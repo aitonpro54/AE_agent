@@ -137,6 +137,10 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
 }
 
 const RUNTIME_FILES = [
+  "mcp-server/panel-lifecycle-causal.js",
+  "mcp-server/panel-lifecycle-causal-observer.js",
+  "scripts/panel-lifecycle-causal.js",
+  "scripts/panel-lifecycle-causal-upgrade.js",
   "mcp-server/ae-agent-panel-bootstrap.js",
   "mcp-server/session-recovery-state.js",
   "mcp-server/ame-open-comp.js",

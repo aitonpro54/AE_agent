@@ -50,9 +50,15 @@ function activationFor(ctx,generation){return {schema:"ae-agent.product-session-
 function ordinaryValidator(ctx){const {createAutonomousSessionManager}=require("../mcp-server/autonomous-session");return createAutonomousSessionManager({panelState:()=>({...ctx.deliveryActor(),seenAt:Date.now()})});}
 function installBootstrapConnect(f){
   const ctx=f.ctx,source=fs.readFileSync(path.join(__dirname,"../cep-panel/panel.js"),"utf8"),start=source.indexOf("  function connect("),end=source.indexOf("  function disconnect(",start),handler=source.indexOf('    "bridge.connect":function'),handlerEnd=source.indexOf('    "bridge.disconnect":function',handler);assert(start>=0&&end>start&&handler>=0&&handlerEnd>handler);
+  const observerStart=source.indexOf("  var causalRuntimeStamp=null;"),observerEnd=source.indexOf("  function request(",observerStart);assert(observerStart>=0&&observerEnd>observerStart);
   ctx.panelConnectionGeneration=0;ctx.panelLifecycleEpoch=0;ctx.running=false;f.busy.agentsLoad=false;f.busy.usageSnapshot=false;let normalConnects=0,polls=0;
+  const values=new Map(),actions=require("../cep-panel/panel-actions")(require("../cep-panel/panel-action-contract"),{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,String(v))});
+  // Keep the existing reset metadata fixture; the new connection observer uses
+  // the actual private UI API with bindings to this same connection context.
+  ctx.panelActionUI=actions.bind({handlers:{},availability:()=>({available:true,reasonCodes:[]}),state:()=>({assetVersion:"3.3.4",recoveryTransport:ctx.recoveryTransportScope}),
+    lifecycle:()=>({epoch:ctx.panelLifecycleEpoch,generation:ctx.panelConnectionGeneration,busy:false}),causalRuntimeStamp:()=>ctx.causalRuntimeStamp});
   Object.assign(ctx,{initialAutomaticConnectDispatch:null,initialAutomaticStartup:null,ownedPollingClosed:false,bridgeHostAvailable:()=>true,currentPlanSyncWaiters:[],urlEl:{value:"http://offline"},tokenEl:{value:"offline"},setBridgeHelp(){},refreshAppTitle(){},loadAgents(){},loadUsageSnapshot(){},panelLifecycleIdle(done){done(null);},bridgeNextPath:()=>"/bridge/next?panelConnectionId=offline&physicalInflight=0"});
-  vm.runInContext(source.slice(start,end)+'\nvar manualBootstrapConnect=({'+source.slice(handler,handlerEnd)+'})["bridge.connect"];',ctx);const original=ctx.connect,manager=ordinaryValidator(ctx);ctx.connect=function(...args){normalConnects++;return original(...args);};ctx.poll=done=>{polls++;assert(Number(ctx.panelConnectionGeneration)>0);manager.observePanel(ctx.deliveryActor());if(done)done(null,{connected:true});};
+  vm.runInContext(source.slice(observerStart,observerEnd)+source.slice(start,end)+'\nvar manualBootstrapConnect=({'+source.slice(handler,handlerEnd)+'})["bridge.connect"];',ctx);const original=ctx.connect,manager=ordinaryValidator(ctx);ctx.connect=function(...args){normalConnects++;return original(...args);};ctx.poll=done=>{polls++;assert(Number(ctx.panelConnectionGeneration)>0);manager.observePanel(ctx.deliveryActor());if(done)done(null,{connected:true});};
   return {manager,normalConnects:()=>normalConnects,polls:()=>polls};
 }
 async function main(){

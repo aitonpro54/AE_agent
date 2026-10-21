@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+"use strict";
+// Administrative technical proof only. No URL/path/eval/outcome/replay inputs.
+const causal=require("../mcp-server/panel-lifecycle-causal"),observer=require("../mcp-server/panel-lifecycle-causal-observer");
+function parse(argv){if(argv.length!==1||!["inspect","prepare-once","read-back","rearm-current-once"].includes(argv[0]))causal.fail("panel_causal_closed_commands_only");return argv[0];}
+function summary(store){const names=["policy","subject-source","certificate","reload-intent","reload-result"],rows=Object.fromEntries(names.map(n=>[n,store.read(n)]));return {ok:true,rawInventoryOnly:true,adoptionObserved:false,sidecars:Object.fromEntries(names.map(n=>[n,rows[n]?{sha256:rows[n].envelope.sha256,rawSha256:rows[n].rawSha256}:null])),certificatePresent:rows.certificate!==null,originalOutcome:"unknown_preserved",replayAllowed:false};}
+async function run(argv){const command=parse(argv),store=causal.privateStore();if(command==="rearm-current-once")return store.rearmCurrentOnce();if(command!=="prepare-once")return summary(store);store.provisionOnce();if(store.read("certificate"))return {...summary(store),status:"already_created_readback_only"};const runtime=await store.authenticatedRuntime(),capture=await observer.captureFresh();if(!causal.same(runtime,await store.authenticatedRuntime()))causal.fail("panel_causal_runtime_changed");const certificate=store.issue(capture);return {ok:true,status:"technical_certificate_created",certificateSha256:certificate.envelope.sha256,subject:certificate.value.classification.subject,...causal.disposition()};}
+if(require.main===module)run(process.argv.slice(2)).then(v=>process.stdout.write(JSON.stringify(v)+"\n")).catch(e=>{process.stdout.write(JSON.stringify({ok:false,code:/^(panel_causal_|causal_)[a-z0-9_]+$/.test(e.code||"")?e.code:"panel_causal_refused",originalOutcome:"unknown_preserved",replayAllowed:false})+"\n");process.exitCode=1;});
+module.exports={parse,run,summary};

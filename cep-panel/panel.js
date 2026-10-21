@@ -623,8 +623,17 @@
   function isFixedGuardLookup(method, path, body) {
     if (method !== "GET" || body !== null && body !== undefined) return false;
     if (path === "/human-guard-settlement/lookup" || path === "/ame/fixture-ui-disposition/lookup" || path === "/ame/native-fixture-prephase-recovery/lookup" || path === "/ame/native-fixture-admission-refusal/lookup") return true;
+    if(path.indexOf("/panel-lifecycle-causal/lookup?")===0)return true;
     var nativeSelector = /^\/ame\/native-fixture-abandonment\/lookup\?requestId=([^&]+)&runId=([^&]+)$/.exec(path);
     return !!nativeSelector && window.AEAgentPanelContract.UUID_REGEX.test(nativeSelector[1]) && window.AEAgentPanelContract.UUID_REGEX.test(nativeSelector[2]);
+  }
+
+  var causalRuntimeStamp=null;
+  function observeCausalRuntime(xhr,error) {
+    var next=null;
+    try{if(!error && xhr && typeof xhr.getResponseHeader==="function"){var raw=xhr.getResponseHeader("x-ae-panel-causal-runtime");if(/^[a-f0-9]{64}$/.test(raw || ""))next=raw;}}catch(_){next=null;}
+    if(error || !next || next!==causalRuntimeStamp){if(panelActionUI && panelActionUI.invalidateCausalRuntime)panelActionUI.invalidateCausalRuntime();}
+    causalRuntimeStamp=next;
   }
 
   function request(method, path, body, onDone) {
@@ -662,6 +671,7 @@
         response=null;
       }
       if (error) { error.isUnknown = method === "POST" && (error.status === 0 || error.status === undefined); error.phase = error.diagnostic && error.diagnostic.phase || (error.isUnknown ? "delivery_unknown" : "transport"); }
+      observeCausalRuntime(xhr,error);
       onDone(error, response);
     }
     xhr.onreadystatechange = function () {
@@ -4822,6 +4832,7 @@
     pollInFlight = false;
     try{panelConnectionGeneration = nextPanelConnectionGeneration();}catch(_){running=false;if(onDone)onDone({rejected:true,code:"delivery_epoch_fence_unreadable"});return;}
     panelLifecycleEpoch += 1;
+    observeCausalRuntime(null,{code:"connection_changed"});
     try{rotateBootstrapDeliveryFence();}catch(_){running=false;if(onDone)onDone({rejected:true,code:"delivery_epoch_fence_unreadable"});return;}
     ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     if (startup) {startup.epoch=panelLifecycleEpoch;startup.generation=panelConnectionGeneration;startup.state="pending";}
@@ -4854,6 +4865,7 @@
   }
 
   function disconnect() {
+    observeCausalRuntime(null,{code:"connection_changed"});
     if(ownedPollingSession) closeOwnedPolling("owned_original_poll_lifecycle_changed");
     ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     recoveryTransportConnecting=false;recoveryTransportScope=null;
@@ -4939,6 +4951,7 @@
   function panelActionSnapshot() {
     rememberPanelSecrets();
     return {assetVersion:APP_VERSION,connected:running && badgeEl.textContent === "online",running:running,
+      nativeBusy:panelActionBusy(),physicalInflight:physicalEvalScriptIdle() ? 0 : 1,
       bridgeConnection:{panelConnectionId:panelConnectionId},
       recoveryTransport:recoveryTransportScope ? {scopeId:recoveryTransportScope.scopeId,connecting:recoveryTransportConnecting,state:recoveryTransportScope.state || "connecting",freshReconcileRequired:true} : null,
       provider:{group:localStorage.getItem("codexAeProviderGroup") || "",authMode:openAiAuthMode(),agentId:agentSelect.value,
@@ -5033,6 +5046,7 @@
 
   var panelActionHandlers={
     "bridge.configure":function(args,done) {
+      observeCausalRuntime(null,{code:"configuration_changed"});
       if(args.url !== undefined) {configuredBridgeUrl=args.url.replace(/\/+$/,"");urlEl.value=configuredBridgeUrl;localStorage.setItem("codexAeBridgeUrl",configuredBridgeUrl);}
       if(args.panelToken !== undefined) {configuredPanelToken=args.panelToken;tokenEl.value=args.panelToken;localStorage.setItem("codexAeBridgeToken",args.panelToken);}
       done(null,{configured:true,url:getBaseUrl()});
@@ -5230,6 +5244,16 @@
   }
   rememberPanelSecrets();
   panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,productSessionReset:function(){return productResetActivation;},
+    causalRuntimeStamp:function(){return causalRuntimeStamp;},createCausalNonce:actionUuid,
+    lookupPanelLifecycleCausal:function(frame,done){
+      var url=getBaseUrl(),token=getToken();
+      if(!causalRuntimeStamp){done(null,null);return;}
+      if(!window.AEAgentPanelContract.validateLoopbackUrl(url)||!token){observeCausalRuntime(null,{code:"causal_bridge_unavailable"});done({code:"causal_bridge_unavailable"});return;}
+      var query="nonce="+encodeURIComponent(frame.nonce)+"&sequence="+encodeURIComponent(frame.sequence)+"&actor="+encodeURIComponent(JSON.stringify(frame.actor));
+      request("GET","/panel-lifecycle-causal/lookup?"+query,null,function(error,response){
+        if(getBaseUrl()!==url||getToken()!==token||error||!response||response.ok!==true){done(error||{code:"causal_lookup_failed"});return;}done(null,response.causal);
+      });
+    },
     passive:{"logs.get":true,"chat.sessions.list":true,"chat.transcript.get":true,"plan.current":function(args) {return !args || !args.fresh;}},
     availability:actionAvailability,state:panelActionSnapshot,
     lookupHumanSettlements:function(done) {

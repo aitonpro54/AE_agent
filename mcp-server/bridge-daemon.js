@@ -5025,11 +5025,15 @@ function getScriptLineContext(script, line, radius) {
 function writeJson(res, status, payload) {
   if (res.destroyed || res.writableEnded || res.headersSent) return;
   const text = JSON.stringify(res.authRole === "panel" ? payload : sanitizeAutomationResponse(payload));
+  let causalStamp=null;
+  if(res.authRole==="panel" && !initialRuntime && deploymentMode==="product" && process.env.AE_OWNED_RUNTIME_GENERATION){try{causalStamp=require("./panel-lifecycle-causal").tupleStamp({generation:process.env.AE_OWNED_RUNTIME_GENERATION,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,pid:process.pid,startedAt:new Date(STARTED_AT).toISOString(),loadedSourceSha256:RUNTIME_IDENTITY.sourceSha256});}catch(_){/* Missing managed tuple revokes, never grants trust. */}}
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     ...(res.allowedOrigin ? {"Access-Control-Allow-Origin": res.allowedOrigin, "Vary": "Origin"} : {}),
     "Access-Control-Allow-Headers": "content-type, x-ae-bridge-token",
+    "Access-Control-Expose-Headers": "x-ae-panel-causal-runtime",
+    ...(causalStamp ? {"x-ae-panel-causal-runtime":causalStamp} : {}),
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
   });
   res.end(text);
@@ -10784,6 +10788,22 @@ function startHttpBridge() {
       } catch (error) { writeJson(res,409,{ok:false,code:error.code || error.message || "fixture_disposition_failed"}); }
       return;
     }
+    if(url.pathname==="/panel-lifecycle-causal/lookup" && req.method==="GET"){
+      if(!requireToken(req,res,url))return;
+      if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"panel_causal_panel_role_required"});return;}
+      try{
+        const causal=require("./panel-lifecycle-causal"),keys=[...url.searchParams.keys()];
+        if(req.url.length>2048 || keys.sort().join(",")!=="actor,nonce,sequence")throw Object.assign(Error("panel_causal_lookup_query_invalid"),{code:"panel_causal_lookup_query_invalid"});
+        const frame=causal.lookupFrame({nonce:url.searchParams.get("nonce"),sequence:Number(url.searchParams.get("sequence")),actor:JSON.parse(url.searchParams.get("actor"))});
+        const store=causal.privateStore();
+        if(!store.read("certificate")){writeJson(res,200,{ok:true,causal:null});return;}
+        // This observation owns no execution/bootstrap ticket. Readiness still
+        // gates external maintenance and every native/resource operation.
+        const assertObservation=()=>{const ctx=ownedRuntimeService.context?.getStore(),s=ownedRuntimeService.status(),c=store.certificate(),own=causal.tupleStamp({generation:process.env.AE_OWNED_RUNTIME_GENERATION,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,pid:process.pid,startedAt:new Date(STARTED_AT).toISOString(),loadedSourceSha256:RUNTIME_IDENTITY.sourceSha256});if(ctx?.kind!=="observation"||ctx.executionEntitled!==false||ctx.bootstrapEntitled||!c||!s.owned||s.generation!==c.runtime.registration.generation||s.draining||s.closing||own!==causal.runtimeStamp(c.runtime))throw Object.assign(Error("panel_causal_lookup_observation_required"),{code:"panel_causal_lookup_observation_required"});};
+        assertObservation();const result=await store.lookup(frame);assertObservation();writeJson(res,200,{ok:true,causal:result});
+      }catch(error){writeJson(res,409,{ok:false,code:error.code || "panel_causal_lookup_refused"});}
+      return;
+    }
     if(url.pathname==="/human-guard-settlement/lookup" && req.method==="GET"){
       if(!requireToken(req,res,url))return;
       if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"human_settlement_panel_role_required"});return;}
@@ -14729,7 +14749,7 @@ function panelControlUsesRetainedTransport() {
   if (!current || current.generation!==process.env.AE_OWNED_RUNTIME_GENERATION) return true;
   return !supervisor.readProductStopAuthority(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION);
 }
-const panelControlService = panelControl.createPanelControlService({evidenceRoot:LOG_DIR,readCutoverInventory:process.env.AE_OWNED_RUNTIME_GENERATION?()=>ownedRuntimeStartup.initialRecovery?require("./owned-runtime-initial-recovery").ordinaryCutover():(require("./owned-runtime-product-activation").controlCutover(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION)||ownedRuntimeAuthority.readOriginalTransportInventory(PROJECT_ROOT)):undefined,resolveStateDirectory:()=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.currentTransportDirectory(PROJECT_ROOT,LOG_DIR):path.join(LOG_DIR,"cep-panel-control"),resolveReceiptDirectory:id=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.receiptTransportDirectory(PROJECT_ROOT,LOG_DIR,id):path.join(LOG_DIR,"cep-panel-control"),lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders()),lookupRetainedNativeFixture:s=>nativeFixtureAbandonment.lookup(s,nativeRetainedReaders()),assertRetainedAdmissionCurrent:expected=>{
+const panelControlService = panelControl.createPanelControlService({evidenceRoot:LOG_DIR,readCutoverInventory:process.env.AE_OWNED_RUNTIME_GENERATION?()=>ownedRuntimeStartup.initialRecovery?require("./owned-runtime-initial-recovery").ordinaryCutover():(require("./owned-runtime-product-activation").controlCutover(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION)||ownedRuntimeAuthority.readOriginalTransportInventory(PROJECT_ROOT)):undefined,resolveStateDirectory:()=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.currentTransportDirectory(PROJECT_ROOT,LOG_DIR):path.join(LOG_DIR,"cep-panel-control"),resolveReceiptDirectory:id=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.receiptTransportDirectory(PROJECT_ROOT,LOG_DIR,id):path.join(LOG_DIR,"cep-panel-control"),lookupPanelLifecycleCausal:()=>require("./panel-lifecycle-causal").readControlProjection(),lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders()),lookupRetainedNativeFixture:s=>nativeFixtureAbandonment.lookup(s,nativeRetainedReaders()),assertRetainedAdmissionCurrent:expected=>{
   const status=getBridgeStatus();
   if(status.lastPanelInfo?.panelGeneration!==expected.currentActor.panelGeneration || status.lastPanelInfo?.panelInstanceId!==expected.currentActor.panelInstanceId || status.lastPanelInfo?.panelLifecycleEpoch!==expected.currentActor.panelLifecycleEpoch || status.humanGuardRuntime.pid!==expected.runtime.daemon.pid || status.humanGuardRuntime.startedAt!==expected.runtime.daemon.startedAt || RUNTIME_IDENTITY.sourceSha256!==expected.runtime.loadedRuntimeSha256 || reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256!==expected.runtime.currentRuntimeSha256)throw Object.assign(Error("retained_admission_actor_or_runtime_changed"),{code:"retained_admission_actor_or_runtime_changed"});
 }});

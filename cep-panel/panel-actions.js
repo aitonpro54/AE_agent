@@ -30,6 +30,34 @@
   var prephaseCertificate=null,prephaseTrusted=false,prephaseLookupPending=false,guardRefreshPending=false,guardRefreshSequence=0,guardRefreshResult=null;
   var REFUSAL_ID="0c33f0f5-a452-47c4-b2d0-204d96cb8fef",REFUSAL_RUN="8674d583-e151-47fc-9c2b-374584b2faa8",REFUSAL_ERROR="fixture_prephase_new_manual_action_required";
   var refusal=null,refusalTrusted=false,refusalLookupPending=false,refusalContext="";
+  var causalEntries=Object.create(null),causalFrame=null;
+  function invalidateCausalRuntime(){causalEntries=Object.create(null);}
+  function causalCanonical(v){if(Array.isArray(v))return "["+v.map(causalCanonical).join(",")+"]";if(v&&typeof v==="object")return "{"+Object.keys(v).sort().map(function(k){return JSON.stringify(k)+":"+causalCanonical(v[k]);}).join(",")+"}";return JSON.stringify(v);}
+  function causalEnvelope(v){return v&&v.schema==="ae-agent.panel-lifecycle-causal.v1.envelope"&&v.value&&v.sha256===sha256(causalCanonical(v.value));}
+  function causalValid(id){
+    var e=causalEntries[id],r=records[id],current=currentFixtureActor();
+    if(!e||!r||!bindings||typeof bindings.causalRuntimeStamp!=="function"||bindings.causalRuntimeStamp()!==e.runtimeStamp||JSON.stringify(current)!==JSON.stringify(e.adopter)||r.state!=="unknown"||r.action!=="bridge.disconnect"||r.replayAllowed!==false||sha256(JSON.stringify(r))!==e.subject.entrySha256||r.panelInstanceId!==e.subject.originalActor.panelInstanceId||r.epoch!==e.subject.originalActor.panelLifecycleEpoch||String(r.generation)!==e.subject.originalActor.panelGeneration)return false;
+    try{var index=JSON.parse(storage.getItem(INDEX_KEY));return !!index&&sha256(JSON.stringify(index[id]))===e.subject.indexEntrySha256;}catch(_){return false;}
+  }
+  function refreshPanelLifecycleCausal(onDone){
+    invalidateCausalRuntime();
+    if(!bindings||typeof bindings.lookupPanelLifecycleCausal!=="function"||typeof bindings.createCausalNonce!=="function"){onDone(true);return;}
+    var nonce=bindings.createCausalNonce(),frame={nonce:nonce,sequence:guardRefreshSequence,actor:currentFixtureActor()};
+    if(!contract.UUID_REGEX.test(nonce||"")){onDone(false);return;}
+    causalFrame=frame;var settled=false;
+    function complete(error,response){
+      if(settled)return;settled=true;
+      var ok=false;
+      try{
+        if(error||causalFrame!==frame||JSON.stringify(frame.actor)!==JSON.stringify(currentFixtureActor()))return;
+        if(response===null){ok=true;return;}
+        var c=response.certificate,w=response.witness,v=c&&c.value,x=w&&w.value,s=v&&v.classification&&v.classification.subject;
+        if(!causalEnvelope(c)||!causalEnvelope(w)||v.schema!=="ae-agent.panel-lifecycle-causal.v1.certificate"||x.schema!=="ae-agent.panel-lifecycle-causal.v1.witness"||x.certificateSha256!==c.sha256||x.nonce!==frame.nonce||x.sequence!==frame.sequence||JSON.stringify(x.adopter)!==JSON.stringify(frame.actor)||!s||JSON.stringify(x.subject)!==JSON.stringify(s)||x.originalOutcome!=="unknown_preserved"||x.causalResult!=="handler_not_submitted"||x.releaseScope!=="current_panel_control_guard_only"||x.replayAllowed!==false||x.nativeExecutionAuthority!==false||x.humanAbandonAuthority!==false||x.runtimeStamp!==bindings.causalRuntimeStamp())return;
+        causalEntries[s.requestId]={subject:clone(s),adopter:clone(x.adopter),runtimeStamp:x.runtimeStamp,certificateSha256:c.sha256};ok=causalValid(s.requestId);if(!ok)invalidateCausalRuntime();
+      }finally{if(causalFrame===frame)causalFrame=null;if(!ok)invalidateCausalRuntime();onDone(ok);}
+    }
+    try{bindings.lookupPanelLifecycleCausal(clone(frame),complete);}catch(_){complete({code:"causal_lookup_failed"});}
+  }
   function dataField(value,key) {
     if(!value || typeof value !== "object") return undefined;
     var descriptor=Object.getOwnPropertyDescriptor(value,key);
@@ -46,7 +74,7 @@
       var r=records[id];
       var reset=bindings && bindings.productSessionReset && bindings.productSessionReset();
       if(reset && reset.disposition && reset.disposition.oldOutcome==="unknown_preserved" && reset.disposition.oldCommandsReplayAllowed===false && reset.panelControl && Array.isArray(reset.panelControl.oldActionEntries) && reset.panelControl.oldActionEntries.some(function(entry){return entry.requestId===id && entry.entrySha256===sha256(JSON.stringify(r));}))return false;
-      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true) && !nativeRetainedValid(id,true) && !prephaseValid(id,true) && !refusalValid(id,true);
+      return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true) && !nativeRetainedValid(id,true) && !prephaseValid(id,true) && !refusalValid(id,true) && !causalValid(id);
     }).map(function(id) {
       var r=records[id],definition=contract.getActionDefinition(r.action);
       return {requestId:id,entrySha256:sha256(JSON.stringify(r)),action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
@@ -138,7 +166,10 @@
     snapshot.nativeFixtureAbandonments=Object.keys(nativeAbandonments).filter(function(id){return nativeAbandonmentValid(id,true);}).map(function(id){var v=nativeAbandonments[id].value;return {requestId:id,runId:v.selector.runId,dispositionId:v.dispositionId,status:v.status,guardDisposition:v.guardDisposition,historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false};});
     snapshot.nativeFixtureRetainedDispositions=Object.keys(nativeRetained).filter(function(id){return nativeRetainedValid(id,true);}).map(function(id){var s=nativeRetained[id],v=s.value;return {requestId:id,runId:v.selector.runId,dispositionId:v.dispositionId,sha256:s.sha256,groupRetirementSha256:s.readBack.groupRetirementSha256,currentActor:clone(s.readBack.currentActor),status:v.status,guardDisposition:v.guardDisposition,historicalOutcome:"unknown",nativeExecutionProven:false,replayAllowed:false};});
     snapshot.trustedGuardRefresh={pending:guardRefreshPending,sequence:guardRefreshSequence,result:guardRefreshResult && clone(guardRefreshResult)};
+    snapshot.causalLookup=causalFrame?{pending:true,nonce:causalFrame.nonce,sequence:causalFrame.sequence,actor:clone(causalFrame.actor)}:null;
+    snapshot.panelLifecycleCausal=Object.keys(causalEntries).filter(causalValid).map(function(id){var e=causalEntries[id];return {requestId:id,entrySha256:e.subject.entrySha256,certificateSha256:e.certificateSha256,currentActor:clone(e.adopter),runtimeStamp:e.runtimeStamp,originalOutcome:"unknown_preserved",causalResult:"handler_not_submitted",releaseScope:"current_panel_control_guard_only",replayAllowed:false};});
     snapshot.nativeFixturePrephaseRecovery=prephaseValid(PREPHASE_ID,true) ? {requestId:PREPHASE_ID,runId:PREPHASE_RUN,status:"prephase_admission_certified",certificateSha256:prephaseCertificate.sha256,entrySha256:prephaseCertificate.readBack.entrySha256,currentActor:clone(prephaseCertificate.readBack.currentActor),scope:"new_disjoint_fixture_only",historicalOutcome:"unknown",nativeExecutionProven:false,processExitProven:false,nativeEndpointInertProven:false,replayAllowed:false} : null;
+    snapshot.nativeFixturePrephaseLookupPending=prephaseLookupPending;
     snapshot.nativeFixtureAdmissionRefusalLookupPending=refusalLookupPending;
     snapshot.nativeFixtureAdmissionRefusal=refusalValid(REFUSAL_ID,true) ? {requestId:REFUSAL_ID,runId:REFUSAL_RUN,authority:refusal.authority,scope:refusal.scope,historicalOutcome:"unknown",nativeExecutionProven:false,processExitProven:false,nativeEndpointInertProven:false,replayAllowed:false} : null;
     return snapshot;
@@ -423,8 +454,8 @@
     if(guardRefreshPending || humanLookupPending || fixtureLookupPending || nativeAbandonmentLookupPending || prephaseLookupPending || refusalLookupPending || active || life().busy || rawState().recoveryTransport || storageFailure)return {accepted:false,code:"trusted_guard_refresh_not_idle"};
     guardRefreshPending=true;guardRefreshResult=null;guardRefreshSequence++;
     var sequence=guardRefreshSequence,actor=JSON.stringify(currentFixtureActor());
-    function finish(ready) {ready=!!ready && !active && !life().busy && !rawState().recoveryTransport && !storageFailure && actor===JSON.stringify(currentFixtureActor());if(!ready){humanSettlementTrusted=false;fixtureDispositionTrusted=false;nativeAbandonmentTrusted=Object.create(null);nativeRetainedTrusted=Object.create(null);prephaseTrusted=false;refusalTrusted=false;}guardRefreshPending=false;guardRefreshResult={sequence:sequence,ok:ready,code:ready ? "trusted_guards_refreshed" : "trusted_guard_refresh_failed"};if(onDone)onDone(ready);}
-    refreshHumanSettlements(function(humanReady) {if(!humanReady){finish(false);return;}refreshAmeFixtureDisposition(function(ameReady){if(!ameReady){finish(false);return;}refreshNativeFixtureAbandonments(function(nativeReady){if(!nativeReady){finish(false);return;}refreshPrephaseCertificate(function(prephaseReady){if(!prephaseReady){finish(false);return;}refreshAdmissionRefusal(finish);});});});});
+    function finish(ready) {ready=!!ready && !active && !life().busy && !rawState().recoveryTransport && !storageFailure && actor===JSON.stringify(currentFixtureActor());if(!ready){humanSettlementTrusted=false;fixtureDispositionTrusted=false;nativeAbandonmentTrusted=Object.create(null);nativeRetainedTrusted=Object.create(null);prephaseTrusted=false;refusalTrusted=false;invalidateCausalRuntime();}causalFrame=null;guardRefreshPending=false;guardRefreshResult={sequence:sequence,ok:ready,code:ready ? "trusted_guards_refreshed" : "trusted_guard_refresh_failed"};if(onDone)onDone(ready);}
+    refreshHumanSettlements(function(humanReady) {if(!humanReady){finish(false);return;}refreshAmeFixtureDisposition(function(ameReady){if(!ameReady){finish(false);return;}refreshNativeFixtureAbandonments(function(nativeReady){if(!nativeReady){finish(false);return;}refreshPrephaseCertificate(function(prephaseReady){if(!prephaseReady){finish(false);return;}refreshAdmissionRefusal(function(refusalReady){if(!refusalReady){finish(false);return;}refreshPanelLifecycleCausal(finish);});});});});});
     return {accepted:true,sequence:sequence,lookupPending:guardRefreshPending};
   }
   function recoveryValid(id,confirmed) {
@@ -711,6 +742,6 @@
       }
     });
     persist();
-    return Object.freeze({invokeUI:function(envelope) {return invoke(envelope,"ui");},refreshHumanSettlements:refreshHumanSettlements,refreshAmeFixtureDisposition:refreshAmeFixtureDisposition,refreshNativeFixtureAbandonments:refreshNativeFixtureAbandonments,refreshTrustedGuards:refreshTrustedGuards});
+    return Object.freeze({invokeUI:function(envelope) {return invoke(envelope,"ui");},invalidateCausalRuntime:invalidateCausalRuntime,refreshHumanSettlements:refreshHumanSettlements,refreshAmeFixtureDisposition:refreshAmeFixtureDisposition,refreshNativeFixtureAbandonments:refreshNativeFixtureAbandonments,refreshTrustedGuards:refreshTrustedGuards});
   }};
 });

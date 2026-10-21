@@ -288,7 +288,7 @@ function cutoverReceiptSemantics(row) {
 }
 function createPanelControlService(options={}) {
   // Private Node fixture seams; none are accepted by CLI/MCP or environment settings.
-  exact(options,["stateDir","evidenceRoot","resolveStateDirectory","resolveReceiptDirectory","readCutoverInventory","cdpPort","inspectInstalledTarget","fetchCdpTargets","evaluateViaCdp","WebSocket","persistReceipt","lookupNativeFixtureAdmissionRefusal","lookupRetainedNativeFixture","assertRetainedAdmissionCurrent"]);
+  exact(options,["stateDir","evidenceRoot","resolveStateDirectory","resolveReceiptDirectory","readCutoverInventory","cdpPort","inspectInstalledTarget","fetchCdpTargets","evaluateViaCdp","WebSocket","persistReceipt","lookupNativeFixtureAdmissionRefusal","lookupRetainedNativeFixture","assertRetainedAdmissionCurrent","lookupPanelLifecycleCausal"]);
   if(options.lookupNativeFixtureAdmissionRefusal!==undefined && typeof options.lookupNativeFixtureAdmissionRefusal!=="function")throw problem("fixture_refusal_lookup_callback_invalid");
   if(options.lookupRetainedNativeFixture!==undefined && typeof options.lookupRetainedNativeFixture!=="function")throw problem("retained_lookup_callback_invalid");
   if(options.assertRetainedAdmissionCurrent!==undefined && typeof options.assertRetainedAdmissionCurrent!=="function")throw problem("retained_admission_callback_invalid");
@@ -297,6 +297,7 @@ function createPanelControlService(options={}) {
   let directory=path.resolve(options.stateDir || DEFAULT_STATE_DIR);
   const recoveryLogDir=path.resolve(options.evidenceRoot || path.dirname(directory)),recovery=require("./generated-export-recovery"),commonRecovery=require("./common-title-assembly-recovery"),runRecords=require("./plan-run-records");
   for(const name of ["resolveStateDirectory","resolveReceiptDirectory"])if(options[name]!==undefined && typeof options[name]!=="function")throw problem("owned_receipt_private_resolver_required");
+  if(options.lookupPanelLifecycleCausal!==undefined&&typeof options.lookupPanelLifecycleCausal!=="function")throw problem("panel_causal_private_reader_required");
   function refreshDirectory(){if(options.resolveStateDirectory)directory=path.resolve(options.resolveStateDirectory());}
   function receiptDirectory(id){return options.resolveReceiptDirectory?path.resolve(options.resolveReceiptDirectory(id)):directory;}
   const inspect=options.inspectInstalledTarget || bootstrap.inspectInstalledTarget,fetchTargets=options.fetchCdpTargets || fetchCdpTargets;
@@ -449,6 +450,10 @@ function createPanelControlService(options={}) {
     actions:remoteCatalog(await read("catalog",undefined,budget))};}catch(error){return responseError(error);}}
   async function state(args={},timeoutMs=5000) {try {exact(args,[]);const budget=timeout(timeoutMs,5000);return {ok:true,
     state:remoteState(await read("state",args,budget))};}catch(error){return responseError(error);}}
+  async function freshCausalValid(row){
+    if(!row||row.action!=="bridge.disconnect"||row.state!=="unknown"||typeof options.lookupPanelLifecycleCausal!=="function")return null;
+    try{const projection=await options.lookupPanelLifecycleCausal();if(!projection)return null;require("./panel-lifecycle-causal").assertControlProjection(projection,receiptDirectory(row.requestId),row);return projection;}catch(_){return null;}
+  }
   async function maintenanceTransportState() {
     refreshDirectory();
     const index=readIndex(directory),requestIds=[];
@@ -456,6 +461,7 @@ function createPanelControlService(options={}) {
       const prior=loadDurableReceipt(directory,id),unproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
       if(!unproven && await freshRefusalValid(prior))continue;
       if(!unproven && await freshRetainedValid(prior))continue;
+      if(!unproven && await freshCausalValid(prior))continue;
       if(prior && !unproven && readonlyOrphan.read(safeRoot(directory),id,"disposition")) {
         try{await readonlyOrphan.validate(orphanContext(),prior);continue;}catch(_){requestIds.push(id);continue;}
       }
@@ -486,6 +492,10 @@ function createPanelControlService(options={}) {
     try {
       requestId(id);refreshDirectory();const budget=timeout(timeoutMs,5000);local=loadDurableReceipt(receiptDirectory(id),id);
       if(local && !local.signature) return responseError(problem(local.code),local);
+      if(local?.action==="bridge.disconnect"&&local.state==="unknown"){
+        const original=require("./panel-lifecycle-causal").coveredLocalOriginal(receiptDirectory(id),id);
+        if(original)return responseReceipt(original); // Immutable UNKNOWN, no remote merge or persistence.
+      }
       const remote=await read("getResult",id,budget);
       const retained=require("./native-fixture-retained");
       if(retained.isRetainedReceipt(local)) {
@@ -567,12 +577,13 @@ function createPanelControlService(options={}) {
       claim=acquireControllerLock(directory,id);
       const index=readIndex(directory,true),second=loadDurableReceipt(directory,id);
       if(second)return second.signature===signature?responseReceipt(second):responseError(problem("duplicate_request_id_conflict"),second);
-      const unresolved=[],readonlyDispositions=[];
+      const unresolved=[],readonlyDispositions=[],causalDispositions=[];
       for(const previous of Object.keys(index.identities)) {
         const prior=loadDurableReceipt(directory,previous);
         const storageUnproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
         if(!storageUnproven && await freshRefusalValid(prior))continue;
         if(!storageUnproven && await freshRetainedValid(prior))continue;
+        if(!storageUnproven){const causal=await freshCausalValid(prior);if(causal){causalDispositions.push({projection:causal,row:prior});continue;}}
         if(prior && !storageUnproven && readonlyOrphan.read(safeRoot(directory),previous,"disposition")) {
           try {const disposition=await readonlyOrphan.validate(orphanContext(),prior);readonlyDispositions.push(disposition);continue;}
           catch(_) {unresolved.push(prior);continue;}
@@ -588,6 +599,7 @@ function createPanelControlService(options={}) {
       const deadline=Date.now()+input.timeoutMs,budget=()=>{const left=deadline-Date.now();if(left<1)throw problem("cdp_timeout");return left;};
       const selected=await resolveTarget(budget()),current=remoteState(await methodAt(selected.target,"state",{},budget()));
       const binding={panelInstanceId:current.panelInstanceId,panelLifecycleEpoch:current.panelLifecycleEpoch,panelGeneration:current.panelGeneration};
+      for(const saved of causalDispositions)require("./panel-lifecycle-causal").assertControlProjection(saved.projection,receiptDirectory(saved.row.requestId),saved.row,binding);
       if(readonlyDispositions.some(disposition=>JSON.stringify(disposition.actor)!==JSON.stringify(binding) ||
         disposition.targetSha256!==readonlyOrphan.hash({installed:selected.installed,target:{url:selected.target.url,webSocketDebuggerUrl:selected.target.webSocketDebuggerUrl}})))throw problem("readonly_orphan_observation_changed");
       if(envelope.expectedState && Object.keys(envelope.expectedState).some(key=>envelope.expectedState[key]!==binding[key]))throw problem("expected_state_mismatch");
@@ -595,6 +607,7 @@ function createPanelControlService(options={}) {
       if(JSON.stringify(checked.installed)!==JSON.stringify(selected.installed) || checked.target.url!==selected.target.url ||
          checked.target.webSocketDebuggerUrl!==selected.target.webSocketDebuggerUrl)throw problem("panel_target_changed");
       for(const disposition of readonlyDispositions)if(await methodAt(checked.target,"getResult",disposition.saved.value.requestId,budget(),binding)!==null)throw problem("readonly_orphan_remote_record_appeared");
+      for(const saved of causalDispositions)require("./panel-lifecycle-causal").assertControlProjection(saved.projection,receiptDirectory(saved.row.requestId),saved.row,binding);
       record.binding=binding;record.panelInstanceId=binding.panelInstanceId;record.epoch=binding.panelLifecycleEpoch;record.generation=binding.panelGeneration;
       record.state="running";record.phase="submitted";record.delivery="submitted";persist(directory,record);sent=true;
       const value=await methodAt(checked.target,"invoke",bound,budget(),binding),verified=remoteReceipt(value,id,{action:envelope.action,binding});
