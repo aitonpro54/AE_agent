@@ -10,26 +10,54 @@ function hash(value) { return crypto.createHash("sha256").update(Buffer.isBuffer
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function same(a,b) { return JSON.stringify(a) === JSON.stringify(b); }
 function safeDirectory(dir) {
-  for (let p=path.resolve(dir); ; p=path.dirname(p)) {
-    const s=fs.lstatSync(p);
-    if (!s.isDirectory() || s.isSymbolicLink() || fs.realpathSync(p).toLowerCase()!==p.toLowerCase()) fail("fixture_ledger_directory_identity");
+  const direct=path.resolve(dir);
+  for (let p=direct; ; p=path.dirname(p)) {
+    if(!proofReadView||!proofReadView.directories.has(p)){
+      const s=fs.lstatSync(p,{bigint:true});
+      if(!s.isDirectory()||s.isSymbolicLink()||fs.realpathSync(p).toLowerCase()!==p.toLowerCase())fail("fixture_ledger_directory_identity");
+      if(proofReadView)proofReadView.directories.set(p,{stat:s,strict:p===direct});
+    }else if(p===direct){proofReadView.directories.get(p).strict=true;}
     if (path.dirname(p)===p) break;
   }
 }
 function ensure(dir) { if (!fs.existsSync(dir)) { ensure(path.dirname(dir)); fs.mkdirSync(dir); } safeDirectory(dir); }
-function readBytes(file) {
+function readBytesUncached(file) {
   safeDirectory(path.dirname(file)); const a=fs.lstatSync(file);
   if (!a.isFile() || a.isSymbolicLink() || a.nlink!==1 || a.size>16*1024*1024 || fs.realpathSync(file).toLowerCase()!==path.resolve(file).toLowerCase()) fail("fixture_ledger_file_identity");
   const bytes=fs.readFileSync(file), b=fs.lstatSync(file);
   if (a.dev!==b.dev || a.ino!==b.ino || a.size!==b.size || a.mtimeMs!==b.mtimeMs || bytes.length!==b.size) fail("fixture_ledger_file_changed"); return bytes;
 }
+// Synchronous exact-byte proof view only. Never survives an await or grants
+// readiness across requests. Every unique file is read again at view close.
+let proofReadView=null;
+function proofExists(file){const found=fs.existsSync(file);if(!proofReadView)return found;const key=path.resolve(file);if(proofReadView.existence.has(key)){const first=proofReadView.existence.get(key);if(first===null&&found)fail("fixture_proof_absence_changed");if(first!==null&&!found)fail("fixture_proof_presence_changed");}if(proofReadView.existence.size>=1024&&!proofReadView.existence.has(key))fail("fixture_proof_presence_budget");if(!found){let parent=path.dirname(key);while(!fs.existsSync(parent)){const next=path.dirname(parent);if(next===parent)fail("fixture_proof_parent_missing");parent=next;}safeDirectory(parent);proofReadView.existence.set(key,null);}else{safeDirectory(path.dirname(key));const stat=fs.lstatSync(key,{bigint:true});if(stat.isSymbolicLink()||!stat.isFile()&&!stat.isDirectory()||stat.isFile()&&stat.nlink!==1n||fs.realpathSync(key).toLowerCase()!==key.toLowerCase())fail("fixture_proof_presence_identity");if(!proofReadView.existence.has(key))proofReadView.existence.set(key,stat);}return found;}
+function freshProofBytes(file){
+ safeDirectory(path.dirname(file));const a=fs.lstatSync(file,{bigint:true});
+ const identity=s=>s.dev===a.dev&&s.ino===a.ino&&s.size===a.size&&s.mtimeNs===a.mtimeNs&&s.ctimeNs===a.ctimeNs&&s.nlink===1n;
+ if(!a.isFile()||a.isSymbolicLink()||a.nlink!==1n||a.size>16777216n||fs.realpathSync(file).toLowerCase()!==path.resolve(file).toLowerCase())fail("fixture_proof_file_identity");
+ const fd=fs.openSync(file,"r");try{if(!identity(fs.fstatSync(fd,{bigint:true})))fail("fixture_proof_file_changed");const chunks=[],buffer=Buffer.alloc(524288);let total=0,n;while((n=fs.readSync(fd,buffer,0,buffer.length,null))!==0){if((total+=n)>16777216)fail("fixture_proof_file_budget");chunks.push(Buffer.from(buffer.subarray(0,n)));}const bytes=Buffer.concat(chunks,total);if(BigInt(bytes.length)!==a.size||!identity(fs.fstatSync(fd,{bigint:true}))||!identity(fs.lstatSync(file,{bigint:true})))fail("fixture_proof_file_changed");safeDirectory(path.dirname(file));if(fs.realpathSync(file).toLowerCase()!==path.resolve(file).toLowerCase())fail("fixture_proof_file_identity");return {bytes,stat:a,rawSha256:hash(bytes)};}finally{fs.closeSync(fd);}
+}
+function readBytes(file){
+ if(!proofReadView)return readBytesUncached(file);
+ const key=path.resolve(file);let row=proofReadView.files.get(key);
+ if(!row){row=freshProofBytes(key);if(proofReadView.files.size>=1024||(proofReadView.bytes+=row.bytes.length)>67108864)fail("fixture_proof_read_budget");proofReadView.files.set(key,row);}
+ else{const st=fs.lstatSync(key,{bigint:true}),a=row.stat;safeDirectory(path.dirname(key));if(!st.isFile()||st.isSymbolicLink()||st.nlink!==1n||st.dev!==a.dev||st.ino!==a.ino||st.size!==a.size||st.mtimeNs!==a.mtimeNs||st.ctimeNs!==a.ctimeNs||fs.realpathSync(key).toLowerCase()!==key.toLowerCase())fail("fixture_proof_view_changed");}
+ return Buffer.from(row.bytes);
+}
+function freezeProofFact(v,seen=new WeakSet()){if(v===null||typeof v!=="object"&&typeof v!=="function")return v;if(seen.has(v))return v;seen.add(v);if(typeof v==="function")return Object.freeze(v);if(Buffer.isBuffer(v)||!Array.isArray(v)&&Object.getPrototypeOf(v)!==Object.prototype&&Object.getPrototypeOf(v)!==null)fail("fixture_proof_memo_mutable_type");for(const d of Object.values(Object.getOwnPropertyDescriptors(v))){if(!Object.hasOwn(d,"value"))fail("fixture_proof_memo_accessor");freezeProofFact(d.value,seen);}return Object.freeze(v);}
+function memoProofRead(key,read){if(!proofReadView)return read();if(!proofReadView.memo.has(key))proofReadView.memo.set(key,freezeProofFact(read()));return proofReadView.memo.get(key);}
+function withFreshProofReadView(read){
+ const previous=proofReadView,view={files:new Map(),directories:new Map(),existence:new Map(),memo:new Map(),bytes:0};proofReadView=view;
+ try{const value=read();if(value&&typeof value.then==="function")fail("fixture_proof_view_must_be_synchronous");for(const [file,row]of view.files){const current=freshProofBytes(file);const a=row.stat,z=current.stat;if(z.dev!==a.dev||z.ino!==a.ino||z.size!==a.size||z.mtimeNs!==a.mtimeNs||z.ctimeNs!==a.ctimeNs||z.nlink!==a.nlink||current.rawSha256!==row.rawSha256)fail("fixture_proof_view_bytes_changed");}for(const [file,a]of view.existence){if(a===null){if(fs.existsSync(file))fail("fixture_proof_absence_changed");}else{const z=fs.lstatSync(file,{bigint:true});if(z.isSymbolicLink()||z.dev!==a.dev||z.ino!==a.ino||z.size!==a.size||z.mtimeNs!==a.mtimeNs||z.ctimeNs!==a.ctimeNs||z.nlink!==a.nlink||fs.realpathSync(file).toLowerCase()!==file.toLowerCase())fail("fixture_proof_presence_changed");}}for(const [dir,pin]of view.directories){const a=pin.stat,z=fs.lstatSync(dir,{bigint:true});if(!z.isDirectory()||z.isSymbolicLink()||z.dev!==a.dev||z.ino!==a.ino||(pin.strict&&(z.mtimeNs!==a.mtimeNs||z.ctimeNs!==a.ctimeNs))||z.nlink!==a.nlink||fs.realpathSync(dir).toLowerCase()!==dir.toLowerCase())fail("fixture_proof_view_directory_changed");}return value;}finally{proofReadView=previous;}
+}
+function withProofReadView(read){if(!proofReadView)return withFreshProofReadView(read);const value=read();if(value&&typeof value.then==="function")fail("fixture_proof_view_must_be_synchronous");return value;}
 function writeOnce(file,value,metadata={}) {
   ensure(path.dirname(file)); const row={schema:SCHEMA+".envelope",sha256:hash(value),value:clone(value),...metadata};
   const fd=fs.openSync(file,"wx",0o600);
   try {fs.writeFileSync(fd,JSON.stringify(row));fs.fsyncSync(fd);} finally {fs.closeSync(fd);} return row;
 }
 function read(file) {
-  if (!fs.existsSync(file)) return null;
+  if (!proofExists(file)) return null;
   const row=JSON.parse(readBytes(file));
   if (row.schema!==SCHEMA+".envelope" || !SHA.test(row.sha256 || "") || hash(row.value)!==row.sha256) fail("fixture_ledger_envelope_corrupt"); return row;
 }
@@ -288,4 +316,4 @@ function assertAdmission(repoRoot,permittedRunId=null,admission=null) {
   }
   if(blocked.length)fail("fixture_runner_unretired_attempt_no_replay");
 }
-module.exports={SCHEMA,SHA,TOKEN,UUID,hash,clone,same,fail,safeDirectory,ensure,readBytes,read,writeOnce,directory,fileFor,descriptor,processIdentity,birthIdentity,sameProcess,reserve,launch,unknown,validateRetirement,auditRetirement,validRetirement,attemptInventory,completionFile,complete,validCompletion,outstanding,assertAdmission};
+module.exports={proofExists,withFreshProofReadView,withProofReadView,memoProofRead,SCHEMA,SHA,TOKEN,UUID,hash,clone,same,fail,safeDirectory,ensure,readBytes,read,writeOnce,directory,fileFor,descriptor,processIdentity,birthIdentity,sameProcess,reserve,launch,unknown,validateRetirement,auditRetirement,validRetirement,attemptInventory,completionFile,complete,validCompletion,outstanding,assertAdmission};

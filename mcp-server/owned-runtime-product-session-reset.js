@@ -29,10 +29,10 @@ function provision(reference,root=path.resolve(__dirname,"..")){
   const ref={source:"explicit_user_chat",reference};authorization(ref);ledger.ensure(authority.base(root));
   if(require("./owned-runtime-product-lifecycle").legacyPresent(root)){
     const s=require("./owned-runtime-supervisor"),current=s.readDaemonRegistration(root),reg=legacyResetEligible(root,current?.generation),facts=s.registeredGeneration(root,reg.generation),dir=path.join(authority.base(root),"product-session-reset-policies"),file=path.join(dir,reg.generation+".json"),value={schema:SCHEMA+".generation-policy",enabled:true,authorization:ref,capability:"reset_owned_runtime_product_session",generation:reg.generation,currentRawSha256:snapshot(path.join(authority.base(root),"current-daemon.json")).sha256,registration:facts.refs,authentication:""};value.authentication=signed(value,authority.runtimeControlFor(root).credential({daemon:{port:3456,credentialSha256:facts.reservation.value.credentialSha256}}));
-    if(fs.existsSync(file)){const p=policy(root,reg.generation);if(!same(p.value,value))fail("owned_product_reset_policy_already_provisioned");return {ok:true,status:"reset_policy_present"};}ledger.ensure(dir);const fd=fs.openSync(file,"wx",0o600);try{fs.writeFileSync(fd,JSON.stringify(value));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}policy(root,reg.generation);return {ok:true,status:"reset_policy_provisioned"};
+    if(ledger.proofExists(file)){const p=policy(root,reg.generation);if(!same(p.value,value))fail("owned_product_reset_policy_already_provisioned");return {ok:true,status:"reset_policy_present"};}ledger.ensure(dir);const fd=fs.openSync(file,"wx",0o600);try{fs.writeFileSync(fd,JSON.stringify(value));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}policy(root,reg.generation);return {ok:true,status:"reset_policy_provisioned"};
   }
   const file=path.join(authority.base(root),"product-session-reset-policy.json"),value={schema:POLICY,enabled:true,authorization:ref,capability:"reset_owned_runtime_product_session"};
-  if(fs.existsSync(file)){const p=policy(root);if(!same(p.policy,value))fail("owned_product_reset_policy_already_provisioned");return {ok:true,status:"reset_policy_present"};}
+  if(ledger.proofExists(file)){const p=policy(root);if(!same(p.policy,value))fail("owned_product_reset_policy_already_provisioned");return {ok:true,status:"reset_policy_present"};}
   const fd=fs.openSync(file,"wx",0o600);try{fs.writeFileSync(fd,JSON.stringify(value));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}policy(root);return {ok:true,status:"reset_policy_provisioned"};
 }
 function disposition(){return {oldOutcome:"unknown_preserved",oldExitProven:false,oldControlDisposition:"operator_abandoned",oldCapabilitiesValidInNewEpoch:false,oldCommandsReplayAllowed:false,oldEditOwnershipInherited:false,oldExternalEffectsAdjudicated:false,replayAllowed:false};}
@@ -48,7 +48,8 @@ function readIntent(root,generation,keyReader){
   if(b.schema!==(generationReset?SCHEMA+".generation-binding":(legacyActivation?activation.SCHEMA:SCHEMA)+".binding")||b.generation!==generation||b.intentSha256!==intent.row.sha256||v.schema!==(legacyActivation?activation.SCHEMA:SCHEMA)+".intent"||v.generation!==generation||v.operationId!==b.operationId||!uuid(v.predecessorGeneration)||!uuid(v.challenge)||!same(v.disposition,disposition())||v.authentication!==signed(v,keyReader(v.predecessorGeneration)))fail("owned_product_reset_intent_invalid");
   return {binding,intent,value:v,dir:resetDir(root,v.operationId)};
 }
-function readAnchor(root,generation,readGeneration,keyReader,roots=new Set()){
+function readAnchor(root,generation,readGeneration,keyReader,roots=new Set()){return ledger.memoProofRead("product-reset-anchor:"+path.resolve(root)+":"+generation,()=>readAnchorUncached(root,generation,readGeneration,keyReader,roots));}
+function readAnchorUncached(root,generation,readGeneration,keyReader,roots=new Set()){
   if(roots.has(generation)||roots.size>=32)fail("owned_product_reset_lineage_invalid");roots.add(generation);
   const x=readIntent(root,generation,g=>keyReader(readGeneration(root,g).reservation.value)),p=readRow(path.join(x.dir,"anchor.json")),v=p.value,facts=readGeneration(root,generation),key=keyReader(facts.reservation.value);
   let legacyActivation=x.value.schema===require("./owned-runtime-product-activation").SCHEMA+".intent";if(legacyActivation)require("./owned-runtime-product-activation").sessionGrant(root,x,readGeneration,keyReader);
@@ -62,7 +63,7 @@ function readAnchor(root,generation,readGeneration,keyReader,roots=new Set()){
 function sessionAnchor(root,generation,readGeneration,keyReader,roots=new Set()){
   // Locate a root, then supervisor verifies every real exit/succession edge.
   let g=generation;const seen=new Set(),dir=path.join(authority.base(root),"daemon-succession");
-  while(uuid(g)&&!seen.has(g)&&seen.size<256){seen.add(g);if(fs.existsSync(bindingFile(root,g)))return readAnchor(root,g,readGeneration,keyReader,roots);const f=path.join(dir,g+".json");if(!fs.existsSync(f))return null;g=readRow(f).value.predecessorGeneration;}
+  while(uuid(g)&&!seen.has(g)&&seen.size<256){seen.add(g);if(ledger.proofExists(bindingFile(root,g)))return readAnchor(root,g,readGeneration,keyReader,roots);const f=path.join(dir,g+".json");if(!ledger.proofExists(f))return null;g=readRow(f).value.predecessorGeneration;}
   if(seen.size)fail("owned_product_reset_lineage_invalid");return null;
 }
 function currentStatus(root,reg,readGeneration,keyReader){
@@ -70,16 +71,16 @@ function currentStatus(root,reg,readGeneration,keyReader){
   const anchor=sessionAnchor(root,reg.generation,readGeneration,keyReader);
   if(anchor){const state=daemonSession({root,generation:anchor.value.generation,readGeneration,keyReader,retireEdit(){}}),active=state.activation();return {ok:true,status:active?"reset_active":"reset_pending_preflight",operationId:anchor.value.operationId,generation:reg.generation,sessionRootGeneration:anchor.value.generation,daemonLiveness:"not_observed",writeAdmissionReleased:false,...disposition()};}
   const pointer=snapshot(path.join(authority.base(root),"current-daemon.json")),key=r1.hash({predecessorGeneration:reg.generation,predecessorCurrentRawSha256:pointer.sha256}),file=path.join(authority.base(root),"product-session-reset-keys",key+".json");
-  if(!fs.existsSync(file))return null;const r=readBack(root,readRow(file).value.operationId);return {ok:true,status:r.status,operationId:r.operationId,generation:r.generation,daemonLiveness:"not_observed",writeAdmissionReleased:false,...disposition()};
+  if(!ledger.proofExists(file))return null;const r=readBack(root,readRow(file).value.operationId);return {ok:true,status:r.status,operationId:r.operationId,generation:r.generation,daemonLiveness:"not_observed",writeAdmissionReleased:false,...disposition()};
 }
-function readBack(root,id){const dir=resetDir(root,id),rows={};if(fs.existsSync(dir))for(const name of fs.readdirSync(dir)){if(!/^(intent|absence|old-edit|anchor|activation|launch-intent|launch-result|unknown|result)\.json$/.test(name))fail("owned_product_reset_foreign_record");rows[name.slice(0,-5)]=readRow(path.join(dir,name)).row;}return {ok:true,status:rows.activation?"reset_active":rows.anchor?"reset_pending_preflight":"reset_partial_readback_only",operationId:id,generation:rows.intent?.value.generation||null,oldOutcome:"unknown_preserved",oldExitProven:false,replayAllowed:false,rows};}
+function readBack(root,id){const dir=resetDir(root,id),rows={};if(ledger.proofExists(dir))for(const name of fs.readdirSync(dir)){if(!/^(intent|absence|old-edit|anchor|activation|launch-intent|launch-result|unknown|result)\.json$/.test(name))fail("owned_product_reset_foreign_record");rows[name.slice(0,-5)]=readRow(path.join(dir,name)).row;}return {ok:true,status:rows.activation?"reset_active":rows.anchor?"reset_pending_preflight":"reset_partial_readback_only",operationId:id,generation:rows.intent?.value.generation||null,oldOutcome:"unknown_preserved",oldExitProven:false,replayAllowed:false,rows};}
 async function reset(deps){
   const {root,native,current,readGeneration,keyReader,launch,publishCurrent,readSources,readLifecyclePolicy}=deps;
   if(require("./deployment-mode").deploymentMode()!=="product")fail("owned_product_reset_product_only");
   const lifecycle=readLifecyclePolicy(),reg=current();if(!reg)fail("owned_product_reset_registered_predecessor_required");if(require("./owned-runtime-product-lifecycle").legacyPresent(root))legacyResetEligible(root,reg.generation);const p=policy(root,reg.generation);
-  if(fs.existsSync(bindingFile(root,reg.generation))){const pending=readIntent(root,reg.generation,g=>keyReader(readGeneration(root,g).reservation.value));if(!fs.existsSync(path.join(pending.dir,"activation.json")))return readBack(root,pending.value.operationId);}
+  if(ledger.proofExists(bindingFile(root,reg.generation))){const pending=readIntent(root,reg.generation,g=>keyReader(readGeneration(root,g).reservation.value));if(!ledger.proofExists(path.join(pending.dir,"activation.json")))return readBack(root,pending.value.operationId);}
   const pointer=snapshot(path.join(authority.base(root),"current-daemon.json")),key=r1.hash({predecessorGeneration:reg.generation,predecessorCurrentRawSha256:pointer.sha256}),keys=path.join(authority.base(root),"product-session-reset-keys"),keyFile=path.join(keys,key+".json");
-  if(fs.existsSync(keyFile))return readBack(root,readRow(keyFile).value.operationId);
+  if(ledger.proofExists(keyFile))return readBack(root,readRow(keyFile).value.operationId);
   const source=readSources(),old=readGeneration(root,reg.generation),edit=snapshot(path.join(root,"logs","edit-session-active.json"));assertLifecycle(root);
   if(p.policy.schema===SCHEMA+".generation-policy"&&(p.policy.currentRawSha256!==pointer.sha256||!same(p.policy.registration,old.refs)))fail("owned_product_reset_current_grant_required");
   function unchanged(){p.assertUnchanged();readLifecyclePolicy(lifecycle.authorization);pointer.assertUnchanged();edit.assertUnchanged();assertLifecycle(root);if(current()?.generation!==reg.generation||readSources().sourceSha256!==source.sourceSha256)fail("owned_product_reset_baseline_changed");}
@@ -99,7 +100,7 @@ async function startFreshReset(deps,baseline,selectors){
     const result=await launch(op,reg.generation,{generation,bootNonce,launchKey:key,beforeLaunch:absent});unchanged();
     const after=readGeneration(root,generation),anchor={schema:SCHEMA+".anchor",operationId:id,generation,intentSha256:intentRow.sha256,predecessorGeneration:reg.generation,predecessorRegistration:old.refs,registration:after.refs,sourceSha256:source.sourceSha256,createdAt:new Date().toISOString(),disposition:disposition(),authentication:""};anchor.authentication=signed(anchor,keyReader(after.reservation.value));r1.writeJournalOnce(dir,"anchor",anchor);
     readAnchor(root,generation,readGeneration,keyReader);unchanged();await native.assertHeld();await publishCurrent(generation,pointer.sha256);r1.writeJournalOnce(dir,"result",{ok:true,status:"reset_pending_preflight",generation,registration:result.registration,...disposition()});return {ok:true,status:"reset_pending_preflight",generation,operationId:id,writeAdmissionReleased:false,...disposition()};
-  }catch(error){if(!fs.existsSync(path.join(dir,"unknown.json")))r1.writeJournalOnce(dir,"unknown",{schema:SCHEMA+".unknown",code:/^owned_[a-z0-9_]+$/.test(error.code||"")?error.code:"owned_product_reset_unknown",generation,...disposition()});throw error;}
+  }catch(error){if(!ledger.proofExists(path.join(dir,"unknown.json")))r1.writeJournalOnce(dir,"unknown",{schema:SCHEMA+".unknown",code:/^owned_[a-z0-9_]+$/.test(error.code||"")?error.code:"owned_product_reset_unknown",generation,...disposition()});throw error;}
 }
 // Generic private failed-start selection. Old operation/launch keys stay
 // consumed; each new recovery is keyed by the failed operation and exact pins,
@@ -109,9 +110,9 @@ function selectFailedStart(deps){
   let selected=null;
   // A lost publication ACK can leave current pointing to the recovery child.
   // Its signed binding identifies the original recovery, without directory scan.
-  if(fs.existsSync(bindingFile(root,reg.generation))){
+  if(ledger.proofExists(bindingFile(root,reg.generation))){
     const x=readIntent(root,reg.generation,g=>keyReader(readGeneration(root,g).reservation.value)),file=path.join(authority.base(root),"product-session-reset-recoveries",x.value.operationId,"intent.json");
-    if(fs.existsSync(file)){const row=readRow(file).value;if(row.schema!==SCHEMA+".failed-start-intent"||row.operationId!==x.value.operationId||row.generation!==reg.generation||row.authentication!==signed(row,keyReader(readGeneration(root,x.value.predecessorGeneration).reservation.value)))fail("owned_product_reset_recovery_intent_invalid");selected=row.original;}
+    if(ledger.proofExists(file)){const row=readRow(file).value;if(row.schema!==SCHEMA+".failed-start-intent"||row.operationId!==x.value.operationId||row.generation!==reg.generation||row.authentication!==signed(row,keyReader(readGeneration(root,x.value.predecessorGeneration).reservation.value)))fail("owned_product_reset_recovery_intent_invalid");selected=row.original;}
   }
   if(!selected){
     const pointer=snapshot(path.join(authority.base(root),"current-daemon.json")),key=r1.hash({predecessorGeneration:reg.generation,predecessorCurrentRawSha256:pointer.sha256}),once=readRow(path.join(authority.base(root),"product-session-reset-keys",key+".json")).value;
@@ -125,7 +126,7 @@ function selectFailedStart(deps){
   const seen=new Set();
   for(let n=0;n<32;n++){
     if(seen.has(selected.operationId))fail("owned_product_reset_failed_start_cycle");seen.add(selected.operationId);
-    const facts=failedStartFacts(deps,selected),paths=recoveryPaths(root,selected,facts.pins);if(!fs.existsSync(paths.keyFile))return selected;
+    const facts=failedStartFacts(deps,selected),paths=recoveryPaths(root,selected,facts.pins);if(!ledger.proofExists(paths.keyFile))return selected;
     const once=readRow(paths.keyFile),readback=recoveryReadBack(deps,facts,once);if(readback.rows.result||!readback.rows.intent)return selected;
     const next={operationId:readback.operationId,generation:readback.generation,predecessorGeneration:selected.predecessorGeneration},rows=readBack(root,next.operationId).rows;
     if(rows.unknown?.value.code!=="owned_supervisor_started_process_exited"||rows.anchor||rows.activation||rows.result||rows["launch-result"])return selected;
@@ -133,7 +134,7 @@ function selectFailedStart(deps){
   }
   fail("owned_product_reset_failed_start_chain_budget");
 }
-function recoveryPaths(root,original,pins){const legacy=r1.hash(FAILED_START),key=same(original,FAILED_START)&&fs.existsSync(path.join(authority.base(root),"product-session-reset-recovery-keys",legacy+".json"))?legacy:r1.hash({original,originalPins:pins});return {key,keyFile:path.join(authority.base(root),"product-session-reset-recovery-keys",key+".json"),directory:id=>path.join(authority.base(root),"product-session-reset-recoveries",id)};}
+function recoveryPaths(root,original,pins){const legacy=r1.hash(FAILED_START),key=same(original,FAILED_START)&&ledger.proofExists(path.join(authority.base(root),"product-session-reset-recovery-keys",legacy+".json"))?legacy:r1.hash({original,originalPins:pins});return {key,keyFile:path.join(authority.base(root),"product-session-reset-recovery-keys",key+".json"),directory:id=>path.join(authority.base(root),"product-session-reset-recoveries",id)};}
 function failedStartFacts(deps,b=selectFailedStart(deps),depth=0){
   if(depth>32||!b||!uuid(b.operationId)||!uuid(b.generation)||!uuid(b.predecessorGeneration))fail("owned_product_reset_failed_start_selector_invalid");
   const {root,readGeneration,keyReader}=deps,old=readGeneration(root,b.predecessorGeneration),x=readIntent(root,b.generation,g=>keyReader(readGeneration(root,g).reservation.value)),v=x.value;
@@ -163,16 +164,16 @@ function recoveryReadBack(deps,facts,once){
   const {root,keyReader,readGeneration}=deps,paths=recoveryPaths(root,facts.original,facts.pins),b=facts.original,v=once.value;
   exact(v,["schema","operationId","original","originalPins","replayAllowed"]);
   if(v.schema!==SCHEMA+".failed-start-once"||!uuid(v.operationId)||!same(v.original,b)||!same(v.originalPins,facts.pins)||v.replayAllowed!==false)fail("owned_product_reset_recovery_once_invalid");
-  const dir=paths.directory(v.operationId),rows={};if(fs.existsSync(dir))for(const name of fs.readdirSync(dir)){if(!/^(intent|absence|unknown|result)\.json$/.test(name))fail("owned_product_reset_recovery_foreign_record");rows[name.slice(0,-5)]=readRow(path.join(dir,name)).row;}
+  const dir=paths.directory(v.operationId),rows={};if(ledger.proofExists(dir))for(const name of fs.readdirSync(dir)){if(!/^(intent|absence|unknown|result)\.json$/.test(name))fail("owned_product_reset_recovery_foreign_record");rows[name.slice(0,-5)]=readRow(path.join(dir,name)).row;}
   let generation=null;if(rows.intent){const i=rows.intent.value;exact(i,["schema","operationId","generation","original","originalPins","sourceSha256","createdAt","authentication"]);if(i.schema!==SCHEMA+".failed-start-intent"||i.operationId!==v.operationId||!uuid(i.generation)||!same(i.original,b)||!same(i.originalPins,facts.pins)||!ledger.SHA.test(i.sourceSha256||"")||!Number.isFinite(Date.parse(i.createdAt))||i.authentication!==signed(i,keyReader(facts.old.reservation.value)))fail("owned_product_reset_recovery_intent_invalid");generation=i.generation;}
   if(rows.result){if(!rows.intent||!same(rows.result.value,{ok:true,status:"reset_pending_preflight",generation,operationId:v.operationId,writeAdmissionReleased:false,...disposition()}))fail("owned_product_reset_recovery_result_invalid");const anchor=readAnchor(root,generation,readGeneration,keyReader);if(anchor.value.operationId!==v.operationId||anchor.value.sourceSha256!==rows.intent.value.sourceSha256||anchor.value.predecessorGeneration!==b.predecessorGeneration)fail("owned_product_reset_recovery_result_invalid");}
   return {ok:true,status:rows.result?"failed_start_recovered_pending_preflight":"failed_start_recovery_partial_readback_only",operationId:v.operationId,generation,original:b,writeAdmissionReleased:false,...disposition(),nextAction:{kind:rows.result?"complete_physical_product_session_preflight":"observe_exact_candidate_registration_or_failure",automaticReplayAllowed:false},rows};
 }
-function failedStartStatus(deps){const facts=failedStartFacts(deps),paths=recoveryPaths(deps.root,facts.original,facts.pins),b=facts.original;return fs.existsSync(paths.keyFile)?recoveryReadBack(deps,facts,readRow(paths.keyFile)):{ok:true,status:"failed_start_recovery_not_attempted",original:b,writeAdmissionReleased:false,...disposition()};}
+function failedStartStatus(deps){const facts=failedStartFacts(deps),paths=recoveryPaths(deps.root,facts.original,facts.pins),b=facts.original;return ledger.proofExists(paths.keyFile)?recoveryReadBack(deps,facts,readRow(paths.keyFile)):{ok:true,status:"failed_start_recovery_not_attempted",original:b,writeAdmissionReleased:false,...disposition()};}
 async function recoverFailedStart(deps){
   const {root,native,current,readGeneration,keyReader,readSources,readLifecyclePolicy}=deps;
   if(require("./deployment-mode").deploymentMode()!=="product")fail("owned_product_reset_product_only");
-  const facts=failedStartFacts(deps),b=facts.original,paths=recoveryPaths(root,b,facts.pins);if(fs.existsSync(paths.keyFile))return recoveryReadBack(deps,facts,readRow(paths.keyFile));
+  const facts=failedStartFacts(deps),b=facts.original,paths=recoveryPaths(root,b,facts.pins);if(ledger.proofExists(paths.keyFile))return recoveryReadBack(deps,facts,readRow(paths.keyFile));
   if(require("./owned-runtime-product-lifecycle").legacyPresent(root))legacyResetEligible(root,b.predecessorGeneration);
   const p=policy(root,b.predecessorGeneration),lifecycle=readLifecyclePolicy(),reg=current(),pointer=snapshot(path.join(authority.base(root),"current-daemon.json")),source=readSources(),edit=snapshot(path.join(root,"logs","edit-session-active.json")),original=facts.x.value;
   if(reg?.generation!==b.predecessorGeneration||pointer.sha256!==original.predecessorCurrentRawSha256||edit.sha256!==original.oldEditRawSha256||p.rawSha256!==original.policyRawSha256||!same(p.policy.authorization,original.authorizationRef)||!same(lifecycle.authorization,original.lifecycleAuthorizationRef))fail("owned_product_reset_recovery_baseline_changed");
@@ -186,10 +187,10 @@ async function recoverFailedStart(deps){
   catch(error){r1.writeJournalOnce(dir,"unknown",{code:/^owned_[a-z0-9_]+$/.test(error.code||"")?error.code:"owned_product_reset_recovery_unknown",generation,replayAllowed:false});throw error;}
 }
 function daemonSession({root,generation,readGeneration,keyReader,readLifecycle,readEditHash,retireEdit}={}){
-  if(!generation||!fs.existsSync(bindingFile(root,generation)))return null;
+  if(!generation||!ledger.proofExists(bindingFile(root,generation)))return null;
   const x=readIntent(root,generation,g=>keyReader(readGeneration(root,g).reservation.value));let challengeActor=null,challengeExpiresAt=0,challengeToken=null;
   function grant(){return x.value.schema===SCHEMA+".intent"?policy(root,x.value.predecessorGeneration):require("./owned-runtime-product-activation").sessionGrant(root,x,readGeneration,keyReader);}
-  function activation(){const pGrant=grant();if(pGrant.rawSha256!==x.value.policyRawSha256||!same(pGrant.policy.authorization,x.value.authorizationRef))fail("owned_product_reset_policy_changed");const file=path.join(x.dir,"activation.json");if(!fs.existsSync(file))return null;const p=readRow(file),v=p.value,key=keyReader(readGeneration(root,generation).reservation.value);if(v.schema!==SCHEMA+".activation"||v.generation!==generation||v.intentSha256!==x.intent.row.sha256||!uuid(v.challenge)||v.authentication!==signed(v,key)||!same(v.disposition,disposition()))fail("owned_product_reset_activation_invalid");return v;}
+  function activation(){const pGrant=grant();if(pGrant.rawSha256!==x.value.policyRawSha256||!same(pGrant.policy.authorization,x.value.authorizationRef))fail("owned_product_reset_policy_changed");const file=path.join(x.dir,"activation.json");if(!ledger.proofExists(file))return null;const p=readRow(file),v=p.value,key=keyReader(readGeneration(root,generation).reservation.value);if(v.schema!==SCHEMA+".activation"||v.generation!==generation||v.intentSha256!==x.intent.row.sha256||!uuid(v.challenge)||v.authentication!==signed(v,key)||!same(v.disposition,disposition()))fail("owned_product_reset_activation_invalid");return v;}
   function admissionReady(){if(!activation())return false;readAnchor(root,generation,readGeneration,keyReader);retireEdit(x.value.oldEditRawSha256);return true;}
   function challenge(actor,physicalInflight){
     if(admissionReady())return null;if(physicalInflight!==0)fail("owned_product_reset_physical_fence_required");readAnchor(root,generation,readGeneration,keyReader);exact(actor,["panelConnectionId","panelGeneration","panelInstanceId","panelLifecycleEpoch"]);if(!actor.panelConnectionId||!actor.panelGeneration||!actor.panelInstanceId||!Number.isSafeInteger(actor.panelLifecycleEpoch))fail("owned_product_reset_panel_actor_required");

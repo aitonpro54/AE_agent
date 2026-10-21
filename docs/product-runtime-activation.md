@@ -158,3 +158,53 @@ physical bootstrap guards остаются обязательными.
 отдельный reviewed maintenance exit с factual read-back. Force receipt не
 превращается в graceful claim и не завершает старые UNKNOWN. Возврат source/
 panel bytes не восстанавливает историческую control authority.
+
+
+## Синхронная проверка proof graph без блокировки status
+
+Bootstrap snapshot и owned readiness используют один synchronous fresh proof
+read view. Каждый уникальный critical file открывается с bounded read, regular/
+noalias и FD/path identity checks. Внутри одного синхронного вызова переиспользуются
+exact bytes, frozen parse и проверенные immutable lineage facts; после await этот
+view не существует. На завершении все unique files снова читаются и сравниваются
+по raw SHA и file identity. Direct proof namespaces проверяют также directory
+mtime/ctime; общие ancestors — identity и отсутствие aliases. Это не TTL и не
+persistent ready flag. Global outstanding/resource census и active counters
+вычисляются заново для каждого readiness.
+
+Непосредственно перед native spawn, CDP construction/send и typed project read
+используется отдельный NEW fresh view; view прежнего status или до await не
+разрешает delivery. Изменение bytes с прежним размером/mtime обнаруживается raw
+hash. Неизвестная lineage остаётся namespace_unavailable/busy, без global fallback.
+
+Offline benchmark по actual FS signed graph с сохранёнными quiescence counters
+дал full readiness860–990ms в5 прогонах. Это не live readiness proof. Штатные
+product transport deadlines не увеличены. Временный exact-run long graceful
+adapter для предшествующего hot runtime меняет только timeout пассивного HTTP/
+same-HANDLE observation; не создаёт force authority и не меняет product source.
+
+## Оставшийся graceful shutdown после позднего drain ACK
+
+Если normal supervisor сохранил `owned_supervisor_drain_ack_unknown_readback_only`,
+повтор drain и прежнего operation запрещён. Проверенный remaining-step helper
+создаёт отдельный source-independent once, связанный с exact original UNKNOWN,
+late durable drain ACK, current raw и registration. Новая authenticated readiness
+обязательна перед единственным новым shutdown intent/POST. Поддерживаемый controller
+удерживает тот же target HANDLE; наблюдение ограничено 600s по slices не больше30s,
+без force, reopening PID, stop replay или затрагивания AE/CEP. Recovery transport
+имеет отдельный hard timeout600s; штатные product deadlines не меняются.
+
+Новый HMAC graceful receipt не изменяет original UNKNOWN. Product JS reader и
+native data-only verifier независимо проверяют typed
+`prior_verified_graceful_continuation`: original UNKNOWN+lateACK, new intent/once/
+submission/shutdownACK, same-HANDLE positive exit, immutable source/code snapshots
+и cutoff inventory. Native verifier удерживает прочитанные private files до launch;
+ignored helper никогда не импортируется как historical authority. Новый successor
+сохраняет подписанный session root/bootstrap namespace. Global native3 debt,
+resource reservations и прежние UNKNOWN не получают replay/native admission.
+
+Exact-run CLI и evidence лежат в ignored
+`.codex-runtime/release-3.3.4/product-maintenance-draft/product-graceful-continuation/`;
+source delta подготовлен отдельно в `continuation-source/`. Сам факт offline PASS
+не доказывает live shutdown; root выполняет один remaining step и сверяет sealed
+held exit перед применением source.

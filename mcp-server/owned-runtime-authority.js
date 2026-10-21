@@ -21,7 +21,8 @@ function exact(v,keys,code="owned_authority_contract_invalid") {
 }
 function base(root){return path.join(path.resolve(root),".codex-runtime","owned-runtime-maintenance");}
 function sameKernelIdentity(a,b){const win=require("./owned-runtime-win32");win.validateIdentity(a);win.validateIdentity(b);return r1.canonical(a)===r1.canonical(b);}
-function privateFile(file) {
+function privateFile(file){return ledger.memoProofRead("private-file:"+path.resolve(file),()=>privateFileUncached(file));}
+function privateFileUncached(file) {
   const stat=fs.lstatSync(file,{bigint:true}),bytes=ledger.readBytes(file),rawSha256=ledger.hash(bytes),value=r1.freeze(JSON.parse(bytes));
   function assertUnchanged(){const b=ledger.readBytes(file),s=fs.lstatSync(file,{bigint:true});if(s.dev!==stat.dev || s.ino!==stat.ino || s.size!==stat.size || s.mtimeNs!==stat.mtimeNs || ledger.hash(b)!==rawSha256)ledger.fail("owned_authority_file_changed");}
   assertUnchanged();return {value,rawSha256,assertUnchanged};
@@ -119,13 +120,13 @@ function selectTransportDirectory(root,evidenceRoot,selector){
   const manifest=privateFile(path.join(base(root),"retained-authority.json")),m=validateManifest(manifest.value);
   if(ledger.same(selector,m.selector)){loadRetained(root,m.selector).assertUnchanged();manifest.assertUnchanged();return path.join(evidenceRoot,"cep-panel-control");}
   const retained=require("./native-fixture-retained"),file=retained.managedFile(root,selector.runId);
-  if(fs.existsSync(file)){const group=retained.validateManagedGroup(root,selector.runId).row.value;if(!ledger.same(group.selector,selector))ledger.fail("owned_transport_managed_selector_mismatch");return path.join(evidenceRoot,"cep-panel-control","owned",group.issuer.generation);}
+  if(ledger.proofExists(file)){const group=retained.validateManagedGroup(root,selector.runId).row.value;if(!ledger.same(group.selector,selector))ledger.fail("owned_transport_managed_selector_mismatch");return path.join(evidenceRoot,"cep-panel-control","owned",group.issuer.generation);}
   return currentTransportDirectory(root,evidenceRoot);
 }
 function receiptTransportDirectory(root,evidenceRoot,requestId){
   if(!ledger.UUID.test(requestId || ""))ledger.fail("owned_transport_selector_invalid");
   const manifest=privateFile(path.join(base(root),"retained-authority.json")),m=validateManifest(manifest.value);if(m.selector.requestId===requestId)return selectTransportDirectory(root,evidenceRoot,m.selector);
-  const jobs=path.join(base(root),"fixture-cleanup-jobs");if(fs.existsSync(jobs)){const names=fs.readdirSync(jobs);if(names.length>1000)ledger.fail("owned_transport_job_inventory_budget");for(const id of names){if(!ledger.UUID.test(id))ledger.fail("owned_transport_foreign_job");const file=require("./native-fixture-retained").managedFile(root,id);if(!fs.existsSync(file))continue;const row=privateFile(file);if(row.value.value?.selector?.requestId===requestId)return selectTransportDirectory(root,evidenceRoot,{requestId,runId:id});}}
+  const jobs=path.join(base(root),"fixture-cleanup-jobs");if(ledger.proofExists(jobs)){const names=fs.readdirSync(jobs);if(names.length>1000)ledger.fail("owned_transport_job_inventory_budget");for(const id of names){if(!ledger.UUID.test(id))ledger.fail("owned_transport_foreign_job");const file=require("./native-fixture-retained").managedFile(root,id);if(!ledger.proofExists(file))continue;const row=privateFile(file);if(row.value.value?.selector?.requestId===requestId)return selectTransportDirectory(root,evidenceRoot,{requestId,runId:id});}}
   return currentTransportDirectory(root,evidenceRoot);
 }
 function readPredecessorTransportInventory(root,pair,current,{supervisor=require("./owned-runtime-supervisor"),readIndexedReceipt=require("./cep-panel-control").readIndexedReceipt}={}) {
@@ -144,10 +145,10 @@ function readPredecessorTransportInventory(root,pair,current,{supervisor=require
       const maintenance=edge.operation.evidenceKind==="prior_verified_maintenance_retirement",retired=maintenance?supervisor.readVerifiedMaintenanceRetirement(root,generation):supervisor.readVerifiedStartupRetirement(root,generation);if(!retired || retired.operationId!==edge.operation.sourceOperationId || retired.row.sha256!==edge.operation.source?.[maintenance?"maintenanceRetirementReceiptSha256":"startupRetirementReceiptSha256"] || !ledger.same(retired.source,edge.operation.source) || !["absent","initialized_empty"].includes(retired.namespace?.kind))ledger.fail("owned_cutover_startup_retirement_required");
       const witnessed=new Map(retired.namespace.files.map(f=>[f.path,f.rawSha256]));if(!ledger.same([...files.entries()].sort(),[...witnessed.entries()].sort()))ledger.fail("owned_cutover_startup_namespace_inventory_changed");namespaceChecks.push(retired.assertUnchanged);
       if(retired.namespace.kind==="absent"){
-        if(files.size || fs.existsSync(transport))ledger.fail("owned_cutover_startup_namespace_late_appearance");namespaceChecks.push(()=>{if(fs.existsSync(transport))ledger.fail("owned_cutover_startup_namespace_late_appearance");});continue;
+        if(files.size || ledger.proofExists(transport))ledger.fail("owned_cutover_startup_namespace_late_appearance");namespaceChecks.push(()=>{if(ledger.proofExists(transport))ledger.fail("owned_cutover_startup_namespace_late_appearance");});continue;
       }
     }
-    if(!files.has(prefix+"identities.json") || !files.has(prefix+"initialized.json") || !fs.existsSync(transport))ledger.fail("owned_cutover_predecessor_transport_missing");
+    if(!files.has(prefix+"identities.json") || !files.has(prefix+"initialized.json") || !ledger.proofExists(transport))ledger.fail("owned_cutover_predecessor_transport_missing");
     ledger.safeDirectory(transport);const actual=[],transportNames=fs.readdirSync(transport).sort();let checkpointNames=null;
     for(const name of transportNames){
       if(name==="index-checkpoints"){const checkpoints=path.join(transport,name);ledger.safeDirectory(checkpoints);checkpointNames=fs.readdirSync(checkpoints).sort();for(const receipt of checkpointNames){if(!ledger.UUID.test(receipt.replace(/\.json$/,"")) || !receipt.endsWith(".json"))ledger.fail("owned_cutover_predecessor_transport_partial");actual.push(prefix+name+"/"+receipt);}}

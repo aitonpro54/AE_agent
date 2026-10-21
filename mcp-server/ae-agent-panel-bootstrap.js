@@ -203,13 +203,13 @@ async function reconnectCdp(target,timeoutMs,beforeSend,assertScope=()=>{}) {
 
 function createPanelBootstrapService(deps) {
   const baseStateDir=path.resolve(deps.stateDir),services=new Map(),ledger=require("./native-fixture-attempt-ledger");
-  function resolve(){
+  function resolve(){return ledger.withProofReadView(()=>{
     const scope=deps.resolveSessionScope?deps.resolveSessionScope():null;
     if(scope===null)return {directory:baseStateDir,key:"legacy",scope:null};
     if(!scope||typeof scope.directory!=="string"||!path.isAbsolute(scope.directory)||path.resolve(scope.directory)!==scope.directory||!scope.binding||typeof scope.binding!=="object"||Array.isArray(scope.binding)||typeof scope.assertUnchanged!=="function")throw problem("bootstrap_session_namespace_invalid");
     scope.assertUnchanged();const binding=JSON.parse(JSON.stringify(scope.binding));
     return {directory:scope.directory,key:scope.directory+"\0"+recoveryState.canonical(binding),binding,scope};
-  }
+  });}
   function checkMarker(selected,create){
     if(!selected.scope)return;
     selected.scope.assertUnchanged();const directory=selected.directory,file=path.join(directory,"scope.json");
@@ -226,19 +226,20 @@ function createPanelBootstrapService(deps) {
   }
   function selectedService(create){
     const selected=resolve();checkMarker(selected,create);
-    function assertScope(){const current=resolve();if(current.key!==selected.key)throw problem("bootstrap_session_namespace_changed");checkMarker(current,false);}
+    function assertScope(){return ledger.withProofReadView(()=>{const current=resolve();if(current.key!==selected.key)throw problem("bootstrap_session_namespace_changed");checkMarker(current,false);});}
+    function assertDeliveryScope(){return ledger.withFreshProofReadView(()=>{const current=resolve();if(current.key!==selected.key)throw problem("bootstrap_session_namespace_changed");checkMarker(current,false);});}
     if(!services.has(selected.key)){
-      const guarded={...deps,stateDir:selected.directory,assertScope};
+      const guarded={...deps,stateDir:selected.directory,assertScope,assertDeliveryScope};
       for(const name of ["getStatus","getOrigin","getDeliveryFence","readProject","readResult","discoverAE","inspectInstalled","assertNoCollision","discoverCdp","reconnectCdp","dispatchNative","pause"]){
-        if(typeof deps[name]==="function")guarded[name]=(...args)=>{assertScope();return deps[name](...args);};
+        if(typeof deps[name]==="function")guarded[name]=(...args)=>{if(["getStatus","getOrigin","getDeliveryFence"].includes(name))return ledger.withProofReadView(()=>{assertScope();return deps[name](...args);});if(["readProject","dispatchNative","reconnectCdp"].includes(name))assertDeliveryScope();else assertScope();return deps[name](...args);};
       }
       services.set(selected.key,createScopedPanelBootstrapService(guarded));
     }
     return services.get(selected.key);
   }
   function unavailable(error){const code=typeof error.code==="string"&&/^[a-z0-9_]+$/.test(error.code)?error.code:"bootstrap_session_namespace_unavailable";return {stage:["bootstrap_session_namespace_pending_current","bootstrap_session_namespace_pending_activation"].includes(code)?"namespace_pending":"namespace_unavailable",code,busy:true,admissionBlocked:true,replayAllowed:false,automaticReplayAllowed:false};}
-  function snapshot(){try{const value=selectedService(false).snapshot();return value?.stage==="record_failure"&&value.code?.startsWith("bootstrap_session_")?unavailable({code:value.code}):value;}catch(error){return unavailable(error);}}
-  function isBusy(){try{return selectedService(false).isBusy();}catch(_){return true;}}
+  function snapshot(){try{return ledger.withProofReadView(()=>{const value=selectedService(false).snapshot();return value?.stage==="record_failure"&&value.code?.startsWith("bootstrap_session_")?unavailable({code:value.code}):value;});}catch(error){return unavailable(error);}}
+  function isBusy(){try{return ledger.withProofReadView(()=>selectedService(false).isBusy());}catch(_){return true;}}
   return {snapshot,isBusy,ensure:raw=>{validateInput(raw||{});return selectedService(true).ensure(raw);},recover:raw=>{if(raw!==undefined&&(!raw||typeof raw!=="object"||Array.isArray(raw)||Object.keys(raw).length))throw problem("invalid_bootstrap_recovery_arguments");return selectedService(true).recover(raw);},
     observeTerminal:(...args)=>selectedService(true).observeTerminal(...args),captureRecoveryBinding:(...args)=>selectedService(false).captureRecoveryBinding(...args),
     recoveryChallenge:(...args)=>selectedService(false).recoveryChallenge(...args),acceptRecoveryEpoch:(...args)=>selectedService(true).acceptRecoveryEpoch(...args)};
@@ -301,8 +302,8 @@ function createScopedPanelBootstrapService(deps) {
         };
         stage=cdp ? "cdp_reconnect" : "native_dispatch";
         try {
-          if(cdp) {await (deps.reconnectCdp || reconnectCdp)(cdp,remaining(),recheck,deps.assertScope);record.reloadAcknowledged=true;}
-          else {await recheck();deps.assertScope?.();record.cli=await (deps.dispatchNative || dispatchNative)(ae,scriptPath,deps.assertScope);}
+          if(cdp) {await (deps.reconnectCdp || reconnectCdp)(cdp,remaining(),recheck,deps.assertDeliveryScope||deps.assertScope);record.reloadAcknowledged=true;}
+          else {await recheck();deps.assertScope?.();record.cli=await (deps.dispatchNative || dispatchNative)(ae,scriptPath,deps.assertDeliveryScope||deps.assertScope);}
           save(record);
         } catch(e) {if(record.stage==="prepared") {record.stage="not_executed";save(record);}throw e;}
         stage="wait_connection";

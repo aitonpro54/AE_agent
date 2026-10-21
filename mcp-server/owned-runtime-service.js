@@ -64,7 +64,8 @@ function createOwnedRuntimeService({initialRuntime=null,generation=null,readRegi
   }
   function status(){const current=registeredGeneration();return {ok:true,schema:SCHEMA+".status",owned:current!==null,generation:current,draining,closing,writeAdmission:admissionOpen()?"open":"retained_audit_and_fresh_adoption_required",activeTickets:tickets.size,drainOperationId:drainOperation,shutdownEffectPending,replayAllowed:false};}
   function privateOperation(input,operation){authority.exact(input,["operationId"],"owned_service_body_operation_id_only");const current=registeredGeneration();if(!current)fail("owned_service_registration_required");const rows=readOperation(journalRoot,input.operationId),v=rows.intent.value;if(v.targetGeneration!==current || v.operation!==operation)fail("owned_service_operation_generation_mismatch");const policy=readPolicy();if(policy.enabled!==true || !policy.acceptedServerCoverage?.includes("owned_daemon_lifecycle") || !ledger.same(policy.authorization,v.authorizationRef))fail("owned_service_policy_disabled_or_changed");return rows;}
-  function readiness(){
+  function readiness(){return ledger.withFreshProofReadView(readinessWithinView);}
+  function readinessWithinView(){
     const v=readReadiness(),l=v?.projectLifecycle,q=v?.productStopQuiescence;
     let product=false;try{product=typeof readProductStopAuthority==="function" && readProductStopAuthority()===true;}catch(_){/* Missing/partial product provenance stays closed. */}
     const fresh=l?.enabled===true && l.blocked===true && l.problem==="lifecycle_store_missing" && l.freshMissingStoreReadAllowed===true && l.generation===0 && l.pending===null;

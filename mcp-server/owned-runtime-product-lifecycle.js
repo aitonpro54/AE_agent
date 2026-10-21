@@ -11,7 +11,7 @@ function fail(code="owned_product_provenance_invalid"){throw Object.assign(Error
 function exact(v,keys){authority.exact(v,keys,"owned_product_contract_invalid");}
 function signed(v,key){const {authentication,...data}=v;return crypto.createHmac("sha256",key).update(r1.canonical(data)).digest("hex");}
 function envelope(file){const pin=authority.privateFile(file),row=pin.value;if(row.schema!==r1.SCHEMA+".envelope"||row.sha256!==r1.hash(row.value))fail();return {...pin,row,value:row.value};}
-function legacyPresent(root){return [path.join(authority.base(root),"retained-authority.json"),path.join(authority.base(root),"profiles","bridge-daemon-migration-v1.json"),path.join(root,"logs","evidence","native-fixture-retained-maintenance","capture.json")].some(p=>fs.existsSync(p));}
+function legacyPresent(root){return [path.join(authority.base(root),"retained-authority.json"),path.join(authority.base(root),"profiles","bridge-daemon-migration-v1.json"),path.join(root,"logs","evidence","native-fixture-retained-maintenance","capture.json")].some(p=>ledger.proofExists(p));}
 function productPolicy(root,reference){const p=authority.loadPolicy(root,"owned_daemon_lifecycle",reference);if(!same(p.policy.acceptedServerCoverage,["owned_daemon_lifecycle"]))fail("owned_product_policy_scope_required");return p;}
 function migration(root,value=null){
   const pin=authority.privateFile(path.join(root,MIGRATION_DIR,"result.json")),v=pin.value;
@@ -20,7 +20,7 @@ function migration(root,value=null){
 }
 function firstRegistration(root,generation,readGeneration){
   const facts=readGeneration(root,generation),v=facts.reservation.value,dir=path.join(authority.base(root),"supervisor-operations",v.operationId),intent=envelope(path.join(dir,"intent.json")),result=envelope(path.join(dir,"result.json"));
-  if(fs.existsSync(path.join(dir,"unknown.json"))||intent.value.targetGeneration!==null||intent.value.command!=="ensure"||intent.value.operationId!==v.operationId||intent.value.desiredSourceSha256!==v.sourceSha256||!same(intent.value.authorizationRef,v.authorizationRef)||result.value.ok!==true||result.value.status!=="owned_daemon_registered_admission_closed"||result.value.generation!==generation||result.value.replayAllowed!==false||result.value.writeAdmissionReleased!==false||result.value.registration?.sourceSha256!==v.sourceSha256||!same(result.value.registration?.kernelIdentity,facts.candidate.value.kernelIdentity))fail("owned_product_first_registration_required");
+  if(ledger.proofExists(path.join(dir,"unknown.json"))||intent.value.targetGeneration!==null||intent.value.command!=="ensure"||intent.value.operationId!==v.operationId||intent.value.desiredSourceSha256!==v.sourceSha256||!same(intent.value.authorizationRef,v.authorizationRef)||result.value.ok!==true||result.value.status!=="owned_daemon_registered_admission_closed"||result.value.generation!==generation||result.value.replayAllowed!==false||result.value.writeAdmissionReleased!==false||result.value.registration?.sourceSha256!==v.sourceSha256||!same(result.value.registration?.kernelIdentity,facts.candidate.value.kernelIdentity))fail("owned_product_first_registration_required");
   return facts;
 }
 function readAnchor(root,readGeneration,keyReader){
@@ -33,7 +33,7 @@ function readAnchor(root,readGeneration,keyReader){
   return {product:true,pins:{productGenesisRawSha256:pin.rawSha256,initialGeneration:v.generation},value:v,assertUnchanged};
 }
 function ensureAnchor(root,generation,readGeneration,keyReader){
-  const file=path.join(authority.base(root),"product-genesis.json");if(fs.existsSync(file))return readAnchor(root,readGeneration,keyReader);
+  const file=path.join(authority.base(root),"product-genesis.json");if(ledger.proofExists(file))return readAnchor(root,readGeneration,keyReader);
   if(legacyPresent(root))fail("owned_product_legacy_anchor_present");const facts=firstRegistration(root,generation,readGeneration),policy=productPolicy(root,facts.reservation.value.authorizationRef),m=migration(root);
   const value={schema:SCHEMA+".genesis",generation,registration:facts.refs,sourceSha256:facts.candidate.value.sourceSha256,authorizationRef:facts.reservation.value.authorizationRef,policyRawSha256:policy.rawSha256,migration:m.value,createdAt:new Date().toISOString(),replayAllowed:false,authentication:"0".repeat(64)};value.authentication=signed(value,keyReader(facts.reservation.value));policy.assertUnchanged();m.pin.assertUnchanged();r1.writeJournalOnce(authority.base(root),"product-genesis",value);return readAnchor(root,readGeneration,keyReader);
 }
@@ -56,7 +56,7 @@ function readRepairIntent(root,generation,readGeneration){
 }
 function readRepair(root,generation,readGeneration,keyReader){
   const file=path.join(authority.base(root),"product-repair-retirements",generation+".json"),intentFile=path.join(authority.base(root),"product-repair-retirements",generation+".intent.json");
-  if(!fs.existsSync(file)){if(fs.existsSync(intentFile))fail("owned_product_repair_unknown_no_replay");return null;}
+  if(!ledger.proofExists(file)){if(ledger.proofExists(intentFile))fail("owned_product_repair_unknown_no_replay");return null;}
   const pin=envelope(file),v=pin.value,intent=readRepairIntent(root,generation,readGeneration),i=intent.value;
   exact(v,["schema","kind","operationId","generation","registration","identity","argv","sourceSha256","authorizationRef","migration","intentRawSha256","quiescence","proof","graceful","replayAllowed","authentication"]);
   exact(v.proof,["waitResult","exitCode","identity","handleOpenedAt","observedAt"]);quiescence(v.quiescence);
