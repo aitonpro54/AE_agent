@@ -120,9 +120,9 @@ CLI не принимает PID, paths, scripts, IDs или overrides. Свер�
 при signed reset `6da63cd2…`, generation `efd27532…`, до его activation.
 Она требует свежего idle daemon status, native `OpenProcess` ERROR87 для старого
 AE PID28492 либо exact replacement: `C:\WINDOWS\system32\conhost.exe`,
-PID28492, birth `2026-10-21T04:42:19.6388480Z`, прочитанные через удерживаемый
+PID28492, birth `2026-10-21T04:42:19.6388487Z`, прочитанные через удерживаемый
 native handle. Другой reused PID не принимается. Также требуется единственный
-текущий AE PID10068 с lossless birth `2026-10-21T04:43:27.0820420Z`.
+текущий AE PID10068 с native birth `2026-10-21T04:43:27.0820424Z`; CIM округляет последнюю цифру.
 Alive/denied/unknown старого процесса,
 смена текущего host, registration, anchor, policy или command — отказ.
 Используется read-only kernel существующего pinned absence helper;
