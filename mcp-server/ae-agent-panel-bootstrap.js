@@ -276,4 +276,96 @@ function createPanelBootstrapService(deps) {
   }
   return {ensure,snapshot,isBusy:()=>running};
 }
-module.exports={TOOL_NAME,TARGET,tool,validateInput,assertIdle,selectRunningAE,inspectInstalledTarget,generateBootstrapJsx,createPanelBootstrapService,exactCdpTarget};
+// Closed operator recovery for one historical read, never an ensure fallback.
+// The raw UNKNOWN is archived byte-for-byte; absence is not an exit/completion
+// proof. A separate ordinary ensure owns any new UI action and project read.
+const STALE_READ=Object.freeze({requestId:"fa30d4da-acb9-4f0b-85b8-54d5a0455092",rawSha256:"1bef1895f410c3e4b47abfb71b62639fc833cd76dad8a728c16cac6e2c59e339",
+  commandId:"684d9327-e685-4ad4-8dce-e9f6a8f826b8",executionId:"aa39999f-abb6-423c-8d0b-9288d47aa4ff",
+  generation:"efd27532-cf82-4546-83ce-ea71e0dc009b",operationId:"6da63cd2-bc3d-49d0-b723-2cc5aa63b151",
+  oldAE:Object.freeze({pid:28492,createdAt:"2026-10-19T10:01:45.2324690Z",executable:"C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"}),
+  replacementProcess:Object.freeze({pid:28492,createdAt:"2026-10-21T04:42:19.6388487Z",executable:"C:\\WINDOWS\\system32\\conhost.exe"}),
+  currentAE:Object.freeze({pid:10068,createdAt:"2026-10-21T04:43:27.0820424Z",executable:"C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"}),
+  absenceHelperSha256:"ea4b5bf53cf83721a60a2afa8616e8022cd81e42e809c7c5a371b382b7f9d199"});
+const staleHash=bytes=>crypto.createHash("sha256").update(bytes).digest("hex");
+function staleCheck(ok,code){if(!ok)throw problem("bootstrap_stale_"+code);}
+function staleRecord(bytes,rawSha256=STALE_READ.rawSha256){
+  staleCheck(staleHash(bytes)===rawSha256,"original_bytes_changed");const r=JSON.parse(bytes);
+  staleCheck(r.requestId===STALE_READ.requestId&&r.stage==="project_read_unknown"&&r.delivery==="cdp"&&sameProcess(r.ae,STALE_READ.oldAE)&&r.projectReadCommand?.id===STALE_READ.commandId&&r.projectReadCommand.executionId===STALE_READ.executionId,"original_identity_changed");return r;
+}
+function staleAuthority(root){
+  const authority=require("./owned-runtime-authority"),supervisor=require("./owned-runtime-supervisor"),reset=require("./owned-runtime-product-session-reset"),ledger=require("./native-fixture-attempt-ledger");
+  const reg=supervisor.readDaemonRegistration(root);staleCheck(reg?.generation===STALE_READ.generation,"exact_reset_required");
+  const control=authority.runtimeControlFor(root),keyReader=v=>control.credential({daemon:{port:3456,credentialSha256:v.credentialSha256}}),key=keyReader(reg);
+  const anchor=reset.sessionAnchor(root,reg.generation,supervisor.registeredGeneration,keyReader),policy=reset.policy(root),pointer=authority.privateFile(path.join(authority.base(root),"current-daemon.json"));
+  staleCheck(anchor?.value.generation===STALE_READ.generation&&anchor.value.operationId===STALE_READ.operationId,"exact_reset_required");
+  function assertUnchanged(){anchor.assertUnchanged();policy.assertUnchanged();pointer.assertUnchanged();staleCheck(ledger.same(supervisor.readDaemonRegistration(root),reg),"registration_changed");staleCheck(reset.currentStatus(root,reg,supervisor.registeredGeneration,keyReader)?.status==="reset_pending_preflight","reset_preflight_changed");}
+  assertUnchanged();
+  return {key,reg,anchorSha256:anchor.pins.productResetAnchorRawSha256,policySha256:policy.rawSha256,assertUnchanged,
+    async status(){assertUnchanged();return control.request({daemon:{port:3456,credentialSha256:reg.credentialSha256}},"/dev/status");}};
+}
+function staleReceiptAuthority(root){
+  const authority=require("./owned-runtime-authority"),supervisor=require("./owned-runtime-supervisor"),reset=require("./owned-runtime-product-session-reset"),control=authority.runtimeControlFor(root);
+  const chain=supervisor.registeredGeneration(root,STALE_READ.generation),keyReader=v=>control.credential({daemon:{port:3456,credentialSha256:v.credentialSha256}}),key=keyReader(chain.reservation.value),anchor=reset.sessionAnchor(root,STALE_READ.generation,supervisor.registeredGeneration,keyReader);
+  staleCheck(anchor?.value.operationId===STALE_READ.operationId,"exact_reset_required");anchor.assertUnchanged();return {key,anchorSha256:anchor.pins.productResetAnchorRawSha256};
+}
+// Reuse the already reviewed read-only kernel from the fixed absence helper.
+// Its old reset protocol is not invoked or broadened. No input/host code, UI,
+// launch, close or termination primitive is exposed by this fixed query.
+async function probeStaleBootstrapProcesses(){
+  const win=require("./owned-runtime-win32"),ledger=require("./native-fixture-attempt-ledger");win.verifyPolicy();
+  const bytes=ledger.readBytes(path.join(__dirname,"../scripts/cep-panel-reset-physical-fence-absence.ps1"));staleCheck(staleHash(bytes)===STALE_READ.absenceHelperSha256,"native_source_changed");
+  const kernel=/Add-Type -TypeDefinition @'\r?\n([\s\S]+?)\r?\n'@/.exec(bytes.toString("utf8"));staleCheck(kernel,"native_source_invalid");
+  const script=`$ErrorActionPreference='Stop'; Add-Type -TypeDefinition @'\n${kernel[1]}\n'@\n$old=[IntPtr]::Zero;$current=[IntPtr]::Zero;try {
+  $errorCode=$null;try{$old=[ResetExternalAbsenceKernel]::Open(28492)}catch{$why=$_.Exception;while($why.InnerException){$why=$why.InnerException};if($why -is [ComponentModel.Win32Exception]){$errorCode=$why.NativeErrorCode};if($errorCode -ne 87){throw 'old_absence_unknown'}}
+  $oldProof=@{pid=28492;state='absent';win32Error=87}
+  if($old -ne [IntPtr]::Zero){$replacement=[ResetExternalAbsenceKernel]::Read($old);$oldProof=@{pid=28492;state='pid_reused';win32Error=$null;actual=@{pid=$replacement.pid;createdAt=$replacement.birthUtc;executable=$replacement.imagePath}}}
+  $current=[ResetExternalAbsenceKernel]::Open(10068);$identity=[ResetExternalAbsenceKernel]::Read($current);if([ResetExternalAbsenceKernel]::Signaled($current)){throw 'current_exited'}
+  $rows=@(Get-CimInstance Win32_Process -Filter "Name='AfterFX.exe'" -ErrorAction Stop);if($rows.Count -ne 1 -or $rows[0].ProcessId -ne 10068){throw 'current_ambiguous'}
+  @{readOnly=$true;old=$oldProof;current=@{pid=$identity.pid;createdAt=$identity.birthUtc;executable=$identity.imagePath};observedAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json -Depth 5 -Compress
+}finally{if($old -ne [IntPtr]::Zero){[ResetExternalAbsenceKernel]::Close($old)};if($current -ne [IntPtr]::Zero){[ResetExternalAbsenceKernel]::Close($current)}}`;
+  return new Promise((resolve,reject)=>execFile(win.POLICY.executable,["-NoLogo","-NoProfile","-NonInteractive","-Command",script],{windowsHide:true,timeout:10000,maxBuffer:32768},(error,out)=>{
+    if(error)return reject(problem("bootstrap_stale_native_absence_unproven"));try{resolve(JSON.parse(out.replace(/^\uFEFF/,"")));}catch(_){reject(problem("bootstrap_stale_native_response_invalid"));}
+  }));
+}
+function createStaleBootstrapReconciler(deps={}){
+  const root=path.resolve(deps.root||path.join(__dirname,"..")),stateDir=path.join(root,"logs","ae-agent-panel-bootstrap"),active=path.join(stateDir,"attempt.json"),directory=path.join(stateDir,"retired",STALE_READ.requestId),archive=path.join(directory,"original-attempt.json"),receipt=path.join(directory,"disposition.json");
+  const ledger=require("./native-fixture-attempt-ledger"),r1=require("./owned-runtime-lifecycle"),canonical=r1.canonical;
+  const sign=(value,key)=>crypto.createHmac("sha256",key).update(canonical(value)).digest("hex");
+  // Private offline fixture seam; the closed CLI always pins reviewed bytes.
+  const originalSha256=deps.originalSha256||STALE_READ.rawSha256,readOriginal=file=>staleRecord(ledger.readBytes(file),originalSha256);
+  const disposition={oldOutcome:"unknown_preserved",oldExitProven:false,oldCommandsReplayAllowed:false,oldExternalEffectsAdjudicated:false,replayAllowed:false,newEnsureRequired:true};
+  function inspect(){
+    const activeExists=fs.existsSync(active),archiveExists=fs.existsSync(archive),receiptExists=fs.existsSync(receipt);
+    if(archiveExists)readOriginal(archive);
+    if(receiptExists){
+      staleCheck(archiveExists,"archive_missing");const row=JSON.parse(ledger.readBytes(receipt)),{authentication,...v}=row.value||{},facts=(deps.receiptAuthority||staleReceiptAuthority)(root);
+      staleCheck(row.schema===r1.SCHEMA+".envelope"&&row.sha256===r1.hash(row.value)&&authentication===sign(v,facts.key)&&v.schema==="ae-agent.bootstrap-stale-read-disposition.v1"&&v.requestId===STALE_READ.requestId&&v.commandId===STALE_READ.commandId&&v.executionId===STALE_READ.executionId&&v.originalRawSha256===originalSha256&&v.generation===STALE_READ.generation&&v.operationId===STALE_READ.operationId&&v.anchorSha256===facts.anchorSha256&&Object.keys(disposition).every(k=>v[k]===disposition[k]),"disposition_invalid");
+    }
+    let oldActive=activeExists;if(activeExists&&archiveExists&&receiptExists){const r=JSON.parse(ledger.readBytes(active));staleCheck(r.schema===1&&/^[a-f0-9-]{36}$/.test(r.requestId),"active_record_invalid");oldActive=r.requestId===STALE_READ.requestId;}
+    return {ok:true,status:archiveExists&&receiptExists&&!oldActive?"stale_read_retired":archiveExists||receiptExists?"stale_read_partial_readback_only":"stale_read_not_retired",requestId:STALE_READ.requestId,activeExists,archiveExists,receiptExists,...disposition};
+  }
+  async function reconcile(){
+    let lock;try{
+      ledger.safeDirectory(stateDir);lock=fs.openSync(path.join(stateDir,"service.lock"),"wx",0o600);fs.writeFileSync(lock,String(process.pid));
+      const prior=inspect();if(prior.status!=="stale_read_not_retired")return prior;
+      const original=ledger.readBytes(active);staleRecord(original,originalSha256);const facts=(deps.authority||staleAuthority)(root),moduleHash=staleHash(ledger.readBytes(__filename));
+      function unchanged(){facts.assertUnchanged();staleCheck(staleHash(ledger.readBytes(__filename))===moduleHash,"maintenance_source_changed");readOriginal(active);}
+      async function status(){unchanged();const s=await facts.status();assertIdle(s);staleCheck(s.activeEditSession===null&&s.humanGuardRuntime?.pid===facts.reg.kernelIdentity.pid&&s.humanGuardRuntime.startedAt===facts.reg.serviceStartedAt&&s.humanGuardRuntime.sourceSha256===facts.reg.sourceSha256,"daemon_idle_or_identity_changed");staleCheck(s.panelBootstrap?.requestId===STALE_READ.requestId&&s.panelBootstrap.stage==="project_read_unknown"&&s.panelBootstrap.projectReadCommand?.id===STALE_READ.commandId&&s.panelBootstrap.projectReadCommand.executionId===STALE_READ.executionId,"daemon_bootstrap_changed");return s;}
+      async function probe(){const p=await (deps.probe||probeStaleBootstrapProcesses)(),age=(deps.now||Date.now)()-Date.parse(p?.observedAt),old=p?.old,replacement=old?.actual;
+        const absent=old?.state==="absent"&&old.win32Error===87,reused=old?.state==="pid_reused"&&old.win32Error===null&&replacement&&typeof replacement.executable==="string"&&sameProcess(replacement,STALE_READ.replacementProcess);
+        staleCheck(p?.readOnly===true&&old?.pid===STALE_READ.oldAE.pid&&(absent||reused)&&p.current&&sameProcess(p.current,STALE_READ.currentAE)&&Number.isFinite(age)&&age>=0&&age<=30000,"native_absence_unproven");return p;}
+      await status();const first=await probe();await status();const final=await probe();await status();unchanged();
+      ledger.ensure(directory);
+      const fd=fs.openSync(archive,"wx",0o600);try{fs.writeFileSync(fd,original);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}readOriginal(archive);
+      const value={schema:"ae-agent.bootstrap-stale-read-disposition.v1",requestId:STALE_READ.requestId,commandId:STALE_READ.commandId,executionId:STALE_READ.executionId,originalRawSha256:originalSha256,generation:STALE_READ.generation,operationId:STALE_READ.operationId,anchorSha256:facts.anchorSha256,policySha256:facts.policySha256,moduleSha256:moduleHash,nativeHelperSha256:STALE_READ.absenceHelperSha256,firstNativeObservation:first,finalNativeObservation:final,...disposition,retiredAt:new Date().toISOString()};
+      const signed={...value,authentication:sign(value,facts.key)},row=r1.writeJournalOnce(directory,"disposition",signed);staleCheck(row.sha256===r1.hash(signed),"archive_receipt_changed");
+      unchanged();readOriginal(archive);inspect();
+      // Retire only this active pointer after durable raw archive + signed
+      // disposition exist. Never label the original read completed/not_sent.
+      fs.unlinkSync(active);return inspect();
+    }finally{if(lock!==undefined){fs.closeSync(lock);fs.unlinkSync(path.join(stateDir,"service.lock"));}}
+  }
+  return {inspect,reconcile};
+}
+module.exports={TOOL_NAME,TARGET,tool,validateInput,assertIdle,selectRunningAE,inspectInstalledTarget,generateBootstrapJsx,createPanelBootstrapService,exactCdpTarget,createStaleBootstrapReconciler,STALE_READ};
+if(require.main===module){(async()=>{const args=process.argv.slice(2);staleCheck(args.length===1&&["stale-read-status","reconcile-stale-read"].includes(args[0]),"closed_cli_required");const s=createStaleBootstrapReconciler();process.stdout.write(JSON.stringify(args[0]==="stale-read-status"?s.inspect():await s.reconcile())+"\n");})().catch(e=>{process.stdout.write(JSON.stringify({ok:false,code:e.code||"bootstrap_stale_recovery_unknown",replayAllowed:false})+"\n");process.exitCode=1;});}

@@ -5,14 +5,14 @@
 
 ## Текущая цель пользователя
 
-20.10: проверить API enqueue/self-check всех 11 композиций общего AEP с именами
-`01.mov`–`11.mov` в `Готовое/Титры 01` рядом с проектом. Обязательны несколько pending без ожидания каждого callback, отдельный collector и global START после первого проверенного титра. Explicit pause/resume с новыми once-intents разрешён для точного диапазона; без census/отдельных AEP/CU enqueue.
+21.10: новый финальный API-тест добавления всех 11 композиций общего AEP,
+`01.mov`–`11.mov` в `Готовое/Титры 01/Тест очереди 2026-10-21`. Все submit выполняются без ожидания предыдущих callbacks, collector отдельно после отправок. START/runBatch/render запрещены текущим поручением. Пользователь явно разрешил штатный reset и снятие старого блокера; UNKNOWN/output reservations сохраняются, без census/отдельных AEP/CU enqueue.
 [Open-comp workflow](../docs/ame-open-comp-workflow.md): live11/offline111 с UI receipt, API-only scope не закрыт.
 Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FROZEN.
 
 ## Progress
 
-- 20.10 UTC20:38: ОСТАНОВЛЕНО по прямому поручению пользователя. Core543b184/phase2 7d5bc2e/transport c27501a reviewedGO; runtime14896/source0f847377…. Sourceclean/rev12968854/SHAf84a56ff…. GLOBAL6afe принят до11, теперь stopped. Transport4aa archived UNKNOWN, отдельный fresh read PASS.11 attempt5a4 отказал до constructor/send; settlement denied (closed proof только8cd2). Collector завершён частично: host02/03/04/09/10 подтверждены, на05 error. Полная media/visual11 не завершена. Evidence `.codex-runtime/title-eleven-20261020/`.
+- 21.10 queue-only11: reset6da63cd2…/efd27532… ACTIVE; exact bootstrapfa30 retired с raw archive/HMAC UNKNOWN/noReplay. Две неэффектные проверки установили PIDreuse conhost и округление CIM; NATIVE births AE10068…0820424Z/conhost28492…6388487Z. Native panel opened, initial read90cdd… connection_changed UNKNOWN сохранён; отдельный get_project_info PASS, Connected/autonomy/idle, AEP476/rev12975229. Bootstrap source/offline34+88 и independent review GO; helper fakeN11 PASS. Далее штатный source/config restart и live async11. Новых enqueue/START0.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
   Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
@@ -168,7 +168,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Только после явного возобновления: выяснить exact blocked map-origin через bounded readonly diagnostic, отдельно reviewed closed not-sent proof для run5a4; сейчас11 НЕповторять. Затем fresh admission/new proposal для11, новый разрешённый START и оставшиеся host/media/visual проверки.6afe и01..10 не повторять. N>1 доказан offline; live остался только11. Новых правок после stop нет, чужой WIP сохранён.
+Закрыть stale bootstrap через reviewed bounded recovery → Connected/idle/native project read → fresh source/process/preset/transport pins → новый pendingGroup11 с отдельными output paths → все submit без callback barrier → отдельный collector. Старые jobs/output reservations/UNKNOWN не удалять и не replay. START/render0; проверить фактический submit-before-callback порядок и точные workArea ACK. Прежний финальный media/visual render-test отложен новым queue-only поручением.
 
 ## Отложенные scope
 
