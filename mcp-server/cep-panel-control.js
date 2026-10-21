@@ -625,7 +625,11 @@ function createPanelControlService(options={}) {
     if(before.panelInstanceId!==after.panelInstanceId || before.panelLifecycleEpoch!==after.panelLifecycleEpoch || before.panelGeneration!==after.panelGeneration)throw problem("maintenance_panel_binding_changed");
     const reconcile=catalog.find(row=>row.name==="plan.reconcile");
     // Public busy includes the historical guard. Existing catalog probes actual lifecycle/controller work separately.
-    return {...selected,state:{...after,nativeControlIdle:!after.activeAction && !after.recoveryTransport && after.actionStorage==="ready" && (reconcile?.availability?.available===true && reconcile.availability.reasonCodes.length===0 || after.busy===false)}};
+    const reconcileIdle=reconcile?.availability?.available===true && reconcile.availability.reasonCodes.length===0;
+    // Capture may retain one terminal failed transport; it grants no native, reload or replay authority.
+    const stoppedFailedRecovery=s=>s.activeAction===null && s.actionStorage==="ready" && s.connected===false && s.running===false && s.recoveryTransport?.state==="failed" && s.recoveryTransport.connecting===false && typeof s.recoveryTransport.scopeId==="string" && s.recoveryTransport.scopeId.length>0;
+    const failedRecoveryCaptureIdle=reconcileIdle && stoppedFailedRecovery(before) && stoppedFailedRecovery(after) && JSON.stringify(before.recoveryTransport)===JSON.stringify(after.recoveryTransport);
+    return {...selected,state:{...after,nativeControlIdle:!after.activeAction && !after.recoveryTransport && after.actionStorage==="ready" && (reconcileIdle || after.busy===false),failedRecoveryCaptureIdle}};
   }
   function controllerIdle(){refreshDirectory();return readLock(directory)===null;}
   return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage,maintenanceTarget,maintenanceTransportState,refreshTrustedGuards,controllerIdle,cutoverReadiness,validateManagedCleanupAdoption});

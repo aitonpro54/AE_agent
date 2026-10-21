@@ -62,8 +62,8 @@ raw JSX, destructive plans, `Agent Hardcore` и replay прежнего proposal
 safety/security/authority и устойчивые дефекты — `ae_specialist` (Sol/xhigh).
 Flash configured High — ограниченные правки с ясной приёмкой в подтверждённых
 категориях; постоянное разрешение для такого AE scope сохраняется.
-`ae_specialist` — Sol 6.1/xhigh; `ae_architect` — Sol 6.1/ultra;
-`ae_escalation` — Astra/high только после неудачи Sol/ultra. Scout/operator —
+`ae_specialist` и `ae_architect` — Sol 6.1/xhigh; `ae_architect_ultra` — Sol 6.1/ultra;
+`ae_escalation` — Astra/high только после содержательной неудачи Sol/ultra. Scout/operator —
 Luna/high для простых самостоятельных поручений; reviewer — Sol 6.1/high.
 Для одного короткого вызова отдельный агент не нужен. Terra исключена из маршрута.
 Родитель сохраняет выбранную пользователем модель. Наличие ролей не означает
