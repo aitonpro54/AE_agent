@@ -6,12 +6,139 @@ const fs = require("fs");
 const http = require("http");
 const os = require("os");
 const path = require("path");
+const crypto = require("crypto");
+const { isBuiltin } = require("module");
 const { spawn } = require("child_process");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
-const DAEMON_PATH = path.join(PROJECT_ROOT, "mcp-server", "bridge-daemon.js");
 const FIXTURE_PREFIX = "ae-agent-network-boundary-";
+// Ownership is process-local: a directory name or a copied marker never grants
+// permission to restart someone else's fixture or its production authority.
+const ownedRuntimes = new Map();
+function createRuntimeDirectory() {
+  const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), FIXTURE_PREFIX));
+  plainPath(runtimeDir, true);
+  const stat = fs.lstatSync(runtimeDir);
+  ownedRuntimes.set(runtimeDir, { runtimeDir, active: false, device: stat.dev, inode: stat.ino });
+  return runtimeDir;
+}
+const EXTRA_SOURCES = new Set([
+  "orchestrator/bounded-process-result.cjs", // supported, non-frozen runtime exception
+  "scripts/solution-candidate-report.js", "scripts/solution-registry-smoke.js",
+  "scripts/owned-runtime-control.js", "scripts/autonomous-plan-client.js",
+  "scripts/owned-runtime-startup-retire.js", "scripts/owned-runtime-finalize-launch.js",
+  "scripts/owned-runtime-maintenance-retire.js", "scripts/owned-runtime-panel-reload.js",
+  "scripts/cep-panel-target.js", "scripts/native-fixture-retained-maintenance.js",
+  "scripts/native-fixture-prephase-maintenance.js", "scripts/common-title-assembly-maintenance.js",
+  "scripts/human-guard-settlement-maintenance.js", "scripts/ame-job-source-hash-worker.cjs",
+  "scripts/owned-runtime-win32-helper.ps1", "scripts/owned-runtime-daemon-helper.ps1",
+  "scripts/owned-runtime-startup-retire-helper.ps1", "scripts/owned-runtime-maintenance-retire-helper.ps1",
+  "scripts/cep-panel-cdp-smoke.js"
+]);
+const PANEL_ASSETS = ["CSXS/manifest.xml", "index.html", "panel-action-contract.js",
+  "panel-actions.js", "panel.js", "style.css", "lib/CSInterface.js"].map(name => `cep-panel/${name}`);
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function fail(code) { throw Object.assign(new Error(code), { code }); }
+function samePath(a, b) {
+  return process.platform === "win32" ? a.toLowerCase() === b.toLowerCase() : a === b;
+}
+function plainPath(target, directory = false) {
+  const resolved = path.resolve(target);
+  for (let item = resolved;; item = path.dirname(item)) {
+    const stat = fs.lstatSync(item);
+    if (stat.isSymbolicLink() || !samePath(fs.realpathSync(item), item)) fail("fixture_path_alias_refused");
+    if (item === resolved && (directory ? !stat.isDirectory() : !stat.isFile() || stat.nlink !== 1)) {
+      fail("fixture_nonregular_path_refused");
+    }
+    if (path.dirname(item) === item) break;
+  }
+  return resolved;
+}
+function plainTree(directory) {
+  plainPath(directory, true);
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) plainTree(target);
+    else plainPath(target);
+  }
+}
+function runtimePath(runtimeDir) {
+  const resolved = path.resolve(runtimeDir);
+  if (!path.isAbsolute(runtimeDir) || !samePath(runtimeDir, resolved)
+    || !samePath(path.dirname(resolved), path.resolve(os.tmpdir()))
+    || !path.basename(resolved).startsWith(FIXTURE_PREFIX)) fail("fixture_runtime_path_refused");
+  plainPath(resolved, true);
+  return resolved;
+}
+function sourceAllowed(name) {
+  return /^mcp-server\/[a-z0-9-]+\.js$/.test(name) || EXTRA_SOURCES.has(name)
+    || PANEL_ASSETS.includes(name) || name === "registry/solutions.json" || /^recipes\/[a-z0-9-]+\.md$/.test(name);
+}
+function readSource(root, name) {
+  if (!sourceAllowed(name)) fail("fixture_source_not_allowlisted");
+  const target = path.join(root, name);
+  plainPath(target);
+  return fs.readFileSync(target);
+}
+const digest = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
+
+function copyRuntimeSources(launchRoot) {
+  // Read current disk bytes, including local changes, without loading modules.
+  // Literal imports are the executable closure. runtimeIdentity additionally
+  // hashes some scripts/assets without importing them; copy those exact names.
+  const files = new Map();
+  function copy(name, imports = false) {
+    if (files.has(name)) return;
+    const bytes = readSource(PROJECT_ROOT, name);
+    files.set(name, digest(bytes));
+    const target = path.join(launchRoot, name);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, bytes, { flag: "wx" });
+    if (!imports || !/\.(js|cjs)$/.test(name)) return;
+    for (const match of bytes.toString("utf8").matchAll(/\brequire\s*\(\s*["']([^"']+)["']\s*\)/g)) {
+      const imported = match[1];
+      if (!imported.startsWith(".")) {
+        if (!isBuiltin(imported)) fail("fixture_external_module_refused");
+        continue;
+      }
+      const base = path.posix.normalize(path.posix.join(path.posix.dirname(name), imported));
+      const candidates = [base, `${base}.js`, `${base}.json`, `${base}/index.js`];
+      const found = candidates.find(candidate => sourceAllowed(candidate) && fs.existsSync(path.join(PROJECT_ROOT, candidate)));
+      if (!found) fail("fixture_source_dependency_missing");
+      copy(found, true);
+    }
+  }
+  copy("mcp-server/bridge-daemon.js", true);
+  const collector = readSource(PROJECT_ROOT, "mcp-server/review-evidence.js").toString("utf8");
+  const declared = collector.match(/const RUNTIME_FILES = (\[[\s\S]*?\n\]);/);
+  if (!declared) fail("fixture_runtime_census_unrecognized");
+  const names = JSON.parse(declared[1]);
+  if (!Array.isArray(names) || !names.length) fail("fixture_runtime_census_invalid");
+  for (const name of names) copy(name);
+  for (const name of PANEL_ASSETS) copy(name);
+  copy("registry/solutions.json");
+  const registry = JSON.parse(readSource(PROJECT_ROOT, "registry/solutions.json"));
+  for (const solution of registry.solutions) {
+    if (solution.execution.recipePath) copy(solution.execution.recipePath);
+    // No arbitrary executable assets, runtime configuration or credentials.
+    if (solution.execution.scriptPath) fail("fixture_registry_script_asset_unrecognized");
+  }
+  // A concurrent writer must not leave a mixture of old and new source bytes.
+  // Fail closed; a later caller may take a fresh snapshot after writes settle.
+  for (const [name, sha256] of files) {
+    if (digest(readSource(PROJECT_ROOT, name)) !== sha256) fail("fixture_source_changed_during_snapshot");
+  }
+  return files;
+}
+function verifyRuntimeSources(record) {
+  plainTree(record.launchRoot);
+  for (const [name, sha256] of record.files) {
+    const target = path.join(record.launchRoot, name);
+    plainPath(target);
+    if (digest(fs.readFileSync(target)) !== sha256) fail("fixture_launch_source_changed");
+  }
+}
 
 function cappedAppend(current, chunk, limit = 64 * 1024) {
   return (current + String(chunk)).slice(-limit);
@@ -103,7 +230,8 @@ function abortPartialRequest(fixture, options = {}) {
 function isolatedEnvironment(runtimeDir, options) {
   const env = { ...process.env };
   for (const key of Object.keys(env)) {
-    if (/^(AE_|CODEBURN|OPENAI|ANTHROPIC|CLAUDE|GEMINI|GOOGLE|OPENROUTER|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY)/i.test(key)) {
+    if (/^(AE_|CODEBURN|OPENAI|ANTHROPIC|CLAUDE|GEMINI|GOOGLE|OPENROUTER|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY)/i.test(key)
+      || /^NODE_(OPTIONS|PATH|V8_COVERAGE|COMPILE_CACHE|REDIRECT_WARNINGS)$/i.test(key)) {
       delete env[key];
     }
   }
@@ -115,6 +243,9 @@ function isolatedEnvironment(runtimeDir, options) {
   for (const directory of [logDir, settingsDir, stateDir, backupDir]) fs.mkdirSync(directory, { recursive: true });
 
   Object.assign(env, {
+    // Node copies parent coverage back into a custom env unless the exact key
+    // is present. Empty disables coverage without allowing an external writer.
+    NODE_V8_COVERAGE: "",
     AE_BRIDGE_PORT: String(options.port),
     AE_BRIDGE_HOST: "127.0.0.1",
     AE_BRIDGE_LOG_DIR: logDir,
@@ -149,12 +280,15 @@ async function waitForReady(fixture, timeoutMs = 8000) {
   const deadline = Date.now() + timeoutMs;
   let lastError = null;
   while (Date.now() < deadline) {
-    if (fixture.child.exitCode !== null) {
+    if (fixture.spawnError) throw fixture.spawnError;
+    if (fixture.child.exitCode !== null || fixture.child.signalCode !== null) {
       throw new Error(`daemon exited before readiness (${fixture.child.exitCode}): ${fixture.stderr.trim()}`);
     }
     try {
       const response = await request(fixture, { path: "/health", timeoutMs: 300 });
-      if (response.status === 200 && response.body && response.body.ok === true) return response;
+      if (response.status === 200 && response.body && response.body.ok === true
+        && response.body.port === fixture.port
+        && fixture.stderr.includes(`HTTP bridge listening on http://127.0.0.1:${fixture.port}`)) return response;
     } catch (error) {
       lastError = error;
     }
@@ -164,45 +298,59 @@ async function waitForReady(fixture, timeoutMs = 8000) {
 }
 
 async function stopChild(child, timeoutMs = 2000) {
-  if (!child || child.exitCode !== null) return;
+  if (!child || !child.pid || child.exitCode !== null || child.signalCode !== null) return;
+  const closed = new Promise((resolve) => child.once("close", resolve));
   child.kill();
-  await Promise.race([
-    new Promise((resolve) => child.once("close", resolve)),
-    pause(timeoutMs)
-  ]);
-  if (child.exitCode === null) child.kill("SIGKILL");
+  await Promise.race([closed, pause(timeoutMs)]);
+  if (child.exitCode === null && child.signalCode === null) {
+    child.kill("SIGKILL");
+    await Promise.race([closed, pause(timeoutMs)]);
+  }
+  if (child.exitCode === null && child.signalCode === null) fail("fixture_child_stop_unconfirmed");
 }
 
 function safeRemoveRuntime(runtimeDir) {
-  const resolved = path.resolve(runtimeDir);
-  const expectedRoot = path.resolve(os.tmpdir()) + path.sep;
-  if (!resolved.startsWith(expectedRoot) || !path.basename(resolved).startsWith(FIXTURE_PREFIX)) {
-    throw new Error(`Refusing to remove unexpected fixture directory: ${resolved}`);
-  }
+  const resolved = path.resolve(runtimeDir), record = ownedRuntimes.get(resolved);
+  if (!record) fail("fixture_runtime_not_owned");
+  if (record.active) fail("fixture_runtime_active");
+  runtimePath(runtimeDir);
+  const stat = fs.lstatSync(resolved);
+  if (stat.dev !== record.device || stat.ino !== record.inode) fail("fixture_runtime_identity_changed");
+  plainTree(resolved);
   fs.rmSync(resolved, { recursive: true, force: true });
+  ownedRuntimes.delete(resolved);
 }
 
 function reuseFixtureRuntime(runtimeDir) {
-  const resolved = path.resolve(runtimeDir);
-  const expectedRoot = path.resolve(os.tmpdir()) + path.sep;
-  if (!resolved.startsWith(expectedRoot) || !path.basename(resolved).startsWith(FIXTURE_PREFIX)) {
-    throw new Error(`Refusing to reuse unexpected fixture directory: ${resolved}`);
-  }
-  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
-    throw new Error(`Reusable fixture directory does not exist: ${resolved}`);
-  }
-  return resolved;
+  const resolved = runtimePath(runtimeDir), record = ownedRuntimes.get(resolved);
+  if (!record) fail("fixture_runtime_not_owned");
+  if (record.active) fail("fixture_runtime_active");
+  const stat = fs.lstatSync(resolved);
+  if (stat.dev !== record.device || stat.ino !== record.inode) fail("fixture_runtime_identity_changed");
+  if (!record.launchRoot) fail("fixture_runtime_not_daemon");
+  plainTree(resolved);
+  verifyRuntimeSources(record);
+  return record;
 }
 
 async function startDaemon(options = {}) {
-  const port = options.port || await reserveLoopbackPort();
-  const runtimeDir = options.runtimeDir
+  const port = options.port === undefined ? await reserveLoopbackPort() : options.port;
+  if (!Number.isInteger(port) || port < 1 || port > 65535 || port === 3456) fail("fixture_port_refused");
+  const reused = options.runtimeDir !== undefined;
+  const record = reused
     ? reuseFixtureRuntime(options.runtimeDir)
-    : fs.mkdtempSync(path.join(os.tmpdir(), FIXTURE_PREFIX));
-  const env = isolatedEnvironment(runtimeDir, { ...options, port });
+    : ownedRuntimes.get(createRuntimeDirectory());
+  const runtimeDir = record.runtimeDir;
+  const previousFixture = record.fixture;
+  if (!reused) {
+    record.launchRoot = path.join(runtimeDir, "launch");
+    ownedRuntimes.set(runtimeDir, record);
+  }
+  record.active = true;
   const fixture = {
     port,
     runtimeDir,
+    launchRoot: record.launchRoot,
     automationToken: options.automationToken,
     panelToken: options.panelToken,
     adminToken: options.adminToken,
@@ -212,30 +360,46 @@ async function startDaemon(options = {}) {
     request(optionsForRequest) { return request(fixture, optionsForRequest); },
     abort(optionsForAbort) { return abortPartialRequest(fixture, optionsForAbort); },
     async stop(cleanup = true) {
+      if (record.fixture !== fixture) fail("fixture_runtime_owner_changed");
       await stopChild(fixture.child);
+      record.active = false;
       if (cleanup) safeRemoveRuntime(runtimeDir);
     }
   };
-  if (typeof options.setupRuntime === "function") {
-    try {
-      await options.setupRuntime(runtimeDir);
-    } catch (error) {
-      safeRemoveRuntime(runtimeDir);
-      throw error;
+  record.fixture = fixture;
+  try {
+    if (!reused) {
+      plainPath(runtimeDir, true);
+      fs.mkdirSync(record.launchRoot);
+      record.files = copyRuntimeSources(record.launchRoot);
     }
+    const env = isolatedEnvironment(runtimeDir, { ...options, port });
+    if (typeof options.setupRuntime === "function") await options.setupRuntime(runtimeDir, record.launchRoot);
+    plainTree(runtimeDir);
+    verifyRuntimeSources(record);
+    fixture.child = spawn(process.execPath, [path.join(record.launchRoot, "mcp-server", "bridge-daemon.js")], {
+      cwd: record.launchRoot,
+      env,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    fixture.child.on("error", error => { fixture.spawnError = error; });
+    fixture.child.stdout.setEncoding("utf8");
+    fixture.child.stderr.setEncoding("utf8");
+    fixture.child.stdout.on("data", (chunk) => { fixture.stdout = cappedAppend(fixture.stdout, chunk); });
+    fixture.child.stderr.on("data", (chunk) => { fixture.stderr = cappedAppend(fixture.stderr, chunk); });
+    if (options.waitForReady !== false) await waitForReady(fixture, options.readyTimeoutMs);
+    return fixture;
+  } catch (error) {
+    try {
+      await stopChild(fixture.child);
+      record.active = false;
+      // A failed restart preserves pre-existing test state for reconciliation.
+      if (!reused) safeRemoveRuntime(runtimeDir);
+      else record.fixture = previousFixture;
+    } catch (cleanupError) { error.cleanupError = cleanupError; }
+    throw error;
   }
-  fixture.child = spawn(process.execPath, [DAEMON_PATH], {
-    cwd: PROJECT_ROOT,
-    env,
-    windowsHide: true,
-    stdio: ["ignore", "pipe", "pipe"]
-  });
-  fixture.child.stdout.setEncoding("utf8");
-  fixture.child.stderr.setEncoding("utf8");
-  fixture.child.stdout.on("data", (chunk) => { fixture.stdout = cappedAppend(fixture.stdout, chunk); });
-  fixture.child.stderr.on("data", (chunk) => { fixture.stderr = cappedAppend(fixture.stderr, chunk); });
-  if (options.waitForReady !== false) await waitForReady(fixture, options.readyTimeoutMs);
-  return fixture;
 }
 
 async function expectDaemonStartRejected(options = {}) {
@@ -346,6 +510,7 @@ module.exports = {
   collectRuntimeText,
   commandEcho,
   completeProjectInfoCommand,
+  createRuntimeDirectory,
   expectDaemonStartRejected,
   isolatedEnvironment,
   pause,
