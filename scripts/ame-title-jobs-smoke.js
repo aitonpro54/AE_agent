@@ -35,7 +35,7 @@ function fixture(label, options = {}) {
   const presetPath = path.join(presetDir, "selected.epr"); fs.writeFileSync(presetPath, "<PremiereData><PresetName>Exact fixture</PresetName><ExporterName>Fixture</ExporterName></PremiereData>");
   const catalog = () => presets.scanPresetRoots({ roots: [{ source: "fixture", path: presetDir }] }), selected = catalog().presets[0]; assert(selected);
   let clock = Date.now(), sends = 0, adds = 0, starts = 0, pendingReply = null, processReads = 0;
-  const active = [{ pid: 77, path: "C:\\Program Files\\Adobe\\Adobe Media Encoder 2026\\Adobe Media Encoder.exe", startedAt: born }], wrappers = [], calls = [], hostListeners = {}, manualContexts = new WeakSet();
+  const active = [{ pid: 77, path: "C:\\Program Files\\Adobe\\Adobe Media Encoder 2026\\Adobe Media Encoder.exe", startedAt: born }], wrappers = [], calls = [], dispatches = [], hostListeners = {}, manualContexts = new WeakSet();
   class TestDate extends Date { constructor(value) { super(arguments.length ? value : clock); } static now() { return clock; } }
   const forbidden = () => { throw Error("forbidden host action"); };
   const frontend = {
@@ -76,16 +76,21 @@ function fixture(label, options = {}) {
     inspectProcesses: async () => { processReads++; return active.map(p => ({ ...p })); }, resolveOutputFilePath: name => path.join(outputDir, name),
     assertManualIngress: ctx => { if (!manualContexts.has(ctx) || ctx.channel !== "manual_cep" || ctx.autonomous !== false) throw Error("manual_ingress_required"); },
     assertServerContext: ctx => { if (!manualContexts.has(ctx) || ctx.current !== true) throw Error("server_context_required"); },
-    runExtendScriptBody: async (script, timeout, meta) => { assert.equal(timeout, 30000); assert.equal(meta.mutating, !script.includes('"reconcileRequestNonce"') && ["enqueue", "start"].includes(meta.operation)); acorn.parse(script, { ecmaVersion: 3, allowReturnOutsideFunction: true }); return { result: vm.runInContext("(function(){" + script + "}())", ae) }; },
+    runExtendScriptBody: async (script, timeout, meta) => { dispatches.push({operation:meta.operation,mutating:meta.mutating,requestNonce:meta.requestNonce}); assert.equal(timeout, 30000); assert.equal(meta.mutating, !script.includes('"reconcileRequestNonce"') && ["enqueue", "start"].includes(meta.operation)); acorn.parse(script, { ecmaVersion: 3, allowReturnOutsideFunction: true }); return { result: vm.runInContext("(function(){" + script + "}())", ae) }; },
     ...(options.queueGate ? { assertQueueOwnership: options.queueGate } : {})
   };
   let panelValid = true;
   const issuer = manualQueue.createManualQueueGrant({ stateDir, now: () => clock, assertManualIngress: dependency.assertManualIngress, assertServerContext: dependency.assertServerContext, assertPanelIdentity: () => panelValid });
   if (options.nativePort) {
-    const dispatchCaps = new WeakMap();
+    const dispatchCaps = new WeakMap(),preparationCaps=new WeakMap();
+    const prepare=(operation,selector,context)=>{assert.equal(selector.schema,"ae-agent-ame-title-reservation-selector.v1");assert.equal(selector.operation,operation);assert(Object.isFrozen(selector));assert(manualContexts.has(context));const cap=Object.freeze({});preparationCaps.set(cap,{selector,context});return cap;};
     dependency.manualQueueGrant = issuer;
     dependency.nativeDispatchPort = {
-      authorize: async (metadata, context) => {
+      prepareEnqueue:(selector,context)=>prepare("enqueue",selector,context),
+      prepareStart:(selector,context)=>prepare("start",selector,context),
+      assertPreparation:(cap,selector,context)=>{const saved=preparationCaps.get(cap);assert(saved&&saved.selector===selector&&saved.context===context);},
+      authorize: async (metadata, context, preparation) => {
+        if(metadata.mutating){const saved=preparationCaps.get(preparation);assert(saved&&saved.context===context&&saved.selector.operation===metadata.operation);}
         if (options.onPortAuthorize) await options.onPortAuthorize({ metadata, context, sourcePath, presetPath, active, ame, wrappers, outputDir });
         if (options.denyReadsAfter60 && clock > Date.parse(born) + 60000 && metadata.operation === "status") assert(metadata.completionScope && metadata.completionScope.startRequestNonce, "original completion scope required; no READ extension");
         const cap = Object.freeze({}); dispatchCaps.set(cap, { metadata, context }); return cap;
@@ -109,7 +114,7 @@ function fixture(label, options = {}) {
     return issuer.runAuthenticated(meta, () => executor.execute(adapter.START, args, executor.authorize(adapter.START, args, context)));
   }
   function output(bytes) { fs.mkdirSync(outputDir, { recursive: true }); const file = path.join(outputDir, "title.mov"); fs.writeFileSync(file, Buffer.alloc(bytes, 7)); fs.utimesSync(file, new Date(clock), new Date(clock)); }
-  return { executor, authorize, run, runProtectedStart, issuer, admitFreshReads: () => { options.denyReadsAfter60 = false; }, disconnect: () => { panelValid = false; }, common, enqueueArgs, stateDir, sourcePath, presetPath, wrappers, calls, hostListeners, output,
+  return { dispatches, senderSnapshot:()=>{const value=ae.$.global.aeAgentAMETitleSendV1;return value?JSON.parse(JSON.stringify({requestNonce:value.requestNonce,operationBinding:value.operationBinding,callback:value.callback,body:value.body})):null;}, executor, authorize, run, runProtectedStart, issuer, admitFreshReads: () => { options.denyReadsAfter60 = false; }, disconnect: () => { panelValid = false; }, common, enqueueArgs, stateDir, sourcePath, presetPath, wrappers, calls, hostListeners, output,
     saveSeparateVariant: name => { const file = path.join(dir, name); fs.writeFileSync(file, "separate saved variant " + name); savedSources.add(file); currentProjectFile = file; return { sourceProjectFile: file, expectedSourceSha25664: sha(file) }; },
     ledger: (id = batchId) => JSON.parse(fs.readFileSync(path.join(stateDir, "batches", id + ".json"), "utf8")),
     statusArgs: jobId => ({ ...common, batchId, jobId }), counts: () => ({ sends, adds, starts, processReads }), active,
@@ -184,14 +189,35 @@ function fixture(label, options = {}) {
       assert.equal(f.counts().starts, 0); if (option === "running" || option === "notRunning") assert.equal(f.counts().adds, 0);
     }
   });
-  await check("unknown submit exact reconciliation never sends again, persists across server executor restart", async () => {
+  await check("UNKNOWN enqueue permits distinct own STATUS without mutation replay and retains its original sender", async () => {
     const f = fixture("unknown", { unknownFirst: true }), first = await f.run(adapter.ENQUEUE, f.enqueueArgs);
     assert.equal(first.ok, false); assert.equal(first.unknownOutcome, true); assert.equal(f.counts().adds, 1);
-    const read = await f.run(adapter.STATUS, f.statusArgs(first.jobId)); assert.equal(read.ok, false); assert.equal(f.counts().sends, 1);
-    f.deliver(); const restarted = f.restart(), late = await restarted.execute(adapter.STATUS, f.statusArgs(first.jobId));
-    assert.equal(late.ok, true); assert.equal(late.nativeAssociationVerified, true); assert.equal(f.counts().sends, 1);
-    assert.equal((await f.run(adapter.ENQUEUE, f.enqueueArgs)).code, "duplicate_submit_blocked"); assert.equal(f.counts().adds, 1);
-    assert.equal((await f.run(adapter.STATUS, f.statusArgs(first.jobId))).ok, true); assert.equal(f.counts().sends, 2);
+    const originalResult=JSON.stringify(first),originalSender=f.senderSnapshot();
+    assert.equal(originalSender.requestNonce,first.requestNonce);assert.equal(originalSender.callback,null);
+    const read = await f.run(adapter.STATUS, f.statusArgs(first.jobId));
+    assert.equal(read.ok,true);assert.equal(read.currentStatusObserved,true);assert.equal(read.nativeAssociationVerified,true);
+    assert.notEqual(read.native.requestNonce,first.requestNonce);assert.equal(read.observationDiagnostic.requestNonce,read.native.requestNonce);
+    assert.equal(read.native.job.enqueueRequestNonce,first.requestNonce);assert.equal(read.native.job.handleKey,first.jobId);
+    assert(read.native.observedAt>=Date.parse(f.ledger().jobs[0].submittedAt));assert.equal(f.dispatches[1].requestNonce,read.native.requestNonce);
+    assert.equal(read.originalSender.requestNonce,first.requestNonce);assert.equal(read.originalSender.callback,null);
+    assert.deepEqual(f.senderSnapshot(),originalSender);assert.equal(JSON.stringify(first),originalResult);
+    const archived=f.ledger().jobs[0].ownStatusObservationHistory.at(-1);
+    assert.equal(archived.requestNonce,read.native.requestNonce);assert.equal(archived.enqueueRequestNonce,first.requestNonce);
+    assert.equal(archived.terminal.callback,"result");assert.equal(archived.terminal.requestNonce,read.native.requestNonce);
+    assert.deepEqual(f.dispatches.map(d=>[d.operation,d.mutating]),[["enqueue",true],["status",false]]);
+    assert.equal(f.counts().adds,1);assert.equal(f.counts().starts,0);
+    // Only the original retained callback settles its sender; a later fresh
+    // independent read remains a separate observation after executor restart.
+    f.deliver();const delivered=f.senderSnapshot();assert.equal(delivered.requestNonce,first.requestNonce);assert.equal(delivered.callback,"result");
+    const callback=JSON.parse(delivered.body);assert.equal(callback.requestNonce,first.requestNonce);assert.equal(callback.operationBinding,originalSender.operationBinding);
+    assert.equal(callback.job.handleKey,first.jobId);assert.equal(callback.job.enqueueRequestNonce,first.requestNonce);
+    f.advance(10);const restarted=f.restart(),late=await restarted.execute(adapter.STATUS,f.statusArgs(first.jobId));
+    assert.equal(late.ok,true);assert.equal(late.nativeAssociationVerified,true);assert(late.native.observedAt>read.native.observedAt);
+    assert.equal(JSON.stringify(first),originalResult);assert.equal(f.counts().adds,1);assert.equal(f.counts().starts,0);
+    const beforeDuplicate=f.counts().sends;
+    assert.equal((await f.run(adapter.ENQUEUE,f.enqueueArgs)).code,"duplicate_submit_blocked");
+    assert.equal(f.counts().sends,beforeDuplicate);assert.equal(f.counts().adds,1);
+    assert.equal(f.dispatches.filter(d=>d.mutating).length,1);assert(f.dispatches.slice(1).every(d=>d.operation==="status"&&!d.mutating));
   });
   await check("one exact preset for entire batch and changed source/preset pins refuse", async () => {
     const f = fixture("preset-batch"), first = await f.run(adapter.ENQUEUE, f.enqueueArgs); assert.equal(first.ok, true);
@@ -253,7 +279,7 @@ function fixture(label, options = {}) {
     assert.equal(queued.ok, true); f.output(4); f.hostComplete("True"); const stale = await f.run(adapter.STATUS, f.statusArgs(queued.jobId)); assert.equal(stale.completionVerified, false); assert.equal(stale.nativeAssociationVerified, false);
   });
   await check("v2 one ready manifest, private CEP consumption and native final guard dispatch once", async () => {
-    const f = fixture("v2-start", { nativePort: true }), queued = await f.run(adapter.ENQUEUE, f.enqueueArgs); assert.equal(queued.ok, true);
+    const f = fixture("v2-start", { nativePort: true }), queued = await f.run(adapter.ENQUEUE, f.enqueueArgs); assert.equal(queued.ok, true,JSON.stringify(queued));
     const readArgs = { ...f.common, batchId, manualQueueMode: "cep_user_declaration_v2", completedOwnedPrefix: [] };
     const preview = await f.run(adapter.QUEUE_MANIFEST, readArgs); assert.equal(preview.ok, true, JSON.stringify(preview)); assert.equal(preview.manifest.jobs.length, 1);
     const args = { ...readArgs, manualQueueManifestSha25664: preview.manifestHash };
@@ -289,7 +315,7 @@ function fixture(label, options = {}) {
       const f = fixture("v2-unknown-complete-" + String(startResult), { nativePort: true, startResult }), a = await f.run(adapter.ENQUEUE, f.enqueueArgs);
       const readArgs = { ...f.common, batchId, manualQueueMode: "cep_user_declaration_v2", completedOwnedPrefix: [] }, preview = await f.run(adapter.QUEUE_MANIFEST, readArgs), args = { ...readArgs, manualQueueManifestSha25664: preview.manifestHash };
       assert.equal((await f.runProtectedStart(args)).unknownOutcome, true); f.output(4); f.hostComplete("True");
-      const completed = await f.run(adapter.STATUS, f.statusArgs(a.jobId)); assert.equal(completed.completionVerified, true); assert.equal(completed.startAcceptanceVerified, false);
+      const completed = await f.run(adapter.STATUS, f.statusArgs(a.jobId)); assert.equal(completed.completionVerified, true,JSON.stringify(completed)); assert.equal(completed.startAcceptanceVerified, false);
       const bId = crypto.randomUUID(), before = f.counts(), b = await f.run(adapter.ENQUEUE, { ...f.enqueueArgs, ...f.saveSeparateVariant("B.aep"), batchId: bId, outputFileName: "second.mov" });
       assert.equal(b.code, "ame_title_previous_job_not_completed_no_replay"); assert.equal(f.counts().adds, before.adds); assert.equal(f.counts().sends, before.sends);
       assert.equal((await f.run(adapter.START, { ...readArgs, batchId: bId, completedOwnedPrefix: [{ batchId, jobId: a.jobId }], manualQueueManifestSha25664: preview.manifestHash })).ok, false); assert.equal(f.counts().starts, before.starts);
@@ -313,7 +339,7 @@ function fixture(label, options = {}) {
       const f = fixture("v2-invalid-original-start-" + i, { nativePort: true, tamperReply: native => native.code === "job_observed" && native.job?.hostCompletion ? { ...native, start: changes[i](native.start) } : native }), a = await f.run(adapter.ENQUEUE, f.enqueueArgs);
       const readArgs = { ...f.common, batchId, manualQueueMode: "cep_user_declaration_v2", completedOwnedPrefix: [] }, preview = await f.run(adapter.QUEUE_MANIFEST, readArgs), args = { ...readArgs, manualQueueManifestSha25664: preview.manifestHash };
       assert.equal((await f.runProtectedStart(args)).ok, true); f.output(4); f.hostComplete("True");
-      const completed = await f.run(adapter.STATUS, f.statusArgs(a.jobId)); assert.equal(completed.completionVerified, true); assert.equal(completed.startAcceptanceVerified, false);
+      const completed = await f.run(adapter.STATUS, f.statusArgs(a.jobId)); assert.equal(completed.completionVerified, true,JSON.stringify(completed)); assert.equal(completed.startAcceptanceVerified, false);
       const before = f.counts(); assert.equal((await f.run(adapter.ENQUEUE, { ...f.enqueueArgs, ...f.saveSeparateVariant("B.aep"), batchId: crypto.randomUUID(), outputFileName: "second.mov" })).code, "ame_title_previous_job_not_completed_no_replay");
       assert.equal(f.counts().adds, before.adds); assert.equal(f.counts().starts, before.starts); assert.equal((await f.runProtectedStart(args)).code, "batch_start_already_reserved");
     }
