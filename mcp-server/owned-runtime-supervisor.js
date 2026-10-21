@@ -7,7 +7,7 @@ const r1=require("./owned-runtime-lifecycle"),ledger=require("./native-fixture-a
 const product=require("./owned-runtime-product-lifecycle");
 const productReset=require("./owned-runtime-product-session-reset");
 const ROOT=path.resolve(__dirname,".."),SCHEMA="ae-agent.owned-runtime-supervisor.v1",LEGACY="bridge-daemon-migration-v1";
-const POLICY=Object.freeze({executable:"C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe",executableSha256:"3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237",helper:path.resolve(__dirname,"../scripts/owned-runtime-daemon-helper.ps1"),helperSha256:"8cf2345a3cb6d06227873c486442fe0d7767fb868e427c28622bb210a18650f9",startupDeadlineMs:600000,drainDeadlineMs:10000,exitDeadlineMs:10000});
+const POLICY=Object.freeze({executable:"C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe",executableSha256:"3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237",helper:path.resolve(__dirname,"../scripts/owned-runtime-daemon-helper.ps1"),helperSha256:"18f171fc805b4795e22902591d4b9c7a86331928f1e51b1e0682dbc1ce9569b8",startupDeadlineMs:600000,drainDeadlineMs:10000,exitDeadlineMs:10000});
 const same=(a,b)=>r1.canonical(a)===r1.canonical(b),uuid=v=>ledger.UUID.test(v || ""),sha=v=>ledger.SHA.test(v || "");
 function fail(code){throw Object.assign(Error(code),{code});}
 function exact(v,keys,code="owned_supervisor_contract_invalid"){authority.exact(v,keys,code);}
@@ -291,7 +291,13 @@ function resolveRetainedSuccession(root,pairAnchor,runtime){
   if(current.kernelIdentity.pid!==runtime.daemon?.pid || current.serviceStartedAt!==runtime.daemon?.startedAt || current.sourceSha256!==runtime.loadedRuntimeSha256 || current.sourceSha256!==runtime.currentRuntimeSha256)fail("owned_supervisor_succession_runtime_changed");authority.loadPolicy(root,"owned_daemon_lifecycle");return current;
 }
 function readProductStopAuthority(root,generation){
-  if(!uuid(generation)||product.legacyPresent(root))return false;product.productPolicy(root);
+  if(!uuid(generation))return false;
+  if(product.legacyPresent(root)){
+    const current=readDaemonRegistration(root);if(!current||current.generation!==generation)return false;
+    const anchor=productReset.sessionAnchor(root,generation,registeredGeneration,v=>credential(v,root));if(!anchor?.legacyActivation)return false;
+    authority.loadPolicy(root,"owned_daemon_lifecycle").assertUnchanged();return successionHistory(root,generation).legacyActivation===true;
+  }
+  product.productPolicy(root);
   const current=readDaemonRegistration(root);if(!current||current.generation!==generation)fail("owned_product_current_generation_required");
   return successionHistory(root,generation).product===true;
 }
@@ -311,6 +317,7 @@ function createOwnedRuntimeSupervisor(deps={}){
   async function status(){const reg=current();if(!reg)return {ok:true,status:"owned_registration_absent",owned:false,replayAllowed:false};const resetStatus=productReset.currentStatus(root,reg,registeredGeneration,v=>credential(v,root));if(resetStatus)return resetStatus;const maintenance=priorMaintenance(reg);if(maintenance)return {ok:true,status:"prior_verified_maintenance_retirement",generation:reg.generation,shutdownExitProven:true,proof:maintenance.proof,maintenanceRetirementReceiptSha256:maintenance.row.sha256,writeAdmissionReleased:false,replayAllowed:false};const prior=priorStartup(reg);if(prior)return {ok:true,status:"prior_verified_startup_retirement",generation:reg.generation,shutdownExitProven:true,proof:prior.proof,startupRetirementReceiptSha256:prior.row.sha256,writeAdmissionReleased:false,replayAllowed:false};const repair=readVerifiedProductRepairRetirement(root,reg.generation);if(repair)return {ok:true,status:"prior_verified_product_repair_retirement",generation:reg.generation,shutdownExitProven:true,proof:repair.proof,graceful:false,writeAdmissionReleased:false,replayAllowed:false};const h=await native.openOwned(reg.generation);try{const observed=await h.wait(0);if(r1.exitProof(observed))return {ok:true,status:"owned_daemon_exit_observed",generation:reg.generation,shutdownExitProven:true,replayAllowed:false};return {ok:true,...await authenticatedStatus(reg),registration:projection(reg),shutdownExitProven:false,replayAllowed:false};}finally{await h.dispose();}}
   async function launch(op,predecessor,resetOptions={}){
     const controller=resetOptions.controller;if(!controller)fail("owned_supervisor_controller_required");await controller.assertHeld();
+    if(predecessor&&product.legacyPresent(root)&&productReset.sessionAnchor(root,predecessor,registeredGeneration,v=>credential(v,root))?.legacyActivation){successionHistory(root,predecessor).assertUnchanged();require("./owned-runtime-product-activation").assertConfigurationRoots(root);}
     const p=allowed(op.intent.value.authorizationRef),source=sources(),preparedFile=path.join(base(root),"prepared-successor.json"),candidatePreparation=fs.existsSync(preparedFile)?readEnvelope(preparedFile).value:null,prepared=candidatePreparation?.operationId===op.id?candidatePreparation:null,generation=resetOptions.generation || prepared?.generation || crypto.randomUUID(),bootNonce=resetOptions.bootNonce || prepared?.bootNonce || crypto.randomUUID(),dir=directory(root,generation),keys=path.join(base(root),"daemon-launch-keys");if(source.sourceSha256!==op.intent.value.desiredSourceSha256 || prepared && (prepared.targetGeneration!==predecessor || prepared.desiredSourceSha256!==source.sourceSha256))fail("owned_supervisor_desired_source_changed");ledger.ensure(keys);
     const key=resetOptions.launchKey || r1.hash({predecessorGeneration:predecessor || null,desiredSourceSha256:source.sourceSha256}),keyFile=path.join(keys,key+".json");if(fs.existsSync(keyFile))fail("owned_supervisor_launch_consumed_readback_only");
     const fd=fs.openSync(keyFile,"wx",0o600);try{fs.writeFileSync(fd,JSON.stringify({schema:SCHEMA+".launch-key",generation,operationId:op.id,key,replayAllowed:false}));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}ledger.ensure(dir);
@@ -389,7 +396,8 @@ function createOwnedRuntimeSupervisor(deps={}){
   const resetProductSession=()=>controlled(controller=>productReset.reset(resetDeps(controller)));
   const recoverFailedProductSessionStart=()=>controlled(controller=>productReset.recoverFailedStart(resetDeps(controller)));
   const failedProductSessionStartStatus=()=>productReset.failedStartStatus(resetDeps(null));
-  return Object.freeze({status,ensure:id=>controlled(c=>operate("ensure",id,c)),restart:id=>controlled(c=>operate("restart",id,c)),shutdown:id=>controlled(c=>operate("shutdown",id,c)),recoverInitialStartup:()=>controlled(c=>recoverInitialStartup(c)),resetProductSession,recoverFailedProductSessionStart,failedProductSessionStartStatus,readBack:id=>readSupervisor(root,id)});
+  const activateProductRuntime=()=>controlled(controller=>require("./owned-runtime-product-activation").apply(resetDeps(controller)));
+  return Object.freeze({status,ensure:id=>controlled(c=>operate("ensure",id,c)),restart:id=>controlled(c=>operate("restart",id,c)),shutdown:id=>controlled(c=>operate("shutdown",id,c)),recoverInitialStartup:()=>controlled(c=>recoverInitialStartup(c)),resetProductSession,recoverFailedProductSessionStart,failedProductSessionStartStatus,activateProductRuntime,readBack:id=>readSupervisor(root,id)});
 }
 function createDaemonNativeBackend(){
   function check(){win.verifyPolicy();verifyNodePolicy();if(ledger.hash(ledger.readBytes(POLICY.helper))!==POLICY.helperSha256)fail("owned_supervisor_native_source_changed");}
@@ -406,7 +414,7 @@ function createDaemonNativeBackend(){
     try{const opened=await rpc(open);if(open.op!=="acquire-controller")return target(opened,false);
       async function assertHeld(){await rpc({op:"assert-controller"});}
       async function openTarget(v){await assertHeld();if(targetOpen)fail("owned_supervisor_native_target_already_held");return target(await rpc(v),true);}
-      return Object.freeze({assertHeld,async probeOwned(generation){await assertHeld();if(targetOpen)fail("owned_supervisor_native_target_already_held");return (await rpc({op:"probe-owned",generation})).probe;},openOwned:generation=>openTarget({op:"open-owned",generation}),openLegacy:()=>openTarget({op:"open-legacy"}),launch:generation=>openTarget({op:"launch",generation}),launchInitialRecovery:generation=>openTarget({op:"launch-initial-recovery",generation}),async publishCurrent(generation,expectedRawSha256){await assertHeld();await rpc({op:"publish-current",generation,expectedRawSha256});},dispose:close});
+      return Object.freeze({assertHeld,async probeOwned(generation){await assertHeld();if(targetOpen)fail("owned_supervisor_native_target_already_held");return (await rpc({op:"probe-owned",generation})).probe;},async probeProductActivation(generation){await assertHeld();if(targetOpen)fail("owned_supervisor_native_target_already_held");return (await rpc({op:"probe-product-activation",generation})).probe;},openOwned:generation=>openTarget({op:"open-owned",generation}),openLegacy:()=>openTarget({op:"open-legacy"}),launch:generation=>openTarget({op:"launch",generation}),launchInitialRecovery:generation=>openTarget({op:"launch-initial-recovery",generation}),async publishCurrent(generation,expectedRawSha256){await assertHeld();await rpc({op:"publish-current",generation,expectedRawSha256});},dispose:close});
     }catch(e){child.stdin.end();await exited;throw e;}
   }
   return Object.freeze({acquireController:()=>session({op:"acquire-controller"}),openOwned:generation=>session({op:"open-owned",generation}),openSynthetic:nonce=>session({op:"open-synthetic",nonce})});

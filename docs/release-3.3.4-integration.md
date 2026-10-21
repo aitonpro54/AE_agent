@@ -10,13 +10,18 @@
 
 ## Progress
 
-Подготовка Git и разрешение 29 конфликтных файлов завершены. Выполняется ancestry merge с сохранением обеих историй; текущий рабочий результат проходит offline-валидацию. Canonical product identity, manifest, bootstrap и fixture expectations согласованы на 3.3.4. Установка и проверка реального подключения выполняются root отдельно.
+Source milestone **COMPLETE**: ancestry merge `8b2f79f3c88ed1a0e3cd9c6116433901a3c313bb` опубликован в `origin/codex/release-3.3.4`, checkpoint `checkpoint/ae-agent-3.3.4-integrated-source` сохранён. Offline: 43 PASS / 2 известных FAIL ниже. Панель 3.3.4 установлена при AE0/CEP0; все 9 source/installed hashes совпали, backup прежней 3.3.1 и exact desktop 3.3.2 сохранены локально, evidence — ignored `.codex-runtime/release-3.3.4/installed-panel.json`. Live daily connection ещё не проверено.
+
+Activation implementation **OFFLINE READY / runtime PENDING**: отдельная desktop migration сохраняет legacy history и требует новой явной авторизации по digest; apply/authorization ещё не выполнялись. Единственный source writer — `ae_specialist` (configured Sol 6.1/XHigh), bounded read-only review — `ae_reviewer` (High); root остаётся единственным live-контроллером. Финальный source commit, финальный digest, согласие и live connection — отдельные последующие gates. [Контракт, проверка и возврат](product-runtime-activation.md).
 
 ## Decision Log
 
 - Архитектура/системные границы: `ae_architect`, Sol 6.1/XHigh, read-only. Инвентаризация canonical surfaces и установки: `ae_scout`, Luna/High, read-only.
 - Root владеет Git и остаётся единственным live-контроллером. `ae_implementer` (configured Sol 6.1/High) — единственный integration writer: код, docs и offline-проверки. Архитектурные пересечения разобраны `ae_architect` (configured XHigh), независимое bounded review — `ae_reviewer`; исполнители не создают дополнительных агентов.
 - Исторические evidence, testedAeContext и frozen-intake baseline сохраняются. Main, старые release-ветки и существующие теги не изменяются.
+- Activation: closed admin CLI, pure FS dry-run, HMAC grant по exact review digest, source-independent predecessor once-key. Reused reset engine сохраняет mutex/double absence/reserved launch/registration/anchor/CAS и CEP physical project preflight. Новая lineage не использует laptop migration provenance; старый pure product v1 путь сохранён.
+- Global mixed policy и `legacyPresent=true` сохраняются; новая control/edit epoch не наследует native cleanup authority. Последующий reset требует отдельного per-generation grant; bounded signed origin chain и exact failed-start grant позволяют штатную дальнейшую recovery/succession без переавторизации исторического grant по времени.
+- Полный byte census metadata сохранён в рамках измеренных budgets: plan UUID JSON 192 MiB, exact idempotency streaming64 MiB, остальные control64 MiB, total256 MiB. Hardcore pin ограничен production immediate session metadata/absence и namespace: вложенные historical smoke runtimes не являются production consumers. Redirects фиксированного config/inherited/effective native env отклоняются.
 
 ## Функциональная карта и решения пересечений
 
@@ -52,6 +57,13 @@
 - **FAIL:** `node --expose-internals scripts/ame-job-source-smoke.js` — experimental серия111 достигает `mutation_origin_cache_bound` на 65-м item. Pure source/runner/native/hash tests до этого этапа проходят; защитный finite cache bound не увеличен. Этот snapshot producer остаётся frozen/unfinished по laptop product contract, не входит в переносимую принятую функцию 3.3.4.
 - **BLOCKED / не проверено:** installed 3.3.4, live daily connection, AE/AME mutation/render/save и native initial-owned acceptance. Root read-only status обнаружил сохранённую desktop legacy registration и `legacyPresent=true`; старый pid отсутствует, listener отсутствовал. Laptop migration содержит historical machine-bound authority и не переносится на desktop. Для ежедневного desktop runtime нужен отдельный reviewed migration milestone; старые UNKNOWN/receipts не удалялись и laptop proofs не копировались.
 - Предыдущие desktop limitations не использованы как оправдание: semantic fixture теперь проверена актуальным набором (18 PASS); common-title continuation66 проверен синтетическим deterministic evidence. Старые historical recovery/reconnect smoke, требующие отсутствующий ignored receipt, не запускались и не объявляются live proof.
+
+### Последующие scoped проверки
+
+- AME UNKNOWN STATUS expectation исправлена отдельным test-only commit `c7586cb7b5dd1df576e096cd91b01ae1e1a3bac0`: 27 groups PASS ×3, production AME unchanged, bounded review PASS. Для предыдущего выбранного набора это 44 PASS / 1 известный experimental cache FAIL; исходные 43/2 выше остаются фактом merge snapshot.
+- Activation offline: focused32 и actual native AST23 PASS; реальные merged bridge callbacks в VM проверяют registration/publication gap, pending physical admission и отсутствие inherited cleanup через completion route/lifecycle/reconciler. Temp-root tests сохраняют old hashes, jobs/output/START/sequence/idempotency, проверяют config/source/authority drift, stream FD/path races, crash/UNKNOWN/CAS no-replay и последующие reset/failed-start/shutdown/succession.
+- Аffected regressions: supervisor91, product reset65, service35, initial recovery24 + native AST7, product startup route12 и isolated network boundary24 PASS. Последняя использует exact allowlisted source closure с новым activation CLI, случайные loopback ports и fake CEP; working authority snapshot unchanged. Это не повтор полного acceptance suite и не live AE proof. Syntax9, rules и diff checks PASS; frozen manifest не изменён.
+- Root-only preflight: ранний FS dry-run выявил реальные history sizes; после bounded исправления PASS (751 files/78 dirs/183 927 064 bytes). Query-only native preflight актуального helper PASS 21.10 15:37:51 +05: old generation absent / Win32 87, endpoint free, native owners absent. Evidence остаётся ignored в `.codex-runtime/release-3.3.4/activation-*.json`. Прежние failures/evidence не переписаны. Precommit digest не является согласием; final digest формируется после review/commit, а apply повторит проверки под controller.
 
 ### Исходные FAIL и точные fixture изменения
 

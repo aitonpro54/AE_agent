@@ -146,6 +146,57 @@ function ProbeOwned([string]$generation) {
   return @{state='alive_exact';win32Error=$null;endpointFree=$false;generation=$generation}
  }finally{if($probeHandle -ne [IntPtr]::Zero){[OwnedDaemonKernel]::Dispose($probeHandle)};ReleaseLocks}
 }
+function AssertActivationNativeQuiet {
+ # Query-only, fixed global names. Any owner, enumeration failure or race
+ # refuses initial activation. This never adjudicates historical effects.
+ AssertController
+ for($pass=0;$pass -lt 3;$pass++){
+  foreach($name in @('AfterFX','CEPHtmlEngine','aerender','Adobe Media Encoder')){
+   $owners=[Diagnostics.Process]::GetProcessesByName($name)
+   try{if($owners.Count -ne 0){throw 'owned_activation_native_owner_present'}}finally{foreach($owner in $owners){$owner.Dispose()}}
+  }
+  if(!(EndpointFree)){throw 'owned_supervisor_endpoint_occupied'}
+ }
+ AssertController
+}
+function AssertActivationConfiguration($environment) {
+ $roots=@{AE_BRIDGE_STATE_DIR=(Join-Path $repo '.codex-runtime/project-intent');AE_BRIDGE_LOG_DIR=(Join-Path $repo 'logs');AE_AGENT_HARDCORE_SESSION_DIR=(Join-Path $repo 'logs/hardcore-sessions')}
+ foreach($name in @($environment.Keys)){foreach($expected in $roots.Keys){if($name -ieq $expected){$value=$environment[$name];if($name -cne $expected -or !$value -or ![IO.Path]::IsPathRooted($value) -or [IO.Path]::GetFullPath($value) -ine [IO.Path]::GetFullPath($roots[$expected])){throw 'owned_activation_runtime_redirect_refused'}}}}
+}
+function SignedActivationValue($value,[string]$token) {
+ $data=@{};foreach($p in $value.PSObject.Properties){if($p.Name -cne 'authentication'){$data[$p.Name]=$p.Value}}
+ if($value.authentication -cne (Hmac $data $token)){throw 'owned_activation_origin_signature_invalid'}
+}
+function ActivationOrigin([string]$generation,[string]$token,[int]$depth=0) {
+ if($depth -gt 32 -or $generation -cnotmatch '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'){throw 'owned_activation_origin_invalid'}
+ $bindingFile=Join-Path $base ('daemon-reservations/'+$generation+'/product-session-reset.json')
+ if([IO.File]::Exists($bindingFile)){
+  $b=(Envelope $bindingFile $true).value
+  if($b.schema -cnotin @('ae-agent.product-activation.v1.binding','ae-agent.product-session-reset.v1.generation-binding','ae-agent.product-session-reset.v1.binding')){throw 'owned_activation_origin_invalid'}
+  if($b.generation -cne $generation -or $b.operationId -cnotmatch '^[a-f0-9-]{36}$'){throw 'owned_activation_origin_invalid'}
+  $intent=Envelope (Join-Path $base ('product-session-resets/'+$b.operationId+'/intent.json')) $true;$v=$intent.value;SignedActivationValue $v $token
+  $expectedSchema=if($b.schema -ceq 'ae-agent.product-activation.v1.binding'){'ae-agent.product-activation.v1.intent'}else{'ae-agent.product-session-reset.v1.intent'}
+  if($intent.sha256 -cne $b.intentSha256 -or $v.generation -cne $generation -or $v.operationId -cne $b.operationId -or $v.schema -cne $expectedSchema){throw 'owned_activation_origin_invalid'}
+  if($b.schema -ceq 'ae-agent.product-session-reset.v1.binding'){
+   # Only the bound historical v1 policy proves a genuine pure-product root.
+   # Rewriting an unsigned generation-binding cannot downgrade a signed root.
+   $pure=ReadJson (Join-Path $base 'product-session-reset-policy.json') $v.policyRawSha256 $true
+   if($pure.schema -cne 'ae-agent.product-session-reset.v1.policy' -or $pure.enabled -cne $true -or $pure.capability -cne 'reset_owned_runtime_product_session' -or (Canon $pure.authorization) -cne (Canon $v.authorizationRef)){throw 'owned_activation_origin_invalid'}
+   return $false
+  }
+  return $true
+ }
+ $edgeFile=Join-Path $base ('daemon-succession/'+$generation+'.json');if(![IO.File]::Exists($edgeFile)){return $false}
+ $edge=(Envelope $edgeFile $true).value;SignedActivationValue $edge $token
+ if($edge.schema -cne ($schema+'.succession') -or $edge.successorGeneration -cne $generation -or $edge.anchor.initialGeneration -ceq $generation){throw 'owned_activation_origin_invalid'}
+ return ActivationOrigin $edge.anchor.initialGeneration $token ($depth+1)
+}
+function AssertActivationSuccessorConfiguration($reservation,[string]$token,$environment) {
+ $file=Join-Path $base ('supervisor-operations/'+$reservation.operationId+'/predecessor-exit.json');if(![IO.File]::Exists($file)){return}
+ $v=(Envelope $file $true).value;SignedActivationValue $v $token
+ if($v.schema -cne ($schema+'.predecessor-exit') -or $v.operationId -cne $reservation.operationId){throw 'owned_activation_origin_invalid'}
+ if(ActivationOrigin $v.targetGeneration $token){AssertActivationConfiguration $environment}
+}
 function AssertController {
  if(!$script:controllerOwned -or !$script:controllerMutex){throw 'owned_supervisor_controller_lease_lost'}
  # Reentrant acquisition/release verifies kernel ownership on this same helper
@@ -230,6 +281,7 @@ try{while($null -ne ($line=[Console]::ReadLine())){try{
  if($row.op -eq 'release-target'){Exact $row @('op');AssertController;ReleaseTarget;Emit @{ok=$true};continue}
  if($row.op -eq 'publish-current'){Exact $row @('op','generation','expectedRawSha256');PublishCurrent $row.generation $row.expectedRawSha256;Emit @{ok=$true};continue}
  if($row.op -eq 'probe-owned'){Exact $row @('op','generation');AssertController;Emit @{ok=$true;probe=(ProbeOwned $row.generation)};continue}
+ if($row.op -eq 'probe-product-activation'){Exact $row @('op','generation');AssertController;$probe=ProbeOwned $row.generation;if($probe.state -ceq 'absent' -and $probe.win32Error -eq 87 -and $probe.endpointFree -eq $true){AssertActivationNativeQuiet;$probe.nativeOwnersAbsent=$true}else{$probe.nativeOwnersAbsent=$false};Emit @{ok=$true;probe=$probe};continue}
  if($script:handle -eq [IntPtr]::Zero){
   if($row.op -eq 'launch' -or $row.op -eq 'launch-initial-recovery'){
    AssertController
@@ -241,7 +293,10 @@ try{while($null -ne ($line=[Console]::ReadLine())){try{
    foreach($key in @($info.Environment.Keys)){if($key -match '^AE_BRIDGE_|^AE_OWNED_RUNTIME_'){$info.Environment.Remove($key)|Out-Null}};foreach($key in $config.values.Keys){$info.Environment[$key]=$config.values[$key]};$info.Environment['AE_BRIDGE_HOST']='127.0.0.1';$info.Environment['AE_BRIDGE_PORT']='3456';$info.Environment['AE_BRIDGE_LOG_DIR']=Join-Path $repo 'logs';$info.Environment['AE_OWNED_RUNTIME_GENERATION']=$r.generation;$info.Environment['AE_OWNED_RUNTIME_BOOT_NONCE']=$r.bootNonce
     $initial=$null;if($row.op -eq 'launch-initial-recovery'){$initial=InitialRecoveryLease $row.generation;if($initial.operationId -cne $r.operationId -or $initial.sourceSha256 -cne $r.sourceSha256){throw 'owned_initial_native_successor_binding_invalid'}}
    if((AssertProductDeployment $info.Environment) -cne $deploymentBefore){throw 'owned_supervisor_deployment_mode_changed'}
-   if([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($chain.ticket.value.expiresAt) -or ($null -ne $initial -and [DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($initial.expiresAt))){throw 'owned_supervisor_successor_expired'};if(!(EndpointFree)){throw 'owned_supervisor_endpoint_occupied'};AssertController;$script:handle=[OwnedDaemonKernel]::StartIndependent($node,(Join-Path $repo 'mcp-server/bridge-daemon.js'),$repo,$info.Environment);$opened=[DateTimeOffset]::UtcNow.ToString('o');$identity=[OwnedDaemonKernel]::Identity($script:handle);$identity=$identity|ConvertTo-Json -Compress|ConvertFrom-Json -DateKind String;$identity|Add-Member executableSha256 $nodeSha;$script:image=$image;$script:expected=$identity;$script:expectedArgv=$r.command.argv;AssertArgv $r.command.argv
+   if([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($chain.ticket.value.expiresAt) -or ($null -ne $initial -and [DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($initial.expiresAt))){throw 'owned_supervisor_successor_expired'};if(!(EndpointFree)){throw 'owned_supervisor_endpoint_occupied'};AssertController
+   $resetBinding=Join-Path $chain.dir 'product-session-reset.json';if([IO.File]::Exists($resetBinding)){$binding=Envelope $resetBinding;if($binding.value.schema -cin @('ae-agent.product-activation.v1.binding','ae-agent.product-session-reset.v1.generation-binding')){AssertActivationConfiguration $info.Environment};if($binding.value.schema -ceq 'ae-agent.product-activation.v1.binding'){AssertActivationNativeQuiet}}
+   AssertActivationSuccessorConfiguration $r $config.token $info.Environment
+   $script:handle=[OwnedDaemonKernel]::StartIndependent($node,(Join-Path $repo 'mcp-server/bridge-daemon.js'),$repo,$info.Environment);$opened=[DateTimeOffset]::UtcNow.ToString('o');$identity=[OwnedDaemonKernel]::Identity($script:handle);$identity=$identity|ConvertTo-Json -Compress|ConvertFrom-Json -DateKind String;$identity|Add-Member executableSha256 $nodeSha;$script:image=$image;$script:expected=$identity;$script:expectedArgv=$r.command.argv;AssertArgv $r.command.argv
    $candidate=@{schema=$schema+'.native-candidate';generation=$r.generation;bootNonce=$r.bootNonce;reservationSha256=$chain.reservation.sha256;startupTicketSha256=$chain.ticket.sha256;kernelIdentity=$identity;argv=$r.command.argv;sourceSha256=$r.sourceSha256;heldLaunchWitness=@{kind='native_launch_held_process_handle';handleOpenedAt=$opened;identityVerifiedAt=[DateTimeOffset]::UtcNow.ToString('o')}};$signature=Hmac $candidate $config.token;$candidate.authentication=$signature;[void](WriteOnce (Join-Path $chain.dir 'native-candidate.json') $candidate);$script:mode='owned';ReleaseLocks;Emit @{ok=$true;identity=$identity};continue
   }
   if($row.op -eq 'open-owned'){

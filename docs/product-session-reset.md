@@ -1,5 +1,9 @@
 # Штатный сброс product-сессии bridge
 
+Для mixed desktop legacy предусмотрена отдельная [активация product runtime](product-runtime-activation.md).
+Её verified activated origin поддерживает дальнейший reset только с отдельным
+generation-bound operator grant; исходная activation authority не наследуется.
+
 ## Назначение
 
 `reset_owned_runtime_product_session` начинает новую product-сессию после

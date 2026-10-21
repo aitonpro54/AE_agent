@@ -65,6 +65,12 @@ UNKNOWN и его журналы не становятся product grant или 
 
 ## Явный сброс product-сессии
 
+Для desktop mixed legacy без laptop product-genesis применяется отдельная
+[административная активация](product-runtime-activation.md) по reviewed digest.
+Она сохраняет legacy факт, policy и исторические bytes, создавая новый signed
+session root. Это не автоматический fallback ensure; native cleanup authority
+не наследуется. Последующий reset требует отдельного grant своей generation.
+
 При отсутствии зарегистрированного daemon предусмотрен отдельный
 [операторский сброс product-сессии](product-session-reset.md). Он сохраняет
 исторические UNKNOWN и запрет их replay, требует своей private authorization,

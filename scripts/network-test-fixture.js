@@ -27,6 +27,7 @@ const EXTRA_SOURCES = new Set([
   "scripts/solution-candidate-report.js", "scripts/solution-registry-smoke.js",
   "scripts/owned-runtime-control.js", "scripts/autonomous-plan-client.js",
   "scripts/owned-runtime-initial-recovery.js",
+  "scripts/owned-runtime-product-activation.js",
   "scripts/owned-runtime-startup-retire.js", "scripts/owned-runtime-finalize-launch.js",
   "scripts/owned-runtime-maintenance-retire.js", "scripts/owned-runtime-panel-reload.js",
   "scripts/cep-panel-target.js", "scripts/native-fixture-retained-maintenance.js",
