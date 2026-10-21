@@ -77,4 +77,24 @@ guard. Проверка loaded collector сохранена; lifecycle посл�
   имеет прежний SHA. Legacy `autonomous-mcp-smoke.js` с direct-root spawn
   не запускался; его изоляция не является доказательством этого этапа.
 
-Live применение и проверка текущей legacy attempt фиксируются отдельно ниже.
+## Живая проверка 21.10
+
+Core milestone `b97cdb7` применён: восемь installed assets проверены по SHA,
+изменены manifest/index/panel.js, backup сохранён локально. Reload через штатный
+CDP helper, затем один `restart_owned_runtime_daemon` из fresh CLI.
+Backend/CEP3.3.3; generation `2df65c3c…`, PID32524, source
+`eed86411100ebcf406cd0c025bbf4ceea32e804032a1ce714f4994b293532bf7`.
+
+Generic recovery выбрал прежнюю `90cddf8f…` без caller selectors: pending epoch
+→ пассивное наблюдение ACK → `epoch_fenced_unknown`. Исходные bytes сохранены,
+SHA `c5341ee6a463ec4717365d51670fbcca0215a27784768843f1eec880c1ef95bc`
+совпадает с архивом; `unknown_preserved`, `replayAllowed:false`.
+Отдельный ensure `f58230e4…` дал `already_connected/verified`, затем обычный
+`get_project_info` вне bootstrap тоже PASS. Connected/autonomy active,
+pending/inflight0, edit session отсутствует.
+
+Проект `titr_all.aep`: 476 items, revision12975229; SHA
+`f84a56ffd958c750fad210c19d23e32f774d5866e0e078897c85cb74f6a601c1`
+совпадает с исходным. AME enqueue/START/render/save/CU0. Живой failed-start
+специально не создавался; его новый общий reducer проверен offline65.
+Локальная квитанция: `.codex-runtime/systemic-recovery-20261021/rollout.json`.

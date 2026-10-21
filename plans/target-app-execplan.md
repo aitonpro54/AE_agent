@@ -12,7 +12,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Progress
 
-- 21.10 systemic recovery: fixture08ee550 готов; generic exact observation/causal epoch fence/UNKNOWN disposition и failed-start реализованы, core review GO. Core51/E2E16/fixture24/bootstrap96+110/reset65/service35/supervisor91/lifecycle12/actions48+16/refresh33/dry56 и4network PASS; authority1591/hash unchanged. Final closure review и live применение pending; backend3.3.1/sourcefc6d9637… прежний, live/reset/send0.
+- 21.10 systemic recovery завершён: fixture08ee550/coreb97cdb7, final review GO;51/E2E16/fixture24/bootstrap96+110/reset65/service35/supervisor91/lifecycle12/actions48+16/refresh33/dry56/4network PASS. CEP+backend3.3.3/eed86411… применены одним штатным restart; generic90cdd… retired UNKNOWN/noReplay→fresh ensure verified→ordinary native read PASS. AEP476/rev12975229/SHAf84a… unchanged; AME enqueue/START/render/save/CU0; [live proof](../docs/crash-recovery.md).
 - 21.10 release3.3.3 опубликована: первый atomic push/readback03908ef… в codex/release-3.3.3, checkpoint tag c287061…→f92a75b…; old branch сохранён. Version/fixtures/docs3.3.3, review/offline PASS; foreign hashes7/7 unchanged. Series fixes792a7e0/applied backend sourcefc6d9637… входят в baseline. Последующий docs commit фиксирует публикацию; installed3.3.3/live render/новая очередь не выполнялись.
 - 21.10 queue-only11 PASS: reset6da63cd2…/efd27532… ACTIVE; bootstrapfa30 retired с raw archive/HMAC UNKNOWN/noReplay (3dc2681); новый bootstrap read90cdd… UNKNOWN сохранён, отдельный native read PASS. Runtime9936/a14084b9…, clean AEP476/rev12975229/SHAf84a56ff…, AME2432. Все11 отправлены однократно к05:12:05Z, ДО первого native workArea ACK05:13:23Z; group7d497df9…. К05:44:25Z callback11/11, exact addDL/workArea/output argument ACK и queued fields11/11 PASS. Producer STATUS0/START0/CU0; final native batchRunning=false, AEP unchanged/clean, MOV0. Выявлены 11 generic checkpoint-копий AEP (434823070 bytes) и необходимость explicit collector resume после guard019; это стало основанием исправлений выше.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
@@ -169,7 +169,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Завершить final closure review, зафиксировать core milestone и применить CEP→штатный backend restart→generic recovery→fresh ensure/read. Старые UNKNOWN и jobs сохранить; никаких AME enqueue/START/render. Публикация3.3.3 завершена ранее, текущую ветку не push без поручения.
+Текущий recovery scope завершён и применён локально; дальнейшая работа — по новому поручению. Ветка codex/systemic-session-recovery не опубликована; release3.3.3/checkpoint сохранены. При новом UNKNOWN использовать generic recovery/nextAction, не создавать exact incident scripts. AME очередь/render не запускать без отдельного поручения.
 
 ## Отложенные scope
 
