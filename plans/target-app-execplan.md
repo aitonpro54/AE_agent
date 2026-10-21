@@ -5,18 +5,17 @@
 
 ## Текущая цель пользователя
 
-21.10: новый финальный API-тест добавления всех 11 композиций общего AEP,
-`01.mov`–`11.mov` в `Готовое/Титры 01/Тест очереди 2026-10-21`. Все submit выполняются без ожидания предыдущих callbacks, collector отдельно после отправок. START/runBatch/render запрещены текущим поручением. Пользователь явно разрешил штатный reset и снятие старого блокера; UNKNOWN/output reservations сохраняются, без census/отдельных AEP/CU enqueue.
+21.10: исправить обе выявленные недоработки async AME: один checkpoint на всю серию вместо11,
+автоматическое восстановление collector из сохранённых состояний/nonce без повторных enqueue. Сохранить proposal/dry-run/source/process/preset/output guards, асинхронную отправку и fixed lease. START/runBatch/render запрещены; существующие11 jobs/UNKNOWN/reservations не replay и не удалять. Выполнить scoped реализацию и проверки, без CU enqueue/отдельных render AEP.
 [Open-comp workflow](../docs/ame-open-comp-workflow.md): live11/offline111 с UI receipt, API-only scope не закрыт.
 Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FROZEN.
 
 ## Progress
 
+- 21.10 series fixes: maintained builder/producer задаёт same group/N≤11; private owned edit session/checkpoint1 с fresh guards каждого dispatch. Durable collector сохраняет exact nonces/terminal receipts, census retry1/2/4s bounded3, unknown без replay, serial round/atomic constructor admission. Final collector SHAeaf755be…; independent review GO. Source/offline реализация завершена, live rollout ещё не выполнен; существующие11 jobs не трогали.
 - 21.10 queue-only11 PASS: reset6da63cd2…/efd27532… ACTIVE; bootstrapfa30 retired с raw archive/HMAC UNKNOWN/noReplay (3dc2681); новый bootstrap read90cdd… UNKNOWN сохранён, отдельный native read PASS. Runtime9936/a14084b9…, clean AEP476/rev12975229/SHAf84a56ff…, AME2432. Все11 отправлены однократно к05:12:05Z, ДО первого native workArea ACK05:13:23Z; group7d497df9…. К05:44:25Z callback11/11, exact addDL/workArea/output argument ACK и queued fields11/11 PASS. Producer STATUS0/START0/CU0; final native batchRunning=false, AEP unchanged/clean, MOV0. Выявлены 11 generic checkpoint-копий AEP (434823070 bytes) и необходимость explicit collector resume после guard019; это остаётся недоработкой штатного пути.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
-- 20.10: reset `f0fb9754…` / generation `9f2d63af…` активирован после ручного выхода AE.
-  Старый timeout/UNKNOWN сохранён; final combined recovery завершён за 8s без replay.
-  Connected/idle/autonomy active, native project read: empty/revision1; AME jobs не изменялись.
+- 20.10: reset `f0fb9754…`/generation `9f2d63af…` после ручного выхода AE; UNKNOWN сохранён, recovery8s без replay. Connected/idle/autonomy active, native project empty/revision1; AME jobs не менялись.
 - `b36ed6b` штатно применён с сохранёнными journal hashes/CEP owner. Live11 завершён тем же generic шагом: отдельный first UI receipt и verified name-only restore для каждого, debt0; 8 вспомогательных слоёв сохранены. START/census/replay0; root sole live controller.
 - `505a439`: штатный restart и native project read PASS; история в product workflow.
 - SaveAs/source producer/full-AEP SHA frozen; код и тесты сохранить: [workflow](../docs/ame-single-job-workflow.md).
@@ -49,7 +48,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Decision Log
 
-- [block: final queue-only async11] [executor: ae_specialist bootstrap/recovery analysis; ae_implementer ignored helper; ae_reviewer bounded review]; root sole live/docs. Один общий AEP, отдельные batch11/group1/output paths, producer без STATUS barrier, collector после всех submit. START/PAUSE/RESUME/render/census0. Прежний early START/render этап отложен; исходные UNKNOWN не replay. Collector guard019 отказал до native dispatch при неизменном AME; root exact same-nonce read PASS и explicit resume из persisted states, без обнуления/продления lease. Причина inventory-отказа не установлена.
+- [block: series checkpoint + collector recovery] [executor: ae_specialist sole writer; ae_reviewer independent; ae_implementer saved-callback replay; ae_scout scope]; root sole live/plan/commit. Private series owner привязан к source/process/preset/authority/generation; legacy groups не меняются. Retry только exact owned nonce с typed pre-dispatch census proof. Initial unknown без nonce и ambiguous/stale constructor admission failclosed; standalone authenticated client не добавлен. Producer/collector programmatic API с existing trusted transport, CLI integration point. Render/new enqueue0.
 - N задаётся данными: один выбранный вариант → один native dispatch → exact new-job UI receipt → name-only restore → следующий. Приёмки неизменны; итог читается локально без повторного обхода очереди.
 - Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
@@ -113,7 +112,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Validation
 
-- 21.10: bootstrap focused34/offline88, independent review GO; helper fakeN11/admission PASS. Actual async11/collector11 и локальный final-verification PASS; source SHA unchanged, range0..10.0333333333333, D15.4; fresh end transport05:44:52Z delivery=true/batchRunning=false/projectDirty=false. `.codex-runtime/title-final-async-20261021/final-verification.json` — локальные exact records; completion/media/independent applied preset/own acceptance не заявляются. Rules/syntax/scoped diff PASS; legacy foreign WIP не затронут.
+- 21.10 fixes: new smoke14+bridgeVM6 (source-extracted runner, physical offline copy1/11runs), pending-group8/status-timeout96/async6/sequence6 PASS; independent source review GO; rules/syntax9/diff PASS. Final eaf755be… saved replay: actual11 callbacks→fullQueuedProof11/blocked0,62 fakeSTATUS, nonce/deadline/AEP/72evidenceSHA unchanged. `.codex-runtime/ame-series-fix-verification-20261021/report.json`. Crash/restart controlled и interleaving injected, не powerloss/2OS/live; completion/media/own acceptance не заявлены.
 - 20.10 comps: create25/visibility44 завершены без unknown. Visibility aggregate needs_review из-за отсутствия промежуточного read; подтверждён отдельными 12 native reads без replay. PNG11 visual PASS; save applied1/unknown0 и независимый exact-file dirty=false. Исходные outcomes сохранены.
 - 20.10 recovery56/status21/origin36 + actual offline-copy/independent19/syntax/rules/diff/High review PASS. Live async ENQUEUE01/own STATUS PASS; GLOBAL START1 UNKNOWN сохранён, actual01 media HQalpha/full decode и PNG comparison PASS. Source unchanged/clean. Новый orphan-read/global settlement пока не live-проверены; старый integration startup gate не обходился.
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
@@ -168,7 +167,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Queue-only тест11 завершён; START/render не запускать. До штатного использования: scoped решение одного checkpoint на серию без ослабления gates (сейчас generic runner сделал11 копий), устойчивый collector с сохранением states/nonces после process inventory отказа и диагностикой фактических rows. Bootstrap read90cdd… UNKNOWN сохраняется; его recovery отдельно при необходимости bootstrap. Старые jobs/reservations/UNKNOWN не replay. Render/media/visual этап требует отдельного поручения.
+Применить reviewed код штатным owned backend restart → Connected/idle + native project/AME transport read, START/render/new enqueue0. Не повторять существующие11 jobs ради live приёмки. Bootstrap read90cdd… UNKNOWN сохраняется; recovery отдельно при необходимости bootstrap. Новая queue-only серия/рендер — отдельный дальнейший scope.
 
 ## Отложенные scope
 

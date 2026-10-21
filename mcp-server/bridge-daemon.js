@@ -67,6 +67,7 @@ const { buildRunOutcome } = require("./run-outcome");
 const planRunRecords = require("./plan-run-records");
 const planRunResponse = require("./plan-run-response");
 const amePending=require("./ame-title-pending");
+const ameTitleSeries = require("./ame-title-series").createSeries();
 const toolErrorResponse = require("./tool-error-response");
 const aiAgents = require("./ai-agents");
 const { buildPlannerContext } = require("./planner-context");
@@ -398,6 +399,7 @@ function assertAmeTitleContext(context, binding) {
   const plan = context.record.payload && context.record.payload.plan;
   const steps = plan && plan.steps;
   const step = Array.isArray(steps) && steps.length === 1 && steps[0];
+  if (context.args?.pendingGroupSize !== undefined) ameTitleSeries.assertDispatch(activeEditSession, ameTitleJobs.validateInput(ameTitleJobs.ENQUEUE, context.args), ameTitleSeriesActor(), context.runId);
   const own=ownedAmeContexts.get(context);
   if(own){if(!binding||!step||step.tool!=="run_ai_agent_plan"||![6,7].includes(own.leaf)||binding.name!==(own.leaf===6?ameTitleJobs.ENQUEUE:ameTitleJobs.START)||context.stepCount!==1||
       m100Protocol.stableStringify(step.args)!==m100Protocol.stableStringify(own.outerArgs)||m100Protocol.stableStringify(context.args)!==m100Protocol.stableStringify(own.args)||
@@ -1038,6 +1040,7 @@ function compactEditSession(session) {
     finishedAt: session.finishedAt || null,
     outcome: session.outcome || null,
     checkpoint: compactCheckpoint(session.checkpoint),
+    ameTitleSeries: session.ameTitleSeries || null,
     operationCount: Array.isArray(session.operations) ? session.operations.length : 0,
     latestOperation: latestOperation ? {
       id: latestOperation.id,
@@ -1092,7 +1095,7 @@ function editSessionDetails(session, limit) {
   };
 }
 
-async function startEditSession(args) {
+async function startEditSession(args, onCreated) {
   if (activeEditSession) {
     return toolResult({
       started: false,
@@ -1134,6 +1137,7 @@ async function startEditSession(args) {
     },
     operations: []
   };
+  if (onCreated) onCreated(activeEditSession);
 
   persistActiveEditSession();
   appendEditSessionEvent("session_started", {
@@ -1193,10 +1197,11 @@ function listEditSessions(args) {
   });
 }
 
-function finishEditSession(args) {
+function finishEditSession(args, expectedSessionId) {
   if (!activeEditSession) {
     return toolResult("No edit session is active.", true);
   }
+  if (expectedSessionId && activeEditSession.id !== expectedSessionId || activeEditSession.ameTitleSeries && activeEditSession.id !== expectedSessionId) return toolResult({code:"edit_session_owner_changed",error:"Текущая edit session не принадлежит завершаемому run."},true);
 
   const outcome = editSessionText(args, "outcome", "completed", 80) || "completed";
   const summary = editSessionText(args, "summary", "", 2000) || null;
@@ -1232,10 +1237,12 @@ function isUnsavedProjectError(message) {
 
 async function startPlanRunEditSession(run, validation) {
   const label = planRunSessionLabel(run);
-  const result = await startEditSession({
-    label,
-    notes: `AI plan run ${run.id} with ${validation.mutatingCount} mutating step(s).`
-  });
+  let created = null, result;
+  try { result = await startEditSession({label,notes: `AI plan run ${run.id} with ${validation.mutatingCount} mutating step(s).`}, session => {created=session;}); }
+  catch (error) {
+    if (created && activeEditSession === created) finishEditSession({outcome:"needs-review",summary:"Edit-session preparation failed before dispatch."},created.id);
+    return {ok:false,rawError:error.message,error:error.message,saveProjectFirst:false,payload:null,ownedSession:null};
+  }
   const payload = firstToolPayload(result);
   if (result.isError || !payload || payload.started !== true) {
     const rawError = operationErrorFromPayload(payload) || "Could not start an edit session.";
@@ -1252,6 +1259,7 @@ async function startPlanRunEditSession(run, validation) {
 
   return {
     ok: true,
+    ownedSession: created,
     payload,
     session: payload.session || null,
     checkpoint: payload.session && payload.session.checkpoint
@@ -1260,12 +1268,12 @@ async function startPlanRunEditSession(run, validation) {
   };
 }
 
-function finishPlanRunEditSession(run) {
+function finishPlanRunEditSession(run, expectedSessionId = run.editSession && run.editSession.id) {
   const hasIssue = run.failedCount > 0 || run.ok === false || run.steps.some((step) => step.status === "blocked" || step.status === "failed");
   const result = finishEditSession({
     outcome: hasIssue ? "needs-review" : "completed",
     summary: `AI plan run ${run.id} ${hasIssue ? "finished with issues" : "completed"}.`
-  });
+  }, expectedSessionId);
   const payload = firstToolPayload(result);
   if (result.isError) {
     const error = operationErrorFromPayload(payload) || "Could not finish the auto edit session.";
@@ -1275,6 +1283,17 @@ function finishPlanRunEditSession(run) {
     return null;
   }
   return payload;
+}
+
+function ameTitleSeriesActor() {
+  const authority = autonomousSession.authorization();
+  if (!productRuntimeCurrent() || !authority || !lastPanelInfo?.panelConnectionId || !lastPanelInfo.panelGeneration || Date.now()-lastPanelSeenAt>=10000) throw m100ProtocolError("ame_title_series_current_actor_required", "Серия требует текущую доверенную панель и автономную сессию.");
+  return {instanceId:currentProposalState.snapshot().instanceId,panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration,lifecycleEpoch:lifecycle.epoch(),sessionHash:authority.sessionHash};
+}
+
+function preflightAmeTitleSeries(plan) {
+  if (!activeEditSession?.ameTitleSeries && !require("./ame-title-series").select(plan)) return null;
+  return ameTitleSeries.preflight(activeEditSession, plan, ameTitleSeriesActor());
 }
 
 function firstToolPayload(result) {
@@ -3032,6 +3051,7 @@ async function createM100AgentPlanProposal(planResult, options = {}) {
     return null;
   }
   if (planResult.planValidation.mutatingCount > 0) {
+    preflightAmeTitleSeries(planResult.plan);
     if (Date.now() - lastPanelSeenAt >= 15000) return null; // Offline planner drafts carry no execution authority.
     const lifecycleStep = lifecycle.planStep(planResult.plan);
     const projectInfo = lifecycleStep && projectLifecycleContract.isLifecycleCompletion(lifecycleStep.name)
@@ -8561,6 +8581,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
   const mutatingExecution = !dryRun && validation.mutatingCount > 0;
   const checkpointStepPresent = hasCheckpointStep(validation);
   const activeEditSessionAtStart = Boolean(activeEditSession);
+  let seriesArgs = null, seriesSession = null, createdSeriesSession = null, seriesActor = null;
   let ameFixturePrimaryBaseline = null;
 
   const actionBinding = options._m100ActionRecord;
@@ -8642,6 +8663,21 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     run.finishedAt = new Date().toISOString();
     if (typeof run.ok !== "boolean") {
       run.ok = run.failedCount === 0 && !run.steps.some((step) => step.status === "blocked");
+    }
+    if (!dryRun && seriesSession && activeEditSession === seriesSession) {
+      const state = ameTitleSeries.finish(seriesSession, seriesArgs, run.id, amePending.isPendingRun(run));
+      run.ameTitleSeries = {...run.ameTitleSeries,...state};
+      if (state.close && state.owned) {
+        const finished = finishPlanRunEditSession(run, seriesSession.id);
+        if (finished) {run.editSessionFinished=finished.session;run.safety.editSessionFinished=true;}
+      }
+      seriesSession = null;
+      createdSeriesSession = null;
+    }
+    if (!dryRun && createdSeriesSession && activeEditSession === createdSeriesSession) {
+      const finished=finishPlanRunEditSession(run,createdSeriesSession.id);
+      if(finished){run.editSessionFinished=finished.session;run.safety.editSessionFinished=true;}
+      createdSeriesSession=null;
     }
     if (!run.dryRun && validation.mutatingCount > 0 && !run.semanticVerification) {
       run.semanticVerification = buildServerSemanticVerification(prepared.plan, run);
@@ -8772,6 +8808,8 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     run.error = "Plan validation failed.";
     return finishRun();
   }
+  try { if(validation.mutatingCount>0)seriesArgs = preflightAmeTitleSeries(prepared.plan);if(seriesArgs)seriesActor=ameTitleSeriesActor(); }
+  catch (error) {run.ok=false;run.errorCode=error.code||"ame_title_series_preflight_failed";run.error=error.message;return finishRun();}
   const montageRunMaterialReader = prepared.plan.montagePipeline && !dryRun
     ? montagePipelineService.boundedMaterialReader(require("./montage-contract").normalizeBudgets(prepared.plan.montagePipeline.readBudgets).budgets)
     : null;
@@ -8943,6 +8981,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     const guard = options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
       actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
     const started = await autonomousCommandContext.run(guard, () => startPlanRunEditSession(run, validation));
+    if(seriesArgs)createdSeriesSession=started.ownedSession;
     if (!started.ok) {
       run.ok = false;
       run.error = started.error;
@@ -8957,6 +8996,18 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     run.safety.protection = "auto_edit_session";
     run.editSession = started.session;
     run.checkpoint = started.checkpoint;
+  }
+
+  if (mutatingExecution && seriesArgs) {
+    try {
+      if(m100Protocol.stableStringify(seriesActor)!==m100Protocol.stableStringify(ameTitleSeriesActor()))throw m100ProtocolError("ame_title_series_actor_changed", "Контроллер изменился во время подготовки checkpoint.");
+      if (!activeEditSession.ameTitleSeries) {ameTitleSeries.begin(activeEditSession,seriesArgs,ameTitleSeriesActor());persistActiveEditSession();}
+      seriesSession = activeEditSession;
+      ameTitleSeries.preflight(seriesSession,prepared.plan,ameTitleSeriesActor());
+      run.editSession = compactEditSession(seriesSession);
+      run.checkpoint = compactCheckpoint(seriesSession.checkpoint);
+      run.ameTitleSeries = {groupId:seriesArgs.pendingGroupId,sessionId:seriesSession.id,size:seriesArgs.pendingGroupSize};
+    } catch (error) {run.ok=false;run.errorCode=error.code||"ame_title_series_protection_failed";run.error=error.message;return finishRun();}
   }
 
   if (lifecycleStep && !dryRun) {
@@ -9069,6 +9120,10 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
         const projectNow = firstToolPayload(await callToolLogged("ai-plan-preflight", "get_project_info", {}));
         currentProposalState.assertCurrent(options._m100ActionRecord);
         currentProposalState.bindProject(options._m100ActionRecord, projectNow && projectNow.file);
+        if (seriesArgs) {
+          if (activeEditSession !== seriesSession) throw m100ProtocolError("ame_title_series_session_changed", "Edit session серии изменилась.");
+          run.ameTitleSeries = ameTitleSeries.reserve(seriesSession,seriesArgs,ameTitleSeriesActor(),run.id);
+        }
         if (activeEditSession && require("./proposal-state").normalizeProject(activeEditSession.checkpoint && activeEditSession.checkpoint.sourceFile) !==
           require("./proposal-state").normalizeProject(options._m100ActionRecord.project.expectedFile)) {
           throw m100ProtocolError("edit_session_project_mismatch", "Checkpoint активной edit session относится к другому проекту.");
@@ -9231,7 +9286,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     }
   }
 
-  if (autoStartedEditSession && !(lifecycleStep && run.safety.editSessionFinished)) {
+  if (autoStartedEditSession && !seriesArgs && !(lifecycleStep && run.safety.editSessionFinished)) {
     run.solutionPlanReadBack = verifySolutionPlanReadBack(prepared.plan, run);
     if (run.solutionPlanReadBack && run.solutionPlanReadBack.status !== "passed") run.ok = false;
     const finished = finishPlanRunEditSession(run);

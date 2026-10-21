@@ -35,7 +35,7 @@ function localFile(value, extension) {
 }
 function validateInput(name, raw = {}) {
   const common = ["targetSpecifier", "expectedProcess", "expectedSessionNonce", "timeoutMs"], source = ["sourceProjectFile", "expectedSourceSha25664"];
-  const fields = name === INSPECT ? [...source, "reconcileRequestNonce", "sourceReadBudgetMs"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode", "enqueueTransport", "pendingGroupId", "pauseRequestId"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId", "originalRunId", "acceptanceOnly", "readTransport", "readRequestNonce", "afterReadTimeoutNonce", "afterReadUnavailableNonce"] : null;
+  const fields = name === INSPECT ? [...source, "reconcileRequestNonce", "sourceReadBudgetMs"] : name === ENQUEUE ? [...source, "batchId", "sourceGuid", "presetId", "presetSha25664", "outputFileName", "range", "queueMode", "enqueueTransport", "pendingGroupId", "pendingGroupSize", "pauseRequestId"] : name === START ? ["batchId", "manualQueueMode", "manualQueueManifestSha25664", "completedOwnedPrefix", "queueMode"] : name === QUEUE_MANIFEST ? ["batchId", "manualQueueMode", "completedOwnedPrefix"] : name === STATUS ? ["batchId", "jobId", "originalRunId", "acceptanceOnly", "readTransport", "readRequestNonce", "afterReadTimeoutNonce", "afterReadUnavailableNonce"] : null;
   if (!fields) fail("ame_title_unknown_tool"); object(raw, [...common, ...fields, ...(name === ENQUEUE || name === START ? META : [])]);
   if (!/^ame-[0-9]{1,3}\.[0-9]{1,3}$/.test(text(raw.targetSpecifier))) fail("ame_title_exact_target_required");
   object(raw.expectedProcess, ["pid", "startedAt"]);
@@ -53,6 +53,7 @@ function validateInput(name, raw = {}) {
   }
   if(raw.enqueueTransport!==undefined){if(name!==ENQUEUE||raw.enqueueTransport!==pendingEnqueue.MODE||a.queueMode!==sharedQueue.MODE)fail("ame_title_async_shared_only");a.enqueueTransport=pendingEnqueue.MODE;}
   if(raw.pendingGroupId!==undefined){if(name!==ENQUEUE||a.enqueueTransport!==pendingEnqueue.MODE||a.queueMode!==sharedQueue.MODE||typeof raw.pendingGroupId!=="string"||!UUID.test(raw.pendingGroupId)||!Object.hasOwn(a,"expectedSessionNonce"))fail("ame_title_pending_group_invalid");a.pendingGroupId=raw.pendingGroupId;}
+  if(raw.pendingGroupSize!==undefined){if(!a.pendingGroupId||!Number.isSafeInteger(raw.pendingGroupSize)||raw.pendingGroupSize<1||raw.pendingGroupSize>pendingEnqueue.MAX_GROUP_ITEMS)fail("ame_title_pending_group_size_invalid");a.pendingGroupSize=raw.pendingGroupSize;}
   if(raw.pauseRequestId!==undefined){if(name!==ENQUEUE||!a.pendingGroupId||typeof raw.pauseRequestId!=="string"||!UUID.test(raw.pauseRequestId))fail("ame_title_pause_selector_invalid");a.pauseRequestId=raw.pauseRequestId;}
   if(raw.readTransport!==undefined){if(name!==STATUS||raw.readTransport!==pendingEnqueue.MODE||raw.originalRunId!==undefined||raw.acceptanceOnly===true)fail("ame_title_async_read_invalid");a.readTransport=pendingEnqueue.MODE;}
   if(raw.readRequestNonce!==undefined){if(name!==STATUS||raw.readTransport!==pendingEnqueue.MODE||!UUID.test(raw.readRequestNonce))fail("ame_title_async_read_invalid");a.readRequestNonce=raw.readRequestNonce;}
@@ -659,7 +660,13 @@ function createExecutor(deps) {
     const entry = { name, argsHash: hash(a), context, active: true }; assertIngress(context, name, a); caps.set(cap, entry); return cap;
   }
   async function processPin(a, original) {
-    const rows = await deps.inspectProcesses(); if (!Array.isArray(rows) || rows.length !== 1 || !sameProcess(rows[0], rows[0]) || rows[0].pid !== a.expectedProcess.pid || new Date(rows[0].startedAt).toISOString() !== a.expectedProcess.startedAt || original && !sameProcess(rows[0], original)) fail("ame_title_process_changed_or_ambiguous"); return rows[0];
+    let rows;
+    try { rows = await deps.inspectProcesses(); }
+    catch (_) { throw Object.assign(Error("ame_title_process_changed_or_ambiguous"), {code:"ame_title_process_changed_or_ambiguous", census:{reason:"inspect_error",processes:null}}); }
+    if (!Array.isArray(rows) || rows.length !== 1 || !sameProcess(rows[0], rows[0]) || rows[0].pid !== a.expectedProcess.pid || new Date(rows[0].startedAt).toISOString() !== a.expectedProcess.startedAt || original && !sameProcess(rows[0], original)) {
+      throw Object.assign(Error("ame_title_process_changed_or_ambiguous"), {code:"ame_title_process_changed_or_ambiguous", census:{reason:Array.isArray(rows)&&rows.length===0?"no_process_observed":"changed_ambiguous_or_invalid",processes:Array.isArray(rows)?rows.slice(0,16).map(p=>({pid:p?.pid||null,startedAt:p?.startedAt||null,path:typeof p?.path==="string"?p.path:null})):null}});
+    }
+    return rows[0];
   }
   function binding(a, processInfo) { return hash({ target: a.targetSpecifier, session: a.expectedSessionNonce || null, pid: processInfo.pid, startedAt: processInfo.startedAt, path: String(processInfo.path).replace(/\\/g, "/").toLowerCase() }); }
   function load(id, receiptJobId = null) {
@@ -929,7 +936,7 @@ function createExecutor(deps) {
     return batches().filter(prior => prior.batchId !== batchId).every(prior => prior.jobs.every(job =>
       job.completionVerified === true && originalStartAccepted(prior, job, job.nativeObservation, processInfo)));
   }
-  function groupCommon(a,processBinding,source,presetPin,pauseRef=null){let pause={};if(a.pauseRequestId){if(!pauseRef)fail("ame_title_private_pause_provider_required");pause={pauseRequestId:a.pauseRequestId,pauseParentRequestNonce:pauseRef.parentRequestNonce,pauseParentOperationBinding:pauseRef.parentOperationBinding,pauseRequestNonce:pauseRef.pauseRequestNonce,pauseOperationBinding:pauseRef.pauseOperationBinding};pause.pauseParentBinding=hash(pause);}return {targetSpecifier:a.targetSpecifier,processBinding,sessionNonce:a.expectedSessionNonce,sourcePath:source.path,sourceSha25664:source.sha256,presetPath:presetPin.path,presetSha25664:presetPin.sha256,presetIdentity:hash({path:presetPin.path,sha256:presetPin.sha256}),...pause};}
+  function groupCommon(a,processBinding,source,presetPin,pauseRef=null){let pause={};if(a.pauseRequestId){if(!pauseRef)fail("ame_title_private_pause_provider_required");pause={pauseRequestId:a.pauseRequestId,pauseParentRequestNonce:pauseRef.parentRequestNonce,pauseParentOperationBinding:pauseRef.parentOperationBinding,pauseRequestNonce:pauseRef.pauseRequestNonce,pauseOperationBinding:pauseRef.pauseOperationBinding};pause.pauseParentBinding=hash(pause);}return {targetSpecifier:a.targetSpecifier,processBinding,sessionNonce:a.expectedSessionNonce,sourcePath:source.path,sourceSha25664:source.sha256,presetPath:presetPin.path,presetSha25664:presetPin.sha256,presetIdentity:hash({path:presetPin.path,sha256:presetPin.sha256}),...(a.pendingGroupSize===undefined?{}:{pendingGroupSize:a.pendingGroupSize}),...pause};}
   function assertPauseRef(a,processBinding,p){if(!a.pendingGroupId||!p||p.schema!=="ae-agent-ame-paused-enqueue.v1"||p.pauseRequestId!==a.pauseRequestId||p.processBinding!==processBinding||p.targetSpecifier!==a.targetSpecifier||p.sessionNonce!==a.expectedSessionNonce||![p.parentStartRequestId,p.parentRequestNonce,p.pauseRequestNonce].every(v=>UUID.test(v||""))||![p.parentOperationBinding,p.pauseOperationBinding,p.proofSha25664].every(v=>SHA.test(v||""))||!Number.isFinite(p.observedAt)||p.observedAt>now()||now()-p.observedAt>INDEPENDENT_SENDER_MAX_AGE_MS)fail("ame_title_private_pause_proof_changed_or_expired");}
   function groupDescriptor(job,common,createdAt){const member={jobId:job.jobId,batchId:job.args.batchId,requestNonce:job.requestNonce,operationBinding:job.operationBinding,sourceGuid:job.args.sourceGuid,range:job.args.range,outputPath:job.outputPath};return {schema:"ae-agent-ame-pending-group.v1",groupId:job.args.pendingGroupId,...common,...member,commonBinding:hash(common),memberBinding:hash(member),createdAt,deadline:createdAt+pendingEnqueue.GROUP_BUDGET_MS,budgetMs:pendingEnqueue.GROUP_BUDGET_MS};}
   function pendingGroup(a,processBinding,source,presetPin,job=null,pauseRef=null){
@@ -1141,7 +1148,24 @@ function createExecutor(deps) {
       return result(accepted ? "saved_acceptance_restored" : "saved_acceptance_" + acceptanceState, { ...local, ok: accepted,
         handleKey: job.handleKey, ownItemAccepted: accepted, acceptanceState, acceptanceReceipt: accepted ? job.acceptanceReceipt : null });
     }
-    const processInfo = await processPin(a), batch = load(a.batchId, a.jobId), job = batch && batch.jobs.find(j => j.jobId === a.jobId);
+    const batch = load(a.batchId, a.jobId), job = batch && batch.jobs.find(j => j.jobId === a.jobId);
+    const ownedRead = job && batch.processBinding === binding(a, job.process) && a.targetSpecifier === job.args.targetSpecifier && a.expectedProcess.pid === job.process.pid && Date.parse(a.expectedProcess.startedAt) === Date.parse(job.process.startedAt) && a.expectedSessionNonce === job.args.expectedSessionNonce;
+    // Exact terminal history is historical evidence, never a fresh native read.
+    // It closes the server-terminal/client-fsync crash window without a new send.
+    if (ownedRead && a.readRequestNonce) {
+      const saved = (job.ownStatusObservationHistory || []).find(r => r.requestNonce === a.readRequestNonce)?.readResultReceipt;
+      if (saved && saved.sha25664 === hash(saved.value) && saved.value.batchId === a.batchId && saved.value.jobId === a.jobId && saved.value.requestNonce === a.readRequestNonce) return saved.value;
+    }
+    let processInfo;
+    try { processInfo = await processPin(a, job?.process); }
+    catch (error) {
+      const reason = error.census?.reason, nonce = a.readRequestNonce;
+      if (ownedRead && a.readTransport === pendingEnqueue.MODE && nonce && job.ownStatusObservation?.requestNonce === nonce && ["inspect_error","no_process_observed"].includes(reason) && (!job.pendingGroup || now() < job.pendingGroup.deadline)) {
+        return result("ame_title_read_census_unavailable", {batchId:a.batchId,jobId:a.jobId,requestNonce:nonce,currentStatusObserved:false,executionAuthority:false,sameReadRetryAllowed:true,
+          readGuard:{schema:"ae-agent-ame-title-read-guard.v1",phase:"pre_native_dispatch",dispatchInvoked:false,readRequestNonce:nonce,batchId:a.batchId,jobId:a.jobId,expectedProcess:a.expectedProcess,census:error.census},retryArgs:a});
+      }
+      throw error;
+    }
     if (!job || batch.processBinding !== binding(a, processInfo)) return result("job_not_bound"); pinned(job);
     if(a.originalRunId)return settleNotSent(a,batch,job);
     const asyncStatus=a.readTransport===pendingEnqueue.MODE||job.args.enqueueTransport===pendingEnqueue.MODE;
@@ -1194,7 +1218,14 @@ function createExecutor(deps) {
     }
     if(ownObservation&&observed.terminalObservation){
       const terminal=observed.terminalObservation;
-      job.ownStatusObservationHistory=(job.ownStatusObservationHistory||[]).concat({...job.ownStatusObservation,terminal,resultCode:observed.code,archivedAt:new Date(now()).toISOString()});
+      const archivedAt=new Date(now()).toISOString();let receipt={};
+      if(asyncStatus&&observed.originalSender?.callback==="result") {
+        const value=result("own_status_retained_result",{batchId:a.batchId,jobId:a.jobId,requestNonce:pendingRead.requestNonce,currentStatusObserved:false,executionAuthority:false,retainedReadResult:true,observedAt:archivedAt,originalSender:observed.originalSender});
+        receipt={readResultReceipt:{sha25664:hash(value),value}};
+      }
+      // Commit receipt and nonce retirement together. No durable cleared nonce
+      // may precede its historical callback receipt, even if later reads fail.
+      job.ownStatusObservationHistory=(job.ownStatusObservationHistory||[]).concat({...job.ownStatusObservation,terminal,resultCode:observed.code,archivedAt,...receipt});
       job.ownStatusObservation=null;if(!observed.native)observed.resolved=false;
       observationDiagnostic={requestNonce:terminal.requestNonce,callback:terminal.callback,resultCode:observed.code,bodySha25664:terminal.bodySha25664,nextReadAllowed:true};
     }
@@ -1213,8 +1244,9 @@ function createExecutor(deps) {
     if (startAcceptanceVerified) { batch.start.transportResolved = true; batch.start.state = "accepted"; }
     job.completionVerified = complete; write(recordFile(a.batchId), batch);
     const acceptanceState = savedAcceptance(job), ownItemAccepted = acceptanceState === "accepted";
-    return result(observed.code, { ok: verified, batchId: a.batchId, jobId: job.jobId, handleKey: job.handleKey, ownItemAccepted, acceptanceState, acceptanceReceipt: ownItemAccepted ? job.acceptanceReceipt : null, currentStatusObserved: !!native, nativeAssociationVerified: verified, nativeCompletionObserved: !!(verified && nativeJob.nativeCompletionObserved), nativeResult: exactCompletion ? completion.result : verified ? nativeJob.nativeResult : null, completionVerified: complete,
+    const statusResult = result(observed.code, { ok: verified, batchId: a.batchId, jobId: job.jobId, handleKey: job.handleKey, ownItemAccepted, acceptanceState, acceptanceReceipt: ownItemAccepted ? job.acceptanceReceipt : null, currentStatusObserved: !!native, nativeAssociationVerified: verified, nativeCompletionObserved: !!(verified && nativeJob.nativeCompletionObserved), nativeResult: exactCompletion ? completion.result : verified ? nativeJob.nativeResult : null, completionVerified: complete,
       state: complete ? job.args.queueMode === sharedQueue.MODE ? "native_finished" : "needs_media_probe" : failed ? "failed" : verified && nativeJob.nativeCompletionObserved ? "needs_result_interpretation" : passiveResult.state, queueOnly: job.args.queueMode === sharedQueue.MODE, startAcceptanceVerified, passive: passiveResult, file, native, process: processInfo, startReservation: startReservation(batch), requestNonce: nonce || native && native.requestNonce,observationDiagnostic,originalSender:observed.originalSender||null,transportDiagnostic:observed.transportDiagnostic||null });
+    return statusResult;
   }
   async function execute(name, raw, cap) {
     const a = validateInput(name, raw), mutation = name === ENQUEUE || name === START; if (mutation) { assertCap(cap, name, a); if (busy) fail("ame_title_writer_busy"); busy = true; }
@@ -1228,7 +1260,7 @@ function createExecutor(deps) {
       if (name === START) { try { durable = (a.queueMode === sharedQueue.MODE ? deps.sharedQueueGrant : deps.manualQueueGrant)?.readReservation(a.batchId); } catch (_) {} }
       let initial = {};
       if (name === STATUS) {
-        initial = { ownItemAccepted: false, acceptanceReceipt: null, currentStatusObserved: false, executionAuthority: false };
+        initial = { batchId:a.batchId,jobId:a.jobId,...(a.readRequestNonce?{requestNonce:a.readRequestNonce}:{}),ownItemAccepted: false, acceptanceReceipt: null, currentStatusObserved: false, executionAuthority: false };
         try {
           const job = load(a.batchId, a.jobId)?.jobs.find(j => j.jobId === a.jobId);
           if (job && binding(a, job.process) === job.processBinding && a.expectedProcess.pid === job.process.pid && Date.parse(a.expectedProcess.startedAt) === Date.parse(job.process.startedAt) && savedAcceptance(job) === "accepted") initial = { ...initial, ownItemAccepted: true, acceptanceReceipt: job.acceptanceReceipt };
@@ -1273,14 +1305,17 @@ const definitions = [
 const tools = definitions.map(([name, description, fields, required]) => ({ name, description, inputSchema: { type: "object", additionalProperties: false, properties: { ...common, ...fields }, required: ["targetSpecifier", "expectedProcess", ...required] }, annotations: { readOnlyHint: [INSPECT, STATUS, QUEUE_MANIFEST].includes(name), destructiveHint: false, idempotentHint: false, openWorldHint: false } }));
 tools.find(t=>t.name===ENQUEUE).inputSchema.properties.enqueueTransport={type:"string",enum:[pendingEnqueue.MODE]};
 tools.find(t=>t.name===ENQUEUE).inputSchema.properties.pendingGroupId={type:"string",pattern:UUID.source};
+tools.find(t=>t.name===ENQUEUE).inputSchema.properties.pendingGroupSize={type:"integer",minimum:1,maximum:pendingEnqueue.MAX_GROUP_ITEMS,description:"Explicit bounded series size. Current product autonomous plans share one privately owned project checkpoint/edit session; common pins and size are immutable. Never grants replay or checkpoint bypass."};
 tools.find(t=>t.name===ENQUEUE).inputSchema.properties.pauseRequestId={type:"string",pattern:UUID.source};
 tools.find(t=>t.name===ENQUEUE).description+=" Opt-in enqueueTransport:async_once_v1 in shared mode sends once without blocking; returns pending, never acceptance. Poll exact own STATUS separately; no implicit START.";
 tools.find(t=>t.name===ENQUEUE).description+=" Optional pendingGroupId UUID permits up to 11 distinct pending items with identical server-pinned source/preset/process/session, each in its own batch and output. Requires explicit expectedSessionNonce. Its fixed 6600000ms lease starts at the first retained reservation and never extends. False send ACK remains delivery unknown with dispatchAccepted:null, never acceptance or replay authority. Unrelated mutation/START stays fenced; running enqueue remains unsupported.";
+tools.find(t=>t.name===ENQUEUE).description+=" For a new multi-title series use maintained ame-title-series.buildSeriesPlans/produceSeries: every member receives the same pendingGroupId and explicit pendingGroupSize=N (1..11), selecting one privately owned checkpoint/edit session with per-dispatch source/revision/process/preset/authority guards. Legacy groups without size retain per-run protection. See docs/ame-title-batch.md; never hand-roll an uncheckpointed batch.";
 tools.find(t=>t.name===ENQUEUE).description+=" pauseRequestId additionally selects a privately verified explicit global pause for that group. Same parent/pause markers and paused host state are checked immediately before addDL and after range ACK. No pause/resume control occurs inside enqueue; any early encoding leaves range unverified.";
 Object.assign(tools.find(t=>t.name===STATUS).inputSchema.properties,{readTransport:{type:"string",enum:[pendingEnqueue.MODE]},readRequestNonce:{type:"string",pattern:UUID.source}});
 tools.find(t=>t.name===STATUS).inputSchema.properties.afterReadTimeoutNonce={type:"string",pattern:UUID.source};
 tools.find(t=>t.name===STATUS).inputSchema.properties.afterReadUnavailableNonce={type:"string",pattern:UUID.source};
 tools.find(t=>t.name===STATUS).description+=" readTransport:async_once_v1 selects an independent async own read for shared jobs, including accepted jobs behind a retained timeout sender. Async enqueue jobs inherit this mode. Pending returns exact reconcileArgs; no mutation replay/pump. Pending START requires its existing explicit legacy reconciliation.";
+tools.find(t=>t.name===STATUS).description+=" Maintained ame-title-collector persists exact pending read intents/results and resumes only retained readRequestNonce. A server-proven pre-native-dispatch census unavailable may retry that same nonce with bounded backoff; process mismatch/multiple, missing slot and unknown initial read fail closed. Exact terminal history can return own_status_retained_result with currentStatusObserved:false and no native send; it is historical evidence, never a current status or execution grant.";
 tools.find(t=>t.name===STATUS).description+=" afterReadTimeoutNonce with explicit async read mode probes only that exact pending read and archives a proven callback timeout as transport unknown when the original enqueue has an exact successful result or an exact terminal output_binding_unverified_after_submit result with verified addDL/work-area call acknowledgments. It returns nextReadArgs for a separate new read. The unverified submit remains unaccepted. Exclusive with readRequestNonce/originalRunId/acceptanceOnly. Never resends enqueue or claims acceptance; repeating an archived nonce cannot dispatch.";
 tools.find(t=>t.name===STATUS).description+=" afterReadUnavailableNonce uses the same pinned read retirement only for exact own_observation_unavailable with no cached message and a verified original enqueue result. It archives transport unknown, never not_sent. Exclusive with afterReadTimeoutNonce/readRequestNonce/originalRunId/acceptanceOnly; nextReadArgs requires a separate call.";
 module.exports = { INSPECT, ENQUEUE, START, STATUS, QUEUE_MANIFEST, SCHEMA, NATIVE_SCHEMA, LEDGER_SCHEMA, SLOT, SENDER_SLOT, tools, validateInput, operationArgsHash, messageScript, commandScript, fixedCommandScript, createExecutor, exactTerminalXmpOutput, nativeReceiverSource:()=>nativeTitleJob.toString(), fixedDataExpression:messageArgument, fixedStringExpression:utf16Expression };

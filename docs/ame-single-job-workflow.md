@@ -5,6 +5,12 @@
 offline проверки сохранены для будущего отдельного review; это не активный путь.
 История реализации и эксперимента ниже — справочная, без GO на live acceptance.
 
+Для очереди нескольких композиций одного уже сохранённого clean AEP используется
+[bounded series workflow](ame-title-batch.md#ограниченная-серия-enqueue-и-восстановление-collector--2110):
+maintained builder/producer выбирает один checkpoint/edit session на N≤11,
+а durable collector восстанавливает exact STATUS nonces без enqueue replay.
+Этот путь не создаёт per-title AEP и не размораживает описанный ниже эксперимент.
+
 ## API и проверка source
 
 - `inspect_ame_job_source({expectedProjectFile, compItemId})` читает выбранную

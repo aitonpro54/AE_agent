@@ -155,6 +155,8 @@ const RUNTIME_FILES = [
   "mcp-server/ame-source-probe.js",
   "mcp-server/ame-source-read.js",
   "mcp-server/ame-title-pending.js",
+  "mcp-server/ame-title-series.js",
+  "mcp-server/ame-title-collector.js",
   "mcp-server/m100-protocol.js",
   "mcp-server/proposal-state.js",
   "mcp-server/ame-product-dispatch.js",
