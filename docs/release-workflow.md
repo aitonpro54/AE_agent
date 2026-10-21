@@ -1,5 +1,13 @@
 # Отдельные версии AE Agent и возврат к предыдущему коду
 
+## Подготовка 3.3.3 — 2026-10-21
+
+- По явному поручению пользователя создана `codex/release-3.3.3` от `f92a75b89073bd1ba8848440a67928c22f529283`. Annotated checkpoint `checkpoint/ae-agent-3.3.1-before-3.3.3` сохраняет это точное проверенное состояние 3.3.1; исходная `codex/restore-mcp-connection` остаётся на нём.
+- Фактическая опубликованная `codex/release-3.3.1` перед подготовкой: `662f41099944fbf57e03a0820d238b26abb642a1` (fresh `ls-remote`); она предок исходного HEAD. Накоплено 259 commits/435 файлов; новый этап меняет идентичность версии и текущие expectations, не переписывая историю, testedAeContext и frozen-intake baseline. Устаревший local tracking ref не использовался как release base.
+- В 3.3.3 входят API AME series/collector, единый checkpoint, product reset и исправления подключения. Границы live/offline и переноса на другой desktop описаны в `RELEASES.md`.
+- Canonical identity обновлена до 3.3.3. `check:rules`, syntax13JS, panel-target16, offline bootstrap94, AME series14+bridgeVM6, panel-actions48 и completed-dry56 PASS; bounded version review GO, foreign hashes7/7 unchanged. AGENTS.md нормализован в LF, content diff помимо EOL — только version. Integration `bridge-only`/bootstrap network остановлены на `owned_supervisor_unreserved_startup_refused`, без обхода gate. Live AE/AME/render/installed update в release stage не выполнялись.
+- GitHub Release, accepted tag `v3.3.3`, PR/merge и обновление установленной 3.3.3 в этом этапе не выполняются. Публикуются release-ветка и предыдущий checkpoint; незакоммиченные пользовательские материалы остаются локально.
+
 ## Подготовка 3.3.1 — 2026-10-09
 
 - Ветка `codex/release-3.3.1` создана от `c8f82065b3b506c3e51ff5adc10caa14ba2ab153`; первый push/read-back PASS на `e5dc9f1f736005f6faecbff56106301c8c673dbd`. Опубликованный annotated checkpoint `checkpoint/ae-agent-3.3.0-before-3.3.1`: tag object `7d53d33ddc00aa919dcd956f644e872433587d70`, peeled target `c8f82065b3b506c3e51ff5adc10caa14ba2ab153`.

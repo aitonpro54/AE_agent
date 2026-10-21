@@ -1,5 +1,28 @@
 # AE Agent Releases
 
+## 3.3.3 — подготовка и публикация исходников, 2026-10-21
+
+Версия подготовлена в `codex/release-3.3.3` от проверенного состояния
+`f92a75b89073bd1ba8848440a67928c22f529283`. Точка возврата — annotated checkpoint
+`checkpoint/ae-agent-3.3.1-before-3.3.3`; прежние ветки и теги сохранены.
+
+Включены накопленные исправления штатного product reset, подключения CEP/bridge
+и сохранения UNKNOWN без повторного исполнения. AME получает асинхронную
+API-отправку композиций общего AEP, один checkpoint на серию до 11 заданий,
+durable collector с восстановлением exact nonce и ограниченным retry чтения.
+Backend, MCP adapter, CEP title/menu/assets и package согласованы на 3.3.3.
+
+Живой тест отправки 11 композиций через API прошёл без Computer Use и START.
+Последующие fixes checkpoint/collector проверены offline, включая одну physical
+fixture-copy на 11 runs и replay 11 сохранённых native callbacks. Новый живой
+рендер всех 11 после этих fixes не выполнялся; media/alpha/preset acceptance
+этим выпуском не утверждается. Экспериментальные runtime/intake границы сохраняются.
+
+Публикация ветки не устанавливает обновление: backend и CEP нужно обновлять
+совместно; credentials, private runtime policies, AEP/media и локальные journals
+в Git не переносятся. Незакоммиченные материалы вне release scope не включены.
+Проверки и remote read-back фиксируются в `docs/release-workflow.md`.
+
 ## v3.2.0 — подготовка, 2026-10-01
 
 Рабочая ветка `codex/release-3.2.0` содержит проверяемое восстановление missing

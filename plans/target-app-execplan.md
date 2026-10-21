@@ -1,18 +1,18 @@
-# План исполнения AE Agent 3.3.1
+# План исполнения AE Agent 3.3.3
 
 Продукт: [target app](../specs/target-app.md); режимы: [deployment](../docs/deployment-modes.md).
 Контракты: [reset](../docs/product-session-reset.md), [two-title](../docs/product-two-title-workflow.md), [AME start](../docs/ame-global-start.md).
 
 ## Текущая цель пользователя
 
-21.10: исправить обе выявленные недоработки async AME: один checkpoint на всю серию вместо11,
-автоматическое восстановление collector из сохранённых состояний/nonce без повторных enqueue. Сохранить proposal/dry-run/source/process/preset/output guards, асинхронную отправку и fixed lease. START/runBatch/render запрещены; существующие11 jobs/UNKNOWN/reservations не replay и не удалять. Выполнить scoped реализацию и проверки, без CU enqueue/отдельных render AEP.
+21.10: сохранить накопленные изменения как 3.3.3 и выполнить push на GitHub.
+Новая `codex/release-3.3.3` от f92a75b… с annotated checkpoint прежнего состояния, current identity/fixtures/docs 3.3.3; без чужих WIP/runtime/секретов. Render/новая очередь/installed update/PR/merge/GitHub Release не входят в этап. Подтвердить remote SHA после push.
 [Open-comp workflow](../docs/ame-open-comp-workflow.md): live11/offline111 с UI receipt, API-only scope не закрыт.
 Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FROZEN.
 
 ## Progress
 
-- 21.10 series fixes792a7e0: maintained producer same group/N≤11, private checkpoint1/session с fresh guards; durable collector exact nonces/terminal receipt, census retry1/2/4s bounded3, unknown без replay, round/admission locks. Final eaf755be…/independent review GO. Owned restart применён: PID28512/gen e57105dd…/sourcefc6d9637…, Connected/idle/autonomy. Native AEP476/rev12975229 clean, AME stopped/delivery verified. Новая live11 после fixes не выполнялась; прежние jobs не меняли.
+- 21.10 release3.3.3: branch от f92a75b… + checkpoint/ae-agent-3.3.1-before-3.3.3 созданы; old branch сохранён. Version/fixtures/docs3.3.3, mechanical review GO и offline checks PASS; foreign hashes7/7 unchanged. Series fixes792a7e0/applied backend sourcefc6d9637… входят в baseline. Version3.3.3 пока только в исходниках; commit/push/readback далее, существующие11jobs не меняли.
 - 21.10 queue-only11 PASS: reset6da63cd2…/efd27532… ACTIVE; bootstrapfa30 retired с raw archive/HMAC UNKNOWN/noReplay (3dc2681); новый bootstrap read90cdd… UNKNOWN сохранён, отдельный native read PASS. Runtime9936/a14084b9…, clean AEP476/rev12975229/SHAf84a56ff…, AME2432. Все11 отправлены однократно к05:12:05Z, ДО первого native workArea ACK05:13:23Z; group7d497df9…. К05:44:25Z callback11/11, exact addDL/workArea/output argument ACK и queued fields11/11 PASS. Producer STATUS0/START0/CU0; final native batchRunning=false, AEP unchanged/clean, MOV0. Выявлены 11 generic checkpoint-копий AEP (434823070 bytes) и необходимость explicit collector resume после guard019; это стало основанием исправлений выше.
 - 20.10: `TITR_RENDER_01..11` в общем `titr_all.aep`; native12/PNG11/source/aux8 PASS. Root save semantic PASS, clean/revision12968816/SHAe3de5221…. API addDL2/own STATUS queued, без CU/per-title AEP/START. Async mode offline6 и новый live STATUS2 PASS. Recovery9ed078cc… завершён, runtime PID17752/sourcea6555f60… Connected/idle; старые UNKNOWN сохранены.
 - 20.10: reset `f0fb9754…`/generation `9f2d63af…` после ручного выхода AE; UNKNOWN сохранён, recovery8s без replay. Connected/idle/autonomy active, native project empty/revision1; AME jobs не менялись.
@@ -48,7 +48,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Decision Log
 
-- [block: series checkpoint + collector recovery] [executor: ae_specialist sole writer; ae_reviewer independent; ae_implementer saved-callback replay; ae_scout scope]; root sole live/plan/commit. Private series owner привязан к source/process/preset/authority/generation; legacy groups не меняются. Retry только exact owned nonce с typed pre-dispatch census proof. Initial unknown без nonce и ambiguous/stale constructor admission failclosed; standalone authenticated client не добавлен. Producer/collector programmatic API с existing trusted transport, CLI integration point. Render/new enqueue0.
+- [block: release3.3.3] [executor: ae_operator mechanical version/fixtures; ae_reviewer bounded diff]; root docs/Git/push sole owner. Существующие259commits сохраняются; прежний f92a75b… tagged checkpoint. Только явные файлы release scope, foreign WIP hashes сохраняются; no force push, old tags/branches не перемещать. Accepted v3.3.3/GitHub Release/merge не объявлять без отдельного принятия.
 - N задаётся данными: один выбранный вариант → один native dispatch → exact new-job UI receipt → name-only restore → следующий. Приёмки неизменны; итог читается локально без повторного обхода очереди.
 - Reset разрешён пользователем 19.10 и выполнен root как sole controller через fresh CLI ровно один раз; старый failed startup `UNKNOWN/noReplay` сохранён. Direct MCP lifecycle collector остаётся на v84; служебное восстановление — fresh CLI без новых restart.
 - [block: ame-autostart-global-start] [executor: ae_specialist] [reason: process/session/authority] [ownership: code/tests]; operator/docs.
@@ -112,7 +112,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Validation
 
-- 21.10 fixes: smoke14+bridgeVM6 (physical offline copy1/11runs), group8/timeout96/async6/sequence6, reviewGO/rules/syntax9/diff PASS. Final eaf755be… saved replay:11 callbacks→fullQueuedProof11/blocked0,62 fakeSTATUS, nonce/deadline/AEP/72evidenceSHA unchanged. `.codex-runtime/ame-series-fix-verification-20261021/{report,rollout}.json`: fresh native06:23:18Z samefile/rev/dirtyfalse/batchRunningfalse, enqueue/START0. Crash/interleaving injected, не powerloss/2OS/newlive11; completion/media/own acceptance не заявлены.
+- 21.10 release3.3.3: rules/syntax13/version surfaces/target16/bootstrap offline94/AME14+6/actions48/dry56/review/diff PASS. Integration network startup gate refused, не обходился; release live/installedupdate0. Предыдущиеfixes: group8/timeout96/async6/sequence6 + saved callbacks11(full11/blocked0)/62fakeSTATUS/AEP+72evidenceSHA unchanged; `.codex-runtime/ame-series-fix-verification-20261021/{report,rollout}.json` подтверждает sourcefc6d9637… native read. Новая live11/media/own acceptance не заявлены.
 - 20.10 comps: create25/visibility44 завершены без unknown. Visibility aggregate needs_review из-за отсутствия промежуточного read; подтверждён отдельными 12 native reads без replay. PNG11 visual PASS; save applied1/unknown0 и независимый exact-file dirty=false. Исходные outcomes сохранены.
 - 20.10 recovery56/status21/origin36 + actual offline-copy/independent19/syntax/rules/diff/High review PASS. Live async ENQUEUE01/own STATUS PASS; GLOBAL START1 UNKNOWN сохранён, actual01 media HQalpha/full decode и PNG comparison PASS. Source unchanged/clean. Новый orphan-read/global settlement пока не live-проверены; старый integration startup gate не обходился.
 - Open-comp: final offline42/540 ES3 и root111/1620 PASS; live11 first receipts/restore PASS, aux8 preserved. `.codex-runtime/ame-open-comp-live-20261019/series-summary.json` — только локальные records, queue/native calls0; исходный canary aggregate не переписан.
@@ -167,7 +167,7 @@ Per-title SaveAs/snapshot/full-AEP SHA producer: EXPERIMENTAL / UNFINISHED / FRO
 
 ## Следующий шаг
 
-Обе правки применены; рендер не запускать. Следующая новая серия использует maintained buildSeriesPlans/produceSeries/createCollector; текущие11 jobs не replay. Новая live queue-only приёмка после fixes не выполнялась. Bootstrap read90cdd… UNKNOWN сохраняется; recovery отдельно при необходимости bootstrap. Первый unknown read без nonce/abandoned admission требует адресной сверки, не автоматического replay.
+Завершить scoped release checks/review → commit3.3.3 → push только release-ветки/checkpoint → remote SHA read-back → краткий результат. Desktop installation/новая AME серия/render отдельно. Bootstrap read90cdd… UNKNOWN и unknown/no-replay границы сохраняются.
 
 ## Отложенные scope
 
