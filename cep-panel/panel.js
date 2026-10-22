@@ -4951,6 +4951,7 @@
   function panelActionSnapshot() {
     rememberPanelSecrets();
     return {assetVersion:APP_VERSION,connected:running && badgeEl.textContent === "online",running:running,
+      pollInFlight:pollInFlight,productResetRecoveryOnly:false,
       nativeBusy:panelActionBusy(),physicalInflight:physicalEvalScriptIdle() ? 0 : 1,
       bridgeConnection:{panelConnectionId:panelConnectionId},
       recoveryTransport:recoveryTransportScope ? {scopeId:recoveryTransportScope.scopeId,connecting:recoveryTransportConnecting,state:recoveryTransportScope.state || "connecting",freshReconcileRequired:true} : null,
@@ -5307,7 +5308,7 @@
     if (!initialAutomaticStartupCurrent(startup) || startup.state !== "lookup" || startup.lookupPending || running ||
       attempt !== startup.rounds || attempt > 3) return;
     startup.rounds += 1;startup.lookupPending=true;
-    var receipt = panelActionUI.refreshTrustedGuards(function(ready) {
+    var complete = function(ready) {
       if (!initialAutomaticStartupCurrent(startup) || startup.state !== "lookup" || !startup.lookupPending || running) return;
       startup.lookupPending=false;
       if(ready && tokenEl.value && localStorage.getItem("codexAeBridgeAutoConnect")!=="0") {
@@ -5317,10 +5318,12 @@
           if (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting" || running) return;
           // Initial provider/usage reads may still own the panel at 250ms.
           // Wait before dispatch; never retry a submitted connection or AE read.
+          if(startup.resetActivationCovered===true && !resetActivationCoveredForStartup(startup)){closeInitialAutomaticStartup(startup);return;}
           if (panelActionBusy()) {
             if (++connectWaits >= 80) {closeInitialAutomaticStartup(startup);return;}
             setTimeout(dispatchInitialConnect,250);return;
           }
+          if(startup.resetActivationCovered===true && !resetActivationReadyForStartup(startup)){closeInitialAutomaticStartup(startup);return;}
           initialAutomaticConnectDispatch=startup;
           try {
             var connectReceipt=invokePanelUI("bridge.connect",{});
@@ -5331,11 +5334,49 @@
       } else if (!ready && tokenEl.value && attempt<3) {
         setTimeout(function(){lookupHumanSettlementBeforeConnect(attempt+1);},2000);
       } else closeInitialAutomaticStartup(startup);
-    });
+    };
+    var receipt;
+    if(startup.resetActivationCovered===true){
+      if(!resetActivationCoveredForStartup(startup)){closeInitialAutomaticStartup(startup);return;}
+      complete(true);
+    }else receipt=panelActionUI.refreshTrustedGuards(complete);
     if (receipt && receipt.accepted === false) {
       startup.lookupPending=false;
       closeInitialAutomaticStartup(startup);
     }
   }
-  lookupHumanSettlementBeforeConnect(0);
+  function resetActivationCoveredForStartup(startup) {
+    var state=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    return initialAutomaticStartupCurrent(startup) && productResetActivation===startup.resetActivation &&
+      !!state && state.actionStorage==="ready" && state.activeAction===null && state.recoveryTransport===null &&
+      state.physicalInflight===0 && state.reconciliationRequired===false &&
+      !(state.trustedGuardRefresh && state.trustedGuardRefresh.pending) && physicalEvalScriptIdle();
+  }
+  function resetActivationReadyForStartup(startup) {
+    var state=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    return resetActivationCoveredForStartup(startup) && !!state && state.nativeBusy===false && !panelActionBusy();
+  }
+  function lookupProductSessionBeforeStartup() {
+    var state=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    if(initialAutomaticStartup || running || !state || state.reconciliationRequired!==true || !tokenEl.value || localStorage.getItem("codexAeBridgeAutoConnect")==="0"){lookupHumanSettlementBeforeConnect(0);return;}
+    var startup={epoch:panelLifecycleEpoch,generation:panelConnectionGeneration,url:getBaseUrl(),token:getToken(),
+      state:"reset_lookup",rounds:0,lookupPending:true,consumed:false,getAttempted:false};
+    initialAutomaticStartup=startup;
+    var actor=deliveryActor();
+    request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
+      if(!initialAutomaticStartupCurrent(startup) || startup.state!=="reset_lookup" || !startup.lookupPending || running || !sameDeliveryActor(actor,deliveryActor())){closeInitialAutomaticStartup(startup);return;}
+      startup.lookupPending=false;
+      if(error && error.code!=="owned_product_reset_session_absent"){closeInitialAutomaticStartup(startup);return;}
+      if(!error && response && response.ok===true && response.resetSession){closeInitialAutomaticStartup(startup);return;}
+      if(!error && response && response.ok===true && response.resetSessionActivation){
+        var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);
+        if(!adoption.accepted || !adoption.preconnect){closeInitialAutomaticStartup(startup);return;}
+        startup.resetActivation=response.resetSessionActivation;
+        startup.resetActivationCovered=resetActivationCoveredForStartup(startup);
+      }
+      startup.state="lookup";
+      lookupHumanSettlementBeforeConnect(0);
+    });
+  }
+  lookupProductSessionBeforeStartup();
 })();
