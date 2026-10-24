@@ -18,15 +18,18 @@
 (`WAIT_OBJECT_0`, exit 0), установлен canonical source 3.3.5 из `aca80be`,
 `ensure` поднял daemon `44896` с source SHA `2950db71…`. Панель автоматически
 подключилась; typed `get_project_info` прошёл после CEP reload с новой panel
-instance. Затем чистый ручной close/relaunch AE дал bounded PASS: новая AEP PID
-12480 auto-connected за ~97 s, `connected_idle` и последующий project read PASS;
-daemon/source не менялись, без manual Connect/reset/reload. Первая попытка была
-невалидна из-за queued read до готовности панели (`expired_before_delivery`), а
-auto-connect был отклонён при pending очереди (`bridge_busy/not_submitted`); это
-test orchestration issue, не продуктовый FAIL. Старый запрос не повторялся. AEP
-не менялся/не сохранялся, AME/provider actions не было. Push до `afe69dc` и
-remote read-back подтверждены; финальный docs commit публикуется отдельно. `v3.3.5`,
-PR/merge и GitHub Release этим статусом не объявляются.
+instance. После ручного close/relaunch AE новая AEP PID 12480 была подключена
+пользователем; через ~97 s наблюдались `connected_idle` и успешный project read.
+Это не доказывает automatic connection. Отдельные autoReconnect после daemon
+restart и autoConnect после CEP reload остаются PASS, поскольку прошли без ручного
+Connect. Первая попытка полного restart была невалидна из-за queued read до
+готовности панели (`expired_before_delivery`), а auto-connect получил
+`bridge_busy/not_submitted` при pending очереди; это ошибка порядка тестирования,
+не продуктовый FAIL. Старый запрос не повторялся. Автоподключение после полного
+AE restart остаётся непроверенным. AEP не менялся/не сохранялся, AME/provider
+actions не было. Push до `afe69dc` и remote read-back подтверждены; финальный docs
+commit публикуется отдельно. `v3.3.5`, PR/merge и GitHub Release этим статусом не
+объявляются.
 
 ## Интеграция 3.3.4 — 2026-10-21
 

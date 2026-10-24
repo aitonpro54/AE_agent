@@ -44,17 +44,21 @@ daemon/source до последующего штатного cutover сохра�
 (`WAIT_OBJECT_0`, exit 0), затем применён проверенный source `aca80be`; новый
 daemon `44896` загрузил canonical SHA `2950db71…`. Panel автоматически
 подключилась, а фактический `get_project_info` повторно вернул file:null, 0 items,
-bits16/revision1. После отдельного чистого ручного close/relaunch AE 25 октября новая AEP с PID
-12480 (start 19:51:18.800Z) автоматически подключилась: `connected_idle` наблюдался
-в 19:52:55.547Z, затем typed `get_project_info` подтвердил file:null, 0 items,
-bits16/revision1. Daemon `44896` и source SHA `2950db71…` не менялись; panel
-`panel-1792871568763-ugttcxhr5zj`: connected/autoConnect true, busy/nativeBusy
-false, physical0, unresolved[]; autonomy active, pending0/inflight[]. В чистом
-тесте не было manual Connect, reset или reload. Первая попытка полного restart
-была невалидна как тест: queued `get_project_info` истёк до доставки, а попытка
-auto-connect получила `bridge_busy/not_submitted` при pending очереди; это
-ошибка порядка проверки, не продуктовый FAIL. Старый запрос не повторялся. AEP
-не редактировался и не сохранялся.
+bits16/revision1. После ручного close/relaunch AE 25 октября новая AEP с PID
+12480 (start 19:51:18.800Z) была подключена вручную пользователем. Лишь после
+этого наблюдались `connected_idle` в 19:52:55.547Z и успешный typed
+`get_project_info` (file:null, 0 items, bits16, revision1). Daemon `44896` и
+source SHA `2950db71…` не менялись; panel `panel-1792871568763-ugttcxhr5zj`
+показывала connected/autoConnect true, busy/nativeBusy false, physical0,
+unresolved[]; autonomy active, pending0/inflight[]. Эти данные подтверждают
+связь после ручного Connect, но не автоматическое подключение после полного
+перезапуска AE. Ранее autoReconnect после daemon restart и autoConnect после CEP
+reload наблюдались отдельно без ручного Connect — эти проверки остаются PASS.
+Первая попытка полного restart была невалидна как тест: queued
+`get_project_info` истёк до доставки, а auto-connect получил
+`bridge_busy/not_submitted` при pending очереди; это ошибка порядка проверки, не
+продуктовый FAIL. Старый запрос не повторялся. Проверка auto-connect после
+полного AE restart остаётся незавершённой; AEP не редактировался и не сохранялся.
 
 ## Назначение
 
