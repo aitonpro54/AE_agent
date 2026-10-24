@@ -158,6 +158,37 @@ node scripts/cep-panel-current-reset-external-reconcile.js readback
 новый host/barrier/CAS и partial writes; PS CompileOnly без native enumeration.
 Это offline evidence, не live absence/activation proof.
 
+### Source adoption для failed readonly observation
+
+После отказа первого external query `open_unknown_or_denied` историческая причина
+осталась UNKNOWN: старый PS ответ не содержал числовой Win32-код. Отдельное чтение
+18:20 показало 25 текущих ERROR87, но diagnostic artifact имеет `adoptionAllowed:false`
+и не используется как CONTROL proof или доказательство ошибки прежнего extractor.
+
+Исправленный existing PS возвращает immediate C# OpenProcess Win32 result и полный
+структурированный refusal без exception messages. Права остаются read/sync `0x101000`;
+только zero handle + 87 разрешены, opened/reused/5/unknown по-прежнему запрещены.
+Data-only historical reader принимает exact known prior3 source hashes, неизменные
+base5/reset/config/old journals и ровно четыре подписанных failed-query records.
+Прежние normal mutating commands становятся readback-only до любых lock/write.
+
+Новая named source-adoption authority связывает old failed4 raw hashes с текущими
+source pins и использует тот же recovery/barrier/CAS core. Соседний namespace
+`.codex-runtime/current-reset-external-observation-continuations/<op>/<oldFailureRawSHA>/`
+не меняет прежний failed namespace. Fresh grant и один НОВЫЙ strict native query
+обязательны; diagnostic artifact не читается этим маршрутом.
+
+```powershell
+node scripts/cep-panel-current-reset-external-reconcile.js readback-continuation
+node scripts/cep-panel-current-reset-external-reconcile.js authorize-observation-continuation "<подтверждённый UUID чата>:source-adopt-instrumented-absence"
+node scripts/cep-panel-current-reset-external-reconcile.js observe-continuation-once
+# Только CONTROL adopted разрешает новый AE/панель.
+node scripts/cep-panel-current-reset-external-reconcile.js complete-continuation-once
+```
+
+Validation этого increment: focused 34/34, CompileOnly, pure synthetic immediate
+Win32 87/5 projection, rules/syntax/diff PASS. Live success и old held-exit не заявлены.
+
 ## Последовательность
 
 1. Взять общий OS controller mutex; прочитать и связать текущую registration.
