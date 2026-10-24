@@ -40,6 +40,14 @@ graceful shutdown со старого canonical source и доказанный e
 `reset_active`, autonomy active, pending0/inflight[]/editnull. Canonical
 daemon/source до последующего штатного cutover сохранялись.
 
+25 октября завершён cutover: старый daemon `40784` штатно остановлен
+(`WAIT_OBJECT_0`, exit 0), затем применён проверенный source `aca80be`; новый
+daemon `44896` загрузил canonical SHA `2950db71…`. Panel автоматически
+подключилась, а фактический `get_project_info` повторно вернул file:null, 0 items,
+bits16/revision1. После scoped CEP reload новая panel instance снова автоматически
+подключилась и прошла независимый project read. Полный close/relaunch AE не
+проверен; AEP не редактировался и не сохранялся.
+
 ## Назначение
 
 `reset_owned_runtime_product_session` начинает новую product-сессию после
