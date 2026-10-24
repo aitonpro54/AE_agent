@@ -507,6 +507,29 @@ intent и storage writes; 30 секунд не продлеваются. Все 
 не открывает admission новой сессии. После штатной поставки полной копии панели
 применяется узкий connect/reload порядок из [Tool-First workflow](tool-first-workflow.md).
 
+## Проверка автоматического подключения
+
+Фоновые HTTP-ошибки agents/usage/health не отменяют автоматический startup.
+Собственные ошибки trusted lookup, idle/status, current plan и первого bridge
+poll сохраняют отказ и запрет replay. Ожидание занятой панели до отправки
+ограничено прежними 80 проверками по 250 ms; истечение видно как
+`startup_panel_busy_timeout`. Это исправление подтверждено offline-регрессиями;
+точная причина предыдущего неполного live-наблюдения не установлена.
+
+Штатный `get_panel_state` возвращает `connectionStartup`: состояние и причину
+автоматического startup, его request ID, число automatic/explicit intents и
+происхождение последнего подключения. `explicit` означает ручной UI или
+программный Connect; intent учитывается до admission, включая отказ. Такой отказ
+не отбрасывает callback уже отправленного автоматического действия.
+
+Для automatic-only проверки нужны новая panel instance, `connected=true`,
+`automatic.state=succeeded`, `automatic.current=true`, `automaticAttempts=1`,
+`explicitAttempts=0`, `lastConnectionOrigin=automatic`, terminal completed receipt
+точного `automatic.requestId` и независимый typed project read после подключения.
+До этого допустимы только пассивные наблюдения, без Connect/reload/bootstrap и
+без queued native reads. Ручное вмешательство делает такой опыт непригодным для
+automatic-only PASS. Полный AE restart до фактической проверки остаётся pending.
+
 ## Подтверждённые применения
 
 20.10: reset `f0fb9754-678c-4649-9620-d7d3471d4294` / generation

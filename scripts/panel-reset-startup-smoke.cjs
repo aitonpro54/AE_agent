@@ -20,4 +20,31 @@ function actualBusy(f){for(const name of ["chatInFlight","keySaveInFlight","setu
 for(const phase of ["GET_inflight","dispatch_inflight"])check("background agents250 and connector300 during "+phase+" wait without historical fallback then connect once",()=>{const f=fixture(file);actualBusy(f);f.c.setTimeout(()=>{f.events.push("agents_started");f.c.agentsLoadInFlight=true;f.c.setTimeout(()=>{f.c.agentsLoadInFlight=false;},750);},250);f.c.setTimeout(()=>{f.events.push("connector_started");f.c.connectorStatusInFlight=true;f.c.setTimeout(()=>{f.c.connectorStatusInFlight=false;},800);},300);f.start();const a=activation(f);if(phase==="GET_inflight")f.tick(250);f.respond(0,{ok:true,resetSessionActivation:a});assert.equal(f.c.initialAutomaticStartup.resetActivationCovered,true);assert.equal(f.guards.length,0);if(phase==="dispatch_inflight")f.tick(250);f.tick(300);f.tick(250);assert.equal(f.native.length,0);assert.equal(f.c.initialAutomaticStartup.state,"connecting");assert.equal(f.guards.length,0);f.tick(750);f.tick(250);assert.equal(f.native.length,0);assert.equal(f.guards.length,0);f.tick(800);f.tick(250);assert.equal(f.native.length,1);assert.equal(f.events.filter(x=>x==="ordinary_idle_check").length,1);assert.equal(f.http.length,1);assert.equal(f.guards.length,0);f.originalPreserved();});
 check("covered activation provider wait remains bounded at eighty dispatch checks",()=>{const f=fixture(file);actualBusy(f);f.c.agentsLoadInFlight=true;f.start();f.respond(0,{ok:true,resetSessionActivation:activation(f)});for(let i=0;i<80;i++)f.tick(250);assert.equal(f.c.initialAutomaticStartup.state,"closed");assert.equal(f.guards.length,0);noNative(f);});
 check("physical UNKNOWN during provider wait closes immediately before another busy wait",()=>{const f=fixture(file);actualBusy(f);f.c.agentsLoadInFlight=true;f.start();f.respond(0,{ok:true,resetSessionActivation:activation(f)});f.prefs.set("codexAePhysicalEvalScript.v1",JSON.stringify({unknown:{submittedAt:1}}));f.tick(250);assert.equal(f.c.initialAutomaticStartup.state,"closed");assert.equal(f.guards.length,0);noNative(f);});
+check("automatic origin and exact request survive actual action-bus admission",()=>{
+ const f=fixture(file);f.start();f.respond(0,{ok:true,resetSessionActivation:activation(f)});f.tick(250);
+ const pending=f.runtime.api.state().connectionStartup;
+ assert.equal(pending.automaticAttempts,1);assert.equal(pending.explicitAttempts,0);assert.equal(pending.lastOrigin,"automatic");assert.equal(pending.lastConnectionOrigin,"automatic");assert.equal(pending.automatic.state,"pending");assert(pending.automatic.requestId);
+ assert.equal(f.runtime.api.getResult(pending.automatic.requestId).delivery,"submitted");
+ f.native[0].done("");f.respond(1,{ok:true,command:null});
+ const done=f.runtime.api.state().connectionStartup;
+ assert.equal(done.automatic.state,"succeeded");assert.equal(done.automatic.reason,"connected");assert.equal(done.automatic.current,true);assert.equal(done.explicitAttempts,0);
+ assert.equal(f.runtime.api.getResult(done.automatic.requestId).state,"completed");f.originalPreserved();
+});
+for(const source of ["ui","programmatic"])check("rejected "+source+" Connect during guard lookup is visible and supersedes unsubmitted startup",()=>{
+ const f=fixture(file,{noDebt:true,holdGuards:true});f.start();assert.equal(f.runtime.api.state().trustedGuardRefresh.pending,true);
+ const envelope={protocolVersion:f.runtime.api.protocolVersion,requestId:require("node:crypto").randomUUID(),action:"bridge.connect",args:{}};
+ const r=source==="ui"?f.c.invokePanelUI("bridge.connect",{}):f.runtime.api.invoke(envelope);
+ assert.equal(r.state,"rejected");const state=f.runtime.api.state().connectionStartup;
+ assert.equal(state.explicitAttempts,1);assert.equal(state.automaticAttempts,0);assert.equal(state.automatic.state,"superseded");assert.equal(state.automatic.reason,"explicit_connect");
+ f.guardCallbacks[0](null,null);assert.equal(f.native.length,0);
+});
+for(const phase of ["native","GET"])check("rejected explicit Connect during pending "+phase+" preserves original automatic completion",()=>{
+ const f=fixture(file);f.start();f.respond(0,{ok:true,resetSessionActivation:activation(f)});f.tick(250);
+ const id=f.runtime.api.state().connectionStartup.automatic.requestId;
+ if(phase==="GET")f.native[0].done("");
+ const rejected=f.c.invokePanelUI("bridge.connect",{});assert.equal(rejected.state,"rejected");
+ assert.equal(f.runtime.api.state().connectionStartup.explicitAttempts,1);assert.equal(f.c.initialAutomaticStartup.state,"pending");
+ if(phase==="native")f.native[0].done("");f.respond(1,{ok:true,command:null});
+ assert.equal(f.runtime.api.getResult(id).state,"completed");assert.equal(f.runtime.api.state().activeAction,null);assert.equal(f.c.pollInFlight,false);assert.equal(f.native.length,1);f.originalPreserved();
+});
 console.log(JSON.stringify({ok:true,checks:checks.length,names:checks,scope:"actual staged functions and actual panel action store/eligibility/snapshot; fake HTTP/CS/timers/idle-status; no live proof"}));

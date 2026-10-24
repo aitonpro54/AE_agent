@@ -15,7 +15,7 @@ function body(name) {
   return source.slice(start, start + 1 + end.index);
 }
 const connectHandler = source.slice(source.indexOf('    "bridge.connect":function'), source.indexOf('    "bridge.disconnect":function')).trim().replace(/,$/, "");
-const production = ["initialAutomaticStartupCurrent", "closeInitialAutomaticStartup", "request", "poll", "connect", "lookupHumanSettlementBeforeConnect"].map(body).join("\n") + "\nvar handlers={" + connectHandler + "};";
+const production = ["isFixedGuardLookup", "initialAutomaticStartupCurrent", "closeInitialAutomaticStartup", "request", "connectorRequest", "poll", "connect", "observeConnectIntent", "lookupHumanSettlementBeforeConnect"].map(body).join("\n") + "\nvar handlers={" + connectHandler + "};";
 
 function fixture() {
   const timers = [], evals = [], http = [], writes = [], deliveries = [], completed = [];
@@ -23,6 +23,7 @@ function fixture() {
   let guardCallback;
   const c = {
     running:false, pollTimer:null, pollInFlight:false, initialAutomaticStartup:null, initialAutomaticConnectDispatch:null,
+    connectionStartupDiagnostics:{automaticAttempts:0,explicitAttempts:0,lastOrigin:null},
     ownedPollingSession:null,ownedPollingClosed:false,
     ownedCompletedDryRunPromised:()=>false,
     panelLifecycleEpoch:0,panelConnectionGeneration:0,panelLifecycleGuard:false,panelConnectionId:"panel-fixed",
@@ -30,13 +31,17 @@ function fixture() {
     currentPlanSyncInFlight:false,currentPlanSyncActiveReqId:0,currentPlanSyncActiveEpoch:0,currentPlanSyncWaiters:[],currentPlanSyncAt:Date.now(),
     autonomousSessionState:null,lastPollErrorMessage:"",agents:[{}],badgeEl:{textContent:"online"},urlEl:{value:"http://127.0.0.1:43110"},tokenEl:{value:"panel-token"},
     getBaseUrl:()=>c.urlEl.value,getToken:()=>c.tokenEl.value,
-    bridgeHostAvailable:()=>true,isFixedGuardLookup:()=>false,BRIDGE_OFFLINE_MESSAGE:"offline",
+    bridgeHostAvailable:()=>true,getConnectorBaseUrl:()=>"http://127.0.0.1:43111",BRIDGE_OFFLINE_MESSAGE:"offline",
     makeBridgeOfflineError:()=>({code:"offline",message:"offline"}),diagnosticFromBody:()=>null,
     formatM100DiagnosticBody:(_body,fallback)=>fallback,
-    window:{AEAgentPanelContract:{validateLoopbackUrl:()=>true}},
+    window:{AEAgentPanelContract:{validateLoopbackUrl:()=>true},AEAgentPanelActions:{state:()=>({reconciliationRequired:false})}},
     localStorage:{getItem:k=>prefs[k] ?? null,setItem:(k,v)=>{writes.push([k,v]);prefs[k]=v;}},
     setTimeout:(fn,delay)=>{const timer={fn,delay,cancelled:false};timers.push(timer);return timer;},clearTimeout:timer=>{timer.cancelled=true;},
     cs:{evalScript:(script,callback)=>evals.push({script,callback})},
+    physicalEvalScript:(script,callback)=>c.cs.evalScript(script,callback),
+    nextPanelConnectionGeneration:()=>c.panelConnectionGeneration+1,rotateBootstrapDeliveryFence:()=>{},observeCausalRuntime:()=>{},
+    deliveryActor:()=>({panelConnectionId:c.panelConnectionId,panelGeneration:String(c.panelConnectionGeneration)}),
+    sameDeliveryActor:(a,b)=>JSON.stringify(a)===JSON.stringify(b),
     bridgeNextPath:project=>"/bridge/next?projectFile=" + encodeURIComponent(project || ""),
     setBridgeOffline:error=>error.message || error.code,log:()=>{},setBridgeConnected:()=>{},
     renderAutonomousSession:()=>{},setStatus:()=>{},setBridgeHelp:()=>{},refreshAppTitle:()=>{},loadAgents:()=>{},loadUsageSnapshot:()=>{},
@@ -44,7 +49,7 @@ function fixture() {
     executeCommand:command=>deliveries.push(command),pollRecoveryTransport:()=>{},
     panelLifecycleIdle:done=>done(null),panelActionBusy:()=>false,
     panelActionUI:{refreshTrustedGuards:done=>{guardCallback=done;return {accepted:true};}},
-    invokePanelUI:()=>{c.handlers["bridge.connect"]({},(...args)=>completed.push(args),{submit:()=>true});return {state:"running"};},
+    invokePanelUI:()=>{c.observeConnectIntent();c.handlers["bridge.connect"]({},(...args)=>completed.push(args),{submit:()=>true});return {state:"running"};},
     XMLHttpRequest:function() {
       this.open=(method,url)=>{this.method=method;this.url=url;};this.setRequestHeader=()=>{};
       this.send=()=>http.push(this);
@@ -54,7 +59,9 @@ function fixture() {
   function timer(delay) {const t=timers.find(t=>!t.cancelled && !t.used && t.delay===delay);assert.ok(t,"timer " + delay);t.used=true;t.fn();}
   function response(index,value={},status=200) {const xhr=http[index];assert.ok(xhr,"HTTP " + index);xhr.status=status;xhr.responseText=JSON.stringify(value);xhr.readyState=4;xhr.onreadystatechange();}
   function start() {c.lookupHumanSettlementBeforeConnect(0);guardCallback(true);timer(250);assert.equal(evals.length,1);}
-  return {c,timers,evals,http,writes,deliveries,completed,timer,response,start,guard:ready=>guardCallback(ready),prefs};
+  function manualConnect(...args) {c.observeConnectIntent();return c.handlers["bridge.connect"](...args);}
+  function actualIdle() {c.panelLifecycleIdle=vm.runInContext("("+body("panelLifecycleIdle")+")",c);}
+  return {c,timers,evals,http,writes,deliveries,completed,timer,response,start,guard:ready=>guardCallback(ready),prefs,manualConnect,actualIdle};
 }
 let count=0;
 function check(name,fn) {fn();count++;process.stdout.write("PASS " + name + "\n");}
@@ -71,7 +78,77 @@ check("busy startup wait is bounded and has no native delivery",()=>{
   const f=fixture();f.c.panelActionBusy=()=>true;f.c.lookupHumanSettlementBeforeConnect(0);f.guard(true);
   for(let i=0;i<80;i++)f.timer(250);
   assert.equal(f.c.initialAutomaticStartup.state,"closed");assert.equal(f.evals.length,0);
+  assert.equal(f.c.initialAutomaticStartup.reason,"startup_panel_busy_timeout");
   assert.equal(f.timers.filter(t=>!t.used&&!t.cancelled).length,0);
+});
+check("initial status timeout and slow agents still permit exactly one automatic connection",()=>{
+  const f=fixture();let agentsBusy=true,statusBusy=true;
+  f.c.panelActionBusy=()=>agentsBusy||statusBusy;
+  f.c.lookupHumanSettlementBeforeConnect(0);f.guard(true);
+  f.c.connectorRequest("GET","/status?checkBridge=0",null,()=>{statusBusy=false;});
+  f.c.request("GET","/agents?includeModels=1",null,()=>{agentsBusy=false;});
+  for(let i=0;i<8;i++)f.timer(250); // First two seconds: passive startup reads.
+  f.http[0].ontimeout();
+  assert.equal(f.c.initialAutomaticStartup.state,"connecting");
+  for(let i=0;i<4;i++)f.timer(250);
+  assert.equal(f.evals.length,0);
+  f.response(1,{agents:[]});f.timer(250);
+  assert.equal(f.evals.length,1);f.evals[0].callback("");f.response(2,{ok:true,command:null});
+  assert.equal(f.c.initialAutomaticStartup.state,"succeeded");
+  assert.equal(f.c.connectionStartupDiagnostics.automaticAttempts,1);
+  assert.equal(f.c.connectionStartupDiagnostics.explicitAttempts,0);
+  assert.equal(f.c.connectionStartupDiagnostics.lastOrigin,"automatic");
+  assert.equal(f.evals.length,1);
+});
+check("unrelated background HTTP failures cannot cancel unsubmitted or pending automatic connection",()=>{
+  for(const phase of ["connecting","pending"]) {
+    const f=fixture();f.c.lookupHumanSettlementBeforeConnect(0);f.guard(true);
+    if(phase==="pending")f.timer(250);
+    for(const route of ["/agents?includeModels=1","/health","/usage/snapshot","/status"]) {
+      f.c.request("GET",route,null,()=>{});f.response(f.http.length-1,{error:"background unavailable"},503);
+      assert.equal(f.c.initialAutomaticStartup.state,phase);
+    }
+    if(phase==="connecting")f.timer(250);
+    assert.equal(f.evals.length,1);f.evals[0].callback("");f.response(f.http.length-1,{ok:true,command:null});
+    assert.equal(f.c.initialAutomaticStartup.state,"succeeded");
+    assert.equal(f.c.connectionStartupDiagnostics.automaticAttempts,1);
+  }
+});
+check("disabled AutoConnect during pre-dispatch wait closes without submission",()=>{
+  const f=fixture();f.c.lookupHumanSettlementBeforeConnect(0);f.guard(true);
+  f.prefs.codexAeBridgeAutoConnect="0";f.timer(250);
+  assert.equal(f.c.initialAutomaticStartup.reason,"startup_disabled");
+  assert.equal(f.evals.length,0);assert.equal(f.c.connectionStartupDiagnostics.automaticAttempts,0);
+});
+check("own idle status error or unknown closes before submit without replay",()=>{
+  for(const kind of ["error","unknown"]) {
+    const f=fixture();f.actualIdle();f.c.lookupHumanSettlementBeforeConnect(0);f.guard(true);f.timer(250);
+    assert.equal(f.http.length,1);assert.equal(f.http[0].method,"POST");
+    if(kind==="error")f.response(0,{error:"idle unavailable"},503);else f.http[0].ontimeout();
+    assert.equal(f.c.initialAutomaticStartup.reason,"startup_idle_check_failed");
+    assert.equal(f.evals.length,0);assert.equal(f.c.initialAutomaticStartup.consumed,false);
+    f.c.lookupHumanSettlementBeforeConnect(0);assert.equal(f.http.length,1);
+  }
+});
+check("own busy status and current-plan failure preserve idle admission",()=>{
+  for(const kind of ["busy","plan"]) {
+    const f=fixture();f.actualIdle();f.c.refreshCurrentBridgePlan=(_options,done)=>done({code:"plan_read_failed"});
+    f.c.lookupHumanSettlementBeforeConnect(0);f.guard(true);f.timer(250);
+    const status={projectLifecycle:{enabled:false,blocked:false,problem:null},pendingCommands:kind==="busy"?1:0,inflightCommands:[],activeEditSession:null};
+    f.response(0,{result:{content:[{text:JSON.stringify(status)}]}});
+    assert.equal(f.c.initialAutomaticStartup.reason,kind==="busy"?"startup_bridge_busy":"startup_idle_check_failed");
+    assert.equal(f.evals.length,0);assert.equal(f.c.initialAutomaticStartup.consumed,false);
+    assert.equal(f.c.connectionStartupDiagnostics.automaticAttempts,1);
+  }
+});
+check("URL or credential drift during pre-dispatch wait cannot submit Connect",()=>{
+  for(const field of ["urlEl","tokenEl"]) {
+    const f=fixture();f.c.lookupHumanSettlementBeforeConnect(0);f.guard(true);
+    f.c[field].value="changed";f.timer(250);
+    assert.equal(f.evals.length,0);assert.equal(f.http.length,0);
+    assert.equal(f.c.connectionStartupDiagnostics.automaticAttempts,0);
+    assert.equal(f.c.initialAutomaticStartupCurrent(f.c.initialAutomaticStartup),false);
+  }
 });
 check("product connect uses bootstrap ticket while project actions retain admission",()=>{
   const daemon=fs.readFileSync(path.join(__dirname,"../mcp-server/bridge-daemon.js"),"utf8");
@@ -105,6 +182,7 @@ check("ordinary product admission still rejects experimental or invalid provenan
   const start=daemon.indexOf("readAdmission:()=>"),end=daemon.indexOf(",journalRoot:",start);
   let retained=false,admitted=false,cutover=false;
   const c={ownedRuntimeStartup:{managed:true,requiresRetainedAdoption:true},PROJECT_ROOT:"offline",
+    productSessionResetState:()=>null,
     panelControlUsesRetainedTransport:()=>retained,require:()=>({currentAdmission:()=>admitted}),
     panelControlService:{cutoverReadiness:()=>({ready:cutover})}};
   vm.createContext(c);const read=vm.runInContext("("+daemon.slice(start+"readAdmission:".length,end)+")",c);
@@ -184,13 +262,15 @@ check("successful first GET permits source-bound successor delivery",()=>{
   assert.equal(f.http.length,2);assert.deepEqual(f.deliveries.map(x=>x.id),["first","successor"]);
 });
 check("manual connect preserves submit gate, preferences, and retry",()=>{
-  const f=fixture();f.c.lookupHumanSettlementBeforeConnect(0);f.c.handlers["bridge.connect"]({},()=>{},{submit:()=>false});assert.equal(f.evals.length,0);assert.equal(f.c.initialAutomaticStartup.state,"superseded");
-  f.c.handlers["bridge.connect"]({},()=>{},{submit:()=>true});assert.equal(f.evals.length,1);assert.equal(f.writes.length,3);f.guard(true);assert.equal(f.timers.length,0);
-  f.evals[0].callback("");f.response(0,{error:"offline"},503);assert.equal(f.c.running,true);assert.equal(f.timers.filter(t=>t.delay===1500).length,1);
+  const f=fixture();f.c.lookupHumanSettlementBeforeConnect(0);f.manualConnect({},()=>{},{submit:()=>false});f.response(0,{ok:false,code:"owned_product_reset_session_absent"},409);assert.equal(f.evals.length,0);assert.equal(f.c.initialAutomaticStartup.state,"superseded");
+  assert.equal(f.c.initialAutomaticStartup.reason,"explicit_connect");
+  assert.equal(f.c.connectionStartupDiagnostics.lastOrigin,"explicit");
+  f.manualConnect({},()=>{},{submit:()=>true});f.response(1,{ok:false,code:"owned_product_reset_session_absent"},409);assert.equal(f.evals.length,1);assert.equal(f.writes.length,3);f.guard(true);assert.equal(f.timers.length,0);
+  f.evals[0].callback("");f.response(2,{error:"offline"},503);assert.equal(f.c.running,true);assert.equal(f.timers.filter(t=>t.delay===1500).length,1);
 });
 check("already running user connection is not reset by bootstrap lookup",()=>{
   const f=fixture();f.c.running=true;f.c.panelLifecycleEpoch=17;f.c.panelConnectionGeneration=41;f.c.lookupHumanSettlementBeforeConnect(0);
-  f.c.handlers["bridge.connect"]({},()=>{},{submit:()=>{throw Error("unexpected submit");}});
+  f.manualConnect({},()=>{},{submit:()=>{throw Error("unexpected submit");}});
   assert.equal(f.c.panelLifecycleEpoch,17);assert.equal(f.c.panelConnectionGeneration,41);assert.equal(f.evals.length,0);assert.equal(f.http.length,0);assert.equal(f.c.running,true);
 });
 process.stdout.write(JSON.stringify({ok:true,checks:count,evidence:"offline actual production function bodies with fake CS/HTTP/timers; no live/native proof"}) + "\n");

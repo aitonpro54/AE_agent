@@ -108,6 +108,7 @@
   var pollInFlight = false;
   var initialAutomaticStartup = null;
   var initialAutomaticConnectDispatch = null;
+  var connectionStartupDiagnostics = {automaticAttempts:0,explicitAttempts:0,lastOrigin:null,lastConnectionOrigin:null};
   var activeEvalScriptCommandId = "";
   // A native callback owns this durable latch. Connection lifecycle changes
   // cannot release it; a reload with a lost callback remains fail-closed.
@@ -638,10 +639,12 @@
 
   function request(method, path, body, onDone) {
     var startup = initialAutomaticStartup;
-    if (initialAutomaticStartupCurrent(startup) && /^(lookup|connecting|pending)$/.test(startup.state)) {
+    // Only this startup's trusted admission reads own its cancellation. A
+    // background provider/usage/health failure must not revoke Connect.
+    if (initialAutomaticStartupCurrent(startup) && /^(lookup|connecting|pending)$/.test(startup.state) && isFixedGuardLookup(method,path,body)) {
       var startupDone = onDone;
       onDone = function (error, response) {
-        if (error) closeInitialAutomaticStartup(startup);
+        if (error) closeInitialAutomaticStartup(startup,"startup_guard_lookup_failed");
         startupDone(error, response);
       };
     }
@@ -4675,7 +4678,7 @@
       startup.generation === panelConnectionGeneration && startup.url === getBaseUrl() && startup.token === getToken();
   }
 
-  function closeInitialAutomaticStartup(startup) {
+  function closeInitialAutomaticStartup(startup, reason) {
     if (!startup || /^(closed|superseded|succeeded)$/.test(startup.state)) return;
     if (initialAutomaticStartupCurrent(startup)) {
       running = false;
@@ -4683,6 +4686,8 @@
       if (pollTimer) clearTimeout(pollTimer);
     }
     startup.state = "closed";
+    startup.reason = reason || "startup_interrupted";
+    log("Automatic connection stopped: " + startup.reason);
   }
 
   function poll(onDone) {
@@ -4735,7 +4740,7 @@
     if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "pending" || startup.getAttempted)) return;
     if (!running) { pollInFlight = false; return; }
     if (startup && (typeof projectFile !== "string" || projectFile.indexOf("EvalScript error.") === 0)) {
-      closeInitialAutomaticStartup(startup);
+      closeInitialAutomaticStartup(startup,"startup_project_read_unknown");
       if(onDone) onDone({isUnknown:true,code:"initial_project_file_unknown"});
       return;
     }
@@ -4748,7 +4753,7 @@
       if (startup && (!initialAutomaticStartupCurrent(startup) || !/^(pending|closed)$/.test(startup.state))) return;
       pollInFlight = false;
       if (startup && (error || !response || typeof response !== "object" || startup.state === "closed")) {
-        closeInitialAutomaticStartup(startup);
+        closeInitialAutomaticStartup(startup,"startup_bridge_next_failed");
         var startupError = error || {isUnknown:true,code:"initial_bridge_next_unknown"};
         var startupMessage = setBridgeOffline(startupError);
         if (startupMessage !== lastPollErrorMessage) {log(startupMessage);lastPollErrorMessage=startupMessage;}
@@ -4777,7 +4782,7 @@
         if(onDone) onDone({isUnknown:true,code:"owned_original_session_deadline_invalid"});return;
       }
       var shouldRefreshAgents = !!lastPollErrorMessage || (badgeEl && badgeEl.textContent !== "online") || !agents.length;
-      if (startup) startup.state = "succeeded";
+      if (startup) {startup.state = "succeeded";startup.reason="connected";}
       lastPollErrorMessage = "";
       setBridgeConnected();
       if(ownedCompletedDryRunPromised(response)) ownedPlanPreparationMode="completed_native_dry_run_v1";
@@ -4802,12 +4807,12 @@
     } catch (error) {
       if(ownedPollingSession) {closeOwnedPolling("owned_original_project_file_unknown");if(onDone) onDone(error);return;}
       if (!startup) throw error;
-      closeInitialAutomaticStartup(startup);
+      closeInitialAutomaticStartup(startup,"startup_project_read_unknown");
       if(onDone) onDone(error);
     }
   }
 
-  function connect(onDone, startup, resetChecked) {
+  function connect(onDone, startup, resetChecked, origin) {
     var resetState=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
     if(!startup && !resetChecked && resetState && resetState.reconciliationRequired){
       var lookupActor=deliveryActor(),lookupUrl=getBaseUrl(),lookupToken=getToken();
@@ -4815,7 +4820,7 @@
         if(!sameDeliveryActor(lookupActor,deliveryActor()) || getBaseUrl()!==lookupUrl || getToken()!==lookupToken){if(onDone)onDone({isUnknown:true,code:"product_reset_lookup_actor_changed"});return;}
         if(error || !response || !response.resetSession && !response.resetSessionActivation){if(onDone)onDone(error||{code:"product_reset_session_required",message:"Historical action requires its original reconciliation or an explicit product reset."});return;}
         if(response.resetSession){if(onDone)onDone(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
-        var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!adoption.accepted){if(onDone)onDone({rejected:true,code:"product_reset_activation_actor_mismatch"});return;}if(adoption.transitioned){if(onDone)onDone(null,{connected:true});return;}connect(onDone,startup,true);
+        var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!adoption.accepted){if(onDone)onDone({rejected:true,code:"product_reset_activation_actor_mismatch"});return;}if(adoption.transitioned){if(onDone)onDone(null,{connected:true});return;}connect(onDone,startup,true,origin);
       });return;
     }
     if(ownedPollingSession || ownedPollingClosed) {
@@ -4823,9 +4828,12 @@
       if(onDone) onDone({isUnknown:true,code:"owned_transport_reconciliation_required"});return;
     }
     if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting" || startup.consumed)) return;
-    if (!startup && initialAutomaticStartup && initialAutomaticStartup.state !== "succeeded") initialAutomaticStartup.state = "superseded";
+    if (!startup && initialAutomaticStartup && initialAutomaticStartup.state !== "succeeded") {
+      initialAutomaticStartup.state = "superseded";initialAutomaticStartup.reason=origin==="explicit" ? "explicit_connect" : "internal_connect";
+    }
     if (!bridgeHostAvailable(onDone)) return;
     var restoringRecovery=!!recoveryTransportScope;
+    connectionStartupDiagnostics.lastConnectionOrigin=startup ? "automatic" : origin || "internal";
     recoveryTransportScope=null;recoveryTransportConnecting=false;
     if(pollTimer)clearTimeout(pollTimer);
     running = true;
@@ -4951,6 +4959,13 @@
   function panelActionSnapshot() {
     rememberPanelSecrets();
     return {assetVersion:APP_VERSION,connected:running && badgeEl.textContent === "online",running:running,
+      connectionStartup:{automaticAttempts:connectionStartupDiagnostics.automaticAttempts,
+        explicitAttempts:connectionStartupDiagnostics.explicitAttempts,lastOrigin:connectionStartupDiagnostics.lastOrigin,
+        lastConnectionOrigin:connectionStartupDiagnostics.lastConnectionOrigin,
+        automatic:initialAutomaticStartup ? {state:initialAutomaticStartup.state,reason:initialAutomaticStartup.reason || null,
+          consumed:initialAutomaticStartup.consumed===true,getAttempted:initialAutomaticStartup.getAttempted===true,
+          waits:initialAutomaticStartup.waits || 0,requestId:initialAutomaticStartup.requestId || null,
+          current:initialAutomaticStartupCurrent(initialAutomaticStartup)} : null},
       pollInFlight:pollInFlight,productResetRecoveryOnly:false,
       nativeBusy:panelActionBusy(),physicalInflight:physicalEvalScriptIdle() ? 0 : 1,
       bridgeConnection:{panelConnectionId:panelConnectionId},
@@ -5054,12 +5069,11 @@
     },
     "bridge.connect":function(args,done,context) {
       var startup = initialAutomaticConnectDispatch;
-      if (!startup && initialAutomaticStartup && initialAutomaticStartup.state !== "succeeded") initialAutomaticStartup.state = "superseded";
       if(running && !recoveryTransportScope && !/^reset-/.test(String(panelConnectionGeneration))) {done(null,{connected:badgeEl.textContent === "online",alreadyRunning:true});return;}
       function normalConnect() { panelLifecycleIdle(function(error) {
         if (startup && (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting")) {done(error || {rejected:true,code:"initial_startup_interrupted"});return;}
-        if(error) {if(startup) closeInitialAutomaticStartup(startup);done(error);return;}
-        if(context.submit()) connect(done,startup,true);else if(startup) closeInitialAutomaticStartup(startup);
+        if(error) {if(startup) closeInitialAutomaticStartup(startup,error.code==="bridge_busy" ? "startup_bridge_busy" : "startup_idle_check_failed");done(error);return;}
+        if(context.submit()) connect(done,startup,true,startup ? "automatic" : "explicit");else if(startup) closeInitialAutomaticStartup(startup,"startup_submit_refused");
       },true); }
       if(startup){normalConnect();return;}
       // Reset authority precedes the ordinary idle check: the exact old edit
@@ -5244,7 +5258,7 @@
     setTimeout(loadAgents, 250);
   }
   rememberPanelSecrets();
-  panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,productSessionReset:function(){return productResetActivation;},
+  panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,observeConnectIntent:observeConnectIntent,productSessionReset:function(){return productResetActivation;},
     causalRuntimeStamp:function(){return causalRuntimeStamp;},createCausalNonce:actionUuid,
     lookupPanelLifecycleCausal:function(frame,done){
       var url=getBaseUrl(),token=getToken();
@@ -5301,6 +5315,19 @@
       });
     },
     lifecycle:function() {return {epoch:panelLifecycleEpoch,generation:String(panelConnectionGeneration),busy:panelActionBusy()};}});
+  function observeConnectIntent() {
+    var automatic=!!initialAutomaticConnectDispatch;
+    connectionStartupDiagnostics[automatic ? "automaticAttempts" : "explicitAttempts"] += 1;
+    connectionStartupDiagnostics.lastOrigin=automatic ? "automatic" : "explicit";
+    // Observe intent before action admission: even a refused manual/MCP Connect
+    // invalidates evidence that this page was left untouched for auto-start.
+    // A rejected click must not abandon an already admitted automatic action:
+    // its original native/HTTP callback still owns completion and any UNKNOWN.
+    if(!automatic && initialAutomaticStartup && /^(reset_lookup|lookup|connecting)$/.test(initialAutomaticStartup.state) &&
+       connectionStartupDiagnostics.automaticAttempts===0) {
+      initialAutomaticStartup.state="superseded";initialAutomaticStartup.reason="explicit_connect";
+    }
+  }
   function lookupHumanSettlementBeforeConnect(attempt) {
     if (!initialAutomaticStartup) initialAutomaticStartup = {epoch:panelLifecycleEpoch,generation:panelConnectionGeneration,
       url:getBaseUrl(),token:getToken(),state:"lookup",rounds:0,lookupPending:false,consumed:false,getAttempted:false};
@@ -5316,24 +5343,27 @@
         var connectWaits=0;
         setTimeout(function dispatchInitialConnect() {
           if (!initialAutomaticStartupCurrent(startup) || startup.state !== "connecting" || running) return;
+          if(localStorage.getItem("codexAeBridgeAutoConnect")==="0"){closeInitialAutomaticStartup(startup,"startup_disabled");return;}
           // Initial provider/usage reads may still own the panel at 250ms.
           // Wait before dispatch; never retry a submitted connection or AE read.
-          if(startup.resetActivationCovered===true && !resetActivationCoveredForStartup(startup)){closeInitialAutomaticStartup(startup);return;}
+          if(startup.resetActivationCovered===true && !resetActivationCoveredForStartup(startup)){closeInitialAutomaticStartup(startup,"startup_reset_coverage_changed");return;}
           if (panelActionBusy()) {
-            if (++connectWaits >= 80) {closeInitialAutomaticStartup(startup);return;}
+            startup.waits=++connectWaits;
+            if (connectWaits >= 80) {closeInitialAutomaticStartup(startup,"startup_panel_busy_timeout");return;}
             setTimeout(dispatchInitialConnect,250);return;
           }
-          if(startup.resetActivationCovered===true && !resetActivationReadyForStartup(startup)){closeInitialAutomaticStartup(startup);return;}
+          if(startup.resetActivationCovered===true && !resetActivationReadyForStartup(startup)){closeInitialAutomaticStartup(startup,"startup_reset_not_ready");return;}
           initialAutomaticConnectDispatch=startup;
           try {
             var connectReceipt=invokePanelUI("bridge.connect",{});
-            if (!connectReceipt || connectReceipt.accepted === false || !/^(accepted|running|completed)$/.test(connectReceipt.state)) closeInitialAutomaticStartup(startup);
-          } catch (error) {closeInitialAutomaticStartup(startup);}
+            startup.requestId=connectReceipt && connectReceipt.requestId || null;
+            if (!connectReceipt || connectReceipt.accepted === false || !/^(accepted|running|completed)$/.test(connectReceipt.state)) closeInitialAutomaticStartup(startup,"startup_connect_rejected");
+          } catch (error) {closeInitialAutomaticStartup(startup,"startup_connect_unknown");}
           finally {initialAutomaticConnectDispatch=null;}
         },250);
       } else if (!ready && tokenEl.value && attempt<3) {
         setTimeout(function(){lookupHumanSettlementBeforeConnect(attempt+1);},2000);
-      } else closeInitialAutomaticStartup(startup);
+      } else closeInitialAutomaticStartup(startup,localStorage.getItem("codexAeBridgeAutoConnect")==="0" ? "startup_disabled" : "startup_guard_unavailable");
     };
     var receipt;
     if(startup.resetActivationCovered===true){
@@ -5342,7 +5372,7 @@
     }else receipt=panelActionUI.refreshTrustedGuards(complete);
     if (receipt && receipt.accepted === false) {
       startup.lookupPending=false;
-      closeInitialAutomaticStartup(startup);
+      closeInitialAutomaticStartup(startup,"startup_guard_refresh_rejected");
     }
   }
   function resetActivationCoveredForStartup(startup) {
@@ -5366,11 +5396,11 @@
     request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
       if(!initialAutomaticStartupCurrent(startup) || startup.state!=="reset_lookup" || !startup.lookupPending || running || !sameDeliveryActor(actor,deliveryActor())){closeInitialAutomaticStartup(startup);return;}
       startup.lookupPending=false;
-      if(error && error.code!=="owned_product_reset_session_absent"){closeInitialAutomaticStartup(startup);return;}
-      if(!error && response && response.ok===true && response.resetSession){closeInitialAutomaticStartup(startup);return;}
+      if(error && error.code!=="owned_product_reset_session_absent"){closeInitialAutomaticStartup(startup,"startup_reset_lookup_failed");return;}
+      if(!error && response && response.ok===true && response.resetSession){closeInitialAutomaticStartup(startup,"startup_reset_pending");return;}
       if(!error && response && response.ok===true && response.resetSessionActivation){
         var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);
-        if(!adoption.accepted || !adoption.preconnect){closeInitialAutomaticStartup(startup);return;}
+        if(!adoption.accepted || !adoption.preconnect){closeInitialAutomaticStartup(startup,"startup_reset_activation_rejected");return;}
         startup.resetActivation=response.resetSessionActivation;
         startup.resetActivationCovered=resetActivationCoveredForStartup(startup);
       }

@@ -606,6 +606,7 @@
   }
   function invoke(envelope, source) {
     var checked=contract.validateEnvelope(envelope);
+    if(checked.ok && envelope.action==="bridge.connect" && bindings && typeof bindings.observeConnectIntent==="function") bindings.observeConnectIntent();
     // A malformed replay never overwrites a previous receipt.
     var suppliedId=dataField(envelope,"requestId");
     var id=typeof suppliedId === "string" && contract.UUID_REGEX.test(suppliedId) ? suppliedId : null;
