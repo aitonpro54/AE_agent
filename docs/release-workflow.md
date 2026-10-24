@@ -17,13 +17,16 @@
 24 октября выше: после PRECONNECT reset old daemon `40784` завершился штатно
 (`WAIT_OBJECT_0`, exit 0), установлен canonical source 3.3.5 из `aca80be`,
 `ensure` поднял daemon `44896` с source SHA `2950db71…`. Панель автоматически
-подключилась; typed `get_project_info` прошёл дважды, в том числе после CEP reload
-с новой panel instance. Состояние: reset_active, autonomy active, pending0,
-inflight[], editnull; project file:null/items0/bits16/revision1. Полный выход и
-повторный запуск AE не проверены, поэтому это scoped installed connectivity proof,
-не полный acceptance. AEP не менялся/не сохранялся, AME/provider actions не было.
-Push документационного обновления выполняется отдельно; `v3.3.5`, PR/merge и
-GitHub Release этим статусом не объявляются.
+подключилась; typed `get_project_info` прошёл после CEP reload с новой panel
+instance. Затем чистый ручной close/relaunch AE дал bounded PASS: новая AEP PID
+12480 auto-connected за ~97 s, `connected_idle` и последующий project read PASS;
+daemon/source не менялись, без manual Connect/reset/reload. Первая попытка была
+невалидна из-за queued read до готовности панели (`expired_before_delivery`), а
+auto-connect был отклонён при pending очереди (`bridge_busy/not_submitted`); это
+test orchestration issue, не продуктовый FAIL. Старый запрос не повторялся. AEP
+не менялся/не сохранялся, AME/provider actions не было. Push до `afe69dc` и
+remote read-back подтверждены; финальный docs commit публикуется отдельно. `v3.3.5`,
+PR/merge и GitHub Release этим статусом не объявляются.
 
 ## Интеграция 3.3.4 — 2026-10-21
 
