@@ -10,7 +10,7 @@ const {fileURLToPath} = require("url");
 const {selectCepPanelTarget,isCepExtensionUrl} = require("../scripts/cep-panel-target");
 const recoveryState=require("./session-recovery-state");
 
-const TARGET = Object.freeze({bundleId:"com.codex.aemcpbridge", extensionId:"com.codex.aemcpbridge.panel", menu:"AE Agent 3.3.4", version:"3.3.4"});
+const TARGET = Object.freeze({bundleId:"com.codex.aemcpbridge", extensionId:"com.codex.aemcpbridge.panel", menu:"AE Agent 3.3.5", version:"3.3.5"});
 const TOOL_NAME = "ensure_ae_agent_panel";
 const RECOVERY_TOOL_NAME="recover_ae_agent_panel";
 const recoveryTool={name:RECOVERY_TOOL_NAME,description:"Reconcile the private active panel-bootstrap attempt using exact authenticated native results, or one separately identified fixed project read through the existing physical native latch. Preserves old UNKNOWN, never replays old commands or UI. Accepts no selectors. A successful reconciliation requires a separate fresh ensure.",annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:false},inputSchema:{type:"object",additionalProperties:false,properties:{}}};
@@ -89,7 +89,7 @@ function inspectInstalledTarget(roots=extensionRoots(), sourceRoot=path.resolve(
       const root=path.join(base,entry.name),manifest=path.join(root,"CSXS","manifest.xml");
       if (!fs.existsSync(manifest)) continue;
       const xml=fs.readFileSync(manifest,"utf8");
-      const matchingMenus=(xml.match(/<Menu>\s*AE Agent 3\.3\.4\s*<\/Menu>/g)||[]).length;
+      const matchingMenus=(xml.match(/<Menu>\s*AE Agent 3\.3\.5\s*<\/Menu>/g)||[]).length;
       for(let i=0;i<matchingMenus;i++) menus.push(root);
       if (/\bId\s*=\s*["']com\.codex\.aemcpbridge\.panel["']/.test(xml)) copies.push({root,manifest,xml});
     }
@@ -97,7 +97,7 @@ function inspectInstalledTarget(roots=extensionRoots(), sourceRoot=path.resolve(
   if (!copies.length) throw problem("installed_panel_missing");
   if (copies.length!==1 || menus.length!==1 || path.resolve(menus[0])!==path.resolve(copies[0].root)) throw problem("installed_panel_ambiguous","Exact extension ID or menu title has multiple installed owners.",{copies:copies.map(c=>c.root),menuOwners:menus});
   const c=copies[0];
-  if (path.basename(c.root)!==TARGET.bundleId || !/ExtensionBundleId="com\.codex\.aemcpbridge"/.test(c.xml) || !/ExtensionBundleVersion="3\.3\.4"/.test(c.xml) || !/<Host\s+Name="AEFT"/.test(c.xml) || !/<Extension\s+Id="com\.codex\.aemcpbridge\.panel"\s+Version="3\.3\.4"/.test(c.xml) || !/<MainPath>\.\/index\.html<\/MainPath>/.test(c.xml)) throw problem("installed_panel_identity_mismatch");
+  if (path.basename(c.root)!==TARGET.bundleId || !/ExtensionBundleId="com\.codex\.aemcpbridge"/.test(c.xml) || !/ExtensionBundleVersion="3\.3\.5"/.test(c.xml) || !/<Host\s+Name="AEFT"/.test(c.xml) || !/<Extension\s+Id="com\.codex\.aemcpbridge\.panel"\s+Version="3\.3\.5"/.test(c.xml) || !/<MainPath>\.\/index\.html<\/MainPath>/.test(c.xml)) throw problem("installed_panel_identity_mismatch");
   const hashes={};
   for (const asset of ["CSXS/manifest.xml","index.html","panel-action-contract.js","panel-actions.js","native-probe-startup-guard.js","panel.js","style.css","lib/CSInterface.js"]) {
     const installed=path.join(c.root,asset), source=path.join(sourceRoot,asset);

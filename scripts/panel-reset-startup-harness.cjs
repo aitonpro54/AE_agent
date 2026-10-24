@@ -10,7 +10,7 @@ function fixture(sourceFile,options={}){
  if(options.extraDebt){const extra={...original,requestId:crypto.randomUUID(),code:"new_unknown"};records[extra.requestId]=extra;}
  prefs.set("codexAePanelActionReceiptsInitialized","1");prefs.set("codexAePanelActionReceipts",JSON.stringify({version:1,records,tombstones:{},recoveries:{}}));prefs.set("codexAePanelActionReceiptIndex",JSON.stringify(Object.fromEntries(Object.values(records).map(r=>[r.requestId,{action:r.action,signature:r.signature}]))));
  const stored=prefs.get("codexAePanelActionReceipts"),c={JSON,Object,String,Date,Math,Number,Array,encodeURIComponent,
-  APP_VERSION:"3.3.4",productResetRecoveryOnly:/var productResetRecoveryOnly = true;/.test(source),productResetRecoveryNativePermit:{},
+  APP_VERSION:"3.3.5",productResetRecoveryOnly:/var productResetRecoveryOnly = true;/.test(source),productResetRecoveryNativePermit:{},
   running:false,pollTimer:null,pollInFlight:false,initialAutomaticStartup:null,initialAutomaticConnectDispatch:null,panelLifecycleEpoch:0,panelConnectionGeneration:0,panelLifecycleGuard:false,panelConnectionId:"current-connection",
   ownedPollingSession:null,ownedPollingClosed:false,ownedCompletedDryRunPromised:()=>false,ownedCompletedDryRunCache:null,lastAcceptedDryRun:null,ownedPlanPreparationMode:"",currentBridgePlan:null,
   recoveryTransportScope:null,recoveryTransportConnecting:false,activeEvalScriptCommandId:"",panelHeartbeatAt:0,autonomousSessionState:null,lastPollErrorMessage:"",currentPlanSyncInFlight:false,currentPlanSyncActiveReqId:0,currentPlanSyncActiveEpoch:0,currentPlanSyncWaiters:[],currentPlanSyncAt:Date.now(),agents:[{}],

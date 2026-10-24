@@ -6,7 +6,7 @@
   // A direct/partial asset load must also fail closed before any storage effect.
   if (!hostStartupGuard || !hostStartupGuard.isAllowed()) return;
   var APP_NAME = "AE Agent";
-  var APP_VERSION = "3.3.4";
+  var APP_VERSION = "3.3.5";
   var CHAT_MODE_CHAT = "chat";
   var CHAT_MODE_AGENT = "plan";
   var CHAT_MODE_HARDCORE = "hardcore";

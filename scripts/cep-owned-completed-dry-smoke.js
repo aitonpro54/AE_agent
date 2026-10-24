@@ -17,7 +17,7 @@ function passiveDrain(env){let count=0;while(env.inFlightRequests.length){assert
   const body=r.path.startsWith("/agents?")?{agents:[{id:"openai-cli",provider:"openai",label:"VM",model:"vm",models:["vm"],configured:true,canChat:true,reachable:true,modelAvailable:true}],defaultAgentId:"openai-cli"}:
     r.path==="/usage"?{usage:{sources:{}}}:r.path==="/human-guard-settlement/lookup"?{ok:true,settlement:null}:
     r.path==="/ame/fixture-ui-disposition/lookup"?{ok:true,disposition:null}:r.path==="/ame/native-fixture-prephase-recovery/lookup"?{ok:true,certificate:null}:
-    r.path==="/placeholder/protection"?{ok:true,acceptedCount:0,groupMappings:[],constraints:{}}:{ok:true,command:null,version:"3.3.4"};r.respond(200,body);}}
+    r.path==="/placeholder/protection"?{ok:true,acceptedCount:0,groupMappings:[],constraints:{}}:{ok:true,command:null,version:"3.3.5"};r.respond(200,body);}}
 function fixture(finite=true,holdCommand=false){
   // Host callback control stays in this VM fixture, never in production assets.
   const hostedSource=holdCommand?source.replace("  var cs = new CSInterface();","  var cs = new CSInterface(); var originalEval = cs.evalScript; window.__ownedVmSetConnection = function(url,token) { if(url) configuredBridgeUrl=url; if(token) configuredPanelToken=token; }; cs.evalScript = function(script, callback) { if(script === 'owned-vm-command') { window.__ownedVmCommandDone = callback; return; } originalEval.call(cs,script,callback); };"):source;

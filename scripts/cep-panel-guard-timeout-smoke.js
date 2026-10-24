@@ -18,7 +18,7 @@ function network(clock={now:0},panel=null) {
     this.respond=()=>{this.readyState=4;this.status=200;this.responseText="{\"ok\":true}";this.onreadystatechange();};}
   const values=new Map(),runtime=panel?panel.runtime:createPanelActions(contract,{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,String(v))});
   let context;
-  const ui=panel?panel.ui:runtime.bind({handlers:{},availability:()=>({available:true,reasonCodes:[]}),state:()=>({assetVersion:"3.3.4",recoveryTransport:null}),
+  const ui=panel?panel.ui:runtime.bind({handlers:{},availability:()=>({available:true,reasonCodes:[]}),state:()=>({assetVersion:"3.3.5",recoveryTransport:null}),
     lifecycle:()=>({epoch:context.panelLifecycleEpoch,generation:context.panelConnectionGeneration,busy:false}),causalRuntimeStamp:()=>context.causalRuntimeStamp});
   // Normal request context outside any pending automatic-startup flow. Execute
   // the producer's actual startup predicates and private panel UI API.

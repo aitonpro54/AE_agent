@@ -1,8 +1,8 @@
-# Agent instructions
+# Agent instructions — AE Agent 3.3.5
 
 ## Project goal
 
-Maintain AE Agent 3.3.4 in this clean repository. The product target is
+Maintain AE Agent 3.3.5 in this clean repository. The product target is
 `specs/target-app.md`; the active execution plan is
 `plans/target-app-execplan.md`.
 

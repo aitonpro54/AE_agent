@@ -1,6 +1,6 @@
 {
   "name": "ae-agent",
-  "version": "3.3.4",
+  "version": "3.3.5",
   "private": true,
   "scripts": {
     "smoke:native-title-render": "node scripts/native-render-variant-smoke.js",
