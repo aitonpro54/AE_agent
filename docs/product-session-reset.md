@@ -76,6 +76,53 @@ grant/one-reset case и изолированная PS function parity прове
 без live daemon/AE/CEP. Полная live проверка и installed update выполняются
 единственным root-контроллером после передачи source writer.
 
+## Текущий reset: legacy physical latch без identity владельца
+
+**Progress (24 октября):** standalone `scripts/cep-panel-current-reset-physical-fence.js`
+добавляет недостающий маршрут для текущего проверенного `reset_pending_preflight`.
+Новые helper/module и прежний native witness отсутствуют в runtime census;
+изменение standalone helper не требует restart daemon. Старый helper 20 октября,
+его pins и journals не изменены. Owner identity для будущих latches сюда не входит.
+
+**Decision Log:** private HMAC grant на 30 минут связывает exact current/reset,
+anchor/policy/config/source hashes, raw map и прежние actor/frame/actions. CLI не
+принимает PID, generation, paths, storage keys или scripts. Дата старой v1 записи
+лишь классифицирует legacy map; UNKNOWN, original host identity и no-replay сохраняются.
+Обязательны held `WAIT_OBJECT_0` всех захваченных current AE/CEP contexts/lineage,
+три пустых global census и исчезновение прежней exact page. Лишь после этого
+принимаются новый host/page, один fixed native read-barrier и own-paused map CAS.
+Архив пишется в отдельный fixed key; поздний callback старого владельца исключён
+его реальным exit. Истечение срока, drift и неизвестные send/write допускают только
+read-back. Helper не закрывает, не сохраняет и не перезапускает AE.
+
+После source freeze/review root выполняет по порядку:
+
+```powershell
+node scripts/cep-panel-current-reset-physical-fence.js inspect
+node scripts/cep-panel-current-reset-physical-fence.js authorize "<подтверждённый UUID чата>:current-reset-physical-fence"
+node scripts/cep-panel-current-reset-physical-fence.js prepare-held-exit
+node scripts/cep-panel-current-reset-physical-fence.js readback
+```
+
+Только `held_handles_ready` разрешает попросить пользователя сохранить работу и
+штатно закрыть AE. Native witness ждёт не более пяти минут после запуска; grant
+на 30 минут не продлевает это ожидание. До закрытия native AE commands не отправляются.
+После `captured_contexts_exited` пользователь открывает новый AE/панель; прежняя
+physical map сохраняется. Затем root выполняет `recover` один раз и `readback`.
+Успех `legacy_latch_retired_reset_preflight_required` ещё требует обычной activation,
+Connected и настоящего typed project read. Reload с непустым latch не разрешается.
+Ignored journal: `.codex-runtime/current-reset-physical-fences/<current-reset-operation>/`.
+
+**Validation:** focused DI protocol/adapter 43/43, rules, syntax 3 JS и diff PASS;
+проверки покрывают полный путь, grant/config/
+source/actor/map/tree drift, partial writes, expiry между archive и clear, чужую pause
+и неизвестный resume с обязательным закрытием transport. Это offline proof без AE/CDP.
+Отказ первого live inspect `fence_cdp_closed` разобран до grant: legacy adapter
+читал весь origin storage и терял budget cause. Новый bounded adapter читает только
+два fixed keys, под pause — в её exact frame; произвольные expressions и whole-origin
+reads запрещены. Fake WebSocket воспроизводит oversized legacy response; actual
+размер пользовательского storage не измерялся и live успех этим тестом не доказан.
+
 ## Последовательность
 
 1. Взять общий OS controller mutex; прочитать и связать текущую registration.
