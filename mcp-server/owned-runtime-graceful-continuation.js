@@ -68,4 +68,64 @@ async function continueOnce(deps){
   const exit={schema:SCHEMA+".exit-result",intentSha256:written.sha256,submissionSha256:submitted.sha256,identity:handle.identity,wait,handleOpenedAt:opened,observedAt:new Date().toISOString(),authentication:""};exit.authentication=sign(exit,token);const ex=R.writeJournalOnce(dir,"exit-result",exit),after=S.inventory(root);if(!same(before,after))fail("graceful_continuation_inventory_changed_after_exit");assertCode(f.baseline.helperCodePins);f.assertUnchanged();const inv=R.writeJournalOnce(dir,"final-inventory",after),ack=Service.readOperation(A.base(root),operationId)["shutdown-ack"];if(!ack)fail("graceful_continuation_shutdown_ack_missing");const seal={schema:SCHEMA+".seal",key:f.key,intentSha256:written.sha256,onceSha256:once.sha256,exitResultSha256:ex.sha256,inventorySha256:inv.sha256,shutdownAckSha256:ack.sha256,drainAckSha256:f.baseline.originalPins.drainAckSha256,disposition:DISPOSITION,authentication:""};seal.authentication=sign(seal,token);R.writeJournalOnce(dir,"seal",seal);const result=read(root,generation);return {ok:true,status:"graceful_continuation_exit_sealed",generation,operationId,shutdownExitProven:true,graceful:true,originalOutcome:"unknown",replayAllowed:false,proof:result.proof};
  }finally{try{if(handle)await handle.dispose();}finally{await controller.dispose();}}
 }
-module.exports={SCHEMA,DISPOSITION,onceKey,original,facts,idle,read,continueOnce};
+// Reconcile the different boundary where drain was acknowledged and the reserved
+// shutdown has no durable commit. This never rewrites/completes the UNKNOWN
+// supervisor operation, reserves a replacement service key, or emits a graceful
+// predecessor. A normal supervisor must independently observe the exited object.
+function reservedOriginal(root,generation,operationId,shutdownId){
+ const S=supervisor(),parent=path.join(A.base(root),"supervisor-operations",operationId),rows=S.readSupervisor(root,operationId).rows,v=rows?.intent?.value;
+ if(!v||v.schema!==S.SCHEMA+".intent"||v.operationId!==operationId||v.command!=="shutdown"||v.targetGeneration!==generation||v.replayAllowed!==false||!same(Object.keys(rows).sort(),["drain-readback","intent","shutdown-readback","unknown"])||rows.unknown.value.code!=="owned_supervisor_shutdown_exit_unknown_readback_only"||rows.unknown.value.shutdownExitProven!==false||rows.unknown.value.proof!==null||rows.unknown.value.writeAdmissionReleased!==false||rows.unknown.value.replayAllowed!==false||rows["drain-readback"].value.ackTransportUnknown!==false||rows["shutdown-readback"].value.ackTransportUnknown!==true)fail("graceful_reserved_exact_parent_unknown_required");
+ A.exact(v,["schema","operationId","command","targetGeneration","desiredSourceSha256","authorizationRef","createdAt","replayAllowed"]);
+ const drain=Service.readOperation(A.base(root),operationId),saved=rows["drain-readback"].value.rows,ack=drain["drain-ack"],shutdown=Service.readOperation(A.base(root),shutdownId),sv=shutdown.intent.value;
+ if(!same(drain,saved)||!same(Object.keys(drain).sort(),["drain-ack","intent"])||drain.intent.value.operation!=="drain"||drain.intent.value.operationId!==operationId||drain.intent.value.targetGeneration!==generation||drain.intent.value.desiredSourceSha256!==v.desiredSourceSha256||!same(drain.intent.value.authorizationRef,v.authorizationRef)||ack?.value.schema!==Service.SCHEMA+".drain-ack"||ack.value.operationId!==operationId||ack.value.targetGeneration!==generation||ack.value.intentSha256!==drain.intent.sha256||ack.value.draining!==true||ack.value.replayAllowed!==false||!time(ack.value.acknowledgedAt))fail("graceful_reserved_exact_drain_required");
+ // Historical intent-only readback stays immutable even after the service ACK.
+ if(!same(Object.keys(rows["shutdown-readback"].value.rows).sort(),["intent"])||!same(rows["shutdown-readback"].value.rows.intent,shutdown.intent)||sv.operation!=="shutdown"||sv.operationId!==shutdownId||shutdownId===operationId||sv.targetGeneration!==generation||sv.desiredSourceSha256!==v.desiredSourceSha256||!same(sv.authorizationRef,v.authorizationRef)||!time(v.createdAt)||Date.parse(sv.createdAt)<Date.parse(ack.value.acknowledgedAt))fail("graceful_reserved_exact_shutdown_required");
+ const supervisorKey=R.hash({command:"shutdown",targetGeneration:generation,desiredSourceSha256:v.desiredSourceSha256}),serviceKey=Service.operationKey(sv),keyPin=env(path.join(A.base(root),"supervisor-operation-keys",supervisorKey+".json")),serviceKeyPin=A.privateFile(path.join(A.base(root),"daemon-operation-keys",serviceKey+".json"));
+ if(keyPin.value.schema!==S.SCHEMA+".operation-key"||keyPin.value.key!==supervisorKey||keyPin.value.operationId!==operationId||keyPin.value.replayAllowed!==false||serviceKeyPin.value.schema!==Service.SCHEMA+".operation-key"||serviceKeyPin.value.key!==serviceKey||serviceKeyPin.value.operationId!==shutdownId||serviceKeyPin.value.replayAllowed!==false)fail("graceful_reserved_once_key_changed");
+ const files=[...Object.keys(rows).map(n=>env(path.join(parent,n+".json"))),env(path.join(A.base(root),"daemon-operations",operationId,"intent.json")),env(path.join(A.base(root),"daemon-operations",operationId,"drain-ack.json")),env(path.join(A.base(root),"daemon-operations",shutdownId,"intent.json")),keyPin,serviceKeyPin];
+ return {intent:v,shutdownIntent:shutdown.intent,pins:files.map(p=>p.rawSha256),assertUnchanged(){for(const p of files)p.assertUnchanged();if(!same(fs.readdirSync(parent).sort(),["drain-readback.json","intent.json","shutdown-readback.json","unknown.json"]))fail("graceful_reserved_parent_namespace_changed");},assertNotCommitted(){if(!same(Object.keys(Service.readOperation(A.base(root),shutdownId)).sort(),["intent"]))fail("graceful_reserved_shutdown_commit_already_present");}};
+}
+function reservedFacts(root,generation,operationId,shutdownId,readSources=()=>E.runtimeNamedHashSet(root)){
+ const S=supervisor(),old=reservedOriginal(root,generation,operationId,shutdownId),reg=S.readDaemonRegistration(root),registered=S.registeredGeneration(root,generation),source=readSources(),policy=A.loadPolicy(root,"owned_daemon_lifecycle",old.intent.authorizationRef),current=A.privateFile(path.join(A.base(root),"current-daemon.json"));
+ if(!reg||reg.generation!==generation||reg.sourceSha256!==old.intent.desiredSourceSha256||E.sha256(source)!==reg.sourceSha256||!same(source,registered.reservation.value.sourcePins)||!S.readProductStopAuthority(root,generation))fail("graceful_reserved_current_source_required");
+ const baseline={generation,originalOperationId:operationId,shutdownOperationId:shutdownId,currentRawSha256:current.rawSha256,registration:reg,registrationRefs:registered.refs,sourceSha256:reg.sourceSha256,sourcePins:source,authorizationRef:old.intent.authorizationRef,credentialSha256:reg.credentialSha256,policyRawSha256:policy.rawSha256,originalPins:old.pins};
+ const key=onceKey(baseline),dir=path.join(A.base(root),"product-graceful-reserved-steps",key);
+ return {baseline,key,dir,old,assertUnchanged(){old.assertUnchanged();current.assertUnchanged();policy.assertUnchanged();if(!same(S.registeredGeneration(root,generation).refs,registered.refs)||E.sha256(readSources())!==reg.sourceSha256||!S.readProductStopAuthority(root,generation))fail("graceful_reserved_baseline_changed");}};
+}
+async function continueReservedShutdownOnce(deps){
+ const {root,generation,originalOperationId,shutdownOperationId,native,request,afterExit}=deps;
+ if(typeof afterExit!=="function")fail("graceful_reserved_held_exit_consumer_required");
+ const current=A.privateFile(path.join(A.base(root),"current-daemon.json")),registered=supervisor().registeredGeneration(root,generation),key=onceKey({originalOperationId,currentRawSha256:current.rawSha256,registrationRefs:registered.refs}),dir=path.join(A.base(root),"product-graceful-reserved-steps",key);
+ // Consumed/partial/unknown means observation only, before acquiring a controller.
+ if(exists(dir))return {ok:true,status:"graceful_reserved_consumed_readback_only",generation,replayAllowed:false};
+ const f=reservedFacts(root,generation,originalOperationId,shutdownOperationId,deps.readSources);if(f.key!==key)fail("graceful_reserved_baseline_changed");
+ const pins=deps.codePins();if(!Array.isArray(pins)||pins.length!==2||pins.some(p=>!path.isAbsolute(p.path)||!L.SHA.test(p.rawSha256||"")))fail("graceful_reserved_code_pins_required");assertCode(pins);
+ let controller=await native.acquireController(),handle;
+ try{
+  await controller.assertHeld();f.assertUnchanged();f.old.assertNotCommitted();
+  // This standalone, identity-checked HANDLE outlives the controller lease. It
+  // retains the exited process object for normal supervisor OpenExact/wait.
+  handle=await native.openOwned(generation);if(!same(handle.identity,f.baseline.registration.kernelIdentity))fail("graceful_reserved_held_identity_changed");
+  const opened=new Date().toISOString(),initial=await handle.wait(0);if(initial.waitResult!=="WAIT_TIMEOUT"||initial.signaled!==false||initial.exitCode!==null)fail("graceful_reserved_alive_exact_required");
+  const profile={daemon:{port:3456,credentialSha256:f.baseline.credentialSha256}},status=await request(profile,"/runtime/owned/status");idle(status,f.baseline);
+  await controller.assertHeld();assertCode(pins);f.assertUnchanged();f.old.assertNotCommitted();
+  const token=keyFor(root,f.baseline),intent={schema:SCHEMA+".reserved-intent",key,operationId:shutdownOperationId,baseline:f.baseline,helperCodePins:pins,createdAt:new Date().toISOString(),replayAllowed:false,authentication:""};intent.authentication=sign(intent,token);const written=R.writeJournalOnce(dir,"intent",intent);
+  const submission={schema:SCHEMA+".reserved-submission",intentSha256:written.sha256,serviceIntentSha256:f.old.shutdownIntent.sha256,status,createdAt:new Date().toISOString(),replayAllowed:false,authentication:""};submission.authentication=sign(submission,token);const sent=R.writeJournalOnce(dir,"submission",submission);
+  await controller.assertHeld();assertCode(pins);f.assertUnchanged();f.old.assertNotCommitted();
+  // A late original can win after this reconciliation. Both deliveries use the
+  // exact SAME durable service intent: shutdownOnce commits its ACK synchronously
+  // and a duplicate sees retained ACK without installing another finish effect.
+  try{await request(profile,"/runtime/owned/shutdown-once",{operationId:shutdownOperationId});}catch(_){/* One submission; reconcile ACK and held exit, never replay. */}
+  let wait;for(let n=0;n<20;n++){await controller.assertHeld();wait=await handle.wait(30000);if(R.exitProof(wait))break;if(wait?.waitResult!=="WAIT_TIMEOUT"||wait.signaled!==false||wait.exitCode!==null)fail("graceful_reserved_native_observation_unknown");}
+  if(!R.exitProof(wait))fail("graceful_reserved_exit_unknown_readback_only");
+  const rows=Service.readOperation(A.base(root),shutdownOperationId),ack=rows["shutdown-ack"],a=ack?.value;
+  A.exact(a,["schema","operationId","targetGeneration","intentSha256","drainOperationId","acknowledgedAt","status","exitProven","replayAllowed"]);
+  if(!same(Object.keys(rows).sort(),["intent","shutdown-ack"])||!same(rows.intent,f.old.shutdownIntent)||a.schema!==Service.SCHEMA+".shutdown-ack"||a.operationId!==shutdownOperationId||a.targetGeneration!==generation||a.intentSha256!==rows.intent.sha256||a.drainOperationId!==originalOperationId||a.status!=="shutdown_committed_after_response_finish"||a.exitProven!==false||a.replayAllowed!==false||!time(a.acknowledgedAt)||Date.parse(a.acknowledgedAt)<Date.parse(rows.intent.value.createdAt))fail("graceful_reserved_shutdown_ack_required");
+  const proof={identity:handle.identity,wait,handleOpenedAt:opened,observedAt:new Date().toISOString()};if(Date.parse(proof.observedAt)<Date.parse(a.acknowledgedAt))fail("graceful_reserved_exit_chronology_invalid");
+  const ex={schema:SCHEMA+".reserved-exit",intentSha256:written.sha256,submissionSha256:sent.sha256,shutdownAckSha256:ack.sha256,proof,originalOutcome:"unknown",predecessorAuthority:false,gracefulSuccessionClaimed:false,replayAllowed:false,authentication:""};ex.authentication=sign(ex,token);R.writeJournalOnce(dir,"exit-result",ex);
+  f.assertUnchanged();assertCode(pins);await controller.assertHeld();await controller.dispose();controller=null;
+  const result=await afterExit({proof,baseline:f.baseline,assertHistoricalUnchanged:()=>f.old.assertUnchanged()});
+  R.writeJournalOnce(dir,"successor-result",{schema:SCHEMA+".reserved-successor-result",result,replayAllowed:false});return {ok:true,status:"graceful_reserved_exit_observed_and_consumer_completed",generation,operationId:shutdownOperationId,shutdownExitProven:true,originalOutcome:"unknown",gracefulSuccessionClaimed:false,replayAllowed:false,result};
+ }finally{try{if(controller)await controller.dispose();}finally{if(handle)await handle.dispose();}}
+}
+module.exports={SCHEMA,DISPOSITION,onceKey,original,facts,idle,read,continueOnce,reservedOriginal,reservedFacts,continueReservedShutdownOnce};
