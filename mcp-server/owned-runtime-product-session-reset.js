@@ -3,6 +3,7 @@
 // A reset abandons control, never the history or the effects of an old command.
 // All paths/selectors below are private. The public operation accepts no input.
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto");
+const LOADED_PRECONNECT_SOURCE_SHA256=crypto.createHash("sha256").update(fs.readFileSync(__filename)).digest("hex");
 const authority=require("./owned-runtime-authority"),r1=require("./owned-runtime-lifecycle"),ledger=require("./native-fixture-attempt-ledger");
 const SCHEMA="ae-agent.product-session-reset.v1",POLICY=SCHEMA+".policy";
 const FAILED_START=Object.freeze({operationId:"67226724-68f7-4d65-8e53-332ce661c63d",generation:"889f0a88-9a80-48e9-99c4-0d8961d9721f",predecessorGeneration:"deda8ab3-55ab-4178-bbae-41699bf41141"});
@@ -214,5 +215,62 @@ function daemonSession({root,generation,readGeneration,keyReader,readLifecycle,r
   }
   return Object.freeze({admissionReady,challenge,activate,activation,oldEditRawSha256:x.value.oldEditRawSha256});
 }
-module.exports={SCHEMA,POLICY,FAILED_START,signed,policy,provision,disposition,snapshot,assertLifecycle,readIntent,readAnchor,sessionAnchor,currentStatus,readBack,reset,startFreshReset,failedStartStatus,recoverFailedStart,daemonSession};
+// Private, memory-branded PRECONNECT control disposition. It permits only the
+// existing reset metadata/preflight handler; no old outcome or resource is settled.
+const preconnectWitnesses=new WeakMap(),preconnectRuntimeObservations=new WeakMap();
+async function readPreconnectRuntime(root){
+  const supervisor=require("./owned-runtime-supervisor"),before=supervisor.readDaemonRegistration(root);
+  if(!before)fail("owned_product_preconnect_current_runtime_required");
+  const profile={daemon:{port:3456,credentialSha256:before.credentialSha256}},client=authority.runtimeControlFor(root),started=Date.now();
+  const owned=await client.request(profile,"/runtime/owned/status"),status=await client.request(profile,"/dev/status"),after=supervisor.readDaemonRegistration(root),runtime=status.humanGuardRuntime;
+  if(!same(before,after)||owned.ok!==true||owned.owned!==true||owned.generation!==before.generation||owned.draining!==false||owned.closing!==false||owned.shutdownEffectPending!==null||owned.writeAdmission!=="retained_audit_and_fresh_adoption_required"||owned.activeTickets!==0||status.ok!==true||status.startedAt!==before.serviceStartedAt||runtime?.pid!==before.kernelIdentity.pid||runtime.startedAt!==before.serviceStartedAt||runtime.sourceSha256!==before.sourceSha256||status.pendingCommands!==0||!Array.isArray(status.inflightCommands)||status.inflightCommands.length||status.activeEditSession!==null||status.projectLifecycle?.blocked!==false||status.projectLifecycle.pending)fail("owned_product_preconnect_listener_not_current_idle");
+  const proof=Object.freeze({scope:"authenticated_pending_product_reset_listener"});preconnectRuntimeObservations.set(proof,{root:path.resolve(root),current:before,started});return proof;
+}
+function preconnectSnapshot(root,directory,rows,observation){
+  return ledger.withFreshProofReadView(()=>{
+    if(require("./deployment-mode").deploymentMode()!=="product"||path.resolve(directory)!==path.join(path.resolve(root),"logs","cep-panel-control")||!Array.isArray(rows)||!rows.length||rows.length>120)fail("owned_product_preconnect_scope_required");
+    const supervisor=require("./owned-runtime-supervisor"),control=require("./cep-panel-control"),contract=require("../cep-panel/panel-action-contract");
+    const keyReader=v=>authority.runtimeControlFor(root).credential({daemon:{port:3456,credentialSha256:v.credentialSha256}}),current=supervisor.readDaemonRegistration(root);
+    require("./owned-runtime-product-activation").assertConfigurationRoots(root);
+    if(!current||current.sourceSha256!==require("./review-evidence").runtimeIdentity(root).sourceSha256||!supervisor.readProductStopAuthority(root,current.generation))fail("owned_product_preconnect_current_runtime_required");
+    const listener=preconnectRuntimeObservations.get(observation?.runtime);
+    if(!listener||listener.root!==path.resolve(root)||!same(listener.current,current)||Date.now()<listener.started||Date.now()-listener.started>10000)fail("owned_product_preconnect_listener_observation_required");
+    const anchor=sessionAnchor(root,current.generation,supervisor.registeredGeneration,keyReader);
+    if(!anchor?.legacyActivation)fail("owned_product_preconnect_activated_origin_required");
+    const x=readIntent(root,anchor.value.generation,g=>keyReader(supervisor.registeredGeneration(root,g).reservation.value)),session=g=>daemonSession({root,generation:g,readGeneration:supervisor.registeredGeneration,keyReader,retireEdit(){}});
+    if(x.value.schema!==SCHEMA+".intent"||session(anchor.value.generation).activation())fail("owned_product_preconnect_pending_reset_required");
+    const previous=sessionAnchor(root,x.value.predecessorGeneration,supervisor.registeredGeneration,keyReader),activated=previous&&session(previous.value.generation)?.activation();
+    if(!activated||!same(activated.disposition,disposition())||!Array.isArray(activated.panelControl?.oldActionEntries))fail("owned_product_preconnect_previous_coverage_required");
+    const grant=policy(root,x.value.predecessorGeneration),edit=snapshot(path.join(root,"logs","edit-session-active.json"));
+    if(edit.sha256!==x.value.oldEditRawSha256)fail("owned_product_preconnect_edit_ownership_changed");assertLifecycle(root);
+    const state=observation?.state,actor=state&&{panelInstanceId:state.panelInstanceId,panelLifecycleEpoch:state.panelLifecycleEpoch,panelGeneration:state.panelGeneration};
+    if(!state||typeof actor.panelInstanceId!=="string"||!actor.panelInstanceId||!Number.isSafeInteger(actor.panelLifecycleEpoch)||actor.panelLifecycleEpoch<0||typeof actor.panelGeneration!=="string"||!actor.panelGeneration||!state.bridgeConnection?.panelConnectionId||state.assetVersion!==require("../package.json").version||state.connected!==false||state.running!==false||state.pollInFlight!==false||state.nativeBusy!==false||state.physicalInflight!==0||state.activeAction!==null||state.recoveryTransport!==null||state.actionStorage!=="ready"||state.trustedGuardRefresh?.pending||state.causalLookup?.pending||Object.keys(state).some(k=>/LookupPending$/.test(k)&&state[k]!==false))fail("owned_product_preconnect_fresh_idle_required");
+    const unresolved=state.unresolvedActions;
+    if(!Array.isArray(unresolved)||unresolved.length!==rows.length||new Set(rows.map(r=>r?.requestId)).size!==rows.length||new Set(unresolved.map(r=>r?.requestId)).size!==rows.length||!Array.isArray(observation.remote)||observation.remote.length!==rows.length)fail("owned_product_preconnect_all_unknowns_required");
+    const pins=[];
+    for(const row of rows){
+      const indexed=control.readIndexedReceipt(directory,row?.requestId),local=indexed.row,entry=unresolved.find(r=>r.requestId===local.requestId),remote=observation.remote.find(r=>r?.requestId===local.requestId);
+      if(!same(row,local)||local.action!=="bridge.disconnect"||local.state!=="unknown"||local.replayAllowed!==false||local.delivery!=="delivered"||local.runId||!entry||entry.action!==local.action||entry.runId!==null||!ledger.SHA.test(entry.entrySha256||"")||!activated.panelControl.oldActionEntries.some(e=>e.requestId===local.requestId&&e.entrySha256===entry.entrySha256)||!remote||remote.state!=="unknown"||remote.replayAllowed!==false||remote.runId)fail("owned_product_preconnect_unknown_not_covered");
+      const fields=["protocolVersion","requestId","action","state","phase","acceptedAt","completedAt","panelInstanceId","epoch","generation","code","message","effect","httpStatus","source"];
+      if(!fields.every(k=>same(local[k]??null,remote[k]??null))||!same(local.diagnostic??null,remote.diagnostic??null)||!same(local.result?.diagnostic??null,remote.result?.diagnostic??null)||!same(local.binding,{panelInstanceId:remote.panelInstanceId,panelLifecycleEpoch:remote.epoch,panelGeneration:remote.generation})||actor.panelInstanceId===local.binding.panelInstanceId||actor.panelInstanceId===activated.actor?.panelInstanceId||!same(contract.sanitizeReceipt(remote),remote))fail("owned_product_preconnect_local_panel_link_required");
+      pins.push({requestId:local.requestId,receipt:indexed.rawReceiptSha256,index:indexed.rawIndexSha256,identity:indexed.identitySha256,entrySha256:entry.entrySha256});
+    }
+    const config=path.join(root,".codex","config.toml");
+    return {current,anchor:anchor.pins,intent:x.intent.rawSha256,grant:grant.rawSha256,previousActivation:authority.privateFile(path.join(resetDir(root,previous.value.operationId),"activation.json")).rawSha256,config:ledger.proofExists(config)?ledger.hash(ledger.readBytes(config)):null,edit:edit.sha256,pins:pins.sort((a,b)=>a.requestId.localeCompare(b.requestId)),actor,connection:state.bridgeConnection.panelConnectionId,target:ledger.clone(observation.selected)};
+  });
+}
+function createPreconnectControlWitness(root,directory,rows,observation){
+  const value=preconnectSnapshot(root,directory,rows,observation),witness=Object.freeze({scope:"pending_product_reset_preconnect_only",replayAllowed:false});
+  preconnectWitnesses.set(witness,{root:path.resolve(root),directory:path.resolve(directory),createdAt:Date.now(),value});return witness;
+}
+function assertPreconnectControlWitness(witness,root,directory,rows,observation){
+  const saved=preconnectWitnesses.get(witness);
+  if(!saved||saved.root!==path.resolve(root)||saved.directory!==path.resolve(directory)||Date.now()<saved.createdAt||Date.now()-saved.createdAt>30000||!same(saved.value,preconnectSnapshot(root,directory,rows,observation)))fail("owned_product_preconnect_witness_changed");
+}
+function preconnectControlAudit(witness){
+  const saved=preconnectWitnesses.get(witness);if(!saved)fail("owned_product_preconnect_witness_changed");
+  return {witnessSha256:r1.hash(saved.value),daemon:{generation:saved.value.current.generation,sourceSha256:saved.value.current.sourceSha256}};
+}
+function assertLoadedPreconnectSource(){if(ledger.hash(ledger.readBytes(__filename))!==LOADED_PRECONNECT_SOURCE_SHA256)fail("product_reset_client_loaded_source_changed");}
+module.exports={SCHEMA,POLICY,FAILED_START,signed,policy,provision,disposition,snapshot,assertLifecycle,readIntent,readAnchor,sessionAnchor,currentStatus,readBack,reset,startFreshReset,failedStartStatus,recoverFailedStart,daemonSession,readPreconnectRuntime,createPreconnectControlWitness,assertPreconnectControlWitness,preconnectControlAudit,assertLoadedPreconnectSource};
 if(require.main===module){(async()=>{const [command,...args]=process.argv.slice(2);let result;if(command==="authorize"&&args.length===1)result=provision(args[0]);else if(["status","reset","failed-start-status","recover-failed-start"].includes(command)&&args.length===0){const s=require("./owned-runtime-supervisor").createOwnedRuntimeSupervisor(),method={status:"status",reset:"resetProductSession","failed-start-status":"failedProductSessionStartStatus","recover-failed-start":"recoverFailedProductSessionStart"}[command];result=await s[method]();}else fail("owned_product_reset_cli_arguments_invalid");process.stdout.write(JSON.stringify(result)+"\n");})().catch(e=>{process.stdout.write(JSON.stringify({ok:false,code:e.code||"owned_product_reset_unknown",replayAllowed:false})+"\n");process.exitCode=1;});}

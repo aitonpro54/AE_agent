@@ -2,6 +2,7 @@
 
 // Fixed named CEP service. No bootstrap, arbitrary expression, native or provider lane.
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto"),http=require("node:http");
+const LOADED_CLIENT_CONTROL_SHA256=crypto.createHash("sha256").update(fs.readFileSync(__filename)).digest("hex");
 const contract=require("../cep-panel/panel-action-contract");
 const bootstrap=require("./ae-agent-panel-bootstrap");
 const readonlyOrphan=require("./cep-panel-readonly-orphan");
@@ -9,6 +10,7 @@ const PROTOCOL_VERSION=contract.PROTOCOL_VERSION, DEFAULT_CDP_PORT=8870, DEFAULT
 // Seven serial fixed guard GETs, each bounded at 60s, plus final inspection.
 const TRUSTED_GUARD_REFRESH_TIMEOUT_MS=8*60000;
 const DEFAULT_STATE_DIR=path.resolve(__dirname,"../logs/cep-panel-control");
+const PRODUCT_RESET_CANONICAL_ROOT=path.resolve("C:/Users/Ant/Documents/Codex/AE_agent"),productResetMaintenanceContexts=new WeakMap();
 const STORE_VERSION="ae-agent.cep-panel-transport.v1", STATES=/^(accepted|running|completed|error|rejected|unknown)$/;
 // Retired identity accepted only from persisted history, never by the callable catalog.
 const HISTORICAL_RECEIPT_ACTION="recovery.bootstrap";
@@ -289,6 +291,7 @@ function cutoverReceiptSemantics(row) {
 function createPanelControlService(options={}) {
   // Private Node fixture seams; none are accepted by CLI/MCP or environment settings.
   exact(options,["stateDir","evidenceRoot","resolveStateDirectory","resolveReceiptDirectory","readCutoverInventory","cdpPort","inspectInstalledTarget","fetchCdpTargets","evaluateViaCdp","WebSocket","persistReceipt","lookupNativeFixtureAdmissionRefusal","lookupRetainedNativeFixture","assertRetainedAdmissionCurrent","lookupPanelLifecycleCausal"]);
+  const maintenance=productResetMaintenanceContexts.get(options),productRoot=maintenance?.root || path.resolve(__dirname,"..");
   if(options.lookupNativeFixtureAdmissionRefusal!==undefined && typeof options.lookupNativeFixtureAdmissionRefusal!=="function")throw problem("fixture_refusal_lookup_callback_invalid");
   if(options.lookupRetainedNativeFixture!==undefined && typeof options.lookupRetainedNativeFixture!=="function")throw problem("retained_lookup_callback_invalid");
   if(options.assertRetainedAdmissionCurrent!==undefined && typeof options.assertRetainedAdmissionCurrent!=="function")throw problem("retained_admission_callback_invalid");
@@ -300,7 +303,7 @@ function createPanelControlService(options={}) {
   if(options.lookupPanelLifecycleCausal!==undefined&&typeof options.lookupPanelLifecycleCausal!=="function")throw problem("panel_causal_private_reader_required");
   function refreshDirectory(){if(options.resolveStateDirectory)directory=path.resolve(options.resolveStateDirectory());}
   function receiptDirectory(id){return options.resolveReceiptDirectory?path.resolve(options.resolveReceiptDirectory(id)):directory;}
-  const inspect=options.inspectInstalledTarget || bootstrap.inspectInstalledTarget,fetchTargets=options.fetchCdpTargets || fetchCdpTargets;
+  const inspect=options.inspectInstalledTarget || (maintenance?()=>bootstrap.inspectInstalledTarget(undefined,path.join(productRoot,"cep-panel")):bootstrap.inspectInstalledTarget),fetchTargets=options.fetchCdpTargets || fetchCdpTargets;
   let cutoverWitness=null,cutoverFailure=null;
   const evaluate=options.evaluateViaCdp || evaluateViaWebSocket,persist=options.persistReceipt || saveDurableReceipt;
   async function resolveTarget(budget) {
@@ -560,6 +563,43 @@ function createPanelControlService(options={}) {
       return responseError(problem("wait_timeout"),latest);
     }catch(error){return responseError(error);}
   }
+  async function unresolvedInventory(index){
+    const unresolved=[],readonlyDispositions=[],causalDispositions=[];
+    for(const previous of Object.keys(index.identities)) {
+      const prior=loadDurableReceipt(directory,previous);
+      const storageUnproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
+      if(!storageUnproven && await freshRefusalValid(prior))continue;
+      if(!storageUnproven && await freshRetainedValid(prior))continue;
+      if(!storageUnproven){const causal=await freshCausalValid(prior);if(causal){causalDispositions.push({projection:causal,row:prior});continue;}}
+      if(prior && !storageUnproven && readonlyOrphan.read(safeRoot(directory),previous,"disposition")) {
+        try {const disposition=await readonlyOrphan.validate(orphanContext(),prior);readonlyDispositions.push(disposition);continue;}
+        catch(_) {unresolved.push(prior);continue;}
+      }
+      if(!prior || /^(accepted|running|unknown)$/.test(prior.state) &&
+         (storageUnproven || !PASSIVE_ACTIONS.has(prior.action)) && !projectedRecoveryValid(prior)) unresolved.push(prior);
+    }
+    return {unresolved,readonlyDispositions,causalDispositions};
+  }
+  async function observePreconnect(unresolved,selected,state,budget){
+    const binding={panelInstanceId:state.panelInstanceId,panelLifecycleEpoch:state.panelLifecycleEpoch,panelGeneration:state.panelGeneration},remote=[];
+    for(const row of unresolved)remote.push(remoteReceipt(await methodAt(selected.target,"getResult",row.requestId,budget(),binding),row.requestId,row));
+    return {selected,state,remote,runtime:await require("./owned-runtime-product-session-reset").readPreconnectRuntime(productRoot)};
+  }
+  async function diagnosePreconnect(){
+    let stage="scope",observed;
+    try{
+      if(!maintenance)throw problem("product_reset_client_scope_required");maintenance.assertCurrent();refreshDirectory();
+      stage="transport_inventory";if(readLock(directory))throw problem("transport_busy");const {unresolved}=await unresolvedInventory(readIndex(directory));
+      if(!unresolved.length)throw problem("product_reset_client_preconnect_required");
+      const deadline=Date.now()+60000,budget=()=>{const left=deadline-Date.now();if(left<1)throw problem("cdp_timeout");return left;};
+      stage="panel_target";const selected=await resolveTarget(budget()),state=remoteState(await methodAt(selected.target,"state",{},budget()));observed=state;
+      stage="panel_receipts_and_listener";const observation=await observePreconnect(unresolved,selected,state,budget);
+      stage="preconnect_snapshot";const reset=require("./owned-runtime-product-session-reset"),witness=reset.createPreconnectControlWitness(productRoot,directory,unresolved,observation);
+      stage="final_observation";const next=await resolveTarget(budget()),after=remoteState(await methodAt(next.target,"state",{},budget()));observed=after;
+      const final=await observePreconnect(unresolved,next,after,budget);stage="final_assertion";reset.assertPreconnectControlWitness(witness,productRoot,directory,unresolved,final);maintenance.assertCurrent();if(readLock(directory))throw problem("transport_busy");
+      return {ok:true,scope:"pending_product_reset_preconnect_diagnostic_only",...reset.preconnectControlAudit(witness),sent:false,replayAllowed:false};
+    }catch(error){return {...responseError(error),stage,...(observed?{state:observed}:{}),sent:false,replayAllowed:false};}
+  }
   async function invoke(raw,callOptions={}) {
     refreshDirectory();
     let input,record,claim,sent=false;
@@ -577,26 +617,25 @@ function createPanelControlService(options={}) {
       claim=acquireControllerLock(directory,id);
       const index=readIndex(directory,true),second=loadDurableReceipt(directory,id);
       if(second)return second.signature===signature?responseReceipt(second):responseError(problem("duplicate_request_id_conflict"),second);
-      const unresolved=[],readonlyDispositions=[],causalDispositions=[];
-      for(const previous of Object.keys(index.identities)) {
-        const prior=loadDurableReceipt(directory,previous);
-        const storageUnproven=prior && (prior.phase==="receipt_storage" || /^(receipt_|unindexed_)/.test(prior.code || ""));
-        if(!storageUnproven && await freshRefusalValid(prior))continue;
-        if(!storageUnproven && await freshRetainedValid(prior))continue;
-        if(!storageUnproven){const causal=await freshCausalValid(prior);if(causal){causalDispositions.push({projection:causal,row:prior});continue;}}
-        if(prior && !storageUnproven && readonlyOrphan.read(safeRoot(directory),previous,"disposition")) {
-          try {const disposition=await readonlyOrphan.validate(orphanContext(),prior);readonlyDispositions.push(disposition);continue;}
-          catch(_) {unresolved.push(prior);continue;}
-        }
-        if(!prior || /^(accepted|running|unknown)$/.test(prior.state) &&
-           (storageUnproven || !PASSIVE_ACTIONS.has(prior.action)) && !projectedRecoveryValid(prior)) unresolved.push(prior);
-      }
-      if(unresolved.length && !PASSIVE_ACTIONS.has(envelope.action) && envelope.action!=="connector.emergencyDisable" &&
-          !(envelope.action==="plan.reconcile" && unresolved.some(prior=>prior?.runId===envelope.args.runId))) throw problem("transport_reconciliation_required");
-      record={protocolVersion:PROTOCOL_VERSION,requestId:id,action:envelope.action,signature,state:"accepted",phase:"admission",
-        delivery:"not_submitted",acceptedAt:new Date().toISOString(),replayAllowed:false};persist(directory,record);
-      if(envelope.action==="plan.reconcile" && UUID.test(envelope.args.runId || ""))readonlyOrphan.capture(safeRoot(directory),envelope,{kind:"service-invoke"},signature);
+      if(maintenance){maintenance.assertCurrent();if(fs.existsSync(maintenance.auditFile(id)))throw problem("product_reset_client_orphan_attestation_no_replay");}
+      const {unresolved,readonlyDispositions,causalDispositions}=await unresolvedInventory(index);
       const deadline=Date.now()+input.timeoutMs,budget=()=>{const left=deadline-Date.now();if(left<1)throw problem("cdp_timeout");return left;};
+      let preconnect=null;
+      if(unresolved.length && !PASSIVE_ACTIONS.has(envelope.action) && envelope.action!=="connector.emergencyDisable" &&
+          !(envelope.action==="plan.reconcile" && unresolved.some(prior=>prior?.runId===envelope.args.runId))) {
+        if(envelope.action!=="bridge.connect")throw problem("transport_reconciliation_required");
+        try {
+          const selected=await resolveTarget(budget()),state=remoteState(await methodAt(selected.target,"state",{},budget()));
+          preconnect=require("./owned-runtime-product-session-reset").createPreconnectControlWitness(productRoot,directory,unresolved,await observePreconnect(unresolved,selected,state,budget));
+        }catch(_){throw problem("transport_reconciliation_required");}
+      }
+      function accept(){record={protocolVersion:PROTOCOL_VERSION,requestId:id,action:envelope.action,signature,state:"accepted",phase:"admission",
+        delivery:"not_submitted",acceptedAt:new Date().toISOString(),replayAllowed:false};persist(directory,record);}
+      // The branded lane keeps the original index RAW intact until its final
+      // assertion. No await occurs between that assertion and dispatch.
+      if(maintenance&&!preconnect)throw problem("product_reset_client_preconnect_required");
+      if(!preconnect)accept();
+      if(envelope.action==="plan.reconcile" && UUID.test(envelope.args.runId || ""))readonlyOrphan.capture(safeRoot(directory),envelope,{kind:"service-invoke"},signature);
       const selected=await resolveTarget(budget()),current=remoteState(await methodAt(selected.target,"state",{},budget()));
       const binding={panelInstanceId:current.panelInstanceId,panelLifecycleEpoch:current.panelLifecycleEpoch,panelGeneration:current.panelGeneration};
       for(const saved of causalDispositions)require("./panel-lifecycle-causal").assertControlProjection(saved.projection,receiptDirectory(saved.row.requestId),saved.row,binding);
@@ -608,6 +647,13 @@ function createPanelControlService(options={}) {
          checked.target.webSocketDebuggerUrl!==selected.target.webSocketDebuggerUrl)throw problem("panel_target_changed");
       for(const disposition of readonlyDispositions)if(await methodAt(checked.target,"getResult",disposition.saved.value.requestId,budget(),binding)!==null)throw problem("readonly_orphan_remote_record_appeared");
       for(const saved of causalDispositions)require("./panel-lifecycle-causal").assertControlProjection(saved.projection,receiptDirectory(saved.row.requestId),saved.row,binding);
+      if(preconnect){
+        const observation=await observePreconnect(unresolved,checked,remoteState(await methodAt(checked.target,"state",{},budget(),binding)),budget);
+        observation.state=remoteState(await methodAt(checked.target,"state",{},budget(),binding));observation.selected=await resolveTarget(budget());
+        require("./owned-runtime-product-session-reset").assertPreconnectControlWitness(preconnect,productRoot,directory,unresolved,observation);
+        if(maintenance)maintenance.writeAudit(id,preconnect);
+        budget();accept();
+      }
       record.binding=binding;record.panelInstanceId=binding.panelInstanceId;record.epoch=binding.panelLifecycleEpoch;record.generation=binding.panelGeneration;
       record.state="running";record.phase="submitted";record.delivery="submitted";persist(directory,record);sent=true;
       const value=await methodAt(checked.target,"invoke",bound,budget(),binding),verified=remoteReceipt(value,id,{action:envelope.action,binding});
@@ -645,8 +691,35 @@ function createPanelControlService(options={}) {
     return {...selected,state:{...after,nativeControlIdle:!after.activeAction && !after.recoveryTransport && after.actionStorage==="ready" && (reconcileIdle || after.busy===false),failedRecoveryCaptureIdle}};
   }
   function controllerIdle(){refreshDirectory();return readLock(directory)===null;}
-  return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage,maintenanceTarget,maintenanceTransportState,refreshTrustedGuards,controllerIdle,cutoverReadiness,validateManagedCleanupAdoption});
+  return Object.freeze({catalog,state,invoke,getResult,waitForResult,handleTool,readRecoveryLinkage,maintenanceTarget,maintenanceTransportState,refreshTrustedGuards,controllerIdle,cutoverReadiness,validateManagedCleanupAdoption,...(maintenance?{diagnosePreconnect}:{})});
+}
+// A separate supported local client, never an alternate server identity or a
+// caller-supplied root/fixture seam. It shares the canonical global receipt lock.
+function productResetClientAttestation(){
+  const ledger=require("./native-fixture-attempt-ledger"),sourceRoot=path.resolve(__dirname,".."),entrypoint="scripts/cep-panel-product-reset-client.js";
+  if(ledger.hash(ledger.readBytes(__filename))!==LOADED_CLIENT_CONTROL_SHA256)throw problem("product_reset_client_loaded_source_changed");
+  require("./owned-runtime-product-session-reset").assertLoadedPreconnectSource();require("../scripts/cep-panel-product-reset-client").assertLoadedSource();
+  const modules=require("./review-evidence").runtimeNamedHashSet(sourceRoot).map(row=>({name:row.name,sha256:ledger.hash(ledger.readBytes(path.join(sourceRoot,row.name)))}));
+  const value={schema:"ae-agent.product-reset-client.v1",canonicalRoot:PRODUCT_RESET_CANONICAL_ROOT,sourceRoot,modules,entrypoint:{name:entrypoint,sha256:ledger.hash(ledger.readBytes(path.join(sourceRoot,entrypoint)))}};
+  return {...value,clientSha256:ledger.hash(value)};
+}
+function createProductResetMaintenanceClient(expectedClientSha256){
+  const ledger=require("./native-fixture-attempt-ledger"),pins=productResetClientAttestation();
+  if(!ledger.SHA.test(expectedClientSha256||"")||expectedClientSha256!==pins.clientSha256)throw problem("product_reset_client_source_pin_required");
+  const root=PRODUCT_RESET_CANONICAL_ROOT,options={stateDir:path.join(root,"logs","cep-panel-control"),evidenceRoot:path.join(root,"logs")};
+  const auditFile=id=>path.join(options.stateDir,"client-attestation",requestId(id)+".json");
+  function assertCurrent(){if(!ledger.same(pins,productResetClientAttestation()))throw problem("product_reset_client_source_changed");}
+  function writeAudit(id,witness){
+    assertCurrent();const file=auditFile(id),value={schema:pins.schema+".submission",requestId:id,action:"bridge.connect",client:pins,...require("./owned-runtime-product-session-reset").preconnectControlAudit(witness),replayAllowed:false};
+    const row=ledger.writeOnce(file,value);if(!ledger.same(JSON.parse(ledger.readBytes(file)),row)||row.sha256!==ledger.hash(value))throw problem("product_reset_client_attestation_readback_failed");
+    assertCurrent();
+  }
+  productResetMaintenanceContexts.set(options,{root,auditFile,assertCurrent,writeAudit});const service=createPanelControlService(options);
+  return Object.freeze({attestation:()=>ledger.clone(pins),state:()=>service.state(),diagnose:()=>service.diagnosePreconnect(),getResult:id=>service.getResult(id),connect:async id=>{
+    const result=await service.invoke({requestId:requestId(id),action:"bridge.connect",args:{},timeoutMs:60000});
+    const file=auditFile(id);return {...result,clientSha256:pins.clientSha256,...(fs.existsSync(file)?{clientAttestation:{path:file,rawSha256:ledger.hash(ledger.readBytes(file))}}:{})};
+  }});
 }
 module.exports={PROTOCOL_VERSION,DEFAULT_CDP_PORT,DEFAULT_STATE_DIR,TRUSTED_GUARD_REFRESH_TIMEOUT_MS,PANEL_CONTROL_TOOL_NAMES,isPanelControlTool,panelControlTools,
   listPanelActionsTool:panelControlTools[0],getPanelStateTool:panelControlTools[1],invokePanelActionTool:panelControlTools[2],getPanelActionResultTool:panelControlTools[3],
-  computeActionSignature,validateRawInvokeInput,fetchCdpTargets,evaluateViaWebSocket,createReceiptPath,loadDurableReceipt,readIndexedReceipt,saveDurableReceipt,acquireControllerLock,captureReadOnlyOrphanIntent,cutoverReceiptSemantics,createPanelControlService};
+  computeActionSignature,validateRawInvokeInput,fetchCdpTargets,evaluateViaWebSocket,createReceiptPath,loadDurableReceipt,readIndexedReceipt,saveDurableReceipt,acquireControllerLock,captureReadOnlyOrphanIntent,cutoverReceiptSemantics,createPanelControlService,productResetClientAttestation,createProductResetMaintenanceClient};

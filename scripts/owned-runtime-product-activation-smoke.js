@@ -61,4 +61,4 @@ async function main(){
   await check("genuine shutdown then fixed-config redirect denies ordinary successor before child",()=>withF({},async f=>{f.authorize();const first=await f.apply(),state=session(f,first.generation);state.activate(witness(state,first.generation));await f.run("shutdown");const before=f.counts.launch;fs.writeFileSync(path.join(f.root,".codex","config.toml"),'[mcp_servers."after-effects".env]\nAE_AGENT_HARDCORE_SESSION_DIR='+JSON.stringify(path.join(f.root,"foreign"))+'\n');await assert.rejects(f.run("ensure"),/runtime_redirect_refused/);assert.equal(f.counts.launch,before);assert.equal(supervisor.readProductStopAuthority(f.root,first.generation),true);}));
   process.stdout.write(JSON.stringify({ok:true,checks:cases.length,cases})+"\n");
 }
-if(require.main===module)main().catch(e=>{process.stderr.write((e.stack||String(e))+"\n");process.exitCode=1;});module.exports={main};
+if(require.main===module)main().catch(e=>{process.stderr.write((e.stack||String(e))+"\n");process.exitCode=1;});module.exports={main,make,session,witness};

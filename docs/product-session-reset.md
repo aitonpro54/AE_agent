@@ -4,6 +4,42 @@
 Её verified activated origin поддерживает дальнейший reset только с отдельным
 generation-bound operator grant; исходная activation authority не наследуется.
 
+## Подключение после reset из отдельного проверенного клиента
+
+Для pending reset с прежними covered `bridge.disconnect/UNKNOWN` предусмотрен
+`scripts/cep-panel-product-reset-client.js`. Это закрытый локальный клиент:
+canonical root и общий `logs/cep-panel-control/controller.lock` фиксированы;
+из действий доступен только штатный `bridge.connect` с пустыми args.
+Клиент не запускает и не перезагружает daemon/CEP. Установленные assets строго
+сверяются с canonical `cep-panel`, даже когда клиент работает из staged checkout.
+
+Из проверенного checkout сначала получить `attest`, затем передавать его
+`client.clientSha256` как `--client-sha256` в `state`, `diagnose`,
+`connect --request-id <новый UUID>` и `result --request-id <тот же UUID>`.
+CLI не принимает paths, server identities, arbitrary actions или fixture options.
+`diagnose` повторяет текущие PRECONNECT проверки без отправок и записей, возвращая
+точный отказ и этап. Успех диагностики не заменяет свежие проверки при Connect.
+Проверяются отдельно source нового клиента и source текущего canonical daemon.
+Перед отправкой под общим lock сохраняется immutable
+`client-attestation/<UUID>.json`: клиентские pins, generation/source daemon и
+digest memory-branded PRECONNECT witness. Это audit, не разрешение на replay.
+Sidecar без receipt блокирует повтор. При unknown/timeout читать `result` с тем
+же UUID; повторный Connect не разрешён. Старые receipts и UNKNOWN сохраняются.
+
+После activation штатный cutover выполняется существующим supervisor:
+graceful shutdown со старого canonical source и доказанный exit; только затем
+применение нового source и `ensure`. Connected и настоящий `get_project_info`
+проверяются отдельно; офлайн smoke не доказывает их.
+
+25 октября 2026 root подтвердил этот путь на текущем pending reset:
+первый Connect `05124d2d…` отказан до отправки, receipt отсутствовал. Проверка
+исправлена под реальный producer `shutdownEffectPending:null` (другие значения
+не допускаются). После read-only `diagnose` PASS новый Connect `64112d47…`
+доставлен/completed; пассивное ожидание дало `connected_idle`. Настоящий typed
+`get_project_info` прочитал `file:null`, 0 items, bits16, revision1;
+`reset_active`, autonomy active, pending0/inflight[]/editnull. Canonical
+daemon/source до последующего штатного cutover сохранялись.
+
 ## Назначение
 
 `reset_owned_runtime_product_session` начинает новую product-сессию после
