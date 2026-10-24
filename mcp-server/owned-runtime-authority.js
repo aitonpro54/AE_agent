@@ -8,7 +8,7 @@ const POLICY="ae-agent.owned-runtime-policy.v1",RETAINED="ae-agent.native-fixtur
 const PROFILE="migration-fixture-children-v1";
 const CAPABILITIES=Object.freeze(["native_fixture_disposition","panel_retained_reload","owned_daemon_lifecycle"]);
 const PIN_KEYS=Object.freeze(["canonicalRawSha256","transportReceiptRawSha256","transportIndexRawSha256","transportIdentitySha256","privateRecordSha256","privateIndexEntrySha256","panelReceiptSha256","privateSignatureSha256"]);
-const ACTUAL_RUNTIME_ROOT=path.resolve("C:/Users/Ant/Documents/Codex/AE_agent"),FIXED_CONTROL_SHA256="37da2e60a6ce9f22ca04eea0c394e6e14b252652bc98b48725c32fee07f02cbe";
+const ACTUAL_RUNTIME_ROOT=path.resolve("C:/Users/Ant/Documents/Codex/AE_agent"),FIXED_CONTROL_SHA256="0a4d820bc89ed7d7212e7bcbdfc79d7b4cda1b91deaa453fae187014d2162acb";
 function runtimeControlFor(root=path.resolve(__dirname,"..")) {
   // Staged maintenance must use the genuine ROOT's strict fixed-config reader.
   // No credential path, environment token or fallback is accepted from a caller.

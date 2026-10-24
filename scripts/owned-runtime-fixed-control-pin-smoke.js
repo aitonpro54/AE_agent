@@ -9,7 +9,7 @@ const ledger=require("../mcp-server/native-fixture-attempt-ledger");
 const authority=require("../mcp-server/owned-runtime-authority");
 const native=require("../mcp-server/owned-runtime-win32"),http=require("node:http");
 const root=path.resolve("C:/Users/Ant/Documents/Codex/AE_agent"),controlPath=path.join(root,"scripts","owned-runtime-control.js");
-const expected="37da2e60a6ce9f22ca04eea0c394e6e14b252652bc98b48725c32fee07f02cbe";
+const expected="0a4d820bc89ed7d7212e7bcbdfc79d7b4cda1b91deaa453fae187014d2162acb";
 const cases=[],originalRead=ledger.readBytes,originalNative=native.createWin32Backend,originalHttp=http.request,originalFileRead=fs.readFileSync;
 const originalAutomation=process.env.AE_BRIDGE_TOKEN,originalPanel=process.env.AE_BRIDGE_PANEL_TOKEN;
 function check(name,fn){fn();cases.push(name);}

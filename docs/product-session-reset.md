@@ -57,8 +57,12 @@ ensure; PID reuse, access denied, занятый endpoint и unknown запре�
 что legacy `writeAdmissionReleased:false` не измеряет admission живого daemon.
 Native отказ возвращает в MCP/CLI только `nativeError` с fixed operation/kind,
 числовыми Win32/HRESULT; exception message, paths и environment не выдаются.
-Обновлён только source pin `supervisor.POLICY.helperSha256` для изменённого helper;
-подписанные runtime policies и исторические receipts не переписываются.
+Согласованы source pins `supervisor.POLICY.helperSha256` изменённого helper и
+`authority.FIXED_CONTROL_SHA256` CLI с numeric diagnostics; подписанные runtime
+policies и исторические receipts не переписываются. Пропущенный CLI pin воспроизвёл
+`owned_runtime_fixed_control_source_changed` до native helper. Actual-root regression
+`owned-runtime-fixed-control-pin-smoke.js` проверяет reviewed raw bytes, отказ tamper
+после module cache, line endings, отсутствие credential fallback и нулевые effects.
 
 После final source freeze и review оператор разрешённой recovery использует
 `node mcp-server/owned-runtime-product-session-reset.js authorize "<подтверждённый UUID чата>:owned-daemon-recovery-20261024"`,
