@@ -25,7 +25,7 @@ function fixture(options={}){
   };
   // Same private lease owns all fake native ports and publication, mirroring
   // the production single-helper lifetime without invoking an OS helper.
-  deps.native.acquireController=async()=>({async assertHeld(){},openOwned:g=>deps.native.openOwned(g),openLegacy:()=>deps.native.openLegacy(),launch:g=>deps.native.launch(g),async publishCurrent(g,pin){supervisor.publishCurrent(root,g,pin);},async dispose(){}});
+  deps.native.acquireController=async()=>({async assertHeld(){},async probeOwned(generation){return {generation,state:"alive_exact",win32Error:null,endpointFree:false};},openOwned:g=>deps.native.openOwned(g),openLegacy:()=>deps.native.openLegacy(),launch:g=>deps.native.launch(g),async publishCurrent(g,pin){supervisor.publishCurrent(root,g,pin);},async dispose(){}});
   const f={root,base,p,identity,registration,source,deps,counts,options,key,setExited(value){signaled=value;},setPolicy(enabled){p.enabled=enabled;fs.writeFileSync(path.join(base,"policy.json"),JSON.stringify(p));},get candidate(){return candidate;},run(command="restart",id=uuid()){return supervisor.createOwnedRuntimeSupervisor(deps)[command](id);},cleanup(){assert.match(path.basename(root),/^owned-supervisor-/);assert.equal(path.dirname(root),path.resolve(os.tmpdir()));fs.rmSync(root,{recursive:true});}};return f;
 }
 async function withFixture(options,fn){const f=fixture(options);try{await fn(f);}finally{f.cleanup();}}

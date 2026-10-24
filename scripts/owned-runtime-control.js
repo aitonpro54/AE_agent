@@ -74,4 +74,4 @@ async function run(argv){const s=parse(argv);if(s.command==="help")return {ok:tr
   return lifecycle.createOwnedRuntimeLifecycle({repoRoot:ROOT,journalRoot:path.join(BASE,"journal"),loadTrustedProfile,checkOriginalRegistration,native:createWin32Backend()}).run(s);
 }
 module.exports={run,parse,loadTrustedProfile,checkOriginalRegistration,statusVerified,credential,credentialFingerprint,request,parseCredentialConfig,disablePolicy,PROFILE,PROFILE_FILE};
-if(require.main===module)run(process.argv).then(v=>process.stdout.write(JSON.stringify(v)+"\n")).catch(e=>{process.stdout.write(JSON.stringify({ok:false,code:/^owned_[a-z0-9_]+$/.test(e.code || "")?e.code:"owned_runtime_control_refused",...lifecycle.OUTCOME})+"\n");process.exitCode=1;});
+if(require.main===module)run(process.argv).then(v=>process.stdout.write(JSON.stringify(v)+"\n")).catch(e=>{const nativeError=require("../mcp-server/owned-runtime-supervisor").nativeErrorDetails(e.nativeError);process.stdout.write(JSON.stringify({ok:false,code:/^owned_[a-z0-9_]+$/.test(e.code || "")?e.code:"owned_runtime_control_refused",...(nativeError?{nativeError}:{}),...lifecycle.OUTCOME})+"\n");process.exitCode=1;});

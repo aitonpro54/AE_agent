@@ -40,6 +40,38 @@ jobs и lifecycle resources сохраняются независимо от э�
 Reset требует отдельной операторской авторизации. Обычная lifecycle policy
 не подразумевает права abandon прежнюю control ownership.
 
+## Автовосстановление через ensure — 24 октября 2026
+
+**Progress:** product `ensure_owned_runtime_daemon({})` под общим controller mutex
+проверяет exact зарегистрированный процесс через существующий `probeOwned`.
+Только `absent`, Win32 87 и свободный fixed endpoint переводят управление в
+штатный crash-reset. Сам `ensure` не создаёт операторский grant. В mixed activated
+lineage отсутствующий grant возвращает `owned_product_reset_current_grant_required`.
+
+**Decision Log:** отсутствие PID не становится graceful exit. Сохраняются
+generation-bound grant, once/CAS, повторный absence перед launch, закрытый physical
+preflight, старые UNKNOWN и `replayAllowed:false`. Alive exact использует обычный
+ensure; PID reuse, access denied, занятый endpoint и unknown запрещают recovery.
+Сохранённый `reset_active` совместим с прежним API; новые
+`statusSource:durable_reset_record` и `liveAdmission:not_observed` явно показывают,
+что legacy `writeAdmissionReleased:false` не измеряет admission живого daemon.
+Native отказ возвращает в MCP/CLI только `nativeError` с fixed operation/kind,
+числовыми Win32/HRESULT; exception message, paths и environment не выдаются.
+Обновлён только source pin `supervisor.POLICY.helperSha256` для изменённого helper;
+подписанные runtime policies и исторические receipts не переписываются.
+
+После final source freeze и review оператор разрешённой recovery использует
+`node mcp-server/owned-runtime-product-session-reset.js authorize "<подтверждённый UUID чата>:owned-daemon-recovery-20261024"`,
+затем свежий процесс `node scripts/owned-runtime-control.js ensure-bridge --operation-id <новый UUID>`.
+`reset_pending_preflight` требует штатной активации панели; повтор launch не нужен.
+Установка CEP и единственный reload требуют отдельной проверки свежего panel/physical
+idle и неизвестных операций. Reset status сам такую проверку не заменяет.
+
+**Validation:** focused ensure regression/negative cases, mixed activated-origin
+grant/one-reset case и изолированная PS function parity проверяют этот маршрут
+без live daemon/AE/CEP. Полная live проверка и installed update выполняются
+единственным root-контроллером после передачи source writer.
+
 ## Последовательность
 
 1. Взять общий OS controller mutex; прочитать и связать текущую registration.

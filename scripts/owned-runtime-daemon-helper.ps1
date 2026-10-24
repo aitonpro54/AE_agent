@@ -59,6 +59,15 @@ public static class OwnedDaemonKernel {
 }
 '@
 function Emit($v){$v|ConvertTo-Json -Depth 40 -Compress;[Console]::Out.Flush()}
+function NativeFailure($reason,[string]$operation){
+ while($reason.InnerException){$reason=$reason.InnerException}
+ $operations=@('acquire-controller','assert-controller','release-target','publish-current','probe-owned','probe-product-activation','launch','launch-initial-recovery','open-owned','open-legacy','open-synthetic','wait','dispose','stop-legacy','stop-synthetic')
+ if($operation -cnotin $operations){$operation='unknown'}
+ $code='owned_supervisor_native_refused';$kind='system';$win32=$null
+ if($reason.Message -cmatch '^owned_[a-z0-9_]+$'){$code=$reason.Message;$kind='contract'}
+ if($reason -is [ComponentModel.Win32Exception]){$kind='win32';$win32=$reason.NativeErrorCode}
+ return @{ok=$false;code=$code;nativeError=@{operation=$operation;kind=$kind;win32Error=$win32;hresult=$reason.HResult}}
+}
 function Exact($v,[string[]]$keys){if ((($v.PSObject.Properties.Name|Sort-Object)-join ',') -cne (($keys|Sort-Object)-join ',')){throw 'owned_supervisor_rpc_schema'}}
 function Canon($v){
  if($null -eq $v){return 'null'}
@@ -332,7 +341,7 @@ function LegacyLease([string]$operationId){
 }
 $script:handle=[IntPtr]::Zero;$script:image=$null;$script:locks=@();$script:mode=$null;$script:controllerMutex=$null;$script:controllerOwned=$false
 try{while($null -ne ($line=[Console]::ReadLine())){try{
- if($line.Length -gt 65536){throw 'owned_supervisor_rpc_budget'};$row=$line|ConvertFrom-Json -DateKind String
+ $row=$null;if($line.Length -gt 65536){throw 'owned_supervisor_rpc_budget'};$row=$line|ConvertFrom-Json -DateKind String
  if($row.op -eq 'dispose'){Exact $row @('op');Emit @{ok=$true};break}
  if($row.op -eq 'acquire-controller'){
   Exact $row @('op');if($script:controllerMutex){throw 'owned_supervisor_controller_already_held'}
@@ -387,4 +396,4 @@ try{while($null -ne ($line=[Console]::ReadLine())){try{
   Exact $row @('op');if($script:mode -cne 'synthetic' -or $script:stopped){throw 'owned_supervisor_synthetic_effect_refused'};$script:stopped=$true;$v=ReadJson (Join-Path $script:syntheticDir 'target.json') $null $true;if((HashText (Canon $v)) -cne $script:syntheticRaw){throw 'owned_supervisor_synthetic_lease_changed'};[void](WriteOnce (Join-Path $script:syntheticDir 'attempt.json') @{identity=$script:expected;replayAllowed=$false});[OwnedDaemonKernel]::Force($script:handle,[DateTimeOffset]::UtcNow.AddSeconds(5).ToString('o'),[Action]{[void](AssertIdentity $script:expected);AssertArgv $script:expectedArgv});$wait=[OwnedDaemonKernel]::Wait($script:handle,3000);ReleaseLocks;Emit @{ok=$true;wait=$wait};continue
  }
  throw 'owned_supervisor_rpc_operation'
-}catch{$reason=$_.Exception;while($reason.InnerException){$reason=$reason.InnerException};$code='owned_supervisor_native_refused';if($reason.Message -cmatch '^owned_[a-z0-9_]+$'){$code=$reason.Message};Emit @{ok=$false;code=$code};break}}}finally{ReleaseLocks;if($script:controllerMutex){if($script:controllerOwned){$script:controllerMutex.ReleaseMutex()};$script:controllerMutex.Dispose()};if($script:image){$script:image.Dispose()};if($script:process){$script:process.Dispose();$script:handle=[IntPtr]::Zero};if($script:handle -ne [IntPtr]::Zero){[OwnedDaemonKernel]::Dispose($script:handle)}}
+}catch{Emit (NativeFailure $_.Exception $row.op);break}}}finally{ReleaseLocks;if($script:controllerMutex){if($script:controllerOwned){$script:controllerMutex.ReleaseMutex()};$script:controllerMutex.Dispose()};if($script:image){$script:image.Dispose()};if($script:process){$script:process.Dispose();$script:handle=[IntPtr]::Zero};if($script:handle -ne [IntPtr]::Zero){[OwnedDaemonKernel]::Dispose($script:handle)}}

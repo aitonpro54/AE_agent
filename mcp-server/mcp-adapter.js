@@ -51,7 +51,7 @@ async function handleOwnedRuntimeTool(name,args,controller) {
   ownedRuntimeAuthority.exact(args,[],"owned_adapter_arguments_forbidden");
   if(initialRuntime){const method=OWNED_TOOL_METHODS[name];if(method==="resetProductSession")return toolResult({ok:false,code:"owned_product_reset_product_only",replayAllowed:false},true);const result=method==="status"?await initialRuntime.readStatus(args):await initialRuntime[method](args);return toolResult(result,result.ok===false);}
   const supervisor=controller || require("./owned-runtime-supervisor").createOwnedRuntimeSupervisor();
-  try{const result=await supervisor[OWNED_TOOL_METHODS[name]]();return toolResult(result,result.ok===false);}catch(error){return toolResult({ok:false,code:/^owned_[a-z0-9_]+$/.test(error.code || "")?error.code:"owned_adapter_operation_unknown",replayAllowed:false},true);}
+  try{const result=await supervisor[OWNED_TOOL_METHODS[name]]();return toolResult(result,result.ok===false);}catch(error){const nativeError=require("./owned-runtime-supervisor").nativeErrorDetails(error.nativeError);return toolResult({ok:false,code:/^owned_[a-z0-9_]+$/.test(error.code || "")?error.code:"owned_adapter_operation_unknown",...(nativeError?{nativeError}:{}),replayAllowed:false},true);}
 }
 
 let daemonEnsurePromise = null;

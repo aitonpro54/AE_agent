@@ -7,9 +7,18 @@ const r1=require("./owned-runtime-lifecycle"),ledger=require("./native-fixture-a
 const product=require("./owned-runtime-product-lifecycle");
 const productReset=require("./owned-runtime-product-session-reset");
 const ROOT=path.resolve(__dirname,".."),SCHEMA="ae-agent.owned-runtime-supervisor.v1",LEGACY="bridge-daemon-migration-v1";
-const POLICY=Object.freeze({executable:"C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe",executableSha256:"3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237",helper:path.resolve(__dirname,"../scripts/owned-runtime-daemon-helper.ps1"),helperSha256:"cf9dfe48186128dc630305bb1b771a446f4b35b0bdec4d7acf199da5ae1afe39",startupDeadlineMs:600000,drainDeadlineMs:10000,exitDeadlineMs:10000});
+const POLICY=Object.freeze({executable:"C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe",executableSha256:"3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237",helper:path.resolve(__dirname,"../scripts/owned-runtime-daemon-helper.ps1"),helperSha256:"7453ca5377e1e4eb462069907af9f25e2e2826ec4f458d208ad649e5251cd2ff",startupDeadlineMs:600000,drainDeadlineMs:10000,exitDeadlineMs:10000});
 const same=(a,b)=>r1.canonical(a)===r1.canonical(b),uuid=v=>ledger.UUID.test(v || ""),sha=v=>ledger.SHA.test(v || "");
 function fail(code){throw Object.assign(Error(code),{code});}
+// Public diagnostics contain fixed operation names and numeric OS codes only.
+// Never forward exception messages, paths, environment or arbitrary properties.
+function nativeErrorDetails(value){
+  const operations=["acquire-controller","assert-controller","release-target","publish-current","probe-owned","probe-product-activation","launch","launch-initial-recovery","open-owned","open-legacy","open-synthetic","wait","dispose","stop-legacy","stop-synthetic","unknown"];
+  if(!value || typeof value!=="object" || !operations.includes(value.operation) || !["win32","contract","system"].includes(value.kind) || !Number.isInteger(value.hresult) || value.hresult < -2147483648 || value.hresult > 2147483647)return null;
+  if(value.kind==="win32" && (!Number.isInteger(value.win32Error) || value.win32Error<0 || value.win32Error>4294967295))return null;
+  return {operation:value.operation,kind:value.kind,win32Error:value.kind==="win32"?value.win32Error:null,hresult:value.hresult};
+}
+function nativeFailure(reply){const code=/^owned_[a-z0-9_]+$/.test(reply?.code || "")?reply.code:"owned_supervisor_native_refused";return Object.assign(Error(code),{code,nativeError:nativeErrorDetails(reply?.nativeError)});}
 function exact(v,keys,code="owned_supervisor_contract_invalid"){authority.exact(v,keys,code);}
 function base(root){return authority.base(root);}
 function directory(root,generation){if(!uuid(generation))fail("owned_supervisor_generation_invalid");return path.join(base(root),"daemon-reservations",generation);}
@@ -377,10 +386,22 @@ function createOwnedRuntimeSupervisor(deps={}){
     await controller.assertHeld();const native=controller;
     if(!["ensure","restart","shutdown"].includes(command) || !uuid(operationId))fail("owned_supervisor_closed_operation_required");const pointer=productReset.snapshot(path.join(base(root),"current-daemon.json")),p=allowed(),source=sources(),reg=current(),legacy=!reg && ledger.proofExists(path.join(base(root),"profiles",LEGACY+".json"));
     if(!reg && !legacy && command!=="ensure")fail("owned_supervisor_private_registered_daemon_required");
-    const targetGeneration=reg?.generation || (legacy?(deps.loadLegacy || (()=>loadLegacyProfile(root)))().profile.generation:null),key=r1.hash({command:command==="ensure"?"restart":command,targetGeneration,desiredSourceSha256:source.sourceSha256}),keyFile=path.join(base(root),"supervisor-operation-keys",key+".json");if(ledger.proofExists(keyFile))return readSupervisor(root,readEnvelope(keyFile).value.operationId);
+    const targetGeneration=reg?.generation || (legacy?(deps.loadLegacy || (()=>loadLegacyProfile(root)))().profile.generation:null);
     // Validate an earlier successful shutdown before opening a possibly reused
     // PID. A missing receipt grants nothing; native open failure then refuses.
-    const maintenance=reg?priorMaintenance(reg):null,startup=reg && !maintenance?priorStartup(reg):null,repair=reg && !maintenance && !startup?readVerifiedProductRepairRetirement(root,reg.generation):null,prior=maintenance || startup || repair || (reg?readVerifiedShutdown(root,reg.generation):null);let op=null,h,initialWait=null,proof=null,heldIdentity=null,handleOpenedAt=null,exitKind=null;
+    const maintenance=reg?priorMaintenance(reg):null,startup=reg && !maintenance?priorStartup(reg):null,repair=reg && !maintenance && !startup?readVerifiedProductRepairRetirement(root,reg.generation):null,prior=maintenance || startup || repair || (reg?readVerifiedShutdown(root,reg.generation):null);
+    if(command==="ensure" && reg && !prior && require("./deployment-mode").deploymentMode()==="product"){
+      await controller.assertHeld();const probe=await controller.probeOwned(reg.generation);await controller.assertHeld();
+      if(probe?.generation!==reg.generation)fail("owned_supervisor_probe_generation_changed");
+      if(probe.state==="absent" && probe.win32Error===87 && probe.endpointFree===true){
+        // Absence is not an exit proof. The separate reset grant, once key,
+        // fresh absence/CAS checks and closed physical preflight remain in force.
+        return productReset.reset(resetDeps(controller));
+      }
+      if(probe.state!=="alive_exact")fail("owned_supervisor_probe_"+(["pid_reused","access_denied","unknown","endpoint_occupied"].includes(probe.state)?probe.state:"absence_unproven"));
+    }
+    const key=r1.hash({command:command==="ensure"?"restart":command,targetGeneration,desiredSourceSha256:source.sourceSha256}),keyFile=path.join(base(root),"supervisor-operation-keys",key+".json");if(ledger.proofExists(keyFile))return readSupervisor(root,readEnvelope(keyFile).value.operationId);
+    let op=null,h,initialWait=null,proof=null,heldIdentity=null,handleOpenedAt=null,exitKind=null;
     function observe(wait){const v=r1.exitProof(wait);if(v && !proof){proof={...v,identity:heldIdentity,handleOpenedAt,observedAt:new Date(now()).toISOString()};r1.writeJournalOnce(op.dir,"exit-result",{schema:SCHEMA+".held-handle-exit",targetGeneration,shutdownExitProven:true,proof,replayAllowed:false});}return proof;}
     try{
       if(reg && !prior){h=await native.openOwned(reg.generation);heldIdentity=win.validateIdentity(h.identity);if(!same(heldIdentity,reg.kernelIdentity))fail("owned_supervisor_held_identity_mismatch");handleOpenedAt=new Date(now()).toISOString();initialWait=await h.wait(0);
@@ -441,7 +462,7 @@ function createDaemonNativeBackend(){
   function check(){win.verifyPolicy();verifyNodePolicy();if(ledger.hash(ledger.readBytes(POLICY.helper))!==POLICY.helperSha256)fail("owned_supervisor_native_source_changed");}
   async function session(open){check();const env={...process.env};for(const key of Object.keys(env))if(/^AE_BRIDGE_.*TOKEN$|^AE_OWNED_RUNTIME_/i.test(key))delete env[key];
     const child=spawn(win.POLICY.executable,["-NoLogo","-NoProfile","-NonInteractive","-MTA","-File",POLICY.helper],{windowsHide:true,env,stdio:["pipe","pipe","pipe"]});let buffer="",pending=null,dead=false;child.stderr.resume();
-    child.stdout.setEncoding("utf8");child.stdout.on("data",chunk=>{buffer+=chunk;if(buffer.length>1048576){dead=true;child.stdin.end();pending?.reject(Error("owned_supervisor_native_budget"));return;}let end;while((end=buffer.indexOf("\n"))>=0){const line=buffer.slice(0,end).replace(/^\uFEFF/,"");buffer=buffer.slice(end+1);const p=pending;pending=null;try{const v=JSON.parse(line);if(!p || v.ok!==true)throw Object.assign(Error(v.code || "owned_supervisor_native_refused"),{code:v.code});p.resolve(v);}catch(e){dead=true;child.stdin.end();p?.reject(e);}}});
+    child.stdout.setEncoding("utf8");child.stdout.on("data",chunk=>{buffer+=chunk;if(buffer.length>1048576){dead=true;child.stdin.end();pending?.reject(Error("owned_supervisor_native_budget"));return;}let end;while((end=buffer.indexOf("\n"))>=0){const line=buffer.slice(0,end).replace(/^\uFEFF/,"");buffer=buffer.slice(end+1);const p=pending;pending=null;try{const v=JSON.parse(line);if(!p || v.ok!==true)throw nativeFailure(v);p.resolve(v);}catch(e){dead=true;child.stdin.end();p?.reject(e);}}});
     const exited=new Promise(resolve=>{child.on("error",()=>{dead=true;pending?.reject(Error("owned_supervisor_native_failed"));});child.on("close",()=>{dead=true;pending?.reject(Error("owned_supervisor_native_unknown"));resolve();});});
     async function rpc(v){if(dead || pending)fail("owned_supervisor_native_session_unavailable");const promise=new Promise((resolve,reject)=>{pending={resolve,reject};}),timer=setTimeout(()=>{dead=true;pending?.reject(Error("owned_supervisor_native_unknown"));child.stdin.end();},(v.milliseconds || 0)+20000);try{child.stdin.write(JSON.stringify(v)+"\n");return await promise;}finally{clearTimeout(timer);}}
     async function close(){if(!dead)try{await rpc({op:"dispose"});}catch(_){}child.stdin.end();await exited;}
@@ -457,4 +478,4 @@ function createDaemonNativeBackend(){
   }
   return Object.freeze({acquireController:()=>session({op:"acquire-controller"}),openOwned:generation=>session({op:"open-owned",generation}),openSynthetic:nonce=>session({op:"open-synthetic",nonce})});
 }
-module.exports={readVerifiedGracefulSuccession,SCHEMA,LEGACY,POLICY,fixedCommand,verifyNodePolicy,validateReservation,validateStartupTicket,assertStartupReservation,registerCurrentDaemon,loadCurrentDaemonRegistration,readDaemonRegistration,readCandidate,signedCandidate,projection,registeredGeneration,publishCurrent,prepareSuccessorReservation,loadLegacyProfile,loadHistoricalLegacyProfile,readVerifiedStartupRetirement,readVerifiedMaintenanceRetirement,readProtectedInventory,inventory,reserveSupervisor,readSupervisor,mintSuccession,resolveRetainedSuccession,validateSuccessionPath,readProductStopAuthority,readVerifiedProductRepairRetirement,validateProductRepairIntent,createOwnedRuntimeSupervisor,createDaemonNativeBackend};
+module.exports={nativeFailure,nativeErrorDetails,readVerifiedGracefulSuccession,SCHEMA,LEGACY,POLICY,fixedCommand,verifyNodePolicy,validateReservation,validateStartupTicket,assertStartupReservation,registerCurrentDaemon,loadCurrentDaemonRegistration,readDaemonRegistration,readCandidate,signedCandidate,projection,registeredGeneration,publishCurrent,prepareSuccessorReservation,loadLegacyProfile,loadHistoricalLegacyProfile,readVerifiedStartupRetirement,readVerifiedMaintenanceRetirement,readProtectedInventory,inventory,reserveSupervisor,readSupervisor,mintSuccession,resolveRetainedSuccession,validateSuccessionPath,readProductStopAuthority,readVerifiedProductRepairRetirement,validateProductRepairIntent,createOwnedRuntimeSupervisor,createDaemonNativeBackend};
