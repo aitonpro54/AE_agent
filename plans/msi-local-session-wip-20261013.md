@@ -1,5 +1,7 @@
 # Пауза MSI перед перезапуском Codex — 13 октября 2026
 
+AME-specific цель 0/2, single-job queue wiring и encode/media acceptance из этой исторической заметки сняты с текущего scope решением 2026-10-24; независимое восстановление MSI/runtime остаётся отдельным. Возврат к AME — после следующей версии Media Encoder и отдельного запроса. См. [решение в активном плане](target-app-execplan.md).
+
 Пользователь поручил безопасную паузу для восстановления удалённого управления.
 Цель не завершена: два последовательных AME DXV3 High Quality With Alpha — 0/2.
 
@@ -44,9 +46,10 @@ UNVERIFIED: scratch сохранён, его outcome не угадывать и 
 После явного возобновления сверить Git/WIP hashes/runtime и продолжить L3c:
 private installed factory/store + independent same-process floor/original daemon
 lifecycle, source review → actual build/19-family proof. Затем L4 v2 typed ingress,
-L5 fresh registration/native READ; AME single-job protected queue wiring.
+L5 fresh registration/native READ; AME single-job protected queue wiring снято с текущего scope решением 2026-10-24.
 Использовать existing typed `save_project_as` для A/B в одной композиции:
 toggle/frame review → Save As → exact GUID → encode/media acceptance → следующий
-вариант; в конце восстановить baseline enabled. Native capture/AEX reload для
+вариант — исторический AME workflow, снятый с текущего scope решением 2026-10-24;
+в конце восстановить baseline enabled. Native capture/AEX reload для
 этого пути не нужны. HQ calibration и decoder availability ещё требуют проверки.
 Подробный source-only AME packet сохранён в external WIP checkpoint.

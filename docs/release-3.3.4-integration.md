@@ -1,5 +1,9 @@
 # Интеграция AE Agent 3.3.4 — 21 октября 2026
 
+## Решение по AME — 2026-10-24
+
+Пользователь решил сохранить текущую реализацию AME: в её нынешнем виде она его устраивает. Работы по AME и новые AME-проверки сняты с текущего scope. К вопросу вернуться после следующей версии Media Encoder и только по отдельному запросу; напоминания, фоновые проверки версий и новый обязательный backlog не создаются. Предположение пользователя, что проблема связана с внешним ПО, не является установленным техническим фактом. Результаты ниже — историческая запись: `NOT ACCEPTED` и `FAIL` остаются такими, не превращаются в PASS, но больше не являются AME release debt. Состояние версии в целом и независимые runtime blockers этим решением не меняются.
+
 ## Исходные состояния
 
 - Desktop `codex/release-3.3.2`: `4e7efc8526f35d83a4d36144608076d545f0b65d`.
@@ -10,7 +14,7 @@
 
 ## Progress
 
-**Текущее состояние, 21.10.2026 — causal source опубликован; дальнейший cutover BLOCKED, ремонт остановлен.** `codex/release-3.3.4` содержит source commit `21f73e77b25b8bbe96d4636a110fb070e5bf5aef`; causal source SHA `0fa0c34080907504e434270ac3310ff7412a3649775a1af64c8efb308b7744cc`, 116 pins, native helper `cf9dfe48…` без изменений. Изменения: 16 source и 2 fixture-only fixes; causal154 unique и прежние смежные PASS сохранены. Independent High production+DATA review — PASS, что подтверждает source review, но не runtime acceptance. До этого graceful continuation `f73fbdda-d9e0-4b87-a21a-4162a3c02a79` дала sealed положительный exit 0 для PID 33808; AE PID 24732 остался тем же. Установленный CEP всё ещё соответствует прежнему source `8b2f79f`; causal source и reload в установленной панели не проверялись, управляемые causal certificates/data не записывались.
+**Исторический срез на 21.10.2026 — causal source опубликован; дальнейший cutover BLOCKED, ремонт остановлен.** `codex/release-3.3.4` содержит source commit `21f73e77b25b8bbe96d4636a110fb070e5bf5aef`; causal source SHA `0fa0c34080907504e434270ac3310ff7412a3649775a1af64c8efb308b7744cc`, 116 pins, native helper `cf9dfe48…` без изменений. Изменения: 16 source и 2 fixture-only fixes; causal154 unique и прежние смежные PASS сохранены. Independent High production+DATA review — PASS, что подтверждает source review, но не runtime acceptance. До этого graceful continuation `f73fbdda-d9e0-4b87-a21a-4162a3c02a79` дала sealed положительный exit 0 для PID 33808; AE PID 24732 остался тем же. Установленный CEP всё ещё соответствует прежнему source `8b2f79f`; causal source и reload в установленной панели не проверялись, управляемые causal certificates/data не записывались.
 
 Свежий официальный read-only bridge status PASS: `panelConnected=true`, version 3.3.4, очереди/inflight пусты, edit отсутствует, source `0fa…`, PID 26736 (`.codex-runtime/release-3.3.4/mcp-get_bridge_status-1792597577719.json`). Единственный `get_project_info` PASS: `file:null`, bits16, numItems1, activeComp1, revision27 (`.codex-runtime/release-3.3.4/mcp-get_project_info-1792597604483.json`). Это текущее несохранённое состояние пользователя: не приписывать его агенту и не заявлять сохранение его hash. Финальный daemon snapshot (`final-readonly-checkpoint-state.json`) подтверждает ready/draining, tickets/queue/inflight0, closing=false, shutdownPending=null, PID26736/source `0fa…`, parent UNKNOWN `ba5f…`; static installed read-back (`final-installed-static-readback.json`) подтверждает прежние 9/9 pins, version3.3.4/source `8b2`, reload=false. Read-only соединение работает; обычная mutation-приёмка не подтверждена.
 

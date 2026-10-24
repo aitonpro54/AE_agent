@@ -1,6 +1,8 @@
 # Пакетный экспорт вариантов титров через AME
 
-**Текущий фокус:** довести две title variants из одной рабочей композиции до независимых AEP-снимков и пакетного экспорта через существующий EPR и AME. Текущая AME-приёмка не пройдена; saved-source foundation ещё не доказывает пригодность текущего in-memory проекта.
+**Снято с текущего scope решением от 2026-10-24:** AME milestones и проверки в этом плане остаются исторической записью; M3/M4 и связанные следующие шаги не являются открытым backlog. Возврат — после следующей версии Media Encoder и отдельного запроса. См. [решение в активном плане](target-app-execplan.md).
+
+**Исторический фокус:** довести две title variants из одной рабочей композиции до независимых AEP-снимков и пакетного экспорта через существующий EPR и AME. На момент записи AME-приёмка не пройдена; saved-source foundation не доказывал пригодность текущего in-memory проекта.
 
 **Progress:** correction commit `815c06f0415f20f01e4aec10315397f8b34a6bc2` прошёл closing review без P1/P2; production effects остаются OFF. Actual passive state/catalog observer завершился terminal 0 в `2026-10-12T14:13:27.6763417Z`: cached `connected=true`, `running=false`, `busy=true`, `reconciliationRequired=true`, `unresolved=9`, `activeAction=null`, `refreshPending=false`; connector write/emergency false. `bridge.connect` отказал как unavailable (`reconciliation_required/unresolved_effect`), `plan.reconcile` доступен. Project read и admission proof отсутствуют. Текущий OS read (`current-owner-os-observation.json`) в `2026-10-12T14:22:57.6792676Z` прошёл config projection HMAC и strict-config checks; generation `83e86583-fe0c-42a2-975c-0dcc6019504e` указывает expected PID29760/source SHA `1e660e4…139ff`/port3456, но успешные TCP/CIM queries вернули пустой listener и отсутствующий PID. Это только current absence, не historical exit/effect proof; Connect по-прежнему сообщает 9 unresolved.
 
@@ -58,12 +60,12 @@ Flash в этой задаче. Подробное фактическое сос
   каталог существующих пресетов. Это доказывает транспорт/каталог, не экспорт.
 - [x] M2 implementation, commit `80c0067`: `ensure_ame_running` + offline smoke. **Live guard:**
   runner остановился до исполнения на `project_save_required`; live ensure не принят.
-- [ ] M3 BLOCKED: immutable grant `a56cae55-40c1-49f2-b79e-e4aa9f23f1b5`, SHA-256
+- M3 — снят с текущего scope; исторический статус BLOCKED: immutable grant `a56cae55-40c1-49f2-b79e-e4aa9f23f1b5`, SHA-256
   `f46238c1038d7b890dc02cc314d5b22f7d0ff075385eff0ba4058b1281f72f4e`, принят
   только актуальным CEP epoch 1 / generation 1791648133063. Run
   `54062238-4828-453c-a115-6ddc9f302dee` остаётся `UNKNOWN/no-replay`; root
   подтвердил выход ранее удержанного exact child handle (exit 0), но M3 не принят.
-- [ ] M4 NOT ACCEPTED: полная live цепочка двух вариантов не выполнена.
+- M4 — снят с текущего scope; исторический статус NOT ACCEPTED: полная live цепочка двух вариантов не выполнена.
 - [x] Дополнительный fixed exporter read: 18 offline групп PASS; live response
   `7a287810-07ee-44d6-8b73-f84fb4d0b118` доставлен, старый session nonce не совпал.
   Encoder/exporter API отражён без submit/encode, это не готовность экспортировать.
@@ -344,8 +346,9 @@ Flash в этой задаче. Подробное фактическое сос
   consumed-snapshot и unknown. Подписанная причина отказа —
   `receipt_attempt_terminal_no_replay`; nested idle при открытии AEP локализован
   анализом кода, не receipt trace. Это не M3 acceptance и не доказательство
-  отсутствия native execution. M3/M4 BLOCKED: production snapshot backend, AME
-  submit/encoding/media и полная двухвариантная цепочка не приняты.
+  отсутствия native execution. В том историческом срезе M3/M4 были BLOCKED:
+  production snapshot backend, AME submit/encoding/media и полная двухвариантная
+  цепочка не приняты. Этот AME scope снят решением 2026-10-24.
 - **Live maintenance, 10 октября. Progress:** root применил helper один раз; daemon
   PID22388/runtime `9620ddef…`, изменён только `panel-actions`, остальные 6 hashes
   совпали, один CDP reload. Manual run `172deffe…` завершился

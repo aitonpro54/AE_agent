@@ -1,5 +1,7 @@
 # Два тестовых состояния существующего текста
 
+Этапы AME-экспорта и его приёмка в этой записи сняты с текущего scope решением от 2026-10-24; независимые runtime/native обязательства сохраняются. Возврат к AME возможен после следующей версии Media Encoder и отдельного запроса. См. [решение в активном плане](../plans/target-app-execplan.md).
+
 14 октября 2026. Пользователь разрешил «любые два», первый и второй, для
 тестового прогона. Это уточнение содержания, а не завершение интеграции или
 рендера. Текущий результат — 0/2. Решение ниже условно до приёмки реализации.
@@ -456,7 +458,8 @@ originals6 CLOSED0/EOF/taskscompleted/handlesclosed и explicitexit0.
 Local acceptance `native95-proof-acceptance-526171c05a9e.json/0041052C…`.
 Это synthetic predicates для Restore57F source, не actual AE facts, новый AME
 build, loaded modules/descendants, whole M/FIT или production admission.
-Render0/2; следующий блок — AME/D47 source STOP/review/build, затем D48–50.
+Render0/2; следующим планировался блок AME/D47 source STOP/review/build, затем
+D48–50; AME-specific work снята с текущего scope решением 2026-10-24.
 
 AME/D47 STOP97/native63 `2E3C1993…` принят как immutable candidate; Root97 hashes
 PASS. VM84/static10/title85/proposal21/gate26/syntax9/rules/diff PASS, новые CPP
@@ -482,8 +485,9 @@ taskscompleted/handlesclosed, затем explicitexit0. Acceptance `774AA2F7…`
 Rules, syntax19 snapshot-owned changed JS и diff PASS. Контрольная точка сохраняет
 только Source/build состояние; D48–50, whole footprint/SourceM/M и admission
 остаются CLOSED. Actual AME26 API, Native root Pin40 и final frames UNVERIFIED.
-Следующий блок — D48–49 ordinal/terminal/floor и семь precharge Notes до children;
-затем D50/collector. User AEP hashes E55/01A неизменны при свежем FS чтении;
+В историческом плане далее следовали D48–49 ordinal/terminal/floor и семь precharge
+Notes до children, затем D50/collector; AME-specific шаги сняты с текущего scope.
+User AEP hashes E55/01A неизменны при свежем FS чтении;
 AE19140/AME22812 живы с прежними birth, это не owned-runtime attestation.
 Дополнительный controller VM выявил stale catalog11 вместо actual13. Proof-only
 fix `F3A5C3A2…` проверяет exact names, frozen slot1/2 schemas, правильный C5 body
