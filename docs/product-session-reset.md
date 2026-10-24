@@ -40,25 +40,56 @@ graceful shutdown со старого canonical source и доказанный e
 `reset_active`, autonomy active, pending0/inflight[]/editnull. Canonical
 daemon/source до последующего штатного cutover сохранялись.
 
-25 октября завершён cutover: старый daemon `40784` штатно остановлен
-(`WAIT_OBJECT_0`, exit 0), затем применён проверенный source `aca80be`; новый
-daemon `44896` загрузил canonical SHA `2950db71…`. Panel автоматически
-подключилась, а фактический `get_project_info` повторно вернул file:null, 0 items,
-bits16/revision1. После ручного close/relaunch AE 25 октября новая AEP с PID
-12480 (start 19:51:18.800Z) была подключена вручную пользователем. Лишь после
-этого наблюдались `connected_idle` в 19:52:55.547Z и успешный typed
-`get_project_info` (file:null, 0 items, bits16, revision1). Daemon `44896` и
-source SHA `2950db71…` не менялись; panel `panel-1792871568763-ugttcxhr5zj`
-показывала connected/autoConnect true, busy/nativeBusy false, physical0,
-unresolved[]; autonomy active, pending0/inflight[]. Эти данные подтверждают
-связь после ручного Connect, но не автоматическое подключение после полного
-перезапуска AE. Ранее autoReconnect после daemon restart и autoConnect после CEP
-reload наблюдались отдельно без ручного Connect — эти проверки остаются PASS.
-Первая попытка полного restart была невалидна как тест: queued
-`get_project_info` истёк до доставки, а auto-connect получил
-`bridge_busy/not_submitted` при pending очереди; это ошибка порядка проверки, не
-продуктовый FAIL. Старый запрос не повторялся. Проверка auto-connect после
-полного AE restart остаётся незавершённой; AEP не редактировался и не сохранялся.
+25 октября продолжен cutover ограниченной recovery-операцией. Reserved shutdown
+для точного старого daemon завершился `WAIT_OBJECT_0`/exit 0; ранее неизвестный
+parent результат сохранён без replay. Следующий стандартный restart получил
+`owned_supervisor_native_refused` до intent, так как supervisor directory
+отсутствовал; successor и весь cutover этим не подтверждены.
+
+Затем разрешённый reset завершился с новой generation. PRECONNECT diagnose
+прошёл; штатный programmatic Connect завершён и активировал сессию. Это recovery,
+не доказательство automatic startup. На последующем scoped CEP reload новая
+panel instance `newpanel-1792874953526-pa8putb5cei` в epoch 1 успешно подключилась
+автоматически: `automaticAttempts=1`, `explicitAttempts=0`,
+`lastConnectionOrigin=automatic`; receipt `8c416309-ff5b-4541-9b06-e2af28492142`
+completed. Независимый typed `get_project_info` подтвердил `file:null`, 0 items,
+bits16/revision1. Runtime: daemon PID 12480, source
+`c3779fd41af8887ee89cf75da719ae5716aa8d70840c023ce78020b8b6670c30`; canonical
+и установленная panel hashes совпадают с проверенными.
+
+## Полный AE restart без Connect — 25 октября 2026
+
+Первая чистая попытка завершилась честным FAIL: AE PID `39764` (born
+20:50:18Z) загрузил workspace UI без панели AE Agent; установленная CEP отказала
+в autoload (`CEP8870`). Panel не появилась. No-Connect ожидание/ensure продолжались
+до отказа. Поздний setup ensure `2592c0e8-402b-473b-b77f-d6fe58d9bd11`
+выполнил native menu action `5045`, но вернул
+`fixture_proof_view_directory_changed` после ack. Панель позже открылась, и typed
+read прошёл, однако этот setup не является чистым full-restart proof.
+
+В ходе проверки сохранён отдельный AE workspace `AE Agent` через Window →
+Workspace → Save as New Workspace; фактически исходным был workspace `Text`, а не
+`Default`. Это изменение рабочего окружения AE, AEP не затрагивался. После этого
+AE PID `39764` штатно закрыт и подтверждено отсутствие процесса/окон. AE был один
+раз запущен в том же установленном экземпляре без открытия панели и без Connect,
+ensure или reload. В сохранённом workspace `AE Agent` панель стартовала
+автоматически.
+
+Чистый результат: AE PID `26440` (born `2026-10-24T20:58:35.9148771Z`), новая
+panel instance `panel-1792875527133-bwdnkf8o22`. В
+`.codex-runtime/automatic-connect-20261025/restart.json` зафиксированы
+`automaticAttempts=1`, `explicitAttempts=0`, `lastConnectionOrigin=automatic`,
+`automatic.state=succeeded`, `automatic.current=true`; request
+`6f8b8146-1daa-42d8-9414-0f5d350ca37d` завершён в `20:58:53.158Z` (~17.24 s
+после старта процесса). Пассивно наблюдался `connected_idle` в `20:58:57.869Z`.
+Свежий typed `get_project_info` прошёл: `file:null`, `numItems:0`, `bits16`,
+`revision:1`.
+
+Итог — automatic connect после обычного закрытия/запуска AE подтверждён в
+сохранённом workspace `AE Agent`, где панель остаётся частью workspace. Это не
+доказывает автоматическое открытие панели в любом workspace. Предыдущий ручной
+Connect, recovery/setup ensure и первая попытка не засчитываются как PASS. AEP не
+редактировался и не сохранялся.
 
 ## Назначение
 
@@ -528,7 +559,10 @@ poll сохраняют отказ и запрет replay. Ожидание за
 точного `automatic.requestId` и независимый typed project read после подключения.
 До этого допустимы только пассивные наблюдения, без Connect/reload/bootstrap и
 без queued native reads. Ручное вмешательство делает такой опыт непригодным для
-automatic-only PASS. Полный AE restart до фактической проверки остаётся pending.
+automatic-only PASS. После setup Connect отдельная CEP reload instance прошла
+эти критерии и независимый project read; это reload case. Чистый полный restart
+без Connect также прошёл критерии в сохранённом workspace `AE Agent`; результат
+не распространяется на автоматическое открытие панели в других workspaces.
 
 ## Подтверждённые применения
 
