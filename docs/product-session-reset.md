@@ -123,6 +123,41 @@ source/actor/map/tree drift, partial writes, expiry между archive и clear,
 reads запрещены. Fake WebSocket воспроизводит oversized legacy response; actual
 размер пользовательского storage не измерялся и live успех этим тестом не доказан.
 
+## Remaining-only reconciliation после timeout вспомогательного lineage
+
+24 октября первый current physical witness сохранил `held-ready`, но завершился
+UNKNOWN: он ожидал также persistent `dynamiclinkmanager`/`AdobeIPCBroker`. Их exit
+не является условием закрытия AE/CEP script owners. Положительные per-target waits
+при timeout не были записаны и не восстанавливаются как held-exit proof.
+
+**Progress:** отдельные `cep-panel-current-reset-external-reconcile` module/CLI и
+query-only `cep-panel-current-reset-external-absence.ps1` обслуживают лишь exact
+authenticated boundary `authority→prepare→watcher-consumed→held-ready→failure`.
+Прежние пять source pins и пять journal bytes остаются неизменными. Новый namespace:
+`.codex-runtime/current-reset-external-reconciliations/<derived current operation>/`.
+
+**Decision Log:** отдельный HMAC CONTROL grant связывает current reset/config/source
+и raw hashes старого графа. Old grant читается исторически без продления deadline.
+Только ERROR87 для каждого captured AE/CEP identity, три пустых global AE/CEP census,
+native helper exit0 и исчезновение старой page дают `captured_context_absence_control_adopted`.
+Aux exit не выводится; `heldExitProven:false`, `oldExitProven:false`, UNKNOWN/no-replay
+сохраняются. Только затем новый AE/page, один fresh read-barrier и own-paused map CAS
+разрешают обычный reset preflight. Любой partial/unknown intent остаётся readback-only.
+
+```powershell
+node scripts/cep-panel-current-reset-external-reconcile.js readback
+node scripts/cep-panel-current-reset-external-reconcile.js authorize "<подтверждённый UUID чата>:current-reset-external-reconcile"
+node scripts/cep-panel-current-reset-external-reconcile.js observe-absence-once
+# Новый AE/панель открываются только после CONTROL adopted.
+node scripts/cep-panel-current-reset-external-reconcile.js complete-once
+node scripts/cep-panel-current-reset-external-reconcile.js readback
+```
+
+**Validation:** focused 32/32, включая authenticated original graph, строгий absent87,
+отрицательные reused/denied/unknown/nonempty, once/no-replay, immutable old journals,
+новый host/barrier/CAS и partial writes; PS CompileOnly без native enumeration.
+Это offline evidence, не live absence/activation proof.
+
 ## Последовательность
 
 1. Взять общий OS controller mutex; прочитать и связать текущую registration.

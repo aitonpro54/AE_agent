@@ -1,0 +1,27 @@
+"use strict";
+
+// Remaining-only operator entry. Original current/legacy sources and receipts
+// are authenticated, read-only history; the new disposition has its own grant.
+const fs=require("node:fs"),path=require("node:path"),{spawn}=require("node:child_process");
+const reconcile=require("../mcp-server/cep-panel-current-reset-external-reconcile"),current=require("../mcp-server/cep-panel-current-reset-physical-fence"),currentCLI=require("./cep-panel-current-reset-physical-fence"),old=require("../mcp-server/cep-panel-reset-physical-fence"),legacy=require("./cep-panel-reset-physical-fence"),ledger=require("../mcp-server/native-fixture-attempt-ledger"),win=require("../mcp-server/owned-runtime-win32");
+const ROOT=path.resolve(__dirname,".."),FILE=__filename,HELPER=path.join(__dirname,"cep-panel-current-reset-external-absence.ps1"),sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+function fail(code){throw Object.assign(Error(code),{code});}function check(value,code){if(!value)fail(code);}
+function parse(argv){const a=argv.slice(2),command=a.shift();check(["authorize","readback","observe-absence-once","complete-once"].includes(command),"external_reconcile_closed_cli_required");check(command==="authorize"?a.length===1&&a[0].length>0:a.length===0,"external_reconcile_cli_arguments_forbidden");return {command,reference:a[0]};}
+function loadAuthority(){
+  const a=currentCLI.loadAuthority(),summary=current.createRecovery({root:ROOT,authority:currentCLI.loadAuthority}).readback(),dir=path.join(ROOT,".codex-runtime","current-reset-physical-fences",a.operationId),names=["authority.json","failure.json","held-ready.json","prepare.json","watcher-consumed.json"];
+  ledger.safeDirectory(dir);check(JSON.stringify(fs.readdirSync(dir).sort())===JSON.stringify(names),"external_reconcile_original_partial_or_foreign");
+  const originalRawPins=names.map(name=>({name,sha256:old.hash(ledger.readBytes(path.join(dir,name)))}));
+  const sourcePins=[...a.sourcePins,...[FILE,path.join(ROOT,"mcp-server","cep-panel-current-reset-external-reconcile.js"),HELPER].map(file=>({name:path.relative(ROOT,file).replace(/\\/g,"/"),sha256:old.hash(ledger.readBytes(file))}))];
+  return {...a,sourcePins,originalRows:summary.rows,originalRawPins};
+}
+async function probe(expected,operationId,generation){
+  win.verifyPolicy();return await new Promise((resolve,reject)=>{const child=spawn(win.POLICY.executable,["-NoLogo","-NoProfile","-NonInteractive","-File",HELPER],{windowsHide:true,stdio:["pipe","pipe","pipe"]});let output="",failed=false;child.stderr.resume();
+    function refuse(code){if(!failed){failed=true;reject(Object.assign(Error(code),{code}));}}
+    const timer=setTimeout(()=>refuse("external_reconcile_probe_timeout_readback_only"),30000);child.stdout.setEncoding("utf8");child.stdout.on("data",bytes=>{output+=bytes;if(Buffer.byteLength(output)>524288)refuse("external_reconcile_probe_response_budget");});child.once("error",()=>refuse("external_reconcile_probe_start_unknown"));child.stdin.on("error",()=>refuse("external_reconcile_probe_input_unknown"));child.once("close",helperExitCode=>{clearTimeout(timer);if(failed)return;try{const lines=output.replace(/^\uFEFF/,"").trim().split(/\r?\n/);check(lines.length===1,"external_reconcile_probe_output_invalid");const result={helperExitCode,nativeProof:JSON.parse(lines[0])};resolve(result);}catch(error){refuse(error.code||"external_reconcile_probe_output_invalid");}});
+    child.stdin.end(JSON.stringify({schema:reconcile.ABSENCE,operationId,generation,expected}));
+  });
+}
+function production(){return reconcile.createRecovery({root:ROOT,authority:loadAuthority,census:legacy.census,panel:currentCLI.panel(),absence:{probe},barrier:{async send(host,scriptPath,processes){const tree=old.validateTree(await legacy.census());check(JSON.stringify(tree.host)===JSON.stringify(host)&&JSON.stringify(tree.processes)===JSON.stringify(processes),"external_reconcile_barrier_identity_changed");const child=spawn(old.AE,["-r",scriptPath],{windowsHide:true,stdio:"ignore",shell:false});await new Promise((resolve,reject)=>{child.once("spawn",resolve);child.once("error",()=>reject(Object.assign(Error("external_reconcile_barrier_submit_unknown"),{code:"external_reconcile_barrier_submit_unknown"})));});child.unref();},async ack(p){while(Date.now()<=p.deadline){if(fs.existsSync(p.ackPath)){try{return JSON.parse(ledger.readBytes(p.ackPath).toString("utf8").replace(/^\uFEFF/,""));}catch(_){fail("external_reconcile_barrier_ack_invalid");}}await sleep(100);}fail("external_reconcile_barrier_timeout_no_replay");}}});}
+async function run(argv,create=production){const {command,reference}=parse(argv),r=create();if(command==="authorize")return r.authorize(reference);if(command==="observe-absence-once")return r.observe();if(command==="complete-once")return r.complete();return r.readback();}
+module.exports={parse,loadAuthority,probe,production,run};
+if(require.main===module)run(process.argv).then(value=>process.stdout.write(JSON.stringify(currentCLI.compact(value))+"\n")).catch(error=>{process.stdout.write(JSON.stringify({ok:false,code:/^(external|current_fence|fence|owned)_[a-z0-9_]+$/.test(error.code||"")?error.code:"external_reconcile_unknown_readback_only",...reconcile.UNKNOWN})+"\n");process.exitCode=1;});
