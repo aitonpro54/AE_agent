@@ -70,6 +70,13 @@
       "literalDependencies": []
     },
     {
+      "path": "config/core-legacy-verifier-manifest.json",
+      "bytes": 6202,
+      "sha256": "b758b71b6e473be605240994ec5252cf306096fb9677f4e86cf61e379f6fe45e",
+      "disposition": "core-specific",
+      "literalDependencies": []
+    },
+    {
       "path": "mcp-server/ae-agent-panel-bootstrap.js",
       "bytes": 64393,
       "sha256": "47d6e5491c23e3ffdf3f13f78089c33548280e3b73c1a0a3e7063193412abcfe",
@@ -1744,8 +1751,8 @@
     },
     {
       "path": "mcp-server/review-evidence.js",
-      "bytes": 22917,
-      "sha256": "58ade35f1ac41be62a7c6eb354baace94007e1017d3aeded3fb7a686c4148518",
+      "bytes": 23007,
+      "sha256": "2dc221d28f4534b093fb5571a4c4d7750fc87e4b119bdf5a009c28c345d7f90a",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "e9bfb8c35305edf58d7c0adad5c13ba3ca1179037baabfa491fa0c1903b10d38",
       "literalDependencies": []
@@ -1914,8 +1921,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 539,
-      "sha256": "a9c85e5d4a876fa32dd1be936d804b4c86ee0f999a9256b9bb8a9da7d1755154",
+      "bytes": 623,
+      "sha256": "dc4826d7dd26bd5bab65040e4fb0e564eaeb31b09b40882ab226b806bbabf84c",
       "disposition": "core-specific",
       "literalDependencies": []
     },
@@ -1998,6 +2005,26 @@
       "sha256": "7af5caed7f16ce910299b5820a12aa3349d40204d4d48a8f5dce3f3714086f1a",
       "disposition": "core-specific",
       "literalDependencies": []
+    },
+    {
+      "path": "scripts/core-legacy-control-reader-smoke.js",
+      "bytes": 7927,
+      "sha256": "37bb4c3929e01de88f2c61eef7d4e938f28bd95ca67acd568632a8c0e127f906",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/owned-runtime-lifecycle.js",
+        "scripts/core-legacy-control-reader.js"
+      ]
+    },
+    {
+      "path": "scripts/core-legacy-control-reader.js",
+      "bytes": 16762,
+      "sha256": "3abf06af5cbdefd481d77234299d7e2e27c46cc5e96733ad6bd59813fc6a0d3c",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/owned-runtime-lifecycle.js",
+        "scripts/owned-runtime-control.js"
+      ]
     },
     {
       "path": "scripts/core-runtime-smoke.js",

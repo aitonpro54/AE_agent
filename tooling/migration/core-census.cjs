@@ -3,8 +3,10 @@ const fs=require("fs"),path=require("path");
 const ROOT=path.resolve(__dirname,"../..");
 const files=[];
 files.push("package.json");
+files.push("config/core-legacy-verifier-manifest.json");
+const coreProductScripts=new Set(["scripts/core-legacy-control-reader.js","scripts/core-product-migration-control.js"]);
 for(const dir of ["mcp-server","scripts","cep-panel"]){
-  function walk(d){for(const e of fs.readdirSync(path.join(ROOT,d),{withFileTypes:true})){const n=d+"/"+e.name;if(e.isDirectory())walk(n);else if(!n.startsWith("scripts/core-")&&!n.endsWith("network-test-fixture.js"))files.push(n);}}
+  function walk(d){for(const e of fs.readdirSync(path.join(ROOT,d),{withFileTypes:true})){const n=d+"/"+e.name;if(e.isDirectory())walk(n);else if((!n.startsWith("scripts/core-")||coreProductScripts.has(n))&&!n.endsWith("network-test-fixture.js"))files.push(n);}}
   walk(dir);
 }
 const name=path.join(ROOT,"mcp-server/review-evidence.js");

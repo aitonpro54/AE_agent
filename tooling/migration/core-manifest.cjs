@@ -3,7 +3,7 @@ const fs=require("fs"),path=require("path"),crypto=require("crypto"),{isBuiltin}
 const root=path.resolve(__dirname,"../.."),digest=b=>crypto.createHash("sha256").update(b).digest("hex");
 const origins=JSON.parse(fs.readFileSync(path.join(root,"config/source-provenance.json"),"utf8"));
 const files=[];function list(dir){for(const e of fs.readdirSync(path.join(root,dir),{withFileTypes:true})){const n=dir+"/"+e.name;if(e.isDirectory())list(n);else files.push(n);}}
-for(const dir of ["mcp-server","scripts","cep-panel"])list(dir);files.push("package.json");
+for(const dir of ["mcp-server","scripts","cep-panel"])list(dir);files.push("package.json","config/core-legacy-verifier-manifest.json");
 const rows=files.sort().map(name=>{const bytes=fs.readFileSync(path.join(root,name)),source=origins.paths.find(p=>p.path===name),literalDependencies=[];
 if(/\.(js|cjs)$/.test(name))for(const m of bytes.toString("utf8").matchAll(/\brequire\s*\(\s*["']([^"']+)["']\s*\)/g)){if(!m[1].startsWith('.')){if(!isBuiltin(m[1]))throw Error('unexpected dependency '+m[1]);continue;}const base=path.posix.normalize(path.posix.join(path.posix.dirname(name),m[1])),found=[base,base+'.js',base+'.json',base+'/index.js'].find(n=>fs.existsSync(path.join(root,n)));if(!found||found.startsWith('../'))throw Error('unresolved '+name+' '+m[1]);literalDependencies.push(found);}
 return {path:name,bytes:bytes.length,sha256:digest(bytes),disposition:source?(digest(bytes)===source.sourceSha256?'copied':'extracted-or-adapted'):'core-specific',...(source?{sourceSha256:source.sourceSha256}:{}),literalDependencies:[...new Set(literalDependencies)].sort()};});

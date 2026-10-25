@@ -9,6 +9,7 @@
     "smoke:core-cep": "node scripts/core-cep-smoke.js",
     "smoke:state-migration": "node scripts/core-state-migration-smoke.js",
     "smoke:core-scenarios": "node scripts/core-scenarios-smoke.js",
-    "smoke:core-safety": "node scripts/core-safety-smoke.js"
+    "smoke:core-safety": "node scripts/core-safety-smoke.js",
+    "smoke:core-legacy-reader": "node scripts/core-legacy-control-reader-smoke.js"
   }
 }
