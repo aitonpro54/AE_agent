@@ -1,0 +1,399 @@
+# Private fixed daemon launcher/held-handle transport. No caller executable,
+# argv, PID, path, force policy, title selection or process-tree operation.
+$ErrorActionPreference='Stop'
+[Console]::InputEncoding=[Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
+$repo=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$base=Join-Path $repo '.codex-runtime/owned-runtime-maintenance'
+$node=[IO.Path]::GetFullPath('C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe')
+$nodeSha='3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237'
+$schema='ae-agent.owned-runtime-supervisor.v1'
+Add-Type -TypeDefinition @'
+using System;using System.ComponentModel;using System.Diagnostics;using System.Globalization;using System.IO;using System.Runtime.InteropServices;using System.Security.Cryptography;using System.Text;using System.Collections.Generic;
+public static class OwnedDaemonKernel {
+ [DllImport("kernel32.dll",SetLastError=true)] static extern IntPtr OpenProcess(uint r,bool i,int p);
+ [DllImport("kernel32.dll",SetLastError=true)] static extern uint GetProcessId(IntPtr h);
+ [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetProcessTimes(IntPtr h,out long b,out long e,out long k,out long u);
+ [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool QueryFullProcessImageName(IntPtr h,uint f,StringBuilder p,ref uint n);
+ [DllImport("kernel32.dll",SetLastError=true)] static extern uint WaitForSingleObject(IntPtr h,uint ms);
+ [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetExitCodeProcess(IntPtr h,out uint c);
+ [DllImport("kernel32.dll",SetLastError=true)] static extern bool TerminateProcess(IntPtr h,uint c);
+ [DllImport("kernel32.dll",SetLastError=true)] static extern bool CloseHandle(IntPtr h);
+ [StructLayout(LayoutKind.Sequential)] struct SA {public int nLength;public IntPtr descriptor;[MarshalAs(UnmanagedType.Bool)] public bool inherit;}
+ [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Unicode)] struct SI {public uint cb;public string reserved,desktop,title;public uint x,y,xSize,ySize,xChars,yChars,fill,flags;public ushort show,reservedLength;public IntPtr reservedBytes,input,output,error;}
+ [StructLayout(LayoutKind.Sequential)] struct SX {public SI startup;public IntPtr attributes;}
+ [StructLayout(LayoutKind.Sequential)] struct PI {public IntPtr process,thread;public uint pid,tid;}
+ [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr CreateFileW(string name,uint access,uint share,ref SA security,uint creation,uint flags,IntPtr template);
+ [DllImport("kernel32.dll",SetLastError=true)] static extern bool InitializeProcThreadAttributeList(IntPtr list,int count,uint flags,ref IntPtr bytes);
+ [DllImport("kernel32.dll",SetLastError=true)] static extern bool UpdateProcThreadAttribute(IntPtr list,uint flags,IntPtr attribute,IntPtr value,IntPtr bytes,IntPtr previous,IntPtr returned);
+ [DllImport("kernel32.dll")] static extern void DeleteProcThreadAttributeList(IntPtr list);
+ [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool CreateProcessW(string app,StringBuilder command,IntPtr processSecurity,IntPtr threadSecurity,bool inherit,uint flags,IntPtr environment,string cwd,ref SX startup,out PI process);
+ [DllImport("shell32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr CommandLineToArgvW(string c,out int n);
+ [DllImport("kernel32.dll")] static extern IntPtr LocalFree(IntPtr p);
+ [StructLayout(LayoutKind.Sequential,Pack=4)] struct FI {public uint attributes;public long birth,access,write;public uint volume,sh,sl,links,ih,il;}
+ [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetFileInformationByHandle(IntPtr h,out FI f);
+ static void Error(){throw new Win32Exception(Marshal.GetLastWin32Error());}
+ public static void FileIdentity(FileStream s){FI f;if(!GetFileInformationByHandle(s.SafeFileHandle.DangerousGetHandle(),out f))Error();if(f.links!=1 || (f.attributes&0x400)!=0)throw new InvalidOperationException("owned_supervisor_file_identity");}
+ public static IntPtr Open(int p,bool terminate){IntPtr h=OpenProcess(0x00100000|0x1000|(terminate?(uint)1:0),false,p);if(h==IntPtr.Zero)Error();return h;}
+ public static object Identity(IntPtr h){uint pid=GetProcessId(h);long b=0,e=0,k=0,u=0;if(pid==0 || !GetProcessTimes(h,out b,out e,out k,out u))Error();StringBuilder p=new StringBuilder(32768);uint n=(uint)p.Capacity;if(!QueryFullProcessImageName(h,0,p,ref n))Error();return new {pid=(int)pid,birthFileTime=b.ToString(CultureInfo.InvariantCulture),birthUtc=DateTime.FromFileTimeUtc(b).ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ",CultureInfo.InvariantCulture),imagePath=p.ToString()};}
+ public static object Wait(IntPtr h,uint ms){uint w=WaitForSingleObject(h,ms);if(w==0){uint c;if(!GetExitCodeProcess(h,out c))Error();return new {waitResult="WAIT_OBJECT_0",signaled=true,exitCode=(long?)c};}if(w==258)return new {waitResult="WAIT_TIMEOUT",signaled=false,exitCode=(long?)null};Error();throw new InvalidOperationException("owned_supervisor_wait_invalid");}
+ public static string[] Args(string command){int n;IntPtr p=CommandLineToArgvW(command,out n);if(p==IntPtr.Zero)Error();try{string[] a=new string[n];for(int i=0;i<n;i++)a[i]=Marshal.PtrToStringUni(Marshal.ReadIntPtr(p,i*IntPtr.Size));return a;}finally{LocalFree(p);}}
+ public static string Hash(Stream f){f.Position=0;using(SHA256 s=SHA256.Create())return BitConverter.ToString(s.ComputeHash(f)).Replace("-","").ToLowerInvariant();}
+ public static void Force(IntPtr h,string expiry,Action check){check();if(DateTimeOffset.UtcNow>=DateTimeOffset.Parse(expiry,CultureInfo.InvariantCulture))throw new InvalidOperationException("owned_supervisor_lease_expired");if(!TerminateProcess(h,0))Error();}
+ public static void Dispose(IntPtr h){if(h!=IntPtr.Zero && !CloseHandle(h))Error();}
+ public static IntPtr StartIndependent(string executable,string script,string cwd,IDictionary<string,string> environment){
+  if(executable.IndexOfAny(new char[]{'"','\0','\r','\n'})>=0 || script.IndexOfAny(new char[]{'"','\0','\r','\n'})>=0)throw new InvalidOperationException("owned_supervisor_fixed_argv_invalid");
+  IntPtr input=IntPtr.Zero,output=IntPtr.Zero,error=IntPtr.Zero,list=IntPtr.Zero,handles=IntPtr.Zero,block=IntPtr.Zero;bool initialized=false;
+  try{SA security=new SA{nLength=Marshal.SizeOf(typeof(SA)),inherit=true};
+   input=CreateFileW("NUL",0x80000000,3,ref security,3,0,IntPtr.Zero);if(input==new IntPtr(-1))Error();
+   output=CreateFileW("NUL",0x40000000,3,ref security,3,0,IntPtr.Zero);if(output==new IntPtr(-1))Error();
+   error=CreateFileW("NUL",0x40000000,3,ref security,3,0,IntPtr.Zero);if(error==new IntPtr(-1))Error();
+   IntPtr bytes=IntPtr.Zero;InitializeProcThreadAttributeList(IntPtr.Zero,1,0,ref bytes);if(bytes==IntPtr.Zero)Error();list=Marshal.AllocHGlobal(bytes);if(!InitializeProcThreadAttributeList(list,1,0,ref bytes))Error();initialized=true;
+   handles=Marshal.AllocHGlobal(IntPtr.Size*3);Marshal.WriteIntPtr(handles,0,input);Marshal.WriteIntPtr(handles,IntPtr.Size,output);Marshal.WriteIntPtr(handles,IntPtr.Size*2,error);
+   if(!UpdateProcThreadAttribute(list,0,new IntPtr(0x20002),handles,new IntPtr(IntPtr.Size*3),IntPtr.Zero,IntPtr.Zero))Error();
+   List<string> keys=new List<string>(environment.Keys);keys.Sort(StringComparer.OrdinalIgnoreCase);StringBuilder values=new StringBuilder();foreach(string key in keys){string value=environment[key];if(key.IndexOf('\0')>=0 || value==null || value.IndexOf('\0')>=0)throw new InvalidOperationException("owned_supervisor_environment_invalid");values.Append(key).Append('=').Append(value).Append('\0');}values.Append('\0');block=Marshal.StringToHGlobalUni(values.ToString());
+   SX sx=new SX{startup=new SI{cb=(uint)Marshal.SizeOf(typeof(SX)),flags=0x101,show=0,input=input,output=output,error=error},attributes=list};PI pi;
+   if(!CreateProcessW(executable,new StringBuilder("\""+executable+"\" \""+script+"\""),IntPtr.Zero,IntPtr.Zero,true,0x08000000|0x00000400|0x00080000,block,cwd,ref sx,out pi))Error();CloseHandle(pi.thread);return pi.process;
+  }finally{foreach(IntPtr h in new IntPtr[]{input,output,error})if(h!=IntPtr.Zero && h!=new IntPtr(-1))CloseHandle(h);if(initialized)DeleteProcThreadAttributeList(list);foreach(IntPtr p in new IntPtr[]{list,handles,block})if(p!=IntPtr.Zero)Marshal.FreeHGlobal(p);}
+ }
+}
+'@
+function Emit($v){$v|ConvertTo-Json -Depth 40 -Compress;[Console]::Out.Flush()}
+function NativeFailure($reason,[string]$operation){
+ while($reason.InnerException){$reason=$reason.InnerException}
+ $operations=@('acquire-controller','assert-controller','release-target','publish-current','probe-owned','probe-product-activation','launch','launch-initial-recovery','open-owned','open-legacy','open-synthetic','wait','dispose','stop-legacy','stop-synthetic')
+ if($operation -cnotin $operations){$operation='unknown'}
+ $code='owned_supervisor_native_refused';$kind='system';$win32=$null
+ if($reason.Message -cmatch '^owned_[a-z0-9_]+$'){$code=$reason.Message;$kind='contract'}
+ if($reason -is [ComponentModel.Win32Exception]){$kind='win32';$win32=$reason.NativeErrorCode}
+ return @{ok=$false;code=$code;nativeError=@{operation=$operation;kind=$kind;win32Error=$win32;hresult=$reason.HResult}}
+}
+function Exact($v,[string[]]$keys){if ((($v.PSObject.Properties.Name|Sort-Object)-join ',') -cne (($keys|Sort-Object)-join ',')){throw 'owned_supervisor_rpc_schema'}}
+function Canon($v){
+ if($null -eq $v){return 'null'}
+ if($v -is [string]){return ($v|ConvertTo-Json -Compress)}
+ if($v -is [bool]){if($v){return 'true'}else{return 'false'}}
+ if($v -is [ValueType]){return [Convert]::ToString($v,[Globalization.CultureInfo]::InvariantCulture)}
+ if($v -is [Collections.IDictionary]){$keys=[string[]]@($v.Keys);[Array]::Sort($keys,[StringComparer]::Ordinal);return '{'+(($keys|ForEach-Object {(Canon $_)+':'+(Canon $v[$_])})-join ',')+'}'}
+ if($v -is [Collections.IEnumerable]){return '['+(($v|ForEach-Object {Canon $_})-join ',')+']'}
+ $values=@{};foreach($p in $v.PSObject.Properties){$values[$p.Name]=$p.Value};return Canon $values
+}
+function HashText([string]$text){$s=[IO.MemoryStream]::new([Text.Encoding]::UTF8.GetBytes($text));try{return [OwnedDaemonKernel]::Hash($s)}finally{$s.Dispose()}}
+function SafeFile([string]$file,[bool]$image=$false){$p=[IO.Path]::GetFullPath($file);$a=$p;while($a -ne ''){if(((Get-Item -LiteralPath $a -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)-ne 0){throw 'owned_supervisor_reparse_refused'};$a=[IO.Path]::GetDirectoryName($a);if($null -eq $a){break}};$s=[IO.FileStream]::new($p,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);try{[OwnedDaemonKernel]::FileIdentity($s);if($s.Length -gt $(if($image){1073741824}else{16777216})){throw 'owned_supervisor_file_budget'};return $s}catch{$s.Dispose();throw}}
+function ReadJson([string]$file,[string]$rawPin=$null,[bool]$keep=$false){$s=SafeFile $file;try{if($rawPin -and [OwnedDaemonKernel]::Hash($s) -cne $rawPin){throw 'owned_supervisor_private_source_changed'};$s.Position=0;$reader=[IO.StreamReader]::new($s,[Text.UTF8Encoding]::new($false),$true,4096,$true);try{$v=$reader.ReadToEnd()|ConvertFrom-Json -DateKind String}finally{$reader.Dispose()};if($keep){$script:locks+=@($s);$s=$null};return $v}finally{if($null -ne $s){$s.Dispose()}}}
+function Envelope([string]$file,[bool]$keep=$false){$v=ReadJson $file $null $keep;if($v.schema -cne 'ae-agent.owned-runtime-shutdown.v1.envelope' -or $v.sha256 -cne (HashText (Canon $v.value))){throw 'owned_supervisor_envelope_invalid'};return $v}
+function WriteOnce([string]$file,$value){$row=@{schema='ae-agent.owned-runtime-shutdown.v1.envelope';sha256=(HashText (Canon $value));value=$value};$bytes=[Text.Encoding]::UTF8.GetBytes((Canon $row));$s=[IO.FileStream]::new($file,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::Read);try{$s.Write($bytes,0,$bytes.Length);$s.Flush($true)}finally{$s.Dispose()};return $row}
+function ReleaseLocks{foreach($s in $script:locks){$s.Dispose()};$script:locks=@()}
+function Config {
+ # Reuse the accepted R1 parser AST from its exact immutable source pin.
+ $file=Join-Path $repo 'scripts/owned-runtime-win32-helper.ps1';$s=SafeFile $file
+ try{if([OwnedDaemonKernel]::Hash($s) -cne '945ef885a9c8eecbc2ddf3076cc4762d2a4789b64c3153f12abee8c7f5236ed4'){throw 'owned_supervisor_r1_parser_changed'}}finally{$s.Dispose()}
+ $errors=$null;$tokens=$null;$ast=[Management.Automation.Language.Parser]::ParseFile($file,[ref]$tokens,[ref]$errors);if($errors.Count){throw 'owned_supervisor_r1_parser_invalid'}
+ $fn=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -ceq 'ParseCredentialConfig'},$true);Invoke-Expression $fn.Extent.Text
+ $s=SafeFile (Join-Path $repo '.codex/config.toml');try{$reader=[IO.StreamReader]::new($s,[Text.UTF8Encoding]::new($false),$true,4096,$true);try{$text=$reader.ReadToEnd()}finally{$reader.Dispose()};$token=ParseCredentialConfig $text $repo;$values=@{};$selected=$false
+  foreach($line in ($text -replace '^\uFEFF','') -split '\r?\n'){if($line -match '^\s*\['){$selected=$line.Trim() -ceq '[mcp_servers."after-effects".env]';continue};if($selected -and $line -cmatch '^\s*([A-Z][A-Z0-9_]*)\s*=\s*("(?:[^"\\]|\\.)*")\s*(?:#.*)?$'){$values[$Matches[1]]=($Matches[2]|ConvertFrom-Json -DateKind String)}}
+  $script:locks+=@($s);$s=$null;return @{token=$token;values=$values}
+ }finally{if($null -ne $s){$s.Dispose()}}
+}
+function AssertProductDeployment($environment) {
+ foreach($key in @($environment.Keys)) {
+  if($key -match '^AE_AGENT_(?:LOCAL_SESSION_|TRUSTED_READ_)' -or ($key -match '^AE_AGENT_DEPLOYMENT_MODE$' -and $key -cne 'AE_AGENT_DEPLOYMENT_MODE')) {throw 'owned_supervisor_deployment_mode_changed'}
+ }
+ $mode=$environment['AE_AGENT_DEPLOYMENT_MODE'];if($null -eq $mode){return 'product'}
+ if($mode -cne 'product'){throw 'owned_supervisor_deployment_mode_changed'};return $mode
+}
+function Policy($authorization){$p=ReadJson (Join-Path $base 'policy.json') $null $true;if($p.schema -cne 'ae-agent.owned-runtime-policy.v1' -or $p.enabled -cne $true -or $p.acceptedServerCoverage -cnotcontains 'owned_daemon_lifecycle' -or (Canon $p.authorization) -cne (Canon $authorization)){throw 'owned_supervisor_policy_disabled_or_changed'}}
+function BootstrapIdle($value) {
+  if ($null -eq $value) { return $false }
+  $keys=@($value.PSObject.Properties.Name)
+  if ($keys -contains 'stage' -and $value.stage -cne 'verified') { return $false }
+  return ($value.busy -ceq $false -or ($keys -notcontains 'busy' -and $value.stage -ceq 'verified'))
+}
+function SafeInteger($value,[long]$minimum,[long]$maximum) {
+ return (($value -is [int] -or $value -is [long] -or $value -is [uint32] -or $value -is [uint64]) -and $value -ge $minimum -and $value -le $maximum)
+}
+function ProcessBirth([string]$value) {
+ if($value -cnotmatch '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{1,7}(Z|\+00:00)$'){throw 'owned_supervisor_legacy_original_proof_required'}
+ $normalized=$value -replace '\+00:00$','Z';$normalized=[regex]::Replace($normalized,'\.(\d+)Z$',{param($m)'.'+$m.Groups[1].Value.PadRight(7,'0')+'Z'})
+ return [DateTimeOffset]::ParseExact($normalized,"yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'",[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::AssumeUniversal)
+}
+function OriginalRetirementProof($retirement,$expected) {
+ try{
+  Exact $retirement @('schema','process','proof','nativeExecutionProven');Exact $expected @('pid','createdUnixMs','createdAt','path')
+  $p=$retirement.process;$w=$retirement.proof;$keys=@('pid','createdUnixMs','createdAt','path');if(@($p.PSObject.Properties.Name) -contains 'createdFileTime'){$keys+=@('createdFileTime')};Exact $p $keys;Exact $w @('kind','waitResult','exitCode','handleOpenedAt','identityVerifiedAt','observedAt')
+  if($retirement.schema -cne 'ae-agent.native-fixture-retirement-proof.v1' -or $retirement.nativeExecutionProven -isnot [bool] -or $retirement.nativeExecutionProven -cne $false -or $w.kind -cne 'held_process_handle_signaled' -or $w.waitResult -cne 'WAIT_OBJECT_0' -or !(SafeInteger $w.exitCode 0 4294967295) -or !(SafeInteger $p.pid 1 2147483647) -or !(SafeInteger $p.createdUnixMs 1 9007199254740991) -or !(SafeInteger $expected.pid 1 2147483647) -or !(SafeInteger $expected.createdUnixMs 1 9007199254740991) -or $p.pid -ne $expected.pid -or $p.createdUnixMs -ne $expected.createdUnixMs -or $p.path -isnot [string] -or $expected.path -isnot [string] -or [string]::IsNullOrEmpty($p.path) -or $p.path -ine $expected.path){throw 'owned_supervisor_legacy_original_proof_required'}
+  $birth=ProcessBirth $p.createdAt;$launchBirth=ProcessBirth $expected.createdAt
+  if($birth.UtcDateTime.Ticks -ne $launchBirth.UtcDateTime.Ticks -or $birth.ToUnixTimeMilliseconds() -ne $p.createdUnixMs -or $launchBirth.ToUnixTimeMilliseconds() -ne $expected.createdUnixMs){throw 'owned_supervisor_legacy_original_proof_required'}
+  if($keys -contains 'createdFileTime' -and ($p.createdFileTime -isnot [string] -or $p.createdFileTime -cne $birth.UtcDateTime.ToFileTimeUtc().ToString([Globalization.CultureInfo]::InvariantCulture))){throw 'owned_supervisor_legacy_original_proof_required'}
+  $opened=[DateTimeOffset]::Parse($w.handleOpenedAt,[Globalization.CultureInfo]::InvariantCulture);$verified=[DateTimeOffset]::Parse($w.identityVerifiedAt,[Globalization.CultureInfo]::InvariantCulture);$observed=[DateTimeOffset]::Parse($w.observedAt,[Globalization.CultureInfo]::InvariantCulture)
+  if($opened.UtcDateTime.Ticks -lt $birth.UtcDateTime.Ticks -or $verified.UtcDateTime.Ticks -lt $opened.UtcDateTime.Ticks -or $observed.UtcDateTime.Ticks -lt $verified.UtcDateTime.Ticks){throw 'owned_supervisor_legacy_original_proof_required'}
+  return $true
+ }catch{throw 'owned_supervisor_legacy_original_proof_required'}
+}
+function AssertIdentity($expected){$actual=[OwnedDaemonKernel]::Identity($script:handle);if($actual.pid -ne $expected.pid -or $actual.birthFileTime -cne $expected.birthFileTime -or $actual.birthUtc -cne $expected.birthUtc -or $actual.imagePath -ine $expected.imagePath -or [OwnedDaemonKernel]::Hash($script:image) -cne $expected.executableSha256){throw 'owned_supervisor_identity_changed'};return $actual}
+function AssertArgv($expected){if(([OwnedDaemonKernel]::Wait($script:handle,0)).signaled){return};$pidValue=([OwnedDaemonKernel]::Identity($script:handle)).pid;$cim=Get-CimInstance Win32_Process -Filter ('ProcessId='+$pidValue);if(!$cim -or $cim.ExecutablePath -ine $node -or (Canon ([OwnedDaemonKernel]::Args($cim.CommandLine))) -cne (Canon $expected)){throw 'owned_supervisor_argv_changed'}}
+function OpenExact($identity,$argv,[bool]$terminate){$script:handle=[OwnedDaemonKernel]::Open([int]$identity.pid,$terminate);$script:image=SafeFile $identity.imagePath $true;[void](AssertIdentity $identity);AssertArgv $argv;$script:expected=$identity;$script:expectedArgv=$argv}
+function EndpointFree {
+ # Enumeration failure is UNKNOWN. Never convert it to an empty listener list.
+ try { $listeners=[Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners();return @($listeners|Where-Object {$_.Port -eq 3456}).Count -eq 0 } catch {throw 'owned_supervisor_endpoint_unknown'}
+}
+function ProbeOwned([string]$generation) {
+ $chain=Reservation $generation $false;$config=Config;$candidate=Envelope (Join-Path $chain.dir 'native-candidate.json');$c=$candidate.value;$data=@{};foreach($p in $c.PSObject.Properties){if($p.Name -cne 'authentication'){$data[$p.Name]=$p.Value}}
+ if($c.authentication -cne (Hmac $data $config.token) -or $c.generation -cne $generation -or $c.reservationSha256 -cne $chain.reservation.sha256 -or $c.startupTicketSha256 -cne $chain.ticket.sha256 -or $c.bootNonce -cne $chain.reservation.value.bootNonce){throw 'owned_supervisor_candidate_authentication'}
+ $probeHandle=[IntPtr]::Zero
+ try {
+  try {$probeHandle=[OwnedDaemonKernel]::Open([int]$c.kernelIdentity.pid,$false)} catch {
+   $reason=$_.Exception;while($reason.InnerException){$reason=$reason.InnerException}
+   if($reason -is [ComponentModel.Win32Exception]) {if($reason.NativeErrorCode -eq 87){$free=EndpointFree;return @{state=$(if($free){'absent'}else{'endpoint_occupied'});win32Error=87;endpointFree=$free;generation=$generation;observedAt=[DateTimeOffset]::UtcNow.ToString('o')}};if($reason.NativeErrorCode -eq 5){return @{state='access_denied';win32Error=5;endpointFree=$false;generation=$generation}}}
+   return @{state='unknown';win32Error=$null;endpointFree=$false;generation=$generation}
+  }
+  $actual=[OwnedDaemonKernel]::Identity($probeHandle);$expected=$c.kernelIdentity
+  if($actual.pid -ne $expected.pid -or $actual.birthFileTime -cne $expected.birthFileTime -or $actual.birthUtc -cne $expected.birthUtc -or $actual.imagePath -ine $expected.imagePath){return @{state='pid_reused';win32Error=$null;endpointFree=$false;generation=$generation}}
+  $image=SafeFile $actual.imagePath $true;try{if([OwnedDaemonKernel]::Hash($image) -cne $expected.executableSha256){return @{state='pid_reused';win32Error=$null;endpointFree=$false;generation=$generation}}}finally{$image.Dispose()}
+  $process=Get-CimInstance Win32_Process -Filter ('ProcessId='+$actual.pid) -ErrorAction Stop
+  if(!$process -or (Canon ([OwnedDaemonKernel]::Args($process.CommandLine))) -cne (Canon $c.argv)){return @{state='unknown';win32Error=$null;endpointFree=$false;generation=$generation}}
+  return @{state='alive_exact';win32Error=$null;endpointFree=$false;generation=$generation}
+ }finally{if($probeHandle -ne [IntPtr]::Zero){[OwnedDaemonKernel]::Dispose($probeHandle)};ReleaseLocks}
+}
+function AssertActivationNativeQuiet {
+ # Query-only, fixed global names. Any owner, enumeration failure or race
+ # refuses initial activation. This never adjudicates historical effects.
+ AssertController
+ for($pass=0;$pass -lt 3;$pass++){
+  foreach($name in @('AfterFX','CEPHtmlEngine','aerender','Adobe Media Encoder')){
+   $owners=[Diagnostics.Process]::GetProcessesByName($name)
+   try{if($owners.Count -ne 0){throw 'owned_activation_native_owner_present'}}finally{foreach($owner in $owners){$owner.Dispose()}}
+  }
+  if(!(EndpointFree)){throw 'owned_supervisor_endpoint_occupied'}
+ }
+ AssertController
+}
+function AssertActivationConfiguration($environment) {
+ $roots=@{AE_BRIDGE_STATE_DIR=(Join-Path $repo '.codex-runtime/project-intent');AE_BRIDGE_LOG_DIR=(Join-Path $repo 'logs');AE_AGENT_HARDCORE_SESSION_DIR=(Join-Path $repo 'logs/hardcore-sessions')}
+ foreach($name in @($environment.Keys)){foreach($expected in $roots.Keys){if($name -ieq $expected){$value=$environment[$name];if($name -cne $expected -or !$value -or ![IO.Path]::IsPathRooted($value) -or [IO.Path]::GetFullPath($value) -ine [IO.Path]::GetFullPath($roots[$expected])){throw 'owned_activation_runtime_redirect_refused'}}}}
+}
+function SignedActivationValue($value,[string]$token) {
+ $data=@{};foreach($p in $value.PSObject.Properties){if($p.Name -cne 'authentication'){$data[$p.Name]=$p.Value}}
+ if($value.authentication -cne (Hmac $data $token)){throw 'owned_activation_origin_signature_invalid'}
+}
+function ActivationOrigin([string]$generation,[string]$token,[int]$depth=0) {
+ if($depth -gt 32 -or $generation -cnotmatch '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'){throw 'owned_activation_origin_invalid'}
+ $bindingFile=Join-Path $base ('daemon-reservations/'+$generation+'/product-session-reset.json')
+ if([IO.File]::Exists($bindingFile)){
+  $b=(Envelope $bindingFile $true).value
+  if($b.schema -cnotin @('ae-agent.product-activation.v1.binding','ae-agent.product-session-reset.v1.generation-binding','ae-agent.product-session-reset.v1.binding')){throw 'owned_activation_origin_invalid'}
+  if($b.generation -cne $generation -or $b.operationId -cnotmatch '^[a-f0-9-]{36}$'){throw 'owned_activation_origin_invalid'}
+  $intent=Envelope (Join-Path $base ('product-session-resets/'+$b.operationId+'/intent.json')) $true;$v=$intent.value;SignedActivationValue $v $token
+  $expectedSchema=if($b.schema -ceq 'ae-agent.product-activation.v1.binding'){'ae-agent.product-activation.v1.intent'}else{'ae-agent.product-session-reset.v1.intent'}
+  if($intent.sha256 -cne $b.intentSha256 -or $v.generation -cne $generation -or $v.operationId -cne $b.operationId -or $v.schema -cne $expectedSchema){throw 'owned_activation_origin_invalid'}
+  if($b.schema -ceq 'ae-agent.product-session-reset.v1.binding'){
+   # Only the bound historical v1 policy proves a genuine pure-product root.
+   # Rewriting an unsigned generation-binding cannot downgrade a signed root.
+   $pure=ReadJson (Join-Path $base 'product-session-reset-policy.json') $v.policyRawSha256 $true
+   if($pure.schema -cne 'ae-agent.product-session-reset.v1.policy' -or $pure.enabled -cne $true -or $pure.capability -cne 'reset_owned_runtime_product_session' -or (Canon $pure.authorization) -cne (Canon $v.authorizationRef)){throw 'owned_activation_origin_invalid'}
+   return $false
+  }
+  return $true
+ }
+ $edgeFile=Join-Path $base ('daemon-succession/'+$generation+'.json');if(![IO.File]::Exists($edgeFile)){return $false}
+ $edge=(Envelope $edgeFile $true).value;SignedActivationValue $edge $token
+ if($edge.schema -cne ($schema+'.succession') -or $edge.successorGeneration -cne $generation -or $edge.anchor.initialGeneration -ceq $generation){throw 'owned_activation_origin_invalid'}
+ return ActivationOrigin $edge.anchor.initialGeneration $token ($depth+1)
+}
+function AssertProductMaintenancePredecessor($v,[string]$token) {
+ # Data-only verification. No ignored code or captured source is executed.
+ Exact $v.source @('intentSha256','exitResultSha256','drainAckSha256','shutdownAckSha256','priorShutdownReceiptSha256','productMaintenanceReceiptSha256')
+ $parent=Join-Path $repo '.codex-runtime/product-maintenance-stop';$names=@(Get-ChildItem -LiteralPath $parent -Force|ForEach-Object {$_.Name});if($names.Count -ne 1 -or $names[0] -cnotmatch '^[a-f0-9]{64}$'){throw 'owned_product_maintenance_namespace_invalid'}
+ $dir=Join-Path $parent $names[0];$grantFile=Join-Path $dir 'grant.json';$stream=SafeFile $grantFile;try{$raw=[OwnedDaemonKernel]::Hash($stream);$script:locks+=@($stream);$stream=$null}finally{if($stream){$stream.Dispose()}}
+ $g=ReadJson $grantFile $raw $true;SignedActivationValue $g $token;$b=$g.baseline
+ if($g.schema -cne 'ae-agent.product-maintenance-stop.v1.grant' -or $g.key -cne $names[0] -or $g.forceConsent -cne $true -or $g.authorization.source -cne 'explicit_user_chat' -or [string]::IsNullOrWhiteSpace($g.authorization.reference) -or $g.replayAllowed -cne $false -or $b.generation -cne $v.targetGeneration -or $b.sessionRootGeneration -cne $v.targetGeneration -or $g.reviewDigest -cne (HashText (Canon @{baseline=$b;current=$g.current;native=$g.native}))){throw 'owned_product_maintenance_grant_invalid'}
+ $prior=Reservation $v.targetGeneration $false;$candidate=Envelope (Join-Path $prior.dir 'native-candidate.json') $true;SignedActivationValue $candidate.value $token
+ if($candidate.value.generation -cne $v.targetGeneration -or $candidate.value.reservationSha256 -cne $prior.reservation.sha256 -or (Canon $b.sourcePins) -cne (Canon $prior.reservation.value.sourcePins) -or $b.sourceSha256 -cne $prior.reservation.value.sourceSha256 -or (Canon $b.registrationRefs) -cne (Canon $v.predecessor)){throw 'owned_product_maintenance_original_registration_invalid'}
+ $rows=@{};foreach($name in @('once','force-intent','native-attempt','exit-result','post-exit','retired-source')){$rows[$name]=Envelope (Join-Path $dir ($name+'.json')) $true}
+ $once=$rows.once;$intent=$rows['force-intent'];$attempt=$rows['native-attempt'];$exit=$rows['exit-result'];$post=$rows['post-exit'];$seal=$rows['retired-source'];foreach($row in @($exit,$post,$seal)){SignedActivationValue $row.value $token}
+ foreach($entry in $rows.GetEnumerator()){if($entry.Value.value.schema -cne ('ae-agent.product-maintenance-stop.v1.'+$entry.Key) -or $entry.Value.value.key -cne $g.key -or $entry.Value.value.grantRawSha256 -cne $raw){throw 'owned_product_maintenance_receipt_binding_invalid'}}
+ if($seal.sha256 -cne $v.source.productMaintenanceReceiptSha256 -or $intent.sha256 -cne $v.source.intentSha256 -or $exit.sha256 -cne $v.source.exitResultSha256 -or $once.value.operationId -cne $v.sourceOperationId -or $intent.value.onceSha256 -cne $once.sha256 -or $intent.value.operationId -cne $once.value.operationId -or $attempt.value.forceIntentSha256 -cne $intent.sha256 -or $exit.value.forceIntentSha256 -cne $intent.sha256 -or $exit.value.nativeAttemptSha256 -cne $attempt.sha256 -or $post.value.exitResultSha256 -cne $exit.sha256 -or $seal.value.exitResultSha256 -cne $exit.sha256 -or $seal.value.onceSha256 -cne $once.sha256 -or $seal.value.postExitSha256 -cne $post.sha256 -or $seal.value.generation -cne $v.targetGeneration -or $post.value.manifestSha256 -cne (HashText (Canon $b.manifest)) -or $v.source.drainAckSha256 -cne $b.drain.ackSha256 -or $null -ne $v.source.shutdownAckSha256 -or $null -ne $v.source.priorShutdownReceiptSha256){throw 'owned_product_maintenance_receipt_chain_invalid'}
+ $e=$exit.value;if((Canon $e.identity) -cne (Canon $candidate.value.kernelIdentity) -or (Canon $attempt.value.identity) -cne (Canon $e.identity) -or $e.handleOpenedAt -cne $attempt.value.handleOpenedAt -or $e.wait.signaled -cne $true -or $e.wait.waitResult -cne 'WAIT_OBJECT_0' -or $null -eq $e.wait.exitCode -or [DateTimeOffset]::Parse($e.handleOpenedAt) -lt [DateTimeOffset]::Parse($e.identity.birthUtc) -or [DateTimeOffset]::Parse($e.observedAt) -lt [DateTimeOffset]::Parse($e.handleOpenedAt) -or $e.disposition.graceful -cne $false -or $e.disposition.oldExitProven -cne $false -or $e.disposition.oldExternalEffectsAdjudicated -cne $false -or $e.disposition.resourceFencesReleased -cne $false -or $e.disposition.replayAllowed -cne $false -or (Canon $seal.value.disposition) -cne (Canon $e.disposition) -or $e.consoleHost.touched -cne $false -or $null -eq $e.consoleHost.wait){throw 'owned_product_maintenance_held_exit_invalid'}
+ $cw=$e.consoleHost.wait;$consoleKnown=($cw.waitResult -ceq 'WAIT_OBJECT_0' -and $cw.signaled -ceq $true -and $null -ne $cw.exitCode) -or ($cw.waitResult -ceq 'WAIT_TIMEOUT' -and $cw.signaled -ceq $false -and $null -eq $cw.exitCode)
+ if(!$consoleKnown -or (Canon $e.consoleHost.record) -cne (Canon $g.native.children[0]) -or @($g.native.children).Count -ne 1 -or [DateTimeOffset]::Parse($e.consoleHost.observedAt) -lt [DateTimeOffset]::Parse($e.handleOpenedAt) -or [DateTimeOffset]::Parse($e.consoleHost.observedAt) -gt [DateTimeOffset]::Parse($e.observedAt) -or (Canon $e.disposition) -cne (Canon $b.disposition) -or (Canon $post.value.disposition) -cne (Canon $b.disposition) -or (Canon $intent.value.disposition) -cne (Canon $b.disposition)){throw 'owned_product_maintenance_console_or_disposition_invalid'}
+ $drainAck=Envelope (Join-Path $base ('daemon-operations/'+$b.drain.operationId+'/drain-ack.json')) $true;if($drainAck.sha256 -cne $b.drain.ackSha256 -or $drainAck.value.targetGeneration -cne $v.targetGeneration -or $drainAck.value.draining -cne $true){throw 'owned_product_maintenance_drain_invalid'}
+ if(@($b.sourcePins).Count -lt 1 -or @($b.sourcePins).Count -gt 128){throw 'owned_product_maintenance_snapshot_budget'}
+ foreach($p in $b.sourcePins){if([IO.Path]::IsPathRooted($p.name) -or $p.name -cmatch '(^|[\\/])\.\.([\\/]|$)') {throw 'owned_product_maintenance_snapshot_path'};$data=ReadJson (Join-Path $dir ('source-files/'+$p.name)) $null $true;if($data.schema -cne 'ae-agent.product-maintenance-stop.v1.source-bytes' -or $data.name -cne $p.name -or $data.rawSha256 -cne $p.sha256){throw 'owned_product_maintenance_snapshot_invalid'};$bytes=[IO.MemoryStream]::new([Convert]::FromBase64String($data.base64));try{if([OwnedDaemonKernel]::Hash($bytes) -cne $p.sha256){throw 'owned_product_maintenance_snapshot_changed'}}finally{$bytes.Dispose()}}
+ $paths=@((Join-Path $repo '.codex-runtime/release-3.3.4/product-maintenance-draft/product-maintenance-stop.js'),(Join-Path $repo '.codex-runtime/release-3.3.4/product-maintenance-draft/product-maintenance-stop-helper.ps1'),(Join-Path $repo 'scripts/cep-panel-target.js'));if(@($b.codePins).Count -ne 3){throw 'owned_product_maintenance_code_pins_invalid'}
+ for($i=0;$i -lt 3;$i++){$p=$b.codePins[$i];$data=ReadJson (Join-Path $dir ('code-files/'+$i+'.json')) $null $true;if($p.path -ine $paths[$i] -or $data.schema -cne 'ae-agent.product-maintenance-stop.v1.code-bytes' -or $data.path -cne $p.path -or $data.rawSha256 -cne $p.rawSha256){throw 'owned_product_maintenance_code_snapshot_invalid'};$bytes=[IO.MemoryStream]::new([Convert]::FromBase64String($data.base64));try{if([OwnedDaemonKernel]::Hash($bytes) -cne $p.rawSha256){throw 'owned_product_maintenance_code_snapshot_changed'}}finally{$bytes.Dispose()}}
+}
+function AssertGracefulContinuationPredecessor($v,[string]$token) {
+ # A distinct normal-stop receipt; the parent UNKNOWN is never completed.
+ $cs='ae-agent.product-graceful-continuation.v1';$service='ae-agent.owned-runtime-service.v1'
+ Exact $v.source @('intentSha256','exitResultSha256','drainAckSha256','shutdownAckSha256','priorShutdownReceiptSha256','gracefulContinuationReceiptSha256')
+ if($null -ne $v.source.priorShutdownReceiptSha256){throw 'owned_graceful_continuation_wrong_kind'}
+ $parent=Join-Path $base 'product-graceful-continuations';$dirs=@(Get-ChildItem -LiteralPath $parent -Force);if($dirs.Count -gt 32){throw 'owned_graceful_continuation_namespace'}
+ $selected=$null;foreach($item in $dirs){if(!$item.PSIsContainer -or $item.Name -cnotmatch '^[a-f0-9]{64}$' -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)){throw 'owned_graceful_continuation_namespace'};$row=Envelope (Join-Path $item.FullName 'intent.json') $true;if($row.value.baseline.generation -ceq $v.targetGeneration){if($selected){throw 'owned_graceful_continuation_multiple'};$selected=@{dir=$item.FullName;intent=$row;key=$item.Name}}}
+ if(!$selected){throw 'owned_graceful_continuation_missing'};$dir=$selected.dir;$intent=$selected.intent;$i=$intent.value;$b=$i.baseline
+ Exact $i @('schema','key','operationId','baseline','createdAt','authentication');Exact $b @('schema','generation','originalOperationId','currentRawSha256','registration','registrationRefs','sourceSha256','sourcePins','authorizationRef','credentialSha256','policyRawSha256','originalPins','disposition','helperCodePins');SignedActivationValue $i $token
+ $key=HashText (Canon @{originalOperationId=$b.originalOperationId;currentRawSha256=$b.currentRawSha256;registrationRefs=$b.registrationRefs})
+ if($i.schema -cne ($cs+'.intent') -or $b.schema -cne ($cs+'.baseline') -or $i.key -cne $key -or $selected.key -cne $key -or $i.operationId -cne $v.sourceOperationId -or $b.generation -cne $v.targetGeneration -or $intent.sha256 -cne $v.source.intentSha256){throw 'owned_graceful_continuation_intent_invalid'}
+ $prior=Reservation $v.targetGeneration $false;$candidate=Envelope (Join-Path $prior.dir 'native-candidate.json') $true;$registration=Envelope (Join-Path $prior.dir 'registration.json') $true;SignedActivationValue $candidate.value $token
+ $refs=@{reservationSha256=$prior.reservation.sha256;startupTicketSha256=$prior.ticket.sha256;nativeCandidateSha256=$candidate.sha256;registrationSha256=$registration.sha256;bootNonce=$candidate.value.bootNonce}
+ if((Canon $refs) -cne (Canon $v.predecessor) -or (Canon $refs) -cne (Canon $b.registrationRefs) -or $candidate.value.generation -cne $b.generation -or $candidate.value.reservationSha256 -cne $prior.reservation.sha256 -or $candidate.value.startupTicketSha256 -cne $prior.ticket.sha256 -or $candidate.value.bootNonce -cne $prior.reservation.value.bootNonce -or $registration.value.generation -cne $b.generation -or $registration.value.reservationSha256 -cne $prior.reservation.sha256 -or $registration.value.startupTicketSha256 -cne $prior.ticket.sha256 -or $registration.value.nativeCandidateSha256 -cne $candidate.sha256 -or $b.sourceSha256 -cne $prior.reservation.value.sourceSha256 -or (Canon $b.sourcePins) -cne (Canon $prior.reservation.value.sourcePins) -or (HashText (Canon $b.sourcePins)) -cne $b.sourceSha256 -or (Canon $b.registration.kernelIdentity) -cne (Canon $candidate.value.kernelIdentity) -or $b.credentialSha256 -cne $prior.reservation.value.credentialSha256 -or (HashText $token) -cne $b.credentialSha256){throw 'owned_graceful_continuation_registration_invalid'}
+ $current=ReadJson (Join-Path $base 'current-daemon.json') $b.currentRawSha256 $true;[void](ReadJson (Join-Path $base 'policy.json') $b.policyRawSha256 $true);if($current.schema -cne 'ae-agent.owned-runtime-shutdown.v1.envelope' -or $current.sha256 -cne (HashText (Canon $current.value)) -or $current.value.generation -cne $b.generation -or $current.value.registrationSha256 -cne $registration.sha256){throw 'owned_graceful_continuation_current_changed'}
+ $oldDir=Join-Path $base ('supervisor-operations/'+$b.originalOperationId);if((Canon @(Get-ChildItem -LiteralPath $oldDir -Force|ForEach-Object {$_.Name}|Sort-Object)) -cne (Canon @('drain-readback.json','intent.json','unknown.json'))){throw 'owned_graceful_continuation_parent_namespace'}
+ $old=Envelope (Join-Path $oldDir 'intent.json') $true;$unknown=Envelope (Join-Path $oldDir 'unknown.json') $true;$readback=Envelope (Join-Path $oldDir 'drain-readback.json') $true;$o=$old.value
+ [void](ReadJson (Join-Path $oldDir 'intent.json') $b.originalPins.supervisorIntentRawSha256 $true);[void](ReadJson (Join-Path $oldDir 'unknown.json') $b.originalPins.supervisorUnknownRawSha256 $true);[void](ReadJson (Join-Path $oldDir 'drain-readback.json') $b.originalPins.drainReadbackRawSha256 $true)
+ $oldKey=HashText (Canon @{command='shutdown';targetGeneration=$b.generation;desiredSourceSha256=$b.sourceSha256});$keyFile=Join-Path $base ('supervisor-operation-keys/'+$oldKey+'.json');$ok=ReadJson $keyFile $b.originalPins.operationKeyRawSha256 $true
+ if($o.schema -cne ($schema+'.intent') -or $o.command -cne 'shutdown' -or $o.operationId -cne $b.originalOperationId -or $o.targetGeneration -cne $b.generation -or $o.desiredSourceSha256 -cne $b.sourceSha256 -or (Canon $o.authorizationRef) -cne (Canon $b.authorizationRef) -or $ok.value.operationId -cne $b.originalOperationId -or $ok.value.key -cne $oldKey -or $unknown.value.code -cne 'owned_supervisor_drain_ack_unknown_readback_only' -or $unknown.value.shutdownExitProven -cne $false -or $null -ne $unknown.value.proof -or $unknown.value.writeAdmissionReleased -cne $false -or $unknown.value.replayAllowed -cne $false -or $readback.value.ackTransportUnknown -cne $true -or $old.sha256 -cne $b.originalPins.supervisorIntentSha256 -or $unknown.sha256 -cne $b.originalPins.supervisorUnknownSha256 -or $readback.sha256 -cne $b.originalPins.drainReadbackSha256){throw 'owned_graceful_continuation_parent_unknown_invalid'}
+ $drainDir=Join-Path $base ('daemon-operations/'+$b.originalOperationId);$drain=Envelope (Join-Path $drainDir 'intent.json') $true;$da=Envelope (Join-Path $drainDir 'drain-ack.json') $true
+ [void](ReadJson (Join-Path $drainDir 'intent.json') $b.originalPins.serviceIntentRawSha256 $true);[void](ReadJson (Join-Path $drainDir 'drain-ack.json') $b.originalPins.drainAckRawSha256 $true)
+ if($drain.value.schema -cne ($service+'.intent') -or $drain.value.operation -cne 'drain' -or $drain.value.targetGeneration -cne $b.generation -or $drain.value.desiredSourceSha256 -cne $b.sourceSha256 -or $drain.sha256 -cne $b.originalPins.serviceIntentSha256 -or $readback.value.rows.intent.sha256 -cne $drain.sha256 -or $da.sha256 -cne $b.originalPins.drainAckSha256 -or $da.sha256 -cne $v.source.drainAckSha256 -or $da.value.schema -cne ($service+'.drain-ack') -or $da.value.intentSha256 -cne $drain.sha256 -or $da.value.operationId -cne $b.originalOperationId -or $da.value.targetGeneration -cne $b.generation -or $da.value.draining -cne $true -or $da.value.replayAllowed -cne $false){throw 'owned_graceful_continuation_late_ack_invalid'}
+ $rows=@{};foreach($name in @('once','submission','exit-result','final-inventory','seal')){$rows[$name]=Envelope (Join-Path $dir ($name+'.json')) $true};$once=$rows.once;$sub=$rows.submission;$exit=$rows['exit-result'];$inv=$rows['final-inventory'];$seal=$rows.seal
+ Exact $once.value @('schema','key','operationId','intentSha256','createdAt','replayAllowed','authentication');Exact $sub.value @('schema','key','operationId','intentSha256','onceSha256','serviceIntentSha256','createdAt','replayAllowed','authentication');Exact $exit.value @('schema','intentSha256','submissionSha256','identity','wait','handleOpenedAt','observedAt','authentication');Exact $seal.value @('schema','key','intentSha256','onceSha256','exitResultSha256','inventorySha256','shutdownAckSha256','drainAckSha256','disposition','authentication')
+ foreach($row in @($once,$sub,$exit,$seal)){SignedActivationValue $row.value $token}
+ if($once.value.schema -cne ($cs+'.once') -or $sub.value.schema -cne ($cs+'.submission') -or $exit.value.schema -cne ($cs+'.exit-result') -or $seal.value.schema -cne ($cs+'.seal') -or $once.value.key -cne $key -or $sub.value.key -cne $key -or $seal.value.key -cne $key -or $once.value.operationId -cne $i.operationId -or $sub.value.operationId -cne $i.operationId -or $once.value.intentSha256 -cne $intent.sha256 -or $sub.value.intentSha256 -cne $intent.sha256 -or $exit.value.intentSha256 -cne $intent.sha256 -or $seal.value.intentSha256 -cne $intent.sha256 -or $sub.value.onceSha256 -cne $once.sha256 -or $seal.value.onceSha256 -cne $once.sha256 -or $exit.value.submissionSha256 -cne $sub.sha256 -or $seal.value.exitResultSha256 -cne $exit.sha256 -or $seal.value.inventorySha256 -cne $inv.sha256 -or $seal.sha256 -cne $v.source.gracefulContinuationReceiptSha256 -or $exit.sha256 -cne $v.source.exitResultSha256 -or $once.value.replayAllowed -cne $false -or $sub.value.replayAllowed -cne $false){throw 'owned_graceful_continuation_chain_invalid'}
+ $newDir=Join-Path $base ('daemon-operations/'+$i.operationId);$shutdown=Envelope (Join-Path $newDir 'intent.json') $true;$sa=Envelope (Join-Path $newDir 'shutdown-ack.json') $true
+ Exact $sa.value @('schema','operationId','targetGeneration','intentSha256','drainOperationId','acknowledgedAt','status','exitProven','replayAllowed')
+ $serviceKey=HashText (Canon @{targetGeneration=$b.generation;operation='shutdown';desiredSourceSha256=$b.sourceSha256});$sk=ReadJson (Join-Path $base ('daemon-operation-keys/'+$serviceKey+'.json')) $null $true;if($sk.schema -cne ($service+'.operation-key') -or $sk.key -cne $serviceKey -or $sk.operationId -cne $i.operationId -or $sk.replayAllowed -cne $false){throw 'owned_graceful_continuation_service_once_invalid'}
+ if($shutdown.value.schema -cne ($service+'.intent') -or $shutdown.value.operation -cne 'shutdown' -or $shutdown.value.operationId -cne $i.operationId -or $shutdown.value.targetGeneration -cne $b.generation -or $shutdown.value.desiredSourceSha256 -cne $b.sourceSha256 -or (Canon $shutdown.value.authorizationRef) -cne (Canon $b.authorizationRef) -or $sub.value.serviceIntentSha256 -cne $shutdown.sha256 -or $sa.value.schema -cne ($service+'.shutdown-ack') -or $sa.value.operationId -cne $i.operationId -or $sa.value.targetGeneration -cne $b.generation -or $sa.value.intentSha256 -cne $shutdown.sha256 -or $sa.value.drainOperationId -cne $b.originalOperationId -or $sa.value.status -cne 'shutdown_committed_after_response_finish' -or $sa.value.exitProven -cne $false -or $sa.value.replayAllowed -cne $false -or $seal.value.shutdownAckSha256 -cne $sa.sha256 -or $seal.value.drainAckSha256 -cne $da.sha256 -or $v.source.shutdownAckSha256 -cne $sa.sha256){throw 'owned_graceful_continuation_shutdown_ack_invalid'}
+ $e=$exit.value;$d=@{graceful=$true;forceUsed=$false;originalOutcome='unknown';oldExternalEffectsAdjudicated=$false;resourceFencesReleased=$false;successorLaunched=$false;aeTouched=$false;cepTouched=$false;replayAllowed=$false}
+ if((Canon $b.disposition) -cne (Canon $d) -or (Canon $seal.value.disposition) -cne (Canon $d) -or (Canon $e.identity) -cne (Canon $candidate.value.kernelIdentity) -or $e.wait.waitResult -cne 'WAIT_OBJECT_0' -or $e.wait.signaled -cne $true -or $null -eq $e.wait.exitCode -or $e.wait.exitCode -lt 0 -or $e.wait.exitCode -gt 4294967295 -or [DateTimeOffset]::Parse($e.handleOpenedAt) -lt [DateTimeOffset]::Parse($e.identity.birthUtc) -or [DateTimeOffset]::Parse($e.observedAt) -lt [DateTimeOffset]::Parse($e.handleOpenedAt) -or [DateTimeOffset]::Parse($e.observedAt) -lt [DateTimeOffset]::Parse($sa.value.acknowledgedAt) -or [DateTimeOffset]::Parse($sa.value.acknowledgedAt) -lt [DateTimeOffset]::Parse($shutdown.value.createdAt)){throw 'owned_graceful_continuation_held_exit_invalid'}
+ if($inv.value.schema -cne ($schema+'.sealed-inventory') -or $inv.value.inventorySha256 -cne (HashText (Canon $inv.value.files)) -or $inv.value.ingressFenced -cne $false -or $inv.value.historicalOutcome -cne 'unknown' -or $inv.value.replayAllowed -cne $false -or @($inv.value.files).Count -gt 4096){throw 'owned_graceful_continuation_inventory_invalid'}
+ if(@($b.sourcePins).Count -lt 1 -or @($b.sourcePins).Count -gt 128){throw 'owned_graceful_continuation_source_budget'}
+ foreach($p in $b.sourcePins){if([IO.Path]::IsPathRooted($p.name) -or $p.name -cmatch '\\|(^|/)\.\.?(/|$)'){throw 'owned_graceful_continuation_source_path'};$data=(Envelope (Join-Path $dir ('source-files/'+$p.name+'.json')) $true).value;if($data.schema -cne ($cs+'.source-bytes') -or $data.name -cne $p.name -or $data.rawSha256 -cne $p.sha256){throw 'owned_graceful_continuation_source_snapshot_invalid'};$bytes=[IO.MemoryStream]::new([Convert]::FromBase64String($data.base64));try{if([OwnedDaemonKernel]::Hash($bytes) -cne $p.sha256){throw 'owned_graceful_continuation_source_snapshot_changed'}}finally{$bytes.Dispose()}}
+ $paths=@((Join-Path $repo '.codex-runtime/release-3.3.4/product-maintenance-draft/product-graceful-continuation/continue-graceful.js'),(Join-Path $repo '.codex-runtime/release-3.3.4/product-maintenance-draft/continuation-source/mcp-server/owned-runtime-graceful-continuation.js'));if(@($b.helperCodePins).Count -ne 2){throw 'owned_graceful_continuation_code_pins_invalid'}
+ for($n=0;$n -lt 2;$n++){$p=$b.helperCodePins[$n];$data=(Envelope (Join-Path $dir ('code-files/'+$n+'.json')) $true).value;if($p.path -ine $paths[$n] -or $data.schema -cne ($cs+'.code-bytes') -or $data.path -cne $p.path -or $data.rawSha256 -cne $p.rawSha256){throw 'owned_graceful_continuation_code_snapshot_invalid'};$bytes=[IO.MemoryStream]::new([Convert]::FromBase64String($data.base64));try{if([OwnedDaemonKernel]::Hash($bytes) -cne $p.rawSha256){throw 'owned_graceful_continuation_code_snapshot_changed'}}finally{$bytes.Dispose()}}
+}
+function AssertActivationSuccessorConfiguration($reservation,[string]$token,$environment) {
+ $file=Join-Path $base ('supervisor-operations/'+$reservation.operationId+'/predecessor-exit.json');if(![IO.File]::Exists($file)){return}
+ $v=(Envelope $file $true).value;SignedActivationValue $v $token
+ if($v.schema -cne ($schema+'.predecessor-exit') -or $v.operationId -cne $reservation.operationId){throw 'owned_activation_origin_invalid'}
+ if($v.kind -ceq 'prior_verified_product_maintenance_retirement'){AssertProductMaintenancePredecessor $v $token}
+ if($v.kind -ceq 'prior_verified_graceful_continuation'){AssertGracefulContinuationPredecessor $v $token}
+ if(ActivationOrigin $v.targetGeneration $token){AssertActivationConfiguration $environment}
+}
+function AssertController {
+ if(!$script:controllerOwned -or !$script:controllerMutex){throw 'owned_supervisor_controller_lease_lost'}
+ # Reentrant acquisition/release verifies kernel ownership on this same helper
+ # thread. Native effects and publication never escape this owning process.
+ if(!$script:controllerMutex.WaitOne(0)){throw 'owned_supervisor_controller_lease_lost'};$script:controllerMutex.ReleaseMutex()
+}
+function ReleaseTarget {
+ ReleaseLocks;if($script:image){$script:image.Dispose();$script:image=$null};if($script:handle -ne [IntPtr]::Zero){[OwnedDaemonKernel]::Dispose($script:handle);$script:handle=[IntPtr]::Zero}
+ $script:expected=$null;$script:expectedArgv=$null;$script:mode=$null;$script:stopped=$false;$script:legacyRaw=$null
+}
+function PublishCurrent([string]$generation,$expectedRawSha256) {
+ AssertController;if($null -ne $expectedRawSha256 -and $expectedRawSha256 -cnotmatch '^[a-f0-9]{64}$'){throw 'owned_supervisor_current_cas_invalid'}
+ $chain=Reservation $generation $false;$registration=Envelope (Join-Path $chain.dir 'registration.json') $true;$candidate=Envelope (Join-Path $chain.dir 'native-candidate.json') $true
+ if($registration.value.schema -cne ($schema+'.registration') -or $registration.value.generation -cne $generation -or $registration.value.reservationSha256 -cne $chain.reservation.sha256 -or $registration.value.startupTicketSha256 -cne $chain.ticket.sha256 -or $registration.value.nativeCandidateSha256 -cne $candidate.sha256){throw 'owned_supervisor_current_registration_invalid'}
+ $current=Join-Path $base 'current-daemon.json'
+ function CheckCurrent {
+  try {$s=[IO.FileStream]::new($current,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read);try{[OwnedDaemonKernel]::FileIdentity($s);$actual=[OwnedDaemonKernel]::Hash($s)}finally{$s.Dispose()}} catch [IO.FileNotFoundException] {$actual=$null}
+  if($actual -cne $expectedRawSha256){throw 'owned_supervisor_current_cas_failed'}
+ }
+ CheckCurrent;AssertController;$temp=Join-Path $base ('.current-'+[Guid]::NewGuid().ToString()+'.json');[void](WriteOnce $temp @{schema=$schema+'.current';generation=$generation;registrationSha256=$registration.sha256})
+ try{CheckCurrent;AssertController;[IO.File]::Move($temp,$current,$true)}finally{if([IO.File]::Exists($temp)){[IO.File]::Delete($temp)};ReleaseLocks}
+}
+function Reservation([string]$generation,[bool]$fresh){if($generation -cnotmatch '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'){throw 'owned_supervisor_generation_invalid'};$dir=Join-Path $base ('daemon-reservations/'+$generation);$r=Envelope (Join-Path $dir 'reservation.json') $true;$v=$r.value;$t=Envelope (Join-Path $dir 'startup-ticket.json') $true
+ if($v.schema -cne ($schema+'.reservation') -or $v.generation -cne $generation -or $v.command.executable -ine $node -or $v.command.executableSha256 -cne $nodeSha -or $v.command.cwd -ine $repo -or (Canon $v.command.argv) -cne (Canon @($node,(Join-Path $repo 'mcp-server/bridge-daemon.js'))) -or $v.replayAllowed -cne $false -or $t.value.schema -cne ($schema+'.startup-ticket') -or $t.value.generation -cne $generation -or $t.value.bootNonce -cne $v.bootNonce -or $t.value.reservationSha256 -cne $r.sha256 -or $t.value.replayAllowed -cne $false -or ($fresh -and ([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($t.value.expiresAt) -or [DateTimeOffset]::UtcNow -lt [DateTimeOffset]::Parse($t.value.issuedAt)))){throw 'owned_supervisor_startup_ticket_invalid'}
+ return @{reservation=$r;ticket=$t;dir=$dir}
+}
+function SourcePins($pins){foreach($pin in $pins){if($pin.name -cmatch '(^|[\\/])\.\.([\\/]|$)' -or [IO.Path]::IsPathRooted($pin.name)){throw 'owned_supervisor_source_path'};$s=SafeFile (Join-Path $repo $pin.name);if([OwnedDaemonKernel]::Hash($s) -cne $pin.sha256){$s.Dispose();throw 'owned_supervisor_source_changed'};$script:locks+=@($s)}}
+function Hmac($value,[string]$token){$mac=[Security.Cryptography.HMACSHA256]::new([Text.Encoding]::UTF8.GetBytes($token));try{return [Convert]::ToHexString($mac.ComputeHash([Text.Encoding]::UTF8.GetBytes((Canon $value)))).ToLowerInvariant()}finally{$mac.Dispose()}}
+function InitialRecoveryLease([string]$generation) {
+ $cap=Envelope (Join-Path $base 'initial-recovery-authority.json') $true;$v=$cap.value;$config=Config;$unsigned=@{};foreach($p in $v.PSObject.Properties){if($p.Name -cne 'authentication'){$unsigned[$p.Name]=$p.Value}}
+ if($v.schema -cne 'ae-agent.owned-runtime-initial-recovery.v1.authority' -or $v.mode -cne 'ordinary_initial_after_abandoned_startup' -or $v.generation -cne $generation -or $v.authentication -cne (Hmac $unsigned $config.token) -or $v.authorizationRef.source -cne 'explicit_user_chat' -or $v.authorizationRef.reference -cnotmatch '^[a-f0-9-]{36}:initial-startup-recovery-20261017$' -or $v.resetAnchor -cne '1206e57f6dcc5823ffb7ea5dc0ce69d7360b9a51' -or $v.historicalOutcome -cne 'unknown' -or $v.historicalExitProven -cne $false -or $v.retainedAdmissionGranted -cne $false -or $v.replayAllowed -cne $false -or [DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($v.expiresAt) -or [DateTimeOffset]::UtcNow -lt [DateTimeOffset]::Parse($v.issuedAt) -or [DateTimeOffset]::UtcNow -lt [DateTimeOffset]::Parse($v.original.ticketExpiresAt)){throw 'owned_initial_native_authority_invalid'}
+ [void](ReadJson (Join-Path $base 'policy.json') $v.policyRawSha256 $true);$configFile=SafeFile (Join-Path $repo '.codex/config.toml');if([OwnedDaemonKernel]::Hash($configFile) -cne $v.configRawSha256){$configFile.Dispose();throw 'owned_initial_native_config_changed'};$script:locks+=@($configFile)
+ foreach($name in @('current-daemon.json','retained-authority.json','prepared-successor.json','profiles','fixture-profiles','fixture-cleanup-jobs','daemon-succession','daemon-verified-shutdown','historical-sources')){if(Test-Path -LiteralPath (Join-Path $base $name)){throw 'owned_initial_native_foreign_state'}}
+ if(Test-Path -LiteralPath (Join-Path $repo 'logs/cep-panel-control/owned')){throw 'owned_initial_native_owned_transport_present'}
+ $generations=@(Get-ChildItem -LiteralPath (Join-Path $base 'daemon-reservations') -Force | ForEach-Object {$_.Name} | Sort-Object)
+ if((Canon $generations) -cne (Canon @(@($v.original.generation,$generation)|Sort-Object))){throw 'owned_initial_native_foreign_reservation'}
+ $originalDir=Join-Path $base ('daemon-reservations/'+$v.original.generation)
+ if((Canon @(Get-ChildItem -LiteralPath $originalDir -Force|ForEach-Object {$_.Name}|Sort-Object)) -cne (Canon @('native-candidate.json','registration.json','reservation.json','startup-ticket.json'))){throw 'owned_initial_native_original_namespace_changed'}
+ $key=Envelope (Join-Path $base ('initial-recovery-keys/'+$v.original.generation+'.json')) $true
+ $capStream=SafeFile (Join-Path $base 'initial-recovery-authority.json');$capRaw=[OwnedDaemonKernel]::Hash($capStream);$script:locks+=@($capStream)
+ if($key.value.operationId -cne $v.operationId -or $key.value.successorGeneration -cne $generation -or $key.value.authorityRawSha256 -cne $capRaw){throw 'owned_initial_native_recovery_key_invalid'}
+ SourcePins $v.original.files;SourcePins $v.history
+ $processes=@(Get-CimInstance Win32_Process -Filter "Name='node.exe' OR Name='pwsh.exe' OR Name='powershell.exe'" -ErrorAction Stop)
+ $self=$processes|Where-Object {$_.ProcessId -eq $PID};$controller=$processes|Where-Object {$_.ProcessId -eq $self.ParentProcessId}
+ if(!$self -or !$controller -or $controller.ExecutablePath -ine $node -or (Canon ([OwnedDaemonKernel]::Args($controller.CommandLine))) -cne (Canon @($node,(Join-Path $repo 'scripts/owned-runtime-initial-recovery.js'),'recover-once'))){throw 'owned_initial_native_controller_binding_invalid'}
+ foreach($processRow in $processes){
+  if([string]::IsNullOrWhiteSpace($processRow.CommandLine) -or !$processRow.CreationDate -or !$processRow.ExecutablePath){throw 'owned_initial_native_process_observation_unknown'}
+  if($processRow.ProcessId -eq $PID -or $processRow.ProcessId -eq $controller.ProcessId){continue}
+  $command=$processRow.CommandLine;$born=$processRow.CreationDate.ToUniversalTime()
+  if(($processRow.ProcessId -eq $v.original.kernelIdentity.pid -and $born.ToFileTimeUtc().ToString() -ceq $v.original.kernelIdentity.birthFileTime) -or $command -match 'owned-runtime-daemon-helper\.ps1' -or ($command -match '(mcp-adapter\.js|owned-runtime-control\.js|bridge-daemon\.js|owned-runtime-initial-recovery\.js)' -and $born -le [DateTime]::Parse($v.original.kernelIdentity.birthUtc).ToUniversalTime())){throw 'owned_initial_native_original_owner_present'}
+ }
+ $tcpInventory=@(Get-NetTCPConnection -ErrorAction Stop);if(@($tcpInventory|Where-Object {$_.State -eq 'Listen' -and $_.LocalPort -eq 3456}).Count -ne 0){throw 'owned_initial_native_listener_present'}
+ return $v
+}
+function AssertProtected($profile){foreach($protected in $profile.protected){if($protected.pid -eq $profile.daemon.identity.pid){throw 'owned_supervisor_protected_target'};$h=[OwnedDaemonKernel]::Open([int]$protected.pid,$false);try{$i=[OwnedDaemonKernel]::Identity($h);if($i.birthFileTime -cne $protected.birthFileTime -or $i.birthUtc -cne $protected.birthUtc -or $i.imagePath -ine $protected.imagePath -or ([OwnedDaemonKernel]::Wait($h,0)).signaled){throw 'owned_supervisor_protected_identity_changed'};$f=SafeFile $i.imagePath $true;try{if([OwnedDaemonKernel]::Hash($f) -cne $protected.executableSha256){throw 'owned_supervisor_protected_image_changed'}}finally{$f.Dispose()}}finally{[OwnedDaemonKernel]::Dispose($h)}}}
+function LegacyLease([string]$operationId){
+ $file=Join-Path $base 'profiles/bridge-daemon-migration-v1.json';$s=SafeFile $file;try{$raw=[OwnedDaemonKernel]::Hash($s);if($script:legacyRaw -and $raw -cne $script:legacyRaw){throw 'owned_supervisor_legacy_profile_changed'};$script:legacyRaw=$raw}finally{$s.Dispose()}
+ $p=ReadJson $file $raw $true;if($p.schema -cne ($schema+'.legacy-profile') -or $p.profileId -cne 'bridge-daemon-migration-v1' -or $p.policy.transition -cne 'native_forced_legacy_transition' -or [DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($p.expiresAt) -or [DateTimeOffset]::UtcNow -lt [DateTimeOffset]::Parse($p.issuedAt) -or $p.daemon.port -ne 3456 -or $p.policy.waitMs -lt 1 -or $p.policy.waitMs -gt 10000){throw 'owned_supervisor_legacy_lease_refused'}
+ Policy $p.authorizationRef;SourcePins $p.sourcePins;$config=Config;if((HashText $config.token) -cne $p.daemon.credentialSha256){throw 'owned_supervisor_legacy_credential_changed'}
+ $next=Reservation $p.successor.generation $true;$script:successorExpiresAt=$next.ticket.value.expiresAt;$prepared=Envelope (Join-Path $base 'prepared-successor.json') $true
+ if($next.reservation.sha256 -cne $p.successor.reservationSha256 -or $next.ticket.sha256 -cne $p.successor.startupTicketSha256 -or $next.reservation.value.bootNonce -cne $p.successor.bootNonce -or $next.reservation.value.sourceSha256 -cne $p.sourcePair.currentSourceSha256 -or (Canon $next.reservation.value.authorizationRef) -cne (Canon $p.authorizationRef) -or $prepared.value.generation -cne $p.successor.generation -or $prepared.value.targetGeneration -cne $p.generation -or $prepared.value.operationId -cne $next.reservation.value.operationId -or ($operationId -and $operationId -cne $next.reservation.value.operationId)){throw 'owned_supervisor_legacy_successor_changed'}
+ $pins=@($p.launchReceipt,$p.capsule);foreach($c in $p.children){$pins+=@($c.launch,$c.retirementProof)};if(@($p.children).Count -ne 2){throw 'owned_supervisor_legacy_two_proofs_required'}
+ foreach($pin in $pins){$resolved=[IO.Path]::GetFullPath($pin.path);if(!$resolved.StartsWith($repo+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'owned_supervisor_legacy_pin_path'};$row=ReadJson $resolved $pin.rawSha256 $true;if($row.sha256 -cne $pin.envelopeSha256){throw 'owned_supervisor_legacy_pin_changed'}}
+ foreach($c in $p.children){$launch=ReadJson $c.launch.path $c.launch.rawSha256;$proof=ReadJson $c.retirementProof.path $c.retirementProof.rawSha256;[void](OriginalRetirementProof $proof.value $launch.value.process)}
+ if($script:handle -ne [IntPtr]::Zero){[void](AssertIdentity $p.daemon.identity);AssertArgv $p.daemon.argv}
+ AssertProtected $p
+ $client=[Net.Http.HttpClient]::new();$client.Timeout=[TimeSpan]::FromSeconds(3);try{[void]$client.DefaultRequestHeaders.Add('x-ae-bridge-token',$config.token);$status=$client.GetStringAsync('http://127.0.0.1:3456/dev/status').GetAwaiter().GetResult()|ConvertFrom-Json -DateKind String;if(!$status.ok -or $status.humanGuardRuntime.pid -ne $p.daemon.identity.pid -or $status.humanGuardRuntime.sourceSha256 -cne $p.daemon.loadedRuntimeSha256 -or $status.startedAt -cne $p.daemon.startedAt -or $status.pendingCommands -ne 0 -or @($status.inflightCommands).Count -ne 0 -or $null -ne $status.activeEditSession -or $status.projectLifecycle.blocked -cne $false -or $status.projectLifecycle.pending -or !(BootstrapIdle $status.panelBootstrap)){throw 'owned_supervisor_legacy_quiescence_refused'}}finally{$client.Dispose()}
+ if($operationId){$dir=Join-Path $base ('supervisor-operations/'+$operationId);$intent=Envelope (Join-Path $dir 'intent.json') $true;if($intent.value.targetGeneration -cne $p.generation -or $intent.value.command -cnotin @('restart','shutdown','ensure') -or $intent.value.desiredSourceSha256 -cne $p.sourcePair.currentSourceSha256 -or (Canon $intent.value.authorizationRef) -cne (Canon $p.authorizationRef) -or !(Test-Path -LiteralPath (Join-Path $dir 'pre-stop-inventory.json'))){throw 'owned_supervisor_legacy_intent_required'}}
+ return $p
+}
+$script:handle=[IntPtr]::Zero;$script:image=$null;$script:locks=@();$script:mode=$null;$script:controllerMutex=$null;$script:controllerOwned=$false
+try{while($null -ne ($line=[Console]::ReadLine())){try{
+ $row=$null;if($line.Length -gt 65536){throw 'owned_supervisor_rpc_budget'};$row=$line|ConvertFrom-Json -DateKind String
+ if($row.op -eq 'dispose'){Exact $row @('op');Emit @{ok=$true};break}
+ if($row.op -eq 'acquire-controller'){
+  Exact $row @('op');if($script:controllerMutex){throw 'owned_supervisor_controller_already_held'}
+  $script:controllerMutex=[Threading.Mutex]::new($false,('Local\AEAgentProductController-'+(HashText $repo.ToLowerInvariant())))
+  try{$script:controllerOwned=$script:controllerMutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$script:controllerOwned=$true}
+  if(!$script:controllerOwned){throw 'owned_supervisor_competing_controller'};Emit @{ok=$true};continue
+ }
+ if($row.op -eq 'assert-controller'){Exact $row @('op');AssertController;Emit @{ok=$true};continue}
+ if($row.op -eq 'release-target'){Exact $row @('op');AssertController;ReleaseTarget;Emit @{ok=$true};continue}
+ if($row.op -eq 'publish-current'){Exact $row @('op','generation','expectedRawSha256');PublishCurrent $row.generation $row.expectedRawSha256;Emit @{ok=$true};continue}
+ if($row.op -eq 'probe-owned'){Exact $row @('op','generation');AssertController;Emit @{ok=$true;probe=(ProbeOwned $row.generation)};continue}
+ if($row.op -eq 'probe-product-activation'){Exact $row @('op','generation');AssertController;$probe=ProbeOwned $row.generation;if($probe.state -ceq 'absent' -and $probe.win32Error -eq 87 -and $probe.endpointFree -eq $true){AssertActivationNativeQuiet;$probe.nativeOwnersAbsent=$true}else{$probe.nativeOwnersAbsent=$false};Emit @{ok=$true;probe=$probe};continue}
+ if($script:handle -eq [IntPtr]::Zero){
+  if($row.op -eq 'launch' -or $row.op -eq 'launch-initial-recovery'){
+   AssertController
+   Exact $row @('op','generation');$chain=Reservation $row.generation $true;$r=$chain.reservation.value;Policy $r.authorizationRef;SourcePins $r.sourcePins;$config=Config;if((HashText $config.token) -cne $r.credentialSha256){throw 'owned_supervisor_credential_changed'}
+   if(!(EndpointFree)){throw 'owned_supervisor_endpoint_occupied'}
+   $image=SafeFile $node $true;if([OwnedDaemonKernel]::Hash($image) -cne $nodeSha){$image.Dispose();throw 'owned_supervisor_node_pin_changed'}
+   $info=[Diagnostics.ProcessStartInfo]::new($node);$info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.WindowStyle=[Diagnostics.ProcessWindowStyle]::Hidden;$info.WorkingDirectory=$repo;[void]$info.ArgumentList.Add((Join-Path $repo 'mcp-server/bridge-daemon.js'))
+   $deploymentBefore=AssertProductDeployment $info.Environment
+   foreach($key in @($info.Environment.Keys)){if($key -match '^AE_BRIDGE_|^AE_OWNED_RUNTIME_'){$info.Environment.Remove($key)|Out-Null}};foreach($key in $config.values.Keys){$info.Environment[$key]=$config.values[$key]};$info.Environment['AE_BRIDGE_HOST']='127.0.0.1';$info.Environment['AE_BRIDGE_PORT']='3456';$info.Environment['AE_BRIDGE_LOG_DIR']=Join-Path $repo 'logs';$info.Environment['AE_OWNED_RUNTIME_GENERATION']=$r.generation;$info.Environment['AE_OWNED_RUNTIME_BOOT_NONCE']=$r.bootNonce
+    $initial=$null;if($row.op -eq 'launch-initial-recovery'){$initial=InitialRecoveryLease $row.generation;if($initial.operationId -cne $r.operationId -or $initial.sourceSha256 -cne $r.sourceSha256){throw 'owned_initial_native_successor_binding_invalid'}}
+   if((AssertProductDeployment $info.Environment) -cne $deploymentBefore){throw 'owned_supervisor_deployment_mode_changed'}
+   if([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($chain.ticket.value.expiresAt) -or ($null -ne $initial -and [DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($initial.expiresAt))){throw 'owned_supervisor_successor_expired'};if(!(EndpointFree)){throw 'owned_supervisor_endpoint_occupied'};AssertController
+   $resetBinding=Join-Path $chain.dir 'product-session-reset.json';if([IO.File]::Exists($resetBinding)){$binding=Envelope $resetBinding;if($binding.value.schema -cin @('ae-agent.product-activation.v1.binding','ae-agent.product-session-reset.v1.generation-binding')){AssertActivationConfiguration $info.Environment};if($binding.value.schema -ceq 'ae-agent.product-activation.v1.binding'){AssertActivationNativeQuiet}}
+   AssertActivationSuccessorConfiguration $r $config.token $info.Environment
+   $script:handle=[OwnedDaemonKernel]::StartIndependent($node,(Join-Path $repo 'mcp-server/bridge-daemon.js'),$repo,$info.Environment);$opened=[DateTimeOffset]::UtcNow.ToString('o');$identity=[OwnedDaemonKernel]::Identity($script:handle);$identity=$identity|ConvertTo-Json -Compress|ConvertFrom-Json -DateKind String;$identity|Add-Member executableSha256 $nodeSha;$script:image=$image;$script:expected=$identity;$script:expectedArgv=$r.command.argv;AssertArgv $r.command.argv
+   $candidate=@{schema=$schema+'.native-candidate';generation=$r.generation;bootNonce=$r.bootNonce;reservationSha256=$chain.reservation.sha256;startupTicketSha256=$chain.ticket.sha256;kernelIdentity=$identity;argv=$r.command.argv;sourceSha256=$r.sourceSha256;heldLaunchWitness=@{kind='native_launch_held_process_handle';handleOpenedAt=$opened;identityVerifiedAt=[DateTimeOffset]::UtcNow.ToString('o')}};$signature=Hmac $candidate $config.token;$candidate.authentication=$signature;[void](WriteOnce (Join-Path $chain.dir 'native-candidate.json') $candidate);$script:mode='owned';ReleaseLocks;Emit @{ok=$true;identity=$identity};continue
+  }
+  if($row.op -eq 'open-owned'){
+   Exact $row @('op','generation');$chain=Reservation $row.generation $false;$config=Config;$candidate=Envelope (Join-Path $chain.dir 'native-candidate.json');$c=$candidate.value;$signature=$c.authentication;$data=@{};foreach($p in $c.PSObject.Properties){if($p.Name -cne 'authentication'){$data[$p.Name]=$p.Value}}
+   if($signature -cne (Hmac $data $config.token) -or $c.reservationSha256 -cne $chain.reservation.sha256 -or $c.startupTicketSha256 -cne $chain.ticket.sha256 -or $c.bootNonce -cne $chain.reservation.value.bootNonce){throw 'owned_supervisor_candidate_authentication'};OpenExact $c.kernelIdentity $c.argv $false;$script:mode='owned';ReleaseLocks;Emit @{ok=$true;identity=$c.kernelIdentity};continue
+  }
+  if($row.op -eq 'open-legacy'){Exact $row @('op');$p=LegacyLease $null;OpenExact $p.daemon.identity $p.daemon.argv $true;$script:mode='legacy';ReleaseLocks;Emit @{ok=$true;identity=$p.daemon.identity};continue}
+  if($row.op -eq 'open-synthetic'){
+   Exact $row @('op','nonce');if($row.nonce -cnotmatch '^[a-f0-9]{32}$'){throw 'owned_supervisor_synthetic_nonce'};$script:syntheticDir=Join-Path $base ('supervisor-synthetic-'+$row.nonce);$v=ReadJson (Join-Path $script:syntheticDir 'target.json');$argv=@($node,(Join-Path $script:syntheticDir 'fixture.js'))
+   if($v.schema -cne ($schema+'.synthetic-target') -or $v.productionAuthority -cne $false -or (Canon $v.argv) -cne (Canon $argv) -or $v.identity.imagePath -ine $node -or $v.identity.executableSha256 -cne $nodeSha){throw 'owned_supervisor_synthetic_target'};OpenExact $v.identity $argv $true;$script:mode='synthetic';$script:syntheticRaw=HashText (Canon $v);ReleaseLocks;Emit @{ok=$true;identity=$v.identity};continue
+  }
+  throw 'owned_supervisor_named_open_required'
+ }
+ if($row.op -eq 'wait'){Exact $row @('op','milliseconds');if($row.milliseconds -lt 0 -or $row.milliseconds -gt 30000){throw 'owned_supervisor_wait_budget'};Emit @{ok=$true;wait=[OwnedDaemonKernel]::Wait($script:handle,[uint32]$row.milliseconds)};continue}
+ if($row.op -eq 'dispose'){Exact $row @('op');Emit @{ok=$true};break}
+ if($row.op -eq 'stop-legacy'){
+  AssertController
+  Exact $row @('op','operationId');if($script:mode -cne 'legacy' -or $script:stopped -or $row.operationId -cnotmatch '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'){throw 'owned_supervisor_distinct_legacy_authority_required'};$script:stopped=$true;$dir=Join-Path $base ('supervisor-operations/'+$row.operationId)
+  $p=LegacyLease $row.operationId;$attempt=Join-Path $dir 'native-legacy-attempt.json';$result=Join-Path $dir 'native-legacy-result.json';if((Test-Path -LiteralPath $attempt)-or(Test-Path -LiteralPath $result)){throw 'owned_supervisor_legacy_consumed_readback_only'}
+  [void](WriteOnce $attempt @{schema=$schema+'.native-legacy-attempt';identity=$p.daemon.identity;profileRawSha256=$script:legacyRaw;operationId=$row.operationId;attemptedAt=[DateTimeOffset]::UtcNow.ToString('o');replayAllowed=$false});[OwnedDaemonKernel]::Force($script:handle,$p.expiresAt,[Action]{AssertProtected $p;[void](AssertIdentity $script:expected);AssertArgv $script:expectedArgv;if([DateTimeOffset]::UtcNow -ge [DateTimeOffset]::Parse($script:successorExpiresAt)){throw 'owned_supervisor_successor_expired'}});$wait=[OwnedDaemonKernel]::Wait($script:handle,[uint32]$p.policy.waitMs)
+  # Persist factual positive exit before any later lease/readback await.
+  [void](WriteOnce $result @{schema=$schema+'.native-legacy-result';identity=$script:expected;wait=$wait;shutdownExitProven=$wait.signaled;replayAllowed=$false});ReleaseLocks;Emit @{ok=$true;wait=$wait};continue
+ }
+ if($row.op -eq 'stop-synthetic'){
+  Exact $row @('op');if($script:mode -cne 'synthetic' -or $script:stopped){throw 'owned_supervisor_synthetic_effect_refused'};$script:stopped=$true;$v=ReadJson (Join-Path $script:syntheticDir 'target.json') $null $true;if((HashText (Canon $v)) -cne $script:syntheticRaw){throw 'owned_supervisor_synthetic_lease_changed'};[void](WriteOnce (Join-Path $script:syntheticDir 'attempt.json') @{identity=$script:expected;replayAllowed=$false});[OwnedDaemonKernel]::Force($script:handle,[DateTimeOffset]::UtcNow.AddSeconds(5).ToString('o'),[Action]{[void](AssertIdentity $script:expected);AssertArgv $script:expectedArgv});$wait=[OwnedDaemonKernel]::Wait($script:handle,3000);ReleaseLocks;Emit @{ok=$true;wait=$wait};continue
+ }
+ throw 'owned_supervisor_rpc_operation'
+}catch{Emit (NativeFailure $_.Exception $row.op);break}}}finally{ReleaseLocks;if($script:controllerMutex){if($script:controllerOwned){$script:controllerMutex.ReleaseMutex()};$script:controllerMutex.Dispose()};if($script:image){$script:image.Dispose()};if($script:process){$script:process.Dispose();$script:handle=[IntPtr]::Zero};if($script:handle -ne [IntPtr]::Zero){[OwnedDaemonKernel]::Dispose($script:handle)}}

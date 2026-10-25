@@ -1,0 +1,853 @@
+{
+  "schema": "ae-agent.core-provenance.v1",
+  "sourceCommit": "1b48076e0aa4a68f21b3229af511d9e526ed0072",
+  "checkpoint": "checkpoint/ae-agent-before-core-2026-10-25",
+  "sourceRoot": "C:/Users/Ant/Documents/Codex/AE_agent",
+  "paths": [
+    {
+      "path": "cep-panel/panel-action-contract.js",
+      "sourceSha256": "78937c094982cc68cc7c06e85955e09b5c5d5fe741f5c5a84a52c816ea0328df",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ae-agent-panel-bootstrap.js",
+      "sourceSha256": "47d6e5491c23e3ffdf3f13f78089c33548280e3b73c1a0a3e7063193412abcfe",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ae-task-completion.js",
+      "sourceSha256": "775577b18f43dce1a232a8804ceab803c5d1c51e809e8f7b646b57df94b1001d",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-enqueue-sequence.js",
+      "sourceSha256": "e8b47782b61e4209fe0ce74af22d286325ec20f38a88c240e762c7d8e9cc1800",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-fixture-ui-backend.js",
+      "sourceSha256": "f0e36de9feca26fca51c9c52ca19c1744a91b5c865f1e04e7cc0765427b2345a",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-fixture-ui-disposition.js",
+      "sourceSha256": "47d4a661514f4353e6d59c2b7748db7d315fea1eb9b704737cdee15b10f67d84",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-job-source-native.js",
+      "sourceSha256": "63f810845ee8e6abbbfd221d1a8498a7a361851e33884a2374e1799d3d3acef3",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-job-source-sha256.js",
+      "sourceSha256": "4007f112b30517a108f42dc712b25f876646a635f2767d366208950af1c805de",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-job-source.js",
+      "sourceSha256": "df99d233e0776c9d40235cdccfe369155bf4ade42daf827a408ae55318404a89",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-manual-queue-grant.js",
+      "sourceSha256": "29b4ef5bedb0a7b73c91ec9cfce40f339453752c51131114ac55e4f65249dc41",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-native-fixture-grant.js",
+      "sourceSha256": "2bc1b47c752d042c0961994a300441fe0239ddb55f05a0400a7b5725f4669b87",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-native-fixture-runner.js",
+      "sourceSha256": "81651fa7a6cad4646d96a0fad02784ebd77122bc938cd600c808bcdbc5b5812f",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-open-comp-native.js",
+      "sourceSha256": "bbace3a5cab7166b6779c0c1a941897d482a9dec3e1df6cdb95daf90c2b6f735",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-open-comp.js",
+      "sourceSha256": "02ba00c6742c0838e5ad3a786ed3239442f739109888ff7275c5739791ff23cc",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-passive-status.js",
+      "sourceSha256": "824e71210a8313a38a1bd2f9cbec7d7f71e19d8c4904cebb6538599adc9d5b91",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-presets.js",
+      "sourceSha256": "fe23bce2e6899a606e80bfa5812308ab2b84b2bf6613341bfaaaa535f05bb1a8",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-product-dispatch.js",
+      "sourceSha256": "d9a13acd6dba197c272296e285eab967b1167b026c5e575675e041d97ee660c0",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-product-read-dispatch.js",
+      "sourceSha256": "89692d676293cbd52d979107c2e29b0a6311fd3c4bc09fce3230850e992c1dc6",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-queue-control.js",
+      "sourceSha256": "3d5c6e2b03f4d7ea6ba47f051d056664da2810610417ff1bf040fd4364717b8d",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-running.js",
+      "sourceSha256": "fe065e750ddf1e8d2250e14b8f53b183e6acfbc6307916fca8d768de94a3c17f",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-saved-source-admission.js",
+      "sourceSha256": "24c2ca52f27e5a288cba9ea921a16906db3018d9f6f36383441bb37ac7738308",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-shared-queue-grant.js",
+      "sourceSha256": "2fe0274ce9ccf9c1b44136493d749053ae79622cb922d933a1f23d5c91da3c04",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-source-probe.js",
+      "sourceSha256": "138ed8f60cd9fcd21b8cac89ab017cdb6aefc4c6871fd1c01ada4ec046b92fa4",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-source-read.js",
+      "sourceSha256": "4f030b638c6c891d32a107ec175a9c370ef53c79beef1f97e240331dea754d8e",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-submit-guard.js",
+      "sourceSha256": "f6418fceceaae8d7e026d5f1c7ecfd50f142d22454078b409cfb155318d55c07",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-title-jobs.js",
+      "sourceSha256": "768f359e2097883c30fe62348e97cc0abb44918ee12427f1e3af93a7e6f51efe",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-title-pending.js",
+      "sourceSha256": "89cf327867619d6777ead8cf2c18de75423df57d2c73f7487004e778dc19124c",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-title-sender-refusal-proof.js",
+      "sourceSha256": "1b35eb015a5e0022ea88f29e12779a798b6035795629331bc770a4158f5cd742",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-title-series.js",
+      "sourceSha256": "8c20ebb69eeaf4b40fe6e14617b3f34a80efd24e3b2820fc41045d070af993b9",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/ame-transport.js",
+      "sourceSha256": "069c1b2af19c2e33e8079b50a3653c932e37f52ac45fdd6a131859fdbc0e99f3",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/autonomous-repair.js",
+      "sourceSha256": "5866769ba1f38d45fd5be45a82c54e6591f2421859576fde550a1f556bdd0c56",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/autonomous-session.js",
+      "sourceSha256": "48ef732fa7cdbe688307aaf036d73dc52ce87dc5ffa7b3a36837506e1bf8f205",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/bridge-daemon.js",
+      "sourceSha256": "559437276f659418687b48f9365fd73d8f59e03bc1ce5ebde40b05ef7f433aa8",
+      "action": "extract"
+    },
+    {
+      "path": "mcp-server/cep-manual-plan-ingress.js",
+      "sourceSha256": "930a86ef7d4dfe64cf78875419fbdcc84e49afd192e18fda6ec2469a66ce4908",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/cep-panel-control.js",
+      "sourceSha256": "c0f39b920d9a9ea93be191e839b0eccfac6a873581bee69832c232f8bc254ad1",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/cep-panel-readonly-orphan.js",
+      "sourceSha256": "52ef4a43ffa8945635550161a109cc4e82a6577f1a886eefe79cc75b4e9c796a",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/codex-visual-evidence.js",
+      "sourceSha256": "8995a558afcec0eee91beb9616d3355237d91c03baa4f48392296313712e416d",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/command-receipt.js",
+      "sourceSha256": "9ae9ec4eb9b1c18e60f8ec4b8d0a67c0134bf04240e8bde0d829e2d63505a42c",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/common-title-assembly-recovery.js",
+      "sourceSha256": "02e0b2589f7060e79309effa1c77af458f9981729e7ae09e660f79eb8a17f955",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/comp-dynamic-link-read.js",
+      "sourceSha256": "b6b23f6a08c6daac4f0291e6f4e22623c456b6fc508c153aa853a25a5f2cf0e1",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/comp-visual-review-manifest.js",
+      "sourceSha256": "7a68e059d27d40bb4826e12e0fd3b4072f9e637bb13068e4553ac990b13aba88",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/comp-visual-review-plan.js",
+      "sourceSha256": "beefbfea80bb78fcabf45a6ad61ac7139665603d8f0b9c35daa5808311345f0c",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/deployment-mode.js",
+      "sourceSha256": "2c0b3062ad09bb6594c7a963dbabeec67a7257d58a5c65b835f1089d2a61619b",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/fixed-guard-timeout-maintenance-proof.js",
+      "sourceSha256": "e70b3df96ad054ab95753d4f433e535bc3e300408a5f33bf6254d88e9f3557da",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/generated-export-recovery.js",
+      "sourceSha256": "5f58f1cfe9bb7dc47b826b7f2c754152a82058f32477e37f51716012d0ca1f1e",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/generated-png-proof.js",
+      "sourceSha256": "96107e11c599aec6cb4c89c0513ef20edab0219cfcf115ed8ace84ba548e5639",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/generated-safety-contracts.js",
+      "sourceSha256": "1db59b630ca59431e67b597239e8a3115b4bf09bb9763deb9c4ff9eebab598fc",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/http-boundary.js",
+      "sourceSha256": "333881ba5d0c126f62e03c51c64966459dae433844002b4827f4e60246868737",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/human-guard-settlement.js",
+      "sourceSha256": "07d3fcde4608a87382cd80be9893dc60f9469020d8eed39070c3a873d202d16d",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/m100-protocol.js",
+      "sourceSha256": "d993ae2f70643d5f3bbb81e4be16ce06868b19fd2a4a6bd68e1a2fdde043c65c",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/mcp-adapter.js",
+      "sourceSha256": "94ccad9a174d06d5769b949144ee9b1784e67f7c680400b8f6950ec993d511a2",
+      "action": "extract"
+    },
+    {
+      "path": "mcp-server/montage-capture-requirements.js",
+      "sourceSha256": "189dff537807ade48fe8543e8ff9c97563b84f3823c7bd5103952767c1470e58",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-capture-service.js",
+      "sourceSha256": "1151771619ec2e5d161bbb02e80403808bf986db6c49c52066d370bbf6f3b0d8",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-contract.js",
+      "sourceSha256": "135c137562fb44f2c35012f4d92c297f9aee7629f69c927069e6dd053f497cfb",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-coverage.js",
+      "sourceSha256": "5bacbf77c63a434de4a892bb39a68c6997caad1cbc5c97c0d3cf5bdb5311de35",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-manifest.js",
+      "sourceSha256": "a52da19d12fc65dca23cad0c49af67e0ecb83ec8354897b8baf085aeee85c2c9",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-materials.js",
+      "sourceSha256": "374342ddc06ddf021fbf0031b0bf97b694f6374d2778bc5614d29a5dcdcbe660",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-native.js",
+      "sourceSha256": "fb3e09a5dead4a0631602d78508e0b8e7c5ed3891bdbf501b26514b5dc636c5e",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-observations.js",
+      "sourceSha256": "40e8d89c925a521f777e4b1b15cb11d2fc869b2cfcd0f21e0aa3348e8540eaa4",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-pipeline-service.js",
+      "sourceSha256": "b3488c745f87a1c0e627a50eb23e07efd41173cf51cad7bfd8d71e65b8c1d74a",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-pipeline.js",
+      "sourceSha256": "dde7762013fd23d9a2234e684cef9eeb5d9c838c09ac403f30124b0e3b59bff5",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-plan-guard.js",
+      "sourceSha256": "d639a73842a244431db06719c08828ba764a09db88ca989fc4b89b3295014023",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-postread.js",
+      "sourceSha256": "4696cf79152cd3955bba618e421c9e23844267104d4cf22944fa0bfffa5c0723",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-root-png.js",
+      "sourceSha256": "d08ef98d25d94999a230e8edd5d85d517c24bbf799972471f92d07bbe8a088f9",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-root-render.js",
+      "sourceSha256": "5fcda5bfca37474148531ec022f72d9bae68687df5718539629ab095054a088e",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-run-bindings.js",
+      "sourceSha256": "a6bc2afc21d01741777dbe5fb6f848514017c2cef0f72c324dc1a856aa372e36",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/montage-tools.js",
+      "sourceSha256": "bd42757ec67f65266de0b8a8d9535db4bef0e84c11637284a0dea53f080aff4a",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/native-fixture-abandonment-backend.js",
+      "sourceSha256": "3a73c4b785475d6f6f130dbb5656a0512f25022f1d4feda7af99d9a9652ae4a5",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/native-fixture-abandonment.js",
+      "sourceSha256": "1437a3f7aaed3edc68aff61776c878a233291f025cd00f6ef651403d402f0616",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/native-fixture-admission-refusal-proof.js",
+      "sourceSha256": "ec28221c1f40e269991b1f9e8690c0f0d018749c6217670a1c2764ab82467bf0",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/native-fixture-admission-refusal.js",
+      "sourceSha256": "06db5443cfb247f6513b7a600c68037471680ff43a41c15ac7a3f65484923b03",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/native-fixture-attempt-ledger.js",
+      "sourceSha256": "a970bd28927e87fe77fc4c5bc7ca3713b87763613b648c123f9a916c0543c61d",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/native-fixture-prephase-recovery-backend.js",
+      "sourceSha256": "41b4d450daff9c512f5c5b358143dac4918fdefad73dc89d8f1a96fbb1de0e5c",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/native-fixture-prephase-recovery-proof.js",
+      "sourceSha256": "3cdd812c0dcf88e85434c6d359f15bf53cc92c47b585822dd152d9bd42c9161f",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/native-fixture-prephase-recovery.js",
+      "sourceSha256": "12b64a9e73913e74c19127233d6355d88011583f0abba44c4b46d877f7ebfbbd",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/native-fixture-retained.js",
+      "sourceSha256": "253860443b72adc6f01c77199f1cacbeab01f679e19a1d73d9c0bc9ff4ff577d",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/native-render-variant.js",
+      "sourceSha256": "2eab35ee45124c49ed2c692c81e9cb0480afbd28cac25d37d7f6e1aa3844f6f6",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/operation-wait.js",
+      "sourceSha256": "429bfc2f440f3fd294ce66ba1bac9303e026d7d7946c3b0c0e5bcaac8227ec40",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-fixture-lifecycle.js",
+      "sourceSha256": "ffd4703623da22c59256629b02e4e85bd4b433e8fa1b26ee43a3b2136a65e145",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-authority.js",
+      "sourceSha256": "fbd8f374117a08ef08ada6f7264f623223f0813b1787a375cd5f5357a2fe9f0a",
+      "action": "extract"
+    },
+    {
+      "path": "mcp-server/owned-runtime-graceful-continuation.js",
+      "sourceSha256": "b9eb81286316ff5a87b1cf0ac62e70bc0c792ce076212e1604111517db2e5126",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-http-transport.js",
+      "sourceSha256": "055933ea39b80e3095dcc9a4c4ccb713da7f2c2adad4e9e8112fdbcadafc2acf",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-native-client.js",
+      "sourceSha256": "f242cd0e76532b0820221d32dc2e23e47565738e4ef41e42eecabb13927ff439",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-observers.js",
+      "sourceSha256": "566ac976589214592842211e814e57728c88bf9e9c527bd2fa03212355d0cc6a",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-recovery.js",
+      "sourceSha256": "eae9a8718ea797c63d30dca9046b61bbb83637dfb47e9c636ef1ca34a56b622d",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-runtime.js",
+      "sourceSha256": "95dc271d4e6ba3be9c7c1e736930d6df99085fc2ffd02db030d87d2a74b82f57",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-shared-queue-context.js",
+      "sourceSha256": "702918000e7eb39df2da1e9eb9ef93608fbc86426ebf7b8cc52cbef2df1f5ec2",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-source-census.js",
+      "sourceSha256": "6d1f293cfde9a8841aa62be064eebf5833982a2dde9b10572359e2c36ca6a2ab",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-title-plan.js",
+      "sourceSha256": "39df30c7516d99636cfcc3e7358f211e802b13bdccdef86b8df832814ad80931",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-lifecycle.js",
+      "sourceSha256": "700327f1415fce2bcdc5dc5365f3e133c96c2951f2e5e32a8a5a91f9ad42688c",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-product-activation.js",
+      "sourceSha256": "5aae2a590c28fdfced69c73e8b1c4ffa9403c8820428d206fea47f8a159e3acb",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-product-lifecycle.js",
+      "sourceSha256": "a426d2c22ab2391fff9eedae7af94a3c6fcb2fdd7c3f6ea4a8388770554e174b",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-product-maintenance.js",
+      "sourceSha256": "f9a8ba547d118e51530c24fd0f7bfbc4ce0e0106aec2b06b8f64d199f9e7ed77",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-product-session-reset.js",
+      "sourceSha256": "9f50ce8d0c4155aede66e29d2f98c5276223838123194ccd752c2f85ac489ad2",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-service.js",
+      "sourceSha256": "75525886a326125be551f75a1894f81f88afe4aa037a44037f9af3f87fe2489c",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-supervisor.js",
+      "sourceSha256": "6edccfa3c8f05c42bb379b4de8a3acffd5e962afb40bf4f13547903beaeb105f",
+      "action": "extract"
+    },
+    {
+      "path": "mcp-server/owned-runtime-ui-baseline.js",
+      "sourceSha256": "01682dd06a7b4f3f4c5ad9c11d559c0ae43554cf8ce4f6fa00da1a677c2b71b8",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/owned-runtime-win32.js",
+      "sourceSha256": "9f3db992c79e4d06ef6b50ba4919c2779dbd692c3a6c32bf20838a45008dc774",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/panel-lifecycle-causal-observer.js",
+      "sourceSha256": "4da6d3a91aedd855e081fe9d2a71ae7f4905a22b36da7846dbb8e845a20232fa",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/panel-lifecycle-causal.js",
+      "sourceSha256": "c060da36d684f67c6dc7a802576bb575ba6fceca81edcbf4385404d857720354",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-evidence.js",
+      "sourceSha256": "917c148acd52efdd5b85a8ffac342392ed87783cae6d45457de2a53529c73286",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-framing.js",
+      "sourceSha256": "4d620c829c1ca2118bba99e80689cd4cf4a5ac893d9b948bb569bc9c1466667b",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-geometry.js",
+      "sourceSha256": "7a7bbd128e006c1ebb4b36847fdd1524a84b16ceb38c4f1c751afe74e6aec1e3",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-plan-builder.js",
+      "sourceSha256": "f0ba23467e2c335c51f57976e6bf5a4eaad871f4606145b1add4029123564880",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-protection.js",
+      "sourceSha256": "5aa1e9324caa52f1c0c1f61be686e09ca5c3132c746498f581ccb144a83b0b5e",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-readback.js",
+      "sourceSha256": "be8608a9dfd615cf6e19945b1fda4c594a5afc035ac66ac20a0feb406e5a1e55",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-review-service.js",
+      "sourceSha256": "0fb56b7ed6e0d81b5f1c4ba07ce833ced3f56f2d348fde05ce0b81e2e38eefd9",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-review-tools.js",
+      "sourceSha256": "141ac56e5920afcfe73fca6f8ce6f5fc421ba8379f7999c39a0fa2afd02c4095",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-source-recovery.js",
+      "sourceSha256": "82dfea29337636bb102180d11b1763457e033b94d39641b8714ccbfe2c8c32e5",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-timing.js",
+      "sourceSha256": "eb176e282c331a83a72277c4c2fdc577c3fe12b02b4f2a69d42e1f8800a821ee",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-usage.js",
+      "sourceSha256": "3a142e16392bd90f81d17b9c720407feef8c395e9f039105d08b077b5bbd79b1",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-visual-batches.js",
+      "sourceSha256": "d1f6ed3d40e03fc38759028c7c72af8e4adf3b869d353afde7cd215b592f01f1",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/placeholder-visual-review.js",
+      "sourceSha256": "06b80ade07d01d0a129cad6af205ec3577d2a33704be71bf6bc09d5ec79b0a32",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/plan-repair.js",
+      "sourceSha256": "c508bbe2fcf2eb0fcdedd4966c639b7542d840218de8f8106c0931db2f010ec2",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/plan-risk-classifier.js",
+      "sourceSha256": "17615c8a20206839911ba650bdc18644d70573a75e1635b37016a9ca92091ab4",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/plan-run-reconciliation.js",
+      "sourceSha256": "dbdc3d946e6b27b960b1f99eb735ea1342bf22aa2587c380bcac1a0aa5fb5b1d",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/plan-run-records.js",
+      "sourceSha256": "422d1240144bc91370bb937328305655ed40c39bde596dc20e2325ca584f89d4",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/plan-run-response.js",
+      "sourceSha256": "936fa6be3b8fcc561f1018eafd5c4ba47cb9ac2c7392cdf0eb2eb58ff363db38",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/project-intent-memory.js",
+      "sourceSha256": "2ca30c7c9788413300eb4c0329445f2a4da337dc47d92e4ddfaf68f3297d9371",
+      "action": "extract"
+    },
+    {
+      "path": "mcp-server/project-lifecycle-bridge-adapter.js",
+      "sourceSha256": "d4a4a0b34cc35eca5cc7ef6b9d3a2c5142e9305d54a20f2b9d45641c82503e40",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/project-lifecycle-contract.js",
+      "sourceSha256": "5d104c94f90e8a844cf5d9ea2b4ef70438d73fa93816b3a8614a392e3af6f0e3",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/project-lifecycle-plan.js",
+      "sourceSha256": "4833a6178ae1b13233d9af5a8b2a0aaa9661b8c41917db59da115f0d9735872e",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/project-lifecycle-service.js",
+      "sourceSha256": "9e5020ad0a62453abf8a2b5ddc839d4b50cbeee4760c7dad39693902180340a5",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/project-lifecycle-state.js",
+      "sourceSha256": "6864d44ce354fc8a0ac7589236c1032c4d563bacc9f84a8d042a83623f95c3a0",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/project-lifecycle-transition.js",
+      "sourceSha256": "072baf0018f488d07e83ed28ca076b7969bec2e16d4311d3ee82bd34030c1aac",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/project-lifecycle-verification.js",
+      "sourceSha256": "21d5bc173a54477821832dba5999e395edf4c33067f374fe6b548101ad97f52c",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/project-save.js",
+      "sourceSha256": "59b09dde3ef9bc66d68d745d6ce614252fd907196f2581a13d3ae8c9fea2a16f",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/proposal-state.js",
+      "sourceSha256": "35150c536c54ecfa2b05741315aa4fb11aa1b0ac63609eede0b0cc21843375c1",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/review-evidence.js",
+      "sourceSha256": "e9bfb8c35305edf58d7c0adad5c13ba3ca1179037baabfa491fa0c1903b10d38",
+      "action": "extract"
+    },
+    {
+      "path": "mcp-server/run-outcome.js",
+      "sourceSha256": "c3a8bdd19120d86032af604879bf5421036d884460468f0b7e31c5c117ed5d6f",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/semantic-verification.js",
+      "sourceSha256": "f9edd022002f523f483a0b438b5b9a6cdff1c3a9e33b80900025c8681ea28556",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/server.js",
+      "sourceSha256": "6db469b3ef59e5cbefc0221cd9eebb9120fb9bd43cf8c0fe4c5c3a76b0d05e01",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/session-recovery-state.js",
+      "sourceSha256": "1ad82bda116c01d9cb231480819b6d140b1135c028fc70ff973344956dfb6087",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/slideshow-manifest.js",
+      "sourceSha256": "8773ed468d57f86f90fafbefbbc0caa5fd5bf00a3a4c1b9a6d6a00e08bd79201",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/slideshow-plan-builder.js",
+      "sourceSha256": "b3bd52f6eec50673fa5dc09fc6657095cba45220833a6b57933ce69f74c4ba0d",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/slideshow-tools.js",
+      "sourceSha256": "bf8d48b3c12c47d40e372a510c0a987d4f3f4f6367adf5f72f2a1eb82a45d973",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/solution-plan-builder.js",
+      "sourceSha256": "43afd2a69aaaeec7848dbb5c83b1eb9997f4ffdfdcbe68228774631872acd2fb",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/solution-plan-verification.js",
+      "sourceSha256": "5e3a76067640cf55e27751a7f9140e9c3828cea684b9695a5aa3b718471aae98",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/text-layout-policy.js",
+      "sourceSha256": "f746de650224cd7963258c26f0b0c0bf0a0d2d640ab2ea7e584e9f2f3fcc7979",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/text-visual-review-plan.js",
+      "sourceSha256": "1fd5e22bff0f4026d2a373b0d4001e2a58f23a28916786ed2a345e3d67cc5b04",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/title-export-snapshots.js",
+      "sourceSha256": "ce31134353babd2addec92a06d97e0ec184df3eca5a0bfcd1aec4cdc0b98ef4a",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/title-export-verification.js",
+      "sourceSha256": "8e42d1fb8f183b6b93cf84518f6e06267e09b63ad65ffa9e821faa44bf90f709",
+      "action": "copy"
+    },
+    {
+      "path": "mcp-server/tool-error-response.js",
+      "sourceSha256": "a48cd04e195fde3b3e065915a8cc87f7bacbef3ad91df85a4bedf9c568cb5b39",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/autonomous-plan-client.js",
+      "sourceSha256": "1ae9ca1a5d537a08bfb48d70c92d3baa39ce1d9da7e577184c2949ab0d1262d7",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/cep-panel-product-reset-client.js",
+      "sourceSha256": "079cfb4f162e67cd62ade25f65f8197f42d8f9a3212a84bb581880db10a070e4",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/cep-panel-target.js",
+      "sourceSha256": "77c708d09cdac93785222b68a056e0c44ee0a509dee302cae316b8c437175744",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/common-title-assembly-maintenance.js",
+      "sourceSha256": "f601b6890f244133ae1042b3577d2801a7046e2dfb3eaf3dc23e721a51449af6",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/human-guard-settlement-maintenance.js",
+      "sourceSha256": "a619a440c27e1c44c70cadd60ba174b69d6129b43da5f051a35c6611144877fa",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/native-fixture-prephase-maintenance.js",
+      "sourceSha256": "d357b9bf7f0daecb4e5d2153c46cc4c6e51eaed86a018ee06707e8a1a62e4a86",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/native-fixture-retained-maintenance.js",
+      "sourceSha256": "492ae12961cb9e809c811a631bbdf15517e4b2473eb9e20e713e30cf5ac4f509",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/owned-runtime-control.js",
+      "sourceSha256": "0a4d820bc89ed7d7212e7bcbdfc79d7b4cda1b91deaa453fae187014d2162acb",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/owned-runtime-finalize-launch.js",
+      "sourceSha256": "ac7e47bbffbb67a22408666e5c479464cb9a2a0d8f0ac7170f103917937b12f6",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/owned-runtime-maintenance-retire.js",
+      "sourceSha256": "57f0785e027481c2e1575c61b039b09b5dfcceed7918631930e9a2c501d8b182",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/owned-runtime-panel-reload.js",
+      "sourceSha256": "f35aa6844e95c42d8c95445b220a18b625b836cde4ba59dd010960554f53e5dd",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/owned-runtime-startup-retire.js",
+      "sourceSha256": "e144fbc048e18193eecda7c77a51c41bf04267baef0414d18a36064478c5c329",
+      "action": "copy"
+    },
+    {
+      "path": "cep-panel/panel.js",
+      "sourceSha256": "e3c7e94a2f51732ffcdcce311776acc6098b3c79df217e7b76a89713535b5ac3",
+      "action": "extract"
+    },
+    {
+      "path": "cep-panel/panel-actions.js",
+      "sourceSha256": "eebcc176997c10165b86dc0f771fd0a720ab77aac5b0b9a58ad3d8b03848906e",
+      "action": "extract"
+    },
+    {
+      "path": "cep-panel/index.html",
+      "sourceSha256": "8e48e2cbc77a9e5327d0d8891d380168a6c8a44683f5c51bdfe3a33890f6e0c9",
+      "action": "extract"
+    },
+    {
+      "path": "cep-panel/style.css",
+      "sourceSha256": "7b02db47543f180d1c3ba2ec40e73911fc7f7fb2c4d815a265bae962ccb0e343",
+      "action": "extract"
+    },
+    {
+      "path": "cep-panel/CSXS/manifest.xml",
+      "sourceSha256": "effe065566d16f2d66fa3245317d0d586cc654d1684432cf8d80bb9deb008b41",
+      "action": "copy"
+    },
+    {
+      "path": "cep-panel/lib/CSInterface.js",
+      "sourceSha256": "67a3d2a4bc38d7facbf2fdfbd67e68f734321bd47fdeafa858fda284241356c1",
+      "action": "copy"
+    },
+    {
+      "path": "cep-panel/native-probe-startup-guard.js",
+      "sourceSha256": "5cc9b24c5748227de5c8df67743ed25228725e4c16d19cc705bc55a7f8ba4184",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/owned-runtime-win32-helper.ps1",
+      "sourceSha256": "945ef885a9c8eecbc2ddf3076cc4762d2a4789b64c3153f12abee8c7f5236ed4",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/owned-runtime-daemon-helper.ps1",
+      "sourceSha256": "7453ca5377e1e4eb462069907af9f25e2e2826ec4f458d208ad649e5251cd2ff",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/owned-runtime-startup-retire-helper.ps1",
+      "sourceSha256": "20e1e5fea69ad9880de8381a30bafa94b43582420615dda939453e469b5f97f5",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/owned-runtime-maintenance-retire-helper.ps1",
+      "sourceSha256": "61fdaef97e7a063fb13af6ea8c989ba79ce457fbb29c504377ba9d82c6062bf7",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/ame-job-source-hash-worker.cjs",
+      "sourceSha256": "800d182f0339addc9c61b26fcb4e47396caf8a269896ed33421807ea692413da",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/cep-panel-reset-physical-fence-absence.ps1",
+      "sourceSha256": "b206c1d878c49a49f7af19f7ee2b94c25ca28e1cd569bb7fb139c0d0d916ef01",
+      "action": "copy"
+    },
+    {
+      "path": "scripts/network-test-fixture.js",
+      "sourceSha256": "39b46a58d7c29d9a7158166c6fe1c3c9321f5331e0e35c914508f00368b74336",
+      "action": "extract"
+    }
+  ]
+}

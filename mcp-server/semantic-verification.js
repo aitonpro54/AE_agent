@@ -1,0 +1,5473 @@
+"use strict";
+
+const path = require("path");
+const crypto = require("node:crypto");
+const amePending=require("./ame-title-pending");
+const { generatedFileEvidenceIssues, isPathInside } = require("./generated-safety-contracts");
+const { DEFAULT_MAX_PNG_BYTES } = require("./generated-png-proof");
+const projectSave = require("./project-save");
+const projectLifecycle = require("./project-lifecycle-contract");
+const lifecycleVerification = require("./project-lifecycle-verification");
+const sourceRecovery = require("./placeholder-source-recovery");
+const ameManualQueue = require("./ame-manual-queue-grant");
+
+function getAuthoritativeExportRoot(options = {}) {
+  if (options && typeof options.generatedExportDir === "string" && options.generatedExportDir.trim()) {
+    return path.resolve(options.generatedExportDir);
+  }
+  if (process.env.AE_AGENT_GENERATED_EXPORT_DIR && process.env.AE_AGENT_GENERATED_EXPORT_DIR.trim()) {
+    return path.resolve(process.env.AE_AGENT_GENERATED_EXPORT_DIR);
+  }
+  const logDir = process.env.AE_BRIDGE_LOG_DIR
+    ? path.resolve(process.env.AE_BRIDGE_LOG_DIR)
+    : path.resolve(__dirname, "..", "logs");
+  return path.resolve(logDir, "generated-exports");
+}
+
+function getAuthoritativeProjectRoot(options = {}) {
+  if (options && typeof options.projectRoot === "string" && options.projectRoot.trim()) {
+    return path.resolve(options.projectRoot);
+  }
+  if (process.env.AE_PROJECT_ROOT && process.env.AE_PROJECT_ROOT.trim()) {
+    return path.resolve(process.env.AE_PROJECT_ROOT);
+  }
+  return path.resolve(__dirname, "..");
+}
+
+function canonicalImportPath(filePath, projectRoot) {
+  if (typeof filePath !== "string" || !filePath.trim()) return "";
+  const root = projectRoot || getAuthoritativeProjectRoot();
+  const resolved = path.resolve(root, filePath.trim());
+  const normalized = path.normalize(resolved).replace(/\\/g, "/");
+  return process.platform === "win32" ? normalized.toLowerCase() : normalized;
+}
+
+const SEMANTIC_VERIFICATION_SCHEMA = "ae-agent-semantic-verification.v1";
+const COLOR_CHANNEL_QUANTIZATION_TOLERANCE = (0.5 / 255) + 0.000001;
+
+const MUTATING_TOOLS = new Set([
+  "dispatch_ame_open_comp",
+  "restore_ame_open_comp",
+  "create_ame_job_source",
+  "verify_title_export_snapshots",
+  "export_two_title_snapshots",
+  "ensure_ame_running",
+  "enqueue_ame_title_variant",
+  "start_ame_title_batch",
+  "start_ame_queue",
+  "pause_ame_queue",
+  "ame_native_fixture_probe",
+  ...projectLifecycle.MUTATIONS,
+  "reload_montage_material_source",
+  "create_placeholder_review_comps",
+  projectSave.TOOL_NAME,
+  "create_comp",
+  "create_test_comp",
+  "create_solid_layer",
+  "create_adjustment_layer",
+  "create_text_layer",
+  "create_shapes_from_text",
+  "import_footage",
+  "create_camera_layer",
+  "create_camera_with_controller",
+  "toggle_onion_skinning",
+  "add_project_item_to_comp",
+  "set_comp_current_time",
+  "set_comp_work_area",
+  "refresh_comp_panel",
+  "set_layer_time_range",
+  "stagger_layers",
+  "align_layers_to_time",
+  "split_layers_at_time",
+  "update_text_layer",
+  "create_shape_layer",
+  "create_layer_connection_line",
+  "create_layer_mask",
+  "set_path_geometry",
+  "export_path_points",
+  "export_text_to_file",
+  "save_comp_frame_png",
+  "set_puppet_pin_type",
+  "set_effect_enabled",
+  "add_property_to_essential_graphics",
+  "fit_layer_to_comp",
+  "set_layer_transform",
+  "set_property_value",
+  "set_effect_property",
+  "set_layer_metadata",
+  "set_layer_blending_mode",
+  "set_project_item_metadata",
+  "set_project_frames_count_type",
+  "set_property_keyframes",
+  "fill_in_keyframes",
+  "keyframe_current_value_from_expression",
+  "apply_keyframe_ease",
+  "set_spatial_in_tangent",
+  "set_expression",
+  "clear_expression",
+  "separate_shape_size_dimensions",
+  "add_comp_marker",
+  "duplicate_layer",
+  "duplicate_layers",
+  "set_layer_selection",
+  "set_layer_parent",
+  "set_layer_track_matte",
+  "delete_layer",
+  "set_comp_properties",
+  "set_layer_mask",
+  "add_layer_marker",
+  "update_layer_marker",
+  "delete_layer_marker",
+  "duplicate_comp",
+  "deep_duplicate_precomp_sources",
+  "precompose_layers",
+  "replace_layer_source",
+  "relink_footage_source",
+  "rename_layers",
+  "rename_project_items",
+  "add_comp_to_render_queue",
+  "render_one_title_variant",
+  "set_render_queue_output",
+  "clone_slideshow_event_tree",
+  "extend_slideshow_cloned_tree",
+  "rewrite_slideshow_tree_expressions",
+  "apply_slideshow_event_text",
+  "replace_slideshow_media_leaf",
+  "copy_slideshow_event_pair",
+  "add_slideshow_event_overlays",
+  "copy_slideshow_control_layer",
+  "configure_slideshow_tree_audio",
+  "create_slideshow_master",
+  "cleanup_test_items"
+]);
+
+const READ_BACK_TOOLS = new Set([
+  "reconcile_ame_open_comp",
+  "inspect_ame_open_comp",
+  "get_project_lifecycle_state",
+  "inspect_ame_transport",
+  "inspect_ame_title_sources",
+  "get_ame_title_job_status",
+  "get_ame_queue_start_status",
+  "inspect_ame_native_fixture_result",
+  "inspect_title_variants",
+  "get_montage_source_load_evidence",
+  "get_bridge_status",
+  "get_project_info",
+  "get_project_snapshot",
+  "get_active_comp",
+  "get_selected_layers",
+  "get_selected_properties",
+  "find_project_items",
+  "list_comps",
+  "list_layers",
+  "list_effects",
+  "get_comp_details",
+  "get_layer_details",
+  "get_property_value",
+  "get_effect_details",
+  "get_layer_essential_properties",
+  "get_essential_graphics_controllers",
+  "get_path_geometry",
+  "get_render_queue_status",
+  "audit_slideshow_generated"
+]);
+
+function isPlainObject(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function hasOwn(value, key) {
+  return Boolean(isPlainObject(value) && Object.prototype.hasOwnProperty.call(value, key));
+}
+
+function compactText(value, maxLength = 180) {
+  const text = String(value === undefined || value === null ? "" : value).replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(0, maxLength - 1))}...`;
+}
+
+function stableStringify(value) {
+  try {
+    return JSON.stringify(value);
+  } catch (_error) {
+    return String(value === undefined ? "" : value);
+  }
+}
+
+function numberValue(value) {
+  const raw = isPlainObject(value) && hasOwn(value, "value") ? value.value : value;
+  const number = Number(raw);
+  return Number.isFinite(number) ? number : null;
+}
+
+function nearlyEqual(left, right, tolerance = 0.001) {
+  const a = numberValue(left);
+  const b = numberValue(right);
+  return a !== null && b !== null && Math.abs(a - b) <= tolerance;
+}
+
+function colorChannelNearlyEqual(left, right) {
+  return nearlyEqual(left, right, COLOR_CHANNEL_QUANTIZATION_TOLERANCE);
+}
+
+function sameString(left, right) {
+  return String(left || "") === String(right || "");
+}
+
+function normalizeTextJustification(value) {
+  if (value === undefined || value === null) return "";
+  const normalized = String(value).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (["left", "left_justify", "left_justified"].includes(normalized)) return "left";
+  if (["center", "centre", "center_justify", "centered", "center_justified"].includes(normalized)) return "center";
+  if (["right", "right_justify", "right_justified"].includes(normalized)) return "right";
+  return normalized;
+}
+
+function textJustificationFromPayload(payload) {
+  const layerText = payload && payload.layer && payload.layer.text;
+  if (layerText && hasOwn(layerText, "justification")) return layerText.justification;
+  const text = payload && payload.text;
+  if (text && typeof text === "object" && hasOwn(text, "justification")) return text.justification;
+  return "";
+}
+
+function numberArrayValue(value) {
+  const raw = Array.isArray(value)
+    ? value
+    : isPlainObject(value) && Array.isArray(value.value)
+      ? value.value
+      : null;
+  if (!raw) return null;
+  const numbers = raw.map(numberValue);
+  if (!numbers.length || numbers.some((item) => item === null)) return null;
+  return numbers;
+}
+
+function normalizeSlashes(value) {
+  return String(value || "").replace(/\\/g, "/");
+}
+
+function pathMatchesSuffix(observed, expected) {
+  const left = normalizeSlashes(observed).toLowerCase();
+  const right = normalizeSlashes(expected).toLowerCase();
+  return Boolean(left && right && (left === right || left.endsWith(`/${right}`) || left.endsWith(right)));
+}
+
+function payloadForStep(step) {
+  if (!step || step.result === undefined || step.result === null) return null;
+  return step.result;
+}
+
+function isMutatingStep(step) {
+  return Boolean(step && (step.mutating === true || step.mutatesProject === true || MUTATING_TOOLS.has(step.tool) || /^run_extendscript(?:_file)?$/.test(step.tool)));
+}
+
+function isReadBackStep(step) {
+  if (!step || step.status !== "completed") return false;
+  if (isMutatingStep(step)) return false;
+  return READ_BACK_TOOLS.has(step.tool);
+}
+
+function stepLabel(step) {
+  if (!step) return "step";
+  return `${step.index || "?"}. ${step.title || step.tool || "Step"}`;
+}
+
+function addName(target, value, source) {
+  const text = compactText(value, 160);
+  if (!text) return;
+  target.names.add(text);
+  if (!target.nameSources[text]) target.nameSources[text] = [];
+  if (source) target.nameSources[text].push(source);
+}
+
+function addOutputPath(target, value, source) {
+  const text = compactText(value, 240);
+  if (!text) return;
+  target.outputPaths.add(text);
+  if (!target.outputPathSources[text]) target.outputPathSources[text] = [];
+  if (source) target.outputPathSources[text].push(source);
+}
+
+function addLayerCount(target, value, source) {
+  const count = numberValue(value);
+  if (count === null || count < 0) return;
+  target.layerCounts.push({
+    count,
+    source: source || "observed layer count"
+  });
+}
+
+function boolValue(value) {
+  if (value === true || value === false) return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return null;
+}
+
+function normalizeFramesCountTypeName(value) {
+  const normalized = String(value === undefined || value === null ? "" : value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+  if (["fcstart0", "startatzero", "start0", "zero", "0"].includes(normalized)) return "FC_START_0";
+  if (["fcstart1", "startatone", "start1", "one", "1"].includes(normalized)) return "FC_START_1";
+  return "";
+}
+
+function framesCountStartFrameForName(value) {
+  const name = normalizeFramesCountTypeName(value);
+  if (name === "FC_START_0") return 0;
+  if (name === "FC_START_1") return 1;
+  return null;
+}
+
+function addLayerEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const index = numberValue(value.index);
+  const name = compactText(value.name, 160);
+  if (index === null || index < 1 || !name) return;
+  const layer = {
+    index,
+    name,
+    id: value.id === undefined || value.id === null ? null : String(value.id),
+    source: source || "observed layer"
+  };
+  for (const field of ["adjustmentLayer", "threeDLayer", "collapseTransformation", "motionBlur", "audioEnabled", "enabled", "guideLayer"]) {
+    if (hasOwn(value, field)) layer[field] = boolValue(value[field]);
+  }
+  if (hasOwn(value, "hasTrackMatte")) layer.hasTrackMatte = boolValue(value.hasTrackMatte);
+  if (hasOwn(value, "isTrackMatte")) layer.isTrackMatte = boolValue(value.isTrackMatte);
+  if (hasOwn(value, "trackMatteTypeName")) layer.trackMatteTypeName = compactText(value.trackMatteTypeName, 80);
+  if (hasOwn(value, "trackMatteLayer")) {
+    if (isPlainObject(value.trackMatteLayer)) {
+      layer.trackMatteLayer = {
+        index: numberValue(value.trackMatteLayer.index),
+        name: compactText(value.trackMatteLayer.name, 160),
+        id: value.trackMatteLayer.id === undefined || value.trackMatteLayer.id === null ? null : String(value.trackMatteLayer.id)
+      };
+    } else {
+      layer.trackMatteLayer = null;
+    }
+  }
+  if (hasOwn(value, "label")) layer.label = numberValue(value.label);
+  if (hasOwn(value, "locked")) layer.locked = boolValue(value.locked);
+  if (hasOwn(value, "comment")) layer.comment = String(value.comment === undefined || value.comment === null ? "" : value.comment);
+  if (hasOwn(value, "blendingModeName")) layer.blendingModeName = normalizedBlendingModeName(value.blendingModeName);
+  if (hasOwn(value, "blendingMode")) layer.blendingMode = normalizedBlendingModeName(value.blendingMode);
+  if (hasOwn(value, "parent")) {
+    if (isPlainObject(value.parent)) {
+      layer.parentIndex = numberValue(value.parent.index);
+      layer.parentName = compactText(value.parent.name, 160);
+      layer.parentId = value.parent.id === undefined || value.parent.id === null ? null : String(value.parent.id);
+    } else {
+      layer.parentIndex = null;
+      layer.parentName = "";
+      layer.parentId = null;
+    }
+  }
+  target.layers.push(layer);
+}
+
+function addCompEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const hasCompField = ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate", "time", "workAreaStart", "workAreaDuration", "motionBlur", "numLayers", "layerCount"].some((key) => hasOwn(value, key));
+  if (!hasCompField) return;
+  target.comps.push({
+    name: compactText(value.name, 160),
+    itemIndex: numberValue(value.itemIndex),
+    width: numberValue(value.width),
+    height: numberValue(value.height),
+    pixelAspect: numberValue(value.pixelAspect),
+    duration: numberValue(value.duration),
+    frameRate: numberValue(value.frameRate),
+    bgColor: numberArrayValue(value.bgColor),
+    displayStartTime: numberValue(value.displayStartTime),
+    displayStartFrame: numberValue(value.displayStartFrame),
+    preserveNestedFrameRate: value.preserveNestedFrameRate === undefined || value.preserveNestedFrameRate === null ? null : value.preserveNestedFrameRate === true,
+    time: numberValue(value.time),
+    workAreaStart: numberValue(value.workAreaStart),
+    workAreaDuration: numberValue(value.workAreaDuration),
+    motionBlur: value.motionBlur === undefined || value.motionBlur === null ? null : value.motionBlur === true,
+    numLayers: numberValue(hasOwn(value, "numLayers") ? value.numLayers : value.layerCount),
+    layers: Array.isArray(value.layers) ? value.layers.map(layer => ({index: layer.index, id: layer.id, name: layer.name,
+      sourceItem: layer.source, startTime: layer.startTime, inPoint: layer.inPoint, outPoint: layer.outPoint})) : [],
+    source: source || "observed comp"
+  });
+}
+
+function addProjectEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const framesCountType = normalizeFramesCountTypeName(value.framesCountType);
+  const framesCountStartFrame = numberValue(value.framesCountStartFrame);
+  if (!framesCountType && framesCountStartFrame === null && typeof value.file !== "string") return;
+  target.projects.push({
+    file: typeof value.file === "string" ? value.file : null,
+    framesCountType,
+    framesCountStartFrame: framesCountStartFrame === null ? framesCountStartFrameForName(framesCountType) : framesCountStartFrame,
+    source: source || "observed project"
+  });
+}
+
+function addMaskEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const shape = isPlainObject(value.shape) ? value.shape : {};
+  const hasMaskField = hasOwn(value, "maskMode") || hasOwn(value, "inverted") || hasOwn(value, "propertyIndex") || hasOwn(value, "opacity") || hasOwn(value, "feather") || hasOwn(value, "expansion") || Array.isArray(shape.vertices);
+  if (!hasMaskField) return;
+  target.masks.push({
+    propertyIndex: numberValue(value.propertyIndex),
+    name: compactText(value.name, 160),
+    maskMode: value.maskMode === undefined || value.maskMode === null ? "" : String(value.maskMode),
+    inverted: value.inverted === true,
+    shape: {
+      closed: shape.closed === true,
+      vertices: Array.isArray(shape.vertices) ? shape.vertices : [],
+      inTangents: Array.isArray(shape.inTangents) ? shape.inTangents : [],
+      outTangents: Array.isArray(shape.outTangents) ? shape.outTangents : []
+    },
+    opacity: numberValue(value.opacity),
+    feather: numberArrayValue(value.feather),
+    expansion: numberValue(value.expansion),
+    source: source || "observed mask"
+  });
+}
+
+function numberArrayFromValue(value) {
+  return numberArrayValue(value);
+}
+
+function addNumberArray(target, key, value, source) {
+  if (!key) return;
+  const numbers = numberArrayFromValue(value);
+  if (!numbers) return;
+  if (!target.numberArrays[key]) target.numberArrays[key] = [];
+  target.numberArrays[key].push({
+    values: numbers,
+    source: source || `observed ${key}`
+  });
+}
+
+function createEvidenceStore(readBackSteps) {
+  return {
+    count: Array.isArray(readBackSteps) ? readBackSteps.length : 0,
+    steps: Array.isArray(readBackSteps) ? readBackSteps.map((step) => ({
+      index: step.index || null,
+      title: step.title || step.tool || "Read-back step",
+      tool: step.tool || null
+    })) : [],
+    names: new Set(),
+    nameSources: {},
+    outputPaths: new Set(),
+    outputPathSources: {},
+    layerCounts: [],
+    numberArrays: {},
+    layers: [],
+    comps: [],
+    masks: [],
+    markers: [],
+    markerSignatures: new Set(),
+    projects: [],
+    projectItems: [],
+    properties: [],
+    propertyReadbacks: [],
+    rawSteps: Array.isArray(readBackSteps) ? readBackSteps : [],
+    essentialGraphicsControllers: [],
+    slideshowAudits: []
+  };
+}
+
+function propertyPathSegments(value) {
+  const raw = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(".")
+      : [];
+  return raw
+    .map((segment) => {
+      if (isPlainObject(segment)) {
+        if (segment.matchName !== undefined && segment.matchName !== null) return String(segment.matchName);
+        if (segment.name !== undefined && segment.name !== null) return String(segment.name);
+        if (segment.propertyIndex !== undefined && segment.propertyIndex !== null) return String(segment.propertyIndex);
+      }
+      return String(segment === undefined || segment === null ? "" : segment);
+    })
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+function propertyPathText(value) {
+  return propertyPathSegments(value).join(".");
+}
+
+function propertyPathMatches(actualPath, expectedPath) {
+  const actual = propertyPathSegments(actualPath);
+  const expected = propertyPathSegments(expectedPath);
+  if (!actual.length || !expected.length || actual.length < expected.length) return false;
+  const tail = actual.slice(actual.length - expected.length);
+  return expected.every((segment, index) => tail[index] === segment);
+}
+
+function propertyValueMatches(expected, observed, tolerance = 0.001) {
+  const expectedNumbers = numberArrayValue(expected);
+  if (expectedNumbers) {
+    const observedNumbers = numberArrayValue(observed);
+    return Boolean(observedNumbers) &&
+      observedNumbers.length >= expectedNumbers.length &&
+      expectedNumbers.every((value, index) => nearlyEqual(value, observedNumbers[index], tolerance));
+  }
+
+  const expectedNumber = numberValue(expected);
+  if (expectedNumber !== null) {
+    return nearlyEqual(expectedNumber, observed, tolerance);
+  }
+
+  return stableStringify(expected) === stableStringify(isPlainObject(observed) && hasOwn(observed, "value") ? observed.value : observed);
+}
+
+function addPropertyEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  if (!hasOwn(value, "value") && !value.propertyPath && !value.matchName && !value.name) return;
+  target.properties.push({
+    name: value.name || null,
+    matchName: value.matchName || null,
+    propertyIndex: numberValue(value.propertyIndex),
+    propertyPath: Array.isArray(value.propertyPath) ? value.propertyPath : [],
+    value: hasOwn(value, "value") ? value.value : undefined,
+    enabled: hasOwn(value, "enabled") ? boolValue(value.enabled) : null,
+    geometry: shapeGeometryFromValue(value.geometry || value.value),
+    numKeys: numberValue(value.numKeys),
+    keyframes: Array.isArray(value.keyframes) ? value.keyframes : [],
+    source: source || "observed property"
+  });
+}
+
+function propertyPathIdentityMatches(actualPath, expectedPath) {
+  const actual = Array.isArray(actualPath) ? actualPath : [];
+  const expected = Array.isArray(expectedPath) ? expectedPath
+    : typeof expectedPath === "string" ? expectedPath.split(".").map((part) => part.trim()).filter(Boolean) : [];
+  if (!expected.length || actual.length !== expected.length) return false;
+  return expected.every((part, index) => {
+    const observed = actual[index];
+    if (!isPlainObject(observed)) return false;
+    if (isPlainObject(part)) {
+      const keys = ["propertyIndex", "name", "matchName"].filter((key) => hasOwn(part, key) && part[key] !== null && part[key] !== "");
+      return keys.length > 0 && keys.every((key) => key === "propertyIndex"
+        ? numberValue(observed[key]) !== null && numberValue(observed[key]) === numberValue(part[key])
+        : String(observed[key] || "") === String(part[key]));
+    }
+    const token = String(part).trim();
+    if (!token) return false;
+    if (/^[1-9]\d*$/.test(token)) return numberValue(observed.propertyIndex) === Number(token);
+    return observed.matchName === token || observed.name === token;
+  });
+}
+
+function propertyPathTailIdentityMatches(actualPath, expectedPath) {
+  const expected = Array.isArray(expectedPath) ? expectedPath : [];
+  return expected.length > 0 && Array.isArray(actualPath) && actualPath.length >= expected.length &&
+    propertyPathIdentityMatches(actualPath.slice(-expected.length), expected);
+}
+
+function positiveIdentityIndex(value) {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "number" && !(typeof value === "string" && /^[1-9]\d*$/.test(value))) return null;
+  const index = numberValue(value);
+  return index !== null && Number.isSafeInteger(index) && index > 0 ? index : null;
+}
+
+function persistentId(value, first, second) {
+  if (!isPlainObject(value)) return null;
+  const fields = [first, second].filter(key => hasOwn(value, key));
+  const ids = fields.map(key => positiveIdentityIndex(value[key]));
+  return fields.length && ids.every(id => id !== null && id === ids[0]) ? ids[0] : null;
+}
+
+function compMatchesRequest(comp, args) {
+  if (!isPlainObject(comp)) return false;
+  const expectedId = persistentId(args, "expectedCompItemId", "compItemId");
+  if (hasOwn(args, "expectedCompItemId") || hasOwn(args, "compItemId")) return expectedId !== null && persistentId(comp, "itemId", "id") === expectedId;
+  if (positiveIdentityIndex(args.compItemIndex) !== null && positiveIdentityIndex(comp.itemIndex) !== positiveIdentityIndex(args.compItemIndex)) return false;
+  if (args.compName && comp.name !== args.compName) return false;
+  return positiveIdentityIndex(comp.itemIndex) !== null || Boolean(comp.name);
+}
+
+function sameCompIdentity(left, right) {
+  if (!isPlainObject(left) || !isPlainObject(right)) return false;
+  const leftId = persistentId(left, "itemId", "id"), rightId = persistentId(right, "itemId", "id");
+  if ([left, right].some(value => hasOwn(value, "itemId") || hasOwn(value, "id"))) return leftId !== null && rightId !== null && leftId === rightId;
+  const leftIndex = positiveIdentityIndex(left.itemIndex);
+  const rightIndex = positiveIdentityIndex(right.itemIndex);
+  if ((leftIndex !== null || rightIndex !== null) &&
+    (leftIndex === null || rightIndex === null || leftIndex !== rightIndex)) return false;
+  if (left.name && right.name && left.name !== right.name) return false;
+  return leftIndex !== null || Boolean(left.name && right.name);
+}
+
+function compBinding(comp) {
+  return isPlainObject(comp) ? { itemId: persistentId(comp, "itemId", "id"), itemIndex: positiveIdentityIndex(comp.itemIndex), name: comp.name || null } : null;
+}
+
+function layerBinding(layer) {
+  return isPlainObject(layer) ? { index: positiveIdentityIndex(layer.index), id: layer.id || null, name: layer.name || null } : null;
+}
+
+function expectedLayerIdentity(args, position = 0) {
+  if (Array.isArray(args.expectedLayerIds)) return positiveIdentityIndex(args.expectedLayerIds[position]);
+  return persistentId(args, "expectedLayerId", "layerId");
+}
+
+function layerMatchesRequest(layer, args, layerIndex, position = 0) {
+  if (!isPlainObject(layer)) return false;
+  const expectedId = expectedLayerIdentity(args, position);
+  return hasOwn(args, "expectedLayerId") || hasOwn(args, "layerId") || hasOwn(args, "expectedLayerIds")
+    ? expectedId !== null && positiveIdentityIndex(layer.id) === expectedId : positiveIdentityIndex(layer.index) === layerIndex;
+}
+
+function sameLayerIdentity(left, right) {
+  if (!isPlainObject(left) || !isPlainObject(right)) return false;
+  const leftId = positiveIdentityIndex(left.id), rightId = positiveIdentityIndex(right.id);
+  if (leftId !== null || rightId !== null) return leftId !== null && rightId !== null && leftId === rightId;
+  return positiveIdentityIndex(left.index) !== null && positiveIdentityIndex(left.index) === positiveIdentityIndex(right.index);
+}
+
+function readTargetFromResult(args, comp, layer, position = 0) {
+  const target = {...args};
+  const compId = persistentId(comp, "itemId", "id"), layerId = positiveIdentityIndex(layer && layer.id);
+  if (!hasOwn(args, "expectedCompItemId") && !hasOwn(args, "compItemId") && compId !== null) target.expectedCompItemId = compId;
+  if (!hasOwn(args, "expectedLayerId") && !hasOwn(args, "layerId") && !hasOwn(args, "expectedLayerIds") && layerId !== null) target.expectedLayerId = layerId;
+  return target;
+}
+
+function readBackStepMatchesTarget(step, observedComp, args, layerIndex, observedLayer) {
+  const readArgs = step && step.args || {};
+  if (hasOwn(args, "time") && (!hasOwn(readArgs, "time") || typeof readArgs.time !== "number" || !Number.isFinite(readArgs.time) ||
+    typeof args.time !== "number" || !Number.isFinite(args.time) || !nearlyEqual(readArgs.time, args.time))) return false;
+  const readCompId = positiveIdentityIndex(readArgs.compItemId || readArgs.expectedCompItemId);
+  if (readCompId !== null && !compMatchesRequest(observedComp, {expectedCompItemId: readCompId})) return false;
+  // Persistent IDs make project/layer indices address hints; property indices
+  // below remain part of the exact composite property identity.
+  if (readCompId === null && positiveIdentityIndex(args.expectedCompItemId || args.compItemId) === null) {
+    if (positiveIdentityIndex(readArgs.compItemIndex) !== null && positiveIdentityIndex(readArgs.compItemIndex) !== positiveIdentityIndex(observedComp && observedComp.itemIndex)) return false;
+    if (readArgs.compName && readArgs.compName !== (observedComp && observedComp.name)) return false;
+  }
+  const readLayerId = positiveIdentityIndex(readArgs.layerId || readArgs.expectedLayerId);
+  if (readLayerId !== null && positiveIdentityIndex(observedLayer && observedLayer.id) !== readLayerId) return false;
+  if (readLayerId === null && positiveIdentityIndex(args.expectedLayerId || args.layerId) === null && !Array.isArray(args.expectedLayerIds) &&
+    positiveIdentityIndex(readArgs.layerIndex) !== null && positiveIdentityIndex(readArgs.layerIndex) !== layerIndex) return false;
+  const path = Array.isArray(args.propertyPath) ? args.propertyPath : [];
+  const effect = path.length > 1 && isPlainObject(path[0]) && path[0].matchName === "ADBE Effect Parade" ? path[1] : null;
+  if (effect && isPlainObject(effect)) {
+    if (positiveIdentityIndex(readArgs.effectIndex) !== null && positiveIdentityIndex(readArgs.effectIndex) !== positiveIdentityIndex(effect.propertyIndex)) return false;
+    if (readArgs.effectName && readArgs.effectName !== effect.name) return false;
+    if (readArgs.effectMatchName && readArgs.effectMatchName !== effect.matchName) return false;
+  }
+  if (positiveIdentityIndex(args.effectIndex) !== null && positiveIdentityIndex(readArgs.effectIndex) !== null &&
+    positiveIdentityIndex(args.effectIndex) !== positiveIdentityIndex(readArgs.effectIndex)) return false;
+  if (args.effectName && readArgs.effectName && args.effectName !== readArgs.effectName) return false;
+  if (args.effectMatchName && readArgs.effectMatchName && args.effectMatchName !== readArgs.effectMatchName) return false;
+  return true;
+}
+
+function collectPropertyReadbacks(step, evidence) {
+  const payload = payloadForStep(step);
+  if (!isPlainObject(payload)) return;
+  const add = (item, ownerLayer) => {
+    if (!isPlainObject(item)) return;
+    if (Array.isArray(item.propertyPath) && hasOwn(item, "value")) {
+      evidence.propertyReadbacks.push({ property: item, comp: payload.comp, layer: item.layer || ownerLayer,
+        stepIndex: step.index, stepTool: step.tool, stepStatus: step.status, stepArgs: step.args || {}, source: stepLabel(step) });
+    }
+    if (Array.isArray(item.children)) item.children.forEach((child) => add(child, ownerLayer));
+  };
+  if (isPlainObject(payload.property)) add(payload.property, payload.layer);
+  if (Array.isArray(payload.properties)) payload.properties.forEach((item) => add(item, payload.layer));
+  if (Array.isArray(payload.selectedProperties)) payload.selectedProperties.forEach((item) => add(item, item.layer));
+  if (Array.isArray(payload.propertyTree)) payload.propertyTree.forEach((item) => add(item, payload.layer));
+  if (Array.isArray(payload.effects)) payload.effects.forEach((item) => add(item, payload.layer));
+}
+
+function addProjectItemEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const itemIndex = numberValue(value.itemIndex);
+  if (itemIndex === null) return;
+  const hasProjectItemShape = hasOwn(value, "type") || hasOwn(value, "typeName") || hasOwn(value, "label") || hasOwn(value, "folderPath") || hasOwn(value, "itemId") || hasOwn(value, "file");
+  if (!hasProjectItemShape) return;
+  target.projectItems.push({
+    itemIndex,
+    itemId: hasOwn(value, "itemId") ? numberValue(value.itemId) : (hasOwn(value, "id") ? numberValue(value.id) : null),
+    name: typeof value.name === "string" ? value.name : "",
+    type: value.type || null,
+    typeName: value.typeName || null,
+    label: hasOwn(value, "label") ? numberValue(value.label) : null,
+    comment: hasOwn(value, "comment") ? String(value.comment || "") : "",
+    folderPath: typeof value.folderPath === "string" ? value.folderPath : "",
+    file: hasOwn(value, "file") && typeof value.file === "string" ? value.file : null,
+    footageMissing: typeof value.footageMissing === "boolean" ? value.footageMissing : null,
+    source: source || "observed project item"
+  });
+}
+
+function addEssentialGraphicsControllerEvidence(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const index = numberValue(value.index);
+  const name = compactText(value.name, 160);
+  if (index === null || index < 1 || !name) return;
+  target.essentialGraphicsControllers.push({
+    index,
+    name,
+    source: source || "observed Essential Graphics controller"
+  });
+}
+
+function markerSignature(marker) {
+  if (!marker) return "";
+  const comment = compactText(marker.comment, 180);
+  const time = numberValue(marker.time);
+  const duration = numberValue(marker.duration);
+  return [
+    comment,
+    time === null ? "" : time.toFixed(3),
+    duration === null ? "" : duration.toFixed(3)
+  ].join("\u0001");
+}
+
+function addMarker(target, value, source) {
+  if (!isPlainObject(value)) return;
+  const comment = String(value.comment === undefined || value.comment === null ? "" : value.comment);
+  if (!comment && !hasOwn(value, "time")) return;
+  const marker = {
+    comment,
+    time: numberValue(value.time),
+    duration: numberValue(value.duration) || 0,
+    source: source || "observed marker"
+  };
+  const signature = markerSignature(marker);
+  if (target.markerSignatures.has(signature)) return;
+  target.markerSignatures.add(signature);
+  target.markers.push(marker);
+}
+
+function collectMarkerPayload(payload, evidence, source) {
+  if (!isPlainObject(payload)) return;
+  if (isPlainObject(payload.marker)) addMarker(evidence, payload.marker, source);
+  if (Array.isArray(payload.markers)) {
+    for (const marker of payload.markers) addMarker(evidence, marker, source);
+  } else if (isPlainObject(payload.markers) && Array.isArray(payload.markers.items)) {
+    for (const marker of payload.markers.items) addMarker(evidence, marker, source);
+  }
+}
+
+function collectPayloadEvidence(payload, evidence, source, depth = 0) {
+  if (!payload || depth > 6) return;
+  if (Array.isArray(payload)) {
+    for (const item of payload) collectPayloadEvidence(item, evidence, source, depth + 1);
+    return;
+  }
+  if (typeof payload === "string") {
+    const text = payload.trim();
+    if (text && (text[0] === "{" || text[0] === "[")) {
+      try {
+        collectPayloadEvidence(JSON.parse(text), evidence, source, depth + 1);
+      } catch (_error) {}
+    }
+    return;
+  }
+  if (!isPlainObject(payload)) return;
+
+  if (payload.operation === "audit_generated" && isPlainObject(payload.root)) {
+    const sourceText = source || "slideshow audit";
+    const sourceIndex = Number.parseInt(String(sourceText), 10);
+    evidence.slideshowAudits.push({ ...payload, source: sourceText, stepIndex: Number.isFinite(sourceIndex) ? sourceIndex : null });
+  }
+
+  if (typeof payload.name === "string") addName(evidence, payload.name, source);
+  addProjectEvidence(evidence, payload, source);
+  addLayerEvidence(evidence, payload, source);
+  addCompEvidence(evidence, payload, source);
+  addMaskEvidence(evidence, payload, source);
+  addPropertyEvidence(evidence, payload, source);
+  addProjectItemEvidence(evidence, payload, source);
+  if (isPlainObject(payload.property)) addPropertyEvidence(evidence, payload.property, source);
+  if (Array.isArray(payload.properties)) {
+    for (const property of payload.properties) addPropertyEvidence(evidence, property, source);
+  }
+  if (isPlainObject(payload.controller)) addEssentialGraphicsControllerEvidence(evidence, payload.controller, source);
+  if (Array.isArray(payload.controllers)) {
+    for (const controller of payload.controllers) addEssentialGraphicsControllerEvidence(evidence, controller, source);
+  }
+  if (isPlainObject(payload.item)) addProjectItemEvidence(evidence, payload.item, source);
+  if (isPlainObject(payload.project)) addProjectEvidence(evidence, payload.project, source);
+  if (Array.isArray(payload.items)) {
+    for (const item of payload.items) addProjectItemEvidence(evidence, item, source);
+  }
+  if (Array.isArray(payload.matches)) {
+    for (const item of payload.matches) addProjectItemEvidence(evidence, item, source);
+  }
+  if (typeof payload.before === "string") addName(evidence, payload.before, source);
+  if (typeof payload.after === "string") addName(evidence, payload.after, source);
+  if (typeof payload.file === "string") addOutputPath(evidence, payload.file, source);
+  if (typeof payload.outputPath === "string") addOutputPath(evidence, payload.outputPath, source);
+  if (hasOwn(payload, "numLayers")) addLayerCount(evidence, payload.numLayers, source);
+  if (hasOwn(payload, "layerCount")) addLayerCount(evidence, payload.layerCount, source);
+  if (Array.isArray(payload.layers)) addLayerCount(evidence, payload.layers.length, source);
+  if (hasOwn(payload, "position")) addNumberArray(evidence, "position", payload.position, source);
+  if (hasOwn(payload, "pointOfInterest")) addNumberArray(evidence, "pointOfInterest", payload.pointOfInterest, source);
+  collectMarkerPayload(payload, evidence, source);
+
+  for (const key of Object.keys(payload)) {
+    collectPayloadEvidence(payload[key], evidence, source, depth + 1);
+  }
+}
+
+const SERVER_ATTACHED_READS = new WeakMap();
+
+function stepOrder(step, fallback) {
+  const number = Number(step && step.index);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function withServerIndependentReads(steps) {
+  const expanded = [], maxReads = 200;
+  let readCount = 0;
+  for (const [position, step] of steps.entries()) {
+    expanded.push(step);
+    if (!isMutatingStep(step) || !["dispatch_ame_open_comp", "restore_ame_open_comp", "create_ame_job_source", "verify_title_export_snapshots", "export_two_title_snapshots", "set_layer_transform", "set_property_value", "set_effect_property", "import_footage", "replace_layer_source", "reload_montage_material_source", "render_one_title_variant", "ensure_ame_running", "enqueue_ame_title_variant", "start_ame_title_batch", "start_ame_queue", "pause_ame_queue", "ame_native_fixture_probe"].includes(step.tool)) continue;
+    if (hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack)) {
+      const order = stepOrder(step, position + 1);
+      const syntheticRead = {
+        tool: "malformed_attached_read",
+        status: "malformed",
+        index: order + 0.5,
+        title: `Malformed independent read after ${step.tool}`
+      };
+      SERVER_ATTACHED_READS.set(syntheticRead, {
+        mutationStep: step,
+        mutationIndex: step.index,
+        mutationOrder: order,
+        valid: false,
+        rawRead: step.independentReadBack
+      });
+      expanded.push(syntheticRead);
+      readCount++;
+      continue;
+    }
+    const reads = Array.isArray(step.independentReadBack) ? step.independentReadBack : [];
+    if (reads.length > 50 || readCount + reads.length > maxReads) continue;
+    const order = stepOrder(step, position + 1);
+    for (const [readPosition, read] of reads.entries()) {
+      // This is runner metadata, separate from payload.verification supplied by
+      // AE. Only the server can populate it from an actual typed read operation.
+      const isPlain = isPlainObject(read);
+      const isCompleteValid = isPlain && read.source === "server_typed_readback" && read.status === "completed" &&
+        Number.isFinite(Date.parse(read.observedAt)) && READ_BACK_TOOLS.has(read.tool) && !isMutatingStep(read) &&
+        isPlainObject(read.args) && isPlainObject(read.result);
+      const isTypedRead = isPlain && READ_BACK_TOOLS.has(read.tool) && !isMutatingStep(read);
+      const syntheticRead = isTypedRead ? {
+        ...read,
+        index: order + (readPosition + 1) / (reads.length + 1),
+        title: `Independent ${read.tool || "read"} after ${step.tool}`
+      } : {
+        tool: "malformed_attached_read",
+        status: "malformed",
+        index: order + (readPosition + 1) / (reads.length + 1),
+        title: `Malformed independent read after ${step.tool}`
+      };
+      SERVER_ATTACHED_READS.set(syntheticRead, {
+        mutationStep: step,
+        mutationIndex: step.index,
+        mutationOrder: order,
+        valid: isCompleteValid,
+        rawRead: read
+      });
+      expanded.push(syntheticRead);
+      readCount++;
+    }
+  }
+  return expanded;
+}
+
+function collectReadBackEvidence(steps, afterOrder, beforeOrder) {
+  const readBackSteps = [];
+  const rawAttemptSteps = [];
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+    const order = stepOrder(step, index + 1);
+    if (order <= afterOrder || (beforeOrder !== undefined && beforeOrder !== null && order >= beforeOrder)) continue;
+    // Association counts attempts before status/payload filtering. Failed reads
+    // must never silently downgrade a corroborated pair to a single read.
+    if (SERVER_ATTACHED_READS.has(step) || (step && !isMutatingStep(step) && READ_BACK_TOOLS.has(step.tool))) rawAttemptSteps.push(step);
+    if (isReadBackStep(step)) readBackSteps.push(step);
+  }
+  const evidence = createEvidenceStore(readBackSteps);
+  evidence.rawAttempts = rawAttemptSteps;
+
+  for (const step of readBackSteps) {
+    collectPayloadEvidence(payloadForStep(step), evidence, stepLabel(step));
+    collectPropertyReadbacks(step, evidence);
+  }
+
+  return evidence;
+}
+
+function collectAllEvidence(steps) {
+  const evidence = createEvidenceStore([]);
+  for (const step of steps) {
+    if (step && step.status === "completed") {
+      collectPayloadEvidence(payloadForStep(step), evidence, stepLabel(step));
+    }
+  }
+  return evidence;
+}
+
+function observedNameEvidence(evidence, expectedName) {
+  if (!expectedName) return null;
+  if (evidence.names.has(expectedName)) {
+    const source = evidence.nameSources[expectedName] && evidence.nameSources[expectedName][0];
+    return source || "observed result";
+  }
+  return null;
+}
+
+function observedLayerAtIndexEvidence(evidence, expectedIndex, expectedName) {
+  const index = numberValue(expectedIndex);
+  const name = compactText(expectedName, 160);
+  if (index === null || !name || !evidence || !Array.isArray(evidence.layers)) return null;
+  for (const layer of evidence.layers) {
+    if (nearlyEqual(layer.index, index) && layer.name === name) {
+      return layer.source || `layer ${index}: ${name}`;
+    }
+  }
+  return null;
+}
+
+function observedOutputEvidence(evidence, expectedPath) {
+  if (!expectedPath) return null;
+  for (const outputPath of evidence.outputPaths) {
+    if (pathMatchesSuffix(outputPath, expectedPath)) {
+      const source = evidence.outputPathSources[outputPath] && evidence.outputPathSources[outputPath][0];
+      return source || outputPath;
+    }
+  }
+  return null;
+}
+
+function observedNumberArrayEvidence(evidence, key, expectedValues) {
+  if (!evidence || !evidence.numberArrays || !Array.isArray(expectedValues)) return null;
+  const candidates = evidence.numberArrays[key] || [];
+  for (const candidate of candidates) {
+    const values = Array.isArray(candidate.values) ? candidate.values : [];
+    if (
+      values.length >= expectedValues.length &&
+      expectedValues.every((value, index) => nearlyEqual(value, values[index]))
+    ) {
+      return {
+        source: candidate.source || `observed ${key}`,
+        values: values.slice(0, expectedValues.length)
+      };
+    }
+  }
+  return null;
+}
+
+function observedLayerCountEvidence(evidence, expectedCount) {
+  const expected = numberValue(expectedCount);
+  if (expected === null || !evidence || !Array.isArray(evidence.layerCounts)) return null;
+  for (const item of evidence.layerCounts) {
+    if (nearlyEqual(item.count, expected)) return item.source || "observed layer count";
+  }
+  return null;
+}
+
+function observedDeletedLayerAbsent(evidence, payload, args) {
+  if (!evidence || !payload) return null;
+  const deletedLayer = payload.deletedLayer || {};
+  const deletedId = deletedLayer.id === undefined || deletedLayer.id === null ? "" : String(deletedLayer.id);
+  const expectedName = compactText(args.expectedLayerName || payload.expectedLayerName, 160);
+  const requestedLayerIndex = numberValue(args.layerIndex || payload.requestedLayerIndex);
+  const afterCountEvidence = observedLayerCountEvidence(evidence, payload.layerCountAfter);
+  const deletedIdStillPresent = deletedId && evidence.layers.some((layer) => layer.id === deletedId);
+  const sameNameAtDeletedIndex = requestedLayerIndex !== null && expectedName
+    ? observedLayerAtIndexEvidence(evidence, requestedLayerIndex, expectedName)
+    : null;
+  if (afterCountEvidence && !deletedIdStillPresent && !sameNameAtDeletedIndex) return afterCountEvidence;
+  return null;
+}
+
+function compFieldMatches(comp, field, expected) {
+  if (!comp) return false;
+  if (field === "bgColor") {
+    const expectedColor = numberArrayValue(expected);
+    const observedColor = numberArrayValue(comp.bgColor);
+    return Array.isArray(expectedColor) &&
+      Array.isArray(observedColor) &&
+      expectedColor.length === 3 &&
+      observedColor.length >= 3 &&
+      expectedColor.every((value, index) => colorChannelNearlyEqual(value, observedColor[index]));
+  }
+  if (typeof expected === "boolean") return comp[field] === expected;
+  return nearlyEqual(comp[field], expected);
+}
+
+function observedCompFieldEvidence(evidence, field, expected) {
+  if (!evidence || !Array.isArray(evidence.comps)) return null;
+  for (const comp of evidence.comps) {
+    if (compFieldMatches(comp, field, expected)) return comp.source || "observed comp";
+  }
+  return null;
+}
+
+function pointsMatch(observed, expected) {
+  if (!Array.isArray(expected)) return true;
+  if (!Array.isArray(observed) || observed.length < expected.length) return false;
+  return expected.every((point, index) => (
+    Array.isArray(point) &&
+    Array.isArray(observed[index]) &&
+    nearlyEqual(point[0], observed[index][0]) &&
+    nearlyEqual(point[1], observed[index][1])
+  ));
+}
+
+function numberArrayMatches(observed, expected) {
+  const expectedNumbers = numberArrayValue(expected);
+  if (!Array.isArray(expectedNumbers)) return true;
+  const observedNumbers = numberArrayValue(observed);
+  if (!Array.isArray(observedNumbers) || observedNumbers.length < expectedNumbers.length) return false;
+  return expectedNumbers.every((value, index) => nearlyEqual(value, observedNumbers[index]));
+}
+
+function pointListsMatch(observed, expected) {
+  if (!Array.isArray(expected)) return true;
+  if (!Array.isArray(observed) || observed.length !== expected.length) return false;
+  return expected.every((point, index) => (
+    Array.isArray(point) &&
+    Array.isArray(observed[index]) &&
+    nearlyEqual(point[0], observed[index][0]) &&
+    nearlyEqual(point[1], observed[index][1])
+  ));
+}
+
+function shapeGeometryFromValue(value) {
+  const raw = isPlainObject(value) && isPlainObject(value.value) && value.value.kind === "Shape"
+    ? value.value
+    : value;
+  if (!isPlainObject(raw)) return null;
+  if (!Array.isArray(raw.vertices)) return null;
+  return {
+    closed: raw.closed === true,
+    vertexCount: numberValue(raw.vertexCount) || raw.vertices.length,
+    vertices: raw.vertices,
+    inTangents: Array.isArray(raw.inTangents) ? raw.inTangents : [],
+    outTangents: Array.isArray(raw.outTangents) ? raw.outTangents : []
+  };
+}
+
+function expectedPathGeometry(args) {
+  const geometry = isPlainObject(args.geometry) ? args.geometry : args;
+  if (!isPlainObject(geometry) || !Array.isArray(geometry.vertices)) return null;
+  return {
+    closed: geometry.closed === true,
+    vertices: geometry.vertices,
+    inTangents: Array.isArray(geometry.inTangents) ? geometry.inTangents : [],
+    outTangents: Array.isArray(geometry.outTangents) ? geometry.outTangents : []
+  };
+}
+
+function pathGeometryMatches(observed, expected) {
+  const actual = shapeGeometryFromValue(observed);
+  if (!actual || !expected) return false;
+  return actual.closed === expected.closed &&
+    actual.vertexCount === expected.vertices.length &&
+    pointListsMatch(actual.vertices, expected.vertices) &&
+    pointListsMatch(actual.inTangents, expected.inTangents) &&
+    pointListsMatch(actual.outTangents, expected.outTangents);
+}
+
+function expectedPathGeometryKeyframes(args) {
+  if (!Array.isArray(args.keyframes)) return [];
+  return args.keyframes.map((item) => ({
+    time: numberValue(item && item.time),
+    geometry: expectedPathGeometry(item && (item.geometry || item))
+  })).filter((item) => item.time !== null && item.geometry);
+}
+
+function pathGeometryKeyframesMatch(observedKeyframes, expectedKeyframes) {
+  if (!expectedKeyframes.length) return true;
+  if (!Array.isArray(observedKeyframes) || observedKeyframes.length < expectedKeyframes.length) return false;
+  return expectedKeyframes.every((expected) => observedKeyframes.some((observed) => (
+    nearlyEqual(observed && observed.time, expected.time) &&
+    pathGeometryMatches(observed && (observed.geometry || observed.value), expected.geometry)
+  )));
+}
+
+function maskMatchesArgs(mask, args) {
+  if (!mask) return false;
+  if (hasOwn(args, "maskIndex") && !nearlyEqual(mask.propertyIndex, args.maskIndex)) return false;
+  if (hasOwn(args, "expectedMaskName") && args.expectedMaskName && !sameString(mask.name, args.expectedMaskName)) return false;
+  if (hasOwn(args, "name") && args.operation === "create" && args.name && !sameString(mask.name, args.name)) return false;
+  if (hasOwn(args, "vertices") && !pointsMatch(mask.shape && mask.shape.vertices, args.vertices)) return false;
+  if (hasOwn(args, "maskMode") && !sameString(mask.maskMode, args.maskMode)) return false;
+  if (hasOwn(args, "inverted") && mask.inverted !== args.inverted) return false;
+  if (hasOwn(args, "opacity") && !nearlyEqual(mask.opacity, args.opacity)) return false;
+  if (hasOwn(args, "feather") && !numberArrayMatches(mask.feather, args.feather)) return false;
+  if (hasOwn(args, "expansion") && !nearlyEqual(mask.expansion, args.expansion)) return false;
+  return true;
+}
+
+function observedMaskEvidence(evidence, args, payloadMask) {
+  if (!evidence || !Array.isArray(evidence.masks)) return null;
+  const index = numberValue(payloadMask && payloadMask.propertyIndex);
+  const name = compactText(payloadMask && payloadMask.name, 160);
+  for (const mask of evidence.masks) {
+    if (index !== null && mask.propertyIndex !== null && !nearlyEqual(mask.propertyIndex, index)) continue;
+    if (name && mask.name && mask.name !== name) continue;
+    if (maskMatchesArgs(mask, args)) return mask.source || "observed mask";
+  }
+  return null;
+}
+
+function observedPathGeometryEvidence(evidence, args, payloadPath) {
+  if (!evidence) return null;
+  const expectedGeometry = expectedPathGeometry(args);
+  const expectedKeyframes = expectedPathGeometryKeyframes(args);
+  const payloadPropertyPath = payloadPath && Array.isArray(payloadPath.propertyPath) ? payloadPath.propertyPath : null;
+
+  for (const property of evidence.properties || []) {
+    const pathMatches = Array.isArray(args.propertyPath)
+      ? propertyPathMatches(property.propertyPath, args.propertyPath)
+      : payloadPropertyPath
+        ? propertyPathMatches(property.propertyPath, payloadPropertyPath)
+        : true;
+    if (!pathMatches) continue;
+    if (expectedGeometry && !pathGeometryMatches(property.geometry || property.value, expectedGeometry)) continue;
+    if (!pathGeometryKeyframesMatch(property.keyframes, expectedKeyframes)) continue;
+    return property.source || "observed path geometry property";
+  }
+
+  if (String(args.targetKind || "") === "mask" && expectedGeometry) {
+    for (const mask of evidence.masks || []) {
+      if (hasOwn(args, "maskIndex") && !nearlyEqual(mask.propertyIndex, args.maskIndex)) continue;
+      if (hasOwn(args, "expectedMaskName") && args.expectedMaskName && !sameString(mask.name, args.expectedMaskName)) continue;
+      if (pathGeometryMatches(mask.shape, expectedGeometry)) return mask.source || "observed mask path geometry";
+    }
+  }
+  return null;
+}
+
+function markerMatchesArgs(marker, args) {
+  if (!marker || !args) return false;
+  if (!sameString(marker.comment, args.comment)) return false;
+  if (hasOwn(args, "time") && !nearlyEqual(marker.time, args.time)) return false;
+  if (hasOwn(args, "duration") && !nearlyEqual(marker.duration, args.duration)) return false;
+  return true;
+}
+
+function updatedMarkerMatchesArgs(marker, args) {
+  if (!marker || !args) return false;
+  if (hasOwn(args, "comment") && !sameString(marker.comment, args.comment)) return false;
+  if (hasOwn(args, "time") && !nearlyEqual(marker.time, args.time)) return false;
+  if (hasOwn(args, "duration") && !nearlyEqual(marker.duration, args.duration)) return false;
+  return true;
+}
+
+function observedUpdatedMarkerEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.markers)) return null;
+  for (const marker of evidence.markers) {
+    if (updatedMarkerMatchesArgs(marker, args)) return marker.source || "observed marker";
+  }
+  return null;
+}
+
+function markerMatchesDeleteTarget(marker, target) {
+  if (!marker || !target) return false;
+  if (target.comment && !sameString(marker.comment, target.comment)) return false;
+  if (target.time !== null && target.time !== undefined && !nearlyEqual(marker.time, target.time)) return false;
+  if (target.duration !== null && target.duration !== undefined && !nearlyEqual(marker.duration, target.duration)) return false;
+  return true;
+}
+
+function observedDeletedMarkerAbsent(evidence, deletedMarker, args) {
+  if (!evidence || !Array.isArray(evidence.markers) || !deletedMarker) return false;
+  const target = {
+    comment: args.targetComment || deletedMarker.comment || "",
+    time: hasOwn(args, "targetTime") ? args.targetTime : deletedMarker.time,
+    duration: deletedMarker.duration
+  };
+  return !evidence.markers.some((marker) => markerMatchesDeleteTarget(marker, target));
+}
+
+function observedMarkerEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.markers)) return null;
+  for (const marker of evidence.markers) {
+    if (markerMatchesArgs(marker, args)) return marker.source || "observed marker";
+  }
+  return null;
+}
+
+function observedMarkerReadBackEvidence(evidence, args) {
+  return observedMarkerEvidence(evidence.readBack, args) ||
+    observedMarkerEvidence(evidence.allReadBack, args);
+}
+
+function markerText(marker) {
+  if (!marker) return "missing";
+  const parts = [`comment: ${marker.comment || ""}`];
+  if (marker.time !== null && marker.time !== undefined) parts.push(`time: ${marker.time}`);
+  if (marker.duration !== null && marker.duration !== undefined) parts.push(`duration: ${marker.duration}`);
+  return parts.join(", ");
+}
+
+function expectedMarkerText(args) {
+  const parts = [`comment: ${args.comment || ""}`];
+  if (hasOwn(args, "time")) parts.push(`time: ${args.time}`);
+  if (hasOwn(args, "duration")) parts.push(`duration: ${args.duration}`);
+  return parts.join(", ");
+}
+
+function pushCheck(checks, fields) {
+  const status = fields.status || (fields.passed ? "passed" : "failed");
+  const check = {
+    id: fields.id,
+    status,
+    title: fields.title,
+    expected: compactText(fields.expected, 220),
+    observed: compactText(fields.observed, 220),
+    evidence: compactText(fields.evidence, 220)
+  };
+  if (fields.binding) check.binding = fields.binding;
+  checks.push(check);
+}
+
+function checkName(checks, step, expectedName, observedName, evidence, title) {
+  if (!expectedName) return;
+  const readBackEvidence = observedNameEvidence(evidence.readBack, expectedName);
+  const allEvidence = observedNameEvidence(evidence.all, expectedName);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:name`,
+    title,
+    expected: expectedName,
+    observed: observedName || (allEvidence ? expectedName : "not observed"),
+    passed: sameString(observedName, expectedName) || Boolean(allEvidence),
+    evidence: readBackEvidence || allEvidence || "No matching read-back or result name."
+  });
+}
+
+function checkNumberFields(checks, step, fields, payload, title) {
+  const mismatches = [];
+  const observed = [];
+  for (const field of fields) {
+    if (!hasOwn(step.args, field.arg)) continue;
+    const expected = step.args[field.arg];
+    const actual = field.read(payload);
+    observed.push(`${field.label}: ${actual === undefined || actual === null ? "missing" : actual}`);
+    if (!nearlyEqual(actual, expected)) {
+      mismatches.push(`${field.label} expected ${expected}, observed ${actual === undefined || actual === null ? "missing" : actual}`);
+    }
+  }
+  if (!observed.length) return;
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:numbers`,
+    title,
+    expected: fields.filter((field) => hasOwn(step.args, field.arg)).map((field) => `${field.label}: ${step.args[field.arg]}`).join(", "),
+    observed: observed.join(", "),
+    passed: mismatches.length === 0,
+    evidence: mismatches.length ? mismatches.join("; ") : stepLabel(step)
+  });
+}
+
+function workAreaPayloadValue(payload, field) {
+  if (hasOwn(payload, field)) return payload[field];
+  if (payload && hasOwn(payload.after, field)) return payload.after[field];
+  if (payload && hasOwn(payload.comp, field)) return payload.comp[field];
+  return null;
+}
+
+function checkSetCompWorkArea(checks, step, payload, evidence) {
+  const fields = [
+    { arg: "start", label: "workAreaStart" },
+    { arg: "duration", label: "workAreaDuration" }
+  ];
+  for (const field of fields) {
+    if (!hasOwn(step.args, field.arg)) continue;
+    const expected = step.args[field.arg];
+    const payloadValue = workAreaPayloadValue(payload, field.label);
+    const payloadMatches = nearlyEqual(payloadValue, expected);
+    const readBackEvidence = observedCompFieldEvidence(evidence.readBack, field.label, expected);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:${field.label}`,
+      title: `Comp ${field.label} matches request`,
+      expected,
+      observed: payloadValue === null ? (readBackEvidence ? "matched read-back" : "missing") : payloadValue,
+      passed: payloadMatches || Boolean(readBackEvidence),
+      evidence: payloadMatches ? stepLabel(step) : (readBackEvidence || `No post-run comp read-back matched ${field.label}.`)
+    });
+  }
+}
+
+function checkNumberArrayField(checks, step, arg, observedValue, evidence, title) {
+  if (!hasOwn(step.args, arg)) return;
+  const expected = Array.isArray(step.args[arg]) ? step.args[arg] : [];
+  const observedNumbers = numberArrayFromValue(observedValue);
+  const observed = observedNumbers ? observedNumbers.slice(0, expected.length) : [];
+  const readBackEvidence = observedNumberArrayEvidence(evidence.readBack, arg, expected);
+  const allEvidence = observedNumberArrayEvidence(evidence.all, arg, expected);
+  const fallbackObserved = readBackEvidence || allEvidence;
+  const finalObserved = observed.length ? observed : fallbackObserved ? fallbackObserved.values : [];
+  const passed = expected.length > 0 && (
+    expected.every((value, index) => nearlyEqual(value, observed[index])) ||
+    Boolean(fallbackObserved)
+  );
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:${arg}`,
+    title,
+    expected: expected.join(","),
+    observed: finalObserved.length ? finalObserved.join(",") : "missing",
+    passed,
+    evidence: passed ? (readBackEvidence && readBackEvidence.source || allEvidence && allEvidence.source || stepLabel(step)) : `${arg} read-back did not match requested values.`
+  });
+}
+
+function checkPointListField(checks, step, arg, observedValue, title) {
+  if (!hasOwn(step.args, arg)) return;
+  const expected = Array.isArray(step.args[arg]) ? step.args[arg] : [];
+  const observed = Array.isArray(observedValue) ? observedValue : [];
+  const mismatch = expected.length <= 0 ||
+    observed.length < expected.length ||
+    expected.some((point, index) => (
+      !Array.isArray(point) ||
+      !Array.isArray(observed[index]) ||
+      !nearlyEqual(point[0], observed[index][0]) ||
+      !nearlyEqual(point[1], observed[index][1])
+    ));
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:${arg}`,
+    title,
+    expected: expected.map((point) => Array.isArray(point) ? point.join(",") : String(point)).join(" | "),
+    observed: observed.length ? observed.slice(0, expected.length).map((point) => Array.isArray(point) ? point.join(",") : String(point)).join(" | ") : "missing",
+    passed: !mismatch,
+    evidence: !mismatch ? stepLabel(step) : `${arg} read-back did not match requested points.`
+  });
+}
+
+function checkSetPropertyValue(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const targets = (Array.isArray(args.layerIndex) ? args.layerIndex : [args.layerIndex]).map(numberValue);
+  const resultLayers = Array.isArray(payload.layers) ? payload.layers : payload.layer ? [payload.layer] : [];
+  const resultProperties = Array.isArray(payload.properties) ? payload.properties : payload.property ? [payload.property] : [];
+  const resultShapeValid = targets.length > 0 && targets.every((index) => index !== null && index > 0) &&
+    new Set(targets).size === targets.length && resultLayers.length === targets.length && resultProperties.length === targets.length;
+  if (!targets.length) {
+    pushCheck(checks, { id: `${step.index || "step"}:${step.tool}:value`, title: "Layer property value matches request",
+      expected: "at least one explicit layer target", observed: "missing", passed: false,
+      evidence: "set_property_value has no layer target to verify." });
+    return;
+  }
+  const path = propertyPathSegments(args.propertyPath);
+  const layerAttribute = path.length === 1 && ["threeDLayer", "collapseTransformation", "motionBlur"].includes(path[0]) ? path[0] : null;
+  for (const [position, layerIndex] of targets.entries()) {
+    const resultLayer = resultLayers[position];
+    const resultProperty = resultProperties[position];
+    const readTargetArgs = readTargetFromResult(args, payload.comp, resultLayer, position);
+    const resultIdentity = resultShapeValid && compMatchesRequest(payload.comp, args) &&
+      layerMatchesRequest(resultLayer, args, layerIndex, position) &&
+      isPlainObject(resultProperty) && (!resultProperty.layer || sameLayerIdentity(resultLayer, resultProperty.layer)) &&
+      propertyPathIdentityMatches(resultProperty && resultProperty.propertyPath, args.propertyPath);
+    const resultMatch = resultIdentity && propertyValueMatches(args.value, resultProperty.value, 0.01);
+    let readBack = null;
+    let knownMismatch = resultIdentity && !resultMatch;
+    for (const candidate of evidence.readBack.propertyReadbacks || []) {
+      if (!compMatchesRequest(candidate.comp, readTargetArgs) || !sameCompIdentity(payload.comp, candidate.comp) ||
+        !layerMatchesRequest(candidate.layer, readTargetArgs, layerIndex, position) || !sameLayerIdentity(resultLayer, candidate.layer) ||
+        !readBackStepMatchesTarget({ args: candidate.stepArgs }, candidate.comp, readTargetArgs, layerIndex, candidate.layer) ||
+        !propertyPathIdentityMatches(candidate.property.propertyPath, args.propertyPath) ||
+        !propertyPathIdentityMatches(candidate.property.propertyPath, resultProperty && resultProperty.propertyPath) ||
+        !propertyPathIdentityMatches(resultProperty && resultProperty.propertyPath, candidate.property.propertyPath)) continue;
+      if (!propertyValueMatches(args.value, candidate.property.value, 0.01)) { knownMismatch = true; continue; }
+      readBack = candidate;
+      break;
+    }
+    if (!readBack && layerAttribute) {
+      for (const readStep of evidence.readBack.rawSteps || []) {
+        const observed = payloadForStep(readStep);
+        if (!isPlainObject(observed) || !compMatchesRequest(observed.comp, readTargetArgs) ||
+          !sameCompIdentity(payload.comp, observed.comp) ||
+          !layerMatchesRequest(observed.layer, readTargetArgs, layerIndex, position) || !sameLayerIdentity(resultLayer, observed.layer) ||
+          !readBackStepMatchesTarget(readStep, observed.comp, readTargetArgs, layerIndex, observed.layer) ||
+          !hasOwn(observed.layer, layerAttribute) ||
+          !propertyValueMatches(args.value, observed.layer[layerAttribute], 0.01)) continue;
+        readBack = { stepIndex: readStep.index, stepTool: readStep.tool, stepStatus: readStep.status,
+          comp: observed.comp, layer: observed.layer, property: { propertyPath: resultProperty && resultProperty.propertyPath,
+            value: observed.layer[layerAttribute] }, source: stepLabel(readStep) };
+        break;
+      }
+    }
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:value${targets.length > 1 ? `:layer-${layerIndex}` : ""}`,
+      title: "Layer property value matches request",
+      expected: `${propertyPathText(args.propertyPath)} = ${compactText(stableStringify(args.value), 80)}`,
+      observed: resultMatch ? `${propertyPathText(resultProperty.propertyPath)} = ${compactText(stableStringify(resultProperty.value), 80)}`
+        : "missing or mismatched property target/value",
+      passed: Boolean(resultMatch && readBack),
+      status: resultMatch && readBack ? "passed" : knownMismatch ? "failed" : "needs_review",
+      evidence: readBack ? readBack.source : "No matching post-run property read-back for this comp, layer, path and value.",
+      binding: {
+        mutationStep: step.index, mutationStatus: step.status,
+        target: { compItemId: args.expectedCompItemId || args.compItemId || null, compItemIndex: args.compItemIndex || null, compName: args.compName || null,
+          layerId: expectedLayerIdentity(args, position), layerIndex, propertyPath: args.propertyPath },
+        result: resultProperty ? { comp: compBinding(payload.comp), layer: layerBinding(resultLayer), propertyPath: resultProperty.propertyPath } : null,
+        readBack: readBack ? { stepIndex: readBack.stepIndex, tool: readBack.stepTool,
+          status: readBack.stepStatus, comp: compBinding(readBack.comp), layer: layerBinding(readBack.layer),
+          propertyPath: readBack.property.propertyPath } : null
+      }
+    });
+  }
+}
+
+function propertyPathContainsEffectIdentity(propertyPath, args) {
+  if (!Array.isArray(propertyPath) || !args) return false;
+  return propertyPath.some((segment, index) => {
+    if (!isPlainObject(segment)) return false;
+    if (index < 1 || !isPlainObject(propertyPath[index - 1]) || propertyPath[index - 1].matchName !== "ADBE Effect Parade") return false;
+    if (hasOwn(args, "effectIndex") && !nearlyEqual(segment.propertyIndex, args.effectIndex)) return false;
+    if (hasOwn(args, "effectMatchName") && args.effectMatchName && segment.matchName !== args.effectMatchName) return false;
+    if (hasOwn(args, "effectName") && args.effectName && segment.name !== args.effectName) return false;
+    return hasOwn(args, "effectIndex") || Boolean(args.effectMatchName) || Boolean(args.effectName);
+  });
+}
+
+function effectPropertyIdentityMatches(property, args) {
+  return Boolean(property) &&
+    propertyPathContainsEffectIdentity(property.propertyPath, args) &&
+    propertyPathTailIdentityMatches(property.propertyPath, args.propertyPath);
+}
+
+function effectPropertyMatchesArgs(property, args) {
+  return effectPropertyIdentityMatches(property, args) && propertyValueMatches(args.value, property.value, 0.01);
+}
+
+function observedEffectPropertyValueEvidence(evidence, args, payload, requireValue = true) {
+  if (!evidence || !Array.isArray(evidence.propertyReadbacks)) return null;
+  const layerIndex = positiveIdentityIndex(args.layerIndex);
+  const readTargetArgs = readTargetFromResult(args, payload.comp, payload.layer);
+  for (const candidate of evidence.propertyReadbacks) {
+    if (!compMatchesRequest(candidate.comp, readTargetArgs) || !sameCompIdentity(payload.comp, candidate.comp) ||
+      !layerMatchesRequest(candidate.layer, readTargetArgs, layerIndex) || !sameLayerIdentity(payload.layer, candidate.layer) ||
+      !readBackStepMatchesTarget({ args: candidate.stepArgs }, candidate.comp, readTargetArgs, layerIndex, candidate.layer) ||
+      !(requireValue ? effectPropertyMatchesArgs(candidate.property, args) : effectPropertyIdentityMatches(candidate.property, args)) ||
+      !propertyPathIdentityMatches(candidate.property.propertyPath, payload.property && payload.property.propertyPath) ||
+      !propertyPathIdentityMatches(payload.property && payload.property.propertyPath, candidate.property.propertyPath)) continue;
+    return candidate;
+  }
+  return null;
+}
+
+function checkSetEffectProperty(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const effect = payload.effect || {};
+  const property = payload.property || {};
+  const resultIdentity = compMatchesRequest(payload.comp, args) &&
+    layerMatchesRequest(payload.layer, args, positiveIdentityIndex(args.layerIndex)) &&
+    effectMatchesArgs(effect, args) && effectPropertyIdentityMatches(property, args);
+  const resultMatches = resultIdentity && propertyValueMatches(args.value, property.value, 0.01);
+  const readBackEvidence = observedEffectPropertyValueEvidence(evidence.readBack, args, payload);
+  const identityReadBack = observedEffectPropertyValueEvidence(evidence.readBack, args, payload, false);
+  const knownMismatch = resultIdentity && (!resultMatches || identityReadBack && !propertyValueMatches(args.value, identityReadBack.property.value, 0.01));
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:value`,
+    title: "Exact effect property value matches request",
+    expected: `${args.effectIndex || "?"}:${args.effectName || args.effectMatchName || "effect"} ${propertyPathText(args.propertyPath)} = ${compactText(stableStringify(args.value), 80)}`,
+    observed: resultMatches
+      ? `${effect.propertyIndex}:${effect.name || effect.matchName || "effect"} ${propertyPathText(property.propertyPath)} = ${compactText(stableStringify(property.value), 80)}`
+      : "missing or mismatched effect/property identity or value",
+    passed: resultMatches && Boolean(readBackEvidence),
+    status: resultMatches && readBackEvidence ? "passed" : knownMismatch ? "failed" : "needs_review",
+    evidence: readBackEvidence ? readBackEvidence.source : "No post-run get_effect_details read-back matched the exact set_effect_property target.",
+    binding: {
+      mutationStep: step.index, mutationStatus: step.status,
+      target: { compItemId: args.expectedCompItemId || args.compItemId || null, compItemIndex: args.compItemIndex || null, compName: args.compName || null,
+        layerId: expectedLayerIdentity(args), layerIndex: args.layerIndex, propertyPath: args.propertyPath },
+      result: { comp: compBinding(payload.comp), layer: layerBinding(payload.layer), propertyPath: property.propertyPath || null },
+      readBack: readBackEvidence ? { stepIndex: readBackEvidence.stepIndex, tool: readBackEvidence.stepTool,
+        status: readBackEvidence.stepStatus, comp: compBinding(readBackEvidence.comp),
+        layer: layerBinding(readBackEvidence.layer), propertyPath: readBackEvidence.property.propertyPath } : null
+    }
+  });
+}
+
+const TRANSFORM_FIELDS = ["position", "scale", "anchorPoint", "rotation", "opacity"];
+
+function finiteTransformValue(value, field) {
+  if (isPlainObject(value)) {
+    if (!hasOwn(value, "value") || value.truncated === true || value.kind && !["number", "array"].includes(value.kind)) return null;
+    value = value.value;
+  }
+  if (["position", "scale", "anchorPoint"].includes(field)) {
+    return Array.isArray(value) && [2, 3].includes(value.length) && value.every(n => typeof n === "number" && Number.isFinite(n)) ? value : null;
+  }
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function transformValuesMatch(expected, observed, field, threeDLayer) {
+  let a = finiteTransformValue(expected, field), b = finiteTransformValue(observed, field);
+  if (a === null || b === null) return false;
+  if(threeDLayer===false && ["position","scale","anchorPoint"].includes(field)){
+    // Normalize only a positively observed 2D layer. Typed property envelopes
+    // must also prove a complete static value; an unknown/nonstandard Z is not
+    // discarded, and 3D/unknown layers retain exact dimension comparison.
+    const staticValue=value=>!isPlainObject(value) || value.truncated!==true && value.numKeys===0 && value.expressionEnabled===false && value.dimensionsSeparated===false && value.isSeparationFollower===false;
+    if(!staticValue(expected) || !staticValue(observed))return false;
+    try{const normalize=require("./placeholder-geometry").normalizeTransformValue;a=normalize(field,a,false);b=normalize(field,b,false);}catch(_error){return false;}
+  }
+  return Array.isArray(a) ? Array.isArray(b) && a.length === b.length && a.every((n, i) => nearlyEqual(n, b[i])) : nearlyEqual(a, b);
+}
+
+function checkSetLayerTransform(checks, step, payload, evidence) {
+  const args = step.args || {}, fields = TRANSFORM_FIELDS.filter(field => hasOwn(args, field));
+  const resultComp = payload.comp, resultLayer = payload.layer;
+  const resultIdentity = compMatchesRequest(resultComp, args) && layerMatchesRequest(resultLayer, args, positiveIdentityIndex(args.layerIndex)) &&
+    persistentId(resultComp, "itemId", "id") !== null && positiveIdentityIndex(resultLayer && resultLayer.id) !== null;
+
+  const target = readTargetFromResult(args, resultComp, resultLayer);
+  const targetCompId = persistentId(target, "expectedCompItemId", "compItemId");
+  const targetCompName = typeof args.compName === "string" && args.compName ? args.compName : (resultComp && resultComp.name ? resultComp.name : "");
+
+  const targetLayerId = expectedLayerIdentity(target);
+  const targetLayerIndex = positiveIdentityIndex(resultLayer && resultLayer.index);
+
+  const rawAttachedAttempts = Array.isArray(step.independentReadBack) ? step.independentReadBack : [];
+  const malformedAttachedField = hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack);
+  const allWindowReads = evidence.readBack.rawAttempts || [];
+
+  const attachedReads = [];
+  let extraAttached = rawAttachedAttempts.length > 1;
+  let malformedAttached = malformedAttachedField;
+  let foreignAttached = false;
+
+  for (const read of allWindowReads) {
+    const meta = SERVER_ATTACHED_READS.get(read);
+    if (!meta) continue;
+    if (meta.mutationStep === step) {
+      if (meta.valid !== true) {
+        malformedAttached = true;
+      }
+      const observed = payloadForStep(read);
+      const matches = observed && compMatchesRequest(observed.comp, target) && sameCompIdentity(resultComp, observed.comp) &&
+        layerMatchesRequest(observed.layer, target, targetLayerIndex) && sameLayerIdentity(resultLayer, observed.layer) &&
+        isPlainObject(read.args) && compMatchesRequest(observed.comp, read.args) &&
+        layerMatchesRequest(observed.layer, read.args, positiveIdentityIndex(read.args.layerIndex)) &&
+        readBackStepMatchesTarget(read, observed.comp, target, targetLayerIndex, observed.layer);
+      if (matches) {
+        attachedReads.push(read);
+      } else {
+        malformedAttached = true;
+      }
+    } else {
+      foreignAttached = true;
+    }
+  }
+
+  if (rawAttachedAttempts.length > 0 && attachedReads.length === 0) {
+    malformedAttached = true;
+  }
+
+  const explicitReads = [];
+  let malformedExplicit = false;
+  let targetedExplicitAttemptCount = 0;
+
+  for (const read of allWindowReads) {
+    if (SERVER_ATTACHED_READS.has(read)) continue;
+    if (read.tool !== "get_layer_details") continue;
+
+    const readArgs = isPlainObject(read.args) ? read.args : {};
+    const observed = payloadForStep(read);
+    const reqCompId = persistentId(readArgs, "expectedCompItemId", "compItemId");
+    const observedCompId = persistentId(observed && observed.comp, "itemId", "id");
+    const reqCompName = typeof readArgs.compName === "string" ? readArgs.compName : (typeof readArgs.expectedCompName === "string" ? readArgs.expectedCompName : "");
+    // A proven foreign request/result is unrelated. Conflicting/missing IDs
+    // remain attempts; matching names alone cannot hide a conflicting read.
+    if (reqCompId !== null && reqCompId !== targetCompId &&
+      (observedCompId === null || observedCompId === reqCompId)) continue;
+    const reqCompIndex = positiveIdentityIndex(readArgs.compItemIndex);
+    if (reqCompId === null && !hasOwn(readArgs, "compItemId") && !hasOwn(readArgs, "expectedCompItemId") &&
+      observedCompId !== targetCompId && ((reqCompIndex !== null && reqCompIndex !== positiveIdentityIndex(resultComp && resultComp.itemIndex)) ||
+      (reqCompName && targetCompName && reqCompName !== targetCompName))) continue;
+
+    const reqLayerId = expectedLayerIdentity(readArgs);
+    const reqLayerIndex = positiveIdentityIndex(readArgs.layerIndex);
+    const observedLayerId = positiveIdentityIndex(observed && observed.layer && observed.layer.id);
+    if (reqLayerId !== null && reqLayerId !== targetLayerId && (observedLayerId === null || observedLayerId === reqLayerId)) continue;
+    if (reqLayerId === null && !hasOwn(readArgs, "layerId") && !hasOwn(readArgs, "expectedLayerId") &&
+      reqLayerIndex !== null && reqLayerIndex !== targetLayerIndex && observedLayerId !== targetLayerId) continue;
+
+    targetedExplicitAttemptCount++;
+
+    if (read.status !== "completed") {
+      malformedExplicit = true;
+      continue;
+    }
+    const explicitCompSelector = hasOwn(readArgs, "compItemId") || hasOwn(readArgs, "expectedCompItemId") || reqCompIndex !== null || Boolean(reqCompName);
+    const explicitLayerSelector = hasOwn(readArgs, "layerId") || hasOwn(readArgs, "expectedLayerId") || reqLayerIndex !== null;
+    const matches = observed && isPlainObject(observed.layer) && explicitCompSelector && explicitLayerSelector &&
+      compMatchesRequest(observed.comp, target) && sameCompIdentity(resultComp, observed.comp) &&
+      layerMatchesRequest(observed.layer, target, targetLayerIndex) && sameLayerIdentity(resultLayer, observed.layer) &&
+      compMatchesRequest(observed.comp, readArgs) && layerMatchesRequest(observed.layer, readArgs, reqLayerIndex) &&
+      readBackStepMatchesTarget(read, observed.comp, target, targetLayerIndex, observed.layer);
+    if (!matches) {
+      malformedExplicit = true;
+      continue;
+    }
+
+    explicitReads.push(read);
+  }
+
+  const hasAttachedAttempt = malformedAttachedField || rawAttachedAttempts.length > 0;
+  const hasExplicitAttempt = targetedExplicitAttemptCount > 0;
+
+  let isCorroboratedPair = false;
+  let isSingle = false;
+  let reads = [];
+
+  if (hasAttachedAttempt && hasExplicitAttempt) {
+    if (!extraAttached && !malformedAttached && !malformedExplicit && !foreignAttached &&
+        attachedReads.length === 1 && explicitReads.length === 1) {
+      isCorroboratedPair = true;
+      reads = [attachedReads[0], explicitReads[0]];
+    }
+  } else if (hasAttachedAttempt && !hasExplicitAttempt) {
+    if (!extraAttached && !malformedAttached && !foreignAttached && attachedReads.length === 1) {
+      isSingle = true;
+      reads = [attachedReads[0]];
+    }
+  } else if (!hasAttachedAttempt && hasExplicitAttempt) {
+    if (!malformedExplicit && explicitReads.length === 1) {
+      isSingle = true;
+      reads = [explicitReads[0]];
+    }
+  }
+
+  if (!fields.length) {
+    pushCheck(checks, {id: `${step.index}:${step.tool}:requested-fields`, title: "Requested transform fields are explicit", expected: "at least one finite field", observed: "no transform fields", status: "needs_review", evidence: "No requested transform postcondition can be verified."});
+  }
+
+  for (const field of fields) {
+    const resultValue = payload.transform && payload.transform[field];
+    const finiteReq = finiteTransformValue(args[field], field);
+    const finiteRes = finiteTransformValue(resultValue, field);
+
+    if (!isSingle && !isCorroboratedPair) {
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: "missing or ambiguous",
+        passed: false,
+        status: "needs_review",
+        evidence: "Missing or ambiguous post-run get_layer_details for the exact stable target.",
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: null
+        }
+      });
+      continue;
+    }
+
+    if (isSingle) {
+      const singleRead = reads[0];
+      const independent = payloadForStep(singleRead);
+      const observedValue = independent && (independent.transform || independent.layer && independent.layer.transform || {})[field];
+      const finiteObs = finiteTransformValue(observedValue, field);
+      const complete = resultIdentity && independent && finiteReq !== null && finiteRes !== null && finiteObs !== null;
+      const proven2D=resultLayer?.threeDLayer===false && independent?.layer?.threeDLayer===false ? false : undefined;
+      const matches = complete && transformValuesMatch(args[field], resultValue, field,resultLayer?.threeDLayer) && transformValuesMatch(args[field], observedValue, field,proven2D);
+
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: observedValue === undefined ? "missing" : stableStringify(observedValue),
+        passed: Boolean(matches),
+        status: matches ? "passed" : complete ? "failed" : "needs_review",
+        evidence: stepLabel(singleRead),
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: independent ? {
+            comp: compBinding(independent.comp),
+            layer: layerBinding(independent.layer),
+            stepIndex: singleRead.index,
+            stepIndices: [singleRead.index]
+          } : null
+        }
+      });
+      continue;
+    }
+
+    // isCorroboratedPair: exactly 1 attached read + 1 explicit read
+    const attachedRead = attachedReads[0];
+    const explicitRead = explicitReads[0];
+    const payloadAtt = payloadForStep(attachedRead);
+    const payloadExp = payloadForStep(explicitRead);
+    const valAtt = payloadAtt && (payloadAtt.transform || payloadAtt.layer && payloadAtt.layer.transform || {})[field];
+    const valExp = payloadExp && (payloadExp.transform || payloadExp.layer && payloadExp.layer.transform || {})[field];
+    const finiteAtt = finiteTransformValue(valAtt, field);
+    const finiteExp = finiteTransformValue(valExp, field);
+    const complete = resultIdentity && finiteReq !== null && finiteRes !== null && finiteAtt !== null && finiteExp !== null;
+
+    if (!complete) {
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: (finiteAtt === null ? "missing or non-finite attached" : stableStringify(valAtt)) + " / " + (finiteExp === null ? "missing or non-finite explicit" : stableStringify(valExp)),
+        passed: false,
+        status: "needs_review",
+        evidence: `${stepLabel(attachedRead)}; ${stepLabel(explicitRead)}`,
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: null
+        }
+      });
+      continue;
+    }
+
+    const pair2D=payloadAtt?.layer?.threeDLayer===false && payloadExp?.layer?.threeDLayer===false ? false : undefined;
+    const matchBoth = transformValuesMatch(valAtt, valExp, field,pair2D);
+    const matchAtt = transformValuesMatch(args[field], valAtt, field,resultLayer?.threeDLayer===false && payloadAtt?.layer?.threeDLayer===false ? false : undefined);
+    const matchExp = transformValuesMatch(args[field], valExp, field,resultLayer?.threeDLayer===false && payloadExp?.layer?.threeDLayer===false ? false : undefined);
+    const matchRes = transformValuesMatch(args[field], resultValue, field,resultLayer?.threeDLayer);
+
+    if (matchBoth && matchAtt && matchExp && matchRes) {
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: stableStringify(valAtt),
+        passed: true,
+        status: "passed",
+        evidence: `${stepLabel(attachedRead)}; ${stepLabel(explicitRead)}`,
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: {
+            comp: compBinding(payloadAtt.comp),
+            layer: layerBinding(payloadAtt.layer),
+            stepIndex: explicitRead.index,
+            stepIndices: [attachedRead.index, explicitRead.index],
+            sources: ["server_typed_readback", "explicit"]
+          }
+        }
+      });
+    } else if (!matchBoth) {
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: `${stableStringify(valAtt)} vs ${stableStringify(valExp)}`,
+        passed: false,
+        status: "needs_review",
+        evidence: `Conflicting read-back values between ${stepLabel(attachedRead)} and ${stepLabel(explicitRead)}`,
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: null
+        }
+      });
+    } else {
+      pushCheck(checks, {
+        id: `${step.index}:${step.tool}:${field}`,
+        title: `Transform ${field} matches the requested value and independent read-back`,
+        expected: stableStringify(args[field]),
+        observed: stableStringify(valAtt),
+        passed: false,
+        status: "failed",
+        evidence: `${stepLabel(attachedRead)}; ${stepLabel(explicitRead)}`,
+        binding: {
+          target: { compItemId: args.expectedCompItemId || args.compItemId || null, layerId: expectedLayerIdentity(args) },
+          result: { comp: compBinding(resultComp), layer: layerBinding(resultLayer) },
+          readBack: {
+            comp: compBinding(payloadAtt.comp),
+            layer: layerBinding(payloadAtt.layer),
+            stepIndex: explicitRead.index,
+            stepIndices: [attachedRead.index, explicitRead.index],
+            sources: ["server_typed_readback", "explicit"]
+          }
+        }
+      });
+    }
+  }
+}
+
+function layerMetadataFields(args) {
+  const fields = [];
+  if (hasOwn(args, "comment")) fields.push("comment");
+  if (hasOwn(args, "label")) fields.push("label");
+  if (hasOwn(args, "locked")) fields.push("locked");
+  if (hasOwn(args, "enabled")) fields.push("enabled");
+  if (hasOwn(args, "guideLayer")) fields.push("guideLayer");
+  if (hasOwn(args, "motionBlur")) fields.push("motionBlur");
+  if (hasOwn(args, "audioEnabled")) fields.push("audioEnabled");
+  return fields;
+}
+
+function layerMetadataFieldMatches(layer, args, field) {
+  if (!layer || !hasOwn(layer, field)) return false;
+  if (field === "comment") return sameString(layer.comment, args.comment);
+  if (field === "label") return nearlyEqual(layer.label, args.label);
+  if (field === "locked") return boolValue(layer.locked) === boolValue(args.locked);
+  if (field === "enabled") return boolValue(layer.enabled) === boolValue(args.enabled);
+  if (field === "guideLayer") return boolValue(layer.guideLayer) === boolValue(args.guideLayer);
+  if (field === "motionBlur") return boolValue(layer.motionBlur) === boolValue(args.motionBlur);
+  if (field === "audioEnabled") return boolValue(layer.audioEnabled) === boolValue(args.audioEnabled);
+  return false;
+}
+
+function layerMatchesMetadataTarget(layer, fields, args, layerIndex, expectedName) {
+  if (!layer || !fields.length) return false;
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedName && !sameString(layer.name, expectedName)) return false;
+  return fields.every((field) => layerMetadataFieldMatches(layer, args, field));
+}
+
+function observedLayerMetadataEvidence(evidence, args) {
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+  const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+  const fields = layerMetadataFields(args);
+  if (!layerIndices.length || !fields.length || !evidence || !Array.isArray(evidence.layers)) return null;
+
+  const matchedSources = [];
+  for (let index = 0; index < layerIndices.length; index += 1) {
+    const layerIndex = layerIndices[index];
+    const expectedName = expectedNames[index] || "";
+    const match = evidence.layers.find((layer) => layerMatchesMetadataTarget(layer, fields, args, layerIndex, expectedName));
+    if (!match) return null;
+    matchedSources.push(match.source || `layer ${layerIndex}`);
+  }
+  return matchedSources.join("; ");
+}
+
+function checkSetLayerMetadata(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const fields = layerMetadataFields(args);
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+  const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+  const changed = Array.isArray(payload.changed) ? payload.changed : [];
+  const postVerification = payload.postVerification || {};
+  const resultMatches = fields.length > 0 &&
+    layerIndices.length > 0 &&
+    postVerification.ok === true &&
+    Number(payload.changedCount || changed.length || 0) === layerIndices.length &&
+    layerIndices.every((layerIndex, index) => {
+      const after = changed[index] && changed[index].after || {};
+      return layerMatchesMetadataTarget(after, fields, args, layerIndex, expectedNames[index] || "");
+    });
+  const readBackEvidence = observedLayerMetadataEvidence(evidence.readBack, args);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:metadata`,
+    title: "Layer metadata matches explicit request",
+    expected: `${layerIndices.length} layer(s); fields: ${fields.join(", ")}`,
+    observed: resultMatches ? `${payload.changedCount || changed.length} layer(s) updated` : "missing or mismatched metadata result",
+    passed: resultMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_metadata."
+  });
+}
+
+function normalizedBlendingModeName(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function layerBlendingModeName(layer) {
+  if (!layer) return "";
+  if (hasOwn(layer, "blendingModeName")) return normalizedBlendingModeName(layer.blendingModeName);
+  return normalizedBlendingModeName(layer.blendingMode);
+}
+
+function layerMatchesBlendingModeTarget(layer, args, layerIndex, expectedName) {
+  if (!layer) return false;
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedName && !sameString(layer.name, expectedName)) return false;
+  return layerBlendingModeName(layer) === normalizedBlendingModeName(args.blendingMode || args.requestedBlendingMode);
+}
+
+function observedLayerBlendingModeEvidence(evidence, args) {
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+  const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+  if (!layerIndices.length || !args.blendingMode || !evidence || !Array.isArray(evidence.layers)) return null;
+
+  const matchedSources = [];
+  for (let index = 0; index < layerIndices.length; index += 1) {
+    const layerIndex = layerIndices[index];
+    const expectedName = expectedNames[index] || "";
+    const match = evidence.layers.find((layer) => layerMatchesBlendingModeTarget(layer, args, layerIndex, expectedName));
+    if (!match) return null;
+    matchedSources.push(match.source || `layer ${layerIndex}`);
+  }
+  return matchedSources.join("; ");
+}
+
+function checkSetLayerBlendingMode(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const layerIndices = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+  const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+  const changed = Array.isArray(payload.changed) ? payload.changed : [];
+  const postVerification = payload.postVerification || {};
+  const targetMode = normalizedBlendingModeName(args.blendingMode || payload.requestedBlendingMode);
+  const resultMatches = targetMode &&
+    layerIndices.length > 0 &&
+    postVerification.ok === true &&
+    Number(payload.changedCount || changed.length || 0) === layerIndices.length &&
+    layerIndices.every((layerIndex, index) => {
+      const after = changed[index] && changed[index].after || {};
+      return layerMatchesBlendingModeTarget(after, { ...args, blendingMode: targetMode }, layerIndex, expectedNames[index] || "");
+    });
+  const readBackEvidence = observedLayerBlendingModeEvidence(evidence.readBack, { ...args, blendingMode: targetMode });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:blending-mode`,
+    title: "Layer blending mode matches explicit request",
+    expected: `${layerIndices.length} layer(s); blendingMode: ${targetMode || "missing"}`,
+    observed: resultMatches ? `${payload.changedCount || changed.length} layer(s) updated` : "missing or mismatched blending mode result",
+    passed: Boolean(resultMatches) && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_blending_mode."
+  });
+}
+
+function layerMatchesParentTarget(layer, args, layerIndex, expectedLayerName, parentLayerIndex, expectedParentName) {
+  if (!layer) return false;
+  const observedParentIndex = hasOwn(layer, "parentIndex")
+    ? layer.parentIndex
+    : (isPlainObject(layer.parent) ? layer.parent.index : null);
+  const observedParentName = hasOwn(layer, "parentName")
+    ? layer.parentName
+    : (isPlainObject(layer.parent) ? layer.parent.name : "");
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedLayerName && !sameString(layer.name, expectedLayerName)) return false;
+  if (!nearlyEqual(observedParentIndex, parentLayerIndex)) return false;
+  if (expectedParentName && !sameString(observedParentName, expectedParentName)) return false;
+  return true;
+}
+
+function observedLayerParentEvidence(evidence, args) {
+  const layerIndex = numberValue(args.layerIndex);
+  const parentLayerIndex = numberValue(args.parentLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedParentName = compactText(args.expectedParentName, 160);
+  if (layerIndex === null || parentLayerIndex === null || !evidence || !Array.isArray(evidence.layers)) return null;
+  for (const layer of evidence.layers) {
+    if (layerMatchesParentTarget(layer, args, layerIndex, expectedLayerName, parentLayerIndex, expectedParentName)) {
+      return layer.source || `layer ${layerIndex} parent ${parentLayerIndex}`;
+    }
+  }
+  return null;
+}
+
+function checkSetLayerParent(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const layerIndex = numberValue(args.layerIndex);
+  const parentLayerIndex = numberValue(args.parentLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedParentName = compactText(args.expectedParentName, 160);
+  const layer = payload.layer || {};
+  const postVerification = payload.postVerification || {};
+  const resultMatches = layerMatchesParentTarget(layer, args, layerIndex, expectedLayerName, parentLayerIndex, expectedParentName) &&
+    postVerification.ok === true &&
+    postVerification.parentMatches === true;
+  const readBackEvidence = observedLayerParentEvidence(evidence.readBack, args);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:parent`,
+    title: "Layer parent link matches explicit request",
+    expected: `layer ${layerIndex || "?"} -> parent ${parentLayerIndex || "?"}${expectedParentName ? ` (${expectedParentName})` : ""}`,
+    observed: resultMatches ? `${layer.name || "layer"} -> ${layer.parentName || layer.parent && layer.parent.name || "missing parent"}` : "missing or mismatched parent result",
+    passed: Boolean(resultMatches) && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_parent."
+  });
+}
+
+function layerMatchesTrackMatteTarget(layer, args, layerIndex, matteLayerIndex, expectedLayerName, expectedMatteLayerName, trackMatteType) {
+  if (!layer) return false;
+  const matteLayer = isPlainObject(layer.trackMatteLayer) ? layer.trackMatteLayer : null;
+  if (!nearlyEqual(layer.index, layerIndex)) return false;
+  if (expectedLayerName && !sameString(layer.name, expectedLayerName)) return false;
+  if (layer.hasTrackMatte !== true) return false;
+  if (trackMatteType && !sameString(layer.trackMatteTypeName, trackMatteType)) return false;
+  if (!matteLayer || !nearlyEqual(matteLayer.index, matteLayerIndex)) return false;
+  if (expectedMatteLayerName && !sameString(matteLayer.name, expectedMatteLayerName)) return false;
+  return true;
+}
+
+function observedLayerTrackMatteEvidence(evidence, args) {
+  const layerIndex = numberValue(args.layerIndex);
+  const matteLayerIndex = numberValue(args.matteLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedMatteLayerName = compactText(args.expectedMatteLayerName, 160);
+  const trackMatteType = compactText(args.trackMatteType, 80);
+  if (layerIndex === null || matteLayerIndex === null || !evidence || !Array.isArray(evidence.layers)) return null;
+  for (const layer of evidence.layers) {
+    if (layerMatchesTrackMatteTarget(layer, args, layerIndex, matteLayerIndex, expectedLayerName, expectedMatteLayerName, trackMatteType)) {
+      return layer.source || `layer ${layerIndex} track matte ${matteLayerIndex}`;
+    }
+  }
+  return null;
+}
+
+function checkSetLayerTrackMatte(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const layerIndex = numberValue(args.layerIndex);
+  const matteLayerIndex = numberValue(args.matteLayerIndex);
+  const expectedLayerName = compactText(args.expectedLayerName, 160);
+  const expectedMatteLayerName = compactText(args.expectedMatteLayerName, 160);
+  const trackMatteType = compactText(args.trackMatteType, 80);
+  const layer = payload.layer || {};
+  const matteLayer = payload.matteLayer || {};
+  const postVerification = payload.postVerification || {};
+  const resultMatches = layerMatchesTrackMatteTarget(layer, args, layerIndex, matteLayerIndex, expectedLayerName, expectedMatteLayerName, trackMatteType) &&
+    postVerification.ok === true &&
+    postVerification.matteLayerMatches === true &&
+    postVerification.trackMatteTypeMatches === true;
+  const readBackEvidence = observedLayerTrackMatteEvidence(evidence.readBack, args);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:track-matte`,
+    title: "Layer track matte matches explicit request",
+    expected: `layer ${layerIndex || "?"} -> matte ${matteLayerIndex || "?"} ${trackMatteType || "unknown"}`,
+    observed: resultMatches ? `${layer.name || "layer"} -> ${matteLayer.name || "matte"} ${layer.trackMatteTypeName || "unknown"}` : "missing or mismatched track matte result",
+    passed: Boolean(resultMatches) && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched set_layer_track_matte."
+  });
+}
+
+function projectItemMetadataFields(args, payload) {
+  const fields = [];
+  if (hasOwn(args, "label") || hasOwn(payload && payload.updates, "label")) fields.push("label");
+  return fields;
+}
+
+function projectItemMetadataArgs(args, payload) {
+  const updates = isPlainObject(payload && payload.updates) ? payload.updates : {};
+  return {
+    ...updates,
+    ...args
+  };
+}
+
+function projectItemIndicesFromArgsOrPayload(args, payload) {
+  if (Array.isArray(args.itemIndices)) return args.itemIndices.map(Number);
+  if (Array.isArray(payload.requestedItemIndices)) return payload.requestedItemIndices.map(Number);
+  return [];
+}
+
+function projectItemNamesFromArgsOrPayload(args, payload) {
+  if (Array.isArray(args.expectedItemNames)) return args.expectedItemNames.map(String);
+  if (Array.isArray(payload.expectedItemNames)) return payload.expectedItemNames.map(String);
+  return [];
+}
+
+function projectItemMetadataFieldMatches(item, args, field) {
+  if (!item || !hasOwn(item, field)) return false;
+  if (field === "label") return nearlyEqual(item.label, args.label);
+  return false;
+}
+
+function projectItemMatchesMetadataTarget(item, fields, args, itemIndex, expectedName) {
+  if (!item || !fields.length) return false;
+  if (!nearlyEqual(item.itemIndex, itemIndex)) return false;
+  if (expectedName && !sameString(item.name, expectedName)) return false;
+  return fields.every((field) => projectItemMetadataFieldMatches(item, args, field));
+}
+
+function observedProjectItemMetadataEvidence(evidence, args, payload) {
+  const itemIndices = projectItemIndicesFromArgsOrPayload(args, payload);
+  const expectedNames = projectItemNamesFromArgsOrPayload(args, payload);
+  const fields = projectItemMetadataFields(args, payload);
+  const normalizedArgs = projectItemMetadataArgs(args, payload);
+  if (!itemIndices.length || !fields.length || !evidence || !Array.isArray(evidence.projectItems)) return null;
+
+  const matchedSources = [];
+  for (let index = 0; index < itemIndices.length; index += 1) {
+    const itemIndex = itemIndices[index];
+    const expectedName = expectedNames[index] || "";
+    const match = evidence.projectItems.find((item) => projectItemMatchesMetadataTarget(item, fields, normalizedArgs, itemIndex, expectedName));
+    if (!match) return null;
+    matchedSources.push(match.source || `project item ${itemIndex}`);
+  }
+  return matchedSources.join("; ");
+}
+
+function checkSetProjectItemMetadata(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const normalizedArgs = projectItemMetadataArgs(args, payload);
+  const fields = projectItemMetadataFields(args, payload);
+  const itemIndices = projectItemIndicesFromArgsOrPayload(args, payload);
+  const expectedNames = projectItemNamesFromArgsOrPayload(args, payload);
+  const changed = Array.isArray(payload.changed) ? payload.changed : [];
+  const postVerification = payload.postVerification || {};
+  const resultMatches = fields.length > 0 &&
+    itemIndices.length > 0 &&
+    postVerification.ok === true &&
+    Number(payload.changedCount || changed.length || 0) === itemIndices.length &&
+    itemIndices.every((itemIndex, index) => {
+      const after = changed[index] && changed[index].after || {};
+      return projectItemMatchesMetadataTarget(after, fields, normalizedArgs, itemIndex, expectedNames[index] || "");
+    });
+  const readBackEvidence = observedProjectItemMetadataEvidence(evidence.readBack, args, payload);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:metadata`,
+    title: "Project item metadata matches explicit request",
+    expected: `${itemIndices.length} project item(s); fields: ${fields.join(", ")}`,
+    observed: resultMatches ? `${payload.changedCount || changed.length} project item(s) updated` : "missing or mismatched project item metadata result",
+    passed: resultMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run project-item read-back matched set_project_item_metadata."
+  });
+}
+
+function observedProjectFramesCountEvidence(evidence, expectedFramesCountType) {
+  const expected = normalizeFramesCountTypeName(expectedFramesCountType);
+  if (!expected || !evidence || !Array.isArray(evidence.projects)) return null;
+  const expectedStartFrame = framesCountStartFrameForName(expected);
+  for (const project of evidence.projects) {
+    const observed = normalizeFramesCountTypeName(project.framesCountType);
+    const observedStartFrame = numberValue(project.framesCountStartFrame);
+    if (observed === expected || (expectedStartFrame !== null && nearlyEqual(observedStartFrame, expectedStartFrame))) {
+      return project.source || "observed project framesCountType";
+    }
+  }
+  return null;
+}
+
+function checkSetProjectFramesCountType(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = normalizeFramesCountTypeName(
+    args.framesCountType ||
+    payload.framesCountType ||
+    (payload.updates && payload.updates.framesCountType) ||
+    (payload.project && payload.project.framesCountType)
+  );
+  const postVerification = payload.postVerification || {};
+  const after = isPlainObject(payload.after) ? payload.after : payload.project || {};
+  const project = isPlainObject(payload.project) ? payload.project : {};
+  const observed = normalizeFramesCountTypeName(
+    after.framesCountType ||
+    after.name ||
+    project.framesCountType ||
+    payload.framesCountType
+  );
+  const readBackEvidence = observedProjectFramesCountEvidence(evidence.readBack, expected);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:frames-count-type`,
+    title: "Project frame count type matches explicit request",
+    expected: expected || "FC_START_0 or FC_START_1",
+    observed: observed || "missing project framesCountType",
+    passed: Boolean(expected) &&
+      observed === expected &&
+      postVerification.ok === true &&
+      postVerification.framesCountTypeMatches === true &&
+      postVerification.projectItemCountUnchanged === true &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_project_info read-back matched set_project_frames_count_type."
+  });
+}
+
+function normalizePuppetPinTypeEvidence(value) {
+  const number = numberValue(value);
+  if (number === 1 || number === 4) return number;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "position") return 1;
+    if (normalized === "advanced") return 4;
+  }
+  return null;
+}
+
+function observedPuppetPinTypeEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.properties)) return null;
+  const expected = normalizePuppetPinTypeEvidence(args.pinType);
+  if (expected === null) return null;
+  for (const property of evidence.properties) {
+    if (property.matchName !== "ADBE FreePin3 PosPin Type") continue;
+    if (Array.isArray(args.pinTypePropertyPath) && !propertyPathMatches(property.propertyPath, args.pinTypePropertyPath)) continue;
+    if (propertyValueMatches(expected, property.value, 0.001)) {
+      return property.source || `Read ADBE FreePin3 PosPin Type after set_puppet_pin_type.`;
+    }
+  }
+  return null;
+}
+
+function checkSetPuppetPinType(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = normalizePuppetPinTypeEvidence(args.pinType);
+  const property = payload.property || {};
+  const effect = payload.effect || {};
+  const pinAtom = payload.pinAtom || {};
+  const valueMatches = expected !== null && (
+    propertyValueMatches(expected, property.value, 0.001) ||
+    nearlyEqual(payload.pinTypeAfter, expected)
+  );
+  const identityMatches = effect.matchName === "ADBE FreePin3" &&
+    pinAtom.matchName === "ADBE FreePin3 PosPin Atom" &&
+    property.matchName === "ADBE FreePin3 PosPin Type";
+  const readBackEvidence = observedPuppetPinTypeEvidence(evidence.readBack, args);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:pin-type`,
+    title: "Puppet pin type matches explicit enum request",
+    expected: `ADBE FreePin3 PosPin Type = ${expected === null ? "invalid" : expected}`,
+    observed: identityMatches
+      ? `${property.matchName || "missing"} = ${compactText(stableStringify(property.value), 80)}`
+      : "missing ADBE FreePin3/PosPin Atom/PosPin Type identity",
+    passed: identityMatches && valueMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_effect_details read-back matched set_puppet_pin_type."
+  });
+}
+
+function effectMatchesArgs(effect, args) {
+  if (!effect || !args) return false;
+  if (hasOwn(args, "effectIndex") && !nearlyEqual(effect.propertyIndex, args.effectIndex)) return false;
+  if (hasOwn(args, "effectMatchName") && args.effectMatchName && effect.matchName !== args.effectMatchName) return false;
+  if (hasOwn(args, "effectName") && args.effectName && effect.name !== args.effectName) return false;
+  return hasOwn(args, "effectIndex") || hasOwn(args, "effectMatchName") || hasOwn(args, "effectName");
+}
+
+function addEffectMatchesArgs(effect, args) {
+  if (!effect || !args) return false;
+  if (hasOwn(args, "effect") && args.effect && effect.matchName !== args.effect) return false;
+  if (hasOwn(args, "name") && args.name && effect.name !== args.name) return false;
+  return Boolean(args.effect || args.name);
+}
+
+function observedAddedEffectEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.properties)) return null;
+  for (const property of evidence.properties) {
+    if (addEffectMatchesArgs(property, args)) {
+      return property.source || `Read added effect ${property.name || property.matchName || args.effect}.`;
+    }
+  }
+  return null;
+}
+
+function checkAddEffect(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const effect = payload.effect || {};
+  const identityMatches = addEffectMatchesArgs(effect, args);
+  const readBackEvidence = observedAddedEffectEvidence(evidence.readBack, args) ||
+    observedAddedEffectEvidence(evidence.allReadBack, args);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:effect`,
+    title: "Added effect identity matches explicit request",
+    expected: `${args.name || args.effect || "effect"} / ${args.effect || "matchName"}`,
+    observed: identityMatches
+      ? `${effect.name || "effect"} / ${effect.matchName || "matchName"}`
+      : "missing matching effect identity",
+    passed: identityMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_effect_details/get_layer_details read-back matched add_effect."
+  });
+}
+
+function observedEffectEnabledEvidence(evidence, args) {
+  if (!evidence || !Array.isArray(evidence.properties)) return null;
+  const expected = boolValue(args.enabled);
+  if (expected === null) return null;
+  for (const property of evidence.properties) {
+    if (!effectMatchesArgs(property, args)) continue;
+    if (property.enabled === expected) {
+      return property.source || `Read effect enabled:${expected} after set_effect_enabled.`;
+    }
+  }
+  return null;
+}
+
+function checkSetEffectEnabled(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = boolValue(args.enabled);
+  const effect = payload.effect || payload.after && payload.after.effect || {};
+  const postVerification = payload.postVerification || {};
+  const identityMatches = effectMatchesArgs(effect, args);
+  const resultMatches = expected !== null &&
+    (effect.enabled === expected || postVerification.enabledMatches === true);
+  const readBackEvidence = observedEffectEnabledEvidence(evidence.readBack, args) ||
+    observedEffectEnabledEvidence(evidence.allReadBack, args);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:effect-enabled`,
+    title: "Effect enabled state matches explicit request",
+    expected: `enabled:${expected === null ? "invalid" : expected}`,
+    observed: identityMatches
+      ? `${effect.name || effect.matchName || "effect"} enabled:${effect.enabled}`
+      : "missing matching effect identity",
+    passed: identityMatches && resultMatches && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_effect_details/get_layer_details read-back matched set_effect_enabled."
+  });
+}
+
+function observedEssentialGraphicsControllerEvidence(evidence, controllerName) {
+  if (!evidence || !Array.isArray(evidence.essentialGraphicsControllers) || !controllerName) return null;
+  const match = evidence.essentialGraphicsControllers.find((controller) => sameString(controller.name, controllerName));
+  return match ? match.source || `Read Essential Graphics controller ${controllerName}.` : null;
+}
+
+function checkAddPropertyToEssentialGraphics(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const controllerName = String(args.controllerName || payload.controllerName || "").trim();
+  const property = payload.property || {};
+  const postVerification = payload.postVerification || {};
+  const expectedMatchName = String(args.expectedPropertyMatchName || "");
+  const expectedPropertyName = String(args.expectedPropertyName || "");
+  const propertyIdentityMatches = (!expectedMatchName || property.matchName === expectedMatchName) &&
+    (!expectedPropertyName || property.name === expectedPropertyName);
+  const readBackEvidence = observedEssentialGraphicsControllerEvidence(evidence.readBack, controllerName);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:controller`,
+    title: "Essential Graphics controller was added and read back",
+    expected: controllerName || "reviewed controller name",
+    observed: payload.controller && payload.controller.name
+      ? `${payload.controller.name}; count ${payload.beforeControllers && payload.beforeControllers.count} -> ${payload.afterControllers && payload.afterControllers.count}`
+      : "missing Essential Graphics controller result",
+    passed: Boolean(controllerName) &&
+      payload.added === true &&
+      postVerification.ok === true &&
+      postVerification.controllerCountIncremented === true &&
+      propertyIdentityMatches &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_essential_graphics_controllers read-back matched add_property_to_essential_graphics."
+  });
+}
+
+function keyframeAtTime(property, time) {
+  const keyframes = Array.isArray(property && property.keyframes) ? property.keyframes : [];
+  const target = Number(time);
+  return keyframes.find((keyframe) => nearlyEqual(Number(keyframe && keyframe.time), target, 0.001)) || null;
+}
+
+function keyframeValueText(value) {
+  return compactText(stableStringify(value), 120);
+}
+
+function propertyKeyframesMatchRequest(property, args) {
+  const expected = Array.isArray(args.keyframes) ? args.keyframes : [];
+  if (!expected.length) {
+    return {
+      passed: false,
+      observed: "missing requested keyframes"
+    };
+  }
+  const mismatches = [];
+  for (const item of expected) {
+    const observed = keyframeAtTime(property, item && item.time);
+    if (!observed) {
+      mismatches.push(`missing time ${item && item.time}`);
+      continue;
+    }
+    if (!propertyValueMatches(item.value, observed.value, 0.01)) {
+      mismatches.push(`time ${item.time} expected ${keyframeValueText(item.value)} got ${keyframeValueText(observed.value)}`);
+    }
+  }
+  return {
+    passed: mismatches.length === 0,
+    observed: mismatches.length ? mismatches.join("; ") : `${expected.length} requested keyframe value(s) read back`
+  };
+}
+
+function observedPropertyKeyframesEvidence(evidence, args) {
+  for (const property of evidence.properties || []) {
+    if (!propertyPathMatches(property.propertyPath, args.propertyPath)) continue;
+    const match = propertyKeyframesMatchRequest(property, args);
+    if (match.passed) {
+      return {
+        source: property.source || `Read ${propertyPathText(args.propertyPath)} keyframes after set_property_keyframes.`,
+        observed: match.observed
+      };
+    }
+  }
+  return null;
+}
+
+function checkKeyframeEase(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const path = Array.isArray(args.propertyPath) ? args.propertyPath
+    : typeof args.propertyPath === "string" ? args.propertyPath.split(".").map(part => part.trim()).filter(Boolean) : [];
+  const layerIndex = positiveIdentityIndex(args.layerIndex);
+  const property = payload.property;
+  const receipt = isPlainObject(payload.keyframeEase) ? payload.keyframeEase : {};
+  const requested = hasOwn(args, "keyIndices") ? (Array.isArray(args.keyIndices) ? args.keyIndices : [args.keyIndices]) : payload.keyIndices;
+  const indicesValid = Array.isArray(requested) && requested.length > 0 &&
+    requested.every(index => typeof index === "number" && Number.isSafeInteger(index) && index > 0) && new Set(requested).size === requested.length;
+  const sameIndices = (indices) => indicesValid && Array.isArray(indices) && indices.length === requested.length &&
+    indices.every((index, position) => index === requested[position]);
+  const before = Array.isArray(receipt.before) ? receipt.before : [];
+  const baselineValid = sameIndices(before.map(key => key && key.index)) && before.every(key =>
+    typeof key.time === "number" && Number.isFinite(key.time) && hasOwn(key, "value") && key.value !== null);
+  const resultIdentity = compMatchesRequest(payload.comp, args) && layerMatchesRequest(payload.layer, args, layerIndex) &&
+    isPlainObject(property) && (!property.layer || sameLayerIdentity(payload.layer, property.layer)) &&
+    propertyPathTailIdentityMatches(property.propertyPath, path) && sameIndices(payload.keyIndices);
+  const easeMatches = (key, direction) => {
+    if (args.interpolation === "hold" || args.interpolation === "linear") return true;
+    const requestedEase = isPlainObject(args[direction === "in" ? "easeIn" : "easeOut"]) ? args[direction === "in" ? "easeIn" : "easeOut"] : {};
+    const values = key[`${direction}TemporalEase`];
+    return Array.isArray(values) && values.length > 0 && values.every(value =>
+      nearlyEqual(value.speed, requestedEase.speed === undefined ? 0 : requestedEase.speed, 0.000001) &&
+      nearlyEqual(value.influence, requestedEase.influence === undefined ? 33 : requestedEase.influence, 0.000001));
+  };
+  const keysMatch = (keys, requireBaseline) => indicesValid && Array.isArray(keys) && requested.every((index, position) => {
+    const matches = keys.filter(key => key && key.index === index);
+    if (matches.length !== 1) return false;
+    const key = matches[0], original = before[position];
+    if (typeof key.time !== "number" || !Number.isFinite(key.time) || !hasOwn(key, "value") || key.value === null) return false;
+    if (args.interpolation && (key.inInterpolation !== args.interpolation || key.outInterpolation !== args.interpolation)) return false;
+    if (!easeMatches(key, "in") || !easeMatches(key, "out")) return false;
+    return !requireBaseline || (baselineValid && nearlyEqual(key.time, original.time, 0.000001) &&
+      propertyValueMatches(original.value, key.value, 0.000001) && propertyValueMatches(key.value, original.value, 0.000001));
+  });
+  const resultKeys = Array.isArray(receipt.after) ? receipt.after : property && property.keyframes;
+  const resultMatch = resultIdentity && baselineValid && keysMatch(resultKeys, true) &&
+    property.numKeys === receipt.originalKeyCount && receipt.verified === true;
+  // A native mismatch is a failure even when the response echoes the request.
+  let knownMismatch = indicesValid && Array.isArray(resultKeys) && !keysMatch(resultKeys, false);
+  const target = readTargetFromResult(args, payload.comp, payload.layer);
+  let readBack = null;
+  for (const candidate of evidence.readBack.propertyReadbacks || []) {
+    if (!resultIdentity || !compMatchesRequest(candidate.comp, target) || !sameCompIdentity(payload.comp, candidate.comp) ||
+      !layerMatchesRequest(candidate.layer, target, layerIndex) || !sameLayerIdentity(payload.layer, candidate.layer) ||
+      !readBackStepMatchesTarget({ args: candidate.stepArgs }, candidate.comp, target, layerIndex, candidate.layer) ||
+      !propertyPathIdentityMatches(candidate.property.propertyPath, property.propertyPath) ||
+      !propertyPathIdentityMatches(property.propertyPath, candidate.property.propertyPath)) continue;
+    if (!keysMatch(candidate.property.keyframes, true) || candidate.property.numKeys !== receipt.originalKeyCount) {
+      knownMismatch = true;
+      continue;
+    }
+    readBack = candidate;
+  }
+  const passed = Boolean(resultMatch && readBack && !knownMismatch);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:ease`,
+    title: "Native keyframe easing and preserved times/values match independent read-back",
+    expected: `${indicesValid ? requested.join(", ") : "valid explicit or selected indexes"}: ${args.interpolation || "temporal ease"}, preserved times/values`,
+    observed: passed ? "native keys and independent read-back match" : "missing or mismatched native keys/read-back",
+    passed, status: passed ? "passed" : knownMismatch ? "failed" : "needs_review",
+    evidence: readBack ? readBack.source : "No independent property read-back matched this comp, layer, property instance and native keyframe outcome.",
+    binding: { mutationStep: step.index, target: { comp: compBinding(payload.comp), layer: layerBinding(payload.layer), propertyPath: args.propertyPath },
+      readBack: readBack ? { stepIndex: readBack.stepIndex, tool: readBack.stepTool, status: readBack.stepStatus,
+        comp: compBinding(readBack.comp), layer: layerBinding(readBack.layer), propertyPath: readBack.property.propertyPath } : null }
+  });
+}
+
+function checkReplaceLayerSource(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const source = payload.sourceItem;
+  const layers = Array.isArray(payload.layers) ? payload.layers : [];
+  const requested = hasOwn(args, "layerIndices") ? (Array.isArray(args.layerIndices) ? args.layerIndices : [args.layerIndices]) : layers.map(layer => layer.index);
+  const targetsValid = requested.length > 0 && requested.every(index => typeof index === "number" && Number.isSafeInteger(index) && index > 0) && new Set(requested).size === requested.length;
+  const sourceId = persistentId(source, "itemId", "id");
+  const sourceMatches = isPlainObject(source) && sourceId !== null &&
+    (positiveIdentityIndex(args.sourceItemIndex) !== null || (typeof args.sourceItemName === "string" && args.sourceItemName.length > 0)) &&
+    (!hasOwn(args, "sourceItemIndex") || (positiveIdentityIndex(args.sourceItemIndex) !== null && positiveIdentityIndex(source.itemIndex) === positiveIdentityIndex(args.sourceItemIndex))) &&
+    (!args.sourceItemName || source.name === args.sourceItemName) &&
+    (!args.sourceItemType || source.type === args.sourceItemType) &&
+    (!hasOwn(args, "expectedSourceItemId") || sourceId === positiveIdentityIndex(args.expectedSourceItemId));
+  const resultComp = payload.comp;
+  const projectRoot = getAuthoritativeProjectRoot(evidence.options);
+  const sameSource = (observed,view) => isPlainObject(source) && isPlainObject(observed) && persistentId(observed, "itemId", "id") === sourceId &&
+    observed.name === source.name && (observed.type === source.type || view==="placeholder.v1" && !hasOwn(observed,"type") && source.type==="footage" &&
+      observed.footageMissing===false && typeof observed.file==="string" && observed.file.length>0 && typeof observed.duration==="number" && observed.duration>0 && typeof observed.frameRate==="number" && observed.frameRate>0) &&
+    (!(hasOwn(source, "file") || hasOwn(observed, "file")) ||
+      (canonicalImportPath(source.file, projectRoot) !== "" && canonicalImportPath(observed.file, projectRoot) !== "" &&
+        canonicalImportPath(observed.file, projectRoot) === canonicalImportPath(source.file, projectRoot)));
+  for (const [position, index] of (targetsValid ? requested : [null]).entries()) {
+    const layer = layers[position];
+    const change = Array.isArray(payload.changed) ? payload.changed[position] : null;
+    const resultMatches = targetsValid && layers.length === requested.length && payload.changedCount === requested.length &&
+      compMatchesRequest(resultComp, args) && layerMatchesRequest(layer, args, index, position) && sourceMatches && sameSource(layer && layer.source) &&
+      (!hasOwn(args, "expectedPreviousSourceItemId") || (change && sameLayerIdentity(change.before, layer) &&
+        persistentId(change.before.source, "itemId", "id") === positiveIdentityIndex(args.expectedPreviousSourceItemId)));
+    const target = readTargetFromResult(args, resultComp, layer, position);
+    let readBack = null, knownMismatch = Boolean(source && !sourceMatches), matchingReadCount=0,attachedMatchCount=0,explicitMatchCount=0;
+    const invalidAttached=(evidence.readBack.rawAttempts || []).some(read=>{const meta=SERVER_ATTACHED_READS.get(read);return meta?.mutationStep===step && meta.valid!==true;});
+    for (const readStep of evidence.readBack.rawSteps || []) {
+      if (readStep.tool !== "get_layer_details") continue;
+      const attached=SERVER_ATTACHED_READS.get(readStep);
+      if(attached && (attached.mutationStep!==step || attached.valid!==true))continue;
+      const observed = payloadForStep(readStep);
+      if (!isPlainObject(observed) || !compMatchesRequest(observed.comp, target) || !sameCompIdentity(resultComp, observed.comp) ||
+        !layerMatchesRequest(observed.layer, target, index, position) || !sameLayerIdentity(layer, observed.layer) ||
+        !readBackStepMatchesTarget(readStep, observed.comp, target, index, observed.layer)) continue;
+      if (!sameSource(observed.layer.source,observed.evidenceView)) { knownMismatch = true; continue; }
+      matchingReadCount++;if(attached)attachedMatchCount++;else explicitMatchCount++;readBack = { step: readStep, payload: observed };
+    }
+    const unambiguous=matchingReadCount===1 || matchingReadCount===2 && attachedMatchCount===1 && explicitMatchCount===1;
+    const passed = Boolean(resultMatches && readBack && unambiguous && !knownMismatch && !invalidAttached);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:source${requested.length > 1 ? `:layer-${index}` : ""}`,
+      title: "Replacement source identity matches independent layer read-back",
+      expected: `source item ${args.sourceItemIndex || args.sourceItemName || "missing"}, ID ${args.expectedSourceItemId || sourceId || "missing"}`,
+      observed: source ? `item ${source.itemIndex}, ID ${sourceId}, ${source.name || "missing"}` : "missing native source",
+      passed, status: passed ? "passed" : knownMismatch ? "failed" : "needs_review",
+      evidence: readBack ? stepLabel(readBack.step) : "No independent get_layer_details matched this composition, layer and replacement source identity/path.",
+      binding: { mutationStep: step.index, source: source ? { itemIndex: source.itemIndex, itemId: sourceId, name: source.name, file: source.file || null } : null,
+        readBack: readBack ? { stepIndex: readBack.step.index, tool: readBack.step.tool, status: readBack.step.status,
+          comp: compBinding(readBack.payload.comp), layer: layerBinding(readBack.payload.layer), source: readBack.payload.layer.source } : null }
+    });
+  }
+}
+
+function checkCameraWithController(checks, step, payload) {
+  const camera = payload.cameraLayer || {};
+  const controller = payload.controllerLayer || {};
+  const parent = camera.parent || {};
+  const cameraName = step.args && (step.args.cameraName || "Camera 1");
+  const controllerName = step.args && (step.args.controllerName || "Camera Controller");
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:parent`,
+    title: "Camera is parented to the generated controller",
+    expected: `${cameraName} parent = ${controllerName}`,
+    observed: `${camera.name || "missing camera"} parent = ${parent.name || "missing parent"}`,
+    passed: camera.name === cameraName && controller.name === controllerName && parent.name === controllerName,
+    evidence: stepLabel(step)
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:controller`,
+    title: "Controller is 3D with separated Position dimensions",
+    expected: "threeDLayer:true, positionDimensionsSeparated:true",
+    observed: `threeDLayer:${payload.controller && payload.controller.threeDLayer === true}, positionDimensionsSeparated:${payload.controller && payload.controller.positionDimensionsSeparated === true}`,
+    passed: Boolean(payload.controller && payload.controller.threeDLayer === true && payload.controller.positionDimensionsSeparated === true),
+    evidence: stepLabel(step)
+  });
+}
+
+function checkToggleOnionSkinning(checks, step, payload) {
+  const args = step.args || {};
+  const expectedEnabled = args.mode === "disable" ? false : true;
+  const effect = payload.effect || {};
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:state`,
+    title: "Onion skinning state matches request",
+    expected: expectedEnabled ? "enabled with CC Wide Time" : "disabled",
+    observed: payload.enabled ? `${payload.layer && payload.layer.name || "layer"} / ${effect.name || effect.matchName || "missing effect"}` : "disabled",
+    passed: expectedEnabled ? payload.enabled === true && /wide time/i.test(`${effect.name || ""} ${effect.matchName || ""}`) : payload.enabled === false,
+    evidence: stepLabel(step)
+  });
+}
+
+function checkFillInKeyframes(checks, step, payload) {
+  const property = payload.property || {};
+  const keyframes = Array.isArray(property.keyframes) ? property.keyframes : [];
+  const clearExpression = !step.args || step.args.clearExpression !== false;
+  const allLinear = keyframes.length > 0 && keyframes.every((keyframe) => (
+    (!keyframe.inInterpolation || keyframe.inInterpolation === "linear") &&
+    (!keyframe.outInterpolation || keyframe.outInterpolation === "linear")
+  ));
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:keyframes`,
+    title: "Expression/value samples were baked into linear keyframes",
+    expected: "sampled keyframes with linear interpolation",
+    observed: `${payload.keyframeCount || 0} keyframe(s), sampled=${payload.sampledCount || 0}`,
+    passed: Number(payload.keyframeCount || 0) >= 2 && allLinear && (!clearExpression || !property.expression),
+    evidence: stepLabel(step)
+  });
+}
+
+function checkCurrentExpressionKeyframe(checks, step, payload) {
+  const time = hasOwn(step.args || {}, "time") ? step.args.time : payload.comp && payload.comp.time;
+  const property = payload.property || {};
+  const keyframe = keyframeAtTime(property, time);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:keyframe`,
+    title: "Current post-expression value was written as a keyframe",
+    expected: `keyframe at ${time}`,
+    observed: keyframe ? `keyframe at ${keyframe.time}` : "missing keyframe",
+    passed: Boolean(keyframe),
+    evidence: stepLabel(step)
+  });
+}
+
+function checkSpatialInTangent(checks, step, payload) {
+  const tangent = numberArrayValue(payload.inSpatialTangent);
+  const keyIndex = Number(payload.keyIndex || step.args && step.args.keyIndex || 0);
+  const property = payload.property || {};
+  const keyframes = Array.isArray(property.keyframes) ? property.keyframes : [];
+  const keyframe = keyframes.find((item) => Number(item && item.index) === keyIndex);
+  const readBackTangent = numberArrayValue(keyframe && keyframe.inSpatialTangent);
+  const matches = tangent && readBackTangent &&
+    tangent.length === readBackTangent.length &&
+    tangent.every((value, index) => nearlyEqual(value, readBackTangent[index], 0.001));
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:spatial-tangent`,
+    title: "Spatial in tangent was written and read back",
+    expected: tangent ? tangent.join(",") : "computed tangent",
+    observed: readBackTangent ? readBackTangent.join(",") : "missing tangent",
+    passed: Boolean(matches),
+    evidence: stepLabel(step)
+  });
+}
+
+function checkSeparateShapeSizeDimensions(checks, step, payload) {
+  const sliders = Array.isArray(payload.sliders) ? payload.sliders : [];
+  const expression = String(payload.expression || payload.property && payload.property.expression || "");
+  const xName = step.args && (step.args.xSliderName || "X Size");
+  const yName = step.args && (step.args.ySliderName || "Y Size");
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:sliders-expression`,
+    title: "Shape Size is driven by X/Y slider controls",
+    expected: `${xName}, ${yName}, expression`,
+    observed: `${sliders.map((slider) => slider.name).join(", ")}; expression=${expression ? "present" : "missing"}`,
+    passed: sliders.length >= 2 && expression.includes(xName) && expression.includes(yName),
+    evidence: stepLabel(step)
+  });
+}
+
+function arrayLength(value) {
+  return Array.isArray(value) ? value.length : 0;
+}
+
+function changedItems(payload) {
+  if (!payload) return [];
+  return Array.isArray(payload.changed) ? payload.changed
+    : Array.isArray(payload.aligned) ? payload.aligned
+      : Array.isArray(payload.split) ? payload.split
+        : [];
+}
+
+function layerAfter(item) {
+  return item && (item.after || item.layer || item.newLayer || item.original || null);
+}
+
+function expectedRenameValue(before, args, index, total) {
+  const mode = args.mode || (hasOwn(args, "name") ? "exact" : hasOwn(args, "prefix") ? "prefix" : hasOwn(args, "suffix") ? "suffix" : "findReplace");
+  if (mode === "exact") return args.name || "";
+  if (mode === "prefix") return `${args.prefix || ""}${before || ""}`;
+  if (mode === "suffix") return `${before || ""}${args.suffix || ""}`;
+  const findText = String(args.find || "");
+  if (!findText) return "";
+  const flags = args.caseSensitive === false ? "gi" : "g";
+  try {
+    return String(before || "").replace(new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), flags), String(args.replace || ""));
+  } catch (_error) {
+    return "";
+  }
+}
+
+function checkChangedLayerTiming(checks, step, payload) {
+  const items = changedItems(payload);
+  if (!items.length) return;
+  const args = step.args || {};
+  const mismatches = [];
+  for (const item of items) {
+    const after = layerAfter(item);
+    if (!after) {
+      mismatches.push("missing layer read-back");
+      continue;
+    }
+    if (hasOwn(args, "startTime") && !nearlyEqual(after.startTime, args.startTime)) mismatches.push(`layer ${after.index || "?"} startTime`);
+    if (hasOwn(args, "inPoint") && !nearlyEqual(after.inPoint, args.inPoint)) mismatches.push(`layer ${after.index || "?"} inPoint`);
+    if (hasOwn(args, "outPoint") && !nearlyEqual(after.outPoint, args.outPoint)) mismatches.push(`layer ${after.index || "?"} outPoint`);
+    if (hasOwn(args, "duration") && !nearlyEqual(Number(after.outPoint) - Number(after.inPoint), args.duration)) mismatches.push(`layer ${after.index || "?"} duration`);
+  }
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:timing`,
+    title: "Layer timing matches requested range",
+    expected: ["startTime", "inPoint", "outPoint", "duration"].filter((key) => hasOwn(args, key)).map((key) => `${key}: ${args[key]}`).join(", "),
+    observed: `${items.length} layer timing read-back item(s)`,
+    passed: mismatches.length === 0,
+    evidence: mismatches.length ? mismatches.join("; ") : stepLabel(step)
+  });
+}
+
+function checkStagger(checks, step, payload) {
+  const items = changedItems(payload);
+  if (!items.length) return;
+  const first = layerAfter(items[0]);
+  const startTime = hasOwn(step.args, "startTime") ? step.args.startTime : payload.startTime;
+  const mismatch = startTime !== undefined && first && !nearlyEqual(first.inPoint, startTime) && !nearlyEqual(first.startTime, startTime);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:stagger`,
+    title: "Layer stagger has timing read-back",
+    expected: `first layer starts near ${startTime}`,
+    observed: first ? `first layer start=${first.startTime}, in=${first.inPoint}; changed=${items.length}` : "missing first layer",
+    passed: !mismatch && Boolean(first),
+    evidence: stepLabel(step)
+  });
+}
+
+function checkAlign(checks, step, payload) {
+  const items = Array.isArray(payload && payload.aligned) ? payload.aligned : [];
+  if (!items.length) return;
+  const targetTime = hasOwn(step.args, "targetTime") ? step.args.targetTime : payload.targetTime;
+  const align = step.args.align || payload.align || "inPoint";
+  const mismatches = [];
+  for (const item of items) {
+    const after = item && item.after;
+    if (!after) {
+      mismatches.push("missing layer timing");
+      continue;
+    }
+    const actual = align === "startTime" ? after.startTime : after.inPoint;
+    if (!nearlyEqual(actual, targetTime)) mismatches.push(`layer ${after.index || "?"} ${align}=${actual}`);
+  }
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:align`,
+    title: "Layer alignment matches requested time",
+    expected: `${align} ${targetTime}`,
+    observed: `${items.length} aligned layer(s)`,
+    passed: mismatches.length === 0,
+    evidence: mismatches.length ? mismatches.join("; ") : stepLabel(step)
+  });
+}
+
+function checkSplit(checks, step, payload) {
+  const items = Array.isArray(payload && payload.split) ? payload.split : [];
+  if (!items.length) return;
+  const splitTime = hasOwn(step.args, "time") ? step.args.time : step.args.targetTime;
+  const mismatches = [];
+  for (const item of items) {
+    const original = item && item.original;
+    const newLayer = item && item.newLayer;
+    if (!original || !newLayer) {
+      mismatches.push("missing split layer read-back");
+      continue;
+    }
+    if (splitTime !== undefined && !nearlyEqual(original.outPoint, splitTime)) mismatches.push(`original outPoint=${original.outPoint}`);
+    if (splitTime !== undefined && !nearlyEqual(newLayer.inPoint, splitTime)) mismatches.push(`new layer inPoint=${newLayer.inPoint}`);
+  }
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:split`,
+    title: "Split layer boundaries match requested time",
+    expected: `split time ${splitTime}`,
+    observed: `${items.length} split read-back item(s)`,
+    passed: mismatches.length === 0,
+    evidence: mismatches.length ? mismatches.join("; ") : stepLabel(step)
+  });
+}
+
+function expectedDuplicateLayerNames(args, pairs) {
+  const sourceNames = Array.isArray(args.sourceNames) ? args.sourceNames.map((value) => String(value)) : [];
+  const suffix = hasOwn(args, "nameSuffix") ? String(args.nameSuffix || "") : " copy";
+  return pairs.map((pair, index) => {
+    const sourceName = sourceNames[index] || pair && pair.source && pair.source.name || "";
+    if (sourceName) return `${sourceName}${suffix}`;
+    if (pair && pair.duplicate && pair.duplicate.name) return String(pair.duplicate.name);
+    return sourceName ? `${sourceName}${suffix}` : "";
+  }).filter(Boolean);
+}
+
+function checkDuplicateLayers(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const pairs = Array.isArray(payload.pairs) ? payload.pairs : [];
+  const requested = Array.isArray(args.layerIndices) ? args.layerIndices : [];
+  const sourceNames = Array.isArray(args.sourceNames) ? args.sourceNames.map((value) => String(value)) : [];
+  const suffix = hasOwn(args, "nameSuffix") ? String(args.nameSuffix || "") : " copy";
+  const expectedCount = requested.length;
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const pairMismatches = [];
+  const pairNameMismatches = [];
+  const pairReadBackMismatches = [];
+  for (let index = 0; index < pairs.length; index += 1) {
+    const pair = pairs[index] || {};
+    if (!pair.source || !pair.duplicate) pairMismatches.push(`pair ${index + 1} missing source or duplicate`);
+    if (pair.requestedLayerIndex !== undefined && requested[index] !== undefined && Number(pair.requestedLayerIndex) !== Number(requested[index])) {
+      pairNameMismatches.push(`pair ${index + 1} requested index ${pair.requestedLayerIndex} != ${requested[index]}`);
+    }
+    const expectedSourceName = sourceNames[index] || pair.source && pair.source.name || "";
+    const expectedDuplicateName = expectedSourceName ? `${expectedSourceName}${suffix}` : pair.duplicate && pair.duplicate.name || "";
+    if (expectedSourceName && pair.source && pair.source.name !== expectedSourceName) {
+      pairNameMismatches.push(`pair ${index + 1} source ${pair.source.name || "missing"} != ${expectedSourceName}`);
+    }
+    if (expectedDuplicateName && pair.duplicate && pair.duplicate.name !== expectedDuplicateName) {
+      pairNameMismatches.push(`pair ${index + 1} duplicate ${pair.duplicate.name || "missing"} != ${expectedDuplicateName}`);
+    }
+    if (pair.duplicate && pair.duplicate.index && expectedDuplicateName && !observedLayerAtIndexEvidence(evidence.readBack, pair.duplicate.index, expectedDuplicateName)) {
+      pairReadBackMismatches.push(`duplicate ${expectedDuplicateName} not read back at layer ${pair.duplicate.index}`);
+    }
+    const sourceAfter = pair.sourceAfter || pair.source;
+    if (sourceAfter && sourceAfter.index && expectedSourceName && !observedLayerAtIndexEvidence(evidence.readBack, sourceAfter.index, expectedSourceName)) {
+      pairReadBackMismatches.push(`source ${expectedSourceName} not read back at layer ${sourceAfter.index}`);
+    }
+  }
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:pairs`,
+    title: "One duplicate exists for each requested source layer",
+    expected: `${expectedCount} source/duplicate pair(s)`,
+    observed: `${pairs.length} pair(s), duplicateCount=${payload.duplicateCount}`,
+    passed: expectedCount > 0 &&
+      pairs.length === expectedCount &&
+      Number(payload.duplicateCount || 0) === expectedCount &&
+      postVerification.pairCountMatches === true &&
+      postVerification.pairNameMatches !== false &&
+      pairMismatches.length === 0,
+    evidence: pairMismatches.length ? pairMismatches.join("; ") : stepLabel(step)
+  });
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:pair-name-order`,
+    title: "Source and duplicate names match requested layer-index order",
+    expected: requested.map((layerIndex, index) => `${layerIndex}:${sourceNames[index] || "source"}`).join(", "),
+    observed: pairNameMismatches.concat(pairReadBackMismatches).length
+      ? pairNameMismatches.concat(pairReadBackMismatches).join("; ")
+      : pairs.map((pair) => `${pair.requestedLayerIndex}:${pair.source && pair.source.name || "missing"} -> ${pair.duplicate && pair.duplicate.name || "missing"}`).join(", "),
+    passed: expectedCount > 0 &&
+      pairs.length === expectedCount &&
+      pairNameMismatches.length === 0 &&
+      pairReadBackMismatches.length === 0,
+    evidence: pairNameMismatches.concat(pairReadBackMismatches).length
+      ? pairNameMismatches.concat(pairReadBackMismatches).join("; ")
+      : "Post-run read-back matched duplicate_layers source/duplicate pair order."
+  });
+
+  const expectedNames = expectedDuplicateLayerNames(args, pairs);
+  const missingNames = expectedNames.filter((name) => !observedNameEvidence(evidence.readBack, name));
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:names`,
+    title: "Duplicate layer names are present in post-run read-back",
+    expected: expectedNames.join(", "),
+    observed: missingNames.length ? `missing: ${missingNames.join(", ")}` : expectedNames.join(", "),
+    passed: expectedNames.length === expectedCount && missingNames.length === 0 && pairNameMismatches.length === 0,
+    evidence: missingNames.length
+      ? "No post-run read-back step contained every expected duplicate name."
+      : expectedNames.map((name) => observedNameEvidence(evidence.readBack, name)).filter(Boolean).join("; ")
+  });
+
+  const before = numberValue(payload.layerCountBefore);
+  const after = numberValue(payload.layerCountAfter);
+  const expectedAfter = before === null ? null : before + expectedCount;
+  const afterReadBackEvidence = observedLayerCountEvidence(evidence.readBack, after);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:layer-counts`,
+    title: "Before and after layer counts match requested duplicates",
+    expected: before === null ? `${expectedCount} new layer(s)` : `${before} -> ${expectedAfter}`,
+    observed: before === null || after === null ? "missing before/after layer counts" : `${before} -> ${after}`,
+    passed: before !== null &&
+      after !== null &&
+      expectedAfter !== null &&
+      nearlyEqual(after, expectedAfter) &&
+      postVerification.ok === true &&
+      postVerification.layerCountMatches === true &&
+      Boolean(afterReadBackEvidence),
+    evidence: afterReadBackEvidence || "No post-run read-back layer count matched duplicate_layers after-count."
+  });
+}
+
+function checkDeleteLayer(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const absentEvidence = observedDeletedLayerAbsent(evidence.readBack, payload, args);
+  const before = numberValue(payload.layerCountBefore);
+  const after = numberValue(payload.layerCountAfter);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:absence`,
+    title: "Deleted layer is absent after read-back",
+    expected: `delete layer ${args.layerIndex || payload.requestedLayerIndex || "specified"} named ${args.expectedLayerName || payload.expectedLayerName || "expected"}`,
+    observed: absentEvidence ? `layer count ${before} -> ${after}; deleted layer absent` : "deleted layer absence not proven by read-back",
+    passed: Boolean(payload.deletedLayer) &&
+      postVerification.ok === true &&
+      postVerification.layerCountMatches === true &&
+      postVerification.deletedLayerIdAbsent === true &&
+      Boolean(absentEvidence),
+    evidence: absentEvidence || "No post-run comp/layer read-back proved the deleted layer is absent."
+  });
+}
+
+function checkSetCompProperties(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const updates = isPlainObject(payload.updates) ? payload.updates : {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const fields = Object.keys(updates).length ? Object.keys(updates) : ["width", "height", "pixelAspect", "duration", "frameRate", "bgColor", "displayStartTime", "displayStartFrame", "preserveNestedFrameRate", "motionBlur"].filter((field) => hasOwn(args, field));
+  if (!fields.length) {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:updates`,
+      title: "Composition update includes at least one bounded field",
+      expected: "one or more approved comp property updates",
+      observed: "no approved comp property updates",
+      passed: false,
+      evidence: "set_comp_properties did not report any bounded updated fields."
+    });
+    return;
+  }
+  for (const field of fields) {
+    const expected = hasOwn(updates, field) ? updates[field] : args[field];
+    const readBackEvidence = observedCompFieldEvidence(evidence.readBack, field, expected);
+    const afterMatches = compFieldMatches(payload.after, field, expected);
+    const fieldMatches = !postVerification.fieldMatches || postVerification.fieldMatches[field] !== false;
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:${field}`,
+      title: `Composition ${field} matches requested update`,
+      expected: Array.isArray(expected) ? expected.join(",") : expected,
+      observed: afterMatches ? (Array.isArray(expected) ? expected.join(",") : expected) : "missing or mismatched after value",
+      passed: afterMatches && fieldMatches && Boolean(readBackEvidence) && postVerification.ok === true,
+      evidence: readBackEvidence || `No post-run comp read-back matched ${field}.`
+    });
+  }
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:identity`,
+    title: "Composition identity and layer count stay bounded",
+    expected: "same comp identity and unchanged layer count",
+    observed: `identity=${postVerification.compIdentityMatches === true}, layerCountUnchanged=${postVerification.layerCountUnchanged === true}`,
+    passed: postVerification.compIdentityMatches === true && postVerification.layerCountUnchanged === true && evidence.readBack.count > 0,
+    evidence: evidence.readBack.count > 0 ? "Post-run comp read-back was present." : "No post-run comp read-back was present."
+  });
+}
+
+function checkRefreshCompPanel(checks, step, payload, evidence) {
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const before = isPlainObject(payload.before) ? payload.before : {};
+  const transient = isPlainObject(payload.transient) ? payload.transient : {};
+  const after = isPlainObject(payload.after) ? payload.after : payload.comp || {};
+  const restoredValue = hasOwn(after, "motionBlur") ? after.motionBlur : before.motionBlur;
+  const readBackEvidence = observedCompFieldEvidence(evidence.readBack, "motionBlur", restoredValue);
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:motionBlur-restored`,
+    title: "Composition motionBlur is restored after refresh toggle",
+    expected: `motionBlur restored to ${before.motionBlur}`,
+    observed: `before=${before.motionBlur}, transient=${transient.motionBlur}, after=${after.motionBlur}`,
+    passed: postVerification.ok === true &&
+      postVerification.motionBlurRestored === true &&
+      postVerification.transientToggled === true &&
+      before.motionBlur === after.motionBlur &&
+      transient.motionBlur !== before.motionBlur &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_comp_details read-back proved restored comp.motionBlur."
+  });
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:bounds`,
+    title: "Composition refresh stays bounded to the explicit comp",
+    expected: "same comp identity, unchanged layer count and work area",
+    observed: `identity=${postVerification.compIdentityMatches === true}, layerCount=${postVerification.layerCountUnchanged === true}, workArea=${postVerification.workAreaUnchanged === true}`,
+    passed: postVerification.compIdentityMatches === true &&
+      postVerification.layerCountUnchanged === true &&
+      postVerification.workAreaUnchanged === true &&
+      evidence.readBack.count > 0,
+    evidence: evidence.readBack.count > 0 ? "Post-run comp read-back was present." : "No post-run comp read-back was present."
+  });
+}
+
+function expectedCompCurrentTime(args, payload) {
+  if (hasOwn(args, "time")) return numberValue(args.time);
+  if (hasOwn(args, "frame")) {
+    const frame = numberValue(args.frame);
+    const frameRate = numberValue(args.frameRate) ||
+      numberValue(payload && payload.requested && payload.requested.frameRate) ||
+      numberValue(payload && payload.after && payload.after.frameRate);
+    if (frame !== null && frameRate !== null && frameRate > 0) return frame / frameRate;
+  }
+  return numberValue(payload && (hasOwn(payload, "targetTime") ? payload.targetTime : payload.after && payload.after.time));
+}
+
+function checkSetCompCurrentTime(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const expected = expectedCompCurrentTime(args, payload);
+  const after = payload.after || payload.comp || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const readBackEvidence = expected === null ? null : observedCompFieldEvidence(evidence.readBack, "time", expected);
+  const afterMatches = expected !== null && compFieldMatches(after, "time", expected);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:time`,
+    title: "Composition current time matches requested CTI target",
+    expected: expected === null ? "finite target time" : expected,
+    observed: hasOwn(after, "time") ? after.time : "missing after time",
+    passed: afterMatches &&
+      postVerification.ok === true &&
+      postVerification.compIdentityMatches === true &&
+      postVerification.structuralFieldsUnchanged === true &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_comp_details read-back matched set_comp_current_time."
+  });
+}
+
+function checkSetLayerMask(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const mask = payload.afterMask || payload.mask || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const readBackEvidence = observedMaskEvidence(evidence.readBack, args, mask);
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:mask`,
+    title: "Layer mask create/update matches read-back",
+    expected: `${args.operation || payload.operation || "operation"} mask ${args.maskIndex || args.name || args.expectedMaskName || ""}`.trim(),
+    observed: mask.name ? `${mask.propertyIndex || "?"}: ${mask.name}` : "missing mask",
+    passed: Boolean(mask && mask.propertyIndex) && postVerification.ok === true && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run layer/mask read-back matched the create/update result."
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:mask-count`,
+    title: "Layer mask count matches bounded operation",
+    expected: `after mask count ${postVerification.expectedMaskCountAfter}`,
+    observed: `after mask count ${postVerification.afterMaskCount}`,
+    passed: postVerification.maskCountMatches === true && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run mask read-back proved the final mask count."
+  });
+}
+
+function checkSetPathGeometry(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const pathGeometry = payload.pathGeometry || payload.property || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const readBackEvidence = observedPathGeometryEvidence(evidence.readBack, args, pathGeometry);
+  const requestedKeyframes = expectedPathGeometryKeyframes(args);
+  const expected = requestedKeyframes.length
+    ? `${requestedKeyframes.length} path geometry keyframe(s)`
+    : `${expectedPathGeometry(args) && expectedPathGeometry(args).vertices.length || 0} path vertices`;
+  const observed = pathGeometry && pathGeometry.geometry
+    ? `${pathGeometry.geometry.vertexCount || pathGeometry.geometry.vertices && pathGeometry.geometry.vertices.length || 0} vertices`
+    : `${postVerification.afterKeyframeCount || 0} keyframe(s)`;
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:geometry`,
+    title: "Path geometry matches read-back",
+    expected,
+    observed,
+    passed: postVerification.ok === true && Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run path geometry read-back matched set_path_geometry."
+  });
+}
+
+function checkCreateLayerConnectionLine(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const connector = payload.connector || payload.layer || {};
+  const pathGeometry = payload.pathGeometry || payload.path || {};
+  const geometry = pathGeometry.geometry || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const expectedLocked = args.lockLayer !== false;
+  const readBackEvidence = observedNameEvidence(evidence.readBack, connector.name) ||
+    observedNameEvidence(evidence.all, connector.name);
+
+  checkName(checks, step, args.name, connector.name, evidence, "Created connector layer name matches request");
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:open-path`,
+    title: "Connector path is an open two-point shape path",
+    expected: "open path with 2 vertices",
+    observed: `closed:${geometry.closed === true}; vertices:${geometry.vertexCount || 0}`,
+    passed: postVerification.ok === true &&
+      postVerification.pathOpen === true &&
+      Number(postVerification.vertexCount || 0) === 2 &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No connector layer read-back matched the generated open path."
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:expression`,
+    title: "Connector path expression is enabled and error-free",
+    expected: "expressionEnabled:true without expressionError",
+    observed: `expressionEnabled:${payload.expressionEnabled === true}; expressionError:${payload.expressionError || ""}`,
+    passed: postVerification.expressionEnabled === true &&
+      postVerification.expressionMatches === true &&
+      !postVerification.expressionError,
+    evidence: stepLabel(step)
+  });
+  if (expectedLocked) {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:locked`,
+      title: "Generated connector layer is locked after setup",
+      expected: "locked:true",
+      observed: `locked:${connector.locked === true}`,
+      passed: connector.locked === true && postVerification.locked === true,
+      evidence: readBackEvidence || stepLabel(step)
+    });
+  }
+}
+
+function checkCreateShapesFromText(checks, step, payload, evidence) {
+  const args = step.args || {};
+  const shapeLayer = payload.shapeLayer || payload.layer || {};
+  const sourceLayer = payload.sourceLayerAfter || payload.sourceLayerBefore || {};
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const outline = isPlainObject(payload.outline) ? payload.outline : {};
+  const expectedShapeName = args.shapeLayerName || shapeLayer.name;
+  const readBackEvidence = observedNameEvidence(evidence.readBack, expectedShapeName) ||
+    observedNameEvidence(evidence.all, expectedShapeName);
+
+  checkName(checks, step, args.shapeLayerName, shapeLayer.name, evidence, "Created shape-outline layer name matches request");
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:shape-layer`,
+    title: "Text conversion produced a shape layer",
+    expected: "shapeLayer:true with AE vector layer matchName",
+    observed: `shapeLayer:${shapeLayer.shapeLayer === true}; matchName:${shapeLayer.matchName || ""}`,
+    passed: postVerification.ok === true &&
+      postVerification.createdShapeLayer === true &&
+      (shapeLayer.shapeLayer === true || shapeLayer.matchName === "ADBE Vector Layer") &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No post-run get_layer_details read-back matched the generated shape layer."
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:outline-groups`,
+    title: "Generated shape layer contains outline vector groups",
+    expected: "outline vectorGroupCount > 0",
+    observed: `outline vectorGroupCount:${outline.vectorGroupCount ?? postVerification.outlineGroupCount ?? 0}`,
+    passed: postVerification.ok === true &&
+      Number(postVerification.outlineGroupCount || outline.vectorGroupCount || 0) > 0 &&
+      Boolean(readBackEvidence),
+    evidence: readBackEvidence || "No generated shape-outline layer read-back proved vector groups."
+  });
+  if (hasOwn(args, "expectedSourceText")) {
+    const observedText = payload.sourceLayerBefore && hasOwn(payload.sourceLayerBefore, "text")
+      ? payload.sourceLayerBefore.text
+      : sourceLayer.text && sourceLayer.text.text;
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:source-text-guard`,
+      title: "Source Text guard matched before conversion",
+      expected: args.expectedSourceText,
+      observed: observedText,
+      passed: sameString(observedText, args.expectedSourceText) && postVerification.sourceTextMatched === true,
+      evidence: stepLabel(step)
+    });
+  }
+  if (args.expectedLayerName) {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:source-name-guard`,
+      title: "Source text layer name guard matched",
+      expected: args.expectedLayerName,
+      observed: sourceLayer.name || payload.sourceLayerBefore && payload.sourceLayerBefore.name,
+      passed: postVerification.sourceNameMatched === true,
+      evidence: stepLabel(step)
+    });
+  }
+}
+
+function exportPathPointsVertices(args) {
+  if (Array.isArray(args.vertices)) return args.vertices;
+  if (isPlainObject(args.geometry) && Array.isArray(args.geometry.vertices)) return args.geometry.vertices;
+  return [];
+}
+
+function roundExportCoordinate(value, decimalPlaces) {
+  return Number(Number(value).toFixed(decimalPlaces));
+}
+
+function expectedExportPathPoints(args) {
+  const decimalPlaces = Math.max(0, Math.min(4, Math.floor(numberValue(hasOwn(args, "decimalPlaces") ? args.decimalPlaces : 2) || 0)));
+  const rotate = hasOwn(args, "rotateFirstPointToEnd") ? args.rotateFirstPointToEnd !== false : true;
+  const points = exportPathPointsVertices(args)
+    .filter((point) => Array.isArray(point) && point.length >= 2)
+    .map((point) => [
+      roundExportCoordinate(point[0], decimalPlaces),
+      roundExportCoordinate(point[1], decimalPlaces)
+    ]);
+  if (rotate && points.length > 1) points.push(points.shift());
+  return points;
+}
+
+function pathPointsMatch(expected, observed) {
+  return Array.isArray(expected) &&
+    Array.isArray(observed) &&
+    expected.length === observed.length &&
+    expected.every((point, index) => (
+      Array.isArray(point) &&
+      Array.isArray(observed[index]) &&
+      nearlyEqual(point[0], observed[index][0]) &&
+      nearlyEqual(point[1], observed[index][1])
+    ));
+}
+
+function checkExportPathPoints(checks, step, payload) {
+  const args = step.args || {};
+  const file = isPlainObject(payload.file) ? payload.file : {};
+  const expectedFileName = args.outputFileName || "points.txt";
+  const expectedPoints = expectedExportPathPoints(args);
+  const observedPoints = Array.isArray(payload.points) ? payload.points : [];
+  const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+  const contentPreview = String(payload.contentPreview || "");
+  const variableName = args.variableName || "points";
+  const fileContractIssues = generatedFileEvidenceIssues(step.tool, file);
+  const fileContractOk = fileContractIssues.length === 0;
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:file`,
+    title: "Generated path-points export file was written and read back",
+    expected: expectedFileName,
+    observed: `${file.outputFileName || "missing"}; bytes=${file.byteLength || 0}; sha256=${hashOk}; contract=${fileContractOk}`,
+    passed: file.outputFileName === expectedFileName && Number(file.byteLength || 0) > 0 && hashOk && fileContractOk,
+    evidence: fileContractOk ? (file.outputPath || "No generated export file evidence.") : fileContractIssues.join(" ")
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:points`,
+    title: "Exported points match rounded and rotated vertices",
+    expected: stableStringify(expectedPoints),
+    observed: stableStringify(observedPoints),
+    passed: expectedPoints.length > 0 && pathPointsMatch(expectedPoints, observedPoints),
+    evidence: stepLabel(step)
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:content`,
+    title: "Export content uses the reviewed variable payload format",
+    expected: `var ${variableName} = ...;`,
+    observed: contentPreview,
+    passed: contentPreview.startsWith(`var ${variableName} = [`) && contentPreview.endsWith(";"),
+    evidence: stepLabel(step)
+  });
+}
+
+function sourceTextFromExportTextLayerEvidence(rawLayer) {
+  const raw = isPlainObject(rawLayer) ? rawLayer : {};
+  const layer = isPlainObject(raw.layer) ? raw.layer : raw;
+  const textPayload = isPlainObject(raw.text) ? raw.text : isPlainObject(layer.text) ? layer.text : null;
+  const sourceText = typeof raw.sourceText === "string"
+    ? raw.sourceText
+    : typeof layer.sourceText === "string"
+      ? layer.sourceText
+      : typeof raw.text === "string"
+        ? raw.text
+        : typeof layer.text === "string"
+          ? layer.text
+          : typeof (textPayload && textPayload.text) === "string"
+            ? textPayload.text
+            : null;
+  const textLayer = raw.textLayer === true ||
+    layer.textLayer === true ||
+    raw.layerKind === "text" ||
+    layer.layerKind === "text" ||
+    raw.type === "text" ||
+    layer.type === "text" ||
+    Boolean(textPayload && textPayload.kind === "TextDocument") ||
+    sourceText !== null;
+  return textLayer ? sourceText : "[Not a text layer]";
+}
+
+function expectedExportTextContent(args) {
+  const layers = Array.isArray(args.layers) ? args.layers : Array.isArray(args.layerEvidence) ? args.layerEvidence : [];
+  return layers.map((layer, index) => {
+    const text = sourceTextFromExportTextLayerEvidence(layer);
+    return `${index + 1}:\n${text === null ? "" : text}\n\n`;
+  }).join("");
+}
+
+function checkExportTextToFile(checks, step, payload) {
+  const args = step.args || {};
+  const file = isPlainObject(payload.file) ? payload.file : {};
+  const expectedFileName = args.outputFileName || "export.txt";
+  const expectedContent = expectedExportTextContent(args);
+  const observedContent = String(payload.exportedText || payload.contentPreview || "");
+  const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+  const fileContractIssues = generatedFileEvidenceIssues(step.tool, file);
+  const fileContractOk = fileContractIssues.length === 0;
+  const expectedLayerCount = Array.isArray(args.layers)
+    ? args.layers.length
+    : Array.isArray(args.layerEvidence)
+      ? args.layerEvidence.length
+      : 0;
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:file`,
+    title: "Generated selected-text export file was written and read back",
+    expected: expectedFileName,
+    observed: `${file.outputFileName || "missing"}; bytes=${file.byteLength || 0}; sha256=${hashOk}; contract=${fileContractOk}`,
+    passed: file.outputFileName === expectedFileName && Number(file.byteLength || 0) > 0 && hashOk && fileContractOk,
+    evidence: fileContractOk ? (file.outputPath || "No generated text export file evidence.") : fileContractIssues.join(" ")
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:content`,
+    title: "Exported selected-layer text matches reviewed evidence",
+    expected: compactText(expectedContent, 220),
+    observed: compactText(observedContent, 220),
+    passed: expectedLayerCount > 0 && observedContent === expectedContent,
+    evidence: stepLabel(step)
+  });
+}
+
+function checkSaveCompFramePng(checks, step, payload) {
+  const args = step.args || {};
+  const file = isPlainObject(payload.file) ? payload.file : {};
+  const comp = isPlainObject(payload.comp) ? payload.comp : {};
+  const frame = isPlainObject(payload.frame) ? payload.frame : {};
+  const resolutionFactor = isPlainObject(payload.resolutionFactor) ? payload.resolutionFactor : {};
+  const expectedFileName = args.outputFileName || "frame.png";
+  const expectedCompName = args.expectedCompName || args.compName || "";
+  const hashOk = typeof file.sha256 === "string" && /^[a-f0-9]{64}$/i.test(file.sha256);
+  const byteLength = Number(file.byteLength || 0);
+  const requestedTime = hasOwn(args, "time") ? Number(args.time) : null;
+  const observedTime = Number(frame.time);
+  const timeMatches = requestedTime === null || (Number.isFinite(observedTime) && nearlyEqual(observedTime, requestedTime, 0.0001));
+  const fileContractIssues = generatedFileEvidenceIssues(step.tool, file);
+  const fileContractOk = fileContractIssues.length === 0;
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:file`,
+    title: "Generated composition frame PNG was written and read back",
+    expected: expectedFileName,
+    observed: `${file.outputFileName || "missing"}; bytes=${byteLength}; sha256=${hashOk}; contract=${fileContractOk}`,
+    passed: file.outputFileName === expectedFileName && byteLength > 0 && hashOk && String(file.mimeType || "") === "image/png" && fileContractOk,
+    evidence: fileContractOk ? (file.outputPath || "No generated PNG file evidence.") : fileContractIssues.join(" ")
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:resolution-factor`,
+    title: "Composition resolutionFactor was restored after frame export",
+    expected: stableStringify(resolutionFactor.before || []),
+    observed: stableStringify(resolutionFactor.after || []),
+    passed: resolutionFactor.restored === true,
+    evidence: stepLabel(step)
+  });
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:target`,
+    title: "Saved frame target matches explicit composition and time",
+    expected: `${expectedCompName || "explicit comp"} at ${requestedTime === null ? "current time" : requestedTime}`,
+    observed: `${comp.name || "missing comp"} at ${Number.isFinite(observedTime) ? observedTime : "missing time"}`,
+    passed: (!expectedCompName || comp.name === expectedCompName) && timeMatches,
+    evidence: stepLabel(step)
+  });
+}
+
+function exactRenamesMatch(items, args) {
+  if (!items.length) return false;
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index] || {};
+    const expected = expectedRenameValue(item.before, args, index + 1, items.length);
+    if (typeof expected !== "string" || item.after !== expected) return false;
+  }
+  return true;
+}
+
+const SLIDESHOW_MUTATING_TOOLS = new Set([
+  "clone_slideshow_event_tree", "extend_slideshow_cloned_tree", "rewrite_slideshow_tree_expressions",
+  "apply_slideshow_event_text", "replace_slideshow_media_leaf", "copy_slideshow_event_pair",
+  "add_slideshow_event_overlays", "copy_slideshow_control_layer", "configure_slideshow_tree_audio",
+  "create_slideshow_master"
+]);
+
+function sameSlideshowKeyMetadata(before, after) {
+  // AE stores spatial tangents with float precision; setting them can round a few millionths of a pixel.
+  for (const field of ["inSpatial", "outSpatial"]) {
+    const left = before[field], right = after[field];
+    if (Array.isArray(left) || Array.isArray(right)) {
+      if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length || !left.every((value, index) => typeof value === "number" && Number.isFinite(value) && typeof right[index] === "number" && Number.isFinite(right[index]) && Math.abs(value - right[index]) <= 0.0001)) return false;
+    } else if (left !== right) return false;
+  }
+  const left = {...before}, right = {...after};
+  for (const field of ["time", "compDuration", "inSpatial", "outSpatial"]) { delete left[field]; delete right[field]; }
+  const linear = (value) => String(value).toUpperCase() === "LINEAR" || String(value) === "6612";
+  // AE derives temporal speed for LINEAR segments from value distance and the
+  // translated key times. Preserve ease arity/influence, while accepting the
+  // corresponding derived speed change. BEZIER/HOLD metadata remains exact.
+  for (const [typeField, easeField] of [["inType", "inEase"], ["outType", "outEase"]]) {
+    if (linear(left[typeField]) && linear(right[typeField]) && Array.isArray(left[easeField]) && Array.isArray(right[easeField])) {
+      left[easeField] = left[easeField].map((ease) => ({...ease, speed: "<derived-linear-speed>"}));
+      right[easeField] = right[easeField].map((ease) => ({...ease, speed: "<derived-linear-speed>"}));
+    }
+  }
+  return stableStringify(left) === stableStringify(right);
+}
+
+const SLIDESHOW_STRUCTURE_SCHEMA = "ae-agent-comp-structure.v1";
+const SLIDESHOW_NUMERIC_EPSILON = 0.0001;
+
+function slideshowStructure(value) {
+  if (!isPlainObject(value) || !Number.isInteger(Number(value.itemId)) || Number(value.itemId) < 1 ||
+    typeof value.name !== "string" || !value.name || !Number.isFinite(Number(value.duration)) ||
+    !Number.isInteger(Number(value.numLayers)) || Number(value.numLayers) < 0 ||
+    value.structureSchema !== SLIDESHOW_STRUCTURE_SCHEMA || !Array.isArray(value.layers) ||
+    value.layers.length !== Number(value.numLayers)) return null;
+  const layers = [];
+  for (const rawLayer of value.layers) {
+    if (!isPlainObject(rawLayer)) return null;
+    const sourceType = rawLayer.sourceType;
+    const sourceItemId = rawLayer.sourceItemId === null ? null : Number(rawLayer.sourceItemId);
+    const sourceName = rawLayer.sourceName === null ? null : rawLayer.sourceName;
+    if (!Number.isInteger(Number(rawLayer.layerId)) || Number(rawLayer.layerId) < 1 ||
+      typeof rawLayer.name !== "string" || !["comp", "footage", "none"].includes(sourceType) ||
+      (sourceType === "none" && (sourceItemId !== null || sourceName !== null)) ||
+      (sourceType !== "none" && (!Number.isInteger(sourceItemId) || sourceItemId < 1 || typeof sourceName !== "string" || !sourceName)) ||
+      ![rawLayer.startTime, rawLayer.inPoint, rawLayer.outPoint, rawLayer.stretch].every((item) => Number.isFinite(Number(item))) ||
+      !["enabled", "audioEnabled", "timeRemapEnabled", "guideLayer", "adjustmentLayer", "threeDLayer", "collapseTransformation"].every((field) => typeof rawLayer[field] === "boolean")) return null;
+    layers.push({
+      layerId: Number(rawLayer.layerId),
+      name: rawLayer.name,
+      sourceType,
+      sourceItemId,
+      sourceName,
+      startTime: Number(rawLayer.startTime),
+      inPoint: Number(rawLayer.inPoint),
+      outPoint: Number(rawLayer.outPoint),
+      stretch: Number(rawLayer.stretch),
+      enabled: rawLayer.enabled,
+      audioEnabled: rawLayer.audioEnabled,
+      timeRemapEnabled: rawLayer.timeRemapEnabled,
+      guideLayer: rawLayer.guideLayer,
+      adjustmentLayer: rawLayer.adjustmentLayer,
+      threeDLayer: rawLayer.threeDLayer,
+      collapseTransformation: rawLayer.collapseTransformation
+    });
+  }
+  if (new Set(layers.map((item) => item.layerId)).size !== layers.length) return null;
+  return {
+    itemId: Number(value.itemId),
+    name: value.name,
+    duration: Number(value.duration),
+    numLayers: Number(value.numLayers),
+    structureSchema: value.structureSchema,
+    layers
+  };
+}
+
+function slideshowStructureDigest(value) {
+  const structure = slideshowStructure(value);
+  if (!structure) return null;
+  const text = JSON.stringify(structure);
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return (`00000000${(hash >>> 0).toString(16)}`).slice(-8);
+}
+
+function fingerprintSummaryMatches(summary, structure, digest) {
+  return isPlainObject(summary) && Number(summary.itemId) === structure.itemId &&
+    summary.name === structure.name && nearlyEqual(summary.duration, structure.duration, SLIDESHOW_NUMERIC_EPSILON) &&
+    Number(summary.numLayers) === structure.numLayers && summary.structureSchema === structure.structureSchema &&
+    summary.digest === digest;
+}
+
+function completeSlideshowSourceProof(items, protectedSources) {
+  if (!Array.isArray(items) || !Array.isArray(protectedSources) || items.length !== protectedSources.length) return false;
+  const unused = new Set(items.map((_, index) => index));
+  for (const rawSource of protectedSources) {
+    const structure = slideshowStructure(rawSource);
+    const digest = slideshowStructureDigest(rawSource);
+    if (!structure || !digest) return false;
+    const matchIndex = items.findIndex((item, index) => unused.has(index) && item && item.unchanged === true &&
+      item.reason === null && fingerprintSummaryMatches(item.expected, structure, digest) &&
+      fingerprintSummaryMatches(item.actual, structure, digest));
+    if (matchIndex < 0) return false;
+    unused.delete(matchIndex);
+  }
+  return unused.size === 0;
+}
+
+function finiteTypedSlideshowKeyValue(value) {
+  if (!isPlainObject(value) || !["scalar", "vector"].includes(value.type)) return false;
+  if (value.type === "scalar") return typeof value.value === "number" && Number.isFinite(value.value);
+  return Array.isArray(value.value) && value.value.length >= 1 && value.value.length <= 4 &&
+    value.value.every((item) => typeof item === "number" && Number.isFinite(item));
+}
+
+function completeSlideshowPropertyIdentity(item) {
+  if (!isPlainObject(item) || !Number.isInteger(Number(item.compItemId)) || Number(item.compItemId) < 1 ||
+    !Number.isInteger(Number(item.layerId)) || Number(item.layerId) < 1 || typeof item.propertyIdentity !== "string" ||
+    !Array.isArray(item.propertyPath) || !item.propertyPath.length ||
+    item.propertyPath.some((part) => !isPlainObject(part) || !Number.isInteger(Number(part.propertyIndex)) || Number(part.propertyIndex) < 1 || typeof part.matchName !== "string" || typeof part.name !== "string")) return false;
+  const expected = [`comp:${Number(item.compItemId)}`, `layer:${Number(item.layerId)}`]
+    .concat(item.propertyPath.map((part) => `property:${Number(part.propertyIndex)}:${encodeURIComponent(part.matchName)}:${encodeURIComponent(part.name)}`))
+    .join("/");
+  return item.propertyIdentity === expected;
+}
+
+function completeSlideshowKeyEvidence(item) {
+  return completeSlideshowPropertyIdentity(item) && Number.isInteger(Number(item.keyIndex)) && Number(item.keyIndex) > 0 && finiteTypedSlideshowKeyValue(item.value);
+}
+
+function slideshowLayerName(item) {
+  return String(item && (item.layer || item.name) || "");
+}
+
+function validStableLayerIdentity(item) {
+  return isPlainObject(item) && Number.isInteger(Number(item.compItemId)) && Number(item.compItemId) > 0 &&
+    Number.isInteger(Number(item.layerId)) && Number(item.layerId) > 0;
+}
+
+function intervalTolerance(layer, kind) {
+  // Interval proof, not a claim of a measured source sample rate. Do not hide a sample-sized gap.
+  if (kind === "audio") return 0.0000001;
+  const frameDuration = Number(layer && layer.compFrameDuration);
+  if (!Number.isFinite(frameDuration) || frameDuration <= 0) return null;
+  return Math.min(SLIDESHOW_NUMERIC_EPSILON, frameDuration / 1000);
+}
+
+function exactSlideshowCoverage(matches, spec, expectedStart, kind) {
+  if (!matches.length) return false;
+  const sorted = matches.slice().sort((left, right) => Number(left.inPoint) - Number(right.inPoint));
+  const expectedEnd = Number(expectedStart) + Number(spec.duration);
+  let cursor = Number(expectedStart);
+  for (const item of sorted) {
+    const tolerance = intervalTolerance(item, kind);
+    const sourceIn = Number(item.sourceIn);
+    if (tolerance === null || !Number.isFinite(Number(item.inPoint)) || !Number.isFinite(Number(item.outPoint)) ||
+      Number(item.outPoint) <= Number(item.inPoint) || !nearlyEqual(item.inPoint, cursor, tolerance) ||
+      !Number.isFinite(sourceIn) || !nearlyEqual(sourceIn, spec.sourceIn, tolerance) ||
+      !nearlyEqual(Number(item.inPoint) - Number(item.startTime), spec.sourceIn, tolerance)) return false;
+    cursor = Number(item.outPoint);
+  }
+  const tolerance = intervalTolerance(sorted[sorted.length - 1], kind);
+  return tolerance !== null && nearlyEqual(sorted[0].inPoint, expectedStart, tolerance) && nearlyEqual(cursor, expectedEnd, tolerance);
+}
+
+function expressionReferencesComp(expression, name) {
+  const source = String(expression || "");
+  const doubleQuoted = `comp(${JSON.stringify(String(name))})`;
+  const singleValue = String(name).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  return source.includes(doubleQuoted) || source.includes(`comp('${singleValue}')`);
+}
+
+function completeExpressionIdentity(item) {
+  return completeSlideshowPropertyIdentity(item);
+}
+
+function expressionReplacementProofMatches(step, payload, audit) {
+  const args = step.args || {};
+  const proof = Array.isArray(payload.expressionReplacements) ? payload.expressionReplacements : null;
+  const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+  const expressions = audit && audit.details && Array.isArray(audit.details.expressions) ? audit.details.expressions : null;
+  const provenance = audit && audit.details && Array.isArray(audit.details.expressionProvenance) ? audit.details.expressionProvenance : null;
+  if (!proof || !expressions || postVerification.ok !== true || postVerification.replacementsProven !== true ||
+    !provenance || !provenance.length || expressions.some((item) => !completeExpressionIdentity(item) || item.error) ||
+    provenance.some((item) => !isPlainObject(item) || typeof item.comp !== "string" || !item.comp || !Number.isInteger(Number(item.compItemId)) || Number(item.compItemId) < 1 || typeof item.sourceName !== "string" || !item.sourceName)) return false;
+  const requested = Array.isArray(args.replacements) ? args.replacements : [];
+  for (const replacement of requested) {
+    const row = proof.find((item) => item && item.kind === "requested" && item.from === replacement.from && item.to === replacement.to);
+    if (!row || Number(row.occurrencesBefore) <= 0 || Number(row.occurrencesAfter) !== 0 || !Array.isArray(row.changedProperties) || !row.changedProperties.length) return false;
+  }
+  // The tool de-duplicates identical mappings. When the caller explicitly
+  // requests Final Comp -> masterCompName, the single proof row is classified
+  // as requested rather than master; it still proves the same required map.
+  const masterRows = proof.filter((item) => item && ["master", "requested"].includes(item.kind) && item.from === "Final Comp" && item.to === args.masterCompName);
+  if (masterRows.length !== 1) return false;
+  const expectedDerived = provenance.map((item) => ({from: item.sourceName, to: item.comp}));
+  const derivedRows = proof.filter((item) => item && item.kind === "derived");
+  if (expectedDerived.some((expected) => !proof.some((item) => item.from === expected.from && item.to === expected.to)) ||
+    derivedRows.some((item) => !expectedDerived.some((expected) => item.from === expected.from && item.to === expected.to))) return false;
+  if (proof.some((item) => !item || typeof item.from !== "string" || typeof item.to !== "string" || Number(item.occurrencesAfter) !== 0 ||
+    !["requested", "derived", "master"].includes(item.kind) || !["replaced", "not_referenced"].includes(item.status) ||
+    (item.status === "replaced" && (Number(item.occurrencesBefore) <= 0 || !Array.isArray(item.changedProperties) || !item.changedProperties.length)) ||
+    (item.status === "not_referenced" && (Number(item.occurrencesBefore) !== 0 || !Array.isArray(item.changedProperties) || item.changedProperties.length !== 0)))) return false;
+  for (const row of proof) {
+    for (const changed of row.changedProperties) {
+      if (!completeExpressionIdentity(changed) || typeof changed.before !== "string" || typeof changed.after !== "string" ||
+        Number(changed.sourceOccurrencesBefore) <= 0 || Number(changed.sourceOccurrencesAfter) !== 0 ||
+        Number(changed.destinationOccurrencesAfter) <= Number(changed.destinationOccurrencesBefore || 0)) return false;
+      const readBack = expressions.find((item) => item.propertyIdentity === changed.propertyIdentity && Number(item.compItemId) === Number(changed.compItemId) && Number(item.layerId) === Number(changed.layerId) && stableStringify(item.propertyPath) === stableStringify(changed.propertyPath));
+      if (!readBack || readBack.expression !== changed.after || expressionReferencesComp(readBack.expression, row.from) || !expressionReferencesComp(readBack.expression, row.to)) return false;
+    }
+  }
+  return proof.every((item) => !expressions.some((entry) => expressionReferencesComp(entry.expression, item.from)));
+}
+
+function completeAudioRouteProof(payload, audit) {
+  const routes = Array.isArray(payload.audioRoutes) ? payload.audioRoutes : null;
+  const layers = audit && audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : null;
+  if (!routes || !routes.length || !layers || Number(payload.audioRouteCountBefore) !== routes.length) return false;
+  const relevantLayers = layers.filter((item) => item && item.sourceType === "comp");
+  if (relevantLayers.length !== routes.length) return false;
+  const matchedLayerIds = new Set();
+  for (const route of routes) {
+    if (!validStableLayerIdentity(route) || !Number.isInteger(Number(route.sourceItemId)) || Number(route.sourceItemId) < 1 ||
+      ![route.inPoint, route.outPoint, route.sourceIn].every((item) => Number.isFinite(Number(item))) || Number(route.outPoint) <= Number(route.inPoint) ||
+      typeof route.audioEnabledBefore !== "boolean" || typeof route.audioEnabledAfter !== "boolean" ||
+      !["preserve_audible", "preserve_muted", "preserve_no_audible_source", "mute_duplicate"].includes(route.action) ||
+      !["unique_audible_route", "muted_before", "source_has_no_audible_path", "fully_covered_duplicate"].includes(route.reason) ||
+      !Array.isArray(route.audiblePaths) || route.audiblePaths.some((path) => !isPlainObject(path) || !Number.isInteger(Number(path.sourceItemId)) || Number(path.sourceItemId) < 1 ||
+        ![path.inPoint, path.outPoint, path.sourceIn].every((item) => Number.isFinite(Number(item))) || Number(path.outPoint) <= Number(path.inPoint))) return false;
+    const layer = relevantLayers.find((item) => Number(item.compItemId) === Number(route.compItemId) && Number(item.layerId) === Number(route.layerId) && Number(item.sourceItemId) === Number(route.sourceItemId));
+    if (!layer || matchedLayerIds.has(`${route.compItemId}:${route.layerId}`) || layer.audioEnabled !== route.audioEnabledAfter ||
+      !nearlyEqual(layer.inPoint, route.inPoint, SLIDESHOW_NUMERIC_EPSILON) || !nearlyEqual(layer.outPoint, route.outPoint, SLIDESHOW_NUMERIC_EPSILON) ||
+      !nearlyEqual(layer.sourceIn, route.sourceIn, SLIDESHOW_NUMERIC_EPSILON)) return false;
+    matchedLayerIds.add(`${route.compItemId}:${route.layerId}`);
+    if ((route.action === "preserve_audible" && (route.reason !== "unique_audible_route" || !route.audioEnabledBefore || !route.audioEnabledAfter || route.audiblePaths.length === 0)) ||
+      (route.action === "preserve_muted" && (route.reason !== "muted_before" || route.audioEnabledBefore || route.audioEnabledAfter)) ||
+      (route.action === "preserve_no_audible_source" && (route.reason !== "source_has_no_audible_path" || !route.audioEnabledBefore || !route.audioEnabledAfter || route.audiblePaths.length !== 0)) ||
+      (route.action === "mute_duplicate" && (route.reason !== "fully_covered_duplicate" || !route.audioEnabledBefore || route.audioEnabledAfter))) return false;
+    if (route.audioEnabledBefore && !route.audioEnabledAfter) {
+      if (route.action !== "mute_duplicate") return false;
+      if (!route.audiblePaths.length) return false;
+      const survivorPaths = [];
+      for (const survivor of routes) {
+        if (survivor !== route && Number(survivor.compItemId) === Number(route.compItemId) && survivor.audioEnabledAfter === true && Array.isArray(survivor.audiblePaths)) survivorPaths.push(...survivor.audiblePaths);
+      }
+      for (const layer of layers) {
+        if (Number(layer.compItemId) === Number(route.compItemId) && layer.sourceType === "footage" && layer.hasAudio === true && layer.audioEnabled === true &&
+          Number.isInteger(Number(layer.sourceItemId)) && Number(layer.sourceItemId) > 0 && [layer.inPoint, layer.outPoint, layer.sourceIn].every((item) => Number.isFinite(Number(item)))) {
+          survivorPaths.push({sourceItemId: Number(layer.sourceItemId), inPoint: Number(layer.inPoint), outPoint: Number(layer.outPoint), sourceIn: Number(layer.sourceIn)});
+        }
+      }
+      for (const mutedPath of route.audiblePaths) {
+        const spans = [];
+        for (const survivorPath of survivorPaths) {
+          if (Number(survivorPath.sourceItemId) !== Number(mutedPath.sourceItemId) ||
+            !nearlyEqual(Number(survivorPath.sourceIn) - Number(survivorPath.inPoint), Number(mutedPath.sourceIn) - Number(mutedPath.inPoint), SLIDESHOW_NUMERIC_EPSILON)) continue;
+          const start = Math.max(Number(mutedPath.inPoint), Number(survivorPath.inPoint));
+          const end = Math.min(Number(mutedPath.outPoint), Number(survivorPath.outPoint));
+          if (end > start + SLIDESHOW_NUMERIC_EPSILON) spans.push({start, end});
+        }
+        spans.sort((left, right) => left.start - right.start || right.end - left.end);
+        let cursor = Number(mutedPath.inPoint);
+        for (const span of spans) {
+          if (span.start > cursor + SLIDESHOW_NUMERIC_EPSILON) break;
+          cursor = Math.max(cursor, span.end);
+          if (cursor >= Number(mutedPath.outPoint) - SLIDESHOW_NUMERIC_EPSILON) break;
+        }
+        if (cursor < Number(mutedPath.outPoint) - SLIDESHOW_NUMERIC_EPSILON) return false;
+      }
+    } else if (route.audioEnabledBefore !== route.audioEnabledAfter) return false;
+  }
+  return matchedLayerIds.size === relevantLayers.length;
+}
+
+function checkSlideshowMutation(checks, step, evidence) {
+  const args = isPlainObject(step.args) ? step.args : {};
+  const audits = Array.isArray(evidence.readBack.slideshowAudits) ? evidence.readBack.slideshowAudits : [];
+  const expectedRoot = ["copy_slideshow_event_pair", "add_slideshow_event_overlays", "copy_slideshow_control_layer"].includes(step.tool)
+    ? args.expectedMasterCompName
+    : args.generatedRootName || args.expectedRootCompName || args.masterName;
+  const audit = audits.find((entry) => entry && entry.root && (!expectedRoot || entry.root.name === expectedRoot));
+  let operationMatches = Boolean(audit && audit.ok === true && Array.isArray(audit.issues) && audit.issues.length === 0);
+  let expected = `${expectedRoot || "generated slideshow target"} with clean independent audit`;
+  let observed = audit ? `${audit.root.name}; issues=${audit.issues.length}` : "missing audit_slideshow_generated read-back";
+  const protectedSources = Array.isArray(args.protectedSourceFingerprints) ? args.protectedSourceFingerprints : [];
+  const sourceBaselineRequired = ["clone_slideshow_event_tree", "copy_slideshow_event_pair", "copy_slideshow_control_layer"].includes(step.tool);
+  if (sourceBaselineRequired && protectedSources.length === 0) {
+    operationMatches = false;
+    expected += "; complete protected source baseline required";
+  }
+  if (protectedSources.length) {
+    operationMatches = operationMatches && completeSlideshowSourceProof(audit && audit.sourceFingerprints, protectedSources);
+    expected += `; ${protectedSources.length} protected source structural baseline(s) match v1 read-back`;
+  }
+
+  if (audit && step.tool === "clone_slideshow_event_tree") {
+    operationMatches = operationMatches && protectedSources.length > 0;
+    if (args.audioMode === "mute") {
+      const clonedLayers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
+      operationMatches = operationMatches && clonedLayers.length > 0 && clonedLayers.every((item) => item.audioEnabled === false);
+      expected += "; all cloned-tree audio switches muted";
+    }
+    expected += "; protected source fingerprint unchanged";
+  } else if (audit && step.tool === "extend_slideshow_cloned_tree") {
+    const priorAudits = Array.isArray(evidence.allReadBack.slideshowAudits) ? evidence.allReadBack.slideshowAudits.filter((entry) => entry && entry.root && entry.root.name === expectedRoot && Number(entry.stepIndex) < Number(step.index)) : [];
+    const beforeAudit = priorAudits.sort((left, right) => Number(right.stepIndex) - Number(left.stepIndex))[0];
+    const beforeKeys = beforeAudit && beforeAudit.details && Array.isArray(beforeAudit.details.keyMetadata) ? beforeAudit.details.keyMetadata : null;
+    const afterKeys = audit.details && Array.isArray(audit.details.keyMetadata) ? audit.details.keyMetadata : null;
+    let keysMatch = Boolean(beforeAudit && beforeKeys && afterKeys && beforeAudit.details.keyMetadataTruncated === false && audit.details.keyMetadataTruncated === false && Number(beforeAudit.stats && beforeAudit.stats.keyMetadataTotal) === beforeKeys.length && Number(audit.stats && audit.stats.keyMetadataTotal) === afterKeys.length && beforeKeys.length === afterKeys.length && beforeKeys.every(completeSlideshowKeyEvidence) && afterKeys.every(completeSlideshowKeyEvidence));
+    if (keysMatch) {
+      const used = new Set();
+      for (const before of beforeKeys) {
+        const originalCompDuration = Number(before.compDuration);
+        const frameDuration = Number(before.compFrameDuration);
+        if (!Number.isFinite(originalCompDuration) || !Number.isFinite(frameDuration) || frameDuration <= 0 || typeof before.translationEligible !== "boolean") { keysMatch = false; break; }
+        const delta = Number(args.targetDuration) - originalCompDuration;
+        const threshold = Math.max(Number(args.introDuration) + 0.0001, originalCompDuration - 2.1);
+        const extend = delta > Math.max(frameDuration * 2, 0.07);
+        const expectedTime = extend && before.translationEligible && Number(before.time) >= threshold ? Number(before.time) + delta : Number(before.time);
+        const matchIndex = afterKeys.findIndex((after, index) => !used.has(index) && nearlyEqual(after.time, expectedTime, SLIDESHOW_NUMERIC_EPSILON) && nearlyEqual(after.compDuration, args.targetDuration, SLIDESHOW_NUMERIC_EPSILON) && sameSlideshowKeyMetadata(before, after));
+        if (matchIndex < 0) { keysMatch = false; break; }
+        used.add(matchIndex);
+      }
+    }
+    operationMatches = operationMatches && nearlyEqual(audit.root.duration, args.targetDuration, SLIDESHOW_NUMERIC_EPSILON) && keysMatch;
+    expected += `; duration=${args.targetDuration}; complete property identity, finite typed key values, times, and temporal/spatial metadata match`;
+  } else if (audit && step.tool === "rewrite_slideshow_tree_expressions") {
+    const expressions = audit.details && Array.isArray(audit.details.expressions) ? audit.details.expressions : [];
+    operationMatches = operationMatches && expressionReplacementProofMatches(step, payloadForStep(step), audit) && expressions.every((item) => {
+      const expression = String(item.expression || "");
+      return !item.error && !expression.includes('comp("Final Comp")') && !expression.includes("comp('Final Comp')");
+    });
+    expected += "; every requested/derived expression mapping has stable-property before/after proof and clean independent read-back";
+  } else if (audit && step.tool === "apply_slideshow_event_text") {
+    const texts = audit.details && Array.isArray(audit.details.texts) ? audit.details.texts : [];
+    const expectedTitle = String(args.title || "").replace(/\s+/g, " ").trim();
+    operationMatches = operationMatches && texts.some((item) => String(item.text || "").replace(/\s+/g, " ").trim() === expectedTitle && /Bold/i.test(String(item.font || "")) && item.rect && Number(item.rect.width) <= Number(item.compWidth) * 0.9 + 1 && Number(item.rect.height) <= Number(item.compHeight) * 0.86 + 1);
+    expected += "; requested title present in fitted Times text";
+  } else if (audit && step.tool === "replace_slideshow_media_leaf") {
+    const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers.filter((item) => item.comp === args.generatedLeafName) : [];
+    operationMatches = operationMatches && Array.isArray(args.mediaItems) && args.mediaItems.length > 0 && args.mediaItems.every((spec, specIndex) => {
+      const baseName = `${args.generatedPrefix}MEDIA_${specIndex + 1}`;
+      const matches = layers.filter((item) => (slideshowLayerName(item) === baseName || slideshowLayerName(item).startsWith(`${baseName}_PART_`)) &&
+        normalizeSlashes(item.sourcePath).toLowerCase() === normalizeSlashes(spec.path).toLowerCase() && item.sourceType === "footage" &&
+        Number.isInteger(Number(item.sourceItemId)) && Number(item.sourceItemId) > 0 && item.hasVideo === true && item.enabled === true &&
+        item.audioEnabled === (spec.audio === true) && nearlyEqual(item.stretch, 100, SLIDESHOW_NUMERIC_EPSILON));
+      return exactSlideshowCoverage(matches, spec, spec.start, spec.audio === true ? "audio" : "video");
+    });
+    expected += "; exact generated leaf/path/range/source offset/audio has frame-derived video tolerance and strict audio interval coverage";
+  } else if (audit && step.tool === "copy_slideshow_event_pair") {
+    const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
+    const token=String(args.expectedRootCompName||"").replace(args.generatedPrefix||"","").replace(/[^A-Za-z0-9_-]/g,"_");
+    const introMatches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&slideshowLayerName(item)===`${args.generatedPrefix}EVENT_${token}_INTRO`),mainMatches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&slideshowLayerName(item)===`${args.generatedPrefix}EVENT_${token}_MAIN`),intro=introMatches[0],main=mainMatches[0];
+    const exactRootSource = (item) => validStableLayerIdentity(item) && Number.isInteger(Number(args.rootCompItemIndex)) && Number(args.rootCompItemIndex) > 0 &&
+      item.sourceType === "comp" && item.sourceName === args.expectedRootCompName && Number.isInteger(Number(item.sourceItemId)) && Number(item.sourceItemId) > 0 &&
+      Number(item.sourceItemIndex) === Number(args.rootCompItemIndex) && item.hasVideo === true && item.enabled === true &&
+      item.audioEnabled === (args.rootHasAudio === true) && (args.rootHasAudio !== true || item.hasAudio === true);
+    operationMatches = operationMatches && introMatches.length===1 && mainMatches.length===1 && exactRootSource(intro) && exactRootSource(main) && Number(intro.sourceItemId) === Number(main.sourceItemId) &&
+      nearlyEqual(intro.startTime,args.eventStart,SLIDESHOW_NUMERIC_EPSILON) && nearlyEqual(main.startTime,args.eventStart,SLIDESHOW_NUMERIC_EPSILON) &&
+      nearlyEqual(intro.inPoint,args.eventStart,SLIDESHOW_NUMERIC_EPSILON) && nearlyEqual(intro.outPoint,args.eventStart+args.introDuration,SLIDESHOW_NUMERIC_EPSILON) &&
+      nearlyEqual(main.inPoint,args.eventStart+args.introDuration,SLIDESHOW_NUMERIC_EPSILON) && nearlyEqual(main.outPoint,args.eventStart+args.eventDuration,SLIDESHOW_NUMERIC_EPSILON) &&
+      nearlyEqual(intro.sourceIn,0,SLIDESHOW_NUMERIC_EPSILON) && nearlyEqual(main.sourceIn,args.introDuration,SLIDESHOW_NUMERIC_EPSILON) &&
+      Number(intro.effects||0)===Number(args.introEffectCount) && Number(main.effects||0)===Number(args.mainEffectCount);
+    expected += "; unique stable root source identity, enabled video, exact pair timing/effects, and positive or negative audio policy";
+  } else if (audit && step.tool === "add_slideshow_event_overlays") {
+    const details = audit.details || {};
+    const media = Array.isArray(details.layers) ? details.layers.filter((item)=>String(item.name||"").startsWith(`${args.generatedPrefix}AUDIO_${args.eventId}_`)) : [];
+    const texts = Array.isArray(details.texts) ? details.texts : [];
+    const audioSpecs=Array.isArray(args.audioItems)?args.audioItems:[],captions=Array.isArray(args.captions)?args.captions:[];
+    operationMatches = operationMatches && audioSpecs.every((spec,specIndex)=>{const baseName=`${args.generatedPrefix}AUDIO_${args.eventId}_${specIndex+1}`,matches=media.filter((item)=>(slideshowLayerName(item)===baseName||slideshowLayerName(item).startsWith(`${baseName}_PART_`))&&normalizeSlashes(item.sourcePath).toLowerCase()===normalizeSlashes(spec.path).toLowerCase()&&item.sourceType==="footage"&&Number.isInteger(Number(item.sourceItemId))&&Number(item.sourceItemId)>0&&item.hasAudio===true&&item.enabled===false&&item.audioEnabled===true&&nearlyEqual(item.stretch,100,SLIDESHOW_NUMERIC_EPSILON));return exactSlideshowCoverage(matches,spec,Number(args.eventStart)+Number(spec.start),"audio");}) && captions.length===texts.filter((item)=>String(item.layer||"").startsWith(`${args.generatedPrefix}CAPTION_${args.eventId}_`)).length && captions.every((caption)=>texts.some((item)=>item.text===caption));
+    expected += "; exact strict audio interval/source offset/visibility and captions match";
+  } else if (audit && step.tool === "copy_slideshow_control_layer") {
+    const layers = audit.details && Array.isArray(audit.details.layers) ? audit.details.layers : [];
+    const targetLayerName=args.targetLayerName||"CONTROL",matches=layers.filter((item)=>item.comp===args.expectedMasterCompName&&item.name===targetLayerName);
+    operationMatches = operationMatches && matches.length===1 && matches[0].enabled === false && matches[0].audioEnabled === false && nearlyEqual(matches[0].inPoint,0) && nearlyEqual(matches[0].outPoint, args.duration) && Number(matches[0].effects||0)===Number(args.expectedEffectCount) && String(matches[0].comment||"").startsWith(`AE_AGENT_SLIDESHOW:${args.generatedPrefix}:`) && String(matches[0].comment||"").endsWith(`:${targetLayerName}`);
+    expected += `; unique ${targetLayerName} identity/range/effects preserved in exact master`;
+  } else if (audit && step.tool === "configure_slideshow_tree_audio") {
+    operationMatches = operationMatches && completeAudioRouteProof(payloadForStep(step), audit) && !audit.issues.some((item) => String(item).includes("duplicate_audible_path"));
+    expected += "; complete before/after audible route evidence preserves every requested interval and only mutes fully covered duplicates";
+  } else if (audit && step.tool === "create_slideshow_master") {
+    operationMatches = operationMatches && nearlyEqual(audit.root.duration, args.duration, 0.001) && audit.stats && audit.stats.backgroundLayers === 1 && audit.details && audit.details.layers.some((item)=>item.comp===args.masterName&&item.name===`${args.generatedPrefix}BACKGROUND`);
+    expected += `; duration=${args.duration}; background present`;
+  }
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:slideshow-audit`,
+    title: "Generated slideshow mutation matches independent typed audit",
+    expected,
+    observed,
+    passed: operationMatches,
+    evidence: audit ? audit.source : "No audit_slideshow_generated step before the next mutation."
+  });
+}
+
+function checkImportFootage(checks, step, payload, evidence) {
+  const args = isPlainObject(step && step.args) ? step.args : {};
+  const projectRoot = getAuthoritativeProjectRoot(evidence && evidence.options);
+
+  if (!isPlainObject(payload) || !isPlainObject(payload.item)) {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:source`,
+      title: "Imported footage source identity and path match request",
+      expected: "completed import_footage step with item reference",
+      observed: "missing or invalid payload item",
+      passed: false,
+      status: "needs_review",
+      evidence: stepLabel(step)
+    });
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:metadata`,
+      title: "Imported footage native media metadata matches request",
+      expected: "native video media metadata",
+      observed: "missing payload",
+      passed: false,
+      status: "needs_review",
+      evidence: stepLabel(step)
+    });
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:read-back`,
+      title: "Imported footage matches independent find_project_items read-back",
+      expected: "independent exact-ID read-back evidence",
+      observed: "missing payload",
+      passed: false,
+      status: "needs_review",
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  const item = payload.item;
+  const footage = isPlainObject(payload.footage) ? payload.footage : {};
+  const isSequence = args.sequence === true || payload.sequence === true;
+  const expectedName = typeof args.name === "string" && args.name.trim() ? args.name.trim() : "";
+  const requestedPath = typeof args.filePath === "string" && args.filePath.trim() ? args.filePath.trim() : "";
+  const canonicalReqPath = canonicalImportPath(requestedPath, projectRoot);
+  const canonicalItemPath = canonicalImportPath(item.file, projectRoot);
+  const canonicalFootagePath = canonicalImportPath(footage.file, projectRoot);
+
+  // Request args type guards
+  const validRequestPath = typeof args.filePath === "string" && args.filePath.trim().length > 0;
+  const malformedNameArg = hasOwn(args, "name") && (args.name === null || typeof args.name !== "string" || !args.name.trim());
+  const malformedSeqArg = hasOwn(args, "sequence") && (args.sequence === null || typeof args.sequence !== "boolean");
+  const malformedResultSequence = hasOwn(payload, "sequence") && typeof payload.sequence !== "boolean";
+  const malformedRequest = !validRequestPath || malformedNameArg || malformedSeqArg || malformedResultSequence;
+
+  // Strict native itemId and ID alias check (safe IDs not index)
+  const validItemId = typeof item.itemId === "number" && Number.isSafeInteger(item.itemId) && item.itemId > 0;
+  const hasConflictingIdAlias = hasOwn(item, "id") &&
+    (typeof item.id !== "number" || !Number.isSafeInteger(item.id) || item.id !== item.itemId);
+  const targetItemId = (validItemId && !hasConflictingIdAlias) ? item.itemId : null;
+
+  // Read-back collection within current mutation window
+  const allWindowReads = (evidence.readBack && evidence.readBack.rawAttempts) || [];
+  const rawAttachedAttempts = allWindowReads.filter((read) => SERVER_ATTACHED_READS.has(read));
+  const malformedAttachedField = hasOwn(step, "independentReadBack") && !Array.isArray(step.independentReadBack);
+  let malformedAttached = false;
+  let foreignAttached = false;
+  const attachedReads = [];
+
+  for (const read of rawAttachedAttempts) {
+    const meta = SERVER_ATTACHED_READS.get(read);
+    if (!meta || meta.mutationStep !== step) {
+      foreignAttached = true;
+      continue;
+    }
+    if (!meta.valid || read.status !== "completed" || read.tool !== "find_project_items") {
+      malformedAttached = true;
+      continue;
+    }
+    const readArgs = isPlainObject(read.args) ? read.args : {};
+    if (!Array.isArray(readArgs.itemIds) || !readArgs.itemIds.every((id) => Number.isSafeInteger(id) && id > 0) || !readArgs.itemIds.includes(targetItemId)) {
+      malformedAttached = true;
+      continue;
+    }
+    if (readArgs.type && readArgs.type !== "footage") {
+      malformedAttached = true;
+      continue;
+    }
+    const res = payloadForStep(read);
+    const matches = res && Array.isArray(res.matches) ? res.matches : [];
+    const targetRows = targetItemId !== null ? matches.filter((m) => m && m.itemId === targetItemId) : [];
+    if (targetRows.length !== 1) {
+      malformedAttached = true;
+      continue;
+    }
+    const row = targetRows[0];
+    if (hasOwn(row, "id") && row.id !== targetItemId) {
+      malformedAttached = true;
+      continue;
+    }
+    attachedReads.push({ read, row });
+  }
+
+  if (rawAttachedAttempts.length > 0 && attachedReads.length === 0) {
+    malformedAttached = true;
+  }
+  const extraAttached = (Array.isArray(step.independentReadBack) && step.independentReadBack.length > 1) || rawAttachedAttempts.length > 1;
+
+  const explicitReads = [];
+  let malformedExplicit = false;
+  let targetedExplicitAttemptCount = 0;
+
+  for (const read of allWindowReads) {
+    if (SERVER_ATTACHED_READS.has(read)) continue;
+    if (read.tool !== "find_project_items") continue;
+
+    // Spoofed marker guard: an explicit plan step must never have source: "server_typed_readback"
+    if (read.source === "server_typed_readback") {
+      malformedExplicit = true;
+      targetedExplicitAttemptCount++;
+      continue;
+    }
+
+    const readArgs = isPlainObject(read.args) ? read.args : {};
+    const hasItemIds = hasOwn(readArgs, "itemIds");
+
+    if (hasItemIds) {
+      const itemIds = readArgs.itemIds;
+      const isArray = Array.isArray(itemIds);
+      const validIds = isArray && itemIds.every((id) => typeof id === "number" && Number.isSafeInteger(id) && id > 0);
+      const uniqueIds = validIds && new Set(itemIds).size === itemIds.length;
+
+      if (!isArray || !validIds || !uniqueIds) {
+        const res = payloadForStep(read);
+        const matches = res && Array.isArray(res.matches) ? res.matches : [];
+        const matchesOurId = targetItemId !== null && matches.some((m) => m && m.itemId === targetItemId);
+        const requestsOurId = targetItemId !== null && isArray && itemIds.some((id) => id === targetItemId || String(id) === String(targetItemId));
+        if (requestsOurId || matchesOurId) {
+          malformedExplicit = true;
+          targetedExplicitAttemptCount++;
+          continue;
+        }
+      }
+
+      const targetsOurId = targetItemId !== null && validIds && uniqueIds && itemIds.includes(targetItemId);
+
+      if (targetsOurId) {
+        targetedExplicitAttemptCount++;
+
+        if (read.status !== "completed") {
+          malformedExplicit = true;
+          continue;
+        }
+
+        if (readArgs.type && readArgs.type !== "footage") {
+          malformedExplicit = true;
+          continue;
+        }
+
+        const res = payloadForStep(read);
+        const matches = res && Array.isArray(res.matches) ? res.matches : [];
+        const targetRows = matches.filter((m) => m && m.itemId === targetItemId);
+        if (targetRows.length !== 1) {
+          malformedExplicit = true;
+          continue;
+        }
+
+        const row = targetRows[0];
+        if (hasOwn(row, "id") && row.id !== targetItemId) {
+          malformedExplicit = true;
+          continue;
+        }
+
+        explicitReads.push({ read, row });
+      } else {
+        // Does not request our target ID.
+        // Proven unrelated IDs ignore ONLY if request/result no conflict:
+        const res = payloadForStep(read);
+        const matches = res && Array.isArray(res.matches) ? res.matches : [];
+        const conflictingRow = targetItemId !== null && matches.find((m) => m && (m.itemId === targetItemId || (canonicalItemPath && canonicalImportPath(m.file, projectRoot) === canonicalItemPath)));
+        if (conflictingRow) {
+          malformedExplicit = true;
+          targetedExplicitAttemptCount++;
+          continue;
+        }
+        continue;
+      }
+    } else {
+      // Lacks exact itemIds (e.g. name-only or query-only find)
+      const res = payloadForStep(read);
+      const matches = res && Array.isArray(res.matches) ? res.matches : [];
+      const conflictingRow = targetItemId !== null && matches.find((m) => m && m.itemId === targetItemId);
+      if (conflictingRow) {
+        targetedExplicitAttemptCount++;
+        malformedExplicit = true;
+      }
+    }
+  }
+
+  const hasAttachedAttempt = malformedAttachedField || rawAttachedAttempts.length > 0;
+  const hasExplicitAttempt = targetedExplicitAttemptCount > 0;
+
+  let isCorroboratedPair = false;
+  let isSingle = false;
+  let chosenReads = [];
+
+  if (hasAttachedAttempt && hasExplicitAttempt) {
+    if (!extraAttached && !malformedAttached && !malformedExplicit && !foreignAttached &&
+        attachedReads.length === 1 && explicitReads.length === 1) {
+      isCorroboratedPair = true;
+      chosenReads = [attachedReads[0], explicitReads[0]];
+    }
+  } else if (hasAttachedAttempt && !hasExplicitAttempt) {
+    if (!extraAttached && !malformedAttached && !foreignAttached && attachedReads.length === 1) {
+      isSingle = true;
+      chosenReads = [attachedReads[0]];
+    }
+  } else if (!hasAttachedAttempt && hasExplicitAttempt) {
+    if (!malformedExplicit && explicitReads.length === 1) {
+      isSingle = true;
+      chosenReads = [explicitReads[0]];
+    }
+  }
+
+  const chosenRead = chosenReads.length ? chosenReads[0].read : null;
+  const chosenRow = chosenReads.length ? chosenReads[0].row : null;
+
+  // 1. Source check
+  const pathMatches = Boolean(canonicalReqPath && canonicalItemPath === canonicalReqPath && canonicalFootagePath === canonicalReqPath);
+  const nameMatches = typeof item.name === "string" && item.name.trim().length > 0 && (!expectedName || item.name === expectedName);
+  const typeMatches = item.type === "footage";
+  const missingMatches = item.footageMissing === false;
+  const idMatches = targetItemId !== null;
+
+  let sourcePassed = !malformedRequest && idMatches && pathMatches && nameMatches && typeMatches && missingMatches && !isSequence && item.hasVideo === true;
+  let sourceStatus = "needs_review";
+  if (sourcePassed) {
+    sourceStatus = "passed";
+  } else if (malformedRequest || isSequence || item.hasVideo !== true) {
+    sourceStatus = "needs_review";
+  } else if (!idMatches || hasConflictingIdAlias || (canonicalItemPath && canonicalItemPath !== canonicalReqPath) || !nameMatches || !typeMatches || item.footageMissing === true) {
+    sourceStatus = "failed";
+  }
+
+  let sourceEvidence = stepLabel(step);
+  if (malformedRequest) {
+    sourceEvidence += " (malformed import_footage request arguments)";
+  } else if (hasConflictingIdAlias) {
+    sourceEvidence += " (conflicting itemId and id aliases in item payload)";
+  } else if (isSequence) {
+    sourceEvidence += " (image sequence import is unsupported by single-file video semantic verification)";
+  } else if (item.hasVideo !== true) {
+    sourceEvidence += " (still image or audio-only footage is unsupported by single-file video semantic verification)";
+  }
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:source`,
+    title: "Imported footage source identity and path match request",
+    expected: `${expectedName ? `name: "${expectedName}", ` : ""}path: ${canonicalReqPath || requestedPath}, type: footage, missing: false, sequence: false`,
+    observed: `name: "${item.name || ""}", path: ${canonicalItemPath || "missing"}, type: ${item.type || "missing"}, missing: ${item.footageMissing}, sequence: ${isSequence}`,
+    passed: sourcePassed,
+    status: sourceStatus,
+    evidence: sourceEvidence,
+    binding: {
+      mutationStep: step.index,
+      itemId: targetItemId,
+      file: canonicalItemPath
+    }
+  });
+
+  // 2. Strict native metadata check (Finding 1)
+  const validItemNumbers = typeof item.width === "number" && Number.isSafeInteger(item.width) && item.width > 0 &&
+    typeof item.height === "number" && Number.isSafeInteger(item.height) && item.height > 0 &&
+    typeof item.duration === "number" && Number.isFinite(item.duration) && item.duration > 0 &&
+    typeof item.frameRate === "number" && Number.isFinite(item.frameRate) && item.frameRate > 0 &&
+    typeof item.pixelAspect === "number" && Number.isFinite(item.pixelAspect) && item.pixelAspect > 0;
+  const validItemBooleans = item.hasVideo === true && typeof item.hasAudio === "boolean";
+
+  const validFootageNumbers = isPlainObject(footage) &&
+    typeof footage.width === "number" && Number.isSafeInteger(footage.width) && footage.width > 0 &&
+    typeof footage.height === "number" && Number.isSafeInteger(footage.height) && footage.height > 0 &&
+    typeof footage.duration === "number" && Number.isFinite(footage.duration) && footage.duration > 0 &&
+    typeof footage.frameRate === "number" && Number.isFinite(footage.frameRate) && footage.frameRate > 0;
+  const validFootageBooleans = isPlainObject(footage) &&
+    footage.hasVideo === true && typeof footage.hasAudio === "boolean";
+
+  const hasFootagePar = isPlainObject(footage) && hasOwn(footage, "pixelAspect");
+  const validFootagePar = !hasFootagePar || (typeof footage.pixelAspect === "number" && Number.isFinite(footage.pixelAspect) && footage.pixelAspect > 0);
+  const footageParMatches = !hasFootagePar || (validFootagePar && nearlyEqual(footage.pixelAspect, item.pixelAspect));
+
+  const footageMatchesItem = isPlainObject(footage) &&
+    validFootageNumbers && validFootageBooleans && validFootagePar && footageParMatches &&
+    footage.width === item.width &&
+    footage.height === item.height &&
+    nearlyEqual(footage.duration, item.duration) &&
+    nearlyEqual(footage.frameRate, item.frameRate) &&
+    footage.hasVideo === item.hasVideo &&
+    footage.hasAudio === item.hasAudio;
+
+  let readBackMediaMatches = (isSingle || isCorroboratedPair);
+  if (readBackMediaMatches) {
+    for (const entry of chosenReads) {
+      const row = entry.row;
+      const validRowNumbers = isPlainObject(row) &&
+        typeof row.width === "number" && Number.isSafeInteger(row.width) && row.width > 0 &&
+        typeof row.height === "number" && Number.isSafeInteger(row.height) && row.height > 0 &&
+        typeof row.duration === "number" && Number.isFinite(row.duration) && row.duration > 0 &&
+        typeof row.frameRate === "number" && Number.isFinite(row.frameRate) && row.frameRate > 0 &&
+        typeof row.pixelAspect === "number" && Number.isFinite(row.pixelAspect) && row.pixelAspect > 0;
+      const validRowBooleans = isPlainObject(row) &&
+        row.hasVideo === true && typeof row.hasAudio === "boolean";
+
+      const rowMatch = isPlainObject(row) &&
+        validRowNumbers && validRowBooleans &&
+        row.width === item.width &&
+        row.height === item.height &&
+        nearlyEqual(row.duration, item.duration) &&
+        nearlyEqual(row.frameRate, item.frameRate) &&
+        nearlyEqual(row.pixelAspect, item.pixelAspect) &&
+        row.hasVideo === item.hasVideo &&
+        row.hasAudio === item.hasAudio;
+      if (!rowMatch) {
+        readBackMediaMatches = false;
+        break;
+      }
+    }
+  }
+
+  const metadataPassed = Boolean(validItemNumbers && validItemBooleans && footageMatchesItem && readBackMediaMatches);
+  let metadataStatus = "needs_review";
+  if (metadataPassed) {
+    metadataStatus = "passed";
+  } else if (!validItemNumbers || !validItemBooleans || (isPlainObject(footage) && (!validFootageNumbers || !validFootageBooleans || !validFootagePar))) {
+    metadataStatus = "needs_review";
+  } else if (!footageMatchesItem || ((isSingle || isCorroboratedPair) && !readBackMediaMatches)) {
+    metadataStatus = "failed";
+  }
+
+  let metadataEvidence = "";
+  if (isCorroboratedPair) {
+    metadataEvidence = `Corroborated read-back metadata verified across ${chosenReads.map((e) => stepLabel(e.read)).join(" and ")}.`;
+  } else if (chosenRead) {
+    metadataEvidence = `${stepLabel(chosenRead)} metadata verified.`;
+  } else {
+    metadataEvidence = stepLabel(step);
+  }
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:metadata`,
+    title: "Imported footage native media metadata matches request",
+    expected: `${item.width}x${item.height}, ${item.duration}s @ ${item.frameRate}fps, PAR ${item.pixelAspect}, video: true, audio: ${item.hasAudio}`,
+    observed: isPlainObject(footage)
+      ? `${footage.width}x${footage.height}, ${footage.duration}s @ ${footage.frameRate}fps, PAR ${hasFootagePar ? footage.pixelAspect : item.pixelAspect}, video: ${footage.hasVideo}, audio: ${footage.hasAudio}`
+      : "missing footage metadata",
+    passed: metadataPassed,
+    status: metadataStatus,
+    evidence: metadataEvidence,
+    binding: {
+      mutationStep: step.index,
+      itemId: targetItemId,
+      width: item.width,
+      height: item.height,
+      duration: item.duration,
+      frameRate: item.frameRate,
+      pixelAspect: item.pixelAspect,
+      hasVideo: item.hasVideo,
+      hasAudio: item.hasAudio
+    }
+  });
+
+  // 3. Independent read-back check (Finding 0)
+  let readBackTargetMatches = (isSingle || isCorroboratedPair);
+  if (readBackTargetMatches) {
+    for (const entry of chosenReads) {
+      const row = entry.row;
+      const canonicalRowPath = canonicalImportPath(row && row.file, projectRoot);
+      const rowNameMatches = typeof row.name === "string" && row.name.trim().length > 0 &&
+        row.name === (expectedName || item.name);
+      if (!row || row.itemId !== targetItemId || row.type !== "footage" || row.footageMissing !== false ||
+          !canonicalRowPath || canonicalRowPath !== canonicalReqPath || !rowNameMatches) {
+        readBackTargetMatches = false;
+        break;
+      }
+    }
+  }
+
+  const readBackPassed = Boolean(readBackTargetMatches && sourcePassed);
+  let readBackStatus = "needs_review";
+  if (readBackPassed) {
+    readBackStatus = "passed";
+  } else if ((isSingle || isCorroboratedPair) && !readBackTargetMatches) {
+    readBackStatus = "failed";
+  } else {
+    readBackStatus = "needs_review";
+  }
+
+  let readBackEvidenceText = "";
+  if (isCorroboratedPair) {
+    const stepsDesc = chosenReads.map((e) => `${stepLabel(e.read)} [${SERVER_ATTACHED_READS.has(e.read) ? (e.read.source || "server_typed_readback") : "explicit"}]`).join("; ");
+    readBackEvidenceText = `Corroborated server-attached and explicit find_project_items read-back for itemId ${targetItemId} (${stepsDesc}).`;
+  } else if (isSingle) {
+    const readStep = chosenReads[0].read;
+    const prov = SERVER_ATTACHED_READS.has(readStep) ? (readStep.source || "server_typed_readback") : "explicit";
+    readBackEvidenceText = hasAttachedAttempt
+      ? `Server-attached find_project_items read-back for itemId ${targetItemId} (${stepLabel(readStep)} [${prov}]).`
+      : `Explicit find_project_items read-back for itemId ${targetItemId} (${stepLabel(readStep)} [${prov}]).`;
+  } else if (hasAttachedAttempt || hasExplicitAttempt) {
+    readBackEvidenceText = "Ambiguous, conflicting, foreign, or malformed find_project_items read-back attempts.";
+  } else {
+    readBackEvidenceText = "No post-run find_project_items read-back matched import_footage exact itemId.";
+  }
+
+  pushCheck(checks, {
+    id: `${step.index || "step"}:${step.tool}:read-back`,
+    title: "Imported footage matches independent find_project_items read-back",
+    expected: `itemId: ${targetItemId}, type: footage, missing: false, path: ${canonicalReqPath || requestedPath}`,
+    observed: chosenRow
+      ? `itemId: ${chosenRow.itemId}, type: ${chosenRow.type}, missing: ${chosenRow.footageMissing}, path: ${canonicalImportPath(chosenRow.file, projectRoot)}`
+      : "missing or unverified read-back",
+    passed: readBackPassed,
+    status: readBackStatus,
+    evidence: readBackEvidenceText,
+    binding: {
+      mutationStep: step.index,
+      targetItemId,
+      readBackCount: chosenReads.length,
+      stepIndices: chosenReads.map((e) => e.read.index)
+    }
+  });
+}
+
+function verifyAmeTitleAssociation(step, evidence) {
+  const jobs = require("./ame-title-jobs"), payload = payloadForStep(step);
+  const args = jobs.validateInput(jobs.ENQUEUE, step.args || {}), run = evidence.run;
+  const attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+  const read = attached.length === 1 ? attached[0] : null, observed = read && payloadForStep(read);
+  const verification = payload && payload.verification, authorization = payload && payload.authorization;
+  if (!read || SERVER_ATTACHED_READS.get(read)?.valid !== true || read.tool !== jobs.STATUS || read.status !== "completed" ||
+      !run || typeof run.id !== "string" || !run.id || typeof run.provenance?.actionId !== "string" || !run.provenance.actionId ||
+      authorization?.runId !== run.id || authorization?.proposalId !== run.provenance.actionId ||
+      verification?.ok !== true || verification.scope !== "ame_native_wrapper_association_only") return false;
+  const wanted = jobs.validateInput(jobs.STATUS, {
+    targetSpecifier: args.targetSpecifier, expectedProcess: args.expectedProcess, timeoutMs: args.timeoutMs,
+    ...(args.expectedSessionNonce ? { expectedSessionNonce: args.expectedSessionNonce } : {}), batchId: args.batchId, jobId: payload.jobId
+  });
+  if (jobs.operationArgsHash(jobs.STATUS, read.args) !== jobs.operationArgsHash(jobs.STATUS, wanted)) return false;
+  const first = payload.native, second = observed && observed.native;
+  const digest = value => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+  const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/, sha = /^[a-f0-9]{64}$/;
+  const exactPath = (left, right) => typeof left === "string" && left.length > 0 && typeof right === "string" && right.length > 0 &&
+    normalizeSlashes(left).toLowerCase() === normalizeSlashes(right).toLowerCase();
+  // Shared enqueue returns its immediate own STATUS observation. The outer
+  // nonce still identifies ENQUEUE; neither STATUS binding contains its args.
+  // Retain the original server command proof to bind source/preset/range args.
+  const sharedObserved = args.queueMode === "shared_queue_v1" && payload.code === "job_observed";
+  const immutableReceipt = payload.acceptanceReceipt?.schema === "ae-agent-ame-own-item-acceptance.v2";
+  const enqueueBinding = digest({ operation: "enqueue", jobId: payload.jobId, args });
+  const statusBinding = digest({ operation: "status", jobId: payload.jobId });
+  if (sharedObserved) {
+    const commands = Array.isArray(step.commands) ? step.commands.filter(command => command.role === "mutation") : [];
+    const command = commands.length === 1 ? commands[0] : null, sender = command && command.result;
+    if (!command || command.executionId !== run.id || command.state !== "completed" || command.ok !== true ||
+        sender?.schema !== "ae-agent-ame-title-send.v1" || sender.code !== "result" || sender.callback !== "result" ||
+        sender.requestNonce !== payload.requestNonce || typeof sender.responseBody !== "string" || sender.responseBody.length > 524288) return false;
+    const original = JSON.parse(sender.responseBody), job = original.job, process = observed.process;
+    if (original.schema !== jobs.NATIVE_SCHEMA || original.code !== "job_enqueued" || original.requestNonce !== payload.requestNonce ||
+        original.operationBinding !== enqueueBinding || original.appSpecifier !== args.targetSpecifier ||
+        original.sessionNonce !== first?.sessionNonce || original.nativeJobId !== null || original.nativeAssociationVerified !== true ||
+        original.batchRunning !== false || !job || job.handleKey !== payload.jobId || job.enqueueRequestNonce !== payload.requestNonce ||
+        job.retainedWrapperSessionNonce !== first?.job?.retainedWrapperSessionNonce || job.sourceGuid !== args.sourceGuid ||
+        !exactPath(job.sourcePath, args.sourceProjectFile) || !exactPath(job.outputPath, payload.outputPath) ||
+        job.presetIdentity !== first?.job?.presetIdentity || job.processBinding !== first?.job?.processBinding ||
+        digest(job.range) !== digest(args.range) || !Number.isFinite(original.observedAt) ||
+        original.observedAt < Date.parse(run.startedAt) || original.observedAt > first.observedAt ||
+        !process || process.pid !== args.expectedProcess.pid || process.startedAt !== args.expectedProcess.startedAt ||
+        !path.isAbsolute(process.path || "") || first.job.processBinding !== digest({ target: args.targetSpecifier,
+          session: args.expectedSessionNonce || null, pid: process.pid, startedAt: process.startedAt,
+          path: process.path.replace(/\\/g, "/").toLowerCase() }) ||
+        !uuid.test(first.requestNonce || "") || first.requestNonce === payload.requestNonce || first.requestNonce === observed.requestNonce ||
+        observed.queueOnly !== true || observed.startAcceptanceVerified !== false || observed.startReservation !== null ||
+        observed.nativeCompletionObserved !== false || observed.nativeResult !== null || observed.file?.exists !== false ||
+        !Number.isFinite(Date.parse(run.startedAt)) || !Number.isFinite(Date.parse(run.finishedAt))) return false;
+  }
+  if (!first || !second || payload.schema !== jobs.SCHEMA || observed.schema !== jobs.SCHEMA ||
+      payload.ok !== true || observed.ok !== true || (!sharedObserved && payload.code !== "job_enqueued") || observed.code !== "job_observed" ||
+      payload.batchId !== args.batchId || observed.batchId !== args.batchId || observed.jobId !== payload.jobId ||
+      payload.handleKey !== payload.jobId || observed.handleKey !== payload.jobId ||
+      payload.nativeJobId !== null || observed.nativeJobId !== null ||
+      payload.nativeAssociationVerified !== true || observed.nativeAssociationVerified !== true ||
+      payload.nativeQueueCompositionVerified !== false || observed.nativeQueueCompositionVerified !== false ||
+      !path.isAbsolute(payload.outputPath || "") || !exactPath(path.basename(payload.outputPath), args.outputFileName) ||
+      !uuid.test(payload.requestNonce || "") || !uuid.test(observed.requestNonce || "") || payload.requestNonce === observed.requestNonce ||
+      first.operationBinding !== (sharedObserved ? statusBinding : enqueueBinding) ||
+      second.operationBinding !== statusBinding) return false;
+  for (const [native, result, code] of [[first, payload, sharedObserved ? "job_observed" : "job_enqueued"], [second, observed, "job_observed"]]) {
+    const job = native.job;
+    if (native.schema !== jobs.NATIVE_SCHEMA || native.code !== code || (!sharedObserved || result === observed) && native.requestNonce !== result.requestNonce ||
+        native.appSpecifier !== args.targetSpecifier || args.expectedSessionNonce && native.sessionNonce !== args.expectedSessionNonce ||
+        native.nativeJobId !== null || native.nativeAssociationVerified !== true || !job ||
+        job.nativeJobId !== null || job.handleKey !== payload.jobId || job.nativeAssociationVerified !== true ||
+        job.sourceGuid !== args.sourceGuid || !exactPath(job.sourcePath, args.sourceProjectFile) ||
+        !exactPath(job.outputPath, payload.outputPath) || !sha.test(job.presetIdentity || "") || !sha.test(job.processBinding || "") ||
+        !isPlainObject(job.range) || Object.keys(job.range).length !== 2 ||
+        job.range.startSeconds !== args.range.startSeconds || job.range.endSeconds !== args.range.endSeconds) return false;
+    if (sharedObserved) {
+      const dispatch = job.dispatchDiagnostic, ack = dispatch?.workAreaCallAck, receipt = result.acceptanceReceipt;
+      const receiptNative = immutableReceipt ? first : native;
+      // Both necessary initial observations prove the same own job. Only the
+      // first selfcheck creates acceptance; the attached read cannot replace it.
+      if (immutableReceipt && (digest(receipt) !== digest(payload.acceptanceReceipt) ||
+          receipt.batchId !== args.batchId || receipt.enqueueOperationBinding !== enqueueBinding ||
+          receipt.nativeSessionNonce !== first.sessionNonce || receipt.nativeObservationSha25664 !== digest(first) ||
+          !sha.test(receipt.jobBindingSha25664 || "") || receipt.authorizedRunId !== run.id ||
+          !exactPath(receipt.sourcePath, args.sourceProjectFile) || receipt.sourceGuid !== args.sourceGuid ||
+          receipt.sourceSha25664 !== args.expectedSourceSha25664 || receipt.presetSha25664 !== args.presetSha25664 ||
+          receipt.presetIdentity !== first.job.presetIdentity || receipt.processBinding !== first.job.processBinding ||
+          digest(receipt.range) !== digest(args.range))) return false;
+      if (result.ownItemAccepted !== true || result.state !== "queued" || result.completionVerified !== false || result.mediaVerified !== false ||
+          result === payload && result.unknownOutcome !== false || native.batchRunning !== false || native.start !== null ||
+          !uuid.test(job.retainedWrapperSessionNonce || "") || job.retainedWrapperSessionNonce !== first.job.retainedWrapperSessionNonce ||
+          job.enqueueRequestNonce !== payload.requestNonce || job.workAreaApplied !== true || job.status !== "queued" ||
+          job.nativeCompletionObserved !== false || job.nativeResult !== null || job.completionOrigin !== null || job.eventObservedAt !== null ||
+          job.hostCompletion !== null || job.wrapperCompletion !== null || job.getEncodeProgress !== 0 || job.getEncodeTime !== 0 ||
+          !Array.isArray(job.readErrors) || job.readErrors.length !== 0 || !Array.isArray(job.outputFiles) || job.outputFiles.length !== 0 ||
+          job.outputBindingEvidence !== "exact_addDL_call_argument_ack" || job.independentOutputGetterVerified !== false || job.generatedOutputVerified !== false ||
+          dispatch?.phase !== "association_readback" || dispatch.addDLInvoked !== true || dispatch.addDLReturned !== true || dispatch.error !== null ||
+          !Array.isArray(dispatch.creationFailures) || dispatch.creationFailures.length !== 0 || ack?.type !== 3 || ack.result !== true ||
+          ack.startSeconds !== args.range.startSeconds || ack.endSeconds !== args.range.endSeconds || !Number.isFinite(ack.observedAt) ||
+          ack.observedAt < Date.parse(run.startedAt) || ack.observedAt > native.observedAt ||
+          receipt?.schema !== (immutableReceipt ? "ae-agent-ame-own-item-acceptance.v2" : "ae-agent-ame-own-item-acceptance.v1") || receipt.jobId !== payload.jobId ||
+          receipt.enqueueRequestNonce !== payload.requestNonce || receipt.readRequestNonce !== receiptNative.requestNonce || receipt.observedAt !== receiptNative.observedAt ||
+          receipt.retainedWrapperSessionNonce !== job.retainedWrapperSessionNonce || !exactPath(receipt.outputPath, payload.outputPath) ||
+          receipt.workAreaApplied !== true || receipt.proofSource !== "retained_encoder_wrapper" || receipt.appliedPresetVerified !== false ||
+          receipt.outputBindingEvidence !== job.outputBindingEvidence || receipt.independentOutputGetterVerified !== false || receipt.generatedOutputVerified !== false ||
+          receipt.rangeProof !== "setWorkArea_call_ack" || receipt.mediaVerified !== false) return false;
+    } else if (!Array.isArray(job.outputFiles) || job.outputFiles.length !== 1 || !exactPath(job.outputFiles[0], payload.outputPath)) return false;
+  }
+  if (!exactPath(first.job.sourcePath, second.job.sourcePath) || !exactPath(first.job.outputPath, second.job.outputPath) ||
+      first.job.presetIdentity !== second.job.presetIdentity || first.job.processBinding !== second.job.processBinding ||
+      first.sessionNonce !== second.sessionNonce) return false;
+  const firstTime = Date.parse(payload.observedAt), secondTime = Date.parse(observed.observedAt), attachedTime = Date.parse(read.observedAt);
+  const runStart = Date.parse(run.startedAt), runFinish = Date.parse(run.finishedAt);
+  // A fresh, distinct status nonce is mandatory. A later timestamp on copied
+  // enqueue JSON is insufficient; native observations must also be ordered.
+  return Number.isFinite(firstTime) && Number.isFinite(secondTime) && Number.isFinite(attachedTime) &&
+    Number.isFinite(first.observedAt) && first.observedAt > 0 && Number.isFinite(second.observedAt) &&
+    second.observedAt >= first.observedAt && (!sharedObserved || second.observedAt > first.observedAt) &&
+    (!sharedObserved || first.observedAt <= firstTime && second.observedAt <= secondTime) &&
+    first.observedAt <= firstTime + 60000 && second.observedAt <= secondTime + 60000 &&
+    secondTime >= firstTime && attachedTime >= secondTime &&
+    (!Number.isFinite(runStart) || firstTime >= runStart && first.observedAt >= runStart) &&
+    (!Number.isFinite(runFinish) || attachedTime <= runFinish);
+}
+
+function verifyAmeNativeFixture(step, evidence) {
+  const fixture = require("./ame-native-fixture-grant"), runner = require("./ame-native-fixture-runner");
+  const args = fixture.validateInput(step.args || {}), payload = payloadForStep(step), run = evidence.run;
+  const attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+  const read = attached.length === 1 ? attached[0] : null, observed = read && payloadForStep(read);
+  const scope = "signed_owned_fixture_copy_and_reopened_variants";
+  const sha = /^[a-f0-9]{64}$/, token = /^[a-f0-9]{32}$/, uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+  const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+  const fixedReadback = value => isPlainObject(value) && value.fixedMainName === "Main" && value.fixedNestedName === "AEAgent Fixture Nested" &&
+    value.rootCompositionCount === 1 && typeof value.fixtureEvidence === "string" && value.fixtureEvidence.length > 0 &&
+    sha.test(value.fixtureCanonicalSha256 || "") && typeof value.projectHandle === "string" && value.projectHandle.length > 0 &&
+    isPlainObject(value.observedState) && Array.isArray(value.observedState.items) && value.observedState.items.length === 4;
+  if (!read || SERVER_ATTACHED_READS.get(read)?.valid !== true || read.status !== "completed" || read.tool !== runner.INSPECT ||
+      !payload || !observed || !uuid.test(payload.evidenceId || "") || Object.keys(read.args).length !== 1 || read.args.evidenceId !== payload.evidenceId ||
+      !run || typeof run.id !== "string" || !run.id || typeof run.provenance?.actionId !== "string" || !run.provenance.actionId ||
+      payload.schema !== fixture.SCHEMA || observed.schema !== "ae-agent.native-fixture-readback.v1" || observed.producer !== "private_signed_fixture_cache" ||
+      observed.evidenceId !== payload.evidenceId || typeof payload.buildId !== "string" || !payload.buildId || observed.buildId !== payload.buildId ||
+      payload.fixtureKind !== args.fixtureKind || observed.fixtureKind !== args.fixtureKind || payload.nativeSubmissionAttempted !== false ||
+      payload.automaticRetryAllowed !== false || observed.mediaProof !== "not_inspected" || observed.ameSubmission !== "not_attempted") return false;
+  for (const result of [payload, observed]) {
+    const v = result.verification;
+    if (result.ok !== true || result.productionBackend !== false || result.currentUserProjectMutation !== false ||
+        result.authorization?.runId !== run.id || result.authorization?.proposalId !== run.provenance.actionId ||
+        v?.ok !== true || v.scope !== scope || v.currentUserProjectMutation !== false || v.productionBackend !== false ||
+        v.sourcePathAndDirtyPreserved !== true || v.outputsHashVerified !== true || v.mediaProof !== "not_inspected" || v.ameSubmission !== "not_attempted") return false;
+  }
+  const snapshot = payload.nativeFixtureSnapshot, variants = payload.nativeFixtureVariants;
+  if (!snapshot || !variants || snapshot.status !== "fixture_baseline_saved_source_preserved" || variants.status !== "two_owned_variants_reopened" ||
+      snapshot.layerSwitchDispatches !== 0 || variants.ameSubmissionAttempted !== false || snapshot.pid === variants.pid || snapshot.rootPath === variants.rootPath ||
+      !Array.isArray(payload.childProcesses) || payload.childProcesses.length !== 2 || !Array.isArray(observed.childProcesses) || observed.childProcesses.length !== 2 ||
+      !sha.test(snapshot.baselineSha256 || "") || snapshot.baselineSha256 !== variants.baselineSha256 || snapshot.baselineSha256 !== observed.baselineSha256 ||
+      snapshot.baselinePath !== path.join(snapshot.rootPath || "", "baseline.aep") || snapshot.baselinePath !== observed.baselinePath) return false;
+  for (const [index, receipt, role] of [[0, snapshot, "capture"], [1, variants, "stage"]]) {
+    const child = payload.childProcesses[index], current = observed.childProcesses[index];
+    if (receipt.schema !== fixture.SCHEMA || receipt.role !== role || receipt.fixture !== args.fixtureKind || receipt.hostLoaded !== true ||
+        receipt.productionAuthorization !== false || receipt.readiness !== false || receipt.replayAllowed !== false ||
+        !Number.isSafeInteger(receipt.pid) || receipt.pid < 1 || !Number.isSafeInteger(receipt.processCreatedUnixMs) || receipt.processCreatedUnixMs <= 0 ||
+        !token.test(receipt.nonce || "") || !token.test(receipt.stageId || "") || !token.test(receipt.challenge || "") || !sha.test(receipt.pluginSha256 || "") ||
+        receipt.grant?.runId !== run.id || receipt.grant?.actionId !== run.provenance.actionId || receipt.grant?.stageId !== receipt.stageId ||
+        receipt.grant?.operation !== (role === "capture" ? "snapshot" : "stage-variants") ||
+        !path.isAbsolute(receipt.rootPath || "") || path.basename(receipt.rootPath) !== `probe-${receipt.nonce}` ||
+        !child || child.pid !== receipt.pid || child.rootPath !== receipt.rootPath || child.terminalReceiptVerified !== true ||
+        !current || current.pid !== receipt.pid || current.createdUnixMs !== receipt.processCreatedUnixMs || current.role !== role) return false;
+  }
+  if (snapshot.pluginSha256 !== variants.pluginSha256) return false;
+  const before = snapshot.sourceBefore, after = snapshot.sourceAfter;
+  const expectedPath = args.fixtureKind === "untitled-dirty" ? "" : path.join(snapshot.rootPath, "source.aep");
+  if (!fixedReadback(before) || !fixedReadback(after) || before.path !== expectedPath || after.path !== before.path ||
+      before.dirty !== (args.fixtureKind !== "saved-clean") || after.dirty !== before.dirty || after.projectHandle !== before.projectHandle ||
+      after.fixtureCanonicalSha256 !== before.fixtureCanonicalSha256 || after.fixtureEvidence !== before.fixtureEvidence ||
+      !same(before, observed.sourceBefore) || !same(after, observed.sourceAfter)) return false;
+  if (!Array.isArray(variants.outputs) || variants.outputs.length !== 2 || !same(payload.outputFiles, variants.outputs) || !same(observed.outputs, variants.outputs)) return false;
+  for (const [index, output] of variants.outputs.entries()) {
+    const expected = path.join(variants.rootPath, `variant-0${index + 1}.aep`);
+    if (!output || output.variant !== index + 1 || output.path !== expected || !sha.test(output.sha256 || "") || output.reopened !== true ||
+        !fixedReadback(output.readback) || output.readback.path !== expected || output.readback.dirty !== false) return false;
+  }
+  const readTime = Date.parse(observed.observedAt), attachedTime = Date.parse(read.observedAt), runStart = Date.parse(run.startedAt), runFinish = Date.parse(run.finishedAt);
+  return Number.isFinite(readTime) && Number.isFinite(attachedTime) && attachedTime >= readTime &&
+    (!Number.isFinite(runStart) || readTime >= runStart) && (!Number.isFinite(runFinish) || attachedTime <= runFinish);
+}
+
+function verifyStep(checks, step, evidence) {
+  if(["dispatch_ame_open_comp","restore_ame_open_comp"].includes(step.tool)){
+    const payload=payloadForStep(step),verifier=require("./ame-open-comp"),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
+    try{valid=step.status==="completed"&&verifier.verifyResult(step.tool,payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{
+      const observed=payloadForStep(read);return SERVER_ATTACHED_READS.get(read)?.valid===true&&read.tool===verifier.RECONCILE&&read.status==="completed"&&observed?.privateProofVerified===true&&observed?.intentId===payload.intentId&&observed?.selector?.runId===payload.selector.runId&&observed?.selector?.commandId===payload.selector.commandId&&observed?.mediaVerified===false&&observed?.executionAuthority===false;
+    });}catch(_){}
+    pushCheck(checks,{id:step.index+":"+step.tool+":journal",title:step.tool==="dispatch_ame_open_comp"?"Одно native Add to AME; UI-приёмка очереди ожидается":"Точное восстановление принадлежащего intent имени",expected:"server proposal, private bounded property journal and fresh exact keyed readback",observed:valid?"native effect verified; media not checked":"native outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if(step.tool==="create_ame_job_source"){
+    const payload=payloadForStep(step),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
+    try{valid=step.status==="completed"&&require("./ame-job-source").verifyResult(payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{
+      const state=payloadForStep(read);return SERVER_ATTACHED_READS.get(read)?.valid===true&&read.tool==="get_project_lifecycle_state"&&read.status==="completed"&&state?.projectPresent===true&&state?.project==="named"&&state?.lifecycleReady===true&&state?.supported?.file===true&&state?.supported?.dirty===true&&state?.supported?.revision===true&&state?.revision===payload.restored.revision&&state?.dirty===false&&projectLifecycle.samePath(state?.file,step.args.expectedProjectFile);
+    });}catch(_){}
+    pushCheck(checks,{id:step.index+":create_ame_job_source:source",title:"Один сохранённый AME источник и восстановленный исходник",expected:"one native snapshot, exact patch/range, private proof and independent clean source read",observed:valid?"source verified; media not checked":"source outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if(step.tool==="verify_title_export_snapshots"){
+    const payload=payloadForStep(step),verifier=require("./title-export-verification"),reads=(evidence.readBack.rawAttempts||[]).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);let valid=false;
+    try{valid=step.status==="completed"&&verifier.verifyResult(payload,step.args).ok===true&&payload.verification?.ok===true&&payload.authorization?.runId===evidence.run?.id&&payload.authorization?.proposalId===evidence.run?.provenance?.actionId&&reads.length===1&&reads.every(read=>{
+      const state=payloadForStep(read);return SERVER_ATTACHED_READS.get(read)?.valid===true&&read.tool==="get_project_lifecycle_state"&&read.status==="completed"&&state?.projectPresent===true&&state?.project==="named"&&state?.lifecycleReady===true&&
+        state?.supported?.file===true&&state?.supported?.dirty===true&&state?.supported?.revision===true&&Number.isSafeInteger(state?.revision)&&state.revision>=0&&projectLifecycle.samePath(state?.file,payload.source.path)&&state?.dirty===false;
+    });}catch(_){}
+    pushCheck(checks,{id:step.index+":verify_title_export_snapshots:existing-files",title:"Verified existing snapshots and restored clean source",expected:"actual graph/flags/GUID/workArea + private proof + independent source read",observed:valid?"verified; original UNKNOWN/noReplay preserved":"verification unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if(step.tool==="export_two_title_snapshots"){
+    const payload=payloadForStep(step);let valid=false;
+    const reads=(evidence.readBack.rawAttempts || []).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
+    try{const checked=require("./title-export-snapshots").verifyResult(payload,step.args);valid=step.status==="completed" && checked.ok && payload.verification?.ok===true &&
+      payload.authorization?.runId===evidence.run?.id && payload.authorization?.proposalId===evidence.run?.provenance?.actionId && reads.length===1 && reads.every(read=>
+      SERVER_ATTACHED_READS.get(read)?.valid===true && read.tool==="get_project_info" && read.status==="completed" && projectLifecycle.samePath(payloadForStep(read)?.file,step.args.expectedProjectFile) && payloadForStep(read)?.dirty===false);}catch(_){}
+    pushCheck(checks,{id:`${step.index}:${step.tool}:snapshots`,title:"Два новых снимка и восстановленный исходник",expected:"native SaveAs read-back, pinned files and source restoration",observed:valid?"two snapshots verified; media not checked":"snapshot outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if (step.tool === "import_footage") {
+    const payload = payloadForStep(step);
+    if (!payload || step.status !== "completed") return;
+    checkImportFootage(checks, step, payload, evidence);
+    return;
+  }
+  const payload = payloadForStep(step);
+  if (!payload || step.status !== "completed") return;
+  const args = isPlainObject(step.args) ? step.args : {};
+  if (step.tool === "enqueue_ame_title_variant") {
+    let valid = false;
+    try { valid = verifyAmeTitleAssociation(step, evidence); } catch (_) {}
+    pushCheck(checks, { id: `${step.index}:${step.tool}:native-association`, title: "Independent AME native wrapper association",
+      expected: "exact manual run and one fresh server-attached status read of the same wrapper",
+      observed: valid ? "wrapper association confirmed; native ID, whole queue, encode and media proof remain separate" : "native wrapper association unresolved",
+      passed: valid, evidence: stepLabel(step) });
+    return;
+  }
+  if (step.tool === "start_ame_queue" || step.tool === "pause_ame_queue") {
+    const control = require("./ame-queue-control"), attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+    let valid = false;
+    try { valid = payload.verification?.ok === true && payload.verification.scope === (step.tool==="pause_ame_queue"?"ame_global_queue_pause_observed":"ame_global_queue_start_dispatch_only") && attached.length === 1 && attached.every(read =>
+      SERVER_ATTACHED_READS.get(read)?.valid === true && read.tool === control.STATUS && read.status === "completed" &&
+      JSON.stringify(control.validateInput(control.STATUS, read.args)) === JSON.stringify(control.statusArgs(step.tool,args)) &&
+      control.verifyReadBack(args, payload, payloadForStep(read), evidence.run)); } catch (_) {}
+    const pause=step.tool===control.PAUSE;
+    pushCheck(checks, { id: `${step.index}:${step.tool}:${pause?"global-pause":"global-start"}`, title: pause?"Общая AME PAUSE":"Общий AME START", expected: pause?"one exact authorized pause intent and independent paused marker read":"one exact authorized runBatch intent and independent native marker read", observed: valid ? pause?"same explicit pause and paused host verified":"global START accepted; queue items, completion and media not inspected" : pause?"global PAUSE unresolved":"global START unresolved", passed: valid, evidence: stepLabel(step) });
+    return;
+  }
+  if (step.tool === "start_ame_title_batch") {
+    if(args.queueMode==="shared_queue_v1"){
+      const attached=(evidence.readBack.rawAttempts || []).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
+      const valid=payload.verification?.ok===true && payload.verification.scope==="ame_two_own_items_global_start" && attached.every(read=>SERVER_ATTACHED_READS.get(read)?.valid===true) &&
+        require("./ame-shared-queue-grant").verifyStartEvidence(args,payload,evidence.run,attached.map(read=>({...read,result:payloadForStep(read)})));
+      pushCheck(checks,{id:`${step.index}:${step.tool}:own-items-start`,title:"Два собственных item и общий START",expected:"exact retained own wrappers and one accepted global start",observed:valid?"own items and global START verified; mixed queue and media not scanned":"shared START unresolved",passed:valid,evidence:stepLabel(step)});return;
+    }
+    if (args.manualQueueMode === "cep_user_declaration_v2") {
+      const attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+      let valid = false;
+      try {
+        valid = payload.authorization?.runId === evidence.run?.id && payload.authorization?.proposalId === evidence.run?.provenance?.actionId &&
+          payload.verification?.ok === true && payload.verification.scope === "ame_authenticated_cep_declaration_dispatch_only" &&
+          attached.every(read => SERVER_ATTACHED_READS.get(read)?.valid === true && read.tool === "get_ame_title_job_status" && read.status === "completed") &&
+          ameManualQueue.verifyStartEvidence(args, payload, evidence.run, attached);
+      } catch (_) {}
+      pushCheck(checks, { id: `${step.index}:${step.tool}:manual-queue-dispatch`, title: "Authenticated CEP single-job declaration and durable START dispatch",
+        expected: "private server-attached wrapper read matching consumed manifest, current run and final guard",
+        observed: valid ? "START accepted under authenticated CEP declaration; native whole queue, completion and media proof remain separate" : "authenticated CEP START evidence unavailable",
+        passed: valid, status: valid ? "passed" : "needs_review", evidence: stepLabel(step) });
+      return;
+    }
+    pushCheck(checks, { id: `${step.index}:${step.tool}:native-queue-composition`, title: "Entire native AME queue ownership before start",
+      expected: "independent server proof of the entire native queue composition", observed: "queue_composition_unavailable",
+      passed: false, status: "needs_review", evidence: "Retained wrappers, job status and an injected gate assertion do not prove the entire native queue." });
+    return;
+  }
+  if (step.tool === "ame_native_fixture_probe") {
+    let valid = false;
+    try { valid = verifyAmeNativeFixture(step, evidence); } catch (_) {}
+    pushCheck(checks, { id: `${step.index}:${step.tool}:independent-native-evidence`, title: "Independent native fixture outcome",
+      expected: "exact signed capture/stage receipts and one fresh server-attached file/process read",
+      observed: valid ? "owned source preserved and two saved variants reopened at receipts; fresh files/processes verified; production, current-user, AME and media proof separate" : "independent native fixture evidence unavailable",
+      passed: valid, status: valid ? "passed" : "needs_review", evidence: stepLabel(step) });
+    return;
+  }
+  if (step.tool === "ensure_ame_running") {
+    const running = require("./ame-running"), verification = payload.verification;
+    let valid = false;
+    try {
+      const wanted = running.inspectionArgs(payload), attached = (evidence.readBack.rawAttempts || []).filter(read => SERVER_ATTACHED_READS.get(read)?.mutationStep === step);
+      valid = Boolean(payload.authorization && payload.authorization.runId === evidence.run.id && payload.authorization.proposalId === evidence.run.provenance?.actionId &&
+        verification && verification.scope === "ame_process_and_read_transport_only" && verification.ok === true && attached.length === 1 &&
+        attached.every(read => read.status === "completed" && read.tool === "inspect_ame_transport" && SERVER_ATTACHED_READS.get(read)?.valid === true &&
+          JSON.stringify(read.args) === JSON.stringify(wanted) && running.verifyReadBack(payload, payloadForStep(read), verification.before, verification.after)));
+    } catch (_) {}
+    pushCheck(checks, { id: `${step.index}:ensure_ame_running:transport`, title: "Independent AME process and fixed read transport", expected: "stable verified process and a fresh correlated typed read", observed: valid ? "transport confirmed; queue ownership and export adapter remain unverified" : "AME process/transport unresolved", passed: valid, evidence: stepLabel(step) });
+    return;
+  }
+  if(step.tool==="render_one_title_variant"){
+    const native=require("./native-render-variant"),receipt=payload.renderReceipt;
+    let valid=false;
+    try{native.verifyReceipt(receipt,args);
+      const wanted=native.inspectionArgs(args,receipt.attemptId),attempts=(evidence.readBack.rawAttempts || []).filter(read=>
+        SERVER_ATTACHED_READS.get(read)?.mutationStep===step || read.tool===native.INSPECT && read.args?.attemptId===receipt.attemptId);
+      const attached=attempts.filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
+      valid=Boolean(receipt.authorization && receipt.authorization.runId===evidence.run.id && receipt.authorization.proposalId===evidence.run.provenance?.actionId && attempts.length>0 && attached.length<=1 &&
+        attempts.every(read=>read.status==="completed" && read.tool===native.INSPECT && (!SERVER_ATTACHED_READS.has(read) || SERVER_ATTACHED_READS.get(read).valid===true) && native.digest(read.args)===native.digest(wanted) && native.verifyInspection(receipt,payloadForStep(read),args)));
+    }catch(_error){}
+    pushCheck(checks,{id:`${step.index}:render_one_title_variant:native-done`,title:"Bound native DONE and independent restored-state receipt",expected:"exact manual attempt + native DONE + restored visibility/queue",observed:valid ? "native completion confirmed; media/alpha/DXV/visual proof separate" : "native render outcome unresolved",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if(step.tool==="reload_montage_material_source"){
+    const epoch=payload.sourceLoadEpoch,verified=payload.verification;
+    let valid=false;try{const capture=require("./montage-capture-service"),p=evidence.run.provenance;capture.validateLoadEpoch(epoch,{projectKey:epoch?.projectKey});
+      valid=capture.validExecutionBinding({runId:evidence.run.id,actionId:p?.actionId,proposalRevision:p?.proposalRevision,planSha256:p?.planSha256,stepIndex:step.index}) &&
+        epoch.sourceItemId===args.sourceItemId && epoch.runId===evidence.run.id && epoch.actionId===p.actionId &&
+        epoch.proposalRevision===evidence.run.provenance?.proposalRevision && epoch.planSha256===evidence.run.provenance?.planSha256 &&
+        epoch.stepIndex===step.index && verified?.ok===true && verified.scope==="independent_native_source_load_epoch" && verified.sourceLoadEvidence?.epoch?.epochId===epoch.epochId;
+      if(hasOwn(step,"independentReadBack")){
+        const attached=(evidence.readBack.rawAttempts || []).filter(read=>SERVER_ATTACHED_READS.get(read)?.mutationStep===step);
+        const read=attached.length===1 ? attached[0] : null,meta=read && SERVER_ATTACHED_READS.get(read),observed=read && payloadForStep(read);
+        valid=valid && meta?.valid===true && read.tool==="get_montage_source_load_evidence" && read.args?.sourceItemId===args.sourceItemId && observed?.ok===true && observed.epoch?.epochId===epoch.epochId;
+      }
+    }catch(_error){}
+    pushCheck(checks,{id:`${step.index}:reload_montage_material_source:native-load`,title:"Explicit native reload with exact owned scope and independent load evidence",expected:"Bound native command, full file bracket and independent native read",observed:valid ? "native source load epoch verified" : "native source load authority incomplete",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if(step.tool==="create_placeholder_review_comps"){
+    const v=payload.verification;
+    const valid=payload.registered===true && typeof payload.owner==="string" && v?.ok===true && v.scope==="registered_live_link_service_receipt" && v.owner===payload.owner &&
+      Array.isArray(payload.items) && Array.isArray(v.itemIds) && payload.items.length===v.itemIds.length && payload.items.every(item=>v.itemIds.includes(item.itemId));
+    pushCheck(checks,{id:`${step.index}:create_placeholder_review_comps:registered-owner`,title:"Native review controls registered and independently verified",expected:"Exact owner and registered native item set",observed:valid ? "registered live-link service receipt" : "owner receipt incomplete",passed:valid,evidence:stepLabel(step)});return;
+  }
+  if(step.tool===projectSave.TOOL_NAME){
+    let valid=false,reason="missing typed save receipt";
+    try{projectSave.verifyReceipt(payload.saveReceipt,args);
+      const receipt=payload.saveReceipt,run=evidence.run;
+      valid=Boolean(run && receipt.authorization.runId===run.id && run.provenance && receipt.authorization.proposalId===run.provenance.actionId &&
+        evidence.readBack.projects.some((project)=>normalizeSlashes(project.file).toLowerCase()===normalizeSlashes(args.expectedProjectFile).toLowerCase()));
+      reason=valid?"file hash, checkpoint, bound save receipt and independent project path match; reopen pending":"missing run binding or independent project path";
+    }catch(error){reason=error.message;}
+    pushCheck(checks,{id:`${step.index}:save_current_named_project:file-proof`,title:"Typed named-project persistence proof",expected:"bound file/checkpoint/project read-back; live reopen separate",observed:reason,passed:valid,evidence:reason});
+    return;
+  }
+  if(projectLifecycle.isLifecycleMutation(step.tool)) {
+    let valid=false,reason="missing lifecycle receipt or native read-back";
+    try { const proof=lifecycleVerification.verifyLifecycleStep(step,evidence.run);valid=proof.ok;
+      reason="Bound source disk/checkpoint, target native inventory, exact manual run and retired context verified.";
+    } catch(error) {reason=error.message;}
+    pushCheck(checks,{id:`${step.index}:${step.tool}:lifecycle-proof`,title:"Guarded project lifecycle proof",
+      expected:"exact manual run, unchanged source, proven final native inventory",observed:reason,passed:valid,evidence:reason});return;
+  }
+
+  if (SLIDESHOW_MUTATING_TOOLS.has(step.tool)) {
+    checkSlideshowMutation(checks, step, evidence);
+    return;
+  }
+
+  if (step.tool === "add_project_item_to_comp") {
+    const targetName = args.compName || payload.comp && payload.comp.name;
+    const targetIndex = args.compItemIndex;
+    const added = payload.layer || {};
+    const comp = evidence.readBack.comps.find(item => item.name === targetName && (!targetIndex || item.itemIndex === targetIndex));
+    const matches = comp ? comp.layers.filter(layer => layer.name === (args.name || added.name) &&
+      (added.id ? String(layer.id) === String(added.id) : layer.index === added.index)) : [];
+    const layer = matches.length === 1 ? matches[0] : null;
+    const sourceName = args.itemName || payload.sourceItem && payload.sourceItem.name;
+    const sourceMatches = layer && layer.sourceItem && layer.sourceItem.name === sourceName &&
+      (!args.itemIndex || layer.sourceItem.itemIndex === args.itemIndex);
+    const timingMatches = layer && (!hasOwn(args, "startTime") || nearlyEqual(layer.startTime, args.startTime)) &&
+      (!hasOwn(args, "duration") || nearlyEqual(layer.outPoint - layer.inPoint, args.duration));
+    pushCheck(checks, {id: `${step.index}:add_project_item_to_comp:source-and-range`,
+      title: "Added layer source, identity and timing match independent composition read-back",
+      expected: `${targetName}: ${args.name || added.name}, source ${sourceName}`,
+      observed: layer ? `${layer.name}: ${layer.sourceItem && layer.sourceItem.name}; ${layer.inPoint}..${layer.outPoint}` : "missing exact layer",
+      passed: Boolean(sourceMatches && timingMatches), evidence: comp ? comp.source : "Missing independent composition layers read-back"});
+    return;
+  }
+
+  if (step.tool === "create_comp") {
+    const created = payload.comp || payload;
+    const itemIndex = numberValue(created.itemIndex);
+    const candidates = evidence.subsequentReadBack.comps.filter((comp) => itemIndex !== null && comp.itemIndex === itemIndex);
+    const automatic = payload.verification && payload.verification.ok === true && payload.verification.comp;
+    const observed = automatic && automatic.itemIndex === itemIndex ? {...automatic, source: "Independent verifyAfter composition inspection"} : candidates.length ? candidates[0] : null;
+    const expected = {
+      width: hasOwn(args, "width") ? args.width : 1920,
+      height: hasOwn(args, "height") ? args.height : 1080,
+      pixelAspect: hasOwn(args, "pixelAspect") ? args.pixelAspect : 1,
+      duration: hasOwn(args, "duration") ? args.duration : 5,
+      frameRate: hasOwn(args, "frameRate") ? args.frameRate : 30,
+      bgColor: hasOwn(args, "bgColor") ? args.bgColor : [0, 0, 0]
+    };
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:identity-and-settings`,
+      title: "Created composition identity and settings match independent read-back",
+      expected: { name: args.name, itemIndex, ...expected },
+      observed,
+      passed: Boolean(observed) && observed.name === args.name && Object.keys(expected).every((field) => compFieldMatches(observed, field, expected[field])),
+      evidence: observed ? observed.source : "Missing exact get_comp_details read-back after creation."
+    });
+    return;
+  }
+
+  if (step.tool === "create_test_comp") {
+    checkName(checks, step, args.name, payload.name || payload.comp && payload.comp.name, evidence, "Created comp is visible in read-back");
+    return;
+  }
+
+  if (step.tool === "create_solid_layer") {
+    checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created solid layer name matches request");
+    checkNumberFields(checks, step, [
+      { arg: "startTime", label: "startTime", read: (value) => value && value.layer && value.layer.startTime },
+      { arg: "duration", label: "duration", read: (value) => value && value.layer ? Number(value.layer.outPoint) - Number(value.layer.inPoint) : null }
+    ], payload, "Created solid layer timing matches request");
+    return;
+  }
+
+  if (step.tool === "create_text_layer") {
+    checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created text layer name matches request");
+    if (args.text) {
+      const observed = payload.layer && payload.layer.text ? payload.layer.text.text : payload.text;
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:text`,
+        title: "Created text content matches request",
+        expected: args.text,
+        observed,
+        passed: sameString(observed, args.text),
+        evidence: stepLabel(step)
+      });
+    }
+    if (hasOwn(args, "justification")) {
+      const observed = normalizeTextJustification(textJustificationFromPayload(payload));
+      const expected = normalizeTextJustification(args.justification);
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:justification`,
+        title: "Created text paragraph justification matches request",
+        expected,
+        observed,
+        passed: observed === expected,
+        evidence: stepLabel(step)
+      });
+    }
+    return;
+  }
+
+  if (step.tool === "create_shapes_from_text") {
+    checkCreateShapesFromText(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "create_camera_layer") {
+    checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created camera layer name matches request");
+    checkNumberArrayField(checks, step, "position", payload.camera && payload.camera.position, evidence, "Created camera position matches request");
+    checkNumberArrayField(checks, step, "pointOfInterest", payload.camera && payload.camera.pointOfInterest, evidence, "Created camera point of interest matches request");
+    checkNumberFields(checks, step, [
+      { arg: "zoom", label: "zoom", read: (value) => value && value.camera && value.camera.zoom }
+    ], payload, "Created camera options match request");
+    return;
+  }
+
+  if (step.tool === "create_camera_with_controller") {
+    checkCameraWithController(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "toggle_onion_skinning") {
+    checkToggleOnionSkinning(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "set_comp_current_time") {
+    checkSetCompCurrentTime(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_comp_work_area") {
+    checkSetCompWorkArea(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_time_range") {
+    checkChangedLayerTiming(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "stagger_layers") {
+    checkStagger(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "align_layers_to_time") {
+    checkAlign(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "split_layers_at_time") {
+    checkSplit(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "update_text_layer") {
+    if (hasOwn(args, "text")) {
+      const observed = payload.layer && payload.layer.text ? payload.layer.text.text : payload.text && payload.text.text;
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:text`,
+        title: "Updated text content matches request",
+        expected: args.text,
+        observed,
+        passed: sameString(observed, args.text),
+        evidence: stepLabel(step)
+      });
+    }
+    if (hasOwn(args, "justification")) {
+      const observed = normalizeTextJustification(textJustificationFromPayload(payload));
+      const expected = normalizeTextJustification(args.justification);
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:justification`,
+        title: "Updated text paragraph justification matches request",
+        expected,
+        observed,
+        passed: observed === expected,
+        evidence: stepLabel(step)
+      });
+    }
+    return;
+  }
+
+  if (step.tool === "create_shape_layer") {
+    const layerShapeContents = payload.layer && Array.isArray(payload.layer.shapeContents) ? payload.layer.shapeContents : [];
+    const requestedShapeType = args.shape || "rectangle";
+    const readBackShape = layerShapeContents.find((item) => item && item.type === requestedShapeType) || layerShapeContents[0] || {};
+    const shapeSummary = isPlainObject(payload.shape) ? payload.shape : {};
+    const observedShape = { ...readBackShape, ...shapeSummary };
+    checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created shape layer name matches request");
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:shape`,
+      title: "Created shape summary matches request",
+      expected: `${requestedShapeType} ${Array.isArray(args.size) ? args.size.join("x") : ""}`.trim(),
+      observed: observedShape.type ? `${observedShape.type || ""} ${Array.isArray(observedShape.size) ? observedShape.size.join("x") : ""}`.trim() : "missing shape summary",
+      passed: Boolean(observedShape.type) &&
+        observedShape.type === requestedShapeType &&
+        (!hasOwn(args, "size") || numberArrayMatches(observedShape.size, args.size)),
+      evidence: stepLabel(step)
+    });
+    if (requestedShapeType === "polygon" || requestedShapeType === "star") {
+      const expectedStarType = args.starType || requestedShapeType;
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:star-type`,
+        title: "Created polystar type matches request",
+        expected: expectedStarType,
+        observed: observedShape.starType || observedShape.type || "missing starType",
+        passed: (observedShape.starType || observedShape.type) === expectedStarType,
+        evidence: stepLabel(step)
+      });
+      for (const key of ["points", "outerRadius"]) {
+        if (!hasOwn(args, key)) continue;
+        pushCheck(checks, {
+          id: `${step.index || "step"}:${step.tool}:${key}`,
+          title: `Created polystar ${key} matches request`,
+          expected: args[key],
+          observed: observedShape[key],
+          passed: nearlyEqual(observedShape[key], args[key]),
+          evidence: stepLabel(step)
+        });
+      }
+      if (requestedShapeType === "star" && hasOwn(args, "innerRadius")) {
+        pushCheck(checks, {
+          id: `${step.index || "step"}:${step.tool}:innerRadius`,
+          title: "Created star innerRadius matches request",
+          expected: args.innerRadius,
+          observed: observedShape.innerRadius,
+          passed: nearlyEqual(observedShape.innerRadius, args.innerRadius),
+          evidence: stepLabel(step)
+        });
+      }
+    }
+    return;
+  }
+
+  if (step.tool === "create_adjustment_layer") {
+    checkName(checks, step, args.name, payload.layer && payload.layer.name, evidence, "Created adjustment layer name matches request");
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:adjustment-layer`,
+      title: "Created layer is an adjustment layer",
+      expected: "adjustmentLayer:true",
+      observed: `adjustmentLayer:${payload.layer && payload.layer.adjustmentLayer === true}`,
+      passed: Boolean(payload.layer && payload.layer.adjustmentLayer === true),
+      evidence: stepLabel(step)
+    });
+    if (args.insertBeforeLayerIndex !== undefined && args.insertBeforeLayerIndex !== null) {
+      const beforeLayer = payload.placement && payload.placement.beforeLayerAfterMove;
+      const expectedName = compactText(args.expectedBeforeLayerName, 160);
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:placement`,
+        title: "Created adjustment layer is immediately above the guarded layer",
+        expected: expectedName ? `immediately before ${expectedName}` : `immediately before layer ${args.insertBeforeLayerIndex}`,
+        observed: payload.placement
+          ? `immediatelyBefore:${payload.placement.immediatelyBefore === true}; layerIndex:${payload.layer && payload.layer.index}; beforeLayerIndex:${beforeLayer && beforeLayer.index}; beforeLayerName:${beforeLayer && beforeLayer.name}`
+          : "missing placement evidence",
+        passed: Boolean(payload.placement && payload.placement.immediatelyBefore === true &&
+          payload.layer && beforeLayer && payload.layer.index + 1 === beforeLayer.index &&
+          (!expectedName || beforeLayer.name === expectedName)),
+        evidence: stepLabel(step)
+      });
+    }
+    return;
+  }
+
+  if (step.tool === "create_layer_connection_line") {
+    checkCreateLayerConnectionLine(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "create_layer_mask") {
+    const mask = payload.mask || {};
+    checkName(checks, step, args.name, mask.name, evidence, "Created mask name matches request");
+    checkPointListField(checks, step, "vertices", mask.shape && mask.shape.vertices, "Created mask vertices match request");
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:mode`,
+      title: "Created mask mode is additive and non-inverted",
+      expected: "maskMode: add, inverted: false",
+      observed: `maskMode: ${mask.maskMode || "missing"}, inverted: ${mask.inverted === true}`,
+      passed: mask.maskMode === "add" && mask.inverted !== true,
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "fit_layer_to_comp") {
+    const verification=payload.verification || {};
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:fit`,
+      title: "Fresh independent rectangular cover coverage",
+      expected: "eligible static uniform cover; artistic review separate",
+      observed: verification.scope || "independent geometry not observed",
+      passed: (args.mode || "contain")==="cover" && verification.ok===true && verification.scope==="fresh_rectangular_footprint_only" &&
+        Array.isArray(verification.checks) && verification.checks.length>0 && verification.checks.every(check=>check.eligible===true && check.covered===true),
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "set_property_value") {
+    checkSetPropertyValue(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_transform") {
+    checkSetLayerTransform(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_effect_property") {
+    checkSetEffectProperty(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_metadata") {
+    checkSetLayerMetadata(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_blending_mode") {
+    checkSetLayerBlendingMode(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_parent") {
+    checkSetLayerParent(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_track_matte") {
+    checkSetLayerTrackMatte(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_project_item_metadata") {
+    checkSetProjectItemMetadata(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_project_frames_count_type") {
+    checkSetProjectFramesCountType(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_puppet_pin_type") {
+    checkSetPuppetPinType(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "add_effect") {
+    checkAddEffect(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_effect_enabled") {
+    checkSetEffectEnabled(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "add_property_to_essential_graphics") {
+    checkAddPropertyToEssentialGraphics(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_property_keyframes") {
+    const readBackEvidence = observedPropertyKeyframesEvidence(evidence.readBack, args) ||
+      observedPropertyKeyframesEvidence(evidence.allReadBack, args);
+    const valueReadBackRequired = /ADBE Text Document/.test(propertyPathText(args.propertyPath));
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:keyframes`,
+      title: "Keyframe count matches request",
+      expected: `${arrayLength(args.keyframes)} keyframe(s)`,
+      observed: `${payload.keyframeCount || 0} keyframe(s)`,
+      passed: Number(payload.keyframeCount || 0) === arrayLength(args.keyframes),
+      evidence: stepLabel(step)
+    });
+    if (readBackEvidence || valueReadBackRequired) {
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool}:keyframe-values`,
+        title: "Keyframe values match post-run read-back",
+        expected: `${propertyPathText(args.propertyPath)} keyframes match requested times and values`,
+        observed: readBackEvidence ? readBackEvidence.observed : "missing or mismatched keyframe read-back",
+        passed: Boolean(readBackEvidence),
+        evidence: readBackEvidence ? readBackEvidence.source : "No post-run property read-back matched set_property_keyframes times and values."
+      });
+    }
+    return;
+  }
+
+  if (step.tool === "fill_in_keyframes") {
+    checkFillInKeyframes(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "keyframe_current_value_from_expression") {
+    checkCurrentExpressionKeyframe(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "apply_keyframe_ease") {
+    checkKeyframeEase(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_spatial_in_tangent") {
+    checkSpatialInTangent(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "set_expression") {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:expression`,
+      title: "Expression matches request",
+      expected: args.expression,
+      observed: payload.expression || "",
+      passed: sameString(payload.expression, args.expression) && !payload.expressionError,
+      evidence: payload.expressionError || stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "separate_shape_size_dimensions") {
+    checkSeparateShapeSizeDimensions(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "clear_expression") {
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:expression`,
+      title: "Expression was cleared",
+      expected: "empty expression",
+      observed: payload.expression || "",
+      passed: !payload.expression,
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "precompose_layers") {
+    checkName(checks, step, args.newCompName, payload.comp && payload.comp.name, evidence, "Precomp name matches request");
+    return;
+  }
+
+  if (step.tool === "duplicate_comp") {
+    checkName(checks, step, args.name, payload.duplicate && payload.duplicate.name, evidence, "Duplicated comp name matches request");
+    return;
+  }
+
+  if (step.tool === "duplicate_layer") {
+    const duplicate = payload.duplicate || payload.layer || {};
+    checkName(checks, step, args.name, duplicate.name, evidence, "Duplicated layer name matches request");
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:duplicate`,
+      title: "Layer duplicate was created from explicit source layer",
+      expected: `source layer ${args.layerIndex || "specified"}`,
+      observed: `source=${payload.source && payload.source.name || "missing"}, duplicate=${duplicate.name || "missing"}`,
+      passed: Boolean(payload.source) && Boolean(duplicate && duplicate.index),
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "duplicate_layers") {
+    checkDuplicateLayers(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_layer_selection") {
+    const requested = Array.isArray(args.layerIndices) ? args.layerIndices.map(Number) : [];
+    const observed = Array.isArray(payload.selectedIndices) ? payload.selectedIndices.map(Number) : [];
+    const expectedNames = Array.isArray(args.expectedLayerNames) ? args.expectedLayerNames.map(String) : [];
+    const observedNames = Array.isArray(payload.selectedNames) ? payload.selectedNames.map(String) : [];
+    const indexMatches = requested.length > 0 &&
+      requested.length === observed.length &&
+      requested.every((value, index) => observed[index] === value);
+    const nameMatches = !expectedNames.length ||
+      (expectedNames.length === observedNames.length && expectedNames.every((value, index) => observedNames[index] === value));
+    const readBackEvidence = observedNameEvidence(evidence.readBack, observedNames[0]) ||
+      observedNameEvidence(evidence.all, observedNames[0]);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:selection`,
+      title: "Layer selection matches explicit request",
+      expected: requested.join(", "),
+      observed: observed.join(", "),
+      passed: indexMatches && nameMatches && Boolean(readBackEvidence),
+      evidence: readBackEvidence || "No selected-layer read-back matched the requested selection."
+    });
+    return;
+  }
+
+  if (step.tool === "delete_layer") {
+    checkDeleteLayer(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_comp_properties") {
+    checkSetCompProperties(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "refresh_comp_panel") {
+    checkRefreshCompPanel(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "set_path_geometry") {
+    checkSetPathGeometry(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "export_path_points") {
+    checkExportPathPoints(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "export_text_to_file") {
+    checkExportTextToFile(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "save_comp_frame_png") {
+    checkSaveCompFramePng(checks, step, payload);
+    return;
+  }
+
+  if (step.tool === "set_layer_mask") {
+    checkSetLayerMask(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "add_comp_marker") {
+    const marker = payload.marker || {};
+    const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+    const readBackEvidence = observedMarkerReadBackEvidence(evidence, args);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:marker`,
+      title: "Composition marker comment and timing match request",
+      expected: expectedMarkerText(args),
+      observed: markerText(marker),
+      passed: markerMatchesArgs(marker, args) &&
+        postVerification.ok === true &&
+        postVerification.markerCountIncremented === true &&
+        Boolean(readBackEvidence),
+      evidence: readBackEvidence || "No matching composition marker read-back after mutation."
+    });
+    return;
+  }
+
+  if (step.tool === "add_layer_marker") {
+    const marker = payload.marker || {};
+    const readBackEvidence = observedMarkerEvidence(evidence.readBack, args);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:marker`,
+      title: "Layer marker comment and timing match request",
+      expected: expectedMarkerText(args),
+      observed: markerText(marker),
+      passed: markerMatchesArgs(marker, args) && Boolean(readBackEvidence),
+      evidence: readBackEvidence || "No matching marker read-back after mutation."
+    });
+    return;
+  }
+
+  if (step.tool === "update_layer_marker") {
+    const marker = payload.marker || {};
+    const readBackEvidence = observedUpdatedMarkerEvidence(evidence.readBack, args);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:marker`,
+      title: "Layer marker update matches request",
+      expected: expectedMarkerText(args),
+      observed: markerText(marker),
+      passed: updatedMarkerMatchesArgs(marker, args) && Boolean(readBackEvidence),
+      evidence: readBackEvidence || "No matching updated marker read-back after mutation."
+    });
+    return;
+  }
+
+  if (step.tool === "delete_layer_marker") {
+    const deletedMarker = payload.markerDeleted || {};
+    const absent = observedDeletedMarkerAbsent(evidence.readBack, deletedMarker, args);
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:marker`,
+      title: "Layer marker target was deleted",
+      expected: `deleted marker absent after read-back: ${markerText(deletedMarker)}`,
+      observed: absent ? "deleted marker absent" : "deleted marker still present or no marker read-back",
+      passed: Boolean(deletedMarker && deletedMarker.keyIndex) && absent,
+      evidence: absent ? "Post-run marker read-back does not include the deleted marker target." : "No post-run marker read-back proving deletion."
+    });
+    return;
+  }
+
+  if (step.tool === "deep_duplicate_precomp_sources") {
+    const duplicate = payload.duplicateComp || {};
+    const layer = payload.layer || {};
+    const expectedSuffix = args.nameSuffix || " copy";
+    const duplicateName = duplicate.name || "";
+    const layerSourceName = layer.source && layer.source.name ? layer.source.name : "";
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:duplicate`,
+      title: "Selected precomp source was duplicated and relinked",
+      expected: `duplicate source comp with suffix ${expectedSuffix}`,
+      observed: duplicateName || layerSourceName || "missing duplicate comp",
+      passed: Boolean(duplicateName) && duplicateName.indexOf(expectedSuffix) >= 0 && (!layerSourceName || layerSourceName === duplicateName),
+      evidence: observedNameEvidence(evidence.all, duplicateName) || stepLabel(step)
+    });
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:items`,
+      title: "Deep duplicate reported copied or reused source items",
+      expected: "duplicated or explicitly reused source items",
+      observed: `duplicated=${Number(payload.duplicatedItemCount || 0)}, reusedFootage=${Number(payload.reusedFootageCount || 0)}`,
+      passed: Number(payload.duplicatedItemCount || 0) > 0 || Number(payload.reusedFootageCount || 0) > 0,
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "replace_layer_source") {
+    checkReplaceLayerSource(checks, step, payload, evidence);
+    return;
+  }
+
+  if (step.tool === "relink_footage_source") {
+    const expectedFile = args.filePath || args.targetFilePath;
+    const targetItemId = Number.isSafeInteger(args.itemId) && args.itemId > 0 ? args.itemId : null;
+    const observedFile = payload.item && (payload.item.file || payload.item.filePath);
+    const observedItemId = payload.itemId !== undefined && payload.itemId !== null
+      ? numberValue(payload.itemId)
+      : (payload.item && payload.item.itemId !== undefined ? numberValue(payload.item.itemId) : null);
+    const postVerification = isPlainObject(payload.postVerification) ? payload.postVerification : {};
+    const fileMatches = sourceRecovery.pathsEqual(observedFile, expectedFile);
+    const itemIdMatches = targetItemId !== null && observedItemId === targetItemId &&
+      payload.item && payload.item.itemId === targetItemId;
+
+    // Use actual rows, not recursively collected project-item summaries (which can
+    // visit the same object twice). A final batch read may follow several relinks.
+    const subsequent = evidence.subsequentReadBack || evidence.readBack;
+    const reads = (subsequent && subsequent.rawSteps || []).filter(read => {
+      if (read.tool !== "find_project_items") return false;
+      const data = payloadForStep(read);
+      const rows = data && data.matches;
+      const readIds = read.args && read.args.itemIds;
+      return Array.isArray(readIds) ? readIds.includes(targetItemId) :
+        Array.isArray(rows) && rows.some(row => row && row.itemId === targetItemId);
+    });
+    const independentStep = reads[reads.length - 1];
+    const independent = sourceRecovery.verifySourceRecoveryReadBack([
+      { itemId: targetItemId, file: expectedFile, name: args.expectedName, footageMissing: false }
+    ], independentStep && payloadForStep(independentStep));
+
+    const passed = Boolean(
+      fileMatches &&
+      itemIdMatches &&
+      payload.item.footageMissing === false &&
+      postVerification.ok === true &&
+      postVerification.footageMissing === false &&
+      independent.ok
+    );
+
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:file`,
+      title: "Relinked footage source matches target file path and independent read-back",
+      expected: expectedFile,
+      observed: observedFile,
+      passed,
+      evidence: independentStep ? stepLabel(independentStep) : (stepLabel(step) + " (missing independent find_project_items read-back evidence)")
+    });
+    return;
+  }
+
+  if (step.tool === "rename_layers") {
+    const renamed = Array.isArray(payload.renamed) ? payload.renamed : [];
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:rename`,
+      title: "Layer rename read-back matches request",
+      expected: args.name || args.prefix || args.suffix || args.replace || "renamed layers",
+      observed: renamed.map((item) => item.after).join(", "),
+      passed: exactRenamesMatch(renamed, args),
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "rename_project_items") {
+    const renamed = Array.isArray(payload.renamed) ? payload.renamed : [];
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:rename`,
+      title: "Project item rename read-back matches request",
+      expected: args.name || args.prefix || args.suffix || args.replace || "renamed items",
+      observed: renamed.map((item) => item.after).join(", "),
+      passed: exactRenamesMatch(renamed, args),
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "add_comp_to_render_queue") {
+    const item = payload.renderQueueItem || {};
+    const comp = item.comp || {};
+    const outputEvidence = args.outputPath ? observedOutputEvidence(evidence.all, args.outputPath) : "no output requested";
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:render-queue`,
+      title: "Render queue item matches requested comp/output",
+      expected: `${args.compName || args.compItemIndex || "active comp"}${args.outputPath ? ` -> ${args.outputPath}` : ""}`,
+      observed: `${comp.name || comp.itemIndex || "unknown"}${outputEvidence ? `; ${outputEvidence}` : ""}`,
+      passed: Boolean(item.index) && (!args.compName || comp.name === args.compName) && (!args.outputPath || Boolean(outputEvidence)),
+      evidence: stepLabel(step)
+    });
+    return;
+  }
+
+  if (step.tool === "set_render_queue_output") {
+    const outputEvidence = args.outputPath ? observedOutputEvidence(evidence.all, args.outputPath) : "template-only output change";
+    pushCheck(checks, {
+      id: `${step.index || "step"}:${step.tool}:render-output`,
+      title: "Render queue output matches request",
+      expected: args.outputPath || args.outputModuleTemplate || args.renderSettingsTemplate || "render queue output update",
+      observed: outputEvidence || "not observed",
+      passed: !args.outputPath || Boolean(outputEvidence),
+      evidence: outputEvidence || stepLabel(step)
+    });
+  }
+}
+
+function buildSummary(status, checks, readBackEvidence, mutationVerificationCount) {
+  const passed = checks.filter((check) => check.status === "passed").length;
+  const failed = checks.filter((check) => check.status === "failed").length;
+  const readBackCount = readBackEvidence.count;
+  if (status === "passed") {
+    return `${passed} semantic check(s) matched the requested outcome using ${readBackCount} read-back summary step(s).`;
+  }
+  if (failed > 0) {
+    return `${failed} semantic check(s) need review; ${passed} passed. Read-back summaries: ${readBackCount}.`;
+  }
+  if (!readBackCount && mutationVerificationCount) {
+    return `Per-step mutation verification exists, but no explicit read-back summary step was found.`;
+  }
+  return `Semantic verification needs review. Read-back summaries: ${readBackCount}.`;
+}
+
+function isScopedGeneratedPngPlanSufficient(mutatingSteps, steps, run, checks, options = {}) {
+  if (!Array.isArray(mutatingSteps) || mutatingSteps.length === 0) return false;
+  if (!run || run.ok !== true) return false;
+
+  // Scoped generated-only check: every mutating step in the entire run must be exact save_comp_frame_png
+  for (const step of steps) {
+    if (isMutatingStep(step)) {
+      if (step.tool !== "save_comp_frame_png" || step.status !== "completed") return false;
+    }
+  }
+
+  const authoritativeRoot = getAuthoritativeExportRoot(options);
+
+  for (const step of mutatingSteps) {
+    if (step.tool !== "save_comp_frame_png" || step.status !== "completed") return false;
+    const args = step.args || {};
+    const payload = payloadForStep(step);
+    if (!isPlainObject(payload)) return false;
+
+    const file = payload.file;
+    if (!isPlainObject(file)) return false;
+
+    // Actual trusted completion flag (must be strictly true)
+    if (file.pngComplete !== true) return false;
+
+    // Retained PNG: existsAfter: true, deletedAfterReadBack: false
+    if (file.existsAfter !== true || file.deletedAfterReadBack !== false) return false;
+
+    // Positive safe integer byteLength capped by DEFAULT_MAX_PNG_BYTES (Finding 5)
+    if (!Number.isSafeInteger(file.byteLength) || file.byteLength <= 0 || file.byteLength > DEFAULT_MAX_PNG_BYTES) return false;
+    if (![file.width, file.height].every(n => Number.isSafeInteger(n) && n > 0 && n <= 0x7fffffff)) return false;
+    if (typeof file.sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(file.sha256)) return false;
+    if (String(file.mimeType || "") !== "image/png") return false;
+
+    // Correct filename and authoritative generated export root binding (Finding 2)
+    const expectedFileName = args.outputFileName || "frame.png";
+    if (file.outputFileName !== expectedFileName) return false;
+    if (typeof file.outputPath !== "string" || !file.outputPath.trim()) return false;
+
+    const canonicalExpectedPath = path.resolve(authoritativeRoot, expectedFileName);
+    const canonicalFilePath = path.resolve(file.outputPath);
+
+    if (!isPathInside(authoritativeRoot, canonicalExpectedPath)) return false;
+    if (path.normalize(canonicalFilePath).toLowerCase() !== path.normalize(canonicalExpectedPath).toLowerCase()) return false;
+
+    if (hasOwn(payload, "outputPath")) {
+      if (typeof payload.outputPath !== "string" || !payload.outputPath.trim()) return false;
+      if (path.normalize(path.resolve(payload.outputPath)).toLowerCase() !== path.normalize(canonicalExpectedPath).toLowerCase()) return false;
+    }
+
+    if (generatedFileEvidenceIssues("save_comp_frame_png", file).length > 0) return false;
+
+    // Host verification is mandatory (Finding 1)
+    if (!payload.verification || !isPlainObject(payload.verification)) return false;
+    if (payload.verification.ok !== true) return false;
+
+    // Verification target binding (Finding 2)
+    const vTarget = payload.verification.target;
+    if (!isPlainObject(vTarget)) return false;
+    if (vTarget.tool !== "save_comp_frame_png") return false;
+    if (vTarget.outputFileName !== expectedFileName) return false;
+    if (typeof vTarget.outputPath !== "string" || !vTarget.outputPath.trim()) return false;
+    if (path.normalize(path.resolve(vTarget.outputPath)).toLowerCase() !== path.normalize(canonicalExpectedPath).toLowerCase()) return false;
+
+    // Verification file consistency (Finding 1 & Finding 5)
+    const vFile = payload.verification.file;
+    if (!isPlainObject(vFile)) return false;
+    if (vFile.pngComplete !== true) return false;
+    if (vFile.sha256 !== file.sha256) return false;
+    if (vFile.byteLength !== file.byteLength) return false;
+    if (vFile.width !== file.width || vFile.height !== file.height) return false;
+    if (vFile.existsAfter !== true || vFile.deletedAfterReadBack !== false) return false;
+
+    // Explicit supported comp selector (Finding 4)
+    // These are the selectors actually supported by save_comp_frame_png.
+    // compItemId/itemIndex aliases do not resolve a comp in the native handler.
+    const hasCompItemIndex = hasOwn(args, "compItemIndex");
+    const hasCompName = typeof args.compName === "string" && args.compName.trim().length > 0;
+    const hasReviewTarget = hasOwn(args, "reviewOwner") || hasOwn(args, "reviewItemId");
+    if (!hasCompItemIndex && !hasCompName && !hasReviewTarget) return false;
+    if (hasOwn(args, "compItemId") || hasOwn(args, "itemIndex")) return false;
+
+    const comp = payload.comp;
+    if (!isPlainObject(comp)) return false;
+
+    if (hasCompItemIndex) {
+      const reqIndex = positiveIdentityIndex(args.compItemIndex);
+      if (reqIndex === null || positiveIdentityIndex(comp.itemIndex) !== reqIndex) return false;
+    }
+    if (hasCompName) {
+      if (typeof comp.name !== "string" || comp.name !== args.compName) return false;
+    }
+    if (hasOwn(args, "expectedCompName") && (typeof args.expectedCompName !== "string" || comp.name !== args.expectedCompName)) return false;
+    if (hasReviewTarget && (typeof args.reviewOwner !== "string" || !args.reviewOwner.trim() ||
+      positiveIdentityIndex(args.reviewItemId) === null || persistentId(comp, "itemId", "id") !== positiveIdentityIndex(args.reviewItemId) ||
+      payload.reviewOwner !== args.reviewOwner || payload.reviewItemId !== args.reviewItemId || args.time !== 0 ||
+      args.allowOverwrite === true || args.deleteAfterReadBack === true)) return false;
+
+    // Explicit finite non-negative time (Finding 4)
+    if (!hasOwn(args, "time") || typeof args.time !== "number" || !Number.isFinite(args.time) || args.time < 0) return false;
+    const frame = payload.frame;
+    if (!isPlainObject(frame) || typeof frame.time !== "number" || !Number.isFinite(frame.time) || !nearlyEqual(frame.time, args.time, 0.0001)) return false;
+
+    // Applied resolution matches request/default, and restored proof (Finding 4)
+    const validResolution = value => Array.isArray(value) && value.length === 2 && value.every(n => Number.isInteger(n) && n >= 1 && n <= 99);
+    if (hasOwn(args, "resolutionFactor") && !validResolution(args.resolutionFactor)) return false;
+    const reqRes = hasOwn(args, "resolutionFactor") ? args.resolutionFactor : [1, 1];
+    if (hasReviewTarget && (reqRes[0] !== 1 || reqRes[1] !== 1)) return false;
+
+    const res = payload.resolutionFactor;
+    if (!isPlainObject(res) || res.restored !== true) return false;
+    if (!Array.isArray(res.applied) || res.applied.length !== 2 || res.applied[0] !== reqRes[0] || res.applied[1] !== reqRes[1]) return false;
+    if (!Array.isArray(res.before) || res.before.length !== 2 || !res.before.every(n => Number.isInteger(n) && n >= 1 && n <= 99)) return false;
+    if (!Array.isArray(res.after) || res.after.length !== 2 || !res.after.every(n => Number.isInteger(n) && n >= 1 && n <= 99)) return false;
+    if (res.before[0] !== res.after[0] || res.before[1] !== res.after[1]) return false;
+
+    const vRes = payload.verification.resolutionFactor;
+    if (!isPlainObject(vRes) || vRes.restored !== true ||
+      !["before", "applied", "after"].every(key => validResolution(vRes[key]) && vRes[key].every((n, index) => n === res[key][index]))) return false;
+
+    // Existing all 3 semantic postconditions must be passed
+    const stepPrefix = `${step.index || "step"}:${step.tool}`;
+    const checkFile = checks.find(c => c.id === `${stepPrefix}:file`);
+    const checkRes = checks.find(c => c.id === `${stepPrefix}:resolution-factor`);
+    const checkTarget = checks.find(c => c.id === `${stepPrefix}:target`);
+    if (!checkFile || checkFile.status !== "passed") return false;
+    if (!checkRes || checkRes.status !== "passed") return false;
+    if (!checkTarget || checkTarget.status !== "passed") return false;
+  }
+
+  return true;
+}
+
+function buildSemanticVerification(plan, run, options = {}) {
+  const steps = withServerIndependentReads(Array.isArray(run && run.steps) ? run.steps : []);
+  const mutatingSteps = steps.filter(isMutatingStep);
+  const checks = [];
+  const unverifiedMutationSteps = [];
+  const warnings = [];
+  const mutatingOrders = mutatingSteps.map((step, index) => stepOrder(step, index + 1));
+  const firstMutatingOrder = mutatingOrders.reduce((min, order) => Math.min(min, order), Number.POSITIVE_INFINITY);
+  const readBackEvidence = collectReadBackEvidence(steps, Number.isFinite(firstMutatingOrder) ? firstMutatingOrder : 0);
+  const allEvidence = collectAllEvidence(steps);
+  const mutationVerificationCount = mutatingSteps.filter((step) => {
+    const payload = payloadForStep(step);
+    return Boolean(payload && payload.verification);
+  }).length;
+
+  if (!run || run.dryRun) {
+    return {
+      schema: SEMANTIC_VERIFICATION_SCHEMA,
+      status: "not_run",
+      ok: null,
+      summary: "Semantic verification is skipped for dry-run previews.",
+      readBackCount: 0,
+      mutationVerificationCount: 0,
+      passedChecks: 0,
+      failedChecks: 0,
+      checks: [],
+      warnings: []
+    };
+  }
+
+  if (!mutatingSteps.length) {
+    return {
+      schema: SEMANTIC_VERIFICATION_SCHEMA,
+      status: "not_applicable",
+      ok: true,
+      summary: "No project-changing outcome was requested.",
+      readBackCount: readBackEvidence.count,
+      mutationVerificationCount,
+      passedChecks: 0,
+      failedChecks: 0,
+      checks: [],
+      warnings: []
+    };
+  }
+
+  if (!readBackEvidence.count) {
+    warnings.push("No explicit read-back summary step was executed after the mutating steps.");
+  }
+
+  for (let index = 0; index < mutatingSteps.length; index += 1) {
+    const step = mutatingSteps[index];
+    if(amePending.isPendingStep(step,run)){pushCheck(checks,{id:`${step.index}:enqueue_ame_title_variant:pending`,title:"AME dispatch recorded; native acceptance pending",expected:"fresh independent own STATUS",observed:"dispatch receipt only; no queue acceptance",passed:false,status:"needs_review",evidence:stepLabel(step)});continue;}
+    if (step.status !== "completed") {
+      pushCheck(checks, {
+        id: `${step.index || "step"}:${step.tool || "unknown"}:completed`,
+        title: "Mutating step completed before semantic comparison",
+        expected: "completed",
+        observed: step.status || "unknown",
+        passed: false,
+        status: "needs_review",
+        evidence: step.error || step.reason || stepLabel(step)
+      });
+      continue;
+    }
+    const currentOrder = stepOrder(step, index + 1);
+    const nextMutatingOrder = index + 1 < mutatingSteps.length
+      ? stepOrder(mutatingSteps[index + 1], index + 2)
+      : null;
+    const stepReadBackEvidence = collectReadBackEvidence(steps, currentOrder, nextMutatingOrder);
+    const priorCheckCount = checks.length;
+    verifyStep(checks, step, { run, readBack: stepReadBackEvidence, subsequentReadBack: collectReadBackEvidence(steps, currentOrder), all: allEvidence, allReadBack: allEvidence, options });
+    if (checks.length === priorCheckCount) unverifiedMutationSteps.push({index: step.index, tool: step.tool});
+  }
+
+  const failedChecks = checks.filter((check) => check.status === "failed").length;
+  const passedChecks = checks.filter((check) => check.status === "passed").length;
+  const needsReviewChecks = checks.filter(check => check.status === "needs_review").length;
+  const generatedPngProofSufficient = isScopedGeneratedPngPlanSufficient(mutatingSteps, steps, run, checks, options);
+  let lifecycleReads=[];
+  if (mutatingSteps.length===1 && steps.length===1 && projectLifecycle.isLifecycleMutation(mutatingSteps[0].tool)) {
+    try {lifecycleReads=lifecycleVerification.verifyLifecycleStep(mutatingSteps[0],run).reads;}catch (_) {}
+  }
+  const verifiedReadBackCount=readBackEvidence.count+lifecycleReads.length;
+  const status = failedChecks === 0 && needsReviewChecks === 0 && unverifiedMutationSteps.length === 0 &&
+    (verifiedReadBackCount > 0 || generatedPngProofSufficient) && (run.ok === true)
+    ? "passed"
+    : "needs_review";
+
+  return {
+    schema: SEMANTIC_VERIFICATION_SCHEMA,
+    status,
+    ok: status === "passed",
+    summary: buildSummary(status, checks, {...readBackEvidence,count:verifiedReadBackCount}, mutationVerificationCount),
+    requestedOutcome: compactText(plan && plan.summary ? plan.summary : "Agent plan outcome", 180),
+    verificationScope: lifecycleReads.length ? (mutatingSteps[0].tool === "recover_project_lifecycle" ? "project_lifecycle_state_only_recovery_proof" : "project_lifecycle_native_and_disk_proof") : generatedPngProofSufficient && readBackEvidence.count === 0 ? "generated_png_file_proof_only" : "implemented_semantic_checks_only",
+    coverageStatus: unverifiedMutationSteps.length || needsReviewChecks ? "incomplete" : "complete",
+    acceptance: "not_established",
+    readBackCount: verifiedReadBackCount,
+    readBackSteps: [...readBackEvidence.steps,...lifecycleReads],
+    mutationVerificationCount,
+    unverifiedMutationCount: unverifiedMutationSteps.length,
+    unverifiedMutationSteps,
+    passedChecks,
+    failedChecks,
+    needsReviewChecks,
+    checks,
+    warnings
+  };
+}
+
+module.exports = {
+  SEMANTIC_VERIFICATION_SCHEMA,
+  buildSemanticVerification,
+  isMutatingStep,
+  propertyPathIdentityMatches,
+  propertyPathTailIdentityMatches,
+  effectPropertyIdentityMatches,
+  finiteTransformValue,
+  transformValuesMatch,
+  isScopedGeneratedPngPlanSufficient,
+  canonicalImportPath
+};

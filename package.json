@@ -1,0 +1,9 @@
+{
+  "name": "ae-agent-core",
+  "version": "3.3.5",
+  "private": true,
+  "scripts": {
+    "check:rules": "node scripts/core-check.js",
+    "smoke:core-runtime": "node scripts/core-runtime-smoke.js"
+  }
+}

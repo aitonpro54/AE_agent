@@ -1,0 +1,10 @@
+node_modules/
+.codex/
+.codex-runtime/
+.codex-autonomy/
+logs/
+backups/
+snapshots/
+pro-review-bundles/
+settings/
+*.log

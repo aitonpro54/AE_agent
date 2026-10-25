@@ -1,0 +1,2191 @@
+{
+  "schema": "ae-agent.core-runtime-manifest.v1",
+  "status": "built-offline-runtime",
+  "sourceCommit": "1b48076e0aa4a68f21b3229af511d9e526ed0072",
+  "checkpoint": "checkpoint/ae-agent-before-core-2026-10-25",
+  "root": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+  "files": [
+    {
+      "path": "cep-panel/CSXS/manifest.xml",
+      "bytes": 1514,
+      "sha256": "effe065566d16f2d66fa3245317d0d586cc654d1684432cf8d80bb9deb008b41",
+      "disposition": "copied",
+      "sourceSha256": "effe065566d16f2d66fa3245317d0d586cc654d1684432cf8d80bb9deb008b41",
+      "literalDependencies": []
+    },
+    {
+      "path": "cep-panel/index.html",
+      "bytes": 11815,
+      "sha256": "8e48e2cbc77a9e5327d0d8891d380168a6c8a44683f5c51bdfe3a33890f6e0c9",
+      "disposition": "copied",
+      "sourceSha256": "8e48e2cbc77a9e5327d0d8891d380168a6c8a44683f5c51bdfe3a33890f6e0c9",
+      "literalDependencies": []
+    },
+    {
+      "path": "cep-panel/lib/CSInterface.js",
+      "bytes": 439,
+      "sha256": "67a3d2a4bc38d7facbf2fdfbd67e68f734321bd47fdeafa858fda284241356c1",
+      "disposition": "copied",
+      "sourceSha256": "67a3d2a4bc38d7facbf2fdfbd67e68f734321bd47fdeafa858fda284241356c1",
+      "literalDependencies": []
+    },
+    {
+      "path": "cep-panel/native-probe-startup-guard.js",
+      "bytes": 4521,
+      "sha256": "5cc9b24c5748227de5c8df67743ed25228725e4c16d19cc705bc55a7f8ba4184",
+      "disposition": "copied",
+      "sourceSha256": "5cc9b24c5748227de5c8df67743ed25228725e4c16d19cc705bc55a7f8ba4184",
+      "literalDependencies": []
+    },
+    {
+      "path": "cep-panel/panel-action-contract.js",
+      "bytes": 35769,
+      "sha256": "78937c094982cc68cc7c06e85955e09b5c5d5fe741f5c5a84a52c816ea0328df",
+      "disposition": "copied",
+      "sourceSha256": "78937c094982cc68cc7c06e85955e09b5c5d5fe741f5c5a84a52c816ea0328df",
+      "literalDependencies": []
+    },
+    {
+      "path": "cep-panel/panel-actions.js",
+      "bytes": 75922,
+      "sha256": "eebcc176997c10165b86dc0f771fd0a720ab77aac5b0b9a58ad3d8b03848906e",
+      "disposition": "copied",
+      "sourceSha256": "eebcc176997c10165b86dc0f771fd0a720ab77aac5b0b9a58ad3d8b03848906e",
+      "literalDependencies": []
+    },
+    {
+      "path": "cep-panel/panel.js",
+      "bytes": 300008,
+      "sha256": "e3c7e94a2f51732ffcdcce311776acc6098b3c79df217e7b76a89713535b5ac3",
+      "disposition": "copied",
+      "sourceSha256": "e3c7e94a2f51732ffcdcce311776acc6098b3c79df217e7b76a89713535b5ac3",
+      "literalDependencies": []
+    },
+    {
+      "path": "cep-panel/style.css",
+      "bytes": 15957,
+      "sha256": "7b02db47543f180d1c3ba2ec40e73911fc7f7fb2c4d815a265bae962ccb0e343",
+      "disposition": "copied",
+      "sourceSha256": "7b02db47543f180d1c3ba2ec40e73911fc7f7fb2c4d815a265bae962ccb0e343",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/ae-agent-panel-bootstrap.js",
+      "bytes": 64393,
+      "sha256": "47d6e5491c23e3ffdf3f13f78089c33548280e3b73c1a0a3e7063193412abcfe",
+      "disposition": "copied",
+      "sourceSha256": "47d6e5491c23e3ffdf3f13f78089c33548280e3b73c1a0a3e7063193412abcfe",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-product-session-reset.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/owned-runtime-win32.js",
+        "mcp-server/session-recovery-state.js",
+        "scripts/cep-panel-target.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ae-task-completion.js",
+      "bytes": 24372,
+      "sha256": "775577b18f43dce1a232a8804ceab803c5d1c51e809e8f7b646b57df94b1001d",
+      "disposition": "copied",
+      "sourceSha256": "775577b18f43dce1a232a8804ceab803c5d1c51e809e8f7b646b57df94b1001d",
+      "literalDependencies": [
+        "mcp-server/generated-png-proof.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/plan-run-response.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-enqueue-sequence.js",
+      "bytes": 9706,
+      "sha256": "e8b47782b61e4209fe0ce74af22d286325ec20f38a88c240e762c7d8e9cc1800",
+      "disposition": "copied",
+      "sourceSha256": "e8b47782b61e4209fe0ce74af22d286325ec20f38a88c240e762c7d8e9cc1800",
+      "literalDependencies": [
+        "mcp-server/ame-running.js",
+        "mcp-server/ame-shared-queue-grant.js",
+        "mcp-server/ame-title-jobs.js",
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-fixture-ui-backend.js",
+      "bytes": 8061,
+      "sha256": "f0e36de9feca26fca51c9c52ca19c1744a91b5c865f1e04e7cc0765427b2345a",
+      "disposition": "copied",
+      "sourceSha256": "f0e36de9feca26fca51c9c52ca19c1744a91b5c865f1e04e7cc0765427b2345a",
+      "literalDependencies": [
+        "mcp-server/ame-fixture-ui-disposition.js",
+        "mcp-server/cep-panel-control.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-fixture-ui-disposition.js",
+      "bytes": 21047,
+      "sha256": "47d4a661514f4353e6d59c2b7748db7d315fea1eb9b704737cdee15b10f67d84",
+      "disposition": "copied",
+      "sourceSha256": "47d4a661514f4353e6d59c2b7748db7d315fea1eb9b704737cdee15b10f67d84",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/plan-run-records.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-job-source-native.js",
+      "bytes": 9574,
+      "sha256": "63f810845ee8e6abbbfd221d1a8498a7a361851e33884a2374e1799d3d3acef3",
+      "disposition": "copied",
+      "sourceSha256": "63f810845ee8e6abbbfd221d1a8498a7a361851e33884a2374e1799d3d3acef3",
+      "literalDependencies": [
+        "mcp-server/ame-job-source-sha256.js",
+        "mcp-server/title-export-snapshots.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-job-source-sha256.js",
+      "bytes": 10350,
+      "sha256": "4007f112b30517a108f42dc712b25f876646a635f2767d366208950af1c805de",
+      "disposition": "copied",
+      "sourceSha256": "4007f112b30517a108f42dc712b25f876646a635f2767d366208950af1c805de",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js",
+        "mcp-server/owned-runtime-supervisor.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-job-source.js",
+      "bytes": 33606,
+      "sha256": "df99d233e0776c9d40235cdccfe369155bf4ade42daf827a408ae55318404a89",
+      "disposition": "copied",
+      "sourceSha256": "df99d233e0776c9d40235cdccfe369155bf4ade42daf827a408ae55318404a89",
+      "literalDependencies": [
+        "mcp-server/ame-job-source-native.js",
+        "mcp-server/ame-job-source-sha256.js",
+        "mcp-server/m100-protocol.js",
+        "mcp-server/project-save.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-manual-queue-grant.js",
+      "bytes": 27209,
+      "sha256": "29b4ef5bedb0a7b73c91ec9cfce40f339453752c51131114ac55e4f65249dc41",
+      "disposition": "copied",
+      "sourceSha256": "29b4ef5bedb0a7b73c91ec9cfce40f339453752c51131114ac55e4f65249dc41",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-native-fixture-grant.js",
+      "bytes": 43280,
+      "sha256": "2bc1b47c752d042c0961994a300441fe0239ddb55f05a0400a7b5725f4669b87",
+      "disposition": "copied",
+      "sourceSha256": "2bc1b47c752d042c0961994a300441fe0239ddb55f05a0400a7b5725f4669b87",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js",
+        "mcp-server/native-fixture-attempt-ledger.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-native-fixture-runner.js",
+      "bytes": 35598,
+      "sha256": "81651fa7a6cad4646d96a0fad02784ebd77122bc938cd600c808bcdbc5b5812f",
+      "disposition": "copied",
+      "sourceSha256": "81651fa7a6cad4646d96a0fad02784ebd77122bc938cd600c808bcdbc5b5812f",
+      "literalDependencies": [
+        "mcp-server/ame-native-fixture-grant.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-prephase-recovery.js",
+        "mcp-server/plan-run-records.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-open-comp-native.js",
+      "bytes": 39952,
+      "sha256": "bbace3a5cab7166b6779c0c1a941897d482a9dec3e1df6cdb95daf90c2b6f735",
+      "disposition": "copied",
+      "sourceSha256": "bbace3a5cab7166b6779c0c1a941897d482a9dec3e1df6cdb95daf90c2b6f735",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/ame-open-comp.js",
+      "bytes": 39045,
+      "sha256": "02ba00c6742c0838e5ad3a786ed3239442f739109888ff7275c5739791ff23cc",
+      "disposition": "copied",
+      "sourceSha256": "02ba00c6742c0838e5ad3a786ed3239442f739109888ff7275c5739791ff23cc",
+      "literalDependencies": [
+        "mcp-server/ame-open-comp-native.js",
+        "mcp-server/m100-protocol.js",
+        "mcp-server/project-save.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-passive-status.js",
+      "bytes": 3792,
+      "sha256": "824e71210a8313a38a1bd2f9cbec7d7f71e19d8c4904cebb6538599adc9d5b91",
+      "disposition": "copied",
+      "sourceSha256": "824e71210a8313a38a1bd2f9cbec7d7f71e19d8c4904cebb6538599adc9d5b91",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/ame-presets.js",
+      "bytes": 14591,
+      "sha256": "fe23bce2e6899a606e80bfa5812308ab2b84b2bf6613341bfaaaa535f05bb1a8",
+      "disposition": "copied",
+      "sourceSha256": "fe23bce2e6899a606e80bfa5812308ab2b84b2bf6613341bfaaaa535f05bb1a8",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/ame-product-dispatch.js",
+      "bytes": 4749,
+      "sha256": "d9a13acd6dba197c272296e285eab967b1167b026c5e575675e041d97ee660c0",
+      "disposition": "copied",
+      "sourceSha256": "d9a13acd6dba197c272296e285eab967b1167b026c5e575675e041d97ee660c0",
+      "literalDependencies": [
+        "mcp-server/ame-saved-source-admission.js",
+        "mcp-server/ame-title-jobs.js",
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-product-read-dispatch.js",
+      "bytes": 1672,
+      "sha256": "89692d676293cbd52d979107c2e29b0a6311fd3c4bc09fce3230850e992c1dc6",
+      "disposition": "copied",
+      "sourceSha256": "89692d676293cbd52d979107c2e29b0a6311fd3c4bc09fce3230850e992c1dc6",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-queue-control.js",
+      "bytes": 57080,
+      "sha256": "3d5c6e2b03f4d7ea6ba47f051d056664da2810610417ff1bf040fd4364717b8d",
+      "disposition": "copied",
+      "sourceSha256": "3d5c6e2b03f4d7ea6ba47f051d056664da2810610417ff1bf040fd4364717b8d",
+      "literalDependencies": [
+        "mcp-server/ame-running.js",
+        "mcp-server/ame-title-jobs.js",
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-running.js",
+      "bytes": 36437,
+      "sha256": "fe065e750ddf1e8d2250e14b8f53b183e6acfbc6307916fca8d768de94a3c17f",
+      "disposition": "copied",
+      "sourceSha256": "fe065e750ddf1e8d2250e14b8f53b183e6acfbc6307916fca8d768de94a3c17f",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-saved-source-admission.js",
+      "bytes": 12922,
+      "sha256": "24c2ca52f27e5a288cba9ea921a16906db3018d9f6f36383441bb37ac7738308",
+      "disposition": "copied",
+      "sourceSha256": "24c2ca52f27e5a288cba9ea921a16906db3018d9f6f36383441bb37ac7738308",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-shared-queue-grant.js",
+      "bytes": 14671,
+      "sha256": "2fe0274ce9ccf9c1b44136493d749053ae79622cb922d933a1f23d5c91da3c04",
+      "disposition": "copied",
+      "sourceSha256": "2fe0274ce9ccf9c1b44136493d749053ae79622cb922d933a1f23d5c91da3c04",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-source-probe.js",
+      "bytes": 14736,
+      "sha256": "138ed8f60cd9fcd21b8cac89ab017cdb6aefc4c6871fd1c01ada4ec046b92fa4",
+      "disposition": "copied",
+      "sourceSha256": "138ed8f60cd9fcd21b8cac89ab017cdb6aefc4c6871fd1c01ada4ec046b92fa4",
+      "literalDependencies": [
+        "mcp-server/ame-running.js",
+        "mcp-server/ame-title-jobs.js",
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-source-read.js",
+      "bytes": 15548,
+      "sha256": "4f030b638c6c891d32a107ec175a9c370ef53c79beef1f97e240331dea754d8e",
+      "disposition": "copied",
+      "sourceSha256": "4f030b638c6c891d32a107ec175a9c370ef53c79beef1f97e240331dea754d8e",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-submit-guard.js",
+      "bytes": 3987,
+      "sha256": "f6418fceceaae8d7e026d5f1c7ecfd50f142d22454078b409cfb155318d55c07",
+      "disposition": "copied",
+      "sourceSha256": "f6418fceceaae8d7e026d5f1c7ecfd50f142d22454078b409cfb155318d55c07",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/ame-title-jobs.js",
+      "bytes": 189643,
+      "sha256": "768f359e2097883c30fe62348e97cc0abb44918ee12427f1e3af93a7e6f51efe",
+      "disposition": "copied",
+      "sourceSha256": "768f359e2097883c30fe62348e97cc0abb44918ee12427f1e3af93a7e6f51efe",
+      "literalDependencies": [
+        "mcp-server/ame-manual-queue-grant.js",
+        "mcp-server/ame-passive-status.js",
+        "mcp-server/ame-presets.js",
+        "mcp-server/ame-running.js",
+        "mcp-server/ame-saved-source-admission.js",
+        "mcp-server/ame-shared-queue-grant.js",
+        "mcp-server/ame-source-read.js",
+        "mcp-server/ame-submit-guard.js",
+        "mcp-server/ame-title-pending.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-title-pending.js",
+      "bytes": 6973,
+      "sha256": "89cf327867619d6777ead8cf2c18de75423df57d2c73f7487004e778dc19124c",
+      "disposition": "copied",
+      "sourceSha256": "89cf327867619d6777ead8cf2c18de75423df57d2c73f7487004e778dc19124c",
+      "literalDependencies": [
+        "mcp-server/ame-title-jobs.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-title-sender-refusal-proof.js",
+      "bytes": 4526,
+      "sha256": "1b35eb015a5e0022ea88f29e12779a798b6035795629331bc770a4158f5cd742",
+      "disposition": "copied",
+      "sourceSha256": "1b35eb015a5e0022ea88f29e12779a798b6035795629331bc770a4158f5cd742",
+      "literalDependencies": [
+        "mcp-server/plan-run-records.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-title-series.js",
+      "bytes": 11421,
+      "sha256": "8c20ebb69eeaf4b40fe6e14617b3f34a80efd24e3b2820fc41045d070af993b9",
+      "disposition": "copied",
+      "sourceSha256": "8c20ebb69eeaf4b40fe6e14617b3f34a80efd24e3b2820fc41045d070af993b9",
+      "literalDependencies": [
+        "mcp-server/ame-title-jobs.js",
+        "mcp-server/ame-title-pending.js"
+      ]
+    },
+    {
+      "path": "mcp-server/ame-transport.js",
+      "bytes": 20621,
+      "sha256": "069c1b2af19c2e33e8079b50a3653c932e37f52ac45fdd6a131859fdbc0e99f3",
+      "disposition": "copied",
+      "sourceSha256": "069c1b2af19c2e33e8079b50a3653c932e37f52ac45fdd6a131859fdbc0e99f3",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/autonomous-repair.js",
+      "bytes": 6689,
+      "sha256": "5866769ba1f38d45fd5be45a82c54e6591f2421859576fde550a1f556bdd0c56",
+      "disposition": "copied",
+      "sourceSha256": "5866769ba1f38d45fd5be45a82c54e6591f2421859576fde550a1f556bdd0c56",
+      "literalDependencies": [
+        "mcp-server/proposal-state.js"
+      ]
+    },
+    {
+      "path": "mcp-server/autonomous-session.js",
+      "bytes": 6650,
+      "sha256": "48ef732fa7cdbe688307aaf036d73dc52ce87dc5ffa7b3a36837506e1bf8f205",
+      "disposition": "copied",
+      "sourceSha256": "48ef732fa7cdbe688307aaf036d73dc52ce87dc5ffa7b3a36837506e1bf8f205",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/bridge-daemon.js",
+      "bytes": 608452,
+      "sha256": "32bfcf13dacc2a8edf383b25a64b596c264b56a9460a2f8e354b2777909ea9be",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "559437276f659418687b48f9365fd73d8f59e03bc1ce5ebde40b05ef7f433aa8",
+      "literalDependencies": [
+        "mcp-server/ae-agent-panel-bootstrap.js",
+        "mcp-server/ame-enqueue-sequence.js",
+        "mcp-server/ame-fixture-ui-backend.js",
+        "mcp-server/ame-fixture-ui-disposition.js",
+        "mcp-server/ame-job-source.js",
+        "mcp-server/ame-manual-queue-grant.js",
+        "mcp-server/ame-native-fixture-grant.js",
+        "mcp-server/ame-native-fixture-runner.js",
+        "mcp-server/ame-open-comp.js",
+        "mcp-server/ame-presets.js",
+        "mcp-server/ame-product-dispatch.js",
+        "mcp-server/ame-product-read-dispatch.js",
+        "mcp-server/ame-queue-control.js",
+        "mcp-server/ame-running.js",
+        "mcp-server/ame-saved-source-admission.js",
+        "mcp-server/ame-shared-queue-grant.js",
+        "mcp-server/ame-source-probe.js",
+        "mcp-server/ame-title-jobs.js",
+        "mcp-server/ame-title-pending.js",
+        "mcp-server/ame-title-sender-refusal-proof.js",
+        "mcp-server/ame-title-series.js",
+        "mcp-server/ame-transport.js",
+        "mcp-server/autonomous-repair.js",
+        "mcp-server/autonomous-session.js",
+        "mcp-server/cep-manual-plan-ingress.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/command-receipt.js",
+        "mcp-server/common-title-assembly-recovery.js",
+        "mcp-server/comp-dynamic-link-read.js",
+        "mcp-server/comp-visual-review-manifest.js",
+        "mcp-server/comp-visual-review-plan.js",
+        "mcp-server/core-tool-catalog.js",
+        "mcp-server/core-tool-dispatch.js",
+        "mcp-server/deployment-mode.js",
+        "mcp-server/fixed-guard-timeout-maintenance-proof.js",
+        "mcp-server/generated-export-recovery.js",
+        "mcp-server/generated-png-proof.js",
+        "mcp-server/generated-safety-contracts.js",
+        "mcp-server/http-boundary.js",
+        "mcp-server/human-guard-settlement.js",
+        "mcp-server/m100-protocol.js",
+        "mcp-server/montage-capture-service.js",
+        "mcp-server/montage-contract.js",
+        "mcp-server/montage-native.js",
+        "mcp-server/montage-pipeline-service.js",
+        "mcp-server/montage-plan-guard.js",
+        "mcp-server/montage-postread.js",
+        "mcp-server/montage-tools.js",
+        "mcp-server/native-fixture-abandonment-backend.js",
+        "mcp-server/native-fixture-abandonment.js",
+        "mcp-server/native-fixture-admission-refusal.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-prephase-recovery-backend.js",
+        "mcp-server/native-fixture-prephase-recovery-proof.js",
+        "mcp-server/native-fixture-prephase-recovery.js",
+        "mcp-server/native-fixture-retained.js",
+        "mcp-server/native-render-variant.js",
+        "mcp-server/operation-wait.js",
+        "mcp-server/owned-fixture-lifecycle.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-initial-http-transport.js",
+        "mcp-server/owned-runtime-initial-native-client.js",
+        "mcp-server/owned-runtime-initial-observers.js",
+        "mcp-server/owned-runtime-initial-recovery.js",
+        "mcp-server/owned-runtime-initial-runtime.js",
+        "mcp-server/owned-runtime-initial-shared-queue-context.js",
+        "mcp-server/owned-runtime-initial-source-census.js",
+        "mcp-server/owned-runtime-initial-title-plan.js",
+        "mcp-server/owned-runtime-product-activation.js",
+        "mcp-server/owned-runtime-product-maintenance.js",
+        "mcp-server/owned-runtime-product-session-reset.js",
+        "mcp-server/owned-runtime-service.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/owned-runtime-ui-baseline.js",
+        "mcp-server/panel-lifecycle-causal.js",
+        "mcp-server/placeholder-evidence.js",
+        "mcp-server/placeholder-framing.js",
+        "mcp-server/placeholder-geometry.js",
+        "mcp-server/placeholder-plan-builder.js",
+        "mcp-server/placeholder-protection.js",
+        "mcp-server/placeholder-readback.js",
+        "mcp-server/placeholder-review-service.js",
+        "mcp-server/placeholder-review-tools.js",
+        "mcp-server/placeholder-source-recovery.js",
+        "mcp-server/placeholder-timing.js",
+        "mcp-server/placeholder-usage.js",
+        "mcp-server/placeholder-visual-batches.js",
+        "mcp-server/placeholder-visual-review.js",
+        "mcp-server/plan-repair.js",
+        "mcp-server/plan-risk-classifier.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/plan-run-response.js",
+        "mcp-server/project-lifecycle-bridge-adapter.js",
+        "mcp-server/project-lifecycle-contract.js",
+        "mcp-server/project-lifecycle-plan.js",
+        "mcp-server/project-lifecycle-state.js",
+        "mcp-server/project-save.js",
+        "mcp-server/project-state-store.js",
+        "mcp-server/proposal-state.js",
+        "mcp-server/review-evidence.js",
+        "mcp-server/run-outcome.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/session-recovery-state.js",
+        "mcp-server/slideshow-plan-builder.js",
+        "mcp-server/slideshow-tools.js",
+        "mcp-server/solution-plan-verification.js",
+        "mcp-server/title-export-snapshots.js",
+        "mcp-server/title-export-verification.js",
+        "mcp-server/tool-error-response.js",
+        "scripts/human-guard-settlement-maintenance.js",
+        "scripts/native-fixture-retained-maintenance.js"
+      ]
+    },
+    {
+      "path": "mcp-server/cep-manual-plan-ingress.js",
+      "bytes": 3643,
+      "sha256": "930a86ef7d4dfe64cf78875419fbdcc84e49afd192e18fda6ec2469a66ce4908",
+      "disposition": "copied",
+      "sourceSha256": "930a86ef7d4dfe64cf78875419fbdcc84e49afd192e18fda6ec2469a66ce4908",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/cep-panel-control.js",
+      "bytes": 71619,
+      "sha256": "a261d86d37df6c0bb1853b01a92296598cd5ea7b3426bd20ea42ca68712e4e17",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "c0f39b920d9a9ea93be191e839b0eccfac6a873581bee69832c232f8bc254ad1",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/ae-agent-panel-bootstrap.js",
+        "mcp-server/cep-panel-readonly-orphan.js",
+        "mcp-server/common-title-assembly-recovery.js",
+        "mcp-server/generated-export-recovery.js",
+        "mcp-server/human-guard-settlement.js",
+        "mcp-server/native-fixture-admission-refusal-proof.js",
+        "mcp-server/native-fixture-admission-refusal.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-retained.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-product-session-reset.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/panel-lifecycle-causal.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/review-evidence.js",
+        "scripts/cep-panel-product-reset-client.js",
+        "scripts/owned-runtime-control.js"
+      ]
+    },
+    {
+      "path": "mcp-server/cep-panel-readonly-orphan.js",
+      "bytes": 11359,
+      "sha256": "52ef4a43ffa8945635550161a109cc4e82a6577f1a886eefe79cc75b4e9c796a",
+      "disposition": "copied",
+      "sourceSha256": "52ef4a43ffa8945635550161a109cc4e82a6577f1a886eefe79cc75b4e9c796a",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js"
+      ]
+    },
+    {
+      "path": "mcp-server/codex-visual-evidence.js",
+      "bytes": 20790,
+      "sha256": "8995a558afcec0eee91beb9616d3355237d91c03baa4f48392296313712e416d",
+      "disposition": "copied",
+      "sourceSha256": "8995a558afcec0eee91beb9616d3355237d91c03baa4f48392296313712e416d",
+      "literalDependencies": [
+        "mcp-server/placeholder-review-service.js",
+        "mcp-server/placeholder-visual-batches.js",
+        "mcp-server/placeholder-visual-review.js"
+      ]
+    },
+    {
+      "path": "mcp-server/command-receipt.js",
+      "bytes": 1450,
+      "sha256": "9ae9ec4eb9b1c18e60f8ec4b8d0a67c0134bf04240e8bde0d829e2d63505a42c",
+      "disposition": "copied",
+      "sourceSha256": "9ae9ec4eb9b1c18e60f8ec4b8d0a67c0134bf04240e8bde0d829e2d63505a42c",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/common-title-assembly-recovery.js",
+      "bytes": 35720,
+      "sha256": "02e0b2589f7060e79309effa1c77af458f9981729e7ae09e660f79eb8a17f955",
+      "disposition": "copied",
+      "sourceSha256": "02e0b2589f7060e79309effa1c77af458f9981729e7ae09e660f79eb8a17f955",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/generated-export-recovery.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/proposal-state.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/comp-dynamic-link-read.js",
+      "bytes": 1864,
+      "sha256": "b6b23f6a08c6daac4f0291e6f4e22623c456b6fc508c153aa853a25a5f2cf0e1",
+      "disposition": "copied",
+      "sourceSha256": "b6b23f6a08c6daac4f0291e6f4e22623c456b6fc508c153aa853a25a5f2cf0e1",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/comp-visual-review-manifest.js",
+      "bytes": 38467,
+      "sha256": "7a68e059d27d40bb4826e12e0fd3b4072f9e637bb13068e4553ac990b13aba88",
+      "disposition": "copied",
+      "sourceSha256": "7a68e059d27d40bb4826e12e0fd3b4072f9e637bb13068e4553ac990b13aba88",
+      "literalDependencies": [
+        "mcp-server/generated-png-proof.js",
+        "mcp-server/montage-run-bindings.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/review-evidence.js",
+        "mcp-server/text-visual-review-plan.js"
+      ]
+    },
+    {
+      "path": "mcp-server/comp-visual-review-plan.js",
+      "bytes": 7558,
+      "sha256": "beefbfea80bb78fcabf45a6ad61ac7139665603d8f0b9c35daa5808311345f0c",
+      "disposition": "copied",
+      "sourceSha256": "beefbfea80bb78fcabf45a6ad61ac7139665603d8f0b9c35daa5808311345f0c",
+      "literalDependencies": [
+        "mcp-server/placeholder-timing.js"
+      ]
+    },
+    {
+      "path": "mcp-server/core-plan-catalog.js",
+      "bytes": 2097,
+      "sha256": "2a649181b5667f5d55094af8ad5bb83fb1aae4e19aa44a9eac607ea5fa7bddf1",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/solution-plan-builder.js"
+      ]
+    },
+    {
+      "path": "mcp-server/core-tool-catalog.js",
+      "bytes": 142237,
+      "sha256": "60113ba8b0175fe4a729b90fe4c94c7c955768ae617dbe23eda54e04e04be00c",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-plan-catalog.js"
+      ]
+    },
+    {
+      "path": "mcp-server/core-tool-dispatch.js",
+      "bytes": 487548,
+      "sha256": "ccfe028012f377dc26c8c052c5b33bfdcaf56281013fe914c4933096f1297d30",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-plan-catalog.js",
+        "mcp-server/generated-export-recovery.js",
+        "mcp-server/montage-contract.js",
+        "mcp-server/montage-plan-guard.js",
+        "mcp-server/placeholder-framing.js",
+        "mcp-server/placeholder-timing.js",
+        "mcp-server/plan-run-reconciliation.js",
+        "mcp-server/proposal-state.js",
+        "mcp-server/semantic-verification.js",
+        "mcp-server/solution-plan-builder.js",
+        "mcp-server/text-visual-review-plan.js"
+      ]
+    },
+    {
+      "path": "mcp-server/deployment-mode.js",
+      "bytes": 1234,
+      "sha256": "2c0b3062ad09bb6594c7a963dbabeec67a7257d58a5c65b835f1089d2a61619b",
+      "disposition": "copied",
+      "sourceSha256": "2c0b3062ad09bb6594c7a963dbabeec67a7257d58a5c65b835f1089d2a61619b",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/fixed-guard-timeout-maintenance-proof.js",
+      "bytes": 9127,
+      "sha256": "e70b3df96ad054ab95753d4f433e535bc3e300408a5f33bf6254d88e9f3557da",
+      "disposition": "copied",
+      "sourceSha256": "e70b3df96ad054ab95753d4f433e535bc3e300408a5f33bf6254d88e9f3557da",
+      "literalDependencies": [
+        "mcp-server/ae-agent-panel-bootstrap.js",
+        "mcp-server/ame-fixture-ui-disposition.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/human-guard-settlement.js",
+        "mcp-server/native-fixture-abandonment.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-prephase-recovery-proof.js",
+        "mcp-server/native-fixture-prephase-recovery.js",
+        "mcp-server/plan-run-records.js"
+      ]
+    },
+    {
+      "path": "mcp-server/generated-export-recovery.js",
+      "bytes": 19174,
+      "sha256": "5f58f1cfe9bb7dc47b826b7f2c754152a82058f32477e37f51716012d0ca1f1e",
+      "disposition": "copied",
+      "sourceSha256": "5f58f1cfe9bb7dc47b826b7f2c754152a82058f32477e37f51716012d0ca1f1e",
+      "literalDependencies": [
+        "mcp-server/generated-png-proof.js",
+        "mcp-server/generated-safety-contracts.js",
+        "mcp-server/montage-run-bindings.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/proposal-state.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/generated-png-proof.js",
+      "bytes": 12508,
+      "sha256": "96107e11c599aec6cb4c89c0513ef20edab0219cfcf115ed8ace84ba548e5639",
+      "disposition": "copied",
+      "sourceSha256": "96107e11c599aec6cb4c89c0513ef20edab0219cfcf115ed8ace84ba548e5639",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/generated-safety-contracts.js",
+      "bytes": 17409,
+      "sha256": "1db59b630ca59431e67b597239e8a3115b4bf09bb9763deb9c4ff9eebab598fc",
+      "disposition": "copied",
+      "sourceSha256": "1db59b630ca59431e67b597239e8a3115b4bf09bb9763deb9c4ff9eebab598fc",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/http-boundary.js",
+      "bytes": 4926,
+      "sha256": "333881ba5d0c126f62e03c51c64966459dae433844002b4827f4e60246868737",
+      "disposition": "copied",
+      "sourceSha256": "333881ba5d0c126f62e03c51c64966459dae433844002b4827f4e60246868737",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/human-guard-settlement.js",
+      "bytes": 12237,
+      "sha256": "07d3fcde4608a87382cd80be9893dc60f9469020d8eed39070c3a873d202d16d",
+      "disposition": "copied",
+      "sourceSha256": "07d3fcde4608a87382cd80be9893dc60f9469020d8eed39070c3a873d202d16d",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/plan-run-records.js"
+      ]
+    },
+    {
+      "path": "mcp-server/m100-protocol.js",
+      "bytes": 14133,
+      "sha256": "d993ae2f70643d5f3bbb81e4be16ce06868b19fd2a4a6bd68e1a2fdde043c65c",
+      "disposition": "copied",
+      "sourceSha256": "d993ae2f70643d5f3bbb81e4be16ce06868b19fd2a4a6bd68e1a2fdde043c65c",
+      "literalDependencies": [
+        "mcp-server/ame-title-pending.js"
+      ]
+    },
+    {
+      "path": "mcp-server/mcp-adapter.js",
+      "bytes": 15141,
+      "sha256": "312a97f83bd9bf9785d7626673f53d402e0a56b1ee63a4fb76e304d802689e2e",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "94ccad9a174d06d5769b949144ee9b1784e67f7c680400b8f6950ec993d511a2",
+      "literalDependencies": [
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/deployment-mode.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-initial-runtime.js",
+        "mcp-server/owned-runtime-initial-source-census.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/text-layout-policy.js",
+        "mcp-server/tool-error-response.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-capture-requirements.js",
+      "bytes": 8284,
+      "sha256": "189dff537807ade48fe8543e8ff9c97563b84f3823c7bd5103952767c1470e58",
+      "disposition": "copied",
+      "sourceSha256": "189dff537807ade48fe8543e8ff9c97563b84f3823c7bd5103952767c1470e58",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js",
+        "mcp-server/placeholder-timing.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-capture-service.js",
+      "bytes": 34137,
+      "sha256": "1151771619ec2e5d161bbb02e80403808bf986db6c49c52066d370bbf6f3b0d8",
+      "disposition": "copied",
+      "sourceSha256": "1151771619ec2e5d161bbb02e80403808bf986db6c49c52066d370bbf6f3b0d8",
+      "literalDependencies": [
+        "mcp-server/montage-capture-requirements.js",
+        "mcp-server/montage-contract.js",
+        "mcp-server/montage-materials.js",
+        "mcp-server/montage-pipeline.js",
+        "mcp-server/montage-plan-guard.js",
+        "mcp-server/montage-root-render.js",
+        "mcp-server/montage-run-bindings.js",
+        "mcp-server/placeholder-visual-review.js",
+        "mcp-server/proposal-state.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-contract.js",
+      "bytes": 6448,
+      "sha256": "135c137562fb44f2c35012f4d92c297f9aee7629f69c927069e6dd053f497cfb",
+      "disposition": "copied",
+      "sourceSha256": "135c137562fb44f2c35012f4d92c297f9aee7629f69c927069e6dd053f497cfb",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/montage-coverage.js",
+      "bytes": 8792,
+      "sha256": "5bacbf77c63a434de4a892bb39a68c6997caad1cbc5c97c0d3cf5bdb5311de35",
+      "disposition": "copied",
+      "sourceSha256": "5bacbf77c63a434de4a892bb39a68c6997caad1cbc5c97c0d3cf5bdb5311de35",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js",
+        "mcp-server/placeholder-timing.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-manifest.js",
+      "bytes": 28263,
+      "sha256": "a52da19d12fc65dca23cad0c49af67e0ecb83ec8354897b8baf085aeee85c2c9",
+      "disposition": "copied",
+      "sourceSha256": "a52da19d12fc65dca23cad0c49af67e0ecb83ec8354897b8baf085aeee85c2c9",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js",
+        "mcp-server/montage-coverage.js",
+        "mcp-server/montage-observations.js",
+        "mcp-server/placeholder-plan-builder.js",
+        "mcp-server/placeholder-timing.js",
+        "mcp-server/placeholder-usage.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-materials.js",
+      "bytes": 16051,
+      "sha256": "374342ddc06ddf021fbf0031b0bf97b694f6374d2778bc5614d29a5dcdcbe660",
+      "disposition": "copied",
+      "sourceSha256": "374342ddc06ddf021fbf0031b0bf97b694f6374d2778bc5614d29a5dcdcbe660",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-native.js",
+      "bytes": 7088,
+      "sha256": "fb3e09a5dead4a0631602d78508e0b8e7c5ed3891bdbf501b26514b5dc636c5e",
+      "disposition": "copied",
+      "sourceSha256": "fb3e09a5dead4a0631602d78508e0b8e7c5ed3891bdbf501b26514b5dc636c5e",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js",
+        "mcp-server/placeholder-geometry.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-observations.js",
+      "bytes": 16719,
+      "sha256": "40e8d89c925a521f777e4b1b15cb11d2fc869b2cfcd0f21e0aa3348e8540eaa4",
+      "disposition": "copied",
+      "sourceSha256": "40e8d89c925a521f777e4b1b15cb11d2fc869b2cfcd0f21e0aa3348e8540eaa4",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js",
+        "mcp-server/placeholder-framing.js",
+        "mcp-server/placeholder-timing.js",
+        "mcp-server/placeholder-usage.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-pipeline-service.js",
+      "bytes": 10896,
+      "sha256": "b3488c745f87a1c0e627a50eb23e07efd41173cf51cad7bfd8d71e65b8c1d74a",
+      "disposition": "copied",
+      "sourceSha256": "b3488c745f87a1c0e627a50eb23e07efd41173cf51cad7bfd8d71e65b8c1d74a",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js",
+        "mcp-server/montage-materials.js",
+        "mcp-server/montage-native.js",
+        "mcp-server/montage-pipeline.js",
+        "mcp-server/montage-plan-guard.js",
+        "mcp-server/montage-tools.js",
+        "mcp-server/placeholder-usage.js",
+        "mcp-server/proposal-state.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-pipeline.js",
+      "bytes": 35560,
+      "sha256": "dde7762013fd23d9a2234e684cef9eeb5d9c838c09ac403f30124b0e3b59bff5",
+      "disposition": "copied",
+      "sourceSha256": "dde7762013fd23d9a2234e684cef9eeb5d9c838c09ac403f30124b0e3b59bff5",
+      "literalDependencies": [
+        "mcp-server/montage-capture-requirements.js",
+        "mcp-server/montage-contract.js",
+        "mcp-server/montage-manifest.js",
+        "mcp-server/montage-observations.js",
+        "mcp-server/montage-root-png.js",
+        "mcp-server/placeholder-plan-builder.js",
+        "mcp-server/placeholder-review-service.js",
+        "mcp-server/placeholder-usage.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-plan-guard.js",
+      "bytes": 15624,
+      "sha256": "d639a73842a244431db06719c08828ba764a09db88ca989fc4b89b3295014023",
+      "disposition": "copied",
+      "sourceSha256": "d639a73842a244431db06719c08828ba764a09db88ca989fc4b89b3295014023",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js",
+        "mcp-server/montage-materials.js",
+        "mcp-server/montage-native.js",
+        "mcp-server/montage-pipeline.js",
+        "mcp-server/montage-run-bindings.js",
+        "mcp-server/placeholder-framing.js",
+        "mcp-server/placeholder-timing.js",
+        "mcp-server/placeholder-usage.js",
+        "mcp-server/proposal-state.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-postread.js",
+      "bytes": 5113,
+      "sha256": "4696cf79152cd3955bba618e421c9e23844267104d4cf22944fa0bfffa5c0723",
+      "disposition": "copied",
+      "sourceSha256": "4696cf79152cd3955bba618e421c9e23844267104d4cf22944fa0bfffa5c0723",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js",
+        "mcp-server/montage-materials.js",
+        "mcp-server/montage-native.js",
+        "mcp-server/montage-plan-guard.js",
+        "mcp-server/montage-run-bindings.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-root-png.js",
+      "bytes": 6203,
+      "sha256": "d08ef98d25d94999a230e8edd5d85d517c24bbf799972471f92d07bbe8a088f9",
+      "disposition": "copied",
+      "sourceSha256": "d08ef98d25d94999a230e8edd5d85d517c24bbf799972471f92d07bbe8a088f9",
+      "literalDependencies": [
+        "mcp-server/montage-capture-requirements.js",
+        "mcp-server/montage-contract.js",
+        "mcp-server/placeholder-timing.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-root-render.js",
+      "bytes": 52267,
+      "sha256": "68477c6db133e0a338c307735191d7e6bc55dc45ee1cdb671a62a5933a362c75",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "5fcda5bfca37474148531ec022f72d9bae68687df5718539629ab095054a088e",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js",
+        "mcp-server/placeholder-timing.js",
+        "mcp-server/project-state-store.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-run-bindings.js",
+      "bytes": 17433,
+      "sha256": "a6bc2afc21d01741777dbe5fb6f848514017c2cef0f72c324dc1a856aa372e36",
+      "disposition": "copied",
+      "sourceSha256": "a6bc2afc21d01741777dbe5fb6f848514017c2cef0f72c324dc1a856aa372e36",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js",
+        "mcp-server/proposal-state.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/montage-tools.js",
+      "bytes": 10453,
+      "sha256": "bd42757ec67f65266de0b8a8d9535db4bef0e84c11637284a0dea53f080aff4a",
+      "disposition": "copied",
+      "sourceSha256": "bd42757ec67f65266de0b8a8d9535db4bef0e84c11637284a0dea53f080aff4a",
+      "literalDependencies": [
+        "mcp-server/montage-contract.js"
+      ]
+    },
+    {
+      "path": "mcp-server/native-fixture-abandonment-backend.js",
+      "bytes": 7009,
+      "sha256": "3a73c4b785475d6f6f130dbb5656a0512f25022f1d4feda7af99d9a9652ae4a5",
+      "disposition": "copied",
+      "sourceSha256": "3a73c4b785475d6f6f130dbb5656a0512f25022f1d4feda7af99d9a9652ae4a5",
+      "literalDependencies": [
+        "mcp-server/ame-fixture-ui-backend.js",
+        "mcp-server/ame-native-fixture-runner.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/native-fixture-abandonment.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-retained.js",
+        "mcp-server/owned-runtime-authority.js"
+      ]
+    },
+    {
+      "path": "mcp-server/native-fixture-abandonment.js",
+      "bytes": 30911,
+      "sha256": "1437a3f7aaed3edc68aff61776c878a233291f025cd00f6ef651403d402f0616",
+      "disposition": "copied",
+      "sourceSha256": "1437a3f7aaed3edc68aff61776c878a233291f025cd00f6ef651403d402f0616",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-retained.js",
+        "mcp-server/plan-run-records.js"
+      ]
+    },
+    {
+      "path": "mcp-server/native-fixture-admission-refusal-proof.js",
+      "bytes": 22427,
+      "sha256": "ec28221c1f40e269991b1f9e8690c0f0d018749c6217670a1c2764ab82467bf0",
+      "disposition": "copied",
+      "sourceSha256": "ec28221c1f40e269991b1f9e8690c0f0d018749c6217670a1c2764ab82467bf0",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js"
+      ]
+    },
+    {
+      "path": "mcp-server/native-fixture-admission-refusal.js",
+      "bytes": 12979,
+      "sha256": "06db5443cfb247f6513b7a600c68037471680ff43a41c15ac7a3f65484923b03",
+      "disposition": "copied",
+      "sourceSha256": "06db5443cfb247f6513b7a600c68037471680ff43a41c15ac7a3f65484923b03",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/ame-fixture-ui-backend.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/native-fixture-abandonment.js",
+        "mcp-server/native-fixture-admission-refusal-proof.js",
+        "mcp-server/native-fixture-attempt-ledger.js"
+      ]
+    },
+    {
+      "path": "mcp-server/native-fixture-attempt-ledger.js",
+      "bytes": 33442,
+      "sha256": "a970bd28927e87fe77fc4c5bc7ca3713b87763613b648c123f9a916c0543c61d",
+      "disposition": "copied",
+      "sourceSha256": "a970bd28927e87fe77fc4c5bc7ca3713b87763613b648c123f9a916c0543c61d",
+      "literalDependencies": [
+        "mcp-server/native-fixture-prephase-recovery.js",
+        "mcp-server/native-fixture-retained.js"
+      ]
+    },
+    {
+      "path": "mcp-server/native-fixture-prephase-recovery-backend.js",
+      "bytes": 8179,
+      "sha256": "41b4d450daff9c512f5c5b358143dac4918fdefad73dc89d8f1a96fbb1de0e5c",
+      "disposition": "copied",
+      "sourceSha256": "41b4d450daff9c512f5c5b358143dac4918fdefad73dc89d8f1a96fbb1de0e5c",
+      "literalDependencies": [
+        "mcp-server/ae-agent-panel-bootstrap.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/native-fixture-abandonment-backend.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-prephase-recovery-proof.js",
+        "mcp-server/project-lifecycle-state.js",
+        "mcp-server/proposal-state.js"
+      ]
+    },
+    {
+      "path": "mcp-server/native-fixture-prephase-recovery-proof.js",
+      "bytes": 12614,
+      "sha256": "3cdd812c0dcf88e85434c6d359f15bf53cc92c47b585822dd152d9bd42c9161f",
+      "disposition": "copied",
+      "sourceSha256": "3cdd812c0dcf88e85434c6d359f15bf53cc92c47b585822dd152d9bd42c9161f",
+      "literalDependencies": [
+        "mcp-server/native-fixture-abandonment.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/native-fixture-prephase-recovery.js",
+      "bytes": 17990,
+      "sha256": "12b64a9e73913e74c19127233d6355d88011583f0abba44c4b46d877f7ebfbbd",
+      "disposition": "copied",
+      "sourceSha256": "12b64a9e73913e74c19127233d6355d88011583f0abba44c4b46d877f7ebfbbd",
+      "literalDependencies": [
+        "mcp-server/native-fixture-abandonment.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-prephase-recovery-proof.js"
+      ]
+    },
+    {
+      "path": "mcp-server/native-fixture-retained.js",
+      "bytes": 38327,
+      "sha256": "253860443b72adc6f01c77199f1cacbeab01f679e19a1d73d9c0bc9ff4ff577d",
+      "disposition": "copied",
+      "sourceSha256": "253860443b72adc6f01c77199f1cacbeab01f679e19a1d73d9c0bc9ff4ff577d",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/native-fixture-abandonment.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/plan-run-records.js",
+        "scripts/owned-runtime-control.js"
+      ]
+    },
+    {
+      "path": "mcp-server/native-render-variant.js",
+      "bytes": 38613,
+      "sha256": "2eab35ee45124c49ed2c692c81e9cb0480afbd28cac25d37d7f6e1aa3844f6f6",
+      "disposition": "copied",
+      "sourceSha256": "2eab35ee45124c49ed2c692c81e9cb0480afbd28cac25d37d7f6e1aa3844f6f6",
+      "literalDependencies": [
+        "mcp-server/project-save.js"
+      ]
+    },
+    {
+      "path": "mcp-server/operation-wait.js",
+      "bytes": 14099,
+      "sha256": "429bfc2f440f3fd294ce66ba1bac9303e026d7d7946c3b0c0e5bcaac8227ec40",
+      "disposition": "copied",
+      "sourceSha256": "429bfc2f440f3fd294ce66ba1bac9303e026d7d7946c3b0c0e5bcaac8227ec40",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/owned-fixture-lifecycle.js",
+      "bytes": 18395,
+      "sha256": "ffd4703623da22c59256629b02e4e85bd4b433e8fa1b26ee43a3b2136a65e145",
+      "disposition": "copied",
+      "sourceSha256": "ffd4703623da22c59256629b02e4e85bd4b433e8fa1b26ee43a3b2136a65e145",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-product-activation.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/owned-runtime-win32.js",
+        "scripts/owned-runtime-control.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-authority.js",
+      "bytes": 34369,
+      "sha256": "06a9f10779579dc33de6ad0e92d74d53130c93476795a2d81ad64f0c19151c66",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "fbd8f374117a08ef08ada6f7264f623223f0813b1787a375cd5f5357a2fe9f0a",
+      "literalDependencies": [
+        "mcp-server/ae-agent-panel-bootstrap.js",
+        "mcp-server/ame-native-fixture-runner.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-retained.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/owned-runtime-win32.js",
+        "scripts/owned-runtime-control.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-graceful-continuation.js",
+      "bytes": 34611,
+      "sha256": "b9eb81286316ff5a87b1cf0ac62e70bc0c792ce076212e1604111517db2e5126",
+      "disposition": "copied",
+      "sourceSha256": "b9eb81286316ff5a87b1cf0ac62e70bc0c792ce076212e1604111517db2e5126",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-product-session-reset.js",
+        "mcp-server/owned-runtime-service.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-http-transport.js",
+      "bytes": 18702,
+      "sha256": "055933ea39b80e3095dcc9a4c4ccb713da7f2c2adad4e9e8112fdbcadafc2acf",
+      "disposition": "copied",
+      "sourceSha256": "055933ea39b80e3095dcc9a4c4ccb713da7f2c2adad4e9e8112fdbcadafc2acf",
+      "literalDependencies": [
+        "mcp-server/owned-runtime-initial-native-client.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-native-client.js",
+      "bytes": 31438,
+      "sha256": "f242cd0e76532b0820221d32dc2e23e47565738e4ef41e42eecabb13927ff439",
+      "disposition": "copied",
+      "sourceSha256": "f242cd0e76532b0820221d32dc2e23e47565738e4ef41e42eecabb13927ff439",
+      "literalDependencies": [
+        "mcp-server/deployment-mode.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-observers.js",
+      "bytes": 22668,
+      "sha256": "566ac976589214592842211e814e57728c88bf9e9c527bd2fa03212355d0cc6a",
+      "disposition": "copied",
+      "sourceSha256": "566ac976589214592842211e814e57728c88bf9e9c527bd2fa03212355d0cc6a",
+      "literalDependencies": [
+        "mcp-server/owned-runtime-initial-native-client.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-recovery.js",
+      "bytes": 14065,
+      "sha256": "eae9a8718ea797c63d30dca9046b61bbb83637dfb47e9c636ef1ca34a56b622d",
+      "disposition": "copied",
+      "sourceSha256": "eae9a8718ea797c63d30dca9046b61bbb83637dfb47e9c636ef1ca34a56b622d",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-runtime.js",
+      "bytes": 26356,
+      "sha256": "95dc271d4e6ba3be9c7c1e736930d6df99085fc2ffd02db030d87d2a74b82f57",
+      "disposition": "copied",
+      "sourceSha256": "95dc271d4e6ba3be9c7c1e736930d6df99085fc2ffd02db030d87d2a74b82f57",
+      "literalDependencies": [
+        "mcp-server/deployment-mode.js",
+        "mcp-server/owned-runtime-initial-native-client.js",
+        "mcp-server/owned-runtime-initial-observers.js",
+        "mcp-server/owned-runtime-initial-source-census.js",
+        "mcp-server/owned-runtime-initial-title-plan.js",
+        "mcp-server/owned-runtime-ui-baseline.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-shared-queue-context.js",
+      "bytes": 2296,
+      "sha256": "702918000e7eb39df2da1e9eb9ef93608fbc86426ebf7b8cc52cbef2df1f5ec2",
+      "disposition": "copied",
+      "sourceSha256": "702918000e7eb39df2da1e9eb9ef93608fbc86426ebf7b8cc52cbef2df1f5ec2",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-source-census.js",
+      "bytes": 3558,
+      "sha256": "6d1f293cfde9a8841aa62be064eebf5833982a2dde9b10572359e2c36ca6a2ab",
+      "disposition": "copied",
+      "sourceSha256": "6d1f293cfde9a8841aa62be064eebf5833982a2dde9b10572359e2c36ca6a2ab",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/owned-runtime-initial-title-plan.js",
+      "bytes": 14080,
+      "sha256": "39df30c7516d99636cfcc3e7358f211e802b13bdccdef86b8df832814ad80931",
+      "disposition": "copied",
+      "sourceSha256": "39df30c7516d99636cfcc3e7358f211e802b13bdccdef86b8df832814ad80931",
+      "literalDependencies": [
+        "mcp-server/ame-title-jobs.js",
+        "mcp-server/native-render-variant.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-lifecycle.js",
+      "bytes": 21733,
+      "sha256": "700327f1415fce2bcdc5dc5365f3e133c96c2951f2e5e32a8a5a91f9ad42688c",
+      "disposition": "copied",
+      "sourceSha256": "700327f1415fce2bcdc5dc5365f3e133c96c2951f2e5e32a8a5a91f9ad42688c",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/owned-runtime-win32.js",
+        "scripts/owned-runtime-control.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-product-activation.js",
+      "bytes": 19980,
+      "sha256": "5aae2a590c28fdfced69c73e8b1c4ffa9403c8820428d206fea47f8a159e3acb",
+      "disposition": "copied",
+      "sourceSha256": "5aae2a590c28fdfced69c73e8b1c4ffa9403c8820428d206fea47f8a159e3acb",
+      "literalDependencies": [
+        "mcp-server/deployment-mode.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-product-lifecycle.js",
+        "mcp-server/owned-runtime-product-session-reset.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-product-lifecycle.js",
+      "bytes": 11809,
+      "sha256": "a426d2c22ab2391fff9eedae7af94a3c6fcb2fdd7c3f6ea4a8388770554e174b",
+      "disposition": "copied",
+      "sourceSha256": "a426d2c22ab2391fff9eedae7af94a3c6fcb2fdd7c3f6ea4a8388770554e174b",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-win32.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-product-maintenance.js",
+      "bytes": 22568,
+      "sha256": "f9a8ba547d118e51530c24fd0f7bfbc4ce0e0106aec2b06b8f64d199f9e7ed77",
+      "disposition": "copied",
+      "sourceSha256": "f9a8ba547d118e51530c24fd0f7bfbc4ce0e0106aec2b06b8f64d199f9e7ed77",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-product-activation.js",
+        "mcp-server/owned-runtime-product-session-reset.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-product-session-reset.js",
+      "bytes": 48945,
+      "sha256": "9f50ce8d0c4155aede66e29d2f98c5276223838123194ccd752c2f85ac489ad2",
+      "disposition": "copied",
+      "sourceSha256": "9f50ce8d0c4155aede66e29d2f98c5276223838123194ccd752c2f85ac489ad2",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/deployment-mode.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-product-activation.js",
+        "mcp-server/owned-runtime-product-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/project-lifecycle-transition.js",
+        "mcp-server/review-evidence.js",
+        "package.json"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-service.js",
+      "bytes": 14122,
+      "sha256": "75525886a326125be551f75a1894f81f88afe4aa037a44037f9af3f87fe2489c",
+      "disposition": "copied",
+      "sourceSha256": "75525886a326125be551f75a1894f81f88afe4aa037a44037f9af3f87fe2489c",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-initial-runtime.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-product-maintenance.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-supervisor.js",
+      "bytes": 98211,
+      "sha256": "d97142af08b5e98b39d0f2c03346659a57987947b81197107987518f538b93e8",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "6edccfa3c8f05c42bb379b4de8a3acffd5e962afb40bf4f13547903beaeb105f",
+      "literalDependencies": [
+        "mcp-server/deployment-mode.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-graceful-continuation.js",
+        "mcp-server/owned-runtime-initial-recovery.js",
+        "mcp-server/owned-runtime-initial-runtime.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-product-activation.js",
+        "mcp-server/owned-runtime-product-lifecycle.js",
+        "mcp-server/owned-runtime-product-maintenance.js",
+        "mcp-server/owned-runtime-product-session-reset.js",
+        "mcp-server/owned-runtime-service.js",
+        "mcp-server/owned-runtime-win32.js",
+        "mcp-server/review-evidence.js",
+        "scripts/owned-runtime-control.js",
+        "scripts/owned-runtime-maintenance-retire.js",
+        "scripts/owned-runtime-startup-retire.js"
+      ]
+    },
+    {
+      "path": "mcp-server/owned-runtime-ui-baseline.js",
+      "bytes": 47263,
+      "sha256": "01682dd06a7b4f3f4c5ad9c11d559c0ae43554cf8ce4f6fa00da1a677c2b71b8",
+      "disposition": "copied",
+      "sourceSha256": "01682dd06a7b4f3f4c5ad9c11d559c0ae43554cf8ce4f6fa00da1a677c2b71b8",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/owned-runtime-win32.js",
+      "bytes": 6092,
+      "sha256": "9f3db992c79e4d06ef6b50ba4919c2779dbd692c3a6c32bf20838a45008dc774",
+      "disposition": "copied",
+      "sourceSha256": "9f3db992c79e4d06ef6b50ba4919c2779dbd692c3a6c32bf20838a45008dc774",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js"
+      ]
+    },
+    {
+      "path": "mcp-server/panel-lifecycle-causal-observer.js",
+      "bytes": 19167,
+      "sha256": "4da6d3a91aedd855e081fe9d2a71ae7f4905a22b36da7846dbb8e845a20232fa",
+      "disposition": "copied",
+      "sourceSha256": "4da6d3a91aedd855e081fe9d2a71ae7f4905a22b36da7846dbb8e845a20232fa",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/panel-lifecycle-causal.js"
+      ]
+    },
+    {
+      "path": "mcp-server/panel-lifecycle-causal.js",
+      "bytes": 39236,
+      "sha256": "c060da36d684f67c6dc7a802576bb575ba6fceca81edcbf4385404d857720354",
+      "disposition": "copied",
+      "sourceSha256": "c060da36d684f67c6dc7a802576bb575ba6fceca81edcbf4385404d857720354",
+      "literalDependencies": [
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/deployment-mode.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/panel-lifecycle-causal-observer.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/placeholder-evidence.js",
+      "bytes": 3547,
+      "sha256": "917c148acd52efdd5b85a8ffac342392ed87783cae6d45457de2a53529c73286",
+      "disposition": "copied",
+      "sourceSha256": "917c148acd52efdd5b85a8ffac342392ed87783cae6d45457de2a53529c73286",
+      "literalDependencies": [
+        "mcp-server/placeholder-protection.js"
+      ]
+    },
+    {
+      "path": "mcp-server/placeholder-framing.js",
+      "bytes": 40149,
+      "sha256": "4d620c829c1ca2118bba99e80689cd4cf4a5ac893d9b948bb569bc9c1466667b",
+      "disposition": "copied",
+      "sourceSha256": "4d620c829c1ca2118bba99e80689cd4cf4a5ac893d9b948bb569bc9c1466667b",
+      "literalDependencies": [
+        "mcp-server/placeholder-timing.js",
+        "mcp-server/placeholder-usage.js"
+      ]
+    },
+    {
+      "path": "mcp-server/placeholder-geometry.js",
+      "bytes": 6679,
+      "sha256": "7a7bbd128e006c1ebb4b36847fdd1524a84b16ceb38c4f1c751afe74e6aec1e3",
+      "disposition": "copied",
+      "sourceSha256": "7a7bbd128e006c1ebb4b36847fdd1524a84b16ceb38c4f1c751afe74e6aec1e3",
+      "literalDependencies": [
+        "mcp-server/placeholder-protection.js"
+      ]
+    },
+    {
+      "path": "mcp-server/placeholder-plan-builder.js",
+      "bytes": 12216,
+      "sha256": "f0ba23467e2c335c51f57976e6bf5a4eaad871f4606145b1add4029123564880",
+      "disposition": "copied",
+      "sourceSha256": "f0ba23467e2c335c51f57976e6bf5a4eaad871f4606145b1add4029123564880",
+      "literalDependencies": [
+        "mcp-server/placeholder-framing.js",
+        "mcp-server/placeholder-timing.js"
+      ]
+    },
+    {
+      "path": "mcp-server/placeholder-protection.js",
+      "bytes": 29326,
+      "sha256": "5aa1e9324caa52f1c0c1f61be686e09ca5c3132c746498f581ccb144a83b0b5e",
+      "disposition": "copied",
+      "sourceSha256": "5aa1e9324caa52f1c0c1f61be686e09ca5c3132c746498f581ccb144a83b0b5e",
+      "literalDependencies": [
+        "mcp-server/placeholder-source-recovery.js",
+        "mcp-server/placeholder-timing.js",
+        "mcp-server/project-save.js"
+      ]
+    },
+    {
+      "path": "mcp-server/placeholder-readback.js",
+      "bytes": 7644,
+      "sha256": "be8608a9dfd615cf6e19945b1fda4c594a5afc035ac66ac20a0feb406e5a1e55",
+      "disposition": "copied",
+      "sourceSha256": "be8608a9dfd615cf6e19945b1fda4c594a5afc035ac66ac20a0feb406e5a1e55",
+      "literalDependencies": [
+        "mcp-server/placeholder-framing.js",
+        "mcp-server/placeholder-protection.js",
+        "mcp-server/placeholder-source-recovery.js",
+        "mcp-server/placeholder-timing.js"
+      ]
+    },
+    {
+      "path": "mcp-server/placeholder-review-service.js",
+      "bytes": 24861,
+      "sha256": "762700ef62a6ab4fb257f373a64df8df6bc38474ccd0cf328db47c50fee2cde7",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "0fb56b7ed6e0d81b5f1c4ba07ce833ced3f56f2d348fde05ce0b81e2e38eefd9",
+      "literalDependencies": [
+        "mcp-server/montage-capture-service.js",
+        "mcp-server/placeholder-protection.js",
+        "mcp-server/placeholder-timing.js",
+        "mcp-server/placeholder-usage.js",
+        "mcp-server/project-state-store.js"
+      ]
+    },
+    {
+      "path": "mcp-server/placeholder-review-tools.js",
+      "bytes": 7143,
+      "sha256": "141ac56e5920afcfe73fca6f8ce6f5fc421ba8379f7999c39a0fa2afd02c4095",
+      "disposition": "copied",
+      "sourceSha256": "141ac56e5920afcfe73fca6f8ce6f5fc421ba8379f7999c39a0fa2afd02c4095",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/placeholder-source-recovery.js",
+      "bytes": 17856,
+      "sha256": "82dfea29337636bb102180d11b1763457e033b94d39641b8714ccbfe2c8c32e5",
+      "disposition": "copied",
+      "sourceSha256": "82dfea29337636bb102180d11b1763457e033b94d39641b8714ccbfe2c8c32e5",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/placeholder-timing.js",
+      "bytes": 4380,
+      "sha256": "eb176e282c331a83a72277c4c2fdc577c3fe12b02b4f2a69d42e1f8800a821ee",
+      "disposition": "copied",
+      "sourceSha256": "eb176e282c331a83a72277c4c2fdc577c3fe12b02b4f2a69d42e1f8800a821ee",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/placeholder-usage.js",
+      "bytes": 45208,
+      "sha256": "3a142e16392bd90f81d17b9c720407feef8c395e9f039105d08b077b5bbd79b1",
+      "disposition": "copied",
+      "sourceSha256": "3a142e16392bd90f81d17b9c720407feef8c395e9f039105d08b077b5bbd79b1",
+      "literalDependencies": [
+        "mcp-server/placeholder-timing.js"
+      ]
+    },
+    {
+      "path": "mcp-server/placeholder-visual-batches.js",
+      "bytes": 4157,
+      "sha256": "d1f6ed3d40e03fc38759028c7c72af8e4adf3b869d353afde7cd215b592f01f1",
+      "disposition": "copied",
+      "sourceSha256": "d1f6ed3d40e03fc38759028c7c72af8e4adf3b869d353afde7cd215b592f01f1",
+      "literalDependencies": [
+        "mcp-server/codex-visual-evidence.js",
+        "mcp-server/placeholder-review-service.js",
+        "mcp-server/placeholder-visual-review.js"
+      ]
+    },
+    {
+      "path": "mcp-server/placeholder-visual-review.js",
+      "bytes": 18584,
+      "sha256": "06b80ade07d01d0a129cad6af205ec3577d2a33704be71bf6bc09d5ec79b0a32",
+      "disposition": "copied",
+      "sourceSha256": "06b80ade07d01d0a129cad6af205ec3577d2a33704be71bf6bc09d5ec79b0a32",
+      "literalDependencies": [
+        "mcp-server/montage-capture-service.js",
+        "mcp-server/placeholder-review-service.js"
+      ]
+    },
+    {
+      "path": "mcp-server/plan-repair.js",
+      "bytes": 47347,
+      "sha256": "c508bbe2fcf2eb0fcdedd4966c639b7542d840218de8f8106c0931db2f010ec2",
+      "disposition": "copied",
+      "sourceSha256": "c508bbe2fcf2eb0fcdedd4966c639b7542d840218de8f8106c0931db2f010ec2",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/plan-risk-classifier.js",
+      "bytes": 16296,
+      "sha256": "17615c8a20206839911ba650bdc18644d70573a75e1635b37016a9ca92091ab4",
+      "disposition": "copied",
+      "sourceSha256": "17615c8a20206839911ba650bdc18644d70573a75e1635b37016a9ca92091ab4",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/plan-run-reconciliation.js",
+      "bytes": 21824,
+      "sha256": "dbdc3d946e6b27b960b1f99eb735ea1342bf22aa2587c380bcac1a0aa5fb5b1d",
+      "disposition": "copied",
+      "sourceSha256": "dbdc3d946e6b27b960b1f99eb735ea1342bf22aa2587c380bcac1a0aa5fb5b1d",
+      "literalDependencies": [
+        "mcp-server/generated-export-recovery.js",
+        "mcp-server/montage-capture-service.js",
+        "mcp-server/montage-run-bindings.js",
+        "mcp-server/native-render-variant.js",
+        "mcp-server/proposal-state.js",
+        "mcp-server/review-evidence.js",
+        "mcp-server/run-outcome.js",
+        "mcp-server/semantic-verification.js"
+      ]
+    },
+    {
+      "path": "mcp-server/plan-run-records.js",
+      "bytes": 3254,
+      "sha256": "422d1240144bc91370bb937328305655ed40c39bde596dc20e2325ca584f89d4",
+      "disposition": "copied",
+      "sourceSha256": "422d1240144bc91370bb937328305655ed40c39bde596dc20e2325ca584f89d4",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/plan-run-response.js",
+      "bytes": 19805,
+      "sha256": "936fa6be3b8fcc561f1018eafd5c4ba47cb9ac2c7392cdf0eb2eb58ff363db38",
+      "disposition": "copied",
+      "sourceSha256": "936fa6be3b8fcc561f1018eafd5c4ba47cb9ac2c7392cdf0eb2eb58ff363db38",
+      "literalDependencies": [
+        "mcp-server/ame-title-pending.js",
+        "mcp-server/plan-run-records.js"
+      ]
+    },
+    {
+      "path": "mcp-server/project-lifecycle-bridge-adapter.js",
+      "bytes": 11115,
+      "sha256": "963ea749ef0e61dfe9dfa9849576d16311b0e008fd5b0b1e7450dc41befdb88a",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "d4a4a0b34cc35eca5cc7ef6b9d3a2c5142e9305d54a20f2b9d45641c82503e40",
+      "literalDependencies": [
+        "mcp-server/project-lifecycle-contract.js",
+        "mcp-server/project-lifecycle-plan.js",
+        "mcp-server/project-lifecycle-service.js",
+        "mcp-server/project-lifecycle-state.js",
+        "mcp-server/project-lifecycle-transition.js",
+        "mcp-server/project-state-store.js"
+      ]
+    },
+    {
+      "path": "mcp-server/project-lifecycle-contract.js",
+      "bytes": 33100,
+      "sha256": "5d104c94f90e8a844cf5d9ea2b4ef70438d73fa93816b3a8614a392e3af6f0e3",
+      "disposition": "copied",
+      "sourceSha256": "5d104c94f90e8a844cf5d9ea2b4ef70438d73fa93816b3a8614a392e3af6f0e3",
+      "literalDependencies": [
+        "mcp-server/placeholder-protection.js"
+      ]
+    },
+    {
+      "path": "mcp-server/project-lifecycle-plan.js",
+      "bytes": 5693,
+      "sha256": "4833a6178ae1b13233d9af5a8b2a0aaa9661b8c41917db59da115f0d9735872e",
+      "disposition": "copied",
+      "sourceSha256": "4833a6178ae1b13233d9af5a8b2a0aaa9661b8c41917db59da115f0d9735872e",
+      "literalDependencies": [
+        "mcp-server/project-lifecycle-contract.js"
+      ]
+    },
+    {
+      "path": "mcp-server/project-lifecycle-service.js",
+      "bytes": 31372,
+      "sha256": "8e3680e936f7ff2b1d5fa2a5ac9f655e136cd6e84e8b85ac8699d79d92500429",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "9e5020ad0a62453abf8a2b5ddc839d4b50cbeee4760c7dad39693902180340a5",
+      "literalDependencies": [
+        "mcp-server/project-lifecycle-contract.js",
+        "mcp-server/project-lifecycle-transition.js",
+        "mcp-server/project-state-store.js"
+      ]
+    },
+    {
+      "path": "mcp-server/project-lifecycle-state.js",
+      "bytes": 6935,
+      "sha256": "6864d44ce354fc8a0ac7589236c1032c4d563bacc9f84a8d042a83623f95c3a0",
+      "disposition": "copied",
+      "sourceSha256": "6864d44ce354fc8a0ac7589236c1032c4d563bacc9f84a8d042a83623f95c3a0",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/project-lifecycle-transition.js",
+      "bytes": 39437,
+      "sha256": "b33071a4bde99f7b241d9662b528c3a58c21c00387fb7a9d277824c604bce444",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "072baf0018f488d07e83ed28ca076b7969bec2e16d4311d3ee82bd34030c1aac",
+      "literalDependencies": [
+        "mcp-server/project-lifecycle-contract.js",
+        "mcp-server/project-lifecycle-state.js",
+        "mcp-server/project-state-store.js"
+      ]
+    },
+    {
+      "path": "mcp-server/project-lifecycle-verification.js",
+      "bytes": 4900,
+      "sha256": "21d5bc173a54477821832dba5999e395edf4c33067f374fe6b548101ad97f52c",
+      "disposition": "copied",
+      "sourceSha256": "21d5bc173a54477821832dba5999e395edf4c33067f374fe6b548101ad97f52c",
+      "literalDependencies": [
+        "mcp-server/project-lifecycle-contract.js"
+      ]
+    },
+    {
+      "path": "mcp-server/project-save.js",
+      "bytes": 24988,
+      "sha256": "59b09dde3ef9bc66d68d745d6ce614252fd907196f2581a13d3ae8c9fea2a16f",
+      "disposition": "copied",
+      "sourceSha256": "59b09dde3ef9bc66d68d745d6ce614252fd907196f2581a13d3ae8c9fea2a16f",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/project-state-store.js",
+      "bytes": 21459,
+      "sha256": "baca725ce96100d051c47c856569f40afe4d2d16274c9907a8a3d60e80f6ed9b",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/montage-capture-service.js",
+        "mcp-server/placeholder-protection.js",
+        "mcp-server/placeholder-review-service.js",
+        "mcp-server/project-lifecycle-transition.js"
+      ]
+    },
+    {
+      "path": "mcp-server/proposal-state.js",
+      "bytes": 7515,
+      "sha256": "35150c536c54ecfa2b05741315aa4fb11aa1b0ac63609eede0b0cc21843375c1",
+      "disposition": "copied",
+      "sourceSha256": "35150c536c54ecfa2b05741315aa4fb11aa1b0ac63609eede0b0cc21843375c1",
+      "literalDependencies": [
+        "mcp-server/ame-title-pending.js"
+      ]
+    },
+    {
+      "path": "mcp-server/review-evidence.js",
+      "bytes": 22836,
+      "sha256": "64ad1861320cd48e9e64d1299e354210b29179ec9dab9c542f673e48f543b21c",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "e9bfb8c35305edf58d7c0adad5c13ba3ca1179037baabfa491fa0c1903b10d38",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/run-outcome.js",
+      "bytes": 9114,
+      "sha256": "c3a8bdd19120d86032af604879bf5421036d884460468f0b7e31c5c117ed5d6f",
+      "disposition": "copied",
+      "sourceSha256": "c3a8bdd19120d86032af604879bf5421036d884460468f0b7e31c5c117ed5d6f",
+      "literalDependencies": [
+        "mcp-server/ame-title-pending.js",
+        "mcp-server/semantic-verification.js"
+      ]
+    },
+    {
+      "path": "mcp-server/semantic-verification.js",
+      "bytes": 308635,
+      "sha256": "f9edd022002f523f483a0b438b5b9a6cdff1c3a9e33b80900025c8681ea28556",
+      "disposition": "copied",
+      "sourceSha256": "f9edd022002f523f483a0b438b5b9a6cdff1c3a9e33b80900025c8681ea28556",
+      "literalDependencies": [
+        "mcp-server/ame-job-source.js",
+        "mcp-server/ame-manual-queue-grant.js",
+        "mcp-server/ame-native-fixture-grant.js",
+        "mcp-server/ame-native-fixture-runner.js",
+        "mcp-server/ame-open-comp.js",
+        "mcp-server/ame-queue-control.js",
+        "mcp-server/ame-running.js",
+        "mcp-server/ame-shared-queue-grant.js",
+        "mcp-server/ame-title-jobs.js",
+        "mcp-server/ame-title-pending.js",
+        "mcp-server/generated-png-proof.js",
+        "mcp-server/generated-safety-contracts.js",
+        "mcp-server/montage-capture-service.js",
+        "mcp-server/native-render-variant.js",
+        "mcp-server/placeholder-geometry.js",
+        "mcp-server/placeholder-source-recovery.js",
+        "mcp-server/project-lifecycle-contract.js",
+        "mcp-server/project-lifecycle-verification.js",
+        "mcp-server/project-save.js",
+        "mcp-server/title-export-snapshots.js",
+        "mcp-server/title-export-verification.js"
+      ]
+    },
+    {
+      "path": "mcp-server/server.js",
+      "bytes": 279,
+      "sha256": "6db469b3ef59e5cbefc0221cd9eebb9120fb9bd43cf8c0fe4c5c3a76b0d05e01",
+      "disposition": "copied",
+      "sourceSha256": "6db469b3ef59e5cbefc0221cd9eebb9120fb9bd43cf8c0fe4c5c3a76b0d05e01",
+      "literalDependencies": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/mcp-adapter.js"
+      ]
+    },
+    {
+      "path": "mcp-server/session-recovery-state.js",
+      "bytes": 4967,
+      "sha256": "1ad82bda116c01d9cb231480819b6d140b1135c028fc70ff973344956dfb6087",
+      "disposition": "copied",
+      "sourceSha256": "1ad82bda116c01d9cb231480819b6d140b1135c028fc70ff973344956dfb6087",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/slideshow-manifest.js",
+      "bytes": 12797,
+      "sha256": "8773ed468d57f86f90fafbefbbc0caa5fd5bf00a3a4c1b9a6d6a00e08bd79201",
+      "disposition": "copied",
+      "sourceSha256": "8773ed468d57f86f90fafbefbbc0caa5fd5bf00a3a4c1b9a6d6a00e08bd79201",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/slideshow-plan-builder.js",
+      "bytes": 15441,
+      "sha256": "b3bd52f6eec50673fa5dc09fc6657095cba45220833a6b57933ce69f74c4ba0d",
+      "disposition": "copied",
+      "sourceSha256": "b3bd52f6eec50673fa5dc09fc6657095cba45220833a6b57933ce69f74c4ba0d",
+      "literalDependencies": [
+        "mcp-server/review-evidence.js",
+        "mcp-server/slideshow-manifest.js"
+      ]
+    },
+    {
+      "path": "mcp-server/slideshow-tools.js",
+      "bytes": 77402,
+      "sha256": "bf8d48b3c12c47d40e372a510c0a987d4f3f4f6367adf5f72f2a1eb82a45d973",
+      "disposition": "copied",
+      "sourceSha256": "bf8d48b3c12c47d40e372a510c0a987d4f3f4f6367adf5f72f2a1eb82a45d973",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/solution-plan-builder.js",
+      "bytes": 30765,
+      "sha256": "43afd2a69aaaeec7848dbb5c83b1eb9997f4ffdfdcbe68228774631872acd2fb",
+      "disposition": "copied",
+      "sourceSha256": "43afd2a69aaaeec7848dbb5c83b1eb9997f4ffdfdcbe68228774631872acd2fb",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/solution-plan-verification.js",
+      "bytes": 12817,
+      "sha256": "5e3a76067640cf55e27751a7f9140e9c3828cea684b9695a5aa3b718471aae98",
+      "disposition": "copied",
+      "sourceSha256": "5e3a76067640cf55e27751a7f9140e9c3828cea684b9695a5aa3b718471aae98",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/text-layout-policy.js",
+      "bytes": 9295,
+      "sha256": "f746de650224cd7963258c26f0b0c0bf0a0d2d640ab2ea7e584e9f2f3fcc7979",
+      "disposition": "copied",
+      "sourceSha256": "f746de650224cd7963258c26f0b0c0bf0a0d2d640ab2ea7e584e9f2f3fcc7979",
+      "literalDependencies": []
+    },
+    {
+      "path": "mcp-server/text-visual-review-plan.js",
+      "bytes": 16489,
+      "sha256": "1fd5e22bff0f4026d2a373b0d4001e2a58f23a28916786ed2a345e3d67cc5b04",
+      "disposition": "copied",
+      "sourceSha256": "1fd5e22bff0f4026d2a373b0d4001e2a58f23a28916786ed2a345e3d67cc5b04",
+      "literalDependencies": [
+        "mcp-server/comp-visual-review-plan.js",
+        "mcp-server/proposal-state.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "mcp-server/title-export-snapshots.js",
+      "bytes": 38806,
+      "sha256": "ce31134353babd2addec92a06d97e0ec184df3eca5a0bfcd1aec4cdc0b98ef4a",
+      "disposition": "copied",
+      "sourceSha256": "ce31134353babd2addec92a06d97e0ec184df3eca5a0bfcd1aec4cdc0b98ef4a",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js",
+        "mcp-server/native-render-variant.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/project-save.js",
+        "mcp-server/title-export-verification.js"
+      ]
+    },
+    {
+      "path": "mcp-server/title-export-verification.js",
+      "bytes": 22635,
+      "sha256": "8e42d1fb8f183b6b93cf84518f6e06267e09b63ad65ffa9e821faa44bf90f709",
+      "disposition": "copied",
+      "sourceSha256": "8e42d1fb8f183b6b93cf84518f6e06267e09b63ad65ffa9e821faa44bf90f709",
+      "literalDependencies": [
+        "mcp-server/m100-protocol.js",
+        "mcp-server/native-render-variant.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/project-save.js",
+        "mcp-server/title-export-snapshots.js"
+      ]
+    },
+    {
+      "path": "mcp-server/tool-error-response.js",
+      "bytes": 13866,
+      "sha256": "a48cd04e195fde3b3e065915a8cc87f7bacbef3ad91df85a4bedf9c568cb5b39",
+      "disposition": "copied",
+      "sourceSha256": "a48cd04e195fde3b3e065915a8cc87f7bacbef3ad91df85a4bedf9c568cb5b39",
+      "literalDependencies": [
+        "mcp-server/ame-title-pending.js",
+        "mcp-server/m100-protocol.js"
+      ]
+    },
+    {
+      "path": "package.json",
+      "bytes": 203,
+      "sha256": "0378e47b5748063f834a26beca5bc5db2d62297585e0a9cf19172b1421adc007",
+      "disposition": "core-specific",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/ame-job-source-hash-worker.cjs",
+      "bytes": 6881,
+      "sha256": "800d182f0339addc9c61b26fcb4e47396caf8a269896ed33421807ea692413da",
+      "disposition": "copied",
+      "sourceSha256": "800d182f0339addc9c61b26fcb4e47396caf8a269896ed33421807ea692413da",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/autonomous-plan-client.js",
+      "bytes": 5065,
+      "sha256": "1ae9ca1a5d537a08bfb48d70c92d3baa39ce1d9da7e577184c2949ab0d1262d7",
+      "disposition": "copied",
+      "sourceSha256": "1ae9ca1a5d537a08bfb48d70c92d3baa39ce1d9da7e577184c2949ab0d1262d7",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/cep-panel-product-reset-client.js",
+      "bytes": 2220,
+      "sha256": "079cfb4f162e67cd62ade25f65f8197f42d8f9a3212a84bb581880db10a070e4",
+      "disposition": "copied",
+      "sourceSha256": "079cfb4f162e67cd62ade25f65f8197f42d8f9a3212a84bb581880db10a070e4",
+      "literalDependencies": [
+        "mcp-server/cep-panel-control.js"
+      ]
+    },
+    {
+      "path": "scripts/cep-panel-reset-physical-fence-absence.ps1",
+      "bytes": 7666,
+      "sha256": "b206c1d878c49a49f7af19f7ee2b94c25ca28e1cd569bb7fb139c0d0d916ef01",
+      "disposition": "copied",
+      "sourceSha256": "b206c1d878c49a49f7af19f7ee2b94c25ca28e1cd569bb7fb139c0d0d916ef01",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/cep-panel-target.js",
+      "bytes": 4746,
+      "sha256": "77c708d09cdac93785222b68a056e0c44ee0a509dee302cae316b8c437175744",
+      "disposition": "copied",
+      "sourceSha256": "77c708d09cdac93785222b68a056e0c44ee0a509dee302cae316b8c437175744",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/common-title-assembly-maintenance.js",
+      "bytes": 15433,
+      "sha256": "f601b6890f244133ae1042b3577d2801a7046e2dfb3eaf3dc23e721a51449af6",
+      "disposition": "copied",
+      "sourceSha256": "f601b6890f244133ae1042b3577d2801a7046e2dfb3eaf3dc23e721a51449af6",
+      "literalDependencies": [
+        "mcp-server/ae-agent-panel-bootstrap.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/common-title-assembly-recovery.js",
+        "mcp-server/generated-export-recovery.js",
+        "mcp-server/plan-run-records.js"
+      ]
+    },
+    {
+      "path": "scripts/core-check.js",
+      "bytes": 1677,
+      "sha256": "606c177620ca2c05349e33558feb8844ab635e2dfdf560c4a6a20bbd1e8618a2",
+      "disposition": "core-specific",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/core-runtime-smoke.js",
+      "bytes": 4991,
+      "sha256": "329100583c89326bd3af85bf74fee323224b1f074a3b35521b2427b3d50afec7",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/review-evidence.js",
+        "mcp-server/solution-plan-builder.js",
+        "scripts/network-test-fixture.js"
+      ]
+    },
+    {
+      "path": "scripts/human-guard-settlement-maintenance.js",
+      "bytes": 14013,
+      "sha256": "a619a440c27e1c44c70cadd60ba174b69d6129b43da5f051a35c6611144877fa",
+      "disposition": "copied",
+      "sourceSha256": "a619a440c27e1c44c70cadd60ba174b69d6129b43da5f051a35c6611144877fa",
+      "literalDependencies": [
+        "mcp-server/ae-agent-panel-bootstrap.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/human-guard-settlement.js",
+        "mcp-server/review-evidence.js",
+        "scripts/common-title-assembly-maintenance.js"
+      ]
+    },
+    {
+      "path": "scripts/native-fixture-prephase-maintenance.js",
+      "bytes": 32337,
+      "sha256": "d357b9bf7f0daecb4e5d2153c46cc4c6e51eaed86a018ee06707e8a1a62e4a86",
+      "disposition": "copied",
+      "sourceSha256": "d357b9bf7f0daecb4e5d2153c46cc4c6e51eaed86a018ee06707e8a1a62e4a86",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/ae-agent-panel-bootstrap.js",
+        "mcp-server/ame-fixture-ui-disposition.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/human-guard-settlement.js",
+        "mcp-server/native-fixture-abandonment.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-prephase-recovery-proof.js",
+        "mcp-server/native-fixture-prephase-recovery.js",
+        "mcp-server/plan-run-records.js",
+        "mcp-server/review-evidence.js",
+        "scripts/common-title-assembly-maintenance.js",
+        "scripts/human-guard-settlement-maintenance.js"
+      ]
+    },
+    {
+      "path": "scripts/native-fixture-retained-maintenance.js",
+      "bytes": 14517,
+      "sha256": "492ae12961cb9e809c811a631bbdf15517e4b2473eb9e20e713e30cf5ac4f509",
+      "disposition": "copied",
+      "sourceSha256": "492ae12961cb9e809c811a631bbdf15517e4b2473eb9e20e713e30cf5ac4f509",
+      "literalDependencies": [
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/native-fixture-abandonment-backend.js",
+        "mcp-server/native-fixture-abandonment.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-retained.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/review-evidence.js",
+        "scripts/common-title-assembly-maintenance.js",
+        "scripts/native-fixture-prephase-maintenance.js",
+        "scripts/owned-runtime-control.js"
+      ]
+    },
+    {
+      "path": "scripts/network-test-fixture.js",
+      "bytes": 20947,
+      "sha256": "c8968f2879160c22c3e33b1b8a3783093b2a254d926dafba46fe41465ccbf5ec",
+      "disposition": "extracted-or-adapted",
+      "sourceSha256": "39b46a58d7c29d9a7158166c6fe1c3c9321f5331e0e35c914508f00368b74336",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/owned-runtime-control.js",
+      "bytes": 11044,
+      "sha256": "0a4d820bc89ed7d7212e7bcbdfc79d7b4cda1b91deaa453fae187014d2162acb",
+      "disposition": "copied",
+      "sourceSha256": "0a4d820bc89ed7d7212e7bcbdfc79d7b4cda1b91deaa453fae187014d2162acb",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/owned-runtime-win32.js"
+      ]
+    },
+    {
+      "path": "scripts/owned-runtime-daemon-helper.ps1",
+      "bytes": 71353,
+      "sha256": "7453ca5377e1e4eb462069907af9f25e2e2826ec4f458d208ad649e5251cd2ff",
+      "disposition": "copied",
+      "sourceSha256": "7453ca5377e1e4eb462069907af9f25e2e2826ec4f458d208ad649e5251cd2ff",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/owned-runtime-finalize-launch.js",
+      "bytes": 22415,
+      "sha256": "ac7e47bbffbb67a22408666e5c479464cb9a2a0d8f0ac7170f103917937b12f6",
+      "disposition": "copied",
+      "sourceSha256": "ac7e47bbffbb67a22408666e5c479464cb9a2a0d8f0ac7170f103917937b12f6",
+      "literalDependencies": [
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/owned-runtime-win32.js",
+        "mcp-server/review-evidence.js",
+        "scripts/owned-runtime-control.js"
+      ]
+    },
+    {
+      "path": "scripts/owned-runtime-maintenance-retire-helper.ps1",
+      "bytes": 24854,
+      "sha256": "61fdaef97e7a063fb13af6ea8c989ba79ce457fbb29c504377ba9d82c6062bf7",
+      "disposition": "copied",
+      "sourceSha256": "61fdaef97e7a063fb13af6ea8c989ba79ce457fbb29c504377ba9d82c6062bf7",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/owned-runtime-maintenance-retire.js",
+      "bytes": 57476,
+      "sha256": "57f0785e027481c2e1575c61b039b09b5dfcceed7918631930e9a2c501d8b182",
+      "disposition": "copied",
+      "sourceSha256": "57f0785e027481c2e1575c61b039b09b5dfcceed7918631930e9a2c501d8b182",
+      "literalDependencies": [
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/native-fixture-abandonment.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-retained.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-service.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/owned-runtime-win32.js",
+        "mcp-server/review-evidence.js",
+        "scripts/owned-runtime-panel-reload.js",
+        "scripts/owned-runtime-startup-retire.js"
+      ]
+    },
+    {
+      "path": "scripts/owned-runtime-panel-reload.js",
+      "bytes": 21892,
+      "sha256": "f35aa6844e95c42d8c95445b220a18b625b836cde4ba59dd010960554f53e5dd",
+      "disposition": "copied",
+      "sourceSha256": "f35aa6844e95c42d8c95445b220a18b625b836cde4ba59dd010960554f53e5dd",
+      "literalDependencies": [
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/native-fixture-retained.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "scripts/autonomous-plan-client.js",
+        "scripts/native-fixture-prephase-maintenance.js",
+        "scripts/native-fixture-retained-maintenance.js",
+        "scripts/owned-runtime-maintenance-retire.js"
+      ]
+    },
+    {
+      "path": "scripts/owned-runtime-startup-retire-helper.ps1",
+      "bytes": 18372,
+      "sha256": "20e1e5fea69ad9880de8381a30bafa94b43582420615dda939453e469b5f97f5",
+      "disposition": "copied",
+      "sourceSha256": "20e1e5fea69ad9880de8381a30bafa94b43582420615dda939453e469b5f97f5",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/owned-runtime-startup-retire.js",
+      "bytes": 42799,
+      "sha256": "e144fbc048e18193eecda7c77a51c41bf04267baef0414d18a36064478c5c329",
+      "disposition": "copied",
+      "sourceSha256": "e144fbc048e18193eecda7c77a51c41bf04267baef0414d18a36064478c5c329",
+      "literalDependencies": [
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/owned-runtime-win32.js",
+        "mcp-server/review-evidence.js",
+        "scripts/owned-runtime-control.js",
+        "scripts/owned-runtime-finalize-launch.js"
+      ]
+    },
+    {
+      "path": "scripts/owned-runtime-win32-helper.ps1",
+      "bytes": 35546,
+      "sha256": "945ef885a9c8eecbc2ddf3076cc4762d2a4789b64c3153f12abee8c7f5236ed4",
+      "disposition": "copied",
+      "sourceSha256": "945ef885a9c8eecbc2ddf3076cc4762d2a4789b64c3153f12abee8c7f5236ed4",
+      "literalDependencies": []
+    }
+  ],
+  "exclusions": [
+    "providers/chat/Hardcore",
+    "Full Intaker/importer/supervisors",
+    "recipes/registry/candidates/reuse metrics",
+    "duplicate Usage/Codeburn adapters",
+    "production state/credentials/journals",
+    "native binaries/provisioning"
+  ],
+  "remaining": [
+    "minimal CEP",
+    "four workflow coverage",
+    "OFF preference and project-state migration",
+    "installed config/authority cutover",
+    "live AE proof; AME paused"
+  ]
+}
