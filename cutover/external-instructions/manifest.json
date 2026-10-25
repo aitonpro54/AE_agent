@@ -1,0 +1,125 @@
+{
+  "schema": "ae-agent.core-external-instruction-patches.v1",
+  "status": "staged-review-required",
+  "sourceHead": "e531f048ba58c3b28545950387143c78c4bfbe98",
+  "sourceDocsCommit": "2b06e19cf52f0ab9e8c4048a3a693eddccb2a0ab",
+  "sourceProductCheckpoint": "1b48076e0aa4a68f21b3229af511d9e526ed0072",
+  "globalWritesPerformed": false,
+  "applyMode": "addressed-file-replacement-only-after-drift-check-and-separate-review",
+  "runtimeManifestOwner": "core_runtime; this docs/instruction bundle is outside config/core-runtime-manifest.json and its runtime hash list",
+  "files": [
+    {
+      "skill": "ae-mcp-bridge-workflow",
+      "relativePath": "SKILL.md",
+      "sourcePath": "C:/Users/Ant/.codex/skills/ae-mcp-bridge-workflow/SKILL.md",
+      "stagedPath": "cutover/external-instructions/ae-mcp-bridge-workflow/SKILL.md",
+      "targetPath": "C:/Users/Ant/.codex/skills/ae-mcp-bridge-workflow/SKILL.md",
+      "sourceSha256": "4bd779e5d177a03fa4fae555383b3410f721ef1206a79954e5767f826bfbb2ab",
+      "stagedSha256": "84e4143cf581d747d57416adc4c703780f7684358a74f0054d6f7c9f4d909835"
+    },
+    {
+      "skill": "ae-slideshow-template-workflow",
+      "relativePath": "SKILL.md",
+      "sourcePath": "C:/Users/Ant/.codex/skills/ae-slideshow-template-workflow/SKILL.md",
+      "stagedPath": "cutover/external-instructions/ae-slideshow-template-workflow/SKILL.md",
+      "targetPath": "C:/Users/Ant/.codex/skills/ae-slideshow-template-workflow/SKILL.md",
+      "sourceSha256": "7d2b1b43b82decbefce76ff2c3e039bad3c8c71bd859d563f92b2151e95871ce",
+      "stagedSha256": "d06bf4a86cffa9907febf9689187c704da2335cfce8f0f1242704d8ae906b0ff"
+    },
+    {
+      "skill": "ae-task-routing",
+      "relativePath": "SKILL.md",
+      "sourcePath": "C:/Users/Ant/.codex/skills/ae-task-routing/SKILL.md",
+      "stagedPath": "cutover/external-instructions/ae-task-routing/SKILL.md",
+      "targetPath": "C:/Users/Ant/.codex/skills/ae-task-routing/SKILL.md",
+      "sourceSha256": "b9abdc12da3e343a3bd476b0919e8251a50b599f307dd56a70aad361a720a003",
+      "stagedSha256": "27ccec6b73adc87fe923ba250490ca32350f3016b8667b8aaeaad7d85599a814"
+    },
+    {
+      "skill": "cep-panel-controls",
+      "relativePath": "SKILL.md",
+      "sourcePath": "C:/Users/Ant/.codex/skills/cep-panel-controls/SKILL.md",
+      "stagedPath": "cutover/external-instructions/cep-panel-controls/SKILL.md",
+      "targetPath": "C:/Users/Ant/.codex/skills/cep-panel-controls/SKILL.md",
+      "sourceSha256": "15143f02cc77ced91142d94cd68f7717df771909e484df51ce9e8acce11a00d7",
+      "stagedSha256": "87cbe4dd6f42457acfa62e93656ae0c5a9dfef049c78c2bcbcef57c9084345dd"
+    },
+    {
+      "skill": "ae-computer-use-workflow",
+      "relativePath": "SKILL.md",
+      "sourcePath": "C:/Users/Ant/.codex/skills/ae-computer-use-workflow/SKILL.md",
+      "stagedPath": "cutover/external-instructions/ae-computer-use-workflow/SKILL.md",
+      "targetPath": "C:/Users/Ant/.codex/skills/ae-computer-use-workflow/SKILL.md",
+      "sourceSha256": "75f6f3e8c0d528b499f4fb036cacaa3a30c077774df06f5d399aed01a6e4cec9",
+      "stagedSha256": "9f61631d95168bc57c954fb15dc43a9de7bcc76241147e2650221ab3482dbc4d"
+    },
+    {
+      "skill": "antigravity-cli",
+      "relativePath": "SKILL.md",
+      "sourcePath": "C:/Users/Ant/.codex/skills/antigravity-cli/SKILL.md",
+      "stagedPath": "cutover/external-instructions/antigravity-cli/SKILL.md",
+      "targetPath": "C:/Users/Ant/.codex/skills/antigravity-cli/SKILL.md",
+      "sourceSha256": "0fcc3d0bb415f14f962b509533d1911f7485ad4d7d167d24a51a00c752a614a8",
+      "stagedSha256": "108faea0959ee1f9c58fd8de6b3c772b0efc0de13f371accddfa79ee56814a4a"
+    },
+    {
+      "skill": "antigravity-cli",
+      "relativePath": "references/ae-agent.md",
+      "sourcePath": "C:/Users/Ant/.codex/skills/antigravity-cli/references/ae-agent.md",
+      "stagedPath": "cutover/external-instructions/antigravity-cli/references/ae-agent.md",
+      "targetPath": "C:/Users/Ant/.codex/skills/antigravity-cli/references/ae-agent.md",
+      "sourceSha256": "941fa43c1fcda91d116eebf4db6a4b3314ae301ca61641aab0a4e6629aa2dbc7",
+      "stagedSha256": "daec7d4871acc911be23d6f856f4789535284ce1ef3a02f3ef24e7307c3c1311"
+    }
+  ],
+  "hook": {
+    "status": "deferred-no-core-target",
+    "legacyPath": "C:/Users/Ant/Documents/Codex/AE_agent/scripts/ae-tool-first-pretool.js",
+    "proposedCorePath": "scripts/ae-tool-first-pretool.js",
+    "coreTargetExists": false,
+    "instruction": "Do not change legacy hook/config. Do not apply a Core hook command until the target helper is included and reviewed."
+  },
+  "rollback": "Restore only exact files in files[] from their matching source snapshots after checking current hashes; never replace whole skill folders.",
+  "coreRuntimeSourceSha256": "d6a29e86e13d16f856ae364eb1e7e3dd096ef8f4072ac5140af10c16dcaca4da",
+  "offlineStage3": {
+    "status": "passed-bounded-offline",
+    "chains": {
+      "titles": 2,
+      "alignAndReview": 12,
+      "placeholders": 3,
+      "aeRender": 1
+    },
+    "safetyChecks": 23,
+    "additionalSafety": [
+      "actual server raw gate validation/receipt matching",
+      "submitted timeout -> UNKNOWN -> m100_confirmation_replayed -> fresh public reconcile unknown/noReplay"
+    ],
+    "notProven": [
+      "live AE",
+      "visual review",
+      "save/reopen",
+      "actual render"
+    ]
+  },
+  "antigravityMcpRegistration": {
+    "status": "registered-legacy-path",
+    "configPath": "C:/Users/Ant/.gemini/config/mcp_config.json",
+    "serverName": "after-effects",
+    "preparedCorePaths": [
+      "Core Windows MCP launcher",
+      "Core mcp-server/mcp-adapter.js"
+    ],
+    "writePerformed": false,
+    "cutoverSwitchRequiresSeparateApproval": true,
+    "instruction": "Keep current legacy binding until approved cutover; any change is an addressed command/args switch only."
+  },
+  "agyBridgeExecutorProfile": {
+    "status": "source-bound-not-provisioned-in-Core",
+    "sourceConfigPath": "C:/Users/Ant/Documents/Codex/AE_agent/config/agy-bridge.json",
+    "profileName": "ae-agent",
+    "coreProfilePresent": false,
+    "writePerformed": false,
+    "instruction": "Do not implicitly reuse source profile or create hidden fallback."
+  },
+  "coreRuntimeCommit": "b01a9de67f1fd0bf1892e03f480787a3513ad6fc"
+}

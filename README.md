@@ -7,3 +7,5 @@
 Проверки: `npm.cmd run check:rules`, `npm.cmd run smoke:core-runtime`. Fixture запускает временные adapter+daemon на отдельном порту с synthetic credentials. Это offline proof, без live AE и native factories.
 
 Installed CEP/MCP и production authority не переключены. Минимальный CEP, workflow coverage и проверяемый cutover остаются в [плане](plans/core-migration.md). AME сохранён с действующей паузой проверок. Codeburn остаётся отдельным внешним MCP.
+
+Рабочие контракты: [model routing](docs/model-routing.md), [Tool-First](docs/tool-first-workflow.md) и [монтаж по сценам](docs/montage-workflow.md). Offline Stage 3 проверил четыре workflow chains и 23 safety checks; это не live/visual/save-reopen/render acceptance. Staged external instruction bundle и deferred hook disposition записаны в [cutover manifest](cutover/external-instructions/manifest.json); глобальные skills, hooks и config не применялись.
