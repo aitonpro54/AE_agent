@@ -39,24 +39,24 @@
     },
     {
       "path": "cep-panel/panel-action-contract.js",
-      "bytes": 18514,
-      "sha256": "1e67a4581061a92f62b7cb680d0a57051b13a5d4802721ac07451bf924816920",
+      "bytes": 19565,
+      "sha256": "5ab09606b8572ec068e98a99f82781784fedf59bffbd3b5081e55e2f3e22a463",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "78937c094982cc68cc7c06e85955e09b5c5d5fe741f5c5a84a52c816ea0328df",
       "literalDependencies": []
     },
     {
       "path": "cep-panel/panel-actions.js",
-      "bytes": 75922,
-      "sha256": "eebcc176997c10165b86dc0f771fd0a720ab77aac5b0b9a58ad3d8b03848906e",
-      "disposition": "copied",
+      "bytes": 75958,
+      "sha256": "9a3b1fc0a4d5b498e62612d7466fa626716920af112505c7c01ba760460ae7fd",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "eebcc176997c10165b86dc0f771fd0a720ab77aac5b0b9a58ad3d8b03848906e",
       "literalDependencies": []
     },
     {
       "path": "cep-panel/panel.js",
-      "bytes": 159450,
-      "sha256": "a4b46fff37d0fe33d1281e7489a64287f4e6cb235e2c1e1e996d29127b07455d",
+      "bytes": 159844,
+      "sha256": "3fe4bcab1f540d10e120a5b1f766564c728d27db3343749200aad75409ef6720",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "e3c7e94a2f51732ffcdcce311776acc6098b3c79df217e7b76a89713535b5ac3",
       "literalDependencies": []
@@ -1977,8 +1977,8 @@
     },
     {
       "path": "scripts/core-cep-smoke.js",
-      "bytes": 12223,
-      "sha256": "7b4baae1413c711758e1a83fccd06fcffbc125ba61c0dccb57a84cc2e9e9821e",
+      "bytes": 17094,
+      "sha256": "46b6c40cf9689b9adf22427f689d7adc8b5f9fcec2e2fb0f1e37fb9840e9df68",
       "disposition": "core-specific",
       "literalDependencies": [
         "cep-panel/panel-action-contract.js"

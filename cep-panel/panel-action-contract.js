@@ -269,6 +269,15 @@
   };
   var PIN_SCHEMA = {type:'object',additionalProperties:false,required:Object.keys(PIN_PROPERTIES),properties:PIN_PROPERTIES};
   var ACTION_INDEX = Object.create(null);
+  // Read-only provenance of the previous product catalog. These names have no
+  // schema/handler and never participate in validateEnvelope or active catalog.
+  var HISTORICAL_ACTION_NAMES = ["ui.diagnostics.set","ui.sidebar.set","connector.refresh","connector.emergencyDisable","usage.refresh",
+    "provider.group.set","provider.authMode.set","provider.agent.set","provider.model.set","provider.freeOnly.set","provider.refresh","provider.detectLocal","provider.check","provider.selfTest","provider.key.save","provider.setup",
+    "chat.mode.set","chat.optimization.set","chat.prompt.set","workflow.preset.set","workflow.insert","chat.sessions.list","chat.session.select","chat.new","chat.clear","chat.transcript.get","chat.send","agent.plan","agent.hardcore","plan.recover","plan.devRequest","logs.get"];
+  function storedActionDefinition(name) {
+    if(ACTION_INDEX[name])return ACTION_INDEX[name];
+    return HISTORICAL_ACTION_NAMES.indexOf(name)>=0 ? {name:name,historical:true} : null;
+  }
   ACTION_CATALOG.forEach(function(def) {
     if (/^plan\.(prepare|dryRun|run)$/.test(def.name)) {
       def.schema = {type:'object',additionalProperties:false,required:['pins'],properties:{pins:PIN_SCHEMA}};
@@ -407,6 +416,7 @@
   return Object.freeze({
     PROTOCOL_VERSION:PROTOCOL_VERSION, UUID_REGEX:UUID_REGEX, ACTION_CATALOG:ACTION_CATALOG, PIN_SCHEMA:PIN_SCHEMA,
     getActionDefinition:function(name) {return ACTION_INDEX[name] || null;}, validateEnvelope:validateEnvelope,
+    getStoredActionDefinition:storedActionDefinition,
     validateActionArgs:validateActionArgs, validateLoopbackUrl:validateLoopbackUrl,
     sanitizeReceipt:sanitizeReceipt, redactState:redactState, rememberSecret:rememberSecret
   });

@@ -31,7 +31,8 @@ function harness(options={}){
       lastAcceptedDryRun=null;if(accepted)rememberPlanRun({ok:true,dryRun:true,id:"synthetic-dry-run"});updatePlanControls();},
     epoch:function(){panelLifecycleEpoch++;},setState:function(v){currentBridgePlan=v;},
     run:runLastPlan,physical:physicalEvalScript,physicalIdle:physicalEvalScriptIdle,execute:executeCommand,
-    snapshot:panelActionSnapshot,ui:uiPlanAction,proposal:function(){return m100ActionProposalForResult(lastPlanResult);}};`;
+    snapshot:panelActionSnapshot,ui:uiPlanAction,proposal:function(){return m100ActionProposalForResult(lastPlanResult);},disconnect:disconnect,
+    reconnect:function(){panelConnectionGeneration++;panelLifecycleEpoch++;lastAcceptedDryRun=null;running=true;refreshCurrentBridgePlan({fresh:true});}};`;
   vm.runInContext(panel.replace(/\}\)\(\);\s*$/,hook+"\n})();"),context);
   function flush(){let count=0;while(callbacks.length){if(++count>100)throw Error("offline callback budget");callbacks.shift()();}}
   flush();
@@ -79,7 +80,28 @@ adoption.setResponder(r=>{
   return {ok:true};
 });
 adoption.click("dryRunPlanButton");assert.equal(adoption.requests.filter(r=>r.path==="/agents/plan/adopt").length,1);assert.equal(adoption.requests.filter(r=>r.path==="/agents/plan/run"&&r.body.dryRun===true).length,1);assert(!adoption.requests.some(r=>r.path==="/agents/plan/run"&&r.body.dryRun===false));
+const reconnect=harness();let reconnectState=installed(reconnect);const oldSession=reconnect.context.__test.session();
+reconnect.setResponder(r=>{
+  if(r.path==="/agents/plan/current")return {ok:true,current:clone(reconnectState)};
+  if(r.path==="/agents/plan/adopt"){
+    assert.notEqual(r.body.confirmationSessionId,oldSession);assert.equal(r.body.confirmationSessionId,reconnect.context.__test.session());
+    reconnectState=clone(reconnectState);reconnectState.revision++;reconnectState.proposal.revision=reconnectState.revision;reconnectState.proposal.confirmation.sessionId=r.body.confirmationSessionId;reconnectState.proposal.confirmation.confirmationToken="confirm_"+"e".repeat(48);reconnectState.state="pending";
+    return {ok:true,revision:reconnectState.revision,plan:clone(reconnectState.plan),validation:clone(reconnectState.validation),proposal:clone(reconnectState.proposal)};
+  }
+  if(r.path==="/agents/plan/run")return {ok:true,run:{ok:true,id:"synthetic-reconnected-dry-run",dryRun:true,validation:reconnectState.validation,steps:[]}};
+  return {ok:true};
+});
+reconnect.context.__test.reconnect();reconnect.flush();assert(!reconnect.context.__test.proposal().confirmation.confirmationToken);reconnect.click("dryRunPlanButton");assert.equal(reconnect.requests.filter(r=>r.path==="/agents/plan/adopt").length,1);assert.equal(reconnect.requests.filter(r=>r.path==="/agents/plan/run"&&r.body.dryRun===true).length,1);reconnect.context.__test.disconnect();assert.equal(reconnect.context.__test.proposal(),null);
 const latch=harness();latch.context.__test.physical("synthetic",()=>{});assert.equal(latch.counts().nativeCalls,1);assert.equal(latch.context.__test.physicalIdle(),false);latch.context.__test.physical("synthetic-again",()=>{});assert.equal(latch.counts().nativeCalls,1);
 const reloaded=harness({storage:latch.values});assert.equal(reloaded.context.__test.physicalIdle(),false);reloaded.context.__test.physical("synthetic-after-reload",()=>{});assert.equal(reloaded.counts().nativeCalls,0);
 const unknown=harness();const unknownState=installed(unknown);unknown.setResponder(r=>r.path==="/agents/plan/current"?{ok:true,current:clone(unknownState)}:r.path==="/agents/plan/run"?{__status:0}:{ok:true});unknown.click("runPlanButton");const before=unknown.requests.filter(r=>r.path==="/agents/plan/run").length;assert.equal(before,1);assert(unknown.context.AEAgentPanelActions.state().unresolvedActions.length);unknown.click("runPlanButton");assert.equal(unknown.requests.filter(r=>r.path==="/agents/plan/run").length,before);
-console.log(JSON.stringify({ok:true,scope:"offline VM/DOM; synthetic HTTP/native stubs",panelActions:allowed.length,protectedRisks:["mutating/save","destructive","raw_jsx"],sessionEpoch:true,manualGesture:true,physicalLatchReload:true,unknownNoReplay:true,liveProof:false}));
+unknown.context.__test.disconnect();unknown.context.__test.reconnect();unknown.flush();unknown.click("runPlanButton");assert.equal(unknown.requests.filter(r=>r.path==="/agents/plan/run").length,before);assert(unknown.context.AEAgentPanelActions.state().unresolvedActions.length);
+const historicalValues={...harness().values},historicalIds=[1,2,3,4].map(n=>String(n).repeat(8)+"-1111-4111-8111-111111111111"),historicalNames=["chat.send","provider.setup","agent.hardcore","logs.get"],historicalRecords={},historicalIndex={};
+historicalNames.forEach((action,i)=>{const requestId=historicalIds[i];historicalRecords[requestId]={requestId,action,state:i===0?"completed":"unknown",signature:"synthetic-legacy-"+i,effect:"provider_operation",delivery:i===0?"submitted":"unknown",replayAllowed:false};historicalIndex[requestId]={action,signature:historicalRecords[requestId].signature};});
+const tombstoneId="55555555-1111-4111-8111-111111111111",tombstone={action:"chat.sessions.list",state:"completed",signature:"synthetic-legacy-tombstone"};historicalIndex[tombstoneId]={action:tombstone.action,signature:tombstone.signature};
+historicalValues.codexAePanelActionReceipts=JSON.stringify({version:1,records:historicalRecords,tombstones:{[tombstoneId]:tombstone}});historicalValues.codexAePanelActionReceiptIndex=JSON.stringify(historicalIndex);
+const historical=harness({storage:historicalValues});assert.equal(historical.context.AEAgentPanelActions.state().actionStorage,"ready");assert.equal(historical.context.AEAgentPanelActions.getResult(historicalIds[0]).state,"completed");assert.equal(historical.context.AEAgentPanelActions.getResult(historicalIds[1]).state,"unknown");assert.equal(historical.context.AEAgentPanelActions.getResult(tombstoneId).code,"receipt_retained_without_detail");assert(historical.context.AEAgentPanelActions.state().unresolvedActions.some(r=>r.action==="provider.setup"));
+const historicalDenied=historical.invoke({protocolVersion:contract.PROTOCOL_VERSION,requestId:"66666666-1111-4111-8111-111111111111",action:"provider.setup",args:{}});assert.equal(historicalDenied.state,"rejected");assert.equal(contract.getActionDefinition("provider.setup"),null);assert.equal(contract.getStoredActionDefinition("provider.setup").historical,true);
+const currentPassive=historical.invoke({protocolVersion:contract.PROTOCOL_VERSION,requestId:"77777777-1111-4111-8111-111111111111",action:"plan.current",args:{}});assert.equal(currentPassive.state,"completed");assert.equal(historical.counts().nativeCalls,0);
+const unknownLegacy={...historicalValues},unknownRows=JSON.parse(unknownLegacy.codexAePanelActionReceipts),unknownIndex=JSON.parse(unknownLegacy.codexAePanelActionReceiptIndex);unknownRows.records[historicalIds[0]].action="not-a-historical-action";unknownIndex[historicalIds[0]].action="not-a-historical-action";unknownLegacy.codexAePanelActionReceipts=JSON.stringify(unknownRows);unknownLegacy.codexAePanelActionReceiptIndex=JSON.stringify(unknownIndex);assert.equal(harness({storage:unknownLegacy}).context.AEAgentPanelActions.state().actionStorage,"unavailable");
+console.log(JSON.stringify({ok:true,scope:"offline VM/DOM; synthetic HTTP/native stubs",panelActions:allowed.length,protectedUiRiskLabels:["mutating/save","destructive","raw_jsx"],sessionEpoch:true,manualGesture:true,physicalLatchReload:true,unknownNoReplay:true,historicalReadOnly:true,reconnectReadoption:true,serverRawGateProven:false,liveProof:false}));

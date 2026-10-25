@@ -76,8 +76,8 @@
       if(reset && reset.disposition && reset.disposition.oldOutcome==="unknown_preserved" && reset.disposition.oldCommandsReplayAllowed===false && reset.panelControl && Array.isArray(reset.panelControl.oldActionEntries) && reset.panelControl.oldActionEntries.some(function(entry){return entry.requestId===id && entry.entrySha256===sha256(JSON.stringify(r));}))return false;
       return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true) && !nativeRetainedValid(id,true) && !prephaseValid(id,true) && !refusalValid(id,true) && !causalValid(id);
     }).map(function(id) {
-      var r=records[id],definition=contract.getActionDefinition(r.action);
-      return {requestId:id,entrySha256:sha256(JSON.stringify(r)),action:r.action,runId:r.runId || null,effect:definition && definition.effect || "unknown",
+      var r=records[id],definition=contract.getStoredActionDefinition(r.action);
+      return {requestId:id,entrySha256:sha256(JSON.stringify(r)),action:r.action,runId:r.runId || null,effect:definition && definition.effect || r.effect || "unknown",
         code:r.code || "delivery_unknown",phase:r.phase || "delivery_unknown",
         recovery:r.runId ? "same_run_read_only_reconciliation" : "exact_terminal_identity_evidence_required"};
     });
@@ -514,7 +514,7 @@
           Array.isArray(parsed.records) || Array.isArray(parsed.tombstones)) throw new Error("Invalid store");
       Object.keys(parsed.records).forEach(function(id) {
         var r=parsed.records[id];
-        if (!contract.UUID_REGEX.test(id) || !r || r.requestId !== id || !(contract.getActionDefinition(r.action) || r.action === "unknown" && r.state === "rejected") ||
+        if (!contract.UUID_REGEX.test(id) || !r || r.requestId !== id || !(contract.getStoredActionDefinition(r.action) || r.action === "unknown" && r.state === "rejected") ||
             !/^(accepted|running|completed|error|rejected|unknown)$/.test(r.state) || typeof r.signature !== "string") throw new Error("Invalid receipt");
         records[id]=contract.redactState(r); records[id].signature=r.signature; records[id].replayAllowed=false;
         if (/^(accepted|running)$/.test(r.state) && !(r.action === "panel.reload" && r.phase === "reload_submitted")) {
@@ -524,7 +524,7 @@
       });
       Object.keys(parsed.tombstones).forEach(function(id) {
         var t=parsed.tombstones[id];
-        if (!contract.UUID_REGEX.test(id) || !t || !(contract.getActionDefinition(t.action) || t.action === "unknown") || typeof t.signature !== "string" || !terminal(t)) throw new Error("Invalid tombstone");
+        if (!contract.UUID_REGEX.test(id) || !t || !(contract.getStoredActionDefinition(t.action) || t.action === "unknown") || typeof t.signature !== "string" || !terminal(t)) throw new Error("Invalid tombstone");
         tombstones[id]=t;
       });
       if(parsed.recoveries && (typeof parsed.recoveries!=="object" || Array.isArray(parsed.recoveries)))throw new Error("Invalid recoveries");
@@ -536,7 +536,7 @@
       Object.keys(index).forEach(function(id) {
         var entry=index[id],record=records[id] || tombstones[id];
         if(!contract.UUID_REGEX.test(id) || !entry || typeof entry.signature !== "string" ||
-           !(contract.getActionDefinition(entry.action) || entry.action === "unknown")) throw new Error("Invalid indexed identity");
+           !(contract.getStoredActionDefinition(entry.action) || entry.action === "unknown")) throw new Error("Invalid indexed identity");
         if(!record) records[id]={protocolVersion:contract.PROTOCOL_VERSION,requestId:id,action:entry.action,signature:entry.signature,
           state:"unknown",phase:"receipt_missing",code:"receipt_record_missing",delivery:"unknown",replayAllowed:false};
         else if(record.action !== entry.action || record.signature !== entry.signature) throw new Error("Indexed receipt mismatch");

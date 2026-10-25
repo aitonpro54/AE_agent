@@ -2,6 +2,8 @@
 
 CEP показывает подключение/status, durable preference автономии, текущий server-owned план, ручную подготовку/dry-run/Run, сверку результата и защиту плейсхолдеров. Providers, чат, Hardcore, Usage, connector, dev-request и debug actions исключены из DOM, handlers и публичного каталога. Исторические receipt readers остаются для запрета replay старых неизвестных отправок.
 
+Для32 исключённых action names сохранён exact read-only descriptor allowlist. Он используется только при чтении прежних receipts/tombstones/index, не добавляет schema/handler/catalog entry и не разрешает invocation. UNKNOWN остаётся в durable ledger; незнакомое имя вне allowlist по-прежнему закрывает чтение. После reconnect token переносится в fresh canonical read только при совпадении текущего session; иначе требуется новая adoption.
+
 Ручной confirmation session больше не зависит от chat storage: private nonce текущей страницы + panelConnectionId + generation + lifecycle epoch. Это selector для server-issued token, а не authority. Переподключение/reload меняет selector; старый token не используется. Tokenless MCP proposal сначала проходит authenticated adoption и dry-run; opaque token, payload/preview hash, revision, target и expiry сверяются исходными gates.
 
 Run через минимальную панель требует trusted DOM click, подтверждение видимого canonical плана и private одноразовый frame с точными pins/session/epoch. Публичный `confirm:true`, программный action, отмена, смена контекста или истечение frame не создают это подтверждение. Server manual ingress, private brands, checkpoint, risk policy и raw dry-run gate сохраняются.

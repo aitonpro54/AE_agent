@@ -997,7 +997,8 @@
             var oldProposal = m100ActionProposalForResult(lastPlanResult);
             var localToken = null;
             var localPins = lastPlanResult && lastPlanResult.bridgePlanPins || currentBridgePlanPins(currentBridgePlan);
-            if (oldProposal && oldProposal.actionId === incoming.actionId &&
+            if (oldProposal && oldProposal.confirmation.surface === "cep-panel" &&
+                oldProposal.confirmation.sessionId === m100ConfirmationSessionId() && oldProposal.actionId === incoming.actionId &&
                 oldProposal.confirmation && oldProposal.confirmation.confirmationToken) {
               if (currentBridgePlanMatchesPins(incoming, localPins) &&
                   oldProposal.actionId === localPins.actionId && oldProposal.requestId === localPins.requestId &&
@@ -2045,6 +2046,8 @@
     try{panelConnectionGeneration = nextPanelConnectionGeneration();}catch(_){running=false;if(onDone)onDone({rejected:true,code:"delivery_epoch_fence_unreadable"});return;}
     panelLifecycleEpoch += 1;
     observeCausalRuntime(null,{code:"connection_changed"});
+    lastPlanResult=null;currentBridgePlan=null;activeManualRunGesture=null;
+    renderCurrentBridgePlan();updatePlanControls();
     try{rotateBootstrapDeliveryFence();}catch(_){running=false;if(onDone)onDone({rejected:true,code:"delivery_epoch_fence_unreadable"});return;}
     ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
     if (startup) {startup.epoch=panelLifecycleEpoch;startup.generation=panelConnectionGeneration;startup.state="pending";}
@@ -2080,6 +2083,8 @@
     observeCausalRuntime(null,{code:"connection_changed"});
     if(ownedPollingSession) closeOwnedPolling("owned_original_poll_lifecycle_changed");
     ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";
+    lastPlanResult=null;currentBridgePlan=null;activeManualRunGesture=null;
+    renderCurrentBridgePlan();updatePlanControls();
     recoveryTransportConnecting=false;recoveryTransportScope=null;
     running = false;
     pollInFlight = false;
