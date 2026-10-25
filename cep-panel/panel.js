@@ -107,6 +107,47 @@
   var resetPreflightRetry = null;
 
   var productResetActivation = null;
+  var coreMigrationActivation = null;
+
+  function acceptCoreMigrationActivation(activation) {
+    if(!activation || activation.schema!=="ae-agent.core-product-migration-session.v1.activation" || activation.origin!=="core_product_migration" || !activation.actor || activation.actor.panelGeneration!=="core-"+activation.generation || !activation.disposition || activation.disposition.scope!=="origin_provenance_only" || activation.disposition.oldCommandsReplayAllowed!==false || activation.disposition.oldExitProven!==false || !physicalEvalScriptIdle())return {accepted:false};
+    var current=deliveryActor(),a=activation.actor;
+    if(current.panelConnectionId!==a.panelConnectionId || current.panelInstanceId!==a.panelInstanceId)return {accepted:false};
+    if(sameDeliveryActor(current,a)){
+      var next;try{next=nextPanelConnectionGeneration();}catch(_){return {accepted:false};}
+      panelConnectionGeneration=next;panelLifecycleEpoch+=1;
+      try{rotateBootstrapDeliveryFence();}catch(_){return {accepted:false};}
+      ownedCompletedDryRunCache=null;lastAcceptedDryRun=null;ownedPlanPreparationMode="";currentBridgePlan=null;autonomousSessionState=null;renderAutonomousSession();coreMigrationActivation=activation;
+      pollInFlight=false;running=true;setBridgeConnected();if(pollTimer)clearTimeout(pollTimer);pollTimer=setTimeout(poll,50);return {accepted:true,transitioned:true};
+    }
+    if(!/^[1-9]\d*$/.test(current.panelGeneration) || current.panelLifecycleEpoch!==a.panelLifecycleEpoch+1)return {accepted:false};
+    coreMigrationActivation=activation;return {accepted:true,transitioned:false};
+  }
+
+  function beginCoreMigrationSession(challenge) {
+    var state=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
+    if(resetPreflightInFlight || !challenge || challenge.schema!=="ae-agent.core-product-migration-session.v1.challenge" || challenge.origin!=="core_product_migration" || !sameDeliveryActor(challenge.actor,deliveryActor()) || !physicalEvalScriptIdle() || !state || state.actionStorage!=="ready" || state.recoveryTransport){setStatus("Core preflight: physical/controller fence closed",false);return;}
+    if(state.journalNamespace!=="ae-agent-core.v1" || (state.unresolvedActions||[]).length!==0){setStatus("Core preflight: shared or own effect unresolved",false);return;}
+    if(state.activeAction || state.nativeBusy || state.trustedGuardRefresh && state.trustedGuardRefresh.pending || panelActionBusy()){
+      var waitingActor=deliveryActor();setTimeout(function(){if(sameDeliveryActor(waitingActor,deliveryActor()))beginCoreMigrationSession(challenge);},500);return;
+    }
+    if(!(Date.parse(challenge.expiresAt)>Date.now())){request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){if(!error && response && response.coreMigrationSession)beginCoreMigrationSession(response.coreMigrationSession);});return;}
+    var previous=deliveryActor(),url=getBaseUrl(),token=getToken(),attempt={challenge:challenge.challenge};resetPreflightAttempt=attempt;resetPreflightInFlight=true;running=false;pollInFlight=false;if(pollTimer)clearTimeout(pollTimer);
+    var panelControl={journalNamespace:"ae-agent-core.v1",nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",unresolvedActions:[]};
+    panelLifecycleEpoch+=1;panelConnectionGeneration="core-"+challenge.generation;
+    function finish(){if(resetPreflightAttempt===attempt){resetPreflightInFlight=false;resetPreflightAttempt=null;}}
+    try{rotateBootstrapDeliveryFence();}catch(_){finish();setStatus("Core preflight: delivery fence unavailable",false);return;}
+    var current=deliveryActor(),script='(function(){var p=app.project;if(!p)return JSON.stringify({projectPresent:false});return JSON.stringify({projectPresent:true,file:p.file?String(p.file.fsName):"",dirty:p.dirty,revision:p.revision,rendering:p.renderQueue.rendering,challenge:'+JSON.stringify(challenge.challenge)+'});}())';
+    physicalEvalScript(script,function(result){if(!sameDeliveryActor(current,deliveryActor()) || getBaseUrl()!==url || getToken()!==token){finish();return;}var project;try{project=JSON.parse(result);}catch(_){finish();setStatus("Core preflight: project read UNKNOWN",false);return;}if(!physicalEvalScriptIdle()){finish();return;}
+      request("POST","/bridge/core-migration-session",{generation:challenge.generation,challenge:challenge.challenge,previousActor:previous,actor:current,physicalInflight:0,panelControl:panelControl,project:project},function(error,response){finish();if(!sameDeliveryActor(current,deliveryActor()) || getBaseUrl()!==url || getToken()!==token)return;if(error || !response || response.status!=="core_migration_active" || !acceptCoreMigrationActivation(response.activation).accepted)setStatus("Core activation refused; read status",false);});
+    });
+  }
+
+  function observeCoreMigrationResponse(response) {
+    if(response && response.coreMigrationSession){beginCoreMigrationSession(response.coreMigrationSession);return true;}
+    if(response && response.coreMigrationSessionActivation){var adopted=acceptCoreMigrationActivation(response.coreMigrationSessionActivation);if(!adopted.accepted){setStatus("Core activation actor mismatch",false);return true;}return !!adopted.transitioned;}
+    return false;
+  }
 
   function physicalEvalScriptIdle() {
     try { var pending=JSON.parse(localStorage.getItem(physicalEvalScriptKey) || "{}");return pending && typeof pending==="object" && !Object.keys(pending).length; } catch (_) { return false; }
@@ -238,7 +279,7 @@
 
   function beginBootstrapRecoveryEpoch(challenge){
     if(bootstrapRecoveryEpochInFlight||!challenge||challenge.schema!=="ae-agent.bootstrap-recovery-epoch.v1.challenge"||!challenge.origin||!challenge.nextActor||!challenge.coveredBootstrap)return;
-    var key="codexAeBootstrapRecoveryEpoch.v1."+challenge.generation,state=window.AEAgentPanelActions&&window.AEAgentPanelActions.state(),entry;
+    var key="codexAeCoreBootstrapRecoveryEpoch.v1."+challenge.generation,state=window.AEAgentPanelActions&&window.AEAgentPanelActions.state(),entry;
     try{entry=JSON.parse(localStorage.getItem(key)||"null");}catch(_){setStatus("Bootstrap recovery storage is unreadable",false);return;}
     function post(payload){
       bootstrapRecoveryEpochInFlight=true;
@@ -529,10 +570,10 @@
   }
 
   function loadPanelConnectionId() {
-    var existing = localStorage.getItem("codexAePanelConnectionId") || "";
+    var existing = localStorage.getItem("codexAeCorePanelConnectionId.v1") || "";
     if (existing) return existing;
     var created = makePanelConnectionId();
-    localStorage.setItem("codexAePanelConnectionId", created);
+    localStorage.setItem("codexAeCorePanelConnectionId.v1", created);
     return created;
   }
 
@@ -1980,6 +2021,7 @@
       }
 
       if(response && response.bootstrapRecovery){if(onDone)onDone(null,{connected:false,bootstrapRecoveryPending:true});beginBootstrapRecoveryEpoch(response.bootstrapRecovery);return;}
+      if(observeCoreMigrationResponse(response)){if(onDone)onDone(null,{connected:false,coreMigrationPending:true});return;}
       if(response && response.resetSession){if(onDone)onDone(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
       if(response && response.resetSessionActivation){var activationAdoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!activationAdoption.accepted){setStatus("Reset activation actor mismatch",false);return;}if(activationAdoption.transitioned)return;}
       if(ownedPollSession && (!response || response.ok!==true || !response.command)) {closeOwnedPolling("owned_original_poll_idle_response_invalid");return;}
@@ -2023,6 +2065,7 @@
       var lookupActor=deliveryActor(),lookupUrl=getBaseUrl(),lookupToken=getToken();
       request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
         if(!sameDeliveryActor(lookupActor,deliveryActor()) || getBaseUrl()!==lookupUrl || getToken()!==lookupToken){if(onDone)onDone({isUnknown:true,code:"product_reset_lookup_actor_changed"});return;}
+        if(!error && response && (response.coreMigrationSession || response.coreMigrationSessionActivation)){if(observeCoreMigrationResponse(response)){if(onDone)onDone(null,{connected:false,coreMigrationPending:true});return;}connect(onDone,startup,true,origin);return;}
         if(error || !response || !response.resetSession && !response.resetSessionActivation){if(onDone)onDone(error||{code:"product_reset_session_required",message:"Historical action requires its original reconciliation or an explicit product reset."});return;}
         if(response.resetSession){if(onDone)onDone(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
         var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!adoption.accepted){if(onDone)onDone({rejected:true,code:"product_reset_activation_actor_mismatch"});return;}if(adoption.transitioned){if(onDone)onDone(null,{connected:true});return;}connect(onDone,startup,true,origin);
@@ -2259,6 +2302,7 @@
       var lookupActor=deliveryActor(),lookupUrl=getBaseUrl(),lookupToken=getToken();
       request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){
         if(!sameDeliveryActor(lookupActor,deliveryActor()) || getBaseUrl()!==lookupUrl || getToken()!==lookupToken){done({isUnknown:true,code:"product_reset_lookup_actor_changed"});return;}
+        if(!error && response && (response.coreMigrationSession || response.coreMigrationSessionActivation)){if(observeCoreMigrationResponse(response)){done(null,{connected:false,coreMigrationPending:true});return;}}
         if(!error && response && response.resetSession){done(null,{connected:false,resetPending:true});beginProductSessionReset(response.resetSession);return;}
         if(!error && response && response.resetSessionActivation){var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);if(!adoption.accepted){done({rejected:true,code:"product_reset_activation_actor_mismatch"});return;}if(adoption.transitioned){done(null,{connected:true});return;}}
         if(window.AEAgentPanelActions.state().reconciliationRequired){done({rejected:true,code:"product_reset_session_required"});return;}
@@ -2431,6 +2475,8 @@
       if(!initialAutomaticStartupCurrent(startup) || startup.state!=="reset_lookup" || !startup.lookupPending || running || !sameDeliveryActor(actor,deliveryActor())){closeInitialAutomaticStartup(startup);return;}
       startup.lookupPending=false;
       if(error && error.code!=="owned_product_reset_session_absent"){closeInitialAutomaticStartup(startup,"startup_reset_lookup_failed");return;}
+      if(!error && response && response.ok===true && response.coreMigrationSession){closeInitialAutomaticStartup(startup,"startup_core_migration_pending");beginCoreMigrationSession(response.coreMigrationSession);return;}
+      if(!error && response && response.ok===true && response.coreMigrationSessionActivation){closeInitialAutomaticStartup(startup,"startup_core_migration_activation");observeCoreMigrationResponse(response);return;}
       if(!error && response && response.ok===true && response.resetSession){closeInitialAutomaticStartup(startup,"startup_reset_pending");return;}
       if(!error && response && response.ok===true && response.resetSessionActivation){
         var adoption=acceptProductSessionResetActivation(response.resetSessionActivation);
@@ -2456,7 +2502,7 @@
   tokenEl.value=localStorage.getItem("codexAeBridgeToken") || "";
   configuredBridgeUrl=urlEl.value;configuredPanelToken=tokenEl.value;
   renderAutonomousSession();setStatus("Отключено",false);updatePlanControls();rememberPanelSecrets();
-  panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,observeConnectIntent:observeConnectIntent,productSessionReset:function(){return productResetActivation;},
+  panelActionUI=window.AEAgentPanelActionBootstrap({handlers:panelActionHandlers,observeConnectIntent:observeConnectIntent,productSessionReset:function(){return productResetActivation;},coreMigrationSession:function(){return coreMigrationActivation;},
     causalRuntimeStamp:function(){return causalRuntimeStamp;},createCausalNonce:actionUuid,
     lookupPanelLifecycleCausal:function(frame,done){
       var url=getBaseUrl(),token=getToken();

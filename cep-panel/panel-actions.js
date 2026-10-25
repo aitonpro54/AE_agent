@@ -12,21 +12,21 @@
     };
   }
 })(typeof window !== "undefined" ? window : this, function (contract, storage) {
-  var STORAGE_KEY = "codexAePanelActionReceipts";
-  var INITIALIZED_KEY = "codexAePanelActionReceiptsInitialized";
-  var INDEX_KEY = "codexAePanelActionReceiptIndex";
+  var STORAGE_KEY = "codexAeCorePanelActionReceipts.v1";
+  var INITIALIZED_KEY = "codexAeCorePanelActionReceiptsInitialized.v1";
+  var INDEX_KEY = "codexAeCorePanelActionReceiptIndex.v1";
   var MAX_RECEIPTS = 120, MAX_TOMBSTONES = 1000, MAX_TERMINAL = 50;
   var instanceId = "panel-" + Date.now() + "-" + Math.random().toString(36).slice(2);
   var records = Object.create(null), tombstones = Object.create(null), recoveries=Object.create(null), validatedRecoveries=Object.create(null);
   var active = null, bindings = null, storageFailure = "", bound = false;
   var humanSettlement=null, humanSettlementTrusted=false, humanLookupPending=false;
-  var HUMAN_KEY="codexAeHumanGuardSettlement20261010";
+  var HUMAN_KEY="codexAeCoreHumanGuardSettlement20261010.v1";
   var fixtureDisposition=null, fixtureDispositionTrusted=false, fixtureLookupPending=false;
-  var FIXTURE_KEY="codexAeAmeFixtureUIDispositionV1", FIXTURE_ID="67d45704-92ac-4700-9288-b7db697ea90f", FIXTURE_RUN="40ddeee4-8b49-47d6-9301-03873fbe8cec";
+  var FIXTURE_KEY="codexAeCoreAmeFixtureUIDispositionV1", FIXTURE_ID="67d45704-92ac-4700-9288-b7db697ea90f", FIXTURE_RUN="40ddeee4-8b49-47d6-9301-03873fbe8cec";
   var nativeAbandonments=Object.create(null),nativeAbandonmentTrusted=Object.create(null),nativeAbandonmentLookupPending=false;
-  var NATIVE_ABANDONMENT_KEY="codexAeNativeFixtureAbandonmentsV1";
-  var nativeRetained=Object.create(null),nativeRetainedTrusted=Object.create(null),NATIVE_RETAINED_KEY="codexAeNativeFixtureRetainedDispositionsV1";
-  var PREPHASE_ID="4f06da6d-4b76-40b2-b70b-a77db3e1e9c7",PREPHASE_RUN="5a4ac6eb-7b2e-42ce-8af9-7d03e52c17c5",PREPHASE_KEY="codexAeNativeFixturePrephaseRecoveryV1";
+  var NATIVE_ABANDONMENT_KEY="codexAeCoreNativeFixtureAbandonmentsV1";
+  var nativeRetained=Object.create(null),nativeRetainedTrusted=Object.create(null),NATIVE_RETAINED_KEY="codexAeCoreNativeFixtureRetainedDispositionsV1";
+  var PREPHASE_ID="4f06da6d-4b76-40b2-b70b-a77db3e1e9c7",PREPHASE_RUN="5a4ac6eb-7b2e-42ce-8af9-7d03e52c17c5",PREPHASE_KEY="codexAeCoreNativeFixturePrephaseRecoveryV1";
   var prephaseCertificate=null,prephaseTrusted=false,prephaseLookupPending=false,guardRefreshPending=false,guardRefreshSequence=0,guardRefreshResult=null;
   var REFUSAL_ID="0c33f0f5-a452-47c4-b2d0-204d96cb8fef",REFUSAL_RUN="8674d583-e151-47fc-9c2b-374584b2faa8",REFUSAL_ERROR="fixture_prephase_new_manual_action_required";
   var refusal=null,refusalTrusted=false,refusalLookupPending=false,refusalContext="";
@@ -69,18 +69,29 @@
   function passiveRead(name) {
     return /^(logs.get|chat.sessions.list|chat.transcript.get|plan.current|autonomy.refresh|placeholder.refresh|connector.refresh)$/.test(name);
   }
+  function legacySharedEffects() {
+    // Read-only shared-effect fence. Legacy receipt/sidecar bytes are never
+    // copied, cleared or terminalized by the Core product journal.
+    try {
+      var raw=storage.getItem("codexAePanelActionReceipts"),indexRaw=storage.getItem("codexAePanelActionReceiptIndex"),old=raw?JSON.parse(raw):{version:1,records:{},tombstones:{}},index=indexRaw?JSON.parse(indexRaw):{};
+      if(!old || old.version!==1 || !old.records || Array.isArray(old.records) || !index || Array.isArray(index))throw new Error("legacy_shared_storage_unreadable");
+      var ids=Object.keys(old.records).concat(Object.keys(index)).filter(function(id,i,all){return all.indexOf(id)===i && contract.LEGACY_RESERVED_REQUEST_IDS.indexOf(id)<0;});
+      return ids.filter(function(id){var r=old.records[id] || old.tombstones && old.tombstones[id],entry=index[id];if(!r || !entry || entry.action!==r.action || entry.signature!==r.signature)return true;var def=contract.getStoredActionDefinition(r.action);if(!def && r.action!=="recovery.bootstrap")return true;var effect=def && def.effect || "unknown",unknown=/^(accepted|running|unknown)$/.test(r.state) || r.result && r.result.run && r.result.run.outcome && r.result.run.outcome.mutation && r.result.run.outcome.mutation.status==="unknown";var mutationUnknown=r.result && r.result.run && r.result.run.outcome && r.result.run.outcome.mutation && r.result.run.outcome.mutation.status==="unknown";return unknown && (mutationUnknown || r.action==="plan.run" || r.action==="agent.hardcore" || effect!=="bridge_read" && effect!=="local_persistence" && effect!=="local_ui" && effect!=="provider_operation");}).map(function(id){var r=old.records[id] || old.tombstones && old.tombstones[id] || {};return {requestId:id,entrySha256:sha256(JSON.stringify(r)),action:r.action || "unknown",runId:Object.prototype.hasOwnProperty.call(r,"runId")?r.runId:null,effect:r.effect || "unknown",code:"legacy_shared_effect_unresolved",journal:"legacy_shared",recovery:"same_legacy_operation_read_only"};});
+    } catch (_) {return [{requestId:"legacy-shared-storage",action:"unknown",runId:null,effect:"unknown",code:"legacy_shared_storage_unreadable",journal:"legacy_shared"}];}
+  }
   function unresolvedEffects() {
-    return Object.keys(records).filter(function(id) {
+    var own=Object.keys(records).filter(function(id) {
       var r=records[id];
       var reset=bindings && bindings.productSessionReset && bindings.productSessionReset();
       if(reset && reset.disposition && reset.disposition.oldOutcome==="unknown_preserved" && reset.disposition.oldCommandsReplayAllowed===false && reset.panelControl && Array.isArray(reset.panelControl.oldActionEntries) && reset.panelControl.oldActionEntries.some(function(entry){return entry.requestId===id && entry.entrySha256===sha256(JSON.stringify(r));}))return false;
       return r.state === "unknown" && !passiveRead(r.action) && r.action !== "plan.reconcile" && !recoveryValid(id,true) && !humanSettlementValid(id,true) && !fixtureDispositionValid(id,true) && !nativeAbandonmentValid(id,true) && !nativeRetainedValid(id,true) && !prephaseValid(id,true) && !refusalValid(id,true) && !causalValid(id);
     }).map(function(id) {
       var r=records[id],definition=contract.getStoredActionDefinition(r.action);
-      return {requestId:id,entrySha256:sha256(JSON.stringify(r)),action:r.action,runId:r.runId || null,effect:definition && definition.effect || r.effect || "unknown",
+      return {requestId:id,entrySha256:sha256(JSON.stringify(r)),action:r.action,runId:Object.prototype.hasOwnProperty.call(r,"runId") ? r.runId : null,effect:definition && definition.effect || r.effect || "unknown",
         code:r.code || "delivery_unknown",phase:r.phase || "delivery_unknown",
         recovery:r.runId ? "same_run_read_only_reconciliation" : "exact_terminal_identity_evidence_required"};
     });
+    return own.concat(legacySharedEffects());
   }
   function hardcoreEvidence(result) {
     var session=result.response || result.session || result;
@@ -148,6 +159,7 @@
     }
     var current = life(), snapshot = contract.redactState(rawState());
     snapshot.protocolVersion = contract.PROTOCOL_VERSION;
+    snapshot.journalNamespace=contract.JOURNAL_NAMESPACE;
     snapshot.panelInstanceId = instanceId;
     snapshot.panelLifecycleEpoch = current.epoch;
     snapshot.panelGeneration = String(current.generation);
@@ -605,6 +617,7 @@
     });
   }
   function invoke(envelope, source) {
+    if(contract.LEGACY_RESERVED_REQUEST_IDS.indexOf(dataField(envelope,"requestId"))>=0)return reject(envelope,"legacy_operation_no_replay","This operation belongs to the legacy journal.");
     var checked=contract.validateEnvelope(envelope);
     if(checked.ok && envelope.action==="bridge.connect" && bindings && typeof bindings.observeConnectIntent==="function") bindings.observeConnectIntent();
     // A malformed replay never overwrites a previous receipt.

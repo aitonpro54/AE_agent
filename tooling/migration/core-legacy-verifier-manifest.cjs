@@ -3,7 +3,7 @@
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto"),{isBuiltin}=require("node:module");
 const acorn=require("internal/deps/acorn/acorn/dist/acorn");
 const ROOT=path.resolve(__dirname,"../.."),SOURCE="C:/Users/Ant/Documents/Codex/AE_agent";
-const entries=["mcp-server/owned-runtime-supervisor.js","mcp-server/owned-runtime-product-session-reset.js","mcp-server/owned-runtime-product-activation.js","mcp-server/owned-runtime-initial-runtime.js","mcp-server/deployment-mode.js","mcp-server/cep-panel-control.js","scripts/owned-runtime-control.js"];
+const entries=["mcp-server/owned-runtime-supervisor.js","mcp-server/owned-runtime-initial-runtime.js","mcp-server/deployment-mode.js","scripts/owned-runtime-control.js"];
 function walk(n,visit){if(!n||typeof n!=="object")return;if(/^(FunctionDeclaration|FunctionExpression|ArrowFunctionExpression)$/.test(n.type))return;if(n.type==="CallExpression"&&n.callee?.name==="require"&&n.arguments.length===1&&typeof n.arguments[0].value==="string")visit(n.arguments[0].value);for(const[k,v]of Object.entries(n)){if(k==="start"||k==="end")continue;if(Array.isArray(v))v.forEach(x=>walk(x,visit));else if(v&&typeof v==="object")walk(v,visit);}}
 const pending=entries.slice(),files=new Map(),builtins=new Set();
 while(pending.length){const name=pending.shift();if(files.has(name))continue;if(files.size>=64)throw Error("verifier_code_budget");const file=path.join(SOURCE,name),bytes=fs.readFileSync(file);files.set(name,{path:name,sha256:crypto.createHash("sha256").update(bytes).digest("hex")});if(name.endsWith(".json"))continue;

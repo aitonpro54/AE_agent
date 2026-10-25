@@ -9,7 +9,7 @@ const readonlyOrphan=require("./cep-panel-readonly-orphan");
 const PROTOCOL_VERSION=contract.PROTOCOL_VERSION, DEFAULT_CDP_PORT=8870, DEFAULT_TIMEOUT_MS=30000;
 // Seven serial fixed guard GETs, each bounded at 60s, plus final inspection.
 const TRUSTED_GUARD_REFRESH_TIMEOUT_MS=8*60000;
-const DEFAULT_STATE_DIR=path.resolve(__dirname,"../logs/cep-panel-control");
+const DEFAULT_STATE_DIR=path.resolve(__dirname,"../logs/core-cep-panel-control");
 const PRODUCT_RESET_CANONICAL_ROOT=path.resolve("C:/Users/Ant/Documents/Codex/AE_Agent_Core"),productResetMaintenanceContexts=new WeakMap();
 const STORE_VERSION="ae-agent.cep-panel-transport.v1", STATES=/^(accepted|running|completed|error|rejected|unknown)$/;
 // Retired identity accepted only from persisted history, never by the callable catalog.
@@ -57,6 +57,7 @@ function requestId(value) {if(typeof value!=="string" || !UUID.test(value) || va
 function validateRawInvokeInput(raw,options={}) {
   exact(raw,["protocolVersion","requestId","action","args","expectedState","timeoutMs","wait"]);exact(options,["timeoutMs","wait"]);
   requestId(raw.requestId);
+  if(contract.LEGACY_RESERVED_REQUEST_IDS.includes(raw.requestId))throw problem("legacy_operation_no_replay");
   const envelope={protocolVersion:raw.protocolVersion===undefined?PROTOCOL_VERSION:raw.protocolVersion,requestId:raw.requestId,action:raw.action,args:raw.args};
   if(Object.hasOwn(raw,"expectedState")) envelope.expectedState=raw.expectedState;
   const checked=contract.validateEnvelope(envelope);if(!checked.ok) throw problem(checked.code);
@@ -402,7 +403,7 @@ function createPanelControlService(options={}) {
     return cutoverReadiness();
   }
   function cutoverReadiness() {
-    if(!options.readCutoverInventory)return {ready:true,scope:"unmanaged_runtime",replayAllowed:false};
+    if(!options.readCutoverInventory)return {ready:true,scope:"core_active_journal",replayAllowed:false};
     if(!cutoverWitness)return {ready:false,reasonCode:cutoverFailure?.reasonCode || "owned_cutover_fresh_observation_required",outstanding:[],replayAllowed:false};
     try {cutoverWitness.assertFresh();return {ready:cutoverWitness.blocked.length===0,generation:cutoverWitness.generation,finalInventorySha256:cutoverWitness.finalInventorySha256,reasonCode:cutoverWitness.blocked.length?"owned_cutover_protected_outcome_unresolved":null,outstanding:cutoverWitness.blocked,replayAllowed:false};}
     catch(error){cutoverWitness=null;cutoverFailure={reasonCode:error.code || "owned_cutover_inventory_or_fresh_disposition_unproven"};return {ready:false,...cutoverFailure,outstanding:[],replayAllowed:false};}
@@ -706,7 +707,7 @@ function productResetClientAttestation(){
 function createProductResetMaintenanceClient(expectedClientSha256){
   const ledger=require("./native-fixture-attempt-ledger"),pins=productResetClientAttestation();
   if(!ledger.SHA.test(expectedClientSha256||"")||expectedClientSha256!==pins.clientSha256)throw problem("product_reset_client_source_pin_required");
-  const root=PRODUCT_RESET_CANONICAL_ROOT,options={stateDir:path.join(root,"logs","cep-panel-control"),evidenceRoot:path.join(root,"logs")};
+  const root=PRODUCT_RESET_CANONICAL_ROOT,options={stateDir:path.join(root,"logs","core-cep-panel-control"),evidenceRoot:path.join(root,"logs")};
   const auditFile=id=>path.join(options.stateDir,"client-attestation",requestId(id)+".json");
   function assertCurrent(){if(!ledger.same(pins,productResetClientAttestation()))throw problem("product_reset_client_source_changed");}
   function writeAudit(id,witness){
@@ -720,6 +721,6 @@ function createProductResetMaintenanceClient(expectedClientSha256){
     const file=auditFile(id);return {...result,clientSha256:pins.clientSha256,...(fs.existsSync(file)?{clientAttestation:{path:file,rawSha256:ledger.hash(ledger.readBytes(file))}}:{})};
   }});
 }
-module.exports={PROTOCOL_VERSION,DEFAULT_CDP_PORT,DEFAULT_STATE_DIR,TRUSTED_GUARD_REFRESH_TIMEOUT_MS,PANEL_CONTROL_TOOL_NAMES,isPanelControlTool,panelControlTools,
+module.exports={PROTOCOL_VERSION,DEFAULT_CDP_PORT,DEFAULT_STATE_DIR,TRUSTED_GUARD_REFRESH_TIMEOUT_MS,PANEL_CONTROL_TOOL_NAMES,isPanelControlTool,panelControlTools,validateStoredReceipt:validateStored,
   listPanelActionsTool:panelControlTools[0],getPanelStateTool:panelControlTools[1],invokePanelActionTool:panelControlTools[2],getPanelActionResultTool:panelControlTools[3],
   computeActionSignature,validateRawInvokeInput,fetchCdpTargets,evaluateViaWebSocket,createReceiptPath,loadDurableReceipt,readIndexedReceipt,saveDurableReceipt,acquireControllerLock,captureReadOnlyOrphanIntent,cutoverReceiptSemantics,createPanelControlService,productResetClientAttestation,createProductResetMaintenanceClient};

@@ -414,9 +414,11 @@
   }
   freezeDeep(ACTION_CATALOG); freezeDeep(PIN_SCHEMA);
   return Object.freeze({
+    JOURNAL_NAMESPACE:"ae-agent-core.v1", LEGACY_RESERVED_REQUEST_IDS:Object.freeze(["b7f2a79a-63ac-416f-81a4-a982280f3766"]),
     PROTOCOL_VERSION:PROTOCOL_VERSION, UUID_REGEX:UUID_REGEX, ACTION_CATALOG:ACTION_CATALOG, PIN_SCHEMA:PIN_SCHEMA,
     getActionDefinition:function(name) {return ACTION_INDEX[name] || null;}, validateEnvelope:validateEnvelope,
     getStoredActionDefinition:storedActionDefinition,
+    STORED_ACTION_NAMES:Object.freeze(ACTION_CATALOG.map(function(row){return row.name;}).concat(HISTORICAL_ACTION_NAMES)),
     validateActionArgs:validateActionArgs, validateLoopbackUrl:validateLoopbackUrl,
     sanitizeReceipt:sanitizeReceipt, redactState:redactState, rememberSecret:rememberSecret
   });

@@ -21,6 +21,7 @@ const trustedReadDaemon={role:null,target:null,cep:null,server:null,transport:nu
 const autonomousCommandContext = new AsyncLocalStorage();
 const evidenceContext = new AsyncLocalStorage();
 const planCommandContext = new AsyncLocalStorage();
+const coreMigrationOperationContext = new AsyncLocalStorage(),coreMigrationOperations=new WeakSet(),coreMigrationNativeWitnesses=new WeakMap();
 const titleRecoveryCommandContext = new AsyncLocalStorage();
 const titleVerificationCommandContext = new AsyncLocalStorage();
 const ameJobSourceCommandContext = new AsyncLocalStorage();
@@ -5122,6 +5123,7 @@ function drainWaitingPanels() {
 }
 
 function enqueueAeCommand(script, timeoutMs) {
+  try{assertCoreMigrationOperation(coreMigrationOperationContext.getStore(),{nativeEffect:true});}catch(error){return Promise.reject(error);}
   try{ameOpenCompExecutor.assertNative(ameOpenCompCommandContext.getStore(),script);}catch(error){return Promise.reject(error);}
   try{ameJobSourceExecutor.assertNative(ameJobSourceCommandContext.getStore(),script);}catch(error){return Promise.reject(error);}
   try{titleVerificationExecutor.assertNative(titleVerificationCommandContext.getStore(),script);}catch(error){return Promise.reject(error);}
@@ -5154,6 +5156,7 @@ function enqueueAeCommand(script, timeoutMs) {
       phase: null,
       settled: false
     };
+    command.coreMigrationOperation=coreMigrationOperationContext.getStore()||null;
     const titleRecoveryScope=titleRecoveryCommandContext.getStore();
     if(titleRecoveryScope)titleExportRecovery.queued(titleRecoveryScope,id);
     titleVerificationExecutor.queued(titleVerificationCommandContext.getStore(),id);
@@ -5422,6 +5425,7 @@ function leaseNextQueuedCommand(req, url) {
     if (!command || command.state !== "queued") continue;
     if(recoveryScope && (command.generatedRecoveryRead?.scopeId!==recoveryScope.scopeId || !recoveryReadAllowed(recoveryScope,command.generatedRecoveryRead?.tool)))throw new Error("generated_recovery_foreign_queue_blocked");
     try {
+      assertCoreMigrationDelivery(command,req,url);
       if (command.lifecycleCapability) lifecycle.validateCommand(command.lifecycleCapability, command.lifecycleRawScript, command.id);
       else lifecycle.assertMutationAllowed();
     } catch (error) {
@@ -7234,6 +7238,7 @@ function runValidatedAgentPlanWithEvidence(options, executionContext) {
 async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) {
   const responseView = planRunResponse.assertValidResponseView(options && options.responseView);
   options = resolveM100PlanRunOptions(options || {});
+  assertCoreMigrationOperation(captureCoreMigrationOperation("plan.run",{plan:options.plan,requestId:options.requestId,actionId:options._m100ActionRecord?.actionId},options.dryRun!==false));
   const autonomous = executionContext && executionContext.autonomousSession
     && executionContext.autonomousSession.authorized === true
     ? executionContext.autonomousSession
@@ -7325,10 +7330,12 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     }
   };
   const runRecord = {schema:"ae-agent-plan-run-record.v1",runId:run.id,createdAt:run.startedAt,
-    plan:prepared.plan,project:{file:expectedProject},run};
+    plan:prepared.plan,project:{file:expectedProject},run,
+    recordContext:planRunRecords.recordContext(options.recordContext,{runId:run.id,projectFile:expectedProject})};
   const persistRun = (item, isFinal = false) => {
     if (!isFinal && (run.dryRun || validation.mutatingCount === 0)) return;
     runRecord.project = {file:run.project && (run.project.expectedFile || run.project.actualFile) || expectedProject};
+    runRecord.recordContext.project.file = runRecord.project.file;
     runRecord.run = item && !run.steps.includes(item) ? {...run,steps:[...run.steps,item]} : run;
     planRunRecords.writeRecord(LOG_DIR,runRecord);
   };
@@ -7821,6 +7828,7 @@ async function runValidatedAgentPlanWithEvidenceImpl(options, executionContext) 
     }
     const stepStartedAt = Date.now();
     try {
+      assertCoreMigrationOperation(captureCoreMigrationOperation(step.tool,bound.args,!step.mutatesProject,{runId:run.id,actionId:options._m100ActionRecord?.actionId,validationId:validation.id}));
       const guard = step.mutatesProject && options._m100ActionRecord ? {sessionHash: autonomous && autonomous.sessionHash, projectFile: options._m100ActionRecord.project.expectedFile,
         actionId: options._m100ActionRecord.actionId, executionId: run.id, proposalExpiresAt: options._m100ActionRecord.proposalExpiresAt} : null;
       persistRun(item);
@@ -8913,7 +8921,7 @@ function startHttpBridge() {
       if(!args || Object.keys(args).some(k=>!["reason","confirmation","authorizationSource","captureSha256"].includes(k))){writeJson(res,400,{ok:false,code:"human_settlement_client_evidence_forbidden"});return;}
       let lock;
       try{
-        lock=panelControl.acquireControllerLock(path.join(LOG_DIR,"cep-panel-control"),crypto.randomUUID());
+        lock=panelControl.acquireControllerLock(path.join(LOG_DIR,"core-cep-panel-control"),crypto.randomUUID());
         const maintenance=require("../scripts/human-guard-settlement-maintenance"),configuration={host:HOST,port:PORT,credentialIdentity:humanGuardSettlement.hash(TOKEN)},capture=humanGuardSettlement.validateCapture(LOG_DIR,humanGuardSettlement.read(LOG_DIR,"capture"),configuration),service=panelControl.createPanelControlService({inspectInstalledTarget:maintenance.baselineInspector(LOG_DIR,capture)}),before=getBridgeStatus(),selected=await service.maintenanceTarget();
         humanGuardSettlement.assertRuntime(RUNTIME_IDENTITY,capture.implementationSha256,reviewEvidence.sha256(reviewEvidence.runtimeNamedHashSet(PROJECT_ROOT)));
         humanGuardSettlement.assertIdle(before,selected.state);humanGuardSettlement.assertExactGuards(selected.state);
@@ -8929,7 +8937,7 @@ function startHttpBridge() {
     if(url.pathname==="/common-title-recovery/maintenance" && req.method==="POST"){
       if(!requireToken(req,res,url))return;
       const args=await readJsonBody(req);commonTitleRecovery.inputs(args);
-      const lock=panelControl.acquireControllerLock(path.join(LOG_DIR,"cep-panel-control"),crypto.randomUUID());
+      const lock=panelControl.acquireControllerLock(path.join(LOG_DIR,"core-cep-panel-control"),crypto.randomUUID());
       try{
         commonTitleRecovery.idle(getBridgeStatus());
         const record=planRunRecords.readRecord(LOG_DIR,args.runId,{throwOnError:true}),original=await panelControlService.readRecoveryLinkage(args.originalRequestId),capsule=commonTitleRecovery.read(LOG_DIR,"capsule");
@@ -8965,6 +8973,9 @@ function startHttpBridge() {
     }
     if (url.pathname === "/bridge/product-session" && req.method === "GET") {
       if(!requireToken(req,res,url))return;
+      if(coreProductMigration.hasOrigin(PROJECT_ROOT)){
+        try{const state=coreMigrationState();if(!state)throw Object.assign(Error("core_migration_genesis_required"),{code:"core_migration_genesis_required"});const actor={panelConnectionId:url.searchParams.get("panelConnectionId"),panelGeneration:url.searchParams.get("panelGeneration"),panelInstanceId:url.searchParams.get("panelInstanceId"),panelLifecycleEpoch:Number(url.searchParams.get("panelLifecycleEpoch"))};writeJson(res,200,{ok:true,coreMigrationSession:state.challenge(actor,url.searchParams.get("physicalInflight")==="0"?0:1),coreMigrationSessionActivation:state.activation()});}catch(error){writeJson(res,409,{ok:false,code:error.code||"core_migration_preflight_refused",replayAllowed:false});}return;
+      }
       try{const state=productSessionResetState();if(!state)throw Object.assign(Error("owned_product_reset_session_absent"),{code:"owned_product_reset_session_absent"});const actor={panelConnectionId:url.searchParams.get("panelConnectionId"),panelGeneration:url.searchParams.get("panelGeneration"),panelInstanceId:url.searchParams.get("panelInstanceId"),panelLifecycleEpoch:Number(url.searchParams.get("panelLifecycleEpoch"))};writeJson(res,200,{ok:true,resetSession:state.admissionReady()?null:state.challenge(actor,url.searchParams.get("physicalInflight")==="0"?0:1),resetSessionActivation:state.activation()});}catch(error){writeJson(res,409,{ok:false,code:error.code||"owned_product_reset_preflight_refused",replayAllowed:false});}return;
     }
     if (url.pathname === "/bridge/next" && req.method === "GET") {
@@ -8991,6 +9002,11 @@ function startHttpBridge() {
         at: lastPanelSeenAt
       };
       const resetState=productSessionResetState();
+      const migrationState=coreMigrationState();
+      if(coreProductMigration.hasOrigin(PROJECT_ROOT)&&!migrationState){writeJson(res,409,{ok:false,code:"core_migration_genesis_required",command:null});return;}
+      if(migrationState&&!migrationState.adopted()){
+        try{writeJson(res,200,{ok:true,command:null,coreMigrationSession:migrationState.challenge({panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration,panelInstanceId:lastPanelInfo.panelInstanceId,panelLifecycleEpoch:lastPanelInfo.panelLifecycleEpoch},url.searchParams.get("physicalInflight")==="0"?0:1)});}catch(error){writeJson(res,409,{ok:false,code:error.code||"core_migration_preflight_refused",command:null});}return;
+      }
       if(resetState && !resetState.admissionReady()){
         try{const resetSession=resetState.challenge({panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration,panelInstanceId:lastPanelInfo.panelInstanceId,panelLifecycleEpoch:lastPanelInfo.panelLifecycleEpoch},0);writeJson(res,200,{ok:true,command:null,resetSession});}catch(error){writeJson(res,409,{ok:false,code:error.code||"owned_product_reset_preflight_refused",command:null});}return;
       }
@@ -9010,14 +9026,19 @@ function startHttpBridge() {
       let command;
       try{command=leaseNextQueuedCommand(req,url);}catch(error){writeJson(res,409,{ok:false,code:error.code || error.message,command:null});return;}
       if (command) {
-        writeJson(res, 200, { ok: true, command,resetSessionActivation });
+        writeJson(res, 200, { ok: true, command,resetSessionActivation,coreMigrationSessionActivation:migrationState?migrationState.activation():null });
         return;
       }
 
-      writeJson(res, 200, { ok: true, command: null,resetSessionActivation });
+      writeJson(res, 200, { ok: true, command: null,resetSessionActivation,coreMigrationSessionActivation:migrationState?migrationState.activation():null });
       return;
     }
 
+    if (url.pathname === "/bridge/core-migration-session" && req.method === "POST") {
+      if(!requireToken(req,res,url))return;
+      if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"core_migration_panel_witness_required"});return;}
+      try{const state=coreMigrationState();if(!state)throw Object.assign(Error("core_migration_genesis_required"),{code:"core_migration_genesis_required"});const result=state.activate(await readJsonBody(req));autonomousSession.invalidateProjectContext();lastPanelSeenAt=Date.now();lastPanelInfo={...lastPanelInfo,...result.activation.actor,at:lastPanelSeenAt};writeJson(res,200,result);}catch(error){writeJson(res,409,{ok:false,code:error.code||"core_migration_preflight_refused",replayAllowed:false});}return;
+    }
     if (url.pathname === "/bridge/reset-session" && req.method === "POST") {
       if(!requireToken(req,res,url))return;
       if(res.authRole!=="panel"){writeJson(res,403,{ok:false,code:"owned_product_reset_panel_witness_required"});return;}
@@ -9293,6 +9314,7 @@ function recoveryStateSame(a,b){return require("./session-recovery-state").same(
 const PANEL_CONTROL_AUTHORITY = Symbol("official-automation-panel-control");
 const PANEL_BOOTSTRAP_AUTHORITY = Symbol("official-automation-panel-bootstrap");
 function panelControlUsesRetainedTransport() {
+  if(require("./core-product-migration").hasOrigin(PROJECT_ROOT))return false;
   if (!ownedRuntimeStartup.managed || ownedRuntimeStartup.initialRecovery) return false;
   const supervisor=require("./owned-runtime-supervisor"), current=supervisor.readDaemonRegistration(PROJECT_ROOT);
   // The supervisor reads status/register before publishing the successor.
@@ -9300,15 +9322,20 @@ function panelControlUsesRetainedTransport() {
   if (!current || current.generation!==process.env.AE_OWNED_RUNTIME_GENERATION) return true;
   return !supervisor.readProductStopAuthority(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION);
 }
-const panelControlService = panelControl.createPanelControlService({evidenceRoot:LOG_DIR,readCutoverInventory:process.env.AE_OWNED_RUNTIME_GENERATION?()=>ownedRuntimeStartup.initialRecovery?require("./owned-runtime-initial-recovery").ordinaryCutover():(require("./owned-runtime-product-activation").controlCutover(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION)||ownedRuntimeAuthority.readOriginalTransportInventory(PROJECT_ROOT)):undefined,resolveStateDirectory:()=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.currentTransportDirectory(PROJECT_ROOT,LOG_DIR):path.join(LOG_DIR,"cep-panel-control"),resolveReceiptDirectory:id=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.receiptTransportDirectory(PROJECT_ROOT,LOG_DIR,id):path.join(LOG_DIR,"cep-panel-control"),lookupPanelLifecycleCausal:()=>require("./panel-lifecycle-causal").readControlProjection(),lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders()),lookupRetainedNativeFixture:s=>nativeFixtureAbandonment.lookup(s,nativeRetainedReaders()),assertRetainedAdmissionCurrent:expected=>{
+const panelControlService = panelControl.createPanelControlService({evidenceRoot:LOG_DIR,readCutoverInventory:process.env.AE_OWNED_RUNTIME_GENERATION&&!require("./core-product-migration").hasOrigin(PROJECT_ROOT)?()=>ownedRuntimeStartup.initialRecovery?require("./owned-runtime-initial-recovery").ordinaryCutover():(require("./owned-runtime-product-activation").controlCutover(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION)||ownedRuntimeAuthority.readOriginalTransportInventory(PROJECT_ROOT)):undefined,resolveStateDirectory:()=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.currentTransportDirectory(PROJECT_ROOT,LOG_DIR):path.join(LOG_DIR,"core-cep-panel-control"),resolveReceiptDirectory:id=>panelControlUsesRetainedTransport()?ownedRuntimeAuthority.receiptTransportDirectory(PROJECT_ROOT,LOG_DIR,id):path.join(LOG_DIR,"core-cep-panel-control"),lookupPanelLifecycleCausal:()=>require("./panel-lifecycle-causal").readControlProjection(),lookupNativeFixtureAdmissionRefusal:()=>nativeFixtureAdmissionRefusal.lookup(nativeRefusalReaders()),lookupRetainedNativeFixture:s=>nativeFixtureAbandonment.lookup(s,nativeRetainedReaders()),assertRetainedAdmissionCurrent:expected=>{
   const status=getBridgeStatus();
   if(status.lastPanelInfo?.panelGeneration!==expected.currentActor.panelGeneration || status.lastPanelInfo?.panelInstanceId!==expected.currentActor.panelInstanceId || status.lastPanelInfo?.panelLifecycleEpoch!==expected.currentActor.panelLifecycleEpoch || status.humanGuardRuntime.pid!==expected.runtime.daemon.pid || status.humanGuardRuntime.startedAt!==expected.runtime.daemon.startedAt || RUNTIME_IDENTITY.sourceSha256!==expected.runtime.loadedRuntimeSha256 || reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256!==expected.runtime.currentRuntimeSha256)throw Object.assign(Error("retained_admission_actor_or_runtime_changed"),{code:"retained_admission_actor_or_runtime_changed"});
 }});
-function nativeRetainedReaders(){return nativeFixtureAbandonmentBackend.createReaders({evidenceRoot:LOG_DIR,projectRoot:PROJECT_ROOT,panelService:panelControl.createPanelControlService({stateDir:path.join(LOG_DIR,"cep-panel-control"),inspectInstalledTarget:()=>require("./owned-runtime-authority").inspectRetainedInstalledTarget(PROJECT_ROOT)}),readBridgeStatus:getBridgeStatus,loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,currentRuntimeSha256:()=>reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256,executorQuiescence:()=>ameFixtureExecutor.quiescence()});}
+function nativeRetainedReaders(){return nativeFixtureAbandonmentBackend.createReaders({evidenceRoot:LOG_DIR,projectRoot:PROJECT_ROOT,panelService:panelControl.createPanelControlService({stateDir:path.join(LOG_DIR,"core-cep-panel-control"),inspectInstalledTarget:()=>require("./owned-runtime-authority").inspectRetainedInstalledTarget(PROJECT_ROOT)}),readBridgeStatus:getBridgeStatus,loadedRuntimeSha256:RUNTIME_IDENTITY.sourceSha256,currentRuntimeSha256:()=>reviewEvidence.runtimeIdentity(PROJECT_ROOT).sourceSha256,executorQuiescence:()=>ameFixtureExecutor.quiescence()});}
 let ownedRuntimeHttpServer=null;
 let ownedRuntimeStartup={managed:!!process.env.AE_OWNED_RUNTIME_GENERATION,requiresRetainedAdoption:!!process.env.AE_OWNED_RUNTIME_GENERATION};
 const ownedRuntimeAuthority=require("./owned-runtime-authority");
 const productSessionReset=require("./owned-runtime-product-session-reset"),productSessionResetCache=new Map();
+const coreProductMigration=require("./core-product-migration");let coreMigrationSessionCache=null;
+function coreMigrationState(){
+  if(!coreProductMigration.hasSealedOrigin(PROJECT_ROOT))return null;if(!ownedRuntimeStartup.managed)throw Object.assign(Error("core_migration_managed_origin_required"),{code:"core_migration_managed_origin_required"});
+  if(!coreMigrationSessionCache){const supervisor=require("./owned-runtime-supervisor");coreMigrationSessionCache=coreProductMigration.createAdmissionSession({root:PROJECT_ROOT,generation:process.env.AE_OWNED_RUNTIME_GENERATION,readGeneration:supervisor.registeredGeneration,keyReader:v=>ownedRuntimeAuthority.runtimeControlFor(PROJECT_ROOT).credential({daemon:{port:3456,credentialSha256:v.credentialSha256}}),readActor:()=>lastPanelInfo&&{panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration,panelInstanceId:lastPanelInfo.panelInstanceId,panelLifecycleEpoch:lastPanelInfo.panelLifecycleEpoch},readLifecycle:()=>productSessionReset.assertLifecycle(PROJECT_ROOT),readEditHash:()=>productSessionReset.snapshot(EDIT_SESSION_ACTIVE_FILE).sha256});}return coreMigrationSessionCache;
+}
 function productSessionResetState(){
   if(deploymentMode!=="product"||!ownedRuntimeStartup.managed)return null;
   const supervisor=require("./owned-runtime-supervisor"),generation=process.env.AE_OWNED_RUNTIME_GENERATION,keyReader=v=>ownedRuntimeAuthority.runtimeControlFor(PROJECT_ROOT).credential({daemon:{port:3456,credentialSha256:v.credentialSha256}});
@@ -9325,7 +9352,9 @@ function productSessionResetState(){
 const ownedRuntimeService=require("./owned-runtime-service").createOwnedRuntimeService({
   initialRuntime,
   readRegistration:()=>ownedRuntimeStartup.managed?require("./owned-runtime-supervisor").loadCurrentDaemonRegistration(PROJECT_ROOT,{pid:process.pid,argv:process.argv,sourceSha256:RUNTIME_IDENTITY.sourceSha256,bootNonce:process.env.AE_OWNED_RUNTIME_BOOT_NONCE,generation:process.env.AE_OWNED_RUNTIME_GENERATION,serviceStartedAt:new Date(STARTED_AT).toISOString()}):null,
-  readAdmission:()=> (!productSessionResetState() || productSessionResetState().admissionReady()) && (ownedRuntimeStartup.initialRecovery
+  readAdmission:()=> coreProductMigration.hasOrigin(PROJECT_ROOT)
+    ? !!coreMigrationState() && coreMigrationState().admissionReady() && (!productSessionResetState() || productSessionResetState().admissionReady())
+    : (!productSessionResetState() || productSessionResetState().admissionReady()) && (ownedRuntimeStartup.initialRecovery
     ? require("./owned-runtime-initial-recovery").admissionReady(PROJECT_ROOT,{generation:ownedRuntimeStartup.generation,loadedSourceSha256:RUNTIME_IDENTITY.sourceSha256,connectionReady:autonomousSession.publicStatus().connectionReady})
     : !ownedRuntimeStartup.requiresRetainedAdoption || ownedRuntimeStartup.managed && !panelControlUsesRetainedTransport() ||
       require("./native-fixture-retained").currentAdmission(PROJECT_ROOT) && panelControlService.cutoverReadiness().ready),journalRoot:ownedRuntimeAuthority.base(PROJECT_ROOT),
@@ -9384,7 +9413,48 @@ function nativePrephaseMaintenanceReaders() {
 let coreToolDispatch;
 function callTool(name,args,executionContext){return coreToolDispatch(name,args,executionContext);}
 
-function callToolLogged(source, name, args, executionContext) {
+function coreMigrationPanelActor(){return lastPanelInfo&&{panelConnectionId:lastPanelInfo.panelConnectionId,panelGeneration:lastPanelInfo.panelGeneration,panelInstanceId:lastPanelInfo.panelInstanceId,panelLifecycleEpoch:lastPanelInfo.panelLifecycleEpoch};}
+function coreMigrationTypedEffects(name,args){
+  const empty={nativeRoot:null,claimNonce:null,stageId:null,pluginPath:null,outputPath:null,sourcePath:null,projectPath:currentProposalState.current?.project?.actualFile||currentProposalState.current?.project?.expectedFile||null,actualAeProcess:null};
+  if(name==="plan.run"){const effects=[];for(const step of args.plan?.steps||[]){const tool=toolByName(step.tool);if(tool&&tool.annotations?.readOnlyHint!==true&&MUTATING_TOOL_NAMES.has(step.tool))effects.push(...coreMigrationTypedEffects(step.tool,step.args||{}));}return effects.length?effects:[{...empty,kind:"local_control"}];}
+  if(panelControl.isPanelControlTool(name)||[panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name))return [{...empty,kind:"local_control"}];
+  if(name===ameFixtureGrant.TOOL_NAME)return [{...empty,kind:"native_claim",nativeRoot:path.join(PROJECT_ROOT,".codex-runtime/ame-native-fixtures")}];
+  if(["save_project_as","create_named_project","open_project"].includes(name))return [{...empty,kind:"file_output",sourcePath:args.expectedSourceProjectFile||null,outputPath:args.targetProjectFile||null}];
+  if(name==="save_current_named_project")return [{...empty,kind:"file_output",sourcePath:args.expectedProjectFile||null,outputPath:args.expectedProjectFile||null}];
+  if(!MUTATING_TOOL_NAMES.has(name)&&!["save_comp_frame_png","start_edit_session","restore_project_checkpoint","restore_project_backup"].includes(name))return [{...empty,kind:"local_control"}];
+  const outputNames=new Set(["save_comp_frame_png","save_project_as","save_current_named_project",nativeRenderVariant.RENDER]);
+  const outputPath=outputNames.has(name)?args.outputPath||args.filePath||null:null;
+  return [{...empty,kind:outputPath?"file_output":"ordinary_ae_mutation",outputPath}];
+}
+function captureCoreMigrationOperation(name,args,readOnly,extra={}){
+  const lane=ameTitleMutationNames.has(name)||ameQueueControl.MUTATIONS.includes(name)||name===ameRunning.TOOL_NAME?"ame_queue_jobs":name===ameFixtureGrant.TOOL_NAME?"native_fixture":name===nativeRenderVariant.RENDER?"native_render_output":"ordinary_typed";
+  const id=readOnly?null:idempotencyContext(name,args||{}),copied=JSON.parse(JSON.stringify(args||{})),context=Object.freeze({tool:name,args:copied,readOnly:readOnly===true,lane,idempotencyRecordKey:id?.recordKey||null,runId:evidenceContext.getStore()?.runId||null,actionId:autonomousCommandContext.getStore()?.actionId||null,...extra,daemonGeneration:process.env.AE_OWNED_RUNTIME_GENERATION||null,panelActor:coreMigrationPanelActor(),effects:Object.freeze(coreMigrationTypedEffects(name,copied).map(e=>Object.freeze(e)))});coreMigrationOperations.add(context);return context;
+}
+function assertCoreMigrationOperation(context,delivery=null){
+  if(!coreProductMigration.hasOrigin(PROJECT_ROOT))return;if(!context||!coreMigrationOperations.has(context))throw Object.assign(Error("core_migration_private_operation_context_required"),{code:"core_migration_private_operation_context_required"});
+  const state=coreMigrationState();if(!state){if(context.readOnly)return;throw Object.assign(Error("core_migration_genesis_required"),{code:"core_migration_genesis_required"});}
+  if(context.readOnly){state.assertOperation(context);return;}
+  const effects=delivery?.nativeEffect&&context.effects.every(e=>e.kind==="local_control")?[{kind:"ordinary_ae_mutation",nativeRoot:null,claimNonce:null,stageId:null,pluginPath:null,outputPath:null,sourcePath:null,projectPath:currentProposalState.current?.project?.actualFile||null,actualAeProcess:null}]:context.effects;
+  if(effects.every(e=>e.kind==="local_control")){state.assertOperation(context);return;}
+  const actor=coreMigrationPanelActor(),equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+  if(!actor||!equal(actor,context.panelActor)||context.daemonGeneration!==(process.env.AE_OWNED_RUNTIME_GENERATION||null)||delivery?.commandId&&!equal(delivery.actor,actor))throw Object.assign(Error("core_migration_operation_actor_changed"),{code:"core_migration_operation_actor_changed"});
+  // Conservative fresh observation at each mutable seam. No TTL/actor cache;
+  // the delivery frame below never reuses an earlier operation observation.
+  const requiresNative=effects.some(e=>e.kind!=="local_control"),observed=requiresNative?ameFixtureRunner.readAeInventorySync():null;
+  if(requiresNative&&observed?.state!=="available"){coreMigrationNativeWitnesses.delete(context);throw Object.assign(Error("core_migration_actual_ae_identity_unavailable"),{code:"core_migration_actual_ae_identity_unavailable"});}
+  const previous=coreMigrationNativeWitnesses.get(context);if(previous&&!require("./native-fixture-attempt-ledger").sameProcess(previous.process,observed.process)){coreMigrationNativeWitnesses.delete(context);throw Object.assign(Error("core_migration_operation_ae_birth_changed"),{code:"core_migration_operation_ae_birth_changed"});}
+  if(!previous)coreMigrationNativeWitnesses.set(context,Object.freeze({daemonGeneration:context.daemonGeneration,panelActor:context.panelActor,process:observed.process}));
+  const checked=Object.freeze({...context,effects:effects.map(e=>Object.freeze({...e,actualAeProcess:observed?.process||null}))});state.assertOperation(checked);
+  return delivery?.commandId?Object.freeze({commandId:delivery.commandId,daemonGeneration:context.daemonGeneration,actor,process:observed?.process||null}):undefined;
+}
+function assertCoreMigrationDelivery(command,req,url){
+  if(!coreProductMigration.hasOrigin(PROJECT_ROOT))return;const owner=panelLeaseOwner(req,url),params=url.searchParams,epoch=params.get("panelLifecycleEpoch"),actor={panelConnectionId:owner.panelConnectionId,panelGeneration:owner.panelGeneration,panelInstanceId:params.get("panelInstanceId"),panelLifecycleEpoch:/^\d+$/.test(epoch||"")?Number(epoch):null};
+  if(command.state!=="queued")throw Object.assign(Error("core_migration_delivery_command_binding_invalid"),{code:"core_migration_delivery_command_binding_invalid"});
+  return assertCoreMigrationOperation(command.coreMigrationOperation,{commandId:command.id,actor,nativeEffect:true});
+}
+
+function callToolLogged(source,name,args,executionContext){const tool=toolByName(name),read=tool?.annotations?.readOnlyHint===true||!!tool&&!MUTATING_TOOL_NAMES.has(name)&&/^(get_|list_|inspect_|find_|search_|ping_|wait_for_)/.test(name)||["get_panel_state","list_panel_actions","get_panel_action_result","refresh_panel_guards","reconcile_plan_run","reconcile_project_lifecycle"].includes(name),context=captureCoreMigrationOperation(name,args,read);return coreMigrationOperationContext.run(context,()=>callToolLoggedWithMigrationContext(source,name,args,executionContext));}
+function callToolLoggedWithMigrationContext(source, name, args, executionContext) {
   if(initialRuntime)initialRuntime.assertTool();
   if(deploymentMode==="product" && [panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name)){
     if(source!=="mcp-adapter" || executionContext?.panelBootstrapAuthority!==PANEL_BOOTSTRAP_AUTHORITY)
@@ -9401,6 +9471,7 @@ function callToolLogged(source, name, args, executionContext) {
   return ownedRuntimeService.run(read?"observation":"execution",()=>callToolLoggedImpl(source,name,args,executionContext));
 }
 async function callToolLoggedImpl(source, name, args, executionContext) {
+  assertCoreMigrationOperation(coreMigrationOperationContext.getStore());
   await ameOpenCompExecutor.assertProjectMutationAllowed(name,MUTATING_TOOL_NAMES.has(name) && ![ameRunning.TOOL_NAME,...ameQueueControl.MUTATIONS,ameFixtureGrant.TOOL_NAME,...ameTitleMutationNames].includes(name) || ["start_edit_session","restore_project_checkpoint","restore_project_backup"].includes(name));
   if ([panelBootstrap.TOOL_NAME,panelBootstrap.RECOVERY_TOOL_NAME].includes(name) && source !== "mcp-adapter") {
     return toolResult({ok:false,status:"failure",stage:"authorization",reason:"official_mcp_adapter_required"}, true);

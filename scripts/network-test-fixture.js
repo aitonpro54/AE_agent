@@ -26,6 +26,8 @@ const EXTRA_SOURCES = new Set([
   "orchestrator/bounded-process-result.cjs", // supported, non-frozen runtime exception
   "scripts/owned-runtime-control.js", "scripts/autonomous-plan-client.js",
   "scripts/owned-runtime-initial-recovery.js",
+  "scripts/core-legacy-control-reader.js", "scripts/core-product-migration-control.js",
+  "scripts/core-state-migration.js", "config/core-legacy-verifier-manifest.json",
   "scripts/owned-runtime-product-activation.js",
   "scripts/owned-runtime-startup-retire.js", "scripts/owned-runtime-finalize-launch.js",
   "scripts/owned-runtime-maintenance-retire.js", "scripts/owned-runtime-panel-reload.js",

@@ -3,22 +3,11 @@
   "sourceRoot": "C:/Users/Ant/Documents/Codex/AE_agent",
   "entries": [
     "mcp-server/owned-runtime-supervisor.js",
-    "mcp-server/owned-runtime-product-session-reset.js",
-    "mcp-server/owned-runtime-product-activation.js",
     "mcp-server/owned-runtime-initial-runtime.js",
     "mcp-server/deployment-mode.js",
-    "mcp-server/cep-panel-control.js",
     "scripts/owned-runtime-control.js"
   ],
   "modules": [
-    {
-      "path": "cep-panel/panel-action-contract.js",
-      "sha256": "78937c094982cc68cc7c06e85955e09b5c5d5fe741f5c5a84a52c816ea0328df"
-    },
-    {
-      "path": "mcp-server/ae-agent-panel-bootstrap.js",
-      "sha256": "47d6e5491c23e3ffdf3f13f78089c33548280e3b73c1a0a3e7063193412abcfe"
-    },
     {
       "path": "mcp-server/ame-manual-queue-grant.js",
       "sha256": "29b4ef5bedb0a7b73c91ec9cfce40f339453752c51131114ac55e4f65249dc41"
@@ -58,14 +47,6 @@
     {
       "path": "mcp-server/ame-title-pending.js",
       "sha256": "89cf327867619d6777ead8cf2c18de75423df57d2c73f7487004e778dc19124c"
-    },
-    {
-      "path": "mcp-server/cep-panel-control.js",
-      "sha256": "c0f39b920d9a9ea93be191e839b0eccfac6a873581bee69832c232f8bc254ad1"
-    },
-    {
-      "path": "mcp-server/cep-panel-readonly-orphan.js",
-      "sha256": "52ef4a43ffa8945635550161a109cc4e82a6577f1a886eefe79cc75b4e9c796a"
     },
     {
       "path": "mcp-server/deployment-mode.js",
@@ -112,10 +93,6 @@
       "sha256": "700327f1415fce2bcdc5dc5365f3e133c96c2951f2e5e32a8a5a91f9ad42688c"
     },
     {
-      "path": "mcp-server/owned-runtime-product-activation.js",
-      "sha256": "5aae2a590c28fdfced69c73e8b1c4ffa9403c8820428d206fea47f8a159e3acb"
-    },
-    {
       "path": "mcp-server/owned-runtime-product-lifecycle.js",
       "sha256": "a426d2c22ab2391fff9eedae7af94a3c6fcb2fdd7c3f6ea4a8388770554e174b"
     },
@@ -146,14 +123,6 @@
     {
       "path": "mcp-server/review-evidence.js",
       "sha256": "e9bfb8c35305edf58d7c0adad5c13ba3ca1179037baabfa491fa0c1903b10d38"
-    },
-    {
-      "path": "mcp-server/session-recovery-state.js",
-      "sha256": "1ad82bda116c01d9cb231480819b6d140b1135c028fc70ff973344956dfb6087"
-    },
-    {
-      "path": "scripts/cep-panel-target.js",
-      "sha256": "77c708d09cdac93785222b68a056e0c44ee0a509dee302cae316b8c437175744"
     },
     {
       "path": "scripts/owned-runtime-control.js",

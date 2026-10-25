@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { execFile,spawn } = require("node:child_process");
+const { execFile,execFileSync,spawn } = require("node:child_process");
 const grant = require("./ame-native-fixture-grant");
 const ledger = require("./native-fixture-attempt-ledger");
 const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
@@ -92,6 +92,22 @@ function queryWindows(script, env = process.env) {
 async function inspectProcess(pid) {
   if (!Number.isSafeInteger(pid) || pid < 1) fail("fixture_runner_pid_invalid");
   return queryWindows(`$ErrorActionPreference='Stop'; ${KERNEL_PROCESS_SETUP}; $p=Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if(!$p){'null';exit}; try{$h=$p.Handle; [FixtureKernelProcess]::ReadIdentity($h) | ConvertTo-Json -Compress}finally{$p.Dispose()}`);
+}
+// Fixed AE-only read. It never creates, waits for or controls a process. This
+// identity is an observation, never an exit proof or a retained HANDLE lease.
+function readAeInventorySync() {
+  try {
+    const win=require("./owned-runtime-win32");win.verifyPolicy();
+    const env={};for(const name of ["SystemRoot","TEMP","TMP"])if(process.env[name])env[name]=process.env[name];
+    const script="$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $env:PSModulePath=Join-Path $PSHOME 'Modules'; "+KERNEL_PROCESS_SETUP+"; $ps=@(Get-Process -Name AfterFX -ErrorAction SilentlyContinue); try { if($ps.Count -ne 1){throw 'exact_ae_process_required'}; $p=$ps[0]; [FixtureKernelProcess]::ReadIdentity($p.Handle) | ConvertTo-Json -Compress } finally { foreach($p in $ps){$p.Dispose()} }";
+    const out=execFileSync(win.POLICY.executable,["-NoLogo","-NoProfile","-NonInteractive","-Command",script],{windowsHide:true,env,timeout:15000,maxBuffer:16384,encoding:"utf8"});
+    const row=JSON.parse(out.replace(/^\uFEFF/,""));
+    if(!row || Object.keys(row).sort().join(",")!=="createdAt,createdFileTime,createdUnixMs,path,pid" || typeof row.path!=="string" || !path.win32.isAbsolute(row.path) ||
+      !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{7}Z$/.test(row.createdAt))throw Error("invalid_ae_identity");
+    win.validateIdentity({pid:row.pid,birthFileTime:row.createdFileTime,birthUtc:row.createdAt,imagePath:row.path,executableSha256:"0".repeat(64)});
+    const identity=ledger.processIdentity(row,{executablePath:row.path});
+    return Object.freeze({state:"available",process:Object.freeze(identity)});
+  } catch (_) {return Object.freeze({state:"unavailable",reasonCode:"core_migration_actual_ae_identity_unavailable"});}
 }
 async function launchChild(descriptor, environment) {
   // A new AE instance, hidden at launch. No -r, arbitrary JSX, GUI actions or
@@ -434,4 +450,4 @@ const inspectTool = { name: INSPECT, description: "Read independent evidence for
   inputSchema: { type: "object", additionalProperties: false, required: ["evidenceId"], properties: { evidenceId: { type: "string", format: "uuid" } } },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false } };
 const inspectAttemptTool={name:INSPECT_ATTEMPT,description:"Read one durable fixture attempt and independently verify an expired signed bootstrap refusal using the current private issuer. Does not renew authority, replay a phase, terminate a process or infer the historical mutation outcome. Process retirement requires an audited exact held-handle exit proof.",inputSchema:{type:"object",additionalProperties:false,required:["stageId"],properties:{stageId:{type:"string",pattern:"^[a-f0-9]{32}$"}}},annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:false,openWorldHint:false}};
-module.exports = { INSPECT,INSPECT_ATTEMPT,createExecutor,createCleanupReconciler, tool, inspectTool,inspectAttemptTool, buildArtifacts, writeOnce, readRegular,inspectProcess };
+module.exports = { INSPECT,INSPECT_ATTEMPT,createExecutor,createCleanupReconciler, tool, inspectTool,inspectAttemptTool, buildArtifacts, writeOnce, readRegular,inspectProcess,readAeInventorySync };

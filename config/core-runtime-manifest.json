@@ -39,24 +39,24 @@
     },
     {
       "path": "cep-panel/panel-action-contract.js",
-      "bytes": 19565,
-      "sha256": "5ab09606b8572ec068e98a99f82781784fedf59bffbd3b5081e55e2f3e22a463",
+      "bytes": 19816,
+      "sha256": "1f1d862c6ddca8dc651c73c3a0bb4bcad26e1be12b2e8fd9786681721235cd08",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "78937c094982cc68cc7c06e85955e09b5c5d5fe741f5c5a84a52c816ea0328df",
       "literalDependencies": []
     },
     {
       "path": "cep-panel/panel-actions.js",
-      "bytes": 75958,
-      "sha256": "9a3b1fc0a4d5b498e62612d7466fa626716920af112505c7c01ba760460ae7fd",
+      "bytes": 78575,
+      "sha256": "8a10235bb46eba4a5db788a126423c4744bc29e140cdf0a25bb47f14adfc773e",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "eebcc176997c10165b86dc0f771fd0a720ab77aac5b0b9a58ad3d8b03848906e",
       "literalDependencies": []
     },
     {
       "path": "cep-panel/panel.js",
-      "bytes": 159844,
-      "sha256": "3fe4bcab1f540d10e120a5b1f766564c728d27db3343749200aad75409ef6720",
+      "bytes": 166290,
+      "sha256": "5191ccab654b4d02c3cdfbb425f13f6560ed4e2ab03175aad9f168cf7c1f23d5",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "e3c7e94a2f51732ffcdcce311776acc6098b3c79df217e7b76a89713535b5ac3",
       "literalDependencies": []
@@ -71,8 +71,8 @@
     },
     {
       "path": "config/core-legacy-verifier-manifest.json",
-      "bytes": 6202,
-      "sha256": "b758b71b6e473be605240994ec5252cf306096fb9677f4e86cf61e379f6fe45e",
+      "bytes": 5003,
+      "sha256": "2a60d0f2a4d71caf5be4ef098f7b9b4a9efd7fe68cce0ede1dd42f7a4a650c76",
       "disposition": "core-specific",
       "literalDependencies": []
     },
@@ -198,14 +198,15 @@
     },
     {
       "path": "mcp-server/ame-native-fixture-runner.js",
-      "bytes": 35598,
-      "sha256": "81651fa7a6cad4646d96a0fad02784ebd77122bc938cd600c808bcdbc5b5812f",
-      "disposition": "copied",
+      "bytes": 37388,
+      "sha256": "161d250a1b50acb98b2361df3b9fd10c7a3536c1173fbc6dc70c14bd5051bc73",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "81651fa7a6cad4646d96a0fad02784ebd77122bc938cd600c808bcdbc5b5812f",
       "literalDependencies": [
         "mcp-server/ame-native-fixture-grant.js",
         "mcp-server/native-fixture-attempt-ledger.js",
         "mcp-server/native-fixture-prephase-recovery.js",
+        "mcp-server/owned-runtime-win32.js",
         "mcp-server/plan-run-records.js"
       ]
     },
@@ -419,8 +420,8 @@
     },
     {
       "path": "mcp-server/bridge-daemon.js",
-      "bytes": 608692,
-      "sha256": "624e8d0de6b92283d8e79a3a1cc3207bbaf887e9fd987d5343b926861e39340b",
+      "bytes": 620706,
+      "sha256": "26b7d6bdafcb808c897b1a454ba9771d1e0e4046464ea174a3b3245fbe77e53e",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "559437276f659418687b48f9365fd73d8f59e03bc1ce5ebde40b05ef7f433aa8",
       "literalDependencies": [
@@ -455,6 +456,7 @@
         "mcp-server/comp-dynamic-link-read.js",
         "mcp-server/comp-visual-review-manifest.js",
         "mcp-server/comp-visual-review-plan.js",
+        "mcp-server/core-product-migration.js",
         "mcp-server/core-tool-catalog.js",
         "mcp-server/core-tool-dispatch.js",
         "mcp-server/deployment-mode.js",
@@ -549,8 +551,8 @@
     },
     {
       "path": "mcp-server/cep-panel-control.js",
-      "bytes": 71619,
-      "sha256": "a261d86d37df6c0bb1853b01a92296598cd5ea7b3426bd20ea42ca68712e4e17",
+      "bytes": 71780,
+      "sha256": "2ef70a19f3437f394733fc2e9ad0608d2cda6d089117b2656bc70bb7538e37de",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "c0f39b920d9a9ea93be191e839b0eccfac6a873581bee69832c232f8bc254ad1",
       "literalDependencies": [
@@ -652,6 +654,31 @@
       ]
     },
     {
+      "path": "mcp-server/core-legacy-cep-view.js",
+      "bytes": 5948,
+      "sha256": "83a46c558e283dcf27d3ad16be7a0658002df517b825b4b94b3d23f9a1892cf0",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js"
+      ]
+    },
+    {
+      "path": "mcp-server/core-migration-resource-fences.js",
+      "bytes": 24265,
+      "sha256": "60b057532a50c84458ef92d66ded08ad18e4ba599d44de175aab666d2aa68932",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-legacy-cep-view.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "scripts/core-state-migration.js"
+      ]
+    },
+    {
       "path": "mcp-server/core-plan-catalog.js",
       "bytes": 3749,
       "sha256": "c3e2e2bd8222b94bbbcf24f1e68e3fdeb336184ee53a6cf8005bb338dcec2a29",
@@ -662,6 +689,22 @@
         "mcp-server/project-lifecycle-plan.js",
         "mcp-server/solution-plan-builder.js",
         "mcp-server/text-visual-review-plan.js"
+      ]
+    },
+    {
+      "path": "mcp-server/core-product-migration.js",
+      "bytes": 40655,
+      "sha256": "ca934541ce3946689af15d5c9616cb6a4e793c1b65d438ffc9201cc966678466",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-migration-resource-fences.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/review-evidence.js",
+        "scripts/core-state-migration.js",
+        "scripts/owned-runtime-control.js"
       ]
     },
     {
@@ -1318,11 +1361,12 @@
     },
     {
       "path": "mcp-server/owned-runtime-product-lifecycle.js",
-      "bytes": 11809,
-      "sha256": "a426d2c22ab2391fff9eedae7af94a3c6fcb2fdd7c3f6ea4a8388770554e174b",
-      "disposition": "copied",
+      "bytes": 12067,
+      "sha256": "5654c055e2175eed764273c1f5d9d7bea1dfe7e717b8789fb2e36b7c84835c1f",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "a426d2c22ab2391fff9eedae7af94a3c6fcb2fdd7c3f6ea4a8388770554e174b",
       "literalDependencies": [
+        "mcp-server/core-product-migration.js",
         "mcp-server/native-fixture-attempt-ledger.js",
         "mcp-server/owned-runtime-authority.js",
         "mcp-server/owned-runtime-lifecycle.js",
@@ -1368,9 +1412,9 @@
     },
     {
       "path": "mcp-server/owned-runtime-service.js",
-      "bytes": 14122,
-      "sha256": "75525886a326125be551f75a1894f81f88afe4aa037a44037f9af3f87fe2489c",
-      "disposition": "copied",
+      "bytes": 14155,
+      "sha256": "b8a31ca2f486f6518f16b86c9f94f84c69870af8194209cda793ba4db25b1ec0",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "75525886a326125be551f75a1894f81f88afe4aa037a44037f9af3f87fe2489c",
       "literalDependencies": [
         "mcp-server/native-fixture-attempt-ledger.js",
@@ -1382,11 +1426,12 @@
     },
     {
       "path": "mcp-server/owned-runtime-supervisor.js",
-      "bytes": 98211,
-      "sha256": "d97142af08b5e98b39d0f2c03346659a57987947b81197107987518f538b93e8",
+      "bytes": 101214,
+      "sha256": "77de45c5ae0f994a138bcbd08cb53b60df478da7c62534d78e3be58c67f290d9",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "6edccfa3c8f05c42bb379b4de8a3acffd5e962afb40bf4f13547903beaeb105f",
       "literalDependencies": [
+        "mcp-server/core-product-migration.js",
         "mcp-server/deployment-mode.js",
         "mcp-server/native-fixture-attempt-ledger.js",
         "mcp-server/owned-runtime-authority.js",
@@ -1625,9 +1670,9 @@
     },
     {
       "path": "mcp-server/plan-run-records.js",
-      "bytes": 3254,
-      "sha256": "422d1240144bc91370bb937328305655ed40c39bde596dc20e2325ca584f89d4",
-      "disposition": "copied",
+      "bytes": 5609,
+      "sha256": "5b03974e469318b04ed3a3f336c34bfaffef7fb3ded17857db6c204ba25b0962",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "422d1240144bc91370bb937328305655ed40c39bde596dc20e2325ca584f89d4",
       "literalDependencies": []
     },
@@ -1751,8 +1796,8 @@
     },
     {
       "path": "mcp-server/review-evidence.js",
-      "bytes": 23007,
-      "sha256": "2dc221d28f4534b093fb5571a4c4d7750fc87e4b119bdf5a009c28c345d7f90a",
+      "bytes": 23223,
+      "sha256": "e06b68c6c40e756b8630c8935b0e253585557b09c454b934734d1b3353835931",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "e9bfb8c35305edf58d7c0adad5c13ba3ca1179037baabfa491fa0c1903b10d38",
       "literalDependencies": []
@@ -1921,8 +1966,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 623,
-      "sha256": "dc4826d7dd26bd5bab65040e4fb0e564eaeb31b09b40882ab226b806bbabf84c",
+      "bytes": 1154,
+      "sha256": "f45e6fee7b6809beefb73c36eaa2de090a574baf970280a52c309738173617d0",
       "disposition": "core-specific",
       "literalDependencies": []
     },
@@ -1992,8 +2037,8 @@
     },
     {
       "path": "scripts/core-cep-smoke.js",
-      "bytes": 17298,
-      "sha256": "d37568b09655468825b33ffb7409a1fe4847466cb5715735f1210a84491f5a3d",
+      "bytes": 18102,
+      "sha256": "1c2c69717b0d96b4c57db0657eac4cc184ac95c09798e997ddf320c13b674d82",
       "disposition": "core-specific",
       "literalDependencies": [
         "cep-panel/panel-action-contract.js"
@@ -2007,9 +2052,19 @@
       "literalDependencies": []
     },
     {
+      "path": "scripts/core-legacy-cep-view-smoke.js",
+      "bytes": 5306,
+      "sha256": "9fb9cbcf5d9a00fae44bd04841b8998688a8f21e08037a3b6039fa12fa67ec06",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "mcp-server/owned-runtime-lifecycle.js"
+      ]
+    },
+    {
       "path": "scripts/core-legacy-control-reader-smoke.js",
-      "bytes": 7927,
-      "sha256": "37bb4c3929e01de88f2c61eef7d4e938f28bd95ca67acd568632a8c0e127f906",
+      "bytes": 7234,
+      "sha256": "b124bc9488ba7b5c5555d302d7966b903cfaa4ade5528d18ff4c3ff63900222f",
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/owned-runtime-lifecycle.js",
@@ -2018,12 +2073,123 @@
     },
     {
       "path": "scripts/core-legacy-control-reader.js",
-      "bytes": 16762,
-      "sha256": "3abf06af5cbdefd481d77234299d7e2e27c46cc5e96733ad6bd59813fc6a0d3c",
+      "bytes": 15249,
+      "sha256": "ce066a74f004e820e651f78524ae0bee69d25884520aabe214fa5463eb6c921e",
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/owned-runtime-lifecycle.js",
         "scripts/owned-runtime-control.js"
+      ]
+    },
+    {
+      "path": "scripts/core-legacy-runtime-proof-smoke.js",
+      "bytes": 5863,
+      "sha256": "6014e471bae021bda76491b0eb672f95d03a3a45f0dd47a7855d6b6128c3a346",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "scripts/core-legacy-control-reader.js"
+      ]
+    },
+    {
+      "path": "scripts/core-migration-ae-identity-smoke.js",
+      "bytes": 2924,
+      "sha256": "0ac51e8d9c9e498a711bb3d9d4c8d099527343975cb0793d6ae53b86891a6c37",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-migration-resource-fences.js",
+        "mcp-server/owned-runtime-win32.js"
+      ]
+    },
+    {
+      "path": "scripts/core-migration-bridge-smoke.js",
+      "bytes": 10573,
+      "sha256": "c5d00f032f183ea5dda23e045ef4afe118192d36f12efe25836be0bff8906c6f",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-migration-resource-fences.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "scripts/core-product-migration-smoke.js"
+      ]
+    },
+    {
+      "path": "scripts/core-migration-cep-smoke.js",
+      "bytes": 7530,
+      "sha256": "be857845e35189594182d856cdc3ed5208b788895b25a172ebd0656763e12783",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js",
+        "scripts/core-cep-smoke.js"
+      ]
+    },
+    {
+      "path": "scripts/core-migration-resource-smoke.js",
+      "bytes": 8107,
+      "sha256": "bf0e3cf951b004f3c591548ad0837ad2bce5ae3c7d0f73c59698f973dcb4cebe",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/project-lifecycle-contract.js",
+        "mcp-server/project-lifecycle-transition.js",
+        "mcp-server/project-state-store.js",
+        "scripts/core-state-migration.js"
+      ]
+    },
+    {
+      "path": "scripts/core-product-migration-control.js",
+      "bytes": 2999,
+      "sha256": "cbd1772a0c7c8346499cae958029973328e32567906c89bef3ff8cc7127625c2",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-product-migration.js"
+      ]
+    },
+    {
+      "path": "scripts/core-product-migration-integration-smoke.js",
+      "bytes": 25479,
+      "sha256": "b89347df4c0fd7214ecf88ff2f056b5d38207f32512946805dd2816357b9666c",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/project-lifecycle-contract.js",
+        "mcp-server/project-lifecycle-transition.js",
+        "mcp-server/project-state-store.js",
+        "scripts/core-state-migration.js",
+        "scripts/owned-runtime-control.js"
+      ]
+    },
+    {
+      "path": "scripts/core-product-migration-native-contract-smoke.ps1",
+      "bytes": 12787,
+      "sha256": "cf78a0b6cc81f4bf4cc1f65b1a69fae8511cca6c02b7584488a3c9cb2675ded5",
+      "disposition": "core-specific",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/core-product-migration-smoke.js",
+      "bytes": 16477,
+      "sha256": "2ed5f92b51880dee250bee899ea78321b59a2e78f0ba47aa447886ba95fba60d",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-legacy-cep-view.js",
+        "mcp-server/core-migration-resource-fences.js",
+        "mcp-server/core-product-migration.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-service.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/review-evidence.js"
+      ]
+    },
+    {
+      "path": "scripts/core-record-context-smoke.js",
+      "bytes": 2424,
+      "sha256": "dd336c65aaf3e7214c9ec2289ade9a3944497e0fa908923f0e33b17ac1f44ee5",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/plan-run-records.js"
       ]
     },
     {
@@ -2174,8 +2340,8 @@
     },
     {
       "path": "scripts/network-test-fixture.js",
-      "bytes": 21044,
-      "sha256": "a4283c36a38d2f84a36457ebe0036f15911f25316da5e920aee3f44c491a500b",
+      "bytes": 21214,
+      "sha256": "d40abbce0f803a21f4d1d23a0e314032e5b48e073082b92afe9ceb8bd3b58f7f",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "39b46a58d7c29d9a7158166c6fe1c3c9321f5331e0e35c914508f00368b74336",
       "literalDependencies": []
@@ -2196,9 +2362,9 @@
     },
     {
       "path": "scripts/owned-runtime-daemon-helper.ps1",
-      "bytes": 71353,
-      "sha256": "7453ca5377e1e4eb462069907af9f25e2e2826ec4f458d208ad649e5251cd2ff",
-      "disposition": "copied",
+      "bytes": 93613,
+      "sha256": "d08061c0f40669e2c0c4a14fe5c497e500fae5a014b890c9b6a92cc0e7e40d80",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "7453ca5377e1e4eb462069907af9f25e2e2826ec4f458d208ad649e5251cd2ff",
       "literalDependencies": []
     },

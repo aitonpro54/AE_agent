@@ -12,13 +12,13 @@ function harness(options={}){
   let reads=0,writes=0,nativeCalls=0,confirmations=0;
   const storage={getItem(k){reads++;return Object.hasOwn(values,k)?values[k]:null;},setItem(k,v){writes++;values[k]=String(v);},removeItem(k){delete values[k];}};
   const elements=new Map();for(const m of html.matchAll(/\bid="([^"]+)"/g))elements.set(m[1],{value:m[1]==="bridgeUrl"?"http://127.0.0.1:3456":"",textContent:"",className:"",style:{},checked:false,disabled:false,listeners:{},attrs:{},addEventListener(t,f){(this.listeners[t] ||= []).push(f);},setAttribute(k,v){this.attrs[k]=String(v);},getAttribute(k){return this.attrs[k] || null;}});
-  const requests=[],callbacks=[],timers=[];let responder=options.respond || (()=>({ok:true,settlement:null,disposition:null,certificate:null}));
+  const requests=[],callbacks=[],timers=[],nativePending=[];let responder=options.respond || (()=>({ok:true,settlement:null,disposition:null,certificate:null}));
   function XHR(){this.status=0;this.readyState=0;}
   XHR.prototype.open=function(method,url){this.method=method;this.url=url;};XHR.prototype.setRequestHeader=function(){};XHR.prototype.getResponseHeader=function(){return null;};
-  XHR.prototype.send=function(raw){const request={method:this.method,path:new URL(this.url).pathname,body:raw?JSON.parse(raw):null};requests.push(request);callbacks.push(()=>{const result=responder(request);this.status=result?.__status===undefined?200:result.__status;this.responseText=JSON.stringify(result?.body || result);this.readyState=4;if(this.status===0)this.onerror();else this.onreadystatechange();});};
+  XHR.prototype.send=function(raw){const request={method:this.method,path:new URL(this.url).pathname,url:this.url,body:raw?JSON.parse(raw):null};requests.push(request);callbacks.push(()=>{const result=responder(request);this.status=result?.__status===undefined?200:result.__status;this.responseText=JSON.stringify(result?.body || result);this.readyState=4;if(this.status===0)this.onerror();else this.onreadystatechange();});};
   const context={console,Date,Math,encodeURIComponent,decodeURIComponent,XMLHttpRequest:XHR,localStorage:storage,
     document:{title:"",getElementById:id=>elements.get(id)||null},
-    CSInterface:function(){this.evalScript=(script,done)=>{nativeCalls++;if(options.nativeComplete)done(options.nativeComplete);};},
+    CSInterface:function(){this.evalScript=(script,done)=>{nativeCalls++;if(typeof options.nativeComplete==="function"){const result=options.nativeComplete(script);if(result!==undefined)done(result);else nativePending.push({script,done});}else if(options.nativeComplete)done(options.nativeComplete);else nativePending.push({script,done});};},
     setTimeout:f=>{timers.push(f);return timers.length;},clearTimeout:()=>{}};
   context.window=context;context.location={href:"file:///fixture/CEP/extensions/com.codex.aemcpbridge/index.html",search:"",replace:()=>{}};
   context.AEAgentHostStartupGuard={isAllowed:()=>options.hostAllowed!==false,snapshot:()=>({code:"host_refused"})};
@@ -29,14 +29,15 @@ function harness(options={}){
     install:function(state,accepted){state=JSON.parse(JSON.stringify(state));running=true;badgeEl.textContent="online";panelConnectionGeneration=101;panelLifecycleEpoch=1;currentBridgePlan=state;
       lastPlanResult={plan:state.plan,planValidation:state.validation,requestId:state.proposal.requestId,m100ActionProposal:state.proposal,bridgePlanPins:currentBridgePlanPins(state)};
       lastAcceptedDryRun=null;if(accepted)rememberPlanRun(typeof accepted==="object"?JSON.parse(JSON.stringify(accepted)):{ok:true,dryRun:true,id:"synthetic-dry-run"});updatePlanControls();},
-    epoch:function(){panelLifecycleEpoch++;},setState:function(v){currentBridgePlan=v;},
+    epoch:function(){panelLifecycleEpoch++;},setState:function(v){currentBridgePlan=v;},coreBegin:beginCoreMigrationSession,coreAccept:acceptCoreMigrationActivation,actor:deliveryActor,poll:poll,
+    installCurrent:function(state){currentBridgePlan=JSON.parse(JSON.stringify(state));lastPlanResult={plan:state.plan,planValidation:state.validation,requestId:state.proposal.requestId,m100ActionProposal:state.proposal,bridgePlanPins:currentBridgePlanPins(state)};lastAcceptedDryRun=null;updatePlanControls();},
     run:runLastPlan,physical:physicalEvalScript,physicalIdle:physicalEvalScriptIdle,execute:executeCommand,
     snapshot:panelActionSnapshot,ui:uiPlanAction,proposal:function(){return m100ActionProposalForResult(lastPlanResult);},disconnect:disconnect,
     reconnect:function(){panelConnectionGeneration++;panelLifecycleEpoch++;lastAcceptedDryRun=null;running=true;refreshCurrentBridgePlan({fresh:true});}};`;
   vm.runInContext(panel.replace(/\}\)\(\);\s*$/,hook+"\n})();"),context);
   function flush(){let count=0;while(callbacks.length){if(++count>100)throw Error("offline callback budget");callbacks.shift()();}}
   flush();
-  return {context,elements,requests,values,flush,invoke:e=>vm.runInContext("AEAgentPanelActions.invoke("+JSON.stringify(e)+")",context),setResponder:f=>{responder=f;},counts:()=>({reads,writes,nativeCalls,confirmations}),click:(id,event={isTrusted:true})=>{for(const f of elements.get(id).listeners.click || [])f(event);flush();}};
+  return {context,elements,requests,values,flush,nativePending,tick:()=>{const next=timers.shift();if(next)next();flush();},invoke:e=>vm.runInContext("AEAgentPanelActions.invoke("+JSON.stringify(e)+")",context),setResponder:f=>{responder=f;},counts:()=>({reads,writes,nativeCalls,confirmations}),click:(id,event={isTrusted:true})=>{for(const f of elements.get(id).listeners.click || [])f(event);flush();}};
 }
 function proposal(h,risk="mutating",session){
   const p={protocolVersion:"m100.v1",messageType:"action_proposal",status:"awaiting_confirmation",serverCreated:true,createdBy:"ae-agent-bridge",requestId:"synthetic-request",actionId:"synthetic-action",revision:1,
@@ -100,12 +101,12 @@ unknown.context.__test.disconnect();unknown.context.__test.reconnect();unknown.f
 const historicalValues={...harness().values},historicalIds=[1,2,3,4].map(n=>String(n).repeat(8)+"-1111-4111-8111-111111111111"),historicalNames=["chat.send","provider.setup","agent.hardcore","logs.get"],historicalRecords={},historicalIndex={};
 historicalNames.forEach((action,i)=>{const requestId=historicalIds[i];historicalRecords[requestId]={requestId,action,state:i===0?"completed":"unknown",signature:"synthetic-legacy-"+i,effect:"provider_operation",delivery:i===0?"submitted":"unknown",replayAllowed:false};historicalIndex[requestId]={action,signature:historicalRecords[requestId].signature};});
 const tombstoneId="55555555-1111-4111-8111-111111111111",tombstone={action:"chat.sessions.list",state:"completed",signature:"synthetic-legacy-tombstone"};historicalIndex[tombstoneId]={action:tombstone.action,signature:tombstone.signature};
-historicalValues.codexAePanelActionReceipts=JSON.stringify({version:1,records:historicalRecords,tombstones:{[tombstoneId]:tombstone}});historicalValues.codexAePanelActionReceiptIndex=JSON.stringify(historicalIndex);
+historicalValues["codexAeCorePanelActionReceipts.v1"]=JSON.stringify({version:1,records:historicalRecords,tombstones:{[tombstoneId]:tombstone}});historicalValues["codexAeCorePanelActionReceiptIndex.v1"]=JSON.stringify(historicalIndex);
 const historical=harness({storage:historicalValues});assert.equal(historical.context.AEAgentPanelActions.state().actionStorage,"ready");assert.equal(historical.context.AEAgentPanelActions.getResult(historicalIds[0]).state,"completed");assert.equal(historical.context.AEAgentPanelActions.getResult(historicalIds[1]).state,"unknown");assert.equal(historical.context.AEAgentPanelActions.getResult(tombstoneId).code,"receipt_retained_without_detail");assert(historical.context.AEAgentPanelActions.state().unresolvedActions.some(r=>r.action==="provider.setup"));
 const historicalDenied=historical.invoke({protocolVersion:contract.PROTOCOL_VERSION,requestId:"66666666-1111-4111-8111-111111111111",action:"provider.setup",args:{}});assert.equal(historicalDenied.state,"rejected");assert.equal(contract.getActionDefinition("provider.setup"),null);assert.equal(contract.getStoredActionDefinition("provider.setup").historical,true);
 const currentPassive=historical.invoke({protocolVersion:contract.PROTOCOL_VERSION,requestId:"77777777-1111-4111-8111-111111111111",action:"plan.current",args:{}});assert.equal(currentPassive.state,"completed");assert.equal(historical.counts().nativeCalls,0);
-const unknownLegacy={...historicalValues},unknownRows=JSON.parse(unknownLegacy.codexAePanelActionReceipts),unknownIndex=JSON.parse(unknownLegacy.codexAePanelActionReceiptIndex);unknownRows.records[historicalIds[0]].action="not-a-historical-action";unknownIndex[historicalIds[0]].action="not-a-historical-action";unknownLegacy.codexAePanelActionReceipts=JSON.stringify(unknownRows);unknownLegacy.codexAePanelActionReceiptIndex=JSON.stringify(unknownIndex);assert.equal(harness({storage:unknownLegacy}).context.AEAgentPanelActions.state().actionStorage,"unavailable");
+const unknownLegacy={...historicalValues},unknownRows=JSON.parse(unknownLegacy["codexAeCorePanelActionReceipts.v1"]),unknownIndex=JSON.parse(unknownLegacy["codexAeCorePanelActionReceiptIndex.v1"]);unknownRows.records[historicalIds[0]].action="not-a-historical-action";unknownIndex[historicalIds[0]].action="not-a-historical-action";unknownLegacy["codexAeCorePanelActionReceipts.v1"]=JSON.stringify(unknownRows);unknownLegacy["codexAeCorePanelActionReceiptIndex.v1"]=JSON.stringify(unknownIndex);assert.equal(harness({storage:unknownLegacy}).context.AEAgentPanelActions.state().actionStorage,"unavailable");
 console.log(JSON.stringify({ok:true,scope:"offline VM/DOM; synthetic HTTP/native stubs",panelActions:allowed.length,protectedUiRiskLabels:["mutating/save","destructive","raw_jsx"],sessionEpoch:true,manualGesture:true,physicalLatchReload:true,unknownNoReplay:true,historicalReadOnly:true,reconnectReadoption:true,serverRawGateProven:false,liveProof:false}));
 }
 // Test fixture export only: no product imports this file or injected VM hook.
-module.exports={harness,clone};
+module.exports={harness,clone,proposal};
