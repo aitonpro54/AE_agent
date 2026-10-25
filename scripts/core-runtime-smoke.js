@@ -29,7 +29,13 @@ async function main(){
     const unknown=await call("build_solution_plan",{solutionId:"removed-recipe",inputs:{}});assert.strictEqual(unknown.isError,true);assert.match(JSON.stringify(unknown),/Unsupported Core plan builder/);
     const builder=require("../mcp-server/solution-plan-builder"),id=builder.SUPPORTED_SOLUTION_IDS[0],inputs=builder.getBuilderContract(id).example;
     const built=payload(await call("build_solution_plan",{solutionId:id,inputs}));assert.strictEqual(built.ok,true);assert(built.plan.steps.length>0);
-    const direct=await call("update_text_layer",{layerIndex:1,text:"must not execute"});assert.strictEqual(direct.isError,true);assert.match(JSON.stringify(direct),/proposal|confirm|blocked|authority|identity/i);
+    // Valid stable identities and checkpoint arguments ensure that authority,
+    // rather than a late input error, is the observed reason for rejection.
+    for(const [name,args]of [
+      ["update_text_layer",{compItemIndex:1,layerIndex:1,expectedCompItemId:101,expectedLayerId:201,text:"must not execute",autoCheckpoint:true,checkpointLabel:"isolated",confirm:true}],
+      ["set_property_value",{compItemIndex:1,layerIndex:1,expectedCompItemId:101,expectedLayerId:201,propertyPath:["ADBE Transform Group","ADBE Opacity"],value:50,autoCheckpoint:true,confirm:true}],
+      ["run_ai_agent_plan",{plan:{steps:[{tool:"update_text_layer",args:{compItemIndex:1,layerIndex:1,expectedCompItemId:101,expectedLayerId:201,text:"must not execute"}}]},dryRun:false,allowMutations:true,confirm:true}]
+    ]){const direct=await call(name,args),blocked=payload(direct);assert.strictEqual(direct.isError,true,name);assert.strictEqual(blocked.code,"proposal_required",name);assert.strictEqual(blocked.m100.riskLevel,"mutating",name);assert.strictEqual(blocked.m100.requiresProposal,true,name);assert.strictEqual(blocked.m100.ignoredClientConfirmation,true,name);}
     const after=payload(await call("get_bridge_status"));assert.strictEqual(after.pendingCommands,0);assert.strictEqual(after.inflightCommands.length,0);
     console.log(JSON.stringify({ok:true,proof:"isolated offline product adapter+daemon",port:fixture.port,daemonPid:fixture.child.pid,adapterPid:adapter.pid,tools:names.length,sourceSha256:expected.sourceSha256,adapterSha256:digest(adapterFile),daemonSha256:digest(daemonFile),checks:["Core snapshot hashes and child argv","MCP initialize/catalog","pid and source-set readback","fixed builder success and unknown rejection","direct mutation refused without dispatch"],liveAE:false,nativeFactories:0}));
   }finally{

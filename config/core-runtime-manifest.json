@@ -412,8 +412,8 @@
     },
     {
       "path": "mcp-server/bridge-daemon.js",
-      "bytes": 608452,
-      "sha256": "32bfcf13dacc2a8edf383b25a64b596c264b56a9460a2f8e354b2777909ea9be",
+      "bytes": 608769,
+      "sha256": "1218bfcd029a7fd87596d75d337b4f7bffcd01a5203393a3ae8a50aa6bab1e9b",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "559437276f659418687b48f9365fd73d8f59e03bc1ce5ebde40b05ef7f433aa8",
       "literalDependencies": [
@@ -1980,8 +1980,8 @@
     },
     {
       "path": "scripts/core-runtime-smoke.js",
-      "bytes": 4991,
-      "sha256": "329100583c89326bd3af85bf74fee323224b1f074a3b35521b2427b3d50afec7",
+      "bytes": 5930,
+      "sha256": "9606c0541cb3d7324460069a66b87e8715e6108dd8db9acd99a8021ff78f4b5d",
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/review-evidence.js",

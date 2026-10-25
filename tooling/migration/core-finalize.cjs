@@ -14,12 +14,14 @@ walk(ast,(n,p)=>{
   }
   if(n.type==="IfStatement" && p?.type==="BlockStatement"){
     const test=s.slice(n.test.start,n.test.end),body=s.slice(n.consequent.start,n.consequent.end);
-    if([...excludedTools].some(name=>test.includes('"'+name+'"'))||test.includes('"/usage"'))rows.push({start:n.start,end:n.end});
+    // Only exact dispatch-name predicates may remove tool handlers. A mixed
+    // toolName risk-policy predicate must retain its supported safety siblings.
+    if(/^name\s*===/.test(test)&&[...excludedTools].some(name=>test.includes('"'+name+'"'))||test.includes('"/usage"'))rows.push({start:n.start,end:n.end});
     if(test.includes('"/agents"')&&body.includes('aiAgents'))rows.push({start:n.start,end:n.end});
   }
   if(n.type==="FunctionDeclaration" && ["ownedTrustedServerOnlyResult","aiChatRequestSummary"].includes(n.id.name))rows.push({start:n.start,end:n.end,text:n.id.name==="ownedTrustedServerOnlyResult"?'function ownedTrustedServerOnlyResult(){throw Object.assign(Error("core_library_tools_removed"),{code:"core_library_tools_removed"});}':""});
 });
-s=edit(s,rows);
+s=edit(s,rows).replace(' || toolName === "run_agent_hardcore_session"',"");
 // Tool descriptor removal is based on exact catalog names, not text matching.
 ast=parse(s);const tools=ast.body.find(n=>n.declarations?.[0]?.id.name==="tools");
 const elements=tools.declarations[0].init.elements.filter(n=>n.type!=="ObjectExpression" || !excludedTools.has(n.properties.find(p=>p.key?.name==="name")?.value?.value));

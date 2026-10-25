@@ -2553,7 +2553,16 @@ function classifyM100ToolRisk(name) {
       reasons: ["destructive tool requires a server-owned proposal"]
     };
   }
-  
+  if (MUTATING_TOOL_NAMES.has(toolName) || toolName === "run_ai_agent_plan") {
+    return {
+      policyVersion: M100_RISK_POLICY_VERSION,
+      toolName,
+      known: true,
+      riskLevel: "mutating",
+      requiresProposal: true,
+      reasons: ["mutating execution path requires a server-owned proposal"]
+    };
+  }
   return {
     policyVersion: M100_RISK_POLICY_VERSION,
     toolName,
