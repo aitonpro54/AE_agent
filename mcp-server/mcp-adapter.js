@@ -206,7 +206,7 @@ async function handleRpcBound(message, originalRequest) {
           tools: {}
         },
         instructions: [
-          "Inspect explicit AE targets through typed tools. Use the fixed deterministic build_solution_plan builders when applicable, then propose_ai_agent_plan and a fresh dry-run. The trusted CEP Autonomous Codex session permits only proposal-backed typed mutation. Raw JSX, destructive operations and save retain protected manual confirmation. Reconcile get_current_ai_agent_plan and UNKNOWN outcomes before further work; never replay an unknown mutation. At most two eligible setter corrections may use parentActionId after fresh inspection and read-back. Token accounting is provided by the separate external Codeburn MCP. Panel functions use list_panel_actions, get_panel_state, invoke_panel_action, and get_panel_action_result.",
+          "Inspect explicit AE targets through typed tools. Use get_plan_builder_contract for an exact supported builder ID from build_solution_plan's enum, then build_solution_plan, propose_ai_agent_plan and a fresh dry-run. The trusted CEP Autonomous Codex session permits only proposal-backed typed mutation. Raw JSX, destructive operations and save retain protected manual confirmation. Reconcile get_current_ai_agent_plan and UNKNOWN outcomes before further work; never replay an unknown mutation. At most two eligible setter corrections may use parentActionId after fresh inspection and read-back. Token accounting is provided by the separate external Codeburn MCP. Panel functions use list_panel_actions, get_panel_state, invoke_panel_action, and get_panel_action_result.",
           TEXT_LAYOUT_POLICY
         ].join("\n\n"),
         serverInfo: {

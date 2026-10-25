@@ -646,11 +646,15 @@
     },
     {
       "path": "mcp-server/core-plan-catalog.js",
-      "bytes": 2097,
-      "sha256": "2a649181b5667f5d55094af8ad5bb83fb1aae4e19aa44a9eac607ea5fa7bddf1",
+      "bytes": 3749,
+      "sha256": "c3e2e2bd8222b94bbbcf24f1e68e3fdeb336184ee53a6cf8005bb338dcec2a29",
       "disposition": "core-specific",
       "literalDependencies": [
-        "mcp-server/solution-plan-builder.js"
+        "mcp-server/comp-visual-review-plan.js",
+        "mcp-server/montage-tools.js",
+        "mcp-server/project-lifecycle-plan.js",
+        "mcp-server/solution-plan-builder.js",
+        "mcp-server/text-visual-review-plan.js"
       ]
     },
     {
@@ -664,8 +668,8 @@
     },
     {
       "path": "mcp-server/core-tool-dispatch.js",
-      "bytes": 487548,
-      "sha256": "ccfe028012f377dc26c8c052c5b33bfdcaf56281013fe914c4933096f1297d30",
+      "bytes": 487843,
+      "sha256": "112002a2293b8991630c0916a158b10cc7b9a9286f4eaade54af99dfd7344ddd",
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/core-plan-catalog.js",
@@ -770,8 +774,8 @@
     },
     {
       "path": "mcp-server/mcp-adapter.js",
-      "bytes": 15141,
-      "sha256": "312a97f83bd9bf9785d7626673f53d402e0a56b1ee63a4fb76e304d802689e2e",
+      "bytes": 15185,
+      "sha256": "259c552963f21ae4328349546b7ef176361fecbeba472264616001157bb83d27",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "94ccad9a174d06d5769b949144ee9b1784e67f7c680400b8f6950ec993d511a2",
       "literalDependencies": [
@@ -1973,19 +1977,18 @@
     },
     {
       "path": "scripts/core-check.js",
-      "bytes": 1677,
-      "sha256": "606c177620ca2c05349e33558feb8844ab635e2dfdf560c4a6a20bbd1e8618a2",
+      "bytes": 2373,
+      "sha256": "7af5caed7f16ce910299b5820a12aa3349d40204d4d48a8f5dce3f3714086f1a",
       "disposition": "core-specific",
       "literalDependencies": []
     },
     {
       "path": "scripts/core-runtime-smoke.js",
-      "bytes": 5930,
-      "sha256": "9606c0541cb3d7324460069a66b87e8715e6108dd8db9acd99a8021ff78f4b5d",
+      "bytes": 6479,
+      "sha256": "4515cb565684e4627054b52bd459d839641fc6aa2051a5948f9cc757fcf28a20",
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/review-evidence.js",
-        "mcp-server/solution-plan-builder.js",
         "scripts/network-test-fixture.js"
       ]
     },

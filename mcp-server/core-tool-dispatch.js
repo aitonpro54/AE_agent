@@ -1265,6 +1265,11 @@ async function callTool(name, args, executionContext) {
     return ports.toolResult({ok: true, current});
   }
 
+  if(name==="get_plan_builder_contract"){
+    try{return ports.toolResult({ok:true,contract:require("./core-plan-catalog").getPlanBuilderContract(args.solutionId)});}
+    catch(error){return ports.toolResult({ok:false,code:error.code||"builder_contract_failed",error:error.message},true);}
+  }
+
   
 
   

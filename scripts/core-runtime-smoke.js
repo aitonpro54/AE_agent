@@ -18,7 +18,7 @@ async function main(){
     adapter.stderr.on("data",b=>{stderr=(stderr+b).slice(-16000);});
     readline.createInterface({input:adapter.stdout}).on("line",line=>{const v=JSON.parse(line),p=pending.get(v.id);if(p){pending.delete(v.id);clearTimeout(p.timer);v.error?p.reject(Error(JSON.stringify(v.error))):p.resolve(v.result);}});
     function rpc(method,params){return new Promise((resolve,reject)=>{const id=++serial,timer=setTimeout(()=>{pending.delete(id);reject(Error("isolated adapter timeout: "+stderr));},8000);pending.set(id,{resolve,reject,timer});adapter.stdin.write(JSON.stringify({jsonrpc:"2.0",id,method,params})+"\n");});}
-    const init=await rpc("initialize",{});assert(init.instructions.includes("fixed deterministic"));assert(!init.instructions.includes("search_solutions"));
+    const init=await rpc("initialize",{});assert(init.instructions.includes("get_plan_builder_contract"));assert(!init.instructions.includes("search_solutions"));
     const catalog=await rpc("tools/list",{}),names=catalog.tools.map(x=>x.name);
     for(const name of ["build_solution_plan","get_current_ai_agent_plan","propose_ai_agent_plan","run_ai_agent_plan","get_project_info"])assert(names.includes(name),name);
     for(const name of ["search_solutions","get_solution","list_solution_candidates","get_solution_candidate","list_ai_agents","chat_with_ai_agent","plan_with_ai_agent","run_agent_hardcore_session","get_task_usage","get_usage_history"])assert(!names.includes(name),name);
@@ -27,8 +27,13 @@ async function main(){
     const status=payload(await call("get_bridge_status"));assert.strictEqual(status.humanGuardRuntime.pid,fixture.child.pid);assert.strictEqual(status.port,fixture.port);assert.strictEqual(status.panelConnected,false);
     const expected=require("../mcp-server/review-evidence").runtimeIdentity(ROOT);assert.strictEqual(status.humanGuardRuntime.sourceSha256,expected.sourceSha256);
     const unknown=await call("build_solution_plan",{solutionId:"removed-recipe",inputs:{}});assert.strictEqual(unknown.isError,true);assert.match(JSON.stringify(unknown),/Unsupported Core plan builder/);
-    const builder=require("../mcp-server/solution-plan-builder"),id=builder.SUPPORTED_SOLUTION_IDS[0],inputs=builder.getBuilderContract(id).example;
-    const built=payload(await call("build_solution_plan",{solutionId:id,inputs}));assert.strictEqual(built.ok,true);assert(built.plan.steps.length>0);
+    const ids=catalog.tools.find(t=>t.name==="build_solution_plan").inputSchema.properties.solutionId.enum;
+    assert.strictEqual(ids.length,9);
+    let publicBuilderCount=0;
+    for(const id of ids){const r=await call("get_plan_builder_contract",{solutionId:id}),contract=payload(r).contract;assert.strictEqual(r.isError,false);assert.strictEqual(contract.solutionId,id);assert(contract.inputSchema);
+      if(contract.example){const built=payload(await call("build_solution_plan",{solutionId:id,inputs:contract.example}));assert.strictEqual(built.ok,true);assert(built.plan.steps.length>0);publicBuilderCount++;}}
+    assert.strictEqual(publicBuilderCount,4,"four keyframe plans built solely from public MCP contracts/examples");
+    assert.strictEqual((await call("get_plan_builder_contract",{solutionId:"removed-recipe"})).isError,true);
     // Valid stable identities and checkpoint arguments ensure that authority,
     // rather than a late input error, is the observed reason for rejection.
     for(const [name,args]of [

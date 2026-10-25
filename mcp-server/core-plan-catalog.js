@@ -7,5 +7,18 @@ const planTools = [
     inputSchema: {type: "object", properties: {plan: {type: "object"}, requestId: {type: "string"}, parentActionId: {type: "string", description: "Failed proposal eligible for at most two inspected setter corrections. Creation/import/JSX and unknown outcomes cannot be retried this way."}}, required: ["plan"]} }
 ];
 const SUPPORTED_BUILDERS=Object.freeze([...require("./solution-plan-builder").SUPPORTED_SOLUTION_IDS,"guarded-project-lifecycle","published-save-as-state-only-recovery","comp-visual-review-plan","text-visual-review-plan","montage-pipeline-plan"]);
+planTools.find(tool=>tool.name==="build_solution_plan").inputSchema.properties.solutionId.enum=[...SUPPORTED_BUILDERS];
+planTools.push({name:"get_plan_builder_contract",description:"Read the exact input/evidence schema for one fixed Core deterministic builder. No discovery, registry, provider or AE call. Read this contract before build_solution_plan; execution retains proposal/dry-run/confirmation/read-back.",inputSchema:{type:"object",additionalProperties:false,properties:{solutionId:{type:"string",enum:[...SUPPORTED_BUILDERS]}},required:["solutionId"]},annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false}});
 function assertSupportedBuilder(id){if(typeof id!=="string"||!SUPPORTED_BUILDERS.includes(id))throw Object.assign(Error("Unsupported Core plan builder"),{code:"unsupported_core_plan_builder"});return id;}
-module.exports=Object.freeze({planTools,SUPPORTED_BUILDERS,assertSupportedBuilder});
+function getPlanBuilderContract(id){
+  assertSupportedBuilder(id);
+  const keyframes=require("./solution-plan-builder").getBuilderContract(id);
+  if(keyframes)return keyframes;
+  if(id==="text-visual-review-plan")return require("./text-visual-review-plan").getTextVisualReviewBuilderContract();
+  if(id==="montage-pipeline-plan")return require("./montage-tools").getMontagePipelineBuilderContract();
+  const descriptor=id==="comp-visual-review-plan"?require("./comp-visual-review-plan").buildCompVisualReviewPlanTool:
+    id==="guarded-project-lifecycle"?require("./project-lifecycle-plan").tool:require("./project-lifecycle-plan").recoveryTool;
+  return {solutionId:id,inputSchema:descriptor.inputSchema,description:descriptor.description,inspectionTool:descriptor.name,
+    restrictions:["Explicit inspected evidence is required.","Build/proposal do not authorize execution.","Proposal, fresh dry-run, protected confirmation and read-back gates remain mandatory."]};
+}
+module.exports=Object.freeze({planTools,SUPPORTED_BUILDERS,assertSupportedBuilder,getPlanBuilderContract});
