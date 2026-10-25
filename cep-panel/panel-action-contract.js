@@ -11,7 +11,7 @@
   var UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   var ACTION_CATALOG = [
-    {
+{
       name: "bridge.configure",
       effect: "local_persistence",
       confirmationRequired: false,
@@ -28,7 +28,7 @@
       affectedInputs: ["bridgeUrl", "bridgeToken"],
       outputFields: ["configured", "url"]
     },
-    {
+{
       name: "bridge.connect",
       effect: "panel_lifecycle",
       confirmationRequired: false,
@@ -41,7 +41,7 @@
       affectedInputs: ["connectButton", "status", "badge"],
       outputFields: ["connected", "baseUrl"]
     },
-    {
+{
       name: "bridge.disconnect",
       effect: "panel_lifecycle",
       confirmationRequired: false,
@@ -54,7 +54,7 @@
       affectedInputs: ["disconnectButton", "status", "badge"],
       outputFields: ["disconnected"]
     },
-    {
+{
       name: "panel.reload",
       effect: "panel_lifecycle",
       confirmationRequired: false,
@@ -67,39 +67,7 @@
       affectedInputs: ["reloadButton"],
       outputFields: ["targetUrl", "reloading"]
     },
-    {
-      name: "ui.diagnostics.set",
-      effect: "local_ui",
-      confirmationRequired: false,
-      description: "Show or hide the panel activity diagnostics pane.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["open"],
-        properties: {
-          open: { type: "boolean" }
-        }
-      },
-      affectedInputs: ["diagnosticsButton", "log"],
-      outputFields: ["open"]
-    },
-    {
-      name: "ui.sidebar.set",
-      effect: "local_ui",
-      confirmationRequired: false,
-      description: "Collapse or expand the sidebar provider pane.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["collapsed"],
-        properties: {
-          collapsed: { type: "boolean" }
-        }
-      },
-      affectedInputs: ["collapseSidebarButton", "sidebar"],
-      outputFields: ["collapsed"]
-    },
-    {
+{
       name: "autonomy.refresh",
       effect: "bridge_read",
       confirmationRequired: false,
@@ -112,7 +80,7 @@
       affectedInputs: ["autonomousSessionButton", "autonomousSessionStatus"],
       outputFields: ["session"]
     },
-    {
+{
       name: "autonomy.set",
       effect: "project_intent_write",
       confirmationRequired: false,
@@ -128,7 +96,7 @@
       affectedInputs: ["autonomousSessionButton", "autonomousSessionStatus"],
       outputFields: ["session"]
     },
-    {
+{
       name: "placeholder.refresh",
       effect: "bridge_read",
       confirmationRequired: false,
@@ -141,7 +109,7 @@
       affectedInputs: ["refreshPlaceholderProtectionButton", "placeholderProtectionStatus"],
       outputFields: ["protection"]
     },
-    {
+{
       name: "placeholder.accept",
       effect: "project_intent_write",
       confirmationRequired: false,
@@ -156,7 +124,7 @@
       affectedInputs: ["acceptPlaceholderButton", "placeholderSelectedProperties"],
       outputFields: ["acceptedCount"]
     },
-    {
+{
       name: "placeholder.release",
       effect: "project_intent_write",
       confirmationRequired: true,
@@ -172,7 +140,7 @@
       affectedInputs: ["releasePlaceholderButton", "placeholderProtectionStatus"],
       outputFields: ["released"]
     },
-    {
+{
       name: "placeholder.mapGroup",
       effect: "project_intent_write",
       confirmationRequired: false,
@@ -188,7 +156,7 @@
       affectedInputs: ["mapPlaceholderGroupButton", "placeholderGroupId"],
       outputFields: ["groupMappings"]
     },
-    {
+{
       name: "placeholder.constraints.set",
       effect: "project_intent_write",
       confirmationRequired: false,
@@ -205,438 +173,7 @@
       affectedInputs: ["applyPlaceholderConstraintsButton", "placeholderDistinctGroups", "placeholderDisallowOverlap"],
       outputFields: ["constraints"]
     },
-    {
-      name: "connector.refresh",
-      effect: "bridge_read",
-      confirmationRequired: false,
-      description: "Check status of the local ChatGPT connector bridge.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {}
-      },
-      affectedInputs: ["connectorStatusButton", "connectorStatusList"],
-      outputFields: ["status"]
-    },
-    {
-      name: "connector.emergencyDisable",
-      effect: "project_intent_write",
-      confirmationRequired: true,
-      description: "Emergency disable write tools in the connector bridge.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["confirm"],
-        properties: {
-          confirm: { type: "boolean" }
-        }
-      },
-      affectedInputs: ["connectorEmergencyDisableButton", "connectorStatusList"],
-      outputFields: ["status"]
-    },
-    {
-      name: "usage.refresh",
-      effect: "bridge_read",
-      confirmationRequired: false,
-      description: "Refresh observed token and execution usage metrics.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {}
-      },
-      affectedInputs: ["usageRefreshButton", "usageStatusList"],
-      outputFields: ["usage"]
-    },
-    {
-      name: "provider.group.set",
-      effect: "local_persistence",
-      confirmationRequired: false,
-      description: "Select active provider tab group.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["group"],
-        properties: {
-          group: { type: "string", enum: ["openai", "gemini", "claude", "openrouter", "local"] }
-        }
-      },
-      affectedInputs: ["providerTabs"],
-      outputFields: ["group"]
-    },
-    {
-      name: "provider.authMode.set",
-      effect: "local_persistence",
-      confirmationRequired: false,
-      description: "Select OpenAI authentication mode (API key or Codex CLI).",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["mode"],
-        properties: {
-          mode: { type: "string", enum: ["api", "cli"] }
-        }
-      },
-      affectedInputs: ["authModeTabs"],
-      outputFields: ["mode"]
-    },
-    {
-      name: "provider.agent.set",
-      effect: "local_persistence",
-      confirmationRequired: false,
-      description: "Select active AI agent by ID.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["agentId"],
-        properties: {
-          agentId: { type: "string", minLength: 1 }
-        }
-      },
-      affectedInputs: ["agentSelect"],
-      outputFields: ["agentId"]
-    },
-    {
-      name: "provider.model.set",
-      effect: "local_persistence",
-      confirmationRequired: false,
-      description: "Select model identifier for the active agent.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["model"],
-        properties: {
-          model: { type: "string", minLength: 1 }
-        }
-      },
-      affectedInputs: ["agentModel"],
-      outputFields: ["model"]
-    },
-    {
-      name: "provider.freeOnly.set",
-      effect: "local_persistence",
-      confirmationRequired: false,
-      description: "Filter agent models to free tier only.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["enabled"],
-        properties: {
-          enabled: { type: "boolean" }
-        }
-      },
-      affectedInputs: ["freeModelsOnly"],
-      outputFields: ["enabled"]
-    },
-    {
-      name: "provider.refresh",
-      effect: "provider_operation",
-      confirmationRequired: false,
-      description: "Refresh agent list from the bridge.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          quiet: { type: "boolean" }
-        }
-      },
-      affectedInputs: ["refreshAgentsButton", "agentSelect", "agentStatus"],
-      outputFields: ["agents"]
-    },
-    {
-      name: "provider.detectLocal",
-      effect: "provider_operation",
-      confirmationRequired: false,
-      description: "Detect local Ollama service on 127.0.0.1:11434.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {}
-      },
-      affectedInputs: ["detectLocalButton", "localStatus"],
-      outputFields: ["status"]
-    },
-    {
-      name: "provider.check",
-      effect: "provider_operation",
-      confirmationRequired: false,
-      description: "Check model readiness and connectivity for the selected agent.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          agentId: { type: "string", minLength: 1 },
-          model: { type: "string", minLength: 1 }
-        }
-      },
-      affectedInputs: ["checkAgentButton", "agentStatus"],
-      outputFields: ["readiness"]
-    },
-    {
-      name: "provider.selfTest",
-      effect: "provider_operation",
-      confirmationRequired: false,
-      description: "Run self-test probe for provider configurations.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          agentId: { type: "string", minLength: 1 }
-        }
-      },
-      affectedInputs: ["providerSelfTestButton", "providerSelfTestList"],
-      outputFields: ["results"]
-    },
-    {
-      name: "provider.key.save",
-      effect: "provider_operation",
-      confirmationRequired: false,
-      description: "Save API key securely for the selected agent.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["key"],
-        properties: {
-          agentId: { type: "string", minLength: 1 },
-          key: { type: "string", minLength: 1, writeOnly: true }
-        }
-      },
-      writeOnly: ["key"],
-      affectedInputs: ["saveAgentKeyButton", "agentApiKey"],
-      outputFields: ["saved"]
-    },
-    {
-      name: "provider.setup",
-      effect: "provider_operation",
-      confirmationRequired: false,
-      description: "Trigger advertised setup action (e.g. codex login flow).",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          agentId: { type: "string", minLength: 1 },
-          action: { type: "string", minLength: 1 }
-        }
-      },
-      affectedInputs: ["agentSetupActionButton", "agentSetupCard"],
-      outputFields: ["setup"]
-    },
-    {
-      name: "chat.mode.set",
-      effect: "local_persistence",
-      confirmationRequired: false,
-      description: "Set composer mode (chat, plan, or hardcore).",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["mode"],
-        properties: {
-          mode: { type: "string", enum: ["chat", "plan", "hardcore"] }
-        }
-      },
-      affectedInputs: ["chatModeTabs", "chatMode"],
-      outputFields: ["mode"]
-    },
-    {
-      name: "chat.optimization.set",
-      effect: "local_persistence",
-      confirmationRequired: false,
-      description: "Enable or disable prompt optimization flag.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["enabled"],
-        properties: {
-          enabled: { type: "boolean" }
-        }
-      },
-      affectedInputs: ["promptOptimization"],
-      outputFields: ["enabled"]
-    },
-    {
-      name: "chat.prompt.set",
-      effect: "local_ui",
-      confirmationRequired: false,
-      description: "Set prompt text in the composer textarea.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["prompt"],
-        properties: {
-          prompt: { type: "string" }
-        }
-      },
-      affectedInputs: ["chatPrompt"],
-      outputFields: ["prompt"]
-    },
-    {
-      name: "workflow.preset.set",
-      effect: "local_ui",
-      confirmationRequired: false,
-      description: "Select workflow preset in the dropdown.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["presetId"],
-        properties: {
-          presetId: { type: "string" }
-        }
-      },
-      affectedInputs: ["workflowPresetSelect"],
-      outputFields: ["presetId"]
-    },
-    {
-      name: "workflow.insert",
-      effect: "local_ui",
-      confirmationRequired: false,
-      description: "Insert workflow preset into composer with standard side effects.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          presetId: { type: "string" }
-        }
-      },
-      affectedInputs: ["applyWorkflowPresetButton", "chatPrompt", "chatModeTabs"],
-      outputFields: ["inserted", "prompt"]
-    },
-    {
-      name: "chat.sessions.list",
-      effect: "local_ui",
-      confirmationRequired: false,
-      description: "List stored chat conversations with bounded pagination.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          offset: { type: "integer", minimum: 0 },
-          limit: { type: "integer", minimum: 1, maximum: 100 }
-        }
-      },
-      affectedInputs: ["chatHistorySelect"],
-      outputFields: ["sessions", "total"]
-    },
-    {
-      name: "chat.session.select",
-      effect: "local_ui",
-      confirmationRequired: false,
-      description: "Switch to a specific chat conversation by session ID.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["sessionId"],
-        properties: {
-          sessionId: { type: "string", minLength: 1 }
-        }
-      },
-      affectedInputs: ["chatHistorySelect", "chatTranscript"],
-      outputFields: ["sessionId"]
-    },
-    {
-      name: "chat.new",
-      effect: "local_ui",
-      confirmationRequired: false,
-      description: "Start a fresh chat conversation.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {}
-      },
-      affectedInputs: ["newChatButton", "chatTranscript"],
-      outputFields: ["sessionId"]
-    },
-    {
-      name: "chat.clear",
-      effect: "local_ui",
-      confirmationRequired: true,
-      description: "Clear active chat transcript and history.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["confirm"],
-        properties: {
-          sessionId: { type: "string" },
-          confirm: { type: "boolean" }
-        }
-      },
-      affectedInputs: ["clearChatButton", "chatTranscript"],
-      outputFields: ["cleared", "sessionId"]
-    },
-    {
-      name: "chat.transcript.get",
-      effect: "local_ui",
-      confirmationRequired: false,
-      description: "Retrieve bounded transcript items from active conversation.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          sessionId: { type: "string" },
-          offset: { type: "integer", minimum: 0 },
-          limit: { type: "integer", minimum: 1, maximum: 100 }
-        }
-      },
-      affectedInputs: [],
-      outputFields: ["messages", "total"]
-    },
-    {
-      name: "chat.send",
-      effect: "provider_operation",
-      confirmationRequired: false,
-      description: "Send prompt in conversation mode to the selected agent.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["prompt"],
-        properties: {
-          prompt: { type: "string", minLength: 1 },
-          agentId: { type: "string", minLength: 1 },
-          model: { type: "string", minLength: 1 },
-          promptOptimization: { type: "boolean" }
-        }
-      },
-      affectedInputs: ["sendChatButton", "chatPrompt", "chatTranscript"],
-      outputFields: ["response", "sessionId"]
-    },
-    {
-      name: "agent.plan",
-      effect: "provider_operation",
-      confirmationRequired: false,
-      description: "Request an AE Agent structured action plan proposal.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["prompt"],
-        properties: {
-          prompt: { type: "string", minLength: 1 },
-          agentId: { type: "string", minLength: 1 },
-          model: { type: "string", minLength: 1 },
-          promptOptimization: { type: "boolean" }
-        }
-      },
-      affectedInputs: ["sendChatButton", "chatPrompt", "chatTranscript", "currentBridgePlan"],
-      outputFields: ["plan", "proposal", "pins"]
-    },
-    {
-      name: "agent.hardcore",
-      effect: "protected_plan_run",
-      confirmationRequired: true,
-      description: "Execute Agent Hardcore autonomous session with owner gates.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["prompt", "confirm"],
-        properties: {
-          prompt: { type: "string", minLength: 1 },
-          agentId: { type: "string", minLength: 1 },
-          model: { type: "string", minLength: 1 },
-          promptOptimization: { type: "boolean" },
-          confirm: { type: "boolean" }
-        }
-      },
-      affectedInputs: ["sendChatButton", "chatPrompt", "chatTranscript", "planRunStatus"],
-      outputFields: ["session", "run"]
-    },
-    {
+{
       name: "plan.current",
       effect: "bridge_read",
       confirmationRequired: false,
@@ -652,20 +189,7 @@
       affectedInputs: ["currentBridgePlan"],
       outputFields: ["current", "pins"]
     },
-    {
-      name: "plan.recover",
-      effect: "provider_operation",
-      confirmationRequired: false,
-      description: "Recover and re-propose last structured plan from chat history.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {}
-      },
-      affectedInputs: ["recoverLastPlanButton", "currentBridgePlan", "planRunStatus"],
-      outputFields: ["plan", "proposal"]
-    },
-    {
+{
       name: "plan.prepare",
       effect: "bridge_read",
       confirmationRequired: false,
@@ -682,7 +206,7 @@
       affectedInputs: ["dryRunPlanButton", "currentBridgePlan", "planRunStatus"],
       outputFields: ["adoptedPins", "acceptedDryRunId", "executed", "dryRun"]
     },
-    {
+{
       name: "plan.dryRun",
       effect: "bridge_read",
       confirmationRequired: false,
@@ -698,7 +222,7 @@
       affectedInputs: ["dryRunPlanButton", "planRunStatus"],
       outputFields: ["run", "executed"]
     },
-    {
+{
       name: "plan.run",
       effect: "protected_plan_run",
       confirmationRequired: true,
@@ -716,7 +240,7 @@
       affectedInputs: ["runPlanButton", "planRunStatus"],
       outputFields: ["run", "runId", "executed"]
     },
-    {
+{
       name: "plan.reconcile",
       effect: "bridge_read",
       confirmationRequired: false,
@@ -730,37 +254,8 @@
       },
       affectedInputs: ["reconcilePlanRunButton"],
       outputFields: ["reconciliation", "admissionGuardReleased", "terminalEvidenceRequired"]
-    },
-    {
-      name: "plan.devRequest",
-      effect: "bridge_read",
-      confirmationRequired: false,
-      description: "Prepare typed tool development request bundle for Codex App.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {}
-      },
-      affectedInputs: ["prepareDevRequestButton"],
-      outputFields: ["bundle"]
-    },
-    {
-      name: "logs.get",
-      effect: "local_ui",
-      confirmationRequired: false,
-      description: "Retrieve bounded sanitized activity log lines.",
-      schema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          offset: { type: "integer", minimum: 0 },
-          limit: { type: "integer", minimum: 1, maximum: 200 }
-        }
-      },
-      affectedInputs: [],
-      outputFields: ["lines", "total"]
     }
-  ];
+];
 
 
   var PIN_PROPERTIES = {
@@ -780,20 +275,9 @@
       if (def.name === 'plan.run') { def.schema.required.push('confirm'); def.schema.properties.confirm = {type:'boolean',enum:[true]}; }
       if (def.name === 'plan.prepare') def.effect = 'project_intent_write';
     }
-    if (/^(chat.send|agent.plan|agent.hardcore)$/.test(def.name)) {
-      def.schema.properties.sessionId = {type:'string',minLength:1};
-      def.schema.properties.mode = {type:'string',enum:[def.name === 'chat.send' ? 'chat' : def.name === 'agent.plan' ? 'plan' : 'hardcore']};
-      def.schema.required = ['prompt','sessionId','agentId','model','mode'];
-      if (def.confirmationRequired) def.schema.required.push('confirm');
-    }
-    if (/^provider\.(check|selfTest|key.save|setup)$/.test(def.name)) {
-      def.schema.properties.model = {type:'string',minLength:1};
-      def.schema.required = (def.schema.required || []).concat(['agentId','model']);
-    }
-    if (def.name === 'provider.freeOnly.set') def.effect = 'provider_operation';
-    if (def.name === 'chat.clear') def.schema.required = ['sessionId','confirm'];
+
     if (def.name === 'plan.reconcile') def.schema.required = ['runId'];
-    if (def.name === 'workflow.insert') def.schema.required = ['presetId'];
+
     if (def.name === 'placeholder.accept') def.schema.required = ['useSelectedProperties'];
     ACTION_INDEX[def.name] = def;
   });

@@ -1,35 +1,29 @@
 # Перенос AE Agent Core
 
-Исходная точка: AE_agent commit `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-agent-before-core-2026-10-25`. Source inventory docs завершены в `e531f04`. Назначение выбрано пользователем: `C:/Users/Ant/Documents/Codex/AE_Agent_Core`.
+Source: AE_agent `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-agent-before-core-2026-10-25`; inventory `e531f04`. Destination: `C:/Users/Ant/Documents/Codex/AE_Agent_Core`, branch `codex/core-migration`.
 
 ## Progress
 
-- [x] Отдельный Git baseline `codex/core-migration`, перенос по source allowlist.
-- [x] Независимый runtime: catalog/dispatch/state extraction, отсутствие providers/registry, изолированный adapter+daemon.
-- [ ] Минимальная CEP и согласование MCP/HTTP/panel contract.
-- [ ] Выбранные safety/scenario checks и перенос явного OFF preference (offline).
-- [ ] Concrete cutover package и отдельное разрешение на installed/runtime switch.
+- [x] Независимый Git baseline и перенос по exact source allowlist.
+- [x] Runtime extraction: typed catalog/dispatch/state, fixed builders, isolated adapter+daemon без providers/registry.
+- [x] Минимальная CEP и offline проверка session/adoption/manual confirmation/UNKNOWN контракта.
+- [ ] Offline helper: byte-exact protected state, path-bound marker, durable autonomy preference/OFF и status без replay.
+- [ ] Четыре выбранных workflow сценария и safety negatives.
+- [ ] Concrete cutover package; отдельное разрешение на installed assets/config/runtime switch и live read-back.
 
 ## Decision Log
 
-- Runtime extraction выполняет назначенный `ae_implementer` Sol 6.1 configured High, единственный destination writer; без helpers и live control. Runtime model/effort не подтверждён дополнительной metadata.
-- Private capability brands/ALS/WeakMaps, guarded wrapper и runner остаются в coherent bridge runtime. Typed schemas, typed dispatch, fixed deterministic plan catalog и project state выделены отдельно с явными interfaces.
-- Из Core исключены provider execution/chat/Hardcore, recipe discovery/candidates/registry/metrics, duplicate Usage. Состояние project protection/ownership/review/lifecycle сохранено; advisory memory остаётся в legacy.
-- Исходные CEP assets временно сохранены как material для следующего минимального UI-блока; это не готовый минимальный продукт.
-- Production authority/provisioning, installed CEP/MCP, private journals/grants/credentials не переносились. Default product mode не требует initial-owned addon; initial-owned native lane остаётся неподтверждённым.
-- Явный OFF нельзя потерять при cutover. V2 project-state marker содержит absolute storePathHash; его нельзя просто копировать/удалять. Нужна отдельная проверяемая migration/rebind процедура.
+- Writer назначается по scope; текущий CEP/authority/helper блок выполняет `ae_specialist`, без helpers/live control. Предыдущий runtime writer — `ae_implementer`. Configured роли не являются дополнительным runtime metadata proof.
+- Coherent runtime сохраняет private brands/ALS/WeakMaps, proposals, risk policy, edit ownership, checkpoints и no-replay. Schemas/dispatch/fixed builders/project-state выделены с явными interfaces. Advisory memory остаётся в legacy.
+- Providers/chat/Hardcore/recipes/registry/candidates/reuse metrics/duplicate Usage и Full Intaker исключены. Codeburn остаётся внешним MCP. AME не получает новых работ или проверок.
+- P1 review нашёл потерянную mixed mutating risk branch; она восстановлена, AST deletion ограничен exact excluded predicates. P2 review потребовал публичные builder contracts: доступны9 IDs,4 keyframe examples строятся через MCP. Review fixes сохранены; unresolved findings runtime review отсутствуют.
+- CEP сохраняет physical latch, delivery epochs, causal/reset receipts и opaque token/pins/manual server ingress. Session зависит от private page nonce и connection epoch, без chat storage. Ручной Run требует trusted click/confirm и private одноразовый frame; публичный Boolean его не создаёт. См. `docs/core-panel-contract.md`.
+- Production data/credentials/grants/journals и installed CEP/config не переносились. Explicit OFF обязателен; missing preference не consent. V2 project-state marker требует reviewed path rebind. Default product не требует initial-owned addon; native initial-owned lane не принят.
+- `.gitattributes` сохраняет raw source bytes при checkout; measured runtime hash обновляется после изменений.
 
 ## Validation
 
-- 25.10.2026: `npm.cmd run check:rules` — PASS (174 files, syntax, 0 missing/external/old-root imports); `npm.cmd run smoke:core-runtime` — PASS; `git diff --check` — PASS.
-- Isolated daemon+adapter: отдельный port 1454,203 MCP tools; own child PID/source-set/hash read-back; fixed builder success/unknown rejection; direct mutation blocked with zero queued/inflight commands. Snapshot удалён после сверки завершения обоих children.
-- Фактический destination manifest: `config/core-runtime-manifest.json` (175 product/test assets,5 412 505 bytes до минимизации CEP). В `config/core-module-boundaries.json` перечислены28 catalog inputs и186 explicit live getter ports typed dispatch. Dynamic/nonliteral/native dependencies отдельно требуют cutover review.
-- Source worktree проверен чистым. Live AE, AME, CU/CDP/bootstrap и native factories не запускались.
-- Унаследованный `create_adjustment_layer` обращался к двум необъявленным переменным. После поручения диспетчера guarded insertion перенесён в `create_solid_layer`, где находятся typed schema и local arguments; adjustment оставлен обычным addSolid. Generated JSX regression: positive move/readback; invalid index/name mismatch отклоняются до addSolid и beginUndoGroup; default solid/adjustment не перемещают существующие слои. Initial-owned library operations исключены из MCP catalog и fail-closed; native lane отдельно не принят.
-- Review исправление: первый runtime commit `2a502c2` содержал потерю mixed mutating risk branch при исключении Hardcore. Ветка восстановлена для всех setters и runner; AST removal ограничен exact `name ===` dispatch predicates. Проверены оставшиеся routes/dispatch deletions: иных смешанных safety deletions review не нашёл.
-- Усиленный isolated regression: `update_text_layer`, `set_property_value` с валидными stable IDs/checkpoint/confirm и `run_ai_agent_plan(dryRun:false)` возвращают именно `proposal_required`, risk=`mutating`, requiresProposal и ignoredClientConfirmation; pending/inflight=0. Port4646, sourceSha=`a1bc993b152e30bdb722b7013f77e470bc19425aa1bc91cf580ecb042c8fe194`. Первоначальный generic error test не считался достаточным safety proof.
-- P2 review исправление: `build_solution_plan` публикует enum9 IDs; `get_plan_builder_contract` возвращает точный retained schema/evidence/example по одному ID. Public MCP regression читает все9 contracts и строит4 keyframe plans из полученных examples, без внутренних imports клиента. PASS port8721/tools204; unknown contract/builders fail-closed.
-- Следующая CEP-граница требует осторожного удаления chat: `m100ConfirmationSessionId` зависит от active chat session, adoption/run сверяет token/pins/session; одновременно действуют physical evalScript latch, product reset и causal receipts. Механическое удаление UI closure не принято как безопасная migration.
-- Финальная runtime проверка: `check:rules` PASS (175 inspected source files,0 missing/external/old-root imports,manifest hashes/exclusions); `smoke:solid-placement` PASS; `smoke:core-runtime` PASS port7448/tools204, sourceSha=`c6e80ad863c1714b5e6bd2c79392217ec8c34e019dde26d4bf30a8455e2daf4e`; diff check PASS.176 runtime/test assets,5 420 371 bytes. Typed dispatcher184 explicit ports после удаления двух ошибочных унаследованных globals.
-- Source worktree чист, активных `node.exe` процессов fixture `ae-agent-network-boundary-*` после cleanup нет; submitted mutation не выполнялись, pending/inflight в последнем read-back=0. Production/AE/CEP не опрашивались для этой проверки.
-- Git attributes сохраняют raw bytes без autocrlf-преобразований, чтобы checkout не ломал measured source hashes.71 ранее нормализованный blob закреплён в исходных worktree bytes; offline comparison подтвердил0 non-EOL changes. Worktree bytes и последний runtime sourceSha не менялись.
+- Runtime baseline: `2cdd4fe`; P1/P2 fixes входят в историю. `core-runtime-smoke` подтверждает204 tools,9 public contracts/4 keyframe builds, unknown rejection и exact `proposal_required` без dispatch/pending/inflight в изолированном snapshot.
+- 25.10.2026, CEP: `smoke:core-cep` PASS — synthetic VM/DOM,16 actions, fresh adoption→dry-run без execute, raw/save/destructive manual gates, stale session/pins/no-dry/отмена/programmatic negatives, physical latch после reload и UNKNOWN/no replay. Новые source assets включены в manifest/hash census.
+- На этапе выполняются `check:rules`, `smoke:core-runtime`, JS syntax и `git diff --check`; точный итог указан в commit/ответе исполнителя. Fixture children завершаются штатным cleanup.
+- Ограничения: fake HTTP/native responses не являются live proof. Не проверены installed CEP/реальный браузерный жест/вид панели/AE evaluation/native provisioning/cutover. Source code/runtime/settings остаются неизменными.

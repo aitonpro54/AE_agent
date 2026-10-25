@@ -15,9 +15,9 @@
     },
     {
       "path": "cep-panel/index.html",
-      "bytes": 11815,
-      "sha256": "8e48e2cbc77a9e5327d0d8891d380168a6c8a44683f5c51bdfe3a33890f6e0c9",
-      "disposition": "copied",
+      "bytes": 4994,
+      "sha256": "3a5d227abbe5dc8fc1facdf903d9cc8e0fa60af5a685bcfa410be920ef322e46",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "8e48e2cbc77a9e5327d0d8891d380168a6c8a44683f5c51bdfe3a33890f6e0c9",
       "literalDependencies": []
     },
@@ -39,9 +39,9 @@
     },
     {
       "path": "cep-panel/panel-action-contract.js",
-      "bytes": 35769,
-      "sha256": "78937c094982cc68cc7c06e85955e09b5c5d5fe741f5c5a84a52c816ea0328df",
-      "disposition": "copied",
+      "bytes": 18514,
+      "sha256": "1e67a4581061a92f62b7cb680d0a57051b13a5d4802721ac07451bf924816920",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "78937c094982cc68cc7c06e85955e09b5c5d5fe741f5c5a84a52c816ea0328df",
       "literalDependencies": []
     },
@@ -55,17 +55,17 @@
     },
     {
       "path": "cep-panel/panel.js",
-      "bytes": 300008,
-      "sha256": "e3c7e94a2f51732ffcdcce311776acc6098b3c79df217e7b76a89713535b5ac3",
-      "disposition": "copied",
+      "bytes": 159450,
+      "sha256": "a4b46fff37d0fe33d1281e7489a64287f4e6cb235e2c1e1e996d29127b07455d",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "e3c7e94a2f51732ffcdcce311776acc6098b3c79df217e7b76a89713535b5ac3",
       "literalDependencies": []
     },
     {
       "path": "cep-panel/style.css",
-      "bytes": 15957,
-      "sha256": "7b02db47543f180d1c3ba2ec40e73911fc7f7fb2c4d815a265bae962ccb0e343",
-      "disposition": "copied",
+      "bytes": 1789,
+      "sha256": "e89977ba109699a6b6658d0df1bdcc5106a4dfbd669988ed9ae0ebab7ce0bba8",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "7b02db47543f180d1c3ba2ec40e73911fc7f7fb2c4d815a265bae962ccb0e343",
       "literalDependencies": []
     },
@@ -1914,8 +1914,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 278,
-      "sha256": "222093837838c53e94ab0fecd6419c364747dc7b13e5d3006a20ad3f81f2bb59",
+      "bytes": 334,
+      "sha256": "ae2f414214e0677bcb5b368e02ac720a3c025f7c3bc2a427f34926d951040388",
       "disposition": "core-specific",
       "literalDependencies": []
     },
@@ -1973,6 +1973,15 @@
         "mcp-server/common-title-assembly-recovery.js",
         "mcp-server/generated-export-recovery.js",
         "mcp-server/plan-run-records.js"
+      ]
+    },
+    {
+      "path": "scripts/core-cep-smoke.js",
+      "bytes": 12223,
+      "sha256": "7b4baae1413c711758e1a83fccd06fcffbc125ba61c0dccb57a84cc2e9e9821e",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "cep-panel/panel-action-contract.js"
       ]
     },
     {
@@ -2194,10 +2203,9 @@
     "native binaries/provisioning"
   ],
   "remaining": [
-    "minimal CEP",
     "four workflow coverage",
     "OFF preference and project-state migration",
     "installed config/authority cutover",
-    "live AE proof; AME paused"
+    "live CEP/AE proof; AME paused"
   ]
 }
