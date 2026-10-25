@@ -14,6 +14,8 @@ Cutover разрешён пользователем в текущей задач
 
 ## Актуальная последовательность
 
+**Текущее partial state:** исходная operation `9c9fb972-201d-4c73-8bf2-35bd6c8596f9`, generation `1672be8d-76e4-4fa3-9994-8a750c8a2209`, bootNonce `84c4eb15-a221-4c99-84ff-a4b1d10f95cf` уже подготовлена. State/preference и installed8 опубликованы sole controller под actual pair. Единственный `start-once` отказал на directory size representation; controller штатно released. Original once/intent/policy/projection/launch-attempt/unknown/reservation/ticket сохраняются byte-unchanged. Operator reconciliation — audit, не authenticated no-Start/exit proof. Ниже шаги1–7 описывают исходный протокол; **для этой consumed case их не повторять и не создавать новые inputs/UUID**. Active next sequence — раздел «Адресный preStart resume».
+
 1. Зафиксировать final implementation review/commit, runtime manifest, helper/Node/pwsh/adapter/daemon и8 CEP asset hashes. Адресные backups: source config, используемые внешние MCP registrations и installed8 assets; отдельно metadata bytes/object IDs защищённого state. Сохранять оригиналы и receipts в ignored cutover directory. Не копировать legacy credential/grants/registrations/journals в Core.
 2. Подготовить только новые, ещё не используемые Core inputs: fresh Core config, ordinary policy coverage **ровно** `owned_daemon_lifecycle`, staged byte-exact state через существующий `core-state-migration.js prepare <один UUID>`. Missing/corrupt/pending/overridden layout/marker или explicit OFF не угадывать. Helper имеет prepare/status/rollback-status, а не authority/apply API. Source bytes не менять.
 3. Выполнить fixed migration review/intent commands ниже. `authorize-current-review` создаёт отдельную closed one-shot policy `create_core_product_genesis_once` с original explicit-user reference `01a171dd-b843-7141-b28a-ae75d79ce7f1`. `prepare-genesis` закрепляет immutable once/operation/generation и ожидаемые staged state/Core assets; final publication ещё не требуется. Это устраняет цикл «publish до mutex».
@@ -45,6 +47,25 @@ $control = 'C:\Users\Ant\Documents\Codex\AE_Agent_Core\scripts\core-product-migr
 Fixed Node SHA `3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237`; pinned pwsh SHA `362a356ce7f0940ec74f73a8fc2c990a2cc24a38a11c90bbd8eca947110ad139`. Installed CEP root `C:/Users/Ant/AppData/Roaming/Adobe/CEP/extensions/com.codex.aemcpbridge`; assets: `CSXS/manifest.xml`, `index.html`, `panel-action-contract.js`, `panel-actions.js`, `native-probe-startup-guard.js`, `panel.js`, `style.css`, `lib/CSInterface.js`. Не менять extension/origin IDs.
 
 ## Same-operation recovery и rollback
+
+### Адресный preStart resume
+
+Offline directory fix и bounded same-operation recovery прошли independent design/implementation ACCEPT, открытых P1/P2 нет. Полный контракт: `core-prestart-recovery-design.md`; fixed case/pins — `config/core-prestart-recovery-case.json`. Actual resume остаётся pending.
+
+1. После final milestone commit sole controller закрепляет новый reviewed runtime/manifest/helper/CLI/Node/pwsh set и сверяет exact original/audit refs. Fixed `authorize-prestart-disposition` создаёт отдельную signed `wx`+fsync decision; это не launch и не подпись прошлого outcome. Existing equal decision только read-back, differing/partial — отказ. Никаких original rewrites/non-code rebase.
+
+```powershell
+& $fixedNode $control authorize-prestart-disposition
+& $fixedNode $control control
+```
+
+2. После `actual_pair_controller_ready` новый sole persistent controller удерживает реальную Source→Core pair. Existing published state/preference/marker/assets/config/projection/ровно3 shared fences повторно проверяются без повторной publication. Требуются fresh source absence/free3456, quiescence/noqueue/physical0/native idle и все прежние ownership/state/actor gates. Внутри этого же controller выполнить `prestart-resume-preflight`; только reviewed Core code pins могут отличаться от original facts.
+3. Один раз отправить `start-prestart-resume-once`. До native RPC создаётся signed `prestart-resume-launch.json`, расходующий authority и связывающий old origin/disposition/effective reservation+fresh ticket с actual nativeSessionId. Existing binding не даёт dispatch, другая session/lost pair не переиспользует её. Ordinary `start-once` остаётся read-back; exact-case ordinary launch закрыт.
+4. Успех проходит штатные candidate/register→explicit resumed genesis→current/handover и затем own CEP adoption/redirect/actual MCP read-back по шагам8–10. Любой partial/timeout/LOST после consumption — только same-operation observation; третья launch/register replay/metadata repair/stop privilege этим scope не выдаются. Original UNKNOWN/history не объявляется PASS.
+
+`observe`/`release` сохраняют прежние lifetime ограничения. При возможном Start сначала factual reconciliation; отсутствие PID/port не exit. Все actual administrative/runtime действия выполняет назначенный sole controller, а не offline writer.
+
+### Общий контракт после возможного Start
 
 После Start native HANDLE сохраняется немедленно. Identity/argv/candidate/register/seal/current/ACK fault сохраняет immutable once и ту же operation/generation. При held recovery допустимы только `observe`/same-operation read-back. Не повторять POST/register/start, не создавать вторую lineage/UUID, не repair metadata и не выдавать prereg rescue/stop privilege. EOF не должен потерять живой HANDLE/pair: persistent owner продолжает observation; LOST остаётся UNKNOWN, не exit.
 

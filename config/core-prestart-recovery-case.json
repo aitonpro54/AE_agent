@@ -1,0 +1,21 @@
+{
+  "operationId": "9c9fb972-201d-4c73-8bf2-35bd6c8596f9",
+  "generation": "1672be8d-76e4-4fa3-9994-8a750c8a2209",
+  "bootNonce": "84c4eb15-a221-4c99-84ff-a4b1d10f95cf",
+  "oldHelperSha256": "d08061c0f40669e2c0c4a14fe5c497e500fae5a014b890c9b6a92cc0e7e40d80",
+  "originalPins": {
+    "once": "c0cf3279b26422be34141c7a8b7102065e732f77b492de19ad19d5e1ea133aef",
+    "intent": "4a077592c2ab575029293bf73e5b06bf7a6134580a1777aae2eea004ee6591d2",
+    "policy": "95e8955ab0c9431100ed35b88acff0db2d61e3d123feb3861b77e177bcec5f2f",
+    "projection": "f0a91ac1cb85d263d10077a96727b30877e4df6c5101387b0b11cbe3d7de5091",
+    "attempt": "3cd21245471871200c312d547b5319122ead58ec343d8e0b82b0d973abe4e670",
+    "unknown": "6451e8ac209f45e0965fc0e9b6eb3b2c22f4d4662a687af6a4aa5577a9cf1e46",
+    "reservation": "329306758a53d8ca841df32933389b568fc3a3387bc0773037a23fafdb9cbd44",
+    "ticket": "ff7bd2d1d085ae3695351b7a5163ed9c54649390a5b5d8f7c28f47f8ea7ee862"
+  },
+  "audit": [
+    {"path":".codex-runtime/core-cutover-live/1ad11d29-92f2-48b9-a58d-aa8093798e34/prestart-refusal-reconciliation.json","rawSha256":"4706b01ffb03739d9595aed4207d028a5a4e84c9a7e1a49a46d3cbf27b0a687b"},
+    {"path":".codex-runtime/core-cutover-live/1ad11d29-92f2-48b9-a58d-aa8093798e34/resource-directory-native-readback.json","rawSha256":"604be66e10c6e99a2e9386effff84db9c96275fa757e6e8d514f791fe2f2bd43"},
+    {"path":".codex-runtime/core-cutover-live/1ad11d29-92f2-48b9-a58d-aa8093798e34/live-controller-release.json","rawSha256":"f04b6316c5d2c298d32f2f20dbd2f9073a98d116cc62cadb8fb253a6afbccdb8"}
+  ]
+}

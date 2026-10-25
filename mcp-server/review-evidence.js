@@ -138,6 +138,8 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
 
 const RUNTIME_FILES = [
   "mcp-server/core-product-migration.js",
+  "mcp-server/core-prestart-recovery.js",
+  "config/core-prestart-recovery-case.json",
   "mcp-server/core-legacy-cep-view.js",
   "mcp-server/core-migration-resource-fences.js",
   "scripts/core-product-migration-control.js",
