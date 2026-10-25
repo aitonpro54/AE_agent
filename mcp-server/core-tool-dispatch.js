@@ -4291,6 +4291,20 @@ async function callTool(name, args, executionContext) {
       var requestedStartTime = ${startTime === null ? "null" : startTime};
       var requestedDuration = ${duration === null ? "comp.duration" : duration};
 
+      var insertBeforeLayerIndex = ${insertBeforeLayerIndex === null ? "null" : insertBeforeLayerIndex};
+      var expectedBeforeLayerName = ${ports.aeLiteral(expectedBeforeLayerName)};
+      var beforeLayer = null;
+      var beforeLayerBeforeMove = null;
+      if (insertBeforeLayerIndex !== null) {
+        if (insertBeforeLayerIndex < 1 || insertBeforeLayerIndex > comp.numLayers) {
+          throw new Error("insertBeforeLayerIndex does not identify a layer in the target comp.");
+        }
+        beforeLayer = comp.layer(insertBeforeLayerIndex);
+        if (expectedBeforeLayerName && beforeLayer.name !== expectedBeforeLayerName) {
+          throw new Error("expectedBeforeLayerName mismatch for insertBeforeLayerIndex.");
+        }
+        beforeLayerBeforeMove = __codexLayerInfo(beforeLayer);
+      }
       app.beginUndoGroup("Codex Create Solid Layer");
       var layer = comp.layers.addSolid(color, layerName, width, height, pixelAspect, requestedDuration);
       if (requestedStartTime !== null) {
@@ -4301,12 +4315,22 @@ async function callTool(name, args, executionContext) {
         var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
         layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
       }
+      if (beforeLayer !== null) {
+        layer.moveBefore(beforeLayer);
+      }
       var response = {
         comp: {
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
         layer: __codexLayerInfo(layer),
+        placement: {
+          insertBeforeLayerIndex: insertBeforeLayerIndex,
+          expectedBeforeLayerName: expectedBeforeLayerName,
+          beforeLayerBeforeMove: beforeLayerBeforeMove,
+          beforeLayerAfterMove: beforeLayer !== null ? __codexLayerInfo(beforeLayer) : null,
+          immediatelyBefore: beforeLayer !== null ? (layer.index + 1 === beforeLayer.index) : null
+        },
         solid: {
           color: color,
           width: width,
@@ -4390,21 +4414,6 @@ async function callTool(name, args, executionContext) {
       var pixelAspect = ${pixelAspect === null ? "comp.pixelAspect" : pixelAspect};
       var requestedStartTime = ${startTime === null ? "null" : startTime};
       var requestedDuration = ${duration === null ? "comp.duration" : duration};
-      var insertBeforeLayerIndex = ${ports.insertBeforeLayerIndex === null ? "null" : ports.insertBeforeLayerIndex};
-      var expectedBeforeLayerName = ${ports.aeLiteral(ports.expectedBeforeLayerName)};
-      var beforeLayer = null;
-      var beforeLayerBeforeMove = null;
-      if (insertBeforeLayerIndex !== null) {
-        if (insertBeforeLayerIndex < 1 || insertBeforeLayerIndex > comp.numLayers) {
-          throw new Error("insertBeforeLayerIndex does not identify a layer in the target comp.");
-        }
-        beforeLayer = comp.layer(insertBeforeLayerIndex);
-        if (expectedBeforeLayerName && beforeLayer.name !== expectedBeforeLayerName) {
-          throw new Error("expectedBeforeLayerName mismatch for insertBeforeLayerIndex.");
-        }
-        beforeLayerBeforeMove = __codexLayerInfo(beforeLayer);
-      }
-
       app.beginUndoGroup("Codex Create Adjustment Layer");
       var layer = comp.layers.addSolid(color, layerName, width, height, pixelAspect, requestedDuration);
       layer.adjustmentLayer = true;
@@ -4416,22 +4425,12 @@ async function callTool(name, args, executionContext) {
         var baseTime = requestedStartTime !== null ? requestedStartTime : layer.inPoint;
         layer.outPoint = Math.min(baseTime + requestedDuration, comp.duration);
       }
-      if (beforeLayer !== null) {
-        layer.moveBefore(beforeLayer);
-      }
       var response = {
         comp: {
           itemIndex: __codexProjectIndexForItem(comp),
           name: comp.name
         },
         layer: __codexLayerInfo(layer),
-        placement: {
-          insertBeforeLayerIndex: insertBeforeLayerIndex,
-          expectedBeforeLayerName: expectedBeforeLayerName,
-          beforeLayerBeforeMove: beforeLayerBeforeMove,
-          beforeLayerAfterMove: beforeLayer !== null ? __codexLayerInfo(beforeLayer) : null,
-          immediatelyBefore: beforeLayer !== null ? (layer.index + 1 === beforeLayer.index) : null
-        },
         solid: {
           color: color,
           width: width,

@@ -412,8 +412,8 @@
     },
     {
       "path": "mcp-server/bridge-daemon.js",
-      "bytes": 608769,
-      "sha256": "1218bfcd029a7fd87596d75d337b4f7bffcd01a5203393a3ae8a50aa6bab1e9b",
+      "bytes": 608692,
+      "sha256": "624e8d0de6b92283d8e79a3a1cc3207bbaf887e9fd987d5343b926861e39340b",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "559437276f659418687b48f9365fd73d8f59e03bc1ce5ebde40b05ef7f433aa8",
       "literalDependencies": [
@@ -659,8 +659,8 @@
     },
     {
       "path": "mcp-server/core-tool-catalog.js",
-      "bytes": 142237,
-      "sha256": "60113ba8b0175fe4a729b90fe4c94c7c955768ae617dbe23eda54e04e04be00c",
+      "bytes": 142232,
+      "sha256": "f3de4df4d34fbb4e1558618b4aa4411f4f56be6ce97bbed81a2e2cb3ed0741b9",
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/core-plan-catalog.js"
@@ -668,8 +668,8 @@
     },
     {
       "path": "mcp-server/core-tool-dispatch.js",
-      "bytes": 487843,
-      "sha256": "112002a2293b8991630c0916a158b10cc7b9a9286f4eaade54af99dfd7344ddd",
+      "bytes": 487824,
+      "sha256": "8726198bae6623714574c97f1737601abe0d22fe43ca7da2fc35a73183cba822",
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/core-plan-catalog.js",
@@ -1914,8 +1914,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 203,
-      "sha256": "0378e47b5748063f834a26beca5bc5db2d62297585e0a9cf19172b1421adc007",
+      "bytes": 278,
+      "sha256": "222093837838c53e94ab0fecd6419c364747dc7b13e5d3006a20ad3f81f2bb59",
       "disposition": "core-specific",
       "literalDependencies": []
     },
@@ -1990,6 +1990,15 @@
       "literalDependencies": [
         "mcp-server/review-evidence.js",
         "scripts/network-test-fixture.js"
+      ]
+    },
+    {
+      "path": "scripts/core-solid-placement-smoke.js",
+      "bytes": 3400,
+      "sha256": "5b828782daffedd011eedd317b26aaf7dedf6bfc02967009bf61cd709f3e9a2d",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/bridge-daemon.js"
       ]
     },
     {

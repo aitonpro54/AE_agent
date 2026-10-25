@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "check:rules": "node scripts/core-check.js",
-    "smoke:core-runtime": "node scripts/core-runtime-smoke.js"
+    "smoke:core-runtime": "node scripts/core-runtime-smoke.js",
+    "smoke:solid-placement": "node scripts/core-solid-placement-smoke.js"
   }
 }

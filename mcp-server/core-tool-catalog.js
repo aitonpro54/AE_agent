@@ -1491,7 +1491,7 @@ projectLifecycleState.getProjectLifecycleStateTool,
         },
         insertBeforeLayerIndex: {
           type: "number",
-          description: "Optional explicit 1-based layer index to place the new adjustment layer immediately above. Only the newly created layer is moved."
+          description: "Optional explicit 1-based layer index to place the new solid layer immediately above. Only the newly created layer is moved."
         },
         expectedBeforeLayerName: {
           type: "string",
