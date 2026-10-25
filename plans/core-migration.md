@@ -10,7 +10,7 @@ Source: AE_agent `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-
 - [x] Offline prepare/status helper: byte-exact protected state, path-bound marker, durable preference/OFF и rollback без replay; production apply отсутствует.
 - [x] Четыре выбранных workflow сценария и safety negatives в изолированном offline-контуре.
 - [x] Concrete offline cutover package с подготовленными forward/rollback commands.
-- [ ] Отдельное разрешение на installed assets/config/runtime switch, fresh native proofs и live read-back.
+- [ ] Actual cutover явно разрешён; preflight выявил три admission blockers. Сначала reviewed Core migration admission fix, затем fresh native proofs и live read-back.
 
 ## Decision Log
 
@@ -23,6 +23,7 @@ Source: AE_agent `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-
 - Cutover protocol — `docs/core-cutover-package.md`: staged files + адресные operator moves только после fresh native/quiescence proof, exact path/hash/object identity checks и отдельного разрешения. Helper никогда не утверждает runtime proof/admission. Launcher build sources добавлены; WinExe скомпилирован офлайн, не запускался.
 - `.gitattributes` сохраняет raw source bytes при checkout; measured runtime hash обновляется после изменений.
 - Stage3 исполняет назначенный `ae_implementer`, sole writer runtime/tests/package/config/Core plan; независимый docs writer сохраняется. Новых production tools/hooks/deps нет: shared test harness использует существующий snapshot fixture, публичный MCP и synthetic VM. Extracted fixture definitions происходят из source checkpoint; старые launchers/suites не переносились.
+- Actual cutover поручен sole `ae_specialist` writer/controller. До production changes обнаружены already-absent source без terminal exit proof, legacy-reset-scoped CEP UNKNOWN и historical f92e-only Core genesis. Live freeze сохраняется; [новый bounded контракт](../docs/core-migration-admission.md) передаётся на независимое design review до native implementation. Source reset не повторяется, authority/history не копируются. Global instruction patch применён отдельно с адресным backup; runtime/config/installed CEP остаются прежними.
 
 ## Validation
 
@@ -37,6 +38,8 @@ Source: AE_agent `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-
 - UNKNOWN: отдельный isolated submitted command без fake execution получает timeout/unknown; повтор того же proposal отвергается `m100_confirmation_replayed`; свежий public reconcile сохраняет unknown/no-replay и original timeout. Bridge mutation script отправлен1раз, VM его не исполнял, children/state затем удалены fixture cleanup. Production pure outcome/reconciliation также проверены.
 - Unchanged OFF/marker/rollback synthetic coverage из `07bcd98` переиспользовано без повторного suite. Ни actual save/reopen/render, ни visual/AME proof этим этапом не заявляются.
 - Финал stage3: targeted `core-cep-smoke` (изменён только test harness export/receipt input), `core-scenarios-smoke`, `core-safety-smoke` PASS; `check:rules` PASS (184 inspected source files,manifest hashes/exclusions,0 unresolved/external/old-root imports), `git diff --check` PASS. Final Core snapshot origin PASS: port9760,204 tools, sourceSha=`d6a29e86e13d16f856ae364eb1e7e3dd096ef8f4072ac5140af10c16dcaca4da`;186 runtime/test assets,5 340 601 bytes. После cleanup активных fixture node children нет. Docs/cutover instruction bundle остаются отдельным ресурсом writer и не входят в runtime hashes.
+- Live preflight: existing source validators подтвердили reset activation и exact coverage одного control-only disconnect row; native query под source mutex подтвердил source generation absent/Win32Error87/free3456, **не exit proof**. CEP physical0/native idle/storage ready, historical UNKNOWN сохранён. Protected store v2 валиден, actual preference true.12 addressed backups + metadata/read-back сохранены в ignored `.codex-runtime/core-cutover-live/16d64090-a9c5-4976-82f9-7651dfed2500/`; protected store не копировался, prepare/launch/moves/config/CEP changes не выполнялись. Новые protocol gates пока design-only, live acceptance не заявляется.
+- Migration admission design draft: `check:rules` PASS (184 source files, unchanged runtime manifest/import/dependency checks), `git diff --check` PASS; product/native код не менялся, новые tests/live grants не запускались. Draft отдельно описывает partial candidate graceful stop до anchor/current и незакрытые source-verifier/resource-census review границы.
 
 ## Offline workflow matrix
 
