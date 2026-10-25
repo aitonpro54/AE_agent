@@ -1744,8 +1744,8 @@
     },
     {
       "path": "mcp-server/review-evidence.js",
-      "bytes": 22836,
-      "sha256": "64ad1861320cd48e9e64d1299e354210b29179ec9dab9c542f673e48f543b21c",
+      "bytes": 22917,
+      "sha256": "58ade35f1ac41be62a7c6eb354baace94007e1017d3aeded3fb7a686c4148518",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "e9bfb8c35305edf58d7c0adad5c13ba3ca1179037baabfa491fa0c1903b10d38",
       "literalDependencies": []
@@ -1914,8 +1914,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 334,
-      "sha256": "ae2f414214e0677bcb5b368e02ac720a3c025f7c3bc2a427f34926d951040388",
+      "bytes": 409,
+      "sha256": "18bac23841315f877d4fa54986a01f521c6998866d3e881297134b695ca1c9cc",
       "disposition": "core-specific",
       "literalDependencies": []
     },
@@ -1933,6 +1933,14 @@
       "sha256": "1ae9ca1a5d537a08bfb48d70c92d3baa39ce1d9da7e577184c2949ab0d1262d7",
       "disposition": "copied",
       "sourceSha256": "1ae9ca1a5d537a08bfb48d70c92d3baa39ce1d9da7e577184c2949ab0d1262d7",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/build-windows-mcp-launcher.ps1",
+      "bytes": 734,
+      "sha256": "b2c0cba611a8d365b94f4f2c45e0380eb797d6d23afb8d93816ad72580aa1c50",
+      "disposition": "copied",
+      "sourceSha256": "b2c0cba611a8d365b94f4f2c45e0380eb797d6d23afb8d93816ad72580aa1c50",
       "literalDependencies": []
     },
     {
@@ -2011,6 +2019,30 @@
       ]
     },
     {
+      "path": "scripts/core-state-migration-smoke.js",
+      "bytes": 14106,
+      "sha256": "d7616db00234d79fb3c1673c7f637cf8bcd51b8692611eda8c0799681c35a18d",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/autonomous-session.js",
+        "mcp-server/project-lifecycle-contract.js",
+        "mcp-server/project-lifecycle-transition.js",
+        "mcp-server/project-state-store.js",
+        "scripts/core-state-migration.js"
+      ]
+    },
+    {
+      "path": "scripts/core-state-migration.js",
+      "bytes": 20431,
+      "sha256": "47569d3ac51b1be7058e513487bd078e85eda7b424079ca5532606f0d9f6963f",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/project-lifecycle-contract.js",
+        "mcp-server/project-lifecycle-transition.js",
+        "mcp-server/project-state-store.js"
+      ]
+    },
+    {
       "path": "scripts/human-guard-settlement-maintenance.js",
       "bytes": 14013,
       "sha256": "a619a440c27e1c44c70cadd60ba174b69d6129b43da5f051a35c6611144877fa",
@@ -2067,8 +2099,8 @@
     },
     {
       "path": "scripts/network-test-fixture.js",
-      "bytes": 20947,
-      "sha256": "c8968f2879160c22c3e33b1b8a3783093b2a254d926dafba46fe41465ccbf5ec",
+      "bytes": 21044,
+      "sha256": "a4283c36a38d2f84a36457ebe0036f15911f25316da5e920aee3f44c491a500b",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "39b46a58d7c29d9a7158166c6fe1c3c9321f5331e0e35c914508f00368b74336",
       "literalDependencies": []
@@ -2192,6 +2224,14 @@
       "disposition": "copied",
       "sourceSha256": "945ef885a9c8eecbc2ddf3076cc4762d2a4789b64c3153f12abee8c7f5236ed4",
       "literalDependencies": []
+    },
+    {
+      "path": "scripts/windows-mcp-launcher.cs",
+      "bytes": 8952,
+      "sha256": "5ca67b246c60f0219e9861f1cb7e33b258b5a9031ba2d5b06e72b575c896c8c1",
+      "disposition": "copied",
+      "sourceSha256": "5ca67b246c60f0219e9861f1cb7e33b258b5a9031ba2d5b06e72b575c896c8c1",
+      "literalDependencies": []
     }
   ],
   "exclusions": [
@@ -2204,7 +2244,7 @@
   ],
   "remaining": [
     "four workflow coverage",
-    "OFF preference and project-state migration",
+    "approved production state publication/runtime adoption",
     "installed config/authority cutover",
     "live CEP/AE proof; AME paused"
   ]

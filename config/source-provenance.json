@@ -848,6 +848,16 @@
       "path": "scripts/network-test-fixture.js",
       "sourceSha256": "39b46a58d7c29d9a7158166c6fe1c3c9321f5331e0e35c914508f00368b74336",
       "action": "extract"
+    },
+    {
+      "path": "scripts/build-windows-mcp-launcher.ps1",
+      "sourceSha256": "b2c0cba611a8d365b94f4f2c45e0380eb797d6d23afb8d93816ad72580aa1c50",
+      "action": "copy-cutover-support"
+    },
+    {
+      "path": "scripts/windows-mcp-launcher.cs",
+      "sourceSha256": "5ca67b246c60f0219e9861f1cb7e33b258b5a9031ba2d5b06e72b575c896c8c1",
+      "action": "copy-cutover-support"
     }
   ]
 }

@@ -4,6 +4,7 @@
 
 - Работать по-русски, сохранять чужие изменения; один writer на ресурс и один live-контроллер.
 - Typed inspection → deterministic build → server-owned proposal → dry-run → подтверждение по риску → read-back. Private brands, grants, ownership, checkpoint и UNKNOWN/no-replay обязательны.
+- Core builders: `get_plan_builder_contract` → `build_solution_plan`; recipe search tools исключены. Cutover protocol: `docs/core-cutover-package.md`, это подготовленный пакет без разрешения actual switch.
 - Raw JSX, destructive и save сохраняют отдельные ручные gates. Файловый доступ не выдаёт runtime authority.
 - Providers, встроенный чат, Hardcore, recipes/registry/candidates и Full Intaker не входят в Core. Codeburn — отдельный внешний MCP.
 - Старый `AE_agent` — неизменяемый источник provenance; runtime state, credentials, `.git` и зависимости не копировать. Действующую установку/config не переключать до отдельного cutover.

@@ -34,6 +34,7 @@ const EXTRA_SOURCES = new Set([
   "scripts/human-guard-settlement-maintenance.js", "scripts/ame-job-source-hash-worker.cjs",
   "scripts/owned-runtime-win32-helper.ps1", "scripts/owned-runtime-daemon-helper.ps1",
   "scripts/owned-runtime-startup-retire-helper.ps1", "scripts/owned-runtime-maintenance-retire-helper.ps1",
+  "scripts/windows-mcp-launcher.cs", // measured source only; never compiled/executed by fixture
   "scripts/cep-panel-cdp-smoke.js"
 ]);
 const PANEL_ASSETS = ["CSXS/manifest.xml", "index.html", "panel-action-contract.js", "native-probe-startup-guard.js",

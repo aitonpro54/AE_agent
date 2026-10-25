@@ -293,6 +293,7 @@ const RUNTIME_FILES = [
   "package.json",
   "scripts/ame-job-source-hash-worker.cjs",
   "scripts/autonomous-plan-client.js",
+  "scripts/build-windows-mcp-launcher.ps1",
   "scripts/cep-panel-product-reset-client.js",
   "scripts/cep-panel-reset-physical-fence-absence.ps1",
   "scripts/cep-panel-target.js",
@@ -308,7 +309,8 @@ const RUNTIME_FILES = [
   "scripts/owned-runtime-panel-reload.js",
   "scripts/owned-runtime-startup-retire-helper.ps1",
   "scripts/owned-runtime-startup-retire.js",
-  "scripts/owned-runtime-win32-helper.ps1"
+  "scripts/owned-runtime-win32-helper.ps1",
+  "scripts/windows-mcp-launcher.cs"
 ];
 
 function runtimeNamedHashSet(root, fileList = RUNTIME_FILES) {
