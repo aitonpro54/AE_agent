@@ -3,7 +3,7 @@
   "status": "built-offline-runtime",
   "sourceCommit": "1b48076e0aa4a68f21b3229af511d9e526ed0072",
   "checkpoint": "checkpoint/ae-agent-before-core-2026-10-25",
-  "root": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+  "root": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core_repair",
   "files": [
     {
       "path": "cep-panel/CSXS/manifest.xml",
@@ -412,16 +412,18 @@
     },
     {
       "path": "mcp-server/autonomous-session.js",
-      "bytes": 6650,
-      "sha256": "48ef732fa7cdbe688307aaf036d73dc52ce87dc5ffa7b3a36837506e1bf8f205",
-      "disposition": "copied",
+      "bytes": 7659,
+      "sha256": "362c29189f9de26fa883b7e6cd3e1b5027c550b44b142460bf96c45219f78673",
+      "disposition": "extracted-or-adapted",
       "sourceSha256": "48ef732fa7cdbe688307aaf036d73dc52ce87dc5ffa7b3a36837506e1bf8f205",
-      "literalDependencies": []
+      "literalDependencies": [
+        "mcp-server/owned-runtime-authority.js"
+      ]
     },
     {
       "path": "mcp-server/bridge-daemon.js",
-      "bytes": 620706,
-      "sha256": "26b7d6bdafcb808c897b1a454ba9771d1e0e4046464ea174a3b3245fbe77e53e",
+      "bytes": 620961,
+      "sha256": "ada01bf38d07d0f4a6aeb567c90c07ad682383f1ca629d6bb139464e838461a4",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "559437276f659418687b48f9365fd73d8f59e03bc1ce5ebde40b05ef7f433aa8",
       "literalDependencies": [
@@ -551,8 +553,8 @@
     },
     {
       "path": "mcp-server/cep-panel-control.js",
-      "bytes": 71780,
-      "sha256": "2ef70a19f3437f394733fc2e9ad0608d2cda6d089117b2656bc70bb7538e37de",
+      "bytes": 73963,
+      "sha256": "48350eca9162775754c2f22a61bbc500263040b2b6d12588fd185ad9f4d85554",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "c0f39b920d9a9ea93be191e839b0eccfac6a873581bee69832c232f8bc254ad1",
       "literalDependencies": [
@@ -693,8 +695,8 @@
     },
     {
       "path": "mcp-server/core-prestart-recovery.js",
-      "bytes": 12640,
-      "sha256": "4658c6765ddf6f8183ed2fda797b62e17da6abceb932f684830ed1ca041ef42a",
+      "bytes": 14582,
+      "sha256": "4a78bc461a398b3a5d2f198c0870143a17fb727d05df9aa335798c64ba41c18c",
       "disposition": "core-specific",
       "literalDependencies": [
         "config/core-prestart-recovery-case.json",
@@ -709,8 +711,8 @@
     },
     {
       "path": "mcp-server/core-product-migration.js",
-      "bytes": 47563,
-      "sha256": "88160c681c0c571ff367a3e482d9c1c4c95f25ffa336834840ae1b4d57713f6f",
+      "bytes": 48891,
+      "sha256": "6834f25020af08d6f02c348164543158538fe944de0b6132e99d92792523f74a",
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/core-migration-resource-fences.js",
@@ -722,6 +724,22 @@
         "mcp-server/review-evidence.js",
         "scripts/core-state-migration.js",
         "scripts/owned-runtime-control.js"
+      ]
+    },
+    {
+      "path": "mcp-server/core-runtime-repair.js",
+      "bytes": 25449,
+      "sha256": "8773562f1ecbb02e7b151b5c51a90c84dd4545978e5eabebfd81e7609af62a10",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "config/core-runtime-repair-case.json",
+        "mcp-server/core-product-migration.js",
+        "mcp-server/native-fixture-attempt-ledger.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-supervisor.js",
+        "mcp-server/owned-runtime-win32.js",
+        "mcp-server/review-evidence.js"
       ]
     },
     {
@@ -1443,8 +1461,8 @@
     },
     {
       "path": "mcp-server/owned-runtime-supervisor.js",
-      "bytes": 101765,
-      "sha256": "0c6298774a67f4a71cfac3956451193816902ee8d8eb048e7501697a4c27c8d4",
+      "bytes": 103678,
+      "sha256": "fb9ce0fe1a50fd38f2168f3391ab3adbbfe1598ff40b9e7600eb7e1fec4c16ef",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "6edccfa3c8f05c42bb379b4de8a3acffd5e962afb40bf4f13547903beaeb105f",
       "literalDependencies": [
@@ -1814,8 +1832,8 @@
     },
     {
       "path": "mcp-server/review-evidence.js",
-      "bytes": 23310,
-      "sha256": "88f5152ca61e68ce9df05707dadf15dbe6b536f19df842488371f9c5e9cc4946",
+      "bytes": 23474,
+      "sha256": "ac61f4ee7d115753f1ecefcdd2f3bb5b452c63fca89f3871ed1f332f68e7d4e7",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "e9bfb8c35305edf58d7c0adad5c13ba3ca1179037baabfa491fa0c1903b10d38",
       "literalDependencies": []
@@ -1984,8 +2002,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 1293,
-      "sha256": "9f6baa725a25240fb480db12eff1a7b6dde758f3414459ec9cdd446c4225016c",
+      "bytes": 1432,
+      "sha256": "ef17f437cddc27b7ddf9898e22f03a6b56b0a34f03452cbdd2e05e5eb77ab899",
       "disposition": "core-specific",
       "literalDependencies": []
     },
@@ -2068,6 +2086,22 @@
       "sha256": "7af5caed7f16ce910299b5820a12aa3349d40204d4d48a8f5dce3f3714086f1a",
       "disposition": "core-specific",
       "literalDependencies": []
+    },
+    {
+      "path": "scripts/core-launch-lifetime-harness.ps1",
+      "bytes": 11936,
+      "sha256": "d1df6f62667e0e47f395d0868ec0ffa5f5f89d81bd7aafeef94ccae62d9024a2",
+      "disposition": "core-specific",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/core-launch-lifetime-prepare.js",
+      "bytes": 3324,
+      "sha256": "3cb5205ccb7082daa4de97cd850324c8a6642d340392257b65e9c825fe3bff0c",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/native-fixture-attempt-ledger.js"
+      ]
     },
     {
       "path": "scripts/core-legacy-cep-view-smoke.js",
@@ -2164,8 +2198,8 @@
     },
     {
       "path": "scripts/core-prestart-recovery-native-smoke.js",
-      "bytes": 2096,
-      "sha256": "31f233c7ac364f7e6b9e95bd9fb5258f03cc080b19cc34a886d2b1eeef72c58f",
+      "bytes": 2181,
+      "sha256": "5806e21661df649b55cbba0364c817087f2ca243af6b3925c04f6af79562a880",
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/owned-runtime-win32.js",
@@ -2174,15 +2208,15 @@
     },
     {
       "path": "scripts/core-prestart-recovery-native-smoke.ps1",
-      "bytes": 11376,
-      "sha256": "4eb97d3f17b2383bc72ed865d329651267dfd2a573d286fd47f0d35639d6438b",
+      "bytes": 11975,
+      "sha256": "fb511cbbeeaf287aa39d034cee33278171b1cd514adda694dfe5647bb16fbd6f",
       "disposition": "core-specific",
       "literalDependencies": []
     },
     {
       "path": "scripts/core-prestart-recovery-smoke.js",
-      "bytes": 25655,
-      "sha256": "157355d8b5a1e204382b3e7999c548c35ff11d3c865122d308b05f7e7429d70c",
+      "bytes": 25955,
+      "sha256": "c77b52ec146e27c42d14b83602ae6df003c00ccdf9b1dd4be5622b13d1982bc0",
       "disposition": "core-specific",
       "literalDependencies": [
         "config/core-prestart-recovery-case.json",
@@ -2248,6 +2282,52 @@
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/plan-run-records.js"
+      ]
+    },
+    {
+      "path": "scripts/core-runtime-repair-authority-smoke.js",
+      "bytes": 8941,
+      "sha256": "a791551f42e91c0ee472551d682aa5ee7a5754ad26dff7061d3bc6b4e722e1a0",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-service.js",
+        "scripts/core-prestart-recovery-smoke.js",
+        "scripts/core-runtime-repair-smoke.js"
+      ]
+    },
+    {
+      "path": "scripts/core-runtime-repair-control.js",
+      "bytes": 2567,
+      "sha256": "3708bdf429f9ab89b3061bc07019cec1c3ed22b097f89f2095ee917529e902ea",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-runtime-repair.js"
+      ]
+    },
+    {
+      "path": "scripts/core-runtime-repair-historical-stop-smoke.js",
+      "bytes": 640,
+      "sha256": "5e25d563f719fedbbde3123a176f90e0b3ee86eb7fe4341e4a57f86c56b24046",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-runtime-repair.js"
+      ]
+    },
+    {
+      "path": "scripts/core-runtime-repair-smoke.js",
+      "bytes": 17146,
+      "sha256": "cf6fe082c9ffcfa022694f0aa0440bd47bfe079abf12a127330e5fbb5d663842",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/autonomous-session.js",
+        "mcp-server/cep-panel-control.js",
+        "mcp-server/owned-runtime-authority.js",
+        "mcp-server/owned-runtime-lifecycle.js",
+        "mcp-server/owned-runtime-service.js",
+        "scripts/core-prestart-recovery-smoke.js"
       ]
     },
     {
@@ -2420,8 +2500,8 @@
     },
     {
       "path": "scripts/owned-runtime-daemon-helper.ps1",
-      "bytes": 105051,
-      "sha256": "b32be92917aed6ed846099aa953d4a4e7b91c5a4e1660121ab93363b919e2291",
+      "bytes": 121746,
+      "sha256": "eb5ab37d9b10a9093e01afd91a009e1d0f9489c24164130c1c9b52b0e9ffddd2",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "7453ca5377e1e4eb462069907af9f25e2e2826ec4f458d208ad649e5251cd2ff",
       "literalDependencies": []

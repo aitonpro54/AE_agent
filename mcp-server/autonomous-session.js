@@ -13,17 +13,18 @@ function createAutonomousSessionManager(options = {}) {
   const freshness = options.panelFreshnessMs || PANEL_FRESHNESS_MS;
   let desiredEnabled = false, trustedPanel = null, trustedGeneration = null;
   let enableOnFirstPanel = Boolean(statePath) && !fs.existsSync(statePath);
-  let connected = null, persistenceError = null;
+  let connected = null, persistenceError = null, loadedPreferenceRawSha256 = null;
   let sessionHash = crypto.randomBytes(24).toString("hex");
   function validGeneration(value) { return typeof value === "string" && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value)); }
   if (statePath && fs.existsSync(statePath)) {
     try {
-      const stored = JSON.parse(fs.readFileSync(statePath, "utf8"));
+      const bytes=fs.readFileSync(statePath),stored = JSON.parse(bytes.toString("utf8"));
       if (stored.schema !== SCHEMA || typeof stored.desiredEnabled !== "boolean" || stored.desiredEnabled &&
           (typeof stored.panelConnectionId !== "string" || !stored.panelConnectionId || !validGeneration(stored.panelGeneration))) throw new Error("invalid_or_legacy_state");
       desiredEnabled = stored.desiredEnabled;
       trustedPanel = stored.panelConnectionId || null;
       trustedGeneration = stored.panelGeneration || null;
+      loadedPreferenceRawSha256 = crypto.createHash("sha256").update(bytes).digest("hex");
     } catch (_) { persistenceError = "invalid_or_legacy_state"; }
   }
   function persist(enabled, identity) {
@@ -60,7 +61,15 @@ function createAutonomousSessionManager(options = {}) {
         trustedGeneration = input.panelGeneration;
       }
     }
-    if (desiredEnabled && trustedPanel !== input.panelConnectionId) throw new Error("Trusted panel identity mismatch.");
+    if (desiredEnabled && trustedPanel !== input.panelConnectionId) {
+      const permit=!persistenceError && typeof options.readMigrationAdoption==="function" && options.readMigrationAdoption(input);
+      if(!permit)throw new Error("Trusted panel identity mismatch.");
+      const saved=require("./owned-runtime-authority").privateFile(statePath);
+      if(saved.rawSha256!==permit.preferenceRawSha256 || saved.rawSha256!==loadedPreferenceRawSha256 || saved.value.schema!==SCHEMA || saved.value.desiredEnabled!==true || saved.value.panelConnectionId!==trustedPanel || saved.value.panelGeneration!==trustedGeneration)throw new Error("Migrated preference changed before trusted adoption.");
+      permit.assertUnchanged();saved.assertUnchanged();
+      if(!persist(true,input)){connected=null;throw new Error("Cannot persist migrated panel identity.");}
+      trustedPanel=input.panelConnectionId;trustedGeneration=input.panelGeneration;loadedPreferenceRawSha256=null;
+    }
     if (desiredEnabled && Number(input.panelGeneration) < Number(trustedGeneration)) throw new Error("Stale panel generation.");
     if (desiredEnabled && input.panelGeneration !== trustedGeneration && !persist(true, input)) {
       connected = null; throw new Error("Cannot persist trusted panel generation.");

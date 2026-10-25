@@ -1,0 +1,1052 @@
+{
+  "schema": "ae-agent.core-runtime-repair-case.v1",
+  "operatorMetadataRawSha256": "ff9aa247afbd50f0700092de2fa933a95d72bc5907b368c4a84d16455e1a8426",
+  "root": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+  "generation": "1672be8d-76e4-4fa3-9994-8a750c8a2209",
+  "kernelIdentity": {
+    "birthFileTime": "134374129383492526",
+    "birthUtc": "2026-10-25T14:42:18.3492526Z",
+    "executableSha256": "3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237",
+    "imagePath": "C:\\Users\\Ant\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+    "pid": 29964
+  },
+  "argv": [
+    "C:\\Users\\Ant\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+    "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\mcp-server\\bridge-daemon.js"
+  ],
+  "command": {
+    "executable": "C:\\Users\\Ant\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+    "executableSha256": "3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237",
+    "argv": [
+      "C:\\Users\\Ant\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+      "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\mcp-server\\bridge-daemon.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core"
+  },
+  "registrationRefs": {
+    "reservationSha256": "d0832a5026a9be693280999dce8a5fc322cb1867beb9371064f838657867f1e0",
+    "startupTicketSha256": "0063722b88ab35c82e5efc5dacc5ba5e37e1c447962287e2f9f9fda46a48d6e3",
+    "nativeCandidateSha256": "cecde069fe09d72c72084aba8ace203c0433cf86e27093cbefccf8e9fad147bd",
+    "registrationSha256": "de27e55c49e2f4509fd1227f1f6f45e57383596be98b01b43f2b70d1cd0a6c40",
+    "bootNonce": "84c4eb15-a221-4c99-84ff-a4b1d10f95cf"
+  },
+  "filePins": [
+    {
+      "relative": ".codex/config.toml",
+      "rawSha256": "fb9a17c3e43e91e760cda725dcf821fccf4542df0bee68b396e1ec1b0879bc37",
+      "identity": {
+        "dev": "338459401",
+        "ino": "6192449488783398",
+        "size": "785",
+        "mtimeNs": "1792934633760105500",
+        "ctimeNs": "1792934633760105500"
+      }
+    },
+    {
+      "relative": ".codex-runtime/owned-runtime-maintenance/policy.json",
+      "rawSha256": "a6e827b0076e07619b5cf8791bf388b5addef132eaa144fb3b61b7ce7c38725a",
+      "identity": {
+        "dev": "338459401",
+        "ino": "8725724279457320",
+        "size": "264",
+        "mtimeNs": "1792934633760609000",
+        "ctimeNs": "1792934633760609000"
+      }
+    },
+    {
+      "relative": ".codex-runtime/owned-runtime-maintenance/current-daemon.json",
+      "rawSha256": "2c52df05d21d5e38091baf04964dd145c970acc7e6f8365e4a11084ddf891c95",
+      "identity": {
+        "dev": "338459401",
+        "ino": "7599824373019333",
+        "size": "338",
+        "mtimeNs": "1792939343047631500",
+        "ctimeNs": "1792939343053141800"
+      }
+    },
+    {
+      "relative": ".codex-runtime/owned-runtime-maintenance/daemon-reservations/1672be8d-76e4-4fa3-9994-8a750c8a2209/reservation.json",
+      "rawSha256": "329306758a53d8ca841df32933389b568fc3a3387bc0773037a23fafdb9cbd44",
+      "identity": {
+        "dev": "338459401",
+        "ino": "7318349396234206",
+        "size": "23605",
+        "mtimeNs": "1792935035891630200",
+        "ctimeNs": "1792935035891630200"
+      }
+    },
+    {
+      "relative": ".codex-runtime/owned-runtime-maintenance/daemon-reservations/1672be8d-76e4-4fa3-9994-8a750c8a2209/startup-ticket.json",
+      "rawSha256": "ff7bd2d1d085ae3695351b7a5163ed9c54649390a5b5d8f7c28f47f8ea7ee862",
+      "identity": {
+        "dev": "338459401",
+        "ino": "5348024559259651",
+        "size": "494",
+        "mtimeNs": "1792935035903507900",
+        "ctimeNs": "1792935035903507900"
+      }
+    },
+    {
+      "relative": ".codex-runtime/owned-runtime-maintenance/daemon-reservations/1672be8d-76e4-4fa3-9994-8a750c8a2209/native-candidate.json",
+      "rawSha256": "cffb751ad869840c251ee371a6e26afa1ef6a3f2a781a4c7cbe11d1824ff1615",
+      "identity": {
+        "dev": "338459401",
+        "ino": "16888498604470170",
+        "size": "1322",
+        "mtimeNs": "1792939338532236000",
+        "ctimeNs": "1792939338532236000"
+      }
+    },
+    {
+      "relative": ".codex-runtime/owned-runtime-maintenance/daemon-reservations/1672be8d-76e4-4fa3-9994-8a750c8a2209/registration.json",
+      "rawSha256": "5c3142e046c7a107300c087de5a02e6a8a3d9f98519096f6aa377140ab608a48",
+      "identity": {
+        "dev": "338459401",
+        "ino": "5066549582623371",
+        "size": "715",
+        "mtimeNs": "1792939340137228600",
+        "ctimeNs": "1792939340137228600"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/once.json",
+      "rawSha256": "c0cf3279b26422be34141c7a8b7102065e732f77b492de19ad19d5e1ea133aef",
+      "identity": {
+        "dev": "338459401",
+        "ino": "5066549582528853",
+        "size": "262",
+        "mtimeNs": "1792934676803441500",
+        "ctimeNs": "1792934676803441500"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/intent.json",
+      "rawSha256": "4a077592c2ab575029293bf73e5b06bf7a6134580a1777aae2eea004ee6591d2",
+      "identity": {
+        "dev": "338459401",
+        "ino": "3659174698975576",
+        "size": "37344",
+        "mtimeNs": "1792934676812831900",
+        "ctimeNs": "1792934676812831900"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/policy.json",
+      "rawSha256": "95e8955ab0c9431100ed35b88acff0db2d61e3d123feb3861b77e177bcec5f2f",
+      "identity": {
+        "dev": "338459401",
+        "ino": "5629499535950091",
+        "size": "1670",
+        "mtimeNs": "1792934668897297600",
+        "ctimeNs": "1792934668897297600"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/resource-projection.json",
+      "rawSha256": "f0a91ac1cb85d263d10077a96727b30877e4df6c5101387b0b11cbe3d7de5091",
+      "identity": {
+        "dev": "338459401",
+        "ino": "5066549582548561",
+        "size": "23900",
+        "mtimeNs": "1792934676832382300",
+        "ctimeNs": "1792934676832382300"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/launch-attempt.json",
+      "rawSha256": "3cd21245471871200c312d547b5319122ead58ec343d8e0b82b0d973abe4e670",
+      "identity": {
+        "dev": "338459401",
+        "ino": "4785074605838342",
+        "size": "488",
+        "mtimeNs": "1792935035914741500",
+        "ctimeNs": "1792935035914741500"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/unknown.json",
+      "rawSha256": "6451e8ac209f45e0965fc0e9b6eb3b2c22f4d4662a687af6a4aa5577a9cf1e46",
+      "identity": {
+        "dev": "338459401",
+        "ino": "4785074605838415",
+        "size": "240",
+        "mtimeNs": "1792935036847435900",
+        "ctimeNs": "1792935036847435900"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/prestart-disposition.json",
+      "rawSha256": "b5c6a393c3b3db2014d304f69e387e6862c80acdeba578fb3c9cd913ac55896b",
+      "identity": {
+        "dev": "338459401",
+        "ino": "15762598697626779",
+        "size": "45645",
+        "mtimeNs": "1792939269290003800",
+        "ctimeNs": "1792939269290003800"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/prestart-resume-launch.json",
+      "rawSha256": "4c75f527297e9a121bb28ed7006e6bf3a35eac19d2c3e094749555341ccdc0c7",
+      "identity": {
+        "dev": "338459401",
+        "ino": "9570149209992456",
+        "size": "25141",
+        "mtimeNs": "1792939330587775300",
+        "ctimeNs": "1792939330587775300"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/native-launch-attempt.json",
+      "rawSha256": "10708b9959a5039c99021497ab0c0c58d91c891d247d896e196399251a94c39f",
+      "identity": {
+        "dev": "338459401",
+        "ino": "16607023627759434",
+        "size": "319",
+        "mtimeNs": "1792939334802463500",
+        "ctimeNs": "1792939334802463500"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/register-attempt.json",
+      "rawSha256": "5fc31ae01fa3d6f111309a5ca078c4079bde5b0689f398a0a4cae231b5233e0e",
+      "identity": {
+        "dev": "338459401",
+        "ino": "5910974512755322",
+        "size": "231",
+        "mtimeNs": "1792939339339732000",
+        "ctimeNs": "1792939339339732000"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/genesis.json",
+      "rawSha256": "2a32710a18e12a3e57c3c0e449aeee5369d7c5cee12d41cc9a64d018cef777d5",
+      "identity": {
+        "dev": "338459401",
+        "ino": "8444249303151297",
+        "size": "22107",
+        "mtimeNs": "1792939341812491900",
+        "ctimeNs": "1792939341812491900"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/activation.json",
+      "rawSha256": "103572a04f8dc53dc2502111c5fc1ce97a060753ded60859fa25f2578fb243ee",
+      "identity": {
+        "dev": "338459401",
+        "ino": "21110623255125581",
+        "size": "2025",
+        "mtimeNs": "1792939635333723300",
+        "ctimeNs": "1792939635333723300"
+      }
+    },
+    {
+      "relative": ".codex-runtime/core-product-migration/first-adoption.json",
+      "rawSha256": "6475f937fbde25f1e72ff5015bb711c779119d72f0940cf158303c4e662a81e7",
+      "identity": {
+        "dev": "338459401",
+        "ino": "15762598697623139",
+        "size": "452",
+        "mtimeNs": "1792939635969372100",
+        "ctimeNs": "1792939635969372100"
+      }
+    },
+    {
+      "relative": "config/core-runtime-manifest.json",
+      "rawSha256": "694361b086e78655cdbe16e5aa21ca4991dd296bf43536b9b1bbb129617e1117",
+      "identity": {
+        "dev": "338459401",
+        "ino": "3659174698793154",
+        "size": "102495",
+        "mtimeNs": "1792939024773292500",
+        "ctimeNs": "1792939024773292500"
+      }
+    },
+    {
+      "relative": "logs/autonomy-preference.json",
+      "rawSha256": "c7d7ed7fe954a667678ad4384440f9ae65294e429fd5ecd9262d81082773d127",
+      "identity": {
+        "dev": "338459401",
+        "ino": "3659174698975472",
+        "size": "160",
+        "mtimeNs": "1792934641739948900",
+        "ctimeNs": "1792935000345747500"
+      }
+    }
+  ],
+  "oldRuntime": {
+    "loadedSourceSha256": "cc191dd1c263256f4b9c1b66f75eab4af7589a41ec84d9b0171a0772d777f529",
+    "currentSourceSha256": "cc191dd1c263256f4b9c1b66f75eab4af7589a41ec84d9b0171a0772d777f529",
+    "manifestRawSha256": "694361b086e78655cdbe16e5aa21ca4991dd296bf43536b9b1bbb129617e1117",
+    "helperRawSha256": "b32be92917aed6ed846099aa953d4a4e7b91c5a4e1660121ab93363b919e2291",
+    "sourcePins": [
+      {
+        "name": "mcp-server/core-product-migration.js",
+        "sha256": "88160c681c0c571ff367a3e482d9c1c4c95f25ffa336834840ae1b4d57713f6f"
+      },
+      {
+        "name": "mcp-server/core-prestart-recovery.js",
+        "sha256": "4658c6765ddf6f8183ed2fda797b62e17da6abceb932f684830ed1ca041ef42a"
+      },
+      {
+        "name": "config/core-prestart-recovery-case.json",
+        "sha256": "1d75f9259d7cb8642b7d9fb3ee2633c8e903e468f9f13fc2765b51f1e1d92ead"
+      },
+      {
+        "name": "mcp-server/core-legacy-cep-view.js",
+        "sha256": "83a46c558e283dcf27d3ad16be7a0658002df517b825b4b94b3d23f9a1892cf0"
+      },
+      {
+        "name": "mcp-server/core-migration-resource-fences.js",
+        "sha256": "60b057532a50c84458ef92d66ded08ad18e4ba599d44de175aab666d2aa68932"
+      },
+      {
+        "name": "scripts/core-product-migration-control.js",
+        "sha256": "36dc94b536be9faeb6fd0f1a85f2cb360a24004ec3688564986a3557619d2d79"
+      },
+      {
+        "name": "scripts/core-state-migration.js",
+        "sha256": "47569d3ac51b1be7058e513487bd078e85eda7b424079ca5532606f0d9f6963f"
+      },
+      {
+        "name": "cep-panel/CSXS/manifest.xml",
+        "sha256": "effe065566d16f2d66fa3245317d0d586cc654d1684432cf8d80bb9deb008b41"
+      },
+      {
+        "name": "cep-panel/index.html",
+        "sha256": "3a5d227abbe5dc8fc1facdf903d9cc8e0fa60af5a685bcfa410be920ef322e46"
+      },
+      {
+        "name": "cep-panel/lib/CSInterface.js",
+        "sha256": "67a3d2a4bc38d7facbf2fdfbd67e68f734321bd47fdeafa858fda284241356c1"
+      },
+      {
+        "name": "cep-panel/native-probe-startup-guard.js",
+        "sha256": "5cc9b24c5748227de5c8df67743ed25228725e4c16d19cc705bc55a7f8ba4184"
+      },
+      {
+        "name": "cep-panel/panel-action-contract.js",
+        "sha256": "1f1d862c6ddca8dc651c73c3a0bb4bcad26e1be12b2e8fd9786681721235cd08"
+      },
+      {
+        "name": "cep-panel/panel-actions.js",
+        "sha256": "8a10235bb46eba4a5db788a126423c4744bc29e140cdf0a25bb47f14adfc773e"
+      },
+      {
+        "name": "cep-panel/panel.js",
+        "sha256": "5191ccab654b4d02c3cdfbb425f13f6560ed4e2ab03175aad9f168cf7c1f23d5"
+      },
+      {
+        "name": "cep-panel/style.css",
+        "sha256": "e89977ba109699a6b6658d0df1bdcc5106a4dfbd669988ed9ae0ebab7ce0bba8"
+      },
+      {
+        "name": "config/core-legacy-verifier-manifest.json",
+        "sha256": "2a60d0f2a4d71caf5be4ef098f7b9b4a9efd7fe68cce0ede1dd42f7a4a650c76"
+      },
+      {
+        "name": "mcp-server/ae-agent-panel-bootstrap.js",
+        "sha256": "47d6e5491c23e3ffdf3f13f78089c33548280e3b73c1a0a3e7063193412abcfe"
+      },
+      {
+        "name": "mcp-server/ae-task-completion.js",
+        "sha256": "775577b18f43dce1a232a8804ceab803c5d1c51e809e8f7b646b57df94b1001d"
+      },
+      {
+        "name": "mcp-server/ame-enqueue-sequence.js",
+        "sha256": "e8b47782b61e4209fe0ce74af22d286325ec20f38a88c240e762c7d8e9cc1800"
+      },
+      {
+        "name": "mcp-server/ame-fixture-ui-backend.js",
+        "sha256": "f0e36de9feca26fca51c9c52ca19c1744a91b5c865f1e04e7cc0765427b2345a"
+      },
+      {
+        "name": "mcp-server/ame-fixture-ui-disposition.js",
+        "sha256": "47d4a661514f4353e6d59c2b7748db7d315fea1eb9b704737cdee15b10f67d84"
+      },
+      {
+        "name": "mcp-server/ame-job-source-native.js",
+        "sha256": "63f810845ee8e6abbbfd221d1a8498a7a361851e33884a2374e1799d3d3acef3"
+      },
+      {
+        "name": "mcp-server/ame-job-source-sha256.js",
+        "sha256": "4007f112b30517a108f42dc712b25f876646a635f2767d366208950af1c805de"
+      },
+      {
+        "name": "mcp-server/ame-job-source.js",
+        "sha256": "df99d233e0776c9d40235cdccfe369155bf4ade42daf827a408ae55318404a89"
+      },
+      {
+        "name": "mcp-server/ame-manual-queue-grant.js",
+        "sha256": "29b4ef5bedb0a7b73c91ec9cfce40f339453752c51131114ac55e4f65249dc41"
+      },
+      {
+        "name": "mcp-server/ame-native-fixture-grant.js",
+        "sha256": "2bc1b47c752d042c0961994a300441fe0239ddb55f05a0400a7b5725f4669b87"
+      },
+      {
+        "name": "mcp-server/ame-native-fixture-runner.js",
+        "sha256": "161d250a1b50acb98b2361df3b9fd10c7a3536c1173fbc6dc70c14bd5051bc73"
+      },
+      {
+        "name": "mcp-server/ame-open-comp-native.js",
+        "sha256": "bbace3a5cab7166b6779c0c1a941897d482a9dec3e1df6cdb95daf90c2b6f735"
+      },
+      {
+        "name": "mcp-server/ame-open-comp.js",
+        "sha256": "02ba00c6742c0838e5ad3a786ed3239442f739109888ff7275c5739791ff23cc"
+      },
+      {
+        "name": "mcp-server/ame-passive-status.js",
+        "sha256": "824e71210a8313a38a1bd2f9cbec7d7f71e19d8c4904cebb6538599adc9d5b91"
+      },
+      {
+        "name": "mcp-server/ame-presets.js",
+        "sha256": "fe23bce2e6899a606e80bfa5812308ab2b84b2bf6613341bfaaaa535f05bb1a8"
+      },
+      {
+        "name": "mcp-server/ame-product-dispatch.js",
+        "sha256": "d9a13acd6dba197c272296e285eab967b1167b026c5e575675e041d97ee660c0"
+      },
+      {
+        "name": "mcp-server/ame-product-read-dispatch.js",
+        "sha256": "89692d676293cbd52d979107c2e29b0a6311fd3c4bc09fce3230850e992c1dc6"
+      },
+      {
+        "name": "mcp-server/ame-queue-control.js",
+        "sha256": "3d5c6e2b03f4d7ea6ba47f051d056664da2810610417ff1bf040fd4364717b8d"
+      },
+      {
+        "name": "mcp-server/ame-running.js",
+        "sha256": "fe065e750ddf1e8d2250e14b8f53b183e6acfbc6307916fca8d768de94a3c17f"
+      },
+      {
+        "name": "mcp-server/ame-saved-source-admission.js",
+        "sha256": "24c2ca52f27e5a288cba9ea921a16906db3018d9f6f36383441bb37ac7738308"
+      },
+      {
+        "name": "mcp-server/ame-shared-queue-grant.js",
+        "sha256": "2fe0274ce9ccf9c1b44136493d749053ae79622cb922d933a1f23d5c91da3c04"
+      },
+      {
+        "name": "mcp-server/ame-source-probe.js",
+        "sha256": "138ed8f60cd9fcd21b8cac89ab017cdb6aefc4c6871fd1c01ada4ec046b92fa4"
+      },
+      {
+        "name": "mcp-server/ame-source-read.js",
+        "sha256": "4f030b638c6c891d32a107ec175a9c370ef53c79beef1f97e240331dea754d8e"
+      },
+      {
+        "name": "mcp-server/ame-submit-guard.js",
+        "sha256": "f6418fceceaae8d7e026d5f1c7ecfd50f142d22454078b409cfb155318d55c07"
+      },
+      {
+        "name": "mcp-server/ame-title-jobs.js",
+        "sha256": "768f359e2097883c30fe62348e97cc0abb44918ee12427f1e3af93a7e6f51efe"
+      },
+      {
+        "name": "mcp-server/ame-title-pending.js",
+        "sha256": "89cf327867619d6777ead8cf2c18de75423df57d2c73f7487004e778dc19124c"
+      },
+      {
+        "name": "mcp-server/ame-title-sender-refusal-proof.js",
+        "sha256": "1b35eb015a5e0022ea88f29e12779a798b6035795629331bc770a4158f5cd742"
+      },
+      {
+        "name": "mcp-server/ame-title-series.js",
+        "sha256": "8c20ebb69eeaf4b40fe6e14617b3f34a80efd24e3b2820fc41045d070af993b9"
+      },
+      {
+        "name": "mcp-server/ame-transport.js",
+        "sha256": "069c1b2af19c2e33e8079b50a3653c932e37f52ac45fdd6a131859fdbc0e99f3"
+      },
+      {
+        "name": "mcp-server/autonomous-repair.js",
+        "sha256": "5866769ba1f38d45fd5be45a82c54e6591f2421859576fde550a1f556bdd0c56"
+      },
+      {
+        "name": "mcp-server/autonomous-session.js",
+        "sha256": "48ef732fa7cdbe688307aaf036d73dc52ce87dc5ffa7b3a36837506e1bf8f205"
+      },
+      {
+        "name": "mcp-server/bridge-daemon.js",
+        "sha256": "26b7d6bdafcb808c897b1a454ba9771d1e0e4046464ea174a3b3245fbe77e53e"
+      },
+      {
+        "name": "mcp-server/cep-manual-plan-ingress.js",
+        "sha256": "930a86ef7d4dfe64cf78875419fbdcc84e49afd192e18fda6ec2469a66ce4908"
+      },
+      {
+        "name": "mcp-server/cep-panel-control.js",
+        "sha256": "2ef70a19f3437f394733fc2e9ad0608d2cda6d089117b2656bc70bb7538e37de"
+      },
+      {
+        "name": "mcp-server/cep-panel-readonly-orphan.js",
+        "sha256": "52ef4a43ffa8945635550161a109cc4e82a6577f1a886eefe79cc75b4e9c796a"
+      },
+      {
+        "name": "mcp-server/codex-visual-evidence.js",
+        "sha256": "8995a558afcec0eee91beb9616d3355237d91c03baa4f48392296313712e416d"
+      },
+      {
+        "name": "mcp-server/command-receipt.js",
+        "sha256": "9ae9ec4eb9b1c18e60f8ec4b8d0a67c0134bf04240e8bde0d829e2d63505a42c"
+      },
+      {
+        "name": "mcp-server/common-title-assembly-recovery.js",
+        "sha256": "02e0b2589f7060e79309effa1c77af458f9981729e7ae09e660f79eb8a17f955"
+      },
+      {
+        "name": "mcp-server/comp-dynamic-link-read.js",
+        "sha256": "b6b23f6a08c6daac4f0291e6f4e22623c456b6fc508c153aa853a25a5f2cf0e1"
+      },
+      {
+        "name": "mcp-server/comp-visual-review-manifest.js",
+        "sha256": "7a68e059d27d40bb4826e12e0fd3b4072f9e637bb13068e4553ac990b13aba88"
+      },
+      {
+        "name": "mcp-server/comp-visual-review-plan.js",
+        "sha256": "beefbfea80bb78fcabf45a6ad61ac7139665603d8f0b9c35daa5808311345f0c"
+      },
+      {
+        "name": "mcp-server/core-plan-catalog.js",
+        "sha256": "c3e2e2bd8222b94bbbcf24f1e68e3fdeb336184ee53a6cf8005bb338dcec2a29"
+      },
+      {
+        "name": "mcp-server/core-tool-catalog.js",
+        "sha256": "f3de4df4d34fbb4e1558618b4aa4411f4f56be6ce97bbed81a2e2cb3ed0741b9"
+      },
+      {
+        "name": "mcp-server/core-tool-dispatch.js",
+        "sha256": "8726198bae6623714574c97f1737601abe0d22fe43ca7da2fc35a73183cba822"
+      },
+      {
+        "name": "mcp-server/deployment-mode.js",
+        "sha256": "2c0b3062ad09bb6594c7a963dbabeec67a7257d58a5c65b835f1089d2a61619b"
+      },
+      {
+        "name": "mcp-server/fixed-guard-timeout-maintenance-proof.js",
+        "sha256": "e70b3df96ad054ab95753d4f433e535bc3e300408a5f33bf6254d88e9f3557da"
+      },
+      {
+        "name": "mcp-server/generated-export-recovery.js",
+        "sha256": "5f58f1cfe9bb7dc47b826b7f2c754152a82058f32477e37f51716012d0ca1f1e"
+      },
+      {
+        "name": "mcp-server/generated-png-proof.js",
+        "sha256": "96107e11c599aec6cb4c89c0513ef20edab0219cfcf115ed8ace84ba548e5639"
+      },
+      {
+        "name": "mcp-server/generated-safety-contracts.js",
+        "sha256": "1db59b630ca59431e67b597239e8a3115b4bf09bb9763deb9c4ff9eebab598fc"
+      },
+      {
+        "name": "mcp-server/http-boundary.js",
+        "sha256": "333881ba5d0c126f62e03c51c64966459dae433844002b4827f4e60246868737"
+      },
+      {
+        "name": "mcp-server/human-guard-settlement.js",
+        "sha256": "07d3fcde4608a87382cd80be9893dc60f9469020d8eed39070c3a873d202d16d"
+      },
+      {
+        "name": "mcp-server/m100-protocol.js",
+        "sha256": "d993ae2f70643d5f3bbb81e4be16ce06868b19fd2a4a6bd68e1a2fdde043c65c"
+      },
+      {
+        "name": "mcp-server/mcp-adapter.js",
+        "sha256": "259c552963f21ae4328349546b7ef176361fecbeba472264616001157bb83d27"
+      },
+      {
+        "name": "mcp-server/montage-capture-requirements.js",
+        "sha256": "189dff537807ade48fe8543e8ff9c97563b84f3823c7bd5103952767c1470e58"
+      },
+      {
+        "name": "mcp-server/montage-capture-service.js",
+        "sha256": "1151771619ec2e5d161bbb02e80403808bf986db6c49c52066d370bbf6f3b0d8"
+      },
+      {
+        "name": "mcp-server/montage-contract.js",
+        "sha256": "135c137562fb44f2c35012f4d92c297f9aee7629f69c927069e6dd053f497cfb"
+      },
+      {
+        "name": "mcp-server/montage-coverage.js",
+        "sha256": "5bacbf77c63a434de4a892bb39a68c6997caad1cbc5c97c0d3cf5bdb5311de35"
+      },
+      {
+        "name": "mcp-server/montage-manifest.js",
+        "sha256": "a52da19d12fc65dca23cad0c49af67e0ecb83ec8354897b8baf085aeee85c2c9"
+      },
+      {
+        "name": "mcp-server/montage-materials.js",
+        "sha256": "374342ddc06ddf021fbf0031b0bf97b694f6374d2778bc5614d29a5dcdcbe660"
+      },
+      {
+        "name": "mcp-server/montage-native.js",
+        "sha256": "fb3e09a5dead4a0631602d78508e0b8e7c5ed3891bdbf501b26514b5dc636c5e"
+      },
+      {
+        "name": "mcp-server/montage-observations.js",
+        "sha256": "40e8d89c925a521f777e4b1b15cb11d2fc869b2cfcd0f21e0aa3348e8540eaa4"
+      },
+      {
+        "name": "mcp-server/montage-pipeline-service.js",
+        "sha256": "b3488c745f87a1c0e627a50eb23e07efd41173cf51cad7bfd8d71e65b8c1d74a"
+      },
+      {
+        "name": "mcp-server/montage-pipeline.js",
+        "sha256": "dde7762013fd23d9a2234e684cef9eeb5d9c838c09ac403f30124b0e3b59bff5"
+      },
+      {
+        "name": "mcp-server/montage-plan-guard.js",
+        "sha256": "d639a73842a244431db06719c08828ba764a09db88ca989fc4b89b3295014023"
+      },
+      {
+        "name": "mcp-server/montage-postread.js",
+        "sha256": "4696cf79152cd3955bba618e421c9e23844267104d4cf22944fa0bfffa5c0723"
+      },
+      {
+        "name": "mcp-server/montage-root-png.js",
+        "sha256": "d08ef98d25d94999a230e8edd5d85d517c24bbf799972471f92d07bbe8a088f9"
+      },
+      {
+        "name": "mcp-server/montage-root-render.js",
+        "sha256": "68477c6db133e0a338c307735191d7e6bc55dc45ee1cdb671a62a5933a362c75"
+      },
+      {
+        "name": "mcp-server/montage-run-bindings.js",
+        "sha256": "a6bc2afc21d01741777dbe5fb6f848514017c2cef0f72c324dc1a856aa372e36"
+      },
+      {
+        "name": "mcp-server/montage-tools.js",
+        "sha256": "bd42757ec67f65266de0b8a8d9535db4bef0e84c11637284a0dea53f080aff4a"
+      },
+      {
+        "name": "mcp-server/native-fixture-abandonment-backend.js",
+        "sha256": "3a73c4b785475d6f6f130dbb5656a0512f25022f1d4feda7af99d9a9652ae4a5"
+      },
+      {
+        "name": "mcp-server/native-fixture-abandonment.js",
+        "sha256": "1437a3f7aaed3edc68aff61776c878a233291f025cd00f6ef651403d402f0616"
+      },
+      {
+        "name": "mcp-server/native-fixture-admission-refusal-proof.js",
+        "sha256": "ec28221c1f40e269991b1f9e8690c0f0d018749c6217670a1c2764ab82467bf0"
+      },
+      {
+        "name": "mcp-server/native-fixture-admission-refusal.js",
+        "sha256": "06db5443cfb247f6513b7a600c68037471680ff43a41c15ac7a3f65484923b03"
+      },
+      {
+        "name": "mcp-server/native-fixture-attempt-ledger.js",
+        "sha256": "a970bd28927e87fe77fc4c5bc7ca3713b87763613b648c123f9a916c0543c61d"
+      },
+      {
+        "name": "mcp-server/native-fixture-prephase-recovery-backend.js",
+        "sha256": "41b4d450daff9c512f5c5b358143dac4918fdefad73dc89d8f1a96fbb1de0e5c"
+      },
+      {
+        "name": "mcp-server/native-fixture-prephase-recovery-proof.js",
+        "sha256": "3cdd812c0dcf88e85434c6d359f15bf53cc92c47b585822dd152d9bd42c9161f"
+      },
+      {
+        "name": "mcp-server/native-fixture-prephase-recovery.js",
+        "sha256": "12b64a9e73913e74c19127233d6355d88011583f0abba44c4b46d877f7ebfbbd"
+      },
+      {
+        "name": "mcp-server/native-fixture-retained.js",
+        "sha256": "253860443b72adc6f01c77199f1cacbeab01f679e19a1d73d9c0bc9ff4ff577d"
+      },
+      {
+        "name": "mcp-server/native-render-variant.js",
+        "sha256": "2eab35ee45124c49ed2c692c81e9cb0480afbd28cac25d37d7f6e1aa3844f6f6"
+      },
+      {
+        "name": "mcp-server/operation-wait.js",
+        "sha256": "429bfc2f440f3fd294ce66ba1bac9303e026d7d7946c3b0c0e5bcaac8227ec40"
+      },
+      {
+        "name": "mcp-server/owned-fixture-lifecycle.js",
+        "sha256": "ffd4703623da22c59256629b02e4e85bd4b433e8fa1b26ee43a3b2136a65e145"
+      },
+      {
+        "name": "mcp-server/owned-runtime-authority.js",
+        "sha256": "06a9f10779579dc33de6ad0e92d74d53130c93476795a2d81ad64f0c19151c66"
+      },
+      {
+        "name": "mcp-server/owned-runtime-graceful-continuation.js",
+        "sha256": "b9eb81286316ff5a87b1cf0ac62e70bc0c792ce076212e1604111517db2e5126"
+      },
+      {
+        "name": "mcp-server/owned-runtime-initial-http-transport.js",
+        "sha256": "055933ea39b80e3095dcc9a4c4ccb713da7f2c2adad4e9e8112fdbcadafc2acf"
+      },
+      {
+        "name": "mcp-server/owned-runtime-initial-native-client.js",
+        "sha256": "f242cd0e76532b0820221d32dc2e23e47565738e4ef41e42eecabb13927ff439"
+      },
+      {
+        "name": "mcp-server/owned-runtime-initial-observers.js",
+        "sha256": "566ac976589214592842211e814e57728c88bf9e9c527bd2fa03212355d0cc6a"
+      },
+      {
+        "name": "mcp-server/owned-runtime-initial-recovery.js",
+        "sha256": "eae9a8718ea797c63d30dca9046b61bbb83637dfb47e9c636ef1ca34a56b622d"
+      },
+      {
+        "name": "mcp-server/owned-runtime-initial-runtime.js",
+        "sha256": "95dc271d4e6ba3be9c7c1e736930d6df99085fc2ffd02db030d87d2a74b82f57"
+      },
+      {
+        "name": "mcp-server/owned-runtime-initial-shared-queue-context.js",
+        "sha256": "702918000e7eb39df2da1e9eb9ef93608fbc86426ebf7b8cc52cbef2df1f5ec2"
+      },
+      {
+        "name": "mcp-server/owned-runtime-initial-source-census.js",
+        "sha256": "6d1f293cfde9a8841aa62be064eebf5833982a2dde9b10572359e2c36ca6a2ab"
+      },
+      {
+        "name": "mcp-server/owned-runtime-initial-title-plan.js",
+        "sha256": "39df30c7516d99636cfcc3e7358f211e802b13bdccdef86b8df832814ad80931"
+      },
+      {
+        "name": "mcp-server/owned-runtime-lifecycle.js",
+        "sha256": "700327f1415fce2bcdc5dc5365f3e133c96c2951f2e5e32a8a5a91f9ad42688c"
+      },
+      {
+        "name": "mcp-server/owned-runtime-product-activation.js",
+        "sha256": "5aae2a590c28fdfced69c73e8b1c4ffa9403c8820428d206fea47f8a159e3acb"
+      },
+      {
+        "name": "mcp-server/owned-runtime-product-lifecycle.js",
+        "sha256": "5654c055e2175eed764273c1f5d9d7bea1dfe7e717b8789fb2e36b7c84835c1f"
+      },
+      {
+        "name": "mcp-server/owned-runtime-product-maintenance.js",
+        "sha256": "f9a8ba547d118e51530c24fd0f7bfbc4ce0e0106aec2b06b8f64d199f9e7ed77"
+      },
+      {
+        "name": "mcp-server/owned-runtime-product-session-reset.js",
+        "sha256": "9f50ce8d0c4155aede66e29d2f98c5276223838123194ccd752c2f85ac489ad2"
+      },
+      {
+        "name": "mcp-server/owned-runtime-service.js",
+        "sha256": "b8a31ca2f486f6518f16b86c9f94f84c69870af8194209cda793ba4db25b1ec0"
+      },
+      {
+        "name": "mcp-server/owned-runtime-supervisor.js",
+        "sha256": "0c6298774a67f4a71cfac3956451193816902ee8d8eb048e7501697a4c27c8d4"
+      },
+      {
+        "name": "mcp-server/owned-runtime-ui-baseline.js",
+        "sha256": "01682dd06a7b4f3f4c5ad9c11d559c0ae43554cf8ce4f6fa00da1a677c2b71b8"
+      },
+      {
+        "name": "mcp-server/owned-runtime-win32.js",
+        "sha256": "9f3db992c79e4d06ef6b50ba4919c2779dbd692c3a6c32bf20838a45008dc774"
+      },
+      {
+        "name": "mcp-server/panel-lifecycle-causal-observer.js",
+        "sha256": "4da6d3a91aedd855e081fe9d2a71ae7f4905a22b36da7846dbb8e845a20232fa"
+      },
+      {
+        "name": "mcp-server/panel-lifecycle-causal.js",
+        "sha256": "c060da36d684f67c6dc7a802576bb575ba6fceca81edcbf4385404d857720354"
+      },
+      {
+        "name": "mcp-server/placeholder-evidence.js",
+        "sha256": "917c148acd52efdd5b85a8ffac342392ed87783cae6d45457de2a53529c73286"
+      },
+      {
+        "name": "mcp-server/placeholder-framing.js",
+        "sha256": "4d620c829c1ca2118bba99e80689cd4cf4a5ac893d9b948bb569bc9c1466667b"
+      },
+      {
+        "name": "mcp-server/placeholder-geometry.js",
+        "sha256": "7a7bbd128e006c1ebb4b36847fdd1524a84b16ceb38c4f1c751afe74e6aec1e3"
+      },
+      {
+        "name": "mcp-server/placeholder-plan-builder.js",
+        "sha256": "f0ba23467e2c335c51f57976e6bf5a4eaad871f4606145b1add4029123564880"
+      },
+      {
+        "name": "mcp-server/placeholder-protection.js",
+        "sha256": "5aa1e9324caa52f1c0c1f61be686e09ca5c3132c746498f581ccb144a83b0b5e"
+      },
+      {
+        "name": "mcp-server/placeholder-readback.js",
+        "sha256": "be8608a9dfd615cf6e19945b1fda4c594a5afc035ac66ac20a0feb406e5a1e55"
+      },
+      {
+        "name": "mcp-server/placeholder-review-service.js",
+        "sha256": "762700ef62a6ab4fb257f373a64df8df6bc38474ccd0cf328db47c50fee2cde7"
+      },
+      {
+        "name": "mcp-server/placeholder-review-tools.js",
+        "sha256": "141ac56e5920afcfe73fca6f8ce6f5fc421ba8379f7999c39a0fa2afd02c4095"
+      },
+      {
+        "name": "mcp-server/placeholder-source-recovery.js",
+        "sha256": "82dfea29337636bb102180d11b1763457e033b94d39641b8714ccbfe2c8c32e5"
+      },
+      {
+        "name": "mcp-server/placeholder-timing.js",
+        "sha256": "eb176e282c331a83a72277c4c2fdc577c3fe12b02b4f2a69d42e1f8800a821ee"
+      },
+      {
+        "name": "mcp-server/placeholder-usage.js",
+        "sha256": "3a142e16392bd90f81d17b9c720407feef8c395e9f039105d08b077b5bbd79b1"
+      },
+      {
+        "name": "mcp-server/placeholder-visual-batches.js",
+        "sha256": "d1f6ed3d40e03fc38759028c7c72af8e4adf3b869d353afde7cd215b592f01f1"
+      },
+      {
+        "name": "mcp-server/placeholder-visual-review.js",
+        "sha256": "06b80ade07d01d0a129cad6af205ec3577d2a33704be71bf6bc09d5ec79b0a32"
+      },
+      {
+        "name": "mcp-server/plan-repair.js",
+        "sha256": "c508bbe2fcf2eb0fcdedd4966c639b7542d840218de8f8106c0931db2f010ec2"
+      },
+      {
+        "name": "mcp-server/plan-risk-classifier.js",
+        "sha256": "17615c8a20206839911ba650bdc18644d70573a75e1635b37016a9ca92091ab4"
+      },
+      {
+        "name": "mcp-server/plan-run-reconciliation.js",
+        "sha256": "dbdc3d946e6b27b960b1f99eb735ea1342bf22aa2587c380bcac1a0aa5fb5b1d"
+      },
+      {
+        "name": "mcp-server/plan-run-records.js",
+        "sha256": "5b03974e469318b04ed3a3f336c34bfaffef7fb3ded17857db6c204ba25b0962"
+      },
+      {
+        "name": "mcp-server/plan-run-response.js",
+        "sha256": "936fa6be3b8fcc561f1018eafd5c4ba47cb9ac2c7392cdf0eb2eb58ff363db38"
+      },
+      {
+        "name": "mcp-server/project-lifecycle-bridge-adapter.js",
+        "sha256": "963ea749ef0e61dfe9dfa9849576d16311b0e008fd5b0b1e7450dc41befdb88a"
+      },
+      {
+        "name": "mcp-server/project-lifecycle-contract.js",
+        "sha256": "5d104c94f90e8a844cf5d9ea2b4ef70438d73fa93816b3a8614a392e3af6f0e3"
+      },
+      {
+        "name": "mcp-server/project-lifecycle-plan.js",
+        "sha256": "4833a6178ae1b13233d9af5a8b2a0aaa9661b8c41917db59da115f0d9735872e"
+      },
+      {
+        "name": "mcp-server/project-lifecycle-service.js",
+        "sha256": "8e3680e936f7ff2b1d5fa2a5ac9f655e136cd6e84e8b85ac8699d79d92500429"
+      },
+      {
+        "name": "mcp-server/project-lifecycle-state.js",
+        "sha256": "6864d44ce354fc8a0ac7589236c1032c4d563bacc9f84a8d042a83623f95c3a0"
+      },
+      {
+        "name": "mcp-server/project-lifecycle-transition.js",
+        "sha256": "b33071a4bde99f7b241d9662b528c3a58c21c00387fb7a9d277824c604bce444"
+      },
+      {
+        "name": "mcp-server/project-lifecycle-verification.js",
+        "sha256": "21d5bc173a54477821832dba5999e395edf4c33067f374fe6b548101ad97f52c"
+      },
+      {
+        "name": "mcp-server/project-save.js",
+        "sha256": "59b09dde3ef9bc66d68d745d6ce614252fd907196f2581a13d3ae8c9fea2a16f"
+      },
+      {
+        "name": "mcp-server/project-state-store.js",
+        "sha256": "baca725ce96100d051c47c856569f40afe4d2d16274c9907a8a3d60e80f6ed9b"
+      },
+      {
+        "name": "mcp-server/proposal-state.js",
+        "sha256": "35150c536c54ecfa2b05741315aa4fb11aa1b0ac63609eede0b0cc21843375c1"
+      },
+      {
+        "name": "mcp-server/review-evidence.js",
+        "sha256": "88f5152ca61e68ce9df05707dadf15dbe6b536f19df842488371f9c5e9cc4946"
+      },
+      {
+        "name": "mcp-server/run-outcome.js",
+        "sha256": "c3a8bdd19120d86032af604879bf5421036d884460468f0b7e31c5c117ed5d6f"
+      },
+      {
+        "name": "mcp-server/semantic-verification.js",
+        "sha256": "f9edd022002f523f483a0b438b5b9a6cdff1c3a9e33b80900025c8681ea28556"
+      },
+      {
+        "name": "mcp-server/server.js",
+        "sha256": "6db469b3ef59e5cbefc0221cd9eebb9120fb9bd43cf8c0fe4c5c3a76b0d05e01"
+      },
+      {
+        "name": "mcp-server/session-recovery-state.js",
+        "sha256": "1ad82bda116c01d9cb231480819b6d140b1135c028fc70ff973344956dfb6087"
+      },
+      {
+        "name": "mcp-server/slideshow-manifest.js",
+        "sha256": "8773ed468d57f86f90fafbefbbc0caa5fd5bf00a3a4c1b9a6d6a00e08bd79201"
+      },
+      {
+        "name": "mcp-server/slideshow-plan-builder.js",
+        "sha256": "b3bd52f6eec50673fa5dc09fc6657095cba45220833a6b57933ce69f74c4ba0d"
+      },
+      {
+        "name": "mcp-server/slideshow-tools.js",
+        "sha256": "bf8d48b3c12c47d40e372a510c0a987d4f3f4f6367adf5f72f2a1eb82a45d973"
+      },
+      {
+        "name": "mcp-server/solution-plan-builder.js",
+        "sha256": "43afd2a69aaaeec7848dbb5c83b1eb9997f4ffdfdcbe68228774631872acd2fb"
+      },
+      {
+        "name": "mcp-server/solution-plan-verification.js",
+        "sha256": "5e3a76067640cf55e27751a7f9140e9c3828cea684b9695a5aa3b718471aae98"
+      },
+      {
+        "name": "mcp-server/text-layout-policy.js",
+        "sha256": "f746de650224cd7963258c26f0b0c0bf0a0d2d640ab2ea7e584e9f2f3fcc7979"
+      },
+      {
+        "name": "mcp-server/text-visual-review-plan.js",
+        "sha256": "1fd5e22bff0f4026d2a373b0d4001e2a58f23a28916786ed2a345e3d67cc5b04"
+      },
+      {
+        "name": "mcp-server/title-export-snapshots.js",
+        "sha256": "ce31134353babd2addec92a06d97e0ec184df3eca5a0bfcd1aec4cdc0b98ef4a"
+      },
+      {
+        "name": "mcp-server/title-export-verification.js",
+        "sha256": "8e42d1fb8f183b6b93cf84518f6e06267e09b63ad65ffa9e821faa44bf90f709"
+      },
+      {
+        "name": "mcp-server/tool-error-response.js",
+        "sha256": "a48cd04e195fde3b3e065915a8cc87f7bacbef3ad91df85a4bedf9c568cb5b39"
+      },
+      {
+        "name": "package.json",
+        "sha256": "9f6baa725a25240fb480db12eff1a7b6dde758f3414459ec9cdd446c4225016c"
+      },
+      {
+        "name": "scripts/ame-job-source-hash-worker.cjs",
+        "sha256": "800d182f0339addc9c61b26fcb4e47396caf8a269896ed33421807ea692413da"
+      },
+      {
+        "name": "scripts/autonomous-plan-client.js",
+        "sha256": "1ae9ca1a5d537a08bfb48d70c92d3baa39ce1d9da7e577184c2949ab0d1262d7"
+      },
+      {
+        "name": "scripts/build-windows-mcp-launcher.ps1",
+        "sha256": "b2c0cba611a8d365b94f4f2c45e0380eb797d6d23afb8d93816ad72580aa1c50"
+      },
+      {
+        "name": "scripts/cep-panel-product-reset-client.js",
+        "sha256": "079cfb4f162e67cd62ade25f65f8197f42d8f9a3212a84bb581880db10a070e4"
+      },
+      {
+        "name": "scripts/cep-panel-reset-physical-fence-absence.ps1",
+        "sha256": "b206c1d878c49a49f7af19f7ee2b94c25ca28e1cd569bb7fb139c0d0d916ef01"
+      },
+      {
+        "name": "scripts/cep-panel-target.js",
+        "sha256": "77c708d09cdac93785222b68a056e0c44ee0a509dee302cae316b8c437175744"
+      },
+      {
+        "name": "scripts/common-title-assembly-maintenance.js",
+        "sha256": "f601b6890f244133ae1042b3577d2801a7046e2dfb3eaf3dc23e721a51449af6"
+      },
+      {
+        "name": "scripts/core-legacy-control-reader.js",
+        "sha256": "ce066a74f004e820e651f78524ae0bee69d25884520aabe214fa5463eb6c921e"
+      },
+      {
+        "name": "scripts/human-guard-settlement-maintenance.js",
+        "sha256": "a619a440c27e1c44c70cadd60ba174b69d6129b43da5f051a35c6611144877fa"
+      },
+      {
+        "name": "scripts/native-fixture-prephase-maintenance.js",
+        "sha256": "d357b9bf7f0daecb4e5d2153c46cc4c6e51eaed86a018ee06707e8a1a62e4a86"
+      },
+      {
+        "name": "scripts/native-fixture-retained-maintenance.js",
+        "sha256": "492ae12961cb9e809c811a631bbdf15517e4b2473eb9e20e713e30cf5ac4f509"
+      },
+      {
+        "name": "scripts/owned-runtime-control.js",
+        "sha256": "0a4d820bc89ed7d7212e7bcbdfc79d7b4cda1b91deaa453fae187014d2162acb"
+      },
+      {
+        "name": "scripts/owned-runtime-daemon-helper.ps1",
+        "sha256": "b32be92917aed6ed846099aa953d4a4e7b91c5a4e1660121ab93363b919e2291"
+      },
+      {
+        "name": "scripts/owned-runtime-finalize-launch.js",
+        "sha256": "ac7e47bbffbb67a22408666e5c479464cb9a2a0d8f0ac7170f103917937b12f6"
+      },
+      {
+        "name": "scripts/owned-runtime-maintenance-retire-helper.ps1",
+        "sha256": "61fdaef97e7a063fb13af6ea8c989ba79ce457fbb29c504377ba9d82c6062bf7"
+      },
+      {
+        "name": "scripts/owned-runtime-maintenance-retire.js",
+        "sha256": "57f0785e027481c2e1575c61b039b09b5dfcceed7918631930e9a2c501d8b182"
+      },
+      {
+        "name": "scripts/owned-runtime-panel-reload.js",
+        "sha256": "f35aa6844e95c42d8c95445b220a18b625b836cde4ba59dd010960554f53e5dd"
+      },
+      {
+        "name": "scripts/owned-runtime-startup-retire-helper.ps1",
+        "sha256": "20e1e5fea69ad9880de8381a30bafa94b43582420615dda939453e469b5f97f5"
+      },
+      {
+        "name": "scripts/owned-runtime-startup-retire.js",
+        "sha256": "e144fbc048e18193eecda7c77a51c41bf04267baef0414d18a36064478c5c329"
+      },
+      {
+        "name": "scripts/owned-runtime-win32-helper.ps1",
+        "sha256": "945ef885a9c8eecbc2ddf3076cc4762d2a4789b64c3153f12abee8c7f5236ed4"
+      },
+      {
+        "name": "scripts/windows-mcp-launcher.cs",
+        "sha256": "5ca67b246c60f0219e9861f1cb7e33b258b5a9031ba2d5b06e72b575c896c8c1"
+      }
+    ]
+  },
+  "serverJournal": {
+    "relative": "logs/core-cep-panel-control",
+    "present": false,
+    "semantic": "absence_is_not_an_initialized_empty_census"
+  },
+  "panelStorage": [
+    {
+      "key": "codexAeCorePanelActionReceiptsInitialized.v1",
+      "present": true,
+      "bytes": 1,
+      "rawSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "key": "codexAeCorePanelActionReceipts.v1",
+      "present": true,
+      "bytes": 6926,
+      "rawSha256": "cd02172a2e688d964c0983dde61a2b0ef8caa11fb6c53aee8c70d221d3b41d59"
+    },
+    {
+      "key": "codexAeCorePanelActionReceiptIndex.v1",
+      "present": true,
+      "bytes": 442,
+      "rawSha256": "9fd04ab85062a9d137d02d6acd17370cc7c8bc8c78748bcd96a996bc3e5a801f"
+    }
+  ],
+  "armed": false,
+  "stopAuthorization": false,
+  "nativeEffectAllowed": false,
+  "replayAllowed": false,
+  "panelActor": {
+    "panelConnectionId": "panel-1792939422818-8875254651467286",
+    "panelGeneration": "1792939636669",
+    "panelInstanceId": "panel-1792939422812-cyfujt8gkop",
+    "panelLifecycleEpoch": 4
+  }
+}

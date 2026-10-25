@@ -1,0 +1,63 @@
+# Единственный replacement потерянного owned generation
+
+Статус: **root и independent design review ACCEPT**, открытых P1/P2 нет. Sole offline writer работает только `AE_Agent_Core_repair`/`codex/core-runtime-repair` от `4efc70b`. Original `AE_Agent_Core` measured files/state/config/assets/journals сохраняются. A/B/historical/prepublication fixes отдельно ACCEPT. Loss-authority implementation разрешена offline; production launch остаётся закрыта до actual lifetime PASS, implementation review/commit/fresh controller gates. Ни force, ни новая production launch этим документом не выполняются.
+
+Harmless probe `4af33140-f29e-4d5f-a9ff-9ef158b5997a` создал один child13516/birth134374189565080321 с breakaway-флагом, но actual IsInAnyJob вернул true; прежний gate отказал без candidate/fallback. Это FAIL/incomplete, не lifetime PASS и не доказательство причины старого Core исчезновения. ПослеTTL own FS содержит heartbeat89631ms/self-exit-intent27, fresh Open87/absence; retained kernel exit proof не получен. Root/architect пересмотрели lifetime invariant: job membership — диагностический факт; решающее доказательство — actual owner/tool closure + независимый same-HANDLE survival interval + terminal27. Новый probe сначала проходит отдельный safety review/GO. Focused lifetime design принадлежит architect: `docs/core-launch-lifetime-design.md`.
+
+Нормативный revised `docs/core-launch-lifetime-design.md` supersedes прежний literal `IsInAnyJob==false` gate и старые job-free формулировки. Новый actual probe0589f811 завершён root observer PASS:5458ms post-tool survival на retained SAMEHANDLE, затем WAIT_OBJECT_0/exit27; creator/observer jobmembershiptrue записана диагностически. ProductionAcceptancefalse; owned-loss authority/edge/lifecycle replacement код **не реализован**, новый этап остановлен по пользовательскому поручению о handoff.
+
+## Честное исходное состояние и permission boundary
+
+Operation `9c9fb972-201d-4c73-8bf2-35bd6c8596f9`, generation `1672be8d-76e4-4fa3-9994-8a750c8a2209`, bootNonce `84c4eb15-a221-4c99-84ff-a4b1d10f95cf` успешно прошли initial Start/registration/genesis/current/own adoption по controller evidence. Kernel identity: PID29964/birthFileTime134374129383492526, pinned Node, old runtime sourceSha256 `cc191dd1c263256f4b9c1b66f75eab4af7589a41ec84d9b0171a0772d777f529`;22 адресных old refs — sanitized `config/core-runtime-repair-case.json`. Последующий transport/holder/HANDLE LOST; fresh observation2026-10-25T15:48:22.5255876Z: target/owner/helper absent, Win32Error87,3456free. Receipt `ownership-refresh-lost.json`, SHA `70d11d414beee40b9524d02445c587151ac292950b86a9b91a8445461ac3d5fe`.
+
+Later exit/cause/exitCode **UNKNOWN**. Нет retained HANDLE/WAIT_OBJECT_0, STOP/force/drain/shutdown ACK не было. Absence не retirement и не graceful exit. Старый exact-process force case HISTORICAL/NOT ARMABLE; его WIP не является current workflow. Никаких действий против alive/reused/denied/unknown PID, force grants, parent spoof, job-limit mutation или общей rescue службы.
+
+Исходное прямое поручение переноса THREAD `01a171dd-b843-7141-b28a-ae75d79ce7f1` покрывает один reviewed **недеструктивный** replacement при свежих guards. Force permission не требуется, потому что force/impact на alive target запрещены. Старые migration commands/resume остаются noReplay; все old bytes и3 реально общих native fences сохраняются. Новый daemon UUID — normal lifecycle generation; не новая migration operation/genesis и не third resume.
+
+## Append-only authority и state flow
+
+Новая own Core HMAC disposition `kind:owned_generation_transport_lost_replacement` фиксирует exact old full identity/22refs/runtime/signed genesis/current/registration/first-adoption и raw loss receipt. Assertions: `initialStart:registered_current_adopted`, `laterExit:unknown`, `exitCode:null`, `cause:unknown`, `exitProven:false`, `forceUsed:false`, `oldCommandsReplayAllowed:false`, `resourceFencesReleased:false`. Это административное разрешение replacement, а не переписанное доказательство прошлого исполнения. Fixed case/verbs, без caller PID/root/hash/force inputs.
+
+После independent design/implementation review и отдельного successful lifetime proof один новый sole controller приобретает real Source→Core pair. Только этот closed loss case может обработать abandoned mutex как сигнал потерянного владельца, сохранив UNKNOWN и повторив **все** fresh guards; abandoned само по себе capability не создаёт. Запрещено молча применять обычный ensure/reset по absence.
+
+Fresh prelaunch gates: source/Core/oldowner/helper genuine absence/free endpoint; exact current/provenance/old refs; target/source path aliases/reparse/hardlink guards; complete current store/marker/preference/pending lifecycle/ownership/revisions/checkpoints и3 constraints; scoped noqueue/inflight/native/physical/local UNKNOWN observation. Последний исторический status0 не заменяет новую проверку. Alive/reused/denied/unknown target или ресурсный drift закрывает Start без действия на target.
+
+Durable signed append-only launch binding резервирует **одну** normal supervisor operation/new generation/bootNonce и расходует authority **до** native RPC; связывает disposition/loss receipt/original origin, reviewed replacement named set/helper/manifest/executables, new current CAS baseline, fresh paired session и guard witnesses. Existing/partial binding, new session после LOST или возможный Start — read-back only, никаких новых UUID/Start/register/current replay.
+
+State flow:
+
+`reviewed disposition → lifetime PASS → actual pair + fresh complete guards → once consumed new normal launch binding → immediate actual HANDLE retention + actual job diagnostic → candidate/register → genuine self status admission closed → explicit loss edge + current → independent observer capture → supported launch-owner release/actual tool completion → new pair/open SAME registered generation without replay → same-HANDLE survival + fresh guards → new generation activation/preference trust adoption → actual typed read-back`.
+
+Любая Start/identity/job/candidate/register/seal/current/ACK/timeout/LOST failure после consumption сохраняет same-operation held/read-back UNKNOWN. Native boundary не допускает alternate ordinary lane для declared loss generation; только exact bound actual pair/session/native attempt. No second spawn/register.
+
+## Own provenance, admission и normal lifecycle
+
+Separate Core-only loss reader распознаёт signed disposition/binding **до open-dead-PID**. Не передавать synthetic exit в `predecessorExitFacts`, не создавать verified-shutdown/graceful edge. New explicit `owned_loss_replacement` edge связывает original own origin+loss decision+actual new registration/current и `exitProven:false`.
+
+Core adapter обязан охватить admission **и** product stop/lifecycle anchor/succession minting. Новый normal lifecycle anchor содержит original genesis+loss edge; после replacement обычные same-new-source graceful suffixes используют существующий глобальный `readVerifiedGracefulSuccession` без изменения его семантики. Old first-adoption остаётся; новая generation требует fresh challenge/activation. Old activation не является новой admission. Historical prestart origin проверяет saved schema/hash/HMAC/self-consistency, current bytes только при fresh prelaunch; pure runtimeNames исключает требование ещё не опубликованных новых файлов.
+
+До replacement launch/admission — reviewed absent-only initial server journal provisioning по принятому протоколу: actual server `logs/core-cep-panel-control` genuinely absent, local3 terminal records не доказательство server initialization. Под real pair: fresh alias-safe absence/stable nearest parent → signed wx/fsync provision once/intent → exclusive nonrecursive fixed mkdir → NEW initialized/index wx/fsync → signed directory/marker lineage origin. Не копировать/очищать legacy/local receipts; existing/partial/UNKNOWN/race/alias/removed/replaced lineage fail-closed, no reinit. Initial empty-index hash исторический, не perpetual current-index pin.
+
+Source/.gemini redirect остаётся после durable actual own adoption и transport read-back по прежнему cutover protocol. Не откатывать current protected state/preference/assets/source ради удобства запуска.
+
+## Durable launch prerequisite и bounded harmless harness
+
+Old cause не установлен. Existing StartIndependent использует STARTUPINFOEX HANDLE_LIST0x20002/NULstdio и NO_WINDOW|UNICODE|EXTENDED, без parent/job attributes или explicit breakaway. Собственный launcher KILL_ON_JOB_CLOSE|SILENT_BREAKAWAY_OK не доказывает свойства внешнего host job.
+
+Минимальный candidate: ровно один CreateProcess с CREATE_BREAKAWAY_FROM_JOB; **без fallback**. Caller немедленно сохраняет returned actual HANDLE до identity/job/candidate checks. Actual IsProcessInJob(child,NULL) записывается как diagnostic, true не является самостоятельным отказом. Ошибка самого наблюдения/identity остаётся fail-closed held recovery, без второго spawn. Fixed argv/env/executable/pins/actual parent provenance/pair gates сохраняются. Новую loss launch нельзя включать до реального harmless lifetime PASS в том же tool context; решающий gate — actual owner/tool completion и same-HANDLE survival/terminal proof. Broker/изменение host jobs не требуются текущим принятым направлением; denied CreateProcess не получает fallback.
+
+Перед native fixture root согласует конкретный harness/observer. Ownership — только test-owned fixed Node и finite fixture под `Core_repair/.codex-runtime/core-launch-lifetime/<UUID>`. Нет Core daemon/credentials/3456/source config/state/AE/AME. Fixture пишет own ready/heartbeat/exit-intent, hardcoded TTL90s/selfexit27. Owner извлекает exact production C# candidate, запускает один child, немедленно сохраняет HANDLE, получает actual identity/IsInJobAnyfalse. Owner ждёт <=45s independent observer captured ack, затем закрывает только свой handle и штатно exits0; child не завершается owner cleanup.
+
+Root observer держит свой свежий QUERY+SYNCHRONIZE exact fixture HANDLE с full birth/image/argv/Node hash и записывает свой actual job diagnostic. После подтверждённого внешним marker завершения owner/tool session заново наблюдает WAIT_TIMEOUT на том же child и проверяет bounded monotonic survival interval5000ms повторными SAMEHANDLE waits, затем SAMEHANDLE WAIT_OBJECT_0/exit27 к <=110s. Никаких Kill/Terminate/parent-tool shutdown, изменения host job или spoof. Cleanup — selfexit и закрытие собственных handles; timeout честно failed/incomplete proof. Denied CreateProcess => one attempt/no fallback. Собственная restrictive/nested-job negative допускается только для test-owned wrappers, без воздействия на host job.
+
+Документация API: [Job Objects](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects), [Process creation flags](https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags). Harmless proof не является Core acceptance и не воспроизводит причину старого UNKNOWN автоматически.
+
+## Focused acceptance
+
+- Wrong case/root/op/source/key/pin/HMAC/loss ref, old generic ensure/reset/resume, stale absence, alive/reused/denied target, pending/UNKNOWN/physical/native/resource drift — spawn0.
+- No lifetime PASS, CreateProcess denied, missing actual job observation/returned HANDLE, altered parent/argv/env or duplicate source pins — no production launch/admission; exactly one CreateProcess, no fallback. Job membership true itself — diagnostic, не подмена survival proof.
+- Existing/partial consumption, foreign native session, any possible Start fault — same operation readback, Start/register<=1; old bytes/noReplay/fences preserved.
+- Actual owned fixtures verify signed loss reader before dead-PID open, explicit non-graceful/non-exit edge, genuine self register/statusclosed/current, fresh own activation/ON trust/OFF, product stop authority and later ordinary same-new-source succession. Global graceful contracts unchanged.
+- Initializer→actual census→actual service pre-ACK/finish checks; absence before provision and removed/replaced lineage closed. Lower fake facts explicitly labelled; actual production launch only after fresh controller proof/review/commit.
+
+Independent design ACCEPT получен; дальнейший authority code выполняется offline в объявленном scope. Original actual files и secrets writer не меняет; новый durable launch harness сначала проходит scoped safety coordination с root. Actual product launch/redirect до проверенного lifetime и implementation acceptance запрещены.

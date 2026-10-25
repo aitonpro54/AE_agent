@@ -289,6 +289,23 @@ function cutoverReceiptSemantics(row) {
   if(TERMINAL.test(row.state) && mutation!=="unknown" && (row.delivery==="not_submitted" || row.phase===row.state))return "closed";
   return "protected_outstanding";
 }
+function coreActiveJournalReadiness(directory) {
+  const ledger=require("./native-fixture-attempt-ledger"),authority=require("./owned-runtime-authority");
+  try{return ledger.withFreshProofReadView(()=>{
+    const root=path.resolve(directory);if(!ledger.proofExists(root))throw problem("core_receipt_journal_missing");ledger.safeDirectory(root);
+    const names=fs.readdirSync(root).sort();if(names.length>MAX_IDENTITIES+3)throw problem("core_receipt_journal_capacity");
+    for(const name of names)if(!["initialized.json","identities.json","controller.lock"].includes(name)&&!(name.endsWith(".json")&&UUID.test(name.slice(0,-5))))throw problem("core_receipt_journal_foreign");
+    regular(path.join(root,"initialized.json"));const marker=authority.privateFile(path.join(root,"initialized.json"));if(!plain(marker.value)||Object.keys(marker.value).join(",")!=="schema"||marker.value.schema!==STORE_VERSION)throw problem("core_receipt_journal_uninitialized");
+    const indexPin=authority.privateFile(path.join(root,"identities.json")),index=readIndex(root),outstanding=[];
+    for(const id of Object.keys(index.identities)){
+      regular(createReceiptPath(root,id));const stored=authority.privateFile(createReceiptPath(root,id)),row=stored.value;validateStored(row,id,index.identities[id]);
+      if(!TERMINAL.test(row.state)||cutoverReceiptSemantics(row)==="protected_outstanding")outstanding.push({requestId:id,action:row.action,state:row.state,reasonCode:"core_receipt_effect_unresolved"});
+    }
+    if(ledger.proofExists(path.join(root,"controller.lock"))){const lock=authority.privateFile(path.join(root,"controller.lock"));readLock(root);outstanding.push({requestId:lock.value.requestId,reasonCode:"transport_busy"});}
+    marker.assertUnchanged();indexPin.assertUnchanged();if(JSON.stringify(fs.readdirSync(root).sort())!==JSON.stringify(names))throw problem("core_receipt_journal_changed");
+    return {ready:outstanding.length===0,scope:"core_active_journal",outstanding,replayAllowed:false};
+  });}catch(error){return {ready:false,scope:"core_active_journal",reasonCode:error.code||"core_receipt_journal_unproven",outstanding:null,replayAllowed:false};}
+}
 function createPanelControlService(options={}) {
   // Private Node fixture seams; none are accepted by CLI/MCP or environment settings.
   exact(options,["stateDir","evidenceRoot","resolveStateDirectory","resolveReceiptDirectory","readCutoverInventory","cdpPort","inspectInstalledTarget","fetchCdpTargets","evaluateViaCdp","WebSocket","persistReceipt","lookupNativeFixtureAdmissionRefusal","lookupRetainedNativeFixture","assertRetainedAdmissionCurrent","lookupPanelLifecycleCausal"]);
@@ -403,7 +420,7 @@ function createPanelControlService(options={}) {
     return cutoverReadiness();
   }
   function cutoverReadiness() {
-    if(!options.readCutoverInventory)return {ready:true,scope:"core_active_journal",replayAllowed:false};
+    if(!options.readCutoverInventory){refreshDirectory();return coreActiveJournalReadiness(directory);}
     if(!cutoverWitness)return {ready:false,reasonCode:cutoverFailure?.reasonCode || "owned_cutover_fresh_observation_required",outstanding:[],replayAllowed:false};
     try {cutoverWitness.assertFresh();return {ready:cutoverWitness.blocked.length===0,generation:cutoverWitness.generation,finalInventorySha256:cutoverWitness.finalInventorySha256,reasonCode:cutoverWitness.blocked.length?"owned_cutover_protected_outcome_unresolved":null,outstanding:cutoverWitness.blocked,replayAllowed:false};}
     catch(error){cutoverWitness=null;cutoverFailure={reasonCode:error.code || "owned_cutover_inventory_or_fresh_disposition_unproven"};return {ready:false,...cutoverFailure,outstanding:[],replayAllowed:false};}

@@ -742,6 +742,7 @@ let lastPanelInfo = null;
 let lastPanelPollLoggedAt = 0;
 const autonomousSession = createAutonomousSessionManager({
   statePath: path.join(process.env.AE_BRIDGE_STATE_DIR || LOG_DIR, "autonomy-preference.json"),
+  readMigrationAdoption:actor=>coreMigrationState()?.preferenceTrustAdoption(actor,lastPanelSeenAt),
   panelState: () => ({
     panelConnectionId: lastPanelInfo && lastPanelInfo.panelConnectionId || null,
     panelGeneration: lastPanelInfo && lastPanelInfo.panelGeneration || null,
@@ -8990,7 +8991,7 @@ function startHttpBridge() {
       let recoveryTransport;
       try{await retireGeneratedRecoveryForNormalPoll(req,url);recoveryTransport=generatedRecoveryLeaseScope(req,url);}
       catch(error){writeJson(res,409,{ok:false,code:error.code || error.message,command:null});return;}
-      try { if(!recoveryTransport)autonomousSession.observePanel({panelConnectionId:panelIdentity,panelGeneration}); }
+      try { if(!recoveryTransport)autonomousSession.observePanel({panelConnectionId:panelIdentity,panelGeneration,panelInstanceId:url.searchParams.get("panelInstanceId"),panelLifecycleEpoch:Number(url.searchParams.get("panelLifecycleEpoch"))}); }
       catch (error) { writeJson(res, 409, {ok:false,code:"panel_identity_mismatch",error:error.message}); return; }
       lastPanelSeenAt = Date.now();
       lastPanelInfo = {
@@ -9368,7 +9369,7 @@ const ownedRuntimeService=require("./owned-runtime-service").createOwnedRuntimeS
     let controlStopCensus=null;try{if(!ownedRuntimeStartup.initialRecovery)controlStopCensus=require("./owned-runtime-product-maintenance").readControlStopCensus(PROJECT_ROOT,process.env.AE_OWNED_RUNTIME_GENERATION);}catch(_){/* Changed/unresolved historical debt never gains control-stop eligibility. */}
     return {...status,protectedTransportReadiness:transport,bootstrapIdle:!panelBootstrapService.isBusy(),nativeExecutionIdle:runnerState.executing===false,ownedChildrenProofs:(initial || children) && fixtureState.allChildrenExitProven && fixtureState.pendingCleanupJobs===0 && runnerState.pendingCleanupJobs===0,retainedCapsulePreserved:initial || capsule,
       productStopQuiescence:{controlStopCensus,planExecutionState:currentProposalState.current ? currentProposalState.current.executionState : null,allChildrenExitProven:fixtureState.allChildrenExitProven,pendingCleanupJobs:fixtureState.pendingCleanupJobs+runnerState.pendingCleanupJobs,pendingNativeAttempts:runnerState.pendingCount,
-        outstandingAttempts:Array.isArray(runnerState.outstandingAttempts)?runnerState.outstandingAttempts.length:null,transportOutstanding:Array.isArray(transport.outstanding)?transport.outstanding.length:null}};
+        outstandingAttempts:Array.isArray(runnerState.outstandingAttempts)?runnerState.outstandingAttempts.length:null,transportOutstanding:transport.ready===true && Array.isArray(transport.outstanding)?transport.outstanding.length:null}};
   },
   closeIdleWaiters:()=>{for(const waiter of waitingPanels.splice(0)){clearTimeout(waiter.timer);if(!waiter.done && !waiter.res.destroyed && !waiter.res.writableEnded){waiter.done=true;writeJson(waiter.res,200,{ok:true,command:null,draining:true});}}},
   closeServer:closeOwnedRuntimeHttpServer

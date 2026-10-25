@@ -41,6 +41,11 @@ if($Case -eq 'resolver'){
  $caught=$null;try{[void](ReadPrestartPair $true $true)}catch{$caught=$_.Exception.Message}finally{ReleaseLocks};if($caught -cne 'owned_core_prestart_effective_pair_invalid'){throw 'prestart_native_expired_ticket_not_closed'};$checks++
  [void](ReadPrestartPair $false $false);ReleaseLocks;$checks++ # immutable reader must work after ticket expiry
  [IO.File]::WriteAllBytes($bindingFile,$originalBinding)
+ foreach($relative in @('mcp-server/synthetic-runtime.js','config/core-runtime-manifest.json','scripts/owned-runtime-daemon-helper.ps1','scripts/core-product-migration-control.js')){
+  $file=Join-Path $repo $relative;$bytes=[IO.File]::ReadAllBytes($file);[IO.File]::AppendAllText($file,' replacement')
+  [void](ReadPrestartPair $false $false);ReleaseLocks;$checks++
+  $caught=$null;try{[void](ReadPrestartPair $true $true)}catch{$caught=$_.Exception.Message}finally{ReleaseLocks};if(!$caught){throw 'prestart_native_replacement_fresh_not_closed'};$checks++;[IO.File]::WriteAllBytes($file,$bytes)
+ }
  # A later native-attempt record does not invalidate the immutable resolver.
  [IO.File]::WriteAllText((Join-Path $dir 'native-launch-attempt.json'),'{}');[void](ReadPrestartPair $false $false);ReleaseLocks;$checks++
 }else{

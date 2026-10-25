@@ -139,6 +139,9 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
 const RUNTIME_FILES = [
   "mcp-server/core-product-migration.js",
   "mcp-server/core-prestart-recovery.js",
+  "mcp-server/core-runtime-repair.js",
+  "config/core-runtime-repair-case.json",
+  "scripts/core-runtime-repair-control.js",
   "config/core-prestart-recovery-case.json",
   "mcp-server/core-legacy-cep-view.js",
   "mcp-server/core-migration-resource-fences.js",
@@ -375,4 +378,4 @@ function packageReviewEvidence(input,options={}) {
   const manifest={schema:"ae-agent-review-package.v1",eventCount:events.length,completeClientAcceptance:false,payloadPolicy:"allowlisted_machine_metadata_only; raw payloads and client artifacts excluded",files:Object.entries(sanitized).map(([name,value])=>({name,sha256:sha256(canonical(value))}))};
   return {manifest,files:sanitized};
 }
-module.exports={canonical,sha256,createVerificationEvidence,linkedEventSlice,sanitizeEvidence,findLeaks,packageReviewEvidence,assessRequirements,assessAudioCoverage,runtimeIdentity,runtimeNamedHashSet,writeStepEvidence};
+module.exports={runtimeNames:()=>RUNTIME_FILES.slice(),canonical,sha256,createVerificationEvidence,linkedEventSlice,sanitizeEvidence,findLeaks,packageReviewEvidence,assessRequirements,assessAudioCoverage,runtimeIdentity,runtimeNamedHashSet,writeStepEvidence};
