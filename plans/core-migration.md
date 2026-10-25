@@ -8,7 +8,7 @@ Source: AE_agent `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-
 - [x] Runtime extraction: typed catalog/dispatch/state, fixed builders, isolated adapter+daemon без providers/registry.
 - [x] Минимальная CEP и offline проверка session/adoption/manual confirmation/UNKNOWN контракта.
 - [x] Offline prepare/status helper: byte-exact protected state, path-bound marker, durable preference/OFF и rollback без replay; production apply отсутствует.
-- [ ] Четыре выбранных workflow сценария и safety negatives.
+- [x] Четыре выбранных workflow сценария и safety negatives в изолированном offline-контуре.
 - [x] Concrete offline cutover package с подготовленными forward/rollback commands.
 - [ ] Отдельное разрешение на installed assets/config/runtime switch, fresh native proofs и live read-back.
 
@@ -22,6 +22,7 @@ Source: AE_agent `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-
 - Production data/credentials/grants/journals и installed CEP/config не переносились. Explicit OFF обязателен; missing preference не consent. V2 project-state marker требует reviewed path rebind. Default product не требует initial-owned addon; native initial-owned lane не принят.
 - Cutover protocol — `docs/core-cutover-package.md`: staged files + адресные operator moves только после fresh native/quiescence proof, exact path/hash/object identity checks и отдельного разрешения. Helper никогда не утверждает runtime proof/admission. Launcher build sources добавлены; WinExe скомпилирован офлайн, не запускался.
 - `.gitattributes` сохраняет raw source bytes при checkout; measured runtime hash обновляется после изменений.
+- Stage3 исполняет назначенный `ae_implementer`, sole writer runtime/tests/package/config/Core plan; независимый docs writer сохраняется. Новых production tools/hooks/deps нет: shared test harness использует существующий snapshot fixture, публичный MCP и synthetic VM. Extracted fixture definitions происходят из source checkpoint; старые launchers/suites не переносились.
 
 ## Validation
 
@@ -31,3 +32,17 @@ Source: AE_agent `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-
 - `smoke:state-migration` PASS на synthetic owned fixtures: byte exact store, final marker validation, OFF connect/restart/rollback и revision7→8; missing/corrupt/unknown/pending/redirect/hardlink/stale identity отказ, partial publish read-back и lost-result без replay. Review усилил bounded config parser (unsupported TOML fail-closed) и общий exact result provenance validator для status/rollback. Actual source state не читался/не копировался при implementation.
 - На этапе выполняются `check:rules`, `smoke:core-runtime`, JS syntax и `git diff --check`; точный итог указан в commit/ответе исполнителя. Fixture children завершаются штатным cleanup.
 - Ограничения: fake HTTP/native responses не являются live proof. Не проверены installed CEP/реальный браузерный жест/вид панели/AE evaluation/native provisioning/cutover. Source code/runtime/settings остаются неизменными.
+- Stage3: `smoke:core-scenarios` PASS — titles2steps; alignment typed2 + deterministic text-review10; placeholder3; AE-only render1. Все проходят public typed input/build/validation→server proposal→dry-run, executedCount0;24 native VM/stub reads,0 bridge mutations; actual builder revision42→99 отклоняется.
+- `smoke:core-safety` PASS —23 meaningful checks: payload/preview hash/revision/superseded; actual generated setter stable-ID rejection before Undo/write (с positive VM control); protected ownership/credential roles/drift; raw/save/destructive autonomous scope denial. Реальные server raw validation blocksRun=true/steps1 и safety.rawExtendscriptGate передаются CEP VM: matching dryRunId отправляется, wrongID отвергается server gate, correctID достигает approved и останавливается confirm:false до исполнения.
+- UNKNOWN: отдельный isolated submitted command без fake execution получает timeout/unknown; повтор того же proposal отвергается `m100_confirmation_replayed`; свежий public reconcile сохраняет unknown/no-replay и original timeout. Bridge mutation script отправлен1раз, VM его не исполнял, children/state затем удалены fixture cleanup. Production pure outcome/reconciliation также проверены.
+- Unchanged OFF/marker/rollback synthetic coverage из `07bcd98` переиспользовано без повторного suite. Ни actual save/reopen/render, ни visual/AME proof этим этапом не заявляются.
+- Финал stage3: targeted `core-cep-smoke` (изменён только test harness export/receipt input), `core-scenarios-smoke`, `core-safety-smoke` PASS; `check:rules` PASS (184 inspected source files,manifest hashes/exclusions,0 unresolved/external/old-root imports), `git diff --check` PASS. Final Core snapshot origin PASS: port9760,204 tools, sourceSha=`d6a29e86e13d16f856ae364eb1e7e3dd096ef8f4072ac5140af10c16dcaca4da`;186 runtime/test assets,5 340 601 bytes. После cleanup активных fixture node children нет. Docs/cutover instruction bundle остаются отдельным ресурсом writer и не входят в runtime hashes.
+
+## Offline workflow matrix
+
+| Workflow | Public path / stubs | Доказано / остаётся |
+|---|---|---|
+| Титры | Exact text IDs10/11, uniform TextDocument; update_text_layer→validate→proposal→dry-run | Typed inputs/gates,2steps,writes0; разные стили и видимый результат требуют live review. |
+| Выравнивание | set_layer_transform[640,360] и text-visual-review builder/root20/route21/target10/11,entry-hold-exit | Deterministic10-step review,revision drift rejection,noexports; визуальное центрирование не доказано. |
+| Slideshow placeholders | builder source100→101,root[0,4],source[2,6],startTime-2; independent read-back fixtures | Stable IDs,3steps,source mismatch needs_review; actual footage/first-middle-last images не просмотрены. |
+| AE render | Public inspect_title_variants stub→stateHash→one-step protected render plan→dry-run | Destructive/manual classification и zero render invocation; media/codec/alpha/output/live render не проверены. |

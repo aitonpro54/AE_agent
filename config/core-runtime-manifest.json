@@ -1914,8 +1914,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 409,
-      "sha256": "18bac23841315f877d4fa54986a01f521c6998866d3e881297134b695ca1c9cc",
+      "bytes": 539,
+      "sha256": "a9c85e5d4a876fa32dd1be936d804b4c86ee0f999a9256b9bb8a9da7d1755154",
       "disposition": "core-specific",
       "literalDependencies": []
     },
@@ -1985,8 +1985,8 @@
     },
     {
       "path": "scripts/core-cep-smoke.js",
-      "bytes": 17094,
-      "sha256": "46b6c40cf9689b9adf22427f689d7adc8b5f9fcec2e2fb0f1e37fb9840e9df68",
+      "bytes": 17298,
+      "sha256": "d37568b09655468825b33ffb7409a1fe4847466cb5715735f1210a84491f5a3d",
       "disposition": "core-specific",
       "literalDependencies": [
         "cep-panel/panel-action-contract.js"
@@ -2007,6 +2007,38 @@
       "literalDependencies": [
         "mcp-server/review-evidence.js",
         "scripts/network-test-fixture.js"
+      ]
+    },
+    {
+      "path": "scripts/core-safety-smoke.js",
+      "bytes": 11720,
+      "sha256": "857c8ce24cb860392e1bad202e37cf69d45e55da8615aba7a2e1404ca2d00995",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/bridge-daemon.js",
+        "mcp-server/plan-run-reconciliation.js",
+        "mcp-server/run-outcome.js",
+        "scripts/core-cep-smoke.js",
+        "scripts/core-scenario-fixture.js"
+      ]
+    },
+    {
+      "path": "scripts/core-scenario-fixture.js",
+      "bytes": 5663,
+      "sha256": "36bd39250483ca37611239db86bb9d58f299bb0f90c40448144acab85eb398a4",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "scripts/core-test-visual-project.js",
+        "scripts/network-test-fixture.js"
+      ]
+    },
+    {
+      "path": "scripts/core-scenarios-smoke.js",
+      "bytes": 8857,
+      "sha256": "b828a5d416cd6b0f47069a2d4a365cc82a3dc912002205e713bfd354f3439b2b",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "scripts/core-scenario-fixture.js"
       ]
     },
     {
@@ -2040,6 +2072,22 @@
         "mcp-server/project-lifecycle-contract.js",
         "mcp-server/project-lifecycle-transition.js",
         "mcp-server/project-state-store.js"
+      ]
+    },
+    {
+      "path": "scripts/core-test-project.js",
+      "bytes": 4711,
+      "sha256": "b35d636b7c4440b4bf726f7105f9cf8eb756374483959685ceb67b5ae2460985",
+      "disposition": "core-specific",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/core-test-visual-project.js",
+      "bytes": 4640,
+      "sha256": "9c01d16bb7885cd76a5ecfae5441dacd3aa2710ca752bd8705368233a0eadd78",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "scripts/core-test-project.js"
       ]
     },
     {
@@ -2242,10 +2290,15 @@
     "production state/credentials/journals",
     "native binaries/provisioning"
   ],
+  "offlineCoverageScripts": {
+    "workflows": "scripts/core-scenarios-smoke.js",
+    "safety": "scripts/core-safety-smoke.js",
+    "migration": "scripts/core-state-migration-smoke.js",
+    "runtimeOrigin": "scripts/core-runtime-smoke.js"
+  },
   "remaining": [
-    "four workflow coverage",
     "approved production state publication/runtime adoption",
     "installed config/authority cutover",
-    "live CEP/AE proof; AME paused"
+    "live CEP/AE visual/evaluation/save-reopen/render proof; AME paused"
   ]
 }

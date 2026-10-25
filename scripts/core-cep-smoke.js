@@ -28,7 +28,7 @@ function harness(options={}){
   const hook=`globalThis.__test={session:m100ConfirmationSessionId,pins:function(){return currentBridgePlanPins(currentBridgePlan);},
     install:function(state,accepted){state=JSON.parse(JSON.stringify(state));running=true;badgeEl.textContent="online";panelConnectionGeneration=101;panelLifecycleEpoch=1;currentBridgePlan=state;
       lastPlanResult={plan:state.plan,planValidation:state.validation,requestId:state.proposal.requestId,m100ActionProposal:state.proposal,bridgePlanPins:currentBridgePlanPins(state)};
-      lastAcceptedDryRun=null;if(accepted)rememberPlanRun({ok:true,dryRun:true,id:"synthetic-dry-run"});updatePlanControls();},
+      lastAcceptedDryRun=null;if(accepted)rememberPlanRun(typeof accepted==="object"?JSON.parse(JSON.stringify(accepted)):{ok:true,dryRun:true,id:"synthetic-dry-run"});updatePlanControls();},
     epoch:function(){panelLifecycleEpoch++;},setState:function(v){currentBridgePlan=v;},
     run:runLastPlan,physical:physicalEvalScript,physicalIdle:physicalEvalScriptIdle,execute:executeCommand,
     snapshot:panelActionSnapshot,ui:uiPlanAction,proposal:function(){return m100ActionProposalForResult(lastPlanResult);},disconnect:disconnect,
@@ -51,6 +51,7 @@ function installed(h,risk="mutating",wrongSession){
   h.setResponder(r=>r.path==="/agents/plan/current"?{ok:true,current:clone(state)}:r.path==="/agents/plan/run"?{ok:true,run:{ok:true,id:"synthetic-run",dryRun:r.body.dryRun,validation:state.validation,steps:[],outcome:{execution:{status:"completed"},mutation:{status:"applied"},verification:{status:"passed"}}}}:{ok:true,settlement:null,disposition:null,certificate:null});
   return state;
 }
+if(require.main===module){
 const hostDenied=harness({hostAllowed:false});assert.deepEqual(hostDenied.counts(),{reads:0,writes:0,nativeCalls:0,confirmations:0});
 const boot=harness();assert(!boot.elements.has("chatPrompt"));assert.equal(boot.counts().nativeCalls,0);assert(boot.context.AEAgentPanelActions.catalog().every(x=>allowed.includes(x.name)));
 const firstSession=boot.context.__test.session();boot.context.__test.epoch();assert.notEqual(boot.context.__test.session(),firstSession);
@@ -105,3 +106,6 @@ const historicalDenied=historical.invoke({protocolVersion:contract.PROTOCOL_VERS
 const currentPassive=historical.invoke({protocolVersion:contract.PROTOCOL_VERSION,requestId:"77777777-1111-4111-8111-111111111111",action:"plan.current",args:{}});assert.equal(currentPassive.state,"completed");assert.equal(historical.counts().nativeCalls,0);
 const unknownLegacy={...historicalValues},unknownRows=JSON.parse(unknownLegacy.codexAePanelActionReceipts),unknownIndex=JSON.parse(unknownLegacy.codexAePanelActionReceiptIndex);unknownRows.records[historicalIds[0]].action="not-a-historical-action";unknownIndex[historicalIds[0]].action="not-a-historical-action";unknownLegacy.codexAePanelActionReceipts=JSON.stringify(unknownRows);unknownLegacy.codexAePanelActionReceiptIndex=JSON.stringify(unknownIndex);assert.equal(harness({storage:unknownLegacy}).context.AEAgentPanelActions.state().actionStorage,"unavailable");
 console.log(JSON.stringify({ok:true,scope:"offline VM/DOM; synthetic HTTP/native stubs",panelActions:allowed.length,protectedUiRiskLabels:["mutating/save","destructive","raw_jsx"],sessionEpoch:true,manualGesture:true,physicalLatchReload:true,unknownNoReplay:true,historicalReadOnly:true,reconnectReadoption:true,serverRawGateProven:false,liveProof:false}));
+}
+// Test fixture export only: no product imports this file or injected VM hook.
+module.exports={harness,clone};

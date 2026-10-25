@@ -7,6 +7,8 @@
     "smoke:core-runtime": "node scripts/core-runtime-smoke.js",
     "smoke:solid-placement": "node scripts/core-solid-placement-smoke.js",
     "smoke:core-cep": "node scripts/core-cep-smoke.js",
-    "smoke:state-migration": "node scripts/core-state-migration-smoke.js"
+    "smoke:state-migration": "node scripts/core-state-migration-smoke.js",
+    "smoke:core-scenarios": "node scripts/core-scenarios-smoke.js",
+    "smoke:core-safety": "node scripts/core-safety-smoke.js"
   }
 }
