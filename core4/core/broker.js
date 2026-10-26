@@ -5,6 +5,7 @@ const { Artifacts } = require('./artifacts');
 const { Ledger } = require('./ledger');
 const { WorkerClient } = require('./worker-client');
 const { Resources } = require('./resources');
+const { readFailure } = require('./receiver');
 const { acquireStateLock } = require('./state-lock');
 const { recordContext } = require('./record-context');
 const { validatePort, validateLifecycleBinding } = require('./authority');
@@ -19,11 +20,16 @@ class Broker {
     if (!stateDir) fail('explicit_state_directory_required');
     this.stateLock = acquireStateLock(stateDir);
     this.closed = false; this.ledger = new Ledger(path.join(stateDir, 'ledger.ndjson')); this.ledger.ownerFault = this.stateLock.error; this.ledger.writeGuard = () => !this.closed;
-    this.artifacts = new Artifacts({ root, store: path.join(stateDir, 'artifacts'), trace });
+    try {
+      this.artifacts = new Artifacts({ root, store: path.join(stateDir, 'artifacts'), trace, readOnly: !!this.stateLock.error, publicationGuard: () => {
+        if (this.closed || this.released) fail('broker_closed');
+        if (this.stateLock.error) fail(this.stateLock.error);
+      } });
+    } catch (e) { if (!this.stateLock.error) this.stateLock.release(); throw e; }
     this.worker = new WorkerClient({ timeout: workerTimeout, runtime: this.artifacts.runtime });
     this.transportTimeout = transportTimeout; this.contracts = new Map(); this.evidence = new Map(); this.builds = new Map(); this.proposals = new Map(); this.dryruns = new Map();
     this.controllerId = id('controller'); this.channelEpoch = id('channel'); this.secret = crypto.randomBytes(32).toString('hex');
-    this.connected = false; this.running = false; this.controllerBusy = false; this.controlPending = 0; this.hooks = {};
+    this.connected = false; this.running = false; this.reconciling = false; this.controllerBusy = false; this.controlPending = 0; this.hooks = {};
     if (privateEmbedding) {
       this.authority = validatePort(privateEmbedding.authority);
       this.transport = privateEmbedding.transport; this.hooks = privateEmbedding.hooks || {};
@@ -115,6 +121,7 @@ class Broker {
       const response = decode(frame, this.secret);
       exact(response, ['protocolVersion', 'commandId', 'executorHash', 'payloadHash', 'result']);
       if (response.protocolVersion !== 1 || response.commandId !== commandId || response.executorHash !== body.executorHash || response.payloadHash !== body.payloadHash) fail('response_correlation');
+      if (phase !== 'mutate' && readFailure(response.result)) fail(response.result.code);
       return response.result;
     }).finally(() => { this.controllerBusy = false; this.releaseIfDrained(); });
     // Late results may inform reconciliation, never continue a reset/expired workflow.
@@ -291,7 +298,8 @@ class Broker {
   async run({ proposalId, dryrunRef }) {
     const { proposal, plan } = this.proposal(proposalId); const dryrun = this.dryruns.get(dryrunRef);
     if (!dryrun || dryrun.proposalId !== proposalId || dryrun.taskEpoch !== plan.taskEpoch || Date.now() - dryrun.createdAt > 5000) fail('fresh_dryrun_required');
-    this.dryruns.delete(dryrunRef); this.ensureConnection(); if (this.running) fail('broker_busy');
+    this.ensureConnection(); if (this.running || this.reconciling || this.controlPending) fail('broker_busy');
+    this.dryruns.delete(dryrunRef);
     if (canonical(plan.pins.transport || null) !== canonical(this.transportIdentity || null)) fail('transport_pin_changed');
     if (this.ledger.unresolved().some(c => c.taskId === plan.taskId)) fail('reconciliation_required');
     this.running = true; const runId = id('run'); const outputs = {};
@@ -334,10 +342,14 @@ class Broker {
   }
   async reconcile({ taskId }) {
     this.ensureConnection();
+    if (this.running || this.reconciling || this.controlPending) fail('broker_busy');
     if (!validateLifecycleBinding(this.sessionBinding)) fail('trusted_project_lifecycle_unavailable');
+    this.reconciling = true;
+    try {
     for (const command of this.ledger.commands(taskId).filter(c => !['succeeded', 'rejected'].includes(c.state))) {
       if (command.target.sessionId !== this.sessionBinding.sessionId || command.target.projectId !== this.sessionBinding.projectId) continue;
-      const proof = decode(await this.transport.completion(command.commandId), this.secret);
+      const proof = decode(await this.completion(command.commandId), this.secret);
+      this.ensureConnection();
       this.lifecycle(command.target);
       exact(proof, ['commandId', 'state', 'response', 'originalBinding']);
       if (proof.commandId !== command.commandId) fail('completion_correlation');
@@ -353,13 +365,29 @@ class Broker {
       if (response.result.outcome !== 'applied') continue;
       // Matching target values without original command-completion proof never reach this branch.
       const after = this.validateReadback(command.selected, command.input, command.before, await this.send(command.selected, 'verify', command.input));
+      this.ensureConnection();
       this.lifecycle(command.target);
       this.ledger.append({ type: 'command', commandId: command.commandId, state: 'succeeded', after });
       this.ledger.append({ type: 'engine', workflowId: command.workflowId, event: { kind: 'succeeded', runId: command.runId, stepId: command.stepId, attemptId: command.attemptId, commandId: command.commandId, inputDigest: command.inputDigest, output: after, reconciled: true } });
     }
     return this.getTask({ taskId });
+    } finally { this.reconciling = false; this.releaseIfDrained(); }
   }
-  releaseIfDrained() { if (this.closed && !this.running && !this.controllerBusy && !this.controlPending && !this.released) { this.stateLock.release(); this.released = true; } }
+  async completion(commandId) {
+    // The deadline bounds only the caller. The actual transport lifetime keeps the
+    // controller and state lease reserved until it settles, even after timeout/close.
+    this.controlPending++;
+    let actual;
+    try { actual = Promise.resolve(this.transport.completion(commandId)); }
+    catch (e) { this.controlPending--; this.releaseIfDrained(); throw e; }
+    const pending = actual.finally(() => { this.controlPending--; this.releaseIfDrained(); });
+    pending.catch(() => {});
+    let timer;
+    try {
+      return await Promise.race([pending, new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error('transport_timeout'), { code: 'transport_timeout' })), this.transportTimeout); })]);
+    } finally { clearTimeout(timer); }
+  }
+  releaseIfDrained() { if (this.closed && !this.running && !this.reconciling && !this.controllerBusy && !this.controlPending && !this.released) { this.stateLock.release(); this.released = true; } }
   close() { this.closed = true; this.connected = false; this.worker.stop(); this.releaseIfDrained(); }
 }
 module.exports = { Broker };

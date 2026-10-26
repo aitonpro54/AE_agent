@@ -1,6 +1,16 @@
 {
   "owners": [
     {
+      "prefix": "core4/test/audit-repairs.test.js",
+      "owner": "audit-repairs",
+      "checks": ["audit-repairs"]
+    },
+    {
+      "prefix": "core4/test/fixtures/artifact-publish-crash.js",
+      "owner": "audit-repairs",
+      "checks": ["audit-repairs"]
+    },
+    {
       "prefix": "core4/core/",
       "owner": "core",
       "checks": [
@@ -150,6 +160,11 @@
     }
   ],
   "contracts": [
+    { "prefix": "core4/core/broker.js", "id": "audit-repair-control-boundary", "consumers": ["audit-repairs"] },
+    { "prefix": "core4/core/receiver.js", "id": "audit-repair-read-boundary", "consumers": ["audit-repairs"] },
+    { "prefix": "core4/core/resources.js", "id": "audit-repair-resource-boundary", "consumers": ["audit-repairs"] },
+    { "prefix": "core4/core/artifacts.js", "id": "audit-repair-publication-boundary", "consumers": ["audit-repairs"] },
+    { "prefix": "core4/integrations/cep/host-dispatcher.js", "id": "audit-repair-read-boundary", "consumers": ["audit-repairs"] },
     {
       "prefix": "core4/protocol/target-contract.json",
       "id": "exact-target-v1",
@@ -306,6 +321,10 @@
     }
   ],
   "checkDependencies": {
+    "audit-repairs": [
+      "core/", "protocol/", "worker.js", "modules/", "plan-engine/", "integrations/cep/", "config/catalog.json", "config/admissions/",
+      "test/audit-repairs.test.js", "test/fixtures/artifact-publish-crash.js", "test/fixtures/cep-host.js", "test/fixtures/ae.js", "test/fixtures/authority.js", "test/helpers.js"
+    ],
     "core-control": [
       "core/",
       "protocol/",
@@ -515,6 +534,7 @@
     ]
   },
   "checkCommands": {
+    "audit-repairs": ["node", "--test", "--test-name-pattern=audit-repairs", "test/audit-repairs.test.js"],
     "titles-owner": [
       "node",
       "--test",
@@ -583,6 +603,7 @@
     ]
   },
   "checkPolicy": {
+    "audit-repairs": { "kind": "integration" },
     "core-control": {
       "kind": "integration"
     },

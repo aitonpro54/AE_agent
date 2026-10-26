@@ -35,7 +35,13 @@ class Resources {
     }
     const records = candidates.filter(r => Object.keys(r.resource).every(k => target[k] === r.resource[k]));
     if (!records.length) fail('resource_constraints_required');
-    for (const record of records) {
+    // Missing item/file/output bindings cannot prove a constraint unrelated. Such
+    // records restrict a broad authorization, but never supply that authorization.
+    // Preserve exclusion for known comp/layer (including sibling-layer) mismatches.
+    const indeterminate = candidates.filter(r => !records.includes(r) &&
+      Object.keys(r.resource).every(k => target[k] === r.resource[k] ||
+        (target[k] === undefined && ['itemId', 'file', 'output'].includes(k))));
+    for (const record of [...records, ...indeterminate]) {
       if (record.schemaVersion !== 1 || !Array.isArray(record.allowedEffects) || typeof record.owner !== 'string') fail('constraint_schema_unavailable');
       if (record.unresolvedOutcome || (record.reservationOwner && record.reservationOwner !== grant.owner)) fail('shared_resource_fenced');
       if (record.owner !== grant.owner || record.checkpointRef !== grant.checkpointRef || !record.allowedEffects.includes(effectPolicy.effect)) fail('resource_ownership_checkpoint_effect');

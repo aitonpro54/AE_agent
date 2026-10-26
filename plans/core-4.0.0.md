@@ -91,6 +91,8 @@ M2a offline завершён: новый optional bridge, durable receiver, fixe
 
 M2b offline реализован: private lifecycle reducer, exact approval и проверки текущей incarnation перед send и terminal результатами. Разрешённые non-network batches **74/74 PASS**, boundaries18 PASS; review P2 закрыт. Mandatory CEP batch остаётся not-run, catalog-discovery deferred; полной scoped/release-сертификации нет. Детальные Progress/Decision Log/Validation — в [M2b work block](core-4.0.0-m2b-events.md). Production event source/issuer и live-приёмка остаются отдельным scope.
 
+27 октября 2026 завершён отдельный разрешённый [engineering block H1–H4](core-4.0.0-audit-repairs.md) по итоговому аудиту той же базы `bd2d6fa`: исправлены completed read refusals, completion concurrency/deadline/drain, narrow resource restrictions и artifact ownership/atomic publication. **119/119 выполненных тестов PASS**, boundaries18 PASS; M2b сохранён. Оба CEP B6 исключены, whole CEP batch unverified, catalog-discovery deferred; release/live certification не заявляется. Спорные sibling-layer semantics не менялись; без AE, push и merge.
+
 ## Progress
 
 - [x] Прочитаны start prompt, текущие AGENTS/README, адресный handoff и Git checkpoints; старый launch маршрут не возобновлялся.

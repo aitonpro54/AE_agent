@@ -89,10 +89,10 @@ test('[cep-transport] B4 missing callback second controller disconnect timeout r
   assert.equal(f.host.counts.evaluate, 1);
 });
 
-test('[cep-transport] B4 callback errors throws malformed and late callback never free UNKNOWN lane', async t => {
+test('[cep-transport] B4 external throws malformed mutation and late callback never free UNKNOWN lane', async t => {
   for (const options of [{ mode: 'throw' }, { mode: 'malformed' }, { delay: 40 }]) {
     const f = await wire(t, { hostOptions: options, callbackTimeout: 10 }), binding = channel(1); await f.transport.connect(binding);
-    await assert.rejects(send(f, binding, 'inspect', target(f.host.state), 'failed'));
+    await assert.rejects(send(f, binding, options.mode === 'malformed' ? 'mutate' : 'inspect', target(f.host.state), 'failed'));
     await new Promise(resolve => setTimeout(resolve, 50));
     assert.equal(f.store.closed, true); assert.equal(f.dispatcher.physicalPending, true);
     await assert.rejects(send(f, binding, 'inspect', target(f.host.state), 'next'), /receiver_lane_closed/); assert.equal(f.host.counts.evaluate, 1);

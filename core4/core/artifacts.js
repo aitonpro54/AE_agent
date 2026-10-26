@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { hash, canonical, fail, parse, exact } = require('../protocol/json');
 function local(root, relative) {
   if (typeof relative !== 'string' || path.isAbsolute(relative) || relative.split(/[\\/]/).includes('..')) fail('artifact_path');
@@ -10,8 +11,8 @@ function local(root, relative) {
   return file;
 }
 class Artifacts {
-  constructor({ root, store, trace = () => {} }) {
-    this.root = root; this.store = store; this.trace = trace;
+  constructor({ root, store, trace = () => {}, publicationGuard = () => {}, readOnly = false }) {
+    this.root = root; this.store = store; this.trace = trace; this.publicationGuard = publicationGuard;
     this.catalog = { catalogRevision: 'absent', modules: [] }; this.refresh();
     const core = this.readJSON('core/artifact.json');
     this.coreIdentity = hash(core); const runtimeBytes = {};
@@ -19,17 +20,41 @@ class Artifacts {
       if (!/^(core\/|protocol\/|worker\.js$)/.test(file)) fail('core_closure_boundary');
       runtimeBytes[file] = this.read(file); if (hash(runtimeBytes[file]) !== digest) fail('core_integrity', file);
     }
-    const runtimePath = path.join(this.store, 'core-' + this.coreIdentity); fs.mkdirSync(runtimePath, { recursive: true });
-    for (const [file, bytes] of Object.entries(runtimeBytes)) {
-      const dest = local(runtimePath, file); fs.mkdirSync(path.dirname(dest), { recursive: true });
-      if (!fs.existsSync(dest)) {
-        const fd = fs.openSync(dest, 'wx');
-        try { if (fs.writeSync(fd, bytes) !== Buffer.byteLength(bytes)) fail('runtime_copy_short_write'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
-      }
-      if (hash(fs.readFileSync(dest)) !== core.hashes[file]) fail('immutable_runtime_integrity');
-    }
-    this.runtime = { path: runtimePath, hashes: core.hashes };
+    if (!readOnly) this.runtime = { path: this.publish('core-' + this.coreIdentity, runtimeBytes, core.hashes, 'runtime_copy_short_write', 'immutable_runtime_integrity'), hashes: core.hashes };
     this.protocolPin = hash(this.readJSON('protocol/artifact.json'));
+  }
+  publish(name, bytes, hashes, shortWriteCode, integrityCode) {
+    this.publicationGuard();
+    const target = path.resolve(this.store, name);
+    const verify = directory => {
+      for (const [file, digest] of Object.entries(hashes)) {
+        const source = local(directory, file);
+        if (!fs.existsSync(source) || hash(fs.readFileSync(source)) !== digest) fail(integrityCode);
+      }
+    };
+    // Existing CAS entries are immutable: verify only, never fill or repair them.
+    if (fs.existsSync(target)) { verify(target); return target; }
+    this.publicationGuard(); fs.mkdirSync(this.store, { recursive: true });
+    const stage = path.resolve(this.store, '.stage-' + name + '-' + crypto.randomUUID());
+    this.publicationGuard(); fs.mkdirSync(stage);
+    try {
+      for (const [file, data] of Object.entries(bytes)) {
+        this.publicationGuard();
+        const dest = local(stage, file); fs.mkdirSync(path.dirname(dest), { recursive: true });
+        const fd = fs.openSync(dest, 'wx');
+        try { if (fs.writeSync(fd, data) !== Buffer.byteLength(data)) fail(shortWriteCode); fs.fsyncSync(fd); }
+        finally { fs.closeSync(fd); }
+      }
+      verify(stage); this.publicationGuard();
+      // The entire verified closure becomes visible in one filesystem operation.
+      // Orphan staging directories from a crashed process are never reused.
+      if (fs.existsSync(target)) verify(target);
+      else fs.renameSync(stage, target);
+      verify(target); return target;
+    } finally {
+      // Only this invocation's unique staging directory may be removed.
+      if (stage.startsWith(path.resolve(this.store) + path.sep) && fs.existsSync(stage)) fs.rmSync(stage, { recursive: true, force: true });
+    }
   }
   read(relative) { this.trace(relative); return fs.readFileSync(local(this.root, relative), 'utf8'); }
   readJSON(relative) { return parse(this.read(relative)); }
@@ -50,6 +75,7 @@ class Artifacts {
     } catch (e) { this.catalogError = e.code || 'invalid_catalog'; return this.catalog; }
   }
   select(moduleId) {
+    this.publicationGuard();
     const entry = this.catalog.modules.find(m => m.id === moduleId);
     if (!entry) fail('module_unavailable');
     let admission;
@@ -72,6 +98,7 @@ class Artifacts {
     this.verifyCopy(selected); return true;
   }
   selectEngine() {
+    this.publicationGuard();
     if (!this.catalog.engine) fail('engine_unavailable');
     let selected;
     try { selected = this.selectArtifact(this.catalog.engine.path, this.catalog.engine.artifactHash); } catch (e) { if (e.code === 'ENOENT') fail('engine_unavailable'); throw e; }
@@ -85,6 +112,7 @@ class Artifacts {
     if (hash(selected.manifest) !== selected.pin) fail('immutable_integrity');
   }
   selectArtifact(relative, admittedPin) {
+    this.publicationGuard();
     let manifest;
     try { manifest = this.readJSON(relative + '/artifact.json'); } catch (e) { if (e.code === 'ENOENT') fail('module_unavailable'); throw e; }
     exact(manifest, ['id', 'version', 'entry', 'hashes', 'publicDependencies']);
@@ -98,13 +126,7 @@ class Artifacts {
       if (file.endsWith('.js')) reviewCode(bytes[file]);
     }
     for (const [file, digest] of Object.entries(manifest.publicDependencies || {})) if (hash(this.read(file)) !== digest) fail('dependency_pin');
-    const target = path.join(this.store, pin); fs.mkdirSync(target, { recursive: true });
-    for (const [file, data] of Object.entries(bytes)) {
-      const dest = local(target, file); fs.mkdirSync(path.dirname(dest), { recursive: true });
-      if (!fs.existsSync(dest)) {
-        const fd = fs.openSync(dest, 'wx'); try { fs.writeSync(fd, data); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
-      } else if (hash(fs.readFileSync(dest)) !== manifest.hashes[file]) fail('immutable_integrity');
-    }
+    const target = this.publish(pin, bytes, manifest.hashes, 'artifact_copy_short_write', 'immutable_integrity');
     return { pin, path: target, manifest, publicDependencies: manifest.publicDependencies };
   }
 }

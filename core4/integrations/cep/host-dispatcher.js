@@ -22,7 +22,10 @@ function createHostDispatcher({ csInterface, installExecutors, reviewedAdmission
       if (physicalPending) fail('physical_lane_pending');
       // Only reviewed source enters the executable position. Every runtime value is a
       // JSON string literal parsed as data. No path/file/raw command ingress exists.
-      const script = '(function(){var executor=' + asset.source + ';var input=JSON.parse(' + literal(bounded(payload)) + ');return JSON.stringify(executor.' + PHASES[phase] + '(input));}())';
+      const call = 'executor.' + PHASES[phase] + '(input)';
+      const invoke = phase === 'mutate' ? 'return JSON.stringify(' + call + ');' :
+        'try{return JSON.stringify(' + call + ');}catch(e){return JSON.stringify({readFailureVersion:1,outcome:"rejected",code:e&&typeof e.coreCode==="string"&&/^[a-z][a-z0-9_]{0,63}$/.test(e.coreCode)?e.coreCode:"snapshot_failed"});}';
+      const script = '(function(){var executor=' + asset.source + ';var input=JSON.parse(' + literal(bounded(payload)) + ');' + invoke + '}())';
       physicalPending = true;
       return new Promise((resolve, reject) => {
         let settled = false;
@@ -32,7 +35,13 @@ function createHostDispatcher({ csInterface, installExecutors, reviewedAdmission
             // A late callback proves physical termination but cannot promote a timeout
             // to success; the durable UNKNOWN tombstone and lane remain fenced.
             if (settled) return;
-            try { const value = parse(result); physicalPending = false; settled = true; clearTimeout(timer); resolve(value); }
+            // A read callback proves physical termination. The fixed wrapper reports
+            // executor refusals as data; the known CEP sentinel is also read-only.
+            if (phase !== 'mutate') physicalPending = false;
+            try {
+              const value = phase !== 'mutate' && result === 'EvalScript error.' ? { readFailureVersion: 1, outcome: 'rejected', code: 'snapshot_failed' } : parse(result);
+              physicalPending = false; settled = true; clearTimeout(timer); resolve(value);
+            }
             catch (e) { settled = true; clearTimeout(timer); reject(e); }
           });
         } catch (e) { settled = true; clearTimeout(timer); reject(e); }

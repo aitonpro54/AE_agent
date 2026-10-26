@@ -4,7 +4,7 @@
   "hashes": {
     "transport.js": "c1e717d2080c1d102276f1e6990d50c3d9e5a3de7ded1e5e94afe5c71089e8fb",
     "completion-store.js": "08a8a5560c1f9781deded4b3fb58e9eecd5c3947c5b474b4e577acbe80794dc0",
-    "host-dispatcher.js": "828e4f783799c8e9d5d3f12c754c54897c96c39c4b90b433cb26c14516b4b0bd",
+    "host-dispatcher.js": "57db0822461593d22540a139abd126dcf67b85b5da57c5ff288d2f44b2f5784c",
     "wire.js": "ffb480d6370b6db418993d830be995b2cb78cfb944ef67b618f629494ff69047",
     "manifest.json": "61c38fe50c28046dc47156e2e819386889cb0027717a3481ec0db5516e001ace"
   }

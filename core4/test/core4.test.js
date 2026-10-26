@@ -376,13 +376,17 @@ test('[validation-routing] actual titles-only diff checks pass with photo and en
 
 test('[validation-routing] shared Core dependencies select component consumers while byte-only integrations remain explicit deferred coverage', () => {
   const ws = workspace(); const file = 'core4/core/resources.js'; const before = selectChecks([file], ws.root);
-  for (const check of ['core-control', 'core-admission', 'titles-owner', 'titles-executor-contract', 'photo-owner', 'photo-executor-contract', 'workflow-recovery']) assert.ok(before.checks.some(c => c.check === check), check);
+  for (const check of ['core-control', 'core-admission', 'titles-owner', 'titles-executor-contract', 'photo-owner', 'photo-executor-contract', 'workflow-recovery', 'audit-repairs']) assert.ok(before.checks.some(c => c.check === check), check);
   assert.ok(before.checks.find(c => c.check === 'titles-owner').reason.includes('changed component dependency core/'));
   assert.ok(before.checks.find(c => c.check === 'workflow-recovery').reason.includes('permanent-core-runtime'));
   const titleKey = before.checks.find(c => c.check === 'titles-owner').evidenceKey;
   rewrite(ws.root, 'core/resources.js', source => source + '\n// changed shared runtime bytes\n');
   assert.notEqual(selectChecks([file], ws.root).checks.find(c => c.check === 'titles-owner').evidenceKey, titleKey);
-  assert.equal(before.executionBatches.length, 3); assert.ok(before.executionBatches.some(batch => batch.checks.includes('titles-owner') && batch.checks.includes('titles-executor-contract')));
+  assert.equal(before.executionBatches.length, 4); assert.ok(before.executionBatches.some(batch => batch.checks.includes('titles-owner') && batch.checks.includes('titles-executor-contract')));
+  for (const changed of ['core4/core/broker.js', 'core4/core/receiver.js', 'core4/core/artifacts.js', 'core4/integrations/cep/host-dispatcher.js']) {
+    const repair = selectChecks([changed], ws.root).checks.find(check => check.check === 'audit-repairs');
+    assert.ok(repair, changed); assert.ok(repair.dependencies.includes('test/audit-repairs.test.js')); assert.ok(repair.dependencies.includes('test/fixtures/artifact-publish-crash.js'));
+  }
   const privateTitle = selectChecks(['core4/modules/titles/implementation.js'], ws.root);
   assert.deepEqual(privateTitle.checks.map(c => c.check).sort(), ['titles-executor-contract', 'titles-owner']);
   assert.ok(privateTitle.deferredCoverage.some(c => c.check === 'workflow-recovery')); assert.ok(!privateTitle.checks.some(c => c.check.startsWith('photo')));

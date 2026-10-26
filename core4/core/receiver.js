@@ -3,6 +3,12 @@ const { decode, encode, envelope } = require('../protocol/codec');
 const { hash, fail, exact } = require('../protocol/json');
 const { dispatchBinding } = require('../protocol/dispatch');
 const { id } = require('../protocol/json');
+function readFailure(result) {
+  if (!result || !Object.hasOwn(result, 'readFailureVersion')) return false;
+  exact(result, ['readFailureVersion', 'outcome', 'code']);
+  if (result.readFailureVersion !== 1 || result.outcome !== 'rejected' || typeof result.code !== 'string' || !/^[a-z][a-z0-9_]{0,63}$/.test(result.code)) fail('invalid_read_failure');
+  return true;
+}
 // Production receiver boundary, shared by fixture transport. No script field, executor path
 // or worker-produced executable token is accepted. Provisioning is a private install action.
 function createReceiver({ controllerId, channelEpoch, secret, admittedExecutors, evaluate, completionStore, receiverStoreIdentity }) {
@@ -25,7 +31,7 @@ function createReceiver({ controllerId, channelEpoch, secret, admittedExecutors,
       if (completions.begin) completions.begin(command, originalBinding);
       else completions.set(command.commandId, { state: 'ongoing', command, originalBinding });
       const result = await evaluate({ source: asset.source, phase: command.phase, payload: command.payload, command });
-      exact(result, command.phase === 'mutate' ? ['outcome', 'snapshot', 'code'] : ['target', 'revision', 'sourceId', 'text', 'protected']);
+      if (command.phase === 'mutate' || !readFailure(result)) exact(result, command.phase === 'mutate' ? ['outcome', 'snapshot', 'code'] : ['target', 'revision', 'sourceId', 'text', 'protected']);
       const response = { protocolVersion: 1, commandId: command.commandId, executorHash: command.executorHash, payloadHash: command.payloadHash, result };
       if (completions.complete) completions.complete(command.commandId, response);
       else completions.set(command.commandId, { state: 'completed', command, originalBinding, response });
@@ -43,4 +49,4 @@ function createReceiver({ controllerId, channelEpoch, secret, admittedExecutors,
   }
   return Object.freeze({ receive, completion, receiverStoreIdentity: storeIdentity });
 }
-module.exports = { createReceiver };
+module.exports = { createReceiver, readFailure };
