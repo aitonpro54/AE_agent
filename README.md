@@ -1,6 +1,6 @@
 # AE Agent Core
 
-Ветка `codex/release-4.0.0` содержит изолированный разрабатываемый контур [Core4](core4/README.md) с собственным package, модульными manifests и проверками. [Текущий план M1](plans/core-4.0.0.md) задаёт границы и приёмку. Команды нового контура выполняются через `npm.cmd --prefix core4`; обычная правка выбирает проверки через `node core4/tools/validate-diff.js <changed-path> --run`. Установленный MCP/CEP на эту ветку не переключён; production transport Core4 до отдельного подключения возвращает unavailable.
+Ветка `codex/release-4.0.0` содержит изолированный контур [Core4](core4/README.md) с собственным package, модульными manifests и проверками. Offline [M2a: optional CEP bridge](plans/core-4.0.0-m2a-bridge.md) завершён: actual TCP/VM, durable completion и original dispatch provenance; [основной план](plans/core-4.0.0.md) сохраняет M1 и последующие этапы. Команды нового контура выполняются через `npm.cmd --prefix core4`; обычная правка выбирает проверки через `node core4/tools/validate-diff.js <changed-path> --run`. Установленный MCP/CEP на эту ветку не переключён; production connect без настоящего lifecycle/grant producer остаётся unavailable.
 
 Ниже сохранено описание проверенной исходной базы 3.3.5. Её runtime manifest не включает рабочие пакеты Core4.
 

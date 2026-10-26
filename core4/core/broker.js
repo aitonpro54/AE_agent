@@ -7,7 +7,8 @@ const { WorkerClient } = require('./worker-client');
 const { Resources } = require('./resources');
 const { acquireStateLock } = require('./state-lock');
 const { recordContext } = require('./record-context');
-const { validatePort } = require('./authority');
+const { validatePort, validateLifecycleBinding } = require('./authority');
+const { dispatchBinding, sameDispatch } = require('../protocol/dispatch');
 const { check } = require('../protocol/schema');
 const { encode, decode } = require('../protocol/codec');
 const { hash, canonical, exact, fail, id, bounded } = require('../protocol/json');
@@ -46,9 +47,17 @@ class Broker {
     if (this.connected) return { available: true, synthetic: !!this.authority.synthetic };
     this.controlPending++;
     try {
-    const binding = await this.transport.connect({ controllerId: this.controllerId, channelEpoch: this.channelEpoch, secret: this.secret });
+    // Every private connection has a new authentication lifetime. In particular a
+    // replacement receiver journal must reject captured frames from the prior one.
+    // Keep durable original dispatch bindings untouched for reconciliation.
+    const channelEpoch = id('channel'), secret = crypto.randomBytes(32).toString('hex');
+    const binding = await this.transport.connect({ controllerId: this.controllerId, channelEpoch, secret });
     if (this.closed) return { available: false, reason: 'broker_closed' };
-    if (!binding?.sessionBinding || binding.sessionBinding.kind !== 'project-incarnation' || binding.sessionBinding.lifecycleVerified !== true) return { available: false, reason: 'trusted_project_lifecycle_unavailable' };
+    if (!validateLifecycleBinding(binding?.sessionBinding)) return { available: false, reason: 'trusted_project_lifecycle_unavailable' };
+    if (typeof binding.receiverStoreIdentity !== 'string' || !binding.receiverStoreIdentity) return { available: false, reason: 'receiver_store_identity_unavailable' };
+    this.channelEpoch = channelEpoch; this.secret = secret;
+    this.receiverStoreIdentity = binding.receiverStoreIdentity;
+    this.transportIdentity = this.transport.identity || null;
     this.sessionBinding = binding.sessionBinding; this.connected = true;
     return { available: true, synthetic: !!this.authority.synthetic };
     } finally { this.controlPending--; this.releaseIfDrained(); }
@@ -83,11 +92,12 @@ class Broker {
     const result = await this.worker.request({ taskId: task.taskId, taskEpoch: task.epoch, method, componentPins: pick(selected, ['pin', 'path', 'manifest']), payload });
     this.current(task.taskId, task.epoch); return result;
   }
-  async send(selected, phase, payload, commandId = id(phase), onDispatched) {
+  async send(selected, phase, payload, commandId = id(phase), onDispatched, expectedDispatch) {
     this.ensureConnection(); if (this.controllerBusy) fail('controller_busy');
     if (phase !== 'verify' && this.ledger.unresolved().some(c => c.commandId !== commandId)) fail('controller_unresolved');
     this.artifacts.recheck(selected);
     const body = { protocolVersion: 1, controllerId: this.controllerId, channelEpoch: this.channelEpoch, commandId, moduleId: selected.moduleId, operationId: selected.contract.operationId, executorHash: selected.admission.executorHash, phase, payloadHash: hash(canonical(payload)), payload };
+    if (expectedDispatch && !sameDispatch(dispatchBinding(body, this.receiverStoreIdentity), expectedDispatch)) fail('dispatch_binding_changed');
     bounded(body); this.controllerBusy = true;
     let actual;
     try { actual = Promise.resolve(this.transport.send(encode(body, this.secret))); }
@@ -104,6 +114,9 @@ class Broker {
     let timer;
     try { const result = await Promise.race([pending, new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error('transport_timeout'), { code: 'transport_timeout' })), this.transportTimeout); })]); if (this.closed) fail('broker_closed'); return result; }
     finally { clearTimeout(timer); }
+  }
+  originalDispatch(selected, phase, payload, commandId) {
+    return dispatchBinding({ controllerId: this.controllerId, channelEpoch: this.channelEpoch, commandId, moduleId: selected.moduleId, operationId: selected.contract.operationId, executorHash: selected.admission.executorHash, phase, payloadHash: hash(canonical(payload)) }, this.receiverStoreIdentity);
   }
   snapshot(selected, result, target) {
     check(selected.contract.snapshotSchema, result);
@@ -146,6 +159,7 @@ class Broker {
       steps.push({ stepId: request.stepId, selected, input, desiredInput: request.input, inputDigest: hash({ input: request.input, modulePin: selected.pin, bindings: request.bindings || [] }), dependsOn: request.dependsOn || [], bindings: request.bindings || [], initialEvidence: evidence.snapshot });
     }
     const engine = this.artifacts.selectEngine(); const plan = { workflowId: args.workflowId || id('workflow'), planRevision: id('revision'), taskId, taskEpoch: task.epoch, engine, steps, pins: { core: this.artifacts.coreIdentity, protocol: this.artifacts.protocolPin, engine: engine.pin, modules: steps.map(s => ({ stepId: s.stepId, module: s.selected.pin, admission: hash(s.selected.admission), dependencies: s.selected.publicDependencies })) } };
+    plan.pins.transport = this.transportIdentity || null;
     plan.recordContext = recordContext(args.recordContext || this.defaultRecordContext, { taskId, projectId: steps[0].input.projectId });
     await this.job(task, 'engine', engine, { action: 'validate', plan: { steps: steps.map(s => pick(s, ['stepId', 'dependsOn', 'bindings'])) } });
     const buildId = id('build'); this.ledger.append({ type: 'build', buildId, plan }); this.builds.set(buildId, clone(plan));
@@ -165,6 +179,7 @@ class Broker {
   async dryrun({ proposalId }) {
     const { plan } = this.proposal(proposalId); this.ensureConnection();
     if (this.ledger.corrupt) fail('ledger_corrupt');
+    if (canonical(plan.pins.transport || null) !== canonical(this.transportIdentity || null)) fail('transport_pin_changed');
     for (const step of plan.steps) this.artifacts.recheck(step.selected);
     const dryrunRef = id('dryrun'); const result = { dryrunRef, proposalId, taskEpoch: plan.taskEpoch, createdAt: Date.now(), structural: true, freshness: 'each-step-reinspected-immediately-before-send' };
     this.dryruns.set(dryrunRef, result); return clone(result);
@@ -211,14 +226,17 @@ class Broker {
     await this.hook('afterAuthorize', { commandId, step });
     this.current(plan.taskId, plan.taskEpoch); this.checkFence(target); this.artifacts.recheck(step.selected); this.resources.authorize(target, policy, grant, before);
     await this.hook('beforeIntent', { commandId, step });
+    const originalBinding = this.originalDispatch(step.selected, 'mutate', input, commandId);
     const guard = () => {
       this.current(plan.taskId, plan.taskEpoch); this.artifacts.recheck(step.selected);
+      if (!sameDispatch(this.originalDispatch(step.selected, 'mutate', input, commandId), originalBinding)) fail('dispatch_binding_changed');
+      if (canonical(plan.pins.transport || null) !== canonical(this.transportIdentity || null)) fail('transport_pin_changed');
       const freshGrant = this.authority.authorize({ proposalId: proposal.proposalId, input, effectPolicy: clone(policy), target: clone(target), taskId: plan.taskId });
       if (canonical(freshGrant) !== canonical(grant)) fail('private_grant_changed');
       this.resources.authorize(target, policy, freshGrant, before);
     };
     guard();
-    const receipt = { type: 'intent', commandId, taskId: plan.taskId, taskEpoch: plan.taskEpoch, workflowId: plan.workflowId, planRevision: plan.planRevision, recordContext: plan.recordContext, runId, stepId: step.stepId, attemptId, inputDigest: step.inputDigest, input, before, target, selected: step.selected, grant, dispatchedAt: Date.now() };
+    const receipt = { type: 'intent', commandId, dispatchBinding: originalBinding, transportIdentity: this.transportIdentity || null, taskId: plan.taskId, taskEpoch: plan.taskEpoch, workflowId: plan.workflowId, planRevision: plan.planRevision, recordContext: plan.recordContext, runId, stepId: step.stepId, attemptId, inputDigest: step.inputDigest, input, before, target, selected: step.selected, grant, dispatchedAt: Date.now() };
     this.ledger.append(receipt);
     await this.hook('afterIntent', receipt);
     // No await exists between this epoch check and physical dispatch. A crash after intent
@@ -227,7 +245,7 @@ class Broker {
     catch (e) { this.ledger.append({ type: 'command', commandId, state: 'rejected', code: e.code || 'gate_revoked_before_send' }); throw e; }
     let mutation;
     try {
-      mutation = await this.send(step.selected, 'mutate', input, commandId, () => { if (this.hooks.afterPhysicalSend) this.hooks.afterPhysicalSend(receipt, this); });
+      mutation = await this.send(step.selected, 'mutate', input, commandId, () => { if (this.hooks.afterPhysicalSend) this.hooks.afterPhysicalSend(receipt, this); }, receipt.dispatchBinding);
       await this.hook('afterSend', receipt);
       exact(mutation, ['outcome', 'snapshot', 'code']);
       if (mutation.outcome === 'rejected') { this.ledger.append({ type: 'command', commandId, state: 'rejected', code: mutation.code || 'executor_rejected' }); fail('executor_rejected', mutation.code); }
@@ -252,6 +270,7 @@ class Broker {
     const { proposal, plan } = this.proposal(proposalId); const dryrun = this.dryruns.get(dryrunRef);
     if (!dryrun || dryrun.proposalId !== proposalId || dryrun.taskEpoch !== plan.taskEpoch || Date.now() - dryrun.createdAt > 5000) fail('fresh_dryrun_required');
     this.dryruns.delete(dryrunRef); this.ensureConnection(); if (this.running) fail('broker_busy');
+    if (canonical(plan.pins.transport || null) !== canonical(this.transportIdentity || null)) fail('transport_pin_changed');
     if (this.ledger.unresolved().some(c => c.taskId === plan.taskId)) fail('reconciliation_required');
     this.running = true; const runId = id('run'); const outputs = {};
     try {
@@ -295,9 +314,13 @@ class Broker {
     this.ensureConnection();
     for (const command of this.ledger.commands(taskId).filter(c => !['succeeded', 'rejected'].includes(c.state))) {
       const proof = decode(await this.transport.completion(command.commandId), this.secret);
-      exact(proof, ['commandId', 'state', 'response']);
+      exact(proof, ['commandId', 'state', 'response', 'originalBinding']);
       if (proof.commandId !== command.commandId) fail('completion_correlation');
       if (proof.state !== 'completed' || !proof.response) continue;
+      // Current-channel MAC authenticates delivery, never execution on a prior channel.
+      // Legacy receipts and lost/replaced receiver journals remain UNKNOWN.
+      if (!command.dispatchBinding || this.receiverStoreIdentity !== command.dispatchBinding.receiverStoreIdentity || !sameDispatch(proof.originalBinding, command.dispatchBinding)) continue;
+      if (!sameDispatch(command.dispatchBinding, dispatchBinding({ ...command.dispatchBinding, moduleId: command.selected.moduleId, operationId: command.selected.contract.operationId, executorHash: command.selected.admission.executorHash, payloadHash: hash(canonical(command.input)), phase: 'mutate' }, command.dispatchBinding.receiverStoreIdentity))) continue;
       const response = proof.response; exact(response, ['protocolVersion', 'commandId', 'executorHash', 'payloadHash', 'result']);
       if (response.protocolVersion !== 1 || response.commandId !== command.commandId || response.executorHash !== command.selected.admission.executorHash || response.payloadHash !== hash(canonical(command.input))) fail('completion_correlation');
       exact(response.result, ['outcome', 'snapshot', 'code']);

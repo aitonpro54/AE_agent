@@ -13,9 +13,17 @@ function seal(directory, id, entry, files, deps = {}) {
 }
 function main() {
   const args = process.argv.slice(2); const all = args.includes('--all');
-  const moduleIndex = args.indexOf('--module'), componentIndex = args.indexOf('--component');
+  const moduleIndex = args.indexOf('--module'), componentIndex = args.indexOf('--component'), integrationIndex = args.indexOf('--integration');
   const moduleId = moduleIndex >= 0 ? args[moduleIndex + 1] : null, component = componentIndex >= 0 ? args[componentIndex + 1] : null;
-  if ([all, !!moduleId, !!component].filter(Boolean).length !== 1) fail('explicit_packaging_scope_required');
+  const integration = integrationIndex >= 0 ? args[integrationIndex + 1] : null;
+  if ([all, !!moduleId, !!component, !!integration].filter(Boolean).length !== 1) fail('explicit_packaging_scope_required');
+  if (integration) {
+    if (integration !== 'cep') fail('unknown_integration');
+    const dir = 'integrations/cep';
+    const artifact = { id: 'cep-bridge', version: '4.0.0-m2a', hashes: Object.fromEntries(['transport.js', 'completion-store.js', 'host-dispatcher.js', 'wire.js', 'manifest.json'].map(file => [file, hash(read(dir + '/' + file))])) };
+    write(dir + '/artifact.json', artifact);
+    console.log(JSON.stringify({ packaged: ['cep-bridge'], pin: hash(artifact), admissionsWritten: false, ...(args.includes('--trace') ? { reads } : {}), liveCalls: 0 })); return;
+  }
   if (moduleId && !['photo-placeholder', 'titles'].includes(moduleId)) fail('unknown_module');
   if (component && !['core', 'protocol', 'worker', 'engine'].includes(component)) fail('unknown_component');
   let catalog;

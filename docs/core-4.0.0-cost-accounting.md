@@ -67,4 +67,19 @@
 | `core4-M1-validation-policy` | `shared/workflow` / `design`; validation, core, plan-engine, titles, photo-placeholder | Повторный bounded read-only turn `/root/architecture`, routing/evidence verdict получен | Underlying turn/response IDs не раскрыты; без точных долей между модулями |
 | `core4-M1-final-scoped-checks` | `core` / `validation`; constraints/routing delta | Повторные turn `/root/m1a_baseline_checks`: предыдущий snapshot 33 executions PASS; итоговый snapshot 38 selected executions PASS, frozen hashes совпали | Варианты не складывать; это числа проверок, не usage totals; helper event IDs отсутствуют |
 
+### Offline M2a: документальные work units
+
+Это карта подтверждённых назначений, не сбор и не отчёт об использовании. Для cross-cutting задач M2a применяется `shared/workflow`; доли между компонентами не выводятся.
+
+| Work unit | Module / activity | Подтверждённая связь | Пробел покрытия |
+| --- | --- | --- | --- |
+| `core4-M2a-architecture` | `shared/workflow` / `design`; core, protocol, bridge и рабочие компоненты | Helper `/root/architecture`, bounded turn verdict; canonical task name подтверждён native delegation tools | Underlying helper thread/turn/response IDs не предоставлены; точная граница событий неизвестна |
+| `core4-M2a-source-seams` | `shared/workflow` / `design`; core, protocol, bridge и рабочие компоненты | Helper `/root/m1_source_seams`, bounded source-seam review; canonical task name подтверждён native delegation tools | Underlying helper thread/turn/response IDs не предоставлены; точная граница событий неизвестна |
+| `core4-M2a-bridge` | `shared/workflow` / `implementation`; core, protocol, bridge и рабочие компоненты | Helper `/root/m2a_implementation`, ownership `core4/**`; canonical task name подтверждён native delegation tools | Underlying helper thread/turn/response IDs не предоставлены; числовую атрибуцию не выполнять |
+| `core4-M2a-docs` | `shared/workflow` / `maintenance/build`; AGENTS, root README и cost map | Helper `/root/m1a_baseline_checks`, документальное ownership указанных файлов; canonical task name подтверждён native delegation tools | Underlying helper thread/turn/response IDs не предоставлены; числовую атрибуцию не выполнять |
+| `core4-M2a-boundary-review` | `shared/workflow` / `validation`; bridge, core и protocol | Helper `/root/m1_implementation`, initial bounded source review получен; дополнительный turn после правки остановлен автоматической проверкой | Underlying helper thread/turn/response IDs не предоставлены; финальный дополнительный динамический probe не утверждается |
+| `core4-M2a-evidence` | `shared/workflow` / `validation`; финальные source/log artifacts | Повторные turn `/root/m1a_baseline_checks`, read-only сверка logs, pins и неизменённых module/engine artifacts | Test counts не являются usage totals; несколько turn не делятся без verified event IDs |
+
+Эти привязки не подтверждают model, effort или точные доли. Root UUID из прежних записей не подтверждается заново для M2a; Codeburn и источники usage для этого обновления не собирались.
+
 Строка review добавлена после фактического получения результата. Исторические usage events не переписывать; после реализации атрибуций импортировать только подтверждённые соответствия. Неподтверждённый остаток сохраняется в coverage gaps. Codeburn и его отчётные инструменты сейчас не вызывались, поэтому measured totals отсутствуют.

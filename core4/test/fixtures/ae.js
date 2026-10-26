@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createReceiver } = require('../../core/receiver');
 const { decode } = require('../../protocol/codec');
+const { brandLifecycleBinding } = require('../../core/authority');
+const { id } = require('../../protocol/json');
 function initialState() {
   return { sessionId: 'synthetic-session', projectId: 'C:/fixture/project.aep', photoSourceId: 11, text: 'Before', counts: { photo: 0, titles: 0 }, completed: {}, style: { font: 'ArialMT', fontSize: 32, applyFill: true, fillColor: [1, 1, 1], applyStroke: false, strokeColor: [0, 0, 0], strokeWidth: 0, tracking: 0, baselineShift: 0, horizontalScale: 100, verticalScale: 100, fauxBold: false, fauxItalic: false, justification: 0, leading: 38, autoLeading: false }, transform: { anchor: [0, 0], position: [400, 300], scale: [100, 100], rotation: 0, opacity: 100 }, time: { startTime: 0, inPoint: 0, outPoint: 5, stretch: 100 }, flags: {} };
 }
@@ -43,7 +45,8 @@ function fixtureTransport({ root, state = initialState(), stateFile, beforeEvalu
     if (!stateFile) return; fs.mkdirSync(path.dirname(stateFile), { recursive: true });
     const fd = fs.openSync(stateFile, 'w'); try { fs.writeSync(fd, JSON.stringify(state)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
   };
-  const store = { has: id => !!state.completed[id], get: id => state.completed[id], set(id, value) { state.completed[id] = value; persist(); } };
+  state.receiverStoreIdentity ||= id('synthetic-store'); persist();
+  const store = { identity: state.receiverStoreIdentity, has: id => !!state.completed[id], get: id => state.completed[id], set(id, value) { state.completed[id] = value; persist(); } };
   return {
     get state() { return state; }, get sends() { return sends; }, persist,
     reopenSamePath() { state.sessionId = state.sessionId + '-reopened'; persist(); },
@@ -62,7 +65,7 @@ function fixtureTransport({ root, state = initialState(), stateFile, beforeEvalu
         if (afterEvaluate) await afterEvaluate({ state, phase, payload, command, result, persist });
         persist(); return JSON.parse(JSON.stringify(result));
       } });
-      return { sessionBinding: { kind: 'project-incarnation', lifecycleVerified: true, sessionId: state.sessionId, projectId: state.projectId, provenance: 'synthetic-project-lifecycle' } };
+      return { receiverStoreIdentity: receiver.receiverStoreIdentity, sessionBinding: brandLifecycleBinding({ kind: 'project-incarnation', lifecycleVerified: true, sessionId: state.sessionId, projectId: state.projectId, provenance: 'synthetic-project-lifecycle' }) };
     },
     async disconnect() {},
     async send(frame) {

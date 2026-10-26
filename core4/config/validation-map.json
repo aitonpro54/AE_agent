@@ -119,6 +119,27 @@
         "photo-owner",
         "photo-executor-contract"
       ]
+    },
+    {
+      "prefix": "core4/integrations/cep/",
+      "owner": "cep-bridge",
+      "checks": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/test/integration/cep-transport.test.js",
+      "owner": "cep-bridge",
+      "checks": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/cep-",
+      "owner": "cep-bridge",
+      "checks": [
+        "cep-transport"
+      ]
     }
   ],
   "contracts": [
@@ -211,6 +232,41 @@
         "photo-executor-contract",
         "workflow-recovery"
       ]
+    },
+    {
+      "prefix": "core4/core/receiver-api.js",
+      "id": "closed-receiver-v2",
+      "consumers": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver.js",
+      "id": "closed-receiver-v2",
+      "consumers": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/core/broker.js",
+      "id": "closed-receiver-v2",
+      "consumers": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/core/authority.js",
+      "id": "closed-receiver-v2",
+      "consumers": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/dispatch.js",
+      "id": "closed-receiver-v2",
+      "consumers": [
+        "cep-transport"
+      ]
     }
   ],
   "checkDependencies": {
@@ -220,7 +276,10 @@
       "worker.js",
       "test/core4.test.js",
       "test/helpers.js",
-      "test/fixtures/",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
       "modules/",
       "plan-engine/",
       "config/catalog.json",
@@ -232,7 +291,10 @@
       "protocol/",
       "test/core4.test.js",
       "test/helpers.js",
-      "test/fixtures/",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
       "worker.js",
       "modules/",
       "plan-engine/",
@@ -246,7 +308,10 @@
       "protocol/json.js",
       "test/core4.test.js",
       "test/helpers.js",
-      "test/fixtures/",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
       "core/",
       "protocol/",
       "modules/",
@@ -259,7 +324,10 @@
       "protocol/",
       "test/core4.test.js",
       "test/helpers.js",
-      "test/fixtures/",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
       "core/",
       "worker.js",
       "modules/",
@@ -275,7 +343,10 @@
       "worker.js",
       "test/core4.test.js",
       "test/helpers.js",
-      "test/fixtures/",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
       "modules/",
       "config/catalog.json",
       "config/admissions/",
@@ -330,14 +401,20 @@
       "core/artifacts.js",
       "test/core4.test.js",
       "test/helpers.js",
-      "test/fixtures/"
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js"
     ],
     "validation-routing": [
       "config/validation-map.json",
       "tools/",
       "test/core4.test.js",
       "test/helpers.js",
-      "test/fixtures/",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
       "core/",
       "protocol/",
       "worker.js",
@@ -352,7 +429,10 @@
       "package.json",
       "test/core4.test.js",
       "test/helpers.js",
-      "test/fixtures/",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
       "core/",
       "protocol/",
       "worker.js",
@@ -365,6 +445,24 @@
     "documentation": [
       "README.md",
       "test/core4.test.js"
+    ],
+    "cep-transport": [
+      "integrations/cep/",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "config/validation-map.json",
+      "tools/",
+      "test/helpers.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/cep-host.js",
+      "test/fixtures/cep-crash-child.js",
+      "test/integration/cep-transport.test.js"
     ]
   },
   "checkCommands": {
@@ -391,6 +489,12 @@
       "--test",
       "--test-name-pattern=photo-executor-contract",
       "test/modules/photo-placeholder.test.js"
+    ],
+    "cep-transport": [
+      "node",
+      "--test",
+      "--test-name-pattern=cep-transport",
+      "test/integration/cep-transport.test.js"
     ]
   },
   "checkProjections": {
@@ -462,6 +566,9 @@
     },
     "documentation": {
       "kind": "component"
+    },
+    "cep-transport": {
+      "kind": "integration"
     }
   },
   "sharedRuntimeEdges": [

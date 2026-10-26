@@ -1,0 +1,8 @@
+{
+  "id": "cep-bridge",
+  "version": "4.0.0-m2a",
+  "entry": "transport.js",
+  "receiverAPI": "closed-receiver-v2",
+  "availability": "private-embedding-only",
+  "productionLifecycleProducer": false
+}

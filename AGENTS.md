@@ -1,4 +1,4 @@
-# AE Agent Core 4.0.0 — разработка M1
+# AE Agent Core 4.0.0 — разработка M2a (optional CEP bridge, offline)
 
 Цель: самостоятельно работающее минимальное ядро Codex → MCP → typed bridge → After Effects и независимо подключаемые рабочие пакеты. Текущий план: `plans/core-4.0.0.md`; `plans/core-migration.md` сохраняет историю исходной базы 3.3.5 и незавершённого cutover.
 

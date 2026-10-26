@@ -1,6 +1,6 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
-26 октября 2026. Проектирование завершено commit `1f5b8204ed4c50c3aed175f2709deefdfd7836a7`. После него пользователь поручил: «Ну всё, воплощай дальше». Текущий этап — **реализация изолированного M1**, включая адресные offline-проверки. Старый cutover handoff используется как описание сохранённого состояния. Установка/публикация, production daemon, подключение живого MCP/CEP/AE и Codeburn в этот блок не входят.
+26 октября 2026. Проектирование завершено commit `1f5b8204ed4c50c3aed175f2709deefdfd7836a7`, offline M1 — `5667b5b8c9d29621cc5136d1abd89f6699ab9ce8`. После нового поручения пользователя «Продолжай» текущий этап — [M2a: optional CEP bridge](core-4.0.0-m2a-bridge.md), включая адресные offline-проверки. Старый cutover handoff используется как описание сохранённого состояния. Установка/публикация, production daemon, подключение живого MCP/CEP/AE и Codeburn в этот блок не входят.
 
 ## Результат и документы
 
@@ -63,7 +63,7 @@ ACK fix сохраняется как проверенный материал д
 
 ## Следующие этапы после M1
 
-1. **M2 — повторяемое извлечение.** Переносить по одному нужному модулю: ownership/manifest → предметные builder/validator/executor/read-back → независимые pins → адресная regression. Core не импортирует модуль; shared API выделяется только при доказанной общей семантике и объявленных потребителях. Старый монолит не используется как скрытый fallback.
+1. **M2 — повторяемое извлечение.** Первый следующий нужный срез — [M2a optional CEP bridge](core-4.0.0-m2a-bridge.md): source-only transport/host dispatcher/durable completion и original dispatch provenance, без issuer/live launch. Далее переносить по одному нужному модулю: ownership/manifest → предметные builder/validator/executor/read-back → независимые pins → адресная regression. Core не импортирует модуль; shared API выделяется только при доказанной общей семантике и объявленных потребителях. Старый монолит не используется как скрытый fallback.
 2. **M3 — необязательная аналитика.** Развить подготовленный Codeburn fork по отдельному плану учёта: выбрать одного владельца collector/DB, атрибуции existing events, report-only dashboard, таблицы/справка. Не блокирует M1/M2. Graphify pilot независим и также не блокирует продукт.
 3. **M4 — выпуск 4.0.0.** Явная полная проверка выбранного состава выпуска, актуальная runtime reconciliation, installation/cutover и ограниченная live-приёмка отдельным разрешённым блоком. Это будущие действия, не продолжение старого runbook по факту завершения проектирования.
 
@@ -84,6 +84,8 @@ ACK fix сохраняется как проверенный материал д
 - Перед live/выпуском определить актуальный способ правомерного владения общими runtime/AE-ресурсами по свежим фактам. Исторический handoff этого не доказывает.
 
 Границы core/engine/worker, первые два модуля, версия identities, no raw script, shared fences и partial-success semantics уже предложены конкретно; их не оставляем абстрактным «выбрать позже».
+
+M2a offline завершён: новый optional bridge, durable receiver, fixed host dispatcher и original dispatch provenance проверены через actual TCP/VM. Итоговые scoped checks 54/54, boundaries18 PASS; source-only и review coverage limits — в [M2a validation](core-4.0.0-m2a-bridge.md). Producer/issuer/live installation не входят в этот результат; переход к ним требует отдельного актуального scope и shared-resource facts.
 
 ## Progress
 
