@@ -76,5 +76,34 @@ npm.cmd --prefix core4 run check:boundaries
 - `final-core.log` и `final-lifecycle.log` содержат raw TAP36/36 и31/31. Остальные32/7/13 подтверждены сохранёнными structured writer records с toolLogChunks; сырых TAP этих запусков в папке нет. Read-only scout независимо проверил raw Core/lifecycle counts, final selection/keys и current/frozen hashes; suites им не повторялись.
 - Frozen manifests содержат все59 файлов Core4. Aggregate SHA-256 до/после final checks: `8f42cbc06cebbab5edcc6a2b55a1d5cd731f611dc5f4b67b2588906db3f591e3`. Core pin: `0cdda498e563e535b5db50358aa027e1d85bf8fa660a6d2f75a00d4a685b9591`; CEP pin: `b425b6ab2a02af5d22b9b4998fc2bcba7c1efc497d61ec1b135673b436152cda`. Core/CEP seal выполнены раздельно; module/engine/admission bytes не менялись.
 - Подтверждены новые outcomes: следующий valid read после completed read refusal проходит; timeout completion сохраняет actual pending/busy/lease; H3 restrictions блокируют все18 нарушений и3 Broker mutations до send без расширения grants; busy/closed artifact API не публикует CAS, crash/short-write не оставляет частичный final, corrupt final не перезаписывается.
-- Sibling-layer seed semantics сохранены. B6 stale synthetic-session setup и его дальнейшие crash boundaries не исправлены и не доказаны. Реальный CSInterface, Windows power-loss/disk-controller, production lifecycle/issuer и live acceptance не проверены. Native AE calls0, внешних сетевых отправок0. Установки/config/credentials/общий runtime state не менялись; push/merge не выполнялись.
+- Sibling-layer seed semantics сохранены. На закрытии H1–H4 B6 stale synthetic-session setup и его дальнейшие crash boundaries ещё не были исправлены и доказаны; последующая точечная проверка описана ниже. Реальный CSInterface, Windows power-loss/disk-controller, production lifecycle/issuer и live acceptance не проверены. Native AE calls0, внешних сетевых отправок0. Установки/config/credentials/общий runtime state не менялись; push/merge не выполнялись.
 - Closing representation: все59 staged Core4 blobs совпали с frozen manifest по raw SHA-256; UTF-8 трёх изменённых Markdown файлов и17 локальных ссылок проверены; working/staged diff checks PASS. Stage содержит только14 Core4 файлов и2 плановых документа; workflow branch/commit не переносились.
+
+### Точечный запуск ранее исключённых B6
+
+27 октября 2026 пользователь отдельно разрешил запустить оба B6 и исправить только session/setup/child, сохранив production CAS и assertions. Нового плана или этапа не создавалось. База перед работой: чистый `79ea9d545a1460b16d1a4cd38f0453081cdab4e4`, та же ветка `codex/ae-agent-core-4.0.0`. Один `ae_implementer` владел двумя test-файлами; root — этой Validation и Git, `ae_reviewer` — bounded read-only review.
+
+| B6 | Baseline на 79ea9d5 | Итог на окончательных test bytes |
+| --- | --- | --- |
+| Actual child crash intent and completion fsync boundaries survive reopen without replay | FAIL в setup: tagged read-failure `session_cas` от stale input оставлял отсутствующий snapshot; построение следующей команды давало `invalid_json` | PASS: intent71/ongoing/mutations0; pending74/ongoing/mutations1; completion72/completed/mutations1. Persisted text и no-replay/lane assertions сохранены |
+| Disk write fsync failures and corruption close lane before false reply | PASS | PASS: все6 write/fsync injection points и corrupt journal сохраняют fail-closed outcome |
+
+Изменены только `core4/test/integration/cep-transport.test.js` и `core4/test/fixtures/cep-crash-child.js`. Setup берёт current session из своего VM host. Fake AE VM/state/lifecycle живут в родителе, а receiver child использует async IPC; его crash не создаёт новое открытие проекта. Pending74 наступает только после actual parent evaluate/persist без передачи callback dispatcher; completion72 — после fulfilled receiver completion. Receiver reopen получает тот же state/source. Настоящий synthetic `project_open` отдельно ротирует actual VM session и проверяет reject/session_cas для старой команды без дополнительной mutation. Не добавлялись adopt-session, ослабление CAS или production API.
+
+Reviewer подтвердил сохранность assertions/continuity/crash boundaries и не обнаружил P1/P2. Малое замечание к failure-path cleanup исправлено: kill не вызывает немедленный reject, сначала ожидается child close; teardown ожидает тот же termination promise, ошибки IPC send обработаны. Reviewer подтвердил закрытие по исходникам. Отдельная динамическая инъекция ошибки cleanup-пути **не запускалась**.
+
+Точный targeted запуск из корня worktree, одинаковый для baseline и final:
+
+```powershell
+node --test --test-reporter=tap --test-name-pattern=" B6 " core4/test/integration/cep-transport.test.js
+node core4/tools/validate-diff.js core4/test/integration/cep-transport.test.js core4/test/fixtures/cep-crash-child.js
+git diff --check
+```
+
+- Baseline raw TAP:2tests, pass1/fail1, exit1; final raw TAP: **2/2 PASS**, fail0, exit0. Final повтор выполнен после cleanup-правки. Предварительный patched2/2 не суммируется с final.
+- Evidence: `C:/Users/Ant/AppData/Local/Temp/core4-b6-fixture-repair-512906d0eb0b418bb8d855606eeac172/`; raw `baseline-b6.log`, `patched-b6.log`, `final-b6.log`; `summary.json`, `selection.json`, `before-core4.json`, `after-core4.json`, `frozen-owned.json`. Summary SHA-256: `3c4929ec30213b06c37dd0b64d553c4f894df1890193db7e04f5a0ea5a179c60`; final raw log: `ca31b8b4692ce8f54d09df17884681220d18b16e4351249097b3bf545e2de1e4`.
+- Actual two-file diff выбирает только `cep-transport`; evidence key `c35763174c1a1e74936b9f850876011aa2bac76b3dd0a1e8a236961d9691e871`. Выполнены только два B6, поэтому whole mandatory CEP batch остаётся partial, остальные13 не повторялись. Lifecycle — deferred/current-closure-unverified. Это **не** новый full CEP/release PASS и не арифметическое дополнение прежних119 к fresh certification.
+- Read-only scout сверил raw baseline/final counts, все59 current hashes и актуальную selection/key. Сохранённый и свежий JSON семантически совпадают; порядок двух deferred path entries различается, byte-equality JSON не заявляется.
+- Остальные57 файлов Core4, включая production code и все pins, побайтно совпадают с `79ea9d5`; seal не запускался. Hash test file: `11acc54cd72d2e18a7529c13329c8022297f2d31811e69e9711be95aec111162`; child: `f48ee7f6c7642b96101a27608c8d783d4485aa38f67cc122641cbdcfa9d7404c`. Нового production defect в проверенном сценарии не выявлено; production не исправлялся.
+- Scope evidence — Node VM/isolated loopback/process crash. Реальные AE/CSInterface/installed CEP, power-loss/disk-controller, production lifecycle и live proof не проверены. Внешних отправок, изменений credentials/config/общего runtime state, push и merge нет; `releaseCertified:false`.
+- Closing: все59 staged Core4 blobs совпали с final manifest по raw SHA-256. UTF-8 двух плановых документов и18 локальных ссылок проверены, working/staged diff checks PASS. Локальный commit фиксирует только два test-файла и дополнения этих двух существующих плановых документов; нового плана/этапа нет.

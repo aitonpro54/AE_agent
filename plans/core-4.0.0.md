@@ -93,6 +93,8 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 27 октября 2026 завершён отдельный разрешённый [engineering block H1–H4](core-4.0.0-audit-repairs.md) по итоговому аудиту той же базы `bd2d6fa`: исправлены completed read refusals, completion concurrency/deadline/drain, narrow resource restrictions и artifact ownership/atomic publication. **119/119 выполненных тестов PASS**, boundaries18 PASS; M2b сохранён. Оба CEP B6 исключены, whole CEP batch unverified, catalog-discovery deferred; release/live certification не заявляется. Спорные sibling-layer semantics не менялись; без AE, push и merge.
 
+В последующем разрешённом targeted запуске оба ранее исключённых B6 прошли **2/2** после test-only исправления setup/child continuity. Production code и pins не менялись, CAS/assertions сохранены. Подробные baseline/final raw logs, команда и ограничения — в дополнении B6 существующей [Validation H1–H4](core-4.0.0-audit-repairs.md); весь CEP batch заново не сертифицирован.
+
 ## Progress
 
 - [x] Прочитаны start prompt, текущие AGENTS/README, адресный handoff и Git checkpoints; старый launch маршрут не возобновлялся.

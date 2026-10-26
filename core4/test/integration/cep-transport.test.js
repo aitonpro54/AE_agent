@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { spawnSync, execFileSync } = require('node:child_process');
+const { fork, spawnSync, execFileSync } = require('node:child_process');
 const { encode, decode, hash, canonical, dispatchBinding, createReceiver } = require('../../core/receiver-api');
 const { Broker } = require('../../core/broker');
 const { createTransport } = require('../../integrations/cep/transport');
@@ -32,6 +32,30 @@ async function send(f, binding, phase, payload, id, moduleId) { return decode(aw
 function counterIO(failAt) {
   let writes = 0, syncs = 0;
   return { ...fs, writeSync(...args) { writes++; if (failAt.write === writes) throw new Error('synthetic_disk_write'); return fs.writeSync(...args); }, fsyncSync(...args) { syncs++; if (failAt.sync === syncs) throw new Error('synthetic_disk_sync'); return fs.fsyncSync(...args); } };
+}
+function crashReceiver(t, { directory, boundary, body, host, marker }) {
+  return new Promise((resolve, reject) => {
+    // The receiver process may die; the synthetic AE process and its lifecycle do not.
+    const child = fork(path.join(SOURCE, 'test/fixtures/cep-crash-child.js'), [directory, boundary, JSON.stringify(body)], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
+    let stdout = '', stderr = '', failure, closed = false;
+    const terminated = new Promise(done => child.once('close', () => { closed = true; done(); }));
+    resources(t).closers.push(async () => { if (!closed) child.kill(); await terminated; });
+    function stop(error) { failure ||= error; if (!closed) child.kill(); }
+    child.stdout.on('data', data => { stdout += data; }); child.stderr.on('data', data => { stderr += data; });
+    const timer = setTimeout(() => stop(new Error('synthetic_crash_child_timeout: ' + stderr)), 10000);
+    child.once('error', stop);
+    child.once('close', (status, signal) => { clearTimeout(timer); if (failure) reject(failure); else resolve({ status, signal, stdout, stderr }); });
+    child.on('message', message => {
+      try {
+        assert.equal(message.type, 'evalScript'); assert.equal(typeof message.script, 'string');
+        const fd = fs.openSync(marker, 'a'); try { fs.writeSync(fd, 'evaluate\n'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+        host.csInterface.evalScript(message.script, result => {
+          // Callback also acknowledges that the parent completed the mutation/persist.
+          if (child.connected) child.send({ type: 'evaluated', result }, error => { if (error) stop(error); });
+        });
+      } catch (error) { stop(error); }
+    });
+  });
 }
 
 test('[cep-transport] B1 Core physically lacks integration and import performs no channel/state IO', async t => {
@@ -124,13 +148,21 @@ test('[cep-transport] B6 actual child crash intent and completion fsync boundari
   for (const boundary of ['intent', 'pending', 'completion']) {
     const directory = path.join(temp(t), 'store'), marker = path.join(path.dirname(directory), 'evaluations');
     const binding = { controllerId: 'crash-controller', channelEpoch: 'crash-channel', secret: 'synthetic-crash-secret' };
-    const setupHost = vmHost(), setupDispatcher = createHostDispatcher({ ...install(SOURCE), csInterface: setupHost.csInterface });
-    const inspection = command(binding, 'inspect', target(initialState()), 'setup');
+    const setupHost = vmHost({ persist() {
+      const fd = fs.openSync(marker + '.state.json', 'w'); try { fs.writeSync(fd, JSON.stringify(setupHost.state)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+    } }), setupDispatcher = createHostDispatcher({ ...install(SOURCE), csInterface: setupHost.csInterface });
+    const lifecycleBinding = setupHost.lifecycle.snapshot().binding;
+    const inspection = command(binding, 'inspect', target(setupHost.state), 'setup');
     const before = await setupDispatcher.evaluate({ phase: 'inspect', payload: inspection.payload, command: inspection });
+    assert.deepEqual(before.target, target(setupHost.state)); assert.equal(before.text, 'Before');
     const body = command(binding, 'mutate', { ...before.target, text: 'Crash-tested Ω', expectedText: before.text, expectedRevision: before.revision }, 'crashed');
-    const child = spawnSync(process.execPath, [path.join(SOURCE, 'test/fixtures/cep-crash-child.js'), directory, marker, boundary, JSON.stringify(body)], { windowsHide: true, encoding: 'utf8' });
+    const child = await crashReceiver(t, { directory, boundary, body, host: setupHost, marker });
     assert.equal(child.status, boundary === 'intent' ? 71 : boundary === 'pending' ? 74 : 72, child.stderr);
-    const f = await wire(t, { directory }), current = channel(2); await f.transport.connect(current);
+    assert.equal(child.signal, null); assert.equal(setupHost.counts.evaluate, boundary === 'intent' ? 1 : 2);
+    assert.equal(setupHost.state.counts.titles, boundary === 'intent' ? 0 : 1);
+    assert.equal(setupHost.state.text, boundary === 'intent' ? 'Before' : 'Crash-tested Ω');
+    const f = await wire(t, { directory, state: setupHost.state }), current = channel(2); await f.transport.connect(current);
+    assert.equal(f.host.lifecycle, setupHost.lifecycle); assert.equal(f.host.lifecycle.snapshot().binding, lifecycleBinding);
     const proof = decode(await f.transport.completion('crashed'), current.secret);
     assert.equal(proof.state, boundary === 'completion' ? 'completed' : 'ongoing');
     await assert.rejects(send(f, current, 'inspect', target(f.host.state), 'crashed'), /duplicate_command_no_replay/);
@@ -138,6 +170,15 @@ test('[cep-transport] B6 actual child crash intent and completion fsync boundari
     assert.equal(f.host.counts.evaluate, 0); assert.equal(fs.existsSync(marker), boundary !== 'intent');
     if (fs.existsSync(marker)) assert.equal(fs.readFileSync(marker, 'utf8').trim(), 'evaluate');
     if (boundary !== 'intent') { const state = JSON.parse(fs.readFileSync(marker + '.state.json', 'utf8')); assert.equal(state.counts.titles, 1); assert.equal(state.text, 'Crash-tested Ω'); }
+    // A real synthetic project_open still rotates incarnation and rejects the old CAS.
+    const currentLifecycle = setupHost.lifecycle.snapshot();
+    const reopened = setupHost.lifecycle.apply({ sourceId: currentLifecycle.sourceId, sourceEpoch: currentLifecycle.sourceEpoch, sequence: currentLifecycle.sequence + 1, type: 'project_open', projectId: setupHost.state.projectId });
+    setupHost.state.sessionId = reopened.sessionId;
+    assert.notEqual(reopened.sessionId, lifecycleBinding.sessionId);
+    const stale = await setupDispatcher.evaluate({ phase: 'mutate', payload: body.payload, command: body });
+    assert.deepEqual(stale, { outcome: 'rejected', code: 'session_cas' });
+    assert.equal(setupHost.state.counts.titles, boundary === 'intent' ? 0 : 1);
+    assert.equal(setupHost.state.text, boundary === 'intent' ? 'Before' : 'Crash-tested Ω');
   }
 });
 

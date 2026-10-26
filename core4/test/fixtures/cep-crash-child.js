@@ -1,22 +1,21 @@
 'use strict';
-const fs = require('node:fs');
 const { createReceiver, encode } = require('../../core/receiver-api');
 const { openCompletionStore } = require('../../integrations/cep/completion-store');
 const { createHostDispatcher } = require('../../integrations/cep/host-dispatcher');
-const { install, vmHost } = require('./cep-host');
-const [directory, marker, boundary, commandJSON] = process.argv.slice(2);
+const { install } = require('./cep-host');
+const [directory, boundary, commandJSON] = process.argv.slice(2);
 const command = JSON.parse(commandJSON), store = openCompletionStore({ directory });
-let host;
-host = vmHost({ persist: () => {
-  const fd = fs.openSync(marker + '.state.json', 'w'); try { fs.writeSync(fd, JSON.stringify(host.state)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
-} });
-const evaluate = host.csInterface.evalScript;
-host.csInterface.evalScript = (script, callback) => {
-  const fd = fs.openSync(marker, 'a'); try { fs.writeSync(fd, 'evaluate\n'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
-  if (boundary === 'pending') { evaluate(script, () => {}); setTimeout(() => process.exit(74), 5); return; }
-  return evaluate(script, callback);
-};
-const dispatcher = createHostDispatcher({ ...install(require('node:path').resolve(__dirname, '../..')), csInterface: host.csInterface });
+if (typeof process.send !== 'function') throw new Error('synthetic_parent_host_required');
+const csInterface = { evalScript(script, callback) {
+  process.once('message', message => {
+    if (message.type !== 'evaluated') throw new Error('synthetic_parent_response');
+    // AE/persist has completed in the surviving parent; deliberately lose its callback.
+    if (boundary === 'pending') process.exit(74);
+    callback(message.result);
+  });
+  process.send({ type: 'evalScript', script });
+} };
+const dispatcher = createHostDispatcher({ ...install(require('node:path').resolve(__dirname, '../..')), csInterface });
 const receiver = createReceiver({ controllerId: command.controllerId, channelEpoch: command.channelEpoch, secret: 'synthetic-crash-secret', admittedExecutors: dispatcher.admittedExecutors, completionStore: store, evaluate: args => {
   if (boundary === 'intent') process.exit(71);
   return dispatcher.evaluate(args);
