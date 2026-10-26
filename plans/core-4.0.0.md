@@ -87,6 +87,8 @@ ACK fix сохраняется как проверенный материал д
 
 M2a offline завершён: новый optional bridge, durable receiver, fixed host dispatcher и original dispatch provenance проверены через actual TCP/VM. Итоговые scoped checks 54/54, boundaries18 PASS; source-only и review coverage limits — в [M2a validation](core-4.0.0-m2a-bridge.md). Producer/issuer/live installation не входят в этот результат; переход к ним требует отдельного актуального scope и shared-resource facts.
 
+После восстановления исходного чата подтверждены чистые `codex/ae-agent-core-4.0.0`/`81ab980` и совпадение с upstream. [Предложение следующего offline-среза](core-4.0.0-next-scope.md) фиксирует открытый выбор: контракт lifecycle/grant на synthetic событиях либо конкретный следующий предметный модуль. Реализация этого нового среза пока не начата; live/cutover ограничения сохраняются.
+
 ## Progress
 
 - [x] Прочитаны start prompt, текущие AGENTS/README, адресный handoff и Git checkpoints; старый launch маршрут не возобновлялся.
