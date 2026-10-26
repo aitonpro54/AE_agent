@@ -762,8 +762,8 @@
     },
     {
       "path": "mcp-server/core-prestart-recovery.js",
-      "bytes": 14582,
-      "sha256": "4a78bc461a398b3a5d2f198c0870143a17fb727d05df9aa335798c64ba41c18c",
+      "bytes": 14848,
+      "sha256": "0040050e6408eeea674f0cfbd9cbf8b6de33e13f8160850b78535146e13c7fbe",
       "disposition": "core-specific",
       "literalDependencies": [
         "config/core-prestart-recovery-case.json",
@@ -2468,10 +2468,11 @@
     },
     {
       "path": "scripts/core-runtime-repair-smoke.js",
-      "bytes": 17146,
-      "sha256": "cf6fe082c9ffcfa022694f0aa0440bd47bfe079abf12a127330e5fbb5d663842",
+      "bytes": 19808,
+      "sha256": "02be08f75aa8e48a920c9b34043506f9d5ac9af74ff72a7a45b019e71fd0a1e9",
       "disposition": "core-specific",
       "literalDependencies": [
+        "config/core-runtime-repair-case.json",
         "mcp-server/autonomous-session.js",
         "mcp-server/cep-panel-control.js",
         "mcp-server/owned-runtime-authority.js",
