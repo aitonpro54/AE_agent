@@ -23,6 +23,8 @@ function createRuntimeDirectory() {
   return runtimeDir;
 }
 const EXTRA_SOURCES = new Set([
+  "config/core-runtime-repair-case.json", "config/core-prestart-recovery-case.json",
+  "config/core-owned-loss-control-case.json",
   "orchestrator/bounded-process-result.cjs", // supported, non-frozen runtime exception
   "scripts/owned-runtime-control.js", "scripts/autonomous-plan-client.js",
   "scripts/owned-runtime-initial-recovery.js",

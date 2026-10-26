@@ -35,21 +35,8 @@
         <p id="planRunStatus" class="plan-run-status" aria-live="polite">Нет текущего плана.</p>
         <pre id="planResult" aria-live="polite"></pre>
       </section>
-      <section class="protection-section">
-        <details class="placeholder-protection-control">
-          <summary>Защита плейсхолдеров</summary>
-          <p class="autonomous-session-help">Выделите плейсхолдер в AE. Принятие защищает источник, время и transform.</p>
-          <label class="placeholder-option"><input id="placeholderSelectedProperties" type="checkbox" /> Защитить выделенные свойства оформления</label>
-          <div class="action-group"><button id="acceptPlaceholderButton">Принять выбранный</button><button id="releasePlaceholderButton">Снять защиту</button></div>
-          <label>Группа / исполнитель<input id="placeholderGroupId" maxlength="120" /></label>
-          <button id="mapPlaceholderGroupButton">Подтвердить группу</button>
-          <label class="placeholder-option"><input id="placeholderDistinctGroups" type="checkbox" /> Разные группы</label>
-          <label class="placeholder-option"><input id="placeholderDisallowOverlap" type="checkbox" /> Исключить повторение фрагментов</label>
-          <div class="action-group"><button id="applyPlaceholderConstraintsButton">Применить к выделенному набору</button><button id="refreshPlaceholderProtectionButton">Обновить защиту</button></div>
-          <p id="placeholderProtectionStatus" class="autonomous-session-help" aria-live="polite">Подключите панель.</p>
-        </details>
-        <p id="log" class="bridge-help" aria-live="polite"></p>
-      </section>
+      <p id="log" class="bridge-help" aria-live="polite"></p>
+
     </main>
     <script>
       document.write('<script src="./lib/CSInterface.js?v='+encodeURIComponent(window.__aeAgentAssetVersion)+'"><\/script>');

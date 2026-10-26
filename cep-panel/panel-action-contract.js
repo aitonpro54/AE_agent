@@ -106,7 +106,7 @@
         additionalProperties: false,
         properties: {}
       },
-      affectedInputs: ["refreshPlaceholderProtectionButton", "placeholderProtectionStatus"],
+      affectedInputs: [],
       outputFields: ["protection"]
     },
 {
@@ -121,7 +121,7 @@
           useSelectedProperties: { type: "boolean" }
         }
       },
-      affectedInputs: ["acceptPlaceholderButton", "placeholderSelectedProperties"],
+      affectedInputs: [],
       outputFields: ["acceptedCount"]
     },
 {
@@ -137,7 +137,7 @@
           confirm: { type: "boolean" }
         }
       },
-      affectedInputs: ["releasePlaceholderButton", "placeholderProtectionStatus"],
+      affectedInputs: [],
       outputFields: ["released"]
     },
 {
@@ -153,7 +153,7 @@
           groupId: { type: "string", minLength: 1 }
         }
       },
-      affectedInputs: ["mapPlaceholderGroupButton", "placeholderGroupId"],
+      affectedInputs: [],
       outputFields: ["groupMappings"]
     },
 {
@@ -170,7 +170,7 @@
           disallowSourceOverlap: { type: "boolean" }
         }
       },
-      affectedInputs: ["applyPlaceholderConstraintsButton", "placeholderDistinctGroups", "placeholderDisallowOverlap"],
+      affectedInputs: [],
       outputFields: ["constraints"]
     },
 {

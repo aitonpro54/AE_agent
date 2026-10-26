@@ -2,6 +2,8 @@
 
 Cutover разрешён пользователем в текущей задаче. **Actual переключение pending**: offline implementation и tests не являются native/CEP/AE proof. Выпускать в production можно после independent implementation review и fresh preflight единственного контроллера. Старую сборку/checkpoint, config и installed assets сохраняем для отката.
 
+**Активный маршрут:** [owned-loss runbook](core-owned-loss-runbook.md). Initial start и адресный preStart resume уже consumed; все команды ниже для generation1672 — исторические, их не выполнять снова. Новый replacement — normal lifecycle generation с отдельной loss authority/once/edge, closed admission до observer survival, затем fresh adoption/redirect под той же pair. Force historical/not armable. Root code rollback tag `checkpoint/core-before-owned-loss-2026-10-26` →4efc70b сохранён; это не exit proof.
+
 Глобальные7 instruction patches уже применены адресным блоком root; receipt `743dfd4b`. Повторно применять staged глобальные copies нельзя без drift/read-back. Последующие source/global instruction уточнения ведёт отдельный назначенный writer с собственным backup/read-back. Этот пакет не создаёт нового разрешения и не требует повторного разрешения уже согласованного cutover.
 
 ## Неизменные границы
@@ -12,9 +14,9 @@ Cutover разрешён пользователем в текущей задач
 - Новый Core automation credential одновременно служит runtime HMAC. PANEL credential сохраняется намеренно для bootstrap, отдельно от automation. Старый source config/key сохраняется до verified own adoption. Секреты не выводить и не коммитить.
 - Один writer и один live AE/CEP/runtime controller. Default Core workflow: public builder contract → deterministic build → server proposal → dry-run → подтверждение по риску → read-back. Raw/save/destructive/manual/ownership/checkpoint gates сохраняются. AME paused; новых AME работ/проверок нет.
 
-## Актуальная последовательность
+## Исторический первоначальный протокол (не повторять для consumed case)
 
-**Текущее partial state:** исходная operation `9c9fb972-201d-4c73-8bf2-35bd6c8596f9`, generation `1672be8d-76e4-4fa3-9994-8a750c8a2209`, bootNonce `84c4eb15-a221-4c99-84ff-a4b1d10f95cf` уже подготовлена. State/preference и installed8 опубликованы sole controller под actual pair. Единственный `start-once` отказал на directory size representation; controller штатно released. Original once/intent/policy/projection/launch-attempt/unknown/reservation/ticket сохраняются byte-unchanged. Operator reconciliation — audit, не authenticated no-Start/exit proof. Ниже шаги1–7 описывают исходный протокол; **для этой consumed case их не повторять и не создавать новые inputs/UUID**. Active next sequence — раздел «Адресный preStart resume».
+**Текущее partial state:** исходная operation `9c9fb972-201d-4c73-8bf2-35bd6c8596f9`, generation `1672be8d-76e4-4fa3-9994-8a750c8a2209`, bootNonce `84c4eb15-a221-4c99-84ff-a4b1d10f95cf` уже подготовлена. State/preference и installed8 опубликованы sole controller под actual pair. Единственный `start-once` отказал на directory size representation; controller штатно released. Original once/intent/policy/projection/launch-attempt/unknown/reservation/ticket сохраняются byte-unchanged. Operator reconciliation — audit, не authenticated no-Start/exit proof. Ниже шаги1–7 описывают исходный протокол; **для этой consumed case их не повторять и не создавать новые inputs/UUID**. Первоначальный preStart resume уже был единожды выполнен, generation1672 registered/current/adopted, затем later exit/cause UNKNOWN. Этот partial state исторический; active next sequence — отдельный owned-loss runbook.
 
 1. Зафиксировать final implementation review/commit, runtime manifest, helper/Node/pwsh/adapter/daemon и8 CEP asset hashes. Адресные backups: source config, используемые внешние MCP registrations и installed8 assets; отдельно metadata bytes/object IDs защищённого state. Сохранять оригиналы и receipts в ignored cutover directory. Не копировать legacy credential/grants/registrations/journals в Core.
 2. Подготовить только новые, ещё не используемые Core inputs: fresh Core config, ordinary policy coverage **ровно** `owned_daemon_lifecycle`, staged byte-exact state через существующий `core-state-migration.js prepare <один UUID>`. Missing/corrupt/pending/overridden layout/marker или explicit OFF не угадывать. Helper имеет prepare/status/rollback-status, а не authority/apply API. Source bytes не менять.
@@ -48,7 +50,7 @@ Fixed Node SHA `3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237
 
 ## Same-operation recovery и rollback
 
-### Адресный preStart resume
+### Исторический адресный preStart resume — consumed/noReplay
 
 Offline directory fix и bounded same-operation recovery прошли independent design/implementation ACCEPT, открытых P1/P2 нет. Полный контракт: `core-prestart-recovery-design.md`; fixed case/pins — `config/core-prestart-recovery-case.json`. Actual resume остаётся pending.
 

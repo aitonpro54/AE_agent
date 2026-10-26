@@ -137,6 +137,12 @@ function assessAudioCoverage(expected,actual,{frameRate,sampleRate}={}) {
 }
 
 const RUNTIME_FILES = [
+  "mcp-server/core-owned-loss-control.js",
+  "config/core-owned-loss-control-case.json",
+  "mcp-server/core-owned-loss.js",
+  "mcp-server/core-owned-loss-native.js",
+  "scripts/core-owned-loss-control.js",
+  "scripts/core-owned-loss-native.ps1",
   "mcp-server/core-product-migration.js",
   "mcp-server/core-prestart-recovery.js",
   "mcp-server/core-runtime-repair.js",

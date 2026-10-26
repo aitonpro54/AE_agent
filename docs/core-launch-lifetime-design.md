@@ -27,11 +27,14 @@ Fixture PASS — prerequisite одного accepted loss replacement, не са�
 
 До source/.gemini redirect проверить actual production owner/tool-release survival, сохранив pair gate:
 
-1. После actual registration/current/fresh activation successor observer захватывает read-only HANDLE exact current generation, пока launch owner ещё удерживает pair/HANDLE. Никаких Start/register/current операций.
-2. Owner делает supported committed release; это не exit. Successor получает реальные mutex Source→Core и удерживает уже захваченный HANDLE. Краткий release/acquire gap не объявляется непрерывной lease: busy/abandoned/unexpected state закрывают дальнейшие действия до read-back.
-3. Это reacquire EXISTING current generation с observe/assert/release scope. Если backend держит только Core mutex, нужен узкий fixed current-owned-pair mode; старый migration/resume selector не переиспользуется.
-4. После actual owner tool completion successor под новой pair получает fresh SAME-HANDLE WAIT_TIMEOUT, полный5000ms survival и authenticated status той же current identity/source. Production terminal exit не ожидается.
-5. Под ТОЙ ЖЕ удерживаемой pair повторить source absence, current/provenance/code/state/assets/resource/CEP guards; затем разрешённые адресные config writes с backup/read-back. Нельзя отпустить pair после proof и считать её действующей при redirect. Unknown outcome сначала сверяется; automatic replay отсутствует.
+1. После actual registration/current, **при закрытом admission и до activation**, independent observer захватывает read-only HANDLE exact current generation, пока launch owner удерживает pair/HANDLE. Никаких Start/register/current операций.
+2. Owner проверяет actual observer identity/liveness/argv и делает supported committed release; это не exit. Root фиксирует actual owner exec tool exit0 отдельным completion marker. Observer получает новую реальную Source→Core pair и сохраняет заранее открытый HANDLE. Release/acquire gap не объявляется непрерывной lease; busy/abandoned/unexpected state закрывают продолжение.
+3. Fixed observer mode работает с EXISTING registered generation. Старый migration/resume selector не используется. Observer release до завершённых survival/adoption/redirect/readbacks запрещён в JS и native; EOF/transport UNKNOWN не закрывает owner pipe автоматически.
+4. Под новой pair после completion marker — новый SAME-HANDLE WAIT_TIMEOUT, полный5000ms survival, authenticated same-generation status/admission closed и fresh source/Core/resource/asset/local/physical guards. Native observation ещё не открывает admission; отдельная accepted survival binding завершает проверки. Production terminal exit не ожидается.
+5. Затем fresh generation-specific challenge/activation/adoption. Под ТОЙ ЖЕ pair — новый post-adoption current actor/activation-bound panel witness, authenticated readiness queue/native/edit/bootstrap checks, source absence и final guards; только после них адресный redirect с backup/CAS/read-back. После законных writes старый source config/key/proof не startup dependency: проверяются ожидаемые новые paths/env/token roles, текущие Core guards и все остальные pinned resources.
+6. После `finish-redirect`/readbacks observer штатно освобождает pair/HANDLE и завершает tool. Затем host MCP reconnect/handshake может приобрести ordinary controller и прочитать тот же registered generation. До redirect pair не отпускать; новый host transport до actual typed read-back не объявлять принятым.
+
+Конкретные команды и witness schemas: [owned-loss runbook](core-owned-loss-runbook.md). Канонический порядок выше supersedes прежнюю формулировку activation-before-observer.
 
 ## Два уровня code binding
 

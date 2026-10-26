@@ -14,6 +14,7 @@
     "smoke:core-product-migration": "node scripts/core-product-migration-smoke.js && node scripts/core-product-migration-integration-smoke.js",
     "smoke:core-prestart-recovery": "node scripts/core-prestart-recovery-smoke.js && node scripts/core-prestart-recovery-native-smoke.js",
     "smoke:core-runtime-repair": "node scripts/core-runtime-repair-smoke.js && node scripts/core-runtime-repair-historical-stop-smoke.js",
-    "smoke:core-migration-delta": "node scripts/core-legacy-cep-view-smoke.js && node scripts/core-migration-resource-smoke.js && node scripts/core-migration-ae-identity-smoke.js && node --expose-internals scripts/core-migration-bridge-smoke.js && node scripts/core-migration-cep-smoke.js && node scripts/core-record-context-smoke.js"
+    "smoke:core-migration-delta": "node scripts/core-legacy-cep-view-smoke.js && node scripts/core-migration-resource-smoke.js && node scripts/core-migration-ae-identity-smoke.js && node --expose-internals scripts/core-migration-bridge-smoke.js && node scripts/core-migration-cep-smoke.js && node scripts/core-record-context-smoke.js",
+    "smoke:core-owned-loss": "node scripts/core-owned-loss-transport-smoke.js && node scripts/core-owned-loss-smoke.js && node scripts/core-owned-loss-control-smoke.js && node scripts/core-owned-loss-native-smoke.js && node scripts/core-placeholder-ui-smoke.js"
   }
 }

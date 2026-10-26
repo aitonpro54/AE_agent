@@ -1,0 +1,16 @@
+{
+  "schema": "ae-agent.core-owned-loss-control-case.v1",
+  "requestId": "ee5f6b98-7f85-4941-9621-38b48c4bcbdc",
+  "observationPath": ".codex-runtime/core-cutover-observations/20261026/local-connect-unknown.json",
+  "observationRawSha256": "3c2ac1f3b5e2c90b4755151009749693b87a54ef0314a6547af23465b6ec66e0",
+  "entrySha256": "e337c35410d5de80ceaca69852ce7704256a26e6a335e653f6b62fda5df50e88",
+  "indexRawSha256": "008673be6e93f808cf90d350a0758203c2b95bacb530f4c354e6dc25506f3d27",
+  "wholeStoreRawSha256": "72fcda3463b48fefe4951ba92dff2fff47d29e2285ad7968dd72b6916504db10",
+  "initializedRawSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+  "originalActor": {
+    "panelConnectionId": "panel-1792939422818-8875254651467286",
+    "panelGeneration": "1792939636669",
+    "panelInstanceId": "panel-1792939422812-cyfujt8gkop",
+    "panelLifecycleEpoch": 4
+  }
+}

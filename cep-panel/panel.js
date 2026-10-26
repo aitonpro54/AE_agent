@@ -48,26 +48,6 @@
 
   var autonomousSessionStatusEl = document.getElementById("autonomousSessionStatus");
 
-  var acceptPlaceholderButton = document.getElementById("acceptPlaceholderButton");
-
-  var releasePlaceholderButton = document.getElementById("releasePlaceholderButton");
-
-  var mapPlaceholderGroupButton = document.getElementById("mapPlaceholderGroupButton");
-
-  var refreshPlaceholderProtectionButton = document.getElementById("refreshPlaceholderProtectionButton");
-
-  var applyPlaceholderConstraintsButton = document.getElementById("applyPlaceholderConstraintsButton");
-
-  var placeholderSelectedPropertiesEl = document.getElementById("placeholderSelectedProperties");
-
-  var placeholderGroupIdEl = document.getElementById("placeholderGroupId");
-
-  var placeholderDistinctGroupsEl = document.getElementById("placeholderDistinctGroups");
-
-  var placeholderDisallowOverlapEl = document.getElementById("placeholderDisallowOverlap");
-
-  var placeholderProtectionStatusEl = document.getElementById("placeholderProtectionStatus");
-
   var planRunStatusEl = document.getElementById("planRunStatus");
 
   var dryRunPlanButton = document.getElementById("dryRunPlanButton");
@@ -127,13 +107,14 @@
   function beginCoreMigrationSession(challenge) {
     var state=window.AEAgentPanelActions && window.AEAgentPanelActions.state();
     if(resetPreflightInFlight || !challenge || challenge.schema!=="ae-agent.core-product-migration-session.v1.challenge" || challenge.origin!=="core_product_migration" || !sameDeliveryActor(challenge.actor,deliveryActor()) || !physicalEvalScriptIdle() || !state || state.actionStorage!=="ready" || state.recoveryTransport){setStatus("Core preflight: physical/controller fence closed",false);return;}
-    if(state.journalNamespace!=="ae-agent-core.v1" || (state.unresolvedActions||[]).length!==0){setStatus("Core preflight: shared or own effect unresolved",false);return;}
+    if(challenge.lossControlCoverage && !window.AEAgentPanelActions.ownedLossControlCovered(challenge.lossControlCoverage,true)){setStatus("Core preflight: exact loss control coverage changed",false);return;}
+    if(state.journalNamespace!=="ae-agent-core.v1" || (state.unresolvedActions||[]).length!==0 && !((state.unresolvedActions||[]).length===1 && window.AEAgentPanelActions.ownedLossControlCovered(challenge.lossControlCoverage,true) && state.unresolvedActions[0].requestId===challenge.lossControlCoverage.subject.requestId && state.unresolvedActions[0].entrySha256===challenge.lossControlCoverage.subject.entrySha256)){setStatus("Core preflight: shared or own effect unresolved",false);return;}
     if(state.activeAction || state.nativeBusy || state.trustedGuardRefresh && state.trustedGuardRefresh.pending || panelActionBusy()){
       var waitingActor=deliveryActor();setTimeout(function(){if(sameDeliveryActor(waitingActor,deliveryActor()))beginCoreMigrationSession(challenge);},500);return;
     }
     if(!(Date.parse(challenge.expiresAt)>Date.now())){request("GET","/bridge/product-session?"+bridgeNextPath("",true).split("?")[1],null,function(error,response){if(!error && response && response.coreMigrationSession)beginCoreMigrationSession(response.coreMigrationSession);});return;}
     var previous=deliveryActor(),url=getBaseUrl(),token=getToken(),attempt={challenge:challenge.challenge};resetPreflightAttempt=attempt;resetPreflightInFlight=true;running=false;pollInFlight=false;if(pollTimer)clearTimeout(pollTimer);
-    var panelControl={journalNamespace:"ae-agent-core.v1",nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",unresolvedActions:[]};
+    var panelControl={journalNamespace:"ae-agent-core.v1",nativeControlIdle:true,activeAction:null,recoveryTransport:null,actionStorage:"ready",unresolvedActions:challenge.lossControlCoverage?[window.AEAgentPanelActions.ownedLossControlProjection(challenge.lossControlCoverage)]:state.unresolvedActions || []};
     panelLifecycleEpoch+=1;panelConnectionGeneration="core-"+challenge.generation;
     function finish(){if(resetPreflightAttempt===attempt){resetPreflightInFlight=false;resetPreflightAttempt=null;}}
     try{rotateBootstrapDeliveryFence();}catch(_){finish();setStatus("Core preflight: delivery fence unavailable",false);return;}
@@ -468,7 +449,6 @@
   }
 
   function renderAutonomousSession() {
-    renderPlaceholderProtectionControls();
     if (!autonomousSessionButton || !autonomousSessionStatusEl) return;
     var state = autonomousSessionState || {};
     autonomousSessionButton.setAttribute("aria-pressed", state.desiredEnabled ? "true" : "false");
@@ -500,40 +480,11 @@
     });
   }
 
-  function renderPlaceholderProtectionControls() {
-    var controls = [acceptPlaceholderButton, releasePlaceholderButton, mapPlaceholderGroupButton,
-      refreshPlaceholderProtectionButton, applyPlaceholderConstraintsButton,
-      placeholderSelectedPropertiesEl, placeholderGroupIdEl, placeholderDistinctGroupsEl, placeholderDisallowOverlapEl];
-    controls.forEach(function (control) {
-      if (control) control.disabled = !running || placeholderProtectionInFlight;
-    });
-    if (!running && placeholderProtectionStatusEl) {
-      placeholderProtectionStatusEl.textContent = "Подключите панель для чтения состояния.";
-    }
-  }
-
-  function placeholderProtectionResponse(error, response) {
-    placeholderProtectionInFlight = false;
-    renderPlaceholderProtectionControls();
-    if (!placeholderProtectionStatusEl || !running) return;
-    if (error || !response || response.ok !== true) {
-      placeholderProtectionStatusEl.textContent = "Ошибка: " + (error && error.message || response && (response.error || response.code) || "Состояние не получено");
-      return;
-    }
-    var accepted = Array.isArray(response.acceptedPlaceholders) ? response.acceptedPlaceholders.length : Number(response.acceptedCount || 0);
-    var groups = Array.isArray(response.groupMappings) ? response.groupMappings.length : 0;
-    var drift = Array.isArray(response.drift) ? response.drift.filter(function (item) { return item.ok !== true; }).length : 0;
-    placeholderProtectionStatusEl.textContent = "Защищено: " + accepted + ". Подтверждённых исходников: " + groups +
-      (drift ? ". Конфликтов текущего состояния: " + drift + "." : ".");
-    if (response.constraints) {
-      if (placeholderDistinctGroupsEl) placeholderDistinctGroupsEl.checked = response.constraints.distinctGroups === true;
-      if (placeholderDisallowOverlapEl) placeholderDisallowOverlapEl.checked = response.constraints.disallowSourceOverlap === true;
-    }
-  }
+  function placeholderProtectionResponse() { placeholderProtectionInFlight = false; }
 
   function refreshPlaceholderProtection(onDone) {
     if (!running || placeholderProtectionInFlight) {if(onDone) onDone({rejected:true,code:!running?"bridge_disconnected":"placeholder_busy"});return;}
-    placeholderProtectionInFlight=true;renderPlaceholderProtectionControls();
+    placeholderProtectionInFlight=true;
     request("GET","/placeholder/protection",null,function(error,response) {
       placeholderProtectionResponse(error,response);if(onDone) onDone(error,response);
     });
@@ -545,11 +496,11 @@
     if(action === "accept") body.useSelectedProperties=args.useSelectedProperties;
     if(action === "map_group") {
       body.groupId=args.groupId.trim();
-      if(!body.groupId) {if(placeholderProtectionStatusEl) placeholderProtectionStatusEl.textContent="Введите подтверждённую группу или исполнителя.";
+      if(!body.groupId) {
         if(onDone) onDone({rejected:true,code:"group_required"});return;}
     }
     if(action === "constraints") {body.distinctGroups=args.distinctGroups;body.disallowSourceOverlap=args.disallowSourceOverlap;}
-    placeholderProtectionInFlight=true;renderPlaceholderProtectionControls();
+    placeholderProtectionInFlight=true;
     request("POST","/placeholder/protection",body,function(error,response) {
       placeholderProtectionResponse(error,response);
       if(error || !response || response.ok !== true) {if(onDone) onDone(error || {code:response && response.code || "placeholder_rejected",message:response && response.error},response);return;}
@@ -2562,11 +2513,6 @@
   onControl(connectButton,"click","bridge.connect");onControl(disconnectButton,"click","bridge.disconnect");onControl(reloadButton,"click","panel.reload");
   [urlEl,tokenEl].forEach(function(el){onControl(el,"change","bridge.configure",function(){return {url:urlEl.value,panelToken:tokenEl.value};});});
   onControl(autonomousSessionButton,"click","autonomy.set",function(){return {enabled:!(autonomousSessionState && autonomousSessionState.desiredEnabled)};});
-  onControl(acceptPlaceholderButton,"click","placeholder.accept",function(){return {useSelectedProperties:placeholderSelectedPropertiesEl.checked};});
-  onControl(releasePlaceholderButton,"click","placeholder.release",{confirm:true});
-  onControl(mapPlaceholderGroupButton,"click","placeholder.mapGroup",function(){return {groupId:placeholderGroupIdEl.value};});
-  onControl(applyPlaceholderConstraintsButton,"click","placeholder.constraints.set",function(){return {distinctGroups:placeholderDistinctGroupsEl.checked,disallowSourceOverlap:placeholderDisallowOverlapEl.checked};});
-  onControl(refreshPlaceholderProtectionButton,"click","placeholder.refresh");
   onControl(document.getElementById("refreshPlanButton"),"click","plan.current",{fresh:true});
   dryRunPlanButton.addEventListener("click",function(){uiPlanAction(true);});
   runPlanButton.addEventListener("click",function(event){uiPlanAction(false,null,event);});

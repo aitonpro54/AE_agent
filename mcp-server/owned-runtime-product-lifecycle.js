@@ -24,7 +24,7 @@ function firstRegistration(root,generation,readGeneration){
   return facts;
 }
 function readAnchor(root,readGeneration,keyReader){
-  const core=require("./core-product-migration");if(core.hasOrigin(root))return core.readGenesis(root,readGeneration,keyReader);
+  const core=require("./core-product-migration");if(core.hasOrigin(root))return require("./core-owned-loss").anchor(root,readGeneration,keyReader)||core.readGenesis(root,readGeneration,keyReader);
   if(legacyPresent(root))fail("owned_product_legacy_anchor_present");const pin=envelope(path.join(authority.base(root),"product-genesis.json")),v=pin.value;
   exact(v,["schema","generation","registration","sourceSha256","authorizationRef","policyRawSha256","migration","createdAt","replayAllowed","authentication"]);
   if(v.schema!==SCHEMA+".genesis"||!uuid(v.generation)||!sha(v.policyRawSha256)||!Number.isFinite(Date.parse(v.createdAt))||v.replayAllowed!==false)fail();
@@ -34,7 +34,7 @@ function readAnchor(root,readGeneration,keyReader){
   return {product:true,pins:{productGenesisRawSha256:pin.rawSha256,initialGeneration:v.generation},value:v,assertUnchanged};
 }
 function ensureAnchor(root,generation,readGeneration,keyReader){
-  const core=require("./core-product-migration");if(core.hasOrigin(root))return core.readGenesis(root,readGeneration,keyReader);
+  const core=require("./core-product-migration");if(core.hasOrigin(root))return require("./core-owned-loss").anchor(root,readGeneration,keyReader)||core.readGenesis(root,readGeneration,keyReader);
   const file=path.join(authority.base(root),"product-genesis.json");if(ledger.proofExists(file))return readAnchor(root,readGeneration,keyReader);
   if(legacyPresent(root))fail("owned_product_legacy_anchor_present");const facts=firstRegistration(root,generation,readGeneration),policy=productPolicy(root,facts.reservation.value.authorizationRef),m=migration(root);
   const value={schema:SCHEMA+".genesis",generation,registration:facts.refs,sourceSha256:facts.candidate.value.sourceSha256,authorizationRef:facts.reservation.value.authorizationRef,policyRawSha256:policy.rawSha256,migration:m.value,createdAt:new Date().toISOString(),replayAllowed:false,authentication:"0".repeat(64)};value.authentication=signed(value,keyReader(facts.reservation.value));policy.assertUnchanged();m.pin.assertUnchanged();r1.writeJournalOnce(authority.base(root),"product-genesis",value);return readAnchor(root,readGeneration,keyReader);
