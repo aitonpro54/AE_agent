@@ -1,0 +1,205 @@
+{
+  "moduleId": "photo-placeholder",
+  "operationId": "replace-source",
+  "protocolVersion": 1,
+  "targetSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "compId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "layerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId"
+    ],
+    "additionalProperties": false
+  },
+  "buildSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "compId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "layerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "newSourceId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId",
+      "newSourceId"
+    ],
+    "additionalProperties": false
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "compId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "layerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "newSourceId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "expectedRevision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "expectedOldSourceId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId",
+      "newSourceId",
+      "expectedRevision",
+      "expectedOldSourceId"
+    ],
+    "additionalProperties": false
+  },
+  "snapshotSchema": {
+    "type": "object",
+    "properties": {
+      "target": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192
+          },
+          "compId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "layerId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "sessionId",
+          "projectId",
+          "compId",
+          "layerId"
+        ],
+        "additionalProperties": false
+      },
+      "revision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "protected": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "sourceId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      }
+    },
+    "required": [
+      "target",
+      "revision",
+      "protected",
+      "sourceId"
+    ],
+    "additionalProperties": false
+  },
+  "effectPolicy": {
+    "effect": "layer.source",
+    "targetFields": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId"
+    ],
+    "expectedBindings": {
+      "expectedRevision": "revision",
+      "expectedOldSourceId": "sourceId"
+    },
+    "resultBindings": {
+      "sourceId": "newSourceId"
+    },
+    "preserve": [
+      "protected"
+    ],
+    "requiresCheckpoint": true,
+    "confirmation": "mutation"
+  }
+}

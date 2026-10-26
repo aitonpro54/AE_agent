@@ -102,6 +102,8 @@ Semver без content hash не закрепляет байты; hash без tru
 
 `titles`: существующий статичный text layer, exact project/comp/layer и expected previous-text fingerprint/value. Меняется только текст, формат сохраняется. Animated/expression и неподтверждённые mixed-style случаи получают unsupported. Нужны усиление текущего handler и адресное доказательство сохранности поддерживаемого стиля.
 
+Адресное уточнение при реализации: Adobe подтверждает появление ExtendScript `CharacterRange`/`ParagraphRange` в [AE 24.3](https://helpx.adobe.com/after-effects/desktop/using/whats-new/2024-3.html). Отсутствие нужного API, неоднозначность range values или ошибка чтения означают unsupported. Подробные официальные страницы [TextDocument](https://developer.adobe.com/after-effects/uxp/after-effects-api/textdocument) и [CharacterRange](https://developer.adobe.com/after-effects/uxp/after-effects-api/characterrange) относятся к UXP/Min27.0: их нельзя автоматически переносить на ExtendScript24.3. Старый first-character preview не доказывает uniform style; присваивание `.text` само по себе не доказывает сохранность всех style attributes. M1 фиксирует поддержанный набор и независимый before/after read-back; actual live round-trip остаётся отдельной приёмкой.
+
 ## Mixed workflow: photo + titles
 
 Идентичности: `workflowId` — работа; `planRevision` — серверная редакция; `runId` — выполнение/продолжение; `stepId` — стабильный шаг; `attemptId` — его попытка; `commandId` — физическая отправка. Одинаковый stepId с другим operation/input digest не считается тем же успешным действием.
@@ -125,7 +127,7 @@ flowchart LR
 5. Core материализует titles step proposal с новой evidence и exact expectations, выполняет свежий dry-run. Late binding разрешён только внутри заранее объявленного scope; новый target/effect/input вне утверждённого намерения требует новой редакции/подтверждения. При старом dry-run execution запрещён.
 6. Titles исполняется и проверяется отдельно. Durable step results сохраняют pins и evidence обеих частей.
 
-ProjectRef включает доказанную project/session binding и точные item/layer IDs. Path/name/index — подсказки поиска, не identity. Наблюдение содержит capture epoch и fingerprints нужных свойств. TTL или внутренний revision counter не доказывает отсутствие ручных изменений: executor сравнивает реальные identities/expected state в AE перед записью.
+ProjectRef включает доказанную project/session binding и точные item/layer IDs. `sessionId` здесь означает trusted project-incarnation epoch, а не время жизни broker/channel: new/open/revert/replacement AEP ротирует binding даже при том же пути и item/layer IDs. При неизвестном lifecycle producer live admission unavailable; одна глобальная строка без такого происхождения не доказывает идентичность проекта. Path/name/index — подсказки поиска, не identity. Наблюдение содержит capture epoch и fingerprints нужных свойств. TTL или внутренний revision counter не доказывает отсутствие ручных изменений: executor сравнивает реальные identities/expected state в AE перед записью. Offline fixture отдельно моделирует повторное открытие того же пути/IDs с новой session.
 
 | Состояние после photo success | Продолжение |
 | --- | --- |
@@ -154,12 +156,13 @@ Reconciliation использует original receipt, доказательств
 1. Каждый changed path получает одного owner. Неизвестная/неоднозначная область означает пробел и отказ scoped-certification; требуется адресно дополнить карту, не молча объявить локальный PASS.
 2. Классифицируется internal/public API/executor-effect/shared runtime/catalog/docs изменение.
 3. Вычисляется affected contract closure и reverse dependency paths. Изменение shared implementation может затронуть потребителей и без смены schema; dependency manifest обязан отражать это.
-4. Выбираются owner checks и contract/consumer/workflow fixtures реально затронутых boundaries. Добавляются только конкретные unresolved failures. Каждая проверка имеет reason.
-5. Обновляются лишь manifests/pins изменённых artifacts и зависимая evidence; неизменённые результаты сохраняются.
+4. Owner checks обязательны. Component conformance выбирается также по изменению её фактической dependency; public contracts, явно заявленные semantic impacts и shared-runtime edges выбирают соответствующих consumers. Каждая проверка имеет reason и dependency path.
+5. Фактическая byte closure каждой проверки сохраняется независимо от обязательности её запуска. Затронутые широкие integration checks, не обязательные в текущем scope, перечисляются в `deferredCoverage` как `current-closure-unverified`; их прежний PASS не переносится на новые байты. Для такого отчёта не требуется читать/хешировать отсутствующие пакеты deferred closure.
+6. Обновляются лишь manifests/pins изменённых artifacts и применимость зависимой evidence; неизменённые результаты сохраняются. Прочитанный проверкой неизменённый photo-файл сам по себе не становится новым diff и не запускает каскад photo-owner.
 
 | Diff | Выбранные проверки / причина |
 | --- | --- |
-| Titles internal implementation | Syntax/boundary + titles behavior + titles executor contract fixtures; изменился owner и его execution seam |
+| Titles private-file implementation diff | Titles behavior + executor contract fixtures; затронутая широкая integration evidence явно deferred для новой closure, без photo prerequisite |
 | Titles input/output/schema или exposed semantics | Titles contract и объявленные consumers, включая mixed binding |
 | Photo executor/effect policy | Photo behavior/identity/read-back и admission/fence fixtures |
 | Shared IPC/admission/target contract | Затронутые interface fixtures и объявленные потребители по dependency paths |
@@ -167,6 +170,10 @@ Reconciliation использует original receipt, доказательств
 | Только документы | Ссылки/согласованность/формат; продуктовые suites не запускаются |
 
 Static graphs помогают найти пропущенные связи, но не заменяют явные contracts и не выбирают tests как authority. Evidence key включает check/producer identity, selected artifact/dependency hashes, contract versions, fixture identity и релевантную среду. Изменение элемента key инвалидирует соответствующий результат и зависимые выводы. Уже валидная evidence остаётся исторически действительной для прежних artifacts; свежие resource inspection, grants и dry-runs не кешируются как кодовая сертификация. Offline proof не является live/visual/save-reopen acceptance.
+
+Уточнение implementation review: `checkPolicy` разделяет component conformance и integration по реальному содержимому проверок. Общая группа с настоящими broker/engine/modules остаётся integration даже с именем `core-control`; изменение её owner всё равно требует её запуска. Для shared Core явно объявляются consumer edges: например, resources затрагивает оба module conformance и workflow recovery. Нельзя удалять реальные dependencies из keys ради локальности.
+
+`private-file diff` не доказывает неизменность публичной семантики. Намеренное изменение поведения без смены schema объявляется через `contractImpacts` и выбирает consumers. Без этого scoped result утверждает только пройденную conformance; deferred integration остаётся непроверенной для текущей closure. Успешный `--run` не является release PASS и не утверждает существование cached PASS, если такой записи нет. Это отделяет стоимость обязательного локального запуска от честной применимости evidence.
 
 ## Компромиссы и адресные evidence gaps
 

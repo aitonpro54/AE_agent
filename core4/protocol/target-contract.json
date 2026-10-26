@@ -1,0 +1,40 @@
+{
+  "id": "ae.exact-target.v1",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "compId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "layerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId"
+    ],
+    "additionalProperties": false
+  },
+  "identitySemantics": {
+    "sessionId": "trusted project-incarnation epoch; changes on every new/open/revert/replacement even same path and same item IDs",
+    "projectId": "exact actual app.project.file.fsName; saved project only",
+    "lifecycleProducerRequired": true
+  }
+}

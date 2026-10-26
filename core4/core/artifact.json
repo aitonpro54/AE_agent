@@ -1,0 +1,22 @@
+{
+  "id": "core",
+  "version": "4.0.0-m1",
+  "hashes": {
+    "core/artifacts.js": "a11c96f6d6f228a7cdacd1e2190c8bd463de0184b354c5c063608aaf36c79756",
+    "core/authority.js": "7a63f901da4cdbcc41112ec222ad66f3d97c4502d5a12683e35bfbc70789029e",
+    "core/broker.js": "32476d480b4aa1b512aa8481d45a7c3fe29dce4ac369c6e68eda9f44b3df3a6a",
+    "core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+    "core/receiver.js": "dd8839ffd5abb9a9dd62629d113d51e6c2dbf05c7450abdb60554c315451cfff",
+    "core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
+    "core/resources.js": "5fb0aa1afb5067ba57ce0a1233ddb5ed21766f4d3c76552bec2127489f8bd269",
+    "core/state-lock.js": "4105e87c09a4546e1785652dc7d55859148881f1214bf8560871803320ba77ea",
+    "core/stdio.js": "58542ececf37121befa7a0eff4bd17e9f313527b760941408b7b068eaf8f5a13",
+    "core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",
+    "worker.js": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02",
+    "protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+    "protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+    "protocol/schema.js": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a",
+    "protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24",
+    "protocol/artifact.json": "1baa8da12d9d597eebd3a711af80842f5732c9392e2cef6bed358df9ba4495d5"
+  }
+}

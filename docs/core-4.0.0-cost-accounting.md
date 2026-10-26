@@ -49,7 +49,7 @@
 
 ## Документальное соответствие уже начатой работы
 
-Снимок на 26 октября 2026, 17:36 Asia/Yekaterinburg. Это карта привязок, не отчёт о токенах. Root thread UUID `01a1782f-f95b-7692-9368-d1e2f27825a6` подтверждён переменной текущего runtime `CODEX_THREAD_ID`; UUID общего MCP не использовался. Инструменты делегирования подтвердили canonical helper names, но не раскрыли их underlying thread/turn/response IDs. Эти имена пока нельзя использовать как ключ соединения с usage events.
+Первый design-снимок — 26 октября 2026, 17:36 Asia/Yekaterinburg; документальные M1 bindings дополнены при закрытии offline M1 26 октября. Это карта привязок, не отчёт о токенах и не `collected_at` Codeburn. Root thread UUID `01a1782f-f95b-7692-9368-d1e2f27825a6` подтверждён переменной текущего runtime `CODEX_THREAD_ID`; UUID общего MCP не использовался. Инструменты делегирования подтвердили canonical helper names, но не раскрыли их underlying thread/turn/response IDs. Эти имена пока нельзя использовать как ключ соединения с usage events.
 
 | Work unit | Module / activity | Подтверждённая связь | Пробел покрытия |
 | --- | --- | --- | --- |
@@ -61,5 +61,10 @@
 | `core4-M1-source-seams` | `shared/workflow` / `implementation`; photo-placeholder, titles, protocol | Helper `/root/m1_source_seams`, read-only evidence получена | Underlying helper thread/turn IDs не раскрыты |
 | `core4-M1-runtime` | `shared/workflow` / `implementation`; core, plan-engine, photo-placeholder, titles | Helper `/root/m1_implementation`, scope `core4/**` | Underlying helper thread/turn IDs не раскрыты |
 | `core4-M1a-baseline` | `core-control` / `validation`; импортированный ACK repair | Helper `/root/m1a_baseline_checks`, готовые isolated checks | Underlying helper thread/turn IDs не раскрыты; результаты добавляются по завершении |
+| `core4-M1-text-api` | `titles` / `validation`; адресное уточнение scripting API | Повторный read-only turn helper `/root/m1_source_seams`, официальные Adobe ссылки получены | Разделение двух turn этого helper по usage event IDs пока недоступно; не приписывать точные доли |
+| `core4-M1-module-review` | `shared/workflow` / `validation`; photo-placeholder, titles | Helper `/root/m1_module_review`, bounded six-file review и managed VM probe получены | Underlying helper thread/turn/response IDs не раскрыты |
+| `core4-M1-runtime-review` | `shared/workflow` / `validation`; core, protocol, plan-engine | Следующий bounded turn `/root/m1_module_review`, новый runtime diff | Несколько turn одного helper не делить по предположению; ждать verified event bindings |
+| `core4-M1-validation-policy` | `shared/workflow` / `design`; validation, core, plan-engine, titles, photo-placeholder | Повторный bounded read-only turn `/root/architecture`, routing/evidence verdict получен | Underlying turn/response IDs не раскрыты; без точных долей между модулями |
+| `core4-M1-final-scoped-checks` | `core` / `validation`; constraints/routing delta | Повторные turn `/root/m1a_baseline_checks`: предыдущий snapshot 33 executions PASS; итоговый snapshot 38 selected executions PASS, frozen hashes совпали | Варианты не складывать; это числа проверок, не usage totals; helper event IDs отсутствуют |
 
 Строка review добавлена после фактического получения результата. Исторические usage events не переписывать; после реализации атрибуций импортировать только подтверждённые соответствия. Неподтверждённый остаток сохраняется в coverage gaps. Codeburn и его отчётные инструменты сейчас не вызывались, поэтому measured totals отсутствуют.

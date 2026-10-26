@@ -1,0 +1,13 @@
+{
+  "id": "photo-placeholder",
+  "version": "4.0.0-m1",
+  "entry": "implementation.js",
+  "hashes": {
+    "implementation.js": "c041620adcfeff37d825f86020a5d3f7f230bbfd1c4fc95b9be170b8ec9fa93e",
+    "contract.json": "092ee4b201f9ff4df0625ec50daeff715c31e4f0c962d21e3abcaabedf2c9b50",
+    "executor.jsx": "971265883277c03316b04cf30ae4be0552bb9ee61f0948b500ee795a4216374a"
+  },
+  "publicDependencies": {
+    "protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24"
+  }
+}

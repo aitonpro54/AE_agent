@@ -1,5 +1,9 @@
 # AE Agent Core
 
+Ветка `codex/release-4.0.0` содержит изолированный разрабатываемый контур [Core4](core4/README.md) с собственным package, модульными manifests и проверками. [Текущий план M1](plans/core-4.0.0.md) задаёт границы и приёмку. Команды нового контура выполняются через `npm.cmd --prefix core4`; обычная правка выбирает проверки через `node core4/tools/validate-diff.js <changed-path> --run`. Установленный MCP/CEP на эту ветку не переключён; production transport Core4 до отдельного подключения возвращает unavailable.
+
+Ниже сохранено описание проверенной исходной базы 3.3.5. Её runtime manifest не включает рабочие пакеты Core4.
+
 Отдельная сборка 3.3.5 для Codex → MCP → typed bridge → AE. Старая сборка и её история остаются в `AE_agent`; source provenance: [config/source-provenance.json](config/source-provenance.json).
 
 `mcp-server/mcp-adapter.js` — stdio MCP; `bridge-daemon.js` — приватные grants, risk/proposal/dry-run/runner, ownership/checkpoint/read-back и HTTP boundary. `core-tool-catalog.js` строит typed schemas, `core-tool-dispatch.js` содержит реализации typed handlers через явные порты runtime. `core-plan-catalog.js` задаёт фиксированные deterministic builders; `project-state-store.js` хранит защиту, ownership, review и lifecycle.

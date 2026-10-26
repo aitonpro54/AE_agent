@@ -1,0 +1,205 @@
+{
+  "moduleId": "titles",
+  "operationId": "set-text",
+  "protocolVersion": 1,
+  "targetSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "compId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "layerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId"
+    ],
+    "additionalProperties": false
+  },
+  "buildSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "compId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "layerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "text": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId",
+      "text"
+    ],
+    "additionalProperties": false
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "compId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "layerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "text": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      },
+      "expectedRevision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "expectedText": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId",
+      "text",
+      "expectedRevision",
+      "expectedText"
+    ],
+    "additionalProperties": false
+  },
+  "snapshotSchema": {
+    "type": "object",
+    "properties": {
+      "target": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192
+          },
+          "compId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "layerId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "sessionId",
+          "projectId",
+          "compId",
+          "layerId"
+        ],
+        "additionalProperties": false
+      },
+      "revision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "protected": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "text": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      }
+    },
+    "required": [
+      "target",
+      "revision",
+      "protected",
+      "text"
+    ],
+    "additionalProperties": false
+  },
+  "effectPolicy": {
+    "effect": "layer.text",
+    "targetFields": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId"
+    ],
+    "expectedBindings": {
+      "expectedRevision": "revision",
+      "expectedText": "text"
+    },
+    "resultBindings": {
+      "text": "text"
+    },
+    "preserve": [
+      "protected"
+    ],
+    "requiresCheckpoint": true,
+    "confirmation": "mutation"
+  }
+}

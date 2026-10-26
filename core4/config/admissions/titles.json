@@ -1,0 +1,12 @@
+{
+  "moduleId": "titles",
+  "operationId": "set-text",
+  "artifactHash": "47f5b84054e60c5257a39919a63629db4034082d31fa5618670487f928ec1d2e",
+  "schemaHash": "a34568bdd5011ac98417f482bca5388436bf481f793176b8e1d3c54204d37cf3",
+  "resultSchemaHash": "92446b5a31d86faee71e3df1722d74a6441bd9712ef17b70ac3baa954adbed64",
+  "effectPolicyHash": "41a29547cfc21d9d4bba4542b2d10f8e2a58925f7eb9084536d182aca038c1d0",
+  "executorHash": "e1eb94f04ce9f2e7fc0fc97acc8a226aadaacde50cec5aa9af72b011b18092ca",
+  "protocolVersion": 1,
+  "trustApprovalId": "M1-source-review-titles-20261026",
+  "revoked": false
+}

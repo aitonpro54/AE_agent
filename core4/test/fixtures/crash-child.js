@@ -1,0 +1,22 @@
+'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
+const { Broker } = require('../../core/broker');
+const { syntheticAuthority } = require('./authority');
+const { fixtureTransport, initialState } = require('./ae');
+const [root, stateDir, aeFile, point] = process.argv.slice(2);
+const state = fs.existsSync(aeFile) ? JSON.parse(fs.readFileSync(aeFile, 'utf8')) : initialState();
+const authority = syntheticAuthority({ sessionId: state.sessionId, projectId: state.projectId, owner: 'synthetic-fixture-owner', checkpointRef: 'synthetic-checkpoint', effects: ['layer.source', 'layer.text'] });
+const transport = fixtureTransport({ root, state, stateFile: aeFile });
+const hooks = { [point]: () => process.exit(77) };
+const recordContext = { purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: 'core4-crash-fixture', project: { file: state.projectId }, resources: [{ kind: 'project', identity: state.projectId }] };
+const broker = new Broker({ root, stateDir, privateEmbedding: { authority, transport, hooks, recordContext } });
+(async () => {
+  await broker.connect(); const moduleId = 'titles'; const contract = broker.getContract({ moduleId });
+  const target = { sessionId: state.sessionId, projectId: state.projectId, compId: 1, layerId: 102 };
+  const evidence = await broker.inspect({ moduleId, contractId: contract.contractId, target });
+  const built = await broker.build({ taskId: 'crash-task', workflowId: 'crash-workflow', steps: [{ stepId: 'titles', moduleId, contractId: contract.contractId, evidenceRef: evidence.evidenceRef, input: { ...target, text: 'After' }, dependsOn: [] }] });
+  const proposed = broker.propose({ buildId: built.buildId }); authority.confirm(proposed.proposalId);
+  const dryrun = await broker.dryrun({ proposalId: proposed.proposalId });
+  await broker.run({ proposalId: proposed.proposalId, dryrunRef: dryrun.dryrunRef }); broker.close(); process.exit(0);
+})().catch(error => { process.stderr.write(error.stack); broker.close(); process.exit(1); });

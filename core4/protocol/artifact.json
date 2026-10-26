@@ -1,0 +1,10 @@
+{
+  "id": "protocol",
+  "version": 1,
+  "hashes": {
+    "protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+    "protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+    "protocol/schema.js": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a",
+    "protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24"
+  }
+}

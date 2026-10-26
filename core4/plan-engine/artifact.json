@@ -1,0 +1,9 @@
+{
+  "id": "plan-engine",
+  "version": "4.0.0-m1",
+  "entry": "index.js",
+  "hashes": {
+    "index.js": "44517f1dbc6612467de58ab0767f266da3fc76fcb7d03f79ca6a9e9f707d2adb"
+  },
+  "publicDependencies": {}
+}

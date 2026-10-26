@@ -1,0 +1,21 @@
+{
+  "catalogRevision": "M1-reviewed-local-1",
+  "modules": [
+    {
+      "id": "photo-placeholder",
+      "version": "4.0.0-m1",
+      "path": "modules/photo-placeholder",
+      "admission": "config/admissions/photo-placeholder.json"
+    },
+    {
+      "id": "titles",
+      "version": "4.0.0-m1",
+      "path": "modules/titles",
+      "admission": "config/admissions/titles.json"
+    }
+  ],
+  "engine": {
+    "path": "plan-engine",
+    "artifactHash": "42493f23dd153833140192483405edf09dd52f527be7114169f9a0ed33573fac"
+  }
+}

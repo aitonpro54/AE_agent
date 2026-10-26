@@ -1,0 +1,13 @@
+{
+  "id": "titles",
+  "version": "4.0.0-m1",
+  "entry": "implementation.js",
+  "hashes": {
+    "implementation.js": "52df6ae84d5d8104753945bccb1cb55c5f0c7495a88605dc308cf3e49e42b4c8",
+    "contract.json": "fa2c06c091b31308d08b77a08b50d43413ff94c5a7812583da0b948d6d6953f9",
+    "executor.jsx": "e1eb94f04ce9f2e7fc0fc97acc8a226aadaacde50cec5aa9af72b011b18092ca"
+  },
+  "publicDependencies": {
+    "protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24"
+  }
+}

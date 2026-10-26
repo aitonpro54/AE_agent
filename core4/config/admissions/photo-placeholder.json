@@ -1,0 +1,12 @@
+{
+  "moduleId": "photo-placeholder",
+  "operationId": "replace-source",
+  "artifactHash": "8828abd90ad8416633737d251692692adc608bde8f3a45549034a357bfa5ff49",
+  "schemaHash": "ce6937cdc4c23b71b0416ae75bfd0f70a29588f545fe98c4000474afb8752a63",
+  "resultSchemaHash": "7bbfd6cf40bc7c7ce4e2ab55336eb1971ff99bd9ae720a7756eb0a587bd6688b",
+  "effectPolicyHash": "4e12f3ead78d19527f4e274061aa861fb491b8316f8531c4232706352ac28f41",
+  "executorHash": "971265883277c03316b04cf30ae4be0552bb9ee61f0948b500ee795a4216374a",
+  "protocolVersion": 1,
+  "trustApprovalId": "M1-source-review-photo-placeholder-20261026",
+  "revoked": false
+}

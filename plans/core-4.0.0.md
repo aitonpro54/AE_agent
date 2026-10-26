@@ -57,6 +57,8 @@ ACK fix сохраняется как проверенный материал д
 
 Адресные counterexamples внутри A5/A8/A10: ручной drift photo между failure/resume не вызывает повторную замену; совпадение нужного текста при ещё не завершённой UNKNOWN-команде не снимает fence; отзыв operation admission между dry-run/send блокирует отправку. Эти случаи уточняют уже заявленные инварианты и не расширяют состав M1.
 
+Уточнение A4: для private-file titles diff широкая integration evidence перечисляется как deferred/current-closure-unverified; это не доказательство прежнего PASS для новой closure. При изменении общего Core выбираются реально зависимые component conformance и явно объявленные integration consumers. Намеренное изменение публичного поведения без schema diff задаётся `contractImpacts`. Deferred reporting не открывает отсутствующие packages и не блокирует module-only conformance; full release остаётся отдельным действием.
+
 У fixture evidence явно указываются synthetic/native calls, pins и environment. Даже PASS A1–A10 не является live AE, визуальной или save/reopen приёмкой. Отдельный будущий live-срез на контролируемой копии AEP доказывает exact project/comp/layer identities, revision freshness и read-back выбранных двух операций; старые runtime UNKNOWN сначала сверяются. Save остаётся отдельным ручным gate. Полную release suite не запускать как условие каждой итерации M1.
 
 ## Следующие этапы после M1
@@ -78,7 +80,6 @@ ACK fix сохраняется как проверенный материал д
 
 Открыты только решения, требующие внешнего выбора или ещё не полученных фактов:
 
-- M1 принят прямым поручением пользователя; дополнительного решения о начале его offline-реализации не требуется.
 - Перед подключением Codeburn выбрать фактического владельца collector и DB path/установку; до этого fork остаётся исходником, не сервисом.
 - Перед live/выпуском определить актуальный способ правомерного владения общими runtime/AE-ресурсами по свежим фактам. Исторический handoff этого не доказывает.
 
@@ -90,7 +91,7 @@ ACK fix сохраняется как проверенный материал д
 - [x] Архитектурный блок делегирован `ae_architect` (Sol 6.1/XHigh role), Codeburn evidence — `ae_scout` (Luna/High role). Runtime model/effort токенов по этим настройкам не утверждаются. Оба read-only; root — единственный writer документов и координатор.
 - [x] Подготовлены intent, architecture, mixed recovery, cost accounting, Graphify pilot и M1 acceptance. Root объединяет зависимые решения/факты; отдельного независимого writer для интеграции нет, чтобы не разойтись в contracts.
 - [x] Адресное независимое review `ae_reviewer` завершено без P1/P2; уточнены три counterexample fixtures. Локальные ссылки/UTF-8 проверены, подготовлен отдельный документационный milestone commit `docs: design modular AE Agent Core 4.0.0`.
-- [ ] Реализовать принятый пользователем M1 в отдельном worktree и пройти A1–A10 в isolated fixtures. Живая приёмка/публикация остаются отдельным блоком.
+- [x] Реализован принятый пользователем offline M1 в отдельном worktree; A1–A10 покрыты isolated Node/VM fixtures и адресными regressions. Живая приёмка/публикация остаются отдельным блоком.
 
 ## Decision Log
 
@@ -116,8 +117,8 @@ ACK fix сохраняется как проверенный материал д
 - [x] По прямому поручению пользователя создан isolated managed worktree и ветка `codex/release-4.0.0` от design milestone `1f5b820`.
 - [x] Проверенная ACK/code-binding дельта `86ce093` адресно перенесена без конфликтов; основной runtime root/ветка не изменены.
 - [x] M1a baseline: 10 imported code/manifest hashes совпали с repair; rules225, isolated runtime204 и ACK stdout6 PASS. Отдельный milestone `chore: establish isolated Core4 baseline from reviewed ACK repair`; contracts/scoped manifests продолжаются в новом контуре.
-- [ ] M1b–M1d: самостоятельный контур `core4/`, два executor bundles, worker/optional engine, mixed recovery и объяснимый выбор проверок.
-- [ ] Независимое review реализации, closing checks и milestone commits.
+- [x] M1b–M1d: самостоятельный контур `core4/`, два executor bundles, worker/optional engine, mixed recovery и объяснимый выбор проверок.
+- [x] Независимое bounded review реализации: все конкретные P1/P2 закрыты; final scoped checks прошли. Milestone `feat: implement isolated modular Core4 M1` фиксирует новый контур и его документацию.
 
 ### Decision Log
 
@@ -125,6 +126,11 @@ ACK fix сохраняется как проверенный материал д
 - Новый контур живёт в `core4/` со своим package, manifests и checks; старый 3.3.5 код сохраняется как provenance/проверенная база. Core4 не импортирует старые adapter/bridge-daemon и не использует старый монолит как fallback.
 - `ae_specialist` владеет только `core4/**`: сложные взаимодействия admission/IPC/ledger. `ae_scout` адресно извлёк handler seams; `ae_operator` выполняет готовые baseline checks. Одновременно активны не более двух helpers. Root владеет plan/docs и Git commits; ни у кого нет live-controller scope.
 - Production transport Core4 до отдельного подключения возвращает unavailable. Synthetic fixture authority изолирована и не публикуется MCP-инструментом. Текущий M1 не выдаёт production grants и не изменяет существующие credentials/полномочия.
+- Независимый module review выявил P2: path/IDs с одной строкой session без provenance не отличают повторное открытие AEP. Контракт уточнён: sessionId — project-incarnation epoch; new/open/revert/replacement ротируют его, неизвестный lifecycle закрывает live admission. P2 закрыт offline same-path/same-IDs/new-epoch fixture; production lifecycle producer остаётся live evidence gap.
+- Титры доказывают uniform/preserved style только для явно перечисленных character/paragraph fields. Это не all-style гарантия и не доказательство ExtendScript/live совместимости; unsupported при недоказанном поддержанном наборе сохраняется.
+- По конкретному routing/evidence blocker назначен bounded `ae_architect` review. Принято разделение обязательного запуска и применимости evidence: actual byte dependencies сохраняются, component reverse closure обязательна; широкие integration checks вне private-file scope явно deferred/current-unverified. Public/declared semantic/shared-runtime impacts выбирают обязательных consumers. Это не обнуление зависимостей и не утверждение семантической эквивалентности по пути файла.
+- Финальное review закрыло scope/CAS drift, stdio backpressure, project-incarnation contract, stale-lock takeover, terminal close, unknown constraint envelope и routing coverage. Короткий atomic gate сериализует владение journal; orphan gate автоматически не восстанавливается. Worker получает только минимальный OS env и запускается из immutable permanent closure. Неизменённые source bundles повторно целиком не review'ились.
+- `recordContext` новых plan/command records описательный: обычный ingress явно `user_work/work_context`, fixtures — `technical_check/ephemeral_check`. Он не выдаёт authority и не снимает fence.
 
 ### Validation
 
@@ -133,3 +139,29 @@ ACK fix сохраняется как проверенный материал д
 - M1a baseline: `npm.cmd run check:rules` PASS (225 файлов; syntax/manifest/exclusions, imports0); `npm.cmd run smoke:core-runtime` PASS (204 tools, random fixture port, synthetic credentials, mutation refused, liveAE=false/nativeFactories=0); `node scripts/core-owned-loss-stdout-smoke.js` PASS6 (old ACK0/fixed ACK1, managed starts≤1, nativeCalls=0/liveProof=false). Каждая команда выполнена один раз; native suite не запускалась.
 - Все 10 imported code/manifest файлов byte-exact совпали с repair: manifest `f1037593…`, native import `31e08d2b…`, helper `e2e220fb…`; docs/plan намеренно объединены с основными publication notes, а не заменены. AE/CEP/production owner/start и действующая конфигурация не затронуты.
 - A1–A10 добавляются по фактическому выполнению; прежние design/offline результаты не объявляются новой live-приёмкой.
+- Module review: 6 implementation/contract/executor файлов просмотрены и зафиксированы SHA; подтверждён один P2 project-incarnation, P1 нет. Node VM probe same-path/same-IDs с прежней session показал необходимость указанного контракта. Setter-after-start→UNKNOWN, mandatory expected guards, still-only и `fixExpressions=false` подтверждены чтением; полная runtime/fixture validation продолжается отдельно.
+
+### Закрытие offline M1 — 26 октября 2026
+
+Новый контур: [core4/README.md](../core4/README.md). Индивидуальные package/admission records, generic stdio MCP, permanent broker, один child worker, optional engine, actual JSX assets photo/titles и validation tools находятся в `core4/`; импорта прежнего bridge нет. Installed runtime, исходная основная ветка, credentials/config и AE-проект не менялись.
+
+| Критерий | Фактическое offline evidence |
+| --- | --- |
+| A1–A3 | Отсутствующие optional packages и bad catalog; lazy selected loading; независимые Core/titles pins при photo/catalog refresh; immutable worker и минимальный env |
+| A4 | Title private diff: 2 checks/1 batch, 4 теста без photo/engine; 7 affected integrations явно deferred. Shared Core выбирает component consumers и integration edges; semantic `contractImpacts` выбирает workflow; unknown owners/impacts отвергаются |
+| A5 | Photo success сохраняется после titles fault, worker/broker restart и новой titles revision. Счётчик photo setter остаётся 1; drift и неизвестный исход требуют адресной сверки |
+| A6–A7 | Reset до/после intent, late epochs, worker infinite loop/exit/malformed IPC; Core остаётся управляемым; receipts/UNKNOWN сохраняются |
+| A8–A9 | Script/claims/foreign identities, stale expectations, revocation и resource constraints; read-back actual JSX в VM; selected artifact substitution и private imports отвергаются |
+| A10 | 8 настоящих child-process crash windows, reopen ledger, command success до engine record, совпавший текст при ongoing UNKNOWN, один writer при reclaim, terminal close и orphan gate |
+
+Проверки и точная область действия:
+
+- Полный первоначальный new-Core4 набор: `npm.cmd --prefix core4 test` — 43/43 PASS. Это baseline до последних адресных constraints/routing fixes, а не release certification итогового diff.
+- Итоговый frozen source: `node core4/tools/validate-diff.js core4/core/resources.js --run` — 10 обязательных checks в 3 неповторяющихся test-file batches: Core 31/31, photo 3/3, titles 4/4; всего 38 выбранных выполнений, без ошибок/пропусков. Их причины owner/shared-runtime/component-dependency перечислены самим selector. Отчёт сохраняет `releaseCertified:false`, `validation-routing` — deferred/current-closure-unverified для этого конкретного resource-only запроса.
+- Отдельный owner diff самого selector/map: routing fixtures 5/5 PASS на итоговой версии, включая semantic impact, deferred coverage без открытия отсутствующих packages, batching и фактический titles-only subprocess. Не складывать пересекающиеся test groups как число уникальных тестов.
+- Последний unknown-envelope fix: 2 targeted constraint regressions и 7 настоящих module consumers PASS; ключи/manifest ресурса совпадают. Boundaries — 13 source units PASS. Старые 3.3.5 suites после M1a без нового diff не повторялись.
+- Финальный независимый read-only review — открытых P1/P2 нет. Последние два findings проверены адресными probes; остальных неизменённых runtime/module файлов повторного full audit не было.
+- Node `v24.15.0`, Windows x64. Canonical Core pin: `d4a38d7254f5b7e381cdf5637fd9bc62e15c331ed9075918a8ea5224e75ba509`; raw core manifest SHA-256: `03958acba429c5af4d732c5a96142a2ccdcd20a4134b42548fbbe9327a8e891d`. Final resource/router/map/test hashes совпали у writer, reviewer и независимого validator. TAP последнего scoped запуска — локальный temp artifact `core4-resources-final-c1f519d6cd3248259d7fed6c03e2789e.tap.log`, не runtime authority.
+- Closing representation check: все 45 staged Core4 файлов byte-exact совпадают с Git blobs, pin не изменился. Проверены 9 Markdown документов и 23 локальные ссылки; missing targets/ошибок UTF-8 нет. `git diff --check` и `git diff --cached --check` PASS. Старый основной checkout и repair сохраняются без рабочего diff.
+
+Все проверки изолированы: native/live AE calls 0. Production CEP transport, project-lifecycle/grant issuer, actual style round-trip и актуальный shared-resource census **не подключены и не приняты**. Default connect возвращает unavailable; synthetic authority доступна только explicit private fixture embedding. Это завершение инженерного offline M1, не выпуск 4.0.0 и не разрешение live cutover. M2/M3/M4 остаются будущими блоками по своему scope.

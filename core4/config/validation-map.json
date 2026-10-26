@@ -1,0 +1,490 @@
+{
+  "owners": [
+    {
+      "prefix": "core4/core/",
+      "owner": "core",
+      "checks": [
+        "core-control",
+        "core-admission"
+      ]
+    },
+    {
+      "prefix": "core4/worker.js",
+      "owner": "worker",
+      "checks": [
+        "worker-isolation"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/",
+      "owner": "protocol",
+      "checks": [
+        "protocol-codec"
+      ]
+    },
+    {
+      "prefix": "core4/plan-engine/",
+      "owner": "plan-engine",
+      "checks": [
+        "workflow-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/modules/photo-placeholder/",
+      "owner": "photo-placeholder",
+      "checks": [
+        "photo-owner",
+        "photo-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles/",
+      "owner": "titles",
+      "checks": [
+        "titles-owner",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/config/catalog.json",
+      "owner": "catalog",
+      "checks": [
+        "catalog-discovery"
+      ]
+    },
+    {
+      "prefix": "core4/config/admissions/photo-placeholder.json",
+      "owner": "photo-placeholder",
+      "checks": [
+        "photo-owner",
+        "photo-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/config/admissions/titles.json",
+      "owner": "titles",
+      "checks": [
+        "titles-owner",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/config/validation-map.json",
+      "owner": "validation",
+      "checks": [
+        "validation-routing"
+      ]
+    },
+    {
+      "prefix": "core4/tools/",
+      "owner": "validation",
+      "checks": [
+        "validation-routing",
+        "artifact-boundaries"
+      ]
+    },
+    {
+      "prefix": "core4/test/",
+      "owner": "validation",
+      "checks": [
+        "validation-routing"
+      ]
+    },
+    {
+      "prefix": "core4/README.md",
+      "owner": "documentation",
+      "checks": [
+        "documentation"
+      ]
+    },
+    {
+      "prefix": "core4/package.json",
+      "owner": "packaging",
+      "checks": [
+        "artifact-boundaries"
+      ]
+    },
+    {
+      "prefix": "core4/test/modules/titles.test.js",
+      "owner": "titles",
+      "checks": [
+        "titles-owner",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/test/modules/photo-placeholder.test.js",
+      "owner": "photo-placeholder",
+      "checks": [
+        "photo-owner",
+        "photo-executor-contract"
+      ]
+    }
+  ],
+  "contracts": [
+    {
+      "prefix": "core4/protocol/target-contract.json",
+      "id": "exact-target-v1",
+      "consumers": [
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/codec.js",
+      "id": "closed-typed-envelope-v1",
+      "consumers": [
+        "core-admission",
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/json.js",
+      "id": "bounded-json-v1",
+      "consumers": [
+        "core-control",
+        "worker-isolation",
+        "workflow-recovery",
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/schema.js",
+      "id": "closed-schema-v1",
+      "consumers": [
+        "core-admission",
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/worker.js",
+      "id": "worker-ipc-v1",
+      "consumers": [
+        "core-control",
+        "workflow-recovery",
+        "photo-owner",
+        "titles-owner"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver.js",
+      "id": "receiver-v1",
+      "consumers": [
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles/contract.json",
+      "id": "titles-public-contract",
+      "consumers": [
+        "workflow-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/modules/photo-placeholder/contract.json",
+      "id": "photo-placeholder-public-contract",
+      "consumers": [
+        "workflow-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/module-harness.js",
+      "id": "module-fixture-driver",
+      "consumers": [
+        "titles-owner",
+        "titles-executor-contract",
+        "photo-owner",
+        "photo-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/ae.js",
+      "id": "synthetic-ae-environment",
+      "consumers": [
+        "titles-owner",
+        "titles-executor-contract",
+        "photo-owner",
+        "photo-executor-contract",
+        "workflow-recovery"
+      ]
+    }
+  ],
+  "checkDependencies": {
+    "core-control": [
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "core-admission": [
+      "core/",
+      "protocol/",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "worker-isolation": [
+      "core/worker-client.js",
+      "worker.js",
+      "protocol/json.js",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/",
+      "core/",
+      "protocol/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "protocol-codec": [
+      "protocol/",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/",
+      "core/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "workflow-recovery": [
+      "plan-engine/",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/",
+      "modules/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "photo-owner": [
+      "modules/photo-placeholder/",
+      "config/admissions/photo-placeholder.json",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/modules/photo-placeholder.test.js",
+      "test/module-harness.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js"
+    ],
+    "titles-owner": [
+      "modules/titles/",
+      "config/admissions/titles.json",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/modules/titles.test.js",
+      "test/module-harness.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js"
+    ],
+    "photo-executor-contract": [
+      "modules/photo-placeholder/",
+      "config/admissions/photo-placeholder.json",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/modules/photo-placeholder.test.js",
+      "test/module-harness.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js"
+    ],
+    "titles-executor-contract": [
+      "modules/titles/",
+      "config/admissions/titles.json",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/modules/titles.test.js",
+      "test/module-harness.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js"
+    ],
+    "catalog-discovery": [
+      "config/catalog.json",
+      "core/artifacts.js",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/"
+    ],
+    "validation-routing": [
+      "config/validation-map.json",
+      "tools/",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/"
+    ],
+    "artifact-boundaries": [
+      "tools/check-boundaries.js",
+      "tools/seal.js",
+      "package.json",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "documentation": [
+      "README.md",
+      "test/core4.test.js"
+    ]
+  },
+  "checkCommands": {
+    "titles-owner": [
+      "node",
+      "--test",
+      "--test-name-pattern=titles-owner",
+      "test/modules/titles.test.js"
+    ],
+    "titles-executor-contract": [
+      "node",
+      "--test",
+      "--test-name-pattern=titles-executor-contract",
+      "test/modules/titles.test.js"
+    ],
+    "photo-owner": [
+      "node",
+      "--test",
+      "--test-name-pattern=photo-owner",
+      "test/modules/photo-placeholder.test.js"
+    ],
+    "photo-executor-contract": [
+      "node",
+      "--test",
+      "--test-name-pattern=photo-executor-contract",
+      "test/modules/photo-placeholder.test.js"
+    ]
+  },
+  "checkProjections": {
+    "titles-owner": [
+      {
+        "file": "config/catalog.json",
+        "key": "modules",
+        "id": "titles"
+      }
+    ],
+    "titles-executor-contract": [
+      {
+        "file": "config/catalog.json",
+        "key": "modules",
+        "id": "titles"
+      }
+    ],
+    "photo-owner": [
+      {
+        "file": "config/catalog.json",
+        "key": "modules",
+        "id": "photo-placeholder"
+      }
+    ],
+    "photo-executor-contract": [
+      {
+        "file": "config/catalog.json",
+        "key": "modules",
+        "id": "photo-placeholder"
+      }
+    ]
+  },
+  "checkPolicy": {
+    "core-control": {
+      "kind": "integration"
+    },
+    "core-admission": {
+      "kind": "integration"
+    },
+    "worker-isolation": {
+      "kind": "integration"
+    },
+    "protocol-codec": {
+      "kind": "integration"
+    },
+    "workflow-recovery": {
+      "kind": "integration"
+    },
+    "photo-owner": {
+      "kind": "component"
+    },
+    "titles-owner": {
+      "kind": "component"
+    },
+    "photo-executor-contract": {
+      "kind": "component"
+    },
+    "titles-executor-contract": {
+      "kind": "component"
+    },
+    "catalog-discovery": {
+      "kind": "integration"
+    },
+    "validation-routing": {
+      "kind": "integration"
+    },
+    "artifact-boundaries": {
+      "kind": "integration"
+    },
+    "documentation": {
+      "kind": "component"
+    }
+  },
+  "sharedRuntimeEdges": [
+    {
+      "prefix": "core4/core/",
+      "id": "permanent-core-runtime",
+      "consumers": [
+        "workflow-recovery",
+        "worker-isolation",
+        "protocol-codec",
+        "artifact-boundaries"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/",
+      "id": "shared-neutral-protocol",
+      "consumers": [
+        "core-control",
+        "core-admission",
+        "worker-isolation",
+        "workflow-recovery",
+        "artifact-boundaries"
+      ]
+    }
+  ]
+}

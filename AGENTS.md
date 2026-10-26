@@ -1,15 +1,15 @@
-# AE Agent Core 3.3.5
+# AE Agent Core 4.0.0 — разработка M1
 
-Цель: Codex → MCP → typed bridge → After Effects. Исходный запрос — «приступай к переносу»; текущий план: `plans/core-migration.md`.
+Цель: самостоятельно работающее минимальное ядро Codex → MCP → typed bridge → After Effects и независимо подключаемые рабочие пакеты. Текущий план: `plans/core-4.0.0.md`; `plans/core-migration.md` сохраняет историю исходной базы 3.3.5 и незавершённого cutover.
 
 - Работать по-русски, сохранять чужие изменения; один writer на ресурс и один live-контроллер.
 - Typed inspection → deterministic build → server-owned proposal → dry-run → подтверждение по риску → read-back. Private brands, grants, ownership, checkpoint и UNKNOWN/no-replay обязательны.
-- Core builders: `get_plan_builder_contract` → `build_solution_plan`; recipe search tools исключены. Cutover protocol: `docs/core-cutover-package.md`, это подготовленный пакет без разрешения actual switch.
+- В базе 3.3.5 builders: `get_plan_builder_contract` → `build_solution_plan`; в Core4 — module discovery/`get_module_contract` и стабильный generic plan API. Recipe search tools исключены. Старый cutover protocol `docs/core-cutover-package.md` — сохранённый пакет без разрешения actual switch; разработка Core4 от него не зависит.
 - Raw JSX, destructive и save сохраняют отдельные ручные gates. Файловый доступ не выдаёт runtime authority.
 - Codeburn — отдельный внешний MCP для аналитики расхода.
 - Старый `AE_agent` — неизменяемый источник provenance; runtime state, credentials, `.git` и зависимости не копировать. Действующую установку/config не переключать до отдельного cutover.
 - AME сохранён без новых работ и проверок. Live/CEP/CDP/bootstrap/native factories в текущем offline-блоке не запускать.
-- Для проверок: `npm.cmd run check:rules`, `npm.cmd run smoke:core-runtime`, `git diff --check`. Offline stub не является live proof.
+- Новый контур — `core4/`, без imports старых `bridge-daemon`/adapter и без монолитного fallback. Его проверки выбираются `node core4/tools/validate-diff.js <changed-path> --run`, boundaries — `npm.cmd --prefix core4 run check:boundaries`; M1 fixtures — `npm.cmd --prefix core4 test`. Полная release-проверка — отдельное явное действие. Старые `check:rules`/`smoke:core-runtime` проверяют только изменённую исходную базу 3.3.5; не повторять их из-за правки Core4. `git diff --check` сохраняется. Offline stub не является live proof.
 - Завершённые этапы фиксировать небольшим commit и обновлять Progress / Decision Log / Validation текущего плана.
 
 ## Рабочие заказы и разработка продукта
