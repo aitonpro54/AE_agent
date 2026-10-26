@@ -6,7 +6,7 @@
 - Typed inspection → deterministic build → server-owned proposal → dry-run → подтверждение по риску → read-back. Private brands, grants, ownership, checkpoint и UNKNOWN/no-replay обязательны.
 - Core builders: `get_plan_builder_contract` → `build_solution_plan`; recipe search tools исключены. Cutover protocol: `docs/core-cutover-package.md`, это подготовленный пакет без разрешения actual switch.
 - Raw JSX, destructive и save сохраняют отдельные ручные gates. Файловый доступ не выдаёт runtime authority.
-- Providers, встроенный чат, Hardcore, recipes/registry/candidates и Full Intaker не входят в Core. Codeburn — отдельный внешний MCP.
+- Codeburn — отдельный внешний MCP для аналитики расхода.
 - Старый `AE_agent` — неизменяемый источник provenance; runtime state, credentials, `.git` и зависимости не копировать. Действующую установку/config не переключать до отдельного cutover.
 - AME сохранён без новых работ и проверок. Live/CEP/CDP/bootstrap/native factories в текущем offline-блоке не запускать.
 - Для проверок: `npm.cmd run check:rules`, `npm.cmd run smoke:core-runtime`, `git diff --check`. Offline stub не является live proof.
