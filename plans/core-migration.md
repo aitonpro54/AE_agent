@@ -1,8 +1,12 @@
 # Перенос AE Agent Core
 
+Текущий блок с 26 октября 2026 — [проектирование 4.0.0](core-4.0.0.md), по отдельному стартовому запросу пользователя. Следующие действия прежнего cutover ниже сохранены как история/состояние; автоматически их не выполнять. Проектирование и будущая разработка 4.0.0 не зависят от завершения этого cutover.
+
 Source: AE_agent `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-agent-before-core-2026-10-25`; inventory `e531f04`. Destination: `C:/Users/Ant/Documents/Codex/AE_Agent_Core`, branch `codex/core-migration`.
 
 ## Progress
+
+- [x] Подготовлен отдельный design-only пакет 4.0.0: intent, границы Core/engine/worker/modules, mixed workflow, Codeburn attribution и первый измеримый M1. Независимое review без P1/P2, документальные ссылки проверены. Реализация и runtime не менялись; подробности — в новом плане, отдельный milestone `docs: design modular AE Agent Core 4.0.0`.
 
 - [x] По явной просьбе пользователя завершён текущий offline ACK/code-repair блок в repair: commit `86ce0936eb2f7d3e6d2fdf5148532e1e35e36249`, independent ACCEPT, source `c0f66f08…0bc4`/192. Loss-only stdout ACK и fixed unconsumed supplement реализованы; последний fix **не опубликован в original**. Original runtime остаётся на коде525edff/source63e9 с известным ACK bug; повторять его owner нельзя.
 - [x] Подготовлена [передача 26 октября](core-cutover-handoff-20261026.md) по прямому поручению пользователя. Actual new Start0: D0/lifetime уже существуют, но S/provision/once/binding/newgen/config redirect отсутствуют. Следующий инженерный шаг — fresh census и адресная публикация reviewed delta, затем актуальный repair runbook. Handoff не создаёт нового runtime gate.
@@ -31,6 +35,8 @@ Source: AE_agent `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-
 
 ## Актуальный Decision Log
 
+- 2026-10-26: стартовый запрос 4.0.0 заменил последовательность немедленного продолжения cutover на проектирование самостоятельного модульного ядра. Repair ACK checkpoint и original publication notes сохраняются; ветки, runtime authority, pending/UNKNOWN и установленная конфигурация не изменяются этим документальным этапом.
+
 - 2026-10-26: после actual acquire-only timeout обнаружен pipeline ACK bug; Ctrl-C был ограничен собственным пустым pre-Start owner, затем Root сверил отсутствие обеих программ и consumption. Original D0/runtime63e9 сохранён byte-exact. Для reviewed code delta принят и реализован один fixed append-only supplement до первого consumption, без новой disposition/genesis/resume/force или revision chain. Новый live-этап после пользовательской просьбы о передаче не начинался.
 - 2026-10-26: root опубликовал только tracked reviewed code в original Core, сохранив его runtime root и ignored пользовательское состояние. Проверка после fast-forward завершена отдельным read-back без повторного Git move; manifest старой сборки сохранён, историческая provenance не переписана. Config staging v2 проверен независимым TOML/JSON parser; actual apply отсутствует.
 - 2026-10-26: назначенный sole offline writer закрыл bounded authority/component block; root — единственный live AE/CEP/runtime controller, scoped reviewer только читал frozen files. Review5 findings закрыты: transport timeout/malformed/budget сохраняют pipe/HANDLE, actual created directory identity фиксируется до wx и проверяется вокруг writes, observer early release/liveness guarded, PS import pin до исполнения, incomplete relevant CIM metadata fail-closed. Final P1 redirect исправлен current signed-activation/actor/local physical witness + actual readiness details на обоих этапах; native recheck readonly на том же HANDLE/pair.
@@ -53,6 +59,8 @@ Source: AE_agent `1b48076e0aa4a68f21b3229af511d9e526ed0072`, tag `checkpoint/ae-
 - Рабочие заказы не становятся product milestone. RecordContext — описательные purpose/lifetime/context/project/resource bindings, legacy unclassified. Engineering scopes выделяются явно. Global7 patches применены root, receipt743dfd4b; active cutover package обновлён на persistentCLI/realpair-before-publication.
 
 ## Актуальная Validation
+
+- 2026-10-26, 4.0.0 design: исходный Core HEAD `acfb5e8` и repair HEAD `0af6977` чистые до документов; addressed code/docs checkpoints сравнены. Codeburn fork уточнён до documentation-only HEAD `55735f3`. Продуктовые suites и live/daemon/Codeburn не запускались по текущему scope; документальное review и closing checks — в [новом плане](core-4.0.0.md).
 
 - Текущий repair checkpoint86ce093: stdout6/retained4/native44/loss77/control45/rules225/MCP204/AST4/C# primitive/syntax/diff PASS; final code review ACCEPT/frozen17 exact. Managed/offline proofs не названы live acceptance. Closing read11:32UTC:3456 свободен, Root controllers/old PID rows отсутствуют, loss namespace ONLYD0, server journal отсутствует, source/global configs original, installed8 baseline, panel offline/physical0/ee5f UNKNOWN; explicit OFF не обнаружен, desiredEnabledtrue. Полные hashes/receipts/ограничения — в передаче.
 - 2026-10-26, original Core после публикации: frozen27 hashes и runtime source `0e347fdb22dac5ee8866345b44f8300648ea364ab78a5fbc47a3a32a4e603992` совпали с ACCEPT; preserved21 own refs и protected2 bytes/identity PASS. `check:rules` PASS223, `git diff --check 4efc70b HEAD` PASS. Code publication receipt сохранён в ignored audit; native Start, journal provisioning, asset installation, config apply и live acceptance ещё не выполнялись.
