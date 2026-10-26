@@ -57,5 +57,9 @@
 | `core4-architecture` | `shared/workflow` / `design`; core, plan-engine, photo-placeholder, titles | Helper `/root/architecture`, отправлен через `spawn_agent` | Helper thread/turn/response UUID не раскрыт; числовой вклад пока не включать |
 | `core4-codeburn-evidence` | `codeburn` / `design` | Helper `/root/codeburn_evidence`, результат получен | Те же отсутствующие helper IDs |
 | `core4-design-review` | `shared/workflow` / `validation`; весь design-пакет | Helper `/root/design_review`, read-only review получено без P1/P2 | Helper thread/turn/response UUID не раскрыт; числовой вклад не включён |
+| `core4-M1-integration` | `shared/workflow` / `implementation`; core, plan-engine, photo-placeholder, titles | Тот же подтверждённый root thread; новый пользовательский turn после design milestone | Точный turn/response ID и event boundaries не раскрыты; не относить весь thread к реализации |
+| `core4-M1-source-seams` | `shared/workflow` / `implementation`; photo-placeholder, titles, protocol | Helper `/root/m1_source_seams`, read-only evidence получена | Underlying helper thread/turn IDs не раскрыты |
+| `core4-M1-runtime` | `shared/workflow` / `implementation`; core, plan-engine, photo-placeholder, titles | Helper `/root/m1_implementation`, scope `core4/**` | Underlying helper thread/turn IDs не раскрыты |
+| `core4-M1a-baseline` | `core-control` / `validation`; импортированный ACK repair | Helper `/root/m1a_baseline_checks`, готовые isolated checks | Underlying helper thread/turn IDs не раскрыты; результаты добавляются по завершении |
 
 Строка review добавлена после фактического получения результата. Исторические usage events не переписывать; после реализации атрибуций импортировать только подтверждённые соответствия. Неподтверждённый остаток сохраняется в coverage gaps. Codeburn и его отчётные инструменты сейчас не вызывались, поэтому measured totals отсутствуют.

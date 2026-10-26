@@ -727,8 +727,8 @@
     },
     {
       "path": "mcp-server/core-owned-loss.js",
-      "bytes": 44570,
-      "sha256": "af292c2ef3c70ec12b7c2bb917f7f5a3808639cc07514176923e14f1dd44b663",
+      "bytes": 53618,
+      "sha256": "8cb4357734a40408479f328a19d47f3d8dd3ec781004e213c612ee0d1ba3ad65",
       "disposition": "core-specific",
       "literalDependencies": [
         "config/core-runtime-repair-case.json",
@@ -1532,7 +1532,7 @@
     {
       "path": "mcp-server/owned-runtime-supervisor.js",
       "bytes": 104504,
-      "sha256": "37cc524ecd91da73d0d9397aecc2516527cc0807354c6de40c025a3f01cc54de",
+      "sha256": "90c40983e1fee0bdfdfcb6692ff31a881062dbe40625786798b05ae9c9f23702",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "6edccfa3c8f05c42bb379b4de8a3acffd5e962afb40bf4f13547903beaeb105f",
       "literalDependencies": [
@@ -2281,8 +2281,8 @@
     },
     {
       "path": "scripts/core-owned-loss-control.js",
-      "bytes": 2690,
-      "sha256": "498ce4133399a16af1e003427a4ab9e0e30feb5e72eaec38560656fa6dd1daea",
+      "bytes": 2890,
+      "sha256": "b9c434a50494c11a38bd00f2c40016b8810f8183a83e9ec7b3539800919a9aed",
       "disposition": "core-specific",
       "literalDependencies": [
         "mcp-server/core-owned-loss.js"
@@ -2299,32 +2299,51 @@
     },
     {
       "path": "scripts/core-owned-loss-native-smoke.ps1",
-      "bytes": 8508,
-      "sha256": "881c55d4e7341543ebc079b05ea82e4afd303f843123b16194a39f4cbe9cee57",
+      "bytes": 17193,
+      "sha256": "9d837327a88b0516ac706fac4df3b49a3b0b99ac1ac695af1c5732da40afb3d9",
       "disposition": "core-specific",
       "literalDependencies": []
     },
     {
       "path": "scripts/core-owned-loss-native.ps1",
-      "bytes": 20784,
-      "sha256": "90c391bad50eba3de5b5b29aab74ed869f6e5ccb0be37e907989aa98c566a7e7",
+      "bytes": 25504,
+      "sha256": "31e08d2bbc483a04797ad1ccc2044a0940ea0be389bbb87f4a628270a0700a97",
       "disposition": "core-specific",
       "literalDependencies": []
     },
     {
       "path": "scripts/core-owned-loss-smoke.js",
-      "bytes": 19562,
-      "sha256": "b061251e7d9110b31d783b73cbb05d3aca2bee0d93262cffa0f908e29950c2bf",
+      "bytes": 27219,
+      "sha256": "30318e738f5d4c12d834b76ca861376481bb5ed8ad6f1f505c954eb37d0a2660",
       "disposition": "core-specific",
       "literalDependencies": [
         "config/core-runtime-repair-case.json",
         "mcp-server/core-owned-loss-control.js",
+        "mcp-server/core-owned-loss.js",
         "mcp-server/core-runtime-repair.js",
         "mcp-server/owned-runtime-authority.js",
         "mcp-server/owned-runtime-lifecycle.js",
         "mcp-server/owned-runtime-product-lifecycle.js",
         "mcp-server/owned-runtime-win32.js",
+        "mcp-server/review-evidence.js",
         "scripts/core-prestart-recovery-smoke.js"
+      ]
+    },
+    {
+      "path": "scripts/core-owned-loss-stdout-fixture.ps1",
+      "bytes": 6462,
+      "sha256": "345b9e1f98e2d69dc39d29c1f086f644a3b8cb704b9920bb7f24e0a323049f84",
+      "disposition": "core-specific",
+      "literalDependencies": []
+    },
+    {
+      "path": "scripts/core-owned-loss-stdout-smoke.js",
+      "bytes": 4581,
+      "sha256": "e45a8a910f81abb63f2aa9a8fadea409f8a69d66700dbecf767e72deb50864ca",
+      "disposition": "core-specific",
+      "literalDependencies": [
+        "mcp-server/core-owned-loss-native.js",
+        "mcp-server/owned-runtime-win32.js"
       ]
     },
     {
@@ -2652,7 +2671,7 @@
     {
       "path": "scripts/owned-runtime-daemon-helper.ps1",
       "bytes": 124155,
-      "sha256": "fbea0d7946c724fcb0b679af07f636e423f6c1b926797c82be3f04a8871a98c0",
+      "sha256": "e2e220fbe4a8af1ca41b64538c5ca96bd68ae0718a48652d02c3d8f0be23c5ee",
       "disposition": "extracted-or-adapted",
       "sourceSha256": "7453ca5377e1e4eb462069907af9f25e2e2826ec4f458d208ad649e5251cd2ff",
       "literalDependencies": []

@@ -7,7 +7,7 @@ const r1=require("./owned-runtime-lifecycle"),ledger=require("./native-fixture-a
 const product=require("./owned-runtime-product-lifecycle");
 const productReset=require("./owned-runtime-product-session-reset");
 const ROOT=path.resolve(__dirname,".."),SCHEMA="ae-agent.owned-runtime-supervisor.v1",LEGACY="bridge-daemon-migration-v1";
-const POLICY=Object.freeze({executable:"C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe",executableSha256:"3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237",helper:path.resolve(__dirname,"../scripts/owned-runtime-daemon-helper.ps1"),helperSha256:"fbea0d7946c724fcb0b679af07f636e423f6c1b926797c82be3f04a8871a98c0",startupDeadlineMs:600000,drainDeadlineMs:10000,exitDeadlineMs:10000});
+const POLICY=Object.freeze({executable:"C:/Users/Ant/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe",executableSha256:"3602f2bb1a10f2cbab4c36886218a33c1ab3db87290e73b033c46c77147d0237",helper:path.resolve(__dirname,"../scripts/owned-runtime-daemon-helper.ps1"),helperSha256:"e2e220fbe4a8af1ca41b64538c5ca96bd68ae0718a48652d02c3d8f0be23c5ee",startupDeadlineMs:600000,drainDeadlineMs:10000,exitDeadlineMs:10000});
 const same=(a,b)=>r1.canonical(a)===r1.canonical(b),uuid=v=>ledger.UUID.test(v || ""),sha=v=>ledger.SHA.test(v || "");
 function fail(code){throw Object.assign(Error(code),{code});}
 // Public diagnostics contain fixed operation names and numeric OS codes only.

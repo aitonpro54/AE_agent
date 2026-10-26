@@ -516,7 +516,7 @@ function CoreRepairDispatch($row){
  }
  throw 'owned_core_repair_closed_operation_required'
 }
-$lossFunctions=SafeFile (Join-Path $PSScriptRoot 'core-owned-loss-native.ps1');try{if([OwnedDaemonKernel]::Hash($lossFunctions) -cne '90c391bad50eba3de5b5b29aab74ed869f6e5ccb0be37e907989aa98c566a7e7'){throw 'owned_core_loss_import_pin_changed'};$lossFunctions.Position=0;$lossReader=[IO.StreamReader]::new($lossFunctions,[Text.UTF8Encoding]::new($false));$lossCode=$lossReader.ReadToEnd();$lossReader.Dispose()}finally{$lossFunctions.Dispose()};. ([ScriptBlock]::Create($lossCode))
+$lossFunctions=SafeFile (Join-Path $PSScriptRoot 'core-owned-loss-native.ps1');try{if([OwnedDaemonKernel]::Hash($lossFunctions) -cne '31e08d2bbc483a04797ad1ccc2044a0940ea0be389bbb87f4a628270a0700a97'){throw 'owned_core_loss_import_pin_changed'};$lossFunctions.Position=0;$lossReader=[IO.StreamReader]::new($lossFunctions,[Text.UTF8Encoding]::new($false));$lossCode=$lossReader.ReadToEnd();$lossReader.Dispose()}finally{$lossFunctions.Dispose()};. ([ScriptBlock]::Create($lossCode))
 $script:handle=[IntPtr]::Zero;$script:image=$null;$script:locks=@();$script:mode=$null;$script:controllerMutex=$null;$script:controllerOwned=$false
 $script:prestartResumeDispatch=$false;$script:migration=$false;$script:sourceControllerMutex=$null;$script:sourceControllerOwned=$false;$script:migrationRecoveryOnly=$false;$script:migrationHandover=$false
 try{while($null -ne ($line=[Console]::ReadLine())){try{
