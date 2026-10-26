@@ -1,6 +1,8 @@
-# AE Agent Core 4.0.0 — разработка M2a (optional CEP bridge, offline)
+# AE Agent Core 4.0.0 — разработка M2b (project events, offline)
 
 Цель: самостоятельно работающее минимальное ядро Codex → MCP → typed bridge → After Effects и независимо подключаемые рабочие пакеты. Текущий план: `plans/core-4.0.0.md`; `plans/core-migration.md` сохраняет историю исходной базы 3.3.5 и незавершённого cutover.
+
+Текущий срез: `plans/core-4.0.0-m2b-events.md` — private offline-контракт lifecycle/grant и synthetic event simulation. Реальный event source/issuer и live/installed runtime не входят в него; public MCP не получает event injection или issuance authority.
 
 - Работать по-русски, сохранять чужие изменения; один writer на ресурс и один live-контроллер.
 - Typed inspection → deterministic build → server-owned proposal → dry-run → подтверждение по риску → read-back. Private brands, grants, ownership, checkpoint и UNKNOWN/no-replay обязательны.

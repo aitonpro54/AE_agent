@@ -225,15 +225,16 @@ test('[core-control workflow-recovery] A10 actual child crash boundaries durable
     const ledger = new Ledger(path.join(ws.stateDir, 'ledger.ndjson')); assert.equal(ledger.commands().length, point === 'beforeIntent' ? 0 : 1, point); assert.equal(ledger.unresolved().length, ['beforeIntent', 'afterSuccessRecord'].includes(point) ? 0 : 1, point);
     const state = fs.existsSync(aeFile) ? JSON.parse(fs.readFileSync(aeFile, 'utf8')) : initialState();
     const f = cleanup(t, fixture({ workspace: ws, state, transportOptions: { stateFile: aeFile } })); await f.broker.connect();
+    // The synthetic observer died with the child. Persisted AE values/store identity
+    // cannot restore its project-incarnation proof in the replacement observer.
     const task = await f.broker.reconcile({ taskId: 'crash-task' });
     if (point === 'beforeIntent') assert.equal(task.commands.length, 0);
-    else if (point === 'afterIntent' || point === 'afterPhysicalSend') assert.equal(task.commands[0].state, 'UNKNOWN', point);
-    else assert.equal(task.commands[0].state, 'succeeded', point);
+    else if (point === 'afterSuccessRecord') assert.equal(task.commands[0].state, 'succeeded', point);
+    else assert.equal(task.commands[0].state, ledger.commands()[0].state, point);
     assert.ok(f.state.counts.titles <= 1, point); const before = f.state.counts.titles;
-    const proposal = [...f.broker.proposals.values()][0]; f.authority.confirm(proposal.proposalId);
-    if (task.commands[0]?.state === 'UNKNOWN') await assert.rejects(run(f, proposal), code('reconciliation_required'));
-    else assert.equal((await run(f, proposal)).state, 'succeeded');
-    assert.equal(f.state.counts.titles, point === 'beforeIntent' ? 1 : before, point);
+    const proposal = [...f.broker.proposals.values()][0]; assert.throws(() => f.authority.confirm(proposal.proposalId), code('authority_target'));
+    if (f.broker.ledger.unresolved().length) await assert.rejects(run(f, proposal), code('reconciliation_required'));
+    assert.equal(f.state.counts.titles, before, point);
   }
 });
 

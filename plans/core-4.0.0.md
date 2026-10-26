@@ -1,6 +1,6 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
-26 октября 2026. Проектирование завершено commit `1f5b8204ed4c50c3aed175f2709deefdfd7836a7`, offline M1 — `5667b5b8c9d29621cc5136d1abd89f6699ab9ce8`. После нового поручения пользователя «Продолжай» текущий этап — [M2a: optional CEP bridge](core-4.0.0-m2a-bridge.md), включая адресные offline-проверки. Старый cutover handoff используется как описание сохранённого состояния. Установка/публикация, production daemon, подключение живого MCP/CEP/AE и Codeburn в этот блок не входят.
+26 октября 2026. Проектирование завершено commit `1f5b8204ed4c50c3aed175f2709deefdfd7836a7`, offline M1 — `5667b5b8c9d29621cc5136d1abd89f6699ab9ce8`, [M2a](core-4.0.0-m2a-bridge.md) — `81ab980`. Текущий принятый этап — [M2b: offline-контракт событий проекта](core-4.0.0-m2b-events.md). Старый cutover handoff используется как описание сохранённого состояния. Установка/публикация, production daemon, подключение живого MCP/CEP/AE и Codeburn в этот блок не входят.
 
 ## Результат и документы
 
@@ -87,7 +87,9 @@ ACK fix сохраняется как проверенный материал д
 
 M2a offline завершён: новый optional bridge, durable receiver, fixed host dispatcher и original dispatch provenance проверены через actual TCP/VM. Итоговые scoped checks 54/54, boundaries18 PASS; source-only и review coverage limits — в [M2a validation](core-4.0.0-m2a-bridge.md). Producer/issuer/live installation не входят в этот результат; переход к ним требует отдельного актуального scope и shared-resource facts.
 
-После восстановления исходного чата подтверждены чистые `codex/ae-agent-core-4.0.0`/`81ab980` и совпадение с upstream. [Предложение следующего offline-среза](core-4.0.0-next-scope.md) фиксирует открытый выбор: контракт lifecycle/grant на synthetic событиях либо конкретный следующий предметный модуль. Реализация этого нового среза пока не начата; live/cutover ограничения сохраняются.
+После восстановления исходного чата подтверждены чистые `codex/ae-agent-core-4.0.0`/`81ab980` и совпадение с upstream. [Предложение следующего offline-среза](core-4.0.0-next-scope.md) зафиксировано локальным `7a4d2e5`. Пользователь выбрал [M2b: offline-контракт событий проекта](core-4.0.0-m2b-events.md) с проверкой на симуляции. Текущий инженерный блок продолжает 4.0.0 без live/cutover/push.
+
+M2b offline реализован: private lifecycle reducer, exact approval и проверки текущей incarnation перед send и terminal результатами. Разрешённые non-network batches **74/74 PASS**, boundaries18 PASS; review P2 закрыт. Mandatory CEP batch остаётся not-run, catalog-discovery deferred; полной scoped/release-сертификации нет. Детальные Progress/Decision Log/Validation — в [M2b work block](core-4.0.0-m2b-events.md). Production event source/issuer и live-приёмка остаются отдельным scope.
 
 ## Progress
 

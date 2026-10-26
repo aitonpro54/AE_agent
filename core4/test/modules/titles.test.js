@@ -23,7 +23,11 @@ test('[titles-executor-contract] unsupported style API mixed text keys expressio
     const f = await moduleFixture(t, 'titles'); f.state.flags[flag] = true; await assert.rejects(f.snapshot()); assert.equal(f.state.counts.titles, 0);
   }
   const f = await moduleFixture(t, 'titles'); const before = await f.snapshot(); const input = await f.intent({ ...f.target, text: 'After' }, before);
-  for (const patch of [{ layerId: 101 }, { compId: 99 }, { sessionId: 'old-project-incarnation' }, { projectId: 'foreign-project' }]) assert.equal((await f.mutate({ ...input, ...patch })).outcome, 'rejected');
+  for (const patch of [{ layerId: 101 }, { compId: 99 }]) assert.equal((await f.mutate({ ...input, ...patch })).outcome, 'rejected');
+  for (const patch of [{ sessionId: 'old-project-incarnation' }, { projectId: 'foreign-project' }]) {
+    await assert.rejects(f.mutate({ ...input, ...patch }), error => error.code === 'project_incarnation_changed');
+    assert.equal((await f.mutateExecutor({ ...input, ...patch })).outcome, 'rejected');
+  }
   assert.equal(f.state.counts.titles, 0);
 });
 test('[titles-executor-contract] setter mutation then error and protected style change remain unknown', async t => {

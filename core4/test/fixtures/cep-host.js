@@ -4,8 +4,7 @@ const net = require('node:net');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
-const { environment, initialState } = require('./ae');
-const { brandLifecycleBinding } = require('../../core/authority');
+const { environment, initialState, lifecycleFor } = require('./ae');
 const { createReceiver, hash } = require('../../core/receiver-api');
 const { openCompletionStore } = require('../../integrations/cep/completion-store');
 const { createHostDispatcher } = require('../../integrations/cep/host-dispatcher');
@@ -19,6 +18,7 @@ function install(root, moduleIds = ['titles', 'photo-placeholder']) {
   return { reviewedAdmissions, installExecutors: reviewedAdmissions.map(a => ({ moduleId: a.moduleId, operationId: a.operationId, executorHash: a.executorHash, admissionRef: a.admissionRef, source: fs.readFileSync(path.join(root, 'modules', a.moduleId, 'executor.jsx'), 'utf8') })) };
 }
 function vmHost({ state = initialState(), persist = () => {}, mode, delay = 0 } = {}) {
+  const lifecycle = lifecycleFor(state);
   const scripts = [], counts = { evaluate: 0, native: 0 };
   const csInterface = { evalScript(script, callback) {
     scripts.push(script); counts.evaluate++;
@@ -27,7 +27,7 @@ function vmHost({ state = initialState(), persist = () => {}, mode, delay = 0 } 
     if (mode === 'missing') return;
     setTimeout(() => callback(mode === 'malformed' ? 'EvalScript error.' : result), delay);
   } };
-  return { state, counts, scripts, csInterface };
+  return { state, counts, scripts, csInterface, lifecycle };
 }
 async function loopback({ root, directory, state, hostOptions = {}, io, loseReply = () => false, callbackTimeout = 100 } = {}) {
   const host = vmHost({ state, ...hostOptions });
@@ -76,7 +76,7 @@ async function loopback({ root, directory, state, hostOptions = {}, io, loseRepl
     }
     return { receiverStoreIdentity: store.identity, send: frame => request({ method: 'send', frame }), completion: commandId => request({ method: 'completion', commandId }), async disconnect() { socket.destroy(); if (active === socket) active = undefined; } };
   } };
-  const lifecycleProducer = () => brandLifecycleBinding({ kind: 'project-incarnation', lifecycleVerified: true, sessionId: host.state.sessionId, projectId: host.state.projectId, provenance: 'synthetic-VM-only' });
+  const lifecycleProducer = () => host.lifecycle.snapshot().binding;
   return { host, store, dispatcher, channel, lifecycleProducer,
     transport: createTransport({ channel, lifecycleProducer }),
     get wireFrames() { return wireFrames; }, get connects() { return connects; },

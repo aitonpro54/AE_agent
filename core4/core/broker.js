@@ -35,16 +35,21 @@ class Broker {
       if (e.type === 'build') this.builds.set(e.buildId, e.plan);
       if (e.type === 'proposal') this.proposals.set(e.proposalId, e);
     }
+    if (this.authority) for (const proposal of this.proposals.values()) {
+      const plan = this.builds.get(proposal.buildId);
+      if (plan && hash(plan) === proposal.planDigest) this.authority.registerProposal(this.approval(proposal, plan));
+    }
   }
   status() {
-    return { ready: !this.closed, closed: this.closed, pid: process.pid, coreIdentity: this.artifacts.coreIdentity, protocolPin: this.artifacts.protocolPin, connection: this.connected ? 'connected' : 'unavailable', unavailableReason: this.closed ? 'broker_closed' : this.stateLock.error || (this.transport ? null : 'live_transport_not_installed'), synthetic: !!this.authority?.synthetic, ledgerFault: !!this.ledger.corrupt, ownershipFault: this.stateLock.error, unresolved: this.ledger.unresolved().map(c => ({ commandId: c.commandId, taskId: c.taskId, state: c.state, target: c.target })), worker: this.worker.status() };
+    const lifecycleCurrent = validateLifecycleBinding(this.sessionBinding);
+    return { ready: !this.closed, closed: this.closed, pid: process.pid, coreIdentity: this.artifacts.coreIdentity, protocolPin: this.artifacts.protocolPin, connection: this.connected && lifecycleCurrent ? 'connected' : 'unavailable', unavailableReason: this.closed ? 'broker_closed' : this.stateLock.error || (!this.transport ? 'live_transport_not_installed' : !lifecycleCurrent ? 'trusted_project_lifecycle_unavailable' : null), synthetic: !!this.authority?.synthetic, ledgerFault: !!this.ledger.corrupt, ownershipFault: this.stateLock.error, unresolved: this.ledger.unresolved().map(c => ({ commandId: c.commandId, taskId: c.taskId, state: c.state, target: c.target })), worker: this.worker.status() };
   }
   diagnostics() { return { ...this.status(), catalogRevision: this.artifacts.catalog.catalogRevision, catalogError: this.artifacts.catalogError, controllerBusy: this.controllerBusy, resourceDiagnostics: this.resources.diagnostics }; }
   async connect() {
     if (this.closed) return { available: false, reason: 'broker_closed' };
     if (this.stateLock.error) return { available: false, reason: this.stateLock.error };
     if (!this.transport || !this.authority) return { available: false, reason: 'live_transport_not_installed' };
-    if (this.connected) return { available: true, synthetic: !!this.authority.synthetic };
+    if (this.connected) return validateLifecycleBinding(this.sessionBinding) ? { available: true, synthetic: !!this.authority.synthetic } : { available: false, reason: 'trusted_project_lifecycle_unavailable' };
     this.controlPending++;
     try {
     // Every private connection has a new authentication lifetime. In particular a
@@ -85,6 +90,10 @@ class Broker {
   }
   selected(contractId) { const selected = this.contracts.get(contractId); if (!selected) fail('contract_required'); this.artifacts.recheck(selected); return selected; }
   ensureConnection() { if (this.closed) fail('broker_closed'); if (this.stateLock.error) fail(this.stateLock.error); if (!this.connected || !this.transport) fail('live_transport_unavailable'); }
+  lifecycle(target) {
+    if (!validateLifecycleBinding(this.sessionBinding)) fail('trusted_project_lifecycle_unavailable');
+    if (target.sessionId !== this.sessionBinding.sessionId || target.projectId !== this.sessionBinding.projectId) fail('project_incarnation_changed');
+  }
   current(taskId, epoch) { if (this.closed) fail('broker_closed'); const task = this.ledger.task(taskId); if (task.reset || task.epoch !== epoch) fail('stale_task_epoch'); return task; }
   async hook(name, data) { if (this.hooks[name]) await this.hooks[name](data, this); }
   async job(task, method, selected, payload) {
@@ -98,7 +107,7 @@ class Broker {
     this.artifacts.recheck(selected);
     const body = { protocolVersion: 1, controllerId: this.controllerId, channelEpoch: this.channelEpoch, commandId, moduleId: selected.moduleId, operationId: selected.contract.operationId, executorHash: selected.admission.executorHash, phase, payloadHash: hash(canonical(payload)), payload };
     if (expectedDispatch && !sameDispatch(dispatchBinding(body, this.receiverStoreIdentity), expectedDispatch)) fail('dispatch_binding_changed');
-    bounded(body); this.controllerBusy = true;
+    bounded(body); this.lifecycle(payload); this.controllerBusy = true;
     let actual;
     try { actual = Promise.resolve(this.transport.send(encode(body, this.secret))); }
     catch (e) { this.controllerBusy = false; throw e; }
@@ -112,7 +121,7 @@ class Broker {
     pending.catch(() => {});
     if (onDispatched) onDispatched();
     let timer;
-    try { const result = await Promise.race([pending, new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error('transport_timeout'), { code: 'transport_timeout' })), this.transportTimeout); })]); if (this.closed) fail('broker_closed'); return result; }
+    try { const result = await Promise.race([pending, new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error('transport_timeout'), { code: 'transport_timeout' })), this.transportTimeout); })]); if (this.closed) fail('broker_closed'); this.lifecycle(payload); return result; }
     finally { clearTimeout(timer); }
   }
   originalDispatch(selected, phase, payload, commandId) {
@@ -168,8 +177,16 @@ class Broker {
   propose({ buildId }) {
     const plan = this.builds.get(buildId); if (!plan) fail('server_build_required'); this.current(plan.taskId, plan.taskEpoch);
     const proposal = { type: 'proposal', proposalId: id('proposal'), buildId, taskId: plan.taskId, taskEpoch: plan.taskEpoch, planDigest: hash(plan), createdAt: Date.now() };
+    if (!this.authority) fail('private_grant_required');
+    this.authority.registerProposal(this.approval(proposal, plan));
     this.ledger.append(proposal); this.proposals.set(proposal.proposalId, proposal);
     return { proposalId: proposal.proposalId, planRevision: plan.planRevision, taskId: plan.taskId, confirmationRequired: true, effects: plan.steps.map(s => ({ stepId: s.stepId, target: pick(s.desiredInput, s.selected.contract.effectPolicy.targetFields), effect: s.selected.contract.effectPolicy.effect, input: clone(s.input), expectedSnapshotDigest: hash(s.initialEvidence), modulePin: s.selected.pin })), pins: clone(plan.pins) };
+  }
+  approvalStep(step) {
+    return { stepId: step.stepId, moduleId: step.selected.moduleId, operationId: step.selected.contract.operationId, modulePin: step.selected.pin, admissionPin: hash(step.selected.admission), input: clone(step.input), target: pick(step.desiredInput, step.selected.contract.effectPolicy.targetFields), effectPolicy: clone(step.selected.contract.effectPolicy), expectedSnapshotDigest: hash(step.initialEvidence) };
+  }
+  approval(proposal, plan) {
+    return { proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, steps: plan.steps.map(step => this.approvalStep(step)) };
   }
   proposal(proposalId) {
     const proposal = this.proposals.get(proposalId); if (!proposal) fail('server_proposal_required');
@@ -217,7 +234,9 @@ class Broker {
     const { input, before, target } = await this.materialize(plan, step, outputs);
     this.checkFence(target); this.current(plan.taskId, plan.taskEpoch);
     const policy = step.selected.contract.effectPolicy;
-    const grant = this.authority.authorize({ proposalId: proposal.proposalId, input, effectPolicy: clone(policy), target: clone(target), taskId: plan.taskId });
+    const authorization = { proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, ...this.approvalStep(step), input: clone(input), target: clone(target) };
+    this.lifecycle(target);
+    const grant = this.authority.authorize(authorization);
     if (!grant || !grant.owner || (policy.requiresCheckpoint && !grant.checkpointRef) || grant.allowedEffect !== policy.effect) fail('private_grant_required');
     this.resources.authorize(target, policy, grant, before);
     const attemptId = id('attempt'); const commandId = id('command');
@@ -229,9 +248,10 @@ class Broker {
     const originalBinding = this.originalDispatch(step.selected, 'mutate', input, commandId);
     const guard = () => {
       this.current(plan.taskId, plan.taskEpoch); this.artifacts.recheck(step.selected);
+      this.lifecycle(target);
       if (!sameDispatch(this.originalDispatch(step.selected, 'mutate', input, commandId), originalBinding)) fail('dispatch_binding_changed');
       if (canonical(plan.pins.transport || null) !== canonical(this.transportIdentity || null)) fail('transport_pin_changed');
-      const freshGrant = this.authority.authorize({ proposalId: proposal.proposalId, input, effectPolicy: clone(policy), target: clone(target), taskId: plan.taskId });
+      const freshGrant = this.authority.authorize(authorization);
       if (canonical(freshGrant) !== canonical(grant)) fail('private_grant_changed');
       this.resources.authorize(target, policy, freshGrant, before);
     };
@@ -255,8 +275,10 @@ class Broker {
       await this.hook('afterAck', receipt);
       this.current(plan.taskId, plan.taskEpoch);
       await this.hook('beforeReadback', receipt);
+      guard();
       const after = this.validateReadback(step.selected, input, before, await this.send(step.selected, 'verify', input));
       await this.hook('afterReadback', receipt);
+      guard();
       this.ledger.append({ type: 'command', commandId, state: 'succeeded', after });
       await this.hook('afterSuccessRecord', receipt);
       this.engineEvent(plan, { kind: 'succeeded', runId, stepId: step.stepId, attemptId, commandId, inputDigest: step.inputDigest, output: after });
@@ -312,8 +334,11 @@ class Broker {
   }
   async reconcile({ taskId }) {
     this.ensureConnection();
+    if (!validateLifecycleBinding(this.sessionBinding)) fail('trusted_project_lifecycle_unavailable');
     for (const command of this.ledger.commands(taskId).filter(c => !['succeeded', 'rejected'].includes(c.state))) {
+      if (command.target.sessionId !== this.sessionBinding.sessionId || command.target.projectId !== this.sessionBinding.projectId) continue;
       const proof = decode(await this.transport.completion(command.commandId), this.secret);
+      this.lifecycle(command.target);
       exact(proof, ['commandId', 'state', 'response', 'originalBinding']);
       if (proof.commandId !== command.commandId) fail('completion_correlation');
       if (proof.state !== 'completed' || !proof.response) continue;
@@ -328,6 +353,7 @@ class Broker {
       if (response.result.outcome !== 'applied') continue;
       // Matching target values without original command-completion proof never reach this branch.
       const after = this.validateReadback(command.selected, command.input, command.before, await this.send(command.selected, 'verify', command.input));
+      this.lifecycle(command.target);
       this.ledger.append({ type: 'command', commandId: command.commandId, state: 'succeeded', after });
       this.ledger.append({ type: 'engine', workflowId: command.workflowId, event: { kind: 'succeeded', runId: command.runId, stepId: command.stepId, attemptId: command.attemptId, commandId: command.commandId, inputDigest: command.inputDigest, output: after, reconciled: true } });
     }

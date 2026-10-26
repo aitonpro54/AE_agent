@@ -5,10 +5,11 @@
   "description": "Independent broker and explicitly selected reviewed artifacts; no installed runtime",
   "scripts": {
     "start": "node core/stdio.js",
-    "test": "node --test test/core4.test.js test/modules/titles.test.js test/modules/photo-placeholder.test.js",
+    "test": "node --test test/core4.test.js test/modules/titles.test.js test/modules/photo-placeholder.test.js test/lifecycle-simulation.test.js",
     "test:cep": "node --test test/integration/cep-transport.test.js",
     "check:boundaries": "node tools/check-boundaries.js",
     "check:scoped": "node tools/validate-diff.js",
-    "check:release": "node tools/check-boundaries.js && node --test test/core4.test.js test/modules/titles.test.js test/modules/photo-placeholder.test.js test/integration/cep-transport.test.js"
+    "check:release": "node tools/check-boundaries.js && node --test test/core4.test.js test/modules/titles.test.js test/modules/photo-placeholder.test.js test/integration/cep-transport.test.js test/lifecycle-simulation.test.js",
+    "test:lifecycle": "node --test test/lifecycle-simulation.test.js"
   }
 }

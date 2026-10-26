@@ -4,8 +4,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createReceiver } = require('../../core/receiver');
 const { decode } = require('../../protocol/codec');
-const { brandLifecycleBinding } = require('../../core/authority');
+const { createLifecycleSource } = require('../../core/authority');
 const { id } = require('../../protocol/json');
+const sources = new WeakMap();
+function lifecycleFor(state) {
+  if (!sources.has(state)) {
+    const source = createLifecycleSource({ sourceId: id('synthetic-observer'), sourceEpoch: id('synthetic-source-epoch'), synthetic: true });
+    const observed = source.apply({ sourceId: source.snapshot().sourceId, sourceEpoch: source.snapshot().sourceEpoch, sequence: 1, type: 'project_open', projectId: state.projectId });
+    state.sessionId = observed.sessionId; sources.set(state, source);
+  }
+  return sources.get(state);
+}
 function initialState() {
   return { sessionId: 'synthetic-session', projectId: 'C:/fixture/project.aep', photoSourceId: 11, text: 'Before', counts: { photo: 0, titles: 0 }, completed: {}, style: { font: 'ArialMT', fontSize: 32, applyFill: true, fillColor: [1, 1, 1], applyStroke: false, strokeColor: [0, 0, 0], strokeWidth: 0, tracking: 0, baselineShift: 0, horizontalScale: 100, verticalScale: 100, fauxBold: false, fauxItalic: false, justification: 0, leading: 38, autoLeading: false }, transform: { anchor: [0, 0], position: [400, 300], scale: [100, 100], rotation: 0, opacity: 100 }, time: { startTime: 0, inPoint: 0, outPoint: 5, stretch: 100 }, flags: {} };
 }
@@ -40,6 +49,7 @@ function environment(state, persist) {
 }
 function fixtureTransport({ root, state = initialState(), stateFile, beforeEvaluate, afterEvaluate, loseAck = () => false, completionOverride, selectedModules = ['photo-placeholder', 'titles'] } = {}) {
   if (stateFile && fs.existsSync(stateFile)) state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+  const lifecycle = lifecycleFor(state);
   let receiver, channel; let sends = 0;
   const persist = () => {
     if (!stateFile) return; fs.mkdirSync(path.dirname(stateFile), { recursive: true });
@@ -48,8 +58,12 @@ function fixtureTransport({ root, state = initialState(), stateFile, beforeEvalu
   state.receiverStoreIdentity ||= id('synthetic-store'); persist();
   const store = { identity: state.receiverStoreIdentity, has: id => !!state.completed[id], get: id => state.completed[id], set(id, value) { state.completed[id] = value; persist(); } };
   return {
-    get state() { return state; }, get sends() { return sends; }, persist,
-    reopenSamePath() { state.sessionId = state.sessionId + '-reopened'; persist(); },
+    get state() { return state; }, get sends() { return sends; }, persist, lifecycle,
+    projectEvent(type, projectId = state.projectId) {
+      const current = lifecycle.snapshot(); const observed = lifecycle.apply({ sourceId: current.sourceId, sourceEpoch: current.sourceEpoch, sequence: current.sequence + 1, type, ...(projectId ? { projectId } : {}) });
+      state.sessionId = observed.sessionId; state.projectId = projectId; persist(); return observed;
+    },
+    reopenSamePath() { return this.projectEvent('project_open'); },
     async connect(binding) {
       channel = binding;
       const admittedExecutors = selectedModules.map(moduleId => {
@@ -65,7 +79,7 @@ function fixtureTransport({ root, state = initialState(), stateFile, beforeEvalu
         if (afterEvaluate) await afterEvaluate({ state, phase, payload, command, result, persist });
         persist(); return JSON.parse(JSON.stringify(result));
       } });
-      return { receiverStoreIdentity: receiver.receiverStoreIdentity, sessionBinding: brandLifecycleBinding({ kind: 'project-incarnation', lifecycleVerified: true, sessionId: state.sessionId, projectId: state.projectId, provenance: 'synthetic-project-lifecycle' }) };
+      return { receiverStoreIdentity: receiver.receiverStoreIdentity, sessionBinding: lifecycle.snapshot().binding };
     },
     async disconnect() {},
     async send(frame) {
@@ -75,4 +89,4 @@ function fixtureTransport({ root, state = initialState(), stateFile, beforeEvalu
     async completion(commandId) { if (completionOverride) return completionOverride(commandId, channel, receiver); return receiver.completion(commandId); }
   };
 }
-module.exports = { initialState, environment, fixtureTransport };
+module.exports = { initialState, environment, fixtureTransport, lifecycleFor };

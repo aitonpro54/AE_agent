@@ -140,6 +140,13 @@
       "checks": [
         "cep-transport"
       ]
+    },
+    {
+      "prefix": "core4/test/lifecycle-simulation.test.js",
+      "owner": "lifecycle-contract",
+      "checks": [
+        "lifecycle-simulation"
+      ]
     }
   ],
   "contracts": [
@@ -230,7 +237,8 @@
         "titles-executor-contract",
         "photo-owner",
         "photo-executor-contract",
-        "workflow-recovery"
+        "workflow-recovery",
+        "lifecycle-simulation"
       ]
     },
     {
@@ -266,6 +274,34 @@
       "id": "closed-receiver-v2",
       "consumers": [
         "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/core/authority.js",
+      "id": "project-lifecycle-and-approval-v1",
+      "consumers": [
+        "lifecycle-simulation"
+      ]
+    },
+    {
+      "prefix": "core4/core/broker.js",
+      "id": "project-lifecycle-and-approval-v1",
+      "consumers": [
+        "lifecycle-simulation"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/authority.js",
+      "id": "synthetic-exact-approval",
+      "consumers": [
+        "lifecycle-simulation"
+      ]
+    },
+    {
+      "prefix": "core4/test/helpers.js",
+      "id": "lifecycle-fixture-driver",
+      "consumers": [
+        "lifecycle-simulation"
       ]
     }
   ],
@@ -463,6 +499,19 @@
       "test/fixtures/cep-host.js",
       "test/fixtures/cep-crash-child.js",
       "test/integration/cep-transport.test.js"
+    ],
+    "lifecycle-simulation": [
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "integrations/cep/",
+      "config/catalog.json",
+      "config/admissions/",
+      "config/validation-map.json",
+      "tools/",
+      "test/"
     ]
   },
   "checkCommands": {
@@ -495,6 +544,12 @@
       "--test",
       "--test-name-pattern=cep-transport",
       "test/integration/cep-transport.test.js"
+    ],
+    "lifecycle-simulation": [
+      "node",
+      "--test",
+      "--test-name-pattern=lifecycle-simulation",
+      "test/lifecycle-simulation.test.js"
     ]
   },
   "checkProjections": {
@@ -568,6 +623,9 @@
       "kind": "component"
     },
     "cep-transport": {
+      "kind": "integration"
+    },
+    "lifecycle-simulation": {
       "kind": "integration"
     }
   },

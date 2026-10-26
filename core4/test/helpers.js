@@ -5,7 +5,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { Broker } = require('../core/broker');
 const { syntheticAuthority } = require('./fixtures/authority');
-const { initialState, fixtureTransport } = require('./fixtures/ae');
+const { initialState, fixtureTransport, lifecycleFor } = require('./fixtures/ae');
 const SOURCE = path.resolve(__dirname, '..');
 function workspace() {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ae-core4-')); const root = path.join(temp, 'core4');
@@ -13,12 +13,14 @@ function workspace() {
 }
 function seal(root) { return execFileSync(process.execPath, [path.join(root, 'tools/seal.js'), '--all', '--reviewed-source'], { encoding: 'utf8', windowsHide: true }); }
 function fixture(options = {}) {
-  const ws = options.workspace || workspace(); const state = options.state || initialState();
+  const ws = options.workspace || workspace(); let state = options.state || initialState();
   const transport = options.transport || fixtureTransport({ root: ws.root, state, ...options.transportOptions });
-  const authority = syntheticAuthority({ sessionId: state.sessionId, projectId: state.projectId, owner: 'synthetic-fixture-owner', checkpointRef: 'synthetic-checkpoint', effects: ['layer.source', 'layer.text'] });
+  state = transport.state || state;
+  const lifecycle = transport.lifecycle || lifecycleFor(state);
+  const authority = syntheticAuthority({ sessionId: state.sessionId, projectId: state.projectId, lifecycle, owner: 'synthetic-fixture-owner', checkpointRef: 'synthetic-checkpoint:' + state.sessionId, effects: ['layer.source', 'layer.text'] });
   const recordContext = { purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: 'core4-synthetic-fixture', project: { file: state.projectId }, resources: [{ kind: 'project', identity: state.projectId }] };
   const broker = new Broker({ root: ws.root, stateDir: ws.stateDir, trace: options.trace, workerTimeout: options.workerTimeout || 1000, transportTimeout: options.transportTimeout || 1000, privateEmbedding: { authority, transport, hooks: options.hooks || {}, recordContext } });
-  return { ...ws, broker, authority, transport, state: transport.state, close: () => broker.close() };
+  return { ...ws, broker, authority, transport, lifecycle, state: transport.state, close: () => broker.close() };
 }
 function target(f, title = false) { return { sessionId: f.state.sessionId, projectId: f.state.projectId, compId: 1, layerId: title ? 102 : 101 }; }
 async function requestStep(f, moduleId, stepId = moduleId) {
