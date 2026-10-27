@@ -354,3 +354,19 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
 - **Progress:** source/reentry/authority границы проверены; выбор ручного режима подтверждён пользователем. Изолированный прототип реализован единственным writer; root сверил frozen evidence, независимый reviewer дал ACCEPT без открытых P1/P2. Source-only milestone закрыт; actual host-validation остаётся отдельным следующим входом.
 - **Decision Log:** identical same-path replacement может быть принят только новым локальным подтверждением на текущую цель; это не continuity старого проекта. Старые session/grants/checkpoint не получают новую authority из path/IDs или nonce.
 - **Validation:** итоговый manual13/13 и selected routing/docs6/6 PASS; direct boundaries18 и diff PASS. Новый case заменяет проект внутри confirm, A0/B1; прежние12 не суммируются. Команда npm завершилась до запуска script, её успех не заявляется. Полные команды/evidence/coverage gaps — в focused плане; production pins не менялись, live и release не проверялись.
+
+
+### Перенос Argon review workflow на MSI — 27 октября 2026
+
+#### Progress
+
+- Перенесён offline-документ workflow и exact-copy шаблоны в MSI Core; ссылки добавлены в `AGENTS.md` и `README.md`. Подробный provenance/status: [отчёт переноса](../docs/argon-review-msi-transfer.md).
+
+#### Decision Log
+
+- Маршрут указывает на controller `01a17d90-d9dc-7531-a1d7-e50b3f8a501d`, projectId `bc4a1ea4-d52c-47f5-8591-6fc00af37ec0` и существующий ARGON_BrowserUse root. Пример ревью остался в исходном worktree; исторические данные не переносились. Workflow остаётся ручным и не даёт permission на отправку.
+- После переноса пользователь отдельно разрешил ограниченную browser-проверку существующему MSI controller. Chrome extension обнаружен, Gemini открылся; чтение вкладки/screenshot вернули Debugger unattached. Аккаунт и Argon не подтверждены, требуется ручная проверка подключения/запроса доступа в расширении. Прежний URL deny исторический; новый сбой не является новым policy deny. Runtime не проверялся.
+
+#### Validation
+
+- Строгий UTF-8, относительные Markdown-ссылки, exact template SHA-256, route/skill read-back и `git diff --check` PASS. `build_bundle.py --help` прошёл локально с UNC-путём; это не MSI execution. Product tests не запускались (docs-only); MSI runtime/browser acceptance отсутствует; свежий результат browser-проверки сохранён в MSI-STATUS.md проекта ARGON_BrowserUse (prompts/uploads/mode switches/login/grants/settings changes: 0).
