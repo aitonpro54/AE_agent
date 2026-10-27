@@ -69,3 +69,28 @@ Root владеет этим планом, основным планом, AGENTS
 - Root независимо сверил hashes исходников/логов с frozen result: mismatches0. Из59 прежних Core4 файлов изменены только README и validation map; production code, schemas, admissions/catalog и все artifact pins byte-exact неизменны. `before-core4.json`/`root-validation.json` сохраняют сверку. Строгая UTF-8,34 локальные ссылки четырёх изменённых Markdown (missing0) и `git diff --check` PASS. Перед commit повторяется только документальная/staged сверка; tests без нового code diff не повторяются.
 - Независимый `ae_reviewer` проверил frozen пять Core4 files, source/evidence hashes и saved outputs: ACCEPT, открытых P1/P2 нет. После дополнительного case он адресно прочитал только новый test и обновлённые hashes/results, подтвердил сохранение ACCEPT. Reviewer tests/live не запускал. Предварительный `ae_specialist` отдельно принял focused plan по authority/reentry/ownership границам.
 - Отсутствующие actual AE/ownership/checkpoint/issuer/channel/independent verification proofs не заменяются количеством offline tests. Следующий необходимый вход для физического подтверждения выбранного пути — отдельный разрешённый host-validation scope на явно выбранном тестовом AEP и свежий authenticated runtime/shared-lane census; повторять offline suites вместо этих фактов не требуется.
+
+## Подготовка указанного AEP и следующего preflight
+
+27 октября 2026, baseline `3c83085`. Пользователь указал файл `C:/Проекты 21/2026.10.12 - Русский оркестр. Ломаем шаблоны (Мунивер и ШМПушка, Былина)/titr_all folder/titr_01_ame_product_20261015.aep` в ответ на выбор тестовой цели. Новые пользовательские AGENTS сохраняют offline scope; выбор файла не объявляется наблюдением состояния AE.
+
+### Progress
+
+- [x] Файл найден:32001325 bytes, mtimeUTC `2026-10-15T17:29:16.6237679Z`. SHA-256 `9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f`.
+- [x] `ae_operator` подготовил единственную byte-copy в `C:/Users/Ant/Documents/Codex/AE_agent_core/snapshots/core4-host-validation/022dad73-ca31-4013-88fe-bf001ae91011/titr_01_ame_product_20261015.aep`; source hash/size/mtime до и после совпали, copy hash/size совпали. AEP и `preparation.json` игнорируются Git.
+- [x] Root сверил manifest и source seams; fresh tool inventory не содержит AE/bridge-status API. Это отсутствие инструмента в текущем чате, а не доказательство остановки/idle runtime.
+- [x] `ae_architect` отдельно проверил узкий вопрос readiness без lifecycle: новый source wrapper не создаст отсутствующих actual owner фактов. Записан [control-only readiness контракт](../docs/core4-readiness-preflight.md) с конкретным порядком будущего preflight.
+- [ ] Отдельный разрешённый live-preflight действующего authenticated owner; открытия AEP и mutation пока нет.
+
+### Decision Log
+
+- Root владеет документацией и является единственным потенциальным live-контроллером; в этом блоке live-контроля нет. Operator владел только своим ignored copy-каталогом. Architect работал read-only. Чужой commit `3c83085` и его Argon workflow сохранены; передачи/браузер/review через Argon не поручались и не запускались.
+- Control-only чтение queue owner предшествует доказательству incarnation и не требует `Broker.connect`; таким образом устраняется круговая зависимость плана. Это уточнение порядка диагностики, execution gates не ослабляются.
+- Реальный Node↔CEP канал, status-provider общей lane и production issuer пока не установлены. Доступ к copy AEP их не создаёт. Новый пустой Broker/store или `physicalPending=false` нового dispatcher не являются census старого runtime.
+- Следующий конкретный scope — только чтение identities/состояния **существующего** runtime без start/reload/bootstrap/config changes, AE evaluate и открытия AEP. При отсутствии authenticated API результат — точный gap/unobserved, а не запуск fallback. Установка control-only peer требует отдельного последующего installation scope.
+- `fixtureReady=true` в copy manifest означает только byte-preservation. Файл в AE не открывался, assets не копировались, цель comp/layer не угадывалась. Это не checkpoint несохранённых правок и не live proof.
+
+### Validation
+
+- Source/copy SHA-256, размер и source pre/post mtime сверены; `git check-ignore` подтверждает оба ignored artifacts. Manifest: `snapshots/core4-host-validation/022dad73-ca31-4013-88fe-bf001ae91011/preparation.json`.
+- Product code/pins не менялись; native/AE/CEP/API calls0, runtime/config/installed writes0. Строгая UTF-8,42 локальные ссылки трёх изменённых документов (missing0) и `git diff --check` PASS. Root повторно сверил source/copy hashes, результат сохранён в `document-validation.json` рядом с copy manifest. Архитектор read-only проверил новый readiness документ: ACCEPT без material findings; тестов/live-вызовов не выполнял. Offline13/routing6/boundaries18 повторно не запускались для этого документального diff.

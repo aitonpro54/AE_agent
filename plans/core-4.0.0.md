@@ -355,6 +355,12 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
 - **Decision Log:** identical same-path replacement может быть принят только новым локальным подтверждением на текущую цель; это не continuity старого проекта. Старые session/grants/checkpoint не получают новую authority из path/IDs или nonce.
 - **Validation:** итоговый manual13/13 и selected routing/docs6/6 PASS; direct boundaries18 и diff PASS. Новый case заменяет проект внутри confirm, A0/B1; прежние12 не суммируются. Команда npm завершилась до запуска script, её успех не заявляется. Полные команды/evidence/coverage gaps — в focused плане; production pins не менялись, live и release не проверялись.
 
+### Подготовка AEP для host-validation — 27 октября 2026
+
+- **Progress:** пользователь выбрал `titr_01_ame_product_20261015.aep`; создана отдельная ignored byte-copy32001325 bytes с SHA-256 `9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f`. Source metadata/hash до и после совпали. Полные пути и manifest — в [focused плане](core-4.0.0-cep-project-safety.md).
+- **Decision Log:** следующая диагностика владельца очереди не требует project-incarnation; порядок исправлен в [control-only readiness контракте](../docs/core4-readiness-preflight.md). Новая обёртка над synthetic provider не добавляется. Сначала отдельный разрешённый read-only preflight существующего authenticated runtime без запуска/переключения/AE evaluate; затем решение по actual IPC/provisioning и host-проверке. Выбор файла не снимает текущий offline-запрет.
+- **Validation:** copy hash/size совпали, source неизменён; AE/runtime не запускались, code/pins не менялись. UTF-8,42 локальные ссылки и diff PASS; bounded read-only architecture review нового readiness документа — ACCEPT. Evidence в ignored copy-каталоге; прежние offline suites не повторялись.
+
 
 ### Перенос Argon review workflow на MSI — 27 октября 2026
 
