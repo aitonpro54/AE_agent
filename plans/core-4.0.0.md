@@ -323,3 +323,26 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
 - SHA-256 и размер всех377 файлов (включая Git metadata и59 файлов Core4) совпали до/после; differences0. Ветки/refs сохранены; исходный каталог после операции содержит0 элементов.
 - Полные manifests и read-back: `C:/Users/Ant/AppData/Local/Temp/core4-root-relocation-f79d9c7bd7b74471893e60f0a66607f2/` (`before-files.json`, `after-files.json`, `before-git.json`, `relocation.json`).
 - Из нового корня: `git fsck --connectivity-only` PASS, `git diff --check` PASS, строгая UTF-8 проверка обоих изменённых Markdown и28 локальных ссылок PASS. Исполняемые исходники не менялись; повтор полного offline-аудита, CEP/live/release не требуется. AE, установленный runtime, конфигурация и credentials не затрагивались.
+
+### Получение официального SDK — проверка публичного каталога
+
+27 октября 2026, baseline `8ad66b7`. Продолжение после переноса рабочего корня: адресно проверить официальный источник SDK, необходимый для шага1 native capability decision. Root — единственный writer; `ae_scout` проверял только публичные официальные источники. Локальный поиск SDK и прежние VM/CEP-проверки не повторялись.
+
+#### Progress
+
+- [x] Официальная [документация Developer Console](https://developer.adobe.com/developer-console/docs/guides/apis-and-services) подтверждает каталог SDK в Downloads и выбор конфигурации пакета. Публичная инструкция не содержит version-bound headers или пакета для AE26.2.
+- [x] По ранее сохранённому официальному frontend уточнён фактический маршрут: `/console/graphql`, операция чтения `GetSdks`. Выполнен запрос каталога без пользовательских credentials: GET вернул HTML оболочки (`200`, `text/html`,2152 bytes); POST с GraphQL **query**, соответствующий клиентскому способу доставки, вернул JSON `403`, `ErrMissingOauthToken`, `error_code:403010`, `Oauth token is missing`. Ни один ответ не содержит каталога или SDK.
+- [x] Зафиксирован конкретный недостающий вход: официальный SDK-пакет/headers с версией и указанием совместимости с AE26.2, полученный через доступ пользователя к [Adobe Developer Console / After Effects](https://developer.adobe.com/console/servicesandapis/ae).
+- [ ] После получения пакета проверить его происхождение, версию/совместимость и только нужные project/registration/utility suites; затем принять native capability decision по ранее записанным критериям.
+
+#### Decision Log
+
+- Отсутствие OAuth token относится к этим запросам без аутентификации. Это не отказ аккаунту пользователя, не доказательство отсутствия лицензии и не подтверждение необходимости принять новые условия. Состояние существующего browser login и Developer Terms остаётся **unobserved**.
+- После `403` новые варианты доступа не пробовались. Cookies/tokens не читались и не переносились; login, принятие условий, получение download link, загрузка SDK, установка и browser control не выполнялись. Старый остановленный Brave/SaveAs и дополнительный сетевой probe не повторялись.
+- Следующее необходимое действие пользователя — получить официальный C++ SDK из указанного каталога и сообщить путь к архиву или распакованной папке. Предпочтителен пакет для26.2; если доступна только другая версия, её применимость к установленному host сначала проверяется по документации пакета. Архив следует оставить вне Git-репозитория; установка plug-in для source-only исследования не требуется.
+- Само наличие SDK не доказывает нужную гарантию. Проверка должна установить invalidation/reuse `AEGP_ProjectH` либо другой host-owned capability при new/open/revert/replacement, покрытие ручных/внешних переходов и порядок guard→target lookup→setter. Если это не документировано, фиксируется точный пробел для официального уточнения; synthetic issuer и `live_transport_not_installed` сохраняются.
+
+#### Validation
+
+- Evidence: `C:/Users/Ant/AppData/Local/Temp/core4-sdk-public-catalog-91f8c1900e5e418dbfe489d2bf1d19c0/`: `request.json` и `catalog-response.txt` для GET, `post-request.json` и `catalog-post-response.txt` для POST. Метаданные содержат время UTC, operation/method/status/content type; account credentials отсутствуют. SHA-256 JSON-ответа Adobe: `73f5353179ac1a77a2ccebf7683501c7b85742c70f31bd24d4dcf768758249f8`.
+- Native AE calls0; SDK downloads0; installed/config/runtime writes0. Diff ограничен этим планом; код Core4 и artifact pins не менялись. Строгая UTF-8 проверка,28 локальных ссылок (missing0) и `git diff --check` PASS; результат сохранён в `validation.json` рядом с evidence. Продуктовые offline/live/release suites для документального diff не запускались.
