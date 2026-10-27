@@ -107,3 +107,20 @@ git diff --check
 - Остальные57 файлов Core4, включая production code и все pins, побайтно совпадают с `79ea9d5`; seal не запускался. Hash test file: `11acc54cd72d2e18a7529c13329c8022297f2d31811e69e9711be95aec111162`; child: `f48ee7f6c7642b96101a27608c8d783d4485aa38f67cc122641cbdcfa9d7404c`. Нового production defect в проверенном сценарии не выявлено; production не исправлялся.
 - Scope evidence — Node VM/isolated loopback/process crash. Реальные AE/CSInterface/installed CEP, power-loss/disk-controller, production lifecycle и live proof не проверены. Внешних отправок, изменений credentials/config/общего runtime state, push и merge нет; `releaseCertified:false`.
 - Closing: все59 staged Core4 blobs совпали с final manifest по raw SHA-256. UTF-8 двух плановых документов и18 локальных ссылок проверены, working/staged diff checks PASS. Локальный commit фиксирует только два test-файла и дополнения этих двух существующих плановых документов; нового плана/этапа нет.
+
+### Полный CEP-прогон после исправления B6
+
+27 октября 2026 пользователь явно поручил выполнить весь CEP-набор без AE, push и merge. База: чистый `29f1bfbb2975f53a711ade6e4420042680513f85`, ветка `codex/ae-agent-core-4.0.0`. Готовый offline-прогон выполнен `ae_operator`, root сверил raw TAP/summary и записал результат в эту существующую Validation. Production-код не менялся, нового плана/этапа нет.
+
+Точная команда из корня worktree, **без фильтров и пропусков**:
+
+```powershell
+node --test --test-reporter=tap core4/test/integration/cep-transport.test.js
+```
+
+- Результат: **15/15 PASS**, exit0, fail0, skipped0, cancelled0, todo0. Оба B6 включены. Пробел whole mandatory `cep-transport` для этой closure **закрыт**; прежние partial13 и targeted2 не суммируются с этим полным прогоном.
+- Current evidence key: `c35763174c1a1e74936b9f850876011aa2bac76b3dd0a1e8a236961d9691e871`; read-only selection выбрала `cep-transport`. Прогон выполнен один раз, повторного калибровочного аудита и других suites не было.
+- Evidence directory: `C:/Users/Ant/AppData/Local/Temp/core4-full-cep-20261027T074942960Z-d3bb354e/`. Raw stdout: `raw-stdout.tap.txt`, stderr: `raw-stderr.txt`, результаты: `summary.json`, selection: `selection.json`, manifest: `frozen-manifest.json`, SHA-снимки: `before-hashes.json`/`after-hashes.json`.
+- SHA-256 raw TAP: `6b6f5fa4f3d468d1e3fcc7e4817db5d63f3eafe05241f73d27e8d698ae7926f8`; summary: `a949806f2bb51fd6f6a1a7ec15909176aa22a11e77846a3680303149ab570b14`; frozen manifest: `2e4c5a39d2a481a8ebf28d4229776acd68518cb1111374a8a4dc59661814722c`.
+- После run HEAD/ветка/status сохранились, все59 tracked Core4 файлов побайтно совпали с baseline. Дефектов рабочего кода этот прогон не выявил; source/seal/config/credentials/общий runtime state не менялись.
+- Это full **offline CEP check**, а не `check:release` и не live acceptance. Deferred lifecycle/catalog evidence этим прогоном не сертифицируется; реальные AE/CSInterface/installed CEP, production lifecycle/issuer, Windows power-loss и live proof не проверены. AE, внешних отправок, push и merge нет; `releaseCertified:false` сохраняется.

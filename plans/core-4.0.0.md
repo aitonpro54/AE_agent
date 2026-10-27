@@ -95,6 +95,8 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 В последующем разрешённом targeted запуске оба ранее исключённых B6 прошли **2/2** после test-only исправления setup/child continuity. Production code и pins не менялись, CAS/assertions сохранены. Подробные baseline/final raw logs, команда и ограничения — в дополнении B6 существующей [Validation H1–H4](core-4.0.0-audit-repairs.md); весь CEP batch заново не сертифицирован.
 
+По следующему явному поручению пользователя на чистом `29f1bfb` выполнен **весь CEP-набор: 15/15 PASS**, skipped/cancelled/todo0, оба B6 включены. Пробел whole CEP check для текущей closure закрыт; все59 файлов Core4 неизменны. Полные raw logs/evidence key — в той же [Validation](core-4.0.0-audit-repairs.md). Это offline CEP evidence, без release/live certification, AE, push или merge.
+
 ## Progress
 
 - [x] Прочитаны start prompt, текущие AGENTS/README, адресный handoff и Git checkpoints; старый launch маршрут не возобновлялся.
