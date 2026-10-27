@@ -304,3 +304,22 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
 - **Decision Log:** [официальный SDK route](https://developer.adobe.com/console/servicesandapis/ae) дополнительно прочитан как публичные HTML и указанные в нём frontend JS-файлы, без исполнения. Frontend содержит получение SDK catalog/download link и отдельный account/Developer Terms flow. Account/terms state пользователя **unobserved**; никакие GraphQL requests, auth, принятие условий, выдача download link, скачивание SDK или установка не выполнялись. Статический source не принят за отказ доступа или требование заново принять уже принятые условия. Старый запрещённый Brave/SaveAs не затрагивался.
 - **Validation:** evidence — `C:/Users/Ant/AppData/Local/Temp/core4-sdk-locator-baf097e820b24767bffcc0e4577e812e/census.json`; рядом сохранены public frontend texts и пустой `documents-name-search.stderr.txt`. Native AE calls0; installed/config writes0. Все59 Core4 файлов совпали с прежним source manifest; UTF-8,28 локальных ссылок и `git diff --check` PASS, результаты в `validation.json`. Offline tests/seal/release не повторялись — source не менялся.
 - **Продолжение:** наличие локального SDK теперь не предполагается. Для source-реализации по-прежнему нужен официальный version-bound SDK/API contract; уже найденные build tools можно использовать только в последующем конкретном source/build scope. Live/installed admission остаётся закрытым, производственный контракт не ослабляется.
+
+### Перенос в постоянный рабочий каталог — 27 октября 2026
+
+#### Progress
+
+- По прямому поручению пользователя репозиторий перенесён из `C:/Users/Ant/Documents/Codex/AI Coverage Agent/AI Agent Core` в `C:/Users/Ant/Documents/Codex/AE_agent_core`, включая собственный `.git` и все локальные commits. Исходная папка пуста; дальнейшая работа Core ведётся только из нового корня.
+- До переноса: чистая ветка `codex/ae-agent-core-4.0.0`, HEAD `83f1310471d0b3348db3659485475d6c96e20438`. Сразу после переноса HEAD, refs и чистое рабочее дерево совпали с исходными.
+- Новый корень закреплён в `AGENTS.md`. Изменения этого блока ограничены инструкциями и этой записью плана; продуктовый код не изменён.
+
+#### Decision Log
+
+- Исполнитель — root: единый последовательный блок переноса и проверки сохранности, без независимой инженерной подзадачи для делегирования. Перенесены дочерние элементы обычным `Move-Item -LiteralPath`; это позволило сохранить открытый исходный каталог без переименования и остановки чужих процессов.
+- Исторические evidence, pinned paths и прежние runtime/cutover records не переписываются. Перенос не является установкой, cutover или выдачей новых grants; следующий продуктовый шаг остаётся прежним source-only исследованием официального SDK/API-контракта.
+
+#### Validation
+
+- SHA-256 и размер всех377 файлов (включая Git metadata и59 файлов Core4) совпали до/после; differences0. Ветки/refs сохранены; исходный каталог после операции содержит0 элементов.
+- Полные manifests и read-back: `C:/Users/Ant/AppData/Local/Temp/core4-root-relocation-f79d9c7bd7b74471893e60f0a66607f2/` (`before-files.json`, `after-files.json`, `before-git.json`, `relocation.json`).
+- Из нового корня: `git fsck --connectivity-only` PASS, `git diff --check` PASS, строгая UTF-8 проверка обоих изменённых Markdown и28 локальных ссылок PASS. Исполняемые исходники не менялись; повтор полного offline-аудита, CEP/live/release не требуется. AE, установленный runtime, конфигурация и credentials не затрагивались.

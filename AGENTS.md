@@ -1,5 +1,16 @@
 # AE Agent Core 4.0.0 — разработка M2b (project events, offline)
 
+## Рабочий каталог
+
+С 27 октября 2026 по поручению пользователя единственный рабочий корень Core —
+`C:/Users/Ant/Documents/Codex/AE_agent_core`. Все дальнейшие чтения, изменения,
+проверки и команды Git для Core выполнять отсюда. Прежний каталог
+`C:/Users/Ant/Documents/Codex/AI Coverage Agent/AI Agent Core` освобождён и больше
+не используется. Исторические пути в evidence и планах сохраняют provenance;
+перенос исходников не переключает установленный MCP/CEP или runtime authority.
+
+## Текущий scope и правила
+
 Цель: самостоятельно работающее минимальное ядро Codex → MCP → typed bridge → After Effects и независимо подключаемые рабочие пакеты. Текущий план: `plans/core-4.0.0.md`; `plans/core-migration.md` сохраняет историю исходной базы 3.3.5 и незавершённого cutover.
 
 Текущий срез: `plans/core-4.0.0-m2b-events.md` — private offline-контракт lifecycle/grant и synthetic event simulation. Реальный event source/issuer и live/installed runtime не входят в него; public MCP не получает event injection или issuance authority.
