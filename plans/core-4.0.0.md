@@ -1,6 +1,6 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
-26 октября 2026. Проектирование завершено commit `1f5b8204ed4c50c3aed175f2709deefdfd7836a7`, offline M1 — `5667b5b8c9d29621cc5136d1abd89f6699ab9ce8`, [M2a](core-4.0.0-m2a-bridge.md) — `81ab980`. Текущий принятый этап — [M2b: offline-контракт событий проекта](core-4.0.0-m2b-events.md). Старый cutover handoff используется как описание сохранённого состояния. Установка/публикация, production daemon, подключение живого MCP/CEP/AE и Codeburn в этот блок не входят.
+26 октября 2026. Проектирование завершено commit `1f5b8204ed4c50c3aed175f2709deefdfd7836a7`, offline M1 — `5667b5b8c9d29621cc5136d1abd89f6699ab9ce8`, [M2a](core-4.0.0-m2a-bridge.md) — `81ab980`. Принятый offline-контракт — [M2b](core-4.0.0-m2b-events.md). 27 октября начата подготовка минимального реального среза на MSI: bounded read-only readiness и план приведены в конце этого документа. Старый cutover handoff используется как описание сохранённого состояния. Текущий блок не запускает installation/cutover, production daemon, живые MCP/CEP/AE-команды или Codeburn.
 
 ## Результат и документы
 
@@ -177,3 +177,57 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 - Closing representation check: все 45 staged Core4 файлов byte-exact совпадают с Git blobs, pin не изменился. Проверены 9 Markdown документов и 23 локальные ссылки; missing targets/ошибок UTF-8 нет. `git diff --check` и `git diff --cached --check` PASS. Старый основной checkout и repair сохраняются без рабочего diff.
 
 Все проверки изолированы: native/live AE calls 0. Production CEP transport, project-lifecycle/grant issuer, actual style round-trip и актуальный shared-resource census **не подключены и не приняты**. Default connect возвращает unavailable; synthetic authority доступна только explicit private fixture embedding. Это завершение инженерного offline M1, не выпуск 4.0.0 и не разрешение live cutover. M2/M3/M4 остаются будущими блоками по своему scope.
+
+## Подготовка минимального реального среза — readiness на MSI
+
+27 октября 2026. Поручение: подготовить Core4 → AE на отдельном тестовом AEP; первый обозримый блок — свежие read-only факты, ограниченная архитектура и, если доказан контракт подключения, source-реализация. Baseline: чистый `0ffd28432a9af4114d0d5e8dcd15d8bc5fa4fc30`, ветка `codex/ae-agent-core-4.0.0`, origin `https://github.com/aitonpro54/AE_agent.git`. Рабочий root: `C:/Users/Ant/Documents/Codex/AI Coverage Agent/AI Agent Core`. Версия остаётся 4.0.
+
+### Progress
+
+- [x] HEAD, ветка, origin и чистота сверены; прочитаны AGENTS, README, основной план, M2b и H1–H4/B6 Validation.
+- [x] Снят ограниченный OS/installed snapshot без credentials, конфигурационных изменений, подключения к AE или запуска служб.
+- [x] `ae_architect` выполнил bounded read-only анализ private seams. Root — единственный writer и AE/CEP/UI-контроллер; агент не управлял runtime и не менял файлы.
+- [x] Записаны разрывы, последовательный план и критерии go/no-go. Это завершённый readiness-блок; production source/live-приёмка не заявляются.
+- [ ] Подтвердить native capability contract для project-incarnation в момент исполнения; затем реализовать выбранный private канал, production issuer и shared-lane admission по шагам ниже.
+- [ ] Получить свежий authenticated runtime census, конкретный тестовый AEP и server-owned typed plan до живых проверок.
+
+### Проверенные факты и непроверенные состояния
+
+| Область | Наблюдение | Практический предел |
+| --- | --- | --- |
+| AE | PID4312, `C:/Program Files/Adobe/Adobe After Effects 2026/Support Files/AfterFX.exe`; есть CEPHtmlEngine children | Не доказывает готовность API или identity открытого AEP; проект не читался и не менялся |
+| Installed CEP | `com.codex.aemcpbridge`, manifest version3.3.3; 6 из 8 выбранных assets отличаются от legacy `cep-panel/` этого checkout; совпали guard и CSInterface | Это сравнение bytes двух копий, не Core4 adoption и не оценка совместимости по номеру версии. Ничего не публиковалось/не reload-илось |
+| OS listeners | Успешный `Get-NetTCPConnection -State Listen`: среди наблюдавшихся node PID listeners не найдены | Одномоментный OS snapshot; не доказательство idle, отсутствия daemon/отправки или terminal exit |
+| Target state | В текущем checkout нет `.codex-runtime` и `logs` | Состояние старых копий и общих ресурсов этим не установлено; чужие dirty files не читались/не менялись |
+| Typed runtime census | В доступном каталоге tools нет bridge status/project tools; authenticated pending/inflight/edit-session/UNKNOWN/shared-lane census не получен | Все эти состояния **unobserved**, а не0/idle. Live admission закрыт |
+| Core4 | Default `Broker.connect` возвращает `live_transport_not_installed`; stdio не передаёт private embedding | Даже исправно установленная старая CEP-панель не подключает новый Core автоматически |
+
+Сохранённый full CEP15/15 на MSI, targeted B6 на новом пути и совпадение59 файлов из передачи переиспользуются как историческое offline evidence. Повторный аудит или full CEP suite в этом документальном блоке не выполнялись.
+
+### Decision Log
+
+- **Source GO: только после подтверждения физического lifecycle-контракта; live сейчас NO-GO.** [Private authority](../core4/core/authority.js) выпускает только явно synthetic lifecycle. `validateLifecycleBinding` проверяет private текущий объект; JSON, `synthetic:false`, path/dirty/revision, PID, store/channel epoch и `AE_CORE_SESSION_ID` из payload не могут создать production authority.
+- [Broker](../core4/core/broker.js) проверяет lifecycle перед transport send; [actual JSX](../core4/modules/titles/executor.jsx) сверяет `AE_CORE_SESSION_ID` и exact target. Межпроцессная доставка может задержать физическое исполнение. Production producer обязан доказать актуальность incarnation непосредственно на AE execution boundary, включая ручные/внешние same-path new/open/revert/replacement. Событие, доставленное в CEP после смены проекта, само по себе эту границу не закрывает. Наличие подходящего native hook/API здесь **не установлено**.
+- [Transport](../core4/integrations/cep/transport.js) принимает private channel, но реальная stdio Node ↔ CEP renderer доставка отсутствует; текущая TCP-реализация находится только в [synthetic fixture](../core4/test/fixtures/cep-host.js). Host dispatcher, receiver и durable completion store уже есть. Новая in-process обёртка над ними сейчас не решила бы IPC, lifecycle или shared-lane gap, поэтому production-код и pins в этом блоке не меняются.
+- Core4 state lock и resource ledger не являются actual shared-lane ownership старого runtime/AE. Новый каталог/UUID не отменяет pending/UNKNOWN и не снимает resource fences. Старый cutover runbook не исполняется; credentials, grants и runtime state не переносятся.
+- Минимальная первая операция — **titles-only**: один существующий статичный single-line text layer в отдельном сохранённом тестовом AEP. Photo/mixed workflow добавляется после доказанного titles-path; отдельный test AEP не отменяет общую физическую очередь. Текущий рабочий AEP не является тестовой целью.
+
+### Последовательный план и приёмка
+
+| Шаг | Конкретный scope | Проверяемое условие завершения |
+| --- | --- | --- |
+| 1. Native capability decision, source-only | Определить реальный источник new/open/revert/replacement и способ проверки incarnation **в AE до target lookup/setter**; записать API, lifetime, authentication, coverage ручных переходов и потери observer. Не выполнять native вызовы/установку для этого исследования | Рассмотрена задержка send→evaluate и same-path/same-IDs replacement. Если гарантии недоступны, зафиксирован конкретный gap; connect остаётся unavailable. Polling/path/hash не объявлены observer |
+| 2. Private production boundary, source-only | После шага1 выбрать explicit Node↔CEP IPC с подтверждённым runtime обеих сторон; связать channel/controller/command/store/pinned executor с private producer. Проработать actual shared-lane owner/census provider до разрешения первого send; UI/службы не стартовать | Reviewable API без discovery/fallback/raw ingress; один owner, same-store completion, loss/timeout/disconnect сохраняют UNKNOWN/no-replay. Private producer не является public event-injection tool. Synthetic issuer не переименован в production |
+| 3. Issuer и execution admission, source-only | Сервер регистрирует exact proposal/step/target/baseline/pins; реальное подтверждение пользователя связывается с этой записью. Resource/checkpoint и held shared-lane проверяются снова на границе отправки/исполнения | Forged/stale/revoked grants и потеря lifecycle/ownership блокируют setter. После physical send отказ не доказывает no-effect; между durable intent и send definite rejection допустим только при доказанном срабатывании guard до отправки. Есть scoped regression на обе стороны физической границы и независимый read-back; confirmation недоступен public MCP как Boolean |
+| 4. Fresh live readiness | Единственный контроллер получает authenticated pending/inflight/active-edit/UNKNOWN/resource census и actual ownership. Затем готовится отдельный тестовый AEP и адресная загрузка только reviewed компонентов в отдельно определённом installation scope | Exact source/runtime/installed identities, protocol/capability match и disposition каждого влияющего fence получены свежими. Missing/denied/unknown не превращены в пустой census. Без этого нет physical inspect, bootstrap или замены открытого AEP |
+| 5. Read-only AE proof | На явно выбранном test AEP проверить actual JSON/API capabilities, session/project/comp/layer identities, titles snapshot и перечисленные style fields через новый typed путь | Реальный correlated receiver result на тех же pins/store/epoch; один bounded запрос, без raw fallback и повторения timeout. Unsupported/undefined/mixed styles остаются отказом; это read-only evidence, ещё не mutation PASS |
+| 6. Одна typed mutation | Зафиксировать exact test AEP/compId/layerId/session/revision/oldText/newText, checkpoint и scope; `inspect → build → server proposal → dry-run → confirmation → run → independent verify` | Одна исходная mutate-команда с correlated durable completion, без replay; единственный вызов setter подтверждается source-контрактом executor. Изменён только одобренный Source Text, перечисленные protected поля совпали. Fresh server grants и подтверждение по риску получены **до** AE-изменения. Timeout/UNKNOWN не replay. Save/reopen/destructive/raw требуют собственных manual gates и сюда не входят |
+
+Пока не определены test AEP и actual target IDs/revision, строка шага6 — приёмочный контракт будущего server-owned плана, **не исполнимый план** и не выданное подтверждение. Целевые файлы для будущей source-реализации выбираются после шага1: private authority/receiver API, выбранная optional integration и её consumers; Core не импортирует старый bridge/adapter. Новый optional artifact получает собственный pin, реальные dependency routes и адресные checks. Нельзя ослаблять validation map, чтобы скрыть затронутого потребителя.
+
+### Validation и продолжение
+
+- Read-only evidence: `C:/Users/Ant/AppData/Local/Temp/core4-msi-readiness-fdec7cd95c324a70b464091d18ea87c3/readiness.json`, SHA-256 `b42adc99ee2daed5b543a9beef7757c64c5fa6c27c8ba55bd5e950d7f0f92956`; `core4-before.json` содержит59 hashes. OS/installed snapshot имеет timestamp и не выдаёт runtime authority.
+- Результат этого блока — документация и read-only readiness. Native AE calls0; нет physical project reads/mutations, browser/Argon/Codeburn, production services/factories, установки/reload/cutover, config/credential/state edits, push/merge. Старый `AE_agent` и stage-копия не затрагивались.
+- Closing checks: UTF-8 и22 локальные ссылки изменённого Markdown PASS, `git diff --check` PASS; все59 Core4 файлов совпали с before snapshot. Результат сохранён в `validation.json` рядом с readiness. Тот же read-only архитектор выполнил bounded review плана: уточнены intent/send rejection и границы доказательства единственного setter; OS facts/hashes им независимо не проверялись, runtime/тесты не запускались. Исполняемые файлы не меняются, поэтому offline suites/seal/release повторно не требуются; `releaseCertified:false`, live PASS отсутствует.
+- Следующий рекомендуемый шаг: **шаг1, source-only native capability decision**. К implementation канала переходить по доказанному контракту, не по отсутствию ошибок у старой панели. Root сохраняет ownership; продолжение остаётся в текущем чате, новый handoff/chat не требуется.
