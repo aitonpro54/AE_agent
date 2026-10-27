@@ -188,6 +188,7 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 - [x] Снят ограниченный OS/installed snapshot без credentials, конфигурационных изменений, подключения к AE или запуска служб.
 - [x] `ae_architect` выполнил bounded read-only анализ private seams. Root — единственный writer и AE/CEP/UI-контроллер; агент не управлял runtime и не менял файлы.
 - [x] Записаны разрывы, последовательный план и критерии go/no-go. Это завершённый readiness-блок; production source/live-приёмка не заявляются.
+- [x] Отдельным source-only блоком проверены опубликованные API-материалы и queued-execution контрмодель:11/11 VM-сценариев. Решение — native capability остаётся **не доказана**, подробности ниже; отсутствие API не утверждается.
 - [ ] Подтвердить native capability contract для project-incarnation в момент исполнения; затем реализовать выбранный private канал, production issuer и shared-lane admission по шагам ниже.
 - [ ] Получить свежий authenticated runtime census, конкретный тестовый AEP и server-owned typed plan до живых проверок.
 
@@ -230,4 +231,65 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 - Read-only evidence: `C:/Users/Ant/AppData/Local/Temp/core4-msi-readiness-fdec7cd95c324a70b464091d18ea87c3/readiness.json`, SHA-256 `b42adc99ee2daed5b543a9beef7757c64c5fa6c27c8ba55bd5e950d7f0f92956`; `core4-before.json` содержит59 hashes. OS/installed snapshot имеет timestamp и не выдаёт runtime authority.
 - Результат этого блока — документация и read-only readiness. Native AE calls0; нет physical project reads/mutations, browser/Argon/Codeburn, production services/factories, установки/reload/cutover, config/credential/state edits, push/merge. Старый `AE_agent` и stage-копия не затрагивались.
 - Closing checks: UTF-8 и22 локальные ссылки изменённого Markdown PASS, `git diff --check` PASS; все59 Core4 файлов совпали с before snapshot. Результат сохранён в `validation.json` рядом с readiness. Тот же read-only архитектор выполнил bounded review плана: уточнены intent/send rejection и границы доказательства единственного setter; OS facts/hashes им независимо не проверялись, runtime/тесты не запускались. Исполняемые файлы не меняются, поэтому offline suites/seal/release повторно не требуются; `releaseCertified:false`, live PASS отсутствует.
-- Следующий рекомендуемый шаг: **шаг1, source-only native capability decision**. К implementation канала переходить по доказанному контракту, не по отсутствию ошибок у старой панели. Root сохраняет ownership; продолжение остаётся в текущем чате, новый handoff/chat не требуется.
+- На закрытии readiness следующим шагом был **source-only native capability decision**; результат последующего поручения записан ниже. К implementation канала переходить по доказанному контракту, не по отсутствию ошибок у старой панели. Root сохраняет ownership; продолжение остаётся в текущем чате, новый handoff/chat не требуется.
+
+### Native lifecycle API — source-only проверка
+
+27 октября 2026 пользователь поручил проверить same-path open/revert и смену проекта между отправкой и исполнением; AE и установленный runtime исключены. База — чистый `5c0cb6d520a987d657c0dae63bb24e95fd653ed6`. Root владеет документацией и изолированным diagnostic probe; тот же `ae_architect` адресно анализирует Core4 и читает evidence без записи, запусков и веб-исследования.
+
+#### Progress
+
+- [x] Проверены доступные исходники Core4, публичные материалы Adobe CEP/UXP и маршрут получения C++ SDK. В репозитории нет C++ SDK headers/native implementation; bounded поиск SDK-файлов в Downloads и SDK-каталогов верхнего уровня Documents ничего не дал. Это не полный поиск по компьютеру.
+- [x] Локализована граница send→native execution; прежний callback delay не признан проверкой очереди перед исполнением.
+- [x] Выполнена отдельная условная VM-матрица с actual Broker/worker/transport/receiver/dispatcher/titles JSX и durable store; raw TAP и воспроизводимый probe сохранены вне runtime/репозитория.
+- [x] Записано решение: **доказательства production capability недостаточно**. Source-only исследование и контрпример завершены; реализация безопасного native producer и live GO из этого не следуют.
+- [ ] Получить официальный version-bound C++ SDK/API-контракт, применимый к AE26.2, и проверить точную гарантию identity/invalidation/ordering. Не повторять уже завершённый broad поиск или offline-аудит вместо этого входа.
+
+#### Decision Log: что подтверждено источниками
+
+| Источник | Проверенный факт | Вывод для этого проекта |
+| --- | --- | --- |
+| [Adobe CEP12 Cookbook](https://github.com/Adobe-CEP/CEP-Resources/blob/ab5e4e3e53a42fad08e1225a22a991bb1ffe73f6/CEP_12.x/Documentation/CEP%2012%20HTML%20Extension%20Cookbook.md), разделы Standard Events / ExtendScript | В таблице document events нет колонки AEFT; исполнение script и dispatch CEP events описаны на main thread host | Таблица не предоставляет нужного AE lifecycle-контракта. Из неё нельзя заключить, что AE26.2 вообще не имеет иных events; доставка уведомления не объявляется синхронной защитой queued mutation |
+| [Adobe CSInterface12](https://github.com/Adobe-CEP/CEP-Resources/blob/ab5e4e3e53a42fad08e1225a22a991bb1ffe73f6/CEP_12.x/CSInterface.js), строки612–619 | `evalScript(script, callback)` делегирует вызов `window.__adobe_cep__.evalScript`; JS-обёртка не проверяет project incarnation | Node preflight не становится atomic guard native lookup/setter. Точный native scheduling/lifetime на AE26.2 этим source не установлен |
+| [Официальный Adobe UXP Project](https://developer.adobe.com/after-effects/uxp/after-effects-api/project) | Опубликованный Project API помечен Min Version27.0; `telemetryGuid` описан как stable project identifier | Это не подтверждение доступности на AE26.2 и не обещание fresh incarnation при каждом open/revert. Host не обновлять ради проверки |
+| [Официальная точка входа C++ SDK](https://developer.adobe.com/after-effects/) → Get the SDKs | Ссылка ведёт в Developer Console; статический ответ — Loading, version-bound пакет/headers не получены | Auth/условия/доступ за пользователя не подтверждались. Нельзя объявить полный аудит актуального SDK или отсутствие нужного native API |
+
+Версия опубликованных CEP sources закреплена commit `ab5e4e3e53a42fad08e1225a22a991bb1ffe73f6`; cookbook Git blob `5a2437f2a375b907674c75300959a79ada9c0938`, CSInterface blob `f66054c0a0cc8f7977fcd83894950201fbc696e6`. Это remote source bytes, не прочитанный installed runtime. [SDK Guide](https://ae-plugins.docsforadobe.dev/aegps/aegp-suites/) и его [описание ownership](https://github.com/docsforadobe/after-effects-plugin-guide/blob/master/readme.md) использованы только для поиска кандидатов; community-maintained редакция не принята как официальный version-bound контракт AE26.2. Обсуждения форумов, сторонние wrappers и зеркала SDK не использовались как доказательство native authority.
+
+Кандидаты для следующей **адресной** сверки: `AEGP_RegisterCommandHook`, `AEGP_RegisterIdleHook`, `AEGP_ProjSuite`/`AEGP_ProjectH` и execution-time host-owned capability. Для каждого отсутствует принятая здесь гарантия, что любой ручной/внешний same-path open/revert/new→open меняет identity до setter; нельзя подменить её наблюдением path/dirty/IDs или сравнением адреса handle. Нужны точная SDK version/suite/header, правила invalidation/reuse, coverage всех переходов и отсутствие lifecycle reentry между guard и setter. Установка hooks, вызовы `NewProject/OpenProject`, перехват/подмена app methods, native factories и изменение globals не выполнялись.
+
+Host-owned object capability может быть альтернативой непрерывному observer **только при доказанном native контракте**: capture на approved inspect, проверка принадлежности текущей incarnation перед setter, invalidation на open/new/revert, отсутствие wrapper/handle ABA/rebind и atomic execution boundary. `app.project === capturedProject`, `isValid(ref)` или nonce отдельно этих гарантий не дают. Потерянный host registry не восстанавливается из path/IDs; confirmation/shared-lane/UNKNOWN остаются отдельными требованиями.
+
+#### Source finding и проверенная матрица
+
+Последний Node lifecycle guard находится в [Broker send](../core4/core/broker.js), строки110–131 и256–275. Далее [receiver](../core4/core/receiver.js) сохраняет begin и вызывает evaluate; [dispatcher](../core4/integrations/cep/host-dispatcher.js) передаёт fixed script в `evalScript`. [Titles JSX](../core4/modules/titles/executor.jsx), строки5–14 и26–43, проверяет global session/path/IDs и text/style revision при исполнении. Если producer не обновил native global и Node binding, другая incarnation с теми же наблюдаемыми значениями не различается этими predicates. Post-send invalidation не отменяет уже поставленную/исполненную native команду.
+
+В [старом CEP fixture](../core4/test/fixtures/cep-host.js), строки26–28, VM исполняется **до** callback delay. [Synthetic projectEvent](../core4/test/fixtures/ae.js), строки62–64, одновременно обновляет reducer и VM session. Их прежние PASS сохраняют свой scope и не доказывают live своевременность producer. Новый temp probe удерживает actual dispatcher script **до** `vm.runInContext`, проверяет receiver ongoing/physical pending и setter0, затем меняет active VM model и явно отпускает единственную исходную mutation. Сокеты не открывает, synthetic authority не становится production.
+
+| Состояние к release queued script | Фактический результат в условной VM-модели |
+| --- | --- |
+| Нет перехода | applied, setter1, independent verify, Broker succeeded |
+| Другой path / compId / layerId | project_cas / comp_cas / layer_cas, setter0 |
+| Same-path, baseline text изменён | stale_target, setter0 |
+| Same-path open, native epoch обновлён при stale Node source | session_cas, setter0 |
+| Same-path open с теми же path/IDs/text/style и stale global/source | Setter новой B=1, исходной A=0; verify и Broker succeeded — контрпример достаточности predicates |
+| Same-path revert-in-place при stale global/source | Hidden incarnation изменена с сохранением object/state values; setter1 и Broker succeeded — отдельная условная модель revert |
+| New→open исходного path между наблюдениями, stale global/source | Модель ABA: setter новой B=1, исходной A=0; Broker succeeded |
+| Observer loss после queue, native global stale | Setter B=1; Broker stopped / trusted_project_lifecycle_unavailable, command UNKNOWN/unresolved1. Completion completed не снял fence, replay нет |
+| Unsaved new к моменту execution | project_cas, setter0 |
+
+**11/11 PASS означает совпадение с ожидаемыми результатами контрмодели**, включая небезопасный исход при нарушенной предпосылке producer. Это не реализация/сертификация native API, не дефект, воспроизведённый в установленном AE, и не новый полный lifecycle/CEP PASS. Реальные persistence global, object identity и возможность такого event scheduling на AE26.2 не проверялись. В каждом сценарии mutate queued/executed ровно1; native AE calls0.
+
+#### Validation и следующий шаг
+
+Точная final команда (cwd — корень репозитория):
+
+```powershell
+node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-lifecycle-69aa7d40c2b04aa9870a9111e87d866b/probe.cjs'
+```
+
+- Evidence directory: `C:/Users/Ant/AppData/Local/Temp/core4-native-lifecycle-69aa7d40c2b04aa9870a9111e87d866b/`. `sources.json` сохраняет remote refs и coverage gaps; `probe.cjs` — воспроизводимый diagnostic harness; `probe-results.json` — structured outcomes; `probe.tap.txt`/`probe.stderr.txt` — raw final output; `before-core4.json` —59 исходных hashes. Runtime/CAS/journals probe находятся только в собственных temp subdirectories; секреты не печатались и не переносились.
+- Final TAP:11 tests, pass11/fail0/skipped0/cancelled0/todo0, exit0. После изменения только названий полей отчёта nativeResult/nativeCode→executorResult/executorCode выполнен один final повтор; preliminary11 не суммируются. Probe SHA-256 `690d6e3a521a163ed09e559825c8adede114a8a86087ab9c3a15b496d6eeb177`; TAP `d3727533b3eb3adc203c5a3eed1c470721ccf85d1646b3773bb7b374bfaafc5e`; results `48a2362b218accc565d5518469ed9fc3a1a0ea7567efb398b0d8a985e87cd6eb`.
+- Bounded read-only review — ACCEPT с перечисленными ограничениями. Архитектор сверил final hashes, raw TAP и actual queue barrier, не делал запусков. Намеренно пропущенное уведомление не является дефектом reducer; revert-in-place использует тот же state object (aSetters=1 ожидаем), а промежуточное null→same-path в ABA не является native new/open proof. Source model не устанавливает правила AE global/object lifetime.
+- Production source, public MCP, pins и validation routes не менялись. Final checks: все59 Core4 hashes совпали с before snapshot; UTF-8,28 локальных ссылок и `git diff --check` PASS; `validation.json` сохранён рядом с evidence. Full offline audit/CEP/release/seal не повторялись. Source/VM evidence имеет `releaseCertified:false`. Нет обращений к AE/installed runtime, браузеру/UI, конфигурации/credentials/общему state, push/merge.
+- Следующий ограниченный source-only вход — официальный version-bound C++ SDK/подтверждённый host API contract и проверка перечисленных native гарантий. Optional запрос пути к уже распакованному SDK отправлен пользователю; отсутствие ответа не считается доступом/подтверждением. Пока этот вход не получен, producer/issuer/новый channel не активировать, synthetic-only gate и `live_transport_not_installed` сохранить.
