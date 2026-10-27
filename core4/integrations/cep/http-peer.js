@@ -1,17 +1,19 @@
 'use strict';
 const http = require('node:http');
 const crypto = require('node:crypto');
-const { hash, canonical, parse, bounded, exact, fail, id, dispatchBinding } = require('../../core/receiver-api');
+const { hash, canonical, parse, bounded, exact, fail, id, dispatchBinding, decode, encode, envelope } = require('../../core/receiver-api');
 const { openCompletionStore } = require('./completion-store');
 const { mac, validMac, requestBody } = require('./peer-protocol');
-function createHttpPeer({ installation, directory, asset, port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {} }) {
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {} }) {
   const store = openCompletionStore({ directory });
   const epoch = id('http'), controllerId = id('controller');
   let peer = null, pending = null, closed = false, activePoll = null;
   const challenges = new Map();
+  const assets = new Map([asset, ...additionalAssets].map(a => [a.executorHash, a])); let brokerBinding;
   const pins = Object.freeze({ packageHash: installation.packageHash, executorHash: asset.executorHash, installationId: installation.installationId });
+  const commandPins = command => ({ ...pins, executorHash: command.executorHash });
   function disconnect(reason) { if (pending) { store.unknown(pending.command.commandId); pending.reject(Object.assign(new Error(reason), { code: reason })); clearTimeout(pending.timer); pending = null; } }
-  function frame() { return pending && !pending.delivered ? { assetKey: asset.assetKey, phase: 'inspect', typedPayload: pending.command.payload, commandId: pending.command.commandId, originalBinding: pending.binding, pins } : null; }
+  function frame() { return pending && !pending.delivered ? { assetKey: assets.get(pending.command.executorHash).assetKey, phase: pending.command.phase, typedPayload: pending.command.payload, commandId: pending.command.commandId, originalBinding: pending.binding, pins: commandPins(pending.command) } : null; }
   function deliver() { if (activePoll && frame()) { const poll = activePoll; activePoll = null; const value = frame(); pending.delivered = true; poll(value); } }
   function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId } : { connected: false }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { commandId: pending.command.commandId, delivered: pending.delivered } : null, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
   function reply(res, statusCode, value, origin) {
@@ -53,7 +55,7 @@ function createHttpPeer({ installation, directory, asset, port = 3457, timeout =
       function signed(payload) { const body = { epoch, peerId: peer.peerId, sequence: b.sequence, payload }; reply(res, 200, { body, mac: mac(body, installation.panelToken) }, origin); }
       if (req.url === '/poll') {
         exact(b.payload, []); if (activePoll) fail('concurrent_poll');
-        if (pending && !pending.delivered) { try { admissionGuard(); } catch (e) { disconnect(e.code || 'physical_admission_closed'); throw e; } }
+        if (pending && !pending.delivered) { try { admissionGuard(pending.command); } catch (e) { disconnect(e.code || 'physical_admission_closed'); throw e; } }
         if (frame()) { const value = frame(); pending.delivered = true; signed({ command: value }); return; }
         await new Promise(resolve => {
           const timer = setTimeout(() => { if (activePoll === finish) activePoll = null; signed({ command: null }); resolve(); }, pollTimeout);
@@ -65,13 +67,20 @@ function createHttpPeer({ installation, directory, asset, port = 3457, timeout =
       if (req.url === '/complete') {
         exact(b.payload, ['commandId', 'originalBinding', 'pins', 'result']);
         const c = store.get(b.payload.commandId);
-        if (!c || canonical(c.originalBinding) !== canonical(b.payload.originalBinding) || canonical(b.payload.pins) !== canonical(pins)) fail('completion_correlation');
+        if (!c || canonical(c.originalBinding) !== canonical(b.payload.originalBinding) || canonical(b.payload.pins) !== canonical(commandPins(c.command))) fail('completion_correlation');
         if (c.state === 'completed') { if (canonical(c.response.result) !== canonical(b.payload.result)) fail('completion_conflict'); signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } }); return; }
         if (!pending || c.state !== 'ongoing' || !pending.delivered || pending.command.commandId !== b.payload.commandId) fail('unknown_no_promotion');
         const result = b.payload.result;
+        const selectedAsset = assets.get(c.command.executorHash);
         if (result.readFailureVersion === 1) {
           exact(result, ['readFailureVersion', 'outcome', 'code']);
-          if (result.outcome !== 'rejected' || !['inspection_failed', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code)) fail('inspection_result');
+          if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code)) fail('inspection_result');
+        } else if (selectedAsset.resultProfile === 'manual-text-v1') {
+          if (c.command.phase === 'mutate') {
+            exact(result, ['outcome', 'snapshot', 'code', 'transactionReceipt']);
+            if (result.outcome === 'unknown') { disconnect('manual_effect_unknown'); fail('manual_effect_unknown'); }
+            if (!['applied', 'rejected'].includes(result.outcome)) fail('manual_result');
+          } else { exact(result, ['target', 'revision', 'text', 'protected']); if (!result.target || typeof result.revision !== 'string' || typeof result.text !== 'string' || typeof result.protected !== 'string') fail('manual_snapshot'); }
         } else {
           // Private asset-selected versioned observation profile. No caller chooses
           // the validator and no lifecycle/session is manufactured for discovery.
@@ -82,25 +91,37 @@ function createHttpPeer({ installation, directory, asset, port = 3457, timeout =
           for (const item of result.compositions) { exact(item, ['compId', 'name', 'numLayers', 'duration']); if (!Number.isSafeInteger(item.compId) || item.compId < 1 || typeof item.name !== 'string' || !Number.isSafeInteger(item.numLayers) || item.numLayers < 0 || typeof item.duration !== 'number' || item.duration < 0) fail('inspection_result'); }
           for (const item of result.layers) { exact(item, ['layerId', 'index', 'name', 'textLayer']); if (!Number.isSafeInteger(item.layerId) || item.layerId < 1 || !Number.isSafeInteger(item.index) || item.index < 1 || typeof item.name !== 'string' || typeof item.textLayer !== 'boolean') fail('inspection_result'); }
         }
-        const response = { result }; store.complete(b.payload.commandId, response);
+        const response = { protocolVersion: 1, commandId: c.command.commandId, executorHash: c.command.executorHash, payloadHash: c.command.payloadHash, result }; store.complete(b.payload.commandId, response);
         const done = pending; pending = null; clearTimeout(done.timer);
         signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } });
-        if (result.readFailureVersion === 1) done.reject(Object.assign(new Error(result.code || 'inspection_failed'), { code: result.code || 'inspection_failed' })); else done.resolve({ observation: result, originalBinding: c.originalBinding, pins, continuity: false });
+        if (result.readFailureVersion === 1) done.reject(Object.assign(new Error(result.code || 'inspection_failed'), { code: result.code || 'inspection_failed' })); else done.resolve(done.broker ? response : { observation: result, originalBinding: c.originalBinding, pins: commandPins(c.command), continuity: false });
         return;
       }
       fail('unknown_peer_route');
     } catch (e) { reply(res, e.code === 'frame_too_large' ? 413 : 403, { error: e.code || 'peer_request_failed' }, origin === 'null' ? origin : undefined); }
   });
+  function submit(command, broker = false) {
+    const selected = assets.get(command.executorHash);
+    if (!selected || selected.moduleId && (selected.moduleId !== command.moduleId || selected.operationId !== command.operationId) || !['inspect', 'mutate', 'verify'].includes(command.phase) || command.phase !== 'inspect' && selected.resultProfile !== 'manual-text-v1') fail('http_asset_not_admitted');
+    admissionGuard(command);
+    if (closed || store.closed) fail('receiver_lane_closed'); if (!peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); if (pending) fail('physical_lane_pending');
+    const binding = dispatchBinding(command, store.identity); store.begin(command, binding);
+    return new Promise((resolve, reject) => { pending = { command, binding, resolve, reject, broker, delivered: false, timer: setTimeout(() => disconnect('host_callback_timeout'), timeout) }; deliver(); });
+  }
   return Object.freeze({
     status,
+    identity: hash({ packageHash: installation.packageHash, assets: [...assets.values()] }),
+    transport: Object.freeze({
+      async connect(value) { if (store.closed || !peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); exact(value, ['controllerId', 'channelEpoch', 'secret']); brokerBinding = Object.freeze({ ...value }); return { receiverStoreIdentity: store.identity }; },
+      async send(frame) { if (!brokerBinding) fail('transport_disconnected'); const command = envelope(decode(frame, brokerBinding.secret)); if (command.controllerId !== brokerBinding.controllerId || command.channelEpoch !== brokerBinding.channelEpoch) fail('controller_binding'); return encode(await submit(command, true), brokerBinding.secret); },
+      async completion(commandId) { if (!brokerBinding) fail('transport_disconnected'); const c = store.get(commandId); return encode({ commandId, state: c?.state || 'unknown', ...(c?.originalBinding ? { originalBinding: c.originalBinding } : {}), ...(c?.response ? { response: c.response } : {}) }, brokerBinding.secret); },
+      async disconnect() { if (pending) fail('physical_lane_pending'); brokerBinding = undefined; }
+    }),
     async listen() { await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); }); return status(); },
     inspect(payload = {}) {
       exact(payload, ['compId']); if (payload.compId !== undefined && (!Number.isSafeInteger(payload.compId) || payload.compId < 1)) fail('invalid_comp_id');
-      admissionGuard();
-      if (closed || store.closed) fail('receiver_lane_closed'); if (!peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); if (pending) fail('physical_lane_pending');
       const command = { protocolVersion: 1, controllerId, channelEpoch: epoch, commandId: id('inspect'), moduleId: 'project-inspection', operationId: 'inspect', executorHash: asset.executorHash, phase: 'inspect', payloadHash: hash(canonical(payload)), payload };
-      const binding = dispatchBinding(command, store.identity); store.begin(command, binding);
-      return new Promise((resolve, reject) => { pending = { command, binding, resolve, reject, delivered: false, timer: setTimeout(() => disconnect('host_callback_timeout'), timeout) }; deliver(); });
+      return submit(command);
     },
     async close() { closed = true; disconnect('runtime_closed'); if (activePoll) { const poll = activePoll; activePoll = null; poll(null); } await new Promise(resolve => server.close(resolve)); store.close(); }
   });

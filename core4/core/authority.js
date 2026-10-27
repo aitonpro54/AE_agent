@@ -2,6 +2,8 @@
 // Private, synthetic-only embedding seam. No production lifecycle source or issuer.
 const { fail, exact, id } = require('../protocol/json');
 const ports = new WeakSet();
+const executionPolicies = new WeakSet();
+const reservations = new WeakSet();
 const lifecycles = new WeakMap();
 const transitions = new Set(['project_new', 'project_open', 'project_revert', 'project_replacement']);
 function createLifecycleSource(options) {
@@ -47,4 +49,11 @@ function brandAuthorityPort(port) {
   ports.add(port); return port;
 }
 function validatePort(port) { if (!ports.has(port)) fail('untrusted_authority_port'); return port; }
-module.exports = { brandAuthorityPort, validatePort, createLifecycleSource, validateLifecycleBinding };
+function brandExecutionPolicyPort(port) {
+  if (!port || ['describe', 'assertCurrent', 'prepareReservation', 'assertReservation', 'verifyCompletion'].some(k => typeof port[k] !== 'function')) fail('execution_policy_port');
+  executionPolicies.add(port); return port;
+}
+function validateExecutionPolicyPort(port) { if (!executionPolicies.has(port)) fail('untrusted_execution_policy_port'); return port; }
+function brandReservationHandle(value) { reservations.add(value); return Object.freeze(value); }
+function validateReservationHandle(value) { if (!value || !reservations.has(value)) fail('untrusted_reservation_handle'); return value; }
+module.exports = { brandAuthorityPort, validatePort, createLifecycleSource, validateLifecycleBinding, brandExecutionPolicyPort, validateExecutionPolicyPort, brandReservationHandle, validateReservationHandle };

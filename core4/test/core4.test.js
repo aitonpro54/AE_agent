@@ -27,9 +27,10 @@ test('[core-control catalog-discovery] A1 independent startup physically absent 
   assert.equal((await broker.disconnect()).unresolvedPreserved, 0); assert.equal(broker.diagnostics().pid, process.pid);
   broker.reset({ taskId: 'absent-task' });
   assert.equal(trace.filter(f => /^(modules|plan-engine)\//.test(f)).length, 0);
-  assert.equal(broker.listModules().modules.length, 2);
+  const discovered = broker.listModules().modules;
+  assert.deepEqual(discovered.map(m => m.id).sort(), ['photo-placeholder', 'titles', 'titles-current-target']);
   fs.writeFileSync(path.join(ws.root, 'config/catalog.json'), '{invalid');
-  assert.equal(broker.listModules({ refresh: true }).modules.length, 2); assert.ok(broker.diagnostics().catalogError);
+  assert.deepEqual(broker.listModules({ refresh: true }).modules, discovered); assert.ok(broker.diagnostics().catalogError);
   assert.equal(broker.status().ready, true);
   const cold = new Broker({ root: ws.root, stateDir: path.join(ws.temp, 'cold') }); t.after(() => cold.close());
   assert.equal(cold.status().ready, true); assert.deepEqual(cold.listModules().modules, []);
@@ -382,7 +383,7 @@ test('[validation-routing] shared Core dependencies select component consumers w
   const titleKey = before.checks.find(c => c.check === 'titles-owner').evidenceKey;
   rewrite(ws.root, 'core/resources.js', source => source + '\n// changed shared runtime bytes\n');
   assert.notEqual(selectChecks([file], ws.root).checks.find(c => c.check === 'titles-owner').evidenceKey, titleKey);
-  assert.equal(before.executionBatches.length, 4); assert.ok(before.executionBatches.some(batch => batch.checks.includes('titles-owner') && batch.checks.includes('titles-executor-contract')));
+  assert.equal(before.executionBatches.length, 6); assert.ok(before.executionBatches.some(batch => batch.checks.includes('manual-runtime'))); assert.ok(before.executionBatches.some(batch => batch.checks.includes('human-window'))); assert.ok(before.executionBatches.some(batch => batch.checks.includes('titles-owner') && batch.checks.includes('titles-executor-contract')));
   for (const changed of ['core4/core/broker.js', 'core4/core/receiver.js', 'core4/core/artifacts.js', 'core4/integrations/cep/host-dispatcher.js']) {
     const repair = selectChecks([changed], ws.root).checks.find(check => check.check === 'audit-repairs');
     assert.ok(repair, changed); assert.ok(repair.dependencies.includes('test/audit-repairs.test.js')); assert.ok(repair.dependencies.includes('test/fixtures/artifact-publish-crash.js'));

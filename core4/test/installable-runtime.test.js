@@ -42,7 +42,7 @@ function fakeHost(pkg) {
   function CompItem() { this.id = 7; this.name = 'Test comp'; this.numLayers = 1; this.duration = 5; }
   CompItem.prototype.layer = () => ({ id: 11, name: 'Title', property: () => ({}) });
   const comp = new CompItem();
-  const context = vm.createContext({ JSON, Object, Math, Error, CompItem, app: { version: '26.0-test', project: { file: { fsName: 'C:/test/project.aep', name: 'project.aep' }, numItems: 1, item: () => comp } } });
+  const context = vm.createContext({ JSON: undefined, Math, Error, CompItem, app: { version: '26.0-test', project: { file: { fsName: 'C:/test/project.aep', name: 'project.aep' }, numItems: 1, item: () => comp } } });
   vm.runInContext(Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString(), context);
   return { evalScript(script, cb) { cb(vm.runInContext(script, context)); } };
 }
@@ -113,8 +113,13 @@ test('installable-runtime bounded TOML edit preserves indented neighboring serve
   const before = '# prefix\r\n [mcp_servers.before] # before comment\r\ncommand = "before"\r\n';
   const ownHeader = '  [mcp_servers.after-effects-core4] # retain this header\r\n';
   const after = '  [mcp_servers.after] # adjacent indented header\r\ncommand = "must stay"\r\nargs = ["a", "b"]\r\n# suffix\r\n';
-  const result = configText(Buffer.from(before + ownHeader + 'command = "old"\r\n' + after), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js');
+  const enabled = '  enabled = false # keep managed client disabled\r\n';
+  const result = configText(Buffer.from(before + ownHeader + enabled + 'command = "old"\r\n' + after), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js');
   assert.ok(result.startsWith(before + ownHeader)); assert.ok(result.endsWith(after)); assert.equal((result.match(/\[mcp_servers.after-effects-core4\]/g) || []).length, 1);
+  assert.ok(result.includes(enabled));
+  const preservedTrue = configText(Buffer.from(ownHeader + "'enabled' = true # explicit user preference\n"), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js'); assert.ok(preservedTrue.includes("'enabled' = true # explicit user preference\n"));
+  assert.throws(() => configText(Buffer.from(ownHeader + 'enabled = false\n"enabled" = true\n'), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js'), /config_duplicate_enabled_preference/);
+  assert.throws(() => configText(Buffer.from(ownHeader + 'enabled = "false"\n'), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js'), /config_enabled_preference_requires_review/);
   const directory = temp(), { args } = install(directory);
   const invalid = Buffer.from('[mcp_servers."after-effects-core4"] # unsupported quoted table\ncommand = "old"\n'); fs.writeFileSync(args.configPath, invalid);
   assert.throws(() => planInstall(args), /config_syntax_requires_review/); assert.ok(fs.readFileSync(args.configPath).equals(invalid)); assert.equal(fs.existsSync(args.installRoot), false);
@@ -193,13 +198,25 @@ test('installable-runtime callback loss fences durable store and persisted brows
   const reopened = createHttpPeer({ installation, directory, asset, port: 0 }); await reopened.listen(); t.after(() => reopened.close());
   assert.equal(reopened.status().storeClosed, true); assert.throws(() => reopened.inspect({}), /receiver_lane_closed/);
 });
-test('installable-runtime host without native JSON returns known capability rejection after durable begin, no raw fallback', async t => {
+test('installable-runtime missing fixed host registry returns known read rejection after durable begin, no raw fallback', async t => {
   const directory = temp(), pkg = buildPackage(), peer = createHttpPeer({ installation, directory, asset, port: 0 }); await peer.listen(); t.after(() => peer.close());
   const c = await client(peer.status().port), context = vm.createContext({ JSON: undefined }); let physicalCalls = 0;
   const dispatch = dispatcher(pkg, { installationId: installation.installationId, assetKey: asset.assetKey, pins: c.pins, storage: memoryStorage(), csInterface: { evalScript(script, cb) { physicalCalls++; cb(vm.runInContext(script, context)); } }, complete: p => c.call('/complete', p) });
-  const rejected = assert.rejects(peer.inspect({}), /host_json_unavailable/);
+  const rejected = assert.rejects(peer.inspect({}), /host_registry_unavailable/);
   await dispatch.dispatch((await c.call('/poll', {})).command); await rejected;
   assert.equal(physicalCalls, 1); assert.equal(peer.status().storeClosed, false); assert.equal(dispatch.pending(), null);
+});
+test('installable-runtime long Cyrillic display names and total inspection budget stay bounded at actual HTTP boundary; next read survives known budget refusal', async t => {
+  const directory = temp(), pkg = buildPackage(), peer = createHttpPeer({ installation, directory, asset, port: 0 }); await peer.listen(); t.after(() => peer.close());
+  const c = await client(peer.status().port), longName = 'ОченьДлинноеИмя'.repeat(2000);
+  function CompItem(id) { this.id = id; this.name = longName; this.duration = 10; this.numLayers = 1000; this.layer = n => ({ id: 1000 + n, name: longName, property: () => ({}) }); }
+  const project = { file: { fsName: 'C:/fixture/проект.aep', name: longName }, numItems: 500, item: n => new CompItem(n) };
+  const context = vm.createContext({ JSON: undefined, Math, Error, CompItem, app: { version: '26.0-fixture', project } }); vm.runInContext('Object.keys=undefined;', context); vm.runInContext(Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString(), context);
+  const dispatch = dispatcher(pkg, { installationId: installation.installationId, assetKey: asset.assetKey, pins: c.pins, storage: memoryStorage(), csInterface: { evalScript(script, cb) { cb(vm.runInContext(script, context)); } }, complete: p => c.call('/complete', p) });
+  async function read() { const inspection = peer.inspect({ compId: 7 }); const observed = inspection.then(value => ({ value }), error => ({ error })); await dispatch.dispatch((await c.call('/poll', {})).command); return observed; }
+  const first = (await read()).value.observation; assert.equal(first.target.projectId, project.file.fsName); assert.equal(first.target.compId, 7); assert.equal(first.truncated, true); assert.ok(JSON.stringify(first).length <= 40000); assert.ok(Buffer.byteLength(JSON.stringify(first)) < 200000); assert.ok([...first.layers, ...first.compositions].every(item => item.name.length <= 256));
+  project.file.fsName = 'C:/' + 'я'.repeat(50000); const oversized = await read(); assert.equal(oversized.error.code, 'inspection_result_budget'); assert.equal(peer.status().storeClosed, false); assert.equal(dispatch.pending(), null);
+  project.file.fsName = 'C:/fixture/проект.aep'; assert.equal((await read()).value.observation.target.compId, 7);
 });
 test('installable-runtime real stdio child advertises generic API, status without panel, then typed module inspect via HTTP + VM', async t => {
   const directory = temp(), pkg = buildPackage(), { plan } = install(directory, pkg), installed = applyInstall(plan), d = JSON.parse(fs.readFileSync(installed.descriptorPath));
@@ -212,16 +229,33 @@ test('installable-runtime real stdio child advertises generic API, status withou
   async function tool(name, payload = {}) { const result = await rpc('tools/call', { name, arguments: { payload } }); return JSON.parse(result.content[0].text); }
   const initialized = await rpc('initialize'); assert.equal(initialized.serverInfo.version, '4.0.0');
   const listed = await rpc('tools/list'); assert.ok(listed.tools.some(x => x.name === 'inspect_module_target')); assert.ok(!listed.tools.some(x => x.name === 'inspect_project'));
+  const withMeta = await rpc('tools/call', { name: 'core_status', arguments: { payload: {} }, _meta: { progressToken: 'fixture-progress', traceparent: 'fixture-trace' } });
+  assert.equal(JSON.parse(withMeta.content[0].text).product, 'AE Agent Core 4.0.0'); assert.ok(!withMeta.content[0].text.includes('fixture-progress'));
+  await assert.rejects(rpc('tools/call', { name: 'core_status', arguments: { payload: {} }, _meta: { padding: 'x'.repeat(9000) } }), /invalid_protocol_metadata/);
+  await assert.rejects(rpc('tools/call', { name: 'core_status', arguments: { payload: {}, _meta: { grant: true } } }), /unexpected_field/);
   const status = await tool('core_status'); assert.equal(status.physical.peer.connected, false); assert.equal(status.automaticLifecycle, 'unavailable');
   const modules = await tool('list_modules'); assert.ok(modules.modules.some(x => x.id === 'project-inspection'));
   const contract = await tool('get_module_contract', { moduleId: 'project-inspection' }); assert.equal(contract.contract.executionPolicy, 'read-only-current-observation-v1');
   await assert.rejects(tool('inspect_module_target', { moduleId: 'titles', contractId: contract.contractId, target: {} }), /contract_identity/);
   await assert.rejects(tool('inspect_module_target', { contractId: contract.contractId, target: {} }), /contract_identity/);
   assert.equal((await tool('core_status')).physical.pending, null);
-  const c = await client(status.physical.port, d), host = fakeHost(pkg), dispatch = dispatcher(pkg, { installationId: d.installationId, assetKey: asset.assetKey, pins: c.pins, storage: memoryStorage(), csInterface: host, complete: p => c.call('/complete', p) });
+  const c = await client(status.physical.port, d), host = fakeHost(pkg); let refuse = true;
+  const dispatch = dispatcher(pkg, { installationId: d.installationId, assetKey: asset.assetKey, pins: c.pins, storage: memoryStorage(), csInterface: { evalScript(script, cb) { if (refuse) { refuse = false; cb(JSON.stringify({ readFailureVersion: 1, outcome: 'rejected', code: 'host_registry_unavailable' })); } else host.evalScript(script, cb); } }, complete: p => c.call('/complete', p) });
+  const refused = assert.rejects(tool('inspect_module_target', { moduleId: 'project-inspection', contractId: contract.contractId, target: {} }), /host_registry_unavailable/);
+  await dispatch.dispatch((await c.call('/poll', {})).command); await refused;
   const inspection = tool('inspect_module_target', { moduleId: 'project-inspection', contractId: contract.contractId, target: { compId: 7 } });
   await dispatch.dispatch((await c.call('/poll', {})).command); assert.equal((await inspection).observation.compositions[0].compId, 7);
   child.stdin.end(); await once(child, 'exit'); assert.equal(errors, ''); assert.equal(child.exitCode, 0);
+});
+test('installable-runtime private adoption bootstrap imports no mutable operator-relative provider before verified release preflight', () => {
+  const directory = temp(), { plan } = install(directory), installed = applyInstall(plan), d = JSON.parse(fs.readFileSync(installed.descriptorPath));
+  const operator = path.join(directory, 'operator/tools/adopt-host.js'), provider = path.join(directory, 'operator/runtime/windows-reservation-provider.js'), sentinel = path.join(directory, 'UNVERIFIED-ADOPTION-PROVIDER');
+  fs.mkdirSync(path.dirname(operator), { recursive: true }); fs.mkdirSync(path.dirname(provider), { recursive: true }); fs.copyFileSync(path.join(root, 'tools/adopt-host.js'), operator);
+  fs.writeFileSync(provider, 'require("node:fs").writeFileSync(' + JSON.stringify(sentinel) + ',"executed");');
+  const witness = path.join(directory, 'witness.json'); fs.writeFileSync(witness, JSON.stringify({ installationId: 'wrong-witness', machineId: d.machineId }));
+  const rejected = spawnSync(process.execPath, [operator, '--installation', installed.descriptorPath, '--witness', witness], { encoding: 'utf8', windowsHide: true, timeout: 5000 }); assert.equal(rejected.status, 1); assert.match(rejected.stderr, /adoption_witness_identity/); assert.equal(fs.existsSync(sentinel), false);
+  fs.writeFileSync(path.join(d.releaseDir, 'runtime/windows-reservation-provider.js'), 'require("node:fs").writeFileSync(' + JSON.stringify(sentinel) + ',"executed");');
+  const unverified = spawnSync(process.execPath, [operator, '--installation', installed.descriptorPath, '--witness', witness], { encoding: 'utf8', windowsHide: true, timeout: 5000 }); assert.equal(unverified.status, 1); assert.match(unverified.stderr, /installed_release_bytes/); assert.equal(fs.existsSync(sentinel), false);
 });
 test('installable-runtime real stdio process crash after delivery preserves original ongoing record and blocks new reads after restart', async t => {
   const directory = temp(), { plan } = install(directory), installed = applyInstall(plan), d = JSON.parse(fs.readFileSync(installed.descriptorPath));

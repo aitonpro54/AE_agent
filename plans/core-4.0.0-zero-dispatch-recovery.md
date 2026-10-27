@@ -7,7 +7,7 @@
 - [x] Read-only proof: прежний PID и HTTP3457 отсутствуют; собственных Core4 процессов не обнаружено. Broker ledger отсутствует, completion journal содержит только один valid origin record, native команд не было.
 - [x] Архитектор дал GO только для private zero-dispatch перехода. Единственный writer реализовал standalone operator CLI и temp-only tests; root остаётся sole installed controller.
 - [x] Независимый authority review V2 — ACCEPT. Перед actual apply root проверяет exact source hash и формирует witness из собственных launch/stop observations; затем inspect и apply с exact proof hash.
-- [ ] Actual переход и read-back записаны в основном [плане установки](core-4.0.0-installable.md).
+- [x] Actual переход и независимый read-back выполнены root: proof `ecfaa1f449e760acd01fe30a10701ca9c2088c2ac35862bc728102590e469829`, transaction `8dec8220-b9f3-465e-acce-0dd2bc733051-zero-dispatch-retirement`. Оба marker bytes сохранены в archive, journal/store identity/origins не изменились, ledger и gates отсутствуют. Evidence — `snapshots/core4-live-proof/II/recovery-result.json` и `recovery-readback.json`; дальнейшая установка описана в основном [плане](core-4.0.0-installable.md).
 
 ## Decision Log
 

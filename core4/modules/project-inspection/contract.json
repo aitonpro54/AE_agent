@@ -5,6 +5,6 @@
   "executionPolicy": "read-only-current-observation-v1",
   "snapshotProfile": "project-observation-v1",
   "targetSchema": { "type": "object", "properties": { "compId": { "type": "integer", "minimum": 1 } }, "additionalProperties": false },
-  "effectPolicy": { "effect": "none", "continuity": false, "boundedItemsScanned": 500, "boundedComps": 50, "boundedLayers": 100 },
+  "effectPolicy": { "effect": "none", "continuity": false, "boundedItemsScanned": 500, "boundedComps": 50, "boundedLayers": 100, "displayNameMaxCodeUnits": 256, "resultMaxCodeUnits": 40000 },
   "buildSupported": false
 }

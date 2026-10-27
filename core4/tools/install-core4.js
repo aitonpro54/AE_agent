@@ -36,14 +36,28 @@ function configText(previous, descriptor, nodePath, entry) {
   const matches = headers.filter(h => h.name === 'mcp_servers.after-effects-core4'); if (matches.length > 1) fail('config_ambiguous_core4');
   const newline = text.includes('\r\n') ? '\r\n' : '\n';
   const body = 'command = ' + JSON.stringify(nodePath.replace(/\\/g, '/')) + newline + 'args = ' + JSON.stringify([entry.replace(/\\/g, '/'), '--installation', descriptor.replace(/\\/g, '/')]) + newline;
-  if (!matches.length) return text + (text && !text.endsWith('\n') ? newline : '') + newline + '[mcp_servers.after-effects-core4]' + newline + body;
+  if (!matches.length) return text + (text && !text.endsWith('\n') ? newline : '') + newline + '[mcp_servers.after-effects-core4]' + newline + 'tool_timeout_sec = 120' + newline + body;
   const own = matches[0], following = headers.find(h => h.start > own.start);
-  return text.slice(0, own.end) + (own.line.endsWith('\n') ? '' : newline) + body + text.slice(following ? following.start : text.length);
+  const ownBody = text.slice(own.end, following ? following.start : text.length), preferences = [], timeouts = [];
+  for (const line of ownBody.match(/[^\n]*(?:\n|$)/g).filter(Boolean)) if (/^[ \t]*(?:enabled|"enabled"|'enabled')[ \t]*=/.test(line)) {
+    if (!/^[ \t]*(?:enabled|"enabled"|'enabled')[ \t]*=[ \t]*(?:true|false)[ \t]*(?:#[^\r\n]*)?(?:\r?\n)?$/.test(line)) fail('config_enabled_preference_requires_review');
+    preferences.push(line);
+  }
+  for (const line of ownBody.match(/[^\n]*(?:\n|$)/g).filter(Boolean)) if (/^[ \t]*(?:tool_timeout_sec|"tool_timeout_sec"|'tool_timeout_sec')[ \t]*=/.test(line)) {
+    if (!/^[ \t]*(?:tool_timeout_sec|"tool_timeout_sec"|'tool_timeout_sec')[ \t]*=[ \t]*[1-9][0-9]*[ \t]*(?:#[^\r\n]*)?(?:\r?\n)?$/.test(line)) fail('config_timeout_preference_requires_review');
+    timeouts.push(line);
+  }
+  if (preferences.length > 1) fail('config_duplicate_enabled_preference');
+  if (timeouts.length > 1) fail('config_duplicate_timeout_preference');
+  const preference = preferences.length ? preferences[0] + (preferences[0].endsWith('\n') ? '' : newline) : '';
+  const timeout = timeouts.length ? timeouts[0] + (timeouts[0].endsWith('\n') ? '' : newline) : 'tool_timeout_sec = 120' + newline;
+  return text.slice(0, own.end) + (own.line.endsWith('\n') ? '' : newline) + preference + timeout + body + text.slice(following ? following.start : text.length);
 }
 function planInstall({ pkg, nodePath, installRoot, extensionsDir, configPath, machineId }) {
   verifyPackage(pkg);
   for (const value of [nodePath, installRoot, extensionsDir, configPath]) if (!path.isAbsolute(value)) fail('absolute_install_paths_required');
   if (path.basename(installRoot).toLowerCase() !== 'aeagentcore4' || path.basename(path.join(extensionsDir, BUNDLE)) !== BUNDLE) fail('install_scope');
+  nodePath = path.resolve(nodePath);
   const resolvedNode = fs.realpathSync(nodePath); if (resolvedNode !== nodePath) fail('node_path_not_exact');
   const version = execFileSync(nodePath, ['--version'], { encoding: 'utf8', windowsHide: true, env: { SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR } }).trim();
   if (!/^v(2\d|[3-9]\d)\./.test(version)) fail('node_20_required');
@@ -59,8 +73,9 @@ function planInstall({ pkg, nodePath, installRoot, extensionsDir, configPath, ma
   }
   const d = { version: 1, installRoot, installationId: origin.installationId, machineId: origin.machineId, packageHash: pkg.packageHash, releaseDir, stateDir, nodePath, nodeHash: hash(fs.readFileSync(nodePath)), nodeVersion: version, panelToken: crypto.randomBytes(32).toString('hex'), controlToken: crypto.randomBytes(32).toString('hex') };
   const inspection = JSON.parse(Buffer.from(pkg.files['modules/project-inspection/artifact.json'], 'base64'));
+  const manualAdmission = JSON.parse(Buffer.from(pkg.files['config/admissions/titles-current-target.json'], 'base64'));
   const cep = Object.fromEntries(Object.entries(pkg.files).filter(([f]) => f.startsWith('cep/')).map(([f, data]) => [f.slice(4), data]));
-  cep['installation.js'] = Buffer.from('window.Core4Installation=' + canonical({ installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: inspection.executorHash, assetKey: 'project-inspection-v1' }) + ';\n').toString('base64');
+  cep['installation.js'] = Buffer.from('window.Core4Installation=' + canonical({ installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: inspection.executorHash, assetKey: 'project-inspection-v1', assets: [{ assetKey: 'project-inspection-v1', executorHash: inspection.executorHash, phases: ['inspect'] }, { assetKey: 'titles-current-target-v1', executorHash: manualAdmission.executorHash, phases: ['inspect', 'mutate', 'verify'] }] }) + ';\n').toString('base64');
   const nextConfig = configText(previousConfig, descriptor, nodePath, path.join(releaseDir, 'runtime/stdio-entry.js'));
   return { pkg, origin, descriptor: d, descriptorPath: descriptor, configPath, nextConfig, cepDir, cep, previousDescriptor, previousConfig, previousCep, baseline: { config: previousConfig ? hash(previousConfig) : null, descriptor: previousDescriptor ? hash(previousDescriptor) : null, cep: treeHash(previousCep) } };
 }

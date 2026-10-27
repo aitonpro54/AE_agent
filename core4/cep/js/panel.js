@@ -16,9 +16,9 @@
       var response = await post('/link', { challenge: challenge, peerId: peerId, proof: await sign({ challenge: challenge, peerId: peerId }) });
       if (response.mac !== await sign(response.body) || response.body.peerId !== peerId || response.body.epoch !== challenge.epoch) throw new Error('link_auth');
       epoch = response.body.epoch; sequence = 0; linked = true;
-      var dispatcher = api.createDispatcher({ installationId: cfg.installationId, assetKey: cfg.assetKey, pins: response.body.pins, storage: localStorage, csInterface: { evalScript: function (s, cb) { __adobe_cep__.evalScript(s, cb); } }, complete: function (p) { return authenticated('/complete', p); } });
+      var dispatcher = api.createDispatcher({ installationId: cfg.installationId, assetKey: cfg.assetKey, assets: cfg.assets, pins: response.body.pins, storage: localStorage, csInterface: { evalScript: function (s, cb) { __adobe_cep__.evalScript(s, cb); } }, complete: function (p) { return authenticated('/complete', p); } });
       await dispatcher.recover(); if (response.body.laneClosed) throw new Error('receiver_lane_closed');
-      show('Подключено · чтение текущего проекта'); detail.textContent = 'Core4 4.0.0 · automatic lifecycle unavailable';
+      show('Подключено к Core 4.0.0'); detail.textContent = 'Изменения текста требуют подтверждения в After Effects';
       while (linked) { var next = await authenticated('/poll', {}); if (next.command) await dispatcher.dispatch(next.command); }
     } catch (e) { linked = false; show('Остановлено: ' + e.message); detail.textContent = 'UNKNOWN не повторяется. Проверяйте core_status; перезагрузка не снимает fence.'; }
     finally { running = false; button.disabled = false; }

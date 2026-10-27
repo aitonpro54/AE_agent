@@ -23,13 +23,16 @@
       dispatch: function (frame) {
         exact(frame, ['assetKey', 'phase', 'typedPayload', 'commandId', 'originalBinding', 'pins']);
         if (active || load()) throw new Error('physical_latch_present');
-        if (frame.assetKey !== options.assetKey || frame.phase !== 'inspect' || canonical(frame.pins) !== canonical(options.pins) || frame.originalBinding.commandId !== frame.commandId || frame.originalBinding.executorHash !== options.pins.executorHash || frame.originalBinding.phase !== frame.phase) throw new Error('fixed_asset_binding');
+        var assets = options.assets || [{ assetKey: options.assetKey, executorHash: options.pins.executorHash, phases: ['inspect'] }];
+        var selected = assets.filter(function (a) { return a.assetKey === frame.assetKey; })[0];
+        var expectedPins = { packageHash: options.pins.packageHash, installationId: options.pins.installationId, executorHash: selected ? selected.executorHash : '' };
+        if (!selected || selected.phases.indexOf(frame.phase) < 0 || canonical(frame.pins) !== canonical(expectedPins) || frame.originalBinding.commandId !== frame.commandId || frame.originalBinding.executorHash !== selected.executorHash || frame.originalBinding.phase !== frame.phase) throw new Error('fixed_asset_binding');
         var record = { frame: frame }; save(record); active = true;
         // This persistent latch is not fsync proof. The Node durable begin/fence
         // is authoritative and remains closed after lost callback/reload.
         return new Promise(function (resolve, reject) {
           var data = canonical(frame).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-          var script = '(function(){if(typeof JSON==="undefined"||typeof JSON.parse!=="function"||typeof JSON.stringify!=="function")return "{\\"readFailureVersion\\":1,\\"outcome\\":\\"rejected\\",\\"code\\":\\"host_json_unavailable\\"}";if(typeof AECore4Host==="undefined"||typeof AECore4Host.dispatch!=="function")return "{\\"readFailureVersion\\":1,\\"outcome\\":\\"rejected\\",\\"code\\":\\"host_registry_unavailable\\"}";return AECore4Host.dispatch(JSON.parse(' + JSON.stringify(data) + '));}())';
+          var script = '(function(){if(typeof AECore4Host==="undefined"||typeof AECore4Host.dispatch!=="function")return "{\\"readFailureVersion\\":1,\\"outcome\\":\\"rejected\\",\\"code\\":\\"host_registry_unavailable\\"}";return AECore4Host.dispatch(' + JSON.stringify(data) + ');}())';
           try { options.csInterface.evalScript(script, function (raw) {
             try { record.result = JSON.parse(raw); save(record); post(record).then(resolve, reject); } catch (e) { reject(e); }
           }); } catch (e) { reject(e); }

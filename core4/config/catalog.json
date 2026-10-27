@@ -1,5 +1,5 @@
 {
-  "catalogRevision": "M1-reviewed-local-1",
+  "catalogRevision": "update-titles-current-target-3731d22abafd98c8a69d137c3ad645184daff7cfaad9aee0c3203ce89c97b48f",
   "modules": [
     {
       "id": "photo-placeholder",
@@ -12,6 +12,12 @@
       "version": "4.0.0-m1",
       "path": "modules/titles",
       "admission": "config/admissions/titles.json"
+    },
+    {
+      "id": "titles-current-target",
+      "version": "4.0.0",
+      "path": "modules/titles-current-target",
+      "admission": "config/admissions/titles-current-target.json"
     }
   ],
   "engine": {

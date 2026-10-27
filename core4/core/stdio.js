@@ -20,7 +20,13 @@ function serve(broker, input = process.stdin, output = process.stdout, { serverI
       else if (request.method === 'ping') result = {};
       else if (request.method === 'tools/list') result = { tools: Object.keys(TOOL_METHODS).map(name => ({ name, description: 'Core4 bounded generic operation; no live fallback', inputSchema: { type: 'object', properties: { payload: { type: 'object', additionalProperties: true } }, additionalProperties: false } })) };
       else if (request.method === 'tools/call') {
-        exact(request.params, ['name', 'arguments']); const method = TOOL_METHODS[request.params.name]; if (!method) fail('unknown_tool');
+        exact(request.params, ['name', 'arguments', '_meta']);
+        // MCP request metadata is transport data only. It never enters a domain
+        // payload, builder, proposal, authority or runtime executor.
+        if (request.params._meta !== undefined) {
+          if (!request.params._meta || typeof request.params._meta !== 'object' || Array.isArray(request.params._meta) || Buffer.byteLength(bounded(request.params._meta)) > 8192) fail('invalid_protocol_metadata');
+        }
+        const method = TOOL_METHODS[request.params.name]; if (!method) fail('unknown_tool');
         const args = request.params.arguments || {}; exact(args, ['payload']);
         const value = await broker[method](args.payload || {});
         result = { content: [{ type: 'text', text: bounded(value) }], isError: false };

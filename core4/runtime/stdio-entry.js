@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const PRODUCTION_TIMING = Object.freeze({ callerTimeoutMs: 100000, callbackTimeoutMs: 90000, mcpToolTimeoutSec: 120 });
 // ONLY builtins are loaded until the entire installed release is verified.
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function canonical(value) {
@@ -56,6 +57,8 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const { serve } = require('../core/stdio.js');
   const { exact, id } = require('../protocol/json.js');
   const { createHttpPeer } = require('../integrations/cep/http-peer.js');
+  const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
+  const { createManualPolicy } = require('./manual-policy.js');
   const profile = JSON.parse(fs.readFileSync(path.join(root, 'runtime/profiles.json'), 'utf8')).profiles.find(p => p.id === 'project-inspection');
   if (!profile || profile.path !== 'modules/project-inspection' || profile.executionPolicy !== 'read-only-current-observation-v1') fail('inspection_profile_not_admitted');
   const contract = JSON.parse(fs.readFileSync(path.join(root, profile.path, 'contract.json'), 'utf8'));
@@ -63,19 +66,27 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const source = fs.readFileSync(path.join(root, profile.path, 'executor.jsx'), 'utf8');
   if (admission.executorHash !== hash(source) || admission.contractHash !== hash(contract) || admission.executionPolicy !== profile.executionPolicy) fail('inspection_admission');
   const asset = { assetKey: 'project-inspection-v1', executorHash: admission.executorHash };
-  broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker') });
-  const admissionGuard = () => {
+  const manualPath = path.join(root, 'modules/titles-current-target');
+  const manualContract = JSON.parse(fs.readFileSync(path.join(manualPath, 'contract.json'), 'utf8'));
+  const manualManifest = JSON.parse(fs.readFileSync(path.join(manualPath, 'artifact.json'), 'utf8'));
+  const manualAdmission = JSON.parse(fs.readFileSync(path.join(root, 'config/admissions/titles-current-target.json'), 'utf8'));
+  const selectedManual = { pin: hash(manualManifest), contract: manualContract, admission: manualAdmission };
+  const provider = createWindowsReservationProvider({ installation, getBroker: () => broker, getPeer: () => peer });
+  const manual = createManualPolicy({ selected: selectedManual, provider, installation, getPeer: () => peer });
+  const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
+  broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, privateEmbedding: { authority: manual.authority, executionPolicy: manual.port, transport } });
+  const admissionGuard = command => {
     if (broker.closed) fail('broker_closed');
     if (broker.stateLock.error) fail(broker.stateLock.error);
     if (broker.ledger.corrupt) fail('ledger_corrupt');
-    if (broker.ledger.unresolved().length) fail('controller_unresolved');
+    if (broker.ledger.unresolved().some(c => c.commandId !== command?.commandId)) fail('controller_unresolved');
   };
-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, port, admissionGuard });
+  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets: [{ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', operationId: manualContract.operationId, executorHash: manualAdmission.executorHash, resultProfile: 'manual-text-v1' }], timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard });
   const contractId = hash({ packageHash: installation.packageHash, admission, contract }); let closed = false;
   const facade = Object.create(broker);
-  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.0.0', installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: peer.status(), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, externalLegacyCoverage: 'unobserved' });
+  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.0.0', installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: peer.status(), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual.policyId, resourceProvider: provider.status(), externalLegacyCoverage: 'unobserved' });
   facade.diagnostics = () => ({ ...broker.diagnostics(), ...facade.status() });
-  facade.connect = async () => ({ available: peer.status().peer.connected, inspectionOnly: true, automaticLifecycle: 'unavailable', physical: peer.status() });
+  facade.connect = async () => ({ ...await broker.connect(), automaticLifecycle: 'unavailable', physical: peer.status() });
   facade.disconnect = async () => ({ disconnected: false, reason: 'physical_link_owned_by_stdio_lifetime', physical: peer.status() });
   facade.listModules = value => { const result = broker.listModules(value); return { ...result, modules: [...result.modules, { id: profile.id, version: '4.0.0', executionPolicy: profile.executionPolicy }] }; };
   facade.getContract = value => { if (value.moduleId !== profile.id) return broker.getContract(value); exact(value, ['moduleId']); return { contractId, moduleId: profile.id, operationId: contract.operationId, modulePin: hash(admission), contract: JSON.parse(canonical(contract)) }; };
@@ -84,6 +95,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     exact(value, ['moduleId', 'contractId', 'target']);
     if (value.moduleId !== profile.id) fail('contract_identity');
     const result = await peer.inspect(value.target || {});
+    if (result.observation?.readFailureVersion === 1) fail(result.observation.code || 'inspection_failed');
     return { evidenceRef: id('observation'), moduleId: profile.id, contractId, ...result, authority: false };
   };
   facade.build = value => { if (value.contractId === contractId || value.steps?.some(s => s.contractId === contractId)) fail('read_only_module_build_unsupported'); return broker.build(value); };
@@ -101,4 +113,4 @@ if (require.main === module) {
     for (const signal of ['SIGTERM', 'SIGINT']) process.once(signal, () => runtime.close().then(() => process.exit(0)));
   }).catch(e => { process.stderr.write((e.code || 'runtime_start_failed') + '\n'); process.exitCode = 1; });
 }
-module.exports = { start, verifyInstallation, verifyRelease };
+module.exports = { start, verifyInstallation, verifyRelease, PRODUCTION_TIMING };

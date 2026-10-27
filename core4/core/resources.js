@@ -1,5 +1,17 @@
 'use strict';
 const { canonical, exact, fail } = require('../protocol/json');
+const { validateReservationHandle } = require('./authority');
+function scopesOverlap(a, b) {
+  if (!a || !b || !a.projectId || !b.projectId) return true;
+  const knownOrigin = value => value && typeof value.machineId === 'string' && value.machineId.length > 0 && Number.isSafeInteger(value.aePid) && value.aePid > 0 && typeof value.aeProcessBirth === 'string' && value.aeProcessBirth.length > 0;
+  if (knownOrigin(a.origin) && knownOrigin(b.origin)) {
+    if (a.origin.machineId && b.origin.machineId && a.origin.machineId !== b.origin.machineId) return false;
+    if (a.origin.aePid && b.origin.aePid && (a.origin.aePid !== b.origin.aePid || a.origin.aeProcessBirth !== b.origin.aeProcessBirth)) return false;
+  }
+  if (a.projectId !== b.projectId) return false;
+  if (a.sessionId && b.sessionId && a.sessionId !== b.sessionId) return false;
+  return ['compId', 'layerId', 'itemId', 'file', 'output'].every(k => a[k] === undefined || b[k] === undefined || a[k] === b[k]);
+}
 // Neutral durable constraints. This class knows no module IDs or domain effects.
 class Resources {
   constructor(ledger, seed = []) {
@@ -16,6 +28,7 @@ class Resources {
     return [...map.values()];
   }
   authorize(target, effectPolicy, grant, snapshot) {
+    if (grant.executionScope) return this.authorizeCurrentTarget(target, effectPolicy, grant, snapshot);
     if (this.diagnostics.length) fail('constraint_rebinding_required');
     for (const record of this.records()) {
       const resource = record?.resource;
@@ -48,5 +61,27 @@ class Resources {
       if (record.revision !== null && record.revision !== snapshot.revision) fail('resource_revision');
     }
   }
+  authorizeCurrentTarget(target, policy, grant, snapshot) {
+    if (this.diagnostics.length || this.ledger.corrupt || this.ledger.ownerFault) fail('constraint_rebinding_required');
+    const handle = validateReservationHandle(grant.reservation);
+    if (handle.ref !== grant.reservationRef || canonical(handle.executionScope) !== canonical(grant.executionScope) || grant.executionScope.schemaVersion !== 2 || canonical(grant.executionScope.target) !== canonical(target)) fail('reservation_scope');
+    const scope = { ...target, origin: grant.executionScope.origin }; let authorized = false;
+    for (const record of this.records()) {
+      if (!record || !record.resource || typeof record.resource.projectId !== 'string') fail('constraint_schema_unavailable');
+      exact(record, ['constraintId', 'schemaVersion', 'resource', 'origin', 'owner', 'checkpointRef', 'allowedEffects', 'reservationOwner', 'unresolvedOutcome', 'revision', 'provenance']);
+      if (![1, 2].includes(record.schemaVersion) || typeof record.owner !== 'string' || typeof record.checkpointRef !== 'string' || !Array.isArray(record.allowedEffects) || record.allowedEffects.some(e => typeof e !== 'string') || typeof record.unresolvedOutcome !== 'boolean' || record.schemaVersion === 1 && (!record.resource.sessionId || record.origin !== undefined)) fail('constraint_schema_unavailable');
+      exact(record.resource, ['sessionId', 'projectId', 'compId', 'layerId', 'itemId', 'file', 'output']);
+      for (const key of ['sessionId', 'projectId', 'file', 'output']) if (key in record.resource && (typeof record.resource[key] !== 'string' || !record.resource[key])) fail('constraint_schema_unavailable');
+      for (const key of ['compId', 'layerId', 'itemId']) if (key in record.resource && (!Number.isSafeInteger(record.resource[key]) || record.resource[key] < 1)) fail('constraint_schema_unavailable');
+      if (record.schemaVersion === 2 && (!record.origin || typeof record.origin.machineId !== 'string' || !Number.isSafeInteger(record.origin.aePid) || record.origin.aePid < 1 || typeof record.origin.aeProcessBirth !== 'string')) fail('constraint_schema_unavailable');
+      if (record.schemaVersion === 2) exact(record.origin, ['machineId', 'aePid', 'aeProcessBirth']);
+      if (!scopesOverlap({ ...record.resource, ...(record.origin ? { origin: record.origin } : {}) }, scope)) continue;
+      if (record.unresolvedOutcome || record.reservationOwner && record.reservationOwner !== grant.owner) fail('shared_resource_fenced');
+      if (record.owner !== grant.owner || record.checkpointRef !== grant.checkpointRef || !record.allowedEffects.includes(policy.effect)) fail('resource_ownership_checkpoint_effect');
+      if (record.revision !== null && record.revision !== snapshot.revision) fail('resource_revision');
+      if (record.schemaVersion === 2 && canonical(record.resource) === canonical(target) && canonical(record.origin) === canonical(scope.origin)) authorized = true;
+    }
+    if (!authorized) fail('resource_constraints_required');
+  }
 }
-module.exports = { Resources };
+module.exports = { Resources, scopesOverlap };

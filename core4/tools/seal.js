@@ -7,8 +7,8 @@ const root = path.resolve(__dirname, '..');
 const reads = [];
 function read(file) { reads.push(file); return fs.readFileSync(path.join(root, file), 'utf8'); }
 function write(file, data) { fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true }); fs.writeFileSync(path.join(root, file), JSON.stringify(data, null, 2) + '\n'); }
-function seal(directory, id, entry, files, deps = {}) {
-  const manifest = { id, version: '4.0.0-m1', entry, hashes: Object.fromEntries(files.map(f => [f, hash(read(directory + '/' + f))])), publicDependencies: Object.fromEntries(Object.keys(deps).map(f => [f, hash(read(f))])) };
+function seal(directory, id, entry, files, deps = {}, version = '4.0.0-m1') {
+  const manifest = { id, version, entry, hashes: Object.fromEntries(files.map(f => [f, hash(read(directory + '/' + f))])), publicDependencies: Object.fromEntries(Object.keys(deps).map(f => [f, hash(read(f))])) };
   write(directory + '/artifact.json', manifest); return { manifest, pin: hash(manifest) };
 }
 function main() {
@@ -24,20 +24,21 @@ function main() {
     write(dir + '/artifact.json', artifact);
     console.log(JSON.stringify({ packaged: ['cep-bridge'], pin: hash(artifact), admissionsWritten: false, ...(args.includes('--trace') ? { reads } : {}), liveCalls: 0 })); return;
   }
-  if (moduleId && !['photo-placeholder', 'titles'].includes(moduleId)) fail('unknown_module');
+  if (moduleId && !['photo-placeholder', 'titles', 'titles-current-target'].includes(moduleId)) fail('unknown_module');
   if (component && !['core', 'protocol', 'worker', 'engine'].includes(component)) fail('unknown_component');
   let catalog;
   if (all) catalog = { catalogRevision: 'M1-reviewed-local-1', modules: [] };
   else catalog = JSON.parse(read('config/catalog.json'));
   const entries = [];
-  for (const id of all ? ['photo-placeholder', 'titles'] : moduleId ? [moduleId] : []) {
+  for (const id of all ? ['photo-placeholder', 'titles', 'titles-current-target'] : moduleId ? [moduleId] : []) {
     const dir = 'modules/' + id;
-    const { pin } = seal(dir, id, 'implementation.js', ['implementation.js', 'contract.json', 'executor.jsx'], { 'protocol/target-contract.json': true });
+    const version = id === 'titles-current-target' ? '4.0.0' : '4.0.0-m1';
+    const { pin } = seal(dir, id, 'implementation.js', ['implementation.js', 'contract.json', 'executor.jsx'], id === 'titles-current-target' ? {} : { 'protocol/target-contract.json': true }, version);
     const contract = JSON.parse(read(dir + '/contract.json'));
     const admission = { moduleId: id, operationId: contract.operationId, artifactHash: pin, schemaHash: hash(contract.inputSchema), resultSchemaHash: hash(contract.snapshotSchema), effectPolicyHash: hash(contract.effectPolicy), executorHash: hash(read(dir + '/executor.jsx')), protocolVersion: 1, trustApprovalId: 'M1-source-review-' + id + '-20261026', revoked: false };
     // Only --reviewed-source writes admission records: generated hashes are not runtime grants.
     if (args.includes('--reviewed-source')) write('config/admissions/' + id + '.json', admission);
-    const entry = { id, version: '4.0.0-m1', path: dir, admission: 'config/admissions/' + id + '.json' };
+    const entry = { id, version, path: dir, admission: 'config/admissions/' + id + '.json' };
     const index = catalog.modules.findIndex(m => m.id === id); if (index >= 0) catalog.modules[index] = entry; else catalog.modules.push(entry);
     if (!all) catalog.catalogRevision = 'update-' + id + '-' + pin;
     entries.push(id);

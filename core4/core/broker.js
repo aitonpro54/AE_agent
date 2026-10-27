@@ -4,11 +4,11 @@ const crypto = require('node:crypto');
 const { Artifacts } = require('./artifacts');
 const { Ledger } = require('./ledger');
 const { WorkerClient } = require('./worker-client');
-const { Resources } = require('./resources');
+const { Resources, scopesOverlap } = require('./resources');
 const { readFailure } = require('./receiver');
 const { acquireStateLock } = require('./state-lock');
 const { recordContext } = require('./record-context');
-const { validatePort, validateLifecycleBinding } = require('./authority');
+const { validatePort, validateLifecycleBinding, validateExecutionPolicyPort } = require('./authority');
 const { dispatchBinding, sameDispatch } = require('../protocol/dispatch');
 const { check } = require('../protocol/schema');
 const { encode, decode } = require('../protocol/codec');
@@ -33,6 +33,7 @@ class Broker {
     if (privateEmbedding) {
       this.authority = validatePort(privateEmbedding.authority);
       this.transport = privateEmbedding.transport; this.hooks = privateEmbedding.hooks || {};
+      if (privateEmbedding.executionPolicy) this.executionPolicy = validateExecutionPolicyPort(privateEmbedding.executionPolicy);
       this.defaultRecordContext = privateEmbedding.recordContext;
     }
     this.resources = new Resources(this.ledger, this.authority?.resourceConstraints || []);
@@ -48,14 +49,14 @@ class Broker {
   }
   status() {
     const lifecycleCurrent = validateLifecycleBinding(this.sessionBinding);
-    return { ready: !this.closed, closed: this.closed, pid: process.pid, coreIdentity: this.artifacts.coreIdentity, protocolPin: this.artifacts.protocolPin, connection: this.connected && lifecycleCurrent ? 'connected' : 'unavailable', unavailableReason: this.closed ? 'broker_closed' : this.stateLock.error || (!this.transport ? 'live_transport_not_installed' : !lifecycleCurrent ? 'trusted_project_lifecycle_unavailable' : null), synthetic: !!this.authority?.synthetic, ledgerFault: !!this.ledger.corrupt, ownershipFault: this.stateLock.error, unresolved: this.ledger.unresolved().map(c => ({ commandId: c.commandId, taskId: c.taskId, state: c.state, target: c.target })), worker: this.worker.status() };
+    return { ready: !this.closed, closed: this.closed, pid: process.pid, coreIdentity: this.artifacts.coreIdentity, protocolPin: this.artifacts.protocolPin, connection: this.connected && (lifecycleCurrent || this.executionPolicy) ? 'connected' : 'unavailable', unavailableReason: this.closed ? 'broker_closed' : this.stateLock.error || (!this.transport ? 'live_transport_not_installed' : !lifecycleCurrent && !this.executionPolicy ? 'trusted_project_lifecycle_unavailable' : null), synthetic: !!this.authority?.synthetic, ledgerFault: !!this.ledger.corrupt, ownershipFault: this.stateLock.error, unresolved: this.ledger.unresolved().map(c => ({ commandId: c.commandId, taskId: c.taskId, state: c.state, target: c.target })), worker: this.worker.status() };
   }
   diagnostics() { return { ...this.status(), catalogRevision: this.artifacts.catalog.catalogRevision, catalogError: this.artifacts.catalogError, controllerBusy: this.controllerBusy, resourceDiagnostics: this.resources.diagnostics }; }
   async connect() {
     if (this.closed) return { available: false, reason: 'broker_closed' };
     if (this.stateLock.error) return { available: false, reason: this.stateLock.error };
     if (!this.transport || !this.authority) return { available: false, reason: 'live_transport_not_installed' };
-    if (this.connected) return validateLifecycleBinding(this.sessionBinding) ? { available: true, synthetic: !!this.authority.synthetic } : { available: false, reason: 'trusted_project_lifecycle_unavailable' };
+    if (this.connected) return validateLifecycleBinding(this.sessionBinding) || this.executionPolicy ? { available: true, synthetic: !!this.authority.synthetic, automaticLifecycle: validateLifecycleBinding(this.sessionBinding) } : { available: false, reason: 'trusted_project_lifecycle_unavailable' };
     this.controlPending++;
     try {
     // Every private connection has a new authentication lifetime. In particular a
@@ -64,7 +65,7 @@ class Broker {
     const channelEpoch = id('channel'), secret = crypto.randomBytes(32).toString('hex');
     const binding = await this.transport.connect({ controllerId: this.controllerId, channelEpoch, secret });
     if (this.closed) return { available: false, reason: 'broker_closed' };
-    if (!validateLifecycleBinding(binding?.sessionBinding)) return { available: false, reason: 'trusted_project_lifecycle_unavailable' };
+    if (!validateLifecycleBinding(binding?.sessionBinding) && !this.executionPolicy) return { available: false, reason: 'trusted_project_lifecycle_unavailable' };
     if (typeof binding.receiverStoreIdentity !== 'string' || !binding.receiverStoreIdentity) return { available: false, reason: 'receiver_store_identity_unavailable' };
     this.channelEpoch = channelEpoch; this.secret = secret;
     this.receiverStoreIdentity = binding.receiverStoreIdentity;
@@ -100,6 +101,12 @@ class Broker {
     if (!validateLifecycleBinding(this.sessionBinding)) fail('trusted_project_lifecycle_unavailable');
     if (target.sessionId !== this.sessionBinding.sessionId || target.projectId !== this.sessionBinding.projectId) fail('project_incarnation_changed');
   }
+  executionDescription(selected, target) { return this.executionPolicy?.describe(selected, { target }) || null; }
+  assertExecution(selected, payload, phase, context, stage = 'before-send') {
+    const target = pick(payload, selected.contract.effectPolicy.targetFields), descriptor = this.executionDescription(selected, target);
+    if (!descriptor) return this.lifecycle(payload);
+    this.executionPolicy.assertCurrent({ ...context, selected, target, descriptor, phase, stage });
+  }
   current(taskId, epoch) { if (this.closed) fail('broker_closed'); const task = this.ledger.task(taskId); if (task.reset || task.epoch !== epoch) fail('stale_task_epoch'); return task; }
   async hook(name, data) { if (this.hooks[name]) await this.hooks[name](data, this); }
   async job(task, method, selected, payload) {
@@ -107,13 +114,13 @@ class Broker {
     const result = await this.worker.request({ taskId: task.taskId, taskEpoch: task.epoch, method, componentPins: pick(selected, ['pin', 'path', 'manifest']), payload });
     this.current(task.taskId, task.epoch); return result;
   }
-  async send(selected, phase, payload, commandId = id(phase), onDispatched, expectedDispatch) {
+  async send(selected, phase, payload, commandId = id(phase), onDispatched, expectedDispatch, executionContext) {
     this.ensureConnection(); if (this.controllerBusy) fail('controller_busy');
     if (phase !== 'verify' && this.ledger.unresolved().some(c => c.commandId !== commandId)) fail('controller_unresolved');
     this.artifacts.recheck(selected);
     const body = { protocolVersion: 1, controllerId: this.controllerId, channelEpoch: this.channelEpoch, commandId, moduleId: selected.moduleId, operationId: selected.contract.operationId, executorHash: selected.admission.executorHash, phase, payloadHash: hash(canonical(payload)), payload };
     if (expectedDispatch && !sameDispatch(dispatchBinding(body, this.receiverStoreIdentity), expectedDispatch)) fail('dispatch_binding_changed');
-    bounded(body); this.lifecycle(payload); this.controllerBusy = true;
+    bounded(body); this.assertExecution(selected, payload, phase, executionContext); this.controllerBusy = true;
     let actual;
     try { actual = Promise.resolve(this.transport.send(encode(body, this.secret))); }
     catch (e) { this.controllerBusy = false; throw e; }
@@ -128,7 +135,7 @@ class Broker {
     pending.catch(() => {});
     if (onDispatched) onDispatched();
     let timer;
-    try { const result = await Promise.race([pending, new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error('transport_timeout'), { code: 'transport_timeout' })), this.transportTimeout); })]); if (this.closed) fail('broker_closed'); this.lifecycle(payload); return result; }
+    try { const result = await Promise.race([pending, new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error('transport_timeout'), { code: 'transport_timeout' })), this.transportTimeout); })]); if (this.closed) fail('broker_closed'); this.assertExecution(selected, payload, phase, executionContext, 'after-send'); return result; }
     finally { clearTimeout(timer); }
   }
   originalDispatch(selected, phase, payload, commandId) {
@@ -158,7 +165,7 @@ class Broker {
     return intent.input;
   }
   async build(args) {
-    exact(args, ['taskId', 'workflowId', 'steps', 'recordContext']);
+    exact(args, ['taskId', 'workflowId', 'steps', 'recordContext', 'oneStep']);
     if (!Array.isArray(args.steps) || args.steps.length > 16 || !args.steps.length) fail('workflow_size');
     const taskId = args.taskId || id('task'); const task = this.ledger.task(taskId); this.current(taskId, task.epoch);
     if (!this.ledger.events.some(e => e.type === 'task' && e.taskId === taskId)) this.ledger.append({ type: 'task', taskId, epoch: 0, reset: false });
@@ -172,12 +179,15 @@ class Broker {
       check(selected.contract.buildSchema, request.input);
       const intent = await this.job(task, 'build', selected, { input: request.input, evidence: evidence.snapshot });
       const input = this.validateIntent(selected, intent, request.input, evidence.snapshot);
-      steps.push({ stepId: request.stepId, selected, input, desiredInput: request.input, inputDigest: hash({ input: request.input, modulePin: selected.pin, bindings: request.bindings || [] }), dependsOn: request.dependsOn || [], bindings: request.bindings || [], initialEvidence: evidence.snapshot });
+      const executionPolicy = this.executionDescription(selected, evidence.snapshot.target);
+      steps.push({ stepId: request.stepId, selected, input, desiredInput: request.input, inputDigest: hash({ input: request.input, modulePin: selected.pin, bindings: request.bindings || [] }), dependsOn: request.dependsOn || [], bindings: request.bindings || [], initialEvidence: evidence.snapshot, ...(executionPolicy ? { executionPolicy } : {}) });
     }
-    const engine = this.artifacts.selectEngine(); const plan = { workflowId: args.workflowId || id('workflow'), planRevision: id('revision'), taskId, taskEpoch: task.epoch, engine, steps, pins: { core: this.artifacts.coreIdentity, protocol: this.artifacts.protocolPin, engine: engine.pin, modules: steps.map(s => ({ stepId: s.stepId, module: s.selected.pin, admission: hash(s.selected.admission), dependencies: s.selected.publicDependencies })) } };
+    const oneStep = args.oneStep === true;
+    if (oneStep && (steps.length !== 1 || !steps[0].executionPolicy || steps[0].dependsOn.length || steps[0].bindings.length)) fail('one_step_policy_required');
+    const engine = oneStep ? null : this.artifacts.selectEngine(); const plan = { workflowId: args.workflowId || id('workflow'), planRevision: id('revision'), taskId, taskEpoch: task.epoch, engine, ...(oneStep ? { oneStep: true } : {}), steps, pins: { core: this.artifacts.coreIdentity, protocol: this.artifacts.protocolPin, engine: engine?.pin || null, modules: steps.map(s => ({ stepId: s.stepId, module: s.selected.pin, admission: hash(s.selected.admission), dependencies: s.selected.publicDependencies, ...(s.executionPolicy ? { executionPolicy: s.executionPolicy } : {}) })) } };
     plan.pins.transport = this.transportIdentity || null;
     plan.recordContext = recordContext(args.recordContext || this.defaultRecordContext, { taskId, projectId: steps[0].input.projectId });
-    await this.job(task, 'engine', engine, { action: 'validate', plan: { steps: steps.map(s => pick(s, ['stepId', 'dependsOn', 'bindings'])) } });
+    if (engine) await this.job(task, 'engine', engine, { action: 'validate', plan: { steps: steps.map(s => pick(s, ['stepId', 'dependsOn', 'bindings'])) } });
     const buildId = id('build'); this.ledger.append({ type: 'build', buildId, plan }); this.builds.set(buildId, clone(plan));
     return { buildId, workflowId: plan.workflowId, planRevision: plan.planRevision, pins: clone(plan.pins), recordContext: clone(plan.recordContext), taskId, deterministicDigest: hash(steps.map(s => ({ operationId: s.selected.contract.operationId, input: s.input, pin: s.selected.pin }))) };
   }
@@ -189,11 +199,16 @@ class Broker {
     this.ledger.append(proposal); this.proposals.set(proposal.proposalId, proposal);
     return { proposalId: proposal.proposalId, planRevision: plan.planRevision, taskId: plan.taskId, confirmationRequired: true, effects: plan.steps.map(s => ({ stepId: s.stepId, target: pick(s.desiredInput, s.selected.contract.effectPolicy.targetFields), effect: s.selected.contract.effectPolicy.effect, input: clone(s.input), expectedSnapshotDigest: hash(s.initialEvidence), modulePin: s.selected.pin })), pins: clone(plan.pins) };
   }
-  approvalStep(step) {
-    return { stepId: step.stepId, moduleId: step.selected.moduleId, operationId: step.selected.contract.operationId, modulePin: step.selected.pin, admissionPin: hash(step.selected.admission), input: clone(step.input), target: pick(step.desiredInput, step.selected.contract.effectPolicy.targetFields), effectPolicy: clone(step.selected.contract.effectPolicy), expectedSnapshotDigest: hash(step.initialEvidence) };
+  approvalStep(step, proposal) {
+    const base = { stepId: step.stepId, moduleId: step.selected.moduleId, operationId: step.selected.contract.operationId, modulePin: step.selected.pin, admissionPin: hash(step.selected.admission), input: clone(step.input), target: pick(step.desiredInput, step.selected.contract.effectPolicy.targetFields), effectPolicy: clone(step.selected.contract.effectPolicy), expectedSnapshotDigest: hash(step.initialEvidence) };
+    if (step.executionPolicy) {
+      base.executionPolicy = clone(step.executionPolicy);
+      base.checkpoint = { kind: step.selected.contract.effectPolicy.checkpointKind, digest: hash({ proposalId: proposal.proposalId, planDigest: proposal.planDigest, ...base, preimage: step.initialEvidence }) };
+    }
+    return base;
   }
   approval(proposal, plan) {
-    return { proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, steps: plan.steps.map(step => this.approvalStep(step)) };
+    return { proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, steps: plan.steps.map(step => this.approvalStep(step, proposal)) };
   }
   proposal(proposalId) {
     const proposal = this.proposals.get(proposalId); if (!proposal) fail('server_proposal_required');
@@ -217,7 +232,7 @@ class Broker {
   }
   checkFence(target) {
     if (this.ledger.corrupt) fail('ledger_corrupt');
-    if (this.ledger.unresolved().some(c => c.target.projectId === target.projectId && c.target.sessionId === target.sessionId)) fail('resource_fenced');
+    if (this.ledger.unresolved().some(c => scopesOverlap(c.target, target))) fail('resource_fenced');
   }
   async materialize(plan, step, outputs) {
     const desired = clone(step.desiredInput);
@@ -237,7 +252,49 @@ class Broker {
     const input = this.validateIntent(step.selected, intent, desired, before);
     return { input, before, target };
   }
+  async executePolicyStep({ plan, step, proposal, runId, outputs }) {
+    const { input, before, target } = await this.materialize(plan, step, outputs);
+    this.checkFence(target); this.current(plan.taskId, plan.taskEpoch);
+    const descriptor = this.executionDescription(step.selected, target);
+    if (canonical(descriptor) !== canonical(step.executionPolicy)) fail('execution_policy_changed');
+    const approved = this.approvalStep(step, proposal), commandId = id('command'), attemptId = id('attempt');
+    const checkpoint = { ref: id('checkpoint'), kind: approved.checkpoint.kind, digest: approved.checkpoint.digest };
+    this.ledger.append({ type: 'checkpoint', checkpoint, proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, stepId: step.stepId, target, preimage: before, baselineDigest: hash(before), pins: plan.pins, effectPolicy: step.selected.contract.effectPolicy, recovery: 'fresh-proposal-and-native-confirmation-required' });
+    const ctx = { plan, step, proposal, selected: step.selected, target, input, before, descriptor, checkpoint, commandId };
+    this.executionPolicy.assertCurrent({ ...ctx, phase: 'mutate', stage: 'prepare' });
+    const reservation = await this.executionPolicy.prepareReservation(ctx); ctx.reservation = reservation;
+    const authorization = { proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, ...approved, checkpointRecord: checkpoint, reservation };
+    const grant = this.authority.authorize(authorization), policy = step.selected.contract.effectPolicy;
+    this.resources.authorize(target, policy, grant, before);
+    const physicalInput = { ...input, _execution: { policyId: descriptor.policyId, proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, stepId: step.stepId, checkpointRef: checkpoint.ref, checkpointDigest: checkpoint.digest, baselineDigest: hash(before), baselineRevision: before.revision, baselineProtected: before.protected, target, pins: plan.pins } };
+    ctx.physicalInput = physicalInput;
+    const originalBinding = this.originalDispatch(step.selected, 'mutate', physicalInput, commandId); ctx.originalBinding = originalBinding;
+    const guard = () => {
+      this.current(plan.taskId, plan.taskEpoch); this.artifacts.recheck(step.selected);
+      if (canonical(this.executionDescription(step.selected, target)) !== canonical(descriptor)) fail('execution_policy_changed');
+      if (this.ledger.unresolved().some(c => c.commandId !== commandId && scopesOverlap(c.target, target))) fail('resource_fenced');
+      this.executionPolicy.assertCurrent({ ...ctx, phase: 'mutate', stage: 'before-send' }); this.executionPolicy.assertReservation(ctx, reservation);
+      const freshGrant = this.authority.authorize(authorization); this.resources.authorize(target, policy, freshGrant, before);
+      if (!sameDispatch(this.originalDispatch(step.selected, 'mutate', physicalInput, commandId), originalBinding) || canonical(plan.pins.transport || null) !== canonical(this.transportIdentity || null)) fail('dispatch_binding_changed');
+    };
+    await this.hook('beforeIntent', { commandId, step }); guard();
+    const { reservation: privateHandle, ...persistedGrant } = grant;
+    const receipt = { type: 'intent', commandId, proposalId: proposal.proposalId, planDigest: proposal.planDigest, dispatchBinding: originalBinding, transportIdentity: this.transportIdentity || null, taskId: plan.taskId, taskEpoch: plan.taskEpoch, workflowId: plan.workflowId, planRevision: plan.planRevision, recordContext: plan.recordContext, runId, stepId: step.stepId, attemptId, inputDigest: step.inputDigest, input, physicalInput, before, target, selected: step.selected, grant: persistedGrant, executionPolicy: descriptor, checkpoint, dispatchedAt: Date.now() };
+    this.ledger.append(receipt); await this.hook('afterIntent', receipt);
+    try { guard(); } catch (e) { this.ledger.append({ type: 'command', commandId, state: 'rejected', code: e.code || 'gate_revoked_before_send' }); throw e; }
+    try {
+      await this.send(step.selected, 'mutate', physicalInput, commandId, () => { if (this.hooks.afterPhysicalSend) this.hooks.afterPhysicalSend(receipt, this); }, originalBinding, ctx);
+      this.current(plan.taskId, plan.taskEpoch);
+      const proof = decode(await this.completion(commandId), this.secret);
+      const verified = this.executionPolicy.verifyCompletion(ctx, proof);
+      if (verified.rejected) { this.ledger.append({ type: 'command', commandId, state: 'rejected', code: verified.code }); fail('executor_rejected', verified.code); }
+      this.validateReadback(step.selected, input, before, verified.after); this.current(plan.taskId, plan.taskEpoch); this.artifacts.recheck(step.selected);
+      this.ledger.append({ type: 'command', commandId, state: 'succeeded', after: verified.after, verificationKind: verified.verificationKind });
+      this.engineEvent(plan, { kind: 'succeeded', runId, stepId: step.stepId, attemptId, commandId, inputDigest: step.inputDigest, output: verified.after }); return verified.after;
+    } catch (e) { this.engineEvent(plan, { kind: 'fault', runId, stepId: step.stepId, attemptId, commandId, code: e.code || 'unknown' }); throw e; }
+  }
   async executeStep({ plan, step, proposal, runId, outputs }) {
+    if (step.executionPolicy) return this.executePolicyStep({ plan, step, proposal, runId, outputs });
     const { input, before, target } = await this.materialize(plan, step, outputs);
     this.checkFence(target); this.current(plan.taskId, plan.taskEpoch);
     const policy = step.selected.contract.effectPolicy;
@@ -306,7 +363,7 @@ class Broker {
     try {
       const events = this.ledger.workflow(plan.workflowId);
       const completions = this.ledger.commands().filter(c => c.workflowId === plan.workflowId && c.state === 'succeeded').map(c => pick(c, ['stepId', 'inputDigest', 'commandId']));
-      const decisions = await this.job({ taskId: plan.taskId, epoch: plan.taskEpoch }, 'engine', plan.engine, { action: 'resume', plan: { steps: plan.steps.map(s => pick(s, ['stepId', 'inputDigest'])) }, events, completions });
+      const decisions = plan.oneStep ? { steps: plan.steps.map(s => { const c = completions.find(c => c.stepId === s.stepId && c.inputDigest === s.inputDigest); return { stepId: s.stepId, action: c ? 'reinspect_success' : 'execute', ...(c ? { commandId: c.commandId } : {}) }; }) } : await this.job({ taskId: plan.taskId, epoch: plan.taskEpoch }, 'engine', plan.engine, { action: 'resume', plan: { steps: plan.steps.map(s => pick(s, ['stepId', 'inputDigest'])) }, events, completions });
       exact(decisions, ['steps']);
       if (!Array.isArray(decisions.steps) || decisions.steps.length !== plan.steps.length) fail('engine_decision');
       this.engineEvent(plan, { kind: 'run_started', runId, planRevision: plan.planRevision });
@@ -343,10 +400,22 @@ class Broker {
   async reconcile({ taskId }) {
     this.ensureConnection();
     if (this.running || this.reconciling || this.controlPending) fail('broker_busy');
-    if (!validateLifecycleBinding(this.sessionBinding)) fail('trusted_project_lifecycle_unavailable');
+    if (!validateLifecycleBinding(this.sessionBinding) && !this.executionPolicy) fail('trusted_project_lifecycle_unavailable');
     this.reconciling = true;
     try {
     for (const command of this.ledger.commands(taskId).filter(c => !['succeeded', 'rejected'].includes(c.state))) {
+      if (command.executionPolicy) {
+        this.artifacts.recheck(command.selected);
+        const proof = decode(await this.completion(command.commandId), this.secret);
+        if (proof.state !== 'completed' || !command.dispatchBinding || this.receiverStoreIdentity !== command.dispatchBinding.receiverStoreIdentity || !sameDispatch(proof.originalBinding, command.dispatchBinding)) continue;
+        const checkpoint = this.ledger.events.find(e => e.type === 'checkpoint' && e.checkpoint.ref === command.checkpoint.ref);
+        if (!checkpoint || checkpoint.checkpoint.digest !== command.checkpoint.digest || checkpoint.baselineDigest !== hash(command.before)) fail('checkpoint_integrity');
+        const ctx = { ...command, selected: command.selected, descriptor: command.executionPolicy, originalBinding: command.dispatchBinding };
+        const verified = this.executionPolicy.verifyCompletion(ctx, proof);
+        if (verified.rejected) { this.ledger.append({ type: 'command', commandId: command.commandId, state: 'rejected', code: verified.code }); continue; }
+        this.validateReadback(command.selected, command.input, command.before, verified.after);
+        this.ledger.append({ type: 'command', commandId: command.commandId, state: 'succeeded', after: verified.after, verificationKind: verified.verificationKind }); continue;
+      }
       if (command.target.sessionId !== this.sessionBinding.sessionId || command.target.projectId !== this.sessionBinding.projectId) continue;
       const proof = decode(await this.completion(command.commandId), this.secret);
       this.ensureConnection();

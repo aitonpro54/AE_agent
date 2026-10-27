@@ -23,7 +23,10 @@ function buildPackage(root = path.resolve(__dirname, '..')) {
   const release = { version: '4.0.0', format: 1, hashes };
   const inspection = JSON.parse(Buffer.from(files['modules/project-inspection/artifact.json'], 'base64'));
   const source = Buffer.from(files['modules/project-inspection/executor.jsx'], 'base64').toString('utf8');
-  const registry = '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var executor=' + source + ';return {dispatch:function(frame){if(!frame||frame.assetKey!=="project-inspection-v1"||frame.phase!=="inspect"||frame.pins.executorHash!=="' + inspection.executorHash + '")throw new Error("fixed_asset_binding");try{return JSON.stringify(executor.inspect(frame.typedPayload));}catch(e){return JSON.stringify({readFailureVersion:1,outcome:"rejected",code:"inspection_failed"});}}};}());\n';
+  const manual = JSON.parse(Buffer.from(files['config/admissions/titles-current-target.json'], 'base64'));
+  const manualSource = Buffer.from(files['modules/titles-current-target/executor.jsx'], 'base64').toString('utf8');
+  const codecSource = Buffer.from(files['runtime/host/json-codec.jsx'], 'base64').toString('utf8');
+  const registry = '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + codecSource + ';var executor=' + source + ';var manual=' + manualSource + ';var assets={"project-inspection-v1":{hash:"' + inspection.executorHash + '",calls:{inspect:executor.inspect}},"titles-current-target-v1":{hash:"' + manual.executorHash + '",calls:{inspect:manual.inspect,mutate:manual.mutate,verify:manual.verify}}};return {dispatch:function(serialized){var frame=JSON.parse(serialized),a=frame&&assets[frame.assetKey],call=a&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({readFailureVersion:1,outcome:"rejected",code:"inspection_failed"});}}};}());\n';
   files['cep/jsx/registry.jsx'] = Buffer.from(registry).toString('base64'); hashes['cep/jsx/registry.jsx'] = hash(registry);
   return { packageHash: hash(release), release, files };
 }
