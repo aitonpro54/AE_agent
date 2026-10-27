@@ -1,4 +1,4 @@
-# AE Agent Core 4.0.0 — разработка M2b (project events, offline)
+# AE Agent Core 4.0.0 — ручной CEP/JSX-контракт текущей цели (offline)
 
 ## Рабочий каталог
 
@@ -13,7 +13,7 @@
 
 Цель: самостоятельно работающее минимальное ядро Codex → MCP → typed bridge → After Effects и независимо подключаемые рабочие пакеты. Текущий план: `plans/core-4.0.0.md`; `plans/core-migration.md` сохраняет историю исходной базы 3.3.5 и незавершённого cutover.
 
-Текущий срез: `plans/core-4.0.0-m2b-events.md` — private offline-контракт lifecycle/grant и synthetic event simulation. Реальный event source/issuer и live/installed runtime не входят в него; public MCP не получает event injection или issuance authority.
+Текущий срез: `plans/core-4.0.0-cep-project-safety.md` — изолированный offline-прототип ручного одобрения текущей совпадающей цели внутри CEP/JSX, без C++ SDK. Пользователь допустил подтверждение в AE; реальные UI/live-действия этим source-only блоком не выполняются. Автоматический lifecycle/grant-контракт M2b сохраняется; production event source/issuer, public injection/issuance и live/installed runtime не включаются. Прототип не подключается к обычному Broker/run_plan и не объявляется доказательством continuity прежней incarnation.
 
 - Работать по-русски, сохранять чужие изменения; один writer на ресурс и один live-контроллер.
 - Typed inspection → deterministic build → server-owned proposal → dry-run → подтверждение по риску → read-back. Private brands, grants, ownership, checkpoint и UNKNOWN/no-replay обязательны.

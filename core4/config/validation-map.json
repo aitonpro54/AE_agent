@@ -1,6 +1,21 @@
 {
   "owners": [
     {
+      "prefix": "core4/experiments/manual-current-target/",
+      "owner": "manual-current-target-experiment",
+      "checks": ["manual-current-target"]
+    },
+    {
+      "prefix": "core4/test/fixtures/manual-current-target.js",
+      "owner": "manual-current-target-experiment",
+      "checks": ["manual-current-target"]
+    },
+    {
+      "prefix": "core4/test/manual-current-target.test.js",
+      "owner": "manual-current-target-experiment",
+      "checks": ["manual-current-target"]
+    },
+    {
       "prefix": "core4/test/audit-repairs.test.js",
       "owner": "audit-repairs",
       "checks": ["audit-repairs"]
@@ -160,6 +175,14 @@
     }
   ],
   "contracts": [
+    { "prefix": "core4/modules/titles/executor.jsx", "id": "manual-current-target-reviewed-dependency", "consumers": ["manual-current-target"] },
+    { "prefix": "core4/config/admissions/titles.json", "id": "manual-current-target-reviewed-dependency", "consumers": ["manual-current-target"] },
+    { "prefix": "core4/core/receiver-api.js", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
+    { "prefix": "core4/core/receiver.js", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
+    { "prefix": "core4/protocol/", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
+    { "prefix": "core4/integrations/cep/host-dispatcher.js", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
+    { "prefix": "core4/integrations/cep/completion-store.js", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
+    { "prefix": "core4/test/fixtures/ae.js", "id": "manual-current-target-synthetic-host", "consumers": ["manual-current-target"] },
     { "prefix": "core4/core/broker.js", "id": "audit-repair-control-boundary", "consumers": ["audit-repairs"] },
     { "prefix": "core4/core/receiver.js", "id": "audit-repair-read-boundary", "consumers": ["audit-repairs"] },
     { "prefix": "core4/core/resources.js", "id": "audit-repair-resource-boundary", "consumers": ["audit-repairs"] },
@@ -321,6 +344,11 @@
     }
   ],
   "checkDependencies": {
+    "manual-current-target": [
+      "experiments/manual-current-target/", "test/manual-current-target.test.js", "test/fixtures/manual-current-target.js", "test/fixtures/ae.js",
+      "core/receiver-api.js", "core/receiver.js", "core/authority.js", "protocol/", "modules/titles/executor.jsx", "config/admissions/titles.json",
+      "integrations/cep/host-dispatcher.js", "integrations/cep/completion-store.js"
+    ],
     "audit-repairs": [
       "core/", "protocol/", "worker.js", "modules/", "plan-engine/", "integrations/cep/", "config/catalog.json", "config/admissions/",
       "test/audit-repairs.test.js", "test/fixtures/artifact-publish-crash.js", "test/fixtures/cep-host.js", "test/fixtures/ae.js", "test/fixtures/authority.js", "test/helpers.js"
@@ -534,6 +562,7 @@
     ]
   },
   "checkCommands": {
+    "manual-current-target": ["node", "--test", "--test-name-pattern=manual-current-target", "test/manual-current-target.test.js"],
     "audit-repairs": ["node", "--test", "--test-name-pattern=audit-repairs", "test/audit-repairs.test.js"],
     "titles-owner": [
       "node",
@@ -603,6 +632,7 @@
     ]
   },
   "checkPolicy": {
+    "manual-current-target": { "kind": "integration" },
     "audit-repairs": { "kind": "integration" },
     "core-control": {
       "kind": "integration"
