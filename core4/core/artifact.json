@@ -11,7 +11,7 @@
     "core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
     "core/resources.js": "27eca74207df9108dcf3282a3b26db4b110965e1832fc26f2a36aa0a99658a5c",
     "core/state-lock.js": "4105e87c09a4546e1785652dc7d55859148881f1214bf8560871803320ba77ea",
-    "core/stdio.js": "58542ececf37121befa7a0eff4bd17e9f313527b760941408b7b068eaf8f5a13",
+    "core/stdio.js": "3100da7943d9119e96e7fffcc9b80cdd4048256e9e2cbdec649fef1021358502",
     "core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",
     "worker.js": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02",
     "protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",

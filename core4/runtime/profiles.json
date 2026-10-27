@@ -1,0 +1,5 @@
+{
+  "profiles": [
+    { "id": "project-inspection", "path": "modules/project-inspection", "executionPolicy": "read-only-current-observation-v1" }
+  ]
+}

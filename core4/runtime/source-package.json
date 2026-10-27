@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "files": [
+    "core/artifact.json", "worker.js", "config/catalog.json", "config/admissions/titles.json", "config/admissions/photo-placeholder.json",
+    "runtime/stdio-entry.js", "runtime/installation.js", "runtime/profiles.json", "runtime/source-package.json",
+    "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js",
+    "modules/project-inspection/contract.json", "modules/project-inspection/executor.jsx", "modules/project-inspection/artifact.json",
+    "cep/CSXS/manifest.xml", "cep/index.html", "cep/panel.css", "cep/js/poll-dispatcher.js", "cep/js/panel.js"
+  ],
+  "artifactClosures": ["core/artifact.json", "protocol/artifact.json", "modules/titles/artifact.json", "modules/photo-placeholder/artifact.json", "plan-engine/artifact.json"]
+}

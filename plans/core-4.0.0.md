@@ -355,6 +355,14 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
 - **Decision Log:** identical same-path replacement может быть принят только новым локальным подтверждением на текущую цель; это не continuity старого проекта. Старые session/grants/checkpoint не получают новую authority из path/IDs или nonce.
 - **Validation:** итоговый manual13/13 и selected routing/docs6/6 PASS; direct boundaries18 и diff PASS. Новый case заменяет проект внутри confirm, A0/B1; прежние12 не суммируются. Команда npm завершилась до запуска script, её успех не заявляется. Полные команды/evidence/coverage gaps — в focused плане; production pins не менялись, live и release не проверялись.
 
+### Создание устанавливаемой4.0.0 — 27 октября 2026
+
+Пользователь прямо поручил создавать собственную версию здесь вместо поиска готового дистрибутива. Активный [план установки/runtime](core-4.0.0-installable.md) включает реальный HTTP IPC, отдельную CEP-панель, package/installer, generic MCP и новый manual current-target typed путь. `35f4c90` — исходная чистая база. Source/build/install теперь разрешены целевым поручением; старые offline/desktop-request ограничения не останавливают этот блок.
+
+- **Progress:** I source/package реализован, после адресных fixes independent review ACCEPT; immutable distribution48files собран root и actual MSI dry-run прошёл. Root устанавливает reviewedI, затем writer продолжаетII без нового запроса разрешения.
+- **Decision Log:** новый код не импортирует legacy bridge, не выдаёт fake epoch и не переименовывает3.3.3. Automatic incarnation gate остаётся строгим; ручная политика имеет собственные target/resource/checkpoint/verification semantics.
+- **Validation:** итоговый I13/13, selected прежние Core36/photo3/titles4 на неизменённой closure, boundaries20/syntax/XML/diff PASS. Exactsource/packagehashes root сверил; packageHash `cf07e3189d88c4921f779b806b5dc45c8a305cd9c4bc27d898b3903678327f04`. Coverage/raw-log/live ограничения — в активном плане; full-release certification не подразумевается.
+
 ### Подготовка AEP для host-validation — 27 октября 2026
 
 - **Progress:** пользователь выбрал `titr_01_ame_product_20261015.aep`; создана отдельная ignored byte-copy32001325 bytes с SHA-256 `9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f`. Source metadata/hash до и после совпали. Полные пути и manifest — в [focused плане](core-4.0.0-cep-project-safety.md).

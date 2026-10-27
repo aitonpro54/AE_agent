@@ -1,0 +1,10 @@
+{
+  "moduleId": "project-inspection",
+  "operationId": "inspect-project",
+  "version": "4.0.0",
+  "executionPolicy": "read-only-current-observation-v1",
+  "snapshotProfile": "project-observation-v1",
+  "targetSchema": { "type": "object", "properties": { "compId": { "type": "integer", "minimum": 1 } }, "additionalProperties": false },
+  "effectPolicy": { "effect": "none", "continuity": false, "boundedItemsScanned": 500, "boundedComps": 50, "boundedLayers": 100 },
+  "buildSupported": false
+}

@@ -1,4 +1,31 @@
-# Core4 M1 — самостоятельный offline-срез
+# Core4 4.0.0 — отдельный устанавливаемый runtime
+
+Этап I добавляет рабочий внешний Node20+ stdio runtime и отдельную pure-browser CEP-панель `com.codex.aeagentcore4` с меню **AE Agent Core4.0.0**. Runtime запускает HTTP3457 в том же процессе; embedded CEP Node, detached daemon, legacy3456 и зависимости npm не используются. Обычный автоматический lifecycle остаётся unavailable. Ни MCP connect, ни HTTP link не создают project-incarnation.
+
+`runtime/profiles.json` допускает optional `project-inspection` по pinned contract/executor. Existing generic flow `list_modules → get_module_contract → inspect_module_target` возвращает bounded текущую observation: до50 comp summaries и до100 layers выбранной comp. `target:{compId}` необязателен; это discovery saved/unsaved проекта без synthetic session. Observation не выдаёт authority или continuity; build для этого read-only модуля явно unsupported. Остальные generic tools обслуживает существующий Broker с прежними strict gates.
+
+Пакет создаётся детерминированно из `runtime/source-package.json` и закреплённых artifact closures. В пакет не входят tests/experiments/tools/deps/logs/state/`.git`. Fixed JSX registry компилируется при packaging; runtime frame содержит только `assetKey/phase/typedPayload/commandId/originalBinding/pins`. Произвольный source/path/function не принимается. CEP использует native WebCrypto HMAC, fresh challenge/epoch/sequence, отдельный panel token и exact loopback Host/opaque `null` Origin. Недоступный WebCrypto закрывает подключение; отсутствующий native JSX JSON возвращает явный известный отказ `host_json_unavailable`, без raw fallback. Native AE support требует фактической live-проверки.
+
+Node append+fsync begin выполняется до публикации команды; complete fsync — до correlated ACK. CEP сохраняет physical latch до eval и callback receipt до POST; latch удаляется только после ACK с exact command/receipt. LocalStorage не является fsync proof: Node store остаётся authority для no-replay. Timeout, callback loss, corruption, reload с потерянным callback и orphan receiver owner закрывают lane. Installer не удаляет owner/fences и отказывает при owned/unknown production state.
+
+Команды подготовки из корня репозитория (первые две не меняют установку):
+
+```powershell
+node core4/tools/package-installable.js --output C:/Temp/core4-package.json
+node core4/tools/install-core4.js dry-run --package C:/Temp/core4-package.json --node 'C:/Program Files/nodejs/node.exe'
+node core4/tools/install-core4.js apply --package C:/Temp/core4-package.json --node 'C:/Program Files/nodejs/node.exe' --expected-package-hash EXACT_HASH_FROM_DRY_RUN
+node core4/tools/install-core4.js rollback C:/Users/USER/AppData/Local/AEAgentCore4/transactions/TRANSACTION.json
+```
+
+Apply требует exact reviewed package hash и пишет собственный immutable release под `%LOCALAPPDATA%/AEAgentCore4/releases/<packageHash>`, stable state под `state/production`, отдельную CEP extension и только project-local `[mcp_servers.after-effects-core4]` в `.codex/config.toml`. Absolute external Node path/version/SHA256 закрепляются в installation descriptor. Entry загружает только Node builtins до проверки полного release tree: exact file/directory set, включая `release.json`; лишние extensionless files, empty directories, symlinks/junctions и подмена bytes запрещены до любых package imports. Unknown Broker owner, ledger fault и unresolved own intent закрывают физические чтения до нового durable begin, даже если отдельный receiver store пуст.
+
+Stable installation origin и state anchor должны совпадать, reinstall не сбрасывает state. Credentials генерируются вне Git/package, panel/control различаются. Config/descriptor/CEP сохраняются в exact-hash rollback transaction; baseline CAS запрещает перезапись concurrent changes. Bounded TOML editor сохраняет соседние таблицы byte-for-byte, включая indentation и inline comments; неподдерживаемые quoted table headers/multiline syntax отклоняются до записи. Partial filesystem failure оставляет transaction для read-back и ручной диагностики; неизвестная мутация не переигрывается автоматически. Rollback сохраняет production state и release evidence, не восстанавливает живую AE очередь.
+
+Адресная проверка: `node core4/tools/validate-diff.js core4/runtime/stdio-entry.js --run`. Actual-component tests используют настоящий stdio child, HTTP, install/rollback только в test-owned temp и compiled JSX/CEP dispatcher в VM. Native calls0, actual CEP Origin/WebCrypto/JSX API, визуальная панель и установленная live-связь требуют отдельного root-controller evidence.
+
+Далее сохранён контракт предыдущих offline M1/M2 срезов.
+
+## M1/M2: самостоятельный offline-срез
 
 `core4/**` не подключает установленный AE Agent и не импортирует прежний bridge. Node builtins, Node 20+, без install. Один broker, один запускаемый по необходимости worker; engine и рабочие пакеты физически необязательны. Публичный stdio MCP использует bounded NDJSON JSON-RPC. До отдельной интеграции trusted transport/session/grant issuer `connect` возвращает `live_transport_not_installed`. Fake fallback отсутствует.
 

@@ -1,0 +1,1 @@
+body { font: 13px system-ui,sans-serif; background:#23262b; color:#e4e8ef; padding:16px; } h1 { font-size:18px; } p { line-height:1.5; } button { padding:8px 14px; background:#3678d4; color:white; border:0; border-radius:4px; } button:disabled { opacity:.5; } pre { white-space:pre-wrap; font-size:11px; color:#adb9cc; }

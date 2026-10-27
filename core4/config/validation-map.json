@@ -1,5 +1,13 @@
 {
   "owners": [
+    { "prefix": "core4/runtime/", "owner": "installable-runtime", "checks": ["installable-runtime"] },
+    { "prefix": "core4/cep/", "owner": "installable-runtime", "checks": ["installable-runtime"] },
+    { "prefix": "core4/modules/project-inspection/", "owner": "installable-runtime", "checks": ["installable-runtime"] },
+    { "prefix": "core4/tools/package-installable.js", "owner": "installable-runtime", "checks": ["installable-runtime"] },
+    { "prefix": "core4/tools/install-core4.js", "owner": "installable-runtime", "checks": ["installable-runtime"] },
+    { "prefix": "core4/integrations/cep/http-peer.js", "owner": "installable-runtime", "checks": ["installable-runtime"] },
+    { "prefix": "core4/integrations/cep/peer-protocol.js", "owner": "installable-runtime", "checks": ["installable-runtime"] },
+    { "prefix": "core4/test/installable-runtime.test.js", "owner": "installable-runtime", "checks": ["installable-runtime"] },
     {
       "prefix": "core4/experiments/manual-current-target/",
       "owner": "manual-current-target-experiment",
@@ -175,6 +183,8 @@
     }
   ],
   "contracts": [
+    { "prefix": "core4/core/stdio.js", "id": "private-stdio-composition-v1", "consumers": ["installable-runtime"] },
+    { "prefix": "core4/integrations/cep/completion-store.js", "id": "http-durable-receiver-store-v1", "consumers": ["installable-runtime"] },
     { "prefix": "core4/modules/titles/executor.jsx", "id": "manual-current-target-reviewed-dependency", "consumers": ["manual-current-target"] },
     { "prefix": "core4/config/admissions/titles.json", "id": "manual-current-target-reviewed-dependency", "consumers": ["manual-current-target"] },
     { "prefix": "core4/core/receiver-api.js", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
@@ -344,6 +354,11 @@
     }
   ],
   "checkDependencies": {
+    "installable-runtime": [
+      "runtime/", "cep/", "modules/project-inspection/", "test/installable-runtime.test.js", "tools/package-installable.js", "tools/install-core4.js",
+      "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js", "core/", "protocol/", "worker.js",
+      "modules/titles/", "modules/photo-placeholder/", "plan-engine/", "config/catalog.json", "config/admissions/"
+    ],
     "manual-current-target": [
       "experiments/manual-current-target/", "test/manual-current-target.test.js", "test/fixtures/manual-current-target.js", "test/fixtures/ae.js",
       "core/receiver-api.js", "core/receiver.js", "core/authority.js", "protocol/", "modules/titles/executor.jsx", "config/admissions/titles.json",
@@ -562,6 +577,7 @@
     ]
   },
   "checkCommands": {
+    "installable-runtime": ["node", "--test", "--test-name-pattern=installable-runtime", "test/installable-runtime.test.js"],
     "manual-current-target": ["node", "--test", "--test-name-pattern=manual-current-target", "test/manual-current-target.test.js"],
     "audit-repairs": ["node", "--test", "--test-name-pattern=audit-repairs", "test/audit-repairs.test.js"],
     "titles-owner": [
@@ -632,6 +648,7 @@
     ]
   },
   "checkPolicy": {
+    "installable-runtime": { "kind": "integration" },
     "manual-current-target": { "kind": "integration" },
     "audit-repairs": { "kind": "integration" },
     "core-control": {
