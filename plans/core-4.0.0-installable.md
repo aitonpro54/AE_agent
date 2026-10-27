@@ -25,10 +25,10 @@
 - [x] Подтверждены user GO, исходники и чистый baseline; поиск внешнего дистрибутива прекращён.
 - [x] `ae_architect` дал bounded source design GO; `ae_scout` проверил CEP/runtime facts. Root владеет планами/commit.
 - [x] Единственный `ae_implementer` получил source ownership `core4/**` и последовательные milestones I/II.
-- [x] I source реализован: отдельная CEP-панель/HTTP peer/stdio entrypoint, `project-inspection` через generic module API, package/installer/rollback. Initial dedicated actual-component checks7/7 PASS; final freeze ожидает адресных review repairs.
+- [x] I source реализован: отдельная CEP-панель/HTTP peer/stdio entrypoint, `project-inspection` через generic module API, package/installer/rollback. Initial dedicated actual-component checks7/7 перекрыты итоговым freeze I_V4.
 - [x] Реализованы runtime/panel/package/installer и scoped validation I; frozenI_V4 принят независимым review.
 - [x] Подготовлены первый локальный milestone commit и immutable distribution I; дальнейшая работа продолжается ко II.
-- [ ] Выполнены target install/read-back и real status/connectivity proof.
+- [x] Выполнены target install/read-back и настоящий stdio handshake/status. CEP connectivity пока не подтверждён: running AE не перечитал новый bundle.
 - [ ] Реализован и проверен manual typed workflow II без fake epoch.
 - [ ] Обновлены пакет/установка и фактическая приёмка; оставшиеся ограничения записаны точно.
 
@@ -45,6 +45,7 @@
 - Независимый I reviewV2 нашёл2P1/1P2: extra extensionless release file мог загрузиться до проверки; orphan Broker ownership допускал отдельную physical inspection; TOML edit мог поглотить indented соседнюю entry. До установки обязательны exact closure/pre-import verification, общий fail-closed physical guard и bounded TOML edit/regressions. Дополнительно apply должен принимать exact reviewed package hash. Writer исправляет только эти адресные места, II до frozen package не публикуется.
 - I_V4 закрыл findings, включая последующее связывание фактического entry root с verified release и повторный descriptor CAS под startup gate. Импорт package code происходит только после проверки closure/identity. Missing/wrong reviewed hash запрещает apply до записи. Прежние marker/fence/ledger не удаляются для старта/установки.
 - II actual provider будет отдельным private Windows probe/adoption/reservation, не публичным Boolean: actual hostname/PID/birth/executable + stable installation/state owner + authenticated peer + exact approval/checkpoint + durable reservation. Coverage ограничен cooperating Core4 lane/current native-confirm target; global AE idle и отсутствие всех сторонних actors не обещаются. Known conflicting obligations блокируют отправку; native confirm повторно сверяет текущую цель. Root adoption привязывает процесс/разрешённую test-copy, но не является grant на setter или project epoch.
+- I установлен из immutable distribution после commit `0131ab3be059aed3926a966f281bca124ace6250`. Новый project-local MCP entry и отдельный CEP bundle не заменяют старую панель3.3.3. Текущий AE показывает только ранее закэшированные расширения; штатный перезапуск пустого AE отдельно запрошен у пользователя. Пока ответ не получен, source/build II продолжается без перезапуска, открытия AEP и native вызовов.
 
 ## Validation
 
@@ -57,3 +58,10 @@
 - Root повторно собрал детерминированный пакет в `dist/core4/4.0.0-readonly-cf07e3189d88/core4-4.0.0.json`: тот же packageHash/48 files, file SHA-256 `786d2a741ce5ec100ef8f7b87d637b51178559ae87494a322278e19a6a70ca6f`. Рядом `distribution.json` и standalone installer closure (3 reviewed files с hashes). Эти generated artifacts игнорируются Git.
 - Root dry-run на actual MSI paths прошёл: внешний Node `C:\Program Files\nodejs\node.exe`, v24.15.0, SHA-256 `3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5`; Core4 install/CEP/project config до установки отсутствуют. CLI требует exact native Node path; первая запись с `/` была отвергнута `node_path_not_exact` до изменений, corrected native-path dry-run PASS.
 - Номер4.0.0 не является release certification: `releaseCertified:false`, actual installed/host proof записывается отдельно после source commit. Full-release suite не запускалась. До завершения II этот пакет имеет feature scope status/read-only inspection.
+
+### I — actual установка и stdio proof
+
+- Installer apply на MSI завершился успешно с exact reviewed packageHash. Descriptor: `C:/Users/Ant/AppData/Local/AEAgentCore4/installation.json`; installationId `installation-1304c438-5794-4d5c-bf72-d8101f3d2a24`. Immutable release размещён в `releases/<packageHash>`, постоянный state — `state/production`. Transaction `9b4212d6-8a75-4e48-8394-ab5151da2804`; legacy bundle и его state не изменены.
+- Root read-back сверил48 release files (mismatches0), exact Node hash и7 установленных CEP files, наличие разных role credentials без вывода их значений. Создан только project-local `.codex/config.toml` с `after-effects-core4`; global config не менялся. Evidence: `snapshots/core4-live-proof/I/installation-readback.json` и `dist/core4/4.0.0-readonly-cf07e3189d88/installation-result.json`.
+- Настоящий installed stdio child PID10612 ответил на JSON-RPC initialize как `ae-agent-core4` версии4.0.0. Два `core_status` подтвердили `ready:true`, `nodeVerified:true`, ownershipFault null, ledgerFault false, unresolved0, открытый receiver store и HTTP3457. Raw ответы сохранены в `snapshots/core4-live-proof/I/stdio.raw.jsonl`. Это proof процесса/IPC listener, но не native AE execution.
+- CEP peer пока `connected:false`, pending null, unknown false; automatic lifecycle остаётся unavailable. Root увидел в меню Window → Extensions только старые bundle: новая панель ещё не загружена текущим сеансом AE. Перезапуск ждёт отдельного ответа пользователя; AEP не открыт/не изменён, native AE calls0, save/reload0. Идущая source-работа II не зависит от этого ответа.
