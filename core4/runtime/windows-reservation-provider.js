@@ -2,24 +2,63 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const net = require('node:net');
-const { execFile } = require('node:child_process');
+const os = require('node:os');
+const childProcess = require('node:child_process');
 const { hash, canonical, fail, id } = require('../protocol/json');
 const { brandReservationHandle, validateReservationHandle } = require('../core/authority');
 const { scopesOverlap } = require('../core/resources');
 function durable(file, value) { fs.mkdirSync(path.dirname(file), { recursive: true }); const fd = fs.openSync(file, 'wx'); try { const text = canonical(value); if (fs.writeSync(fd, text) !== Buffer.byteLength(text)) fail('adoption_short_write'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } }
 function endpoint(port) { return new Promise(resolve => { const socket = net.connect({ host: '127.0.0.1', port }); let done = false; const finish = state => { if (done) return; done = true; socket.destroy(); resolve({ port, state }); }; socket.once('connect', () => finish('active')); socket.once('error', e => finish(e.code === 'ECONNREFUSED' ? 'observed-absent' : 'unknown')); socket.setTimeout(500, () => finish('unknown')); }); }
-async function probeWindows(installation) {
+// One reviewed, package-pinned read-only cmdlet pipeline. The final base64 is
+// UTF-8 JSON DATA only; the plaintext query is never encoded or caller supplied.
+const CIM_QUERY = 'Get-CimInstance -ClassName Win32_Process -Property ProcessId,CreationDate,ExecutablePath -Filter "Name = \'AfterFX.exe\'" -ErrorAction Stop | Select-Object @{Name="pid";Expression={$_.ProcessId}},@{Name="birth";Expression={$_.CreationDate.ToUniversalTime().ToString("o")}},@{Name="executablePath";Expression={$_.ExecutablePath}} -ErrorAction Stop | ConvertTo-Json -Depth 3 -Compress -ErrorAction Stop | ForEach-Object { [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($_)) } -ErrorAction Stop';
+function probeFailure() { fail('host_probe_failed'); }
+function decodeCimWire(wire) {
+  try {
+    if (typeof wire !== 'string' || Buffer.byteLength(wire) > 65536) probeFailure();
+    const encoded = wire.replace(/^\uFEFF/, '').replace(/^[\t\r\n ]+|[\t\r\n ]+$/g, '');
+    if (!encoded) return [];
+    if (encoded.length % 4 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) probeFailure();
+    const data = Buffer.from(encoded, 'base64'), text = data.toString('utf8');
+    if (data.length > 49152 || data.toString('base64') !== encoded || !Buffer.from(text, 'utf8').equals(data)) probeFailure();
+    const value = JSON.parse(text), records = Array.isArray(value) ? value : [value];
+    if (records.length > 16) probeFailure();
+    for (const record of records) {
+      if (!record || Object.getPrototypeOf(record) !== Object.prototype || Object.keys(record).length !== 3 || Object.keys(record).some(key => !['pid', 'birth', 'executablePath'].includes(key)) || !Number.isInteger(record.pid) || record.pid < 1 || record.pid > 0xffffffff || typeof record.birth !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z$/.test(record.birth) || typeof record.executablePath !== 'string' || !record.executablePath || record.executablePath.length > 8192 || /[\x00-\x1f]/.test(record.executablePath) || !path.win32.isAbsolute(record.executablePath)) probeFailure();
+      const date = new Date(record.birth);
+      if (!Number.isFinite(date.getTime()) || date.toISOString() !== record.birth.slice(0, 23) + 'Z' || /^[\\/]$/.test(path.win32.parse(record.executablePath).root)) probeFailure();
+    }
+    return records;
+  } catch { probeFailure(); }
+}
+function nodeHostObservation(records) {
+  try {
+    const hostname = os.hostname();
+    if (typeof hostname !== 'string' || !hostname || hostname.length > 255 || /[\x00-\x1f]/.test(hostname)) probeFailure();
+    const processes = records.map(record => {
+      const before = fs.statSync(record.executablePath);
+      if (!before.isFile() || before.size < 1 || before.size > 512 * 1024 * 1024) probeFailure();
+      const bytes = fs.readFileSync(record.executablePath), after = fs.statSync(record.executablePath);
+      if (bytes.length !== before.size || ['dev', 'ino', 'size', 'mtimeMs', 'ctimeMs'].some(key => before[key] !== after[key])) probeFailure();
+      return { ...record, executableHash: hash(bytes), executableLength: bytes.length };
+    });
+    return { version: 1, hostname, observedAt: new Date(Date.now()).toISOString(), processes };
+  } catch { probeFailure(); }
+}
+async function probeWindows() {
   if (process.platform !== 'win32') fail('windows_host_probe_unavailable');
   const executable = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe');
-  const script = path.join(installation.releaseDir, 'runtime/windows-host-probe.ps1');
-  const host = await new Promise((resolve, reject) => {
+  const records = await new Promise((resolve, reject) => {
     const env = Object.fromEntries(['SystemRoot', 'WINDIR', 'TEMP', 'TMP'].filter(k => process.env[k]).map(k => [k, process.env[k]]));
-    execFile(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-File', script], { windowsHide: true, timeout: 4000, maxBuffer: 64 * 1024, env }, (error, stdout) => {
-      if (error) { reject(Object.assign(new Error('host_probe_failed'), { code: 'host_probe_failed' })); return; }
-      try { resolve(JSON.parse(stdout.replace(/^\uFEFF/, '').trim())); }
-      catch { reject(Object.assign(new Error('host_probe_invalid'), { code: 'host_probe_invalid' })); }
-    });
+    try {
+      childProcess.execFile(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', CIM_QUERY], { windowsHide: true, timeout: 4000, maxBuffer: 64 * 1024, env }, (error, stdout, stderr) => {
+        if (error || stderr !== undefined && typeof stderr !== 'string' || typeof stderr === 'string' && stderr.trim()) { reject(Object.assign(new Error('host_probe_failed'), { code: 'host_probe_failed' })); return; }
+        try { resolve(decodeCimWire(stdout)); }
+        catch { reject(Object.assign(new Error('host_probe_failed'), { code: 'host_probe_failed' })); }
+      });
+    } catch { reject(Object.assign(new Error('host_probe_failed'), { code: 'host_probe_failed' })); }
   });
+  const host = nodeHostObservation(records);
   return { ...host, endpoints: await Promise.all([3456, 8787].map(endpoint)), completedAt: Date.now() };
 }
 function hostIdentity(observation) {
@@ -76,4 +115,4 @@ function createWindowsReservationProvider({ installation, getBroker, getPeer, pr
     }
   };
 }
-module.exports = { createWindowsReservationProvider, probeWindows, hostIdentity };
+module.exports = { createWindowsReservationProvider, probeWindows, hostIdentity, CIM_QUERY, decodeCimWire, nodeHostObservation };

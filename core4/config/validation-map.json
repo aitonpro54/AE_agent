@@ -1,5 +1,6 @@
 {
   "owners": [
+    { "prefix": "core4/test/windows-cim-probe.test.js", "owner": "windows-cim-probe", "checks": ["windows-cim-probe"] },
     { "prefix": "core4/tools/recover-zero-dispatch-owner.js", "owner": "zero-dispatch-recovery", "checks": ["zero-dispatch-recovery"] },
     { "prefix": "core4/test/recover-zero-dispatch-owner.test.js", "owner": "zero-dispatch-recovery", "checks": ["zero-dispatch-recovery"] },
     { "prefix": "core4/test/human-window.test.js", "owner": "human-window", "checks": ["human-window"] },
@@ -8,7 +9,7 @@
     { "prefix": "core4/modules/titles-current-target/", "owner": "manual-runtime", "checks": ["manual-runtime"] },
     { "prefix": "core4/config/admissions/titles-current-target.json", "owner": "manual-runtime", "checks": ["manual-runtime"] },
     { "prefix": "core4/runtime/manual-policy.js", "owner": "manual-runtime", "checks": ["manual-runtime"] },
-    { "prefix": "core4/runtime/windows-reservation-provider.js", "owner": "manual-runtime", "checks": ["manual-runtime"] },
+    { "prefix": "core4/runtime/windows-reservation-provider.js", "owner": "manual-runtime", "checks": ["manual-runtime", "windows-cim-probe"] },
     { "prefix": "core4/runtime/windows-host-probe.ps1", "owner": "manual-runtime", "checks": ["manual-runtime"] },
     { "prefix": "core4/tools/adopt-host.js", "owner": "manual-runtime", "checks": ["manual-runtime", "installable-runtime"] },
     { "prefix": "core4/test/manual-runtime.test.js", "owner": "manual-runtime", "checks": ["manual-runtime"] },
@@ -379,6 +380,9 @@
     }
   ],
   "checkDependencies": {
+    "windows-cim-probe": [
+      "runtime/", "test/windows-cim-probe.test.js", "tools/package-installable.js", "core/", "protocol/", "worker.js", "cep/", "modules/", "plan-engine/", "config/catalog.json", "config/admissions/", "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js"
+    ],
     "zero-dispatch-recovery": [
       "tools/recover-zero-dispatch-owner.js", "test/recover-zero-dispatch-owner.test.js", "tools/install-core4.js", "tools/package-installable.js",
       "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/", "config/catalog.json", "config/admissions/", "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js"
@@ -614,6 +618,7 @@
     ]
   },
   "checkCommands": {
+    "windows-cim-probe": ["node", "--test", "--test-name-pattern=windows-cim-probe", "test/windows-cim-probe.test.js"],
     "zero-dispatch-recovery": ["node", "--test", "--test-name-pattern=zero-dispatch", "test/recover-zero-dispatch-owner.test.js"],
     "human-window": ["node", "--test", "--test-name-pattern=human-window", "test/human-window.test.js"],
     "manual-runtime": ["node", "--test", "--test-name-pattern=manual-runtime", "test/manual-runtime.test.js"],
@@ -688,6 +693,7 @@
     ]
   },
   "checkPolicy": {
+    "windows-cim-probe": { "kind": "integration" },
     "zero-dispatch-recovery": { "kind": "integration" },
     "human-window": { "kind": "integration" },
     "manual-runtime": { "kind": "integration" },
