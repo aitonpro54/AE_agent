@@ -93,6 +93,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- После сообщения пользователя о manual reconnect: actual MCP startup текущего
+  чата отказывает initialize (`connection closed`). Отдельный installed stdio
+  diagnostic23156 дал initialize/core_status PASS и clean exit0, native0,
+  journal unchanged/owners0. Configured-client proof этим не заменён.
+  По отдельному поручению проверены12AE skills, исправлены5entrypoints+reference;
+  результат и границы проверки — [audit](ae-skills-audit-20261028.md).
 - 28 октября, source installer portability: final45/45selected PASS
   (23installable+19recovery+3human), boundaries21/syntax/diff PASS; root exact
   fa9e/60closure и actual dry-run финального CLI из чужого cwd PASS. Descriptor,

@@ -54,6 +54,10 @@ mutation/save/raw, открытие AEP и фактический перенос
 - [x] Завершён самостоятельный source milestone с обязательными selected checks;
   итоговые изменения подготовлены как один reviewable commit.
 - [ ] Подтверждён configured Codex-client `core_status`.
+- [x] После сообщения пользователя о reconnect проверен actual MCP startup:
+  current configured client всё ещё отказывает initialize (`connection closed`).
+  Отдельный диагностический stdio child23156 дал initialize/status PASS,
+  затем clean exit0 без native dispatch и без изменения journal/owners.
 - [ ] Выполнены оставшиеся implementation/acceptance gaps и P1–P8 обеих машин.
 
 ## Decision Log
@@ -134,9 +138,12 @@ Selection keys финальных bytes сверены с report. Его 11 defe
 переустановка не нужна для этого source tooling fix. Исторический UNKNOWN/noReplay
 и текущие local state/origins сохранены.
 
-Следующий живой шаг определён ранее: после ручного configured MCP reconnect
-получить `core_status`, проверить fa9e, receiver/store/ledger/pending и текущую
-панель; не повторять original inspection. Для следующего блока переносимости
+Пользователь уже сообщил о manual reconnect; настроенный клиент всё ещё не
+прошёл initialize. Следующий шаг — установить его точную startup-причину и
+получить configured `core_status`, проверить fa9e, receiver/store/ledger/pending
+и текущую панель; не повторять original inspection. Подробности и отдельный
+stdio proof — в [аудите skills/MCP](ae-skills-audit-20261028.md).
+Для следующего блока переносимости
 нужны свежие facts второй машины и ограниченный environment/capabilities preflight
 по оставшимся gaps. Поддержка неизвестной desktop среды не предполагается;
 фактический round-trip выполняется только при доступе к обеим машинам.

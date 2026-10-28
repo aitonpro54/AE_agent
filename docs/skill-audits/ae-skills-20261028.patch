@@ -1,0 +1,239 @@
+--- a/ae-mcp-bridge-workflow/SKILL.md
++++ b/ae-mcp-bridge-workflow/SKILL.md
+@@ -29,2 +29,7 @@
+-1. Проверь get_bridge_status: panelConnected, pending/inflight, activeEditSession,
+-   autonomousSession. HTTP health сам по себе не доказывает связь с AE.
++1. Сверь scoped AGENTS, установленный runtime и фактически доступные tools.
++   В исходном `AE_agent` используй `get_bridge_status`: panelConnected,
++   pending/inflight, activeEditSession, autonomousSession. В `AE_agent_core`
++   Core4 используй `core_status` и его действующий contract: installation,
++   physical peer/store/pending, ledger/unresolved и coverage. Отсутствие tools
++   или отказ MCP initialize отличается от отказа CEP; HTTP health сам по себе
++   не доказывает связь с AE. Не запускай второй runtime для имитации configured client.
+@@ -32,3 +37,5 @@
+-   контракт, а не только номер продукта. В дампе описаны отдельные credentials
+-   AE_BRIDGE_TOKEN (automation/MCP) и AE_BRIDGE_PANEL_TOKEN (CEP). Применяй эти имена
+-   только если они подтверждаются текущей реализацией/конфигурацией. Не выводи значения.
++   контракт, а не только номер продукта. Имена `AE_BRIDGE_TOKEN` (automation/MCP)
++   и `AE_BRIDGE_PANEL_TOKEN` (CEP) относятся к legacy `AE_agent`; применяй их
++   только при подтверждении текущей реализацией. Core4 имеет собственные
++   install-scoped role credentials; legacy credentials/state/authority туда
++   не переносятся. Не выводи значения.
+@@ -38 +45,3 @@
+-4. После scoped исправления проверь Connected и настоящий get_project_info.
++4. После scoped исправления проверь Connected и настоящий typed read текущего
++   runtime: `get_project_info` в legacy, generic inspection по module contract
++   в Core4. Отдельный stdio probe не заменяет configured-client proof.
+@@ -44,4 +53 @@
+-Сначала search_solutions, затем нужный get_solution; не загружай весь registry.
+-Для чистой правки HTML без работы с AE registry не нужен. Инспектируй точные цели,
+-переиспользуй актуальные результаты в рамках операции. Active comp — контекст,
+-а не замена явно заданной цели. После внешних/ручных изменений baseline обновляется.
++Выбирай flow по текущему проекту и доступному contract, не по старому дампу:
+@@ -49 +55,16 @@
+-При поддержке текущим контрактом используй build_solution_plan →
++- В исходном `AE_agent`, если его AGENTS задаёт solution registry, допустимы
++  `search_solutions` → нужный `get_solution`; весь registry не загружай.
++- В исходной базе 3.3.5 проекта `AE_agent_core` builders используют
++  `get_plan_builder_contract` → `build_solution_plan`; recipe search исключён.
++- В независимом Core4 используй `list_modules` → `get_module_contract` →
++  `inspect_module_target` и объявленный generic plan API. Для поддержанной
++  mutating операции это `build_solution_plan` → `propose_plan` →
++  `dry_run_plan` → `run_plan`, с действующими grants и подтверждениями.
++  Read-only module не превращается в mutating builder. Наличие manual policy
++  не создаёт automatic lifecycle или continuity прежней incarnation.
++
++Для чистой правки HTML без работы с AE registry не нужен. Инспектируй точные
++цели, переиспользуй актуальные результаты в рамках операции. Active comp —
++контекст, а не замена явно заданной цели. После внешних/ручных изменений обнови baseline.
++
++Только в legacy `AE_agent`, при поддержке текущим контрактом, используй build_solution_plan →
+@@ -57 +78,2 @@
+-При настоящем typed gap используй лишь разрешённый protected raw flow. Отказ не
++При настоящем typed gap и наличии отдельно разрешённого protected raw flow
++используй только его текущий contract. Отсутствующий raw API не придумывай. Отказ не
+@@ -62 +84,2 @@
+-Для placeholder read-back используй `get_layer_details(responseView:"placeholder")`;
++Следующие compact/read-back tools относятся к legacy `AE_agent`, если доступны:
++для placeholder read-back используй `get_layer_details(responseView:"placeholder")`;
+@@ -69 +92 @@
+-После protected raw проверь list_solution_candidates и конкретный
++В legacy `AE_agent` после protected raw проверь list_solution_candidates и конкретный
+--- a/ae-mcp-bridge-workflow/references/bridge-patterns.md
++++ b/ae-mcp-bridge-workflow/references/bridge-patterns.md
+@@ -3 +3,4 @@
+-Цепочка: MCP adapter → daemon → CEP poll → evalScript в AE → receipt/result.
++Legacy `AE_agent`: MCP adapter → daemon → CEP poll → evalScript → receipt/result.
++Независимый Core4: installed stdio MCP/external Node → authenticated HTTP peer →
++fixed CEP executor → durable receipt/ACK. Таблица daemon/token ниже описывает
++legacy runtime; Core4 проверяет собственные role credentials, pins и store.
+--- a/ae-computer-use-workflow/SKILL.md
++++ b/ae-computer-use-workflow/SKILL.md
+@@ -14 +14,2 @@
+-зависшей задачи. Это не расширяет scope и не отменяет runtime grants или обязательные
++зависшей задачи. Без явного поручения на такую UI-работу сохраняются default
++ограничения текущего vendor guidance. Это не расширяет scope и не отменяет runtime grants или обязательные
+@@ -16 +17 @@
+-версии 26.917.51856, не подменяй его собственной реализацией sky или helper exe.
++конкретной версии, не подменяй его собственной реализацией sky или helper exe.
+@@ -27 +28 @@
+-Для штатного CEP reload сначала проверь CLI/CDP путь из [docs/tool-first-workflow.md](C:/Users/Ant/Documents/Codex/AE_agent/docs/tool-first-workflow.md#штатная-диагностика-и-reload-cep)
++Для штатного CEP reload исходного `AE_agent` сначала проверь CLI/CDP путь из [docs/tool-first-workflow.md](C:/Users/Ant/Documents/Codex/AE_agent/docs/tool-first-workflow.md#штатная-диагностика-и-reload-cep)
+@@ -28,0 +30,2 @@
++Этот legacy script не переносится в `AE_agent_core`: для Core4 сверь собственный
++installed lifecycle и scope, не запускай старый daemon/adapter ради reload.
+--- a/cep-panel-controls/SKILL.md
++++ b/cep-panel-controls/SKILL.md
+@@ -15 +15 @@
+-Для AE Agent при HTTP 401 проверь роли credentials по текущей реализации. В дампе
++Для исходного `AE_agent` при HTTP 401 проверь роли credentials по текущей реализации. В дампе
+@@ -19 +19,3 @@
+-или adapter перечитал окружение.
++или adapter перечитал окружение. В `AE_agent_core` Core4 используются собственные
++installation roles и exact peer/store/package bindings; legacy env/state/authority
++не импортируются.
+@@ -35 +37 @@
+-Для штатного reload панели используй `node scripts/cep-panel-cdp-smoke.js reload`
++Только в исходном `AE_agent` для штатного reload используй `node scripts/cep-panel-cdp-smoke.js reload`
+@@ -37,0 +40,2 @@
++В Core4 сначала сверь его установленный контракт и разрешённый lifecycle;
++наличие legacy script в другом repo не даёт reload-команду для Core4.
+--- a/ae-full-intake-orchestrator/SKILL.md
++++ b/ae-full-intake-orchestrator/SKILL.md
+@@ -36 +36,2 @@
+-- Missing `Context percent`: do read-only preflight only; do not start runner.
++- Missing `Context percent`: do not start a runner that requires it; independent
++  authorized source/read-only work may continue without inventing a value.
+@@ -62 +63,3 @@
+-   - `plans/full-intake-unsafe-skip-triage.md`
++   - active triage document named by current `AGENTS.md`/plan/handoff;
++     `plans/full-intake-unsafe-skip-triage.md` is historical and is read only
++     when it exists and is still declared active
+@@ -72,0 +76,4 @@
++Verify the selected run/ledger path exists before its status or runner command.
++The example run id and ledger are not proof of a current run. If an active
++required document or ledger is missing, report that gap and keep independent
++source/read-only work available; do not invent or recreate runtime state.
+@@ -137,6 +144,6 @@
+-Use the user's reported context percentage if given. At or above 70%, enter
+-handoff posture. At or above 76%, stop implementation and write/update
+-`.codex/handoff.md`. If context is unknown, do not start runner work.
+-
+-After each atomic task, after large outputs, and before final answer, reassess
+-whether handoff mode is required.
++Use a reported context percentage only as observed metadata. Keep compact
++milestone notes and continue the same authorized task after compaction. Context
++length or percentage alone does not stop implementation or require a new chat.
++Create a continuation chat or choose `handoff-only` only when the user explicitly
++requests it. If a runner requires a context value and none is available, do not
++invent one or start that runner; continue independent source/read-only work.
+@@ -147,2 +154,7 @@
+-`git diff --check`, and the mode-relevant smoke tests. For Full Intaker
+-orchestrator changes, prefer:
++`git diff --check`, and the mode-relevant smoke tests.
++
++Use the actual repository's validation selector first. The examples below
++belong to the original `AE_agent`, not Core4; they are not a mandatory whole
++suite before every commit. Broad/full-release checks retain their separate
++scope and require the authorization specified by the current repo instructions.
++For changes to the original Full Intaker, select the relevant checks from:
+--- a/full-intake-repo-orchestrator/SKILL.md
++++ b/full-intake-repo-orchestrator/SKILL.md
+@@ -3 +3 @@
+-description: Use when Codex must run a guarded autonomous Full Intake workflow for a repository backlog, triage ledger, importer queue, or repo-to-product intake. Supports scoped family batching, proposal-only subagents/worktrees, parent-owned serial acceptance, lane creation and validation, reviewable milestone commits, compact handoffs, and automatic continuation into a new Codex desktop thread when context limits are reached.
++description: Use when Codex must run a guarded autonomous Full Intake workflow for a repository backlog, triage ledger, importer queue, or repo-to-product intake. Supports scoped family batching, proposal-only subagents/worktrees, parent-owned serial acceptance, lane creation and validation, reviewable milestone commits, and compact continuation notes. Creates a continuation chat only when explicitly requested by the user.
+@@ -9,2 +9,2 @@
+-autonomously across multiple reviewable milestones and, when needed, across
+-multiple Codex threads.
++autonomously across multiple reviewable milestones in the current chat. A move
++to another chat requires the user's explicit request and current repo instructions.
+@@ -28,6 +28,5 @@
+-If context percent is unknown, do read-only preflight only unless the user
+-explicitly supplied a starting context or authorized an autonomous longrun. When
+-the UI meter is inaccessible during an authorized longrun, use a conservative
+-synthetic meter: start from the last user-reported value, add 10 points after
+-large reads/outputs, add 20 points after each reviewable milestone, and transfer
+-threads when the synthetic value reaches the normal thresholds.
++Context percent is optional observed metadata, not a synthetic counter or a
++reason to stop the task. If a particular runner requires a context value and
++none is available, do not invent one or start that runner; continue independent
++source/read-only work. Follow compaction with a fresh check of files/runtime
++and continue the same authorized objective.
+@@ -142,3 +141,5 @@
+-   - full repo/intake smoke before commit or after shared contract changes.
+-   Include touched JS syntax checks, whitespace/diff checks, repo rule checks,
+-   registry/solution/intake smokes, and lane-specific checks.
++   - broader repo/intake checks only when the scoped repo contract requires
++     them or the user explicitly requests that scope; a commit alone does not.
++   Follow the repository's diff-based validation selector. Include touched JS
++   syntax, whitespace/diff and relevant lane/contract checks; do not turn a
++   local change into a full release, legacy registry or unrelated module suite.
+@@ -153,28 +154,15 @@
+-At every atomic boundary and before any new family, milestone, broad read, large
+-edit, dependency change, live run, or long validation, check UI context.
+-
+-Thresholds:
+-
+-- `>=60%`: prepare a compact continuation prompt and verify thread tools with
+-  `tool_search`.
+-- `>=66%`: do not start a new family or large milestone.
+-- `>=70%`: stop implementation and create a new continuation thread if work
+-  remains.
+-- `>=76%`: only handoff/thread-transfer work is allowed.
+-- `>=78%`: only write handoff text; no new tool discovery unless already in
+-  progress.
+-
+-Before handoff, run a completion audit. If the goal is complete, close out
+-normally instead of creating a new thread.
+-
+-If using a synthetic context meter, apply the same thresholds to the synthetic
+-value and mention that the UI meter was unavailable in handoff.
+-
+-## Automatic Thread Continuation
+-
+-This skill must preserve autonomy across context windows.
+-
+-When work remains and the context threshold requires transfer:
+-
+-1. Update handoff and mark the current thread state as `handed_off_pending`.
+-2. Write an exact continuation prompt containing:
++Keep compact Progress, Decision Log, Validation and current-resource notes at
++atomic boundaries. Context percentage, output volume or an approaching
++compaction does not require stopping implementation or changing chats. Continue
++after compaction from current files/runtime and the original authorized goal.
++Do not create threads, send prompts to another chat or force `handoff-only`
++because a real or guessed context threshold was reached.
++
++## User-Requested Thread Continuation
++
++Use this section only after the user explicitly asks to move/continue work in
++another chat. A request to run this intake skill alone is not that request.
++
++1. Check the current repo and goal, preserve shared-resource gates, and update
++   compact continuation notes. Do not mark the current chat handed off yet.
++2. Prepare an exact continuation prompt containing:
+@@ -191,8 +179,11 @@
+-   - this automatic continuation contract.
+-3. Use `tool_search` to expose Codex app thread tools.
+-4. Prefer `create_thread` with the continuation prompt in the same
+-   project/workspace. Use `send_message_to_thread` only for an already known
+-   continuation thread.
+-5. If `create_thread` requires a project id or target that is not available from
+-   the current desktop context, `list_threads`, or other exposed thread context,
+-   do not guess. Write handoff and stop.
++   - the user's requested destination and exact continuation scope.
++3. Discover the supported Codex app thread tools. For a new project chat, call
++   `list_projects` before `create_thread`; use the verified project/target.
++   For an existing chat use `send_message_to_thread` only with explicit user
++   authorization to message that chat. Never guess ids or fabricate tools.
++4. If the destination cannot be resolved or creation fails, preserve the
++   notes, report the concrete problem and continue permitted work here unless
++   the user explicitly requested a stop. Do not assume a transfer succeeded.
++   If creation or message delivery has an unknown outcome, resolve that
++   operation first; do not resend or start a second writer for the same resource.
++5. When creation succeeds, attach the verified destination id to the notes.
+@@ -204,4 +194,0 @@
+-
+-If thread tools are unavailable or message/thread creation fails, write the exact
+-continuation prompt to handoff, record the blocker, and stop. Never rely on
+-automatic compaction.
