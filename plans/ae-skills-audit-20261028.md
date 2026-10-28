@@ -87,9 +87,22 @@ owners/gates отсутствуют, journal SHA-256 сохранился
 `1a07b1a379a166a7c8be1af714fa9ac7f7f328f05ad98599fcf12473bdd040b4`.
 
 Это отдельный stdio proof, **не configured-client success** и не новая native
-инспекция. Точная причина отказа штатного launch пока не установлена; у
-пользователя запрошен отображаемый статус/текст ошибки. Старый adoption PID31452
+инспекция. Точная причина отказа штатного launch пока не установлена.
+29 октября пользователь показал настройки приложения: отдельного пункта MCP
+servers на снимках нет. Прежний UI-путь по документации оказался неприменим;
+запрос пользователю найти там статус снят. Дальше нужны headless launch/config
+diagnostics, а не повторные UI-поручения. Старый adoption PID31452
 не обновлялся под текущий AE20108. Повтор original UNKNOWN не выполнялся.
 Локальное evidence — `snapshots/core4-live-proof/VIII-configured-client-20261028/`:
 `configured-post-reconnect-census.json`, `physical-installation-views.json`,
 `stdio-startup-diagnostic.json`, `post-diagnostic-census.json`.
+
+29 октября: выполнен один обратимый цикл project MCP enabled=false/true при
+отсутствии процессов/listener/owners. Исходные config bytes восстановлены точно
+(SHA-256 `0aff09f8e5b98d1d45d09351ad21d12ca9fe2816f0341a74b99355079d6b2835`),
+нового configured startup в журнале не появилось; cached initialize failure
+сохранился. CIM event subscription отменена до создания observer, обхода нет.
+В read-only logs_2.sqlite найдены только сообщения об исключении неготового
+client из tool catalog; причины stderr они не дают. Evidence — ignored
+`snapshots/core4-live-proof/IX-configured-startup-20261029/`. Runtime/CEP и AE
+не менялись, native dispatch0, исходный journal hash прежний.

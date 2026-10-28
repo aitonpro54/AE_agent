@@ -93,6 +93,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- 29 октября: пользовательские screenshots опровергли предложенный UI-путь к
+  отдельному MCP servers. Повторный ручной поиск не требуется. Project config
+  после одного bounded reload-cycle восстановлен byte-identical; cached startup
+  failure остаётся, новой попытки запуска в журнале нет. Следующий technical
+  шаг — точные loaded args/stderr штатного client, не ещё один UI-рецепт.
 - После сообщения пользователя о manual reconnect: actual MCP startup текущего
   чата отказывает initialize (`connection closed`). Отдельный installed stdio
   diagnostic23156 дал initialize/core_status PASS и clean exit0, native0,
