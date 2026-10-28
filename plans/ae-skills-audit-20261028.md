@@ -106,3 +106,17 @@ diagnostics, а не повторные UI-поручения. Старый adop
 client из tool catalog; причины stderr они не дают. Evidence — ignored
 `snapshots/core4-live-proof/IX-configured-startup-20261029/`. Runtime/CEP и AE
 не менялись, native dispatch0, исходный journal hash прежний.
+
+29 октября, следующее продолжение: причина startup воспроизведена на точных argv
+project config — `installation_path` до открытия state. Installer заменял native
+разделители descriptor на `/`, а прежний diagnostic использовал `path.resolve`
+и скрывал дефект. Генератор исправлен, regression теперь потребляет emitted config;
+45 selected checks и boundaries21 PASS. Project entry исправлена через generator,
+backup и byte CAS; `tomllib` и Codex CLI подтвердили decoded paths. Actual installed
+child18160 с исправленными argv дал initialize/core_status PASS и clean exit0,
+stderr пустой, descriptor/origins/journal прежние, native0. Это отдельный diagnostic,
+не managed client. Existing proxy после repair всё ещё дал10050 до initialize;
+configured status остаётся открытым. Подробные Progress/Decision Log/Validation —
+в [installer плане](core-portability-installation-20261028.md), evidence — ignored
+`snapshots/core4-live-proof/X-configured-path-repair-20261029/`. Skills в этом
+продолжении не менялись; новый UI-путь или повтор прежнего UI-поручения не вводился.

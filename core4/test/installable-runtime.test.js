@@ -438,9 +438,17 @@ test('installable-runtime long Cyrillic display names and total inspection budge
   project.file.fsName = 'C:/' + 'я'.repeat(50000); const oversized = await read(); assert.equal(oversized.error.code, 'inspection_result_budget'); assert.equal(peer.status().storeClosed, false); assert.equal(dispatch.pending(), null);
   project.file.fsName = 'C:/fixture/проект.aep'; assert.equal((await read()).value.observation.target.compId, 7);
 });
-test('installable-runtime real stdio child advertises generic API, status without panel, then typed module inspect via HTTP + VM', async t => {
-  const directory = temp(), pkg = buildPackage(), { plan } = install(directory, pkg), installed = applyInstall(plan), d = JSON.parse(fs.readFileSync(installed.descriptorPath));
-  const child = spawn(process.execPath, ['-e', 'require(process.argv[1]).start({descriptor:process.argv[2],port:0}).catch(e=>{process.stderr.write(e.code||e.message);process.exitCode=1})', path.join(d.releaseDir, 'runtime/stdio-entry.js'), installed.descriptorPath], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+test('installable-runtime real stdio child consumes generated MCP config, advertises generic API, status without panel, then typed module inspect via HTTP + VM', async t => {
+  const directory = path.join(temp(), 'Core с пробелом'), pkg = buildPackage(), { plan } = install(directory, pkg), installed = applyInstall(plan), d = JSON.parse(fs.readFileSync(installed.descriptorPath));
+  const ownConfig = fs.readFileSync(plan.configPath, 'utf8').split('[mcp_servers.after-effects-core4]')[1];
+  // Installer emits the JSON-compatible TOML basic-string/array subset. Consume
+  // its decoded values verbatim; rebuilding paths here concealed Windows failures.
+  const command = JSON.parse(/^command = (.+)$/m.exec(ownConfig)[1]), args = JSON.parse(/^args = (.+)$/m.exec(ownConfig)[1]);
+  assert.equal(args.length, 3); assert.equal(args[1], '--installation');
+  verifyInstallation(args[2]);
+  // Only the listener port uses the fixture seam; command/entry/descriptor
+  // come directly from the installed MCP config with no path normalization.
+  const child = spawn(command, ['-e', 'require(process.argv[1]).start({descriptor:process.argv[3],port:0}).catch(e=>{process.stderr.write(e.code||e.message);process.exitCode=1})', ...args], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
   t.after(() => { if (child.exitCode === null) child.kill(); });
   const waiting = new Map(); let output = '', errors = '', nextId = 0;
   child.stderr.on('data', b => errors += b);

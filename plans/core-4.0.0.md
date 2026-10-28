@@ -1,5 +1,13 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Продолжение 29 октября 2026:** startup-причина `installation_path` воспроизведена
+на exact configured argv. Исправлен installer: native paths сохраняются в MCP
+TOML; regression потребляет generated config.45 selected и boundaries21 PASS.
+Actual project entry исправлена, отдельный installed process с её точными argv
+дал initialize/status PASS и clean exit0. fa9e/CEP/state сохранены, AE sends0.
+Managed Codex-client ещё не перечитал запись; existing proxy недоступен (10050).
+[Progress/Decision Log/Validation](core-portability-installation-20261028.md).
+
 **Продолжение 28 октября 2026 по прямому поручению пользователя:** точная
 установка fa9e повторно верифицирована. Configured-client reconnect остаётся
 открытым: tools отсутствуют, existing app-server proxy отказал socket10050

@@ -147,3 +147,83 @@ stdio proof — в [аудите skills/MCP](ae-skills-audit-20261028.md).
 нужны свежие facts второй машины и ограниченный environment/capabilities preflight
 по оставшимся gaps. Поддержка неизвестной desktop среды не предполагается;
 фактический round-trip выполняется только при доступе к обеим машинам.
+
+## Дополнение 29 октября: исправление путей запуска MCP
+
+Baseline `2b6493d`, MSI. Новое поручение «продолжай» относится к ближайшему
+незавершённому шагу: установить точные launch args и stderr MCP-записи.
+
+### Progress
+
+- [x] Фактическая project config декодирована: аргумент descriptor использовал
+  `/`. Installed verifier требует native форму пути. Exact configured argv дали
+  exit1, пустой stdout, stderr `installation_path` до открытия runtime state.
+  Тот же descriptor в native форме прошёл read-only verifier.
+- [x] Генератор сохраняет native Node/entry/descriptor paths, экранируя `\`
+  в TOML basic strings через JSON serialization. Runtime verifier не менялся.
+- [x] Существующий subprocess regression теперь читает command/args из реально
+  установленной MCP-конфигурации без пересборки путей. Fixture root содержит
+  кириллицу и пробелы. До fix — FAIL `installation_path`, после — PASS.
+- [x] Project MCP entry исправлена тем же генератором с backup, byte CAS и fsync.
+  Python `tomllib` и `codex mcp get after-effects-core4 --json` независимо
+  подтвердили decoded paths; enabled=true и timeout120 сохранены.
+- [x] Installed child18160 с точными исправленными argv дал initialize/core_status
+  PASS: ready=true, ownershipFault=null, ledgerFault=false, unresolved=[],
+  pending=null, storeFault/storeClosed/unknown=false. Clean exit0, stderr пустой,
+  own owners/gates отсутствуют. Peer disconnected; native commands0.
+- [ ] Штатный клиент текущего чата перечитал запись и вернул `core_status`.
+  Tools пока отсутствуют. Одна попытка status через existing `app-server proxy`
+  после repair дала socket10050 до initialize. Reload request не отправлен.
+
+### Decision Log
+
+- Прежние diagnostic scripts строили descriptor через `path.resolve`, а installer
+  менял разделители на `/`. Это скрывало дефект emitted argv. Исправление находится
+  в producer конфигурации; exact path/realpath/reparse guards сохранены.
+- Fixture потребляет production command/entry/descriptor из config. Только
+  listener port задаётся как0 через существующий test seam. Subprocess/HTTP/VM
+  и отдельный installed proof не объявляются configured-client acceptance.
+- Actual config repair ограничен command/args. Descriptor, package, CEP,
+  credentials, origins, journal, grants и host adoption не менялись. Пакет fa9e
+  совпадает с source; переустановка runtime и второй app-server не запускались.
+- Генератор исправлен для следующих установок. Ремонт существующей MSI-записи
+  не засчитывается как перенос с0 ручных правок. P1–P8 и приёмка второй машины
+  остаются открытыми. Argon не вызывался.
+
+### Validation
+
+`node core4/tools/validate-diff.js core4/tools/install-core4.js
+core4/test/installable-runtime.test.js --run` — exit0, **45/45 PASS**:
+installable23, native-read-recovery19, human-window3; fail/cancelled/skipped0.
+Boundaries21, syntax обоих изменённых JS и `git diff --check` PASS.11 deferred
+consumers сохраняют статус `current-closure-unverified`; full release не запускался.
+
+Точные изменённые source bytes (остальная база — `2b6493d`):
+
+| Файл | SHA-256 |
+| --- | --- |
+| `core4/tools/install-core4.js` | `5bb6471e03687205f040966ccd245ae520b6e6a5f1e7659dfdc4922c8873262c` |
+| `core4/test/installable-runtime.test.js` | `6f58b11617dcc15efcf6a6623a15666a7b745106ffeaa94dec15a5cc72a14268` |
+
+Evidence в ignored `snapshots/core4-live-proof/X-configured-path-repair-20261029/`:
+`configured-argv-negative-proof.json`, `config-before.toml`,
+`config-repair-result.json`, `cli-config-readback.json`,
+`corrected-argv-stdio-proof.json`, `configured-status-attempt.json`,
+`selection.json`, `selected-validation.log`, `validation-summary.json`.
+Каждый proof сохраняет свой scope; эти local evidence сами по Git не переносятся.
+
+Actual config SHA-256 после repair:
+`f7a7a3a66240dbe8987f5bb7f52470812d6723ce2e730cb116dbd3f0612360a0`.
+Descriptor остался `cc1ad553b518bd2ecdd59e9f6e09379d2545f5dc6b7e147576655dbf8cb7fd75`,
+journal — `1a07b1a379a166a7c8be1af714fa9ac7f7f328f05ad98599fcf12473bdd040b4`.
+Installed verifier и package builder подтвердили прежний
+`fa9e2f4545888c3cfca07221819e3bda4436680ab4602bf74a4f13c6a39b1199`.
+
+Следующий шаг — новое штатное подключение Codex к исправленной MCP-записи и
+configured `core_status`. Доступный proxy пока не обеспечивает reconnect;
+ручной UI-путь не выдумывается, original inspection не повторяется. Независимый
+environment preflight остаётся следующим source-блоком переносимости.
+
+Изменённый installer запускается из текущего source checkout. Сохранённые ранее
+immutable distribution/operator copies не переписывались и не объявляются
+содержащими это исправление; их tooling hashes относятся к прежнему составу.

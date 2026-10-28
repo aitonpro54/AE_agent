@@ -29,6 +29,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29 октября: воспроизведена startup-причина `installation_path`: installer
+  менял native descriptor path на `/`, а прежний diagnostic его нормализовал.
+  Генератор и regression исправлены;45 selected/boundaries21 PASS. Project config
+  исправлена через generator/CAS; corrected argv дали installed initialize/status
+  PASS и clean exit0, native0, fa9e/state прежние. Configured client пока требует
+  нового подключения; existing proxy10050. [Детали](core-portability-installation-20261028.md).
 - [x] 28 октября, продолжение по прямому поручению пользователя: installed
   fa9e release/CEP/Node повторно верифицированы; configured client tools пока
   отсутствуют, existing app-server proxy отказал socket10050 до initialize.
@@ -63,6 +69,10 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- 29 октября: producer MCP-конфигурации сохраняет native paths с TOML escaping;
+  verifier не принимает дополнительные формы пути. Regression потребляет emitted
+  config без нормализации. Отдельный exact-argv proof подтверждает repair,
+  но не managed client; package/CEP update для tooling fix не нужен.
 - Новое поручение «продолжай» возобновляет работу после предыдущей остановки.
   Для configured-client нужен штатный reconnect; текущий proxy10050 не является
   отказом AE и не разрешает второй runtime. Независимый source milestone4
@@ -93,6 +103,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- 29 октября: exact old argv FAIL exit1/`installation_path` до state startup;
+  regenerated native argv PASS initialize/core_status, child18160 exit0/stderr0.
+  Python TOML decode и Codex CLI config read-back PASS; descriptor/origins/journal
+  byte-identical, runtime packagefa9e.45/45 selected, boundaries21, syntax/diff PASS;
+  native0. Configured status через existing proxy недоступен:10050. Evidence —
+  `snapshots/core4-live-proof/X-configured-path-repair-20261029/`.
 - 29 октября: пользовательские screenshots опровергли предложенный UI-путь к
   отдельному MCP servers. Повторный ручной поиск не требуется. Project config
   после одного bounded reload-cycle восстановлен byte-identical; cached startup

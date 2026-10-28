@@ -65,7 +65,9 @@ function configText(previous, descriptor, nodePath, entry) {
   }
   const matches = headers.filter(h => h.name === 'mcp_servers.after-effects-core4'); if (matches.length > 1) fail('config_ambiguous_core4');
   const newline = text.includes('\r\n') ? '\r\n' : '\n';
-  const body = 'command = ' + JSON.stringify(nodePath.replace(/\\/g, '/')) + newline + 'args = ' + JSON.stringify([entry.replace(/\\/g, '/'), '--installation', descriptor.replace(/\\/g, '/')]) + newline;
+  // TOML basic strings accept JSON's escaped backslashes. Preserve native path
+  // bytes: the installed verifier deliberately rejects noncanonical spellings.
+  const body = 'command = ' + JSON.stringify(nodePath) + newline + 'args = ' + JSON.stringify([entry, '--installation', descriptor]) + newline;
   if (!matches.length) return text + (text && !text.endsWith('\n') ? newline : '') + newline + '[mcp_servers.after-effects-core4]' + newline + 'tool_timeout_sec = 120' + newline + body;
   const own = matches[0], following = headers.find(h => h.start > own.start);
   const ownBody = text.slice(own.end, following ? following.start : text.length), preferences = [], timeouts = [];
