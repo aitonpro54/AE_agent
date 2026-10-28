@@ -6,8 +6,9 @@ Root остаётся единственным live-контроллером. О
 
 Подготовлен [единый recovery-план A–D](core-native-read-recovery-design.md):
 capture оригинального ответа, условная terminal disposition, descriptor lineage
-и historical ACK. Единственный initial review этого scope передан через
-существующий controller; ответ ещё не получен. Runtime UNKNOWN не изменён.
+и historical ACK. Единственный initial review этого scope получен через
+существующий controller: conditional go, шесть findings локально разобраны.
+Начата только source-реализация A; Runtime UNKNOWN не изменён.
 
 ## Progress
 

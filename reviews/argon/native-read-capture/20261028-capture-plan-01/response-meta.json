@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "reviewId": "20261028-capture-plan-01",
+  "stageId": "native-read-recovery",
+  "status": "received",
+  "reviewType": "plan",
+  "scope": "single initial review of independent unified A-D native-read-recovery",
+  "targetCommit": "80cc242fc7bc444d726223b39091bdee56879b37",
+  "recipient": {
+    "name": "Aiton Pro",
+    "email": "aitonpro54@gmail.com",
+    "service": "Gemini / Argon"
+  },
+  "readiness": {
+    "verifiedAt": "2026-10-28T10:44:39.372Z",
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "selectedEffort": "Высокий",
+    "effortDescription": "Глубокий",
+    "availableEfforts": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "composerEmpty": true,
+    "oldOriginDraftUsed": false
+  },
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "receipt": {
+    "url": "https://gemini.google.com/app/e4caead3c5324acc",
+    "newUserMessage": "Review ID: 20261028-capture-plan-01",
+    "attachment": "bundle.md",
+    "generating": true,
+    "composerEmpty": true,
+    "durability": "initial UI receipt; awaiting full response"
+  },
+  "response": {
+    "path": "response.txt",
+    "sha256": "f115c6b1df8615fc9a07e92611ebb4cf4349a904738d88be82b7fd962e1fa893",
+    "bytes": 27577,
+    "encoding": "UTF-8",
+    "captureMethod": "exact innerText of model-response-content index 1; no edits, normalization or added newline; citation/code UI labels preserved",
+    "complete": true,
+    "truncated": false,
+    "completionEvidence": "generation button absent; two model-response-content containers; new review user message present; final section 8 and last checklist paragraph present"
+  },
+  "binding": {
+    "checks": {
+      "reviewId": {
+        "expected": "20261028-capture-plan-01",
+        "presentInResponse": true
+      },
+      "stageId": {
+        "expected": "native-read-recovery",
+        "presentInResponse": true
+      },
+      "targetCommit": {
+        "expected": "80cc242fc7bc444d726223b39091bdee56879b37",
+        "presentInResponse": true
+      },
+      "unifiedPlanSha256": {
+        "expected": "9a2861e9c6879d83fdb1849dfb80361bc0f984d624ca098c7268d488864668ed",
+        "presentInResponse": true
+      },
+      "captureSubplanSha256": {
+        "expected": "7ff30c0ebf436ec6f3a195ab885278ce3c3aa3397d61423e0695365662af6d59",
+        "presentInResponse": true
+      },
+      "requestSha256": {
+        "expected": "fe5815fe61272851be9a3b2a86becbe3faa7aa027bbbc642b76ebc0ce40812a9",
+        "presentInResponse": true
+      },
+      "bundleSha256": {
+        "expected": "74c41aa7acfa5904c9c7fdcaf1a08a4137f1e1d58005f5d54fbbdc56a1cf4931",
+        "presentInResponse": true
+      }
+    },
+    "stringBindingsMatch": true,
+    "cryptographicRecomputationByReviewer": "not independently established; response lists declared hashes",
+    "fullReadClaim": {
+      "claimed": true,
+      "contextFiles": 3,
+      "omissions": 0
+    }
+  },
+  "verdict": "go",
+  "receivedAt": "2026-10-28T10:51:00.375Z",
+  "verdictConditions": "локальная фиксация NRR-PLAN-01..06; B-D остаются закрыты при отсутствии требуемого receipt/provenance этапа A",
+  "findings": [
+    {
+      "id": "NRR-PLAN-01",
+      "priority": "P1"
+    },
+    {
+      "id": "NRR-PLAN-02",
+      "priority": "P1"
+    },
+    {
+      "id": "NRR-PLAN-03",
+      "priority": "P1"
+    },
+    {
+      "id": "NRR-PLAN-04",
+      "priority": "P2"
+    },
+    {
+      "id": "NRR-PLAN-05",
+      "priority": "P2"
+    },
+    {
+      "id": "NRR-PLAN-06",
+      "priority": "P3"
+    }
+  ],
+  "limitations": [
+    "Static plan-review; no live capture/actual runtime evidence supplied or verified.",
+    "Reviewer claims full reading of 3 context files. This is not independent attestation or cryptographic recomputation of plan/request/bundle hashes.",
+    "External response is untrusted evidence; findings not locally accepted or executed by this controller.",
+    "No second/fix/final review or clarification was sent. Historical Origin result01 untouched."
+  ]
+}

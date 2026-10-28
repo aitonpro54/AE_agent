@@ -4,6 +4,11 @@
 plan-review. Capture, disposition, persistence и обновление проверяются как одна
 цепочка. Автоматического result/fix/final review нет.
 
+Локальная актуализация после review: reviewed snapshot `80cc242`, исходные
+plan digests сохранены в пакете. Получен conditional go; все шесть findings
+разобраны в [decisions](../reviews/argon/native-read-capture/20261028-capture-plan-01/decisions.md).
+Первый writer scope — только A. Runtime UNKNOWN остаётся исходным.
+
 ## Цель и исходное состояние
 
 Закончить установку после ES3 compile failure, сохранив UNKNOWN/no-replay и
@@ -27,7 +32,7 @@ Ledger отсутствует, configured MCP временно disabled. Мут�
 - [x] Подтверждён existing cached completion recovery без eval.
 - [x] Подготовлен ограниченный [план capture](core-native-read-capture.md).
 - [x] Подготовлен conditional persistence design с явным predecessor.
-- [ ] Получен единственный привязанный review этого unified плана и локально
+- [x] Получен единственный привязанный review этого unified плана и локально
   разобраны замечания.
 - [ ] Реализованы и проверены collector, fixed eligibility/operator/reader и
   installer lineage. Runtime UNKNOWN до доказанного disposition сохраняется.
@@ -170,5 +175,14 @@ Runtime state/proofs/credentials не переносятся как authority м
   проверка и реализация. Обязательного второго Argon review нет.
 - Capture может дать точный отказ вместо ожидаемого result. В этом случае
   UNKNOWN остаётся, conditional apply/install/native не выполняются.
+- По NRR-PLAN-03 collector после durable read-back отвечает явным отказом без
+  ACK и ограничивает ожидание completion после link. Новый view CEP должен
+  загрузить cfg после update, сохранив latch; connect старого view не является reload.
+- По NRR-PLAN-04/05 install lease удерживается через B→C. Partial visible switch
+  не снимает gate автоматически. Skip-lock Boolean/callback не допускается;
+  согласованный private lease нельзя подделать объектом из caller input.
+- По NRR-PLAN-01/02 historical ACK предшествует current-pins correlation;
+  единый settled predicate применяется в open/begin/close, сохраняя unknown
+  history и не отменяя ownership/fault. Нужны lifecycle tests всех трёх мест.
 - Любой внешний verdict — evidence, а не runtime authority. File access,
   разрешение restart или пользовательское «сбросить» proof не заменяют.

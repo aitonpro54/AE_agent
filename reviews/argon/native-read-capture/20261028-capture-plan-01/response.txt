@@ -1,0 +1,227 @@
+Привязка (Bindings) и статус чтения
+
+Review ID: 20261028-capture-plan-01.   
+MD
+
+Stage: native-read-recovery (единый initial plan-review объединённого этапа A–D).   
+MD
+
+Base / Target commit: 80cc242fc7bc444d726223b39091bdee56879b37 (clean).   
+MD
+
+Unified plan (plans/core-native-read-recovery-design.md, 174 строки) SHA-256: 9a2861e9c6879d83fdb1849dfb80361bc0f984d624ca098c7268d488864668ed.   
+MD
+
+Capture subplan (plans/core-native-read-capture.md, 115 строк) SHA-256: 7ff30c0ebf436ec6f3a195ab885278ce3c3aa3397d61423e0695365662af6d59.   
+MD
+
+Embedded request (request.md) SHA-256: fe5815fe61272851be9a3b2a86becbe3faa7aa027bbbc642b76ebc0ce40812a9.   
+MD
+
+Attached bundle.md SHA-256: 74c41aa7acfa5904c9c7fdcaf1a08a4137f1e1d58005f5d54fbbdc56a1cf4931.   
+MD
+
+Полнота чтения и границы: Пакет bundle.md (COMPLETE, 3 включённых файла: frozen-plan.md, implementation-context.md, unified-recovery-design.md, 0 пропусков) прочитан целиком как цитируемое свидетельство без запуска команд или кода. Данное ревью не является authority и не разрешает реализацию, live/AE-действия, установку или изменение состояния.   
+MD
+Ещё 1
+
+1. Verdict
+
+go (при условии обязательной локальной фиксации findings NRR-PLAN-01 .. NRR-PLAN-06 до/в ходе реализации; при отсутствии ожидаемого receipt или provenance на этапе A этапы B–D остаются полностью заблокированными).   
+MD
+
+2. Top 3 Failure Modes & Concrete Findings (Дефекты и уязвимые места)
+NRR-PLAN-01 (P1, Top Failure Mode 1) — Несовпадение packageHash/executorHash в commandPins(c.command) при доставке historical ACK на этапе D
+
+Механизм отказа: В core4/cep/js/poll-dispatcher.js:16,30 сохранённый в localStorage (aeagentcore4-physical-<installationId>) latch хранит record.frame.pins со старыми packageHash и executorHash исходного пакета. После обновления пакета на этапе C и запуска нового runtime на этапе D core4/integrations/cep/http-peer.js:72 проверяет canonical(b.payload.pins) !== canonical(commandPins(c.command)). Поскольку c.command в журнале (http-peer.js:125) не хранит packageHash, функция commandPins(c.command) подставляет новый installation.packageHash, из-за чего исторический /complete от dispatcher.recover() будет отклонён с completion_correlation, а строка http-peer.js:73-74 отклонит команду с state: 'unknown' как unknown_no_promotion.   
+MD
+Ещё 2
+
+Почему это критично: Панель никогда не получит historical ACK, не очистит latch в localStorage (poll-dispatcher.js:18), и новое чтение на этапе D будет заблокировано physical_latch_present (poll-dispatcher.js:25).   
+MD
+
+Требуемое уточнение: В http-peer.js:69-75 выделять ветку исторического ACK для команды с валидированной terminal-read-failure-disposition до проверки текущего commandPins(c.command), сверяя b.payload.pins, b.payload.originalBinding и b.payload.result с историческими значениями, зафиксированными и проверенными через disposition и predecessor lineage.   
+MD
+
+NRR-PLAN-02 (P1, Top Failure Mode 2) — Неполное обновление трёх предикатов r.state !== 'completed' в completion-store.js и передача контекста для внутреннего resolver
+
+Механизм отказа: В core4/integrations/cep/completion-store.js блокировка канала и удержание файла receiver/owner определяются в трёх местах: при открытии (line 45: some(r => r.state !== 'completed')), в begin() (line 55: some(r => r.state !== 'completed')) и в close() (line 76: every(r => r.state === 'completed')). Так как исторический state команды обязан остаться 'unknown', пропуск любого из трёх мест (особенно line 76 в close()) приведёт к тому, что штатное закрытие нового runtime не удалит receiver/owner и необратимо заблокирует следующий запуск на line 12 (EEXIST). Кроме того, openCompletionStore({ directory, io = fs }) (line 6) сейчас не принимает путь к installation.json для внутренней проверки lineage и старого controlToken.   
+MD
+Ещё 2
+
+Почему это критично: Нарушает либо открытие физического слота на этапе D, либо сохранность состояния после первого же перезапуска нового runtime.   
+MD
+
+Требуемое уточнение: Ввести в completion-store.js единый внутренний предикат isSettled(r) (r.state === 'completed' || (r.state === 'unknown' && r.dispositionValid === true)), применить его на строках 45, 55 и 76, оставить get(commandId).state === 'unknown' и has(commandId) === true (line 54), а проверку lineage/MAC выполнять встроенным в модуль fixed-валидатором по проверенному descriptorPath.   
+MD
+
+NRR-PLAN-03 (P1, Top Failure Mode 3) — Устаревший in-memory window.Core4Installation в открытой панели между этапами C и D и поведение collector на /complete
+
+Механизм отказа: На этапе A панель открыта в AE и держит в памяти var cfg = window.Core4Installation (panel.js:3) со старыми packageHash, executorHash и panelToken. На этапе C install-core4.js:78,131 обновляет installation.js на диске с новыми packageHash, executorHash и сгенерированным новым panelToken (install-core4.js:74). Если на этапе D нажать connect в неперезагруженном окне панели, panel.js:15 выбросит installation_binding из-за старого in-memory cfg. Кроме того, на этапе A в poll-dispatcher.js:16-18 вызов options.complete(...) удалит latch из localStorage, если collector вернёт валидный reply.ack, либо зависнет, если панель не пришлёт /complete (когда в localStorage нет prior.result).   
+MD
+Ещё 3
+
+Почему это критично: Потеря latch на этапе A уничтожит единственное доказательство из localStorage, а неперезагруженная панель на этапе D не сможет пройти /challenge и доставить historical ACK.   
+MD
+
+Требуемое уточнение: (1) На этапе A collector при приёме /complete обязан после fsync + read-back транскрипта возвращать явный отказ без ack (например, HTTP 403 capture_recorded_no_ack), чтобы poll-dispatcher.js:17-18 гарантированно не выполнил storage.removeItem(key), а при отсутствии /complete после /link завершаться по короткому таймауту с фиксацией отсутствия cached result. (2) На этапе D перед подключением к обновлённому runtime переоткрыть/перезагрузить view панели CEP в AE (без перезапуска AE, в соответствии с requiresPanelOpen: true в install-core4.js:137), чтобы window.Core4Installation загрузил новые токены/хэши при сохранении localStorage.   
+MD
+Ещё 1
+
+Дополнительные конкретные замечания (NRR-PLAN-04 .. NRR-PLAN-06)
+
+NRR-PLAN-04 (P2) — Снятие install.lock при прерванном switch в install-core4.js и проверка CEP closure: В core4/tools/install-core4.js:139 блок finally { fs.closeSync(fd); fs.unlinkSync(gate); } удаляет install.lock даже при выбросе ошибки после switched = true (line 130), а verifyInstallation в core4/runtime/stdio-entry.js:36-47 не сверяет установленное дерево cepDir. Если ошибка произошла между line 130 и line 136, install.lock не должен удаляться автоматически (либо verifier/resolver должен сверять appliedDescriptorHash и appliedCepHash активной транзакции).   
+MD
+Ещё 1
+
+NRR-PLAN-05 (P2) — Окно между архивацией receiver/owner на этапе B и applyInstall на этапе C: В install-core4.js:111 applyInstall требует отсутствия receiver/owner (assertRuntimeStopped на line 84), поэтому этап B архивирует пустой receiver/owner после записи disposition. Однако если между этапами B и C будет запущен старый runtime, completion-store.js:12,41,76 создаст новый owner, упадёт в fault = true на неизвестном типе записи terminal-read-failure-disposition и при close() оставит новый owner на диске. План должен запрещать запуск старого runtime между B и C и проверять size === 0 и точный state completions.ndjson перед перемещением receiver/owner под удержанием install.lock.   
+MD
+Ещё 2
+
+NRR-PLAN-06 (P3) — Версионирование схемы descriptor в stdio-entry.js:39 и install-core4.js:143: В stdio-entry.js:39 зашита проверка d.version !== 1. При добавлении predecessor: { transactionId, previousDescriptorHash } необходимо явно обновить проверку версии/схемы в verifyInstallation и rollback, требуя для любого descriptor с predecessor !== null валидного UUID транзакции и 64-символьного hex previousDescriptorHash.   
+MD
+Ещё 1
+
+3. Ответы на вопросы Review Request (1–6)
+
+Достаточность provenance для этапа A и минимальные blockers/negative checks:
+
+Provenance достаточна: так как panel.js:15-16 не вызывает exact() на объекте challenge, а подписывает api.canonical({ challenge, peerId }), включение в /challenge полей purpose, receiverStoreIdentity, commandDigest и journalTailHash криптографически связывает ответ панели с состоянием store без модификации установленных файлов панели.   
+MD
+
+Обязательные блокеры до открытия порта 3457: проверка точного совпадения всех 7 файлов в cepDir (6 пакетированных файлов cep/* из release.json + 1 сгенерированный installation.js, вычисленный по формуле install-core4.js:78 из текущего installation.json) без лишних файлов и symlinks/reparse points; проверка size === 0 у receiver/owner; проверка цепочки origin → begin → unknown в completions.ndjson; отсутствие broker-owner.lock, broker-owner.gate, install.lock, незавершённых записей в broker ledger и живых процессов старого runtime.   
+MD
+
+Наличие путей к evaluator, /poll, ACK, новому dispatch или снятию UNKNOWN в A–D:
+
+На этапе A путей нет: panel.js:20 выполняет await dispatcher.recover(); if (response.body.laneClosed) throw new Error('receiver_lane_closed'); строго до цикла while (linked) { await authenticated('/poll', ...); } (line 22), а poll-dispatcher.js:22 при наличии prior.result вызывает только post(prior) без evalScript. Collector не реализует маршруты /poll и submit, возвращает laneClosed: true в /link и не возвращает ack в /complete.   
+MD
+Ещё 1
+
+На этапах B–D исходная запись unknown никогда не переводится в completed (нет promotion), has(commandId) навсегда блокирует повтор с тем же commandId, а любой другой UNKNOWN (или любой результат, отличный от readFailureVersion: 1, outcome: "rejected", code: "host_registry_unavailable") оставляет store.closed = true.   
+MD
+
+Устойчивость схемы C к циклам, подмене predecessor, byte mismatch, ротации, rollback, CAS drift и torn writes:
+
+Генерация transactionId в planInstall до формирования descriptor устраняет циклическую зависимость хэшей: descriptor включает { transactionId, previousDescriptorHash }, а файл транзакции (install-core4.js:125) сохраняет previousDescriptor (в base64) и appliedDescriptorHash: hash(canonical(d)).   
+MD
+
+Поскольку транзакция записывается через durable() (line 126) до атомарного fs.renameSync дескриптора (line 134), невыбранная до switch транзакция недостижима из installation.json, а после switch достижима по явному transactionId, поэтому отдельный commit marker не нужен.   
+MD
+
+Для полной защиты resolver обязан: (а) проверять hash(bytes(currentDescriptor)) === txn.appliedDescriptorHash и hash(Buffer.from(txn.previousDescriptor, 'base64')) === currentDescriptor.predecessor.previousDescriptorHash; (б) проверять неизменность installationId, machineId, installRoot, stateDir и origin.json на каждом шаге; (в) ограничивать глубину цепочки (например, maxDepth <= 16) и отслеживать Set посещённых transactionId и descriptor hashes против циклов; (г) при rollback (install-core4.js:141) восстанавливается старый descriptor, из которого откатанная транзакция становится недостижимой, а старый reader отказывает на новом типе события в completions.ndjson.   
+MD
+
+Разделение panel MAC, old control authorization и private one-use capability:
+
+Контракт разделяет роли корректно: в stdio-entry.js:39 гарантировано d.panelToken !== d.controlToken. Capture-транскрипт на этапе A подписывается панелью на old.panelToken, тогда как запись terminal-read-failure-disposition на этапе B авторизуется с domain separation ключом old.controlToken через приватную одноразовую in-memory capability внутри оператора после прохождения fixed-валидации (без публичного API подписи или файлового grant).   
+MD
+Ещё 1
+
+Минимальные негативные и crash-проверки:
+
+См. раздел 8 (Pre-flight checklist & Minimal Local Checks) ниже.   
+MD
+
+Формулировка предела доказательной силы MAC / capture proof:
+
+HMAC на panelToken доказывает только аутентичность канала и владение локальным panelToken процессом CEP-панели при отправке сохранённого в localStorage ответа (poll-dispatcher.js:37), но не является криптографической подписью движка After Effects или аппаратным подтверждением физического завершения JSX.   
+MD
+
+Физическая callback settlement для этой команды выводится только из полной совокупности независимых улик: (1) неизменный код poll-dispatcher.js:35, где обёртка проверяет typeof AECore4Host === "undefined" и синхронно возвращает host_registry_unavailable до любого вызова AECore4Host.dispatch; (2) доказанный ES3 syntax error в целевом executor.jsx того релиза, из-за которого AECore4Host не мог зарегистрироваться в AE; (3) provenance исходного managed child, записи origin → begin → unknown и наблюдавшегося позднего /complete, отклонённого по unknown_no_promotion; (4) повторно полученный в этапе A идентичный cached result с теми же commandId, originalBinding и pins.   
+MD
+
+4. Weakest Assumption (Самое слабое допущение)
+
+Допущение: В localStorage панели по ключу aeagentcore4-physical-<installationId> до сих пор неизменно хранится сериализованный объект { frame, result } с точным result: { readFailureVersion: 1, outcome: "rejected", code: "host_registry_unavailable" }, и он сохранится между этапом A и этапом D после обновления файлов в cepDir.   
+MD
+
+Почему это важно: Как отмечено в комментарии poll-dispatcher.js:31 (// This persistent latch is not fsync proof), localStorage в CEF не гарантирует транзакционной долговечности, а при пустом или отсутствующем prior.result вызов dispatcher.recover() (line 22) выбросит physical_outcome_unknown_no_replay без отправки /complete. План корректно трактует этот результат как проверяемую гипотезу и блокирует этапы B–D при неполучении точного cached result.   
+MD
+Ещё 1
+
+5. Missing Evidence That Would Change the Verdict (Недостающие свидетельства)
+
+На стадии статического plan-review отсутствует само live-свидетельство этапа A (фактический перехваченный и верифицированный /complete от панели с code: "host_registry_unavailable").   
+MD
+
+Если на этапе A окажется, что: (а) localStorage пуст или содержит только { frame } без result, (б) result отличается от readFailureVersion: 1 / rejected / host_registry_unavailable, или (в) файлы в установленном cepDir / releaseDir / completions.ndjson были изменены относительно installation.json, то для этапов B–D вердикт автоматически меняется на stop (fail-closed, сохранение UNKNOWN).   
+MD
+
+6. Specific Recommended Changes to the Plan (Рекомендуемые точечные правки плана)
+
+Явный ответ collector на /complete (Этап A): Зафиксировать в плане, что collector после durable-записи и fsync транскрипта отвечает на /complete детерминированным отказом без поля ack (например, HTTP 403 capture_recorded_no_ack), исключая вызов options.storage.removeItem(key) в poll-dispatcher.js:18, и имеет явный таймаут ожидания /complete после /link.   
+MD
+
+Ветка historical ACK в http-peer.js (Этап D): Явно указать, что проверка /complete для команды с подтверждённой terminal-read-failure-disposition сверяет b.payload.pins.packageHash и executorHash с историческим пакетом из disposition/lineage, а не с текущим commandPins(c.command) (http-peer.js:72).   
+MD
+
+Трёхточечный инвариант в completion-store.js (Этап D): Указать обязательное обновление всех трёх проверок state !== 'completed' (lines 45, 55, 76) через единый предикат завершённости физического слота при сохранении get(commandId).state === 'unknown' и has(commandId) === true.   
+MD
+
+Переоткрытие панели CEP на этапе D: Указать, что после applyInstall на этапе C и перед подключением панели на этапе D панель CEP должна быть переоткрыта/перезагружена в UI After Effects (без рестарта AE), чтобы window.Core4Installation (panel.js:3) обновил packageHash, executorHash и panelToken.   
+MD
+
+Удержание install.lock при прерванном switch и между B и C: Не удалять install.lock в install-core4.js:139, если switched === true завершился ошибкой чтения/записи, и исключить запуск старого runtime между архивацией receiver/owner в конце этапа B и applyInstall на этапе C.   
+MD
+
+7. What Must Remain Out of Scope & Minimal Safer Alternative
+
+Что обязано остаться вне scope:
+
+Любое выполнение JSX/evalScript, отправка /poll или выдача ACK на этапе A.   
+MD
+
+Любое удаление или перезапись исходных строк origin → begin → unknown в completions.ndjson или разрешение повторного выполнения (replay) исходного commandId.   
+MD
+
+Обобщённое восстановление (generic reset) для любых команд мутации (titles-current-target), для иных кодов ошибок или для отсутствующего в localStorage результата.   
+MD
+
+Публичный API генерации/подписи recovery-proof или сохранение одноразовой capability в виде файлового гранта.   
+MD
+
+Исполнение старого бинарника Node.js при проверке исторической lineage и объявление локальных тестов доказательством двухмашинной переносимости (десктоп ↔ MSI).   
+MD
+
+Minimal Safer Alternative (Минимальная безопасная альтернатива):
+
+Реализовывать и проверять код строго с жёстким операционным барьером после этапа A: сначала выполнить только read-only инспекцию и single-shot capture (этап A), и лишь после получения и верификации реального durable-транскрипта с code: "host_registry_unavailable" разрешать применение этапов B–D. Если этап A возвращает отсутствие результата в localStorage, остановить цепочку без применения B–D.   
+MD
+Ещё 1
+
+8. Pre-Flight Checklist & Minimal Local Checks Before Implementation
+
+Проверка целостности установленного CEP и release closure (Этап A):
+
+Тест подтверждает сверку всех 7 файлов в cepDir (6 из pkg.files['cep/*'] + installation.js по формуле install-core4.js:78) и отказ при лишнем файле, расхождении 1 байта в installation.js или наличии symlink/reparse point.   
+MD
+
+Проверка нулевого eval и сохранения latch в panel.js + poll-dispatcher.js (Этап A):
+
+Тест с реальным createDispatcher и panel.js: при laneClosed: true и наличии cached { frame, result } в localStorage отправляется ровно один /complete, evalScript вызывается 0 раз, /poll вызывается 0 раз, а после ответа collector без ack запись в localStorage остаётся побайтово неизменной.   
+MD
+
+Негативные проверки этапа A: отсутствие result в latch (physical_outcome_unknown_no_replay), иной code/outcome, неверный commandId/originalBinding/pins, неверный Origin/Host/MAC/role, непустой receiver/owner или активный lock.   
+MD
+
+Проверка одноразовой disposition и старого reader (Этап B):
+
+Подпись disposition ключом panelToken вместо controlToken отклоняется; подмена JSON-файла транскрипта без приватной capability отклоняется; повторная запись disposition для того же commandId отклоняется.   
+MD
+
+Crash/short-write тест: при ошибке writeSync/fsyncSync файл receiver/owner не архивируется и store.closed остаётся true.   
+MD
+
+Старый completion-store.js (baseline 80cc242f) на журнале с записью terminal-read-failure-disposition гарантированно переходит в fault: true, closed: true (line 41, 46).   
+MD
+
+Проверка цепочки lineage и rollback (Этап C):
+
+Тесты на цикл (T1 → T2 → T1), превышение глубины цепочки, несовпадение appliedDescriptorHash или previousDescriptorHash, подмену installationId/machineId, ротацию токенов (N → N+1 → N+2) и отказ при rollback на уже изменённом после disposition журнале.   
+MD
+
+Проверка historical ACK и нового чтения с новым commandId (Этап D):
+
+В новом runtime после disposition и смены packageHash/panelToken вызов /complete со старыми pins из localStorage возвращает валидный подписанный { ack: { commandId, receiptRef } }, очищает latch в localStorage, оставляет store.get(oldCommandId).state === 'unknown', блокирует повтор store.begin(oldCommand) (duplicate_command_no_replay), корректно удаляет receiver/owner при store.close() и пропускает новый inspect с новым commandId.   
+MD

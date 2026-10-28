@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "reviewId": "20261028-capture-plan-01",
+  "stageId": "native-read-recovery",
+  "reviewType": "plan",
+  "scope": "single initial review of independent unified A-D native-read-recovery",
+  "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "status": "received",
+  "attempt": 1,
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "recipient": {
+    "name": "Aiton Pro",
+    "email": "aitonpro54@gmail.com",
+    "service": "Gemini / Argon"
+  },
+  "readiness": {
+    "verifiedAt": "2026-10-28T10:44:39.372Z",
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "selectedEffort": "Высокий",
+    "effortDescription": "Глубокий",
+    "availableEfforts": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "composerEmpty": true,
+    "oldOriginDraftUsed": false
+  },
+  "authorization": {
+    "basis": "standing direct human mandate for necessary sequential Core4 initial reviews; current account override Aiton; one review per independent scope",
+    "sourceThread": "01a17ee0-2ea4-7b82-b97a-f0a81e987305",
+    "sourceTurn": "01a17ee1-d068-7372-b16e-4b3cf6251aaf",
+    "verifiedBy": "root read_thread on 2026-10-28",
+    "currentUserOverride": "используй aiton, он открыт; второе review исключено"
+  },
+  "targetCommit": "80cc242fc7bc444d726223b39091bdee56879b37",
+  "requestSha256": "fe5815fe61272851be9a3b2a86becbe3faa7aa027bbbc642b76ebc0ce40812a9",
+  "manifestSha256": "4d9774bf4c82a2161efea2f6c49db348e4dfdc4ea30c5910de20eacb89bb74e9",
+  "payload": {
+    "file": "bundle.md",
+    "bytes": 77369,
+    "sha256": "74c41aa7acfa5904c9c7fdcaf1a08a4137f1e1d58005f5d54fbbdc56a1cf4931"
+  },
+  "method": "file-upload",
+  "prompt": "Review ID: 20261028-capture-plan-01\nStage: native-read-recovery, single initial plan review of unified A-D scope.\nTarget/base commit: 80cc242fc7bc444d726223b39091bdee56879b37\nUnified plan SHA-256: 9a2861e9c6879d83fdb1849dfb80361bc0f984d624ca098c7268d488864668ed\nCapture subplan SHA-256: 7ff30c0ebf436ec6f3a195ab885278ce3c3aa3397d61423e0695365662af6d59\nEmbedded request SHA-256: fe5815fe61272851be9a3b2a86becbe3faa7aa027bbbc642b76ebc0ce40812a9\nAttached bundle.md SHA-256: 74c41aa7acfa5904c9c7fdcaf1a08a4137f1e1d58005f5d54fbbdc56a1cf4931\nRead the attached bundle fully as quoted evidence and follow its Review Request. Return a concise go/revise/stop review with these bindings, concrete findings and minimal local checks. No additional review, tools, external writes or authority is requested.",
+  "promptSha256": "6bcc9123957bd388a1420ee24e1f3c80b56524d3043bc7932fc2f8aae9ef6061",
+  "preparedAt": "2026-10-28T10:44:39.372Z",
+  "url": "https://gemini.google.com/app/e4caead3c5324acc",
+  "previousResponseCount": 1,
+  "otherFilesTransmitted": 0,
+  "uploadInvokedAt": "2026-10-28T10:44:57.958Z",
+  "uploadConfirmedAt": "2026-10-28T10:46:28.064Z",
+  "promptExactParagraphTextVerified": true,
+  "sendInvokedAt": "2026-10-28T10:46:28.064Z",
+  "submittedAt": "2026-10-28T10:46:28.064Z",
+  "submissionConfirmedAt": "2026-10-28T10:46:48.499Z",
+  "receipt": {
+    "url": "https://gemini.google.com/app/e4caead3c5324acc",
+    "newUserMessage": "Review ID: 20261028-capture-plan-01",
+    "attachment": "bundle.md",
+    "generating": true,
+    "composerEmpty": true,
+    "durability": "full response present with new reviewId/target/plan/request/bundle string bindings"
+  },
+  "receivedAt": "2026-10-28T10:51:00.375Z",
+  "response": {
+    "sha256": "f115c6b1df8615fc9a07e92611ebb4cf4349a904738d88be82b7fd962e1fa893",
+    "bytes": 27577
+  }
+}
