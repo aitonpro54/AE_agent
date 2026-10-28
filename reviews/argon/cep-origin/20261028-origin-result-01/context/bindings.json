@@ -1,0 +1,11 @@
+{
+  "reviewId": "20261028-origin-result-01",
+  "stageId": "cep-origin",
+  "reviewType": "result",
+  "baseCommit": "aa1659819d3d9e1c51e87326d314f805a775334c",
+  "targetCommit": "30311539ce2b2eb091d19c179667e513217e41cc",
+  "changesDiffSha256": "f7fdc1747c1aa26ea1ce2d94e64c508e2cae7dbfcd935c8f95932183adfb33b9",
+  "packageHash": "6c94efb678b9a56861b18e762076da7b38824bbbe30233770c4133ff81edc696",
+  "packageFileSha256": "fd4320d1f0e95540dce83515fffaf21c92bbdac09f82303005d305930f5caad3",
+  "requestSha256": "74115c96a4211146ca9ec1a0814d2a66a25c1a8c4b6a64151123456fac406542"
+}

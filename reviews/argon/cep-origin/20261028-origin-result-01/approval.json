@@ -1,0 +1,24 @@
+{
+  "reviewId": "20261028-origin-result-01",
+  "approvedAt": "2026-10-28T08:26:08.685Z",
+  "status": "approved-for-single-result-review",
+  "authorization": "Standing user mandate necessary Core4 reviews plus current panel repair request and explicit account steering: используй aiton, он открыт",
+  "recipient": {
+    "service": "Argon",
+    "name": "Aiton Pro",
+    "email": "aitonpro54@gmail.com",
+    "authorizationBasis": "Явное steering пользователя в текущем Core-чате: «используй aiton, он открыт»; account details local-only."
+  },
+  "externalAllowlist": [
+    "review-bundle.md"
+  ],
+  "manifestSha256": "317a929929818dcec020ed29097b57319dd2f1e8dacc1dfec7edf6caa44bf70b",
+  "payloadSha256": "e353f32aff366554524cc9e4ccaceebc6ef5ad04cff556aa31de817726edb064",
+  "payloadBytes": 85746,
+  "requestSha256": "74115c96a4211146ca9ec1a0814d2a66a25c1a8c4b6a64151123456fac406542",
+  "baseCommit": "aa1659819d3d9e1c51e87326d314f805a775334c",
+  "targetCommit": "30311539ce2b2eb091d19c179667e513217e41cc",
+  "packageHash": "6c94efb678b9a56861b18e762076da7b38824bbbe30233770c4133ff81edc696",
+  "scope": "One bounded result-review via existing controller; no replay of unknown submission, other files excluded, no runtime/AE authority",
+  "clarification": "changes.diff содержит полный diff core4 из4файлов, включая все ИЗМЕНЁННЫЕ фрагменты тестов; неизменённые строки testfile не включены как отдельный полный source snapshot"
+}

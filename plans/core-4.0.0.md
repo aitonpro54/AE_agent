@@ -535,7 +535,7 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
 - **Validation:** final selected installable20/manual12/documentation1 PASS,
   boundaries21/syntax/source-diff PASS. Root independently checked5source hashes,
  56packagefile hashes, rebuilt byte-identical candidate; packageHash6c94efb678b9,
-  fileSHAfd4320d1f0e9,286740bytes. Exact hashes/full TAP/evidence keys/deferred —
+  fileSHAfd4320d1f0e9,286740bytes. Exact hashes/полные логи/evidence keys/deferred —
   в focused плане и `implementation-freeze/`. Прежний Core37 evidence не
   переобъявляется новым current-release PASS; full release/live/desktop не были.
 - **Ограничения:** Node парсер нормализует HTTP OWS до приложения; отдельного
@@ -547,3 +547,32 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
   diff-check PASS не выдаётся за whitespace PASS неизменяемого external evidence.
 - Следующий шаг: source commit → bounded Argon result-review exact diff/package
   → только после принятия штатный apply/read-back и одна typed read пустого AE.
+
+### Итоговая передача и текущий gate
+
+- **Progress:** source milestone `30311539ce2b2eb091d19c179667e513217e41cc` сохранён.
+  Root проверил [result packet01](../reviews/argon/cep-origin/20261028-origin-result-01/manifest.json):
+ 85 746bytes, SHAe353f32aff36,8context/request exact, полный Git diff4files и3
+  current source snapshots совпали с target. Передан только этот файл через
+  существующий controller/Aiton/Argon/Высокий, attempt1.
+- **Decision Log:** отправка сначала появилась в UI вместе с генерацией, затем
+  исчезла; prompt вернулся в composer без нового ответа. После одного обычного
+  reload история не отобразилась целиком, включая старый plan04. Исход остаётся
+  `submission-unknown`; отсутствие UI не объявляется доказательством неотправки.
+  Повторный send/upload0; результат plan04 не выдаётся за result-review.
+- Пользователю показан конкретный выбор: либо ждать итогового Argon, либо явно
+  разрешить исключение для установки только этого проверенного исправления по
+  независимому локальному review. Пока ответа нет, установленная0aea не меняется.
+  Это запрос исключения из review workflow, а не новый runtime grant.
+- **Validation:** root подготовил immutable distribution6c94 и отдельно сверил
+  installer closure3 + unchanged operators2; в package нет secrets/state.
+  Private installed-proof client создан и синтаксически проверен, но не запущен.
+  Native read/mutation/save0. Actual CEP/CORS и configured client остаются open.
+- Поддержанный протокол Codex0.131.0 содержит `config/mcpServer/reload` без
+  thread/server selector; CLI не предоставляет отдельную mcp reload команду.
+  Generated schemas лежат в ignored `.codex-runtime/mcp-reconnect-schema-20261028-01`.
+  [Официальная документация](https://learn.chatgpt.com/docs/app-server) подтверждает
+  reload и thread-bound `mcpServerStatus/list`. Текущий parent app-server найден
+  read-only по ancestry shell, но явный socket/listen аргумент отсутствует.
+  Подтверждённого client handle для текущего UI нет: новый app-server/daemon,
+  повтор старого proxy10050, global reload/config mutation не выполнялись.

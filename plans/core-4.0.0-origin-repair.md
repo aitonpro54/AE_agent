@@ -79,7 +79,8 @@ raw/save/destructive и full-release не входят. Таймер не воз
 - [x] Получен bounded source-analysis GO на минимальный portable repair.
 - [x] Подготовлен и принят Argon plan-review packet04: go,5 findings разобраны root; источник и ограничения — в [decisions](../reviews/argon/cep-origin/20261028-origin-plan-04/decisions.md). Замороженный внешний план имеет собственный digest; локальный план после review обновляется только как operational record.
 - [x] Repair реализован в4файлах; final installable20/manual12/documentation1, boundaries21/syntax/source diff PASS; independent bounded source-review ACCEPT без actionable findings.
-- [ ] Зафиксирован source milestone и принят Argon result-review.
+- [x] Source milestone зафиксирован: `30311539ce2b2eb091d19c179667e513217e41cc`.
+- [ ] Принят Argon result-review либо записано явное пользовательское исключение именно для этой установки; result01 пока `submission-unknown`, запроса повторно нет.
 - [ ] Обновлена установка и выполнен фактический read-only proof подключения.
 
 ## Decision Log
@@ -126,3 +127,10 @@ raw/save/destructive и full-release не входят. Таймер не воз
   В runtime package против0aea изменены только `http-peer.js` и `panel.js`.
   Source reviewer дал ACCEPT (read-only, tests/live0). Installed/live ещё прежние;
   result-review и actual read proof остаются следующим переходом.
+- Result packet01 подтверждён root (85 746bytes, SHAe353f32aff36,8context/request,
+  exact core diff и3source snapshots). Однократная передача в Aiton/Argon/Высокий
+  получила противоречивый UI outcome; после одного read-only reload состояние
+  `submission-unknown` осталось. Metadata сохраняет initial receipt и расхождение,
+  нового response нет. Root не повторяет send/upload и не применяет package до
+  решения review gate. Пользователю задан scoped вопрос об исключении; ответа
+  на момент записи ещё нет. Source/installed/live outcomes не смешиваются.

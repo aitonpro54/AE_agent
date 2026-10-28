@@ -1,0 +1,48 @@
+[
+  {
+    "path": "core4/integrations/cep/http-peer.js",
+    "targetCommit": "30311539ce2b2eb091d19c179667e513217e41cc",
+    "bytes": 14490,
+    "sha256": "d2a6709a054e3cd029c4cf32168e8d9bba73b326af2a814f1754b038f16e676c",
+    "baseBytes": 14197,
+    "baseSha256": "24135024ce651eaa2586d85f7931c714745d582e7ae1f3b8a4890c7cc4e35df6",
+    "unchangedAtTarget": false
+  },
+  {
+    "path": "core4/cep/js/panel.js",
+    "targetCommit": "30311539ce2b2eb091d19c179667e513217e41cc",
+    "bytes": 3864,
+    "sha256": "5c06ab424a0469380009eda2410da50d74dae62c009015ef9a7a3e41ba323662",
+    "baseBytes": 3797,
+    "baseSha256": "f59b51d4bd0c5ad699bce21d77382a7977367ce6f9c072bef7db5a8bb6af34c7",
+    "unchangedAtTarget": false
+  },
+  {
+    "path": "core4/integrations/cep/peer-protocol.js",
+    "targetCommit": "30311539ce2b2eb091d19c179667e513217e41cc",
+    "bytes": 718,
+    "sha256": "9b4f3f3600b32a7e8efa3541bf795a05d485cd691324c374f1e65bab63a6f584",
+    "baseBytes": 718,
+    "baseSha256": "9b4f3f3600b32a7e8efa3541bf795a05d485cd691324c374f1e65bab63a6f584",
+    "unchangedAtTarget": true
+  },
+  {
+    "path": "changes.diff",
+    "command": "git diff aa1659819d3d9e1c51e87326d314f805a775334c 30311539ce2b2eb091d19c179667e513217e41cc -- core4",
+    "bytes": 31981,
+    "sha256": "f7fdc1747c1aa26ea1ce2d94e64c508e2cae7dbfcd935c8f95932183adfb33b9",
+    "changedFiles": [
+      "core4/README.md",
+      "core4/cep/js/panel.js",
+      "core4/integrations/cep/http-peer.js",
+      "core4/test/installable-runtime.test.js"
+    ]
+  },
+  {
+    "path": "validate-diff-02.stdout.txt",
+    "source": "snapshots/core4-live-proof/IV-origin-portability-20261028/implementation-freeze/validate-diff-02.log",
+    "bytes": 18659,
+    "sha256": "d680e39a8526df8a3b33609375f822b4b8657cf0e5e04b1db02a2b064c866adc",
+    "kind": "complete Node test-runner spec stdout; not TAP"
+  }
+]
