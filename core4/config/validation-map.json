@@ -1,5 +1,7 @@
 {
   "owners": [
+    { "prefix": "core4/tools/capture-native-read.js", "owner": "native-read-capture", "checks": ["native-read-capture"] },
+    { "prefix": "core4/test/native-read-capture.test.js", "owner": "native-read-capture", "checks": ["native-read-capture"] },
     { "prefix": "core4/test/windows-cim-probe.test.js", "owner": "windows-cim-probe", "checks": ["windows-cim-probe"] },
     { "prefix": "core4/tools/recover-zero-dispatch-owner.js", "owner": "zero-dispatch-recovery", "checks": ["zero-dispatch-recovery"] },
     { "prefix": "core4/test/recover-zero-dispatch-owner.test.js", "owner": "zero-dispatch-recovery", "checks": ["zero-dispatch-recovery"] },
@@ -380,6 +382,10 @@
     }
   ],
   "checkDependencies": {
+    "native-read-capture": [
+      "tools/capture-native-read.js", "test/native-read-capture.test.js", "tools/install-core4.js", "tools/package-installable.js",
+      "runtime/", "cep/", "core/", "protocol/", "worker.js", "modules/", "plan-engine/", "config/catalog.json", "config/admissions/"
+    ],
     "windows-cim-probe": [
       "runtime/", "test/windows-cim-probe.test.js", "tools/package-installable.js", "core/", "protocol/", "worker.js", "cep/", "modules/", "plan-engine/", "config/catalog.json", "config/admissions/", "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js"
     ],
@@ -618,6 +624,7 @@
     ]
   },
   "checkCommands": {
+    "native-read-capture": ["node", "--test", "--test-name-pattern=native-read-capture", "test/native-read-capture.test.js"],
     "windows-cim-probe": ["node", "--test", "--test-name-pattern=windows-cim-probe", "test/windows-cim-probe.test.js"],
     "zero-dispatch-recovery": ["node", "--test", "--test-name-pattern=zero-dispatch", "test/recover-zero-dispatch-owner.test.js"],
     "human-window": ["node", "--test", "--test-name-pattern=human-window", "test/human-window.test.js"],
@@ -693,6 +700,7 @@
     ]
   },
   "checkPolicy": {
+    "native-read-capture": { "kind": "integration" },
     "windows-cim-probe": { "kind": "integration" },
     "zero-dispatch-recovery": { "kind": "integration" },
     "human-window": { "kind": "integration" },

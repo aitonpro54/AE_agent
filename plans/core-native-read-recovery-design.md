@@ -171,6 +171,11 @@ Runtime state/proofs/credentials не переносятся как authority м
 
 ## Decision Log
 
+- Source A freeze03 принят: 20 selected checks и independent source review PASS;
+  actual production inspect PASS. Первая live evidence-only попытка истекла без
+  receipt после отклонённого до ввода CU click. Actual native/eval/ACK0; original
+  UNKNOWN сохранён. Root готовит retirement только own diagnostic gates, затем
+  допустима одна новая receipt-capture попытка; это не replay AE-команды.
 - Это единое initial review recovery-дизайна; после findings — адресная локальная
   проверка и реализация. Обязательного второго Argon review нет.
 - Capture может дать точный отказ вместо ожидаемого result. В этом случае

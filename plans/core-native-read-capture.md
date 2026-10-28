@@ -28,9 +28,19 @@ Proof MCP child завершён штатно, exit 0; пустой receiver own
 - [x] Подготовлен и проверен пакет единственного unified review A–D; получен
   conditional go с шестью локально разобранными findings. Реализация A начата
   отдельным source writer; root сохраняет Git/install/live ownership.
-- [ ] Реализован отдельный collector и отрицательные проверки.
+- [x] Реализован отдельный builtin-only collector; freeze03, 20 scoped PASS,
+  boundaries21/syntax/diff и independent source ACCEPT. Actual production
+  inspect03 PASS: cache/CEP/provenance/PS5.1/Get-Item/CIM/port checks.
 - [ ] Root получил оригинальный authenticated ответ либо зафиксировал точную
   причину отсутствия доказательства. UNKNOWN в обоих случаях сохранён.
+
+Первая actual capture попытка завершилась deadline без receipt: средство CU
+отклонило кнопку вне bounds основного окна до ввода. Root развернул AE через
+наблюдаемое системное меню; project/raw/eval/ACK действий 0. Исходный UNKNOWN
+сохранён. Собственные gates диагностического child33248 удержаны по fail-closed
+контракту. Подготавливается отдельный строгий retirement этих двух markers
+по managed-session/proof/CAS; receiver owner/journal он не меняет. Повторного
+native dispatch нет. Capture result по-прежнему неизвестен.
 
 ## Предлагаемый контракт
 
@@ -75,6 +85,14 @@ Proof MCP child завершён штатно, exit 0; пустой receiver own
 
 ## Decision Log
 
+- Actual preflight обнаружил два адресных дефекта collector, исправленных
+  локально: штатный broker/artifacts cache не является execution obligation;
+  JSON root array в выбранном Windows PS5.1 должен сохраняться без nested cast.
+  Cache проверяется по exact core manifest/verified retained release как данные;
+  неизвестные файлы/stage/reparse закрыты. Реальный PS5.1 regression использует
+  temp Get-Item и test-only CIM stub; actual root inspect отдельно проверил CIM.
+- Readiness marker публикуется после actual listen и связывает exact proof.
+  Root проверяет доступность UI в границах основного окна до следующего listener.
 - Поручение на ремонт и установку покрывает получение технических доказательств,
   но не разрешает обход UNKNOWN или произвольное принятие receipt.
 - Внешнему review передаются только план и allowlisted source. Реальный
