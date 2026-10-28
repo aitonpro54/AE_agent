@@ -1,0 +1,63 @@
+[
+  {
+    "path": "core4/integrations/cep/http-peer.js",
+    "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+    "bytes": 14197,
+    "sha256": "24135024ce651eaa2586d85f7931c714745d582e7ae1f3b8a4890c7cc4e35df6"
+  },
+  {
+    "path": "core4/integrations/cep/peer-protocol.js",
+    "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+    "bytes": 718,
+    "sha256": "9b4f3f3600b32a7e8efa3541bf795a05d485cd691324c374f1e65bab63a6f584"
+  },
+  {
+    "path": "core4/cep/js/panel.js",
+    "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+    "bytes": 3797,
+    "sha256": "f59b51d4bd0c5ad699bce21d77382a7977367ce6f9c072bef7db5a8bb6af34c7"
+  },
+  {
+    "payloadPath": "context/raw-http-helper-excerpt.md",
+    "source": "core4/test/installable-runtime.test.js",
+    "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+    "fullFileSha256": "536d144b4355fece552ef867a90192a266c9b9a5b5ad782855a1d1aad492ab8e",
+    "includedLines": [
+      [
+        28,
+        35
+      ]
+    ],
+    "bytes": 1142
+  },
+  {
+    "payloadPath": "context/focused-auth-test-excerpt.md",
+    "source": "core4/test/installable-runtime.test.js",
+    "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+    "fullFileSha256": "536d144b4355fece552ef867a90192a266c9b9a5b5ad782855a1d1aad492ab8e",
+    "includedLines": [
+      [
+        159,
+        170
+      ]
+    ],
+    "bytes": 1854
+  },
+  {
+    "payloadPath": "context/portability-excerpt.md",
+    "source": "docs/portability.md",
+    "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+    "fullFileSha256": "026e0bb7fcbebfaf38161fda2ebe9d1a0173494c5c8d7f387535c2e956f0ca22",
+    "includedLines": [
+      [
+        33,
+        57
+      ],
+      [
+        78,
+        91
+      ]
+    ],
+    "bytes": 8336
+  }
+]

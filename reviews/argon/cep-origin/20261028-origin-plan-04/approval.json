@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "approvedAt": "2026-10-28T07:44:54.279Z",
+  "reviewId": "20261028-origin-plan-04",
+  "status": "approved-for-single-plan-review",
+  "authorization": {
+    "standing": "Прямое поручение пользователя на необходимые последовательные Core4 Argon reviews и подтверждённые исправления; trusted history 01a17ee0-2ea4-7b82-b97a-f0a81e987305",
+    "current": "Пользователь возобновил scoped ремонт панели; на вопрос о текущем получателе прямо ответил: «используй aiton, он открыт»",
+    "accountOverride": "Aiton Pro вместо прежнего Rohan; Argon/максимальное доступное усилие сохраняются",
+    "rawTranscriptsIncluded": false
+  },
+  "recipient": {
+    "service": "Argon",
+    "accountName": "Aiton Pro",
+    "email": "aitonpro54@gmail.com",
+    "scope": "local manifest only; user explicitly steered this review to Aiton; external payload names Argon only"
+  },
+  "externalAllowlist": [
+    "review-bundle.md"
+  ],
+  "requestSha256": "c14069a89c7040a782c82665a2f9a72c9156defcd799cfb2e1dd189e50451f00",
+  "externalPlanSha256": "181aa767b0f74f8354c24522d09486a5ae70897007d4c1e7df2e40759e2dc5ef",
+  "manifestSha256": "b9711bff736e1009b63446dd07d2d6c5e831c522fdeb2845b4162341ef0d34b7",
+  "payloadSha256": "947a04842b59dbbf385e6dedece298e3899ae6126771d3c36d7fd619b1501c1a",
+  "payloadBytes": 49552,
+  "scope": "Одна передача plan-review существующему ARGON_BrowserUse controller; без повторов неизвестного исхода, без credentials/runtime state/AEP, без нового чата/платного API; review не даёт AE authority",
+  "nativeCommands": 0
+}

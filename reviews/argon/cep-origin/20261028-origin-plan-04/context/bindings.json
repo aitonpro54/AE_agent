@@ -1,0 +1,14 @@
+{
+  "reviewId": "20261028-origin-plan-04",
+  "stageId": "cep-origin",
+  "reviewType": "plan",
+  "baseCommit": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+  "externalPlan": {
+    "path": "context/plan.md",
+    "sha256": "181aa767b0f74f8354c24522d09486a5ae70897007d4c1e7df2e40759e2dc5ef"
+  },
+  "request": {
+    "path": "request.md",
+    "sha256": "c\u0031\u0034\u0030\u0036\u0039a\u0038\u0039c\u0037\u0030\u0034\u0030a\u0037\u0038\u0032c\u0038\u0032\u0036\u0036\u0035a\u0032f\u0039a\u0037\u0032c\u0039\u0031\u0035\u0036defcd\u0037\u0039\u0039cfb\u0032e\u0031dd\u0031\u0038\u0039e\u0035\u0030\u0034\u0035\u0031f\u0030\u0030"
+  }
+}

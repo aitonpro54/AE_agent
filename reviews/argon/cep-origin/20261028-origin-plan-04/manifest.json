@@ -1,0 +1,181 @@
+{
+  "status": "COMPLETE",
+  "reviewId": "20261028-origin-plan-04",
+  "stageId": "cep-origin",
+  "reviewType": "plan",
+  "baseCommit": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+  "targetCommit": null,
+  "externalPlan": {
+    "path": "context/plan.md",
+    "bytes": 9343,
+    "sha256": "181aa767b0f74f8354c24522d09486a5ae70897007d4c1e7df2e40759e2dc5ef"
+  },
+  "localPlan": {
+    "path": "plans/core-4.0.0-origin-repair.md",
+    "sha256": "a391e3e393b8280ed489578f40dbc89b5460678c723cedec598be6669ca5a727"
+  },
+  "request": {
+    "path": "request.md",
+    "bytes": 5150,
+    "sha256": "c14069a89c7040a782c82665a2f9a72c9156defcd799cfb2e1dd189e50451f00"
+  },
+  "bindings": {
+    "path": "context/bindings.json",
+    "externalPlanSha256": "181aa767b0f74f8354c24522d09486a5ae70897007d4c1e7df2e40759e2dc5ef",
+    "requestSha256": "c14069a89c7040a782c82665a2f9a72c9156defcd799cfb2e1dd189e50451f00"
+  },
+  "dirtyStatus": "frozen local focused plan retained separately; exact baseline source snapshots used; only review-04 folder written",
+  "externalAllowlist": [
+    "review-bundle.md"
+  ],
+  "payloadFiles": [
+    {
+      "path": "review-bundle.md",
+      "role": "single external review payload",
+      "bytes": 49552,
+      "sha256": "947a04842b59dbbf385e6dedece298e3899ae6126771d3c36d7fd619b1501c1a"
+    }
+  ],
+  "recipient": {
+    "service": "Argon",
+    "accountName": "Aiton Pro",
+    "email": "aitonpro54@gmail.com",
+    "scope": "local manifest only; user explicitly steered this review to Aiton; external payload names Argon only"
+  },
+  "classifications": {
+    "technical plan and source excerpts": "INTERNAL",
+    "installed Origin observation": "PRODUCTION-SENSITIVE; short summary only externally; raw excluded",
+    "baseline reproduction": "INTERNAL; summary only externally; raw log excluded",
+    "PII": "excluded externally; recipient email local only",
+    "SECRET": "no values read or included"
+  },
+  "sourceProvenance": [
+    {
+      "path": "core4/integrations/cep/http-peer.js",
+      "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+      "bytes": 14197,
+      "sha256": "24135024ce651eaa2586d85f7931c714745d582e7ae1f3b8a4890c7cc4e35df6"
+    },
+    {
+      "path": "core4/integrations/cep/peer-protocol.js",
+      "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+      "bytes": 718,
+      "sha256": "9b4f3f3600b32a7e8efa3541bf795a05d485cd691324c374f1e65bab63a6f584"
+    },
+    {
+      "path": "core4/cep/js/panel.js",
+      "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+      "bytes": 3797,
+      "sha256": "f59b51d4bd0c5ad699bce21d77382a7977367ce6f9c072bef7db5a8bb6af34c7"
+    },
+    {
+      "payloadPath": "context/raw-http-helper-excerpt.md",
+      "source": "core4/test/installable-runtime.test.js",
+      "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+      "fullFileSha256": "536d144b4355fece552ef867a90192a266c9b9a5b5ad782855a1d1aad492ab8e",
+      "includedLines": [
+        [
+          28,
+          35
+        ]
+      ],
+      "bytes": 1142
+    },
+    {
+      "payloadPath": "context/focused-auth-test-excerpt.md",
+      "source": "core4/test/installable-runtime.test.js",
+      "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+      "fullFileSha256": "536d144b4355fece552ef867a90192a266c9b9a5b5ad782855a1d1aad492ab8e",
+      "includedLines": [
+        [
+          159,
+          170
+        ]
+      ],
+      "bytes": 1854
+    },
+    {
+      "payloadPath": "context/portability-excerpt.md",
+      "source": "docs/portability.md",
+      "baseline": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+      "fullFileSha256": "026e0bb7fcbebfaf38161fda2ebe9d1a0173494c5c8d7f387535c2e956f0ca22",
+      "includedLines": [
+        [
+          33,
+          57
+        ],
+        [
+          78,
+          91
+        ]
+      ],
+      "bytes": 8336
+    }
+  ],
+  "localEvidence": [
+    {
+      "path": "snapshots/core4-live-proof/IV-origin-portability-20261028/actual-cep-origin.json",
+      "classification": "PRODUCTION-SENSITIVE local provenance only",
+      "bytes": 422,
+      "sha256": "842e033cbffb990765410d74faa5efd913930b2f1760d6deace252dad3f1bc71",
+      "capturedAt": "2026-10-28T07:17:22.884Z",
+      "rawIncluded": false
+    },
+    {
+      "path": "snapshots/core4-live-proof/IV-origin-portability-20261028/baseline-reproduction/baseline.log.json",
+      "classification": "INTERNAL local provenance only",
+      "bytes": 2207,
+      "sha256": "04daf87030d55e9cd87a53df9716942c2af60c2d30bdb805f5a75dfd98881408",
+      "summary": "Synthetic temp-owned peer, port 0; null -> 200/ACAO null; file:// -> 403 cep_origin_required/no ACAO; exit 0; link/native/commands 0.",
+      "rawIncluded": false
+    }
+  ],
+  "builder": {
+    "script": "C:/Users/Ant/.codex/skills/codex-pro-review-bundle-skill/pro-review-bundle/scripts/build_bundle.py",
+    "allowWarningsUsed": true,
+    "scannerIncludedFiles": 8,
+    "scannerSkippedFiles": 1,
+    "scannerSkipped": "http-peer.js only; known false positive",
+    "finalMethod": "Direct lossless append using a single explicit sorted nine-file allowlist; six-backtick fences; no source/plan regex splice."
+  },
+  "scannerDiagnostics": [
+    {
+      "pattern": "generic_secret",
+      "source": "core4/integrations/cep/http-peer.js:44",
+      "exactSourceMatch": "const role = challenge?.value.role, secret = role === 'panel' ? installation.panelToken : installation.controlToken;",
+      "classification": "Root-confirmed false positive; field/property names only, no credential value."
+    }
+  ],
+  "scanSummary": {
+    "finalBundlePatternMatches": 1,
+    "knownWhitelistedMatches": 1,
+    "actualSecrets": 0,
+    "actualPII": 0,
+    "emailMatches": 0,
+    "localPathMatches": 0,
+    "rootFieldMatches": 0,
+    "embeddedRequestByteEqual": true,
+    "contextFiles": 9,
+    "contextBlocksExtracted": 9,
+    "fullBaselineFiles": 3,
+    "requiredOmissions": 0,
+    "skippedFiles": 0,
+    "redactions": 0
+  },
+  "supersededLocalPackets": [
+    {
+      "reviewId": "20261028-origin-plan-03",
+      "status": "superseded/incomplete due missing context sections; untouched"
+    },
+    {
+      "reviewId": "20261028-origin-plan-02",
+      "status": "superseded; untouched"
+    }
+  ],
+  "omissions": [],
+  "limitations": [
+    "Plan-review only; no implementation/runtime authorization.",
+    "No live, browser, installation, AE/CEP/UI or product-test actions by packet preparation.",
+    "No approval/submission/response files."
+  ]
+}

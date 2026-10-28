@@ -435,3 +435,88 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
   installer по постоянному контракту, затем минимальная реализация и проверка
   обоих направлений. Результат документации не является разрешением сменить
   действующего controller или продолжить прерванные AE-команды.
+
+## Возобновлённый ремонт CEP Origin — 28 октября 2026
+
+### Progress
+
+- [x] Пользователь поручил продолжить ремонт текущей панели с учётом переносимости
+  и будущего возврата на десктоп. Root — единственный live controller; прочитаны
+  active AGENTS и соответствующие workflows.
+- [x] Проверена неизменность installed package/Node и совпадение четырёх ключевых
+  source/installed файлов. Production owners/ledger отсутствовали, receiver
+  journal содержал только origin, отправок не было. Project MCP оставался
+  `enabled=false` после предыдущего maintenance; настроенный клиент не проверен.
+- [x] После запуска ранее отсутствовавшего AE и обычного Continue в сообщении о
+  прошлом crash визуально подтверждён пустой Untitled. Собственная панель отправила
+  в one-request observer POST `/challenge` с точным `Origin: file://`. Причина
+  `cep_origin_required` установлена: baseline допускает только `null`.
+- [x] Независимый source-only synthetic reproducer подтвердил два исхода:
+  `null` →200/ACAO null, `file://` →403/cep_origin_required/без ACAO. Exit0,
+  source hashes до/после совпали; link/native/commands0.
+- [x] Bounded source-analysis дал технический GO на exact `null|file://` с
+  server-owned challenge/peer origin binding и неизменными auth/Host/MAC gates.
+  [Focused план](core-4.0.0-origin-repair.md) сохраняет порядок изменения и проверки.
+- [ ] Принят обязательный Argon plan-review, реализован и проверен repair,
+  затем принят result-review и обновлена установка с одной реальной typed read.
+
+### Decision Log
+
+- Один общий exact контракт заменит предположение о единственном opaque origin;
+  hostname switch и ручная конфигурация MSI/десктопа не вводятся. Два значения
+  Origin не удостоверяют extension: credentials/pins/epoch остаются authority.
+- Root запросил свежую readiness существующего Argon controller по standing
+  authorization пользователя. Gemini снова доступен, но открыт Aiton Pro/Flash;
+  требуемые Rohan/Argon/maximum effort не подтверждены. Контроллер остановился
+  на account mismatch без отправок или смены аккаунта. Пользователю показан
+  async запрос открыть целевую пару. Автоматизация продолжения не восстановлена.
+- Затем пользователь прямо уточнил: «используй aiton, он открыт». Для этого
+  Origin review и его продолжения выбран открытый Aiton Pro; controller получил
+  поручение подтвердить аккаунт, Argon и максимальное доступное усилие. Это
+  явное изменение получателя, а не автоматическая подмена Rohan. Пакет с source
+  не отправляется до полной проверки состава/hashes и readiness.
+- До обязательного plan-review source/auth repair не начинается; до result-review
+  установка не меняется. Применён pro-review-bundle, получатель по проектному
+  workflow — Argon через существующий controller, без платного API.
+- Local packet01 сохранён как incomplete из-за scanner false positive на ссылке
+  `installation.controlToken`; root проверил отсутствие literal/runtime secret.
+  Packet02 восстановил полный source, но потребовал уточнить включение самого
+  внешнего плана и язык. Последующая редакция фиксируется отдельно; ни один
+  из этих пакетов не отправлен. Credentials/state/user AEP не включаются.
+- Root дополнительно отклонил packet03: два обязательных context-блока были
+  перечислены в таблице, но отсутствовали в body. Итоговый packet04 собран
+  последовательным добавлением всех9 context-файлов; root независимо сверил
+  наличие всех9 полных body, request/plan/payload hashes и source baseline.
+  [Готовый запрос](../reviews/argon/cep-origin/20261028-origin-plan-04/request.md)
+  и [manifest](../reviews/argon/cep-origin/20261028-origin-plan-04/manifest.json)
+  фиксируют COMPLETE пакет49 552bytes, payload SHA начинается `947a04842b59`.
+  Draft01–03 сохранены в ignored operational archive, не в рабочем payload.
+- Для packet04 записано approval на одну отправку Aiton/Argon/максимальное усилие;
+  exact payload передан существующему controller. Receipt отправки и ответ ещё
+  не получены; отправку нельзя считать выполненной по одному dispatch в чат.
+  Снимок controller подтвердил Argon и Высокий (максимум среди трёх уровней).
+  Локальный capacity error контроллера не является отказом Argon; выполненный
+  UI шаг не повторялся вслепую, запрошено одно bounded продолжение.
+
+### Validation
+
+- Installed verification и targeted source equality4/4 PASS; проверка source
+  hash9/9 в synthetic reproduction PASS. Это baseline/диагностика, не успешная
+  живая цепочка MCP→CEP→AE и не приёмка переноса.
+- `validate-diff` без `--run` выбрал installable-runtime и manual-runtime для
+  будущих changed paths; текущие source suites не запускались. Прежнее evidence
+  не расширяется до новых bytes/окружения. Все P1–P8 переносимости открыты.
+- Локальные operational evidence и reproduction: ignored
+  `snapshots/core4-live-proof/IV-origin-portability-20261028/`. Native read,
+  mutation, save/reopen 0; observer и synthetic server завершились штатно.
+- Документальный checkpoint: строгий UTF-8 трёх изменённых планов,45 относительных
+  ссылок и `git diff --check` PASS до финального добавления packet links; после
+  добавления выполнена заключительная проверка. Итоговый packet04: 9 context
+  body/3 полных baseline source и request/plan/payload hashes root PASS. No source
+  edits; обязательный review остаётся pending, новая установка не выполнялась.
+- Финальные47 ссылок/UTF-8 трёх планов PASS; staged diff-check самих планов PASS.
+  Полный staged `git diff --check` выявил четыре `new blank line at EOF` в трёх
+  immutable context excerpts и уже переданном bundle04. Они сохранены byte-exact
+  ради утверждённых hashes; это известные предупреждения документационных
+  артефактов, не PASS полного staged whitespace-check. `.gitattributes` и checks
+  не менялись; runtime/source изменений нет. Нового payload ради EOF не создаём.
