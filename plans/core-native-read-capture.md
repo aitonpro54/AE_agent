@@ -4,6 +4,12 @@
 этап после исправления ES3. Текущее состояние и история —
 [native ES3/recovery](core-native-es3-recovery.md).
 
+**Итог A, 17:38 Asia/Yekaterinburg:** ручной «Подключить» доставил original cached
+receipt. Root проверил SHA/MAC/bindings и неизменность 168 protected files.
+Result строго `host_registry_unavailable`; producer child29592 exit0, ACK0,
+original journal/receiver owner/UNKNOWN сохранены. Собственные diagnostic gates
+штатно освобождены. Ниже активный 10-minute wait — история, collector уже закрыт.
+
 ## Цель и граница этапа
 
 Получить проверяемое доказательство исхода единственного ранее отправленного
@@ -31,7 +37,7 @@ Proof MCP child завершён штатно, exit 0; пустой receiver own
 - [x] Реализован отдельный builtin-only collector; freeze03, 20 scoped PASS,
   boundaries21/syntax/diff и independent source ACCEPT. Actual production
   inspect03 PASS: cache/CEP/provenance/PS5.1/Get-Item/CIM/port checks.
-- [ ] Root получил оригинальный authenticated ответ либо зафиксировал точную
+- [x] Root получил оригинальный authenticated ответ либо зафиксировал точную
   причину отсутствия доказательства. UNKNOWN в обоих случаях сохранён.
 
 Первая actual capture попытка завершилась deadline без receipt: средство CU
@@ -131,6 +137,23 @@ eval/native/ACK не выполнялись. При завершении/timeout
   имени компьютера. Доказательства и authority остаются локальными машине.
 
 ## Validation и приёмка
+
+Actual receipt: transaction `3c633115-a426-4a87-ace3-8ade298a99b0-native-read-capture`,
+SHA-256 `c398eab44728be5b5b3d981a8b92d597a8368f3f2a58d47e831b357348182907`.
+Proof `a6af1095b43cfd7723ff7983565d332d59f9c468662da34a77659e7206d34b51`.
+Transcript ровно challenge/link/complete, fresh collector channel отделён от
+original dispatch channel. Result version1/rejected/host_registry_unavailable
+совпадает с fixed early-return wrapper; собственная operation не запускалась.
+Это bounded settlement evidence в trusted local storage model, не подпись AE,
+не успешная inspection, не continuity или grant. Independent evidence audit —
+SOURCE GO для conditional B, без authority apply.
+
+Локальные полные данные без credentials в новых evidence:
+`snapshots/core4-live-proof/VI-native-read-capture-20261028/root-capture-verification-01.json`
+и `manual-live-1793190620276/`. Raw receipt остаётся только в local installation
+transaction, в Git/Argon не копируется. Source A — commit `34584de`; private
+retirement helper 6 fixtures/source ACCEPT/exact proof apply завершён, исходный
+receiver journal SHA `ac263cde…a78b` неизменен.
 
 Проверки должны использовать изолированные fixtures и настоящий dispatcher:
 

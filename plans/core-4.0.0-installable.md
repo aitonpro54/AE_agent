@@ -29,6 +29,7 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] A actual capture завершён после human click: exact host_registry_unavailable, MAC/bindings/168 protected files PASS, producerexit0, ACK/native0, originalUNKNOWN сохранён. Independent evidence audit допускает SOURCE B–D, без apply grant. Начата offline реализация disposition/sharedlease/lineage/reader/ACK; новый пакет пока не установлен.
 - [x] Source collector A: freeze03/20 scoped PASS/boundaries21/source ACCEPT; actual installed preflight включая PS5.1/CIM PASS. Receipt пока не получен: CU отказал вне bounds до ввода, capture deadline; исходный UNKNOWN не изменён, own diagnostic gates сохраняются до проверенного retirement. AE развёрнут, B–D не реализованы/не применялись.
 - [x] Отдельный native-read recovery design A–D прошёл единственное Argon/Aiton/High plan-review (go,6 findings локально разобраны). Реализация начата только с evidence-only collector A; original UNKNOWN/owner сохраняются, eval/replay/mutation0. Дальнейшие B–D условны до original receipt/proof; [актуальный план](core-native-read-recovery-design.md).
 - [x] Origin transport на installed6c94 подтвердил живое CEP соединение после user-approved restart. Native read обнаружил ES3 protected154 → timeout/UNKNOWN; replay0. Source fix + ES3 grammar/42selected checks и independent ACCEPT готовы; candidate947 не установлен поверх fence. Следующий bounded блок и ограничения — [native ES3/recovery](core-native-es3-recovery.md).

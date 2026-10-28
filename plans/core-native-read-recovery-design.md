@@ -7,7 +7,8 @@ plan-review. Capture, disposition, persistence и обновление пров�
 Локальная актуализация после review: reviewed snapshot `80cc242`, исходные
 plan digests сохранены в пакете. Получен conditional go; все шесть findings
 разобраны в [decisions](../reviews/argon/native-read-capture/20261028-capture-plan-01/decisions.md).
-Первый writer scope — только A. Runtime UNKNOWN остаётся исходным.
+Этап A завершён actual receipt/proof. Writer выполняет offline B–D;
+runtime UNKNOWN остаётся исходным до отдельного проверенного apply.
 
 ## Цель и исходное состояние
 
@@ -22,9 +23,10 @@ runtime; callback timeout закрыл receiver. После закрытия и�
 Journal остаётся `origin → begin → unknown`, receiver owner пустой и сохранён.
 Ledger отсутствует, configured MCP временно disabled. Мутаций и save не было.
 
-Предполагаемый cached result — ровно `readFailureVersion:1`,
-`outcome:"rejected"`, `code:"host_registry_unavailable"`. Это гипотеза, которую
-нужно подтвердить. Иной результат не даёт основания применять этот recovery.
+Actual cached result подтверждён: ровно `readFailureVersion:1`,
+`outcome:"rejected"`, `code:"host_registry_unavailable"`. Исходная гипотеза
+подтвердилась после human click; receipt/MAC/provenance проверены Root и
+independent audit. Иной результат не даёт основания применять этот recovery.
 
 ## Progress
 
@@ -36,7 +38,7 @@ Ledger отсутствует, configured MCP временно disabled. Мут�
   разобраны замечания.
 - [ ] Реализованы и проверены collector, fixed eligibility/operator/reader и
   installer lineage. Runtime UNKNOWN до доказанного disposition сохраняется.
-- [ ] Root получил original receipt и проверенный settlement proof; при пробеле
+- [x] Root получил original receipt и проверенный settlement proof; при пробеле
   остаётся blocked без apply или нового native dispatch.
 - [ ] После точной технической авторизации выполнена одна durable disposition,
   затем штатное обновление и ACK сохранённого callback без eval.
@@ -171,6 +173,14 @@ Runtime state/proofs/credentials не переносятся как authority м
 
 ## Decision Log
 
+- A actual receipt принят: 168 protected files byte-identical, original UNKNOWN
+  сохранён, ACK/native/eval0. B–D SOURCE GO в действующем reviewed scope; новые
+  runtime/operator bytes требуют своих scoped checks и локального source review.
+  Apply — только по exact proof/package/transaction/nonce через parent Node IPC.
+- Persistent reader не зависит от dev repository/evidence files или старых
+  текущих CEP/config/Node bytes. Он проверяет self-contained sealed fixed proof,
+  old descriptor/release через lineage и immutable journal prefix. Полный A
+  preflight используется до append; после append трёхсобытийный parser A не подходит.
 - Source A freeze03 принят: 20 selected checks и independent source review PASS;
   actual production inspect PASS. Первая live evidence-only попытка истекла без
   receipt после отклонённого до ввода CU click. Actual native/eval/ACK0; original
