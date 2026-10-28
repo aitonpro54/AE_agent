@@ -12,6 +12,7 @@ const { hash, canonical } = require('../protocol/json');
 const { dispatchBinding } = require('../protocol/dispatch');
 const { buildPackage } = require('../tools/package-installable');
 const { planInstall, applyInstall } = require('../tools/install-core4');
+const { legacyV1Data } = require('./fixtures/legacy-installation-v1');
 const { createCapture, PROCESS_PROBE } = require('../tools/capture-native-read');
 const root = path.resolve(__dirname, '..');
 const failure = { readFailureVersion: 1, outcome: 'rejected', code: 'host_registry_unavailable' };
@@ -19,7 +20,7 @@ function fixture() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-native-capture-')), evidenceRoot = path.join(directory, 'evidence'); fs.mkdirSync(evidenceRoot);
   const pkg = buildPackage(), config = path.join(directory, 'project/.codex/config.toml');
   const plan = planInstall({ pkg, nodePath: fs.realpathSync(process.execPath), installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'), configPath: config, machineId: os.hostname() });
-  const installed = applyInstall(plan), descriptor = installed.descriptorPath, d = JSON.parse(fs.readFileSync(descriptor)), receiver = path.join(d.stateDir, 'receiver'), broker = path.join(d.stateDir, 'broker'); fs.mkdirSync(receiver); fs.mkdirSync(broker);
+  const installed = legacyV1Data(plan), descriptor = installed.descriptorPath, d = JSON.parse(fs.readFileSync(descriptor)), receiver = path.join(d.stateDir, 'receiver'), broker = path.join(d.stateDir, 'broker'); fs.mkdirSync(receiver); fs.mkdirSync(broker);
   // Real Broker constructor layout, including one stale identity. Contents are
   // copied as fixture DATA and deliberately never imported from this cache.
   const core = JSON.parse(Buffer.from(pkg.files['core/artifact.json'], 'base64')), stalePkg = structuredClone(pkg), staleCore = structuredClone(core);

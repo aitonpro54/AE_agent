@@ -12,7 +12,7 @@ const { createRecovery, PROCESS_PROBE } = require('../tools/recover-zero-dispatc
 function fixture() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-zero-dispatch-'));
   const plan = planInstall({ pkg: buildPackage(), nodePath: fs.realpathSync(process.execPath), installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'), configPath: path.join(directory, 'project/.codex/config.toml'), machineId: 'explicit-offline-fixture-machine' });
-  const installed = applyInstall(plan), descriptor = installed.descriptorPath, d = JSON.parse(fs.readFileSync(descriptor)), broker = path.join(d.stateDir, 'broker'), receiver = path.join(d.stateDir, 'receiver'); fs.mkdirSync(broker); fs.mkdirSync(receiver);
+  const installed = applyInstall(plan), descriptor = installed.descriptorPath, d = JSON.parse(fs.readFileSync(descriptor)), broker = path.join(d.stateDir, 'broker'), receiver = path.join(d.stateDir, 'receiver'); fs.mkdirSync(broker, { recursive: true }); fs.mkdirSync(receiver);
   const ownerFile = path.join(broker, 'broker-owner.lock'), receiverOwner = path.join(receiver, 'owner'), journal = path.join(receiver, 'completions.ndjson'), ledger = path.join(broker, 'ledger.ndjson');
   const ownerBytes = Buffer.from(JSON.stringify({ pid: 123456789, token: '00000000-1111-4222-8333-444444444444' })); fs.writeFileSync(ownerFile, ownerBytes); fs.writeFileSync(receiverOwner, '');
   const origin = { type: 'origin', identity: 'receiver-store-explicit-fixture', seq: 1, previousHash: 'origin' }; fs.writeFileSync(journal, canonical({ ...origin, recordHash: hash(origin) }) + '\n');

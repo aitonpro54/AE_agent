@@ -7,8 +7,12 @@ plan-review. Capture, disposition, persistence и обновление пров�
 Локальная актуализация после review: reviewed snapshot `80cc242`, исходные
 plan digests сохранены в пакете. Получен conditional go; все шесть findings
 разобраны в [decisions](../reviews/argon/native-read-capture/20261028-capture-plan-01/decisions.md).
-Этап A завершён actual receipt/proof. Writer выполняет offline B–D;
-runtime UNKNOWN остаётся исходным до отдельного проверенного apply.
+Этап A завершён actual receipt/proof. Первый freeze B–D дал 91 адресную проверку
+PASS; Root независимо сверил исходники и детерминированную сборку. Локальный
+review выявил один P2 в identity CAS receiver owner; адресное исправление
+получило independent ACCEPT. Окончательный freeze04: 96 selected PASS,
+package `9d43c624a778`, operator `fdae16feef25`; Root сверил все 25 source hashes,
+актуальные dependency keys и повторяемость сборки. Actual B–D пока0.
 
 ## Цель и исходное состояние
 
@@ -36,10 +40,16 @@ independent audit. Иной результат не даёт основания 
 - [x] Подготовлен conditional persistence design с явным predecessor.
 - [x] Получен единственный привязанный review этого unified плана и локально
   разобраны замечания.
-- [ ] Реализованы и проверены collector, fixed eligibility/operator/reader и
+- [x] Реализованы и проверены collector, fixed eligibility/operator/reader и
   installer lineage. Runtime UNKNOWN до доказанного disposition сохраняется.
 - [x] Root получил original receipt и проверенный settlement proof; при пробеле
   остаётся blocked без apply или нового native dispatch.
+- [x] Source freeze B–D: 25 файлов, 91 PASS в 8 selected checks, boundaries21,
+  syntax21. Runtime package `0ba911e5866d` (60 файлов), private operator
+  `6f7034c9f0f7` (66 файлов). Root подтвердил source hashes и повторяемость сборки.
+- [x] P2 owner identity CAS закрыт; итоговый source freeze04: 96 PASS,
+  package `9d43c624a778`/operator `fdae16feef25`, independent source ACCEPT.
+  Первый package/operator superseded, actual не применялись.
 - [ ] После точной технической авторизации выполнена одна durable disposition,
   затем штатное обновление и ACK сохранённого callback без eval.
 - [ ] Получено успешное новое native чтение; переносимость второй машины
@@ -173,6 +183,23 @@ Runtime state/proofs/credentials не переносятся как authority м
 
 ## Decision Log
 
+- Локальный source review первого B–D freeze: P1 нет; один P2 — пустой receiver
+  marker можно заменить другим пустым marker во время ожидания IPC. Добавляется
+  identity observation в stable B proof и held read-only handle с повторным CAS
+  перед append/archive и проверкой archive после rename. Это исторический факт,
+  без будущей runtime зависимости от inode. При mismatch — retain gates/intent,
+  без C, удаления нового marker, rollback или автоматического повтора. Actual0.
+- P2 delta source ACCEPT: `dispose-native-read.js` → `5e29121c81c6`,
+  `native-read-disposition.js` → `20053d0df878`. `seal.ownerObservation` содержит
+  dev/ino/size/birthtimeNs/mtimeNs/ctimeNs без atime, входит в stable proof и MAC.
+  Path/held fd сверяются до append/archive; после rename ctime не сравнивается.
+  Исторический reader не обращается к будущему inode. IPC schema прежняя;
+  actual применение ждёт финальных проверок и нового freeze.
+- Пользователь поручил завершить текущий ремонт/установку панели и затем
+  остановиться для продолжения в новом чате. Scope остановки включает B–D,
+  проверку установленного runtime и новое отдельное native чтение. Последующие
+  продуктовые этапы и приёмка переноса на второй машине здесь не запускаются;
+  фактический итог и оставшиеся ограничения сохраняются в проекте.
 - A actual receipt принят: 168 protected files byte-identical, original UNKNOWN
   сохранён, ACK/native/eval0. B–D SOURCE GO в действующем reviewed scope; новые
   runtime/operator bytes требуют своих scoped checks и локального source review.
@@ -201,3 +228,27 @@ Runtime state/proofs/credentials не переносятся как authority м
   history и не отменяя ownership/fault. Нужны lifecycle tests всех трёх мест.
 - Любой внешний verdict — evidence, а не runtime authority. File access,
   разрешение restart или пользовательское «сбросить» proof не заменяют.
+
+## Validation
+
+- Окончательный freeze после P2: `result-manifest-final-04.json` в том же
+  disposition evidence-каталоге, SHA
+  `c51fa0dfc47551beb76ac934d498b7f91aa71e3dc244f188ed0f2cabefb1997d`.
+  Все 8 актуальных checks дали 96 PASS; boundaries21, syntax delta4 и diff PASS.
+  Root `root-build-verification-02.json`: 25 source hashes и 8 dependency keys
+  совпали; deterministic package60 `9d43c624a77850b552d75f4bcb583ddc809848ca48c8dd9820b6f11efa3debd4`,
+  operator66 `fdae16feef25a6bba0a24bc5e275f03e12018f3a498d9d748941ac5d992677d2`.
+  Source ACCEPT условен до actual inspect/CAS и exact parent IPC approval.
+- B–D freeze: `snapshots/core4-live-proof/VII-native-read-disposition-20261028/`;
+  manifest `result-manifest-final-03.json`, SHA-256
+  `b9f5f996419f390e772b228c6de0dc6e4eee409084a5c456cc22df67d5a6dacd`.
+  PASS отдельных финальных reruns связан с актуальными dependency evidence keys;
+  общий ранний run с fixture failures не объявляется exit0. Это scoped evidence,
+  без full-release сертификации и без actual native proof.
+- Root build/read-back исходников: `VII-native-read-recovery-20261028/` →
+  `root-build-verification-01.json`. Все 25 source SHA совпали; package60 и
+  operator66 совпали с freeze; Node v24.15.0/hash прежний. Actual install/live0.
+- Root supervisor: source SHA `87a546e90ffdbdf9271cf2943f58104cee91c4fccf25c4d9b2d31c4608c6b474`,
+  независимый source ACCEPT, 8 synthetic PASS, включая настоящий Node fork/IPC,
+  ограничение времени и объёма вывода. Approval только одноразовым parent IPC;
+  JSON evidence не заменяет разрешение. Production collector A f3 неизменён.

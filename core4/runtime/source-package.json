@@ -3,6 +3,7 @@
   "files": [
     "core/artifact.json", "worker.js", "config/catalog.json", "config/admissions/titles.json", "config/admissions/photo-placeholder.json",
     "runtime/stdio-entry.js", "runtime/installation.js", "runtime/profiles.json", "runtime/source-package.json",
+    "runtime/receiver-contract.json", "runtime/install-lease.js", "runtime/installation-lineage.js", "runtime/native-read-disposition.js",
     "runtime/manual-policy.js", "runtime/windows-reservation-provider.js", "config/admissions/titles-current-target.json",
     "runtime/host/json-codec.jsx",
     "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js",

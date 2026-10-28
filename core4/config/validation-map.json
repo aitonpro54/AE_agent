@@ -1,52 +1,329 @@
 {
   "owners": [
-    { "prefix": "core4/tools/capture-native-read.js", "owner": "native-read-capture", "checks": ["native-read-capture"] },
-    { "prefix": "core4/test/native-read-capture.test.js", "owner": "native-read-capture", "checks": ["native-read-capture"] },
-    { "prefix": "core4/test/windows-cim-probe.test.js", "owner": "windows-cim-probe", "checks": ["windows-cim-probe"] },
-    { "prefix": "core4/tools/recover-zero-dispatch-owner.js", "owner": "zero-dispatch-recovery", "checks": ["zero-dispatch-recovery"] },
-    { "prefix": "core4/test/recover-zero-dispatch-owner.test.js", "owner": "zero-dispatch-recovery", "checks": ["zero-dispatch-recovery"] },
-    { "prefix": "core4/test/human-window.test.js", "owner": "human-window", "checks": ["human-window"] },
-    { "prefix": "core4/test/fixtures/human-window-stdio.js", "owner": "human-window", "checks": ["human-window"] },
-    { "prefix": "core4/test/fixtures/manual-http-runtime.js", "owner": "human-window", "checks": ["human-window", "manual-runtime"] },
-    { "prefix": "core4/modules/titles-current-target/", "owner": "manual-runtime", "checks": ["manual-runtime"] },
-    { "prefix": "core4/config/admissions/titles-current-target.json", "owner": "manual-runtime", "checks": ["manual-runtime"] },
-    { "prefix": "core4/runtime/manual-policy.js", "owner": "manual-runtime", "checks": ["manual-runtime"] },
-    { "prefix": "core4/runtime/windows-reservation-provider.js", "owner": "manual-runtime", "checks": ["manual-runtime", "windows-cim-probe"] },
-    { "prefix": "core4/runtime/windows-host-probe.ps1", "owner": "manual-runtime", "checks": ["manual-runtime"] },
-    { "prefix": "core4/tools/adopt-host.js", "owner": "manual-runtime", "checks": ["manual-runtime", "installable-runtime"] },
-    { "prefix": "core4/test/manual-runtime.test.js", "owner": "manual-runtime", "checks": ["manual-runtime"] },
-    { "prefix": "core4/runtime/", "owner": "installable-runtime", "checks": ["installable-runtime"] },
-    { "prefix": "core4/cep/", "owner": "installable-runtime", "checks": ["installable-runtime"] },
-    { "prefix": "core4/modules/project-inspection/", "owner": "installable-runtime", "checks": ["installable-runtime"] },
-    { "prefix": "core4/tools/package-installable.js", "owner": "installable-runtime", "checks": ["installable-runtime"] },
-    { "prefix": "core4/tools/install-core4.js", "owner": "installable-runtime", "checks": ["installable-runtime"] },
-    { "prefix": "core4/integrations/cep/http-peer.js", "owner": "installable-runtime", "checks": ["installable-runtime"] },
-    { "prefix": "core4/integrations/cep/peer-protocol.js", "owner": "installable-runtime", "checks": ["installable-runtime"] },
-    { "prefix": "core4/test/installable-runtime.test.js", "owner": "installable-runtime", "checks": ["installable-runtime"] },
+    {
+      "prefix": "core4/integrations/cep/completion-store.js",
+      "owner": "recovery-integration",
+      "checks": [
+        "native-read-recovery",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/source-package.json",
+      "owner": "recovery-integration",
+      "checks": [
+        "native-read-recovery",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/installation.js",
+      "owner": "recovery-integration",
+      "checks": [
+        "native-read-recovery",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/stdio-entry.js",
+      "owner": "recovery-integration",
+      "checks": [
+        "native-read-recovery",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/install-lease.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/installation-lineage.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/native-read-disposition.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/receiver-contract.json",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/tools/dispose-native-read.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/tools/disposition-install-preflight.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/tools/package-native-read-operator.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/native-read-recovery.test.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/native-read-recovery.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/disposition-child.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/legacy-completion-store.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/manual-capture-driver-source.txt",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/legacy-installation-v1.js",
+      "owner": "legacy-installation-test-data",
+      "checks": [
+        "native-read-capture",
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/tools/capture-native-read.js",
+      "owner": "native-read-capture",
+      "checks": [
+        "native-read-capture"
+      ]
+    },
+    {
+      "prefix": "core4/test/native-read-capture.test.js",
+      "owner": "native-read-capture",
+      "checks": [
+        "native-read-capture"
+      ]
+    },
+    {
+      "prefix": "core4/test/windows-cim-probe.test.js",
+      "owner": "windows-cim-probe",
+      "checks": [
+        "windows-cim-probe"
+      ]
+    },
+    {
+      "prefix": "core4/tools/recover-zero-dispatch-owner.js",
+      "owner": "zero-dispatch-recovery",
+      "checks": [
+        "zero-dispatch-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/recover-zero-dispatch-owner.test.js",
+      "owner": "zero-dispatch-recovery",
+      "checks": [
+        "zero-dispatch-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/human-window.test.js",
+      "owner": "human-window",
+      "checks": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/human-window-stdio.js",
+      "owner": "human-window",
+      "checks": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/manual-http-runtime.js",
+      "owner": "human-window",
+      "checks": [
+        "human-window",
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles-current-target/",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/config/admissions/titles-current-target.json",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/manual-policy.js",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/windows-reservation-provider.js",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime",
+        "windows-cim-probe"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/windows-host-probe.ps1",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/tools/adopt-host.js",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/test/manual-runtime.test.js",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/cep/",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/modules/project-inspection/",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/tools/package-installable.js",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/tools/install-core4.js",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime",
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/http-peer.js",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime",
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/peer-protocol.js",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/test/installable-runtime.test.js",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
     {
       "prefix": "core4/experiments/manual-current-target/",
       "owner": "manual-current-target-experiment",
-      "checks": ["manual-current-target"]
+      "checks": [
+        "manual-current-target"
+      ]
     },
     {
       "prefix": "core4/test/fixtures/manual-current-target.js",
       "owner": "manual-current-target-experiment",
-      "checks": ["manual-current-target"]
+      "checks": [
+        "manual-current-target"
+      ]
     },
     {
       "prefix": "core4/test/manual-current-target.test.js",
       "owner": "manual-current-target-experiment",
-      "checks": ["manual-current-target"]
+      "checks": [
+        "manual-current-target"
+      ]
     },
     {
       "prefix": "core4/test/audit-repairs.test.js",
       "owner": "audit-repairs",
-      "checks": ["audit-repairs"]
+      "checks": [
+        "audit-repairs"
+      ]
     },
     {
       "prefix": "core4/test/fixtures/artifact-publish-crash.js",
       "owner": "audit-repairs",
-      "checks": ["audit-repairs"]
+      "checks": [
+        "audit-repairs"
+      ]
     },
     {
       "prefix": "core4/core/",
@@ -198,34 +475,205 @@
     }
   ],
   "contracts": [
-    { "prefix": "core4/runtime/stdio-entry.js", "id": "private-production-human-window-v1", "consumers": ["human-window"] },
-    { "prefix": "core4/tools/install-core4.js", "id": "private-production-human-window-config-v1", "consumers": ["human-window"] },
-    { "prefix": "core4/core/broker.js", "id": "human-window-core-consumer-v1", "consumers": ["human-window"] },
-    { "prefix": "core4/core/authority.js", "id": "human-window-core-consumer-v1", "consumers": ["human-window"] },
-    { "prefix": "core4/core/resources.js", "id": "human-window-core-consumer-v1", "consumers": ["human-window"] },
-    { "prefix": "core4/modules/titles-current-target/contract.json", "id": "manual-current-target-module-v1", "consumers": ["manual-runtime", "installable-runtime"] },
-    { "prefix": "core4/modules/titles-current-target/artifact.json", "id": "manual-current-target-module-v1", "consumers": ["manual-runtime", "installable-runtime"] },
-    { "prefix": "core4/config/admissions/titles-current-target.json", "id": "manual-current-target-module-v1", "consumers": ["manual-runtime", "installable-runtime"] },
-    { "prefix": "core4/core/authority.js", "id": "private-current-target-policy-v1", "consumers": ["manual-runtime"] },
-    { "prefix": "core4/core/broker.js", "id": "private-current-target-policy-v1", "consumers": ["manual-runtime"] },
-    { "prefix": "core4/core/resources.js", "id": "current-target-resource-v2", "consumers": ["manual-runtime"] },
-    { "prefix": "core4/integrations/cep/http-peer.js", "id": "fixed-http-manual-asset-v1", "consumers": ["manual-runtime"] },
-    { "prefix": "core4/cep/js/poll-dispatcher.js", "id": "fixed-http-manual-asset-v1", "consumers": ["manual-runtime"] },
-    { "prefix": "core4/core/stdio.js", "id": "private-stdio-composition-v1", "consumers": ["installable-runtime"] },
-    { "prefix": "core4/integrations/cep/completion-store.js", "id": "http-durable-receiver-store-v1", "consumers": ["installable-runtime"] },
-    { "prefix": "core4/modules/titles/executor.jsx", "id": "manual-current-target-reviewed-dependency", "consumers": ["manual-current-target"] },
-    { "prefix": "core4/config/admissions/titles.json", "id": "manual-current-target-reviewed-dependency", "consumers": ["manual-current-target"] },
-    { "prefix": "core4/core/receiver-api.js", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
-    { "prefix": "core4/core/receiver.js", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
-    { "prefix": "core4/protocol/", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
-    { "prefix": "core4/integrations/cep/host-dispatcher.js", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
-    { "prefix": "core4/integrations/cep/completion-store.js", "id": "manual-current-target-dispatch", "consumers": ["manual-current-target"] },
-    { "prefix": "core4/test/fixtures/ae.js", "id": "manual-current-target-synthetic-host", "consumers": ["manual-current-target"] },
-    { "prefix": "core4/core/broker.js", "id": "audit-repair-control-boundary", "consumers": ["audit-repairs"] },
-    { "prefix": "core4/core/receiver.js", "id": "audit-repair-read-boundary", "consumers": ["audit-repairs"] },
-    { "prefix": "core4/core/resources.js", "id": "audit-repair-resource-boundary", "consumers": ["audit-repairs"] },
-    { "prefix": "core4/core/artifacts.js", "id": "audit-repair-publication-boundary", "consumers": ["audit-repairs"] },
-    { "prefix": "core4/integrations/cep/host-dispatcher.js", "id": "audit-repair-read-boundary", "consumers": ["audit-repairs"] },
+    {
+      "prefix": "core4/runtime/stdio-entry.js",
+      "id": "private-production-human-window-v1",
+      "consumers": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/tools/install-core4.js",
+      "id": "private-production-human-window-config-v1",
+      "consumers": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/core/broker.js",
+      "id": "human-window-core-consumer-v1",
+      "consumers": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/core/authority.js",
+      "id": "human-window-core-consumer-v1",
+      "consumers": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/core/resources.js",
+      "id": "human-window-core-consumer-v1",
+      "consumers": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles-current-target/contract.json",
+      "id": "manual-current-target-module-v1",
+      "consumers": [
+        "manual-runtime",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles-current-target/artifact.json",
+      "id": "manual-current-target-module-v1",
+      "consumers": [
+        "manual-runtime",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/config/admissions/titles-current-target.json",
+      "id": "manual-current-target-module-v1",
+      "consumers": [
+        "manual-runtime",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/core/authority.js",
+      "id": "private-current-target-policy-v1",
+      "consumers": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/core/broker.js",
+      "id": "private-current-target-policy-v1",
+      "consumers": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/core/resources.js",
+      "id": "current-target-resource-v2",
+      "consumers": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/http-peer.js",
+      "id": "fixed-http-manual-asset-v1",
+      "consumers": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/cep/js/poll-dispatcher.js",
+      "id": "fixed-http-manual-asset-v1",
+      "consumers": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/core/stdio.js",
+      "id": "private-stdio-composition-v1",
+      "consumers": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/completion-store.js",
+      "id": "http-durable-receiver-store-v1",
+      "consumers": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles/executor.jsx",
+      "id": "manual-current-target-reviewed-dependency",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/config/admissions/titles.json",
+      "id": "manual-current-target-reviewed-dependency",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver-api.js",
+      "id": "manual-current-target-dispatch",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver.js",
+      "id": "manual-current-target-dispatch",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/",
+      "id": "manual-current-target-dispatch",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/host-dispatcher.js",
+      "id": "manual-current-target-dispatch",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/completion-store.js",
+      "id": "manual-current-target-dispatch",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/ae.js",
+      "id": "manual-current-target-synthetic-host",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/core/broker.js",
+      "id": "audit-repair-control-boundary",
+      "consumers": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver.js",
+      "id": "audit-repair-read-boundary",
+      "consumers": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/core/resources.js",
+      "id": "audit-repair-resource-boundary",
+      "consumers": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/core/artifacts.js",
+      "id": "audit-repair-publication-boundary",
+      "consumers": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/host-dispatcher.js",
+      "id": "audit-repair-read-boundary",
+      "consumers": [
+        "audit-repairs"
+      ]
+    },
     {
       "prefix": "core4/protocol/target-contract.json",
       "id": "exact-target-v1",
@@ -383,37 +831,149 @@
   ],
   "checkDependencies": {
     "native-read-capture": [
-      "tools/capture-native-read.js", "test/native-read-capture.test.js", "tools/install-core4.js", "tools/package-installable.js",
-      "runtime/", "cep/", "core/", "protocol/", "worker.js", "modules/", "plan-engine/", "config/catalog.json", "config/admissions/"
+      "tools/capture-native-read.js",
+      "test/native-read-capture.test.js",
+      "tools/install-core4.js",
+      "tools/package-installable.js",
+      "runtime/",
+      "cep/",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "test/fixtures/legacy-installation-v1.js"
     ],
     "windows-cim-probe": [
-      "runtime/", "test/windows-cim-probe.test.js", "tools/package-installable.js", "core/", "protocol/", "worker.js", "cep/", "modules/", "plan-engine/", "config/catalog.json", "config/admissions/", "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js"
+      "runtime/",
+      "test/windows-cim-probe.test.js",
+      "tools/package-installable.js",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "cep/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js"
     ],
     "zero-dispatch-recovery": [
-      "tools/recover-zero-dispatch-owner.js", "test/recover-zero-dispatch-owner.test.js", "tools/install-core4.js", "tools/package-installable.js",
-      "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/", "config/catalog.json", "config/admissions/", "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js"
+      "tools/recover-zero-dispatch-owner.js",
+      "test/recover-zero-dispatch-owner.test.js",
+      "tools/install-core4.js",
+      "tools/package-installable.js",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "runtime/",
+      "cep/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js"
     ],
     "human-window": [
-      "test/human-window.test.js", "test/fixtures/human-window-stdio.js", "test/fixtures/manual-http-runtime.js", "test/fixtures/ae.js",
-      "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/", "config/catalog.json", "config/admissions/", "tools/package-installable.js", "tools/install-core4.js", "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js"
+      "test/human-window.test.js",
+      "test/fixtures/human-window-stdio.js",
+      "test/fixtures/manual-http-runtime.js",
+      "test/fixtures/ae.js",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "runtime/",
+      "cep/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js"
     ],
     "manual-runtime": [
-      "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "config/catalog.json", "config/admissions/",
-      "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js", "plan-engine/", "tools/package-installable.js", "test/manual-runtime.test.js", "test/fixtures/manual-http-runtime.js", "test/fixtures/ae.js"
+      "core/",
+      "protocol/",
+      "worker.js",
+      "runtime/",
+      "cep/",
+      "modules/",
+      "config/catalog.json",
+      "config/admissions/",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js",
+      "plan-engine/",
+      "tools/package-installable.js",
+      "test/manual-runtime.test.js",
+      "test/fixtures/manual-http-runtime.js",
+      "test/fixtures/ae.js"
     ],
     "installable-runtime": [
-      "runtime/", "cep/", "modules/project-inspection/", "test/installable-runtime.test.js", "tools/package-installable.js", "tools/install-core4.js", "tools/adopt-host.js",
-      "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js", "core/", "protocol/", "worker.js",
-      "modules/titles/", "modules/photo-placeholder/", "modules/titles-current-target/", "plan-engine/", "config/catalog.json", "config/admissions/"
+      "runtime/",
+      "cep/",
+      "modules/project-inspection/",
+      "test/installable-runtime.test.js",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "tools/adopt-host.js",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/titles/",
+      "modules/photo-placeholder/",
+      "modules/titles-current-target/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/"
     ],
     "manual-current-target": [
-      "experiments/manual-current-target/", "test/manual-current-target.test.js", "test/fixtures/manual-current-target.js", "test/fixtures/ae.js",
-      "core/receiver-api.js", "core/receiver.js", "core/authority.js", "protocol/", "modules/titles/executor.jsx", "config/admissions/titles.json",
-      "integrations/cep/host-dispatcher.js", "integrations/cep/completion-store.js"
+      "experiments/manual-current-target/",
+      "test/manual-current-target.test.js",
+      "test/fixtures/manual-current-target.js",
+      "test/fixtures/ae.js",
+      "core/receiver-api.js",
+      "core/receiver.js",
+      "core/authority.js",
+      "protocol/",
+      "modules/titles/executor.jsx",
+      "config/admissions/titles.json",
+      "integrations/cep/host-dispatcher.js",
+      "integrations/cep/completion-store.js",
+      "runtime/native-read-disposition.js",
+      "runtime/installation-lineage.js",
+      "runtime/installation.js",
+      "runtime/stdio-entry.js",
+      "runtime/install-lease.js",
+      "runtime/receiver-contract.json"
     ],
     "audit-repairs": [
-      "core/", "protocol/", "worker.js", "modules/", "plan-engine/", "integrations/cep/", "config/catalog.json", "config/admissions/",
-      "test/audit-repairs.test.js", "test/fixtures/artifact-publish-crash.js", "test/fixtures/cep-host.js", "test/fixtures/ae.js", "test/fixtures/authority.js", "test/helpers.js"
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "integrations/cep/",
+      "config/catalog.json",
+      "config/admissions/",
+      "test/audit-repairs.test.js",
+      "test/fixtures/artifact-publish-crash.js",
+      "test/fixtures/cep-host.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/helpers.js"
     ],
     "core-control": [
       "core/",
@@ -621,17 +1181,83 @@
       "config/validation-map.json",
       "tools/",
       "test/"
+    ],
+    "native-read-recovery": [
+      "test/native-read-recovery.test.js",
+      "test/fixtures/native-read-recovery.js",
+      "test/fixtures/disposition-child.js",
+      "test/fixtures/legacy-installation-v1.js",
+      "test/fixtures/legacy-completion-store.js",
+      "test/fixtures/manual-capture-driver-source.txt",
+      "tools/dispose-native-read.js",
+      "tools/disposition-install-preflight.js",
+      "tools/package-native-read-operator.js",
+      "tools/capture-native-read.js",
+      "tools/install-core4.js",
+      "tools/package-installable.js",
+      "runtime/",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js",
+      "core/",
+      "protocol/",
+      "modules/",
+      "plan-engine/",
+      "cep/",
+      "worker.js",
+      "config/catalog.json",
+      "config/admissions/"
     ]
   },
   "checkCommands": {
-    "native-read-capture": ["node", "--test", "--test-name-pattern=native-read-capture", "test/native-read-capture.test.js"],
-    "windows-cim-probe": ["node", "--test", "--test-name-pattern=windows-cim-probe", "test/windows-cim-probe.test.js"],
-    "zero-dispatch-recovery": ["node", "--test", "--test-name-pattern=zero-dispatch", "test/recover-zero-dispatch-owner.test.js"],
-    "human-window": ["node", "--test", "--test-name-pattern=human-window", "test/human-window.test.js"],
-    "manual-runtime": ["node", "--test", "--test-name-pattern=manual-runtime", "test/manual-runtime.test.js"],
-    "installable-runtime": ["node", "--test", "--test-name-pattern=installable-runtime", "test/installable-runtime.test.js"],
-    "manual-current-target": ["node", "--test", "--test-name-pattern=manual-current-target", "test/manual-current-target.test.js"],
-    "audit-repairs": ["node", "--test", "--test-name-pattern=audit-repairs", "test/audit-repairs.test.js"],
+    "native-read-capture": [
+      "node",
+      "--test",
+      "--test-name-pattern=native-read-capture",
+      "test/native-read-capture.test.js"
+    ],
+    "windows-cim-probe": [
+      "node",
+      "--test",
+      "--test-name-pattern=windows-cim-probe",
+      "test/windows-cim-probe.test.js"
+    ],
+    "zero-dispatch-recovery": [
+      "node",
+      "--test",
+      "--test-name-pattern=zero-dispatch",
+      "test/recover-zero-dispatch-owner.test.js"
+    ],
+    "human-window": [
+      "node",
+      "--test",
+      "--test-name-pattern=human-window",
+      "test/human-window.test.js"
+    ],
+    "manual-runtime": [
+      "node",
+      "--test",
+      "--test-name-pattern=manual-runtime",
+      "test/manual-runtime.test.js"
+    ],
+    "installable-runtime": [
+      "node",
+      "--test",
+      "--test-name-pattern=installable-runtime",
+      "test/installable-runtime.test.js"
+    ],
+    "manual-current-target": [
+      "node",
+      "--test",
+      "--test-name-pattern=manual-current-target",
+      "test/manual-current-target.test.js"
+    ],
+    "audit-repairs": [
+      "node",
+      "--test",
+      "--test-name-pattern=audit-repairs",
+      "test/audit-repairs.test.js"
+    ],
     "titles-owner": [
       "node",
       "--test",
@@ -667,6 +1293,12 @@
       "--test",
       "--test-name-pattern=lifecycle-simulation",
       "test/lifecycle-simulation.test.js"
+    ],
+    "native-read-recovery": [
+      "node",
+      "--test",
+      "--test-name-pattern=native-read-recovery",
+      "test/native-read-recovery.test.js"
     ]
   },
   "checkProjections": {
@@ -700,14 +1332,30 @@
     ]
   },
   "checkPolicy": {
-    "native-read-capture": { "kind": "integration" },
-    "windows-cim-probe": { "kind": "integration" },
-    "zero-dispatch-recovery": { "kind": "integration" },
-    "human-window": { "kind": "integration" },
-    "manual-runtime": { "kind": "integration" },
-    "installable-runtime": { "kind": "integration" },
-    "manual-current-target": { "kind": "integration" },
-    "audit-repairs": { "kind": "integration" },
+    "native-read-capture": {
+      "kind": "integration"
+    },
+    "windows-cim-probe": {
+      "kind": "integration"
+    },
+    "zero-dispatch-recovery": {
+      "kind": "integration"
+    },
+    "human-window": {
+      "kind": "integration"
+    },
+    "manual-runtime": {
+      "kind": "integration"
+    },
+    "installable-runtime": {
+      "kind": "integration"
+    },
+    "manual-current-target": {
+      "kind": "integration"
+    },
+    "audit-repairs": {
+      "kind": "integration"
+    },
     "core-control": {
       "kind": "integration"
     },
@@ -751,6 +1399,9 @@
       "kind": "integration"
     },
     "lifecycle-simulation": {
+      "kind": "integration"
+    },
+    "native-read-recovery": {
       "kind": "integration"
     }
   },

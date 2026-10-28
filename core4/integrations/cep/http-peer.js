@@ -4,8 +4,8 @@ const crypto = require('node:crypto');
 const { hash, canonical, parse, bounded, exact, fail, id, dispatchBinding, decode, encode, envelope } = require('../../core/receiver-api');
 const { openCompletionStore } = require('./completion-store');
 const { mac, validMac, requestBody } = require('./peer-protocol');
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {} }) {
-  const store = openCompletionStore({ directory });
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, installationContext }) {
+  const store = openCompletionStore({ directory, installationContext });
   const epoch = id('http'), controllerId = id('controller');
   let peer = null, pending = null, closed = false, activePoll = null;
   const challenges = new Map();
@@ -69,6 +69,13 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       if (req.url === '/complete') {
         exact(b.payload, ['commandId', 'originalBinding', 'pins', 'result']);
         const c = store.get(b.payload.commandId);
+        // Current-channel MAC/Origin/sequence already passed above. Historical
+        // pins/result come only from a fixed verified disposition, before the
+        // normal current-package correlation. No promotion/event/eval occurs.
+        if (c?.state === 'unknown' && c.terminalDisposition) {
+          if (canonical(c.originalBinding) !== canonical(b.payload.originalBinding) || canonical(c.terminalDisposition.pins) !== canonical(b.payload.pins) || canonical(c.terminalDisposition.result) !== canonical(b.payload.result)) fail('historical_completion_correlation');
+          signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } }); return;
+        }
         if (!c || canonical(c.originalBinding) !== canonical(b.payload.originalBinding) || canonical(b.payload.pins) !== canonical(commandPins(c.command))) fail('completion_correlation');
         if (c.state === 'completed') { if (canonical(c.response.result) !== canonical(b.payload.result)) fail('completion_conflict'); signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } }); return; }
         if (!pending || c.state !== 'ongoing' || !pending.delivered || pending.command.commandId !== b.payload.commandId) fail('unknown_no_promotion');

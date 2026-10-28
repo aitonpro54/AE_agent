@@ -3,10 +3,40 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
-const { execFileSync } = require('node:child_process');
 const { hash, canonical, fail } = require('../protocol/json');
 const { verifyPackage } = require('./package-installable');
+const { acquireInstallLease, assertInstallLease, ownedLeaseGates, checkpointInstallLease, retainInstallLease, releaseInstallLease } = require('../runtime/install-lease');
 const BUNDLE = 'com.codex.aeagentcore4';
+const preparedPlans = new WeakMap();
+function planDigest(plan) { return hash({ transactionId: plan.transactionId, package: plan.pkg, origin: plan.origin, descriptor: plan.descriptor, descriptorPath: plan.descriptorPath, configPath: plan.configPath, nextConfig: plan.nextConfig, cepDir: plan.cepDir, cep: plan.cep, previousDescriptor: plan.previousDescriptor?.toString('base64') || null, previousConfig: plan.previousConfig?.toString('base64') || null, previousCep: plan.previousCep, baseline: plan.baseline }); }
+function assertPreparedInstallPlan(plan) {
+  const entry = plan && preparedPlans.get(plan); if (!entry || entry.digest !== planDigest(plan)) fail('prepared_install_plan_brand_or_changed');
+  return Object.freeze({ transactionId: plan.transactionId, packageHash: plan.pkg.packageHash, appliedDescriptorHash: hash(canonical(plan.descriptor)), previousDescriptorHash: plan.baseline.descriptor, preparedPlanHash: entry.digest, preparedStateHash: entry.prepared?.hash || null });
+}
+function prepareInstallPlan(plan, { lease }) {
+  const fingerprint = assertPreparedInstallPlan(plan), scope = { installRoot: plan.descriptor.installRoot, stateDir: plan.descriptor.stateDir, descriptorPath: plan.descriptorPath };
+  assertInstallLease(lease, scope); const entry = preparedPlans.get(plan);
+  if (!entry.prepared) {
+    const directory = path.join(scope.installRoot, 'transactions', plan.transactionId + '-prepared');
+    const payload = { version: 1, transactionId: plan.transactionId, preparedPlanHash: fingerprint.preparedPlanHash, package: plan.pkg, origin: plan.origin, descriptorBytes: Buffer.from(canonical(plan.descriptor)).toString('base64'), descriptorPath: plan.descriptorPath, configPath: plan.configPath, configBytes: Buffer.from(plan.nextConfig).toString('base64'), cepDir: plan.cepDir, cep: plan.cep, previousDescriptor: plan.previousDescriptor?.toString('base64') || null, previousConfig: plan.previousConfig?.toString('base64') || null, previousCep: plan.previousCep, baseline: plan.baseline };
+    try {
+      const parent = path.dirname(directory); if (!fs.lstatSync(parent).isDirectory() || fs.lstatSync(parent).isSymbolicLink() || fs.realpathSync(parent) !== parent) fail('prepared_install_path');
+      fs.mkdirSync(directory, { recursive: false });
+      if (fs.lstatSync(directory).isSymbolicLink() || fs.realpathSync(directory) !== directory) fail('prepared_install_path');
+      durable(path.join(directory, 'prepared.json'), canonical(payload));
+      durable(path.join(directory, 'descriptor.json'), canonical(plan.descriptor));
+      entry.prepared = { directory, hash: hash(canonical(payload)), descriptorHash: fingerprint.appliedDescriptorHash };
+    } catch (e) { retainInstallLease(lease); e.preparedDirectory = directory; e.leaseRetained = true; throw e; }
+  }
+  return assertDurablePreparedInstallPlan(plan, { lease });
+}
+function assertDurablePreparedInstallPlan(plan, { lease }) {
+  assertPreparedInstallPlan(plan); assertInstallLease(lease, { installRoot: plan.descriptor.installRoot, stateDir: plan.descriptor.stateDir, descriptorPath: plan.descriptorPath });
+  const prepared = preparedPlans.get(plan).prepared; if (!prepared) fail('prepared_install_state_required');
+  const plain = file => { const s = fs.lstatSync(file); return s.isFile() && !s.isSymbolicLink() && !s.reparsePoint && fs.realpathSync(file) === file; };
+  if (fs.lstatSync(prepared.directory).isSymbolicLink() || fs.realpathSync(prepared.directory) !== prepared.directory || canonical(fs.readdirSync(prepared.directory).sort()) !== canonical(['descriptor.json', 'prepared.json']) || !plain(path.join(prepared.directory, 'prepared.json')) || !plain(path.join(prepared.directory, 'descriptor.json')) || hash(fs.readFileSync(path.join(prepared.directory, 'prepared.json'))) !== prepared.hash || hash(fs.readFileSync(path.join(prepared.directory, 'descriptor.json'))) !== prepared.descriptorHash) { retainInstallLease(lease); fail('prepared_install_state_changed'); }
+  return assertPreparedInstallPlan(plan);
+}
 function durable(file, data, flag = 'wx') { fs.mkdirSync(path.dirname(file), { recursive: true }); const fd = fs.openSync(file, flag); try { if (fs.writeSync(fd, data) !== Buffer.byteLength(data)) fail('install_short_write'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } }
 function bytes(file) { return fs.existsSync(file) ? fs.readFileSync(file) : null; }
 function snapshot(directory) {
@@ -55,11 +85,14 @@ function configText(previous, descriptor, nodePath, entry) {
 }
 function planInstall({ pkg, nodePath, installRoot, extensionsDir, configPath, machineId }) {
   verifyPackage(pkg);
+  const receiverContract = pkg.files['runtime/receiver-contract.json'] && JSON.parse(Buffer.from(pkg.files['runtime/receiver-contract.json'], 'base64'));
+  if (!receiverContract || receiverContract.version !== 1 || receiverContract.descriptorVersion !== 2 || receiverContract.journalFormat !== 2 || receiverContract.terminalReadFailureDispositionVersion !== 1) fail('candidate_receiver_contract_unsupported');
   for (const value of [nodePath, installRoot, extensionsDir, configPath]) if (!path.isAbsolute(value)) fail('absolute_install_paths_required');
   if (path.basename(installRoot).toLowerCase() !== 'aeagentcore4' || path.basename(path.join(extensionsDir, BUNDLE)) !== BUNDLE) fail('install_scope');
   nodePath = path.resolve(nodePath);
   const resolvedNode = fs.realpathSync(nodePath); if (resolvedNode !== nodePath) fail('node_path_not_exact');
-  const version = execFileSync(nodePath, ['--version'], { encoding: 'utf8', windowsHide: true, env: { SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR } }).trim();
+  if (path.resolve(process.execPath).toLowerCase() !== nodePath.toLowerCase()) fail('installer_candidate_node_must_be_current_process');
+  const version = process.version;
   if (!/^v(2\d|[3-9]\d)\./.test(version)) fail('node_20_required');
   const releaseDir = path.join(installRoot, 'releases', pkg.packageHash), descriptor = path.join(installRoot, 'installation.json'), stateDir = path.join(installRoot, 'state', 'production'), cepDir = path.join(extensionsDir, BUNDLE);
   const originBytes = bytes(path.join(installRoot, 'origin.json')), anchorBytes = bytes(path.join(stateDir, 'origin.json'));
@@ -70,18 +103,37 @@ function planInstall({ pkg, nodePath, installRoot, extensionsDir, configPath, ma
   const previousDescriptor = bytes(descriptor), previousConfig = bytes(configPath), previousCep = snapshot(cepDir);
   if (previousDescriptor) {
     const old = JSON.parse(previousDescriptor); if (old.installationId !== origin.installationId || old.installRoot !== installRoot || old.stateDir !== stateDir) fail('installation_identity_mismatch');
+    if (old.version === 2 && old.cepDir !== cepDir) fail('installation_cep_binding_change_unsupported');
   }
-  const d = { version: 1, installRoot, installationId: origin.installationId, machineId: origin.machineId, packageHash: pkg.packageHash, releaseDir, stateDir, nodePath, nodeHash: hash(fs.readFileSync(nodePath)), nodeVersion: version, panelToken: crypto.randomBytes(32).toString('hex'), controlToken: crypto.randomBytes(32).toString('hex') };
+  const transactionId = crypto.randomUUID();
+  const d = { version: 2, installRoot, installationId: origin.installationId, machineId: origin.machineId, packageHash: pkg.packageHash, releaseDir, stateDir, nodePath, nodeHash: hash(fs.readFileSync(nodePath)), nodeVersion: version, panelToken: crypto.randomBytes(32).toString('hex'), controlToken: crypto.randomBytes(32).toString('hex'), cepDir, receiverFormatVersion: 2, predecessor: previousDescriptor ? { transactionId, previousDescriptorHash: hash(previousDescriptor) } : null };
   const inspection = JSON.parse(Buffer.from(pkg.files['modules/project-inspection/artifact.json'], 'base64'));
   const manualAdmission = JSON.parse(Buffer.from(pkg.files['config/admissions/titles-current-target.json'], 'base64'));
   const cep = Object.fromEntries(Object.entries(pkg.files).filter(([f]) => f.startsWith('cep/')).map(([f, data]) => [f.slice(4), data]));
   cep['installation.js'] = Buffer.from('window.Core4Installation=' + canonical({ installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: inspection.executorHash, assetKey: 'project-inspection-v1', assets: [{ assetKey: 'project-inspection-v1', executorHash: inspection.executorHash, phases: ['inspect'] }, { assetKey: 'titles-current-target-v1', executorHash: manualAdmission.executorHash, phases: ['inspect', 'mutate', 'verify'] }] }) + ';\n').toString('base64');
   const nextConfig = configText(previousConfig, descriptor, nodePath, path.join(releaseDir, 'runtime/stdio-entry.js'));
-  return { pkg, origin, descriptor: d, descriptorPath: descriptor, configPath, nextConfig, cepDir, cep, previousDescriptor, previousConfig, previousCep, baseline: { config: previousConfig ? hash(previousConfig) : null, descriptor: previousDescriptor ? hash(previousDescriptor) : null, cep: treeHash(previousCep) } };
+  const plan = { pkg, origin, transactionId, descriptor: d, descriptorPath: descriptor, configPath, nextConfig, cepDir, cep, previousDescriptor, previousConfig, previousCep, baseline: { config: previousConfig ? hash(previousConfig) : null, descriptor: previousDescriptor ? hash(previousDescriptor) : null, cep: treeHash(previousCep) } };
+  preparedPlans.set(plan, { digest: planDigest(plan), prepared: null }); return plan;
 }
 function assertBaseline(plan) { if ((bytes(plan.configPath) ? hash(bytes(plan.configPath)) : null) !== plan.baseline.config || (bytes(plan.descriptorPath) ? hash(bytes(plan.descriptorPath)) : null) !== plan.baseline.descriptor || treeHash(snapshot(plan.cepDir)) !== plan.baseline.cep) fail('install_baseline_changed'); }
-function assertRuntimeStopped(stateDir) {
-  for (const relative of ['broker/broker-owner.lock', 'broker/broker-owner.gate', 'receiver/owner']) if (fs.existsSync(path.join(stateDir, relative))) fail('runtime_state_owned_or_unknown');
+function entryExists(file) { try { fs.lstatSync(file); return true; } catch (e) { if (e.code === 'ENOENT') return false; throw e; } }
+function assertRuntimeStopped(stateDir, { lease, descriptorPath, cepDir, plan } = {}) {
+  const scope = { installRoot: path.resolve(stateDir, '../..'), stateDir, descriptorPath };
+  const owned = lease ? (assertInstallLease(lease, scope), ownedLeaseGates(lease)) : new Map();
+  for (const relative of ['broker/broker-owner.lock', 'broker/broker-owner.gate', 'receiver/owner']) {
+    const file = path.join(stateDir, relative);
+    if (entryExists(file) && !(relative === 'broker/broker-owner.gate' && owned.has(file) && fs.readFileSync(file).equals(owned.get(file)))) fail('runtime_state_owned_or_unknown');
+  }
+  const ledger = path.join(stateDir, 'broker/ledger.ndjson');
+  if (entryExists(ledger)) {
+    const stat = fs.lstatSync(ledger); if (stat.isSymbolicLink() || fs.realpathSync(ledger) !== ledger) fail('runtime_ledger_unknown');
+    const { Ledger } = require('../core/ledger'); const value = new Ledger(ledger); if (value.corrupt || value.unresolved().length) fail('runtime_ledger_unresolved');
+  }
+  if (entryExists(path.join(stateDir, 'receiver/completions.ndjson'))) {
+    const options = { directory: path.join(stateDir, 'receiver'), descriptorPath, cepDir };
+    if (plan) require('./disposition-install-preflight').assertPreparedReceiverJournalSettled({ ...options, plan, lease });
+    else require('../runtime/native-read-disposition').assertReceiverJournalSettled(options);
+  }
 }
 function checkRelease(directory, release) {
   const expectedFiles = new Set(['release.json']), expectedDirs = new Set(['']);
@@ -101,60 +153,79 @@ function checkRelease(directory, release) {
   }
   visit(path.resolve(directory), ''); if (expectedFiles.size || expectedDirs.size) fail('immutable_release_mismatch');
 }
-function applyInstall(plan) {
+function applyInstall(plan, { lease: borrowed } = {}) {
+  let fingerprint = assertPreparedInstallPlan(plan);
   assertBaseline(plan);
   const d = plan.descriptor; fs.mkdirSync(d.installRoot, { recursive: true });
-  const gate = path.join(d.installRoot, 'install.lock'); const fd = fs.openSync(gate, 'wx');
-  let txnFile, txn, switched = false;
+  const scope = { installRoot: d.installRoot, stateDir: d.stateDir, descriptorPath: plan.descriptorPath };
+  const lease = borrowed || acquireInstallLease(scope); assertInstallLease(lease, scope);
+  let txnFile, txn, writes = false;
   try {
     assertBaseline(plan);
-    assertRuntimeStopped(d.stateDir);
+    if (d.version !== 2 || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(plan.transactionId) || (plan.previousDescriptor ? canonical(d.predecessor) !== canonical({ transactionId: plan.transactionId, previousDescriptorHash: hash(plan.previousDescriptor) }) : d.predecessor !== null)) fail('install_lineage_plan');
+    assertRuntimeStopped(d.stateDir, { lease, descriptorPath: plan.descriptorPath, cepDir: plan.cepDir, plan });
+    writes = true;
+    fs.mkdirSync(path.join(d.installRoot, 'transactions'), { recursive: true });
+    fingerprint = prepareInstallPlan(plan, { lease });
+    checkpointInstallLease(lease, 'installing');
     // State is stable across reinstall and rollback; no cleanup/reclaim is performed.
     if (!fs.existsSync(path.join(d.installRoot, 'origin.json'))) {
+      writes = true;
       durable(path.join(d.installRoot, 'origin.json'), canonical(plan.origin));
       durable(path.join(d.stateDir, 'origin.json'), canonical(plan.origin));
     }
     if (!fs.existsSync(d.releaseDir)) {
+      writes = true;
       const stage = path.join(d.installRoot, 'releases', '.stage-' + crypto.randomUUID());
       for (const [relative, b64] of Object.entries(plan.pkg.files)) durable(path.join(stage, relative), Buffer.from(b64, 'base64'));
       durable(path.join(stage, 'release.json'), canonical(plan.pkg.release)); checkRelease(stage, plan.pkg.release); fs.renameSync(stage, d.releaseDir);
     }
     checkRelease(d.releaseDir, plan.pkg.release);
-    const transactionId = crypto.randomUUID(); txnFile = path.join(d.installRoot, 'transactions', transactionId + '.json');
+    const transactionId = plan.transactionId; txnFile = path.join(d.installRoot, 'transactions', transactionId + '.json');
     const backupCep = path.join(d.installRoot, 'transactions', transactionId + '-cep');
-    txn = { version: 1, transactionId, installRoot: d.installRoot, descriptorPath: plan.descriptorPath, configPath: plan.configPath, cepDir: plan.cepDir, backupCep, previousDescriptor: plan.previousDescriptor?.toString('base64') || null, previousConfig: plan.previousConfig?.toString('base64') || null, previousCepHash: treeHash(plan.previousCep), appliedDescriptorHash: hash(canonical(d)), appliedConfigHash: hash(plan.nextConfig), appliedCepHash: treeHash(plan.cep), stateDir: d.stateDir };
+    txn = { version: 2, transactionId, preparedPlanHash: fingerprint.preparedPlanHash, preparedStateHash: fingerprint.preparedStateHash, installRoot: d.installRoot, descriptorPath: plan.descriptorPath, configPath: plan.configPath, cepDir: plan.cepDir, backupCep, previousDescriptor: plan.previousDescriptor?.toString('base64') || null, previousConfig: plan.previousConfig?.toString('base64') || null, previousCepHash: treeHash(plan.previousCep), appliedDescriptorHash: hash(canonical(d)), appliedConfigHash: hash(plan.nextConfig), appliedCepHash: treeHash(plan.cep), stateDir: d.stateDir };
+    writes = true;
     durable(txnFile, canonical(txn));
     // Last CAS before any visible switch. Unknown filesystem outcomes are not retried.
     assertBaseline(plan);
     if (fs.existsSync(plan.cepDir)) fs.renameSync(plan.cepDir, backupCep);
-    switched = true;
     restoreTree(plan.cepDir, plan.cep);
     durable(plan.descriptorPath + '.next', canonical(d));
     durable(plan.configPath + '.core4-next', plan.nextConfig);
     fs.renameSync(plan.descriptorPath + '.next', plan.descriptorPath);
     fs.renameSync(plan.configPath + '.core4-next', plan.configPath);
     if (hash(bytes(plan.descriptorPath)) !== txn.appliedDescriptorHash || hash(bytes(plan.configPath)) !== txn.appliedConfigHash || treeHash(snapshot(plan.cepDir)) !== txn.appliedCepHash) fail('install_readback_mismatch');
+    require('../runtime/installation').verifyInstallation(plan.descriptorPath); checkpointInstallLease(lease, 'installed');
     return { installed: true, packageHash: d.packageHash, installationId: d.installationId, descriptorPath: plan.descriptorPath, transactionFile: txnFile, stateDir: d.stateDir, requiresPanelOpen: true, requiresMcpReconnect: true, liveProof: false };
-  } catch (e) { if (switched) e.transactionFile = txnFile; throw e; }
-  finally { fs.closeSync(fd); fs.unlinkSync(gate); }
+  } catch (e) { if (writes) { retainInstallLease(lease); e.leaseRetained = true; if (txnFile) e.transactionFile = txnFile; } throw e; }
+  finally { if (!borrowed) { const state = assertInstallLease(lease, scope); if (!state.retained) releaseInstallLease(lease); } }
 }
 function rollback(file) {
   const t = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (t.version !== 1 || !path.isAbsolute(t.installRoot) || path.basename(t.installRoot).toLowerCase() !== 'aeagentcore4' || t.descriptorPath !== path.join(t.installRoot, 'installation.json') || t.backupCep !== path.join(t.installRoot, 'transactions', t.transactionId + '-cep') || path.basename(t.cepDir) !== BUNDLE || !path.resolve(file).startsWith(path.join(t.installRoot, 'transactions') + path.sep)) fail('rollback_scope');
+  if (![1, 2].includes(t.version) || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(t.transactionId) || !path.isAbsolute(t.installRoot) || path.basename(t.installRoot).toLowerCase() !== 'aeagentcore4' || t.descriptorPath !== path.join(t.installRoot, 'installation.json') || t.backupCep !== path.join(t.installRoot, 'transactions', t.transactionId + '-cep') || path.basename(t.cepDir) !== BUNDLE || path.resolve(file) !== path.join(t.installRoot, 'transactions', t.transactionId + '.json') || fs.lstatSync(file).isSymbolicLink() || fs.realpathSync(file) !== path.resolve(file)) fail('rollback_scope');
   if (hash(bytes(t.descriptorPath)) !== t.appliedDescriptorHash || hash(bytes(t.configPath)) !== t.appliedConfigHash || treeHash(snapshot(t.cepDir)) !== t.appliedCepHash) fail('rollback_baseline_changed');
-  const gate = path.join(t.installRoot, 'install.lock'), fd = fs.openSync(gate, 'wx');
+  const scope = { installRoot: t.installRoot, stateDir: t.stateDir, descriptorPath: t.descriptorPath }, lease = acquireInstallLease(scope); let writes = false;
   try {
-    assertRuntimeStopped(t.stateDir);
+    assertRuntimeStopped(t.stateDir, { lease, descriptorPath: t.descriptorPath, cepDir: t.cepDir });
+    const priorBytes = t.previousDescriptor === null ? null : Buffer.from(t.previousDescriptor, 'base64'), target = priorBytes && JSON.parse(priorBytes);
+    if (priorBytes && priorBytes.toString('base64') !== t.previousDescriptor) fail('rollback_previous_bytes');
+    require('../runtime/native-read-disposition').assertRollbackReaderCompatible({ directory: path.join(t.stateDir, 'receiver'), target });
+    if (target && (target.nodePath !== process.execPath || target.nodeHash !== hash(fs.readFileSync(process.execPath)))) fail('rollback_node_binding_unsupported');
     if (t.previousCepHash !== treeHash(fs.existsSync(t.backupCep) ? snapshot(t.backupCep) : null)) fail('rollback_backup_mismatch');
+    checkpointInstallLease(lease, 'installing');
     // Move only the exact owned bundle. Keep recoverable applied files as evidence.
+    writes = true;
     fs.renameSync(t.cepDir, path.join(t.installRoot, 'transactions', t.transactionId + '-applied-cep'));
     if (fs.existsSync(t.backupCep)) fs.renameSync(t.backupCep, t.cepDir);
     for (const [target, prior] of [[t.descriptorPath, t.previousDescriptor], [t.configPath, t.previousConfig]]) {
       if (prior === null) fs.unlinkSync(target);
       else { durable(target + '.rollback', Buffer.from(prior, 'base64')); fs.renameSync(target + '.rollback', target); }
     }
+    if (t.previousDescriptor !== null) require('../runtime/installation').verifyInstallation(t.descriptorPath, { cepDir: t.cepDir });
+    checkpointInstallLease(lease, 'installed');
     return { rolledBack: true, transactionId: t.transactionId, statePreserved: true, liveProof: false };
-  } finally { fs.closeSync(fd); fs.unlinkSync(gate); }
+  } catch (e) { if (writes) { retainInstallLease(lease); e.leaseRetained = true; e.transactionFile = file; } throw e; }
+  finally { const state = assertInstallLease(lease, scope); if (!state.retained) releaseInstallLease(lease); }
 }
 function defaults(pkg, nodePath) { return { pkg, nodePath, installRoot: path.join(process.env.LOCALAPPDATA, 'AEAgentCore4'), extensionsDir: path.join(process.env.APPDATA, 'Adobe/CEP/extensions'), configPath: path.join(process.cwd(), '.codex/config.toml') }; }
 if (require.main === module) {
@@ -171,4 +242,4 @@ if (require.main === module) {
     }
   } catch (e) { console.error(canonical({ error: e.code || 'install_failed', ...(e.transactionFile ? { transactionFile: e.transactionFile } : {}) })); process.exitCode = 1; }
 }
-module.exports = { planInstall, applyInstall, rollback, snapshot, configText, checkRelease };
+module.exports = { planInstall, assertPreparedInstallPlan, prepareInstallPlan, assertDurablePreparedInstallPlan, applyInstall, rollback, snapshot, configText, checkRelease };

@@ -1,0 +1,29 @@
+'use strict';
+// Root-owned manual-button supervisor. Fixed A, real probes, bounded wait only.
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {spawn}=require('node:child_process');
+const childMode=process.argv[2]==='--child', inputs=process.argv.slice(childMode?3:2);
+if(inputs.length!==2)throw Error('exact_source_and_inspection_required');
+const [operatorHash,inspectionPath]=inputs, sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+const root=path.resolve(__dirname,'../../..'), operator=path.join(root,'core4/tools/capture-native-read.js');
+if(operatorHash!=='f3c51cd62a04a09cc8aaf6a0dd4564319c6d7809c2ff132bdb134ba04956120e'||!path.isAbsolute(inspectionPath)||sha(fs.readFileSync(operator))!==operatorHash)throw Error('capture_source_changed');
+const inspectionBytes=fs.readFileSync(inspectionPath), inspection=JSON.parse(inspectionBytes);
+if(!inspection.inspectionOnly||inspection.authority!==false||inspection.proof.operatorHash!==operatorHash||!/^[a-f0-9]{64}$/.test(inspection.proofHash))throw Error('inspection_binding');
+const descriptor=path.join(process.env.LOCALAPPDATA,'AEAgentCore4/installation.json'),descriptorBytes=fs.readFileSync(descriptor),d=JSON.parse(descriptorBytes);
+if(d.packageHash!=='6c94efb678b9a56861b18e762076da7b38824bbbe30233770c4133ff81edc696'||sha(descriptorBytes)!==inspection.proof.descriptorHash||path.resolve(d.nodePath).toLowerCase()!==path.resolve(process.execPath).toLowerCase()||sha(fs.readFileSync(process.execPath))!==d.nodeHash)throw Error('capture_installation_changed');
+const provenance=path.join(root,'snapshots/core4-live-proof/V-native-es3-20261028/original-read-provenance.json');
+if(sha(fs.readFileSync(provenance))!==inspection.proof.provenanceHash)throw Error('capture_provenance_changed');
+if(childMode){
+  // No injected probes, IO, validator or executor. Only the global pre-link wait
+  // is ten minutes; authenticated callback deadline stays the fixed 15 seconds.
+  require(operator).createCapture({globalTimeoutMs:600000,onListening:value=>console.log(JSON.stringify({event:'capture_listening',...value,manualWaitMs:600000}))}).capture({descriptor,provenance,expectedProofHash:inspection.proofHash}).then(value=>console.log(JSON.stringify(value))).catch(error=>{console.error(JSON.stringify({error:error.code||'capture_failed',...(error.transaction?{transaction:error.transaction}:{})}));process.exitCode=1;});
+}else{
+  const directory=path.join(__dirname,'manual-live-'+Date.now());fs.mkdirSync(directory);
+  fs.writeFileSync(path.join(directory,'context.json'),JSON.stringify({version:1,at:new Date().toISOString(),driverHash:sha(fs.readFileSync(__filename)),operatorHash,inspectionHash:sha(inspectionBytes),proofHash:inspection.proofHash,packageHash:d.packageHash,descriptorHash:sha(descriptorBytes),recordContext:{purpose:'technical_check',lifetime:'ephemeral_check',context:'original cached read receipt, one human button action'},globalTimeoutMs:600000,completionTimeoutMs:15000,automaticNativeDispatch:false,ackAllowed:false,authority:false},null,2)+'\n',{flag:'wx'});
+  const child=spawn(process.execPath,[__filename,'--child',operatorHash,inspectionPath],{cwd:root,stdio:['ignore','pipe','pipe'],windowsHide:true});
+  console.log(JSON.stringify({event:'manual_capture_child_started',pid:child.pid,directory,operatorHash,proofHash:inspection.proofHash}));
+  child.stdout.on('data',bytes=>{fs.appendFileSync(path.join(directory,'stdout.raw.log'),bytes);process.stdout.write(bytes);});
+  child.stderr.on('data',bytes=>{fs.appendFileSync(path.join(directory,'stderr.raw.log'),bytes);process.stderr.write(bytes);});
+  child.on('exit',(code,signal)=>{const value={at:new Date().toISOString(),pid:child.pid,code,signal};fs.writeFileSync(path.join(directory,'exit.json'),JSON.stringify(value)+'\n',{flag:'wx'});console.log(JSON.stringify({event:'manual_capture_child_closed',...value}));process.exitCode=code===0?0:1;});
+  child.on('error',error=>{fs.writeFileSync(path.join(directory,'spawn-error.json'),JSON.stringify({at:new Date().toISOString(),code:error.code})+'\n',{flag:'wx'});process.exitCode=1;});
+}

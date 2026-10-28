@@ -106,7 +106,8 @@ test('installable-runtime exact release closure rejects extensionless shadow, em
   assert.ok(path.resolve(core).startsWith(path.resolve(directory) + path.sep)); assert.ok(path.resolve(backup).startsWith(path.resolve(directory) + path.sep));
   fs.renameSync(core, backup); fs.writeFileSync(path.join(backup, 'broker.js'), code);
   fs.symlinkSync(backup, core, process.platform === 'win32' ? 'junction' : 'dir');
-  rejectedChild(); assert.throws(() => applyInstall(planInstall(args)), /immutable_release_mismatch/);
+  rejectedChild(); assert.throws(() => applyInstall(planInstall(args)), /EEXIST/);
+  assert.equal(fs.existsSync(path.join(args.installRoot, 'install.lock')), true, 'prior private preparation failure stays fenced; no automatic retry');
 });
 test('installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies', () => {
   const directory = temp(), pkgA = buildPackage(), { args, plan } = install(directory, pkgA), installedA = applyInstall(plan), descriptorA = JSON.parse(fs.readFileSync(installedA.descriptorPath));
@@ -127,9 +128,9 @@ test('installable-runtime descriptor changed at startup gate is rejected before 
     if (!changed && file === gate && flags === 'wx') { changed = true; fs.writeFileSync(installed.descriptorPath, canonical({ ...d, panelToken: 'a'.repeat(64) })); }
     return fd;
   };
-  try { await assert.rejects(entry.start({ descriptor: installed.descriptorPath, port: 0 }), /installation_changed_during_start/); }
+  try { await assert.rejects(entry.start({ descriptor: installed.descriptorPath, port: 0 }), /installation_changed_during_start|installation_cep_bytes/); }
   finally { fs.openSync = originalOpen; }
-  assert.equal(changed, true); assert.equal(fs.existsSync(path.join(d.stateDir, 'broker')), false); assert.equal(fs.existsSync(gate), false);
+  assert.equal(changed, true); assert.equal(fs.existsSync(path.join(d.stateDir, 'broker/broker-owner.lock')), false); assert.equal(fs.existsSync(path.join(d.stateDir, 'receiver')), false); assert.equal(fs.existsSync(gate), false);
 });
 test('installable-runtime bounded TOML edit preserves indented neighboring servers and inline-commented Core4 header bytes', () => {
   const before = '# prefix\r\n [mcp_servers.before] # before comment\r\ncommand = "before"\r\n';

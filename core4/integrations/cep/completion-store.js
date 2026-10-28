@@ -2,13 +2,15 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { hash, bounded, parse, canonical, id, fail, sameDispatch } = require('../../core/receiver-api');
+const { validateDisposition } = require('../../runtime/native-read-disposition');
 // No automatic orphan/PID recovery. An abandoned owner permits proof reads only.
-function openCompletionStore({ directory, io = fs }) {
+function openCompletionStore({ directory, io = fs, installationContext }) {
   if (!directory || !path.isAbsolute(directory)) fail('explicit_receiver_store_required');
   io.mkdirSync(directory, { recursive: true });
   const file = path.join(directory, 'completions.ndjson'), ownerFile = path.join(directory, 'owner');
   let owner, closed = false, fault = false, events = [], identity;
   const records = new Map();
+  const isSettled = record => record.state === 'completed' || record.state === 'unknown' && !!record.terminalDisposition;
   try { owner = io.openSync(ownerFile, 'wx'); } catch (e) { if (e.code !== 'EEXIST') throw e; closed = true; }
   function append(event) {
     if (closed || fault || owner === undefined) fail('receiver_lane_closed');
@@ -27,7 +29,8 @@ function openCompletionStore({ directory, io = fs }) {
     if (io.existsSync(file)) {
       const data = io.readFileSync(file, 'utf8');
       if (!data || !data.endsWith('\n')) fail('receiver_store_corrupt');
-      for (const line of data.trimEnd().split('\n')) {
+      const lines = data.slice(0, -1).split('\n');
+      for (const line of lines) {
         const event = parse(line), { recordHash, ...body } = event;
         if (event.seq !== events.length + 1 || event.previousHash !== (events.at(-1)?.recordHash || 'origin') || recordHash !== hash(body)) fail('receiver_store_corrupt');
         if (!events.length) { if (event.type !== 'origin' || typeof event.identity !== 'string') fail('receiver_store_corrupt'); identity = event.identity; }
@@ -38,11 +41,17 @@ function openCompletionStore({ directory, io = fs }) {
           const prior = records.get(event.commandId);
           if (!prior || prior.state !== 'ongoing') fail('receiver_store_corrupt');
           records.set(event.commandId, { ...prior, state: event.type === 'complete' ? 'completed' : 'unknown', ...(event.response ? { response: event.response } : {}) });
+        } else if (event.type === 'terminal-read-failure-disposition') {
+          const prior = records.get(event.commandId);
+          if (!prior || prior.state !== 'unknown' || prior.terminalDisposition || !installationContext || Object.keys(installationContext).some(key => !['descriptorPath', 'cepDir'].includes(key))) fail('receiver_disposition_context');
+          const semantic = validateDisposition(event, { ...installationContext, journalPrefixBytes: Buffer.from(lines.slice(0, 3).join('\n') + '\n') });
+          if (canonical(prior.command) !== canonical(semantic.command) || canonical(prior.originalBinding) !== canonical(semantic.binding)) fail('receiver_disposition_binding');
+          records.set(event.commandId, { ...prior, terminalDisposition: { version: 1, pins: semantic.pins, result: semantic.result } });
         } else fail('receiver_store_corrupt');
         events.push(event);
       }
     } else { identity = id('receiver-store'); append({ type: 'origin', identity }); }
-    if ([...records.values()].some(r => r.state !== 'completed')) closed = true;
+    if ([...records.values()].some(r => !isSettled(r))) closed = true;
   } catch { fault = true; closed = true; }
   return Object.freeze({
     get identity() { return identity; },
@@ -52,7 +61,7 @@ function openCompletionStore({ directory, io = fs }) {
     get(commandId) { if (fault) return undefined; const value = records.get(commandId); return value && JSON.parse(canonical(value)); },
     begin(command, originalBinding) {
       if (records.has(command.commandId)) fail('duplicate_command_no_replay');
-      if (closed || fault || [...records.values()].some(r => r.state !== 'completed')) fail('receiver_lane_closed');
+      if (closed || fault || [...records.values()].some(r => !isSettled(r))) fail('receiver_lane_closed');
       if (!sameDispatch(originalBinding, originalBinding) || originalBinding.receiverStoreIdentity !== identity) fail('receiver_store_binding');
       append({ type: 'begin', commandId: command.commandId, commandDigest: hash(command), command, originalBinding });
       records.set(command.commandId, { state: 'ongoing', command: JSON.parse(canonical(command)), originalBinding });
@@ -73,7 +82,7 @@ function openCompletionStore({ directory, io = fs }) {
       // Retain the owner marker whenever physical lifetime or durability is ambiguous.
       if (owner !== undefined) {
         io.closeSync(owner); owner = undefined;
-        if (!fault && [...records.values()].every(r => r.state === 'completed')) io.unlinkSync(ownerFile);
+        if (!fault && [...records.values()].every(isSettled)) io.unlinkSync(ownerFile);
       }
     }
   });
