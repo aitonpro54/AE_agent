@@ -35,6 +35,9 @@ Proof MCP child завершён штатно, exit 0; пустой receiver own
 1. Отдельный штатный диагностический operator проверяет всю установленную
    release closure до импорта установленного кода. Он не запускает Broker,
    обычный runtime, `createHttpPeer.submit` или host evaluator.
+   Отдельно проверяется фактически установленная CEP closure: package files и
+   generated installation binding соответствуют тому же descriptor; неизвестные
+   дополнительные файлы, links/reparse points и несовпадения закрывают capture.
 2. Pure inspect строит точный digest: descriptor/package/installation/origins,
    receiver identity и hash-chain журнала, original command/binding/pins/payload,
    owner markers, ledger obligations и root-managed process provenance.
