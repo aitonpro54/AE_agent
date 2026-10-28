@@ -1,5 +1,14 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Продолжение 28 октября 2026 по прямому поручению пользователя:** точная
+установка fa9e повторно верифицирована. Configured-client reconnect остаётся
+открытым: tools отсутствуют, existing app-server proxy отказал socket10050
+до initialize. Завершён первый независимый [source-блок переносимости installer](core-portability-installation-20261028.md):
+workspace больше не зависит от cwd, Node выбирается автоматически; final45/45
+selected PASS, boundaries21 и actual foreign-CWD dry-run PASS. Runtime fa9e/60files
+и local state bytes сохранены. Новых AE sends нет; P1–P8 пока открыты. Следующая запись об остановке — история
+предыдущего завершённого ремонта.
+
 **Актуальный итог 28октября2026:** текущий ремонт панели и read-only установка
 завершены. Installed package `fa9e2f454588`, source `36905c4`; authenticated
 installed MCP stdio→CEP→AE native read PASS. Исходный UNKNOWN сохранён как

@@ -14,10 +14,23 @@ Node append+fsync begin выполняется до публикации ком�
 
 ```powershell
 node core4/tools/package-installable.js --output C:/Temp/core4-package.json
-node core4/tools/install-core4.js dry-run --package C:/Temp/core4-package.json --node 'C:/Program Files/nodejs/node.exe'
-node core4/tools/install-core4.js apply --package C:/Temp/core4-package.json --node 'C:/Program Files/nodejs/node.exe' --expected-package-hash EXACT_HASH_FROM_DRY_RUN
+node core4/tools/install-core4.js dry-run --package C:/Temp/core4-package.json
+node core4/tools/install-core4.js apply --package C:/Temp/core4-package.json --expected-package-hash EXACT_HASH_FROM_DRY_RUN
 node core4/tools/install-core4.js rollback C:/Users/USER/AppData/Local/AEAgentCore4/transactions/TRANSACTION.json
 ```
+
+Installer выбирает workspace по собственному расположению в source checkout
+и проверяет marker `core4/package.json` и точный layout `core4/tools/install-core4.js`.
+Текущий каталог запуска не определяет адрес MCP-конфигурации; при вызове installer
+по абсолютному пути из другой папки config остаётся в его checkout. Для явного
+выбора другого source workspace есть `--workspace` с точным абсолютным локальным
+путём; standalone копия без source layout требует такого выбора. Неверный layout
+или относительный workspace отклоняется до записи. `dry-run` показывает
+`workspaceRoot`, `workspaceSource`, `installerPath` и фактический `nodePath`.
+По умолчанию используется уже запущенный Node (`process.execPath`), который
+проходит прежние проверки path/version/hash. Явный `--node` остаётся совместимым
+и обязан указывать этот же executable. Это не устанавливает Node и не проверяет
+AE/CEP capabilities или configured MCP client.
 
 Apply требует exact reviewed package hash и пишет собственный immutable release под `%LOCALAPPDATA%/AEAgentCore4/releases/<packageHash>`, stable state под `state/production`, отдельную CEP extension и только project-local `[mcp_servers.after-effects-core4]` в `.codex/config.toml`. Absolute external Node path/version/SHA256 закрепляются в installation descriptor. Entry загружает только Node builtins до проверки полного release tree: exact file/directory set, включая `release.json`; лишние extensionless files, empty directories, symlinks/junctions и подмена bytes запрещены до любых package imports. Unknown Broker owner, ledger fault и unresolved own intent закрывают физические чтения до нового durable begin, даже если отдельный receiver store пуст.
 

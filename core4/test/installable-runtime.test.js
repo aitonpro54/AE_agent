@@ -14,7 +14,7 @@ const { hash, canonical } = require('../protocol/json');
 const { mac } = require('../integrations/cep/peer-protocol');
 const { createHttpPeer } = require('../integrations/cep/http-peer');
 const { buildPackage, verifyPackage } = require('../tools/package-installable');
-const { planInstall, applyInstall, rollback, configText } = require('../tools/install-core4');
+const { planInstall, applyInstall, rollback, configText, snapshot } = require('../tools/install-core4');
 const { verifyInstallation } = require('../runtime/installation');
 const root = path.resolve(__dirname, '..');
 function temp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'core4-installable-')); }
@@ -156,6 +156,63 @@ test('installable-runtime CLI apply requires reviewed package hash and mismatche
     assert.equal(result.status, 1); assert.match(result.stderr, /usage_install_mode_package_node_expected_hash|reviewed_package_hash_mismatch/);
     assert.equal(fs.existsSync(env.LOCALAPPDATA), false); assert.equal(fs.existsSync(env.APPDATA), false); assert.equal(fs.existsSync(path.join(project, '.codex')), false);
   }
+});
+function installerCliFixture() {
+  const directory = temp(), workspace = path.join(directory, 'source'), foreign = path.join(directory, 'unrelated'), pkg = buildPackage(), file = path.join(directory, 'candidate.json');
+  // Copy the real CLI and its eager import closure, never the real config/state.
+  for (const relative of ['package.json', 'tools/install-core4.js', 'tools/package-installable.js', 'protocol/json.js', 'runtime/install-lease.js']) {
+    const target = path.join(workspace, 'core4', relative); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.copyFileSync(path.join(root, relative), target);
+  }
+  for (const [target, content] of [[workspace, '# selected source\n[mcp_servers.neighbor]\ncommand = "preserve-source"\n'], [foreign, '# unrelated CWD\n[mcp_servers.neighbor]\ncommand = "preserve-foreign"\n']]) {
+    fs.mkdirSync(path.join(target, '.codex'), { recursive: true }); fs.writeFileSync(path.join(target, '.codex/config.toml'), content);
+  }
+  fs.writeFileSync(file, JSON.stringify(pkg));
+  const installer = path.join(workspace, 'core4/tools/install-core4.js'), env = { ...process.env, LOCALAPPDATA: path.join(directory, 'local'), APPDATA: path.join(directory, 'roaming') };
+  function run(extra = [], { cwd = foreign, mode = 'dry-run', entry = installer } = {}) {
+    const state = () => ({ entries: fs.readdirSync(directory, { recursive: true }).sort(), files: snapshot(directory) }), before = state();
+    const result = spawnSync(process.execPath, [entry, mode, '--package', file, ...extra], { cwd, env, encoding: 'utf8', timeout: 10000, windowsHide: true });
+    assert.equal(result.error, undefined); assert.deepEqual(state(), before, 'CLI preflight/dry-run must leave every fixture byte and directory unchanged');
+    return result;
+  }
+  return { directory, workspace, foreign, pkg, file, installer, env, run };
+}
+test('installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node', () => {
+  const fixture = installerCliFixture(), { workspace, foreign, installer, run } = fixture;
+  const sourceConfig = path.join(workspace, '.codex/config.toml'), foreignConfig = path.join(foreign, '.codex/config.toml');
+  const beforeSource = fs.readFileSync(sourceConfig), beforeForeign = fs.readFileSync(foreignConfig);
+  const result = run(); assert.equal(result.status, 0, result.stderr); const report = JSON.parse(result.stdout);
+  assert.equal(report.workspaceRoot, workspace); assert.equal(report.workspaceSource, 'installer-location'); assert.equal(report.installerPath, installer);
+  assert.equal(report.configPath, sourceConfig); assert.equal(report.baseline.config, hash(beforeSource)); assert.notEqual(report.baseline.config, hash(beforeForeign));
+  assert.equal(report.nodePath, process.execPath); assert.equal(report.nodeVersion, process.version); assert.equal(report.nodeHash, hash(fs.readFileSync(process.execPath))); assert.equal(report.liveProof, false);
+  assert.ok(beforeSource.equals(fs.readFileSync(sourceConfig))); assert.ok(beforeForeign.equals(fs.readFileSync(foreignConfig)));
+  const legacy = run(['--node', fs.realpathSync(process.execPath)], { cwd: workspace }); assert.equal(legacy.status, 0, legacy.stderr);
+  assert.deepEqual(JSON.parse(legacy.stdout), report, 'legacy --node and a different CWD select exactly the same preflight inputs');
+  const wrongNode = run(['--node', fixture.file]); assert.equal(wrongNode.status, 1); assert.match(wrongNode.stderr, /installer_candidate_node_must_be_current_process/);
+  for (const target of [fixture.env.LOCALAPPDATA, fixture.env.APPDATA]) assert.equal(fs.existsSync(target), false);
+});
+test('installable-runtime CLI explicit workspace requires an absolute marked source layout before writes', () => {
+  const { directory, workspace, file, run } = installerCliFixture(), other = path.join(directory, 'other-source');
+  fs.mkdirSync(path.join(other, 'core4/tools'), { recursive: true }); fs.copyFileSync(path.join(workspace, 'core4/package.json'), path.join(other, 'core4/package.json')); fs.copyFileSync(path.join(workspace, 'core4/tools/install-core4.js'), path.join(other, 'core4/tools/install-core4.js'));
+  const selected = run(['--workspace', other]); assert.equal(selected.status, 0, selected.stderr); const report = JSON.parse(selected.stdout);
+  assert.equal(report.workspaceRoot, other); assert.equal(report.workspaceSource, 'explicit-workspace'); assert.equal(report.configPath, path.join(other, '.codex/config.toml')); assert.equal(report.baseline.config, null);
+  const relocated = path.join(workspace, 'core4/relocated/install-core4.js'); fs.mkdirSync(path.dirname(relocated)); fs.copyFileSync(path.join(workspace, 'core4/tools/install-core4.js'), relocated); fs.copyFileSync(path.join(workspace, 'core4/tools/package-installable.js'), path.join(path.dirname(relocated), 'package-installable.js'));
+  const wrongPosition = run([], { entry: relocated }); assert.equal(wrongPosition.status, 1); assert.match(wrongPosition.stderr, /workspace_source_layout_required/);
+  const explicitStandalone = run(['--workspace', other], { entry: relocated }); assert.equal(explicitStandalone.status, 0, explicitStandalone.stderr); assert.equal(JSON.parse(explicitStandalone.stdout).configPath, report.configPath);
+  for (const [value, code] of [['source', 'workspace_absolute_exact_path_required'], [path.join(directory, 'missing'), 'workspace_source_layout_required'], [file, 'workspace_source_layout_required'], ['', 'workspace_absolute_exact_path_required']]) {
+    for (const mode of ['dry-run', 'apply']) {
+      const result = run(['--workspace', value, ...(mode === 'apply' ? ['--expected-package-hash', report.packageHash] : [])], { mode });
+      assert.equal(result.status, 1, value); assert.equal(JSON.parse(result.stderr).error, code);
+    }
+  }
+  const incomplete = run(['--workspace']); assert.equal(incomplete.status, 1); assert.match(incomplete.stderr, /usage_install_mode_package_node_expected_hash/);
+  const marker = path.join(other, 'core4/package.json'), cli = path.join(other, 'core4/tools/install-core4.js');
+  for (const value of ['{"name":"different-product"}', '{invalid']) {
+    fs.writeFileSync(marker, value); const result = run(['--workspace', other]); assert.equal(result.status, 1); assert.match(result.stderr, /workspace_source_layout_required/);
+  }
+  fs.copyFileSync(path.join(workspace, 'core4/package.json'), marker); fs.unlinkSync(cli);
+  const missingLayout = run(['--workspace', other]); assert.equal(missingLayout.status, 1); assert.match(missingLayout.stderr, /workspace_source_layout_required/);
+  fs.unlinkSync(path.join(workspace, 'core4/package.json'));
+  const missingDefault = run(); assert.equal(missingDefault.status, 1); assert.match(missingDefault.stderr, /workspace_source_layout_required/);
 });
 test('installable-runtime unknown Broker owner, ledger fault or unresolved intent permits diagnostics but no new physical read begin', async () => {
   for (const fault of ['orphan-gate', 'ledger-corrupt', 'unresolved']) {

@@ -29,6 +29,14 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 28 октября, продолжение по прямому поручению пользователя: installed
+  fa9e release/CEP/Node повторно верифицированы; configured client tools пока
+  отсутствуют, existing app-server proxy отказал socket10050 до initialize.
+  Завершён первый source-блок переносимости: матрица MSI, installer audit и
+  исправление cwd-dependent config target/Node default. Final45selected PASS,
+  boundaries21, root actual foreign-CWD dry-run и unchangedfa9e/60files PASS;
+  [focused план](core-portability-installation-20261028.md). Configured status и
+  P1–P8 этим не закрыты.
 - [x] 28октября: текущий ремонт/установка панели завершены. Package `fa9e2f454588`
   установлен,60release/7CEP+origins/lineage PASS. Fresh authenticated panel и одно
   новое native чтение пустого проекта PASS; original UNKNOWN history/noReplay
@@ -55,7 +63,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
-- После текущего ремонта не переходить автоматически к следующим milestones:
+- Новое поручение «продолжай» возобновляет работу после предыдущей остановки.
+  Для configured-client нужен штатный reconnect; текущий proxy10050 не является
+  отказом AE и не разрешает второй runtime. Независимый source milestone4
+  продолжается; runtime state/adoption и установленный package не меняются.
+- Историческая остановка после предыдущего ремонта до нового поручения:
   пользователь продолжит в новом чате. Own diagnostic MCP закрыт чисто;
   maintenance enabled=false восстановлен в true. Первый шаг продолжения —
   configured-client status/reconnect, без replay старой inspection. Read-only
@@ -81,6 +93,13 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- 28 октября, source installer portability: final45/45selected PASS
+  (23installable+19recovery+3human), boundaries21/syntax/diff PASS; root exact
+  fa9e/60closure и actual dry-run финального CLI из чужого cwd PASS. Descriptor,
+  config, journal и origins byte-identical, release/CEP повторно верифицированы;
+  installation/apply/native0. Configured-client tools отсутствуют; existing
+  proxy10050 до initialize, manual reconnect pending. Final bindings и11deferred
+  current-closure-unverified — в focused плане; full release не запускался.
 - Финальный actual proof и ограничения — в handoff и
   `snapshots/core4-live-proof/VII-native-read-recovery-20261028/root-final-native-proof.json`.
   Native success через installed MCP stdio/CEP/AE, post-read faults/pending0,
