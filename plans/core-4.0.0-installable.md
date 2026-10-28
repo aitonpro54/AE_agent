@@ -29,6 +29,7 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] Origin transport на installed6c94 подтвердил живое CEP соединение после user-approved restart. Native read обнаружил ES3 protected154 → timeout/UNKNOWN; replay0. Source fix + ES3 grammar/42selected checks и independent ACCEPT готовы; candidate947 не установлен поверх fence. Следующий bounded блок и ограничения — [native ES3/recovery](core-native-es3-recovery.md).
 - [x] По новому прямому поручению28октября второе Argon-ревью исключено из общей схемы. Package6c94 установлен, transaction d1b8c949; read-back56release/7CEP, state origins и installed stdio initialize/status/contract PASS. Реальное подключение ожидает открытия панели: AE после её закрытия выдал nullptr warning и не раскрывает Extensions; запрошен ручной шаг/штатный restart пустого AE. Native0, user AEP не менялся; подробности в focused Origin плане.
 - [x] 28 октября, возобновлённый scoped ремонт: собственная CEP фактически отправляет `Origin: file://`; baseline guard допускает только `null`. Новый [focused план](core-4.0.0-origin-repair.md) сохраняет измерение и порядок exact portable repair/review/install. Source и установленный пакет на этом шаге ещё не менялись.
 - [x] Origin plan-review Argon/Aiton/Высокий принят (go,5 findings разобраны); minimal source freeze4files и selected20+12+1 PASS, boundaries21/syntax/diff PASS, independent source ACCEPT. Root сверил5source/56package hashes и deterministic candidate6c94; до result-review installed0aea не обновляется. Live CEP/CORS и переносимость P1–P8 ещё не подтверждены.

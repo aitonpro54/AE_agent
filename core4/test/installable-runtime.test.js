@@ -83,6 +83,16 @@ test('installable-runtime package deterministic closure, install CAS, exact roll
   assert.throws(() => applyInstall(planInstall(args)), /runtime_state_owned_or_unknown/); fs.unlinkSync(path.join(d.stateDir, 'receiver/owner'));
   fs.unlinkSync(path.join(d.stateDir, 'origin.json')); assert.throws(() => planInstall(args), /stable_state_origin/);
 });
+test('installable-runtime full generated host registry parses as ES3 before any host evaluation', () => {
+  const pkg = buildPackage(), registry = Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString('utf8');
+  // Dev-only parser shipped with Node. Fail closed if unavailable; modern VM
+  // parsing does not establish ES3 compatibility. No host code is evaluated.
+  const parser = "const fs=require('node:fs'), acorn=require('internal/deps/acorn/acorn/dist/acorn'); const options={ecmaVersion:3,allowReserved:'never'}; const tree=acorn.parse(fs.readFileSync(0,'utf8'),options); console.log(JSON.stringify({parser:'acorn',version:acorn.version,node:process.version,options,type:tree.type}));";
+  const result = spawnSync(process.execPath, ['--expose-internals', '-e', parser], { input: registry, encoding: 'utf8', timeout: 5000, windowsHide: true });
+  assert.equal(result.error, undefined); assert.equal(result.status, 0, result.stderr || result.stdout);
+  const parsed = JSON.parse(result.stdout); assert.equal(parsed.parser, 'acorn'); assert.ok(parsed.version); assert.equal(parsed.node, process.version);
+  assert.deepEqual(parsed.options, { ecmaVersion: 3, allowReserved: 'never' }); assert.equal(parsed.type, 'Program');
+});
 test('installable-runtime exact release closure rejects extensionless shadow, empty directory and junction before package imports', () => {
   const directory = temp(), { args, plan } = install(directory), installed = applyInstall(plan), d = JSON.parse(fs.readFileSync(installed.descriptorPath));
   const sentinel = path.join(directory, 'UNTRUSTED-CODE-EXECUTED'), shadow = path.join(d.releaseDir, 'core/broker');

@@ -1,5 +1,10 @@
 # Core4 — точный Origin-контракт CEP без настройки по компьютеру
 
+Актуальный результат: Origin repair установлен, реальное CEP-подключение PASS.
+Native read обнаружил отдельный ES3 reserved-word defect и перешёл в UNKNOWN;
+повтора не было. Source ES3 fix42checks/independent ACCEPT готов, но не установлен
+поверх fence. Продолжение — [ES3/recovery план](core-native-es3-recovery.md).
+
 28 октября 2026, Asia/Yekaterinburg. Baseline
 `b42942afa92df0bcdb293ada05214f4ac13a3ed3`. Поручение: продолжить ремонт и разработку
 текущей панели с учётом постоянной [переносимости](../docs/portability.md).

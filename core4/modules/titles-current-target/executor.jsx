@@ -40,7 +40,7 @@
         for (i = 0; i < doc.text.length; i++) if (JSON.stringify(fields(doc.characterRange(i, i + 1), characterFields)) !== JSON.stringify(uniform)) fault('unsupported_mixed_style');
         var style = { character: uniform, paragraph: fields(doc, paragraphFields) };
         var resource = { projectId: p.projectId, compId: t.comp.id, layerId: t.layer.id };
-        return { target: resource, text: doc.text, protected: JSON.stringify(style), revision: JSON.stringify([resource, doc.text, style]) };
+        return { target: resource, text: doc.text, 'protected': JSON.stringify(style), revision: JSON.stringify([resource, doc.text, style]) };
     }
     function mutate(p) {
         var started = false;
@@ -49,20 +49,20 @@
             if (p.expectedRevision !== before.revision || p.expectedText !== before.text) fault('stale_target');
             if (typeof p.text !== 'string' || p.text.length === 0 || /[\r\n]/.test(p.text)) fault('unsupported_text');
             var proof = p._execution;
-            if (!proof || proof.policyId !== 'current-matching-target-after-local-confirmation-v1' || proof.baselineRevision !== before.revision || proof.baselineProtected !== before.protected || !proof.target || proof.target.projectId !== before.target.projectId || proof.target.compId !== before.target.compId || proof.target.layerId !== before.target.layerId) fault('manual_approval_binding');
+            if (!proof || proof.policyId !== 'current-matching-target-after-local-confirmation-v1' || proof.baselineRevision !== before.revision || proof.baselineProtected !== before['protected'] || !proof.target || proof.target.projectId !== before.target.projectId || proof.target.compId !== before.target.compId || proof.target.layerId !== before.target.layerId) fault('manual_approval_binding');
             var message = 'Изменить текст в текущей совпадающей цели?\nПодтверждение относится к текущему проекту, в том числе после повторного открытия.\nПроект: ' + p.projectId + '\ncompId: ' + p.compId + '\nlayerId: ' + p.layerId + '\nСтарый текст: ' + JSON.stringify(before.text) + '\nНовый текст: ' + JSON.stringify(p.text);
             if (confirm(message, true, 'AE Agent Core4 — изменение текста') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
             // Fresh resolution/CAS after modal boundary, then one synchronous setter
             // and separate local snapshot; no scheduling/modal/Node yield follows.
             before = snapshot(p);
-            if (p.expectedRevision !== before.revision || p.expectedText !== before.text || proof.baselineProtected !== before.protected) fault('stale_target');
+            if (p.expectedRevision !== before.revision || p.expectedText !== before.text || proof.baselineProtected !== before['protected']) fault('stale_target');
             var t = target(p), doc = t.prop.value; doc.text = p.text;
             started = true; t.prop.setValue(doc);
             var after = snapshot(p);
-            if (after.text !== p.text || after.protected !== before.protected) fault('readback_mismatch');
+            if (after.text !== p.text || after['protected'] !== before['protected']) fault('readback_mismatch');
             var verified = snapshot(p);
-            if (verified.text !== p.text || verified.protected !== before.protected) fault('local_transaction_readback');
-            return { outcome: 'applied', snapshot: verified, transactionReceipt: { version: 1, policyId: proof.policyId, proposalId: proof.proposalId, planDigest: proof.planDigest, taskId: proof.taskId, taskEpoch: proof.taskEpoch, stepId: proof.stepId, checkpointRef: proof.checkpointRef, checkpointDigest: proof.checkpointDigest, baselineDigest: proof.baselineDigest, baselineRevision: proof.baselineRevision, target: verified.target, desiredText: p.text, protectedFields: verified.protected } };
+            if (verified.text !== p.text || verified['protected'] !== before['protected']) fault('local_transaction_readback');
+            return { outcome: 'applied', snapshot: verified, transactionReceipt: { version: 1, policyId: proof.policyId, proposalId: proof.proposalId, planDigest: proof.planDigest, taskId: proof.taskId, taskEpoch: proof.taskEpoch, stepId: proof.stepId, checkpointRef: proof.checkpointRef, checkpointDigest: proof.checkpointDigest, baselineDigest: proof.baselineDigest, baselineRevision: proof.baselineRevision, target: verified.target, desiredText: p.text, protectedFields: verified['protected'] } };
         } catch (e) { return { outcome: started ? 'unknown' : 'rejected', code: e.coreCode || 'ae_error' }; }
     }
     return { inspect: snapshot, mutate: mutate, verify: snapshot };

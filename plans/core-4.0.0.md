@@ -1,5 +1,12 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+Последний actual результат: установлен6c94, authenticated CEP link PASS.
+Одна native read остановилась на ES3 reserved word protected154, UNKNOWN сохранён.
+Минимальный source fix и42checks/independent ACCEPT готовы, новый package947
+не установлен до корректного reconciliation. Точный статус и следующий блок —
+[native ES3/recovery](core-native-es3-recovery.md); старые pending записи ниже
+сохраняют историю, а не отменяют этот fence.
+
 Актуализация28октября: по прямому поручению пользователя схема Argon теперь
 одно review → локальная проверка/исправление замечаний → local tests/read-back.
 Обязательные второе result-review, повторы fixes и финальный Argon gate отменены
