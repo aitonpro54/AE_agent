@@ -8,7 +8,9 @@ Root остаётся единственным live-контроллером. О
 capture оригинального ответа, условная terminal disposition, descriptor lineage
 и historical ACK. Единственный initial review этого scope получен через
 существующий controller: conditional go, шесть findings локально разобраны.
-Начата только source-реализация A; Runtime UNKNOWN не изменён.
+Текущий ремонт завершён: installed package `fa9e2f454588`, actual native read PASS.
+Original UNKNOWN остаётся историческим с verified terminal disposition/noReplay.
+Продолжение — [handoff](core-panel-installation-handoff-20261028.md).
 
 ## Progress
 
@@ -22,13 +24,18 @@ capture оригинального ответа, условная terminal dispo
 - [x] Source defect исправлен и независимо reviewed ACCEPT: `'protected'` key,
  7 bracket accesses, scoped artifact/admission/catalogRevision.42selected checks,
   boundaries21/syntax/diff PASS; full generated registry проходит ES3 parser.
-- [ ] Подготовлен и реализован корректный отдельный reconciliation путь для
+- [x] Подготовлен и реализован корректный отдельный reconciliation путь для
   первоначального direct read-only UNKNOWN; нет разрешения сбрасывать state.
-- [ ] После корректного reconciliation обновлён ES3 package и получен успешный
-  native read. Current installation6c94, candidate947 не установлен.
+- [x] После корректного reconciliation обновлён ES3 package и получен успешный
+  native read. Current installation `fa9e2f454588`; candidate947 был superseded
+  без установки поверх fence.
 
 ## Decision Log
 
+- 28октября: recovery A–D и дополнительный direct-main exports fix завершены;
+  original UNKNOWN не promoted и не replayed. Новое чтение отдельным commandId
+  успешно на том же AE20108, mutation/save0. Technical proof client закрыт exit0,
+  owners отсутствуют; MCP enabled=true восстановлен. Дальнейшая работа остановлена.
 - Native callback request5 использовал свежий contractId из actual reply3.
   Request4 с опечаткой CID получил definite `contract_required` до dispatch;
   исправленный запрос — единственная native попытка, не replay UNKNOWN.
@@ -58,6 +65,11 @@ capture оригинального ответа, условная terminal dispo
 
 ## Validation
 
+- Actual installed stdio→authenticated CEP→fixed JSX inspection PASS:
+  `snapshots/core4-live-proof/VII-native-read-recovery-20261028/root-final-native-proof.json`.
+  AE26.2x49, пустой несохранённый проект; journal6 с byte-identical original prefix,
+  original begin ровно1 и новая completed inspection ровно1. Configured Codex-client
+  reconnect и desktop↔MSI round-trip остаются отдельными непроверенными пунктами.
 - Actual proof log: ignored `snapshots/core4-live-proof/IV-origin-portability-20261028/installed-proof-1793180928337/`.
   Initialize1/status2/contract3 успешны, request4 refused, request5 timeout,
   statuses6–8 фиксируют delivery/UNKNOWN. Это connection proof, не native read PASS.

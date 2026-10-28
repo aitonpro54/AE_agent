@@ -29,6 +29,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 28октября: текущий ремонт/установка панели завершены. Package `fa9e2f454588`
+  установлен,60release/7CEP+origins/lineage PASS. Fresh authenticated panel и одно
+  новое native чтение пустого проекта PASS; original UNKNOWN history/noReplay
+  сохранены. Direct-main bootstrap regression исправлен, source `36905c4`.
+  По просьбе пользователя работа остановлена; [handoff](core-panel-installation-handoff-20261028.md).
 - [x] A actual capture завершён после human click: exact host_registry_unavailable, MAC/bindings/168 protected files PASS, producerexit0, ACK/native0, originalUNKNOWN сохранён. Independent evidence audit допускает SOURCE B–D, без apply grant. Начата offline реализация disposition/sharedlease/lineage/reader/ACK; новый пакет пока не установлен.
 - [x] Source collector A: freeze03/20 scoped PASS/boundaries21/source ACCEPT; actual installed preflight включая PS5.1/CIM PASS. Receipt пока не получен: CU отказал вне bounds до ввода, capture deadline; исходный UNKNOWN не изменён, own diagnostic gates сохраняются до проверенного retirement. AE развёрнут, B–D не реализованы/не применялись.
 - [x] Отдельный native-read recovery design A–D прошёл единственное Argon/Aiton/High plan-review (go,6 findings локально разобраны). Реализация начата только с evidence-only collector A; original UNKNOWN/owner сохраняются, eval/replay/mutation0. Дальнейшие B–D условны до original receipt/proof; [актуальный план](core-native-read-recovery-design.md).
@@ -50,6 +55,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- После текущего ремонта не переходить автоматически к следующим milestones:
+  пользователь продолжит в новом чате. Own diagnostic MCP закрыт чисто;
+  maintenance enabled=false восстановлен в true. Первый шаг продолжения —
+  configured-client status/reconnect, без replay старой inspection. Read-only
+  installation proof завершён; manual mutation/adoption и P1–P8 ещё не приняты.
 - Поручение пользователя от 28 октября относится ко всему AE Agent Core: название Core4 временное, переносимость обязательна и для последующих версий. Новый блок сейчас документальный; установка, live, таймер и Argon-отправки не возобновляются. Существующие guards и отдельный scope полной release-проверки сохраняются.
 - Предыдущее требование принести готовую4.0.0 с десктопа было ошибкой порядка работы: интеграцию предстоит создать из имеющейся разработки. Новое поручение даёт source/build/install scope; прежний offline-запрет не запрещает этот отдельно порученный блок.
 - IPC выбран HTTP long-poll: установленная browser CEP-панель уже использует HTTP, а embedded Node CEP12 имеет17.7.1; внешний Node20+ не помещается туда по предположению. Новый внешний runtime использует конкретный проверенный absolute Node path/hash без PATH/npm install, без detached daemon/native C# launcher.
@@ -71,6 +81,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- Финальный actual proof и ограничения — в handoff и
+  `snapshots/core4-live-proof/VII-native-read-recovery-20261028/root-final-native-proof.json`.
+  Native success через installed MCP stdio/CEP/AE, post-read faults/pending0,
+  graceful child exit0, owners/gates0. Последний source fix:48selected PASS плюс
+  actual-main negative→positive regression; прежние96 относятся к freeze04.
+  Full release и готовность переносимости не объявляются закрытыми.
 ### Архитектурное требование переносимости — 28 октября 2026
 
 - Scope: документация и план, без runtime/source/config/installed изменений. Строгий UTF-8, относительные ссылки и `git diff --check` — PASS; подробности в основном плане. Прежние product PASS не расширяются; P1–P8 не выполнены и readiness обеих машин не заявляется.

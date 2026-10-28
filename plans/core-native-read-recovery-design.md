@@ -13,9 +13,10 @@ review выявил один P2 в identity CAS receiver owner; адресное
 получило independent ACCEPT. Окончательный freeze04: 96 selected PASS,
 package `9d43c624a778`, operator `fdae16feef25`; Root сверил все 25 source hashes,
 актуальные dependency keys и повторяемость сборки. B→C фактически применён,
-read-back PASS. Отдельный direct-main MCP запуск обнаружил bootstrap import cycle
-и закрыл receiver до native dispatch. Минимальное исправление entrypoint прошло
-direct-main regression и source ACCEPT; package `fa9e2f454588` подготовлен к update.
+read-back PASS. Дополнительный direct-main bootstrap defect исправлен и проверен.
+Итоговый package `fa9e2f454588` установлен: authenticated CEP и одно новое native
+чтение PASS. Работа остановлена по поручению пользователя; продолжение —
+[handoff](core-panel-installation-handoff-20261028.md).
 
 ## Цель и исходное состояние
 
@@ -55,9 +56,9 @@ independent audit. Иной результат не даёт основания 
   Первый package/operator superseded, actual не применялись.
 - [x] После exact parent IPC выполнена одна durable disposition и штатное
   обновление, source commit `dd6c1be`; original UNKNOWN/noReplay сохранены.
-- [ ] Свежий CEP view получил ACK сохранённого callback без eval. Direct-main
-  bootstrap import cycle должен быть исправлен до этого шага.
-- [ ] Получено успешное новое native чтение; переносимость второй машины
+- [x] Свежий CEP view получил ACK сохранённого callback без eval. Direct-main
+  bootstrap import cycle исправлен; startup без warnings/storeFault PASS.
+- [x] Получено успешное новое native чтение; переносимость второй машины
   по-прежнему проверяется отдельно.
 
 ## Этап A: evidence-only capture
@@ -188,6 +189,23 @@ Runtime state/proofs/credentials не переносятся как authority м
 
 ## Decision Log
 
+- Текущий ремонт завершён. Own startup9900 marker отдельно архивирован под
+  identity/CAS и тем же branded lease до normal update; transaction
+  `2d3d6993-fa3c-4035-8767-832b6c7604a2-own-startup-9900-retirement`.
+  Новый install transaction `71950b55-63d3-41f8-872c-2b7d76feca10`, source `36905c4`,
+  installed package `fa9e2f454588`. Original journal4 оставался неизменным.
+- Root installed stdio child2300 запустился без stderr. Fresh native view открыт
+  штатно через Window → Extensions; AE20108 не перезапускался. Fixed dispatcher
+  прошёл recover→«Подключено» и authenticated peer.connected=true; до нового
+  чтения journal оставался4events, значит ACK не создавал новую команду.
+- Единственная новая inspection `inspect-c8d064d5-88b8-4fc2-a316-ccd9a99ccea9`
+  вернула AE26.2x49, пустой несохранённый проект, items0/comps0/layers0.
+  Original command UNKNOWN/terminal disposition и prefix3 сохранены, replay0,
+  mutation/save0. Child2300 штатно закрыт exit0; owner/gates отсутствуют.
+- Maintenance `enabled=false` восстановлен в true только в собственной MCP entry.
+  Текущий Codex tool registry не перечитал Core4; actual configured-client reconnect
+  остаётся первым шагом нового чата. Installed stdio→CEP→AE proof уже получен.
+  По просьбе пользователя дальнейшие этапы здесь не запускаются.
 - Actual B→C: pure proof `95c305d5a10a`, parent Node IPC одобрен один раз после
   проверки prepared plan/descriptor bytes; child exit0. Install transaction
   `58823925-5b97-4c2e-999e-4ac52aa2db4c`, disposition transaction
@@ -252,6 +270,17 @@ Runtime state/proofs/credentials не переносятся как authority м
 
 ## Validation
 
+- Финальный actual proof: `VII-native-read-recovery-20261028/root-final-native-proof.json`,
+  `installed-read-1793199534588/`, `connected-panel-observation.json`,
+  `root-installation-readback-02.json`. Installed60release/7CEP и semantic lineage
+  PASS; журнал6events: original origin/begin/unknown/disposition + новый
+  begin/complete. SHA журнала
+  `1a07b1a379a166a7c8be1af714fa9ac7f7f328f05ad98599fcf12473bdd040b4`.
+  Post-read pending=null, storeFault/storeClosed/unknown=false, unresolved0.
+  После close новая standalone проверка growing journal PASS.
+- `mcp-preference-restored.json` и `final-runtime-state.json`: enabled=true,
+  active Core4 processes0, install/broker/receiver owners и gates отсутствуют.
+  Full release, configured Codex-client и desktop↔MSI P1–P8 этим не сертифицируются.
 - Direct-main fix freeze05: manifest SHA
   `0281b7c6b36c1b8f1618afaa8814a49dde3d530481dd876227468c8060484539`.
   48 PASS в 4 selected checks; изменённые, но не выбранные byte closures явно
@@ -265,7 +294,7 @@ Runtime state/proofs/credentials не переносятся как authority м
   independent source ACCEPT,7synthetic guards/identity PASS. Actual pure inspect
   PASS/proof `7ccc7e1f8c81583e5b0e8d149ac44e97df35d700d8e6855c2e53e9a1dc463592`;
   journal семантически проверен через current v2/lineage как module, без listener.
-  Apply этого конкретного proof ещё не выполнен.
+  Apply этого конкретного proof выполнен успешно; original journal не менялся.
 - Actual evidence: `VII-native-read-recovery-20261028/root-actual-b-inspect-01.json`,
   `actual-apply-1793198080191/`, `root-installation-readback-01.json`.
   Descriptor SHA `78447f0ed2eafd5669c855e32c4acd899d31615f964c4911d8169cb0f8e6d0d7`;

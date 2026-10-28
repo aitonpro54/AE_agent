@@ -1,5 +1,17 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Актуальный итог 28октября2026:** текущий ремонт панели и read-only установка
+завершены. Installed package `fa9e2f454588`, source `36905c4`; authenticated
+installed MCP stdio→CEP→AE native read PASS. Исходный UNKNOWN сохранён как
+история с verified terminal disposition/noReplay; новое чтение имеет новый ID.
+Own proof process закрыт exit0, owners/gates0, MCP enabled=true восстановлен.
+Configured Codex-client reconnect остаётся первым шагом нового чата.
+По поручению пользователя работа здесь остановлена; [handoff](core-panel-installation-handoff-20261028.md).
+Переносимость десктоп↔MSI остаётся обязательным незавершённым критерием готовности.
+
+Следующие вводные абзацы — **исторический статус до завершения recovery**;
+ограничения6c94/947 не описывают текущую установленную версию.
+
 Последний actual результат: установлен6c94, authenticated CEP link PASS.
 Одна native read остановилась на ES3 reserved word protected154, UNKNOWN сохранён.
 Минимальный source fix и42checks/independent ACCEPT готовы, новый package947
@@ -132,6 +144,10 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Progress
 
+- [x] 28октября завершён текущий ремонт установки/панели: packagefa9e2f454588,
+  actual native read PASS, original UNKNOWN/noReplay сохранён; source36905c4.
+  История и результат — в handoff; следующие milestones по просьбе пользователя
+  здесь не запускаются. Общая готовность Core4 и P1–P8 ещё не закрыты.
 - [x] Прочитаны start prompt, текущие AGENTS/README, адресный handoff и Git checkpoints; старый launch маршрут не возобновлялся.
 - [x] Архитектурный блок делегирован `ae_architect` (Sol 6.1/XHigh role), Codeburn evidence — `ae_scout` (Luna/High role). Runtime model/effort токенов по этим настройкам не утверждаются. Оба read-only; root — единственный writer документов и координатор.
 - [x] Подготовлены intent, architecture, mixed recovery, cost accounting, Graphify pilot и M1 acceptance. Root объединяет зависимые решения/факты; отдельного независимого writer для интеграции нет, чтобы не разойтись в contracts.
@@ -140,6 +156,10 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Decision Log
 
+- Успешный installed stdio proof не объявляется configured-client proof. Новый
+  чат начинает с Core4 MCP status/reconnect; повтор original command запрещён.
+  Постоянное правило двусторонней переносимости и схема одного Argon review
+  сохраняются. После текущего результата Root остановлен по поручению пользователя.
 - 2026-10-26: 4.0.0 имеет собственный intent и порядок работ. Незавершённый 3.3.5 cutover — сохранённый контекст, не prerequisite проектирования/реализации.
 - 2026-10-26: permanent Core не зависит от предметных пакетов. Один on-demand worker изолирует зависание; neutral admission/queue/receipts/fences остаются в Core, lifecycle плана — в optional engine.
 - 2026-10-26: independent content identities и plan closure заменяют общий hash всех функций. Registry — данные; новые модули обнаруживаются через стабильный generic MCP surface.
@@ -149,6 +169,11 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Validation
 
+- 28октября, actual `root-final-native-proof.json` в локальном каталоге
+  `snapshots/core4-live-proof/VII-native-read-recovery-20261028/`: fresh CEP/AE26.2x49,
+  empty project, one completed new inspection, mutation/save/replay0; журнал6,
+  byte-identical original prefix3 и verified historical disposition. После clean
+  close owners/gates0. Full-release/вторая машина/configured-client не приняты.
 - Чтение Git подтвердило исходные SHA и чистоту трёх деревьев; Codeburn HEAD уточнён до `55735f3`. Сравнение addressed files не меняло refs/checkout.
 - Связанность из стартового запроса не исследовалась повторно целиком. Адресно уточнены existing handlers, script transport/CEP boundary и Codeburn seams; Graphify проверен по pinned официальным исходникам.
 - Продуктовые `check:rules`/`smoke:core-runtime`, daemon/native/live tools и Codeburn **не запускались**, по явному ограничению планового этапа. Документальные проверки и review фиксируются ниже при закрытии.
