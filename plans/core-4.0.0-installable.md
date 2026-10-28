@@ -4,9 +4,15 @@
 
 ## Цель и scope
 
+С 28 октября 2026 [двусторонняя переносимость десктоп ↔ MSI](../docs/portability.md)
+входит в обязательную готовность этого среза и всего AE Agent Core, независимо
+от рабочего названия Core4. После первичной подготовки двух сред перенос
+крупных архитектурных блоков не требует повторной ручной настройки. Приёмка
+P1–P8 остаётся открытой; локальный успех установки на MSI её не заменяет.
+
 Получить установочный пакет4.0.0 из нашего Core4: настоящий stdio MCP, внешний Node, локальный аутентифицированный канал к CEP, компактная панель4.0.0, диагностика и выбранный typed manual current-target путь для текста. Continuous-incarnation API остаются закрытыми без своего настоящего provider. Версия3.3.3 не переименовывается в4.0.0; legacy daemon/adapter не импортируются.
 
-[Ручной прототип](core-4.0.0-cep-project-safety.md) и [readiness-контракт](../docs/core4-readiness-preflight.md) переиспользуются как проверенные границы, их offline evidence не выдаётся за live proof. C++ SDK, AME, Argon/desktop-пересылки и старый cutover protocol сюда не входят.
+[Ручной прототип](core-4.0.0-cep-project-safety.md) и [readiness-контракт](../docs/core4-readiness-preflight.md) переиспользуются как проверенные границы, их offline evidence не выдаётся за live proof. C++ SDK, AME и старый cutover protocol сюда не входят. Исходный блок I–III не включал Argon/desktop-пересылки; добавленный пункт4 требует двусторонней приёмки по новому контракту, а конкретные передачи и доступ к машинам выполняются только в разрешённом scope.
 
 Разрешены source/runtime/panel/installer, адресные проверки, детерминированная упаковка, stage/backup/read-back и целевая установка собственного Core4. Root — единственный installed/runtime/CEP/UI-контроллер; один writer `core4/**` и не более двух helpers. Старая установка и её данные сохраняются. Новые install-scoped role credentials создаются отдельно и не попадают в Git/package/public response. Raw executable ingress, public grant Boolean, fake production lifecycle, replay после UNKNOWN и автоматическое снятие fences запрещены.
 
@@ -17,11 +23,14 @@
 1. **Package/status/inspect.** Production composition root `runtime/stdio-entry.js`, реальный HTTP long-poll peer внешнего Node и pure CEP browser, fixed reviewed executor registry, MCP status без lifecycle и bounded typed inspection/discovery. Отдельный CEP bundle `com.codex.aeagentcore4`, видимое имя AE Agent Core4.0.0. Receiver/store во внешнем Node; browser не исполняет Core через embedded Node17. Installer публикует immutable release по manifest hashes, отдельные credentials и project MCP entry, сохраняет state origin/fences. После scoped subprocess/IPC/VM/package/installer regressions — bounded review, commit и root install/read-back.
 2. **Typed manual current-target.** Отдельный optional `titles-current-target` package/contract с target без sessionId. Private branded policy вне domain-neutral Core; engine-optional single-step path и versioned resource scope. Generic inspect→build→proposal→dry-run→run; fresh native confirm, single setter и local transaction receipt verifier. Durable preimage checkpoint покрывает точный текст/объявленный style, не весь AEP; recovery требует нового typed proposal/подтверждения. Политика выбирается trusted composition/admitted pin, не public Boolean. Default automatic epoch gates сохраняются. После scoped regressions/review обновить пакет и установленную копию.
 3. **Фактическая приёмка.** Correlated MCP handshake, exact Node/install/CEP identities, status/admission coverage, одна разрешённая read-only инспекция через installed IPC. Для mutation — актуальные resource/ownership/physical gates и native confirmation. Если running AE не позволяет загрузить новую панель без сохранения/перезапуска, не закрывать его автоматически и не объявлять offline PASS живым результатом; независимая source/packaging работа продолжается.
+4. **Двусторонняя переносимость и обновления.** Выполнить этапы [постоянного контракта](../docs/portability.md): матрица сред и installer gaps → адресная реализация/preflight/config generation → реальный десктоп→MSI→десктоп цикл → отчёт P1–P8. Повторная ручная настройка не допускается; credentials/state/authority остаются локальными, общие fences сохраняются. Критерий обязателен до объявления готовности выбранного состава, а не отложен в необязательные улучшения.
 
-Между пунктами не нужны новый чат и повторное разрешение на уже порученную разработку/установку. Каждый пакет самостоятельно запускает свой разрешённый scope. После первого status-only результата работа продолжается ко второму пункту.
+Между пунктами не нужны новый чат и повторное разрешение на уже порученную разработку/установку. Каждый пакет самостоятельно запускает свой разрешённый scope. После первого status-only результата работа продолжается ко второму пункту. Добавление пункта 4 в план не возобновляет остановленные live/UI-действия и не выдаёт доступ к другой машине.
 
 ## Progress
 
+- [x] 28 октября: переносимость закреплена как постоянное архитектурное правило AE Agent Core в AGENTS, intent и architecture; задан измеримый контракт P1–P8.
+- [ ] Реализован и подтверждён штатный перенос архитектурных блоков десктоп ↔ MSI без повторной ручной настройки; P1–P8 закрыты фактическим evidence обеих машин.
 - [x] Подтверждены user GO, исходники и чистый baseline; поиск внешнего дистрибутива прекращён.
 - [x] `ae_architect` дал bounded source design GO; `ae_scout` проверил CEP/runtime facts. Root владеет планами/commit.
 - [x] Единственный `ae_implementer` получил source ownership `core4/**` и последовательные milestones I/II.
@@ -34,6 +43,7 @@
 
 ## Decision Log
 
+- Поручение пользователя от 28 октября относится ко всему AE Agent Core: название Core4 временное, переносимость обязательна и для последующих версий. Новый блок сейчас документальный; установка, live, таймер и Argon-отправки не возобновляются. Существующие guards и отдельный scope полной release-проверки сохраняются.
 - Предыдущее требование принести готовую4.0.0 с десктопа было ошибкой порядка работы: интеграцию предстоит создать из имеющейся разработки. Новое поручение даёт source/build/install scope; прежний offline-запрет не запрещает этот отдельно порученный блок.
 - IPC выбран HTTP long-poll: установленная browser CEP-панель уже использует HTTP, а embedded Node CEP12 имеет17.7.1; внешний Node20+ не помещается туда по предположению. Новый внешний runtime использует конкретный проверенный absolute Node path/hash без PATH/npm install, без detached daemon/native C# launcher.
 - Во фреймах только fixed reviewed asset key/phase и typed payload, не source/path/function. Durable begin предшествует выдаче команды, physical latch — eval, callback receipt — POST, clear latch — correlated durable completion ACK. Browser storage не объявляется fsync-защитой. Timeout/reload/loss сохраняют UNKNOWN/no-replay.
@@ -53,6 +63,10 @@
 - Private zero-dispatch recovery V2 прошёл8/8 и independent review ACCEPT после lstat/dangling-ledger repair; source commit `1cd50b5`. Root применил ровно reviewed CLI из distribution после actual inspect/proof CAS. Transaction `8dec8220-b9f3-465e-acce-0dd2bc733051-zero-dispatch-retirement`; независимый read-back подтвердил byte-identical archived markers, неизменные origins/journal/store identity, отсутствие ledger/gates/owner markers. Никакие command outcomes/fences/grants не менялись. [Focused record](core-4.0.0-zero-dispatch-recovery.md).
 
 ## Validation
+
+### Архитектурное требование переносимости — 28 октября 2026
+
+- Scope: документация и план, без runtime/source/config/installed изменений. Строгий UTF-8, относительные ссылки и `git diff --check` — PASS; подробности в основном плане. Прежние product PASS не расширяются; P1–P8 не выполнены и readiness обеих машин не заявляется.
 
 ### I — source/package, до actual установки
 

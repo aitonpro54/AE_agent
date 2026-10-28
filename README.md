@@ -1,5 +1,10 @@
 # AE Agent Core
 
+Постоянное архитектурное требование проекта — [переносимость десктоп ↔ MSI](docs/portability.md)
+без повторной ручной настройки после первичной подготовки сред. Оно обязательно
+для текущего среза Core4 и последующих версий; реализация и приёмка в обе стороны
+пока не завершены.
+
 Ветка `codex/release-4.0.0` содержит изолированный контур [Core4](core4/README.md) с собственным package, модульными manifests и проверками. Offline [M2a: optional CEP bridge](plans/core-4.0.0-m2a-bridge.md) завершён: actual TCP/VM, durable completion и original dispatch provenance; [основной план](plans/core-4.0.0.md) сохраняет M1 и последующие этапы. Команды нового контура выполняются через `npm.cmd --prefix core4`; обычная правка выбирает проверки через `node core4/tools/validate-diff.js <changed-path> --run`. Установленный MCP/CEP на эту ветку не переключён; production connect без настоящего lifecycle/grant producer остаётся unavailable.
 
 Ниже сохранено описание проверенной исходной базы 3.3.5. Её runtime manifest не включает рабочие пакеты Core4.
