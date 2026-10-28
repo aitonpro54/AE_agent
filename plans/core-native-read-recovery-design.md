@@ -12,7 +12,10 @@ PASS; Root независимо сверил исходники и детерм�
 review выявил один P2 в identity CAS receiver owner; адресное исправление
 получило independent ACCEPT. Окончательный freeze04: 96 selected PASS,
 package `9d43c624a778`, operator `fdae16feef25`; Root сверил все 25 source hashes,
-актуальные dependency keys и повторяемость сборки. Actual B–D пока0.
+актуальные dependency keys и повторяемость сборки. B→C фактически применён,
+read-back PASS. Отдельный direct-main MCP запуск обнаружил bootstrap import cycle
+и закрыл receiver до native dispatch. Минимальное исправление entrypoint прошло
+direct-main regression и source ACCEPT; package `fa9e2f454588` подготовлен к update.
 
 ## Цель и исходное состояние
 
@@ -50,8 +53,10 @@ independent audit. Иной результат не даёт основания 
 - [x] P2 owner identity CAS закрыт; итоговый source freeze04: 96 PASS,
   package `9d43c624a778`/operator `fdae16feef25`, independent source ACCEPT.
   Первый package/operator superseded, actual не применялись.
-- [ ] После точной технической авторизации выполнена одна durable disposition,
-  затем штатное обновление и ACK сохранённого callback без eval.
+- [x] После exact parent IPC выполнена одна durable disposition и штатное
+  обновление, source commit `dd6c1be`; original UNKNOWN/noReplay сохранены.
+- [ ] Свежий CEP view получил ACK сохранённого callback без eval. Direct-main
+  bootstrap import cycle должен быть исправлен до этого шага.
 - [ ] Получено успешное новое native чтение; переносимость второй машины
   по-прежнему проверяется отдельно.
 
@@ -183,6 +188,22 @@ Runtime state/proofs/credentials не переносятся как authority м
 
 ## Decision Log
 
+- Actual B→C: pure proof `95c305d5a10a`, parent Node IPC одобрен один раз после
+  проверки prepared plan/descriptor bytes; child exit0. Install transaction
+  `58823925-5b97-4c2e-999e-4ac52aa2db4c`, disposition transaction
+  `40fbd293-9aae-4bab-978f-06730c01ca0d-native-read-disposition`.
+  Read-back60release/7CEP, descriptor v2, unchanged origins, rotated separate
+  role keys и original journal prefix PASS; исходный owner архивирован с identity
+  CAS. Исторический UNKNOWN не promoted, новая AE-команда не отправлялась.
+- Первый direct-main installed MCP child9900: initialize/status/contract PASS,
+  но circular imports захватили undefined bootstrap exports и дали storeFault.
+  Native requests0, journal остался ровно4events/hash `7dd94910eb27`.
+  Root сохранил identity своего нового startup marker до close, child штатно
+  закрыт exit0 без transport fault. Broker gates удалены штатно, новый receiver
+  marker сохранён. Source fix — публикация exports перед вызовом main start;
+  отдельный actual-main regression должен покрыть этот путь. Только own marker
+  может быть отдельно архивирован по fixed zero-dispatch provenance/identity;
+  generic reset/UNKNOWN cleanup/повтор B не допускаются.
 - Локальный source review первого B–D freeze: P1 нет; один P2 — пустой receiver
   marker можно заменить другим пустым marker во время ожидания IPC. Добавляется
   identity observation в stable B proof и held read-only handle с повторным CAS
@@ -231,6 +252,27 @@ Runtime state/proofs/credentials не переносятся как authority м
 
 ## Validation
 
+- Direct-main fix freeze05: manifest SHA
+  `0281b7c6b36c1b8f1618afaa8814a49dde3d530481dd876227468c8060484539`.
+  48 PASS в 4 selected checks; изменённые, но не выбранные byte closures явно
+  deferred, прежние96 не объявляются PASS нового package. Negative fixture
+  воспроизвёл circular warnings/storeFault; positive actual-main fixture с
+  test-only ephemeral port подтвердил empty stderr и чистое закрытие owner.
+  Root сверил26 source hashes/current4keys/deterministic package60 `fa9e2f454588`;
+  operator66 `d1c5314eb4ea`, entry SHA `213e711c6c8f`.
+- Private own-startup helper `retire-own-startup-and-update.js`, SHA
+  `f2934e05ca502bef29b9e4738d00fb027f6331e10e1fbb985008046071a07b04`:
+  independent source ACCEPT,7synthetic guards/identity PASS. Actual pure inspect
+  PASS/proof `7ccc7e1f8c81583e5b0e8d149ac44e97df35d700d8e6855c2e53e9a1dc463592`;
+  journal семантически проверен через current v2/lineage как module, без listener.
+  Apply этого конкретного proof ещё не выполнен.
+- Actual evidence: `VII-native-read-recovery-20261028/root-actual-b-inspect-01.json`,
+  `actual-apply-1793198080191/`, `root-installation-readback-01.json`.
+  Descriptor SHA `78447f0ed2eafd5669c855e32c4acd899d31615f964c4911d8169cb0f8e6d0d7`;
+  original3events byte-identical, event4 — terminal disposition.
+  Direct-main child evidence: `installed-read-1793198169221/`,
+  `startup-fault-owner-before-close.json`, `startup-fault-after-close.json`.
+  Это actual CLI startup finding; scoped offline PASS не выдаётся за native PASS.
 - Окончательный freeze после P2: `result-manifest-final-04.json` в том же
   disposition evidence-каталоге, SHA
   `c51fa0dfc47551beb76ac934d498b7f91aa71e3dc244f188ed0f2cabefb1997d`.

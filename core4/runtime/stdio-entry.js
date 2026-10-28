@@ -134,6 +134,9 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   } catch (e) { if (peer) await peer.close(); if (broker) await broker.close(); throw e; }
   finally { fs.closeSync(startupGate); fs.unlinkSync(installGate); }
 }
+// Direct-main start imports the historical reader synchronously. Publish these
+// builtin verifiers first so its installation.js import sees initialized exports.
+module.exports = { start, verifyInstallation, verifyRelease, verifyCep, PRODUCTION_TIMING };
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.length !== 2 || args[0] !== '--installation') { process.stderr.write('Explicit --installation ABSOLUTE_DESCRIPTOR required.\n'); process.exitCode = 2; }
@@ -141,4 +144,3 @@ if (require.main === module) {
     for (const signal of ['SIGTERM', 'SIGINT']) process.once(signal, () => runtime.close().then(() => process.exit(0)));
   }).catch(e => { process.stderr.write((e.code || 'runtime_start_failed') + '\n'); process.exitCode = 1; });
 }
-module.exports = { start, verifyInstallation, verifyRelease, verifyCep, PRODUCTION_TIMING };

@@ -1,6 +1,13 @@
 {
   "owners": [
     {
+      "prefix": "core4/test/fixtures/stdio-main-ephemeral.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
       "prefix": "core4/integrations/cep/completion-store.js",
       "owner": "recovery-integration",
       "checks": [
@@ -1206,7 +1213,8 @@
       "cep/",
       "worker.js",
       "config/catalog.json",
-      "config/admissions/"
+      "config/admissions/",
+      "test/fixtures/stdio-main-ephemeral.js"
     ]
   },
   "checkCommands": {
