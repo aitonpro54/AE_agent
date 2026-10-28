@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "reviewId": "20261028-origin-plan-04",
+  "stageId": "cep-origin",
+  "reviewType": "plan",
+  "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "recipient": {
+    "service": "Gemini / Argon",
+    "name": "Aiton Pro",
+    "email": "aitonpro54@gmail.com"
+  },
+  "mode": "4 Argon",
+  "effort": {
+    "selected": "Высокий",
+    "description": "Глубокий",
+    "available": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true
+  },
+  "method": "file-upload",
+  "payload": {
+    "name": "review-bundle.md",
+    "bytes": 49552,
+    "sha256": "947a04842b59dbbf385e6dedece298e3899ae6126771d3c36d7fd619b1501c1a"
+  },
+  "requestSha256": "c14069a89c7040a782c82665a2f9a72c9156defcd799cfb2e1dd189e50451f00",
+  "externalPlanSha256": "181aa767b0f74f8354c24522d09486a5ae70897007d4c1e7df2e40759e2dc5ef",
+  "baseCommit": "b42942afa92df0bcdb293ada05214f4ac13a3ed3",
+  "attempt": 1,
+  "status": "received",
+  "preparedAt": "2026-10-28T07:46:05.518Z",
+  "submittedAt": "2026-10-28T07:46:28.089Z",
+  "receivedAt": "2026-10-28T07:54:15.420Z",
+  "receiptUrl": "https://gemini.google.com/app/e4caead3c5324acc",
+  "authorization": "standing Core4 reviews; trusted user response 01a18172-7162-7282-afba-5d2c63f53dbb: используй aiton, он открыт; approval.json local",
+  "otherFilesTransmitted": 0,
+  "prompt": "Прочитай целиком единственный приложенный review-bundle.md и выполни plan-review по встроенному запросу. Не запускай код или команды. Ответ дай по-русски: binding, один verdict, findings со стабильными ID и приоритетами, перечень прочитанного и пропуски/ограничения. Привязка: reviewId=20261028-origin-plan-04; stage=cep-origin; type=plan; base=b42942afa92df0bcdb293ada05214f4ac13a3ed3; requestSHA256=c14069a89c7040a782c82665a2f9a72c9156defcd799cfb2e1dd189e50451f00; externalPlanSHA256=181aa767b0f74f8354c24522d09486a5ae70897007d4c1e7df2e40759e2dc5ef. Файл: 49552 байта, SHA256=947a04842b59dbbf385e6dedece298e3899ae6126771d3c36d7fd619b1501c1a. Если проверка digest или полного чтения недоступна, укажи это явно. Ревью не разрешает реализацию или runtime-действия.",
+  "uploadConfirmedAt": "2026-10-28T07:46:21.765Z",
+  "sendInvokedAt": "2026-10-28T07:46:28.089Z",
+  "submissionConfirmedAt": "2026-10-28T07:46:52.766Z",
+  "receipt": "UI: review-bundle.md + submitted user prompt + stop-generation button",
+  "responseSha256": "df165fdf3be48ca7c1efd5c2bc56b94dbe5dedcbf1405895ee26f19658d1eeeb",
+  "responseBytes": 32102
+}

@@ -6,6 +6,7 @@ const path = require('node:path');
 const os = require('node:os');
 const vm = require('node:vm');
 const http = require('node:http');
+const { webcrypto } = require('node:crypto');
 const { spawn, spawnSync } = require('node:child_process');
 const { PassThrough } = require('node:stream');
 const { once } = require('node:events');
@@ -25,10 +26,21 @@ function install(directory, pkg = buildPackage()) {
 }
 const installation = { packageHash: '1'.repeat(64), installationId: 'test-installation', panelToken: '2'.repeat(64), controlToken: '3'.repeat(64) };
 const asset = { assetKey: 'project-inspection-v1', executorHash: hash(fs.readFileSync(path.join(root, 'modules/project-inspection/executor.jsx'))) };
-async function client(port, config = installation) {
+function rawRequest(port, route, body, { origin = 'null', headers = {}, method = 'POST', rawHeaders } = {}) {
+  // Delete missing headers explicitly: Node rejects an undefined header value client-side.
+  const values = { Origin: origin, 'Content-Type': 'application/json', ...headers };
+  for (const key of Object.keys(values)) if (values[key] === undefined) delete values[key];
+  return new Promise((resolve, reject) => {
+    const req = http.request('http://127.0.0.1:' + port + route, { method, agent: false, headers: rawHeaders || values }, res => {
+      let data = ''; res.on('data', b => data += b);
+      res.on('end', () => { try { resolve({ status: res.statusCode, headers: res.headers, value: data ? JSON.parse(data) : null }); } catch (e) { reject(e); } });
+    });
+    req.on('error', reject); req.end(body === undefined ? undefined : canonical(body));
+  });
+}
+async function client(port, config = installation, origin = 'null') {
   let sequence = 0;
-  const base = 'http://127.0.0.1:' + port;
-  async function raw(route, body, extra = {}) { return new Promise((resolve, reject) => { const req = http.request(base + route, { method: 'POST', headers: { Origin: 'null', 'Content-Type': 'application/json', ...extra } }, res => { let data = ''; res.on('data', b => data += b); res.on('end', () => resolve({ status: res.statusCode, value: JSON.parse(data) })); }); req.on('error', reject); req.end(canonical(body)); }); }
+  function raw(route, body, extra = {}, options = {}) { return rawRequest(port, route, body, { origin, headers: extra, ...options }); }
   const challenge = (await raw('/challenge', { role: 'panel' })).value, peerId = 'test-peer';
   const link = await raw('/link', { challenge, peerId, proof: mac({ challenge, peerId }, config.panelToken) });
   assert.equal(link.status, 200); assert.equal(link.value.mac, mac(link.value.body, config.panelToken));
@@ -170,6 +182,140 @@ test('installable-runtime actual HTTP auth role, origin, challenge, epoch, repla
   const big = await c.raw('/challenge', { role: 'panel', padding: 'x'.repeat(300000) }); assert.equal(big.status, 413);
   assert.ok(!canonical(peer.status()).includes(installation.panelToken)); assert.ok(!canonical(peer.status()).includes(installation.controlToken));
 });
+function cors(response, origin) {
+  assert.equal(response.headers['access-control-allow-origin'], origin);
+  assert.equal(response.headers.vary, origin === undefined ? undefined : 'Origin');
+  assert.equal(response.headers['access-control-allow-credentials'], undefined);
+}
+test('installable-runtime exact CEP Origin ingress and CORS success/error/OPTIONS matrix at Node HTTP boundary', async t => {
+  const peer = createHttpPeer({ installation, directory: temp(), asset, port: 0, pollTimeout: 5 }); await peer.listen(); t.after(() => peer.close());
+  const port = peer.status().port;
+  for (const origin of ['null', 'file://']) {
+    const challenge = await rawRequest(port, '/challenge', { role: 'panel' }, { origin });
+    assert.equal(challenge.status, 200); assert.equal(challenge.value.origin, origin); cors(challenge, origin);
+    const error = await rawRequest(port, '/challenge', { role: 'other' }, { origin });
+    assert.equal(error.value.error, 'role_required'); cors(error, origin);
+    const preflight = await rawRequest(port, '/challenge', undefined, { origin, method: 'OPTIONS' });
+    assert.equal(preflight.status, 204); assert.equal(preflight.value, null); cors(preflight, origin);
+    assert.equal(preflight.headers['access-control-allow-methods'], 'POST'); assert.equal(preflight.headers['access-control-allow-headers'], 'Content-Type');
+    for (const host of ['localhost:' + port, '127.0.0.1:' + (port === 65535 ? port - 1 : port + 1), '[::1]:' + port]) {
+      for (const method of ['POST', 'OPTIONS']) {
+        const response = await rawRequest(port, '/challenge', { role: 'panel' }, { origin, method, headers: { Host: host } });
+        assert.equal(response.value.error, 'loopback_host_required'); cors(response, undefined);
+      }
+    }
+  }
+  const invalid = [undefined, '', 'NULL', 'FILE://', 'File://', 'file:', 'file:/', 'file:///', 'file://localhost', 'file:///C:/panel.html', 'null, null', 'null, file://', 'null file://', 'n ull', 'file: //', 'http://127.0.0.1:' + port, 'http://localhost:' + port, 'https://example.test'];
+  for (const origin of invalid) for (const method of ['POST', 'OPTIONS']) {
+    const response = await rawRequest(port, '/challenge', { role: 'panel' }, { headers: { Origin: origin }, method });
+    assert.equal(response.value.error, 'cep_origin_required', String(origin)); cors(response, undefined);
+  }
+  for (const values of [['null', 'null'], ['file://', 'file://'], ['null', 'file://'], ['file://', 'null']]) for (const method of ['POST', 'OPTIONS']) {
+    const response = await rawRequest(port, '/challenge', { role: 'panel' }, { method, rawHeaders: ['Host', '127.0.0.1:' + port, 'Origin', values[0], 'oRiGiN', values[1], 'Content-Type', 'application/json'] });
+    assert.equal(response.value.error, 'cep_origin_required'); cors(response, undefined);
+  }
+  // HTTP OWS is stripped by Node's parser before application validation. This is
+  // a parser-layer observation, not a claim that original wire bytes are exact.
+  for (const origin of ['null', 'file://']) {
+    const response = await rawRequest(port, '/challenge', { role: 'panel' }, { origin: ' \t' + origin + '\t ' });
+    assert.equal(response.status, 200); assert.equal(response.value.origin, origin); cors(response, origin);
+  }
+});
+for (const origin of ['null', 'file://']) test('installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: ' + origin, async t => {
+  const directory = temp(), peer = createHttpPeer({ installation, directory, asset, port: 0, pollTimeout: 5 }); await peer.listen(); t.after(() => peer.close());
+  const port = peer.status().port, foreign = origin === 'null' ? 'file://' : 'null';
+  const raw = (route, body, selected = origin) => rawRequest(port, route, body, { origin: selected });
+  const challenge = async (role = 'panel') => (await raw('/challenge', { role })).value;
+  const link = (value, selected = origin, secret = installation.panelToken, peerId = 'test-peer') => raw('/link', { challenge: value, peerId, proof: mac({ challenge: value, peerId }, secret) }, selected);
+  const crossed = await challenge(); assert.equal((await link(crossed, foreign)).value.error, 'peer_auth');
+  assert.equal((await link(crossed)).value.error, 'peer_auth', 'foreign link burns the one-time challenge');
+  const tampered = await challenge(); tampered.origin = foreign;
+  assert.equal((await link(tampered, foreign)).value.error, 'peer_auth', 'even a recomputed valid MAC cannot replace the stored challenge');
+  const wrongPin = await challenge(); wrongPin.packageHash = 'a'.repeat(64);
+  assert.equal((await link(wrongPin)).value.error, 'peer_auth', 'stored pins remain bound even with a valid MAC');
+  assert.equal((await link(await challenge(), origin, installation.controlToken)).value.error, 'peer_auth');
+  const control = await challenge('control');
+  assert.equal((await link(control, foreign, installation.controlToken)).value.error, 'peer_auth', 'origin is checked before role');
+  assert.equal((await link(await challenge('control'), origin, installation.controlToken)).value.error, 'panel_role_required');
+  const expired = await challenge(), now = Date.now;
+  try { Date.now = () => now() + 10001; assert.equal((await link(expired)).value.error, 'peer_auth'); } finally { Date.now = now; }
+  const c = await client(port, installation, origin); assert.equal(c.challenge.origin, origin);
+  const other = await challenge(); assert.equal((await link(other, foreign, installation.panelToken, 'other-peer')).value.error, 'peer_auth', 'origin is checked before duplicate peer');
+  assert.equal(peer.status().peer.peerId, c.peerId);
+  assert.equal((await link(await challenge(), origin, installation.panelToken, 'other-peer')).value.error, 'duplicate_peer');
+  assert.equal((await link(c.challenge)).value.error, 'peer_auth', 'successful link is also one-time');
+  const envelope = c.envelope('/poll', {});
+  const rejected = await raw('/poll', envelope, foreign); assert.equal(rejected.value.error, 'peer_auth_or_replay'); cors(rejected, foreign);
+  const accepted = await raw('/poll', envelope); assert.equal(accepted.status, 200); cors(accepted, origin); assert.equal(accepted.value.body.sequence, 1);
+  assert.equal((await raw('/poll', envelope)).value.error, 'peer_auth_or_replay');
+  for (const patch of [{ epoch: 'old' }, { peerId: 'other' }, { sequence: 100 }, { method: 'GET' }, { path: '/complete' }]) {
+    const bad = c.envelope('/poll', {}, 2); Object.assign(bad.body, patch); bad.mac = mac(bad.body, installation.panelToken);
+    assert.equal((await raw('/poll', bad)).value.error, 'peer_auth_or_replay');
+  }
+  const wrongMac = c.envelope('/poll', {}, 2); wrongMac.mac = mac(wrongMac.body, installation.controlToken);
+  assert.equal((await raw('/poll', wrongMac)).value.error, 'peer_auth_or_replay');
+  const extraOrigin = c.envelope('/poll', {}, 2); extraOrigin.body.origin = origin; extraOrigin.mac = mac(extraOrigin.body, installation.panelToken);
+  assert.equal((await raw('/poll', extraOrigin)).value.error, 'unexpected_field', 'signed request schema is unchanged');
+  const fresh = c.envelope('/poll', {}, 2);
+  try {
+    Date.now = () => now() + 45001;
+    assert.equal((await raw('/poll', fresh, foreign)).value.error, 'peer_auth_or_replay');
+    assert.equal(peer.status().peer.connected, false, 'foreign request did not refresh lastSeen');
+    assert.equal((await raw('/poll', fresh)).status, 200); assert.equal(peer.status().peer.connected, true);
+  } finally { Date.now = now; }
+  let settled = false; const inspection = peer.inspect({}); inspection.then(() => { settled = true; }, () => { settled = true; });
+  const nextPoll = c.envelope('/poll', {}, 3), beforeDelivery = fs.readFileSync(path.join(directory, 'completions.ndjson'));
+  assert.equal(peer.status().pending.delivered, false);
+  assert.equal((await raw('/poll', nextPoll, foreign)).value.error, 'peer_auth_or_replay');
+  assert.equal(peer.status().pending.delivered, false); assert.ok(fs.readFileSync(path.join(directory, 'completions.ndjson')).equals(beforeDelivery));
+  const frame = (await raw('/poll', nextPoll)).value.body.payload.command;
+  const receipt = { commandId: frame.commandId, originalBinding: frame.originalBinding, pins: frame.pins, result: { observationVersion: 1, target: { projectId: null, compId: null }, project: { name: 'Untitled', numItems: 0, saved: false }, compositions: [], layers: [], truncated: false, aeVersion: '26.0-fixture' } };
+  const completion = c.envelope('/complete', receipt, 4), before = fs.readFileSync(path.join(directory, 'completions.ndjson'));
+  const status = peer.status(); const denied = await raw('/complete', completion, foreign);
+  assert.equal(denied.value.error, 'peer_auth_or_replay'); assert.equal(denied.value.body, undefined); assert.equal(settled, false);
+  assert.deepEqual(peer.status().pending, status.pending); assert.ok(fs.readFileSync(path.join(directory, 'completions.ndjson')).equals(before));
+  const ack = await raw('/complete', completion); assert.equal(ack.status, 200); cors(ack, origin);
+  assert.equal(ack.value.mac, mac(ack.value.body, installation.panelToken)); assert.equal(ack.value.body.payload.ack.commandId, frame.commandId);
+  assert.equal((await inspection).observation.project.name, 'Untitled'); assert.equal(peer.status().pending, null);
+  const completed = fs.readFileSync(path.join(directory, 'completions.ndjson'));
+  assert.equal(completed.toString().trim().split('\n').map(JSON.parse).filter(e => e.type === 'complete').length, 1);
+  assert.equal((await raw('/complete', completion)).value.error, 'peer_auth_or_replay');
+  assert.ok(fs.readFileSync(path.join(directory, 'completions.ndjson')).equals(completed), 'same signed completion cannot ACK twice');
+});
+test('installable-runtime panel VM/WebCrypto shim validates challenge Origin before signing or link and signs full original challenge', async () => {
+  const source = fs.readFileSync(path.join(root, 'cep/js/panel.js'), 'utf8');
+  for (const origin of ['null', 'file://', undefined, '', 'NULL', 'FILE://', 'file:///', 'https://example.test']) {
+    const accepted = origin === 'null' || origin === 'file://', calls = [], signed = [];
+    const challenge = { epoch: 'shim-epoch', nonce: 'shim-nonce', role: 'panel', ...installation, executorHash: asset.executorHash, controllerId: 'shim-controller' };
+    delete challenge.panelToken; delete challenge.controlToken; if (origin !== undefined) challenge.origin = origin;
+    const cfg = { ...installation, executorHash: asset.executorHash, assetKey: asset.assetKey }, elements = { status: {}, detail: {} };
+    let finish; const finished = new Promise(resolve => { finish = resolve; });
+    elements.connect = { addEventListener() {}, set disabled(value) { if (!value) finish(); } };
+    let recovered = 0;
+    const cryptoShim = { getRandomValues: value => webcrypto.getRandomValues(value), subtle: { importKey: (...args) => webcrypto.subtle.importKey(...args), sign: (...args) => { signed.push(Buffer.from(args[2]).toString()); return webcrypto.subtle.sign(...args); } } };
+    const context = vm.createContext({ crypto: cryptoShim, TextEncoder, Uint8Array, localStorage: memoryStorage(), document: { getElementById: id => elements[id] }, __adobe_cep__: { evalScript() { throw new Error('no native dispatch in shim'); } },
+      Core4Installation: cfg,
+      async fetch(url, options) {
+        const route = new URL(url).pathname, value = JSON.parse(options.body); calls.push({ route, options, value });
+        assert.deepEqual(Object.keys(options.headers), ['Content-Type']); assert.equal(options.credentials, 'omit'); assert.equal(options.cache, 'no-store');
+        if (route === '/challenge') return { ok: true, json: async () => challenge };
+        if (route === '/link') {
+          assert.equal(canonical(value.challenge), canonical(challenge)); assert.equal(value.proof, mac({ challenge, peerId: value.peerId }, installation.panelToken));
+          const body = { peerId: value.peerId, epoch: challenge.epoch, pins: {} }; return { ok: true, json: async () => ({ body, mac: mac(body, installation.panelToken) }) };
+        }
+        assert.equal(route, '/poll'); throw new Error('shim_stop_after_poll');
+      }
+    });
+    vm.runInContext('window=this;', context);
+    vm.runInContext(fs.readFileSync(path.join(root, 'cep/js/poll-dispatcher.js'), 'utf8'), context);
+    context.Core4PollDispatcher.createDispatcher = () => ({ recover: async () => { recovered++; } });
+    vm.runInContext(source, context); await finished;
+    assert.deepEqual(calls.map(c => c.route), accepted ? ['/challenge', '/link', '/poll'] : ['/challenge'], elements.status.textContent);
+    assert.equal(recovered, accepted ? 1 : 0);
+    if (accepted) { assert.equal(signed[0], canonical({ challenge, peerId: calls[1].value.peerId })); assert.match(elements.status.textContent, /shim_stop_after_poll/); }
+    else { assert.equal(signed.length, 0); assert.equal(elements.status.textContent, 'Остановлено: installation_binding'); }
+  }
+});
 test('installable-runtime real HTTP and compiled registry VM: begin before evaluate, receipt before POST, durable ACK then latch clear', async t => {
   const directory = temp(), pkg = buildPackage(), peer = createHttpPeer({ installation, directory, asset, port: 0, pollTimeout: 5 }); await peer.listen(); t.after(() => peer.close());
   const c = await client(peer.status().port), storage = memoryStorage(); let physicalCalls = 0;
@@ -185,9 +331,9 @@ test('installable-runtime real HTTP and compiled registry VM: begin before evalu
   const missingAck = dispatcher(pkg, { installationId: 'wrong-ack', assetKey: asset.assetKey, pins: c.pins, storage: memoryStorage(), csInterface: host, complete: async () => ({ ack: { commandId: 'wrong' } }) });
   await assert.rejects(missingAck.dispatch(frame), /completion_ack_mismatch/); assert.ok(missingAck.pending().result);
 });
-test('installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or restart', async t => {
+for (const origin of ['null', 'file://']) test('installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: ' + origin, async t => {
   const directory = temp(), pkg = buildPackage(), peer = createHttpPeer({ installation, directory, asset, port: 0, timeout: 40 }); await peer.listen();
-  const c = await client(peer.status().port), storage = memoryStorage(); let physicalCalls = 0;
+  const c = await client(peer.status().port, installation, origin), storage = memoryStorage(); let physicalCalls = 0;
   const options = { installationId: installation.installationId, assetKey: asset.assetKey, pins: c.pins, storage, csInterface: { evalScript() { physicalCalls++; } }, complete: () => { throw new Error('unexpected'); } };
   const dispatch = dispatcher(pkg, options);
   const inspection = peer.inspect({}); const rejected = assert.rejects(inspection, /host_callback_timeout/);
@@ -197,6 +343,12 @@ test('installable-runtime callback loss fences durable store and persisted brows
   assert.equal(peer.status().unknown, true); await peer.close();
   const reopened = createHttpPeer({ installation, directory, asset, port: 0 }); await reopened.listen(); t.after(() => reopened.close());
   assert.equal(reopened.status().storeClosed, true); assert.throws(() => reopened.inspect({}), /receiver_lane_closed/);
+  const reconnected = await client(reopened.status().port, installation, origin === 'null' ? 'file://' : 'null');
+  const before = fs.readFileSync(path.join(directory, 'completions.ndjson'));
+  const receipt = { commandId: frame.commandId, originalBinding: frame.originalBinding, pins: frame.pins, result: { readFailureVersion: 1, outcome: 'rejected', code: 'inspection_failed' } };
+  assert.equal((await reconnected.raw('/complete', reconnected.envelope('/complete', receipt))).value.error, 'unknown_no_promotion');
+  assert.ok(fs.readFileSync(path.join(directory, 'completions.ndjson')).equals(before)); assert.equal(physicalCalls, 1);
+  assert.throws(() => reopened.inspect({}), /receiver_lane_closed/);
 });
 test('installable-runtime missing fixed host registry returns known read rejection after durable begin, no raw fallback', async t => {
   const directory = temp(), pkg = buildPackage(), peer = createHttpPeer({ installation, directory, asset, port: 0 }); await peer.listen(); t.after(() => peer.close());

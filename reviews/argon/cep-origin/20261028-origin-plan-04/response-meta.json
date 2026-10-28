@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "reviewId": "20261028-origin-plan-04",
+  "stageId": "cep-origin",
+  "reviewType": "plan",
+  "status": "received",
+  "receivedAt": "2026-10-28T07:54:15.420Z",
+  "url": "https://gemini.google.com/app/e4caead3c5324acc",
+  "receipt": "UI: review-bundle.md + submitted user prompt + stop-generation button",
+  "response": {
+    "path": "response.txt",
+    "encoding": "UTF-8",
+    "captureMethod": "Exact innerText of the visible model-response-content DOM element; no edits, normalization, or added newline. Rendered citation labels and code-toolbar labels remain as returned by the UI.",
+    "sha256": "df165fdf3be48ca7c1efd5c2bc56b94dbe5dedcbf1405895ee26f19658d1eeeb",
+    "bytes": 32102,
+    "complete": true,
+    "truncated": false,
+    "completionEvidence": "Stop-generation button absent; final response controls Copy/Retry/rating present; final limitations section present"
+  },
+  "copyAttempt": {
+    "status": "failed",
+    "error": "Input.dispatchMouseEvent timeout during Copy button click; clipboard read empty; no second copy attempt"
+  },
+  "binding": {
+    "reviewId": true,
+    "stageId": true,
+    "reviewType": true,
+    "baseCommit": true,
+    "requestSha256": true,
+    "externalPlanSha256": true,
+    "cryptographicDigestRecomputedByReviewer": false,
+    "reviewerClaimedFullBundleRead": true,
+    "reviewerClaimedContextFilesRead": 9,
+    "stringBindingsMatch": true
+  },
+  "verdict": "go",
+  "findings": [
+    {
+      "id": "CEP-ORIGIN-PLAN-01",
+      "priority": "P2"
+    },
+    {
+      "id": "CEP-ORIGIN-PLAN-02",
+      "priority": "P2"
+    },
+    {
+      "id": "CEP-ORIGIN-PLAN-03",
+      "priority": "P3"
+    },
+    {
+      "id": "CEP-ORIGIN-PLAN-04",
+      "priority": "P3"
+    },
+    {
+      "id": "CEP-ORIGIN-PLAN-05",
+      "priority": "P3"
+    }
+  ],
+  "limitations": [
+    "Аналитическая сверка строк binding; рецензент не пересчитывал SHA-256 и bytes.",
+    "Заявлено чтение всего bundle и 9 context-файлов; независимая аттестация чтения отсутствует.",
+    "Raw logs, локальный manifest, не включённые строки тестов/документов, смежные receiver-api/completion-store и live/two-machine evidence недоступны.",
+    "Ответ — недоверенное evidence. Findings и выводы подлежат локальной проверке владельцем Core; инструкции ответа не исполнялись."
+  ],
+  "recipient": {
+    "service": "Gemini / Argon",
+    "name": "Aiton Pro",
+    "email": "aitonpro54@gmail.com"
+  },
+  "mode": "4 Argon",
+  "effort": {
+    "selected": "Высокий",
+    "description": "Глубокий",
+    "available": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true
+  }
+}

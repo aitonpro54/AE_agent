@@ -1,0 +1,310 @@
+Подтверждение привязки (Binding) и полноты чтения
+
+Review ID: 20261028-origin-plan-04 (совпадает в запросе пользователя, заголовке review-bundle.md, встроенном request.md и context/bindings.json).   
+MD
+
+Stage ID: cep-origin (совпадает во всех источниках привязки).   
+MD
+
+Review Type: plan (совпадает во всех источниках привязки).   
+MD
+
+Base / Reviewed Commit: b42942afa92df0bcdb293ada05214f4ac13a3ed3 (совпадает в context/bindings.json, request.md, context/plan.md, context/source-metadata.json и выдержках тестов/документации).   
+MD
+
+External Plan: context/plan.md, SHA-256 = 181aa767b0f74f8354c24522d09486a5ae70897007d4c1e7df2e40759e2dc5ef (совпадает в context/bindings.json, request.md и заголовке bundle).   
+MD
+
+Request: request.md, SHA-256 = c14069a89c7040a782c82665a2f9a72c9156defcd799cfb2e1dd189e50451f00 (значение в context/bindings.json записано через JSON unicode escapes c\u0031\u0034\u0030\u0036\u0039a\u0038\u0039c\u0037\u0030\u0034\u0030a\u0037\u0038\u0032c\u0038\u0032\u0036\u0036\u0035a\u0032f\u0039a\u0037\u0032c\u0039\u0031\u0035\u0036defcd\u0037\u0039\u0039cfb\u0032e\u0031dd\u0031\u0038\u0039e\u0035\u0030\u0034\u0035\u0031f\u0030\u0030, что после декодирования посимвольно равно c14069a89c7040a782c82665a2f9a72c9156defcd799cfb2e1dd189e50451f00).   
+MD
+
+Статус чтения и проверки digest: Приложенный файл review-bundle.md прочитан целиком от начала до конца вместе со всеми 9 встроенными context-блоками и request.md. Несовпадений строковых привязок между запросом, заголовком bundle, request.md, context/bindings.json и context/source-metadata.json нет. В соответствии с запретом на запуск кода и команд криптографический пересчёт SHA-256 (947a04842b59dbbf385e6dedece298e3899ae6126771d3c36d7fd619b1501c1a для bundle, 181aa767b0f74f8354c24522d09486a5ae70897007d4c1e7df2e40759e2dc5ef для плана, c14069a89c7040a782c82665a2f9a72c9156defcd799cfb2e1dd189e50451f00 для запроса и хэшей в context/source-metadata.json) и машинный подсчёт точного числа байт (49552) не выполнялись; сверка проведена аналитически по содержимому bundle.   
+MD
+Ещё 2
+
+Вердикт
+
+go
+
+Предлагаемый в context/plan.md технический план архитектурой безопасен и достаточен для перехода к этапу узкой реализации при условии учёта приведённых ниже findings (CEP-ORIGIN-PLAN-01 .. CEP-ORIGIN-PLAN-05) в коде и тестах до result-review. Данный вердикт является исключительно результатом планового ревью и не разрешает реализацию, изменение файлов, сборку/установку пакета или любые runtime-действия.   
+MD
+Ещё 1
+
+Ответы на вопросы запроса
+
+Безопасность ограничения Origin ровно значениями null и file:// и закрытие граничных случаев:
+
+Разрешение точных значений 'null' и 'file://' безопасно, так как Origin в архитектуре Core4 служит только фильтром входящего канала (ingress), а не источником identity или authority: выдача link и все последующие команды защищены проверкой 127.0.0.1:<port> в Host, req.socket.remoteAddress === '127.0.0.1', одноразовым challenge с TTL 10 секунд, ролевым секретом panelToken/controlToken (HMAC-SHA256), pins, epoch и строго возрастающим sequence.   
+MD
+
+В обычном браузере страница с http:/https: не может подделать заголовок Origin: file:// (в то время как Origin: null уже возможен из sandboxed iframe и потому изначально защищён требованием свежего role-secret MAC).   
+MD
+
+Помимо null и file://, проверкой строгого равенства (origin === 'null' || origin === 'file://') и адресными тестами необходимо закрыть: отсутствующий заголовок (undefined), пустую строку (""), пробельные обёртки (" null", "file:// "), регистровые варианты ("NULL", "FILE://", "File://"), варианты file: с путём/хостом/слэшами ("file:", "file:/", "file:///", "file://localhost", "file:///C:/..."), дублирующиеся заголовки Origin (которые в Node.js http склеиваются через ", ", например "null, null" или "null, file://"), списки через пробел ("null file://") и любые loopback/внешние http(s) origins ("[http://127.0.0.1:3457](http://127.0.0.1:3457)", "http://localhost:3457", "[https://example.test](https://example.test)").   
+MD
+
+Достаточность привязок challenge/link/peer-origin и порядок проверок до изменения состояния:
+
+Привязка достаточна: /challenge сохраняет проверенный origin внутри challenge.value, /link сверяет полный input.challenge с challenge.value через canonical(...) и дополнительно проверяет origin === challenge.value.origin, после чего записывает peer.origin = challenge.value.origin.   
+MD
+
+В core4/integrations/cep/http-peer.js:53 проверка origin !== peer.origin должна выполняться внутри единого условного оператора аутентификации до строки 54 (peer.sequence = b.sequence; peer.lastSeen = Date.now();), а также до ветвей /poll (строки 56–66) и /complete (строки 67–93), что гарантирует неизменность sequence, lastSeen, pending, activePoll, store и отсутствие выдачи ACK при отказе по Origin.   
+MD
+
+Важная деталь для /link: в core4/integrations/cep/http-peer.js:43 вызов challenges.delete(input.challenge?.nonce) происходит до проверок строки 45, поэтому любая попытка /link с известным nonce (включая cross-origin) штатно сжигает одноразовый challenge, но не изменяет уже подключённый peer и его sequence/lastSeen/pending (см. CEP-ORIGIN-PLAN-02).   
+MD
+
+Покрытие существующей MAC полного challenge с новым полем origin:
+
+В core4/integrations/cep/peer-protocol.js:4 функция mac(value, secret) вычисляет HMAC-SHA256 от canonical(value), а в core4/cep/js/panel.js:6,15 панель подписывает { challenge: challenge, peerId: peerId } через api.canonical(value).   
+MD
+
+Поэтому добавление поля origin в объект challenge на сервере автоматически включает challenge.origin под защиту HMAC без изменения формата вызова sign({ challenge, peerId }).   
+MD
+
+Если challenge.origin подменён без пересчёта MAC, запрос /link отвергается и по canonical(input.challenge) !== canonical(challenge.value), и по !validMac(...) в core4/integrations/cep/http-peer.js:45.   
+MD
+
+Если challenge.origin подменён с корректно пересчитанной MAC (сценарий компрометации или локального пересчёта с известным токеном), validMac сам по себе прошёл бы, но проверка canonical(input.challenge) !== canonical(challenge.value) (а также сверка wire origin !== challenge.value.origin) в core4/integrations/cep/http-peer.js:45 гарантированно отклоняет запрос с peer_auth, так как сервер сравнивает присланный объект с собственным сохранённым challenge.value.   
+MD
+
+Полнота CORS-контракта для success/error/OPTIONS при exact Host/port:
+
+В текущем baseline есть две тонкости, которые необходимо учесть при реализации плана (см. CEP-ORIGIN-PLAN-01):
+
+В core4/integrations/cep/http-peer.js:30 для OPTIONS заголовок 'Access-Control-Allow-Origin': 'null' захардкожен и должен быть заменён на отражение проверенного origin ('null' или 'file://') с сохранением Vary: 'Origin', 'Access-Control-Allow-Methods': 'POST' и 'Access-Control-Allow-Headers': 'Content-Type' без Access-Control-Allow-Credentials и без wildcard *.   
+MD
+
+В core4/integrations/cep/http-peer.js:26,95 при отказе проверки loopback_host_required (например, неверный Host: localhost:<port>) управление переходит в catch (e), который в baseline проверяет только origin === 'null' ? origin : undefined и всё равно выставляет Access-Control-Allow-Origin. Чтобы CORS отражался строго при соблюдении exact Host/port и loopback, переменную разрешённого CORS origin следует фиксировать только после успешного прохождения проверок строки 26 (loopback_host_required) и строки 29 (cep_origin_required).   
+MD
+Ещё 1
+
+Корректность обработки challenge в panel.js:
+
+Описание в плане полностью корректно: в core4/cep/js/panel.js:7 функция post использует fetch с credentials: 'omit' и cache: 'no-store', не пытаясь вручную выставить запрещённый Fetch-спецификацией заголовок Origin.   
+MD
+
+Отказ от вычисления ожидаемого wire Origin из location.origin или location.href в panel.js критически важен, так как в средах CEF/Chromium для file:// страниц window.location.origin и фактический HTTP-заголовок Origin (null vs file://) могут различаться.   
+MD
+
+В core4/cep/js/panel.js:14 достаточно добавить проверку (challenge.origin !== 'null' && challenge.origin !== 'file://') в условие выброса new Error('installation_binding') до вызова sign и /link на строке 15 (см. CEP-ORIGIN-PLAN-05).   
+MD
+
+Достаточность validation и gates до установки, минимальные доказательства и границы вне scope:
+
+Последовательность gates в context/plan.md (plan-review → узкие изменения и адресные тесты → result-review точного commit/diff/validation → детерминированный package и dry-run по точному package hash → отдельный разрешённый apply → read-back и проверка установленного runtime) полна и соответствует docs/portability.md.   
+MD
+
+До установки минимально необходимы: unit/integration HTTP-тесты для обоих режимов (null и file://), матрицы негативных Origin (включая рефакторинг тестового helper raw в core4/test/installable-runtime.test.js:31, см. CEP-ORIGIN-PLAN-04), проверка OPTIONS и ошибок, проверка cross-origin /link, /poll, /complete в обе стороны, проверка tampered challenge.origin с пересчитанной MAC, проверка неизменности sequence/lastSeen/pending при отказе Origin, а также проверка panel.js в VM/shim.   
+MD
+
+Явно вне scope данного этапа остаются: разрешение на реализацию или install из самого plan-review, объявление офлайн/Node-тестов доказательством реального браузерного CEP/CORS поведения, закрытие матрицы переносимости P1–P8 по результатам одной машины (требуется отдельный round-trip десктоп ↔ MSI), а также любые операции с пользовательскими AEP-проектами и внешними ресурсами.   
+MD
+
+Findings
+CEP-ORIGIN-PLAN-01 — Отражение CORS-заголовков при отказе loopback_host_required и хардкод 'null' в OPTIONS
+
+Приоритет: P2
+
+Классификация: new
+
+Уверенность: Высокая (подтверждается прямым чтением context/http-peer.js).   
+MD
+
+Утверждение и сценарий отказа: В core4/integrations/cep/http-peer.js:26 проверка if (closed || req.headers.host !== '127.0.0.1:' + server.address().port || req.socket.remoteAddress !== '127.0.0.1') fail('loopback_host_required'); выбрасывает исключение до проверки Origin, однако блок catch (e) на строке 95 вычисляет 4-й аргумент reply только по условию допустимости origin (origin === 'null' ? origin : undefined). Если в catch (e) просто заменить условие на origin === 'null' || origin === 'file://', то запрос с неверным заголовком Host (например, Host: localhost:3457 при Origin: file:// или Origin: null) получит HTTP 403 с заголовком Access-Control-Allow-Origin. Кроме того, на строке 30 обработчик OPTIONS содержит константу 'Access-Control-Allow-Origin': 'null' вместо проверенного origin.   
+MD
+Ещё 2
+
+Baseline path:line / выдержка:
+core4/integrations/cep/http-peer.js:26-30,95:   
+MD
+
+JavaScript
+if (closed || req.headers.host !== '127.0.0.1:' + server.address().port || req.socket.remoteAddress !== '127.0.0.1') fail('loopback_host_required');
+// CEP file origin is opaque. It is accepted only with fresh role-secret MAC;
+// never wildcard CORS, cookies, unauthenticated status or source ingress.
+if (origin !== 'null') fail('cep_origin_required');
+if (req.method === 'OPTIONS') { res.writeHead(204, { 'Access-Control-Allow-Origin': 'null', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type', Vary: 'Origin' }); res.end(); return; }
+...
+} catch (e) { reply(res, e.code === 'frame_too_large' ? 413 : 403, { error: e.code || 'peer_request_failed' }, origin === 'null' ? origin : undefined); }
+
+
+Минимальная проверка: Сохранять разрешённый corsOrigin = origin только после успешного прохождения проверок loopback_host_required (строка 26) и cep_origin_required (строка 29), использовать corsOrigin в OPTIONS (строка 30) и в catch (e) (строка 95), и добавить в тест проверку того, что при неверном Host (даже с Origin: null или Origin: file://) и при неверном Origin заголовок Access-Control-Allow-Origin в ответе 403 отсутствует.   
+MD
+
+CEP-ORIGIN-PLAN-02 — Порядок проверки origin в /link и разделение семантики одноразового challenge и сохранения состояния peer
+
+Приоритет: P2
+
+Классификация: new
+
+Уверенность: Высокая (подтверждается context/http-peer.js:42-55 и context/plan.md).   
+MD
+
+Утверждение и сценарий отказа: В core4/integrations/cep/http-peer.js:43-47 при обработке /link важно проверить origin !== challenge.value.origin внутри условия fail('peer_auth') на строке 45 до проверок if (role !== 'panel') fail('panel_role_required') (строка 46) и if (peer && ...) fail('duplicate_peer') (строка 47), иначе запрос /link с чужим допустимым Origin (null вместо file:// или наоборот) сможет различать коды ошибок panel_role_required и duplicate_peer и перезаписать peer, если бы проверка стояла позже. Также, поскольку строка 43 (challenges.delete(input.challenge?.nonce)) удаляет challenge сразу при обращении к /link, cross-origin попытка /link с реальным nonce одноразово сжигает сам challenge (требуя нового /challenge), тогда как для уже установленного соединения (peer) отказ по origin !== peer.origin на строке 53 в /poll и /complete не должен изменять peer.sequence, peer.lastSeen, pending, activePoll или store.   
+MD
+Ещё 1
+
+Baseline path:line / выдержка:
+core4/integrations/cep/http-peer.js:42-54:   
+MD
+
+JavaScript
+if (req.url === '/link') {
+  exact(input, ['challenge', 'peerId', 'proof']); const challenge = challenges.get(input.challenge?.nonce); challenges.delete(input.challenge?.nonce);
+  const role = challenge?.value.role, secret = role === 'panel' ? installation.panelToken : installation.controlToken;
+  if (!challenge || Date.now() - challenge.time > 10000 || canonical(input.challenge) !== canonical(challenge.value) || typeof input.peerId !== 'string' || !/^[a-zA-Z0-9-]{1,100}$/.test(input.peerId) || !validMac({ challenge: input.challenge, peerId: input.peerId }, input.proof, secret)) fail('peer_auth');
+  if (role !== 'panel') fail('panel_role_required');
+  if (peer && (Date.now() - peer.lastSeen < 45000 || pending)) fail('duplicate_peer');
+  peer = { peerId: input.peerId, sequence: 0, lastSeen: Date.now() };
+...
+exact(input, ['body', 'mac']); const b = requestBody(input.body);
+if (!peer || b.epoch !== epoch || b.peerId !== peer.peerId || b.sequence !== peer.sequence + 1 || b.method !== req.method || b.path !== req.url || !validMac(b, input.mac, installation.panelToken)) fail('peer_auth_or_replay');
+peer.sequence = b.sequence; peer.lastSeen = Date.now();
+
+
+Минимальная проверка: Включить origin !== challenge.value.origin в условие fail('peer_auth') на строке 45, инициализировать peer = { peerId: input.peerId, origin: challenge.value.origin, sequence: 0, lastSeen: Date.now() } на строке 48, и включить origin !== peer.origin в условие fail('peer_auth_or_replay') на строке 53 до строки 54. В тестах проверить, что после cross-origin отказа на /poll и /complete запрос с исходным peer.origin и тем же sequence = peer.sequence + 1 проходит успешно и завершает pending штатным ACK.   
+MD
+Ещё 1
+
+CEP-ORIGIN-PLAN-03 — Неопределённость роли core4/integrations/cep/peer-protocol.js в границах реализации
+
+Приоритет: P3
+
+Классификация: new
+
+Уверенность: Высокая (подтверждается сопоставлением context/plan.md, context/peer-protocol.js и context/panel.js).   
+MD
+
+Утверждение и сценарий отказа: Раздел «Узкие границы реализации» в context/plan.md включает core4/integrations/cep/peer-protocol.js в перечень изменяемых файлов, но описание протокола и изменений панели не уточняет, какие именно изменения предназначаются для peer-protocol.js. Если при реализации в requestBody(value) (core4/integrations/cep/peer-protocol.js:6) будет добавлено обязательное поле origin в exact(value, [...]), это сломает совместимость с core4/cep/js/panel.js:8 (var b = { epoch: epoch, peerId: peerId, sequence: ++sequence, method: 'POST', path: path, payload: payload };), так как панель по контракту не вычисляет и не передаёт wire Origin в теле подписанных запросов /poll и /complete.   
+MD
+Ещё 1
+
+Baseline path:line / выдержка:
+core4/integrations/cep/peer-protocol.js:6:   
+MD
+
+JavaScript
+function requestBody(value) { exact(value, ['epoch', 'peerId', 'sequence', 'method', 'path', 'payload']); if (!Number.isSafeInteger(value.sequence) || value.sequence < 1) fail('peer_sequence'); return value; }
+
+
+Минимальная проверка: Сохранить схему requestBody(value) в core4/integrations/cep/peer-protocol.js:6 неизменной (['epoch', 'peerId', 'sequence', 'method', 'path', 'payload']); использовать peer-protocol.js только для экспорта чистого предиката проверки допустимого CEP Origin (например, validOrigin(origin) для 'null' и 'file://') либо оставить peer-protocol.js без изменений.   
+MD
+
+CEP-ORIGIN-PLAN-04 — Ограничения helper-функции raw() в core4/test/installable-runtime.test.js для тестирования OPTIONS, отсутствующего Origin и заголовков ответа
+
+Приоритет: P3
+
+Классификация: new
+
+Уверенность: Высокая (подтверждается context/raw-http-helper-excerpt.md).   
+MD
+
+Утверждение и сценарий отказа: В core4/test/installable-runtime.test.js:31 тестовый helper raw(route, body, extra = {}) жёстко задаёт method: 'POST', подставляет по умолчанию headers: { Origin: 'null', 'Content-Type': 'application/json', ...extra }, безусловно вызывает JSON.parse(data) и возвращает только { status, value } без res.headers. В результате через текущий raw() невозможно: (а) отправить запрос вообще без заголовка Origin (передача { Origin: undefined } в http.request вызовет клиентский TypeError [ERR_HTTP_INVALID_HEADER_VALUE]), (б) отправить OPTIONS (так как метод захардкожен как POST, а пустой ответ 204 No Content вызовет SyntaxError в JSON.parse('')), (в) проверить наличие/отсутствие Access-Control-Allow-Origin и Vary: Origin в заголовках ответа.   
+MD
+Ещё 1
+
+Baseline path:line / выдержка:
+core4/test/installable-runtime.test.js:28-32 (context/raw-http-helper-excerpt.md):   
+MD
+
+JavaScript
+async function client(port, config = installation) {
+  let sequence = 0;
+  const base = 'http://127.0.0.1:' + port;
+  async function raw(route, body, extra = {}) { return new Promise((resolve, reject) => { const req = http.request(base + route, { method: 'POST', headers: { Origin: 'null', 'Content-Type': 'application/json', ...extra } }, res => { let data = ''; res.on('data', b => data += b); res.on('end', () => resolve({ status: res.statusCode, value: JSON.parse(data) })); }); req.on('error', reject); req.end(canonical(body)); }); }
+
+
+Минимальная проверка: Расширить тестовый helper (или добавить отдельный низкоуровневый helper в тесте) для параметризации origin при создании клиента ('null' и 'file://'), возврата headers: res.headers, поддержки OPTIONS с пустым телом (204) и явного удаления заголовка Origin при проверке missing-Origin сценария.   
+MD
+
+CEP-ORIGIN-PLAN-05 — Строгая проверка challenge.origin в core4/cep/js/panel.js до вычисления HMAC для /link
+
+Приоритет: P3
+
+Классификация: known (отражено в разделе «Изменение панели» в context/plan.md).   
+MD
+
+Уверенность: Высокая (подтверждается context/panel.js:13-15 и context/plan.md).   
+MD
+
+Утверждение и сценарий отказа: В core4/cep/js/panel.js:14 панель проверяет поля packageHash, installationId, executorHash и role, но в baseline ещё не проверяет challenge.origin. Если панель не проверит (challenge.origin !== 'null' && challenge.origin !== 'file://') до вызова sign({ challenge: challenge, peerId: peerId }) на строке 15, она подпишет ролевым секретом panelToken ответ /challenge с отсутствующим или нестандартным origin.   
+MD
+Ещё 1
+
+Baseline path:line / выдержка:
+core4/cep/js/panel.js:13-15:   
+MD
+
+JavaScript
+var challenge = await post('/challenge', { role: 'panel' });
+if (challenge.packageHash !== cfg.packageHash || challenge.installationId !== cfg.installationId || challenge.executorHash !== cfg.executorHash || challenge.role !== 'panel') throw new Error('installation_binding');
+var response = await post('/link', { challenge: challenge, peerId: peerId, proof: await sign({ challenge: challenge, peerId: peerId }) });
+
+
+Минимальная проверка: Добавить || (challenge.origin !== 'null' && challenge.origin !== 'file://') в условие installation_binding в core4/cep/js/panel.js:14 и покрыть unit-тестом с VM/WebCrypto/fetch shim оба допустимых значения ('null', 'file://') и отказ installation_binding при отсутствующем/неверном challenge.origin без отправки запроса /link.   
+MD
+
+Перечень прочитанного и недоступные/непрочитанные свидетельства
+
+Прочитанные файлы и секции (в составе review-bundle.md):
+
+Заголовок комплектности, инструкции, диагностика сканера (generic_secret false positive в core4/integrations/cep/http-peer.js:44) и встроенный request.md.   
+MD
+
+context/bindings.json (привязки ревью и SHA-256 плана/запроса).   
+MD
+
+context/focused-auth-test-excerpt.md (core4/test/installable-runtime.test.js:159-170).   
+MD
+
+context/http-peer.js (core4/integrations/cep/http-peer.js, полный файл, строки 1–104).   
+MD
+
+context/panel.js (core4/cep/js/panel.js, полный файл, строки 1–28).   
+MD
+
+context/peer-protocol.js (core4/integrations/cep/peer-protocol.js, полный файл, строки 1–7).   
+MD
+
+context/plan.md (полный текст рассматриваемого технического плана).   
+MD
+
+context/portability-excerpt.md (docs/portability.md:33-57, 78-91).   
+MD
+
+context/raw-http-helper-excerpt.md (core4/test/installable-runtime.test.js:28-35).   
+MD
+
+context/source-metadata.json (метаданные, размеры и SHA-256 исходных файлов и выдержек).   
+MD
+
+Недоступные и непрочитанные свидетельства (вне review-bundle.md):
+
+Локальный manifest, который хранит те же привязки, но явно не включён во внешний payload.   
+MD
+
+Raw-логи минимального наблюдения CEP-панели и synthetic source-only воспроизведения (в bundle приведена только текстовая сводка в request.md и context/plan.md).   
+MD
+
+Не включённые в выдержки строки core4/test/installable-runtime.test.js (вне строк 28–35 и 159–170) и docs/portability.md (вне строк 33–57 и 78–91), а также смежные модули core4/core/receiver-api.js и core4/integrations/cep/completion-store.js, импортируемые в http-peer.js и peer-protocol.js.   
+MD
+
+Live CEP/AE/CORS доказательства после сборки и установки пакета, а также двухмашинные доказательства переносимости десктоп ↔ MSI по матрице P1–P8 (отсутствуют на этапе plan-review по дизайну процесса).   
+MD
+
+Допущения, упрощения, отсутствующее live evidence и остаточные ограничения
+
+Допущения о смежных модулях: Предполагается, что импортируемые из ../../core/receiver-api функции (canonical, exact, parse, bounded, fail) детерминированно сериализуют все собственные перечислимые ключи объекта challenge (включая новое поле origin) и выбрасывают ошибку с полем code при вызове fail(code).   
+MD
+
+Упрощения верификации в рамках ревью: Проверка SHA-256 и байтового размера bundle выполнена без запуска внешних утилит/кода в силу прямого ограничения из запроса; соответствие request.sha256 проверено декодированием JSON unicode escapes из context/bindings.json и сверкой со строкой в запросе.   
+MD
+
+Отсутствующее live evidence: Сводка о наблюдении Origin: file:// от собственной file-based CEP-панели получена в режиме observer-only и не является доказательством успешного production-подключения. Синтетические тесты в Node.js с ручной передачей заголовка Origin и тесты panel.js с VM/WebCrypto/fetch shim проверяют логику сервера и клиента, но не заменяют реальную проверку CORS и WebCrypto внутри живого CEP runtime After Effects.   
+MD
+Ещё 1
+
+Остаточные ограничения и границы полномочий: Принятие данного plan-review со статусом go не разрешает изменение исходного кода, сборку, dry-run/apply установщика, запуск AE/CEP/UI или чтение локального состояния установки. Переход к реализации, последующему result-review, сборке детерминированного пакета, установке и проверке P1–P8 на обеих машинах (десктоп и MSI) требует отдельных явных разрешений и фиксации точных commit/package hashes на каждом gate.   
+MD
+Ещё 1

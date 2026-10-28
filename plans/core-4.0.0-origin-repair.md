@@ -77,8 +77,8 @@ raw/save/destructive и full-release не входят. Таймер не воз
 
 - [x] Фактический Origin собственной установленной панели измерен; причина найдена.
 - [x] Получен bounded source-analysis GO на минимальный portable repair.
-- [ ] Подготовлен и принят Argon plan-review точного пакета.
-- [ ] Реализован repair и пройдены адресные проверки.
+- [x] Подготовлен и принят Argon plan-review packet04: go,5 findings разобраны root; источник и ограничения — в [decisions](../reviews/argon/cep-origin/20261028-origin-plan-04/decisions.md). Замороженный внешний план имеет собственный digest; локальный план после review обновляется только как operational record.
+- [x] Repair реализован в4файлах; final installable20/manual12/documentation1, boundaries21/syntax/source diff PASS; independent bounded source-review ACCEPT без actionable findings.
 - [ ] Зафиксирован source milestone и принят Argon result-review.
 - [ ] Обновлена установка и выполнен фактический read-only proof подключения.
 
@@ -93,11 +93,36 @@ raw/save/destructive и full-release не входят. Таймер не воз
   checkpoints подтверждена предыдущим прямым поручением пользователя; root
   запросил только свежую readiness существующего controller без prompts/uploads.
 - Чужие изменения workflow и untracked continuation plan сохраняются отдельно.
+- Пользователь изменил получателя: «используй aiton, он открыт». Один пакет04
+  отправлен существующим controller в Aiton/Argon/Высокий (максимум из трёх
+  показанных уровней). После local capacity failures контроллера забран ответ
+  того же запроса; повторных отправок0. Root проверил response hash/bindings,
+  принял5 findings для минимальной реализации и выделил одного source writer.
 
 ## Validation
 
 - Actual observation и чистое исходное состояние зафиксированы выше. Native
   inspection/mutation/save 0; tests нового контракта пока не выполнялись.
 - Старый installed read-back и новый source-analysis не являются новым live PASS.
-- Source changes отсутствуют; readiness Argon/plan packet и дальнейшие результаты
+- На момент измерения source changes отсутствовали; дальнейшие результаты
   добавляются только после фактического выполнения.
+- Plan-review packet04,49 552bytes, submission attempt1 подтверждён; response
+ 32 102bytes, SHA-256 `df165fdf3be48ca7c1efd5c2bc56b94dbe5dedcbf1405895ee26f19658d1eeeb`
+  сверен root. Digest вычислял root, не Argon; его go/source reading — внешнее
+  evidence, проверяемые findings привязаны к baseline в decisions. До patch
+  и tests новые source/runtime PASS отсутствуют.
+- Source freeze: `http-peer.js`, `panel.js`, `installable-runtime.test.js`,
+  `core4/README.md`; `peer-protocol.js`/signed-body schema не менялись. Exact
+  исходники и full logs — `implementation-freeze/` в том же ignored evidence
+  каталоге. Final selected suites20+12+1 PASS, boundaries21 и syntax/diff PASS.
+  Тестовые попытки с ECONNRESET reuse/cross-realm canonical сохранены; исправлен
+  только стенд (`agent:false`, настоящий browser canonical), source gates не
+  ослаблялись. OWS нормализует Node HTTP parser; отдельный timing activePoll test
+  не добавлен, общий auth guard расположен до effects. Это явные границы покрытия.
+- Root независимо сверил5sourcehashes и56packagefiles; build побайтно совпал с
+  candidate. PackageHash `6c94efb678b9a56861b18e762076da7b38824bbbe30233770c4133ff81edc696`,
+  file SHA `fd4320d1f0e95540dce83515fffaf21c92bbdac09f82303005d305930f5caad3`,
+  286740bytes, immutable `dist/core4/4.0.0-origin-6c94efb678b9/core4-4.0.0.json`.
+  В runtime package против0aea изменены только `http-peer.js` и `panel.js`.
+  Source reviewer дал ACCEPT (read-only, tests/live0). Installed/live ещё прежние;
+  result-review и actual read proof остаются следующим переходом.

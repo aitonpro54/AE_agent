@@ -22,12 +22,14 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   }
   const server = http.createServer(async (req, res) => {
     const origin = req.headers.origin;
+    let corsOrigin;
     try {
       if (closed || req.headers.host !== '127.0.0.1:' + server.address().port || req.socket.remoteAddress !== '127.0.0.1') fail('loopback_host_required');
-      // CEP file origin is opaque. It is accepted only with fresh role-secret MAC;
+      // Package-owned CEP file origins. They are accepted only with fresh role-secret MAC;
       // never wildcard CORS, cookies, unauthenticated status or source ingress.
-      if (origin !== 'null') fail('cep_origin_required');
-      if (req.method === 'OPTIONS') { res.writeHead(204, { 'Access-Control-Allow-Origin': 'null', 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type', Vary: 'Origin' }); res.end(); return; }
+      if ((origin !== 'null' && origin !== 'file://') || req.rawHeaders.filter((value, index) => index % 2 === 0 && value.toLowerCase() === 'origin').length !== 1) fail('cep_origin_required');
+      corsOrigin = origin;
+      if (req.method === 'OPTIONS') { res.writeHead(204, { 'Access-Control-Allow-Origin': corsOrigin, 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type', Vary: 'Origin' }); res.end(); return; }
       if (req.method !== 'POST') fail('post_required');
       let bytes = 0, chunks = [];
       for await (const chunk of req) { bytes += chunk.length; if (bytes > 256 * 1024) fail('frame_too_large'); chunks.push(chunk); }
@@ -36,23 +38,23 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         exact(input, ['role']); if (!['panel', 'control'].includes(input.role)) fail('role_required');
         for (const [key, c] of challenges) if (Date.now() - c.time > 10000) challenges.delete(key);
         if (challenges.size >= 16) fail('challenge_backpressure');
-        const nonce = crypto.randomBytes(32).toString('hex'); const value = { nonce, epoch, role: input.role, ...pins, controllerId };
-        challenges.set(nonce, { value, time: Date.now() }); reply(res, 200, value, origin); return;
+        const nonce = crypto.randomBytes(32).toString('hex'); const value = { nonce, epoch, role: input.role, origin: corsOrigin, ...pins, controllerId };
+        challenges.set(nonce, { value, time: Date.now() }); reply(res, 200, value, corsOrigin); return;
       }
       if (req.url === '/link') {
         exact(input, ['challenge', 'peerId', 'proof']); const challenge = challenges.get(input.challenge?.nonce); challenges.delete(input.challenge?.nonce);
         const role = challenge?.value.role, secret = role === 'panel' ? installation.panelToken : installation.controlToken;
-        if (!challenge || Date.now() - challenge.time > 10000 || canonical(input.challenge) !== canonical(challenge.value) || typeof input.peerId !== 'string' || !/^[a-zA-Z0-9-]{1,100}$/.test(input.peerId) || !validMac({ challenge: input.challenge, peerId: input.peerId }, input.proof, secret)) fail('peer_auth');
+        if (!challenge || origin !== challenge.value.origin || Date.now() - challenge.time > 10000 || canonical(input.challenge) !== canonical(challenge.value) || typeof input.peerId !== 'string' || !/^[a-zA-Z0-9-]{1,100}$/.test(input.peerId) || !validMac({ challenge: input.challenge, peerId: input.peerId }, input.proof, secret)) fail('peer_auth');
         if (role !== 'panel') fail('panel_role_required');
         if (peer && (Date.now() - peer.lastSeen < 45000 || pending)) fail('duplicate_peer');
-        peer = { peerId: input.peerId, sequence: 0, lastSeen: Date.now() };
+        peer = { peerId: input.peerId, origin: challenge.value.origin, sequence: 0, lastSeen: Date.now() };
         const body = { linked: true, epoch, peerId: peer.peerId, controllerId, pins, receiverStoreIdentity: store.identity, laneClosed: store.closed };
-        reply(res, 200, { body, mac: mac(body, secret) }, origin); return;
+        reply(res, 200, { body, mac: mac(body, secret) }, corsOrigin); return;
       }
       exact(input, ['body', 'mac']); const b = requestBody(input.body);
-      if (!peer || b.epoch !== epoch || b.peerId !== peer.peerId || b.sequence !== peer.sequence + 1 || b.method !== req.method || b.path !== req.url || !validMac(b, input.mac, installation.panelToken)) fail('peer_auth_or_replay');
+      if (!peer || origin !== peer.origin || b.epoch !== epoch || b.peerId !== peer.peerId || b.sequence !== peer.sequence + 1 || b.method !== req.method || b.path !== req.url || !validMac(b, input.mac, installation.panelToken)) fail('peer_auth_or_replay');
       peer.sequence = b.sequence; peer.lastSeen = Date.now();
-      function signed(payload) { const body = { epoch, peerId: peer.peerId, sequence: b.sequence, payload }; reply(res, 200, { body, mac: mac(body, installation.panelToken) }, origin); }
+      function signed(payload) { const body = { epoch, peerId: peer.peerId, sequence: b.sequence, payload }; reply(res, 200, { body, mac: mac(body, installation.panelToken) }, corsOrigin); }
       if (req.url === '/poll') {
         exact(b.payload, []); if (activePoll) fail('concurrent_poll');
         if (pending && !pending.delivered) { try { admissionGuard(pending.command); } catch (e) { disconnect(e.code || 'physical_admission_closed'); throw e; } }
@@ -98,7 +100,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         return;
       }
       fail('unknown_peer_route');
-    } catch (e) { reply(res, e.code === 'frame_too_large' ? 413 : 403, { error: e.code || 'peer_request_failed' }, origin === 'null' ? origin : undefined); }
+    } catch (e) { reply(res, e.code === 'frame_too_large' ? 413 : 403, { error: e.code || 'peer_request_failed' }, corsOrigin); }
   });
   function submit(command, broker = false) {
     const selected = assets.get(command.executorHash);

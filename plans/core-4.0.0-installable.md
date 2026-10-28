@@ -30,6 +30,7 @@ P1–P8 остаётся открытой; локальный успех уст�
 ## Progress
 
 - [x] 28 октября, возобновлённый scoped ремонт: собственная CEP фактически отправляет `Origin: file://`; baseline guard допускает только `null`. Новый [focused план](core-4.0.0-origin-repair.md) сохраняет измерение и порядок exact portable repair/review/install. Source и установленный пакет на этом шаге ещё не менялись.
+- [x] Origin plan-review Argon/Aiton/Высокий принят (go,5 findings разобраны); minimal source freeze4files и selected20+12+1 PASS, boundaries21/syntax/diff PASS, independent source ACCEPT. Root сверил5source/56package hashes и deterministic candidate6c94; до result-review installed0aea не обновляется. Live CEP/CORS и переносимость P1–P8 ещё не подтверждены.
 - [x] 28 октября: переносимость закреплена как постоянное архитектурное правило AE Agent Core в AGENTS, intent и architecture; задан измеримый контракт P1–P8.
 - [ ] Реализован и подтверждён штатный перенос архитектурных блоков десктоп ↔ MSI без повторной ручной настройки; P1–P8 закрыты фактическим evidence обеих машин.
 - [x] Подтверждены user GO, исходники и чистый baseline; поиск внешнего дистрибутива прекращён.

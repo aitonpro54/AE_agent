@@ -520,3 +520,30 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
   ради утверждённых hashes; это известные предупреждения документационных
   артефактов, не PASS полного staged whitespace-check. `.gitattributes` и checks
   не менялись; runtime/source изменений нет. Нового payload ради EOF не создаём.
+
+### Source milestone после plan-review
+
+- **Progress:** packet04 получен (Aiton/Argon/Высокий), go/5 findings проверены
+  root и разобраны в [decisions](../reviews/argon/cep-origin/20261028-origin-plan-04/decisions.md).
+  Один writer реализовал exact finite Origins, stored challenge/peer binding,
+  CORS после Host/Origin guards и client validation, расширил адресные тесты.
+  Изменены4файла; независимый source reviewer дал ACCEPT без actionable findings.
+- **Decision Log:** signed-body schema/peer-protocol, runtime profiles,
+  installer/config и прочие grants/pins не меняются. Один общий контракт не
+  требует веток MSI/десктоп. Актуальный candidate не установлен до Argon
+  result-review. Runtime authority и неизвестные исходы не переносятся.
+- **Validation:** final selected installable20/manual12/documentation1 PASS,
+  boundaries21/syntax/source-diff PASS. Root independently checked5source hashes,
+ 56packagefile hashes, rebuilt byte-identical candidate; packageHash6c94efb678b9,
+  fileSHAfd4320d1f0e9,286740bytes. Exact hashes/full TAP/evidence keys/deferred —
+  в focused плане и `implementation-freeze/`. Прежний Core37 evidence не
+  переобъявляется новым current-release PASS; full release/live/desktop не были.
+- **Ограничения:** Node парсер нормализует HTTP OWS до приложения; отдельного
+  timing-specific activePoll probe нет. Общий origin auth guard расположен до
+  effects; foreign poll/complete сохраняют sequence/pending/journal и исходный
+  ACK. Callback loss/reconnect с обеими Origin формами сохраняет UNKNOWN/no replay.
+- **Raw response:** immutable `response.txt` хранит UI citation/code labels и
+  trailing whitespace исходного DOM text. Его hash сохранён; source/plan scoped
+  diff-check PASS не выдаётся за whitespace PASS неизменяемого external evidence.
+- Следующий шаг: source commit → bounded Argon result-review exact diff/package
+  → только после принятия штатный apply/read-back и одна typed read пустого AE.
