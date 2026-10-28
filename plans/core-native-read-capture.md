@@ -42,6 +42,22 @@ Proof MCP child завершён штатно, exit 0; пустой receiver own
 по managed-session/proof/CAS; receiver owner/journal он не меняет. Повторного
 native dispatch нет. Capture result по-прежнему неизвестен.
 
+Продолжение: private helper retirement прошёл 6 fixture tests/source ACCEPT,
+pure inspect и exact-proof apply. Архивированы только два own diagnostic markers
+первой попытки в transaction `0a89bd5e-1d25-4753-b063-0fea875825f2`; исходные
+receiver owner/UNKNOWN/journal сохранены. Новый production inspect04 снова PASS
+с тем же proof `a6af1095…d34b51`.
+
+28 октября, около 17:30 Asia/Yekaterinburg: evidence-only collector ожидает
+один ручной «Подключить»: child29592, transaction
+`3c633115-a426-4a87-ace3-8ade298a99b0-native-read-capture`, bounded wait 10 минут.
+Он держит собственные install/broker gates; ни runtime, ни installer параллельно
+не запускать. Windows CU не может направить клик во вложенный CEPHtmlEngine,
+CDP8870 недоступен; пользователь получил конкретный ручной шаг. UI reload/
+eval/native/ACK не выполнялись. При завершении/timeout читать actual session
+`snapshots/core4-live-proof/VI-native-read-capture-20261028/manual-live-1793190620276/`,
+не угадывать исход по этому временному статусу и не снимать gates вручную.
+
 ## Предлагаемый контракт
 
 1. Отдельный штатный диагностический operator проверяет всю установленную
