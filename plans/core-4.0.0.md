@@ -1,5 +1,22 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+Актуализация28октября: по прямому поручению пользователя схема Argon теперь
+одно review → локальная проверка/исправление замечаний → local tests/read-back.
+Обязательные второе result-review, повторы fixes и финальный Argon gate отменены
+для всей схемы. Старые записи таких gates ниже — история. Origin package6c94
+установлен с verified read-back; actual CEP read ещё ожидает открытия панели
+после nullptr warning AE, см. [focused план](core-4.0.0-origin-repair.md).
+
+Последний завершённый блок установки: package6c94 применён штатно, read-back
+56release/7CEP и реальный installed MCP initialize/status/contract PASS, origins
+сохранены. Proof client завершён exit0, owners отсутствуют, receiver journal
+содержит только origin (native commands0). AE UI завис после nullptr warning;
+пользователь подтвердил повторяемость зависания. Root не делает новых UI-вводов
+и ждёт отдельного разрешения на restart/при необходимости exact-process kill.
+Общая схема одного review закреплена в обоих проектах; итоговый result01 больше
+не gate и не переотправляется. UTF-8/62относительные ссылки/diff документации PASS;
+код runtime не менялся, прежние33selected checks не повторялись без причины.
+
 26 октября 2026. Проектирование завершено commit `1f5b8204ed4c50c3aed175f2709deefdfd7836a7`, offline M1 — `5667b5b8c9d29621cc5136d1abd89f6699ab9ce8`, [M2a](core-4.0.0-m2a-bridge.md) — `81ab980`. Принятый offline-контракт — [M2b](core-4.0.0-m2b-events.md). 27 октября начата подготовка минимального реального среза на MSI: bounded read-only readiness и план приведены в конце этого документа. Старый cutover handoff используется как описание сохранённого состояния. Текущий блок не запускает installation/cutover, production daemon, живые MCP/CEP/AE-команды или Codeburn.
 
 ## Результат и документы

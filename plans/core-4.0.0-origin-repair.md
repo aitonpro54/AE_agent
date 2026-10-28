@@ -80,8 +80,9 @@ raw/save/destructive и full-release не входят. Таймер не воз
 - [x] Подготовлен и принят Argon plan-review packet04: go,5 findings разобраны root; источник и ограничения — в [decisions](../reviews/argon/cep-origin/20261028-origin-plan-04/decisions.md). Замороженный внешний план имеет собственный digest; локальный план после review обновляется только как operational record.
 - [x] Repair реализован в4файлах; final installable20/manual12/documentation1, boundaries21/syntax/source diff PASS; independent bounded source-review ACCEPT без actionable findings.
 - [x] Source milestone зафиксирован: `30311539ce2b2eb091d19c179667e513217e41cc`.
-- [ ] Принят Argon result-review либо записано явное пользовательское исключение именно для этой установки; result01 пока `submission-unknown`, запроса повторно нет.
-- [ ] Обновлена установка и выполнен фактический read-only proof подключения.
+- [x] Пользователь отменил обязательное второе Argon-ревью в общей схеме: одно ревью → проверка/исправление замечаний → локальные проверки. Это постоянное правило, не разовое исключение. Result01 сохраняется как исторический submission-unknown и не продолжается.
+- [x] Обновлена установка package6c94, выполнен read-back56release/7CEP файлов и реальный installed stdio initialize/status/contract.
+- [ ] Выполнен фактический CEP connect/read-only proof: после закрытия старой панели AE показал nullptr warning; Extensions не раскрывается, запрошены ручное открытие панели либо штатный restart пустого AE.
 
 ## Decision Log
 
@@ -134,3 +135,38 @@ raw/save/destructive и full-release не входят. Таймер не воз
   нового response нет. Root не повторяет send/upload и не применяет package до
   решения review gate. Пользователю задан scoped вопрос об исключении; ответа
   на момент записи ещё нет. Source/installed/live outcomes не смешиваются.
+
+### Установка по обновлённой общей схеме — 28 октября
+
+- Прямое поручение пользователя: убрать второе ревью из общей схемы и приступать
+  к установке. Одно plan04 review + проверенные fixes + local33checks и independent
+  source ACCEPT достаточны; дополнительное подтверждение review-исключения не нужно.
+- Apply exact6c94 PASS, transaction `d1b8c949-8c92-41de-9a4b-32df5cac4399`.
+  Проверены56release/7CEP files, Node hash, generated installation.js bindings и
+  разные role credentials без раскрытия. Stable origin/state anchor byte-identical.
+  Проверки в `installation-readback.json` рядом с прежним ignored evidence.
+- Первый non-TTY proof child штатно завершился exit0 из-за EOF без dispatch.
+  Активный TTY proof client session80245, child PID3804, logs
+  `installed-proof-1793179979280/`: initialize/status/contract успешны, ready=true,
+  ownershipFault=null, ledgerFault=false, pending=null, unresolved0, unknown=false.
+  До принятия следующего UI шага peer.connected=false, native0.
+- Старая pane не закрылась при первом CU действии: geometry outside bounds,
+  неизвестного AE dispatch нет. После разворачивания штатное закрытие только
+  панели вызвало warning «A nullptr was dereferenced». Warning закрыт кнопкойOK.
+  Проект остаётся пустым Untitled, PID27832 Responding=true; меню Window/Extensions
+  не раскрывается мышью и клавиатурой, дополнительных dialogs inventory не показал.
+- Root запросил у пользователя ручное открытие новой панели либо разрешение
+  штатного restart именно пустого AE. Force kill/restart/save/AEP не выполнялись.
+  Следующий шаг — проверить fresh UI/peer, затем одна typed read; configured
+  Codex-client ещё не перечитан, project MCP enabled=false на время root proof.
+- Пользователь сообщил о повторяющемся зависании AE. OS Responding=true не
+  выдан за работоспособность интерфейса. Root прекратил UI-ввод, повторно получил
+  status5 (peer=false/pending=null/unresolved0/unknown=false) и штатно закрыл
+  proof child PID3804, exit0. Native commands0, журнал не получил begin.
+- Запрошено явное разрешение штатно закрыть именно пустой PID27832 и, только
+  если он не закроется, завершить проверенный процесс без tree kill; stop при
+  save dialog. Сообщение пользователя «AE висит» не трактуется как разрешение
+  force/restart. До ответа никакой restart/kill не выполняется.
+- Общая схема одного review закреплена в Core AGENTS/workflow/templates/
+  continuation plan и в AGENTS/README/MSI-STATUS существующего ARGON_BrowserUse
+  controller. Его docs-only update подтверждён final; новых browser действий0.
