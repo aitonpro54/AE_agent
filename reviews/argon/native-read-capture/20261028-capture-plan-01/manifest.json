@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "status": "COMPLETE",
+  "review_id": "20261028-capture-plan-01",
+  "stage_id": "native-read-recovery",
+  "type": "plan",
+  "repository": "AE Agent Core / Core4",
+  "snapshot": {
+    "base_commit": "80cc242fc7bc444d726223b39091bdee56879b37",
+    "target_commit": "80cc242fc7bc444d726223b39091bdee56879b37",
+    "source_tree": "clean at target before packet creation; only this packet directory was added during assembly"
+  },
+  "recipient": {
+    "service": "Argon",
+    "account": "Aiton Pro",
+    "requested_effort": "High",
+    "route": "existing ARGON_BrowserUse controller only",
+    "readiness": "not performed in this task"
+  },
+  "submission": {
+    "status": "not_submitted",
+    "prompts": 0,
+    "uploads": 0,
+    "external_messages": 0
+  },
+  "review_scope": "One initial plan review of unified native-read-recovery stages A-D; no implementation or second result/fix/final review.",
+  "frozen_plans": [
+    {
+      "sha256": "9a2861e9c6879d83fdb1849dfb80361bc0f984d624ca098c7268d488864668ed",
+      "path": "plans/core-native-read-recovery-design.md",
+      "lines": 174
+    },
+    {
+      "sha256": "7ff30c0ebf436ec6f3a195ab885278ce3c3aa3397d61423e0695365662af6d59",
+      "path": "plans/core-native-read-capture.md",
+      "lines": 115
+    }
+  ],
+  "request": {
+    "path": "request.md",
+    "bytes": 6175,
+    "sha256": "fe5815fe61272851be9a3b2a86becbe3faa7aa027bbbc642b76ebc0ce40812a9"
+  },
+  "payload": {
+    "path": "bundle.md",
+    "bytes": 77369,
+    "sha256": "74c41aa7acfa5904c9c7fdcaf1a08a4137f1e1d58005f5d54fbbdc56a1cf4931",
+    "skill": "codex-pro-review-bundle/build_bundle.py",
+    "script_manifest": {
+      "completeness": "COMPLETE",
+      "included_files": 3,
+      "skipped_files": 0,
+      "warnings": 0,
+      "automatic_redactions": 0
+    },
+    "post_processing": "After bundle generation, corrected CEP file count in the embedded request and changed generic skill boilerplate recipient labels GPT Pro to Argon; no context text changed. Root normalized CR/CRLF line endings to LF without changing logical content."
+  },
+  "context_files": [
+    {
+      "path": "context/unified-recovery-design.md",
+      "bytes": 14038,
+      "sha256": "5cac0672eb14806c1c520836622eb00bdd3add0e5ef3f4155ca3f762cf202d7c"
+    },
+    {
+      "path": "context/frozen-plan.md",
+      "bytes": 10512,
+      "sha256": "31dfbb55fbd474ea1b9ab4dc39f290cf1e1f9404ba01c63616a3af7091a2ef26"
+    },
+    {
+      "path": "context/implementation-context.md",
+      "bytes": 45611,
+      "sha256": "12dd79f0614e8202216d98ad12268ade72fba5a86d05c8694c77d349db7ed70a"
+    }
+  ],
+  "source_allowlist": [
+    {
+      "export": "full text",
+      "sha": "9a2861e9c6879d83fdb1849dfb80361bc0f984d624ca098c7268d488864668ed",
+      "path": "plans/core-native-read-recovery-design.md",
+      "lines": "1-174"
+    },
+    {
+      "export": "full text with 3 production identifiers replaced",
+      "sha": "7ff30c0ebf436ec6f3a195ab885278ce3c3aa3397d61423e0695365662af6d59",
+      "path": "plans/core-native-read-capture.md",
+      "lines": "1-115"
+    },
+    {
+      "export": "exact lines",
+      "sha": "5c06ab424a0469380009eda2410da50d74dae62c009015ef9a7a3e41ba323662",
+      "path": "core4/cep/js/panel.js",
+      "lines": "1-27"
+    },
+    {
+      "export": "exact lines",
+      "sha": "741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006",
+      "path": "core4/cep/js/poll-dispatcher.js",
+      "lines": "1-44"
+    },
+    {
+      "export": "selected lines; line 46 token-source expression summarized",
+      "sha": "d2a6709a054e3cd029c4cf32168e8d9bba73b326af2a814f1754b038f16e676c",
+      "path": "core4/integrations/cep/http-peer.js",
+      "lines": "23-67,69-102,119-128"
+    },
+    {
+      "export": "exact lines",
+      "sha": "08a8a5560c1f9781deded4b3fb58e9eecd5c3947c5b474b4e577acbe80794dc0",
+      "path": "core4/integrations/cep/completion-store.js",
+      "lines": "1-81"
+    },
+    {
+      "export": "selected lines",
+      "sha": "13ca37381638e2d04f2caeec5a72fa8a4e2ba00eb2b6d63910e5443948c4dbf0",
+      "path": "core4/runtime/stdio-entry.js",
+      "lines": "36-105"
+    },
+    {
+      "export": "selected lines; line 74 credential-generation expression summarized",
+      "sha": "bd9cbc8bd1b22c94558045051eb4388ca55865fb588e9dfef167d4beaf99eeb6",
+      "path": "core4/tools/install-core4.js",
+      "lines": "53-165"
+    }
+  ],
+  "redactions": [
+    "capture plan: installed package hash -> [REDACTED_PACKAGE_HASH]",
+    "capture plan: original command UUID -> [REDACTED_ORIGINAL_COMMAND_ID]",
+    "capture plan: receiver journal SHA-256 -> [REDACTED_RECEIVER_JOURNAL_SHA256]",
+    "http-peer.js:46: role-selected installation key reference summarized; no value was present",
+    "install-core4.js:74: generated credential expression summarized; no value was present"
+  ],
+  "privacy": {
+    "classification": [
+      "INTERNAL source excerpts",
+      "PRODUCTION-SENSITIVE evidence summarized"
+    ],
+    "excluded": [
+      "actual descriptor/config and installation files",
+      "panel/control credentials and auth/runtime state",
+      "receiver journal, logs and raw authenticated transcript",
+      "browser state, user AEP/assets, personal absolute paths, emails"
+    ],
+    "gaps": [
+      "No live/runtime evidence or actual installed-file inventory; this is a static design review package.",
+      "No implementation/tests; package builder source, actual descriptor and actual CEP closure remain excluded.",
+      "Source excerpts are scoped to the files and line ranges listed; reviewer should request no secret-bearing artifacts."
+    ]
+  },
+  "completeness_note": "COMPLETE means local allowlist bundle assembled with no builder warnings/skips; it is not review approval, sending authorization, runtime authority or proof of implementation.",
+  "externalAllowlist": [
+    "bundle.md"
+  ],
+  "localOnly": [
+    "request.md",
+    "manifest.json",
+    "verification.md",
+    "context/**"
+  ]
+}

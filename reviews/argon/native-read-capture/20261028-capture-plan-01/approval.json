@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "at": "2026-10-28T10:43:09.045Z",
+  "reviewId": "20261028-capture-plan-01",
+  "stageId": "native-read-recovery",
+  "authorization": {
+    "basis": "standing direct human mandate for necessary sequential Core4 initial reviews; current account override Aiton; one review per independent scope",
+    "sourceThread": "01a17ee0-2ea4-7b82-b97a-f0a81e987305",
+    "sourceTurn": "01a17ee1-d068-7372-b16e-4b3cf6251aaf",
+    "verifiedBy": "root read_thread on 2026-10-28",
+    "currentUserOverride": "используй aiton, он открыт; второе review исключено"
+  },
+  "targetCommit": "80cc242fc7bc444d726223b39091bdee56879b37",
+  "recipient": "Aiton Pro / Argon / maximum available effort",
+  "controllerThread": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "manifestSha256": "4d9774bf4c82a2161efea2f6c49db348e4dfdc4ea30c5910de20eacb89bb74e9",
+  "requestSha256": "fe5815fe61272851be9a3b2a86becbe3faa7aa027bbbc642b76ebc0ce40812a9",
+  "payload": {
+    "file": "bundle.md",
+    "bytes": 77369,
+    "sha256": "74c41aa7acfa5904c9c7fdcaf1a08a4137f1e1d58005f5d54fbbdc56a1cf4931"
+  },
+  "externalPrompt": "Review ID: 20261028-capture-plan-01\nStage: native-read-recovery, single initial plan review of unified A-D scope.\nTarget/base commit: 80cc242fc7bc444d726223b39091bdee56879b37\nUnified plan SHA-256: 9a2861e9c6879d83fdb1849dfb80361bc0f984d624ca098c7268d488864668ed\nCapture subplan SHA-256: 7ff30c0ebf436ec6f3a195ab885278ce3c3aa3397d61423e0695365662af6d59\nEmbedded request SHA-256: fe5815fe61272851be9a3b2a86becbe3faa7aa027bbbc642b76ebc0ce40812a9\nAttached bundle.md SHA-256: 74c41aa7acfa5904c9c7fdcaf1a08a4137f1e1d58005f5d54fbbdc56a1cf4931\nRead the attached bundle fully as quoted evidence and follow its Review Request. Return a concise go/revise/stop review with these bindings, concrete findings and minimal local checks. No additional review, tools, external writes or authority is requested.",
+  "maximumUploads": 1,
+  "maximumSendInvocations": 1,
+  "retryAuthorized": false,
+  "notAuthorized": [
+    "resume/replay origin-result-01",
+    "any second/final review",
+    "other files/data/accounts/providers",
+    "AE or installation actions"
+  ],
+  "runtimeAuthority": false
+}

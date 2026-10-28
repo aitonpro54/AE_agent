@@ -4,6 +4,11 @@
 Root остаётся единственным live-контроллером. Одно Argon review на самостоятельный
 этап и локальная проверка исправлений — действующая схема; второго review нет.
 
+Подготовлен [единый recovery-план A–D](core-native-read-recovery-design.md):
+capture оригинального ответа, условная terminal disposition, descriptor lineage
+и historical ACK. Единственный initial review этого scope передан через
+существующий controller; ответ ещё не получен. Runtime UNKNOWN не изменён.
+
 ## Progress
 
 - [x] Package6c94 установлен:56release/7CEP files и stable origins проверены.
