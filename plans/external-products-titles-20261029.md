@@ -36,6 +36,11 @@ CLI только читает явно переданные файлы и выд
 - 29 октября, новое поручение пользователя разрешает T2 live на тестовом проекте
   и продолжение плана. Текущий root controller ведёт [T2 evidence/maintenance](titles-live-20261029.md);
   отдельный writer закрывает C1 standalone closure только offline/source.
+- T2 continuation: в новом controller чате восстановлены configured tools;
+  адресное stopped retirement двух orphan owner-markers выполнено после
+ 23/23 TEMP tests.16settled events,host adoption,test AEP и installation bytes
+  сохранены. Compiler job готов; native mutation ещё0. Полный read-back T2
+  остаётся следующим шагом после штатного возобновления runtime.
 - [x] C1a standalone closure: штатный builder/entry реализован, missing lazy
   disposition preflight включён в exact helper closure. Реальные TEMP apply
   manual/readonly и signed-history guards PASS; итог7/7 standalone +5/5 routing.

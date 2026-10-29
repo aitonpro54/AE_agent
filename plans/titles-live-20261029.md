@@ -31,6 +31,10 @@ SHA256 `9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f`.
   exact3markers архивированы под standard lease, provider.adopt привязал AE9672
   и точный test-copy. Outcome readopted, journal/project/installation unchanged,
   grants/epoch/native dispatch0; gates released. Configured runtime ещё возобновить.
+- [x] В текущем чате configured MCP восстановлен, выявлен orphan receiver-marker
+  после общего restart; отдельное stopped обслуживание Core20436 завершено:
+  ровно два markers архивированы,16events/adoption/AEP/installation unchanged.
+  Возобновление после этого обслуживания — ближайший шаг.
 - [ ] Fresh Titles inspection → compiler → build/proposal → dry-run/run.
 - [ ] Original completion, style/text read-back, визуальная проверка и final status.
 - [ ] Итоговый milestone и продолжение C1.
@@ -51,6 +55,11 @@ SHA256 `9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f`.
   gates/no-replay. Native confirmation выбранной цели остаётся внутри AE.
 - C1 standalone closure исправляется параллельно отдельным writer в source/tools
   и TEMP. Этот код не устанавливается и не меняет bytes текущего live runtime.
+- Общий restart клиента может завершить installed stdio runtime без очистки
+  receiver-marker; повторный startup тогда корректно закрывает полосу. В новом
+  чате не запускается второй broker для обхода этого состояния. Для текущего T2
+  применено отдельное адресное stopped retirement; универсальное исправление
+  lifecycle не объявлено результатом этого maintenance.
 
 ## Validation
 
@@ -74,6 +83,43 @@ Unique transaction `stopped-readopt-Titles-T2-20261029-a134de87` completed.
 Повтор stop/readoption/install не требуется и не допускается этим continuation.
 
 ## Ближайшее продолжение
+
+Продолжение в чате `01a188ce-d1dc-7453-9bcf-45b8a418c02d`: прежний UI
+restart уже завершился (app-server13416, managed Core18856 в прежнем чате).
+Новый чат29.10 в17:56:59 и17:57:05UTC получил MCP initialize/connection closed.
+Root проверил signed receiver history: те же16settled events, broker ledger
+отсутствует; install/broker gates отсутствуют. Новый live dispatch0.
+Подготовлен ещё один штатный UI restart, только текущий чат active. Codeburn
+off/on возвращён к точным исходным bytes global config (SHA256
+`93015e22c32dadad28be3dc9223d8e978f6d72e6390a028d0e38fe593f92ce64`).
+Первый restart этого чата выполнен18:02UTC: configured tools появились,
+Core20436/parent32720 слушает3457, но receiver закрыт orphan-marker прежнего
+runtime18856. `core_diagnostics`: pending=null, unresolved=[], controllerBusy=false,
+storeFault=false; закрытие полосы не является новым неразрешённым AE-эффектом.
+Fresh signed history — те же16settled events, SHA256
+`4cfe881718e7255829785e57b604304493b319ba6e68d597074a98454e146f45`.
+
+Адресное обслуживание в `snapshots/titles-product/20261029/reconnect/`:
+private адаптация ранее reviewed XX operator, только два owner-marker под
+стандартным lease.20/20 TEMP tests PASS до проверки большого protected AEP.
+Root остановил20436 через retained handle18:10:42UTC; maintenance evidence SHA256
+`9826bd722555dffb4eb3c1aef2a49e2eb2b6f9ef11c41efa4cc9966e556b3374`.
+Первый inspect отказал до intent из-за AEP32001325bytes при лимите8MiB;
+архивирования/выдачи authority не было. Уточняется только bounded проверка этого
+точного AEP; adopted AE9672, installation и journal не изменяются.
+
+Итог:23/23 TEMP tests PASS. Root inspect PASS, затем один run завершился
+`retired`18:14:34UTC, receiverArchived=true/brokerArchived=true,
+journalUnchanged=true/installationChanged=false/nativeDispatch=0.
+Transaction `stopped-owners-titles-reconnect-20261029-7ed91ac5` завершена;
+gates освобождены, archive read-back выполнен самим operator. Helper SHA256
+`f0da537279f69d7ec54d49540fd90244cc8da7af4f775a4d03886f1fa72682d1`.
+Повтор stop/retirement/readoption/install не нужен. Следующий шаг — только
+штатное возобновление configured MCP в этом же чате, затем fresh status/CEP
+connect/inspection. Не открывать прежний controller chat ради вызова Core.
+Подготовлен `live/titles-job.json`: test text `TITLES OK`,comp218/layer219;
+compile PASS, build не отправлен. При отправке root явно заменяет описательный
+recordContext на technical_check/ephemeral_check, сохраняя target/references.
 
 Возобновить configured MCP штатным UI restart Codex app-server. AE9672 остаётся
 открытым с тестовым AEP. Закрывать CEP не нужно: в fresh accessibility tree AE
