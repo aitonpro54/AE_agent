@@ -3,7 +3,7 @@
   "reviewId": "20261029-architecture-plan-01",
   "stageId": "external-workflows",
   "reviewType": "plan",
-  "status": "blocked-response-read",
+  "status": "received",
   "recipient": {
     "service": "Gemini Argon",
     "name": "Aiton Pro",
@@ -35,30 +35,161 @@
     "attachment": "bundle.md",
     "generating": true,
     "composerEmpty": true,
-    "durability": "initial UI receipt; awaiting full response"
+    "durability": "full bound response retrieved in same existing chat"
   },
   "response": {
-    "path": null,
-    "sha256": null,
-    "bytes": null,
-    "complete": false
+    "path": "response.txt",
+    "sha256": "e97cb0c2d560a38ea6c60f1fde14d5d982c573548fa42f0c439f294c710d266c",
+    "bytes": 60181,
+    "encoding": "UTF-8",
+    "complete": true,
+    "truncated": false,
+    "captureMethod": "Exact visible model-response-content index 0 innerText for matching review; no editing, normalization or added newline; UI/math/table text preserved",
+    "completionEvidence": "generation button absent; complete 7 questions and final pre-flight checklist present"
   },
-  "binding": null,
-  "verdict": null,
+  "binding": {
+    "checks": {
+      "reviewId": {
+        "expected": "20261029-architecture-plan-01",
+        "presentInResponse": true
+      },
+      "stageId": {
+        "expected": "external-workflows",
+        "presentInResponse": true
+      },
+      "reviewType": {
+        "expected": "plan",
+        "presentInResponse": true
+      },
+      "baseCommit": {
+        "expected": "70b340f6e7ecca81673c193a738fd741b43b3306",
+        "presentInResponse": true
+      },
+      "requestSha256": {
+        "expected": "bcfde2b0a368d99fbc45d568f5f72fd297ece52b633a7578ef3fa218a011cb3b",
+        "presentInResponse": true
+      },
+      "bundleSha256": {
+        "expected": "8564f648eb0f27444b336cd3b926b4d387f9f1d58e04fb020c27cc4b71f0acbc",
+        "presentInResponse": true
+      }
+    },
+    "stringBindingsMatch": true,
+    "cryptographicRecomputationByReviewer": "not independently established; response labels hashes as declared"
+  },
+  "verdict": "revise",
   "retrieval": {
-    "observedAt": "2026-10-29T14:36:41.5139371Z",
-    "status": "blocked",
-    "responseOutcome": "unknown",
-    "events": [
-      "Read-only Playwright count: Runtime.evaluate timeout",
-      "Same-tab getAXState: 30s timeout and REPL kernel reset",
-      "Fresh inventory after reset: same extension instance and same tab/receipt URL still present",
-      "One same-tab screenshot using restored binding: Debugger unattached"
-    ],
-    "lastReceiptUrl": "https://gemini.google.com/app/8443e83ad4497380",
+    "observedAt": "2026-10-29T16:06:30.354Z",
+    "status": "received",
+    "responseOutcome": "complete",
+    "authorization": {
+      "sourceThreadId": "01a18806-3e4e-7cb0-8a3c-eeb4fa2f8942",
+      "trustedUserMessageId": "01a18868-3ec1-7863-99c0-b66f1197a214",
+      "scope": "read-only retrieval of existing consultation; no new upload/send"
+    },
+    "readiness": {
+      "observedAt": "2026-10-29T16:06:30.044Z",
+      "url": "https://gemini.google.com/app/8443e83ad4497380",
+      "account": "Аккаунт Google: Aiton Pro (aitonpro54@gmail.com)",
+      "modeArgonHighVisible": 1,
+      "generating": 0,
+      "matchingUserMessage": 1
+    },
+    "newUploads": 0,
+    "newSendInvocations": 0,
     "submissionReplay": false,
     "refreshOrNavigation": false,
     "otherChannelUsed": false
   },
-  "submissionStatus": "submitted"
+  "submissionStatus": "received",
+  "receivedAt": "2026-10-29T16:06:30.354Z",
+  "retrievalHistory": [
+    {
+      "observedAt": "2026-10-29T14:36:41.5139371Z",
+      "status": "blocked",
+      "responseOutcome": "unknown",
+      "events": [
+        "Read-only Playwright count: Runtime.evaluate timeout",
+        "Same-tab getAXState: 30s timeout and REPL kernel reset",
+        "Fresh inventory after reset: same extension instance and same tab/receipt URL still present",
+        "One same-tab screenshot using restored binding: Debugger unattached"
+      ],
+      "lastReceiptUrl": "https://gemini.google.com/app/8443e83ad4497380",
+      "submissionReplay": false,
+      "refreshOrNavigation": false,
+      "otherChannelUsed": false
+    },
+    {
+      "observedAt": "2026-10-29T16:06:30.354Z",
+      "status": "received",
+      "responseOutcome": "complete",
+      "authorization": {
+        "sourceThreadId": "01a18806-3e4e-7cb0-8a3c-eeb4fa2f8942",
+        "trustedUserMessageId": "01a18868-3ec1-7863-99c0-b66f1197a214",
+        "scope": "read-only retrieval of existing consultation; no new upload/send"
+      },
+      "readiness": {
+        "observedAt": "2026-10-29T16:06:30.044Z",
+        "url": "https://gemini.google.com/app/8443e83ad4497380",
+        "account": "Аккаунт Google: Aiton Pro (aitonpro54@gmail.com)",
+        "modeArgonHighVisible": 1,
+        "generating": 0,
+        "matchingUserMessage": 1
+      },
+      "newUploads": 0,
+      "newSendInvocations": 0,
+      "submissionReplay": false,
+      "refreshOrNavigation": false,
+      "otherChannelUsed": false
+    }
+  ],
+  "strategicRecommendation": "go on separating product workflows; revise specific plan and verify claims locally",
+  "findings": [
+    {
+      "id": "F-01",
+      "priority": "P1"
+    },
+    {
+      "id": "F-02",
+      "priority": "P1"
+    },
+    {
+      "id": "F-03",
+      "priority": "P1"
+    },
+    {
+      "id": "F-04",
+      "priority": "P2"
+    },
+    {
+      "id": "F-05",
+      "priority": "P2"
+    },
+    {
+      "id": "F-06",
+      "priority": "P2"
+    },
+    {
+      "id": "F-07",
+      "priority": "P3"
+    }
+  ],
+  "readCoverage": {
+    "claimed": [
+      "request.md",
+      "context.md",
+      "source-excerpts.md with listed source ranges"
+    ],
+    "omissions": [
+      "source ranges excluded from bundle, including broker execution/reconcile code",
+      "manual-policy, windows-reservation-provider, plan-engine and other files outside allowlist",
+      "live AE/two-machine/third-party installation validation"
+    ],
+    "independentlyAttested": false
+  },
+  "limitations": [
+    "External findings, architectural estimates and third-party claims are untrusted evidence requiring local verification by owner Core.",
+    "No suggested source/runtime/AE actions or commands executed by this controller.",
+    "Only existing response retrieved; original 1 upload/1 send/0 retries counts unchanged. Other conversation messages excluded from raw review capture."
+  ]
 }

@@ -4,7 +4,7 @@
 
 ## Внешний результат
 
-Запрос отправлен; внешний ответ не получен из-за `Debugger unattached` после тайм-аутов чтения. `response.txt` отсутствует, verdict и findings отсутствуют. Отправка не повторяется. Ниже собственные решения по локальному source analysis и первичным web sources, не triage выдуманных findings Argon.
+Исторически получение было заблокировано `Debugger unattached`. При продолжении по прямому поручению пользователя штатное чтение восстановилось; ответ получен без новых uploads/sends. Verdict `revise` по плану при поддержке стратегического направления. Raw response60181байт, SHA-256 `e97cb0c2d560a38ea6c60f1fde14d5d982c573548fa42f0c439f294c710d266c`; bindings совпали. Первоначальные локальные рекомендации ниже дополнены разбором реальных findings.
 
 ## Принятые для рекомендации положения
 
@@ -24,4 +24,30 @@
 
 ## Следующий шаг
 
-После восстановления browser connection существующий controller читает тот же ответ по receipt URL без нового send/upload и сохраняет raw текст/hash/bindings. Только после этого возможен честный triage внешних findings. Независимо от консультации следующий предлагаемый engineering scope — договориться о bounded Titles pilot; текущий запрос реализации не включает.
+Получение завершено. Следующий предлагаемый engineering scope — bounded Titles pilot через существующий sole MCP controller; текущий запрос реализации не включает.
+
+## Локальный разбор Argon
+
+Проверено на source70b340f6 и текущем HEAD7d951c8: между ними исследованный runtime-код не менялся, добавлены документы. Статусы ниже относятся к отдельным утверждениям; отсутствие live proof не закрывается source review.
+
+| ID | Внешний → локальный приоритет | Статус и evidence | Новизна / следующий шаг |
+| --- | --- | --- | --- |
+| F-01 | P1 → P2 для текущего pilot: fixed composition уже известна, внешний compiler её не меняет | Подтверждена связанность packageHash с transport и inspection contract (`stdio-entry.js:164,175`), fixed IDs:34–49; уже учтён known-open в docs/core-installed-composition.md:44–48. Универсальная формулировка «любое обновление ломает живой план» не доказана: runtime читает immutable release, смена установки имеет отдельные gates; :175 относится к inspection contractId, а не ко всем module contracts. | known; самостоятельный контракт независимого обновления capability. Не удалять package/peer bindings без модели совместимости и проверки UNKNOWN. Не блокирует изменение чистого внешнего compiler. |
+| F-02 | P1 → P3: вывод о необходимости удаления worker не подтверждён | Подтверждено, что нынешние titles/titles-current-target builders делают validation и expectedBindings, photo — binding (`modules/*/implementation.js:2–5`). `broker.js:156–181` контролирует desired inputs и server evidence. Это не доказательство ошибочности изолированного builder seam или выигрыша от удаления worker. | new suggestion; сохранить текущий seam для pilot, оптимизация по измерениям отдельно. |
+| F-03 | P1 → P2: известный migration gap | Подтверждены legacy50/Core16 (`slideshow-plan-builder.js:7`, `broker.js:169`). Уже учтён в исходном context.md до review. В appendEvent6+N мутаций и6+N audits, не7+N мутаций, как в одном пункте ответа. N3 даёт18steps, с2prelude20. Простая копия несовместима; неизвестно, что все audits можно удалить без потери семантики. | known; capability mapping, bounded stages и сохранение всех postconditions до реализации slideshow. |
+| F-04 | P2 → P2 | Подтверждено различие catalog3/physical assets inspection+current-target (`stdio-entry.js:34,47–49,157–174`). Уже учтён known-open в исходном context.md. Это ограничение выбранного manual пути с automaticLifecycle unavailable, а не доказанный непреднамеренный runtime defect. | known; discovery должен честно показывать availability; новые capabilities — отдельный допуск/приёмка. Live probe для консультации не требуется. |
+| F-05 | P2 → P2 | Подтверждён узкий single-line/uniform Source Text контракт (`titles/executor.jsx:14,28–41`, current-target implementation:3). Уже учтён как протокольный pilot, не полный продукт. «90% проектов», обязательность поддержки всех анимированных слоёв и достаточность сохранения стиля первого символа не доказаны; animation Source Text не тождественна любой layer animation. | known + unsupported estimates; определить реальные шаблоны/требования, затем ограниченный новый contract. Не ослаблять style guarantees вслепую. |
+| F-06 | P2 → P3 для integration guidance | Подтверждён TTL5000 (`broker.js:357`). Гипотеза о native confirm между dry-run и run не подтверждается: confirm в `titles-current-target/executor.jsx:54` уже внутри mutate; `manual-policy.js:13–23` регистрирует/авторизует доставку, без UI confirm. | new guidance; без медленной подготовки между dry-run/run. Proposal review может предшествовать dry-run, native confirm остаётся в AE. Не объединять два API вызова под выдуманной транзакционной атомарностью. |
+| F-07 | P3 → P3 | Принято как упрощение рекомендации: существующие stdio tools:5 и JSON schemas достаточны для первого внешнего compiler. Отдельные repo/SDK не обязательны; заявленные «50 строк», «1–2 дня», «100% изоляция папкой» не измерены. | new clarification; pilot вне core4 в том же repo допустим; организация repos определяется независимым выпуском, а не запретом отдельных проектов. |
+
+## Дополнительные коррекции внешних рекомендаций
+
+- Runtime stdio принадлежит одному владельцу. Формулировка Argon «CLI общается stdio» не означает готового attach к уже запущенному broker: начальный CLI только компилирует, команды отправляет текущий MCP controller. Факты: stdio-entry.js:167,185,197; state-lock.js:25–37.
+- Capability implementation/executor могут принадлежать отдельному пакету; нельзя превращать Core в каталог всех предметных handlers только переименованием modules.
+- Предлагаемые macro операции (clone+retime+rewrite и batches) ещё не спроектированы и не проверены. Снижение числа steps не доказывает bounded failure, ownership и read-back каждого эффекта.
+- Сторонние MCP и оценки затрат не подвергались независимому аудиту. Вывод — нет достаточного основания менять Core сейчас, без универсального утверждения «аналогов гарантий не существует».
+- Обязательный десктоп↔MSI round-trip остаётся критерием проекта; отказ от немедленного marketplace/hot-swap не отменяет переносимость.
+
+## Окончательное решение по консультации
+
+Принять как рекомендацию: независимые workflow-продукты + общий Core + отдельно допускаемые capabilities. Скорректировать путь: один внешний Titles compiler поверх нынешнего API, затем уточнение реального титровального контракта и перенос slideshow. Не вводить SDK/MCP/массовое разделение repos заранее. Исправления authority/identity/worker по одному совету Argon не выполнять. Реализация и новая установка остаются отдельным scope, повторного review нет.

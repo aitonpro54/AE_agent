@@ -1,0 +1,623 @@
+Паспорт ревью, привязки (Bindings) и база доказательств
+
+Review ID: 20261029-architecture-plan-01   
+MD
+
+Stage ID: external-workflows   
+MD
+
+Review Type: plan (одна архитектурная консультация; реализация, переустановка, перенос проектов, мутации AE и внешние сетевые запросы этим ревью не разрешаются)   
+MD
+
+Base / Source Commit: 70b340f6e7ecca81673c193a738fd741b43b3306   
+MD
+
+Declared Request / Plan SHA-256: bcfde2b0a368d99fbc45d568f5f72fd297ece52b633a7578ef3fa218a011cb3b
+
+Declared Bundle SHA-256: 8564f648eb0f27444b336cd3b926b4d387f9f1d58e04fb020c27cc4b71f0acbc
+
+Completeness бандла: COMPLETE (2 включённых файла: context.md, source-excerpts.md; 0 пропущенных файлов в манифесте; 1 ложное срабатывание сканера phone_like на цифрах внутри SHA-256 и дате протокола MCP 2024-11-05 закрыто вручную без редакции байтов).   
+MD
+
+Прочитанные материалы и зафиксированные SHA-256 исходников из bundle.md:
+
+request.md и context.md (в составе бандла).   
+MD
+
+docs/core-4.0.0-intent.md (SHA-256: 7fdda4a8b6d378dd5f3c8f602be99986cc3ea2f11485b7d43503b1c8914e1515, строки 16–37).   
+MD
+
+docs/core-installed-composition.md (SHA-256: 5cd0ad6efa54ad853ef35915711b9a5f80c98304f791e471a2db6967108c993a, строки 7–16, 30–48).   
+MD
+
+core4/runtime/stdio-entry.js (SHA-256: b756c068a0be8f311d644f38b7b499a94df6fac9972a3f9fc5ccd3e88121ebbf, строки 30–63, 157–178).   
+MD
+
+core4/runtime/source-package.json (SHA-256: a1ef82ab8f3dda21acb3101071e36138af16710cce2013ac98bca1ea8c8fcdb2, строки 29–43, 62–90).   
+MD
+
+core4/core/stdio.js (SHA-256: e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401, строки 5–31).   
+MD
+
+core4/core/broker.js (SHA-256: 74c457d7ef0da217313c2bc81665091bf41dc1eb07508d0ff9835abaca45ba3f, строки 148–200, 218–224, 355–383).   
+MD
+
+core4/core/artifacts.js (SHA-256: d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c981109d3177a6, строки 6–24, 77–98, 114–136).   
+MD
+
+core4/modules/titles/executor.jsx (SHA-256: e1eb94f04ce9f2e7fc0fc97acc8a226aadaacde50cec5aa9af72b011b18092ca, строки 5–15, 26–49).   
+MD
+
+core4/modules/titles-current-target/implementation.js (SHA-256: 1b31cd96b475f6af3e286fdd5c009d46e09b18b271db88ce951e9ec8d7fc580b, строки 1–6).   
+MD
+
+mcp-server/bridge-daemon.js (SHA-256: ada01bf38d07d0f4a6aeb567c90c07ad682383f1ca629d6bb139464e838461a4, строки 97–126, 7490–7504, 7940–7950).   
+MD
+
+mcp-server/core-tool-dispatch.js (SHA-256: 8726198bae6623714574c97f1737601abe0d22fe43ca7da2fc35a73183cba822, строки 301–313).   
+MD
+
+mcp-server/slideshow-plan-builder.js (SHA-256: b3bd52f6eec50673fa5dc09fc6657095cba45220833a6b57933ce69f74c4ba0d, строки 7, 67–103).   
+MD
+
+Пропущенные материалы и пробелы доказательств (Evidence Gaps):
+
+Не включены и не проверены опущенные диапазоны строк указанных файлов, в том числе core4/core/broker.js (строки 1–147, 201–217, 225–354, 384+, где реализованы executeStep, reconcile, reset и обработка bindings между шагами).   
+MD
+
+Не входят в бандл файлы core4/runtime/manual-policy.js, core4/runtime/windows-reservation-provider.js, core4/plan-engine/*, core4/modules/titles-current-target/contract.json, core4/modules/project-inspection/*, docs/portability.md и plans/core-installed-composition-20261029.md.   
+MD
+
+Отсутствует live-доказательство исполнения в After Effects, реальный round-trip между двумя машинами (Desktop ↔ MSI) и динамический аудит сторонних MCP-пакетов.   
+MD
+
+1. Прямая рекомендация и Вердикт
+
+Вердикт по архитектурному предложению: revise.   
+MD
+
+Стратегическое направление (go по концепции разделения): Вынести слайд-шоу (Slideshow), титры (Titles), монтаж и прочие предметные генераторы из ядра во внешние продуктовые workflow-пакеты — абсолютно верное решение. Историческая архитектура 3.3.5 (mcp-server/bridge-daemon.js:97-126, 7490-7504, 7940-7950) страдает от жёсткой связности: запуск демона импортирует все предметные модули сразу, а главный цикл исполнения содержит предметные if-ветвления (audit_slideshow_generated, preflightAmeTitleSeries, guardPlaceholderPlan).   
+MD
+Ещё 1
+
+Почему требуется корректировка плана (revise): Предложенная схема в текущей формулировке оставляет три критических архитектурных противоречия с реальным кодом core4:   
+MD
+
+Терминологическое и кодовое смешение «модуля» в Core4: В core4 сущность modules/* сейчас одновременно трактуется и как «рабочий пакет» (docs/core-4.0.0-intent.md:16-18), и как низкоуровневый атомарный executor.jsx с тривиальной обёрткой implementation.js (core4/modules/titles-current-target/implementation.js:1-6). Если вынести workflow наружу, внутри core4 должны остаться не «предметные модули», а компактный каталог допускаемых Host Capabilities (операций исполнителя).   
+MD
+Ещё 1
+
+Скрытая связанность через stdio-entry.js и packageHash: core4/runtime/stdio-entry.js:34-49 жёстко хардкодит массив ['photo-placeholder', 'titles', 'titles-current-target'] и список expectedAssets, а строки 164 и 175 подмешивают глобальный installation.packageHash в transport.identity и contractId. Любое изменение каталога или добавление новой host capability инвалидирует packageHash и ломает планы по transport_pin_changed (core4/core/broker.js:221, 360), нарушая Инвариант 10 (docs/core-4.0.0-intent.md:33).   
+MD
+Ещё 1
+
+Преждевременный отдельный SDK и разрыв гранулярности: Строить сейчас отдельный версионированный SDK-слой между внешним пакетом и Core избыточно для одного пользователя — JSON-схемы core4/core/stdio.js:5 (inspect_module_target, build_solution_plan, propose_plan, dry_run_plan, run_plan) уже являются готовым wire-контрактом. При этом прямое портирование slideshow-plan-builder.js (до 50 микро-шагов на стадию, ~18 шагов на одно событие, mcp-server/slideshow-plan-builder.js:7, 81-96) упрётся в жёсткий лимит steps.length <= 16 (core4/core/broker.js:169).   
+MD
+Ещё 1
+
+2. Схема границ и сравнение архитектур
+Сравнение трёх архитектурных состояний
+Критерий	Прежняя система 3.3.5 (mcp-server/)	Текущий срез Core 4.0.0 (core4/)	Целевая архитектура (External Workflows над Core 4)
+Где живёт продуктовая логика (ТЗ, вёрстка, тайминг, отбор ассетов)	
+
+Внутри MCP-демона (slideshow-plan-builder.js, placeholder-*, montage-*), загружается при старте (bridge-daemon.js:97-126). 
+MD
+
+	
+
+Частично вынесена из core/, но остатки предметных имён (titles, photo-placeholder) жёстко прибиты в stdio-entry.js:34 и source-package.json:63-66. 
+MD
+
+	
+
+Полностью во внешних workflow-пакетах (CLI/библиотека + Codex skill), вне дерева core4 и вне его packageHash. 
+MD
+
+
+Где живёт компиляция плана (Plan Building)	
+
+Внутри MCP-инструмента build_slideshow_plan (core-tool-dispatch.js:301-306). 
+MD
+
+	
+
+Двойственная: клиент подаёт steps в build_solution_plan, но broker.js:180 вызывает воркер selected.build(), который по validateIntent (160-165) может лишь проставить expectedBindings. 
+MD
+
+	
+
+Внешний пакет детерминированно компилирует steps[] по публичным JSON-схемам; Core выполняет только привязку серверного evidenceRef (expectedBindings) и валидацию инвариантов. 
+MD
+
+
+Оркестрация и проверка этапов (Semantic Audit)	
+
+Зашита в рантайм-цикл демона (if (step.tool === "audit_slideshow_generated") в bridge-daemon.js:7940). 
+MD
+
+	
+
+Унифицирована через контракт операции: фазы inspect → mutate → verify внутри executor.jsx (titles/executor.jsx:49) и сверку snapshot в broker.js:378-380. 
+MD
+
+	
+
+Двухуровневая: атомарный post-condition и сохранение protected-полей проверяет executor.jsx + Core; доменную полноту между стадиями проверяет внешний workflow по snapshot/receipts. 
+MD
+
+
+Влияние правки правил титров/слайд-шоу на Core и CEP	
+
+Требует перезапуска MCP-сервера и ревью монолита. 
+MD
+
+	
+
+Меняет source-package.json / packageHash в составе manual (stdio-entry.js:30-63, 164). 
+MD
+
+	
+
+Нулевое влияние на Core и CEP, пока не требуется новая ExtendScript-операция (executor.jsx). 
+MD
+
+
+Authority, Grants, Ledger, UNKNOWN	
+
+Внутри монолитного bridge-daemon.js. 
+MD
+
+	
+
+Изолированы в Broker (broker.js:168-173, 197, 361), manual-policy.js и ledger. 
+MD
+
+	
+
+Строго внутри Core. Внешний пакет никогда не получает CEP credentials, не снимает UNKNOWN и не подтверждает собственный успех. 
+MD
+
+Целевая схема границ (3 слоя)
+Plaintext
+[Слой 1: Внешний Продуктовый Workflow (Папка/Пакет вне Core4)]
+  Codex Skill (тонкий UX-вход) ──► Deterministic Workflow CLI / Library (Node.js)
+  Владеет: разбором ТЗ, шаблонами, расчётом таймингов, проверкой файлов на диске,
+           разбивкой на стадии (chunking <= 16 steps), формированием JSON-запросов.
+  НЕ владеет: CEP-портом, transport credentials, private grants, правом ретрая UNKNOWN.
+         │
+         ▼  (JSON-RPC stdio / MCP tool calls или тонкий JSON-клиент к существующему контракту)
+[Слой 2: Публичный Протокол Core4 (`core4/core/stdio.js`)]
+  list_modules -> get_module_contract -> inspect_module_target (выдаёт server evidenceRef)
+  -> build_solution_plan -> propose_plan (требует local risk confirmation)
+  -> dry_run_plan (TTL 5s) -> run_plan -> get_task / reconcile_task
+         │
+         ▼
+[Слой 3: AE Agent Core 4.0.0 Runtime + Admitted Host Capabilities]
+  ├── Core Broker & Ledger: sole controller, stateLock, durable command ledger,
+  │                         UNKNOWN/no-replay fence, Windows reservation provider.
+  └── Admitted Host Capabilities (`modules/<capability-id>/`):
+        contract.json (input/target/snapshot schemas + effectPolicy)
+        + admission.json (hashes + trustApprovalId)
+        + executor.jsx (bounded ExtendScript: inspect / mutate / verify с CAS-проверками)
+
+3. Конкретные архитектурные замечания (Findings F-01 – F-07)
+ID	Приоритет	Описание проблемы и почему это важно	Evidence (path:line / Гипотеза)	Минимальная локальная проверка
+F-01	P1	Хардкод состава модулей и примешивание глобального packageHash в transport.identity и contractId. В stdio-entry.js для состава manual жёстко зашит массив ['photo-placeholder', 'titles', 'titles-current-target'] и список expectedAssets. Более того, transport.identity и contractId вычисляются от installation.packageHash всего релиза. Любое обновление несвязанного модуля меняет packageHash, что роняет dryrun/run с transport_pin_changed, нарушая Инвариант 10.	
+
+core4/runtime/stdio-entry.js:34-35, 47-49, 164, 175; core4/core/broker.js:221, 360; docs/core-4.0.0-intent.md:33 
+MD
+
+	Изменить 1 байт в неиспользуемом модуле photo-placeholder в тестовом слепке и проверить, изменится ли transport.identity для titles-current-target.
+F-02	P1	Рудиментарный серверный build-воркер при внешнем компиляторе. broker.build() запускает изолированный job this.job(task, 'build', selected, ...), но validateIntent() запрещает этому коду менять любые поля desired (request.input), кроме дозаполнения expectedBindings из evidence.snapshot. Вызов тяжёлого воркера ради копирования expectedRevision и expectedText создаёт ложную абстракцию «серверного билдера модуля».	
+
+core4/core/broker.js:156-166, 180-181; core4/modules/titles-current-target/implementation.js:2-5 
+MD
+
+	Проверить контракты всех модулей в core4/modules/*/implementation.js: выполняют ли они что-либо кроме маппинга evidence в expected* поля.
+F-03	P1	Конфликт размерности планов между Legacy Slideshow и Core4 Broker. Legacy slideshow-plan-builder.js строит стадии до 50 шагов (MAX_STAGE_STEPS = 50), где одно событие порождает 12 + 2*N шагов (при 3 медиа-группах — 18 шагов, а с get_project_info и get_comp_details — 20 шагов, где каждый второй шаг — audit_slideshow_generated). core4/core/broker.js жёстко отвергает планы длиннее 16 шагов (steps.length > 16). Без укрупнения host-операций и слияния mutate + audit в единый цикл inspect/mutate/verify внутри capability слайд-шоу не поместится в лимит Core4.	
+
+core4/core/broker.js:169 vs mcp-server/slideshow-plan-builder.js:7, 81-99 
+MD
+
+	Подсчитать число мутирующих шагов appendEvent без отдельных вызовов audit_slideshow_generated (7 мутаций + N замен медиа-листьев).
+F-04	P2	Рассинхронизация каталога manual и активных assets HTTP-пира. В stdio-entry.js и source-package.json состав manual включает 3 модуля (photo-placeholder, titles, titles-current-target), но в expectedAssets и createHttpPeer(... additionalAssets) передаётся только titles-current-target-v1 (и project-inspection-v1). Модули titles и photo-placeholder проходят проверку admitted(), но фактически недоступны для createHttpPeer.	
+
+core4/runtime/stdio-entry.js:34, 47-49, 157, 174; core4/runtime/source-package.json:62-90 
+MD
+
+	Вызвать в оффлайн-тесте inspect_module_target для moduleId: 'titles' (не titles-current-target) и проверить, отклонит ли его transport/peer.
+F-05	P2	Чрезмерная узость titles/executor.jsx для реального титровального продукта. Текущий executor.jsx падает с unsupported_animated_text при наличии ключей/выражений, с unsupported_text на многострочном тексте (/[\r\n]/) и выполняет 
+𝑂
+(
+𝑁
+)
+O(N) посимвольный JSON.stringify(fields(doc.characterRange(i, i+1))). Это отличный защитный контракт для первого протокольного пилота, но для реальных концертных титров потребуется отдельная capability (например, titles-template-text-v1) с поддержкой многострочности и анимированных слоёв.	
+
+core4/modules/titles/executor.jsx:14, 28, 31, 41; core4/modules/titles-current-target/implementation.js:3 
+MD
+
+	Проверить типовые AEP-проекты титров: какая доля текстовых слоёв содержит \r, аниматоры текста или выражения.
+F-06	P2	Жёсткое окно 5000 мс между dryrun и run при внешнем управлении. В broker.js:357 проверка Date.now() - dryrun.createdAt > 5000 требует вызова run_plan не позднее 5 секунд после dry_run_plan. Если внешний workflow или агент запрашивает пользовательское подтверждение после dryrun (а не между propose и dryrun), окно гарантированно истечёт с fresh_dryrun_required.	
+
+core4/core/broker.js:196-200, 218-224, 357 (Гипотеза о порядке вызовов в manual-policy.js, так как файл не включён в бандл) 
+MD
+
+	Проверить в core4/runtime/manual-policy.js, на какой фазе (propose или dryrun) открывается нативное окно подтверждения.
+F-07	P3	Избыточность выделения публичного SDK и отдельных репозиториев на старте. Проектирование и поддержка отдельного npm/SDK-пакета между внешним workflow и core4 до завершения хотя бы 2 реальных workflow создаст лишнюю точку синхронизации версий без выигрыша в надёжности.	
+
+request.md (Пункты 2, 5 рабочего предложения); core4/core/stdio.js:5-31 
+MD
+
+	Оценить объём обвязки для вызова 6 методов TOOL_METHODS напрямую через тонкий локальный JSON-RPC helper (~50 строк кода).
+4. Ответы на 7 вопросов из Review Request
+Вопрос 1. Правильна ли граница «внешний workflow → публичный контракт → Core + отдельно допускаемые host capabilities»? Где она избыточна или оставляет скрытую связанность?
+
+Граница концептуально правильная, но в предложении есть одна избыточная прослойка и две точки скрытой связанности в коде core4:   
+MD
+
+Где избыточность: Выделение отдельного «публичного версионированного SDK» между внешним workflow и Core сейчас не нужно. У Core4 уже есть жёсткий, минималистичный JSON-RPC контракт в core4/core/stdio.js:5 (TOOL_METHODS: core_status, list_modules, get_module_contract, inspect_module_target, build_solution_plan, propose_plan, dry_run_plan, run_plan, get_task, reset_task, reconcile_task) и декларативные JSON-схемы в contract.json. Внешнему пакету достаточно зависеть от JSON-схемы протокола (protocol/artifact.json, core4/core/artifacts.js:24) и вызывать MCP/JSON-RPC напрямую.   
+MD
+Ещё 2
+
+Где скрытая связанность №1 (Серверный build-воркер): В core4/core/broker.js:180 метод build() вызывает this.job(task, 'build', selected, { input: request.input, evidence: evidence.snapshot }). Это заставляет каждый host capability иметь JS-файл implementation.js, проверяемый регулярным выражением reviewCode() (core4/core/artifacts.js:133-136), хотя вся его работа сводится к подстановке expectedRevision и expectedText из evidence (core4/modules/titles-current-target/implementation.js:4), которые тут же сверяются декларативным effectPolicy.expectedBindings в broker.validateIntent() (core4/core/broker.js:164). Декларативной привязки expectedBindings на стороне Broker достаточно — отдельный JS-билдер внутри Core для каждого capability создаёт лишнюю связанность.   
+MD
+Ещё 2
+
+Где скрытая связанность №2 (Глобальный packageHash и stdio-entry.js): Как показано в F-01, core4/runtime/stdio-entry.js:34-49, 164, 175 связывает все capabilities единым хардкодом и единым packageHash. Пока transport.identity зависит от packageHash всего релиза, а не от { coreIdentity, protocolPin } (core4/core/artifacts.js:18, 24), добавление новой host capability будет ломать пины существующих планов.   
+MD
+Ещё 1
+
+Вопрос 2. Что действительно следует вынести из прежней и нынешней системы, а что должно оставаться общим? (Продуктовая политика vs Runtime-Authority)
+
+Вынести во внешние продуктовые workflow-пакеты (Product Policy & Compilation):
+
+Из mcp-server/bridge-daemon.js:97-126 и mcp-server/slideshow-plan-builder.js: весь парсинг манифестов (normalizeManifest), вёрстку газетных статей (articles), расчёт таймингов сцен (eventStart, eventDuration, introDuration), проверку наличия медиафайлов на диске, генерацию префиксов и имён композиций (${m.prefix}E${event.id}_ROOT), а также логику разбивки длинного сценария на последовательные батчи/стадии (eventStages).   
+MD
+
+Все предметные пайплайны: placeholder-* (геометрия, поиск исходников, визуальные батчи), montage-*, comp-visual-review-*, title-export-* и подготовку серий для AME (bridge-daemon.js:99-126, 7490-7504).   
+MD
+
+Из core4/runtime/source-package.json:63-66: заготовки продуктовых модулей titles и photo-placeholder, если они содержат продуктовую логику, оставив в Core только атомарные capabilities.   
+MD
+
+Оставить общим внутри AE Agent Core (Runtime Authority & Safety Invariants):
+
+Sole Controller и транспорт к CEP/AE: createHttpPeer, сериализация команд, таймауты (callerTimeoutMs, callbackTimeoutMs), проверка AE_CORE_SESSION_ID (core4/runtime/stdio-entry.js:167-174, core4/modules/titles/executor.jsx:6).   
+MD
+
+Admission и криптографическая целостность исполнителей: проверка admission.json (trustApprovalId, executorHash, schemaHash, effectPolicyHash, revoked: false) в core4/core/artifacts.js:90-98.   
+MD
+
+Durable Command Ledger и политика UNKNOWN / no-replay: блокировка повторных отправок при неразрешённой команде (controller_unresolved в stdio-entry.js:172, reconciliation_required в broker.js:361), сохранение состояния при reset (Инвариант 7, docs/core-4.0.0-intent.md:30).   
+MD
+
+Гейты подтверждения и резервирования ресурсов: manual-policy.js, windows-reservation-provider.js, проверка свежести evidenceRef и dryrunRef, запрет доверия клиентским proposal или grant (broker.js:177-178, 195-200, 357).   
+MD
+
+Атомарный CAS + Read-back на стороне AE: внутри каждого допущенного executor.jsx фаза mutate обязана сама снять before = snapshot(p), сверить expectedRevision, выполнить мутацию с флагом started = true, снять after = snapshot(p) и при ошибке после started = true вернуть { outcome: 'unknown' } (core4/modules/titles/executor.jsx:36-48).   
+MD
+
+Вопрос 3. Когда достаточно skill + deterministic CLI/library, когда нужен отдельный MCP, а когда нужен host executor? Конкретные критерии для слайд-шоу и титров.
+Форм-фактор компонента	Чёткий инженерный критерий применения	Применение к Титровальному продукту (Titles)	Применение к Слайд-шоу (Slideshow)
+1. Codex Skill + Deterministic CLI / Library (По умолчанию для всех продуктов)	
+
+Задача решается чтением/валидацией локальных файлов (ТЗ, JSON/CSV, медиа), детерминированным расчётом параметров и вызовом уже существующих MCP-инструментов ae-agent-core4. Не требует хранения собственного долгоживущего in-memory состояния между сессиями агента. 
+MD
+
+	
+
+Основной формат продукта Titles: парсинг программы концерта, проверка орфографии/длины строк, маппинг номеров на слои/композиции, сборка JSON для build_solution_plan. 
+MD
+
+	
+
+Основной формат продукта Slideshow: нормализация манифеста и статей, проверка медиафайлов, расчёт таймлайна и генерация стадий по 
+≤
+16
+≤16 шагов. 
+MD
+
+
+2. Отдельный MCP-сервер продукта	
+
+Почти никогда не нужен для одного пользователя. Оправдан только если внешний продукт сам является интерактивным демоном со сторонним UI/стримингом или должен обслуживать клиентов, не умеющих запускать локальный CLI. Иначе второй MCP-сервер создаёт проблему двойного оркестратора (LLM путается между двумя MCP или один MCP проксирует другой). 
+MD
+Ещё 1
+
+	
+
+Не нужен. Skill + CLI поверх единственного MCP ae-agent-core4 проще, прозрачнее и не плодит фоновые процессы. 
+MD
+
+	
+
+Не нужен. Пакет слайд-шоу работает как детерминированный компилятор планов и инспектор чеков (receipts). 
+MD
+
+
+3. Допускаемый Host Executor (executor.jsx в Core)	
+
+Требуется новая мутация или чтение объектной модели DOM внутри After Effects, которую невозможно или крайне неэффективно выразить существующими допущенными operationId без потери CAS-защиты и атомарного read-back. 
+MD
+
+	
+
+1) Для пилота (однострочный текст без анимации) — не нужен, хватает titles-current-target (titles/executor.jsx:26-49). 
+MD
+
+	
+
+
+
+2) Для реальных концертных титров (многострочный текст \r\n, слои с keyframe-анимацией/выражениями, пакетная подстановка нескольких текстовых полей в композиции) — нужен новый узкий capability (например, titles-comp-fields-v1). | Нужен набор из 4–6 coarse-grained capabilities в Core (см. Вопрос 4), так как в текущем каталоге Core4 операций клонирования дерева сцен, ретайминга и перепривязки медиа ещё нет (context.md). |   
+MD
+Ещё 1
+
+Вопрос 4. Как сохранить небольшие typed операции и эффективные batches, не превратив Core в новую библиотеку всех предметных команд и не открыв raw JSX?
+
+Принцип декомпозиции: «Структурные глаголы AE DOM вместо предметных существительных продукта»:   
+MD
+
+Встроить inspect + CAS + mutate + verify внутрь каждого вызова executor.jsx: В прежнем mcp-server/slideshow-plan-builder.js:73-96 после каждого мутирующего шага отдельным шагом плана вызывался audit_slideshow_generated, что удваивало число шагов в плане. В Core4 (core4/modules/titles/executor.jsx:36-49) верификация after = snapshot(p) уже встроена в конец mutate(p), а broker.js:378 вызывает verify при возобновлении (reinspect_success). Отказ от отдельных шагов аудита в плане сразу сокращает длину плана вдвое.   
+MD
+Ещё 2
+
+Заменить газетно-специфичные инструменты на параметризованные структурные операции над композициями: Вместо apply_slideshow_event_text с аргументами hero, articleChunks, newspaper layout (slideshow-plan-builder.js:89-90) в Core допускается обобщённая типизированная операция comp.set_text_fields_v1 (принимает compId, массив { layerId/Name, text, expectedText } и список protectedSourceFingerprints). Тогда внешние пакеты и для слайд-шоу, и для концертных титров используют один и тот же допущенный executor.jsx!   
+MD
+
+Свести всё слайд-шоу к 5–6 переиспользуемым Host Capabilities:
+
+comp.create_or_guard_master_v1 (создание мастер-композиции + копирование базовых управляющих слоёв);   
+MD
+
+comp.clone_hierarchy_v1 (изолированное клонирование дерева прекомпозов с переписыванием ссылок в выражениях и проверкой protectedSourceFingerprints — объединяет clone_slideshow_event_tree + extend_slideshow_cloned_tree + rewrite_slideshow_tree_expressions из slideshow-plan-builder.js:83-88, так как все три мутируют только что созданный изолированный клон!);   
+MD
+
+comp.set_text_fields_v1 (пакетная замена текстовых слоёв внутри целевой иерархии);   
+MD
+
+comp.relink_media_leaves_v1 (пакетная перепривязка медиа-слоёв для списка листьев одного события вместо цикла по 
+𝑁
+N шагов в slideshow-plan-builder.js:91);   
+MD
+
+comp.mount_event_layers_v1 (монтаж собранной сцены и оверлеев/аудио в мастер-композицию — объединяет copy_slideshow_event_pair + add_slideshow_event_overlays, slideshow-plan-builder.js:92-95).   
+MD
+
+Результат по числу шагов: Одно событие слайд-шоу сжимается с 18–20 шагов до 4 типизированных шагов (или даже 1–2 макро-шагов на событие), что легко позволяет упаковать стадию из 3–4 событий в жёсткий лимит steps.length <= 16 (core4/core/broker.js:169) без вскрытия raw JSX.   
+MD
+
+Вопрос 5. Какой минимальный внешний pilot докажет независимость обновлений, отказов, receipts и переносимости? Какие существующие пробелы мешают ему сегодня?
+
+Дизайн минимального пилота (external-titles-pilot):
+
+Отдельная директория вне core4/ (в том же репозитории на время проверки, например workflows/titles-pilot/), содержащая детерминированный CLI-скрипт и проверочный harness без единого require() во внутренние файлы core4/core/*.   
+MD
+
+Пакет общается с core4 исключительно через JSON-RPC поток (core4/core/stdio.js) и использует уже допущенный в составе manual контракт titles-current-target (operationId: 'set-current-text') и project-inspection.   
+MD
+
+6 обязательных проверок пилота (Acceptance Matrix):
+
+Независимость обновлений (Zero Core Hash Impact): изменение логики нормализации/форматирования текста внутри workflows/titles-pilot/ не меняет ни один хеш в core/artifact.json, runtime/composition.json и config/admissions/* (core4/runtime/stdio-entry.js:30-45, core4/core/artifacts.js:17-24).   
+MD
+
+Устойчивость Core к удалению пакета (Graceful Absence): физическое удаление папки workflows/titles-pilot/ после выполненного или прерванного прогона оставляет полностью работоспособными core_status, get_task, reconcile_task, reset_task и историю в ledger (core4/core/stdio.js:5, Инвариант 1 и 6 в docs/core-4.0.0-intent.md:24, 29).   
+MD
+
+Контрактный барьер (Version/Schema Gate): подача несовместимого contractId, устаревшего evidenceRef или многострочного текста (\n) останавливает процесс на фазе inspect/build до любого обращения к транспорту отправки мутации (core4/core/broker.js:150, 176-178, core4/modules/titles-current-target/implementation.js:3).   
+MD
+
+Сохранение UNKNOWN и запрет самовольного ретрая: при симуляции обрыва связи после started = true (outcome: 'unknown') внешний пакет получает статус ошибки/неопределённости и при попытке повторно вызвать run_plan блокируется брокером с кодом reconciliation_required / controller_unresolved (core4/core/broker.js:361, core4/runtime/stdio-entry.js:172).   
+MD
+
+Защита от двух контроллеров: одновременный запуск второго экземпляра внешнего workflow не создаёт второго соединения с CEP и отклоняется по broker_busy или stateLock (core4/core/broker.js:358, core4/runtime/stdio-entry.js:170).   
+MD
+
+Переносимость между двумя средами (Portability Boundary): перенос директории workflows/titles-pilot/ и сохранённого скомпилированного артефакта во второй инстанс (или симуляцию второй машины с другим installationId / transportIdentity) доказывает, что старый proposalId / buildId не даёт права исполнить мутацию без нового inspect → build → propose → dryrun на целевой машине (core4/core/broker.js:221, 360, Инвариант 14 в docs/core-4.0.0-intent.md:37).   
+MD
+
+Существующие пробелы в коде, которые мешают полноценному пилоту сегодня:
+
+В core4/runtime/stdio-entry.js:178 поле automaticLifecycle: 'unavailable', а независимая установка/замена модулей ещё не реализована (docs/core-installed-composition.md:44-46).   
+MD
+
+Связка transport.identity и contractId с полным installation.packageHash (stdio-entry.js:164, 175) мешает доказать независимость хост-модулей друг от друга (см. F-01).   
+MD
+
+Окно свежести dryrun в 5000 мс (core4/core/broker.js:357) может приводить к флапающим отказам fresh_dryrun_required, если внешний процесс или пользовательская проверка вносит задержку между dry_run_plan и run_plan (см. F-06).   
+MD
+
+Вопрос 6. Что разумно заимствовать из рассмотренных внешних решений, и есть ли веское основание заменить наш Core готовым решением?
+
+Вердикт по замене Core: Веских оснований заменять AE Agent Core 4.0.0 любым из рассмотренных открытых или коммерческих решений нет. Ни один из изученных сторонних MCP-мостов не предоставляет подтверждённого эквивалента связки: серверный admission по криптографическим пинам + CAS по expectedRevision + изоляция UNKNOWN/no-replay + нейтральный durable ledger + переносимость с защитой от чужих grants. Более того, популярные решения (например, kumoproductions/mcp-aftereffects) трактуют TIMEOUT как retryable и полагаются на AE Undo Group как на механизм отката, что в среде After Effects опасно при зависшем или частично выполнившемся скрипте.   
+MD
+Ещё 2
+
+Что именно разумно заимствовать (точечные паттерны):
+
+Из kumoproductions/mcp-aftereffects (CONTRIBUTING.md): паттерн компактного публичного MCP-интерфейса (ae_catalog / ae_do поверх реестра типизированных операций) — наш core4/core/stdio.js (list_modules, get_module_contract, inspect/build/propose/dryrun/run) уже реализует более строгую версию этой идеи; полезно перенять удобную организацию документации каталога операций и группировку мутаций одного шага внутри app.beginUndoGroup/endUndoGroup исключительно для удобства ручного Ctrl+Z оператора в UI (но не как замену UNKNOWN/no-replay!).   
+MD
+
+Из inlife/nexrender: чистую декларативную схему Job JSON (разделение описания ассетов, подстановок данных и целевых композиций от самого раннера). Это идеальный прототип для входного манифеста наших внешних пакетов Slideshow и Titles.   
+MD
+Ещё 1
+
+Из Dataclay Templater (Templater Home): концепцию конвенции именования/разметки шаблонных слоёв и внешних таблиц данных (Data Source) как чисто продуктового слоя поверх AE. Это подтверждает, что логика маппинга данных на слои — задача внешнего титровального пакета, а не транспорта.   
+MD
+Ещё 1
+
+Из ComfyUI Nodes и Automation Blocks for After Effects: идею явной типизации входов/выходов (inputs/outputs) и версионирования зависимостей узлов workflow. При этом модель кэширования чистых функций ComfyUI нельзя переносить напрямую, так как открытый проект .aep в After Effects — это глобально мутируемое состояние (context.md).   
+MD
+Ещё 1
+
+Из 23d1/after-effects-mcp (src/bridge.ts), Dakkshin/after-effects-mcp, ku1x/after-effects-mcp-enhanced, irfanabdulhameed/aftereffects-mcp, maaz997/after-effects-mcp и документации Adobe After Effects Scripting (afterfx -r): номенклатуру типовых операций чтения/модификации слоёв для проектирования наших будущих contract.json.   
+MD
+
+Из дорожной карты Adobe After Effects UXP API (Adobe Blog: UXP comes to flagship applications): стратегическое подтверждение того, что вынос Slideshow и Titles за пределы транспортного слоя защитит предметный код при будущем переходе транспорта с CEP на UXP к декабрю 2029 года (поскольку ExtendScript сохраняется, а меняется только хост-панель).   
+MD
+
+Вопрос 7. Какие 3–5 решений стоит принять сейчас, а какие явно отложить? Оценка цены сложности и практической пользы для одного пользователя.
+
+Принять сейчас (высокая практическая отдача, низкая цена поддержки для одного разработчика):
+
+Зафиксировать архитектурное правило: Slideshow, Titles и любые новые предметные генераторы создаются только как внешние детерминированные пакеты (CLI/библиотека + Codex skill) вне core4/, использующие существующий JSON-RPC интерфейс core4/core/stdio.js. (Цена: минимальная; Польза: прекращает разрастание ядра и избавляет от полного ревью Core при правке вёрстки титров или слайд-шоу).   
+MD
+Ещё 1
+
+Переименовать/разграничить роль core4/modules/*: трактовать core4/modules/* исключительно как Admitted Host Capabilities (атомарные операции AE с contract.json + executor.jsx + декларативным expectedBindings), не размещая там продуктовых компиляторов. (Цена: нулевая ломка протокола; Польза: устраняет путаницу между модулем-продуктом и модулем-исполнителем).   
+MD
+Ещё 1
+
+Отвязать transport.identity и contractId от глобального installation.packageHash в stdio-entry.js:164, 175 (привязать их к coreIdentity, protocolPin и хешу конкретного admission/contract). (Цена: ~15 строк правок в stdio-entry.js; Польза: реальное выполнение Инварианта 10 — добавление новой capability перестаёт инвалидировать пины старых модулей).   
+MD
+Ещё 1
+
+Провести минимальный внешний пилот (workflows/titles-pilot/) на базе уже существующего titles-current-target внутри текущего репозитория (monorepo-папка с жёстким запретом прямых импортов из core4/). (Цена: 1–2 дня работы; Польза: проверяет все 6 инвариантов границы без написания новых .jsx и без миграции репозиториев).   
+MD
+Ещё 1
+
+Явно отложить (Out of Scope сейчас — высокая сложность при нулевой отдаче для одного пользователя):
+
+Отдельный MCP-сервер на каждый продукт (Slideshow MCP, Titles MCP) — удваивает число процессов, логирование и сложность маршрутизации вызовов агента.   
+MD
+
+Публикация отдельного версионированного SDK-пакета и немедленный разнос по разным Git-репозиториям — до стабилизации 2–3 workflows внешняя директория в том же репо с lint/test-запретом кросс-импортов даёт 100% архитектурной изоляции без накладных расходов на синхронизацию git submodules / npm registries.   
+MD
+
+Hot-swap модулей без перезапуска процесса, Marketplace, PKI-подписи плагинов и визуальный DAG-редактор — для одного пользователя-инженера сборка/допуск capability через детерминированный catalog.json при старте полностью закрывает потребность.   
+MD
+
+Миграция на UXP и замена CEP прямо сейчас — UXP в AE находится в бете (публичная бета к ноябрю 2026, отключение CEP в новых версиях не ранее декабря 2029).   
+MD
+
+Универсальный «движок всех примитивов AE» в Core — приведёт к деградации до небезопасного проксирования raw JSX.   
+MD
+
+5. Пять основных рисков и способы их нейтрализации (включая Top 3 Failure Modes)
+
+[Top-1 Failure Mode | P1] Скрытая инвалидация планов и транспорта при любом обновлении каталога (transport_pin_changed).
+
+Почему это критично: Из-за включения installation.packageHash в transport.identity (core4/runtime/stdio-entry.js:164) и жёсткого списка expectedIds (stdio-entry.js:34) любое добавление новой capability для слайд-шоу изменит packageHash и сделает невалидными планы титров (broker.js:221, 360).   
+MD
+
+Митигация: Вычислять transport.identity от coreIdentity + protocolPin + peerConfig, а contractId — только от { coreIdentity, protocolPin, admission, contract }.   
+MD
+
+[Top-2 Failure Mode | P1] Превращение build_solution_plan в узкое горлышко на многошаговых сценариях (workflow_size > 16).
+
+Почему это критично: При попытке перенести slideshow-plan-builder.js «как есть» во внешний пакет сгенерированный план из 30–50 микро-шагов будет немедленно отвергнут core4/core/broker.js:169 (steps.length > 16).   
+MD
+
+Митигация: Укрупнить host capabilities (встроить audit в фазу mutate/verify внутри executor.jsx и принимать массивы листьев/текстов одной сцены в одном шаге) + реализовать во внешнем workflow поэтапную подачу стадий (Stage Chunking по 
+≤
+16
+≤16 шагов с проверкой receipts между стадиями).   
+MD
+
+[Top-3 Failure Mode | P1] Иллюзия атомарности или самовольный ретрай внешним пакетом после частичного сбоя (UNKNOWN / Partial Mutation).
+
+Почему это критично: Если внешний пакет слайд-шоу на 3-м событии из 5 получит таймаут или ошибку и попытается перезапустить весь план с нуля поверх уже мутированного .aep, он создаст дубликаты композиций или повредит проект.   
+MD
+
+Митигация: Внешний workflow обязан хранить привязку своих стадий к taskId / workflowId Core4, при сбое запрашивать get_task, останавливаться при любом UNKNOWN до ручного reconcile_task, а при продолжении полагаться на reinspect_success в broker.js:374-380.   
+MD
+
+[Риск 4 | P2] Протухание dryrunRef (5000 мс) и evidenceRef (CAS-конфликт) при интерактивной работе.
+
+Почему это критично: В core4/core/broker.js:357 зашито жёсткое условие Date.now() - dryrun.createdAt > 5000. Если между dry_run_plan и run_plan происходит пользовательский диалог или медленная сериализация во внешнем оркестраторе, выполнение всегда будет падать с fresh_dryrun_required.   
+MD
+Ещё 1
+
+Митигация: Чётко зафиксировать в протоколе внешнего пакета последовательность: пользовательское подтверждение риска выполняется на фазе propose_plan (proposalId), а связка dry_run_plan → run_plan выполняется атомарно непосредственно перед отправкой в AE.   
+MD
+
+[Риск 5 | P2] Дрейф между узким контрактом titles/executor.jsx и реальными шаблонами титров.
+
+Почему это критично: Текущий titles/executor.jsx:14, 28, 31 отвергает любой текст с переносом строки \r\n, анимацией или смешанным стилем. Попытка обойти это во внешнем пакете без расширения host capability приведёт к тому, что пилот заработает только на синтетических фикстурах, но откажет на 90% боевых проектов.   
+MD
+Ещё 1
+
+Митигация: Разделить задачу на Этап А (проверка архитектурной границы на однострочной фикстуре через существующий titles-current-target) и Этап Б (допуск отдельного titles-template-fields-v1 capability с безопасной заменой многострочного текста при сохранении базового стиля первого символа).   
+MD
+
+6. Сводка по регламенту Argon (Пункты 1–8 из Instructions For Argon)
+
+Verdict: revise — утвердить вынос продуктовых workflows (Slideshow, Titles и др.) во внешние детерминированные пакеты (CLI/library + skill) над общим Core4, но скорректировать план: отказаться от преждевременного SDK и отдельных MCP-серверов на продукт, устранить привязку transport.identity/contractId к глобальному packageHash в stdio-entry.js и разграничить внешние продуктовые пакеты от внутренних атомарных Host Capabilities (core4/modules/*).   
+MD
+
+Top 3 failure modes and why they matter:
+
+Мода отказа 1: Инвалидация transport.identity и contractId при любом изменении соседнего модуля из-за глобального installation.packageHash (core4/runtime/stdio-entry.js:164, 175) — ломает независимость обновлений.   
+MD
+
+Мода отказа 2: Отказ build_solution_plan по лимиту steps.length > 16 (core4/core/broker.js:169) при переносе мелкозернистых планов слайд-шоу (mcp-server/slideshow-plan-builder.js:81-96).   
+MD
+
+Мода отказа 3: Нарушение идемпотентности при попытке внешнего workflow перезапустить многошаговый план в обход серверного workflowId / reconcile_task после частичной мутации.   
+MD
+
+Weakest assumption: Допущение в рабочем предложении о том, что в текущем core4 «Core identity уже полностью отделена от module identities на уровне установленного рантайма, и поэтому внешний пакет можно сразу проверять на независимость обновлений без правки stdio-entry.js». На деле core4/runtime/stdio-entry.js:34-49, 164, 175 связывает состав manual фиксированным списком модулей и единым packageHash.   
+MD
+Ещё 1
+
+Missing evidence that would change the verdict:
+
+Исходный код core4/runtime/manual-policy.js, core4/plan-engine/* и пропущенных строк core4/core/broker.js:225-354, 384+ (executeStep, reconcile, обработка межшаговых bindings) — если там уже реализована независимая от packageHash перепривязка или особая логика подтверждения между dryrun и run, приоритет замечаний F-01 и F-06 снизится.   
+MD
+
+Доказательство успешного multi-step прогона (oneStep: false с plan-engine) через createHttpPeer в составе manual.   
+MD
+
+Specific recommended changes to the plan:
+
+Правка 1 (Терминология и граница в Core4): Зафиксировать, что core4/modules/* — это Host Capabilities (операции AE), а внешние пакеты (workflows/titles, workflows/slideshow) — Product Workflows (компиляторы планов).   
+MD
+
+Правка 2 (Отказ от SDK на старте): Заменить пункт 2 рабочего предложения («разработать публичный версионированный SDK») на прямое использование JSON-RPC методов core4/core/stdio.js:5 и JSON-схем contract.json.   
+MD
+
+Правка 3 (Изоляция хешей в stdio-entry.js): Убрать общий installation.packageHash из contractId (stdio-entry.js:175) и transport.identity (stdio-entry.js:164), заменив на пины core/artifact.json, protocol/artifact.json и конкретного admission.json.   
+MD
+
+Правка 4 (Гранулярность для Slideshow): Запланировать для переноса слайд-шоу укрупнение шагов (встроенный verify вместо отдельного audit_slideshow_generated на каждый шаг) и chunking стадий по 
+≤
+16
+≤16 шагов.   
+MD
+
+What must remain out of scope:
+
+Отдельные MCP-серверы для Slideshow и Titles.   
+MD
+
+Массовое перемещение файлов и создание отдельных Git-репозиториев до завершения пилота.   
+MD
+
+Marketplace, динамический hot-swap без рестарта, PKI для сторонних плагинов, визуальный DAG и миграция с CEP на UXP.   
+MD
+
+Открытие произвольного eval / raw JSX для внешних workflow-пакетов.   
+MD
+
+Minimal safer alternative (Минимальный практический путь):
+
+Создать внутри текущего репозитория изолированную директорию workflows/titles-pilot/ (deterministic CLI + тесты), которая общается с core4 только через stdio JSON-RPC (core4/core/stdio.js) и использует уже допущенный titles-current-target (operationId: 'set-current-text').   
+MD
+
+Прогнать оффлайн-проверку 6 инвариантов (неизменность хешей Core при правке правил форматирования во внешнем пакете, выживаемость core_status/ledger/UNKNOWN при удалении папки пакета, отказ по версии/схеме до send, блокировка второго контроллера, отказ исполнения чужого proposalId при смене installationId).   
+MD
+
+Pre-flight checklist before implementation:
+
+[ ] Проверить в пропущенных строках core4/core/broker.js и core4/runtime/manual-policy.js точный момент запроса пользовательского подтверждения относительно 5-секундного окна dryrun (broker.js:357).   
+MD
+
+[ ] Подтвердить, что lint/test-правило запрещает любые require() / import между будущей директорией workflows/* и core4/*.   
+MD
+
+[ ] Проверить вычисление contractId и transport.identity в core4/runtime/stdio-entry.js:164, 175 на соответствие Инварианту 10 (docs/core-4.0.0-intent.md:33).   
+MD
+
+[ ] Зафиксировать JSON-схему входного манифеста для titles-pilot и формат локального отчёта (receipt summary), который ссылается на taskId/proposalId/runId брокера, но не дублирует и не подменяет серверный command ledger.   
+MD

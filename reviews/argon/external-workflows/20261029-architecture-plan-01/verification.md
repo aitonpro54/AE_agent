@@ -27,4 +27,10 @@
 
 ## Продолжение
 
-Цель дальнейшего read-only шага — получить существующий ответ по receipt URL и разобрать реальные findings на зафиксированном snapshot. Реализация внешнего Titles pilot остаётся предложением, не результатом этого исследовательского блока.
+Read-only получение завершено при продолжении по прямому поручению пользователя. Ответ60181байт, SHA-256 `e97cb0c2d560a38ea6c60f1fde14d5d982c573548fa42f0c439f294c710d266c`; request/stage/base/bundle string bindings совпали. Verdict revise, семь findings разобраны в decisions.md. Исторические сведения о блокере выше сохранены как ход получения; актуальный response-meta.status received. Upload/send totals1/1, новых0/0.
+
+Проверены дополнительные source ranges: три implementation.js; manual-policy.js:13–23; current-target executor:45–68; broker dry-run/run и stdio install identities. Нативное подтверждение находится внутри mutate после run, поэтому перенос подтверждения в proposal не принят. Source snapshot остаётся применим: между исходным snapshot и HEAD7d951c8 менялись только документы.
+
+Привязки request/bundle установлены по строкам ответа; самостоятельный пересчёт source hashes Argon не доказан. В его перечне sources есть опечатка hash artifacts.js (`c981` вместо исходного `c991`); верен локально проверенный hash из immutable source-excerpts.md. Raw ответ не исправлялся.
+
+Реализация внешнего Titles pilot остаётся предложением, не результатом этого исследовательского блока. Документальный результат завершён; дальнейшего внешнего review не запрашивалось.

@@ -94,10 +94,26 @@ Adobe [официально объявила](https://blog.developer.adobe.com/e
 
 Единственная консультация отправлена через существующий контроллер: Aiton / 4 Argon / «Высокий — Глубокий», максимум из трёх доступных UI уровней. Один upload, один send, повторов нет. [Запрос](../reviews/argon/external-workflows/20261029-architecture-plan-01/request.md), [manifest](../reviews/argon/external-workflows/20261029-architecture-plan-01/manifest.json), [receipt](../reviews/argon/external-workflows/20261029-architecture-plan-01/submission.json), [чат Argon](https://gemini.google.com/app/8443e83ad4497380).
 
-**Ответ не получен.** После подтверждённой отправки чтение страницы завершилось timeout, затем `Debugger unattached`. Состояние отправки — submitted; получение ответа — blocked-response-read, исход генерации неизвестен. Raw response, binding и verdict отсутствуют. Архитектурная рекомендация выше принадлежит локальному анализу и не выдаётся за согласие Argon. Контроллер остановил browser actions без reload, смены канала и повторной отправки. Пользователю сообщено о восстановлении подключения; после этого нужен read-only захват существующего ответа и локальный разбор, не новый review.
+**Ответ получен при продолжении по прямому поручению пользователя.** Штатное чтение восстановилось, новых uploads/sends не было. [Полный неизменённый ответ](../reviews/argon/external-workflows/20261029-architecture-plan-01/response.txt): 60181 байт, SHA-256 `e97cb0c2d560a38ea6c60f1fde14d5d982c573548fa42f0c439f294c710d266c`. Review/stage/base/request/bundle string bindings совпали; это не доказательство независимого пересчёта хешей внешней моделью. Исторический блокер сохранён в retrievalHistory.
+
+Argon поддерживает стратегию внешних продуктов, но даёт конкретному плану `revise`: 7 замечаний (3 P1, 3 P2, 1 P3). [Локальный разбор каждого](../reviews/argon/external-workflows/20261029-architecture-plan-01/decisions.md) уточняет преувеличения и не превращает рекомендации в автоматическое разрешение правок.
+
+## Окончательный архитектурный вердикт после сверки
+
+**Рекомендуется принять направление: самостоятельные прикладные workflow-пакеты поверх общего AE Core и отдельно допускаемых AE capabilities. План перехода скорректирован; реализация в этом блоке не выполняется.**
+
+Начальная форма — изолированный пакет вне `core4/`, skill + схема задания + чистый compiler + fixtures, с использованием существующего MCP-клиента. Для проверки границы достаточно отдельной директории в текущем репозитории; отдельные repos выбираются по независимым циклам выпуска. Собственный SDK и MCP-сервер на продукт не являются предпосылкой. Первый pilot — узкий Titles, затем реальные требования титров и адаптация slideshow.
+
+Независимость изменения внешнего compiler можно проверять при нынешнем фиксированном составе runtime. Независимость установки/обновления host capabilities пока не достигнута. Package/transport/contract identities сегодня связаны; их будущая декомпозиция требует явного учёта installation, peer, protocol, execution policy, admissions и закреплённых незавершённых команд. Простое удаление packageHash не принято как безопасное исправление.
+
+Серверный build остаётся существующим доверенным швом: текущие builders малы, но это не доказывает необходимость немедленно удалить worker или перенести его обязанности в Core. Укрупнение batch-операций и замена legacy audits допустимы только после сопоставления их postconditions, protected resources и partial-failure semantics. Операции с несколькими мутациями не получают обещание атомарного rollback.
+
+Уточнение порядка подтверждения: `run` проверяет пятисекундную свежесть dry-run до отправки; native confirm расположен в `titles-current-target/executor.jsx:54`, внутри mutate после отправки. Медленный агент между dry-run/run может получить штатный отказ, но длительность native confirm не является доказанным нарушением этого TTL. Перенос native confirm на proposal не принят.
+
+Готовые MCP остаются источником паттернов и кандидатами для отдельных сравнительных испытаний. По материалам исследования оснований заменять Core сейчас нет; это не утверждение об отсутствии эквивалентных гарантий во всех сторонних продуктах.
 
 ## Progress / Decision Log / Validation
 
-- Progress: исследованы локальные границы, выполнен поиск альтернатив; единственный ограниченный запрос Argon отправлен, чтение ответа заблокировано соединением Chrome.
-- Decision Log: рекомендация — внешние продуктовые workflows и отдельно допускаемые capabilities. Решение о реализации ещё не принято; исходники runtime, installed config и AE не менялись.
-- Validation: read-only source inspection и первичные web sources; payload allowlist и hashes. Кодовые suites и live checks не запускались, поскольку production code не менялся. Пробелы: внешний pilot, SDK, independent capability install, multi-client routing и двухмашинная приёмка.
+- Progress: исследованы локальные границы, выполнен поиск альтернатив; получен и локально разобран единственный Argon review, окончательная рекомендация уточнена.
+- Decision Log: внешние продуктовые workflows и отдельно допускаемые capabilities; первый pilot без обязательного SDK/нового MCP. Удаление worker/package pins и перенос native confirm не приняты как готовые исправления. Решение о реализации ещё не принято; исходники runtime, installed config и AE не менялись.
+- Validation: read-only source inspection и первичные web sources; payload/response hashes и bindings. После source snapshot изменились только два посторонних плановых документа (commit7d951c8), исследованные source bytes неизменны. Кодовые suites и live checks не запускались, поскольку production code не менялся. Пробелы: внешний pilot, independent capability install, multi-client routing и двухмашинная приёмка.
