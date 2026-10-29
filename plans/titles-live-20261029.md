@@ -27,7 +27,10 @@ SHA256 `9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f`.
   Discovery ограничен50comps; targeted comp observation содержит один text layer.
 - [x] Подготовлены private root service observation, host witness и retained-handle
   stop script. Ничего не остановлено; текущая история16events semantically settled.
-- [ ] Обслужить старую host adoption и возобновить configured runtime.
+- [x] Stopped maintenance завершён: Core33164 остановлен через retained handle,
+  exact3markers архивированы под standard lease, provider.adopt привязал AE9672
+  и точный test-copy. Outcome readopted, journal/project/installation unchanged,
+  grants/epoch/native dispatch0; gates released. Configured runtime ещё возобновить.
 - [ ] Fresh Titles inspection → compiler → build/proposal → dry-run/run.
 - [ ] Original completion, style/text read-back, визуальная проверка и final status.
 - [ ] Итоговый milestone и продолжение C1.
@@ -60,3 +63,28 @@ identity/endpoints. `service-process.json`: Core33164/parent16204, native birth
 
 `collect-service.cjs`, `check-before-stop.cjs` и PowerShell stop syntax PASS.
 Live mutation пока0. Служебные и C1 offline tests не объявляются живой приёмкой Titles.
+
+19/19 TEMP tests и независимый read-only review ACCEPT для private operator.
+Root bound maintenance evidence SHA256
+`4a823a7d764261f740ff2834dfb2797f7b01ff1b84c87db5a551ba38d1e32a97`;
+итоговый helper SHA256 `be515c7535ac3ad09b240503553fd7aa1878dada5da430444584c61fef0ae653`.
+Stop17:51:46UTC; readoption17:52:22UTC. New adoption digest
+`65ece94b9fb88cec5a138ec3489b43770661f678b7f34ba2ed262a13e542b48c`.
+Unique transaction `stopped-readopt-Titles-T2-20261029-a134de87` completed.
+Повтор stop/readoption/install не требуется и не допускается этим continuation.
+
+## Ближайшее продолжение
+
+Возобновить configured MCP штатным UI restart Codex app-server. AE9672 остаётся
+открытым с тестовым AEP. Закрывать CEP не нужно: в fresh accessibility tree AE
+видна кнопка «Подключить»; после нового Core нажать её по свежему index и проверить
+physical.peer.connected. Не заменять configured client отдельным stdio probe.
+Другие пользовательские чаты completed/idle/notLoaded по fresh inventory.
+
+Затем fresh contract/inspection `titles-current-target` на target
+`{projectId:<absolute live/Titles-T2-test.aep>,compId:218,layerId:219}`.
+Подготовить job через `products/titles/cli.js`, технический запуск явно маркировать
+technical_check/ephemeral_check. Планируемый test text — `TITLES OK`.
+Proposal/dry-run/run и native confirm выполняет root в пределах поручения
+пользователя; при unknown без повторной mutation, только original reconciliation.
+C1a уже завершён commit `42b8646`; independent capability install/C1b остаётся дальше.
