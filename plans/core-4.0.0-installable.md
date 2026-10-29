@@ -8,7 +8,7 @@
 работы здесь, на MSI. Следует локальная доводка и функциональная приёмка;
 milestone 4 и сбор facts другой машины сейчас не продолжаются. Требование
 переносимости сохраняется открытым. Текущий ограниченный engineering block —
-[ожидание повторного подключения CEP](core-msi-panel-reconnect-20261029.md).
+[восстановление receiver ownership и установка f548](core-settled-owner-recovery-20261029.md).
 
 С 28 октября 2026 [двусторонняя переносимость десктоп ↔ MSI](../docs/portability.md)
 входит в обязательную готовность этого среза и всего AE Agent Core, независимо
@@ -35,6 +35,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29октября, по прямому поручению восстановления ownership подготовлен
+  one-case XV operator:46offline tests/syntax PASS, independent ACCEPT;
+  held lease/identityCAS/durable archive и штатный installer одним переходом.
+  Root actual inspect finalhash корректно блокируется живым24688 до записи;
+  protected state/markers прежние. Нужен закрытый Codex для actual apply;
+  [готовый launcher и план](core-settled-owner-recovery-20261029.md).
 - [x] 29октября, разобран пользовательский `local_check_failed`: apply marker
   отсутствует, installedfa9e/config/origins/journal прежние. Точная исходная
   ошибка не была записана. Launcher теперь сохраняет stage/OS code и отдельный
