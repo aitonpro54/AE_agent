@@ -211,7 +211,7 @@ Core4 MCP tools в этом turn недоступны; второй runtime не
   пишется durable `offline-apply-attempt.json`; неизвестный исход не разрешает
   повтор. Under-lease stopped/settled и UNKNOWN остаются в installer.
 
-### Конкретный следующий шаг
+### Прежний следующий шаг — заменён диагностикой ниже
 
 Полностью штатно закрыть Codex, затем из Проводника запустить
 `snapshots/core4-live-proof/XIV-msi-install-continuation-20261029/INSTALL-CORE4.cmd`
@@ -223,3 +223,72 @@ Codex и продолжить этот чат для configured handshake и р�
 Root не может штатно закрыть собственный desktop host и продолжать установку
 в этом же turn; ручной шаг нужен для освобождения занятого runtime, не для
 повторного согласования уже разрешённого обновления.
+
+## Диагностика пользовательского отказа launcher — 29 октября 2026
+
+### Progress
+
+- [x] Получен screenshot и сохранён исходный `offline-install-report.json`:
+  `blocked/local_check_failed`,05:28:37.704UTC (10:28MSI). Оригинал и копии
+  старых launcher/tests сохранены с суффиксом `.original` в evidence XIV.
+- [x] Независимые read-only проверки candidate closure63files, package,
+  конфигурации, полного installed verifier и штатного dry-run PASS. Baseline
+  совпадает с frozenPIN. Установлен прежнийfa9e; attempt marker отсутствует.
+- [x] Исправлена потеря diagnostic stage и OS error code в локальном launcher.
+  `--check-only` теперь пишет отдельный отчёт; ошибка после создания attempt
+  marker классифицируется `unknown` с no-replay, включая сбой записи/fsync marker.
+  Текст ошибки, пути ошибки, stack и raw child output в публичный отчёт не идут.
+- [x] Configured MCP теперь доступен: PID24688, start05:29:35UTC. Pending=null,
+  unresolved=[], broker/receiver faults=false; peer disconnected,
+  physical.storeClosed/unknown=true. Receiver owner существует с04:11:57UTC,
+  раньше нового процесса; original journal SHA-256 прежний.
+- [ ] Восстановление ownership доказано подходящим scoped оператором и
+  выполнено при штатно освобождённом MCP; после этого установленf548.
+
+### Decision Log
+
+- Точная причина `local_check_failed` на screenshot **не восстановлена**:
+  старый catch потерял её, отдельные проверки её не воспроизводят. Нельзя
+  выдавать текущий ownership blocker за доказанную причину прежнего сообщения.
+- Текущая блокировка подтверждается отдельно. Completion store выставляет
+  closed при EEXIST receiver owner; marker старше текущего runtime. Семантический
+  read-only `assertReceiverJournalSettled` PASS:8events, original UNKNOWN с
+  verified terminal disposition и2complete. Это не новая невыясненная AE-команда,
+  но settlement сам по себе не разрешает снятие ownership/fences.
+- Нельзя продолжать прежнюю инструкцию «закрыть Codex и снова запустить
+  launcher»: receiver marker пережил прежние завершения, его lifecycle требует
+  отдельного доказательства. Existing `recover-zero-dispatch-owner` допускает
+  только single-origin journal, поэтому здесь неприменим; его guards не менять
+  и не подставлять этот8event журнал как zero-dispatch.
+- Следующий инженерный блок — доказать происхождение и отсутствие владельца
+  именно receiver marker и подготовить ограниченное архивирование с identity
+  CAS, полным settlement/lineage proof и отсутствием runtime под gates. При
+  недостатке provenance переход остаётся закрытым. Автоматического cleanup,
+  удаления marker, повторного disposition/replay или переключения config нет.
+  До этого не нужно снова закрывать Codex ради прежнего launcher.
+- Эта дельта касается только локальной ignored operational обёртки/evidence;
+  Core4 source, immutable candidate и installed runtime не менялись. Runtime
+  recovery API или новая live authority этим диагностическим блоком не введены.
+
+### Validation
+
+- `local-check-diagnosis.json`:6изолированных read-only checks PASS, frozen
+  baseline PASS. Apply/native/runtime start0; исходный report hash
+  `9b88f221c575094c284748a920c6b67fafbea9ccf3353251d44c5af52cb6acd6`.
+- `offline-launcher-tests.json`:43assertions PASS (прежние29 плюс14адресных
+  checks). Проверены OS code/stage без secret message/path, SyntaxError,
+  unknown после attempt marker, сохранение domain error и реальный CLI catch
+  через in-memory filesystem refusal; check-only не перезаписывает install
+  report. Fixtures не читают installed paths, real apply0. Node syntax PASS.
+- Actual `--check-only`: `blocked/runtime_state_owned_or_unknown`,
+  failureStage=ownership, applyAttemptRecorded=false; новый
+  `offline-check-only-report.json`. Исходный installation report byte-identical.
+- `configured-status-diagnosis.json` и `owner-blocker-evidence.json` содержат
+  current configured status, marker inode/time, semantic settlement и hashes.
+  Descriptor/origins/journal/project config совпали с pre-launcher evidence;
+  installed release60files/CEP/Node проверены полностью. Owners не изменялись.
+- Новый `offline-update.cjs` SHA-256
+  `90e52b323dbb9893bafcdafcb024f4e71d63c621b3558830016b678f2bfdc325`;
+  tests `4b9596c8bc11c7ae4f2905a492f2a692e32faea94f18a9194b8a57df8bccba6e`.
+  Original launcher SHA-256 остаётся `ec0e04baaced6505c4e6007fc1b39a4db0c539c33580173213f3a6f63f20b4d6`.
+  Product suites/full release не повторялись: product bytes прежние.

@@ -35,6 +35,13 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29октября, разобран пользовательский `local_check_failed`: apply marker
+  отсутствует, installedfa9e/config/origins/journal прежние. Точная исходная
+  ошибка не была записана. Launcher теперь сохраняет stage/OS code и отдельный
+  check-only report;43fixture assertions PASS. Configured MCP24688 доступен,
+  но receiver закрыт при сохранившемся marker от04:11:57UTC; journal settled,
+  zero-dispatch recovery неприменим. Повтор установки исключён до отдельного
+  проверяемого восстановления; [диагностика](core-msi-panel-reconnect-20261029.md).
 - [x] 29октября, после restart Codex прежний owner21872 завершён, но новый26568
   автоматически удерживает fa9e. Full file verifier PASS; AE не запущен.
   Existing proxy снова os10050 до initialize. Готов локальный launcher
@@ -100,6 +107,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- Сообщение `local_check_failed` не устанавливает первопричину: прежний wrapper
+  скрывал OS errors и не сохранял stage. Новый актуальный blocker подтверждён
+  отдельно: closed receiver при старом owner, хотя журнал семантически settled.
+  Current broker owner живой; timestamp/пустой marker/settled journal не дают
+  права удалить marker. Existing zero-dispatch operator для8event history
+  неприменим. Ранее предложенный повтор offline launcher пока не выполнять.
 - Установка f548 выполняется между штатным закрытием и следующим запуском
   Codex: обычный restart немедленно возвращает прежнего MCP-владельца.
   Подготовлен локальный launcher штатного installer без изменения gates,
@@ -146,6 +159,13 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- Screenshot diagnosis: full installed verifier/candidate63file closure/package/
+  config/dry-run/baseline PASS; `assertReceiverJournalSettled` PASS на неизменном
+ 8event journal. Current configured status pending=null/unresolved=[]/faults=false,
+  physical.storeClosed/unknown=true. Local wrapper43assertions/syntax PASS;
+  actual `--check-only` отказал на ownership без apply marker, исходный отчёт
+  сохранён byte-for-byte. Source/runtime/CEP/state/owners не менялись;
+  ни новая установка, ни live acceptance этим блоком не подтверждены.
 - После restart: actual fa9e60files/CEP/Node/origins verified, protected hashes
   прежние; configured status в этом чате недоступен, fresh queue не заявляется.
   Existing control proxy exit1/stdout0/os10050, status/reload0; install/native0.
