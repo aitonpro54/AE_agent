@@ -35,6 +35,14 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29октября08:57UTC: фактически установлен f548 без очередного пользовательского
+  запуска CMD. Root завершил только exact idle managed Node21876, полный stopped
+  inspect PASS, successor recovery архивировал оба owner markers под lease и
+  выполнил штатный installer. Независимый read-back release/CEP/Node/config/
+  origins/semantic journal PASS;99адресных tests PASS. Текущий MCP transport
+  закрыт: для нового configured handshake требуется перезапуск только Codex.
+  [Evidence и решение](core-settled-owner-recovery-20261029.md#завершение-установки-без-нового-пользовательского-запуска--29-октября-2026).
+
 - [x] 29октября, stopped CHECK локализовал ENOENT на transaction_parent.
   Win32 backing-path и два Node context probes подтвердили MSIX AppData view:
   внешний CMD не видел установленный runtime. Локальный same-package relay
@@ -133,6 +141,13 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- 29октября: прежняя ошибка повторялась из-за broker pin24688 после новых
+  Codex lifetimes. Committed pre-apply отказ позволил отдельный exact successor
+ 21876 с сохранением старого guard, original receiver/history и всех runtime
+  checks. Однократное обслуживание точного idle Node выполнено root в scope
+  порученной установки; graceful drain не заявляется. INSTALL завершён;
+  дальнейший пользовательский запуск не нужен. AE/native/replay0.
+
 - Причина XV ENOENT подтверждена как различие virtualized AppData внутри Codex
   MSIX и внешнего CMD. One-case relay входит в тот же package context через
   штатный Invoke/PreventBreakaway, не переносит state и не меняет logical paths,
@@ -200,6 +215,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 - Private zero-dispatch recovery V2 прошёл8/8 и independent review ACCEPT после lstat/dangling-ledger repair; source commit `1cd50b5`. Root применил ровно reviewed CLI из distribution после actual inspect/proof CAS. Transaction `8dec8220-b9f3-465e-acce-0dd2bc733051-zero-dispatch-retirement`; независимый read-back подтвердил byte-identical archived markers, неизменные origins/journal/store identity, отсутствие ledger/gates/owner markers. Никакие command outcomes/fences/grants не менялись. [Focused record](core-4.0.0-zero-dispatch-recovery.md).
 
 ## Validation
+
+- 29октября: successor96fixtures +3real installer/semantic/lineage integration
+  PASS; source review P1/P2нет. Actual install exit0 и независимый read-back
+ 08:58:16UTC PASS. Packagef548, два markers в durable архиве, journal/origins
+  неизменны, gates отсутствуют. Configured status после остановки старого
+  клиента: `Transport closed`; новое подключение и live CEP ещё не подтверждены.
 
 - MSIX relay:36/36fixtures, PS5.1 parser,6CMD stub cases/syntax PASS; независимый
   source/fix review ACCEPT. Actual inspect из внешнего процесса без видимого

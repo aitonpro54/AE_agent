@@ -22,8 +22,9 @@ origins, journal и пользовательский AEP сохраняются.
   наблюдаемому receiver marker; автоматическое generic recovery не вводится.
 - [x] Helper/fixtures завершены:46/46PASS; независимое source review ACCEPT,
   открытых P1/P2 нет. Root actual inspect отказал до lease/intent при живом24688.
-- [ ] Runtime штатно освобождён; operator inspect и apply прошли под lease.
-- [ ] Архив marker, установленный f548, config/CEP/Node/state прочитаны обратно.
+- [x] Точный idle runtime завершён root при проверенной идентичности; operator
+  inspect и apply прошли под lease. Это controlled termination, не graceful close.
+- [x] Архив markers, установленный f548, config/CEP/Node/state прочитаны обратно.
 - [ ] Новый configured handshake/status подтвердил открытый receiver. Живая
   CEP/AE приёмка остаётся отдельно от файловой установки.
 
@@ -291,7 +292,7 @@ apply и проверяет результат. Не открывать Codex д
   файле и `package-context-review.json`. Исторические wrapper bytes сохранены
   как `*.cmd.msix-original`; старые format fixtures читают именно эти snapshots.
 
-### Следующий ручной шаг
+### Прежний ручной шаг — отменён успешной установкой ниже
 
 Полностью штатно закрыть Codex и один раз запустить обновлённый
 `XV/INSTALL-CORE4.cmd`. Он входит в проверенный package filesystem context и
@@ -299,3 +300,78 @@ apply и проверяет результат. Не открывать Codex д
 При SUCCESS открыть Codex для configured read-back; при BLOCKED/UNKNOWN сохранить
 `package-context-reports` и recovery reports и не повторять запуск. Root не
 выполнял actual run; установка f548 ещё не объявляется завершённой.
+
+## Завершение установки без нового пользовательского запуска — 29 октября 2026
+
+### Progress
+
+- [x] Последний пользовательский run `34f4a531-afdb-4fd2-801c-21ffe1a92964`
+  подтверждён committed terminal: `blocked/recovery_broker_identity_changed`
+  в первом inspect, до вызова apply, lease и recovery intent. Повторы Codex
+  создавали нового broker owner; XV ошибочно продолжал ожидать исходный24688.
+- [x] Подготовлен отдельный XVI successor с configured status/CIM и точными
+  bytes/шестью identity полями нынешнего собственного broker21876. Исходный
+  receiver, пять protected hashes, candidate и historical settlement прежние.
+  Девять файлов predecessor, включая старый guard и helper, связаны hashes;
+  старый guard сохранён, универсального принятия любого нового broker нет.
+- [x] Устранён пробел прежних fixtures: настоящие installer, lease, boot и
+  semantic/lineage APIs проверены на temp-only установке с синтетическими
+  credentials и подписанным восьмисобытийным journal. Production state и ключи
+  не копировались, runtime/HTTP/AE в тестах не запускались.
+- [x] Root завершил только проверенный idle Node21876 в08:56:53UTC, сохранив
+  Codex открытым. После этого actual inspect08:57:01UTC — `inspectionReady`;
+  полный process census, endpoint, journal, evidence и install plan прошли.
+- [x] Actual run `9929b149-59ee-4356-85c0-80453b7f7a4c` завершён08:57:26UTC:
+  `installed`, exit0, exact f548, оба markers архивированы под общим lease,
+  journal неизменён. Это фактическая установка, а не подготовка launcher.
+- [x] Независимый файловый read-back08:58:16UTC подтвердил immutable release,
+  CEP, Node, config, origins, semantic journal и оба архивных markers.
+  Owner/install gates отсутствуют; старый и новый submit guards сохранены.
+- [x] Прежний XV и новый XVI INSTALL показывают сохранённый успешный результат,
+  не вызывая recovery. Исходные CMD bytes сохранены;2real-CMD проверки PASS.
+- [ ] Новое configured MCP подключение после перезапуска Codex. Единственный
+  текущий вызов status после установки вернул `Transport closed`; второй
+  runtime не запускался. AE/CEP live acceptance остаётся отдельным шагом.
+
+### Decision Log
+
+- Прежний `forceTerminationAllowed:false` был процедурным ограничением root
+  для offline operator, не отдельным запретом пользователя на обслуживание
+  idle MCP. Текущее поручение завершить ремонт и действующий scope установки
+  позволяют точное обслуживание служебного процесса. Helper процессов не
+  завершает и runtime authority не получает. Root отдельно зафиксировал
+  `root-maintenance-decision.json`, submit/result и свежий configured status.
+- Это принудительное завершение точного процесса, **не** заявление о штатном
+  drain. Перед ним проверены PID/native birth/parent/argv/executable hash,
+  protected hashes, closed receiver, отсутствие pending/unresolved/worker/AE
+  и иных writers. После последнего status новые MCP-запросы не отправлялись
+  до завершения; один retained Process handle связывал проверку с Kill.
+- Два подготовительных отказа проверки времени не достигли submit/Kill:
+  PowerShell JSON преобразовал timestamp в DateTime; CIM отбрасывает последний
+ 100ns digit. Native birth `08:38:36.0666837Z` и CIM `08:38:36.0666830Z`
+  установлены отдельно, затем оба проверены точно. Выполнен только один Kill.
+- Stopped-state полный inspect и проверки под lease не ослаблялись. Наличие
+  `unknown:true` у старого peer означало closed store; signed journal был
+  семантически settled. Историческая UNKNOWN-команда не повторялась.
+- Повторять INSTALL теперь не требуется. Остаётся перезапуск только Codex
+  для configured handshake с обновлённым MCP entry. AE не запускался и не
+  перезапускался; пользовательские проекты не изменялись. Portability/MSIX
+  filesystem gap и двусторонняя приёмка не объявляются решёнными.
+
+### Validation
+
+- XVI orchestration/package relay:96/96PASS. Новый `test-real-install.cjs`:
+ 3/3PASS; реальные fresh/absent broker archive+install, credential rotation,
+  CEP/config/readback, две historical edges, reopening store и duplicate no-replay.
+  Stale broker и forged hash-consistent MAC отказали до lease/archive/apply.
+- Независимое bounded source review: P1/P2нет. Дополнительный lifecycle review
+  не нашёл конкретного незавершённого native writer в подтверждённом scope;
+  обычный status не объявлен полной метрикой всех внутренних busy-состояний.
+- Evidence: `snapshots/core4-live-proof/XVI-current-owner-install-20261029/`,
+  `root-installed-readback.json`, `root-maintenance-result.json`,
+  `root-configured-after-install.json` и correlated `package-context-reports/`.
+  Descriptor SHA256 `67202b2e5e75e462eb3631757e035f512a86dc5f78db6af1b17355e84ea4419e`;
+  config `e709ace397056955261d2585611d7e7feb048b915a601c020578d9742a848d57`.
+- Installed package `f54863dbb69b5e3a4b0e79d8ee3629cf71c7eced0a3759745d8899fa65a1ce90`;
+  installationId/origins/journal сохранены. Actual recovery/install1, native/AE0.
+  Source `core4/**` и candidate не менялись; full release не запускался.
