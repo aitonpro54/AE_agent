@@ -7,6 +7,18 @@ MCP пользователем. Root остаётся единственным l
 
 ## Progress
 
+- [x] Пользователь ответил «делай» на явный вопрос об общем restart app-server
+  с остановкой другого активного чата. Это расширение обслуживания разрешено;
+  повторного согласования не требуется. Другой чат и Argon уже completed/idle.
+- [x] XX preflight: current manual3f92/receiver markers PID34608,
+  descriptor/origins/project config unchanged, signed10event journal settled,
+  broker ledger absent. Exact PID остановлен один раз через retained native
+  handle; оба marker архивированы под standard lease, outcome `retired`.
+  Установка и журнал не изменены; runtime/native dispatch0.
+- [x] Штатный restart UI подготовлен обратимым off/on Codeburn. Save без
+  изменений не активен. Единственная добавленная строка `enabled = true`
+  проверена; global config возвращён к точному исходному byte image через CAS.
+- [ ] Выполнить один общий restart штатным UI; текущая точка перед нажатием.
 - [x] Установленный manual3f9293 и project MCP entry сохранены; повторной
   установки/owner recovery/AE-команды в этом блоке нет.
 - [x] CLI `mcp list` из текущего рабочего корня читает Core4 enabled=true.
@@ -66,8 +78,16 @@ UI snapshots возвращены штатным Windows Computer Use; наст�
 
 ## Продолжение
 
-Для общего restart сначала согласовать влияние на активный пользовательский
-чат, установить судьбу его внешних отправок и повторить Core pending/history
-preflight. После restart заново установить ownership, configured discovery и
-status; неизвестную команду/отправку не повторять. Проверка текущего чата пока
-не завершена; успех отдельного installed stdio остаётся отдельным evidence.
+Общий restart разрешён пользователем; соседние задачи completed/idle.
+XX:18/18 scoped tests PASS, независимый read-only review PASS. Runtime PID34608
+остановлен29.10.2026 16:34:22UTC, markers retired16:34:54UTC; transaction
+`stopped-owners-XX-20261029-6f82c4d1` завершена, gates освобождены. Evidence:
+`snapshots/core4-live-proof/XX-app-server-restart-20261029/`; maintenance SHA256
+`5df5e70f94a39af12d26b325ab995ffdd9756b64a3881edc19b75c27a6342072`.
+До следующего старта owners отсутствуют. Не повторять stop/retirement/install.
+
+Далее нажать уже доступный штатный restart в Settings→Plugins→MCP (иконка
+справа от «Серверы»). После restart заново получить configured discovery и
+`core_status`, затем один fresh typed project-inspection через CEP. AE10856
+остаётся открытым. Неизвестную команду/отправку не повторять. Проверка текущего
+чата пока не завершена; успех отдельного installed stdio — отдельное evidence.
