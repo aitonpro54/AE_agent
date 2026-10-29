@@ -1,5 +1,14 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Фактическая установка,29октября2026:** [manual install/live](core-manual-install-live-20261029.md).
+Manual package3f9293… установлен после exact owner recovery; origins и original
+UNKNOWN/disposition сохранены.109offline/tempPASS, independent installed read-back
+и один real stdio MCP→CEP→AE read PASS(AE26.3x87,пустой проект,mutation0,exit0).
+Diagnostic runtime закрыт, owners/gates/listener0. Configured Codex-client proof
+остаётся открытым: tools в текущем чате отсутствуют, требуется reconnect.
+Standalone distribution apply closure gap отмечен в этом плане; full release,
+manual mutation/adoption и P1–P8 не подтверждаются. Ниже — история этапов.
+
 **Source/temp этап завершён, 29 октября 2026:**
 [декларативная устанавливаемая композиция](core-installed-composition-20261029.md).
 Source `ed747ef`, local fixes `510d5ca`; final scoped75PASS +exact-f5481PASS,

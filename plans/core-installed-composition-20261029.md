@@ -149,6 +149,12 @@ Request/manifest/bundle/response и20byte sections сверены root;1upload/1
 
 ## Продолжение
 
+**Последующее фактическое обслуживание завершено:**
+[manual install/live](core-manual-install-live-20261029.md) установил manual3f92
+и подтвердил real installed stdio→CEP→AE read. Configured Codex-client и
+standalone distribution actual apply closure остаются отдельными gaps.
+Нижеследующее состояние f548 сохранено как исходный snapshot этого source этапа.
+
 **Source/temp этап завершён.** Изменены package/runtime/installer/boundary guard,
 validation routing и адресные fixtures/tests; документация состава —
 [core-installed-composition](../docs/core-installed-composition.md).

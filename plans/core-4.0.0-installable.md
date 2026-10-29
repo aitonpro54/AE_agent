@@ -4,6 +4,13 @@
 
 ## Цель и scope
 
+**Текущий операторский блок:** [manual install/live](core-manual-install-live-20261029.md).
+Final manual3f92 установлен, exact owners архивированы; origins и signed history
+сохранены.109offline/tempPASS, independent installed read-back и sole installed
+stdio MCP→CEP→AE read PASS(native1,mutation0,clean exit0). Configured Codex-client
+ещё требует переподключения MCP; tools отсутствуют в текущем чате. Найденный
+standalone apply closure gap записан отдельно; full release/P1–P8 не закрыты.
+
 **Source/temp этап завершён:** [декларативная устанавливаемая композиция](core-installed-composition-20261029.md).
 Созданы readonly40/manual59 с прежними gates; release-specific verifyCep
 покрывает fixed f548. Source `ed747ef`, local fixes `510d5ca`, scoped75PASS
