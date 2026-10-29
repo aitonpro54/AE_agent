@@ -35,6 +35,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29октября, новый screenshot отказа XV launcher воспроизведён: UTF-8/LF
+  ломал Windows batch parser до вызова Node. Исправлены только22LF→CRLF;
+  original сохранён, реальные `cmd` проверки с подменой и кодами0/1/7 PASS.
+  Protected hashes/receiver прежние, intent/recovery reports отсутствуют;
+  broker уже нового runtime. Установка не повторялась;
+  [диагностика и границы](core-settled-owner-recovery-20261029.md#исправление-формата-launcher--29-октября-2026).
 - [x] 29октября, по прямому поручению восстановления ownership подготовлен
   one-case XV operator:46offline tests/syntax PASS, independent ACCEPT;
   held lease/identityCAS/durable archive и штатный installer одним переходом.
@@ -113,6 +119,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- Новый отказ XV launcher вызван сочетанием UTF-8 текста и LF в Windows `cmd`;
+  byte-identical воспроизведение подтвердило отсутствие вызова Node. CRLF
+  устраняет parser defect без изменений recovery/installer/pins. Новый broker
+  не подменяет прежний approved marker: если он останется после закрытия Codex,
+  существующий exact-CAS guard сохраняет отказ до intent.
 - Сообщение `local_check_failed` не устанавливает первопричину: прежний wrapper
   скрывал OS errors и не сохранял stage. Новый актуальный blocker подтверждён
   отдельно: closed receiver при старом owner, хотя журнал семантически settled.
@@ -165,6 +176,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- XV launcher-format regression: исходные bytes воспроизводят screenshot,
+  исправленные CRLF проходят три реальные `cmd` проверки0/1/7 на recording stub
+  в каталоге с пробелами; actual recovery/apply/native0. Новый launcher hash
+  `df8e54c1c24b5093e1182338c1e7827e10aa3b8775609573b8fda4a7e930a499`.
+  Read-back06:20:29UTC: installedfa9e,5protected files/receiver прежние,
+  transaction/gates/recovery reports отсутствуют; broker нового PID2752.
 - Screenshot diagnosis: full installed verifier/candidate63file closure/package/
   config/dry-run/baseline PASS; `assertReceiverJournalSettled` PASS на неизменном
  8event journal. Current configured status pending=null/unresolved=[]/faults=false,

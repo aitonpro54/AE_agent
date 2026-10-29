@@ -84,3 +84,50 @@ apply и проверяет результат. Не открывать Codex д
 новый report, не повторять и не удалять gates. Это технический ручной переход
 из-за недоступного shutdown managed stdio в текущем host, не новое согласование.
 Фактическое восстановление/установка пока не выполнены и не объявляются PASS.
+
+## Исправление формата launcher — 29 октября 2026
+
+### Progress
+
+- [x] Ошибка с нового screenshot воспроизведена настоящим Windows `cmd /d /c`
+  на byte-identical копии launcher рядом с безопасной Node-подменой. Исходный
+  UTF-8 файл имел22LF и0CRLF. `cmd` выполнял обрывки строк, включая
+  `4_RECOVERY_RESULT` и `eport.json`; Node-подмена не вызывалась, batch ошибочно
+  завершался с0. Это отдельная доказанная причина нового screenshot.
+- [x] В `XV/INSTALL-CORE4.cmd` заменены только LF→CRLF, русский текст и команды
+  прежние. Оригинал сохранён как `INSTALL-CORE4.cmd.lf-original`.
+- [x] Исправленный byte-identical launcher проверен на подмене с кодами0/1/7:
+  ровно один вызов с аргументом `run`, правильная SUCCESS/BLOCKED ветка,
+  точный exit code, читаемый русский текст, stderr пуст. Проверены пробелы в
+  пути `%~dp0`, очистка NODE_OPTIONS/NODE_PATH и завершение после pause.
+
+### Decision Log
+
+- Исправление ограничено форматом локальной operational обёртки. Helper,
+  candidate, installer, evidence pins, gates и правила no-replay не меняются.
+  Тестируется фактический batch parser, без запуска настоящего `run`/`inspect`,
+  AE, MCP или installer. Product suites/full release здесь нерелевантны.
+- После повторного открытия Codex broker принадлежит новому PID2752; его
+  bytes/identity отличаются от исходного24688. Подмена baseline не выполнялась.
+  Helper по-прежнему допускает отсутствие broker после штатного завершения;
+  если новый marker останется, exact-CAS guard должен отказать до intent.
+  Этот отказ нельзя обходить повтором, удалением marker или расширением pins.
+- Свежий read-back: отчётов recovery нет, transaction/intent и install gates
+  отсутствуют. Это вместе с воспроизведением подтверждает отказ batch до
+  восстановления. Закрытие Codex и запуск исправленного launcher остаются
+  подготовленным ручным переходом; actual install/live proof ещё не получены.
+
+### Validation
+
+- `test-launcher-format.cjs` / `launcher-format-validation.json`: исходный
+  screenshot воспроизведён с0stub calls; все3исправленных сценария PASS.
+  Изменены только22line endings:1086→1108bytes. Новый launcher SHA-256
+  `df8e54c1c24b5093e1182338c1e7827e10aa3b8775609573b8fda4a7e930a499`;
+  прежний `17be880c…` выше относится к сохранённому LF-оригиналу.
+- `root-launcher-format-readback.json`,06:20:29UTC: все5protected hashes и
+  полная receiver identity/bytes прежние; installed packagefa9e, gates,
+  broker ledger и `.next` отсутствуют. Broker изменён новым runtime, что явно
+  отражено в отчёте; общая неизменность всех markers не заявляется.
+- Actual recovery/apply/native dispatch0 в этом диагностическом блоке;
+  helper/tests hashes `80583154…`/`42a8f885…` прежние. Их46offline checks и
+  независимое review не повторяются из-за изменения только batch line endings.
