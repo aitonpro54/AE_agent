@@ -1344,7 +1344,8 @@
       "test/fixtures/fixed-format1-package.js",
       "test/fixtures/legacy-installation-v1.js",
       "test/fixtures/disposition-child.js",
-      "test/fixtures/manual-capture-driver-source.txt"
+      "test/fixtures/manual-capture-driver-source.txt",
+      "tools/check-boundaries.js"
     ],
     "exact-f548-transition": [
       "runtime/",

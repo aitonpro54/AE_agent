@@ -7,6 +7,8 @@ const { hash, canonical } = require('../protocol/json');
 const { buildPackage, verifyPackage } = require('../tools/package-installable');
 const { planInstall, applyInstall } = require('../tools/install-core4');
 const { verifyInstallation, verifyRelease, verifyCep } = require('../runtime/installation');
+const { deriveComposition } = require('../runtime/stdio-entry');
+const { checkEntrySource } = require('../tools/check-boundaries');
 const { mac } = require('../integrations/cep/peer-protocol');
 const root = path.resolve(__dirname, '..');
 const temp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'core4-composition-'));
@@ -51,6 +53,28 @@ test('installed-composition deterministic packages, fixed ES3 registries, admiss
   }
   assert.equal(buildPackage().packageHash, buildPackage(root, 'manual').packageHash); assert.throws(() => buildPackage(root, 'other'), /composition_selector/);
 });
+test('installed-composition direct legacy derivation requires each fixed admission hash and exact bytes', () => {
+  const pkg = require('./fixtures/fixed-format1-package').fixedFormat1Package();
+  const read = file => Buffer.from(pkg.files[file], 'base64');
+  const selected = deriveComposition(pkg.release, read); assert.equal(selected.legacy, true); assert.deepEqual(selected.assets.map(a => a.assetKey), ['project-inspection-v1', 'titles-current-target-v1']);
+  for (const file of ['modules/project-inspection/artifact.json', 'config/admissions/titles-current-target.json']) {
+    const missing = structuredClone(pkg.release); delete missing.hashes[file]; assert.throws(() => deriveComposition(missing, read), /composition_unhashed_path/);
+    assert.throws(() => deriveComposition(pkg.release, name => name === file ? Buffer.from('{}') : read(name)), /composition_bytes/);
+  }
+});
+test('installed-composition entry source guard covers top-level/start/lease-prefix/tail and fails closed on layout changes', () => {
+  const source = fs.readFileSync(path.join(root, 'runtime/stdio-entry.js'), 'utf8');
+  assert.equal(checkEntrySource(source), true, 'current post-verification and lazy manual imports remain accepted');
+  const initial = 'const installation = verifyInstallation(descriptor), root = installation.releaseDir;';
+  const barrier = "if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');";
+  const end = 'finally { fs.closeSync(startupGate); fs.unlinkSync(installGate); }';
+  const untrusted = "require('../unverified-helper.js');\n";
+  for (const modified of [untrusted + source, source.replace(initial, untrusted + initial), source.replace(barrier, untrusted + barrier), source + '\n' + untrusted]) assert.throws(() => checkEntrySource(modified), /unverified_entry_import/);
+  for (const marker of ['async function start(', initial, barrier, end]) {
+    assert.throws(() => checkEntrySource(source.replace(marker, '/* removed verification layout marker */')), /entry_verification_layout/);
+    assert.throws(() => checkEntrySource(source + '\n/* ' + marker + ' */'), /entry_verification_layout/);
+  }
+});
 test('installed-composition build CLI selects readonly/manual and rejects ambiguous options without output', () => {
   const directory = temp(), cli = path.join(root, 'tools/package-installable.js');
   for (const selector of ['readonly', 'manual', null]) {
@@ -90,6 +114,8 @@ test('installed-composition installed readonly child initialize/status/discovery
     const listening = await h.message('listening'); assert.notEqual(listening.port, 3457);
     assert.equal((await h.rpc('initialize')).result.serverInfo.name, 'ae-agent-core4');
     let status = await h.call('core_status'); assert.equal(status.composition, 'readonly'); assert.equal(status.manualPolicy, null); assert.equal(status.resourceProvider, null); assert.equal(status.mutationAvailable, false); assert.equal(status.physical.inspectionAvailable, false); assert.equal(status.automaticLifecycle, 'unavailable');
+    const unavailable = await h.call('core_connect'); assert.equal(unavailable.available, false); assert.equal(unavailable.reason, 'physical_inspection_unavailable'); assert.deepEqual(unavailable.physical, status.physical);
+    const unchanged = await h.call('core_disconnect'); assert.equal(unchanged.disconnected, false); assert.equal(unchanged.reason, 'physical_link_owned_by_stdio_lifetime'); assert.deepEqual(unchanged.physical, status.physical);
     assert.deepEqual((await h.call('list_modules')).modules.map(m => m.id), ['project-inspection']);
     const contract = await h.call('get_module_contract', { moduleId: 'project-inspection' }); assert.equal(contract.contract.buildSupported, false);
     await assert.rejects(h.call('get_module_contract', { moduleId: 'titles' }), /module_unavailable/);
@@ -97,6 +123,9 @@ test('installed-composition installed readonly child initialize/status/discovery
     const call = await panel(listening.port, f.d);
     status = await h.call('core_status'); assert.equal(status.physical.inspectionAvailable, true); assert.equal(status.connection, 'unavailable');
     const connected = await h.call('core_connect'); assert.equal(connected.available, true); assert.equal(connected.mutationAvailable, false);
+    assert.deepEqual(connected.physical, status.physical);
+    const disconnected = await h.call('core_disconnect'); assert.equal(disconnected.disconnected, false); assert.equal(disconnected.reason, 'physical_link_owned_by_stdio_lifetime'); assert.deepEqual(disconnected.physical, status.physical);
+    assert.deepEqual((await h.call('core_status')).physical, status.physical, 'stdio lifetime retains the physical link');
     function CompItem() { this.id = 7; this.name = 'Synthetic comp'; this.numLayers = 0; this.duration = 5; }
     const comp = new CompItem(), context = vm.createContext({ JSON: undefined, Math, Error, CompItem, app: { version: 'synthetic', project: { file: null, numItems: 1, item: () => comp } } });
     vm.runInContext(Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString(), context);
