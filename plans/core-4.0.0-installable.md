@@ -35,6 +35,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29октября, разрешённое поручение прежнему чату выполнено: очередь пуста,
+  но штатно завершить managed MCP не удалось; Node21872/owners сохраняются.
+  Root подготовил полный63file installer closure и dry-run PASS. Пользователь
+  сообщил AEcrash; Windows event подтвердил RuntimeInstaller.DLL/c0000005,
+  процесс AE завершился. Candidatef548 не установлен; [итог](core-msi-panel-reconnect-20261029.md).
 - [x] 29 октября, локальная доводка MSI: исправлено ожидание после быстрого
   переоткрытия CEP. Retry только handshake/точного duplicate_peer,47selected PASS,
   boundaries21/source review ACCEPT. Candidatef548/60files готов, от fa9e
@@ -90,6 +95,10 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- Свежий пустой status не заменяет штатное завершение stdio lifetime.
+  Освобождение MCP остаётся реальной границей установки; процессы/markers не
+  завершаются принудительно. AEcrash фиксируется отдельно: новый пакет не был
+  установлен, fault module не выдаётся за первопричину. Перезапуск AE0.
 - Перенос отложен по новому поручению29октября; локальная доводка продолжается.
   UI bounded retry сохраняет серверный45speer guard и UNKNOWN/no-replay.
   Старый managed runtime остаётся владельцем до штатного освобождения;
@@ -128,6 +137,10 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- Продолжение после пересылки: actual standalone dry-run63file closure PASS,
+  package/source bytes прежние. Configured status получен владельцем прежнего
+  чата; освобождение MCP FAIL/not-supported. Windows event1000 и census
+  подтвердили завершение AE; нового native/live/install proof нет.
 - Локальный reconnect source-блок:47/47selected PASS, old baseline negative
   FAIL1/1, final evidence keys совпали; boundaries21/syntax/diff PASS,
   independent source ACCEPT. Candidatef548deterministic/60files; actualfa9e

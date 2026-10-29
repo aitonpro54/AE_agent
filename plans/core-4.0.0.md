@@ -7,6 +7,10 @@ Configured MCP → CEP → AE read-only уже подтверждён в `5e5b36
 В текущем turn Core4 tools отсутствуют в inventory при работающем MCP-процессе;
 новый сервер вместо него не запускается. Manual mutation/adoption ещё не приняты.
 P1–P8 остаются открытым требованием, работы второй машины сейчас отложены.
+После разрешённого поручения прежнему чату выяснено: очередь пуста, штатное
+закрытие managed MCP недоступно. Windows подтвердил AEcrash RuntimeInstaller.DLL;
+AE завершился, MCP21872 остался. Candidatef548 не установлен; актуальные facts —
+в [локальном плане](core-msi-panel-reconnect-20261029.md).
 Следующие вводные записи сохраняют историческое состояние своих этапов.
 
 **Продолжение 29 октября 2026:** startup-причина `installation_path` воспроизведена
@@ -170,6 +174,9 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Progress
 
+- [x] Разрешённая пересылка в прежний чат выполнена; shutdown не подтверждён.
+  Полный installer closure63/dry-run PASS. Root read-only подтвердил AEcrash
+  и exit; установкаf548/live verification остаются открытыми.
 - [x] 29 октября: по новому приоритету переноса нет; локальный CEP reconnect
   source repair прошёл47selected/boundaries21/source ACCEPT. Candidatef548
   подготовлен, installedfa9e не менялся; live update ждёт штатного освобождения
@@ -194,6 +201,9 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Decision Log
 
+- Old configured client сохранил Node21872:core_disconnect не завершает stdio.
+  Force kill/marker cleanup не используются. После AEcrash source-only кандидат
+  не объявляется установленным; native0/restart0, перенос по-прежнему отложен.
 - Локальная доводка MSI имеет приоритет до переноса. Быстрое переоткрытие CEP
   обрабатывается ожиданием bounded handshake; server/auth/UNKNOWN не меняются.
   Недоступный configured MCP не заменяется вторым владельцем или live proof
@@ -211,6 +221,10 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Validation
 
+- Продолжение установки: dry-run63closure PASS, packagef548 неизменён;
+  owner-thread status empty, managed shutdown not-supported. ApplicationError1000
+  подтвердил AE26.2/RuntimeInstaller.DLL/c0000005; root censusAfterFX0/Node21872.
+  Actual install/live proof отсутствует;47source checks заново не запускались.
 - Reconnect source:47PASS/0FAIL, meaningful baseline-negative1FAIL,
   boundaries21/syntax/diff и independent source review ACCEPT. Deterministic
   packagef548/60files, actualfa9e read-only verification PASS. Fresh native

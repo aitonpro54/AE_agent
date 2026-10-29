@@ -90,13 +90,65 @@ Core4 MCP tools в этом turn недоступны; второй runtime не
   package SHA-256 `dc02187e1d71513638d94e544f40901ab343ec22d75640704a08a777c1acb9b8`.
   Два deterministic builds совпали, все60files и manifest hash независимо
   пересчитаны. От installedfa9e изменён только `cep/js/panel.js`.
-  Immutable candidate/distribution с4file standalone installer closure:
-  `dist/core4/4.0.0-panel-reconnect-f54863dbb69b/`; read-back —
-  `candidate-readback.json`. Candidate не установлен; native0.
+  Первоначальный distribution с4file installer fragment сохранён как provenance;
+  его недостаточно для apply с существующей lineage. Root дополнил package-owned
+  installer closure до63files(60runtime+3tools), включая lazy disposition/imports.
+  Новый immutable distribution:
+  `dist/core4/4.0.0-panel-reconnect-f54863dbb69b-complete/`; read-back —
+  `candidate-readback.json`. PackageHash/bytes прежние. Candidate не установлен;
+  native0. Полный literal local import graph28files разрешён внутри этого дерева;
+  actual CLI dry-run из closure с explicit workspace/node/hash PASS.
 - Read-only verifier подтвердил actual installedfa9e/60files/CEP/Node/origins.
   Это не fresh status/queue/adoption proof. Installed package и пользовательский
   AEP этим source block не обновляются; live reconnect acceptance ещё открыта.
-- Root final:6изменённых документов strictUTF-8/76relative links PASS;
+- Root final:6изменённых документов strictUTF-8/78relative links PASS;
   descriptor/origin/anchor/receiver journal/project config SHA-256 до/после
   byte-identical. `root-final-static-proof.json`, native0. Git diff-check PASS;
   source block можно независимо установить после штатного освобождения runtime.
+
+## Продолжение после разрешённой пересылки
+
+29октября пользователь прямо разрешил поручение в прежний чат «Доложи
+обстановку». Оно передано в `01a185db-77ee-7bc2-a91a-3df263e7f74f`; результат
+получен через `wait_threads`, без сообщений обратно и без нового controller.
+
+### Progress
+
+- [x] Прежний configured client прочитал свежий status: pending=null,
+  unresolved=[], UNKNOWN/faults=false. Node21872 остаётся runtime owner.
+- [x] Проверена семантика `core_disconnect`: disconnected=false,
+  физическое подключение принадлежит stdio lifetime. Штатного управления stdin
+  или lifecycle managed client не найдено; ос10050proxy повторно не запускался.
+- [x] Root завершил полный installer closure/read-back и actual dry-run.
+- [ ] MCP lifetime штатно завершён; owners освобождены и установлен f548.
+
+### Decision Log
+
+- Разрешённая пересылка не означает успешное освобождение. Оба чата не меняли
+  source/runtime/config/state ради закрытия; force kill и удаление markers0.
+  Старый чат завершил поручение и idle; root снова sole live/UI-controller.
+- В старом чате пользователь показал «Crash in progress». Root только осмотрел
+  окно AE/пустойUntitled project и прочитал процессы/Windows Application events.
+  После снимка AE31380 завершился. ApplicationError1000 от04:52:16.211UTC
+  подтверждает AfterFX26.2.0.49/RuntimeInstaller.DLL, c0000005, offset0x10de13.
+  Это fault location, не доказанная первопричина; candidatef548 не устанавливался.
+  AE не запускался заново, диалог/save не нажимались, native dispatch0.
+- До фактической остановки managed Node21872 установка остаётся заблокированной.
+  Ни отсутствие AE, ни свежий пустой status не заменяют штатное завершение MCP.
+  Дальнейшая живая проверка требует восстановленного AE и configured client;
+  прежний аварийный процесс не объявляется здоровым по старому screenshot.
+- После штатного закрытия Codex/MCP и проверки owners следующий шаг —
+  apply exact f548 через полный installer closure, read-back и новый configured
+  handshake. Installer штатно создаст новые role credentials; прежние значения,
+  ошибочно выведенные при диагностике, до этого остаются действующими.
+
+### Validation
+
+- `installer-dry-run.stdout.json`/`.stderr.log`: exit0/stderr0, workspace/config
+  и exact external Nodev24.15.0 совпали;63closure hashes PASS, package SHA/hash
+  прежние. Dry-run не выполняет under-lease stopped/receiver acceptance apply.
+- `ae-crash-observation.json`: ApplicationError1000 + current process census.
+  После crash наблюдался только Node21872; причинная связь с CEP не установлена.
+- 47selected/source ACCEPT относятся к неизменённому source7dec462;
+  suites не повторялись из-за packaging/docs. Installation/live acceptance0,
+  old UNKNOWN/noReplay не менялись, перенос остаётся отложенным.
