@@ -10,6 +10,10 @@ Response20645bytes, SHA-256
 `b8a629433fe0c9d305df5e6b7d3ad7fcf7d40c0ca4707dcf692a8773091b5521`.
 Runtime code после reviewed commit не менялся. Request/manifest/bundle/raw response
 сохранены неизменными. Документальные уточнения не требуют нового Argon review.
+Для точных payload excerpts, embedded diff и raw response scoped `.gitattributes`
+сохраняет bytes и не исправляет цитируемые пробелы: начальный staged whitespace
+check обнаружил их, нормализация изменила бы разрешённые/полученные hashes.
+Project source и редактируемые документы сохраняют обычную whitespace-проверку.
 
 ## Подготовка до отправки — историческая запись
 

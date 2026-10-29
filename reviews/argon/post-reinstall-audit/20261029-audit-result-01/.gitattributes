@@ -1,0 +1,6 @@
+# Preserve hashed payload excerpts, embedded diff and exact visible response.
+# Their quoted whitespace is evidence, not editable project formatting.
+bundle.md -text -whitespace
+changes.diff -text -whitespace
+response.txt -text -whitespace
+context/*.md -text -whitespace
