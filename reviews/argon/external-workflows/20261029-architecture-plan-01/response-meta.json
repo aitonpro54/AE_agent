@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "reviewId": "20261029-architecture-plan-01",
+  "stageId": "external-workflows",
+  "reviewType": "plan",
+  "status": "blocked-response-read",
+  "recipient": {
+    "service": "Gemini Argon",
+    "name": "Aiton Pro",
+    "email": "aitonpro54@gmail.com"
+  },
+  "readiness": {
+    "verifiedAt": "2026-10-29T14:29:37.067Z",
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "effort": "Высокий",
+    "effortDescription": "Глубокий",
+    "availableEfforts": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "composerEmpty": true
+  },
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "receipt": {
+    "url": "https://gemini.google.com/app/8443e83ad4497380",
+    "reviewId": "20261029-architecture-plan-01",
+    "attachment": "bundle.md",
+    "generating": true,
+    "composerEmpty": true,
+    "durability": "initial UI receipt; awaiting full response"
+  },
+  "response": {
+    "path": null,
+    "sha256": null,
+    "bytes": null,
+    "complete": false
+  },
+  "binding": null,
+  "verdict": null,
+  "retrieval": {
+    "observedAt": "2026-10-29T14:36:41.5139371Z",
+    "status": "blocked",
+    "responseOutcome": "unknown",
+    "events": [
+      "Read-only Playwright count: Runtime.evaluate timeout",
+      "Same-tab getAXState: 30s timeout and REPL kernel reset",
+      "Fresh inventory after reset: same extension instance and same tab/receipt URL still present",
+      "One same-tab screenshot using restored binding: Debugger unattached"
+    ],
+    "lastReceiptUrl": "https://gemini.google.com/app/8443e83ad4497380",
+    "submissionReplay": false,
+    "refreshOrNavigation": false,
+    "otherChannelUsed": false
+  },
+  "submissionStatus": "submitted"
+}

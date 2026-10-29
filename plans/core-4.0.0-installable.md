@@ -4,6 +4,12 @@
 
 ## Цель и scope
 
+**Отдельное архитектурное исследование, 29 октября:** по прямому вопросу
+пользователя подготовлено [сравнение независимых workflow-продуктов и AE MCP](../docs/external-workflows-research-20261029.md).
+Это консультационный блок; он не меняет текущий install/live scope и не запускает
+перенос модулей. Progress / Decision Log / Validation исследования ведутся в
+связанном документе вместе с единственным Argon review.
+
 **Текущий операторский блок:** [manual install/live](core-manual-install-live-20261029.md).
 Final manual3f92 установлен, exact owners архивированы; origins и signed history
 сохранены.109offline/tempPASS, independent installed read-back и sole installed

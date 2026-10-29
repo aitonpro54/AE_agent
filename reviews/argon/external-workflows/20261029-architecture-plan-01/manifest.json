@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "status": "COMPLETE",
+  "reviewId": "20261029-architecture-plan-01",
+  "stageId": "external-workflows",
+  "reviewType": "plan",
+  "baseCommit": "70b340f6e7ecca81673c193a738fd741b43b3306",
+  "targetCommit": null,
+  "planDigest": "bcfde2b0a368d99fbc45d568f5f72fd297ece52b633a7578ef3fa218a011cb3b",
+  "createdAt": "2026-10-29T14:27:08.6398169Z",
+  "dirtyBaseline": [
+    ".codex-attachments/ (untracked, excluded)"
+  ],
+  "files": [
+    {
+      "path": "request.md",
+      "bytes": 9718,
+      "sha256": "bcfde2b0a368d99fbc45d568f5f72fd297ece52b633a7578ef3fa218a011cb3b"
+    },
+    {
+      "path": "context.md",
+      "bytes": 10223,
+      "sha256": "7318c0668f1d2ae085da34b230d1400dc401e9897200823315f80818056703a6"
+    },
+    {
+      "path": "source-excerpts.md",
+      "bytes": 55167,
+      "sha256": "615da6248a8b96d0bb90bac6a8cecdc6c13cc79be7800427653c5c9f58e39ae3"
+    },
+    {
+      "path": "bundle.md",
+      "bytes": 77587,
+      "sha256": "8564f648eb0f27444b336cd3b926b4d387f9f1d58e04fb020c27cc4b71f0acbc"
+    }
+  ],
+  "externalAllowlist": [
+    "bundle.md"
+  ],
+  "recipient": "Argon via existing MSI controller, Aiton account, maximum available UI effort",
+  "classification": [
+    "PUBLIC",
+    "INTERNAL"
+  ],
+  "excluded": [
+    "secrets",
+    "credentials",
+    "browser state",
+    "runtime state",
+    "AEP/assets",
+    "personal data",
+    "full logs",
+    "unrelated source",
+    "previous review responses"
+  ],
+  "limitations": [
+    "Architecture source review only, no live AE validation",
+    "Upstream web facts documented, no installed third-party tests",
+    "Independent capability installation not implemented",
+    "Two-machine round trip not demonstrated",
+    "Selected source ranges only; omitted code not externally reviewed"
+  ],
+  "scannerReview": {
+    "unresolvedWarnings": 0,
+    "falsePositive": "phone_like matches two source SHA-256 digit runs and protocol date 2024-11-05; verified technical identifiers",
+    "redactions": 0,
+    "skippedFiles": 0
+  },
+  "localOnly": [
+    "manifest.json",
+    "approval.json",
+    "submission.json",
+    "response.txt",
+    "response-meta.json",
+    "decisions.md",
+    "verification.md"
+  ]
+}
