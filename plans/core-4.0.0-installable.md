@@ -28,8 +28,10 @@ stdio MCP→CEP→AE read PASS(native1,mutation0,clean exit0). Затем под
 [configured Codex-client путь](core-client-reconnect-20261029.md): разрешённый
 shared restart, recovery AE после CEP crash и один fresh native read PASS.
 Managed33164→CEP→AE9672,receiver12events settled,pending/UNKNOWN0,mutation/save0.
-Найденный
-standalone apply closure gap записан отдельно; full release/P1–P8 не закрыты.
+Найденный standalone apply closure gap старого ad hoc dist исправлен в
+[штатном source builder/entry](../docs/core-standalone-closure-20261029.md):
+7/7+5/5 scoped PASS, actual TEMP apply, existing installed/dist без изменений.
+Full release/P1–P8 не закрыты; independent capability install — следующий C1b.
 
 **Source/temp этап завершён:** [декларативная устанавливаемая композиция](core-installed-composition-20261029.md).
 Созданы readonly40/manual59 с прежними gates; release-specific verifyCep

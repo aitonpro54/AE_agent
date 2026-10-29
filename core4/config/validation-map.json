@@ -1,6 +1,34 @@
 {
   "owners": [
     {
+      "prefix": "core4/tools/package-standalone-installer.js",
+      "owner": "standalone-installer",
+      "checks": [
+        "standalone-installer"
+      ]
+    },
+    {
+      "prefix": "core4/tools/standalone-installer.js",
+      "owner": "standalone-installer",
+      "checks": [
+        "standalone-installer"
+      ]
+    },
+    {
+      "prefix": "core4/test/standalone-installer.test.js",
+      "owner": "standalone-installer",
+      "checks": [
+        "standalone-installer"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/standalone-history.js",
+      "owner": "standalone-installer",
+      "checks": [
+        "standalone-installer"
+      ]
+    },
+    {
       "prefix": "core4/test/exact-f548-transition.test.js",
       "owner": "exact-historical-code-fixture",
       "checks": [
@@ -167,7 +195,8 @@
       "prefix": "core4/tools/disposition-install-preflight.js",
       "owner": "native-read-recovery",
       "checks": [
-        "native-read-recovery"
+        "native-read-recovery",
+        "standalone-installer"
       ]
     },
     {
@@ -355,7 +384,8 @@
       "checks": [
         "installable-runtime",
         "installed-composition",
-        "manual-runtime"
+        "manual-runtime",
+        "standalone-installer"
       ]
     },
     {
@@ -365,7 +395,8 @@
         "installable-runtime",
         "native-read-recovery",
         "installed-composition",
-        "manual-runtime"
+        "manual-runtime",
+        "standalone-installer"
       ]
     },
     {
@@ -1373,6 +1404,29 @@
       "test/fixtures/manual-capture-driver-source.txt",
       "test/fixtures/exact-f548-transition.js",
       "test/exact-f548-transition.test.js"
+    ],
+    "standalone-installer": [
+      "tools/package-standalone-installer.js",
+      "tools/standalone-installer.js",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "tools/disposition-install-preflight.js",
+      "test/standalone-installer.test.js",
+      "test/fixtures/standalone-history.js",
+      "test/fixtures/fixed-format1-package.js",
+      "test/fixtures/legacy-installation-v1.js",
+      "runtime/",
+      "cep/",
+      "core/",
+      "protocol/",
+      "modules/",
+      "plan-engine/",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js",
+      "worker.js",
+      "config/catalog.json",
+      "config/admissions/"
     ]
   },
   "checkCommands": {
@@ -1489,6 +1543,12 @@
       "--test",
       "--test-name-pattern=exact-f548-transition",
       "test/exact-f548-transition.test.js"
+    ],
+    "standalone-installer": [
+      "node",
+      "--test",
+      "--test-name-pattern=standalone-installer",
+      "test/standalone-installer.test.js"
     ]
   },
   "checkProjections": {
@@ -1604,6 +1664,9 @@
       "kind": "integration"
     },
     "exact-f548-transition": {
+      "kind": "integration"
+    },
+    "standalone-installer": {
       "kind": "integration"
     }
   },

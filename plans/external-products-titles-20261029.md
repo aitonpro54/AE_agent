@@ -33,6 +33,16 @@ CLI только читает явно переданные файлы и выд
 
 ## Progress
 
+- 29 октября, новое поручение пользователя разрешает T2 live на тестовом проекте
+  и продолжение плана. Текущий root controller ведёт [T2 evidence/maintenance](titles-live-20261029.md);
+  отдельный writer закрывает C1 standalone closure только offline/source.
+- [x] C1a standalone closure: штатный builder/entry реализован, missing lazy
+  disposition preflight включён в exact helper closure. Реальные TEMP apply
+  manual/readonly и signed-history guards PASS; итог7/7 standalone +5/5 routing.
+  Независимый review P2 ancestor-junction и P3 bounded-read исправлены локально,
+  адресные regressions2/2 PASS. [Отчёт и CLI](../docs/core-standalone-closure-20261029.md).
+  Installed runtime/существующие dist неизменны; independent capabilities — C1b.
+
 - [x] Принято решение пользователя о трёх уровнях и финальном этапе переносимости.
 - [x] Проверены существующие build/oneStep/module/recordContext контракты; изменение runtime для pilot не требуется.
 - [x] T1: реализован внешний пакет и пример: `products/titles/`, версия0.1.0,
@@ -46,6 +56,12 @@ CLI только читает явно переданные файлы и выд
 - [ ] T2/C1/S1 и финальная переносимость — последующие самостоятельные этапы.
 
 ## Decision Log
+
+- C1a — отдельный packaging adapter с обязательными явными absolute destination
+  bindings. Он использует стандартный plan/apply/lease/CAS и не выдаёт authority.
+  Semantic format1 history в tests не объявляется exact historical f548.
+  Проверка7/7 после локальных review fixes; boundaries28PASS — исторический
+  результат до этих fixes, full release/current broad closure не заявлены.
 
 - Новый Argon review не запрашивается: существующий единственный review и локальный разбор уже покрыли выбранное направление. Рекомендация не заменяет технические проверки реализации.
 - Первый pilot находится в том же repo вне `core4/`; выделение репозитория и SDK не является условием начала.

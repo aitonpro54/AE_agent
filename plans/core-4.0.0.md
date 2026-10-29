@@ -9,6 +9,9 @@
 и полная приёмка выбранного выпуска — финальный этап. Ниже сохранена история.
 T1 завершён: внешний `products/titles/`0.1.0,8/8offline checks PASS, настоящий
 Broker build TEMP/VM, Core/CEP bytes unchanged. Следующий предметный этап — T2.
+T2 live поручен пользователем и ведётся в [focused плане](titles-live-20261029.md).
+C1a source/temp завершён: [standalone installer closure](../docs/core-standalone-closure-20261029.md),
+7/7+5/5PASS, review fixes подтверждены локально; installed/dist не изменялись.
 
 **Фактическая установка,29октября2026:** [manual install/live](core-manual-install-live-20261029.md).
 Manual package3f9293… установлен после exact owner recovery; origins и original
@@ -18,7 +21,9 @@ Diagnostic runtime закрыт. Затем [configured Codex-client proof](core
 завершён в текущем чате: разрешённые shared restart и AE recovery после CEP crash,
 managed33164→CEP→AE9672,один fresh native read PASS. Receiver12events settled,
 pending/UNKNOWN0,mutation/save0; runtime и CEP оставлены подключёнными.
-Standalone distribution apply closure gap отмечен в этом плане; full release,
+Standalone distribution apply closure gap исходного ad hoc пакета исправлен
+новым штатным source builder и TEMP actual apply (C1a выше); старые dist
+не переписаны. Full release,
 manual mutation/adoption и P1–P8 не подтверждаются. Ниже — история этапов.
 
 **Source/temp этап завершён, 29 октября 2026:**
