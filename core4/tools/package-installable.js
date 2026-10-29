@@ -2,10 +2,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { hash, canonical, fail } = require('../protocol/json');
-function buildPackage(root = path.resolve(__dirname, '..')) {
+const { deriveComposition, registrySource } = require('../runtime/stdio-entry.js');
+function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual') {
+  if (!['readonly', 'manual'].includes(selector)) fail('composition_selector');
   const spec = JSON.parse(fs.readFileSync(path.join(root, 'runtime/source-package.json'), 'utf8'));
-  const paths = new Set(spec.files);
-  for (const relative of spec.artifactClosures) {
+  const optional = selector === 'manual' ? spec.optional.manual : { files: [], artifactClosures: [] };
+  const paths = new Set([...spec.files, ...optional.files]);
+  for (const relative of [...spec.artifactClosures, ...optional.artifactClosures]) {
     paths.add(relative);
     const artifact = JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8'));
     for (const file of Object.keys(artifact.hashes)) {
@@ -20,24 +23,33 @@ function buildPackage(root = path.resolve(__dirname, '..')) {
     const full = path.resolve(root, relative); if (fs.realpathSync(full) !== full) fail('package_symlink');
     const bytes = fs.readFileSync(full); hashes[relative] = hash(bytes); files[relative] = bytes.toString('base64');
   }
-  const release = { version: '4.0.0', format: 1, hashes };
-  const inspection = JSON.parse(Buffer.from(files['modules/project-inspection/artifact.json'], 'base64'));
-  const source = Buffer.from(files['modules/project-inspection/executor.jsx'], 'base64').toString('utf8');
-  const manual = JSON.parse(Buffer.from(files['config/admissions/titles-current-target.json'], 'base64'));
-  const manualSource = Buffer.from(files['modules/titles-current-target/executor.jsx'], 'base64').toString('utf8');
-  const codecSource = Buffer.from(files['runtime/host/json-codec.jsx'], 'base64').toString('utf8');
-  const registry = '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + codecSource + ';var executor=' + source + ';var manual=' + manualSource + ';var assets={"project-inspection-v1":{hash:"' + inspection.executorHash + '",calls:{inspect:executor.inspect}},"titles-current-target-v1":{hash:"' + manual.executorHash + '",calls:{inspect:manual.inspect,mutate:manual.mutate,verify:manual.verify}}};return {dispatch:function(serialized){var frame=JSON.parse(serialized),a=frame&&assets[frame.assetKey],call=a&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({readFailureVersion:1,outcome:"rejected",code:"inspection_failed"});}}};}());\n';
-  files['cep/jsx/registry.jsx'] = Buffer.from(registry).toString('base64'); hashes['cep/jsx/registry.jsx'] = hash(registry);
-  return { packageHash: hash(release), release, files };
+  const release = { version: '4.0.0', format: 2, hashes };
+  const original = JSON.parse(fs.readFileSync(path.join(root, 'config/catalog.json'), 'utf8'));
+  const { modules, assets } = spec.compositions[selector];
+  if (modules.some(id => original.modules.filter(m => m.id === id).length !== 1)) fail('composition_catalog');
+  const catalog = { catalogRevision: original.catalogRevision, modules: modules.map(id => original.modules.find(m => m.id === id)), engine: selector === 'manual' ? original.engine : null };
+  const composition = { version: 1, id: selector, modules, engine: catalog.engine, assets };
+  const add = (file, source) => { const bytes = typeof source === 'string' ? source : canonical(source); files[file] = Buffer.from(bytes).toString('base64'); hashes[file] = hash(bytes); };
+  add('config/catalog.json', catalog); add('runtime/composition.json', composition);
+  const selected = deriveComposition(release, file => Buffer.from(files[file], 'base64'));
+  add('cep/jsx/registry.jsx', registrySource(selected.assets, Buffer.from(files['runtime/host/json-codec.jsx'], 'base64').toString('utf8')));
+  return verifyPackage({ packageHash: hash(release), release, files });
 }
 function verifyPackage(pkg) {
   if (pkg.packageHash !== hash(pkg.release) || pkg.release.version !== '4.0.0' || canonical(Object.keys(pkg.files).sort()) !== canonical(Object.keys(pkg.release.hashes).sort())) fail('package_integrity');
   for (const [relative, data] of Object.entries(pkg.files)) {
     if (!/^[a-zA-Z0-9_./-]+$/.test(relative) || relative.split('/').includes('..') || path.isAbsolute(relative) || /^(test|experiments|node_modules|\.git|logs|state|tools)\//.test(relative) || hash(Buffer.from(data, 'base64')) !== pkg.release.hashes[relative]) fail('package_integrity');
   }
+  const selected = deriveComposition(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
+  if (!selected.legacy && Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString('utf8') !== registrySource(selected.assets, Buffer.from(pkg.files['runtime/host/json-codec.jsx'], 'base64').toString('utf8'))) fail('composition_registry');
   return pkg;
 }
 if (require.main === module) {
-  try { const args = process.argv.slice(2); if (args.length !== 2 || args[0] !== '--output' || !path.isAbsolute(args[1])) fail('absolute_output_required'); const pkg = buildPackage(); fs.writeFileSync(args[1], canonical(pkg), { flag: 'wx' }); console.log(JSON.stringify({ packageHash: pkg.packageHash, files: Object.keys(pkg.files).length, output: args[1] })); } catch (e) { console.error(e.code || e.message); process.exitCode = 1; }
+  try {
+    const args = process.argv.slice(2), options = {};
+    for (let n = 0; n < args.length; n += 2) { const key = args[n]; if (!['--output', '--composition'].includes(key) || Object.hasOwn(options, key) || typeof args[n + 1] !== 'string' || args[n + 1].startsWith('--')) fail('package_options'); options[key] = args[n + 1]; }
+    if (!options['--output'] || !path.isAbsolute(options['--output'])) fail('absolute_output_required');
+    const pkg = buildPackage(undefined, options['--composition'] ?? 'manual'); fs.writeFileSync(options['--output'], canonical(pkg), { flag: 'wx' }); console.log(JSON.stringify({ packageHash: pkg.packageHash, files: Object.keys(pkg.files).length, composition: options['--composition'] ?? 'manual', output: options['--output'] }));
+  } catch (e) { console.error(e.code || e.message); process.exitCode = 1; }
 }
 module.exports = { buildPackage, verifyPackage };

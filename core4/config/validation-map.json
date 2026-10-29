@@ -1,6 +1,56 @@
 {
   "owners": [
     {
+      "prefix": "core4/test/exact-f548-transition.test.js",
+      "owner": "exact-historical-code-fixture",
+      "checks": [
+        "exact-f548-transition"
+      ]
+    },
+    {
+      "prefix": "core4/tools/check-boundaries.js",
+      "owner": "runtime-boundaries",
+      "checks": [
+        "artifact-boundaries",
+        "installed-composition"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/fixed-format1-package.js",
+      "owner": "installed-composition",
+      "checks": [
+        "installed-composition"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/exact-f548-transition.js",
+      "owner": "installed-composition",
+      "checks": [
+        "exact-f548-transition"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/installed-composition-transition.js",
+      "owner": "installed-composition",
+      "checks": [
+        "installed-composition"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/installed-composition-child.js",
+      "owner": "installed-composition",
+      "checks": [
+        "installed-composition"
+      ]
+    },
+    {
+      "prefix": "core4/test/installed-composition.test.js",
+      "owner": "installed-composition",
+      "checks": [
+        "installed-composition"
+      ]
+    },
+    {
       "prefix": "core4/cep/js/panel.js",
       "owner": "panel-reconnect",
       "checks": [
@@ -55,7 +105,9 @@
       "owner": "recovery-integration",
       "checks": [
         "native-read-recovery",
-        "installable-runtime"
+        "installable-runtime",
+        "installed-composition",
+        "manual-runtime"
       ]
     },
     {
@@ -71,7 +123,9 @@
       "owner": "recovery-integration",
       "checks": [
         "native-read-recovery",
-        "installable-runtime"
+        "installable-runtime",
+        "installed-composition",
+        "manual-runtime"
       ]
     },
     {
@@ -299,7 +353,9 @@
       "prefix": "core4/tools/package-installable.js",
       "owner": "installable-runtime",
       "checks": [
-        "installable-runtime"
+        "installable-runtime",
+        "installed-composition",
+        "manual-runtime"
       ]
     },
     {
@@ -307,7 +363,9 @@
       "owner": "installable-runtime",
       "checks": [
         "installable-runtime",
-        "native-read-recovery"
+        "native-read-recovery",
+        "installed-composition",
+        "manual-runtime"
       ]
     },
     {
@@ -1260,7 +1318,60 @@
       "worker.js",
       "config/catalog.json",
       "config/admissions/",
-      "test/fixtures/stdio-main-ephemeral.js"
+      "test/fixtures/stdio-main-ephemeral.js",
+      "test/fixtures/fixed-format1-package.js"
+    ],
+    "installed-composition": [
+      "runtime/",
+      "cep/",
+      "core/",
+      "protocol/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "worker.js",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "tools/dispose-native-read.js",
+      "tools/capture-native-read.js",
+      "tools/disposition-install-preflight.js",
+      "tools/package-native-read-operator.js",
+      "test/installed-composition.test.js",
+      "test/fixtures/installed-composition-child.js",
+      "test/fixtures/installed-composition-transition.js",
+      "test/fixtures/native-read-recovery.js",
+      "test/fixtures/fixed-format1-package.js",
+      "test/fixtures/legacy-installation-v1.js",
+      "test/fixtures/disposition-child.js",
+      "test/fixtures/manual-capture-driver-source.txt"
+    ],
+    "exact-f548-transition": [
+      "runtime/",
+      "cep/",
+      "core/",
+      "protocol/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "worker.js",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "tools/dispose-native-read.js",
+      "tools/capture-native-read.js",
+      "tools/disposition-install-preflight.js",
+      "tools/package-native-read-operator.js",
+      "test/installed-composition.test.js",
+      "test/fixtures/installed-composition-child.js",
+      "test/fixtures/installed-composition-transition.js",
+      "test/fixtures/native-read-recovery.js",
+      "test/fixtures/fixed-format1-package.js",
+      "test/fixtures/legacy-installation-v1.js",
+      "test/fixtures/disposition-child.js",
+      "test/fixtures/manual-capture-driver-source.txt",
+      "test/fixtures/exact-f548-transition.js",
+      "test/exact-f548-transition.test.js"
     ]
   },
   "checkCommands": {
@@ -1365,6 +1476,18 @@
       "--test",
       "--test-name-pattern=native-read-recovery",
       "test/native-read-recovery.test.js"
+    ],
+    "installed-composition": [
+      "node",
+      "--test",
+      "--test-name-pattern=installed-composition",
+      "test/installed-composition.test.js"
+    ],
+    "exact-f548-transition": [
+      "node",
+      "--test",
+      "--test-name-pattern=exact-f548-transition",
+      "test/exact-f548-transition.test.js"
     ]
   },
   "checkProjections": {
@@ -1474,6 +1597,12 @@
       "kind": "integration"
     },
     "native-read-recovery": {
+      "kind": "integration"
+    },
+    "installed-composition": {
+      "kind": "integration"
+    },
+    "exact-f548-transition": {
       "kind": "integration"
     }
   },

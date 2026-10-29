@@ -160,7 +160,7 @@ test('installable-runtime CLI apply requires reviewed package hash and mismatche
 function installerCliFixture() {
   const directory = temp(), workspace = path.join(directory, 'source'), foreign = path.join(directory, 'unrelated'), pkg = buildPackage(), file = path.join(directory, 'candidate.json');
   // Copy the real CLI and its eager import closure, never the real config/state.
-  for (const relative of ['package.json', 'tools/install-core4.js', 'tools/package-installable.js', 'protocol/json.js', 'runtime/install-lease.js']) {
+  for (const relative of ['package.json', 'tools/install-core4.js', 'tools/package-installable.js', 'protocol/json.js', 'runtime/install-lease.js', 'runtime/stdio-entry.js']) {
     const target = path.join(workspace, 'core4', relative); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.copyFileSync(path.join(root, relative), target);
   }
   for (const [target, content] of [[workspace, '# selected source\n[mcp_servers.neighbor]\ncommand = "preserve-source"\n'], [foreign, '# unrelated CWD\n[mcp_servers.neighbor]\ncommand = "preserve-foreign"\n']]) {

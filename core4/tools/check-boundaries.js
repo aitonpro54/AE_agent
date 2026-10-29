@@ -22,6 +22,16 @@ function checkBoundaries(root = path.resolve(__dirname, '..')) {
     }
     checked++;
   }
+  for (const file of files(path.join(root, 'runtime')).filter(f => f.endsWith('.js'))) {
+    const source = fs.readFileSync(file, 'utf8');
+    if (/require\s*\(\s*[^'"\s]/.test(source) || /require\s*\(\s*['"][^'"]*(?:bridge-daemon|modules\/|plan-engine\/|core-tool-dispatch)/.test(source)) fail('runtime_domain_import', file);
+    if (path.basename(file) === 'stdio-entry.js') {
+      const prefix = source.slice(0, source.indexOf('async function start('));
+      for (const match of prefix.matchAll(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) if (!match[1].startsWith('node:')) fail('unverified_entry_import', file);
+      if (!source.includes('if (manualAsset) {') || source.indexOf("require('./manual-policy.js')") < source.indexOf('if (manualAsset) {') || source.indexOf("require('./windows-reservation-provider.js')") < source.indexOf('if (manualAsset) {')) fail('runtime_optional_policy_import', file);
+    }
+    checked++;
+  }
   return { checked, model: 'reviewed-local-code; conservative source guard; not OS sandbox', liveCalls: 0 };
 }
 if (require.main === module) { try { console.log(JSON.stringify(checkBoundaries())); } catch (e) { console.error(e.code || e.message); process.exitCode = 1; } }

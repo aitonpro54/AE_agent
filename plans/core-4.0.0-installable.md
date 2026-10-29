@@ -4,6 +4,13 @@
 
 ## Цель и scope
 
+**Текущий source-блок:** [декларативная устанавливаемая композиция](core-installed-composition-20261029.md).
+Цель — отдельный read-only состав без рабочих modules/engine и сохранение
+manual состава с теми же gates; release-specific verifyCep покрывает fixed f548.
+Configured tools текущего чата доступны. Native inspection/install пока не
+выполняются: receiver storeClosed=true, stale marker требует отдельного
+обслуживания с проверкой владельца и истории, без replay. Installed f548 сохранён.
+
 **Текущий блок после переустановки среды:** [аудит накопленных изменений](core-post-reinstall-audit-20261029.md).
 Установка f548 из предыдущего recovery завершена; повтор INSTALL не нужен.
 Ordinary CEP connect визуально успешен; этот статус не проверяет evalScript.

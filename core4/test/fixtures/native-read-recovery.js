@@ -5,9 +5,9 @@ const {hash,canonical}=require('../../protocol/json');const {dispatchBinding}=re
 const {buildPackage}=require('../../tools/package-installable');const {planInstall}=require('../../tools/install-core4');
 const {legacyV1Data}=require('./legacy-installation-v1');const {createCapture}=require('../../tools/capture-native-read');
 const {buildOperatorPackage,writeOperatorPackage}=require('../../tools/package-native-read-operator');
-function fixture() {
+function fixture({ historicalPackage } = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-native-capture-')), evidenceRoot = path.join(directory, 'evidence'); fs.mkdirSync(evidenceRoot);
-  const pkg = buildPackage(), config = path.join(directory, 'project/.codex/config.toml');
+  const pkg = historicalPackage || require('./fixed-format1-package').fixedFormat1Package(), config = path.join(directory, 'project/.codex/config.toml');
   const plan = planInstall({ pkg, nodePath: fs.realpathSync(process.execPath), installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'), configPath: config, machineId: os.hostname() });
   const installed = legacyV1Data(plan), descriptor = installed.descriptorPath, d = JSON.parse(fs.readFileSync(descriptor)), receiver = path.join(d.stateDir, 'receiver'), broker = path.join(d.stateDir, 'broker'); fs.mkdirSync(receiver); fs.mkdirSync(broker);
   // Real Broker constructor layout, including one stale identity. Contents are
@@ -43,8 +43,8 @@ function fixture() {
 }
 function raw(port, route, value) { return new Promise((resolve,reject)=>{const req=http.request('http://127.0.0.1:'+port+route,{method:'POST',agent:false,headers:{Origin:'file://','Content-Type':'application/json'}},res=>{let s='';res.on('data',b=>s+=b);res.on('end',()=>resolve({status:res.statusCode,value:JSON.parse(s)}));});req.on('error',reject);req.end(canonical(value));}); }
 function mac(value,secret){return crypto.createHmac('sha256',secret).update(canonical(value)).digest('hex');}
-async function recoveryFixture(){
-  const f=fixture(),producerDriver=path.join(__dirname,'manual-capture-driver-source.txt'),inspection=path.join(f.evidenceRoot,'capture-inspection.json'),initial=await createCapture(f.probes).inspect(f.args);fs.writeFileSync(inspection,JSON.stringify({at:new Date().toISOString(),...initial},null,2)+'\n');
+async function recoveryFixture(options = {}){
+  const f=fixture(options),producerDriver=path.join(__dirname,'manual-capture-driver-source.txt'),inspection=path.join(f.evidenceRoot,'capture-inspection.json'),initial=await createCapture(f.probes).inspect(f.args);fs.writeFileSync(inspection,JSON.stringify({at:new Date().toISOString(),...initial},null,2)+'\n');
   const op=createCapture({...f.probes,port:0}),started=new Date().toISOString(),pending=op.capture({...f.args,expectedProofHash:initial.proofHash}),observed=pending.then(value=>({value}),error=>({error}));
   for(let n=0;n<1000&&!op.status().listening;n++){const out=await Promise.race([observed,new Promise(r=>setTimeout(()=>r(null),5))]);if(out)throw out.error||new Error('fixture_capture_ended');}
   const port=op.status().port,challenge=(await raw(port,'/challenge',{role:'panel'})).value,peerId='fixture-recovery';
@@ -59,7 +59,7 @@ async function recoveryFixture(){
   fs.writeFileSync(path.join(producerSession,'stdout.raw.log'),canonical({event:'capture_listening',port:3457,proofHash:initial.proofHash,transaction:result.transaction,manualWaitMs:600000})+'\n'+canonical(result)+'\n');
   fs.writeFileSync(path.join(producerSession,'exit.json'),canonical({at:new Date().toISOString(),pid:333333331,code:0,signal:null})+'\n');
   const bundle=buildOperatorPackage(),operatorRoot=path.join(f.directory,'operator');writeOperatorPackage(operatorRoot,bundle);
-  const candidate=structuredClone(buildPackage()),css=Buffer.from(candidate.files['cep/panel.css'],'base64').toString()+'\n/* recovery fixture candidate */\n';candidate.files['cep/panel.css']=Buffer.from(css).toString('base64');candidate.release.hashes['cep/panel.css']=hash(css);candidate.packageHash=hash(candidate.release);
+  const candidate=structuredClone(buildPackage(undefined, options.selector || 'manual')),css=Buffer.from(candidate.files['cep/panel.css'],'base64').toString()+'\n/* recovery fixture candidate */\n';candidate.files['cep/panel.css']=Buffer.from(css).toString('base64');candidate.release.hashes['cep/panel.css']=hash(css);candidate.packageHash=hash(candidate.release);
   const packageFile=path.join(f.directory,'candidate.json');fs.writeFileSync(packageFile,canonical(candidate));
   const args={...f.args,capture,producerSession,producerDriver,inspection,package:packageFile,expectedPackageHash:candidate.packageHash};
   const config={operatorRoot,operatorHash:bundle.operatorHash,args};const fixtureFile=path.join(f.directory,'operator-fixture.json');fs.writeFileSync(fixtureFile,canonical(config));
