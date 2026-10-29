@@ -1,0 +1,928 @@
+diff --git a/core4/config/validation-map.json b/core4/config/validation-map.json
+index 567df83..18c50d0 100644
+--- a/core4/config/validation-map.json
++++ b/core4/config/validation-map.json
+@@ -2,0 +3,50 @@
++    {
++      "prefix": "core4/test/exact-f548-transition.test.js",
++      "owner": "exact-historical-code-fixture",
++      "checks": [
++        "exact-f548-transition"
++      ]
++    },
++    {
++      "prefix": "core4/tools/check-boundaries.js",
++      "owner": "runtime-boundaries",
++      "checks": [
++        "artifact-boundaries",
++        "installed-composition"
++      ]
++    },
++    {
++      "prefix": "core4/test/fixtures/fixed-format1-package.js",
++      "owner": "installed-composition",
++      "checks": [
++        "installed-composition"
++      ]
++    },
++    {
++      "prefix": "core4/test/fixtures/exact-f548-transition.js",
++      "owner": "installed-composition",
++      "checks": [
++        "exact-f548-transition"
++      ]
++    },
++    {
++      "prefix": "core4/test/fixtures/installed-composition-transition.js",
++      "owner": "installed-composition",
++      "checks": [
++        "installed-composition"
++      ]
++    },
++    {
++      "prefix": "core4/test/fixtures/installed-composition-child.js",
++      "owner": "installed-composition",
++      "checks": [
++        "installed-composition"
++      ]
++    },
++    {
++      "prefix": "core4/test/installed-composition.test.js",
++      "owner": "installed-composition",
++      "checks": [
++        "installed-composition"
++      ]
++    },
+@@ -58 +108,3 @@
+-        "installable-runtime"
++        "installable-runtime",
++        "installed-composition",
++        "manual-runtime"
+@@ -74 +126,3 @@
+-        "installable-runtime"
++        "installable-runtime",
++        "installed-composition",
++        "manual-runtime"
+@@ -302 +356,3 @@
+-        "installable-runtime"
++        "installable-runtime",
++        "installed-composition",
++        "manual-runtime"
+@@ -310 +366,3 @@
+-        "native-read-recovery"
++        "native-read-recovery",
++        "installed-composition",
++        "manual-runtime"
+@@ -1263 +1321,54 @@
+-      "test/fixtures/stdio-main-ephemeral.js"
++      "test/fixtures/stdio-main-ephemeral.js",
++      "test/fixtures/fixed-format1-package.js"
++    ],
++    "installed-composition": [
++      "runtime/",
++      "cep/",
++      "core/",
++      "protocol/",
++      "modules/",
++      "plan-engine/",
++      "config/catalog.json",
++      "config/admissions/",
++      "worker.js",
++      "tools/package-installable.js",
++      "tools/install-core4.js",
++      "tools/dispose-native-read.js",
++      "tools/capture-native-read.js",
++      "tools/disposition-install-preflight.js",
++      "tools/package-native-read-operator.js",
++      "test/installed-composition.test.js",
++      "test/fixtures/installed-composition-child.js",
++      "test/fixtures/installed-composition-transition.js",
++      "test/fixtures/native-read-recovery.js",
++      "test/fixtures/fixed-format1-package.js",
++      "test/fixtures/legacy-installation-v1.js",
++      "test/fixtures/disposition-child.js",
++      "test/fixtures/manual-capture-driver-source.txt"
++    ],
++    "exact-f548-transition": [
++      "runtime/",
++      "cep/",
++      "core/",
++      "protocol/",
++      "modules/",
++      "plan-engine/",
++      "config/catalog.json",
++      "config/admissions/",
++      "worker.js",
++      "tools/package-installable.js",
++      "tools/install-core4.js",
++      "tools/dispose-native-read.js",
++      "tools/capture-native-read.js",
++      "tools/disposition-install-preflight.js",
++      "tools/package-native-read-operator.js",
++      "test/installed-composition.test.js",
++      "test/fixtures/installed-composition-child.js",
++      "test/fixtures/installed-composition-transition.js",
++      "test/fixtures/native-read-recovery.js",
++      "test/fixtures/fixed-format1-package.js",
++      "test/fixtures/legacy-installation-v1.js",
++      "test/fixtures/disposition-child.js",
++      "test/fixtures/manual-capture-driver-source.txt",
++      "test/fixtures/exact-f548-transition.js",
++      "test/exact-f548-transition.test.js"
+@@ -1367,0 +1479,12 @@
++    ],
++    "installed-composition": [
++      "node",
++      "--test",
++      "--test-name-pattern=installed-composition",
++      "test/installed-composition.test.js"
++    ],
++    "exact-f548-transition": [
++      "node",
++      "--test",
++      "--test-name-pattern=exact-f548-transition",
++      "test/exact-f548-transition.test.js"
+@@ -1477,0 +1601,6 @@
++    },
++    "installed-composition": {
++      "kind": "integration"
++    },
++    "exact-f548-transition": {
++      "kind": "integration"
+diff --git a/core4/runtime/source-package.json b/core4/runtime/source-package.json
+index 575f039..5823f1e 100644
+--- a/core4/runtime/source-package.json
++++ b/core4/runtime/source-package.json
+@@ -2 +2 @@
+-  "version": 1,
++  "version": 2,
+@@ -4,4 +4,8 @@
+-    "core/artifact.json", "worker.js", "config/catalog.json", "config/admissions/titles.json", "config/admissions/photo-placeholder.json",
+-    "runtime/stdio-entry.js", "runtime/installation.js", "runtime/profiles.json", "runtime/source-package.json",
+-    "runtime/receiver-contract.json", "runtime/install-lease.js", "runtime/installation-lineage.js", "runtime/native-read-disposition.js",
+-    "runtime/manual-policy.js", "runtime/windows-reservation-provider.js", "config/admissions/titles-current-target.json",
++    "core/artifact.json",
++    "worker.js",
++    "runtime/stdio-entry.js",
++    "runtime/installation.js",
++    "runtime/receiver-contract.json",
++    "runtime/install-lease.js",
++    "runtime/installation-lineage.js",
++    "runtime/native-read-disposition.js",
+@@ -9,3 +13,11 @@
+-    "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js",
+-    "modules/project-inspection/contract.json", "modules/project-inspection/executor.jsx", "modules/project-inspection/artifact.json",
+-    "cep/CSXS/manifest.xml", "cep/index.html", "cep/panel.css", "cep/js/poll-dispatcher.js", "cep/js/panel.js"
++    "integrations/cep/http-peer.js",
++    "integrations/cep/peer-protocol.js",
++    "integrations/cep/completion-store.js",
++    "modules/project-inspection/contract.json",
++    "modules/project-inspection/executor.jsx",
++    "modules/project-inspection/artifact.json",
++    "cep/CSXS/manifest.xml",
++    "cep/index.html",
++    "cep/panel.css",
++    "cep/js/poll-dispatcher.js",
++    "cep/js/panel.js"
+@@ -13 +25,69 @@
+-  "artifactClosures": ["core/artifact.json", "protocol/artifact.json", "modules/titles/artifact.json", "modules/photo-placeholder/artifact.json", "modules/titles-current-target/artifact.json", "plan-engine/artifact.json"]
++  "artifactClosures": [
++    "core/artifact.json",
++    "protocol/artifact.json"
++  ],
++  "optional": {
++    "manual": {
++      "files": [
++        "config/admissions/titles.json",
++        "config/admissions/photo-placeholder.json",
++        "runtime/manual-policy.js",
++        "runtime/windows-reservation-provider.js",
++        "config/admissions/titles-current-target.json"
++      ],
++      "artifactClosures": [
++        "modules/titles/artifact.json",
++        "modules/photo-placeholder/artifact.json",
++        "modules/titles-current-target/artifact.json",
++        "plan-engine/artifact.json"
++      ]
++    }
++  },
++  "compositions": {
++    "readonly": {
++      "modules": [],
++      "assets": [
++        {
++          "assetKey": "project-inspection-v1",
++          "moduleId": "project-inspection",
++          "path": "modules/project-inspection",
++          "admission": "modules/project-inspection/artifact.json",
++          "policy": "read-only-current-observation-v1",
++          "phases": [
++            "inspect"
++          ]
++        }
++      ]
++    },
++    "manual": {
++      "modules": [
++        "photo-placeholder",
++        "titles",
++        "titles-current-target"
++      ],
++      "assets": [
++        {
++          "assetKey": "project-inspection-v1",
++          "moduleId": "project-inspection",
++          "path": "modules/project-inspection",
++          "admission": "modules/project-inspection/artifact.json",
++          "policy": "read-only-current-observation-v1",
++          "phases": [
++            "inspect"
++          ]
++        },
++        {
++          "assetKey": "titles-current-target-v1",
++          "moduleId": "titles-current-target",
++          "path": "modules/titles-current-target",
++          "admission": "config/admissions/titles-current-target.json",
++          "policy": "current-matching-target-after-local-confirmation-v1",
++          "phases": [
++            "inspect",
++            "mutate",
++            "verify"
++          ]
++        }
++      ]
++    }
++  }
+diff --git a/core4/runtime/stdio-entry.js b/core4/runtime/stdio-entry.js
+index d1a1fbc..56b47aa 100644
+--- a/core4/runtime/stdio-entry.js
++++ b/core4/runtime/stdio-entry.js
+@@ -15,0 +16,57 @@ function hash(value) { return crypto.createHash('sha256').update(typeof value ==
++function exactKeys(value, keys) { if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).sort().join(',') !== [...keys].sort().join(',')) fail('composition_schema'); }
++// Builtin-only release interpretation. Callers verify the COMPLETE tree first.
++// These two reviewed adapters are closed policies, never names of executable imports.
++function deriveComposition(release, read) {
++  if (release.format !== 1 && release.format !== 2) fail('release_format');
++  if (release.format === 1) {
++    if (Object.hasOwn(release.hashes, 'runtime/composition.json')) fail('composition_downgrade');
++    if (!Object.hasOwn(release.hashes, 'runtime/profiles.json') || !Object.hasOwn(release.hashes, 'runtime/source-package.json')) fail('composition_downgrade');
++    const inspection = JSON.parse(read('modules/project-inspection/artifact.json'));
++    const manual = JSON.parse(read('config/admissions/titles-current-target.json'));
++    return { legacy: true, assets: [{ assetKey: 'project-inspection-v1', executorHash: inspection.executorHash, phases: ['inspect'] }, { assetKey: 'titles-current-target-v1', executorHash: manual.executorHash, phases: ['inspect', 'mutate', 'verify'] }] };
++  }
++  if (!Object.hasOwn(release.hashes, 'runtime/composition.json')) fail('composition_required');
++  const json = file => { if (!Object.hasOwn(release.hashes, file)) fail('composition_unhashed_path'); const bytes = read(file); if (hash(bytes) !== release.hashes[file]) fail('composition_bytes'); return JSON.parse(bytes); };
++  const composition = json('runtime/composition.json'); exactKeys(composition, ['version', 'id', 'modules', 'engine', 'assets']);
++  if (composition.version !== 1 || !['readonly', 'manual'].includes(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
++  const catalog = json('config/catalog.json'); exactKeys(catalog, ['catalogRevision', 'modules', 'engine']);
++  const expectedIds = composition.id === 'readonly' ? [] : ['photo-placeholder', 'titles', 'titles-current-target'];
++  if (canonical(composition.modules) !== canonical(expectedIds) || !Array.isArray(catalog.modules) || canonical(catalog.modules.map(m => m.id)) !== canonical(expectedIds) || canonical(catalog.engine) !== canonical(composition.engine) || (composition.id === 'readonly' ? composition.engine !== null : !composition.engine || composition.engine.path !== 'plan-engine')) fail('composition_catalog');
++  function checked(file) { if (!Object.hasOwn(release.hashes, file)) fail('composition_unhashed_path'); const bytes = read(file); if (hash(bytes) !== release.hashes[file]) fail('composition_bytes'); return bytes; }
++  function admitted(entry) {
++    exactKeys(entry, ['id', 'version', 'path', 'admission']);
++    if (entry.path !== 'modules/' + entry.id || entry.admission !== 'config/admissions/' + entry.id + '.json') fail('composition_catalog');
++    const manifest = json(entry.path + '/artifact.json'), contract = json(entry.path + '/contract.json'), admission = json(entry.admission), executor = checked(entry.path + '/executor.jsx');
++    exactKeys(admission, ['moduleId', 'operationId', 'artifactHash', 'schemaHash', 'resultSchemaHash', 'effectPolicyHash', 'executorHash', 'protocolVersion', 'trustApprovalId', 'revoked']);
++    if (manifest.id !== entry.id || manifest.version !== entry.version || admission.revoked !== false || typeof admission.trustApprovalId !== 'string' || !admission.trustApprovalId || admission.protocolVersion !== 1 || admission.moduleId !== entry.id || contract.moduleId !== entry.id || admission.operationId !== contract.operationId || admission.artifactHash !== hash(manifest) || admission.schemaHash !== hash(contract.inputSchema) || admission.resultSchemaHash !== hash(contract.snapshotSchema) || admission.effectPolicyHash !== hash(contract.effectPolicy) || admission.executorHash !== hash(executor)) fail('composition_not_admitted');
++    for (const [file, pin] of Object.entries(manifest.hashes)) if (!/^[A-Za-z0-9_-]+\.(js|json|jsx)$/.test(file) || hash(checked(entry.path + '/' + file)) !== pin) fail('composition_artifact');
++    return { manifest, contract, admission, executor };
++  }
++  const selected = new Map(catalog.modules.map(entry => [entry.id, admitted(entry)]));
++  if (composition.engine) { exactKeys(composition.engine, ['path', 'artifactHash']); const manifest = json('plan-engine/artifact.json'); if (hash(manifest) !== composition.engine.artifactHash) fail('composition_engine'); for (const [file, pin] of Object.entries(manifest.hashes)) if (!/^[A-Za-z0-9_-]+\.(js|json)$/.test(file) || hash(checked('plan-engine/' + file)) !== pin) fail('composition_engine'); }
++  const expectedAssets = [{ assetKey: 'project-inspection-v1', moduleId: 'project-inspection', path: 'modules/project-inspection', admission: 'modules/project-inspection/artifact.json', policy: 'read-only-current-observation-v1', phases: ['inspect'] }];
++  if (composition.id === 'manual') expectedAssets.push({ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', path: 'modules/titles-current-target', admission: 'config/admissions/titles-current-target.json', policy: 'current-matching-target-after-local-confirmation-v1', phases: ['inspect', 'mutate', 'verify'] });
++  if (canonical(composition.assets) !== canonical(expectedAssets)) fail('composition_assets');
++  const assets = composition.assets.map(asset => {
++    let value = selected.get(asset.moduleId);
++    if (asset.policy === 'read-only-current-observation-v1') {
++      const contract = json(asset.path + '/contract.json'), admission = json(asset.admission), executor = checked(asset.path + '/executor.jsx');
++      exactKeys(admission, ['moduleId', 'executionPolicy', 'executorHash', 'contractHash']);
++      if (admission.moduleId !== asset.moduleId || admission.executionPolicy !== asset.policy || admission.executorHash !== hash(executor) || admission.contractHash !== hash(contract)) fail('composition_not_admitted');
++      value = { contract, admission, executor };
++    }
++    if (!value) fail('composition_not_admitted');
++    return { ...asset, ...value, executorHash: value.admission.executorHash };
++  });
++  // No optional runtime code is shipped in the standalone inspection composition.
++  if (composition.id === 'readonly' && Object.keys(release.hashes).some(file => /^(plan-engine\/|modules\/(?!project-inspection\/)|config\/admissions\/|runtime\/(manual-policy|windows-reservation-provider)\.js$)/.test(file))) fail('composition_optional_closure');
++  return { composition, assets };
++}
++function registrySource(assets, codecSource) {
++  const declarations = [], entries = assets.map((asset, index) => {
++    const name = 'executor' + index; declarations.push('var ' + name + '=' + asset.executor + ';');
++    return JSON.stringify(asset.assetKey) + ':{"hash":' + JSON.stringify(asset.executorHash) + ',"calls":{' + asset.phases.map(phase => JSON.stringify(phase) + ':' + name + '[' + JSON.stringify(phase) + ']').join(',') + '}}';
++  });
++  return '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + codecSource + ';' + declarations.join('') + 'var assets={' + entries.join(',') + '};return {"dispatch":function(serialized){var frame=JSON.parse(serialized),own=Object.prototype.hasOwnProperty,a=frame&&own.call(assets,frame.assetKey)&&assets[frame.assetKey],call=a&&own.call(a.calls,frame.phase)&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({"readFailureVersion":1,"outcome":"rejected","code":"inspection_failed"});}}};}());\n';
++}
++function installationConfig(d, selected) { const assets = selected.assets.map(a => ({ assetKey: a.assetKey, executorHash: a.executorHash, phases: a.phases })); return { installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: assets[0].executorHash, assetKey: assets[0].assetKey, assets }; }
+@@ -16,0 +74 @@ function verifyRelease(directory, release) {
++  exactKeys(release, ['version', 'format', 'hashes']); if (release.version !== '4.0.0' || !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype) fail('release_schema');
+@@ -34,0 +93,4 @@ function verifyRelease(directory, release) {
++  if (release.format !== 1 && release.format !== 2) fail('release_format');
++  if (release.format === 1) { if (Object.hasOwn(release.hashes, 'runtime/composition.json')) fail('composition_downgrade'); return; }
++  const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
++  if (fs.readFileSync(path.join(root, 'cep/jsx/registry.jsx'), 'utf8') !== registrySource(selected.assets, fs.readFileSync(path.join(root, 'runtime/host/json-codec.jsx'), 'utf8'))) fail('composition_registry');
+@@ -40,0 +103 @@ function verifyCep(d, manifest, cepDir) {
++  verifyRelease(d.releaseDir, manifest);
+@@ -42,2 +105 @@ function verifyCep(d, manifest, cepDir) {
+-  const inspection = JSON.parse(fs.readFileSync(path.join(d.releaseDir, 'modules/project-inspection/artifact.json'), 'utf8'));
+-  const manual = JSON.parse(fs.readFileSync(path.join(d.releaseDir, 'config/admissions/titles-current-target.json'), 'utf8'));
++  const selected = deriveComposition(manifest, file => fs.readFileSync(path.join(d.releaseDir, file)));
+@@ -46 +108 @@ function verifyCep(d, manifest, cepDir) {
+-  const cfg = { installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: inspection.executorHash, assetKey: 'project-inspection-v1', assets: [{ assetKey: 'project-inspection-v1', executorHash: inspection.executorHash, phases: ['inspect'] }, { assetKey: 'titles-current-target-v1', executorHash: manual.executorHash, phases: ['inspect', 'mutate', 'verify'] }] };
++  const cfg = installationConfig(d, selected);
+@@ -88,18 +150,18 @@ async function start({ descriptor, port = 3457, input = process.stdin, output =
+-  const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
+-  const { createManualPolicy } = require('./manual-policy.js');
+-  const profile = JSON.parse(fs.readFileSync(path.join(root, 'runtime/profiles.json'), 'utf8')).profiles.find(p => p.id === 'project-inspection');
+-  if (!profile || profile.path !== 'modules/project-inspection' || profile.executionPolicy !== 'read-only-current-observation-v1') fail('inspection_profile_not_admitted');
+-  const contract = JSON.parse(fs.readFileSync(path.join(root, profile.path, 'contract.json'), 'utf8'));
+-  const admission = JSON.parse(fs.readFileSync(path.join(root, profile.path, 'artifact.json'), 'utf8'));
+-  const source = fs.readFileSync(path.join(root, profile.path, 'executor.jsx'), 'utf8');
+-  if (admission.executorHash !== hash(source) || admission.contractHash !== hash(contract) || admission.executionPolicy !== profile.executionPolicy) fail('inspection_admission');
+-  const asset = { assetKey: 'project-inspection-v1', executorHash: admission.executorHash };
+-  const manualPath = path.join(root, 'modules/titles-current-target');
+-  const manualContract = JSON.parse(fs.readFileSync(path.join(manualPath, 'contract.json'), 'utf8'));
+-  const manualManifest = JSON.parse(fs.readFileSync(path.join(manualPath, 'artifact.json'), 'utf8'));
+-  const manualAdmission = JSON.parse(fs.readFileSync(path.join(root, 'config/admissions/titles-current-target.json'), 'utf8'));
+-  const selectedManual = { pin: hash(manualManifest), contract: manualContract, admission: manualAdmission };
+-  const provider = createWindowsReservationProvider({ installation, getBroker: () => broker, getPeer: () => peer });
+-  const manual = createManualPolicy({ selected: selectedManual, provider, installation, getPeer: () => peer });
+-  const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
+-  broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, privateEmbedding: { authority: manual.authority, executionPolicy: manual.port, transport } });
++  const release = JSON.parse(fs.readFileSync(path.join(root, 'release.json'), 'utf8'));
++  const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
++  if (selected.legacy) fail('runtime_composition_required');
++  const inspection = selected.assets.find(a => a.policy === 'read-only-current-observation-v1');
++  const { contract, admission } = inspection;
++  const profile = { id: inspection.moduleId, executionPolicy: inspection.policy };
++  const asset = { assetKey: inspection.assetKey, executorHash: inspection.executorHash };
++  const manualAsset = selected.assets.find(a => a.policy === 'current-matching-target-after-local-confirmation-v1');
++  let provider, manual, privateEmbedding;
++  if (manualAsset) {
++    const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
++    const { createManualPolicy } = require('./manual-policy.js');
++    provider = createWindowsReservationProvider({ installation, getBroker: () => broker, getPeer: () => peer });
++    manual = createManualPolicy({ selected: { pin: hash(manualAsset.manifest), contract: manualAsset.contract, admission: manualAsset.admission }, provider, installation, getPeer: () => peer });
++    const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission: manualAsset.admission }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
++    privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };
++  }
++  broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, ...(privateEmbedding ? { privateEmbedding } : {}) });
+@@ -112 +174 @@ async function start({ descriptor, port = 3457, input = process.stdin, output =
+-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets: [{ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', operationId: manualContract.operationId, executorHash: manualAdmission.executorHash, resultProfile: 'manual-text-v1' }], timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, installationContext: { descriptorPath: descriptor } });
++  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets: manualAsset ? [{ assetKey: manualAsset.assetKey, moduleId: manualAsset.moduleId, operationId: manualAsset.contract.operationId, executorHash: manualAsset.executorHash, resultProfile: 'manual-text-v1' }] : [], timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, installationContext: { descriptorPath: descriptor } });
+@@ -115 +177,2 @@ async function start({ descriptor, port = 3457, input = process.stdin, output =
+-  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.0.0', installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: peer.status(), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual.policyId, resourceProvider: provider.status(), externalLegacyCoverage: 'unobserved' });
++  const physical = () => { const value = peer.status(); return { ...value, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && !value.storeClosed && !value.storeFault && !value.pending }; };
++  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.0.0', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
+@@ -117 +180 @@ async function start({ descriptor, port = 3457, input = process.stdin, output =
+-  facade.connect = async () => ({ ...await broker.connect(), automaticLifecycle: 'unavailable', physical: peer.status() });
++  facade.connect = async () => ({ ...(manual ? await broker.connect() : { available: physical().inspectionAvailable, reason: physical().inspectionAvailable ? null : 'physical_inspection_unavailable', mutationAvailable: false }), automaticLifecycle: 'unavailable', physical: physical() });
+@@ -139 +202 @@ async function start({ descriptor, port = 3457, input = process.stdin, output =
+-module.exports = { start, verifyInstallation, verifyRelease, verifyCep, PRODUCTION_TIMING };
++module.exports = { start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, registrySource, installationConfig, PRODUCTION_TIMING };
+diff --git a/core4/test/exact-f548-transition.test.js b/core4/test/exact-f548-transition.test.js
+new file mode 100644
+index 0000000..863caac
+--- /dev/null
++++ b/core4/test/exact-f548-transition.test.js
+@@ -0,0 +1,5 @@
++'use strict';
++const test = require('node:test');
++test('exact-f548-transition code artifact to readonly with fresh synthetic state', { timeout: 30000 }, async () => {
++  console.log(JSON.stringify(await require('./fixtures/exact-f548-transition').exactTransition()));
++});
+diff --git a/core4/test/fixtures/exact-f548-transition.js b/core4/test/fixtures/exact-f548-transition.js
+new file mode 100644
+index 0000000..855baf0
+--- /dev/null
++++ b/core4/test/fixtures/exact-f548-transition.js
+@@ -0,0 +1,15 @@
++'use strict';
++// Explicit historical CODE artifact only. All credentials/state are fresh temp data.
++const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
++const { hash } = require('../../protocol/json');
++const file = path.resolve(__dirname, '../../..', 'dist/core4/4.0.0-panel-reconnect-f54863dbb69b/core4-4.0.0.json');
++async function exactTransition() {
++  const bytes = fs.readFileSync(file), pkg = JSON.parse(bytes);
++  assert.equal(bytes.length, 343626); assert.equal(hash(bytes), 'dc02187e1d71513638d94e544f40901ab343ec22d75640704a08a777c1acb9b8');
++  assert.equal(pkg.packageHash, 'f54863dbb69b5e3a4b0e79d8ee3629cf71c7eced0a3759745d8899fa65a1ce90'); assert.equal(hash(pkg.release), pkg.packageHash);
++  require('../../tools/package-installable').verifyPackage(pkg);
++  const result = await require('./installed-composition-transition').transition(pkg);
++  return { evidence: 'exact-historical-code/temp-synthetic-state', artifact: file, artifactBytes: bytes.length, artifactSha256: hash(bytes), ...result };
++}
++if (require.main === module) exactTransition().then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.code || error.stack); process.exitCode = 1; });
++module.exports = { exactTransition };
+diff --git a/core4/test/fixtures/fixed-format1-package.js b/core4/test/fixtures/fixed-format1-package.js
+new file mode 100644
+index 0000000..7fce478
+--- /dev/null
++++ b/core4/test/fixtures/fixed-format1-package.js
+@@ -0,0 +1,17 @@
++'use strict';
++// Portable semantic legacy fixture, NOT the byte-identical historical f548 build.
++// Current reviewed code bytes retain the fixed format1 two-asset CEP contract.
++const { buildPackage, verifyPackage } = require('../../tools/package-installable');
++const { hash, canonical } = require('../../protocol/json');
++function fixedFormat1Package() {
++  const pkg = structuredClone(buildPackage());
++  delete pkg.files['runtime/composition.json']; delete pkg.release.hashes['runtime/composition.json']; pkg.release.format = 1;
++  const add = (file, value) => { const bytes = typeof value === 'string' ? value : canonical(value); pkg.files[file] = Buffer.from(bytes).toString('base64'); pkg.release.hashes[file] = hash(bytes); };
++  add('runtime/profiles.json', { profiles: [{ id: 'project-inspection', path: 'modules/project-inspection', executionPolicy: 'read-only-current-observation-v1' }] });
++  add('runtime/source-package.json', { version: 1, files: Object.keys(pkg.files).sort(), artifactClosures: [] });
++  const read = file => Buffer.from(pkg.files[file], 'base64').toString();
++  const inspection = JSON.parse(read('modules/project-inspection/artifact.json')), manual = JSON.parse(read('config/admissions/titles-current-target.json'));
++  add('cep/jsx/registry.jsx', '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + read('runtime/host/json-codec.jsx') + ';var executor=' + read('modules/project-inspection/executor.jsx') + ';var manual=' + read('modules/titles-current-target/executor.jsx') + ';var assets={"project-inspection-v1":{hash:"' + inspection.executorHash + '",calls:{inspect:executor.inspect}},"titles-current-target-v1":{hash:"' + manual.executorHash + '",calls:{inspect:manual.inspect,mutate:manual.mutate,verify:manual.verify}}};return {dispatch:function(serialized){var frame=JSON.parse(serialized),a=frame&&assets[frame.assetKey],call=a&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({readFailureVersion:1,outcome:"rejected",code:"inspection_failed"});}}};}());\n');
++  pkg.packageHash = hash(pkg.release); return verifyPackage(pkg);
++}
++module.exports = { fixedFormat1Package };
+diff --git a/core4/test/fixtures/installed-composition-child.js b/core4/test/fixtures/installed-composition-child.js
+new file mode 100644
+index 0000000..9aadb5d
+--- /dev/null
++++ b/core4/test/fixtures/installed-composition-child.js
+@@ -0,0 +1,11 @@
++'use strict';
++// Test preload: real installed direct-main entry, ephemeral listener, cache report.
++// No runtime production flags, credentials or provider injection.
++const net = require('node:net');
++const listen = net.Server.prototype.listen;
++net.Server.prototype.listen = function (port, host, ...rest) {
++  if (port !== 3457 || host !== '127.0.0.1') throw new Error('fixture_unexpected_listener');
++  this.once('listening', () => process.send({ event: 'listening', port: this.address().port }));
++  return listen.call(this, 0, host, ...rest);
++};
++process.on('message', value => { if (value === 'cache') process.send({ event: 'cache', modules: Object.keys(require.cache) }); });
+diff --git a/core4/test/fixtures/installed-composition-transition.js b/core4/test/fixtures/installed-composition-transition.js
+new file mode 100644
+index 0000000..acdac03
+--- /dev/null
++++ b/core4/test/fixtures/installed-composition-transition.js
+@@ -0,0 +1,36 @@
++'use strict';
++const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
++const { fork } = require('node:child_process');
++const { recoveryFixture } = require('./native-read-recovery');
++const { canonical, hash } = require('../../protocol/json');
++const { openCompletionStore } = require('../../integrations/cep/completion-store');
++const { createHttpPeer } = require('../../integrations/cep/http-peer');
++const { mac } = require('../../integrations/cep/peer-protocol');
++const http = require('node:http');
++async function transition(historicalPackage) {
++  const f = await recoveryFixture({ historicalPackage, selector: 'readonly' }), prefix = fs.readFileSync(f.journal);
++  const child = fork(path.join(__dirname, 'disposition-child.js'), [f.fixtureFile], { stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true }); let stderr = '', done;
++  child.stdout.resume(); child.stderr.on('data', b => { stderr += b; });
++  child.on('message', message => { if (message.event === 'native_read_disposition_authorization') { const { event, ...body } = message; child.send({ ...body, decision: 'approve' }); } if (message.event === 'fixture_result') done = message.value; });
++  const code = await new Promise((resolve, reject) => { child.on('error', reject); child.on('exit', resolve); }); assert.equal(code, 0, stderr); assert.equal(done.packageHash, f.candidate.packageHash);
++  const d = require('../../runtime/installation').verifyInstallation(f.args.descriptor), events = fs.readFileSync(f.journal).toString().trimEnd().split('\n').map(JSON.parse);
++  assert.equal(JSON.parse(fs.readFileSync(path.join(d.releaseDir, 'runtime/composition.json'))).id, 'readonly'); assert.ok(fs.readFileSync(f.journal).subarray(0, prefix.length).equals(prefix)); assert.equal(events[2].type, 'unknown'); assert.equal(events[3].type, 'terminal-read-failure-disposition');
++  const options = { descriptorPath: f.args.descriptor, journalPrefixBytes: prefix }, reader = require('../../runtime/native-read-disposition'); assert.ok(reader.validateDisposition(events[3], options));
++  const bad = structuredClone(events[3]); bad.controlMac = '0'.repeat(64); assert.throws(() => reader.validateDisposition(bad, options));
++  const store = openCompletionStore({ directory: f.receiver, installationContext: { descriptorPath: f.args.descriptor } }); assert.equal(store.closed, false); assert.equal(store.fault, false); assert.equal(store.get(f.command.commandId).state, 'unknown'); assert.ok(store.get(f.command.commandId).terminalDisposition); assert.throws(() => store.begin(f.command, f.binding), /duplicate_command_no_replay/); store.close();
++  // A late ACK authenticates with the new panel role secret but preserves old pins.
++  const peer = createHttpPeer({ installation: d, directory: f.receiver, port: 0, asset: { assetKey: 'project-inspection-v1', executorHash: f.command.executorHash }, installationContext: { descriptorPath: f.args.descriptor } }); await peer.listen();
++  function raw(route, value) { return new Promise((resolve, reject) => { const request = http.request('http://127.0.0.1:' + peer.status().port + route, { method: 'POST', agent: false, headers: { Origin: 'null', 'Content-Type': 'application/json' } }, response => { let data = ''; response.on('data', b => { data += b; }); response.on('end', () => resolve({ status: response.statusCode, value: JSON.parse(data) })); }); request.on('error', reject); request.end(canonical(value)); }); }
++  try {
++    const challenge = (await raw('/challenge', { role: 'panel' })).value, peerId = 'transition-fixture'; assert.equal((await raw('/link', { challenge, peerId, proof: mac({ challenge, peerId }, d.panelToken) })).status, 200);
++    const payload = { commandId: f.command.commandId, originalBinding: f.binding, pins: f.pins, result: { readFailureVersion: 1, outcome: 'rejected', code: 'host_registry_unavailable' } };
++    const before = fs.readFileSync(f.journal);
++    for (let sequence = 1; sequence <= 2; sequence++) { const body = { epoch: challenge.epoch, peerId, sequence, method: 'POST', path: '/complete', payload }, response = await raw('/complete', { body, mac: mac(body, d.panelToken) }); assert.equal(response.status, 200, JSON.stringify(response.value)); assert.equal(response.value.mac, mac(response.value.body, d.panelToken)); }
++    assert.ok(before.equals(fs.readFileSync(f.journal)));
++  } finally { await peer.close(); }
++  const prior = fs.readFileSync(f.journal).toString().trimEnd().split('\n').map(JSON.parse), command = { ...f.command, commandId: 'additional-unknown' }, binding = require('../../protocol/dispatch').dispatchBinding(command, f.binding.receiverStoreIdentity); let tail = prior.at(-1);
++  for (const entry of [{ type: 'begin', commandId: command.commandId, commandDigest: hash(command), command, originalBinding: binding }, { type: 'unknown', commandId: command.commandId }]) { const body = { ...entry, seq: tail.seq + 1, previousHash: tail.recordHash }; tail = { ...body, recordHash: hash(body) }; fs.appendFileSync(f.journal, canonical(tail) + '\n'); }
++  const closed = openCompletionStore({ directory: f.receiver, installationContext: { descriptorPath: f.args.descriptor } }); assert.equal(closed.closed, true); assert.equal(closed.fault, false); assert.ok(closed.get(f.command.commandId).terminalDisposition); closed.close(); assert.ok(fs.existsSync(f.owner));
++  return { historicalPackageHash: f.pkg.packageHash, candidatePackageHash: f.candidate.packageHash, historicalFormat: f.pkg.release.format, candidateFormat: f.candidate.release.format, signedDisposition: true, originalUnknownPreserved: true, duplicateNoReplay: true, lateAckCount: 2, additionalUnknownClosesStore: true, nativeCalls: 0, productionCalls: 0 };
++}
++module.exports = { transition };
+diff --git a/core4/test/fixtures/native-read-recovery.js b/core4/test/fixtures/native-read-recovery.js
+index 63872b0..54b6d7e 100644
+--- a/core4/test/fixtures/native-read-recovery.js
++++ b/core4/test/fixtures/native-read-recovery.js
+@@ -8 +8 @@ const {buildOperatorPackage,writeOperatorPackage}=require('../../tools/package-n
+-function fixture() {
++function fixture({ historicalPackage } = {}) {
+@@ -10 +10 @@ function fixture() {
+-  const pkg = buildPackage(), config = path.join(directory, 'project/.codex/config.toml');
++  const pkg = historicalPackage || require('./fixed-format1-package').fixedFormat1Package(), config = path.join(directory, 'project/.codex/config.toml');
+@@ -46,2 +46,2 @@ function mac(value,secret){return crypto.createHmac('sha256',secret).update(cano
+-async function recoveryFixture(){
+-  const f=fixture(),producerDriver=path.join(__dirname,'manual-capture-driver-source.txt'),inspection=path.join(f.evidenceRoot,'capture-inspection.json'),initial=await createCapture(f.probes).inspect(f.args);fs.writeFileSync(inspection,JSON.stringify({at:new Date().toISOString(),...initial},null,2)+'\n');
++async function recoveryFixture(options = {}){
++  const f=fixture(options),producerDriver=path.join(__dirname,'manual-capture-driver-source.txt'),inspection=path.join(f.evidenceRoot,'capture-inspection.json'),initial=await createCapture(f.probes).inspect(f.args);fs.writeFileSync(inspection,JSON.stringify({at:new Date().toISOString(),...initial},null,2)+'\n');
+@@ -62 +62 @@ async function recoveryFixture(){
+-  const candidate=structuredClone(buildPackage()),css=Buffer.from(candidate.files['cep/panel.css'],'base64').toString()+'\n/* recovery fixture candidate */\n';candidate.files['cep/panel.css']=Buffer.from(css).toString('base64');candidate.release.hashes['cep/panel.css']=hash(css);candidate.packageHash=hash(candidate.release);
++  const candidate=structuredClone(buildPackage(undefined, options.selector || 'manual')),css=Buffer.from(candidate.files['cep/panel.css'],'base64').toString()+'\n/* recovery fixture candidate */\n';candidate.files['cep/panel.css']=Buffer.from(css).toString('base64');candidate.release.hashes['cep/panel.css']=hash(css);candidate.packageHash=hash(candidate.release);
+diff --git a/core4/test/installable-runtime.test.js b/core4/test/installable-runtime.test.js
+index 8f2e958..3d32f73 100644
+--- a/core4/test/installable-runtime.test.js
++++ b/core4/test/installable-runtime.test.js
+@@ -163 +163 @@ function installerCliFixture() {
+-  for (const relative of ['package.json', 'tools/install-core4.js', 'tools/package-installable.js', 'protocol/json.js', 'runtime/install-lease.js']) {
++  for (const relative of ['package.json', 'tools/install-core4.js', 'tools/package-installable.js', 'protocol/json.js', 'runtime/install-lease.js', 'runtime/stdio-entry.js']) {
+diff --git a/core4/test/installed-composition.test.js b/core4/test/installed-composition.test.js
+new file mode 100644
+index 0000000..7a2fbc3
+--- /dev/null
++++ b/core4/test/installed-composition.test.js
+@@ -0,0 +1,124 @@
++'use strict';
++const test = require('node:test'), assert = require('node:assert/strict');
++const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), vm = require('node:vm'), http = require('node:http');
++const { fork, spawnSync } = require('node:child_process');
++const { once } = require('node:events');
++const { hash, canonical } = require('../protocol/json');
++const { buildPackage, verifyPackage } = require('../tools/package-installable');
++const { planInstall, applyInstall } = require('../tools/install-core4');
++const { verifyInstallation, verifyRelease, verifyCep } = require('../runtime/installation');
++const { mac } = require('../integrations/cep/peer-protocol');
++const root = path.resolve(__dirname, '..');
++const temp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'core4-composition-'));
++test('installed-composition portable fixed-format1 transition to readonly preserves signed history and no replay', { timeout: 30000 }, async () => {
++  const result = await require('./fixtures/installed-composition-transition').transition(); assert.equal(result.historicalFormat, 1); assert.equal(result.candidateFormat, 2);
++});
++function install(pkg) {
++  const directory = temp(), args = { pkg, nodePath: fs.realpathSync(process.execPath), installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'), configPath: path.join(directory, 'config.toml'), machineId: os.hostname() };
++  const applied = applyInstall(planInstall(args)); return { directory, args, descriptor: applied.descriptorPath, d: verifyInstallation(applied.descriptorPath) };
++}
++function edit(pkg, file, transform) {
++  const value = JSON.parse(Buffer.from(pkg.files[file], 'base64')); transform(value); const bytes = canonical(value);
++  pkg.files[file] = Buffer.from(bytes).toString('base64'); pkg.release.hashes[file] = hash(bytes); pkg.packageHash = hash(pkg.release); return pkg;
++}
++function rpcChild(f) {
++  const child = fork(path.join(f.d.releaseDir, 'runtime/stdio-entry.js'), ['--installation', f.descriptor], { execArgv: ['--require', path.join(__dirname, 'fixtures/installed-composition-child.js')], stdio: ['pipe', 'pipe', 'pipe', 'ipc'], windowsHide: true, cwd: os.tmpdir() });
++  let buffer = '', stderr = '', next = 0; const pending = new Map();
++  child.stdout.on('data', bytes => { buffer += bytes; while (buffer.includes('\n')) { const n = buffer.indexOf('\n'), value = JSON.parse(buffer.slice(0, n)); buffer = buffer.slice(n + 1); pending.get(value.id)?.(value); pending.delete(value.id); } });
++  child.stderr.on('data', b => { stderr += b; });
++  const rpc = (method, params = {}) => new Promise(resolve => { const id = ++next; pending.set(id, resolve); child.stdin.write(canonical({ jsonrpc: '2.0', id, method, params }) + '\n'); });
++  const call = async (name, payload = {}) => { const response = await rpc('tools/call', { name, arguments: { payload } }); if (response.error) throw new Error(response.error.message); return JSON.parse(response.result.content[0].text); };
++  const message = event => new Promise(resolve => { const handler = value => { if (value.event === event) { child.off('message', handler); resolve(value); } }; child.on('message', handler); });
++  return { child, rpc, call, message, async close() { const exited = once(child, 'exit'); child.kill('SIGTERM'); await exited; assert.equal(stderr, ''); } };
++}
++function raw(port, route, value) { return new Promise((resolve, reject) => { const request = http.request('http://127.0.0.1:' + port + route, { method: 'POST', agent: false, headers: { Origin: 'null', 'Content-Type': 'application/json' } }, response => { let bytes = ''; response.on('data', b => { bytes += b; }); response.on('end', () => resolve({ status: response.statusCode, value: JSON.parse(bytes) })); }); request.on('error', reject); request.end(canonical(value)); }); }
++async function panel(port, d) {
++  const challenge = (await raw(port, '/challenge', { role: 'panel' })).value, peerId = 'composition-fixture';
++  const linked = await raw(port, '/link', { challenge, peerId, proof: mac({ challenge, peerId }, d.panelToken) }); assert.equal(linked.status, 200); let sequence = 0;
++  return async (route, payload) => { const body = { epoch: challenge.epoch, peerId, sequence: ++sequence, method: 'POST', path: route, payload }; const response = await raw(port, route, { body, mac: mac(body, d.panelToken) }); assert.equal(response.status, 200, JSON.stringify(response.value)); assert.equal(response.value.mac, mac(response.value.body, d.panelToken)); return response.value.body.payload; };
++}
++test('installed-composition deterministic packages, fixed ES3 registries, admission pins and physical closure', () => {
++  for (const selector of ['manual', 'readonly']) {
++    const pkg = buildPackage(root, selector); assert.equal(pkg.packageHash, buildPackage(root, selector).packageHash); assert.equal(verifyPackage(pkg), pkg); assert.equal(pkg.release.format, 2);
++    const composition = JSON.parse(Buffer.from(pkg.files['runtime/composition.json'], 'base64'));
++    assert.equal(composition.id, selector); assert.equal(composition.engine === null, selector === 'readonly');
++    if (selector === 'readonly') assert.ok(Object.keys(pkg.files).every(file => !/^(plan-engine\/|modules\/(?!project-inspection\/)|config\/admissions\/|runtime\/(manual-policy|windows-reservation-provider)\.js$)/.test(file)));
++    const source = Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString();
++    const parser = "const fs=require('node:fs'),acorn=require('internal/deps/acorn/acorn/dist/acorn');acorn.parse(fs.readFileSync(0,'utf8'),{ecmaVersion:3,allowReserved:'never'});console.log('ES3 PASS');";
++    const parsed = spawnSync(process.execPath, ['--expose-internals', '-e', parser], { input: source, encoding: 'utf8', windowsHide: true }); assert.equal(parsed.status, 0, parsed.stderr);
++    const context = vm.createContext({ JSON: undefined, Object, Error }); vm.runInContext(source, context);
++    for (const phase of ['constructor', 'toString', '__proto__']) assert.throws(() => vm.runInContext('AECore4Host.dispatch(' + JSON.stringify(canonical({ assetKey: composition.assets[0].assetKey, phase, pins: { executorHash: JSON.parse(Buffer.from(pkg.files['modules/project-inspection/artifact.json'], 'base64')).executorHash } })) + ')', context), /fixed_asset_binding/);
++  }
++  assert.equal(buildPackage().packageHash, buildPackage(root, 'manual').packageHash); assert.throws(() => buildPackage(root, 'other'), /composition_selector/);
++});
++test('installed-composition build CLI selects readonly/manual and rejects ambiguous options without output', () => {
++  const directory = temp(), cli = path.join(root, 'tools/package-installable.js');
++  for (const selector of ['readonly', 'manual', null]) {
++    const file = path.join(directory, (selector || 'default') + '.json'), args = ['--output', file, ...(selector ? ['--composition', selector] : [])];
++    const result = spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8', windowsHide: true }); assert.equal(result.status, 0, result.stderr); assert.equal(JSON.parse(fs.readFileSync(file)).packageHash, buildPackage(root, selector || 'manual').packageHash);
++  }
++  let index = 0;
++  for (const options of [['--composition', ''], ['--composition', 'other'], ['--composition', 'readonly', '--composition', 'manual'], ['--unknown', 'readonly'], ['--composition'], ['--output', 'relative.json']]) {
++    const file = path.join(directory, 'denied-' + index++ + '.json'), result = spawnSync(process.execPath, [cli, '--output', file, ...options], { encoding: 'utf8', windowsHide: true }); assert.equal(result.status, 1); assert.equal(fs.existsSync(file), false);
++  }
++});
++test('installed-composition unknown/missing/corrupt/duplicate/path/phase/catalog/admission/downgrade failures', () => {
++  const make = () => structuredClone(buildPackage());
++  const mutations = [
++    p => { p.release.format = 99; p.packageHash = hash(p.release); },
++    p => { delete p.files['runtime/composition.json']; delete p.release.hashes['runtime/composition.json']; p.packageHash = hash(p.release); },
++    p => { p.files['runtime/composition.json'] = Buffer.from('{}').toString('base64'); },
++    p => edit(p, 'runtime/composition.json', c => { c.version = 2; }),
++    p => edit(p, 'runtime/composition.json', c => { c.extra = true; }),
++    p => edit(p, 'runtime/composition.json', c => { c.assets.push(c.assets[0]); }),
++    p => edit(p, 'runtime/composition.json', c => { c.modules.push(c.modules[0]); }),
++    p => edit(p, 'runtime/composition.json', c => { c.assets[0].path = '../outside'; }),
++    p => edit(p, 'runtime/composition.json', c => { c.assets[0].phases = ['mutate']; }),
++    p => edit(p, 'runtime/composition.json', c => { c.assets[0].policy = 'other'; }),
++    p => edit(p, 'config/catalog.json', c => { c.modules.pop(); }),
++    p => edit(p, 'config/admissions/titles-current-target.json', c => { c.revoked = true; }),
++    p => edit(p, 'config/admissions/titles-current-target.json', c => { c.executorHash = '0'.repeat(64); }),
++    p => { p.release.format = 1; p.packageHash = hash(p.release); },
++    p => { p.release.format = 1; delete p.files['runtime/composition.json']; delete p.release.hashes['runtime/composition.json']; p.packageHash = hash(p.release); }
++  ];
++  for (const mutate of mutations) { const pkg = make(); mutate(pkg); assert.throws(() => verifyPackage(pkg)); }
++  const readonly = buildPackage(root, 'readonly'); edit(readonly, 'config/catalog.json', c => { c.engine = { path: 'plan-engine', artifactHash: '0'.repeat(64) }; }); assert.throws(() => verifyPackage(readonly), /composition_catalog/);
++});
++test('installed-composition installed readonly child initialize/status/discovery/contract and native fake VM inspection', { timeout: 15000 }, async () => {
++  const pkg = buildPackage(root, 'readonly'), f = install(pkg), h = rpcChild(f); let nativeCalls = 0;
++  try {
++    const listening = await h.message('listening'); assert.notEqual(listening.port, 3457);
++    assert.equal((await h.rpc('initialize')).result.serverInfo.name, 'ae-agent-core4');
++    let status = await h.call('core_status'); assert.equal(status.composition, 'readonly'); assert.equal(status.manualPolicy, null); assert.equal(status.resourceProvider, null); assert.equal(status.mutationAvailable, false); assert.equal(status.physical.inspectionAvailable, false); assert.equal(status.automaticLifecycle, 'unavailable');
++    assert.deepEqual((await h.call('list_modules')).modules.map(m => m.id), ['project-inspection']);
++    const contract = await h.call('get_module_contract', { moduleId: 'project-inspection' }); assert.equal(contract.contract.buildSupported, false);
++    await assert.rejects(h.call('get_module_contract', { moduleId: 'titles' }), /module_unavailable/);
++    await assert.rejects(h.call('build_solution_plan', { contractId: contract.contractId }), /read_only_module_build_unsupported/);
++    const call = await panel(listening.port, f.d);
++    status = await h.call('core_status'); assert.equal(status.physical.inspectionAvailable, true); assert.equal(status.connection, 'unavailable');
++    const connected = await h.call('core_connect'); assert.equal(connected.available, true); assert.equal(connected.mutationAvailable, false);
++    function CompItem() { this.id = 7; this.name = 'Synthetic comp'; this.numLayers = 0; this.duration = 5; }
++    const comp = new CompItem(), context = vm.createContext({ JSON: undefined, Math, Error, CompItem, app: { version: 'synthetic', project: { file: null, numItems: 1, item: () => comp } } });
++    vm.runInContext(Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString(), context);
++    const pending = h.call('inspect_module_target', { moduleId: 'project-inspection', contractId: contract.contractId, target: {} });
++    const polled = await call('/poll', {}); assert.ok(polled.command); nativeCalls++;
++    const result = JSON.parse(vm.runInContext('AECore4Host.dispatch(' + JSON.stringify(canonical(polled.command)) + ')', context)); assert.equal(result.readFailureVersion, undefined);
++    await call('/complete', { commandId: polled.command.commandId, originalBinding: polled.command.originalBinding, pins: polled.command.pins, result });
++    assert.equal((await pending).authority, false); assert.equal(nativeCalls, 1);
++    const cacheReply = h.message('cache'); h.child.send('cache'); const loaded = (await cacheReply).modules;
++    assert.ok(loaded.every(file => !/[\\/](manual-policy|windows-reservation-provider)\.js$|[\\/]plan-engine[\\/]|[\\/]modules[\\/](titles|photo-placeholder)/.test(file)));
++  } finally { await h.close(); }
++});
++test('installed-composition actual manual installed child retains module discovery and manual gated policy', { timeout: 15000 }, async () => {
++  const f = install(buildPackage()), h = rpcChild(f);
++  try { await h.message('listening'); const status = await h.call('core_status'); assert.equal(status.composition, 'manual'); assert.equal(status.manualPolicy, 'current-matching-target-after-local-confirmation-v1'); assert.ok(status.resourceProvider); assert.equal(status.automaticLifecycle, 'unavailable'); assert.deepEqual((await h.call('list_modules')).modules.map(m => m.id), ['photo-placeholder', 'titles', 'titles-current-target', 'project-inspection']); assert.equal((await h.call('get_module_contract', { moduleId: 'titles-current-target' })).operationId, 'set-current-text'); }
++  finally { await h.close(); }
++});
++test('installed-composition installed format2 corruption/missing composition rejects before imports and legacy format1 generic verification stays generic', () => {
++  const f = install(buildPackage(root, 'readonly')), composition = path.join(f.d.releaseDir, 'runtime/composition.json'), bytes = fs.readFileSync(composition);
++  const rejectedChild = pattern => { const result = spawnSync(process.execPath, [path.join(f.d.releaseDir, 'runtime/stdio-entry.js'), '--installation', f.descriptor], { input: '', encoding: 'utf8', timeout: 5000, windowsHide: true }); assert.equal(result.status, 1); assert.match(result.stderr, pattern); assert.equal(result.stdout, ''); };
++  fs.writeFileSync(composition, '{}'); assert.throws(() => verifyInstallation(f.descriptor), /installed_release_bytes/); rejectedChild(/installed_release_bytes/); fs.writeFileSync(composition, bytes);
++  fs.renameSync(composition, composition + '.missing'); assert.throws(() => verifyInstallation(f.descriptor), /release_tree_mismatch/); rejectedChild(/release_tree_mismatch/); fs.renameSync(composition + '.missing', composition);
++  const dir = temp(), source = 'historical generic release'; fs.writeFileSync(path.join(dir, 'data'), source); const release = { version: '4.0.0', format: 1, hashes: { data: hash(source) } }; fs.writeFileSync(path.join(dir, 'release.json'), canonical(release)); assert.doesNotThrow(() => verifyRelease(dir, release));
++  assert.throws(() => verifyCep(f.d, { ...JSON.parse(fs.readFileSync(path.join(f.d.releaseDir, 'release.json'))), format: 99 }, f.d.cepDir));
++});
+diff --git a/core4/tools/check-boundaries.js b/core4/tools/check-boundaries.js
+index 8a29562..bd70c5f 100644
+--- a/core4/tools/check-boundaries.js
++++ b/core4/tools/check-boundaries.js
+@@ -24,0 +25,10 @@ function checkBoundaries(root = path.resolve(__dirname, '..')) {
++  for (const file of files(path.join(root, 'runtime')).filter(f => f.endsWith('.js'))) {
++    const source = fs.readFileSync(file, 'utf8');
++    if (/require\s*\(\s*[^'"\s]/.test(source) || /require\s*\(\s*['"][^'"]*(?:bridge-daemon|modules\/|plan-engine\/|core-tool-dispatch)/.test(source)) fail('runtime_domain_import', file);
++    if (path.basename(file) === 'stdio-entry.js') {
++      const prefix = source.slice(0, source.indexOf('async function start('));
++      for (const match of prefix.matchAll(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) if (!match[1].startsWith('node:')) fail('unverified_entry_import', file);
++      if (!source.includes('if (manualAsset) {') || source.indexOf("require('./manual-policy.js')") < source.indexOf('if (manualAsset) {') || source.indexOf("require('./windows-reservation-provider.js')") < source.indexOf('if (manualAsset) {')) fail('runtime_optional_policy_import', file);
++    }
++    checked++;
++  }
+diff --git a/core4/tools/install-core4.js b/core4/tools/install-core4.js
+index 974d7a6..5ff0580 100644
+--- a/core4/tools/install-core4.js
++++ b/core4/tools/install-core4.js
+@@ -7,0 +8 @@ const { verifyPackage } = require('./package-installable');
++const { deriveComposition, installationConfig } = require('../runtime/stdio-entry.js');
+@@ -112,2 +113 @@ function planInstall({ pkg, nodePath, installRoot, extensionsDir, configPath, ma
+-  const inspection = JSON.parse(Buffer.from(pkg.files['modules/project-inspection/artifact.json'], 'base64'));
+-  const manualAdmission = JSON.parse(Buffer.from(pkg.files['config/admissions/titles-current-target.json'], 'base64'));
++  const selected = deriveComposition(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
+@@ -115 +115 @@ function planInstall({ pkg, nodePath, installRoot, extensionsDir, configPath, ma
+-  cep['installation.js'] = Buffer.from('window.Core4Installation=' + canonical({ installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: inspection.executorHash, assetKey: 'project-inspection-v1', assets: [{ assetKey: 'project-inspection-v1', executorHash: inspection.executorHash, phases: ['inspect'] }, { assetKey: 'titles-current-target-v1', executorHash: manualAdmission.executorHash, phases: ['inspect', 'mutate', 'verify'] }] }) + ';\n').toString('base64');
++  cep['installation.js'] = Buffer.from('window.Core4Installation=' + canonical(installationConfig(d, selected)) + ';\n').toString('base64');
+diff --git a/core4/tools/package-installable.js b/core4/tools/package-installable.js
+index 1296fe3..a665db9 100644
+--- a/core4/tools/package-installable.js
++++ b/core4/tools/package-installable.js
+@@ -5 +5,3 @@ const { hash, canonical, fail } = require('../protocol/json');
+-function buildPackage(root = path.resolve(__dirname, '..')) {
++const { deriveComposition, registrySource } = require('../runtime/stdio-entry.js');
++function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual') {
++  if (!['readonly', 'manual'].includes(selector)) fail('composition_selector');
+@@ -7,2 +9,3 @@ function buildPackage(root = path.resolve(__dirname, '..')) {
+-  const paths = new Set(spec.files);
+-  for (const relative of spec.artifactClosures) {
++  const optional = selector === 'manual' ? spec.optional.manual : { files: [], artifactClosures: [] };
++  const paths = new Set([...spec.files, ...optional.files]);
++  for (const relative of [...spec.artifactClosures, ...optional.artifactClosures]) {
+@@ -23,9 +26,11 @@ function buildPackage(root = path.resolve(__dirname, '..')) {
+-  const release = { version: '4.0.0', format: 1, hashes };
+-  const inspection = JSON.parse(Buffer.from(files['modules/project-inspection/artifact.json'], 'base64'));
+-  const source = Buffer.from(files['modules/project-inspection/executor.jsx'], 'base64').toString('utf8');
+-  const manual = JSON.parse(Buffer.from(files['config/admissions/titles-current-target.json'], 'base64'));
+-  const manualSource = Buffer.from(files['modules/titles-current-target/executor.jsx'], 'base64').toString('utf8');
+-  const codecSource = Buffer.from(files['runtime/host/json-codec.jsx'], 'base64').toString('utf8');
+-  const registry = '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + codecSource + ';var executor=' + source + ';var manual=' + manualSource + ';var assets={"project-inspection-v1":{hash:"' + inspection.executorHash + '",calls:{inspect:executor.inspect}},"titles-current-target-v1":{hash:"' + manual.executorHash + '",calls:{inspect:manual.inspect,mutate:manual.mutate,verify:manual.verify}}};return {dispatch:function(serialized){var frame=JSON.parse(serialized),a=frame&&assets[frame.assetKey],call=a&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({readFailureVersion:1,outcome:"rejected",code:"inspection_failed"});}}};}());\n';
+-  files['cep/jsx/registry.jsx'] = Buffer.from(registry).toString('base64'); hashes['cep/jsx/registry.jsx'] = hash(registry);
+-  return { packageHash: hash(release), release, files };
++  const release = { version: '4.0.0', format: 2, hashes };
++  const original = JSON.parse(fs.readFileSync(path.join(root, 'config/catalog.json'), 'utf8'));
++  const { modules, assets } = spec.compositions[selector];
++  if (modules.some(id => original.modules.filter(m => m.id === id).length !== 1)) fail('composition_catalog');
++  const catalog = { catalogRevision: original.catalogRevision, modules: modules.map(id => original.modules.find(m => m.id === id)), engine: selector === 'manual' ? original.engine : null };
++  const composition = { version: 1, id: selector, modules, engine: catalog.engine, assets };
++  const add = (file, source) => { const bytes = typeof source === 'string' ? source : canonical(source); files[file] = Buffer.from(bytes).toString('base64'); hashes[file] = hash(bytes); };
++  add('config/catalog.json', catalog); add('runtime/composition.json', composition);
++  const selected = deriveComposition(release, file => Buffer.from(files[file], 'base64'));
++  add('cep/jsx/registry.jsx', registrySource(selected.assets, Buffer.from(files['runtime/host/json-codec.jsx'], 'base64').toString('utf8')));
++  return verifyPackage({ packageHash: hash(release), release, files });
+@@ -37,0 +43,2 @@ function verifyPackage(pkg) {
++  const selected = deriveComposition(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
++  if (!selected.legacy && Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString('utf8') !== registrySource(selected.assets, Buffer.from(pkg.files['runtime/host/json-codec.jsx'], 'base64').toString('utf8'))) fail('composition_registry');
+@@ -41 +48,6 @@ if (require.main === module) {
+-  try { const args = process.argv.slice(2); if (args.length !== 2 || args[0] !== '--output' || !path.isAbsolute(args[1])) fail('absolute_output_required'); const pkg = buildPackage(); fs.writeFileSync(args[1], canonical(pkg), { flag: 'wx' }); console.log(JSON.stringify({ packageHash: pkg.packageHash, files: Object.keys(pkg.files).length, output: args[1] })); } catch (e) { console.error(e.code || e.message); process.exitCode = 1; }
++  try {
++    const args = process.argv.slice(2), options = {};
++    for (let n = 0; n < args.length; n += 2) { const key = args[n]; if (!['--output', '--composition'].includes(key) || Object.hasOwn(options, key) || typeof args[n + 1] !== 'string' || args[n + 1].startsWith('--')) fail('package_options'); options[key] = args[n + 1]; }
++    if (!options['--output'] || !path.isAbsolute(options['--output'])) fail('absolute_output_required');
++    const pkg = buildPackage(undefined, options['--composition'] ?? 'manual'); fs.writeFileSync(options['--output'], canonical(pkg), { flag: 'wx' }); console.log(JSON.stringify({ packageHash: pkg.packageHash, files: Object.keys(pkg.files).length, composition: options['--composition'] ?? 'manual', output: options['--output'] }));
++  } catch (e) { console.error(e.code || e.message); process.exitCode = 1; }
+diff --git a/docs/core-installed-composition.md b/docs/core-installed-composition.md
+new file mode 100644
+index 0000000..5e7e825
+--- /dev/null
++++ b/docs/core-installed-composition.md
+@@ -0,0 +1,48 @@
++# Устанавливаемые составы Core
++
++Начиная с этого среза package release имеет `format:2` и обязательный
++`runtime/composition.json`, включённый в manifest hashes. Версия installation
++descriptor остаётся 2; это другой контракт, чем format пакета.
++
++Доступны два состава, выбираемые при сборке:
++
++- `readonly`: Core, CEP и bounded `project-inspection`. Рабочие модули,
++  их admissions, plan-engine, manual-policy и Windows reservation provider
++  физически отсутствуют. Broker не получает authority; доступность inspection
++  отдельно отражается в physical status. Automatic lifecycle отсутствует.
++- `manual` — default: прежние рабочие пакеты и engine, inspection и existing
++  current-target adapter. Наличие adapter/контракта не выдаёт mutation grant:
++  сохраняются proposal/dry-run, fresh native confirmation, ownership,
++  checkpoint, read-back и UNKNOWN/no-replay.
++
++Из корня репозитория в PowerShell:
++
++```powershell
++node core4/tools/package-installable.js --composition readonly --output (Join-Path $env:TEMP 'core4-readonly.json')
++node core4/tools/package-installable.js --composition manual --output (Join-Path $env:TEMP 'core4-manual.json')
++```
++
++`--output` требует абсолютный новый путь; существующий файл не перезаписывается.
++Без `--composition` собирается manual. Эти команды создают пакет, не запускают
++MCP, CEP или AE. Установка использует прежний installer с точным reviewed
++packageHash и проверками текущего runtime/state.
++
++Состав задаёт modules/catalog, engine и selected assets. Доступны только
++существующие reviewed policy adapters; произвольные имена policy или source в
++runtime frames не принимаются. Pins выводятся из проверенных artifact/admission
++bytes. Registry собирается детерминированно из выбранных executor bytes и
++проверяется вместе с полным release tree до imports runtime.
++
++Старый `format:1` сохраняет fixed контракт своей CEP-конфигурации. Новый
++verifier использует format именно проверяемого release, включая historical
++install preflight; состав кандидата не заменяет контракт старого f548.
++Для format2 отсутствие composition/hash, подмена registry, несовпадение
++catalog/admission и неизвестный формат означают отказ, без if-exists fallback.
++Signed history, original UNKNOWN и disposition не переписываются при смене
++состава.
++
++Этот этап создаёт два устанавливаемых состава. Независимая установка/горячая
++замена произвольных рабочих пакетов остаётся последующей работой; она не
++заявляется по наличию build-time selector. Temp/VM proof не является live AE
++приёмкой. Production installation и переносимость двух машин подтверждаются
++отдельно. Текущий [план и evidence](../plans/core-installed-composition-20261029.md).
+diff --git a/plans/core-4.0.0-installable.md b/plans/core-4.0.0-installable.md
+index e6860d0..e749105 100644
+--- a/plans/core-4.0.0-installable.md
++++ b/plans/core-4.0.0-installable.md
+@@ -6,0 +7,7 @@
++**Текущий source-блок:** [декларативная устанавливаемая композиция](core-installed-composition-20261029.md).
++Цель — отдельный read-only состав без рабочих modules/engine и сохранение
++manual состава с теми же gates; release-specific verifyCep покрывает fixed f548.
++Configured tools текущего чата доступны. Native inspection/install пока не
++выполняются: receiver storeClosed=true, stale marker требует отдельного
++обслуживания с проверкой владельца и истории, без replay. Installed f548 сохранён.
++
+diff --git a/plans/core-4.0.0.md b/plans/core-4.0.0.md
+index fa6eea5..e87e04f 100644
+--- a/plans/core-4.0.0.md
++++ b/plans/core-4.0.0.md
+@@ -2,0 +3,8 @@
++**Текущий source-блок, 29 октября 2026:**
++[декларативная устанавливаемая композиция](core-installed-composition-20261029.md).
++Configured Core4 tools доступны; status/discovery/contract прочитаны в текущем
++чате. Installed f548 пока не меняется: receiver store закрыт, marker старше
++нынешнего MCP, pending/unresolved пусты, историческая UNKNOWN имеет disposition.
++Native read при закрытом store не отправляется. Следующие записи сохраняют
++историю завершённого аудита и прежних установок.
++
+diff --git a/plans/core-installed-composition-20261029.md b/plans/core-installed-composition-20261029.md
+new file mode 100644
+index 0000000..f292ddd
+--- /dev/null
++++ b/plans/core-installed-composition-20261029.md
+@@ -0,0 +1,114 @@
++# Декларативная устанавливаемая композиция Core
++
++29 октября 2026. Baseline `1eea17d`; продолжение завершённого
++[аудита](core-post-reinstall-audit-20261029.md). Цель — устанавливаемый read-only
++Core без обязательных рабочих пакетов и plan engine, при сохранении текущего
++manual состава и исторической проверки установок.
++
++## Scope
++
++Source/runtime/package/installer и адресные temp-only проверки. Root —
++единственный live controller; архитектурный помощник завершил read-only разбор,
++одному implementer передан ownership `core4/**`; root ведёт планы/evidence/review.
++Изменения production state, owner markers, AE/AEP и повтор прежних команд в
++этот source-блок не входят. Полная release-проверка и приёмка второй машины
++не выполняются.
++
++## Progress
++
++- [x] Прочитаны актуальные планы, scoped инструкции и история коммитов.
++- [x] Configured tools Core4 доступны: status, diagnostics, discovery и contract
++  прочитаны через MCP текущего чата. Installed package остаётся f548.
++- [x] Зафиксирован live blocker: CEP disconnected, receiver storeClosed=true,
++  unknown=true, pending=null, storeFault=false, unresolved=[]; PID25840.
++  Журнал содержит восемь событий: исходная UNKNOWN с terminal disposition и
++  два complete. Marker receiver создан 09:09:53UTC, текущий MCP — 11:08:28UTC.
++  Это признаки оставшегося marker, а не разрешение его удалить.
++- [x] Определить минимальный release-specific контракт композиции.
++- [x] Новый source verifier проверил actual installed f548 и exact retained
++  f548 package; descriptor/journal bytes не изменились, native/install0.
++- [x] Убрать обязательные imports/closures/admissions manual titles и engine
++  из read-only состава, сохранив server-owned admission и fixed registry.
++- [x] Проверить standalone read-only install/start/discovery и переход с fixed
++  f548 с сохранением signed disposition, original UNKNOWN и no-replay.
++- [x] Выполнить адресные проверки, собрать детерминированные candidates;
++  независимое source review ACCEPT, найденный CLI P2 исправлен локально.
++- [ ] Зафиксировать source milestone, получить одно ограниченное Argon review
++  результата и разобрать findings локально без повторного review.
++
++## Decision Log
++
++- `unknown` в текущем HTTP status означает закрытый store; одного этого Boolean
++  недостаточно для вывода о незавершённом native исполнении. Native inspection
++  не отправляется при закрытом store. Новый runtime не запускается.
++- Старый adopted host PID31452 отличается от фактического AE PID18992.
++  Старые resource bindings не принимаются как текущая incarnation.
++- Ожидаемые CEP bytes определяются контрактом именно проверяемого release:
++  current verifier обязан понимать fixed f548 в historical install path.
++  Отсутствующий новый manifest не превращается в разрешённый legacy fallback.
++- Hash/manifest сам по себе не выдаёт admission или mutation authority.
++  Рабочие пакеты остаются optional, automatic lifecycle unavailable.
++- Новый release `format:2` требует hashed `runtime/composition.json`; `format:1`
++  проверяется по прежнему fixed контракту двух assets. Выбор формата не зависит
++  от наличия файла. До полного release verification и entry-root binding
++  stdio-entry импортирует только builtins; исторический entry не исполняется.
++- `readonly` и `manual` выбираются при сборке; default остаётся manual.
++  Readonly package физически исключает рабочие modules/admissions, plan-engine,
++  manual-policy и windows-reservation-provider. Broker работает без authority,
++  facade inspection сохраняет прежние owner/ledger/unresolved guards.
++- Selected assets получают pins из проверенных artifact/admission bytes;
++  policy adapters ограничены двумя существующими контрактами. Unknown/duplicate
++  assets, catalog mismatch, отсутствующий manifest и downgrade отвергаются.
++- Portable fixed-format1 fixture и temp proof с exact retained f548 package —
++  разные доказательства. В обоих случаях credentials/state создаются заново;
++  production journal и ключи не копируются. Старые MAC/seals не переписываются.
++- Source review первоначальных пяти файлов — ACCEPT. Tiny CLI review обнаружил
++  пустой selector, превращавшийся через `||` в manual; заменён на `??` и добавлен
++  negative CLI case. Это локальное review, не дополнительное обращение к Argon.
++- Выбор двух установочных presets не объявляется независимой горячей установкой
++  любых рабочих пакетов. Этот последующий пункт intent остаётся открытым.
++
++## Validation
++
++Пока только read-only preflight текущей установки: configured MCP metadata,
++discovery/contract; descriptor SHA256
++`67202b2e5e75e462eb3631757e035f512a86dc5f78db6af1b17355e84ea4419e`;
++receiver journal SHA256
++`0354eb5e308336776e85963efb5c940534fb3c2b94ea2d7b53feb9e69e21fb7f`.
++Actual AE commands0, install0, state mutations0.
++
++`snapshots/core4-live-proof/XVIII-installed-composition-20261029/`:
++`configured-preflight.json` — ответ configured status с реальным покрытием;
++`root-legacy-verification.json` — новый verifier против installed format1,
++retained packageHash f548 совпал, 60 package files, descriptor/journal unchanged.
++Это read-only совместимость verifier; фактический переход на format2 ещё не принят.
++
++### Source/temp milestone
++
++- `implementation/scoped-final.log`: exit0, **73/73 PASS** — recovery19,
++  installable23, composition7, manual12, human-window3, routing/boundaries9.
++  Runtime bytes окончательные; packager CLI имел hash `f33a4bf…` до исправления
++  empty selector. После CLI/test/routing delta этот прогон не переименовывается
++  в единый final-closure PASS.
++- `implementation/composition-cli-final.log`: final CLI, **7+1 PASS** в двух
++  отдельных suites (composition и exact f548). `routing-final.log`:5PASS.
++  `boundaries-final.log`:28unitsPASS; `diff-check-final.log`:exit0.
++- Portable format1 fixture и exact f548 artifact проверены раздельно. Последний:
++  343626bytes, SHA256 `dc02187e1d71513638d94e544f40901ab343ec22d75640704a08a777c1acb9b8`.
++  Temp transition сохраняет signed disposition/original UNKNOWN/no-replay;
++  два late ACK не меняют journal, дополнительная UNKNOWN закрывает lane.
++  Исходный ENOENT test harness сохранён; исправлен только относительный путь.
++- Новый runtime реально запущен в temp installed child: stdio discovery/contract,
++  ephemeral HTTP и одна native fake VM inspection. Это **не live AE**.
++- Root независимо пересобрал пакеты дважды и сверил каждый file/manifest hash:
++  readonly40files — `c14436485c1889e2ff98b0582bded0cff5e96c03be6c448d69ca15202d2578f4`;
++  manual59files — `e945f12b5ac42cf1fb945b5db92f1fd537210c743fd09e952f283c8754b91af0`.
++  `coreIdentity` прежний: `c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7`.
++- В `dist/core4/4.0.0-composition-{readonly-c14436485c18,manual-e945f12b5ac4}/`
++  сохранены immutable package/distribution и standalone installer closure6.
++  Root dry-run обоих exact distributions в temp workspace/env PASS, installRoot
++  и config не созданы. Evidence: `root-packages.json`,
++  `root-distribution-dry-run.json`, `implementation/implementation-summary.json`.
++
++Production остаётся f548; actual install/native0. Release certification,
++manual AE mutation, automatic lifecycle и round-trip P1–P8 не подтверждаются.

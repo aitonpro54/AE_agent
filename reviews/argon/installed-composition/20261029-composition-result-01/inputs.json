@@ -1,0 +1,148 @@
+{
+  "reviewId": "20261029-composition-result-01",
+  "stageId": "installed-composition",
+  "baseCommit": "1eea17de7d9378b2d9e663675bfb5999e125b90f",
+  "targetCommit": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f",
+  "files": [
+    {
+      "file": "request.md",
+      "source": "review request",
+      "bytes": 4701,
+      "sha256": "c3feda2e6cb073f7d49ca332e638871a33f59798d851b4d39d9debc4c976265f",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "changes.diff",
+      "source": "git diff --unified=0 1eea17de7d9378b2d9e663675bfb5999e125b90f ed747efceb47c43c0b185d09262d9ba72f7a0a9f",
+      "bytes": 80310,
+      "sha256": "ab7ee4758d52dffab9dba6031f9ed5f977ff4032d114f82223ff7ea88e6c5726",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "evidence.json",
+      "source": "sanitized local evidence summary",
+      "bytes": 6892,
+      "sha256": "2eb047048c57ca7e7b50e1abe6b4e68c6b5a860464eda751781c09435597ec23",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__runtime__stdio-entry.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/runtime/stdio-entry.js",
+      "bytes": 23745,
+      "sha256": "d989daef7df9d143835c049dfe510b146dea598d46a60a37c87dfad4a2082598",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__runtime__source-package.json",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/runtime/source-package.json",
+      "bytes": 2668,
+      "sha256": "a1ef82ab8f3dda21acb3101071e36138af16710cce2013ac98bca1ea8c8fcdb2",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__tools__package-installable.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/tools/package-installable.js",
+      "bytes": 4798,
+      "sha256": "e0ee47e2509eba5c588fec3ab51865dd2931df39e08fdc99a1dfe05295c39dad",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__tools__install-core4.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/tools/install-core4.js",
+      "bytes": 27446,
+      "sha256": "23521b67e91cc59cc8d11ff67eb24ec55021cef69be0f2bb191020f45e58a2b7",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__tools__check-boundaries.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/tools/check-boundaries.js",
+      "bytes": 2851,
+      "sha256": "822ba1c0665d509f273f76f1398ba3be1133c7f9643c7f82726aeb0c07094293",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__runtime__installation-lineage.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/runtime/installation-lineage.js",
+      "bytes": 8305,
+      "sha256": "5575ccf7651e83a1545916fc88edb268ab3a72b08d57703b6d5df564a45d894a",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__runtime__native-read-disposition.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/runtime/native-read-disposition.js",
+      "bytes": 21495,
+      "sha256": "20053d0df8780feb975bf3302efd0cd32f07770c752d1acefc100f96fefaeb5b",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__tools__disposition-install-preflight.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/tools/disposition-install-preflight.js",
+      "bytes": 5104,
+      "sha256": "0276831b78e8157117532ed815717f39d12f2ad120338d4a5cb2612ee6df55e8",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__integrations__cep__completion-store.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/integrations/cep/completion-store.js",
+      "bytes": 6240,
+      "sha256": "c5678e98b6eea7cb0ad7db605b4bd9a5a4f73080bb1e32f60c6a99420e904835",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__integrations__cep__http-peer.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/integrations/cep/http-peer.js",
+      "bytes": 15230,
+      "sha256": "678aa498eee23498d143017834be0be1f60df10d36de39aad6fec91ba7938757",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__test__installed-composition.test.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/test/installed-composition.test.js",
+      "bytes": 14964,
+      "sha256": "4583ddff9d9050e95e84dfc04d8afc87562b79bd2c859fdfff3744be68b431b6",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__test__exact-f548-transition.test.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/test/exact-f548-transition.test.js",
+      "bytes": 270,
+      "sha256": "5cf0f0fbccacf5147a76f54ba75505f48d48b95ac043f128268698fa7425bc08",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__test__fixtures__installed-composition-transition.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/test/fixtures/installed-composition-transition.js",
+      "bytes": 5756,
+      "sha256": "c8086bd7910eee3d712eca8aa34200e4ee12f364e3d991f4f43c615cdd084d54",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__test__fixtures__installed-composition-child.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/test/fixtures/installed-composition-child.js",
+      "bytes": 676,
+      "sha256": "7374dbbc696464658a2babc36f735dfadfc6dee39173b2855f82f69dcba1f299",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__test__fixtures__fixed-format1-package.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/test/fixtures/fixed-format1-package.js",
+      "bytes": 2377,
+      "sha256": "2773f81e775dcc22dc47e57b0302eaa55e282d2b39823312646af76a43a48553",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__test__fixtures__native-read-recovery.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/test/fixtures/native-read-recovery.js",
+      "bytes": 13737,
+      "sha256": "5795220502f29d55300843a5743e89b10500adc77b58f6430027ac356a078f1b",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__test__fixtures__exact-f548-transition.js",
+      "source": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f:core4/test/fixtures/exact-f548-transition.js",
+      "bytes": 1277,
+      "sha256": "2e5a2f9a4b62ad1af3ddb14c084daf42de3dd9cd5d105a7507523a87543538a7",
+      "classification": "INTERNAL"
+    }
+  ]
+}

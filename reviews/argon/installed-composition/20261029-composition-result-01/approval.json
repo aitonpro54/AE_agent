@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "reviewId": "20261029-composition-result-01",
+  "stageId": "installed-composition",
+  "targetCommit": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f",
+  "requestSha256": "c3feda2e6cb073f7d49ca332e638871a33f59798d851b4d39d9debc4c976265f",
+  "manifestSha256": "eda69ced9346a6ee4973989238522b57bea2c9052932bc8efb5651d14f60d681",
+  "payload": {
+    "file": "bundle.md",
+    "bytes": 256764,
+    "sha256": "c3366a890f2f37a4795d9312fd2689237cd6cc156f2763dd6e0b6720223573a8"
+  },
+  "recipient": {
+    "service": "Gemini Argon",
+    "accountAlias": "Aiton Pro",
+    "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+    "effort": "maximum available; verify fresh UI"
+  },
+  "externalPrompt": "Review ID: 20261029-composition-result-01\nStage ID: installed-composition\nType: result\nTarget commit: ed747efceb47c43c0b185d09262d9ba72f7a0a9f\nRequest SHA-256: c3feda2e6cb073f7d49ca332e638871a33f59798d851b4d39d9debc4c976265f\nBundle SHA-256: c3366a890f2f37a4795d9312fd2689237cd6cc156f2763dd6e0b6720223573a8\nПроведи одно ограниченное review приложенного bundle.md по request.md внутри. Проверь format2 installed composition, standalone readonly, сохранение format1 f548 history/verifyCep/admission/UNKNOWN и соответствие scoped evidence. Это новый самостоятельный этап, не повтор audit review. Верни bindings, прочитанное/пропущенное, verdict и actionable findings с точным evidence. Known live/hot-swap/portability gaps не считать закрытыми. Второго review после fixes не требуется.",
+  "authorization": {
+    "source": "User-supplied scoped AGENTS.md and current direct continue request",
+    "userQuote": "Уже данное поручение на первые review следующих самостоятельных этапов сохраняет силу; автоматического второго result/fix/final review нет. Не создавать новые точки согласия для уже разрешённой работы.",
+    "basis": "First bounded result review of a new independent installed-composition stage after local checks and source commit; prior workflow per-package consent superseded by standing scoped user instruction.",
+    "scope": "One upload/one send; no retries after unknown; no follow-up review or broader permission"
+  },
+  "preparedAt": "2026-10-29T11:35:13.872Z"
+}

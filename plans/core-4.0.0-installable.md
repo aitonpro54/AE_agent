@@ -4,9 +4,11 @@
 
 ## Цель и scope
 
-**Текущий source-блок:** [декларативная устанавливаемая композиция](core-installed-composition-20261029.md).
-Цель — отдельный read-only состав без рабочих modules/engine и сохранение
-manual состава с теми же gates; release-specific verifyCep покрывает fixed f548.
+**Source/temp этап завершён:** [декларативная устанавливаемая композиция](core-installed-composition-20261029.md).
+Созданы readonly40/manual59 с прежними gates; release-specific verifyCep
+покрывает fixed f548. Source `ed747ef`, local fixes `510d5ca`, scoped75PASS
+и exact-f5481PASS, boundaries28PASS. Одно Argon `go`,3P3 разобраны локально;
+новые hashes readonly7a46/manual3f92, full release не заявляется.
 Configured tools текущего чата доступны. Native inspection/install пока не
 выполняются: receiver storeClosed=true, stale marker требует отдельного
 обслуживания с проверкой владельца и истории, без replay. Installed f548 сохранён.

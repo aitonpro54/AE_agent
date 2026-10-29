@@ -1,0 +1,253 @@
+1. Bindings и метаданные ревью
+
+Review ID: 20261029-composition-result-01   
+MD
+
+Stage ID: installed-composition   
+MD
+
+Type: result   
+MD
+
+Repository: AE_agent_core   
+MD
+
+Base commit: 1eea17de7d9378b2d9e663675bfb5999e125b90f   
+MD
+
+Target commit: ed747efceb47c43c0b185d09262d9ba72f7a0a9f   
+MD
+
+Request SHA-256: c3feda2e6cb073f7d49ca332e638871a33f59798d851b4d39d9debc4c976265f   
+MD
+
+Bundle SHA-256: c3366a890f2f37a4795d9312fd2689237cd6cc156f2763dd6e0b6720223573a8
+
+2. Прочитанные материалы и пропуски
+
+Фактически прочитанные секции bundle.md (все 20/20 разделов из Input manifest):
+
+request.md (4701 bytes, SHA-256: c3feda2e6cb073f7d49ca332e638871a33f59798d851b4d39d9debc4c976265f)   
+MD
+
+changes.diff (80310 bytes, SHA-256: ab7ee4758d52dffab9dba6031f9ed5f977ff4032d114f82223ff7ea88e6c5726)   
+MD
+
+evidence.json (6892 bytes, SHA-256: 2eb047048c57ca7e7b50e1abe6b4e68c6b5a860464eda751781c09435597ec23)   
+MD
+
+context/core4__runtime__stdio-entry.js (23745 bytes, SHA-256: d989daef7df9d143835c049dfe510b146dea598d46a60a37c87dfad4a2082598)   
+MD
+
+context/core4__runtime__source-package.json (2668 bytes, SHA-256: a1ef82ab8f3dda21acb3101071e36138af16710cce2013ac98bca1ea8c8fcdb2)   
+MD
+
+context/core4__tools__package-installable.js (4798 bytes, SHA-256: e0ee47e2509eba5c588fec3ab51865dd2931df39e08fdc99a1dfe05295c39dad)   
+MD
+
+context/core4__tools__install-core4.js (27446 bytes, SHA-256: 23521b67e91cc59cc8d11ff67eb24ec55021cef69be0f2bb191020f45e58a2b7)   
+MD
+
+context/core4__tools__check-boundaries.js (2851 bytes, SHA-256: 822ba1c0665d509f273f76f1398ba3be1133c7f9643c7f82726aeb0c07094293)   
+MD
+
+context/core4__runtime__installation-lineage.js (8305 bytes, SHA-256: 5575ccf7651e83a1545916fc88edb268ab3a72b08d57703b6d5df564a45d894a)   
+MD
+
+context/core4__runtime__native-read-disposition.js (21495 bytes, SHA-256: 20053d0df8780feb975bf3302efd0cd32f07770c752d1acefc100f96fefaeb5b)   
+MD
+
+context/core4__tools__disposition-install-preflight.js (5104 bytes, SHA-256: 0276831b78e8157117532ed815717f39d12f2ad120338d4a5cb2612ee6df55e8)   
+MD
+
+context/core4__integrations__cep__completion-store.js (6240 bytes, SHA-256: c5678e98b6eea7cb0ad7db605b4bd9a5a4f73080bb1e32f60c6a99420e904835)   
+MD
+
+context/core4__integrations__cep__http-peer.js (15230 bytes, SHA-256: 678aa498eee23498d143017834be0be1f60df10d36de39aad6fec91ba7938757)   
+MD
+
+context/core4__test__installed-composition.test.js (14964 bytes, SHA-256: 4583ddff9d9050e95e84dfc04d8afc87562b79bd2c859fdfff3744be68b431b6)   
+MD
+
+context/core4__test__exact-f548-transition.test.js (270 bytes, SHA-256: 5cf0f0fbccacf5147a76f54ba75505f48d48b95ac043f128268698fa7425bc08)   
+MD
+
+context/core4__test__fixtures__installed-composition-transition.js (5756 bytes, SHA-256: c8086bd7910eee3d712eca8aa34200e4ee12f364e3d991f4f43c615cdd084d54)   
+MD
+
+context/core4__test__fixtures__installed-composition-child.js (676 bytes, SHA-256: 7374dbbc696464658a2babc36f735dfadfc6dee39173b2855f82f69dcba1f299)   
+MD
+
+context/core4__test__fixtures__fixed-format1-package.js (2377 bytes, SHA-256: 2773f81e775dcc22dc47e57b0302eaa55e282d2b39823312646af76a43a48553)   
+MD
+
+context/core4__test__fixtures__native-read-recovery.js (13737 bytes, SHA-256: 5795220502f29d55300843a5743e89b10500adc77b58f6430027ac356a078f1b)   
+MD
+
+context/core4__test__fixtures__exact-f548-transition.js (1277 bytes, SHA-256: 2e5a2f9a4b62ad1af3ddb14c084daf42de3dd9cd5d105a7507523a87543538a7)   
+MD
+
+Пропуски / материалы вне полного context/:
+
+Внутри bundle.md пропусков нет (прочитаны все 20 секций).   
+MD
+
+Файлы core4/config/validation-map.json, core4/test/installable-runtime.test.js, docs/core-installed-composition.md, plans/core-4.0.0-installable.md, plans/core-4.0.0.md и plans/core-installed-composition-20261029.md проверены по полным hunks в changes.diff и хешам в evidence.json (без отдельных секций context/).   
+MD
+
+Внешние артефакты (dist/core4/4.0.0-panel-reconnect-f54863dbb69b/core4-4.0.0.json, собранные пакеты в dist/core4/4.0.0-composition-*, сырые .log файлы и реальное окружение/state) не входят в allowlist бандла и оценивались исключительно по детерминированным сводкам и SHA-256 в evidence.json.   
+MD
+
+3. Verdict
+
+Verdict: go (для заявленного source/temp этапа installed-composition; блокеры P0/P1 и регрессии безопасности отсутствуют, есть 3 необязательных замечания уровня P3 по локальному упрощению и самодостаточности проверок).
+
+4. Ответы на контрольные вопросы request.md
+1. Есть ли конкретный новый bypass bootstrap/admission, скрытый legacy fallback или подмена contract старого release новым?
+
+Bypass bootstrap/admission отсутствует: На уровне модуля core4/runtime/stdio-entry.js загружает только node:fs, node:path, node:crypto. В start() сначала выполняется полная проверка verifyInstallation(descriptor), затем привязка корня fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(root) (installation_entry_root_mismatch), захват install.lock (wx) и повторная сверка verifyInstallation(descriptor) до загрузки ../core/broker.js и остальных модулей. Попытка запустить start() на format: 1 релизе жёстко блокируется проверкой if (selected.legacy) fail('runtime_composition_required').   
+MD
+Ещё 2
+
+Скрытый legacy fallback отсутствует: Ветвление в verifyRelease и deriveComposition определяется строго полем release.format (1 или 2), а не наличием файла runtime/composition.json. Для format: 2 отсутствие runtime/composition.json в release.hashes вызывает fail('composition_required'), а для format: 1 присутствие runtime/composition.json или отсутствие runtime/profiles.json и runtime/source-package.json вызывает fail('composition_downgrade').   
+MD
+Ещё 1
+
+Подмена контракта старого release новым отсутствует: В resolveHistoricalForInstall (core4/runtime/installation-lineage.js) вызывается verifyCep(d, node.release, d.version === 2 ? d.cepDir : cepDir), где node.release — манифест именно исторического установленного релиза из d.releaseDir, а не пакета-кандидата. Внутри verifyCep вызов deriveComposition(manifest, ...) для исторического f548 (format: 1) формирует installation.js со старым двухэлементным списком (project-inspection-v1 и titles-current-target-v1), поэтому исторический CEP-бандл проверяется по своему собственному контракту даже тогда, когда кандидатом выступает readonly (format: 2).   
+MD
+Ещё 1
+
+2. Сохраняются ли readonly отсутствие authority и manual guards, deterministic registry и no executable ingress?
+
+Отсутствие authority и физическое исключение кода в readonly: При composition.id === 'readonly' в deriveComposition проверяется отсутствие в release.hashes любых путей plan-engine/, modules/(?!project-inspection/), config/admissions/ и runtime/(manual-policy|windows-reservation-provider).js (composition_optional_closure). В start() при отсутствии manualAsset модули ./windows-reservation-provider.js и ./manual-policy.js не импортируются (подтверждено проверкой require.cache в дочернем процессе теста), Broker создаётся без privateEmbedding (без authority, executionPolicy и мутационного transport), createHttpPeer получает additionalAssets: [], facade.status() возвращает manualPolicy: null, resourceProvider: null, mutationAvailable: false, а facade.inspect возвращает authority: false.   
+MD
+Ещё 1
+
+Сохранение manual guards: В manual составе createWindowsReservationProvider и createManualPolicy подключаются только при наличии допущенного manualAsset (current-matching-target-after-local-confirmation-v1), а admissionGuard в stdio-entry.js и проверки в http-peer.js / completion-store.js остаются без ослаблений.   
+MD
+
+Детерминированный ES3 registry и защита от executable ingress: registrySource(assets, codecSource) детерминированно собирает cep/jsx/registry.jsx из проверенных по SHA-256 executor.jsx и json-codec.jsx, проверяется парсером Acorn (ecmaVersion: 3, allowReserved: 'never'), использует Object.prototype.hasOwnProperty для защиты от прототипных ключей (constructor, toString, __proto__) и сверяет frame.pins.executorHash !== a.hash перед вызовом фазы. В verifyRelease и verifyPackage байты cep/jsx/registry.jsx побайтово сверяются с результатом registrySource(...).   
+MD
+Ещё 1
+
+3. Достаточны ли scoped evidence для заявленного source/temp результата; какие утверждения выходят за их пределы?
+
+Достаточность для source/temp этапа: Представленные в evidence.json доказательства полностью подтверждают заявленный source/temp результат:
+
+все 14 исходных файлов и 9 логов имеют верифицированные SHA-256 (mismatches: 0);   
+MD
+
+оба пакета (readonly — 40 файлов, packageHash: c14436485c18...; manual — 59 файлов, packageHash: e945f12b5ac4...) пересобраны детерминированно и проверены через standalone installer dry-run в temp-окружении (exit: 0, без создания installRoot/config);   
+MD
+
+переход на readonly (format: 2) проверен в temp-окружении со свежими синтетическими ключами как для портативной фикстуры fixed-format1-package.js, так и для точного исторического кода dist/core4/4.0.0-panel-reconnect-f54863dbb69b/core4-4.0.0.json (343626 байт, SHA-256 dc02187e..., packageHash: f54863db...) с сохранением 3-событийного префикса, подписанного terminal-read-failure-disposition, исходного UNKNOWN, запрета повтора (duplicate_command_no_replay), двух поздних ACK и закрытия store при дополнительном UNKNOWN;   
+MD
+
+корректно учтено и задокументировано, что scoped-final.log (73/73 PASS) выполнялся на финальном stdio-entry.js (d989daef...), но до точечного CLI-исправления || → ?? в package-installable.js (f33a4bf2... → e0ee47e2...), после чего отдельно выполнены финальные прогоны composition-cli-final.log (7+1 PASS), routing-final.log (5 PASS), boundaries-final.log (28 PASS) и diff-check-final.log (exit: 0).   
+MD
+
+Утверждения, которые выходили бы за пределы evidence:
+
+нельзя заявлять единый полный прогон всех 73 тестов после последнего коммита package-installable.js / validation-map.json (выполнены scoped-final.log до CLI-дельты + адресные финальные сьюты после неё);   
+MD
+
+нельзя заявлять live AE / CEP приёмку: выполнение AECore4Host.dispatch в installed-composition.test.js проведено в node:vm с синтетическим CompItem, а не в реальном хосте After Effects;   
+MD
+
+нельзя заявлять починку, обновление или перезапуск production-инсталляции (она остаётся на f548 с storeClosed=true и старым owner маркером);   
+MD
+
+нельзя заявлять динамическую/горячую установку произвольных модулей (реализованы ровно два закрытых пресета сборки readonly и manual) или переносимость между двумя машинами (P1–P8).   
+MD
+
+4. Есть ли минимальное упрощение в текущем scope без новой системы policies/plugins?
+
+Да — см. FINDING-01 и FINDING-02 ниже:
+
+В core4/runtime/stdio-entry.js можно исключить дублирующиеся обходы дерева релиза и повторные вызовы deriveComposition между verifyRelease, verifyCep, verifyInstallation и start (сейчас при одном вызове start() дерево релиза читается и хешируется 4 раза, а deriveComposition выполняется 5 раз).   
+MD
+
+В deriveComposition (core4/runtime/stdio-entry.js) можно поднять хелперы checked/json выше ветки if (release.format === 1) и использовать json(...) также для чтения modules/project-inspection/artifact.json и config/admissions/titles-current-target.json в format: 1, убрав дублирование JSON.parse(read(...)) и сделав функцию самодостаточной.   
+MD
+
+5. Actionable Findings
+FINDING-01 (P3) — Многократное дублирование verifyRelease и deriveComposition при верификации и старте
+
+Точная локация и сценарий: core4/runtime/stdio-entry.js, строки 95, 103, 105, 134–136, 140, 145, 151.   
+MD
+
+Evidence:
+
+verifyInstallation(file) вызывает verifyRelease(d.releaseDir, manifest) (строка 134), который для format: 2 вызывает deriveComposition(release, ...) (строка 95), после чего verifyInstallation в строке 135 вызывает verifyCep(d, manifest, d.cepDir).   
+MD
+
+verifyCep в первой же строке (103) повторно вызывает verifyRelease(d.releaseDir, manifest) (снова обходя и хешируя все 40–59 файлов на диске и снова вызывая deriveComposition), а затем в строке 105 вызывает deriveComposition(manifest, ...) в третий раз.   
+MD
+
+В start() функция verifyInstallation(descriptor) вызывается дважды (до и после install.lock, строки 140 и 145), а затем в строке 151 напрямую вызывается deriveComposition(release, ...). В итоге один запуск start() выполняет 4 полных обхода verifyRelease и 5 вызовов deriveComposition.   
+MD
+Ещё 1
+
+Минимальное изменение и адресная проверка:
+
+Возвращать результат deriveComposition из verifyRelease (для format: 2) и передавать/переиспользовать его в verifyCep и verifyInstallation (либо вызывать verifyRelease внутри verifyCep только тогда, когда verifyCep вызван вне verifyInstallation, например из resolveHistoricalForInstall).   
+MD
+
+Проверка: node --test --test-name-pattern=installed-composition core4/test/installed-composition.test.js.   
+MD
+
+FINDING-02 (P3) — Прямое чтение файлов без json()/checked() в ветке format === 1 функции deriveComposition
+
+Точная локация и сценарий: core4/runtime/stdio-entry.js, строки 20–28 (при прямом вызове экспортированной функции deriveComposition(release, read) для release.format === 1).   
+MD
+
+Evidence:
+
+В ветке if (release.format === 1) строки 23–24 выполняют const inspection = JSON.parse(read('modules/project-inspection/artifact.json')); и const manual = JSON.parse(read('config/admissions/titles-current-target.json')); без проверки Object.hasOwn(release.hashes, file) и hash(bytes) !== release.hashes[file], тогда как хелпер const json = file => ... объявляется на строке 28 сразу после блока format === 1.   
+MD
+
+При вызове через verifyCep или verifyPackage целостность хэшей проверяется внешним кодом заранее, но так как deriveComposition теперь экспортируется в module.exports (строка 202), перенос checked/json в начало deriveComposition и использование json(...) в ветке format === 1 гарантирует инвариант composition_unhashed_path / composition_bytes при любом прямом вызове.   
+MD
+
+Минимальное изменение и адресная проверка:
+
+Поднять checked и json в начало deriveComposition и заменить JSON.parse(read(...)) в строках 23–24 на json(...).   
+MD
+
+Проверка: node --test --test-name-pattern=installed-composition core4/test/installed-composition.test.js и node --test --test-name-pattern=exact-f548-transition core4/test/exact-f548-transition.test.js.   
+MD
+
+FINDING-03 (P3) — Граница среза в check-boundaries.js и мелкая несогласованность physical в facade.connect / facade.disconnect
+
+Точная локация и сценарий: core4/tools/check-boundaries.js, строки 28–31; core4/runtime/stdio-entry.js, строки 177–181.   
+MD
+
+Evidence:
+
+В check-boundaries.js (строка 29) проверка отсутствия не-node: импортов до верификации релиза берёт срез const prefix = source.slice(0, source.indexOf('async function start('));. Если не-builtin require(...) будет ошибочно добавлен в первые строки тела start() до if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start'); (строка 145) или в хвост файла после start(), статическая проверка check-boundaries.js это не заметит.   
+MD
+Ещё 1
+
+В stdio-entry.js (строка 180) facade.connect вызывает physical() до трёх раз за один вызов, а facade.disconnect (строка 181) возвращает physical: peer.status() без вычисляемого поля inspectionAvailable, в отличие от facade.status, facade.diagnostics и facade.connect.   
+MD
+
+Минимальное изменение и адресная проверка:
+
+В check-boundaries.js брать префикс до fail('installation_changed_during_start') и дополнительно проверять хвост после start(); в stdio-entry.js сохранять const phys = physical() в facade.connect и возвращать physical: physical() в facade.disconnect.   
+MD
+
+Проверка: node core4/tools/check-boundaries.js и node --test --test-name-pattern=installed-composition core4/test/installed-composition.test.js.   
+MD
+
+6. Известные открытые ограничения (Known Gaps — не считаются закрытыми)
+
+Следующие пункты зафиксированы как известные открытые задачи вне текущего source/temp этапа и не считаются закрытыми:
+
+Live production blocker и отсутствие live AE proof: установленный production-релиз остаётся на f54863dbb69b... с закрытым receiver store (storeClosed=true, unknown=true, pending=null, старый owner маркер от 09:09:53 UTC и расхождение старого adopted PID 31452 с текущим AE PID 18992); реальная установка в production и live-проверка в After Effects / CEP не выполнялись.   
+MD
+
+Отсутствие динамической/горячей компоновки модулей: текущий этап реализует два фиксированных build-time пресета (readonly и manual); независимая установка или hot-swap произвольных рабочих модулей без пересборки пакета не реализованы.   
+MD
+
+Отсутствие единого пост-дельта прогона всех 73 тестов и сертификации переносимости: полный 73-тестовый сьют (scoped-final.log) запускался до однострочного CLI-исправления ?? в package-installable.js, а проверка переносимости между двумя машинами / round-trip (P1–P8) и финальная сертификация релиза остаются открытыми.   
+MD

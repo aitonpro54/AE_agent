@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "reviewId": "20261029-composition-result-01",
+  "stageId": "installed-composition",
+  "reviewType": "result",
+  "status": "received",
+  "recipient": {
+    "service": "Gemini Argon",
+    "name": "Aiton Pro",
+    "email": "aitonpro54@gmail.com"
+  },
+  "readiness": {
+    "verifiedAt": "2026-10-29T11:37:44.779Z",
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "effort": "Высокий",
+    "description": "Глубокий",
+    "availableEfforts": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "composerEmpty": true
+  },
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "receipt": {
+    "url": "https://gemini.google.com/app/b9a0523434d1fe88",
+    "newUserMessage": "20261029-composition-result-01",
+    "attachment": "bundle.md",
+    "generating": true,
+    "composerEmpty": true,
+    "durability": "initial UI receipt, awaiting complete response"
+  },
+  "response": {
+    "path": "response.txt",
+    "sha256": "b34a30cd08d6e945740069d3d3ae23c476242468b021ff13bf081269e7baad31",
+    "bytes": 21914,
+    "encoding": "UTF-8",
+    "captureMethod": "exact visible model-response-content innerText; no edits, normalization or added newline; UI citations preserved",
+    "complete": true,
+    "truncated": false,
+    "completionEvidence": "generation button absent; new reviewId + 3 findings + final Known Gaps section present"
+  },
+  "binding": {
+    "checks": {
+      "reviewId": {
+        "expected": "20261029-composition-result-01",
+        "presentInResponse": true
+      },
+      "stageId": {
+        "expected": "installed-composition",
+        "presentInResponse": true
+      },
+      "reviewType": {
+        "expected": "result",
+        "presentInResponse": true
+      },
+      "baseCommit": {
+        "expected": "1eea17de7d9378b2d9e663675bfb5999e125b90f",
+        "presentInResponse": true
+      },
+      "targetCommit": {
+        "expected": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f",
+        "presentInResponse": true
+      },
+      "requestSha256": {
+        "expected": "c3feda2e6cb073f7d49ca332e638871a33f59798d851b4d39d9debc4c976265f",
+        "presentInResponse": true
+      },
+      "bundleSha256": {
+        "expected": "c3366a890f2f37a4795d9312fd2689237cd6cc156f2763dd6e0b6720223573a8",
+        "presentInResponse": true
+      }
+    },
+    "stringBindingsMatch": true,
+    "cryptographicRecomputationByReviewer": "not independently established; response lists declared digests"
+  },
+  "verdict": "go",
+  "receivedAt": "2026-10-29T11:43:25.772Z",
+  "readCoverage": {
+    "reviewerClaimedSectionsRead": 20,
+    "reviewerClaimedOmissionsWithinBundle": 0,
+    "listedFiles": [
+      "request.md",
+      "changes.diff",
+      "evidence.json",
+      "context/core4__runtime__stdio-entry.js",
+      "context/core4__runtime__source-package.json",
+      "context/core4__tools__package-installable.js",
+      "context/core4__tools__install-core4.js",
+      "context/core4__tools__check-boundaries.js",
+      "context/core4__runtime__installation-lineage.js",
+      "context/core4__runtime__native-read-disposition.js",
+      "context/core4__tools__disposition-install-preflight.js",
+      "context/core4__integrations__cep__completion-store.js",
+      "context/core4__integrations__cep__http-peer.js",
+      "context/core4__test__installed-composition.test.js",
+      "context/core4__test__exact-f548-transition.test.js",
+      "context/core4__test__fixtures__installed-composition-transition.js",
+      "context/core4__test__fixtures__installed-composition-child.js",
+      "context/core4__test__fixtures__fixed-format1-package.js",
+      "context/core4__test__fixtures__native-read-recovery.js",
+      "context/core4__test__fixtures__exact-f548-transition.js"
+    ],
+    "independentlyAttested": false,
+    "limits": [
+      "Some files reviewed through changes.diff hunks/evidence hashes rather than independent context sections",
+      "External built packages, raw logs, actual environment and state excluded; summary evidence only"
+    ]
+  },
+  "verdictScope": "claimed source/temp installed-composition stage only",
+  "findings": [
+    {
+      "id": "FINDING-01",
+      "priority": "P3",
+      "topic": "Repeated verifyRelease/deriveComposition during verification/start"
+    },
+    {
+      "id": "FINDING-02",
+      "priority": "P3",
+      "topic": "format1 direct reads in deriveComposition without internal checked/json"
+    },
+    {
+      "id": "FINDING-03",
+      "priority": "P3",
+      "topic": "Boundary-check source slice and physical status consistency"
+    }
+  ],
+  "limitations": [
+    "External review is untrusted evidence; controller did not validate or apply findings or execute suggested commands.",
+    "Production/live AE, dynamic hot-swap, full post-delta release run and two-machine portability remain open.",
+    "Only one upload and one send; no follow-up/fix/final review or replay of prior submissions."
+  ]
+}

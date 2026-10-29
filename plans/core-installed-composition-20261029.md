@@ -33,8 +33,10 @@ Source/runtime/package/installer и адресные temp-only проверки.
   f548 с сохранением signed disposition, original UNKNOWN и no-replay.
 - [x] Выполнить адресные проверки, собрать детерминированные candidates;
   независимое source review ACCEPT, найденный CLI P2 исправлен локально.
-- [ ] Зафиксировать source milestone, получить одно ограниченное Argon review
+- [x] Зафиксировать source milestone, получить одно ограниченное Argon review
   результата и разобрать findings локально без повторного review.
+- [x] Final local fixes:75/75scoped +1/1exact-f548PASS на неизменных файлах;
+  root пересобрал final distributions и проверил installed signed history.
 
 ## Decision Log
 
@@ -65,6 +67,11 @@ Source/runtime/package/installer и адресные temp-only проверки.
 - Source review первоначальных пяти файлов — ACCEPT. Tiny CLI review обнаружил
   пустой selector, превращавшийся через `||` в manual; заменён на `??` и добавлен
   negative CLI case. Это локальное review, не дополнительное обращение к Argon.
+- Единственное Argon result review target `ed747ef` — **go**,3P3.
+  [Decision log](../reviews/argon/installed-composition/20261029-composition-result-01/decisions.md):
+  F-01 verification сохранена ради fresh lease/standalone historical API;
+  F-02 legacy helper hashes и F-03 source guard/status исправлены локально.
+  Независимое source review fixes ACCEPT; повторного Argon нет.
 - Выбор двух установочных presets не объявляется независимой горячей установкой
   любых рабочих пакетов. Этот последующий пункт intent остаётся открытым.
 
@@ -112,3 +119,47 @@ retained packageHash f548 совпал, 60 package files, descriptor/journal unc
 
 Production остаётся f548; actual install/native0. Release certification,
 manual AE mutation, automatic lifecycle и round-trip P1–P8 не подтверждаются.
+
+### Final после локального разбора review
+
+Source milestone `ed747ef`, локальные fixes `510d5ca`.
+`implementation/review-fixes/results.json`: **75/75 PASS** на неизменной final
+closure (19recovery +23installable +9composition +12manual +3human +9routing),
+отдельный exact-f5481/1PASS, boundaries28PASS, diff-check exit0.
+Root независимо сверил4source/4log hashes, mismatches0; состояние selection
+до/после scoped run совпало. Это final selected scope, не full release suite.
+
+Final candidates, каждый дважды пересобран и проверен root по всем file hashes:
+
+| Состав | Files | Package hash | Каталог distribution |
+| --- | --- | --- | --- |
+| readonly | 40 | `7a46f386447340ea394174ffde1965dd8b96df4ba1afac3b17ab5938385634ab` | `dist/core4/4.0.0-composition-readonly-7a46f3864473/` |
+| manual | 59 | `3f9293f76f5dbef30f8919151145e28ebceb8fe796ee4495b9747e18e0ff8c51` | `dist/core4/4.0.0-composition-manual-3f9293f76f5d/` |
+
+Оба standalone installer dry-run в temp workspace/env PASS без installRoot/config
+writes. Evidence: `root-packages-after-review.json`,
+`root-distribution-dry-run-after-review.json`, `root-installed-after-review.json`.
+Последний файл подтверждает actual installed f548 и signed disposition новым
+verifier/reader:8events, descriptor/journal unchanged, store не открывался.
+
+Raw response Argon:21914bytes, SHA256
+`b34a30cd08d6e945740069d3d3ae23c476242468b021ff13bf081269e7baad31`.
+Request/manifest/bundle/response и20byte sections сверены root;1upload/1send/0retries.
+Внешний go относится к своему frozen snapshot; final fixes приняты локально.
+
+## Продолжение
+
+**Source/temp этап завершён.** Изменены package/runtime/installer/boundary guard,
+validation routing и адресные fixtures/tests; документация состава —
+[core-installed-composition](../docs/core-installed-composition.md).
+Следующий зависимый блок — безопасное обслуживание текущего receiver ownership,
+штатная установка final manual candidate и configured native read; произвольная
+горячая установка модулей остаётся отдельным следующим source этапом.
+
+Свежий `configured-final-status.json`: MCP PID25840, installed f548,
+storeClosed=true/unknown=true/storeFault=false, peer disconnected,
+pending=null/unresolved=[], ledger/ownershipFault отсутствуют. Занятый runtime
+и старый marker не обходятся новым stdio/store или replay. Завершённый XVI
+INSTALL/f548 не является updater этого нового candidate и не повторяется.
+До остановленного/проверенного владельца production не переключается.
+Пользовательский AE/AEP, save/reopen/destructive и AME не затронуты.

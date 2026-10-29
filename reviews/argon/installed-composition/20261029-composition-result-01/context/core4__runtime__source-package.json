@@ -1,0 +1,94 @@
+{
+  "version": 2,
+  "files": [
+    "core/artifact.json",
+    "worker.js",
+    "runtime/stdio-entry.js",
+    "runtime/installation.js",
+    "runtime/receiver-contract.json",
+    "runtime/install-lease.js",
+    "runtime/installation-lineage.js",
+    "runtime/native-read-disposition.js",
+    "runtime/host/json-codec.jsx",
+    "integrations/cep/http-peer.js",
+    "integrations/cep/peer-protocol.js",
+    "integrations/cep/completion-store.js",
+    "modules/project-inspection/contract.json",
+    "modules/project-inspection/executor.jsx",
+    "modules/project-inspection/artifact.json",
+    "cep/CSXS/manifest.xml",
+    "cep/index.html",
+    "cep/panel.css",
+    "cep/js/poll-dispatcher.js",
+    "cep/js/panel.js"
+  ],
+  "artifactClosures": [
+    "core/artifact.json",
+    "protocol/artifact.json"
+  ],
+  "optional": {
+    "manual": {
+      "files": [
+        "config/admissions/titles.json",
+        "config/admissions/photo-placeholder.json",
+        "runtime/manual-policy.js",
+        "runtime/windows-reservation-provider.js",
+        "config/admissions/titles-current-target.json"
+      ],
+      "artifactClosures": [
+        "modules/titles/artifact.json",
+        "modules/photo-placeholder/artifact.json",
+        "modules/titles-current-target/artifact.json",
+        "plan-engine/artifact.json"
+      ]
+    }
+  },
+  "compositions": {
+    "readonly": {
+      "modules": [],
+      "assets": [
+        {
+          "assetKey": "project-inspection-v1",
+          "moduleId": "project-inspection",
+          "path": "modules/project-inspection",
+          "admission": "modules/project-inspection/artifact.json",
+          "policy": "read-only-current-observation-v1",
+          "phases": [
+            "inspect"
+          ]
+        }
+      ]
+    },
+    "manual": {
+      "modules": [
+        "photo-placeholder",
+        "titles",
+        "titles-current-target"
+      ],
+      "assets": [
+        {
+          "assetKey": "project-inspection-v1",
+          "moduleId": "project-inspection",
+          "path": "modules/project-inspection",
+          "admission": "modules/project-inspection/artifact.json",
+          "policy": "read-only-current-observation-v1",
+          "phases": [
+            "inspect"
+          ]
+        },
+        {
+          "assetKey": "titles-current-target-v1",
+          "moduleId": "titles-current-target",
+          "path": "modules/titles-current-target",
+          "admission": "config/admissions/titles-current-target.json",
+          "policy": "current-matching-target-after-local-confirmation-v1",
+          "phases": [
+            "inspect",
+            "mutate",
+            "verify"
+          ]
+        }
+      ]
+    }
+  }
+}

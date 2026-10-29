@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "reviewId": "20261029-composition-result-01",
+  "stageId": "installed-composition",
+  "reviewType": "result",
+  "scope": "single initial result review of independent installed-composition",
+  "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "status": "received",
+  "attempt": 1,
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "recipient": {
+    "service": "Gemini Argon",
+    "name": "Aiton Pro",
+    "email": "aitonpro54@gmail.com"
+  },
+  "readiness": {
+    "verifiedAt": "2026-10-29T11:37:44.779Z",
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "effort": "Высокий",
+    "description": "Глубокий",
+    "availableEfforts": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "composerEmpty": true
+  },
+  "authorization": {
+    "source": "User-supplied scoped AGENTS.md and current direct continue request",
+    "userQuote": "Уже данное поручение на первые review следующих самостоятельных этапов сохраняет силу; автоматического второго result/fix/final review нет. Не создавать новые точки согласия для уже разрешённой работы.",
+    "basis": "First bounded result review of a new independent installed-composition stage after local checks and source commit; prior workflow per-package consent superseded by standing scoped user instruction.",
+    "scope": "One upload/one send; no retries after unknown; no follow-up review or broader permission",
+    "trustedContinueUserMessage": "01a18758-f2cb-7833-898f-8c0c82212678",
+    "sourceThread": "01a18758-d3d9-7442-99b4-31763f4c393b"
+  },
+  "baseCommit": "1eea17de7d9378b2d9e663675bfb5999e125b90f",
+  "targetCommit": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f",
+  "payload": {
+    "file": "bundle.md",
+    "bytes": 256764,
+    "sha256": "c3366a890f2f37a4795d9312fd2689237cd6cc156f2763dd6e0b6720223573a8"
+  },
+  "requestSha256": "c3feda2e6cb073f7d49ca332e638871a33f59798d851b4d39d9debc4c976265f",
+  "manifestSha256": "eda69ced9346a6ee4973989238522b57bea2c9052932bc8efb5651d14f60d681",
+  "sectionValidation": {
+    "count": 20,
+    "allHashesMatch": true
+  },
+  "method": "file-upload",
+  "prompt": "Review ID: 20261029-composition-result-01\nStage ID: installed-composition\nType: result\nTarget commit: ed747efceb47c43c0b185d09262d9ba72f7a0a9f\nRequest SHA-256: c3feda2e6cb073f7d49ca332e638871a33f59798d851b4d39d9debc4c976265f\nBundle SHA-256: c3366a890f2f37a4795d9312fd2689237cd6cc156f2763dd6e0b6720223573a8\nПроведи одно ограниченное review приложенного bundle.md по request.md внутри. Проверь format2 installed composition, standalone readonly, сохранение format1 f548 history/verifyCep/admission/UNKNOWN и соответствие scoped evidence. Это новый самостоятельный этап, не повтор audit review. Верни bindings, прочитанное/пропущенное, verdict и actionable findings с точным evidence. Known live/hot-swap/portability gaps не считать закрытыми. Второго review после fixes не требуется.",
+  "promptSha256": "d6349e4caebaa706d7c7651d891cfb6073e90043ad2dc7377b24caed70725cdf",
+  "preparedAt": "2026-10-29T11:37:44.859Z",
+  "url": "https://gemini.google.com/app/b9a0523434d1fe88",
+  "previousResponseCount": 0,
+  "otherFilesTransmitted": 0,
+  "uploadInvokedAt": "2026-10-29T11:38:00.073Z",
+  "uploadConfirmedAt": "2026-10-29T11:38:42.353Z",
+  "promptExactParagraphTextVerified": true,
+  "sendInvokedAt": "2026-10-29T11:38:42.353Z",
+  "submittedAt": "2026-10-29T11:38:42.353Z",
+  "submissionConfirmedAt": "2026-10-29T11:38:54.678Z",
+  "receipt": {
+    "url": "https://gemini.google.com/app/b9a0523434d1fe88",
+    "newUserMessage": "20261029-composition-result-01",
+    "attachment": "bundle.md",
+    "generating": true,
+    "composerEmpty": true,
+    "durability": "complete response with matching reviewId/base/target/request/bundle string bindings"
+  },
+  "receivedAt": "2026-10-29T11:43:25.772Z",
+  "response": {
+    "path": "response.txt",
+    "sha256": "b34a30cd08d6e945740069d3d3ae23c476242468b021ff13bf081269e7baad31",
+    "bytes": 21914
+  }
+}

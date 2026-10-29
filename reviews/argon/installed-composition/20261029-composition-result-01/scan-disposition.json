@@ -1,0 +1,22 @@
+{
+  "status": "manually-classified-false-positives-only",
+  "builderExit": 3,
+  "builderArtifact": "bundle.generated.md (unaltered, not sent)",
+  "actualSecrets": 0,
+  "actualPII": 0,
+  "redactions": 0,
+  "omittedAllowlistFiles": 0,
+  "classification": [
+    {
+      "kind": "phone_like",
+      "count": 13,
+      "reason": "Git diff index/file-mode numbers and digit substrings inside declared SHA256 digests; no telephone fields"
+    },
+    {
+      "kind": "generic_secret",
+      "count": 3,
+      "reason": "Token: crypto.randomBytes (two syntactic fields) and Token : installation.controlToken (code expression); no literal credential values"
+    }
+  ],
+  "authorization": "Standing user instruction: first reviews of new independent stages are authorized; no new consent points for already authorized work. No incomplete or omitted content is sent."
+}

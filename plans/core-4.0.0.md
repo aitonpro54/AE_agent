@@ -1,11 +1,16 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
-**Текущий source-блок, 29 октября 2026:**
+**Source/temp этап завершён, 29 октября 2026:**
 [декларативная устанавливаемая композиция](core-installed-composition-20261029.md).
+Source `ed747ef`, local fixes `510d5ca`; final scoped75PASS +exact-f5481PASS,
+boundaries28PASS. Readonly40/manual59 собраны детерминированно; independent
+source review ACCEPT, единственное Argon `go`,3P3 разобраны локально.
 Configured Core4 tools доступны; status/discovery/contract прочитаны в текущем
 чате. Installed f548 пока не меняется: receiver store закрыт, marker старше
 нынешнего MCP, pending/unresolved пусты, историческая UNKNOWN имеет disposition.
-Native read при закрытом store не отправляется. Следующие записи сохраняют
+Native read при закрытом store не отправляется. Следующий зависимый блок —
+обслуживание ownership и установка final candidate, без повторного XVI INSTALL.
+Независимая горячая установка модулей пока не реализована. Следующие записи сохраняют
 историю завершённого аудита и прежних установок.
 
 **Актуальный блок, 29 октября 2026:** [аудит после переустановки внешней среды](core-post-reinstall-audit-20261029.md).

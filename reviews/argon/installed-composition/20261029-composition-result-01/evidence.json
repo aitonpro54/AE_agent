@@ -1,0 +1,187 @@
+{
+  "baseCommit": "1eea17de7d9378b2d9e663675bfb5999e125b90f",
+  "targetCommit": "ed747efceb47c43c0b185d09262d9ba72f7a0a9f",
+  "validation": [
+    {
+      "log": "scoped-final.log",
+      "exit": 0,
+      "checks": {
+        "native-read-recovery": 19,
+        "installable-runtime": 23,
+        "installed-composition": 7,
+        "manual-runtime": 12,
+        "human-window": 3,
+        "validation-routing/artifact-boundaries": 9
+      },
+      "totalPass": 73,
+      "packagerSha256": "f33a4bf2225e99c75ebb1e6a872d17eb4e4d45de602d4be609cf307b8643094e",
+      "note": "Before CLI empty-selector fix. Runtime source final; later change only CLI nullish default and test/routing deltas."
+    },
+    {
+      "log": "composition-cli-final.log",
+      "exit": 0,
+      "checks": {
+        "installed-composition": 7,
+        "exact-f548-transition": 1
+      },
+      "note": "Final CLI source; actual installed child inspection is synthetic native VM, not live AE."
+    },
+    {
+      "log": "routing-final.log",
+      "exit": 0,
+      "checks": {
+        "validation-routing": 5
+      }
+    },
+    {
+      "log": "boundaries-final.log",
+      "exit": 0,
+      "checked": 28,
+      "model": "reviewed-local-code; conservative source guard; not OS sandbox"
+    },
+    {
+      "log": "diff-check-final.log",
+      "exit": 0
+    }
+  ],
+  "logHashes": [
+    {
+      "file": "boundaries-final.log",
+      "sha256": "d4dafcb0ab88edf56bf2df315363046b28fe85287b5feb089257176271ffcb59"
+    },
+    {
+      "file": "boundaries.log",
+      "sha256": "d4dafcb0ab88edf56bf2df315363046b28fe85287b5feb089257176271ffcb59"
+    },
+    {
+      "file": "composition-cli-final.log",
+      "sha256": "175f8267f3851723c3d8f643b2bec5a24410c9502391f81f1a034a7e809d37c2"
+    },
+    {
+      "file": "diff-check-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "diff-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "exact-f548-transition-final.log",
+      "sha256": "ba7f9721dd0048d160dce9695dc38c5861a4430d21a1638ad8627c06073761ca"
+    },
+    {
+      "file": "exact-f548-transition.log",
+      "sha256": "f9695faf05f66e1534d9f1c85595980b932f630345db7bd6fd6005a9967c0767"
+    },
+    {
+      "file": "routing-final.log",
+      "sha256": "e73b3e63e00ec5e769372f4b392ea8c88462514a37604dca8944d06e7d1acf21"
+    },
+    {
+      "file": "scoped-final.log",
+      "sha256": "7d598e2caa82b1d73c684d2023180c1c6971ade2d2a6f529fd758a2b9daecf45"
+    }
+  ],
+  "sourceHashes": [
+    {
+      "file": "core4/config/validation-map.json",
+      "sha256": "3e1b55c88412fdc37edb95082d1c8df26abe8f2647844440c6ede07816a0992e"
+    },
+    {
+      "file": "core4/runtime/source-package.json",
+      "sha256": "a1ef82ab8f3dda21acb3101071e36138af16710cce2013ac98bca1ea8c8fcdb2"
+    },
+    {
+      "file": "core4/runtime/stdio-entry.js",
+      "sha256": "d989daef7df9d143835c049dfe510b146dea598d46a60a37c87dfad4a2082598"
+    },
+    {
+      "file": "core4/test/fixtures/native-read-recovery.js",
+      "sha256": "5795220502f29d55300843a5743e89b10500adc77b58f6430027ac356a078f1b"
+    },
+    {
+      "file": "core4/test/installable-runtime.test.js",
+      "sha256": "1352b6a0e979cc6ecd47e23c73e3e718740141bba50d211006f0a19dda7fa7a6"
+    },
+    {
+      "file": "core4/tools/check-boundaries.js",
+      "sha256": "822ba1c0665d509f273f76f1398ba3be1133c7f9643c7f82726aeb0c07094293"
+    },
+    {
+      "file": "core4/tools/install-core4.js",
+      "sha256": "23521b67e91cc59cc8d11ff67eb24ec55021cef69be0f2bb191020f45e58a2b7"
+    },
+    {
+      "file": "core4/tools/package-installable.js",
+      "sha256": "e0ee47e2509eba5c588fec3ab51865dd2931df39e08fdc99a1dfe05295c39dad"
+    },
+    {
+      "file": "core4/test/fixtures/exact-f548-transition.js",
+      "sha256": "2e5a2f9a4b62ad1af3ddb14c084daf42de3dd9cd5d105a7507523a87543538a7"
+    },
+    {
+      "file": "core4/test/fixtures/fixed-format1-package.js",
+      "sha256": "2773f81e775dcc22dc47e57b0302eaa55e282d2b39823312646af76a43a48553"
+    },
+    {
+      "file": "core4/test/fixtures/installed-composition-child.js",
+      "sha256": "7374dbbc696464658a2babc36f735dfadfc6dee39173b2855f82f69dcba1f299"
+    },
+    {
+      "file": "core4/test/fixtures/installed-composition-transition.js",
+      "sha256": "c8086bd7910eee3d712eca8aa34200e4ee12f364e3d991f4f43c615cdd084d54"
+    },
+    {
+      "file": "core4/test/installed-composition.test.js",
+      "sha256": "4583ddff9d9050e95e84dfc04d8afc87562b79bd2c859fdfff3744be68b431b6"
+    },
+    {
+      "file": "core4/test/exact-f548-transition.test.js",
+      "sha256": "5cf0f0fbccacf5147a76f54ba75505f48d48b95ac043f128268698fa7425bc08"
+    }
+  ],
+  "historicalCodeArtifact": {
+    "file": "dist/core4/4.0.0-panel-reconnect-f54863dbb69b/core4-4.0.0.json",
+    "bytes": 343626,
+    "sha256": "dc02187e1d71513638d94e544f40901ab343ec22d75640704a08a777c1acb9b8",
+    "packageHash": "f54863dbb69b5e3a4b0e79d8ee3629cf71c7eced0a3759745d8899fa65a1ce90",
+    "credentialsAndState": "fresh synthetic temp-only"
+  },
+  "harnessFailure": {
+    "log": "exact-f548-transition.log",
+    "error": "Initial code-artifact relative path ENOENT before any install; fixed test harness path, final proof is separate."
+  },
+  "packages": [
+    {
+      "composition": "readonly",
+      "packageHash": "c14436485c1889e2ff98b0582bded0cff5e96c03be6c448d69ca15202d2578f4",
+      "packageFileSha256": "e20908d8d8f16c8b3d9bad611a5fae7c9312610ad9e59ce5b25e5d816ea3d897",
+      "packageBytes": 275422,
+      "packageFiles": 40
+    },
+    {
+      "composition": "manual",
+      "packageHash": "e945f12b5ac42cf1fb945b5db92f1fd537210c743fd09e952f283c8754b91af0",
+      "packageFileSha256": "330a8538d7301760f4c400cc03fe22d3f43ea53332c24002f22490e05e46a23c",
+      "packageBytes": 355138,
+      "packageFiles": 59
+    }
+  ],
+  "rootVerification": {
+    "sourceHashes": 14,
+    "logHashes": 9,
+    "mismatches": 0,
+    "deterministicBuilds": true,
+    "independentPackageFileAndManifestHashes": true,
+    "standaloneInstallerTempDryRun": "both exit0; no installRoot/config created",
+    "installedF548Verifier": "PASS; descriptor/journal unchanged"
+  },
+  "gaps": [
+    "No production installation/state/credentials/MCP/AE/CEP/UI or port3457 access.",
+    "No live AE proof, release certification or second-machine/round-trip portability proof.",
+    "Scoped73 result intentionally not relabelled as full final-closure PASS after CLI/test routing delta; final targeted checks above.",
+    "Production receiver closed with no pending/unresolved; not repaired or restarted.",
+    "Standalone dynamic package installation/hot swap remains future work; this stage supplies two aggregate installable presets."
+  ],
+  "privacy": "INTERNAL code/tests; production observations summarized; no actual credentials/state/PII/AEP/assets/full raw logs or browser data."
+}
