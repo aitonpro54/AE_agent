@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "0.1",
+  "jobId": "opening-title-01",
+  "target": { "projectId": "C:/example/film.aep", "compId": 1, "layerId": 102 },
+  "text": "Начало истории"
+}

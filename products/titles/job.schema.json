@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Titles 0.1: один существующий текстовый слой",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "jobId", "target", "text"],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "jobId": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "compId", "layerId"],
+      "properties": {
+        "projectId": { "type": "string", "minLength": 1, "maxLength": 8192, "pattern": "^(?![\\s\\S]*[\\u0000-\\u001f\\u007f\\u0085\\u2028\\u2029])(?=[\\s\\S]*\\S)[\\s\\S]+$" },
+        "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "layerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+      }
+    },
+    "text": { "type": "string", "minLength": 1, "maxLength": 2048, "pattern": "^(?![\\s\\S]*[\\u0000-\\u001f\\u007f\\u0085\\u2028\\u2029])(?=[\\s\\S]*\\S)[\\s\\S]+$" }
+  }
+}

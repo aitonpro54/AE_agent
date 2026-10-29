@@ -35,9 +35,14 @@ CLI только читает явно переданные файлы и выд
 
 - [x] Принято решение пользователя о трёх уровнях и финальном этапе переносимости.
 - [x] Проверены существующие build/oneStep/module/recordContext контракты; изменение runtime для pilot не требуется.
-- [ ] T1: реализован внешний пакет и пример.
-- [ ] T1: адресные offline/actual-Broker проверки и граница Core/CEP подтверждены.
-- [ ] T1: milestone commit и итоговый handoff.
+- [x] T1: реализован внешний пакет и пример: `products/titles/`, версия0.1.0,
+  API `compile(job)` и `prepareBuild(job,contract,inspection)`, CLI, schema,
+  публичный compatibility profile и русские README/WORKFLOW.
+- [x] T1:8/8 адресных offline tests PASS, включая настоящий Broker с текущим
+  executor в TEMP/VM. CLI пример PASS, Core/CEP/legacy283tracked files unchanged.
+- [x] T1: независимое read-only review выполнено; два замечания исправлены
+  и подтверждены root повторным адресным suite. Milestone сохраняется отдельным
+  commit после plan commit `4929d73`.
 - [ ] T2/C1/S1 и финальная переносимость — последующие самостоятельные этапы.
 
 ## Decision Log
@@ -45,7 +50,47 @@ CLI только читает явно переданные файлы и выд
 - Новый Argon review не запрашивается: существующий единственный review и локальный разбор уже покрыли выбранное направление. Рекомендация не заменяет технические проверки реализации.
 - Первый pilot находится в том же repo вне `core4/`; выделение репозитория и SDK не является условием начала.
 - Пользователь разрешил разработку Titles. Этот блок не создаёт пользовательский AEP, не запускает live mutation ради демонстрации и не меняет установленный runtime.
+- Compatibility profile закрепляет известные public contract и module pin;
+  opaque contractId/admissionPin берутся из ответа Core. Локальная совместимость
+  не доказывает происхождение или свежесть экспортного JSON.
+- Интеграционный test сначала проверяет отказ на synthetic inspection, затем
+  явно меняет только недоверенную экспортную metadata на false для проверки
+  production-формы adapter. Server evidence остаётся synthetic. Настоящий Broker
+  принимает build, сам добавляет expected fields и отвергает выдуманный ref;
+  это не production authority, live mutation или проверка lifecycle.
+- Review P2: массив с hex reference проходил RegExp coercion — добавлен строгий
+  string guard и адресный regression. Review P3: тестовый build имел user_work —
+  fixture теперь явно сохраняет technical_check/ephemeral_check; product default
+  user_work/work_context проверяется отдельно и сохранён.
 
 ## Validation
 
-Начальный preflight: исходники модуля, generic Broker build и recordContext прочитаны; рабочее дерево до этапа содержит только посторонний untracked `.codex-attachments/`. Проверки реализации и их точные границы будут записаны после T1. Offline/VM не объявляется live PASS.
+Начальный preflight: исходники модуля, generic Broker build и recordContext прочитаны;
+дерево до этапа содержало только посторонний untracked `.codex-attachments/`.
+
+- `npm.cmd --prefix products/titles test`: **8/8 PASS**,0fail; root952.5818ms.
+  Проверены strict fields/types/budgets, Unicode/whitespace, deterministic preview,
+  oneStep payload, compatibility/ref/target mismatch, CLI без записей, production
+  import closure, actual Broker guards и сохранение temp ledger после удаления
+  отдельной test-owned копии продукта. Нативные вызовы0, installed changes0.
+- `node products/titles/cli.js compile --job products/titles/examples/single-title.json`:
+  PASS. Пример содержит демонстрационную цель, не предназначен для отправки в AE.
+- Root baseline283files и validation в ignored
+  `snapshots/titles-product/20261029/`; source Core/CEP/legacy bytes сохранены.
+- Локальные ссылки документов и `git diff --check`: PASS. Core4/full release
+  suites не запускались: Core4 не менялся; тестируется фактически новый продукт.
+
+## Продолжение / handoff T1
+
+План принят в `4929d73`; реализация T1 идёт отдельным следующим commit. Изменены
+только план/архитектурные документы и `products/`; установленный manual3f92,
+credentials, authority и production receipts не затрагивались.
+
+Следующий предметный этап T2: выбрать реальный поддержанный Titles-сценарий,
+уточнить тексты/шаблоны и точную цель. Нужен уже сохранённый открытый AEP с
+существующим подходящим слоем; пустой unsaved проект из предыдущего live-read
+такой целью не является. Не сохранять/создавать пользовательский AEP ради
+прохождения pilot. Далее действующий controller ведёт fresh inspection→build→
+proposal→dry-run→native confirm→receipt/read-back. Полный типографический продукт,
+independent capability install, Slideshow и финальная переносимость остаются
+последующими этапами; T1 не объявляется их готовностью.
