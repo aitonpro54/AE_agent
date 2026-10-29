@@ -161,6 +161,10 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Progress
 
+- [x] 29 октября: configured MCP → installed fa9e → authenticated CEP → AE
+  подтверждён одной новой typed read-only inspection пустого проекта. Очередь
+  после чтения пуста, UNKNOWN/faults=false; manual mutation/adoption, P1–P8
+  и full release остаются открыты. Подробности — в focused плане установки.
 - [x] 28октября завершён текущий ремонт установки/панели: packagefa9e2f454588,
   actual native read PASS, original UNKNOWN/noReplay сохранён; source36905c4.
   История и результат — в handoff; следующие milestones по просьбе пользователя

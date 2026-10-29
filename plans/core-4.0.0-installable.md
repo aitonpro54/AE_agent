@@ -29,6 +29,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29 октября: configured Codex MCP client подтвердил status и одну новую
+  typed inspection через установленный fa9e/CEP/AE26.2x49. Закрытая панель
+  открыта штатно и подключилась автоматически; пустой проект, native read1,
+  mutation/save/replay/restart0. После чтения peer connected, pending=null,
+  unresolved=[], faults/UNKNOWN=false. Evidence и границы — в дополнении
+  [focused плана](core-portability-installation-20261028.md).
 - [x] 29 октября: воспроизведена startup-причина `installation_path`: installer
   менял native descriptor path на `/`, а прежний diagnostic его нормализовал.
   Генератор и regression исправлены;45 selected/boundaries21 PASS. Project config

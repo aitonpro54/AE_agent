@@ -53,7 +53,8 @@ mutation/save/raw, открытие AEP и фактический перенос
   правильные workspace/config/Node; protected local bytes остались прежними.
 - [x] Завершён самостоятельный source milestone с обязательными selected checks;
   итоговые изменения подготовлены как один reviewable commit.
-- [ ] Подтверждён configured Codex-client `core_status`.
+- [x] 29 октября подтверждены configured Codex-client `core_status` и одна
+  новая typed native inspection; подробности в дополнении ниже.
 - [x] После сообщения пользователя о reconnect проверен actual MCP startup:
   current configured client всё ещё отказывает initialize (`connection closed`).
   Отдельный диагностический stdio child23156 дал initialize/status PASS,
@@ -171,8 +172,8 @@ Baseline `2b6493d`, MSI. Новое поручение «продолжай» о
   PASS: ready=true, ownershipFault=null, ledgerFault=false, unresolved=[],
   pending=null, storeFault/storeClosed/unknown=false. Clean exit0, stderr пустой,
   own owners/gates отсутствуют. Peer disconnected; native commands0.
-- [ ] Штатный клиент текущего чата перечитал запись и вернул `core_status`.
-  Tools пока отсутствуют. Одна попытка status через existing `app-server proxy`
+- [x] 29 октября штатный клиент нового чата вернул `core_status` и typed read;
+  исторически tools отсутствовали. Одна попытка status через existing `app-server proxy`
   после repair дала socket10050 до initialize. Reload request не отправлен.
 
 ### Decision Log
@@ -227,3 +228,43 @@ environment preflight остаётся следующим source-блоком п
 Изменённый installer запускается из текущего source checkout. Сохранённые ранее
 immutable distribution/operator copies не переписывались и не объявляются
 содержащими это исправление; их tooling hashes относятся к прежнему составу.
+
+## Дополнение 29 октября: configured клиент и живая цепочка подтверждены
+
+### Progress
+
+- Root получил `core_status` непосредственно через настроенный MCP текущего
+  Codex-чата: installed fa9e, Node24.15.0 verified, runtime ready. Второй stdio
+  server, proxy или app-server не запускался.
+- AE открыт с пустым `Untitled Project.aep`; собственная закрытая панель
+  открыта через Window → Extensions → AE Agent Core4.0.0. Она автоматически
+  установила authenticated connection. AE не перезапускался, проект не менялся.
+- По свежему `project-inspection` contract выполнена ровно одна новая команда
+  `inspect-cb5a4fef-1e45-4f50-9974-e67304de1cbe`. Результат: AE26.2x49,
+  несохранённый проект, items/compositions/layers0; authority/continuity=false.
+
+### Decision Log
+
+- Configured-client startup blocker закрыт actual tool evidence после ремонта
+  путей `182d9ae`. Исторические socket10050/отсутствие tools остаются фактами
+  прошлых попыток, а не текущим состоянием.
+- Fresh read не обновляет historical adoption AE31452, не выдаёт mutation
+  grant и не отменяет original UNKNOWN/noReplay disposition. Верхнее
+  `connection=unavailable` относится к automatic lifecycle; physical peer=true
+  и успешный bounded read подтверждаются отдельно.
+- Следующий source-блок — ограниченный environment/endpoint preflight по
+  оставшимся installer gaps. P1–P8 требуют фактов обеих машин; текущий read
+  закрывает только configured live путь MSI, без round-trip утверждения.
+
+### Validation
+
+- После native read: ready=true, peer.connected=true, pending=null,
+  unresolved=[], ownershipFault=null, ledgerFault/storeFault/storeClosed/unknown=false.
+  Package/receiver-store identities совпали с baseline. Mutation/save/replay0.
+- Локальный proof с descriptive technical_check/ephemeral_check context и
+  полными MCP read/status replies:
+  `snapshots/core4-live-proof/XI-configured-client-20261029/configured-native-proof.json`.
+  Это ignored local evidence; authority/credentials между машинами не переносит.
+- Source/tests/package bytes не менялись, продуктовые suites не повторялись.
+  UTF-8/локальные ссылки изменённых планов и `git diff --check` проверены при
+  milestone commit. Full release и manual mutation acceptance не выполнялись.
