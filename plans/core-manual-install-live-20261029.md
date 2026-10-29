@@ -108,6 +108,11 @@ Actual install/recovery/native0 на этом preflight.
 
 ## Продолжение
 
+Продолжение по прямому поручению самому восстановить клиент:
+[configured MCP diagnostics](core-client-reconnect-20261029.md). Новый managed
+manual process наблюдался, но текущий чат сохраняет старый MCP snapshot;
+configured read остаётся открытым, общий app-server restart затронет другую работу.
+
 Установка и отдельная живая техническая диагностика завершены. Для полного
 запрошенного Codex-path proof остаётся configured client после переподключения
 MCP; не повторять recovery/install или diagnostic native read вместо него.
