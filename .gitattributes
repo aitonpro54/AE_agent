@@ -1,2 +1,5 @@
 # Runtime authority hashes raw bytes. Preserve exact bytes across checkouts.
 * -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Точные bytes переданного/полученного review сохраняют Markdown-пробелы и EOF.
+reviews/argon/**/response.txt -whitespace
+reviews/argon/**/bundle.md -whitespace

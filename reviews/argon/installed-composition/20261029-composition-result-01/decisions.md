@@ -53,3 +53,12 @@ intermediate c144/e945 сохраняют свои исходные tested bytes
 
 Live AE, новое production install, automatic lifecycle, независимая hot-swap
 установка пакетов и round-trip P1–P8 остаются открытыми. Review этого не меняет.
+
+## Сохранение исходных bytes
+
+Первый whole-docs `git diff --check` отметил Markdown hard-break пробелы в
+неизменённом `response.txt` и пустую строку EOF переданного `bundle.md`; exit2
+сохранён в `raw-review-whitespace.log`. Эти bytes не исправлялись. Узкие
+`.gitattributes` rules отключают whitespace lint только для двух видов exact
+review artifacts; исходники, tests и редактируемая документация сохраняют
+обычные проверки. Root повторно проверяет hashes и весь diff этапа.
