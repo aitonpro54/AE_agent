@@ -72,7 +72,7 @@ origins, journal и пользовательский AEP сохраняются.
   Protected hashes и все6identity/bytes обоих markers прежние, install gates и
   transaction не создавались. `root-final-inspect-readback.json`; actual apply0.
 
-## Подготовленный ручной переход
+## Подготовленный ручной переход — исторический, заменён диагностикой ENOENT ниже
 
 Единственный оставшийся шаг для освобождения текущего managed24688 — полностью
 штатно закрыть Codex. Затем запустить из Проводника
@@ -131,3 +131,72 @@ apply и проверяет результат. Не открывать Codex д
 - Actual recovery/apply/native dispatch0 в этом диагностическом блоке;
   helper/tests hashes `80583154…`/`42a8f885…` прежние. Их46offline checks и
   независимое review не повторяются из-за изменения только batch line endings.
+
+## Отказ ENOENT после закрытия Codex — 29 октября 2026
+
+### Progress
+
+- [x] Сохранены все5dated reports06:27:54–06:29:49UTC, включая screenshot
+ 06:29:01. Во всех `blocked/recovery_local_failure`, `systemCode=ENOENT`,
+  `failureStage=snapshot`, `recoveryIntentStarted=false`, `leaseRetained=false`.
+  Файл или каталог не указан; прежняя диагностика потеряла точный шаг.
+- [x] Fresh installed verifier/candidate closure/package/semantic settlement и
+  read-only branded `planInstall` PASS; все5protected hashes и receiver all6/bytes
+  прежние. Intent/install gates/broker ledger отсутствуют. Package по-прежнемуfa9e;
+  broker нового managed PID31972, его исходные pins не расширялись.
+- [x] Добавлены фиксированные allowlisted `failureCheck`/`failureResource`
+  вокруг snapshot readers, lease acquire, plan/baseline и held-handle checks.
+  Path/message/stack/credentials не публикуются. Helper/tests до правки сохранены
+  как `*.enoent-original`. Порядок checks, intent, CAS, lease и apply прежний.
+- [x] Новый `CHECK-CORE4.cmd` вызывает только `inspect`, сохраняет отдельный
+  `recovery-inspect-latest-report.json` и показывает его в окне. Он не вызывает
+  recovery/apply; старые5dated reports и latest installation report сохранены.
+  CLI `inspect` теперь также проверяет pure install plan/baseline до lease:
+  исходный ENOENT мог возникнуть и в планировании. Plan/credentials не выводятся.
+- [ ] Получен отчёт CHECK при полностью закрытом Codex; исходный missing resource
+  установлен адресным evidence и устранён в разрешённом scope. До этого
+  готовность нового запуска INSTALL не заявляется.
+
+### Decision Log
+
+- Точный исходный ENOENT **не восстановлен**. Текущие file readers и планирование
+  проходят, а actual inspect останавливается на новом broker. Даже read-only
+  in-memory projection отсутствующего broker проходит snapshot и блокируется
+  process census: отсутствие broker само по себе ошибку не объясняет. Projection
+  не была authority/proof и не использовалась для actual apply.
+- `failureStage=snapshot` мог относиться и к `planInstall`/открытию receiver
+  после получения lease: stage раньше не менялся. Отсутствие gates и
+  `leaseRetained=false` не доказывают, что lease вообще не приобретался; он мог
+  штатно освободиться при pre-intent отказе. Все5reports подтверждают именно
+  отсутствие начала recovery intent; повтор recovery не выполнялся.
+- Node realpath может сообщить missing ancestor вместо leaf и использует
+  внутренний lstat, обходящий JS proxy. Поэтому ресурс задаётся перед вызовом
+  фиксированной меткой, а не выводится из произвольного `error.path`.
+- Следующий ручной шаг заменён: полностью закрыть Codex, один раз выполнить
+  `XV/CHECK-CORE4.cmd`, дождаться отчёта, затем открыть Codex. Это read-only
+  диагностика состояния вне lifetime managed MCP. INSTALL пока не повторять;
+  markers/gates не удалять, baseline не перепривязывать к новому broker.
+
+### Validation
+
+- `node --test .../test-recover-settled-owner.cjs`:60/60PASS, syntax PASS.
+  Новые14checks: missing5protected files/transaction parent/receiver, plan ENOENT
+  under lease, disappearance перед receiver open, realpath ancestor, redaction.
+  Ещё3из них проверяют pure check-only planning success/ENOENT/baseline refusal
+  при acquire0/ioMutations0/apply0.
+  Подтверждены release здоровых gates до intent и прежний UNKNOWN/no-replay после
+  intent; absent-broker success и foreign-broker refusal сохраняются.
+- Independent read-only delta review ACCEPT, P1/P2 отсутствуют. Final helper
+  SHA-256 `adff6d88f8772f5713642c62a3419c5321bd7449c38c7fdfab5f76968de0ad27`;
+  tests `54b6d0277acd9f36e8701ae4e47463645696e2c8fcbb0732e2e755f9f35ca3de`.
+  Старый source review/46tests относятся к `*.enoent-original`.
+- `test-inspect-launcher.cjs`:2real-cmd stub cases0/1PASS в temp path с пробелами;
+  ровно один аргумент `inspect`, точный exit, report redirection и cleared env.
+  Новая wrapper сохранена с CRLF. Actual CHECK в текущем открытом Codex ожидаемо
+  дал `recovery_broker_identity_changed`, check/resource=`broker_marker`, exit1,
+  intent=false, без apply. Это проверка wrapper, не stopped-state inspection.
+- Evidence: `root-enoent-diagnosis.json`, `inspect-launcher-validation.json`,
+  `root-inspect-launcher-validation.json`, `enoent-diagnostic-review.json`.
+  CHECK hash `349f4f3fcfe73f1e218b4918beeee95d93e1f31061dfc2ee50e21529c91994f1`.
+  Actual recovery/apply/native0;
+  full release/product suites не повторяются: product/candidate bytes прежние.

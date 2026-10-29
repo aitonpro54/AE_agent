@@ -35,6 +35,13 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29октября, пользовательский XV ENOENT разобран до границы evidence:
+ 5reportsblocked до intent, protected files/receiver прежние, original missing
+  path не сохранён и сейчас не воспроизводится. Расширены только fixed labels
+  диагностики helper:60fixtures/syntax и independent delta review PASS.
+  Подготовлен read-only `CHECK-CORE4.cmd`; следующий ручной шаг — CHECK при
+  закрытом Codex, INSTALL до разбора отчёта не повторять;
+  [текущее состояние](core-settled-owner-recovery-20261029.md#отказ-enoent-после-закрытия-codex--29-октября-2026).
 - [x] 29октября, новый screenshot отказа XV launcher воспроизведён: UTF-8/LF
   ломал Windows batch parser до вызова Node. Исправлены только22LF→CRLF;
   original сохранён, реальные `cmd` проверки с подменой и кодами0/1/7 PASS.
@@ -119,6 +126,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- Новый XV `ENOENT` не идентифицирует исчезнувший ресурс. Stage=snapshot мог
+  сохраниться и на pre-intent plan/open после lease; отсутствие gates после
+  отказа не доказывает отсутствие его получения. Новый диагностический helper
+  уточняет фиксированный check/resource без раскрытия path. Stopped-state
+  read-only CHECK заменяет прежнюю рекомендацию повторить INSTALL.
 - Новый отказ XV launcher вызван сочетанием UTF-8 текста и LF в Windows `cmd`;
   byte-identical воспроизведение подтвердило отсутствие вызова Node. CRLF
   устраняет parser defect без изменений recovery/installer/pins. Новый broker
@@ -176,6 +188,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- XV ENOENT:60/60helper fixtures/syntax, independent diagnostic-delta ACCEPT;
+  real-cmd CHECK stub0/1PASS. Actual CHECK при новом broker31972 блокируется
+  на broker_marker до intent; actual apply/native0.5dated reports сохранены,
+ 5protected hashes и receiver identity/bytes прежние, installedfa9e.
+  Missing resource из исходного ENOENT остаётся неизвестным до stopped-state
+  evidence; готовность повторного INSTALL не заявляется.
 - XV launcher-format regression: исходные bytes воспроизводят screenshot,
   исправленные CRLF проходят три реальные `cmd` проверки0/1/7 на recording stub
   в каталоге с пробелами; actual recovery/apply/native0. Новый launcher hash
