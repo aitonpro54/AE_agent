@@ -4,6 +4,12 @@
 
 ## Цель и scope
 
+**Текущий блок после переустановки среды:** [аудит накопленных изменений](core-post-reinstall-audit-20261029.md).
+Установка f548 из предыдущего recovery завершена; повтор INSTALL не нужен.
+Ordinary CEP connect визуально успешен. Source audit исправляет накопительный
+дефект lineage; candidate не заменяет занятую installed копию без fresh status.
+Следующая запись сохраняет прежний порядок работ до этого аудита.
+
 **Приоритет от 29 октября 2026:** пользователь отложил перенос до устойчивой
 работы здесь, на MSI. Следует локальная доводка и функциональная приёмка;
 milestone 4 и сбор facts другой машины сейчас не продолжаются. Требование
@@ -34,6 +40,10 @@ P1–P8 остаётся открытой; локальный успех уст�
 Между пунктами не нужны новый чат и повторное разрешение на уже порученную разработку/установку. Каждый пакет самостоятельно запускает свой разрешённый scope. После первого status-only результата работа продолжается ко второму пункту. Добавление пункта 4 в план не возобновляет остановленные live/UI-действия и не выдаёт доступ к другой машине.
 
 ## Progress
+
+- 29 октября: baseline86connection/install и108M1 checks PASS, installed f548
+  verifier PASS, UI Connected в двух observations. Снятие искусственного лимита
+  lineage и проверка17updates ведутся в [audit record](core-post-reinstall-audit-20261029.md).
 
 - [x] 29октября08:57UTC: фактически установлен f548 без очередного пользовательского
   запуска CMD. Root завершил только exact idle managed Node21876, полный stopped
@@ -141,6 +151,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- Post-reinstall audit сохраняет compatibility fixes/authority/no-replay;
+  operator recovery не является connect dependency. Fixed manual titles в
+  installed composition — открытый modularity debt, не исправляемый простым
+  if-exists. Новый source candidate отдельно от installed f548/live proof.
+
 - 29октября: прежняя ошибка повторялась из-за broker pin24688 после новых
   Codex lifetimes. Committed pre-apply отказ позволил отдельный exact successor
  21876 с сохранением старого guard, original receiver/history и всех runtime
@@ -215,6 +230,10 @@ P1–P8 остаётся открытой; локальный успех уст�
 - Private zero-dispatch recovery V2 прошёл8/8 и independent review ACCEPT после lstat/dangling-ledger repair; source commit `1cd50b5`. Root применил ровно reviewed CLI из distribution после actual inspect/proof CAS. Transaction `8dec8220-b9f3-465e-acce-0dd2bc733051-zero-dispatch-retirement`; независимый read-back подтвердил byte-identical archived markers, неизменные origins/journal/store identity, отсутствие ledger/gates/owner markers. Никакие command outcomes/fences/grants не менялись. [Focused record](core-4.0.0-zero-dispatch-recovery.md).
 
 ## Validation
+
+- Post-reinstall: baseline86/86, M1 108/108, boundaries21PASS; реальная temp
+  история после17updates проходит installed startup/store с UNKNOWN/no-replay.
+  Свежая live mutation/adoption и configured native read этим не доказываются.
 
 - 29октября: successor96fixtures +3real installer/semantic/lineage integration
   PASS; source review P1/P2нет. Actual install exit0 и независимый read-back

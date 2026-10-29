@@ -49,9 +49,19 @@ test('native-read-recovery actual Node IPC approval commits one unknown disposit
   const {rollback,planInstall,applyInstall}=require('../tools/install-core4');assert.throws(()=>rollback(tx),/rollback_reader_unsupported/);assert.equal(fs.existsSync(f.gates[0]),false);
   const {verifyInstallation}=require('../runtime/installation');assert.throws(()=>verifyInstallation(f.args.descriptor,{verifyNode:false}),/installation_verifier_options/);const preparedDescriptor=path.join(f.d.installRoot,'transactions',event.authorization.installTransactionId+'-prepared/descriptor.json');assert.throws(()=>verifyInstallation(preparedDescriptor),/installation_descriptor/);
   fs.renameSync(f.evidenceRoot,f.evidenceRoot+'-removed');fs.writeFileSync(f.args.config,'# mutable client preferences\n[mcp_servers.after-effects-core4]\nenabled = false\n');
-  fs.appendFileSync(path.join(f.cacheRoot,'core-'+f.caches[0],'core/broker.js'),'\n// mutable inert cache irrelevant to historical authority\n');
+  const cacheFile=path.join(f.cacheRoot,'core-'+f.caches[0],'core/broker.js'),cacheBytes=fs.readFileSync(cacheFile);
+  fs.appendFileSync(cacheFile,'\n// mutable inert cache irrelevant to historical authority\n');
   const oldReader=require('./fixtures/legacy-completion-store').openCompletionStore({directory:f.receiver});assert.equal(oldReader.fault,true);oldReader.close();assert.ok(fs.existsSync(f.owner));fs.unlinkSync(f.owner); // fixture-created owner only, never original owner.
-  for(let n=0;n<2;n++){const previous=JSON.parse(fs.readFileSync(f.args.descriptor)),plan=planInstall({pkg:f.candidate,nodePath:process.execPath,installRoot:f.d.installRoot,extensionsDir:path.dirname(f.args.cepDir),configPath:f.args.config,machineId:os.hostname()});applyInstall(plan);const next=verifyInstallation(f.args.descriptor);assert.notEqual(next.panelToken,previous.panelToken);assert.notEqual(next.controlToken,previous.controlToken);assert.ok(validateDisposition(event,options));}
+  // Cross the former 16-descriptor limit with real installs and the original
+  // signed disposition. Updates must not turn settled history into storeFault.
+  for(let n=0;n<17;n++){const previous=JSON.parse(fs.readFileSync(f.args.descriptor)),plan=planInstall({pkg:f.candidate,nodePath:process.execPath,installRoot:f.d.installRoot,extensionsDir:path.dirname(f.args.cepDir),configPath:f.args.config,machineId:os.hostname()});applyInstall(plan);const next=verifyInstallation(f.args.descriptor);assert.notEqual(next.panelToken,previous.panelToken);assert.notEqual(next.controlToken,previous.controlToken);assert.ok(validateDisposition(event,options));}
+  // History validation above ignores the deliberately corrupted cache; actual
+  // startup must verify it. Restore only these synthetic fixture bytes first.
+  fs.writeFileSync(cacheFile,cacheBytes);
+  directMainReadOnly(f);
+  const deepStore=openCompletionStore({directory:f.receiver,installationContext:{descriptorPath:f.args.descriptor}});assert.equal(deepStore.fault,false);assert.equal(deepStore.closed,false);assert.equal(deepStore.get(f.command.commandId).state,'unknown');assert.ok(deepStore.get(f.command.commandId).terminalDisposition);assert.throws(()=>deepStore.begin(f.command,f.binding),/duplicate_command_no_replay/);deepStore.close();
+  // A later invocation must still verify old bytes; no cross-call cache.
+  fs.writeFileSync(tx,canonical(tampered));assert.throws(()=>validateDisposition(event,options),/lineage_transaction_binding/);fs.writeFileSync(tx,saved);assert.ok(validateDisposition(event,options));
   const active=verifyInstallation(f.args.descriptor);await historicalAck(f,active);assert.ok(validateDisposition(event,options));
   const resultChild=spawnSync(process.execPath,['-e',"const p=require('node:path'),fs=require('node:fs');const d=JSON.parse(fs.readFileSync(process.argv[1]));const s=require(p.join(d.releaseDir,'integrations/cep/completion-store.js')).openCompletionStore({directory:p.join(d.stateDir,'receiver'),installationContext:{descriptorPath:process.argv[1]}});if(s.fault||s.closed)throw Error('standalone_history');s.close();console.log('standalone PASS');",f.args.descriptor],{cwd:os.tmpdir(),encoding:'utf8',timeout:10000,windowsHide:true});assert.equal(resultChild.status,0,resultChild.stderr);assert.match(resultChild.stdout,/standalone PASS/);
   const prior=fs.readFileSync(f.journal).toString().trimEnd().split('\n').map(JSON.parse),command={...f.command,commandId:'unrelated-new-unknown'},binding=require('../protocol/dispatch').dispatchBinding(command,f.binding.receiverStoreIdentity);let tail=prior.at(-1);for(const value of [{type:'begin',commandId:command.commandId,commandDigest:hash(command),command,originalBinding:binding},{type:'unknown',commandId:command.commandId}]){const body={...value,seq:tail.seq+1,previousHash:tail.recordHash};tail={...body,recordHash:hash(body)};fs.appendFileSync(f.journal,canonical(tail)+'\n');}
@@ -93,9 +103,21 @@ test('native-read-recovery historical Node binding is data, explicit lineage rej
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'core4-recovery-lineage-')),args={pkg:buildPackage(),nodePath:process.execPath,installRoot:path.join(dir,'AEAgentCore4'),extensionsDir:path.join(dir,'extensions'),configPath:path.join(dir,'config.toml'),machineId:os.hostname()},old=legacyV1Data(planInstall(args)),d=JSON.parse(fs.readFileSync(old.descriptorPath));
   d.nodePath=path.join(dir,'historical-node-must-never-execute.exe');d.nodeHash='1'.repeat(64);fs.writeFileSync(old.descriptorPath,canonical(d));const oldHash=hash(fs.readFileSync(old.descriptorPath)),installed=applyInstall(planInstall(args)),query={descriptorPath:old.descriptorPath,descriptorHash:oldHash};
   assert.equal(resolveHistoricalInstallation(query).historical.descriptor.nodePath,d.nodePath);assert.equal(fs.existsSync(d.nodePath),false);assert.throws(()=>resolveHistoricalInstallation({...query,verifyNode:false}),/lineage_runtime_options/);
-  const file=installed.transactionFile,saved=fs.readFileSync(file);fs.renameSync(file,file+'.fixture-missing');assert.throws(()=>resolveHistoricalInstallation(query),/ENOENT/);fs.renameSync(file+'.fixture-missing',file);
+  const file=installed.transactionFile,saved=fs.readFileSync(file);fs.renameSync(file,file+'.fixture-missing');assert.throws(()=>resolveHistoricalInstallation(query),/lineage_transaction_not_in_snapshot/);fs.renameSync(file+'.fixture-missing',file);
   const tx=JSON.parse(saved);tx.previousDescriptor=Buffer.from(canonical({...d,controlToken:'3'.repeat(64)})).toString('base64');fs.writeFileSync(file,canonical(tx));assert.throws(()=>resolveHistoricalInstallation(query),/lineage_previous_bytes/);fs.writeFileSync(file,saved);
   assert.throws(()=>resolveHistoricalInstallation({...query,descriptorHash:'f'.repeat(64)}),/lineage_target_unreachable/);
+  // A correctly bound file arriving after enumeration cannot grow this walk.
+  const transactions=path.dirname(file),late=file+'.fixture-late',readdir=fs.readdirSync;
+  fs.renameSync(file,late);let snapshots=0;
+  fs.readdirSync=function(directory,...args){const names=readdir.call(fs,directory,...args);if(directory===transactions){snapshots++;fs.renameSync(late,file);}return names;};
+  try{assert.throws(()=>resolveHistoricalInstallation(query),/lineage_transaction_not_in_snapshot/);assert.equal(snapshots,1);}
+  finally{fs.readdirSync=readdir;if(fs.existsSync(late))fs.renameSync(late,file);}
+  assert.equal(resolveHistoricalInstallation(query).historical.descriptor.nodePath,d.nodePath);
+  // Directory enumeration must not introduce a reparse-path bypass.
+  const moved=transactions+'-fixture-original';fs.renameSync(transactions,moved);
+  try{fs.symlinkSync(moved,transactions,process.platform==='win32'?'junction':'dir');assert.throws(()=>resolveHistoricalInstallation(query),/lineage_path/);}
+  finally{if(fs.existsSync(transactions))fs.unlinkSync(transactions);fs.renameSync(moved,transactions);}
+  assert.equal(resolveHistoricalInstallation(query).historical.descriptor.nodePath,d.nodePath);
 });
 
 test('native-read-recovery rollback partial visible switch retains both lease gates and transaction without automatic rollback',()=>{

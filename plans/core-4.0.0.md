@@ -1,5 +1,16 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Актуальный блок, 29 октября 2026:** [аудит после переустановки внешней среды](core-post-reinstall-audit-20261029.md).
+Installed f548 проверен; панель подключилась в первом снимке примерно через818мс
+после открытия и оставалась Connected в снимке через376с. Свежий MCP→AE read
+этого чата не подтверждён: tools отсутствуют, existing proxy os10050.
+Исправлен подтверждённый предел16descriptors в истории обновлений;
+17updates с installed startup/store и UNKNOWN/no-replay проверены адресно.
+M1:108PASS, baseline connection/install suites:86PASS, boundaries21PASS.
+Fixed installed composition всё ещё требует titles-current-target; независимая
+установка модулей и P1–P8 остаются открытыми. Следующий абзац — история до
+завершённой установки f548, а не текущая рекомендация повторить recovery.
+
 **Текущий приоритет, 29 октября 2026:** по прямому поручению пользователя
 перенос на десктоп отложен до устойчивой работы на MSI. Продолжается локальная
 доводка; первый ограниченный блок — [повторное подключение панели](core-msi-panel-reconnect-20261029.md).
@@ -178,6 +189,10 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Progress
 
+- 29 октября: выполнен аудит прошлых workaround/compatibility changes и
+  ordinary connect; текущая сводка, source correction и границы приёмки —
+  [post-reinstall audit](core-post-reinstall-audit-20261029.md).
+
 - [x] Разрешённая пересылка в прежний чат выполнена; shutdown не подтверждён.
   Полный installer closure63/dry-run PASS. Root read-only подтвердил AEcrash
   и exit; установкаf548/live verification остаются открытыми.
@@ -205,6 +220,11 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Decision Log
 
+- Переустановка внешней среды не отменяет доказанные ES3/MCP/Windows path fixes
+  или UNKNOWN/no-replay. Разовые recovery operators не включаются в startup.
+  Дефект числового предела lineage устраняется отдельно от архитектурного долга
+  fixed installed composition; новый recovery/cutover не создаётся.
+
 - Old configured client сохранил Node21872:core_disconnect не завершает stdio.
   Force kill/marker cleanup не используются. После AEcrash source-only кандидат
   не объявляется установленным; native0/restart0, перенос по-прежнему отложен.
@@ -224,6 +244,10 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 - 2026-10-26: независимый reviewer не нашёл P1/P2. Предложенные counterexamples включены в существующую M1 matrix; неизвестные live/реализационные факты остаются evidence gaps, а не пройденной приёмкой. Локальный Pro review bundle подготовлен по allowlist, внешняя отправка/Pro review не проводились и не объявляются разрешением на реализацию.
 
 ## Validation
+
+- Новый audit: M1 108/108, baseline connection/install 86/86 и boundaries21PASS;
+  finite inventory отрицательные случаи и real17updates проверяются в focused
+  record. UI connection, offline regression и configured native proof разделены.
 
 - Продолжение установки: dry-run63closure PASS, packagef548 неизменён;
   owner-thread status empty, managed shutdown not-supported. ApplicationError1000

@@ -24,15 +24,25 @@ function historicalDescriptor(bytes, anchor) {
 function resolve({ descriptorPath, descriptorHash, cepDir }, preparedCurrent) {
   if (!/^[a-f0-9]{64}$/.test(descriptorHash)) fail('lineage_target_required');
   const current = preparedCurrent || verifyInstallation(descriptorPath, { ...(cepDir ? { cepDir } : {}) }), anchor = current;
-  let bytes = read(descriptorPath), childEdge = null;
+  let bytes = read(descriptorPath), childEdge = null, transactionNames;
   const hashes = new Set(), transactionIds = new Set(), edges = [];
-  for (let depth = 0; depth < 16; depth++) {
+  while (true) {
     const node = historicalDescriptor(bytes, anchor), d = node.descriptor;
     if (hashes.has(node.descriptorHash)) fail('lineage_cycle'); hashes.add(node.descriptorHash);
     if (node.descriptorHash === descriptorHash) return Object.freeze({ current, historical: node, edgeFromHistorical: childEdge, edges: Object.freeze(edges) });
     if (d.version !== 2 || d.predecessor === null) fail('lineage_target_unreachable');
     const p = d.predecessor;
     if (!p || Object.keys(p).sort().join(',') !== 'previousDescriptorHash,transactionId' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(p.transactionId) || !/^[a-f0-9]{64}$/.test(p.previousDescriptorHash) || transactionIds.has(p.transactionId)) fail('lineage_predecessor');
+    if (!transactionNames) {
+      const directory = path.join(anchor.installRoot, 'transactions'), stat = fs.lstatSync(directory);
+      if (!stat.isDirectory() || stat.isSymbolicLink() || stat.reparsePoint || fs.realpathSync(directory) !== directory) fail('lineage_path');
+      // A private, single-call snapshot bounds the traversal by existing history,
+      // not by the lifetime number of updates. Each edge consumes one unique ID;
+      // later files cannot extend the walk. Membership is not trust: read/hash/
+      // schema checks below still verify every referenced transaction and release.
+      transactionNames = new Set(fs.readdirSync(directory).filter(name => /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.json$/.test(name)));
+    }
+    if (!transactionNames.has(p.transactionId + '.json')) fail('lineage_transaction_not_in_snapshot');
     transactionIds.add(p.transactionId);
     const file = path.join(anchor.installRoot, 'transactions', p.transactionId + '.json'), t = JSON.parse(read(file));
     if (t.version !== 2 || t.transactionId !== p.transactionId || t.installRoot !== anchor.installRoot || t.stateDir !== anchor.stateDir || t.descriptorPath !== descriptorPath || t.appliedDescriptorHash !== node.descriptorHash || typeof t.previousDescriptor !== 'string') fail('lineage_transaction_binding');
@@ -41,7 +51,6 @@ function resolve({ descriptorPath, descriptorHash, cepDir }, preparedCurrent) {
     if (!/^[a-f0-9]{64}$/.test(t.preparedPlanHash) || !/^[a-f0-9]{64}$/.test(t.preparedStateHash)) fail('lineage_prepared_plan');
     childEdge = Object.freeze({ transactionId: t.transactionId, childDescriptorHash: node.descriptorHash, childPackageHash: d.packageHash, parentDescriptorHash: p.previousDescriptorHash, preparedPlanHash: t.preparedPlanHash, preparedStateHash: t.preparedStateHash, childNodePath: d.nodePath, childNodeHash: d.nodeHash, childNodeVersion: d.nodeVersion, childCepDir: d.cepDir }); edges.push(childEdge); bytes = previous;
   }
-  fail('lineage_depth');
 }
 function resolveHistoricalInstallation(options) {
   if (Object.keys(options).some(k => !['descriptorPath', 'descriptorHash', 'cepDir'].includes(k))) fail('lineage_runtime_options');
