@@ -6,8 +6,10 @@
 
 **Текущий блок после переустановки среды:** [аудит накопленных изменений](core-post-reinstall-audit-20261029.md).
 Установка f548 из предыдущего recovery завершена; повтор INSTALL не нужен.
-Ordinary CEP connect визуально успешен. Source audit исправляет накопительный
-дефект lineage; candidate не заменяет занятую installed копию без fresh status.
+Ordinary CEP connect визуально успешен; этот статус не проверяет evalScript.
+Source audit исправил накопительный дефект lineage (`1ec3453`),17updates
+с installed test startup/store проверены адресно. Единственное Argon review:
+go,2P3 учтены локально. Candidate e073 не заменяет installed f548 без fresh status.
 Следующая запись сохраняет прежний порядок работ до этого аудита.
 
 **Приоритет от 29 октября 2026:** пользователь отложил перенос до устойчивой

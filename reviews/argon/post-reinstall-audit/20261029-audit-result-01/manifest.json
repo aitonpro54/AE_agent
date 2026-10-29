@@ -1,0 +1,295 @@
+{
+  "status": "COMPLETE",
+  "reviewId": "20261029-audit-result-01",
+  "stageId": "post-reinstall-audit",
+  "reviewType": "result",
+  "snapshot": {
+    "baseCommit": "769e5bc702f458f437bfc66da1d95b4cb44df3a1",
+    "targetCommit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+    "sourceFixCommit": "1ec34536e8ea6b90e6c005c8068646ef72d41ac2",
+    "dirtyStatus": "only new review artifacts and unrelated .codex-attachments; committed code/docs snapshot"
+  },
+  "recipient": {
+    "service": "Gemini Argon",
+    "accountAlias": "Aiton Pro",
+    "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+    "effort": "maximum available; verify fresh UI"
+  },
+  "externalAllowlist": [
+    "bundle.md"
+  ],
+  "payload": {
+    "file": "bundle.md",
+    "bytes": 132341,
+    "sha256": "2898a50929add26eaf6e232ac89e085c665b82e8a21a1c04b70b28d5341b3da2"
+  },
+  "requestSha256": "7447b03006b9e0db4e55e7b50e1d6f7273ca6e90c0d98243f6159b570fa255f3",
+  "embeddedFiles": [
+    {
+      "file": "request.md",
+      "bytes": 5187,
+      "sha256": "7447b03006b9e0db4e55e7b50e1d6f7273ca6e90c0d98243f6159b570fa255f3",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "changes.diff",
+      "bytes": 12228,
+      "sha256": "1d384d6083e9302e55cc30746528f9a2e396bcf010ce02664b74cb6a4d768a34",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "evidence.json",
+      "bytes": 2496,
+      "sha256": "17fcff0f688340110a73b41a4683db29ede739809b8e48837b3107a052489472",
+      "classification": "PRODUCTION-SENSITIVE, summarized"
+    },
+    {
+      "file": "context/core4__runtime__installation-lineage.js.md",
+      "bytes": 8846,
+      "sha256": "f9ac0247483764a2a1a5484c9bb4e7e8cfac597bbf6e8de8278396baad039bd9",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__tools__disposition-install-preflight.js.md",
+      "bytes": 5568,
+      "sha256": "3e034166c369d1271acfac79caff227f55d23543af008a6f7ff583726b8f981b",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__runtime__native-read-disposition.js.md",
+      "bytes": 6110,
+      "sha256": "b84979366cac9c121448863928be7f51379069eaf1629d844ea0b537169e6ef8",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__integrations__cep__completion-store.js.md",
+      "bytes": 5757,
+      "sha256": "22b0d8eb37f6d4357e87a454d807e4e3b8387ca2fb58560709db5855a2b7282f",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__tools__install-core4.js.md",
+      "bytes": 11379,
+      "sha256": "065054619a877fcefaf495035274bccdd9109a948e27120c5b86b3cd258f1b3c",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__runtime__stdio-entry.js.md",
+      "bytes": 8086,
+      "sha256": "5099f8cc5836a033b2415d933b7bd989e234132cc933deacec02061c6e71e717",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__tools__package-installable.js.md",
+      "bytes": 3766,
+      "sha256": "1059a7ec73c83559d7684f1c3b569056ad6085b33d71433c3b61b764a70ccddc",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__runtime__source-package.json.md",
+      "bytes": 1482,
+      "sha256": "4e4b39afd3b16b5bd80b8890595d6947557dddfc30e022777dd88ac76a14e606",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__cep__js__panel.js.md",
+      "bytes": 6097,
+      "sha256": "8103314970d56c21fc5a92a504971d1116fd385e428cd009f240c6c7098d523f",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__test__native-read-recovery.test.js.md",
+      "bytes": 28958,
+      "sha256": "5a18f59f6fa039dcf8a4bfc82d6e12be6f059a938e243b8394a5d4644e6626fd",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/docs__core-4.0.0-intent.md.md",
+      "bytes": 9826,
+      "sha256": "113b45f52a4f0059b04637915bc66e468b3383719a3b20d5ce238cd2f3bc96ec",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/plans__core-post-reinstall-audit-20261029.md.md",
+      "bytes": 11852,
+      "sha256": "b21b02b94fc3b5f61e3d8d0af9c8da24c7aed17037198c92cdf5794948b0535d",
+      "classification": "INTERNAL"
+    }
+  ],
+  "context": [
+    {
+      "file": "context/core4__runtime__installation-lineage.js.md",
+      "source": "core4/runtime/installation-lineage.js",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "5575ccf7651e83a1545916fc88edb268ab3a72b08d57703b6d5df564a45d894a",
+      "ranges": [
+        1,
+        70
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__tools__disposition-install-preflight.js.md",
+      "source": "core4/tools/disposition-install-preflight.js",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "0276831b78e8157117532ed815717f39d12f2ad120338d4a5cb2612ee6df55e8",
+      "ranges": [
+        1,
+        49
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__runtime__native-read-disposition.js.md",
+      "source": "core4/runtime/native-read-disposition.js",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "20053d0df8780feb975bf3302efd0cd32f07770c752d1acefc100f96fefaeb5b",
+      "ranges": [
+        73,
+        100
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__integrations__cep__completion-store.js.md",
+      "source": "core4/integrations/cep/completion-store.js",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "c5678e98b6eea7cb0ad7db605b4bd9a5a4f73080bb1e32f60c6a99420e904835",
+      "ranges": [
+        1,
+        68
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__tools__install-core4.js.md",
+      "source": "core4/tools/install-core4.js",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "5bb6471e03687205f040966ccd245ae520b6e6a5f1e7659dfdc4922c8873262c",
+      "ranges": [
+        88,
+        138,
+        158,
+        204
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__runtime__stdio-entry.js.md",
+      "source": "core4/runtime/stdio-entry.js",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "213e711c6c8f7324c8de788d4bbb015a6400b56a440fd4b86020a5b2571c3909",
+      "ranges": [
+        40,
+        51,
+        88,
+        133
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__tools__package-installable.js.md",
+      "source": "core4/tools/package-installable.js",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "7587d8ce18c069994f88ff689b2ae1a45cd44629dca836dea0eca079ceea3a9e",
+      "ranges": [
+        1,
+        35
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__runtime__source-package.json.md",
+      "source": "core4/runtime/source-package.json",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "0575b9596c7ae5c7bc72b06fdc4239ebfacd65f8d442db27427969f67ab66a1c",
+      "ranges": [
+        1,
+        14
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__cep__js__panel.js.md",
+      "source": "core4/cep/js/panel.js",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "861a0c797276f1ec52f47b204f4f6a7c819ea432b9f93f223bf58e37f3a07ba7",
+      "ranges": [
+        1,
+        57
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/core4__test__native-read-recovery.test.js.md",
+      "source": "core4/test/native-read-recovery.test.js",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "1a9c93656916ad23157f9ff9bfe5aad8fb943e54c35f4b3ced9945e44fb88575",
+      "ranges": [
+        1,
+        144
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/docs__core-4.0.0-intent.md.md",
+      "source": "docs/core-4.0.0-intent.md",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "7fdda4a8b6d378dd5f3c8f602be99986cc3ea2f11485b7d43503b1c8914e1515",
+      "ranges": [
+        1,
+        45
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "context/plans__core-post-reinstall-audit-20261029.md.md",
+      "source": "plans/core-post-reinstall-audit-20261029.md",
+      "commit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+      "sourceSha256": "c8062662c5f1e43271b6fdac2022cbe62d56ae1a8f88cab14376e49c255a51fa",
+      "ranges": [
+        1,
+        109
+      ],
+      "classification": "INTERNAL"
+    }
+  ],
+  "excluded": [
+    "credentials/environment/config/installation.json",
+    "browser cookies/auth/runtime state",
+    "journals/DB/AEP/media",
+    "full live logs",
+    "prior review responses",
+    "generated scanner draft and local approval/receipt"
+  ],
+  "redactions": [],
+  "scopeGaps": [
+    "Configured MCP read and manual mutation/adoption unverified in this session",
+    "Installed f548 unchanged; candidate e073 not installed",
+    "Installed composition still requires titles-current-target",
+    "Automatic lifecycle provider and portability P1-P8 open"
+  ],
+  "scannerAdjudication": [
+    {
+      "finding": "generic_secret",
+      "source": "core4/tools/install-core4.js:111",
+      "match": "Token: crypto.randomBytes",
+      "decision": "false-positive: two source expressions generate fresh random values; no credential values are present"
+    },
+    {
+      "finding": "phone_like",
+      "source": "changes.diff",
+      "decision": "false-positive: git index hash substring"
+    },
+    {
+      "finding": "phone_like",
+      "source": "context/core4__tools__disposition-install-preflight.js.md",
+      "decision": "false-positive: substring of full source SHA-256"
+    },
+    {
+      "finding": "phone_like",
+      "source": "evidence.json",
+      "decision": "false-positive: UTC date and test duration values"
+    }
+  ]
+}

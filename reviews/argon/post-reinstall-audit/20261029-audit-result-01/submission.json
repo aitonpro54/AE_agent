@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "reviewId": "20261029-audit-result-01",
+  "stageId": "post-reinstall-audit",
+  "reviewType": "result",
+  "scope": "single initial result review of independent post-reinstall-audit",
+  "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "status": "received",
+  "attempt": 1,
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "recipient": {
+    "name": "Aiton Pro",
+    "email": "aitonpro54@gmail.com",
+    "service": "Gemini Argon"
+  },
+  "readiness": {
+    "verifiedAt": "2026-10-29T10:55:53.093Z",
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "initialMode": "3.8 Flash",
+    "initialEffort": "Низкий",
+    "mode": "4 Argon",
+    "effort": "Высокий",
+    "effortDescription": "Глубокий",
+    "availableEfforts": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "composerEmpty": true
+  },
+  "authorization": {
+    "sourceThreadId": "01a18731-173e-7122-8edb-472f47d6eb94",
+    "sourceTurnId": "01a18731-1aa9-75c1-8bcb-e969cbe0d6ea",
+    "userQuote": "Можешь также задействовать ревью Argon для этого, после того как сам все проверишь и сделаешь все необходимое со своей стороны.",
+    "basis": "Current direct human authorization for this audit plus standing mandate for first review of independent scope; local code checks completed before dispatch.",
+    "scope": "One initial result review of post-reinstall audit; no follow-up/retry or old unknown submission",
+    "trustedUserMessageId": "01a18731-1fd1-7da1-8b56-73019e65a5e7",
+    "verifiedBy": "controller read_thread, 2026-10-29"
+  },
+  "baseCommit": "769e5bc702f458f437bfc66da1d95b4cb44df3a1",
+  "targetCommit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+  "requestSha256": "7447b03006b9e0db4e55e7b50e1d6f7273ca6e90c0d98243f6159b570fa255f3",
+  "manifestSha256": "8178776344b83ce542db9489b321eb1b4a8fafdf5db2c2018f6a0b9e269bba36",
+  "payload": {
+    "file": "bundle.md",
+    "bytes": 132341,
+    "sha256": "2898a50929add26eaf6e232ac89e085c665b82e8a21a1c04b70b28d5341b3da2"
+  },
+  "method": "file-upload",
+  "prompt": "Review ID: 20261029-audit-result-01\nStage ID: post-reinstall-audit\nType: result\nTarget commit: e6cde7c1f061763b6d0008162580039d2717aeb7\nRequest SHA-256: 7447b03006b9e0db4e55e7b50e1d6f7273ca6e90c0d98243f6159b570fa255f3\nBundle SHA-256: 2898a50929add26eaf6e232ac89e085c665b82e8a21a1c04b70b28d5341b3da2\nПроведи одно ограниченное review приложенного bundle.md по request.md внутри. Проверяй новое исправление lineage и выводы аудита после переустановки; это не повтор прежнего recovery-plan review. Не требуй второго автоматического review. Верни bindings, прочитанное/пропущенное, verdict и конкретные findings с evidence. Известные live/modularity gaps отмечены явно; не считай их проверенными.",
+  "promptSha256": "f87c6547cfe14f37e7a2628e9eb8e80f0ba27bd67935c206db0b97b99853f951",
+  "preparedAt": "2026-10-29T10:55:53.093Z",
+  "url": "https://gemini.google.com/app/c8b0e030f9b39f3b",
+  "previousResponseCount": 0,
+  "otherFilesTransmitted": 0,
+  "uploadInvokedAt": "2026-10-29T10:56:16.480Z",
+  "uploadConfirmedAt": "2026-10-29T10:56:55.038Z",
+  "promptExactParagraphTextVerified": true,
+  "sendInvokedAt": "2026-10-29T10:56:55.038Z",
+  "submittedAt": "2026-10-29T10:56:55.038Z",
+  "submissionConfirmedAt": "2026-10-29T10:57:08.935Z",
+  "receipt": {
+    "url": "https://gemini.google.com/app/c8b0e030f9b39f3b",
+    "message": "Review ID: 20261029-audit-result-01",
+    "attachment": "bundle.md",
+    "generating": true,
+    "composerEmpty": true,
+    "durability": "full response present with matching reviewId/base/target/request/bundle string bindings"
+  },
+  "lastObservedAt": "2026-10-29T10:58:02.550Z",
+  "receivedAt": "2026-10-29T11:01:07.957Z",
+  "response": {
+    "path": "response.txt",
+    "sha256": "b8a629433fe0c9d305df5e6b7d3ad7fcf7d40c0ca4707dcf692a8773091b5521",
+    "bytes": 20645
+  }
+}

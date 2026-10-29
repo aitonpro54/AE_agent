@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-29T11:05:20.612Z",
+  "hashesVerified": true,
+  "embeddedFiles": 15,
+  "bindingStringsVerified": true,
+  "responseBytes": 20645,
+  "status": "received",
+  "verdict": "go",
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "codeUnchangedAfterReviewedCommit": true
+}

@@ -38,8 +38,12 @@
   единственный упавший expanded scenario после исправления тестового cache
   повторно PASS. Не заявляется единый полный19/19прогон финального test файла.
 - [x] Source/audit milestone зафиксирован: `1ec34536e8ea6b90e6c005c8068646ef72d41ac2`.
-- [ ] Подготовить и передать единственное Argon review по текущему поручению.
-- [ ] Получить и локально разобрать ответ Argon без повторного review.
+- [x] Подготовлено и передано единственное Argon review по текущему поручению:
+  `20261029-audit-result-01`, target `e6cde7c`,1upload/1send/0retries.
+- [x] Получен `go`, два P3, блокирующих findings нет; замечания проверены и
+  документация уточнена в [decision log](../reviews/argon/post-reinstall-audit/20261029-audit-result-01/decisions.md).
+  Второго review нет. Этот audit/source milestone завершён; live/composition
+  пробелы ниже остаются открытыми, готовность всего продукта не объявляется.
 
 ## Разбор прежних изменений
 
@@ -62,6 +66,10 @@
   не запускался. UI Connected не объявляется MCP→AE inspection PASS.
 - Повторный UI снимок через376с также показывает Connected; это наблюдение
   в двух точках времени, не мониторинг без разрывов. Пакет f548 не заменялся.
+- Уточнение F-01: Connected подтверждает загрузку CEP CEF/JS-панели и
+  authenticated HTTP handshake с Node. Сам статус не вызывает evalScript и
+  не проверяет AECore4Host.dispatch/ExtendScript. Root не отправлял native
+  commands; работоспособность JSX в переустановленном AE ещё не подтверждена.
 - Private snapshot допускает максимум `|S|` рёбер и `|S|+1`descriptors:
   каждое ребро требует имя из первоначального снимка и ещё не использованный ID.
   Добавление файлов во время обхода не расширяет `S`. Имена не являются доверием:
@@ -79,6 +87,11 @@
   Это известный открытый архитектурный долг, а не результат внешней аварии.
   Следующий отдельный блок — декларативная композиция admitted assets и реальная
   установка read-only Core без titles/engine, с сохранением admission semantics.
+  В него обязательно входят `verifyCep` (`runtime/stdio-entry.js`, re-export
+  `runtime/installation.js`) и его вызов в `resolveHistoricalForInstall`:
+  expected installation.js определяется контрактом конкретного проверяемого
+  release, включая fixed f548. Проверить переход к read-only составу с прежней
+  подписанной historical disposition; простое if-exists этот контракт не заменяет.
 - Manual text mutation/adoption, automatic lifecycle provider и переносимость
   P1–P8 не принимаются по UI подключению или offline тестам. Пользовательский
   AEP, raw JSX, save/reopen/destructive и AME в этом аудите не затрагиваются.
@@ -105,5 +118,19 @@ junction отвергаются, после восстановления нов�
 Детерминированная сборка60files: `e07346dc0ffefc01b582ae9f332aeac1b4ca6b78c7d101126a2eaee64821264b`;
 повторный build/verifyPackage совпал. Candidate сохранён локально, не установлен.
 Final `git diff --check` и повторный installed verifier f548 PASS.
+Argon raw response/bindings/hashes проверены локально; F-01/F-02a/F-02b разобраны
+в decision log. После source fix изменялись только test fixture/docs; после
+review — только docs, поэтому runtime suites повторно не запускались.
+
+## Продолжение
+
+Исправление кода: `1ec3453`; уточнение версии пользователя: `e6cde7c`.
+Файлы: installation-lineage, его existing recovery test и audit/main/installable
+plans; review artifacts сохраняют точный reviewed snapshot.
+Первая эксплуатационная проверка после появления configured tools в этом чате:
+core_status → module contract → одна fresh project-inspection, без replay.
+Перед установкой candidate нужен свежий статус/штатное освобождение runtime;
+занятый owner не обходится новым recovery. Следующий source блок по intent —
+декларативная installed composition с проверками исторического verifyCep.
 Reproduction выполнен на temp-only installation, Node24.15.0, f548; actual AE
 commands0. Live proof ограничен открытием панели и UI Connected.

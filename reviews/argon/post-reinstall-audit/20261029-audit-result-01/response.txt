@@ -1,0 +1,189 @@
+Bindings
+
+Review ID: 20261029-audit-result-01   
+MD
+
+Stage ID: post-reinstall-audit   
+MD
+
+Type: result   
+MD
+
+Base commit: 769e5bc702f458f437bfc66da1d95b4cb44df3a1   
+MD
+
+Target commit: e6cde7c1f061763b6d0008162580039d2717aeb7   
+MD
+
+Request SHA-256: 7447b03006b9e0db4e55e7b50e1d6f7273ca6e90c0d98243f6159b570fa255f3   
+MD
+
+Bundle SHA-256: 2898a50929add26eaf6e232ac89e085c665b82e8a21a1c04b70b28d5341b3da2   
+MD
+
+Прочитанное и пропущенное
+
+Прочитано внутри bundle.md:
+
+request.md (5187 bytes, SHA-256 7447b03006b9e0db4e55e7b50e1d6f7273ca6e90c0d98243f6159b570fa255f3)   
+MD
+
+changes.diff (12228 bytes, SHA-256 1d384d6083e9302e55cc30746528f9a2e396bcf010ce02664b74cb6a4d768a34)   
+MD
+
+evidence.json (2496 bytes, SHA-256 17fcff0f688340110a73b41a4683db29ede739809b8e48837b3107a052489472)   
+MD
+
+context/core4__runtime__installation-lineage.js.md (строки 1–70, full source SHA-256 5575ccf7651e83a1545916fc88edb268ab3a72b08d57703b6d5df564a45d894a)   
+MD
+
+context/core4__tools__disposition-install-preflight.js.md (строки 1–49, full source SHA-256 0276831b78e8157117532ed815717f39d12f2ad120338d4a5cb2612ee6df55e8)   
+MD
+
+context/core4__runtime__native-read-disposition.js.md (строки 73–100, full source SHA-256 20053d0df8780feb975bf3302efd0cd32f07770c752d1acefc100f96fefaeb5b)   
+MD
+
+context/core4__integrations__cep__completion-store.js.md (строки 1–68, full source SHA-256 c5678e98b6eea7cb0ad7db605b4bd9a5a4f73080bb1e32f60c6a99420e904835)   
+MD
+
+context/core4__tools__install-core4.js.md (строки 88–138 и 158–204, full source SHA-256 5bb6471e03687205f040966ccd245ae520b6e6a5f1e7659dfdc4922c8873262c)   
+MD
+
+context/core4__runtime__stdio-entry.js.md (строки 40–51 и 88–133, full source SHA-256 213e711c6c8f7324c8de788d4bbb015a6400b56a440fd4b86020a5b2571c3909)   
+MD
+
+context/core4__tools__package-installable.js.md (строки 1–35, full source SHA-256 7587d8ce18c069994f88ff689b2ae1a45cd44629dca836dea0eca079ceea3a9e)   
+MD
+
+context/core4__runtime__source-package.json.md (строки 1–14, full source SHA-256 0575b9596c7ae5c7bc72b06fdc4239ebfacd65f8d442db27427969f67ab66a1c)   
+MD
+
+context/core4__cep__js__panel.js.md (строки 1–57, full source SHA-256 861a0c797276f1ec52f47b204f4f6a7c819ea432b9f93f223bf58e37f3a07ba7)   
+MD
+
+context/core4__test__native-read-recovery.test.js.md (строки 1–144, full source SHA-256 1a9c93656916ad23157f9ff9bfe5aad8fb943e54c35f4b3ced9945e44fb88575)   
+MD
+
+context/docs__core-4.0.0-intent.md.md (строки 1–45, full source SHA-256 7fdda4a8b6d378dd5f3c8f602be99986cc3ea2f11485b7d43503b1c8914e1515)   
+MD
+
+context/plans__core-post-reinstall-audit-20261029.md.md (строки 1–109, full source SHA-256 c8062662c5f1e43271b6fdac2022cbe62d56ae1a8f88cab14376e49c255a51fa)   
+MD
+
+Пропущено / не включено в bundle.md:
+
+Не вошедшие в сниппеты диапазоны строк (core4/runtime/native-read-disposition.js 1–72 и >100; core4/integrations/cep/completion-store.js >68; core4/tools/install-core4.js 1–87, 139–157 и >204; core4/runtime/stdio-entry.js 1–39, 52–87 и >133; core4/tools/package-installable.js >35) и остальные файлы репозитория вне allowlist.   
+MD
+
+Исключённые локальные и production-артефакты: installation.json, config.toml, переменные окружения, browser/CEP storage, реальные credentials, журналы (completions.ndjson, ledger.ndjson), пользовательские AEP/медиафайлы, полные тексты тестовых логов из snapshots/core4-live-proof/XVII-post-reinstall-audit-20261029/, скриншоты UI и старые ответы review.   
+MD
+
+Verdict
+
+go — исправление обхода истории в core4/runtime/installation-lineage.js устраняет искусственный предел в 16 дескрипторов без ослабления проверок целостности, подлинности и владения ресурсами, а выводы аудита после переустановки корректно разделяют подтверждённые инварианты и открытые live/modularity пробелы. Второе автоматическое review не требуется.   
+MD
+Ещё 1
+
+Ответы на вопросы request.md
+
+Конечность обхода и сохранение исторического proof (core4/runtime/installation-lineage.js:24-54):
+Блокирующих дефектов (P0–P2) нет. При совпадении текущего дескриптора с искомым descriptorHash возврат происходит на строке 32 до обращения к каталогу transactions (edgeFromHistorical: null). При переходе по рёбрам predecessor на первом шаге (!transactionNames, строки 36–44) выполняется однократная проверка каталога path.join(anchor.installRoot, 'transactions') через fs.lstatSync (!stat.isDirectory() || stat.isSymbolicLink() || stat.reparsePoint || fs.realpathSync(directory) !== directory) и формируется неизменяемое в рамках вызова множество transactionNames из файлов, строго соответствующих UUIDv4 .json. Поскольку каждый переход требует наличия p.transactionId + '.json' в transactionNames (строка 45) и отсутствия p.transactionId в transactionIds с немедленным добавлением в transactionIds (строки 35, 46), а также проверяет отсутствие циклов по хешам дескрипторов (hashes, строка 31), цикл while (true) гарантированно завершается не более чем за 
+∣
+𝑆
+∣
+∣S∣ переходов (
+∣
+𝑆
+∣
++
+1
+∣S∣+1 дескрипторов). На каждом шаге сохраняются полная проверка historicalDescriptor(bytes, anchor) (включая verifyRelease(d.releaseDir, release), строки 12–23), привязка транзакции к anchor и node.descriptorHash (строка 48), каноничность base64 и SHA-256 previousDescriptor (строки 49–50), а переменная childEdge на момент достижения целевого historical удерживает точное ребро перехода от historical к его непосредственному потомку, которое затем проверяется в verifyDispositionInstallEdge (core4/runtime/native-read-disposition.js:93-95 и core4/tools/disposition-install-preflight.js:19).   
+MD
+Ещё 4
+
+Достаточность тестового покрытия узкой дельты (core4/test/native-read-recovery.test.js:49-66, 103-121):
+Набора проверок достаточно для данной узкой дельты, расширять тестовый scope не требуется. Важная деталь: в цикле for (let n = 0; n < 17; n++) (core4/test/native-read-recovery.test.js:57) при наличии записи terminal-read-failure-disposition в receiver/completions.ndjson каждый вызов applyInstall(plan) через assertRuntimeStopped 
+→
+→ assertPreparedReceiverJournalSettled (core4/tools/install-core4.js:136, core4/tools/disposition-install-preflight.js:42) вызывает resolveHistoricalForInstall, а последующий validateDisposition(event, options) вызывает resolveHistoricalInstallation. Таким образом, оба публичных входа installation-lineage.js проверены на глубине 18 рёбер (19 дескрипторов), вместе с проверками directMainReadOnly, openCompletionStore, duplicate_command_no_replay, порчи tx без межвызового кеша, отсутствующего файла транзакции, подстановки файла после readdirSync и подмены каталога transactions на junction/symlink.   
+MD
+Ещё 2
+
+Сохранение compatibility fixes, recovery-reader и отсутствие излишеств на штатном connect:
+Решение оставить прежние исправления совместимости (ES3 JSON/reserved words, CIM, MCP _meta, direct-main exports, TOML paths, installer cwd), защитные механизмы (Origin/HMAC, private brands/leases, owner locks, UNKNOWN/duplicate_command_no_replay) и installation-lineage / native-read-disposition технически обосновано. На штатном пути подключения панели (core4/cep/js/panel.js:18-55) доказанных излишеств или искусственных задержек нет: цикл ожидания в link() (строки 28–38, интервал 3 с до 50 с) активируется исключительно при получении точного ответа HTTP 403 {"error":"duplicate_peer"} на /link (строка 12), а при свободном слоте /challenge и /link проходят за один проход без пауз. Чтение истории дескрипторов при штатном коннекте без записей terminal-read-failure-disposition вообще не вызывается, а при их наличии в журнале выполняется только при открытии completion-store на старте процесса, но не в цикле /poll.   
+MD
+Ещё 2
+
+Граница модульности:
+Оценка полностью точна и подтверждается кодом в бандле. Хотя сам Broker проходит изолированные M1-тесты (modularity-m1.log, 108 PASS), устанавливаемая композиция жёстко привязана к titles-current-target сразу в четырёх компонентах: core4/runtime/source-package.json:7,13, core4/tools/package-installable.js:26-30 (генерация cep/jsx/registry.jsx), core4/tools/install-core4.js:113,115 (генерация cep/installation.js) и core4/runtime/stdio-entry.js:43,46,97-105,112 (включая verifyCep). Отказ от попытки закрыть это локальным if-exists в данном патче верен, так как условное чтение файлов нарушило бы инвариант детерминированной проверки замыкания релиза и CEP (verifyCep и fixed_asset_binding). Выделение декларативной композиции допускаемых модульных ассетов в отдельный этап архитектурно корректно.   
+MD
+Ещё 3
+
+Соотношение выводов аудита и имеющегося evidence:
+Выводы в plans/core-post-reinstall-audit-20261029.md сформулированы консервативно и не выдают локальные/UI проверки за сквозную live-приёмку. Есть два небольших момента (оформлены ниже как F-01 и F-02 уровня P3), где формулировки или сводка логов требуют минимального локального уточнения без изменения архитектуры.   
+MD
+Ещё 1
+
+Findings
+F-01 (P3) — Формулировка про UI Подключено к Core 4.0.0 не уточняет, что ExtendScript (evalScript) на этом этапе не вызывается
+
+Утверждение: В plans/core-post-reinstall-audit-20261029.md:24-26, 50, 63 наблюдение статуса «Подключено к Core 4.0.0» через ~818 мс и ~376 с корректно ограничено как UI observation (не benchmark и не MCP→AE inspection PASS), однако без явного указания границы между CEP CEF (JS) и хостом ExtendScript (JSX) это наблюдение легко прочитать как подтверждение работоспособности связки CEP 
+→
+→ AE в переустановленном After Effects 26.2/26.3.   
+MD
+
+Отказ / Риск: В core4/cep/js/panel.js:44-52 статус show('Подключено к Core 4.0.0') выставляется сразу после проверки typeof __adobe_cep__.evalScript === 'function', HTTP-рукопожатия /challenge + /link с 127.0.0.1:3457, dispatcher.recover() (no-op при пустом localStorage) и проверки !response.body.laneClosed, до получения первой команды из /poll и до любого вызова __adobe_cep__.evalScript / AECore4Host.dispatch (cep/jsx/registry.jsx). При 0 отправленных команд (actual AE commands 0, plans/core-post-reinstall-audit-20261029.md:108-109) движок ExtendScript внутри AE за эти 376 с ни разу не исполнял код пакета.   
+MD
+Ещё 1
+
+Evidence: core4/cep/js/panel.js:44-52, core4/tools/package-installable.js:29-30, plans/core-post-reinstall-audit-20261029.md:24-26, 59-64, 108-109.   
+MD
+
+Уверенность: Высокая (100% по исходному коду panel.js).   
+MD
+
+Минимальная локальная проверка: Учесть в локальных заметках аудита, что UI Connected доказывает только загрузку CEP-панели и быстрый HTTP-линк с Node http-peer на порту 3457, а проверка выполнения evalScript / AECore4Host.dispatch в переустановленном AE остаётся частью первой живой проверки project-inspection после восстановления configured MCP подключения.   
+MD
+
+F-02 (P3) — Разделение прогона native-read-recovery.test.js между final-scoped.log (18/19) и deep-history-final.log (1/1) и учёт verifyCep в будущем этапе модульности
+
+Утверждение: В evidence.json и plans/core-post-reinstall-audit-20261029.md:38-39, 96-102 честно задокументировано, что final-scoped.log завершился с pass 18, fail 1 (из-за того, что тест 1 намеренно портил cacheFile на строке 53 до вызова directMainReadOnly(f)), после чего был исправлен сам тест (core4/test/native-read-recovery.test.js:52, 60) и перезапущен отдельно в deep-history-final.log (pass 1, fail 0) без повторного прогона всего файла целиком. Кроме того, при описании жёсткой привязки к titles-current-target (plans/core-post-reinstall-audit-20261029.md:77-81) наряду со stdio-entry, packager и installer стоит явно учитывать верификатор verifyCep (core4/runtime/stdio-entry.js:40-47, core4/runtime/installation-lineage.js:67).   
+MD
+Ещё 1
+
+Отказ / Риск: Отсутствие единого зелёного лога 19/19 для финального core4/test/native-read-recovery.test.js не скрывает ошибку в runtime-коде (ошибка была только в порядке восстановления тестовой фикстуры cacheFile), но оставляет fail 1 в evidence.json. А при будущей реализации декларативной композиции модульных ассетов пропуск verifyCep в resolveHistoricalForInstall (core4/runtime/installation-lineage.js:67) может привести к отказу preflight-проверки при обновлении со старого релиза f548 (где installation.js содержал фиксированный массив из двух ассетов) на новый релиз без titles-current-target, если verifyCep не будет вычислять ожидаемый installation.js из метаданных конкретного проверяемого релиза d.releaseDir.   
+MD
+Ещё 1
+
+Evidence: evidence.json (final-scoped.log, deep-history-final.log), core4/test/native-read-recovery.test.js:52-61, core4/runtime/stdio-entry.js:40-47, core4/runtime/installation-lineage.js:67, plans/core-post-reinstall-audit-20261029.md:38-39, 77-81, 96-102.   
+MD
+
+Уверенность: Высокая.   
+MD
+
+Минимальная локальная проверка: При следующем плановом запуске тестов (или при подготовке этапа декларативных module-assets) локально сохранить единый 19/19 прогон core4/test/native-read-recovery.test.js и включить verifyCep (runtime/installation.js и runtime/stdio-entry.js) в спецификацию перехода от фиксированного списка ассетов в f548 к декларативному.   
+MD
+
+Known Gaps, упрощения и отсутствующее Live Evidence (не считаются проверенными)
+
+Следующие пункты явно зафиксированы в request.md, evidence.json и plans/core-post-reinstall-audit-20261029.md как открытые и не считаются подтверждёнными в рамках данного review:   
+MD
+
+Сквозной configured MCP read и ручная мутация/adoption: в текущей сессии Core4 отсутствовал в доступном MCP tool inventory, а одиночная попытка обращения через существующий app-server proxy завершилась до initialize (os 10050, stdout 0); живые вызовы inspect / mutate / verify в After Effects не выполнялись (actual AE commands 0).   
+MD
+
+Обновление установленного пакета: в рабочей среде остаётся установленным пакет f54863dbb69b5e3a4b0e79d8ee3629cf71c7eced0a3759745d8899fa65a1ce90 (занятый текущим процессом Core PID 5280 на порту 3457); собранный и проверенный кандидат e07346dc0ffefc01b582ae9f332aeac1b4ca6b78c7d101126a2eaee64821264b с исправлением installation-lineage.js локально сохранён, но ещё не установлен.   
+MD
+
+Модульность устанавливаемой композиции: source-package.json, package-installable.js, install-core4.js и stdio-entry.js (verifyCep) по-прежнему жёстко требуют наличия titles-current-target; реальная установка read-only Core без titles-current-target и plan-engine отложена в отдельный этап декларативной композиции module-assets.   
+MD
+
+Линейная стоимость обхода истории: обход дескрипторов и транзакций в installation-lineage.js не использует межвызовый кеш и растёт по времени и памяти линейно от числа исторических обновлений, вызывая verifyRelease на каждом шаге.   
+MD
+
+Прочие открытые блоки проекта: автоматический lifecycle provider, контракт двусторонней переносимости Desktop 
+↔
+↔ MSI (P1–P8), работа с пользовательскими AEP, raw JSX, save/reopen/destructive операции и AME в этом аудите не проверялись.   
+MD
+
+Версия After Effects: расхождение между подтверждённой пользователем версией After Effects 26.2 и версией бинарного файла AfterFX (26.3), как и улучшение стабильности после переустановки, зафиксированы только как наблюдения без заявления доказанной первопричины прежних сбоев.   
+MD

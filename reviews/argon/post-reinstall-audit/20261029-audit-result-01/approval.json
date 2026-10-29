@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "reviewId": "20261029-audit-result-01",
+  "stageId": "post-reinstall-audit",
+  "targetCommit": "e6cde7c1f061763b6d0008162580039d2717aeb7",
+  "requestSha256": "7447b03006b9e0db4e55e7b50e1d6f7273ca6e90c0d98243f6159b570fa255f3",
+  "manifestSha256": "8178776344b83ce542db9489b321eb1b4a8fafdf5db2c2018f6a0b9e269bba36",
+  "payload": {
+    "file": "bundle.md",
+    "bytes": 132341,
+    "sha256": "2898a50929add26eaf6e232ac89e085c665b82e8a21a1c04b70b28d5341b3da2"
+  },
+  "recipient": {
+    "service": "Gemini Argon",
+    "accountAlias": "Aiton Pro",
+    "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+    "effort": "maximum available; verify fresh UI"
+  },
+  "externalPrompt": "Review ID: 20261029-audit-result-01\nStage ID: post-reinstall-audit\nType: result\nTarget commit: e6cde7c1f061763b6d0008162580039d2717aeb7\nRequest SHA-256: 7447b03006b9e0db4e55e7b50e1d6f7273ca6e90c0d98243f6159b570fa255f3\nBundle SHA-256: 2898a50929add26eaf6e232ac89e085c665b82e8a21a1c04b70b28d5341b3da2\nПроведи одно ограниченное review приложенного bundle.md по request.md внутри. Проверяй новое исправление lineage и выводы аудита после переустановки; это не повтор прежнего recovery-plan review. Не требуй второго автоматического review. Верни bindings, прочитанное/пропущенное, verdict и конкретные findings с evidence. Известные live/modularity gaps отмечены явно; не считай их проверенными.",
+  "authorization": {
+    "sourceThreadId": "01a18731-173e-7122-8edb-472f47d6eb94",
+    "sourceTurnId": "01a18731-1aa9-75c1-8bcb-e969cbe0d6ea",
+    "userQuote": "Можешь также задействовать ревью Argon для этого, после того как сам все проверишь и сделаешь все необходимое со своей стороны.",
+    "basis": "Current direct human authorization for this audit plus standing mandate for first review of independent scope; local code checks completed before dispatch.",
+    "scope": "One initial result review of post-reinstall audit; no follow-up/retry or old unknown submission"
+  },
+  "preparedAt": "2026-10-29T10:53:30.880Z"
+}

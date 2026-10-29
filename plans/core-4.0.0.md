@@ -10,6 +10,9 @@ M1:108PASS, baseline connection/install suites:86PASS, boundaries21PASS.
 Fixed installed composition всё ещё требует titles-current-target; независимая
 установка модулей и P1–P8 остаются открытыми. Следующий абзац — история до
 завершённой установки f548, а не текущая рекомендация повторить recovery.
+Единственное Argon review аудита: `go`,2P3, локально учтены; повтор не нужен.
+Следующий composition блок включает release-specific verifyCep и проверку
+перехода с fixed f548 при сохранении historical disposition.
 
 **Текущий приоритет, 29 октября 2026:** по прямому поручению пользователя
 перенос на десктоп отложен до устойчивой работы на MSI. Продолжается локальная
