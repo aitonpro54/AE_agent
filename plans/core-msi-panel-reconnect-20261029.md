@@ -152,3 +152,74 @@ Core4 MCP tools в этом turn недоступны; второй runtime не
 - 47selected/source ACCEPT относятся к неизменённому source7dec462;
   suites не повторялись из-за packaging/docs. Installation/live acceptance0,
   old UNKNOWN/noReplay не менялись, перенос остаётся отложенным.
+
+## Продолжение после перезапуска Codex — 29 октября 2026
+
+### Progress
+
+- [x] Свежий census подтвердил завершение прежнего Node21872. Новый managed
+  Node26568, parent19560, запущен в05:00:55UTC и удерживает broker/receiver.
+  AE-процессов на момент наблюдения нет. Core4 tools в текущем чате недоступны.
+- [x] Полный read-only verifier вновь подтвердил installedfa9e:60release files,
+  CEP, external Nodev24.15.0 и origins. Descriptor/origins/receiver journal
+  совпадают с сохранёнными hashes; broker ledger отсутствует.
+- [x] После фактического restart выполнена одна новая проверка existing
+  app-server proxy. Отказ до initialize повторился: os10050, stdout0, exit1.
+  Status/reload не отправлялись; новый app-server не создавался.
+- [x] Подготовлен и адресно проверен отдельный локальный launcher f548 для
+  запуска при закрытом Codex. Root прочитал source и выполнил `--check-only`:
+  ожидаемый отказ `runtime_state_owned_or_unknown`, попытка apply не создавалась.
+- [ ] Пользователь штатно закрыл Codex и выполнил launcher; установка и live
+  reconnect подтверждены новым read-back. Этот переход пока не выполнен.
+
+### Decision Log
+
+- Простое открытие Codex заново запускает прежний enabled MCP и вновь занимает
+  state. Обновление следует выполнить между штатным закрытием Codex и его
+  следующим запуском. Root готовит конкретный локальный launcher; процессы,
+  owners, config preferences, fences и журналы ради освобождения не меняются.
+- Это ограниченная операционная подготовка прежней разрешённой установки,
+  не новый runtime API или перенос на другую машину. Candidatef548 и его
+  package-owned63file installer closure сохраняются. Launcher вызывает штатный
+  installer; under-lease stopped/settled checks остаются решающими.
+- Root сохраняет исключительное владение live/install и планами; одному
+  `ae_implementer` передана только подготовка ignored launcher/fixtures без
+  доступа к installed state или исполнения apply. Отдельный runtime не нужен.
+- [Официальный App Server](https://learn.chatgpt.com/docs/app-server) описывает
+  reload/configured status, но это не устраняет наблюдаемый отказ подключения
+  control socket. Повтор того же отказа в этом процессе не выполняется.
+
+### Validation
+
+- Fresh evidence: `snapshots/core4-live-proof/XIV-msi-install-continuation-20261029/`
+  — `continuation-observation.json`, `installed-before.json`,
+  `app-control-after-restart.json`. Только безопасные identities/hashes;
+  configured queue/peer/adoption/authority после restart не наблюдались.
+- Установка, recovery, AE launch/native/save0. Source/panel suites не
+  повторяются из-за неизменившихся bytes; перенос и full release остаются открыты.
+- Launcher fixtures:29 assertions PASS, syntax PASS, real apply0. Покрыты
+  изменённые distribution/package/installer bytes, лишний файл closure,
+  шесть owner/gate/.next отказов до вызова apply, durable no-replay и точная
+  enabled MCP-конфигурация. Fixtures не читают installed paths.
+- `offline-update.cjs` SHA-256
+  `ec0e04baaced6505c4e6007fc1b39a4db0c539c33580173213f3a6f63f20b4d6`.
+  Wrapper проверяет frozen distribution SHA-256
+  `3db904cd891c4c8b1dca53f299b53e58f89cc30e674072df2c50db9be807c944`,
+  все63installer files, package и exact Node до загрузки candidate code.
+  Это local MSI operation в ignored evidence, не переносимый product module.
+- Единственный apply идёт через штатный CLI без shell/timeout/retry. До submit
+  пишется durable `offline-apply-attempt.json`; неизвестный исход не разрешает
+  повтор. Under-lease stopped/settled и UNKNOWN остаются в installer.
+
+### Конкретный следующий шаг
+
+Полностью штатно закрыть Codex, затем из Проводника запустить
+`snapshots/core4-live-proof/XIV-msi-install-continuation-20261029/INSTALL-CORE4.cmd`
+в рабочем корне. Не открывать Codex до результата launcher. На `SUCCESS`
+пакет/CEP/Node/config уже прочитаны обратно; это ещё не live proof. Затем открыть
+Codex и продолжить этот чат для configured handshake и разрешённой приёмки.
+При `BLOCKED`/`UNKNOWN` сохранить `offline-install-report.json` и вернуться
+с результатом для диагностики; повтор launcher и ручное удаление locks не нужны.
+Root не может штатно закрыть собственный desktop host и продолжать установку
+в этом же turn; ручной шаг нужен для освобождения занятого runtime, не для
+повторного согласования уже разрешённого обновления.

@@ -35,6 +35,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29октября, после restart Codex прежний owner21872 завершён, но новый26568
+  автоматически удерживает fa9e. Full file verifier PASS; AE не запущен.
+  Existing proxy снова os10050 до initialize. Готов локальный launcher
+  установки f548 при закрытом Codex:29fixture assertions PASS; actual check-only
+  ожидаемо блокируется owner. Apply0; [следующий шаг](core-msi-panel-reconnect-20261029.md).
 - [x] 29октября, разрешённое поручение прежнему чату выполнено: очередь пуста,
   но штатно завершить managed MCP не удалось; Node21872/owners сохраняются.
   Root подготовил полный63file installer closure и dry-run PASS. Пользователь
@@ -95,6 +100,10 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- Установка f548 выполняется между штатным закрытием и следующим запуском
+  Codex: обычный restart немедленно возвращает прежнего MCP-владельца.
+  Подготовлен локальный launcher штатного installer без изменения gates,
+  удаления markers или принудительного завершения процессов.
 - Свежий пустой status не заменяет штатное завершение stdio lifetime.
   Освобождение MCP остаётся реальной границей установки; процессы/markers не
   завершаются принудительно. AEcrash фиксируется отдельно: новый пакет не был
@@ -137,6 +146,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- После restart: actual fa9e60files/CEP/Node/origins verified, protected hashes
+  прежние; configured status в этом чате недоступен, fresh queue не заявляется.
+  Existing control proxy exit1/stdout0/os10050, status/reload0; install/native0.
+  Local launcher29fixture assertions/syntax PASS; actual read-only preflight
+  отказал `runtime_state_owned_or_unknown` до apply/attempt marker. Проверки
+  stopped/settled под lease и actual installation/read-back остаются открыты.
 - Продолжение после пересылки: actual standalone dry-run63file closure PASS,
   package/source bytes прежние. Configured status получен владельцем прежнего
   чата; освобождение MCP FAIL/not-supported. Windows event1000 и census

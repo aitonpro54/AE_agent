@@ -9,7 +9,11 @@ Configured MCP → CEP → AE read-only уже подтверждён в `5e5b36
 P1–P8 остаются открытым требованием, работы второй машины сейчас отложены.
 После разрешённого поручения прежнему чату выяснено: очередь пуста, штатное
 закрытие managed MCP недоступно. Windows подтвердил AEcrash RuntimeInstaller.DLL;
-AE завершился, MCP21872 остался. Candidatef548 не установлен; актуальные facts —
+AE завершился, MCP21872 остался. После restart Codex прежний owner завершён,
+но новый26568 вновь удерживает installedfa9e; fresh file verifier PASS,
+existing proxy снова os10050. Готов отдельный launcher штатной установки
+f548 при закрытом Codex:29fixture assertions PASS, actual check-only закрыт
+занятым owner до apply. Candidatef548 пока не установлен; актуальные facts —
 в [локальном плане](core-msi-panel-reconnect-20261029.md).
 Следующие вводные записи сохраняют историческое состояние своих этапов.
 
