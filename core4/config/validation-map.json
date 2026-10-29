@@ -1,6 +1,20 @@
 {
   "owners": [
     {
+      "prefix": "core4/cep/js/panel.js",
+      "owner": "panel-reconnect",
+      "checks": [
+        "panel-reconnect"
+      ]
+    },
+    {
+      "prefix": "core4/test/panel-reconnect.test.js",
+      "owner": "panel-reconnect",
+      "checks": [
+        "panel-reconnect"
+      ]
+    },
+    {
       "prefix": "core4/tools/check-core4-endpoint.js",
       "owner": "endpoint-observation",
       "checks": [
@@ -858,6 +872,12 @@
     }
   ],
   "checkDependencies": {
+    "panel-reconnect": [
+      "cep/js/panel.js",
+      "cep/js/poll-dispatcher.js",
+      "protocol/json.js",
+      "test/panel-reconnect.test.js"
+    ],
     "endpoint-observation": [
       "tools/check-core4-endpoint.js",
       "test/endpoint-observation.test.js",
@@ -1244,6 +1264,12 @@
     ]
   },
   "checkCommands": {
+    "panel-reconnect": [
+      "node",
+      "--test",
+      "--test-name-pattern=panel-reconnect",
+      "test/panel-reconnect.test.js"
+    ],
     "endpoint-observation": [
       "node",
       "--test",
@@ -1372,6 +1398,9 @@
     ]
   },
   "checkPolicy": {
+    "panel-reconnect": {
+      "kind": "component"
+    },
     "endpoint-observation": {
       "kind": "component"
     },

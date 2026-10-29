@@ -4,6 +4,12 @@
 
 ## Цель и scope
 
+**Приоритет от 29 октября 2026:** пользователь отложил перенос до устойчивой
+работы здесь, на MSI. Следует локальная доводка и функциональная приёмка;
+milestone 4 и сбор facts другой машины сейчас не продолжаются. Требование
+переносимости сохраняется открытым. Текущий ограниченный engineering block —
+[ожидание повторного подключения CEP](core-msi-panel-reconnect-20261029.md).
+
 С 28 октября 2026 [двусторонняя переносимость десктоп ↔ MSI](../docs/portability.md)
 входит в обязательную готовность этого среза и всего AE Agent Core, независимо
 от рабочего названия Core4. После первичной подготовки двух сред перенос
@@ -29,6 +35,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29 октября, локальная доводка MSI: исправлено ожидание после быстрого
+  переоткрытия CEP. Retry только handshake/точного duplicate_peer,47selected PASS,
+  boundaries21/source review ACCEPT. Candidatef548/60files готов, от fa9e
+  отличается только panel.js; пока не установлен. Текущий MCP startup закрывается
+  при занятом владельце прежнего чата; [focused блок](core-msi-panel-reconnect-20261029.md).
 - [x] 29 октября: добавлена отдельная fixed-endpoint diagnostic source-команда,
  21selected PASS; root actual occupied exit2 без protected byte changes, peer
   connected/pending0/UNKNOWNfalse. Runtime fa9e/60files не менялся. Полный
@@ -79,6 +90,10 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- Перенос отложен по новому поручению29октября; локальная доводка продолжается.
+  UI bounded retry сохраняет серверный45speer guard и UNKNOWN/no-replay.
+  Старый managed runtime остаётся владельцем до штатного освобождения;
+  force kill/marker cleanup и второй listener не используются для установки.
 - 29 октября: producer MCP-конфигурации сохраняет native paths с TOML escaping;
   verifier не принимает дополнительные формы пути. Regression потребляет emitted
   config без нормализации. Отдельный exact-argv proof подтверждает repair,
@@ -113,6 +128,11 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- Локальный reconnect source-блок:47/47selected PASS, old baseline negative
+  FAIL1/1, final evidence keys совпали; boundaries21/syntax/diff PASS,
+  independent source ACCEPT. Candidatef548deterministic/60files; actualfa9e
+  read-only verifier PASS. Actual install/live/9deferred integrations/full
+  release не приняты. Evidence и package hashes — в focused плане выше.
 - 29 октября: exact old argv FAIL exit1/`installation_path` до state startup;
   regenerated native argv PASS initialize/core_status, child18160 exit0/stderr0.
   Python TOML decode и Codex CLI config read-back PASS; descriptor/origins/journal

@@ -1,5 +1,14 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Текущий приоритет, 29 октября 2026:** по прямому поручению пользователя
+перенос на десктоп отложен до устойчивой работы на MSI. Продолжается локальная
+доводка; первый ограниченный блок — [повторное подключение панели](core-msi-panel-reconnect-20261029.md).
+Configured MCP → CEP → AE read-only уже подтверждён в `5e5b36e`.
+В текущем turn Core4 tools отсутствуют в inventory при работающем MCP-процессе;
+новый сервер вместо него не запускается. Manual mutation/adoption ещё не приняты.
+P1–P8 остаются открытым требованием, работы второй машины сейчас отложены.
+Следующие вводные записи сохраняют историческое состояние своих этапов.
+
 **Продолжение 29 октября 2026:** startup-причина `installation_path` воспроизведена
 на exact configured argv. Исправлен installer: native paths сохраняются в MCP
 TOML; regression потребляет generated config.45 selected и boundaries21 PASS.
@@ -161,6 +170,10 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Progress
 
+- [x] 29 октября: по новому приоритету переноса нет; локальный CEP reconnect
+  source repair прошёл47selected/boundaries21/source ACCEPT. Candidatef548
+  подготовлен, installedfa9e не менялся; live update ждёт штатного освобождения
+  владельца предыдущего чата. [План и evidence](core-msi-panel-reconnect-20261029.md).
 - [x] 29 октября: standalone endpoint observation реализована и проверена
  21selected PASS/root actual occupied; runtime package неизменён. Это отдельный
   шаг переносимости, без install grant/capability/round-trip PASS;
@@ -181,6 +194,10 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Decision Log
 
+- Локальная доводка MSI имеет приоритет до переноса. Быстрое переоткрытие CEP
+  обрабатывается ожиданием bounded handshake; server/auth/UNKNOWN не меняются.
+  Недоступный configured MCP не заменяется вторым владельцем или live proof
+  через offline fixture; source milestone и установленная проверка разделены.
 - Успешный installed stdio proof не объявляется configured-client proof. Новый
   чат начинает с Core4 MCP status/reconnect; повтор original command запрещён.
   Постоянное правило двусторонней переносимости и схема одного Argon review
@@ -194,6 +211,10 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Validation
 
+- Reconnect source:47PASS/0FAIL, meaningful baseline-negative1FAIL,
+  boundaries21/syntax/diff и independent source review ACCEPT. Deterministic
+  packagef548/60files, actualfa9e read-only verification PASS. Fresh native
+  приёмка обновлённой панели и manual mutation ещё открыты; full release0.
 - 28октября, actual `root-final-native-proof.json` в локальном каталоге
   `snapshots/core4-live-proof/VII-native-read-recovery-20261028/`: fresh CEP/AE26.2x49,
   empty project, one completed new inspection, mutation/save/replay0; журнал6,
