@@ -35,6 +35,13 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29октября, stopped CHECK локализовал ENOENT на transaction_parent.
+  Win32 backing-path и два Node context probes подтвердили MSIX AppData view:
+  внешний CMD не видел установленный runtime. Локальный same-package relay
+  готов:36fixtures/PS5.1 parse/6CMD cases/syntax PASS, independent ACCEPT;
+  actual external inspect видит exact state и блокируется штатным broker guard.
+  Следующий шаг снова INSTALL при закрытом Codex; actual apply0.
+  [Evidence и текущий ручной переход](core-settled-owner-recovery-20261029.md#следующий-ручной-шаг).
 - [x] 29октября, пользовательский XV ENOENT разобран до границы evidence:
  5reportsblocked до intent, protected files/receiver прежние, original missing
   path не сохранён и сейчас не воспроизводится. Расширены только fixed labels
@@ -126,6 +133,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Decision Log
 
+- Причина XV ENOENT подтверждена как различие virtualized AppData внутри Codex
+  MSIX и внешнего CMD. One-case relay входит в тот же package context через
+  штатный Invoke/PreventBreakaway, не переносит state и не меняет logical paths,
+  recovery pins или grants. Timeout/неясный handoff сохраняет no-replay; отдельный
+  wx run-submit guard не очищается автоматически. Общая независимость installer
+  от filesystem view остаётся portability gap; migration сейчас не выполняется.
 - Новый XV `ENOENT` не идентифицирует исчезнувший ресурс. Stage=snapshot мог
   сохраниться и на pre-intent plan/open после lease; отсутствие gates после
   отказа не доказывает отсутствие его получения. Новый диагностический helper
@@ -188,6 +201,12 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Validation
 
+- MSIX relay:36/36fixtures, PS5.1 parser,6CMD stub cases/syntax PASS; независимый
+  source/fix review ACCEPT. Actual inspect из внешнего процесса без видимого
+  AppData входит в нужный context, сверяет bindings и возвращает ожидаемый
+  broker guard до intent.5protected files/receiver/history прежние, oldfa9e,
+  original/new guards до actual run отсутствуют. Apply/native0; installer product
+  bytes и underlying helperadff…ad27 прежние.
 - XV ENOENT:60/60helper fixtures/syntax, independent diagnostic-delta ACCEPT;
   real-cmd CHECK stub0/1PASS. Actual CHECK при новом broker31972 блокируется
   на broker_marker до intent; actual apply/native0.5dated reports сохранены,

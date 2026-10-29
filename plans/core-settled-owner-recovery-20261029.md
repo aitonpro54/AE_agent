@@ -153,9 +153,9 @@ apply и проверяет результат. Не открывать Codex д
   recovery/apply; старые5dated reports и latest installation report сохранены.
   CLI `inspect` теперь также проверяет pure install plan/baseline до lease:
   исходный ENOENT мог возникнуть и в планировании. Plan/credentials не выводятся.
-- [ ] Получен отчёт CHECK при полностью закрытом Codex; исходный missing resource
-  установлен адресным evidence и устранён в разрешённом scope. До этого
-  готовность нового запуска INSTALL не заявляется.
+- [x] Получен отчёт CHECK при полностью закрытом Codex; причина установлена:
+  внешний CMD не видел виртуализированную установку MSIX. Исправление и новый
+  ручной переход описаны в следующем разделе.
 
 ### Decision Log
 
@@ -200,3 +200,102 @@ apply и проверяет результат. Не открывать Codex д
   CHECK hash `349f4f3fcfe73f1e218b4918beeee95d93e1f31061dfc2ee50e21529c91994f1`.
   Actual recovery/apply/native0;
   full release/product suites не повторяются: product/candidate bytes прежние.
+
+## Причина ENOENT: разные представления AppData в MSIX — 29 октября 2026
+
+### Progress
+
+- [x] Пользователь подтвердил: INSTALL выполнялся при полностью закрытом Codex.
+  Новый пользовательский CHECK07:10:19UTC отказал до lease/intent именно на
+  `transaction_parent`. Оригинал сохранён как
+  `user-stopped-check-20261029T071019.json` до новых диагностических вызовов.
+- [x] Win32 `GetFinalPathNameByHandle` для логического descriptor показал
+  физический файл в
+  `AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/LocalCache/Local/AEAgentCore4/installation.json`.
+  Файл репозитория этим механизмом не перенаправлен. Нормальный `realpathSync`
+  возвращал прежний логический путь; одной такой проверки было недостаточно.
+- [x] Установлен Windows-пакет `OpenAI.Codex_26.1023.6621.0_x64__2p2nqsd0c76g0`,
+  family `OpenAI.Codex_2p2nqsd0c76g0`, manifest AppId=`App`. Host/descriptor
+  machineId=`MSI`; ошибки смены компьютера здесь нет.
+- [x] Отдельный read-only Node с package context/PreventBreakaway увидел
+  transactions и все5protected files с точными исходными hashes. Контрольный
+  дочерний Node без сохранения context увидел ENOENT для transactions и4файлов
+  AppData; repo config остался доступен и совпал. Эти пробы не импортировали
+  recovery, не запускали runtime/AE и не меняли installed state.
+- [x] Локальный package-context relay подготовлен, scoped fixtures и independent
+  review пройдены; actual read-only запуск из внешнего context подтвердил
+  доступ к прежнему state и соблюдение исходных guards.
+
+### Decision Log
+
+- Исходная причина теперь подтверждена двумя представлениями одной файловой
+  системы. Перезапуск Codex возвращал видимость виртуализированной установки;
+  он не восстанавливал удалённый transactions и не доказывал race shutdown.
+  Ошибка не исправляется созданием пустого каталога во внешнем AppData.
+- Существующие descriptor/history содержат логические пути. Для этой локальной
+  операции требуется тот же filesystem context; credentials, origins, journal,
+  owners и authority не копируются в другой root, физический LocalCache не
+  подставляется вместо проверяемого логического installRoot.
+- Документированный `Invoke-CommandInDesktopPackage` даёт package identity и
+  доступ к virtualized resources; `PreventBreakaway` сохраняет context детей.
+  Его token не идентичен обычному процессу приложения, прочие side effects
+  не гарантированы. Здесь используется только проверенное файловое поведение
+  отдельного one-case operational relay; все штатные install/recovery checks
+  сохраняются. Это не общий production-контракт обновления Core.
+- MSIX-свойство AppData является дополнительным installer/portability gap:
+  независимость установки от запускающего host этим обходом не принимается.
+  Установленный state сейчас не мигрируется; отложенный portability milestone
+  и его P1–P8 сохраняются открытыми.
+- Relay использует Node outer и короткие фиксированные inline PowerShell
+  commands. Effective PS5.1 policy=Restricted сохранена; `.ps1`, IEX, script-file
+  eval, `ExecutionPolicy Bypass` и изменения manifest/настроек не используются.
+- У каждого handoff свой requestId/start/child-started и terminal+commit с
+  fsync/hash correlation. Возврат Invoke не объявляется завершением операции.
+  Timeout/неясный launch дают UNKNOWN без kill/retry. Для `run` до handoff
+  создаётся отдельный wx `package-context-run-submit.guard.json` в evidence;
+  он не удаляется автоматически даже при BLOCKED. Original install lease,
+  receiver/broker CAS и recovery intent остаются самостоятельными guards.
+- Root принял writer ownership после capacity-ошибки исполнителя и закрыл две
+  адресные несовместимости до передачи пользователю: outer не содержал
+  packageHash для повторной проверки installed result; successful inspect
+  исходного helper не содержит automaticReplay. Sender/receiver pins теперь
+  совпадают; отсутствие automaticReplay допускается только у inspect success,
+  наружу возвращается false. Underlying helper не изменён.
+
+### Validation
+
+- `root-package-context-probe-result.json`,07:18:07UTC:
+  transactionParentPresent=true, allProtectedMatch=true; exact Node24.15.0/MSI.
+- `root-package-breakaway-probe-result.json`,07:20:17UTC:
+  transactionParentPresent=false, descriptor/origins/journal ENOENT, config hash
+  прежний. Runtime/recovery/native0 в обеих пробах. Launch cmdlet доступен;
+  developer mode/elevation/manifest/permissions/execution policy не менялись.
+- Нормативные первичные источники Microsoft:
+  [AppData virtualization](https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes#appdata-operations-on-windows-10-version-1903-and-later),
+  [package-context process и его ограничения](https://learn.microsoft.com/en-us/powershell/module/appx/invoke-commandindesktoppackage?view=windowsserver2025-ps).
+- `node --test .../test-package-context.cjs`:36/36PASS, включая успешную установку
+  на fixture, blocked/unknown/timeout, duplicate guard, redaction, точный actual
+  inspect success schema и production pin contract. PS5.1 parse обеих encoded
+  программ PASS;6CMD stub cases0/1/7 для inspect/run PASS, CRLF сохранены.
+  Syntax2PASS; unchanged underlying60tests не повторяются.
+- Independent bounded code review ACCEPT после адресного fix-review; открытых
+  P1/P2 нет. Это source review, не actual install acceptance.
+- Actual relay inspect из Codex07:36UTC и из доказанного внешнего filesystem
+  context07:38:51UTC: bindingsVerified=true, helper ровно1раз, ожидаемый
+  `blocked/recovery_broker_identity_changed` на текущем19704, intent=false.
+  Внешний процесс до relay не видел descriptor/transactions. Relay видит их и
+  достигает прежних helper guards. Actual run/apply/native0.
+- `root-msix-relay-validation.json`: все5protected hashes, receiver all6/bytes
+  и5исторических recovery reports прежние; original transaction/install gates и
+  новый run-submit guard отсутствуют. Final hashes и source review — в этом
+  файле и `package-context-review.json`. Исторические wrapper bytes сохранены
+  как `*.cmd.msix-original`; старые format fixtures читают именно эти snapshots.
+
+### Следующий ручной шаг
+
+Полностью штатно закрыть Codex и один раз запустить обновлённый
+`XV/INSTALL-CORE4.cmd`. Он входит в проверенный package filesystem context и
+вызывает прежний one-case recovery/installer. Не открывать Codex до результата.
+При SUCCESS открыть Codex для configured read-back; при BLOCKED/UNKNOWN сохранить
+`package-context-reports` и recovery reports и не повторять запуск. Root не
+выполнял actual run; установка f548 ещё не объявляется завершённой.
