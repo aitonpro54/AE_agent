@@ -4,8 +4,10 @@
 Manual package3f9293… установлен после exact owner recovery; origins и original
 UNKNOWN/disposition сохранены.109offline/tempPASS, independent installed read-back
 и один real stdio MCP→CEP→AE read PASS(AE26.3x87,пустой проект,mutation0,exit0).
-Diagnostic runtime закрыт, owners/gates/listener0. Configured Codex-client proof
-остаётся открытым: tools в текущем чате отсутствуют, требуется reconnect.
+Diagnostic runtime закрыт. Затем [configured Codex-client proof](core-client-reconnect-20261029.md)
+завершён в текущем чате: разрешённые shared restart и AE recovery после CEP crash,
+managed33164→CEP→AE9672,один fresh native read PASS. Receiver12events settled,
+pending/UNKNOWN0,mutation/save0; runtime и CEP оставлены подключёнными.
 Standalone distribution apply closure gap отмечен в этом плане; full release,
 manual mutation/adoption и P1–P8 не подтверждаются. Ниже — история этапов.
 

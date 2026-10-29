@@ -15,8 +15,11 @@
 **Текущий операторский блок:** [manual install/live](core-manual-install-live-20261029.md).
 Final manual3f92 установлен, exact owners архивированы; origins и signed history
 сохранены.109offline/tempPASS, independent installed read-back и sole installed
-stdio MCP→CEP→AE read PASS(native1,mutation0,clean exit0). Configured Codex-client
-ещё требует переподключения MCP; tools отсутствуют в текущем чате. Найденный
+stdio MCP→CEP→AE read PASS(native1,mutation0,clean exit0). Затем подтверждён
+[configured Codex-client путь](core-client-reconnect-20261029.md): разрешённый
+shared restart, recovery AE после CEP crash и один fresh native read PASS.
+Managed33164→CEP→AE9672,receiver12events settled,pending/UNKNOWN0,mutation/save0.
+Найденный
 standalone apply closure gap записан отдельно; full release/P1–P8 не закрыты.
 
 **Source/temp этап завершён:** [декларативная устанавливаемая композиция](core-installed-composition-20261029.md).

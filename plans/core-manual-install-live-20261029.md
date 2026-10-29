@@ -34,8 +34,9 @@ candidate `3f9293f76f5dbef30f8919151145e28ebceb8fe796ee4495b9747e18e0ff8c51`
   реальный AE26.3x87, пустой unsaved project, clean runtime exit0/stderr0.
 - [x] Final history:10events, первые8побайтно сохранены, новый begin/complete;
   journal semantically settled, owners/gates/ledger/listener/runtime отсутствуют.
-- [ ] Configured Codex-client handshake/status/native read. Tools в текущем
-  чате отсутствуют, пользовательского ответа о переподключении пока нет.
+- [x] Configured Codex-client handshake/status/native read PASS после разрешённого
+  общего app-server restart и отдельного разрешённого AE restart после CEP crash.
+  Подробности и итоговая история — [configured proof](core-client-reconnect-20261029.md).
 
 ## Decision Log
 
@@ -108,16 +109,13 @@ Actual install/recovery/native0 на этом preflight.
 
 ## Продолжение
 
-Продолжение по прямому поручению самому восстановить клиент:
-[configured MCP diagnostics](core-client-reconnect-20261029.md). Новый managed
-manual process наблюдался, но текущий чат сохраняет старый MCP snapshot;
-configured read остаётся открытым, общий app-server restart затронет другую работу.
-
-Установка и отдельная живая техническая диагностика завершены. Для полного
-запрошенного Codex-path proof остаётся configured client после переподключения
-MCP; не повторять recovery/install или diagnostic native read вместо него.
-Следующий вызов при появлении tools:core_status→discovery/contract→один fresh
-project-inspection. Если панель остановилась после закрытия diagnostic runtime,
-открыть её после готовности configured runtime; старую UNKNOWN не повторять.
+Установка и полный запрошенный live путь завершены:
+[configured MCP proof](core-client-reconnect-20261029.md). Shared restart и
+последующий AE restart после подтверждённого CEP crash разрешены пользователем.
+Текущий чат выполнил один fresh read через managed33164→CEP→AE9672;
+AE26.3x87,numItems0,save/mutation0. Final receiver12events semantically settled,
+первые10побайтно сохранены, pending/UNKNOWN отсутствуют. Runtime/CEP оставлены
+подключёнными. Историческая adopted identity не принята как current authority.
+Recovery/install/native inspection не повторять ради нового подтверждения.
 Standalone distribution closure требует отдельного адресного исправления и
 temp actual apply acceptance; full release/P1–P8 остаются открытыми.
