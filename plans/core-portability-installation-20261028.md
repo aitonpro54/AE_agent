@@ -84,6 +84,10 @@ mutation/save/raw, открытие AEP и фактический перенос
 
 ## Оставшиеся installer gaps
 
+29 октября: первый отдельный [endpoint observation блок](core-endpoint-observation-20261029.md)
+завершён (21selected PASS, root actual occupied). Он даёт bounded TCP observation,
+но не становится installer admission gate и не закрывает нижеследующие gaps.
+
 1. Node/workspace discovery этого блока не проверяет AE/CEP capabilities и
    доступность fixed endpoints до применения установки. Для этого нужен
    отдельный ограниченный preflight; отсутствие наблюдения не равно PASS.

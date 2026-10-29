@@ -32,6 +32,22 @@ Installer выбирает workspace по собственному распол�
 и обязан указывать этот же executable. Это не устанавливает Node и не проверяет
 AE/CEP capabilities или configured MCP client.
 
+Ограниченное наблюдение endpoint из source checkout: `node core4/tools/check-core4-endpoint.js`
+(из корня репозитория). Команда без аргументов делает один IPv4 TCP connect к
+`127.0.0.1:3457`, без application payload, с deadline1000ms и без повторов.
+JSON показывает `occupied` (connect, exit2), `absent` (ECONNREFUSED, exit0) или
+`unknown` (deadline/error/premature close, exit3); дополнительные аргументы
+отклоняются до probe с exit64. Адрес/порт/env overrides отсутствуют.
+`absent` не резервирует порт и не доказывает будущий bind; `occupied` не определяет
+владельца listener. Report явно оставляет `bindability:unverified`, AE/CEP
+capabilities `unobserved`, `environmentPreflight:incomplete`, `authority:false`
+и `liveProof:false`. Это завершённый диагностический шаг, а installer preflight/gate
+и capability checks остаются открытыми. Installation descriptor, credentials,
+конфигурация и runtime state не читаются; файлы и runtime не изменяются.
+Адресная offline-проверка: `node core4/tools/validate-diff.js core4/tools/check-core4-endpoint.js --run`.
+Fixtures используют VM и private перенаправление test subprocess к ephemeral
+loopback; настоящий3457, AE и установленный runtime в них не наблюдаются.
+
 Apply требует exact reviewed package hash и пишет собственный immutable release под `%LOCALAPPDATA%/AEAgentCore4/releases/<packageHash>`, stable state под `state/production`, отдельную CEP extension и только project-local `[mcp_servers.after-effects-core4]` в `.codex/config.toml`. Absolute external Node path/version/SHA256 закрепляются в installation descriptor. Entry загружает только Node builtins до проверки полного release tree: exact file/directory set, включая `release.json`; лишние extensionless files, empty directories, symlinks/junctions и подмена bytes запрещены до любых package imports. Unknown Broker owner, ledger fault и unresolved own intent закрывают физические чтения до нового durable begin, даже если отдельный receiver store пуст.
 
 Stable installation origin и state anchor должны совпадать, reinstall не сбрасывает state. Credentials генерируются вне Git/package, panel/control различаются. Config/descriptor/CEP сохраняются в exact-hash rollback transaction; baseline CAS запрещает перезапись concurrent changes. Bounded TOML editor сохраняет соседние таблицы byte-for-byte, включая indentation и inline comments; неподдерживаемые quoted table headers/multiline syntax отклоняются до записи. Partial filesystem failure оставляет transaction для read-back и ручной диагностики; неизвестная мутация не переигрывается автоматически. Rollback сохраняет production state и release evidence, не восстанавливает живую AE очередь.

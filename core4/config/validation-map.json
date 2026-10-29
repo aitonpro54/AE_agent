@@ -1,6 +1,27 @@
 {
   "owners": [
     {
+      "prefix": "core4/tools/check-core4-endpoint.js",
+      "owner": "endpoint-observation",
+      "checks": [
+        "endpoint-observation"
+      ]
+    },
+    {
+      "prefix": "core4/test/endpoint-observation.test.js",
+      "owner": "endpoint-observation",
+      "checks": [
+        "endpoint-observation"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/endpoint-observation-preload.js",
+      "owner": "endpoint-observation",
+      "checks": [
+        "endpoint-observation"
+      ]
+    },
+    {
       "prefix": "core4/test/fixtures/stdio-main-ephemeral.js",
       "owner": "native-read-recovery",
       "checks": [
@@ -837,6 +858,11 @@
     }
   ],
   "checkDependencies": {
+    "endpoint-observation": [
+      "tools/check-core4-endpoint.js",
+      "test/endpoint-observation.test.js",
+      "test/fixtures/endpoint-observation-preload.js"
+    ],
     "native-read-capture": [
       "tools/capture-native-read.js",
       "test/native-read-capture.test.js",
@@ -1218,6 +1244,12 @@
     ]
   },
   "checkCommands": {
+    "endpoint-observation": [
+      "node",
+      "--test",
+      "--test-name-pattern=endpoint-observation",
+      "test/endpoint-observation.test.js"
+    ],
     "native-read-capture": [
       "node",
       "--test",
@@ -1340,6 +1372,9 @@
     ]
   },
   "checkPolicy": {
+    "endpoint-observation": {
+      "kind": "component"
+    },
     "native-read-capture": {
       "kind": "integration"
     },

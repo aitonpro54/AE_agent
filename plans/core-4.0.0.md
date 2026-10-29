@@ -161,6 +161,10 @@ M2b offline реализован: private lifecycle reducer, exact approval и �
 
 ## Progress
 
+- [x] 29 октября: standalone endpoint observation реализована и проверена
+ 21selected PASS/root actual occupied; runtime package неизменён. Это отдельный
+  шаг переносимости, без install grant/capability/round-trip PASS;
+  [Progress/Decision Log/Validation](core-endpoint-observation-20261029.md).
 - [x] 29 октября: configured MCP → installed fa9e → authenticated CEP → AE
   подтверждён одной новой typed read-only inspection пустого проекта. Очередь
   после чтения пуста, UNKNOWN/faults=false; manual mutation/adoption, P1–P8

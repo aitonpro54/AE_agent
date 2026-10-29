@@ -29,6 +29,10 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 ## Progress
 
+- [x] 29 октября: добавлена отдельная fixed-endpoint diagnostic source-команда,
+ 21selected PASS; root actual occupied exit2 без protected byte changes, peer
+  connected/pending0/UNKNOWNfalse. Runtime fa9e/60files не менялся. Полный
+  installer gate и capabilities остаются открыты; [focused блок](core-endpoint-observation-20261029.md).
 - [x] 29 октября: configured Codex MCP client подтвердил status и одну новую
   typed inspection через установленный fa9e/CEP/AE26.2x49. Закрытая панель
   открыта штатно и подключилась автоматически; пустой проект, native read1,
