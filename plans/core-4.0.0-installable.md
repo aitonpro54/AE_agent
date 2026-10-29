@@ -4,6 +4,14 @@
 
 ## Цель и scope
 
+**Актуальная очередь после установки, 29 октября:** пользователь принял
+[план внешних продуктов](external-products-titles-20261029.md) и поручил
+начать Titles вне `core4/`. Ранее описанные install/manual milestones
+сохраняют техническую историю. Следующая разработка — T1 Titles compiler;
+независимая поставка capabilities и Slideshow идут отдельными этапами.
+Фактический round-trip переносимости назначен на финал функционального состава,
+а не перед началом Titles. P1–P8 остаются открытым критерием выпуска.
+
 **Отдельное архитектурное исследование, 29 октября:** по прямому вопросу
 пользователя подготовлено [сравнение независимых workflow-продуктов и AE MCP](../docs/external-workflows-research-20261029.md).
 Это консультационный блок; он не меняет текущий install/live scope и не запускает
@@ -59,7 +67,7 @@ P1–P8 остаётся открытой; локальный успех уст�
 
 Пользовательский AEP, save/reopen/destructive не выполняются ради установки. Пользователь отдельно разрешил штатно перезапустить пустой AE для перечитывания списка расширений; перед закрытием root повторно проверяет отсутствие элементов и несохранённых изменений. Test-copy: `snapshots/core4-host-validation/022dad73-ca31-4013-88fe-bf001ae91011/titr_01_ame_product_20261015.aep`, source SHA-256 `9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f`.
 
-## Последовательные working milestones
+## Исходные install milestones (история; актуальная очередь выше)
 
 1. **Package/status/inspect.** Production composition root `runtime/stdio-entry.js`, реальный HTTP long-poll peer внешнего Node и pure CEP browser, fixed reviewed executor registry, MCP status без lifecycle и bounded typed inspection/discovery. Отдельный CEP bundle `com.codex.aeagentcore4`, видимое имя AE Agent Core4.0.0. Receiver/store во внешнем Node; browser не исполняет Core через embedded Node17. Installer публикует immutable release по manifest hashes, отдельные credentials и project MCP entry, сохраняет state origin/fences. После scoped subprocess/IPC/VM/package/installer regressions — bounded review, commit и root install/read-back.
 2. **Typed manual current-target.** Отдельный optional `titles-current-target` package/contract с target без sessionId. Private branded policy вне domain-neutral Core; engine-optional single-step path и versioned resource scope. Generic inspect→build→proposal→dry-run→run; fresh native confirm, single setter и local transaction receipt verifier. Durable preimage checkpoint покрывает точный текст/объявленный style, не весь AEP; recovery требует нового typed proposal/подтверждения. Политика выбирается trusted composition/admitted pin, не public Boolean. Default automatic epoch gates сохраняются. После scoped regressions/review обновить пакет и установленную копию.

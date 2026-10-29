@@ -1,5 +1,13 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Принятая архитектура и текущий следующий этап, 29 октября:**
+[внешние продукты / Titles](external-products-titles-20261029.md).
+Пользователь поручил начать самостоятельный Titles-пакет вне `core4/`.
+Продуктовая логика отделяется от допущенных операций AE и общего Core;
+существующий runtime и его гарантии сохраняются. Порядок: Titles pilot →
+проверка применимости → поставка capabilities → Slideshow; переносимость P1–P8
+и полная приёмка выбранного выпуска — финальный этап. Ниже сохранена история.
+
 **Фактическая установка,29октября2026:** [manual install/live](core-manual-install-live-20261029.md).
 Manual package3f9293… установлен после exact owner recovery; origins и original
 UNKNOWN/disposition сохранены.109offline/tempPASS, independent installed read-back

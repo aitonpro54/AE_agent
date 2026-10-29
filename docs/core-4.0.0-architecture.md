@@ -24,8 +24,17 @@
 
 ## Владельцы и разрешённые зависимости
 
+Уточнение, принятое пользователем 29 октября 2026: «рабочий модуль» ниже —
+пакет ограниченных операций AE, а не весь продукт Titles/Slideshow/Montage.
+Продукт располагается вне `core4/`, владеет заданиями, шаблонами, продуктовым
+compiler и своими проверками; использует публичные JSON-контракты и существующий
+MCP-контроллер. Полный продукт не становится startup dependency Core.
+Первый pilot не требует SDK или собственной службы; общий Core не получает
+каталог всех предметных primitives. План — [внешние продукты / Titles](../plans/external-products-titles-20261029.md).
+
 | Компонент | Владеет | Не содержит |
 | --- | --- | --- |
+| Внешний workflow-продукт | Задание, шаблоны, layout/timing, чистый compiler и проверка пользовательского результата | Transport credentials, private grants, собственный broker для того же AE, прямые CEP вызовы |
 | Permanent Core broker | Lifecycle, connection/reconnect/status/diagnostics, очередь/task epochs, единственный controller, generic admission, neutral resource/receipt ledger | Предметные builders, AE handlers, обход всех рабочих пакетов |
 | MCP adapter | Стабильные generic JSON tools и ограниченные проекции ответов Core | Enum всех предметных схем при startup |
 | Optional plan engine | Plan/workflow DAG, step dependencies, lifecycle, partial success/resume, контрактные bindings | Предметные builders/read-back, transport authority |
