@@ -7,10 +7,11 @@
     { "prefix": "core4/test/fixtures/owner-runtime-child.js", "owner": "owner-runtime", "checks": ["owner-runtime"] },
     { "prefix": "core4/runtime/client-ipc.js", "owner": "client-ipc", "checks": ["client-ipc", "owner-ipc-process"] },
     { "prefix": "core4/test/client-ipc.test.js", "owner": "client-ipc", "checks": ["client-ipc"] },
-    { "prefix": "core4/runtime/attachment-owner.js", "owner": "owner-attachments", "checks": ["owner-attachments", "owner-ipc-process"] },
+    { "prefix": "core4/runtime/attachment-owner.js", "owner": "owner-attachments", "checks": ["owner-attachments", "owner-ipc-process", "controller-transfer"] },
     { "prefix": "core4/runtime/client-stdio.js", "owner": "owner-attachments", "checks": ["owner-attachments", "owner-ipc-process"] },
     { "prefix": "core4/test/owner-attachments.test.js", "owner": "owner-attachments", "checks": ["owner-attachments"] },
     { "prefix": "core4/test/owner-ipc-process.test.js", "owner": "owner-ipc-process", "checks": ["owner-ipc-process"] },
+    { "prefix": "core4/test/controller-transfer-ipc.test.js", "owner": "controller-transfer", "checks": ["controller-transfer"] },
     { "prefix": "core4/test/fixtures/attachment-process.js", "owner": "owner-ipc-process", "checks": ["owner-ipc-process"] },
     {
       "prefix": "core4/runtime/controller-lease.js",
@@ -987,6 +988,7 @@
     }
   ],
   "checkDependencies": {
+    "controller-transfer": ["runtime/controller-lease.js", "runtime/attachment-owner.js", "runtime/client-ipc.js", "test/controller-transfer-ipc.test.js"],
     "client-entry": ["runtime/client-entry.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/client-ipc.js", "runtime/owner-entry.js", "test/client-entry.test.js", "tools/check-boundaries.js"],
     "owner-runtime": ["runtime/", "test/owner-runtime.test.js", "test/fixtures/owner-runtime-child.js", "tools/check-boundaries.js", "tools/install-core4.js", "tools/package-installable.js", "tools/disposition-install-preflight.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
     "client-ipc": ["runtime/client-ipc.js", "test/client-ipc.test.js"],
@@ -1462,6 +1464,7 @@
     ]
   },
   "checkCommands": {
+    "controller-transfer": ["node", "--test", "--test-name-pattern=controller-transfer", "test/controller-transfer-ipc.test.js"],
     "client-entry": ["node", "--test", "--test-name-pattern=client-entry", "test/client-entry.test.js"],
     "owner-runtime": ["node", "--test", "--test-name-pattern=owner-runtime", "test/owner-runtime.test.js"],
     "client-ipc": ["node", "--test", "--test-name-pattern=^IPC ", "test/client-ipc.test.js"],
@@ -1620,6 +1623,7 @@
     ]
   },
   "checkPolicy": {
+    "controller-transfer": { "kind": "component" },
     "client-entry": { "kind": "component" },
     "owner-runtime": { "kind": "integration" },
     "client-ipc": { "kind": "component" },

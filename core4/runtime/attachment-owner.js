@@ -6,9 +6,9 @@ const { createControllerLease } = require('./controller-lease');
 // Production embedding must restore durable state before exposing this owner,
 // enforce assertCurrent at physical submit/deliver, and report real activity.
 const TOOL_METHODS = Object.freeze({ core_status: 'status', core_connect: 'connect', core_disconnect: 'disconnect', core_diagnostics: 'diagnostics', list_modules: 'listModules', get_module_contract: 'getContract', inspect_module_target: 'inspect', build_solution_plan: 'build', propose_plan: 'propose', dry_run_plan: 'dryrun', run_plan: 'run', get_task: 'getTask', reset_task: 'reset', reconcile_task: 'reconcile' });
-const CONTROL_METHODS = Object.freeze(['owner_status', 'controller_acquire', 'controller_renew', 'controller_release']);
+const CONTROL_METHODS = Object.freeze(['owner_status', 'controller_acquire', 'controller_renew', 'controller_release', 'controller_transfer']);
 const OWNER_METHODS = Object.freeze([...Object.keys(TOOL_METHODS), ...CONTROL_METHODS]);
-const LEASE_ERRORS = Object.freeze(['controller_busy', 'controller_fenced', 'controller_lease_identity', 'controller_lease_expired', 'controller_draining', 'controller_client_detached', 'controller_clock_fault', 'controller_operation_pending']);
+const LEASE_ERRORS = Object.freeze(['controller_busy', 'controller_fenced', 'controller_lease_identity', 'controller_lease_expired', 'controller_draining', 'controller_client_detached', 'controller_clock_fault', 'controller_operation_pending', 'controller_expected', 'controller_transfer_changed', 'controller_not_expired']);
 const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed']);
 const OBSERVERS = new Set(['core_status', 'core_diagnostics', 'list_modules', 'get_module_contract', 'get_task']);
 
@@ -78,6 +78,12 @@ function createAttachmentOwner({ runtime, activity, invoke, clock, ttlMs, drainI
     if (method === 'owner_status') { object(payload, []); return status(); }
     if (method === 'controller_acquire') {
       object(payload, []); admitted(); record.grant = lease.acquire(record.attachment); record.token = randomBytes(32).toString('hex');
+      for (const values of Object.values(refs)) values.clear();
+      return { leaseToken: record.token, bootId: record.grant.bootId, generation: record.grant.generation };
+    }
+    if (method === 'controller_transfer') {
+      object(payload, ['expected']); admitted();
+      record.grant = lease.transferExpired(record.attachment, payload.expected); record.token = randomBytes(32).toString('hex');
       for (const values of Object.values(refs)) values.clear();
       return { leaseToken: record.token, bootId: record.grant.bootId, generation: record.grant.generation };
     }

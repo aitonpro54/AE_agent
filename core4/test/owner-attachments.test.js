@@ -183,3 +183,25 @@ test('owner-attachments oversized response and long request identity always prod
   f.send({ id: 'x'.repeat(250000), method: 'ping' });
   await until(() => f.replies.length === 2); assert.equal(f.replies[1].id, null); assert.ok(Buffer.byteLength(JSON.stringify(f.replies[1])) < 1024); f.adapter.close();
 });
+test('owner-attachments explicit expired transfer requires fresh holder CAS and invalidates prior references', async () => {
+  const f = fixture(), a = f.attach(), b = f.attach(), grant = await ok(f.call(a, 'controller_acquire'));
+  const evidence = await ok(f.call(a, 'inspect_module_target')), observed = f.owner.status();
+  const expected = { bootId: observed.bootId, generation: observed.generation, holderClientId: observed.holderClientId };
+  await denied(f.call(b, 'controller_transfer', { expected }), 'controller_not_expired'); f.at(1000);
+  const next = await ok(f.call(b, 'controller_transfer', { expected })); assert.equal(next.generation, grant.generation + 1);
+  await denied(f.call(a, 'controller_release', { leaseToken: grant.leaseToken }), 'controller_lease_identity');
+  await denied(f.call(a, 'controller_transfer', { expected }), 'controller_transfer_changed');
+  await denied(f.call(b, 'build_solution_plan', { steps: [{ evidenceRef: evidence.evidenceRef }] }), 'owner_reference_generation');
+  f.owner.onDetach(a); await ok(f.call(b, 'core_connect')); await f.owner.close();
+});
+test('owner-attachments expired transfer cannot waive actual physical/control pending, unresolved or fault', async () => {
+  const f = fixture(), a = f.attach(), b = f.attach(); await ok(f.call(a, 'controller_acquire')); const observed = f.owner.status(); f.at(1000);
+  const expected = { bootId: observed.bootId, generation: observed.generation, holderClientId: observed.holderClientId };
+  for (const field of ['pending', 'unresolved', 'fault']) {
+    f.facts[field] = true;
+    await denied(f.call(b, 'controller_transfer', { expected }), field === 'pending' ? 'owner_draining' : 'owner_recovery_required');
+    f.facts[field] = false;
+  }
+  assert.equal(f.owner.status().generation, observed.generation);
+  await denied(f.call(b, 'controller_transfer', { expected: { ...expected, safe: true } }), 'controller_expected'); await f.owner.close();
+});

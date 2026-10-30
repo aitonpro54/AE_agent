@@ -111,6 +111,8 @@ R3 не использует fake production epoch и не переносит au
   source review ACCEPT; [evidence/границы](core-cep-r2-attachments-20261030.md).
 - [x] R2b: verified owner execution/physical guards/thin client loader,
  129selectedPASS, source review ACCEPT; [границы](core-cep-r2-runtime-20261030.md).
+- [x] R3a: explicit expired-controller transfer,16lease+24owner+1wire PASS,
+  source review ACCEPT; [границы](core-cep-r3-transfer-20261030.md).
 - [ ] R2c–R5: package/installer/launcher/recovery/CEP и приёмка;
   устойчивость installed runtime пока не заявлена.
 

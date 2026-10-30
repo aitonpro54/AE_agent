@@ -87,3 +87,33 @@ test('controller-lease invalid clock and options fail closed', () => {
   assert.throws(() => createControllerLease({ ttlMs: 0 }), /controller_options/);
   const owner = createControllerLease({ clock() { throw new Error('broken'); } }); refuses(() => owner.status(), 'controller_clock_fault');
 });
+test('controller-lease explicit exact expired transfer invalidates old grant without disconnecting its observer', () => {
+  const { owner, at } = fixture(), a = owner.attach(), b = owner.attach(), old = owner.acquire(a);
+  const expected = { bootId: old.bootId, generation: old.generation, holderClientId: a.clientId };
+  refuses(() => owner.transferExpired(b, expected), 'controller_not_expired');
+  at(1000); assert.equal(owner.status().mode, 'expired');
+  const next = owner.transferExpired(b, expected); assert.equal(next.generation, old.generation + 1);
+  refuses(() => owner.assertCurrent(old), 'controller_lease_identity'); refuses(() => owner.release(old), 'controller_lease_identity');
+  owner.detach(a); owner.assertCurrent(next);
+  refuses(() => owner.transferExpired(a, expected), 'controller_client_detached');
+});
+test('controller-lease expired transfer refuses pending work, UNKNOWN, stale boot and holder CAS', () => {
+  for (const outcome of ['settled', 'unknown']) {
+    const { owner, at } = fixture(), a = owner.attach(), b = owner.attach(), grant = owner.acquire(a), op = owner.begin(grant);
+    const expected = { bootId: grant.bootId, generation: grant.generation, holderClientId: a.clientId }; at(1000);
+    refuses(() => owner.transferExpired(b, expected), 'controller_draining'); owner.complete(op, outcome);
+    if (outcome === 'unknown') refuses(() => owner.transferExpired(b, expected), 'controller_fenced');
+    else {
+      refuses(() => owner.transferExpired(b, { ...expected, bootId: 'wrong' }), 'controller_transfer_changed');
+      refuses(() => owner.transferExpired(b, { ...expected, holderClientId: b.clientId }), 'controller_transfer_changed');
+      owner.transferExpired(b, expected); refuses(() => owner.transferExpired(a, expected), 'controller_transfer_changed');
+    }
+  }
+});
+test('controller-lease transfer accepts no caller safe flags and uses one monotonic sample', () => {
+  const times = [0, 1000, 1999]; let samples = 0;
+  const owner = createControllerLease({ clock: () => times[samples++], ttlMs: 1000 }), a = owner.attach(), b = owner.attach(), grant = owner.acquire(a);
+  const expected = { bootId: grant.bootId, generation: grant.generation, holderClientId: a.clientId };
+  refuses(() => owner.transferExpired(b, { ...expected, safe: true }), 'controller_expected');
+  owner.transferExpired(b, expected); assert.equal(samples, 2); assert.equal(owner.status().mode, 'held');
+});

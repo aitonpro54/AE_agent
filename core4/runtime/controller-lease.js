@@ -32,6 +32,11 @@ function createControllerLease({ clock = () => performance.now(), ttlMs = 30000 
     if (!allowExpired && now() >= record.expiresAt) fail('controller_lease_expired');
     return record;
   }
+  function issue(session, time) {
+    const handle = Object.freeze({ bootId, generation: ++generation, clientId: session.clientId });
+    const record = { session, handle, expiresAt: time + ttlMs, operation: null, fenced: false };
+    grants.set(handle, record); current = record; return handle;
+  }
   return Object.freeze({
     attach() {
       healthy();
@@ -41,9 +46,19 @@ function createControllerLease({ clock = () => performance.now(), ttlMs = 30000 
     acquire(session) {
       healthy(); client(session);
       if (current) fail(current.fenced ? 'controller_fenced' : 'controller_busy');
-      const time = now(), handle = Object.freeze({ bootId, generation: ++generation, clientId: session.clientId });
-      const record = { session, handle, expiresAt: time + ttlMs, operation: null, fenced: false };
-      grants.set(handle, record); current = record; return handle;
+      return issue(session, now());
+    },
+    transferExpired(session, expected) {
+      healthy(); client(session);
+      if (!expected || Object.getPrototypeOf(expected) !== Object.prototype || Object.keys(expected).sort().join(',') !== 'bootId,generation,holderClientId') fail('controller_expected');
+      if (!current || expected.bootId !== bootId || expected.generation !== current.handle.generation || expected.holderClientId !== current.session.clientId) fail('controller_transfer_changed');
+      if (current.fenced) fail('controller_fenced');
+      if (current.operation) fail('controller_draining');
+      const time = now();
+      if (time < current.expiresAt) fail('controller_not_expired');
+      // Explicit exact-holder transfer only. Durable quiescence is additionally
+      // checked by the trusted embedding; no time-driven automatic takeover.
+      return issue(session, time);
     },
     assertCurrent(handle) { lease(handle); },
     renew(handle) {
