@@ -1,5 +1,12 @@
 {
   "owners": [
+    { "prefix": "core4/runtime/client-ipc.js", "owner": "client-ipc", "checks": ["client-ipc", "owner-ipc-process"] },
+    { "prefix": "core4/test/client-ipc.test.js", "owner": "client-ipc", "checks": ["client-ipc"] },
+    { "prefix": "core4/runtime/attachment-owner.js", "owner": "owner-attachments", "checks": ["owner-attachments", "owner-ipc-process"] },
+    { "prefix": "core4/runtime/client-stdio.js", "owner": "owner-attachments", "checks": ["owner-attachments", "owner-ipc-process"] },
+    { "prefix": "core4/test/owner-attachments.test.js", "owner": "owner-attachments", "checks": ["owner-attachments"] },
+    { "prefix": "core4/test/owner-ipc-process.test.js", "owner": "owner-ipc-process", "checks": ["owner-ipc-process"] },
+    { "prefix": "core4/test/fixtures/attachment-process.js", "owner": "owner-ipc-process", "checks": ["owner-ipc-process"] },
     {
       "prefix": "core4/runtime/controller-lease.js",
       "owner": "controller-lease",
@@ -971,6 +978,9 @@
     }
   ],
   "checkDependencies": {
+    "client-ipc": ["runtime/client-ipc.js", "test/client-ipc.test.js"],
+    "owner-attachments": ["runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/controller-lease.js", "test/owner-attachments.test.js", "core/", "protocol/"],
+    "owner-ipc-process": ["runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/client-ipc.js", "runtime/controller-lease.js", "test/owner-ipc-process.test.js", "test/fixtures/attachment-process.js", "test/helpers.js", "test/fixtures/ae.js", "test/fixtures/authority.js", "core/", "protocol/", "modules/", "plan-engine/", "config/admissions/", "config/catalog.json", "worker.js"],
     "controller-lease": ["runtime/controller-lease.js", "test/controller-lease.test.js"],
     "panel-reconnect": [
       "cep/js/panel.js",
@@ -1441,6 +1451,9 @@
     ]
   },
   "checkCommands": {
+    "client-ipc": ["node", "--test", "--test-name-pattern=^IPC ", "test/client-ipc.test.js"],
+    "owner-attachments": ["node", "--test", "--test-name-pattern=owner-attachments", "test/owner-attachments.test.js"],
+    "owner-ipc-process": ["node", "--test", "--test-name-pattern=owner-ipc-process", "test/owner-ipc-process.test.js"],
     "controller-lease": ["node", "--test", "--test-name-pattern=controller-lease", "test/controller-lease.test.js"],
     "panel-reconnect": [
       "node",
@@ -1594,6 +1607,9 @@
     ]
   },
   "checkPolicy": {
+    "client-ipc": { "kind": "component" },
+    "owner-attachments": { "kind": "component" },
+    "owner-ipc-process": { "kind": "integration" },
     "controller-lease": { "kind": "component" },
     "panel-reconnect": {
       "kind": "component"

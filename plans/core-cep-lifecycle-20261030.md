@@ -68,6 +68,10 @@ original reconciliation; reconnect не повторяет mutation. Прост�
 - Организационный writer/координатор — текущий чат. До надёжного завершения
   handoff/recheck не выполнять live переключение или новый AE dispatch.
   Source/offline работа не требует остановки работающей установки.
+- После выполненного пользователем restart Codex штатная отправка handoff
+  принята. `01a18b19…` завершил turn `01a18d03…`, подтвердил отсутствие
+  незавершённых AE callbacks/helpers и передал управление этому чату.
+  Подробности и post-restart storeClosed — в [R2a](core-cep-r2-attachments-20261030.md).
 
 Предыдущие maintenance tests доказывают свои exact transactions, а не устойчивость
 нового lifecycle. Их полезные guards/evidence сохраняются; переиспользование
@@ -100,10 +104,13 @@ R3 не использует fake production epoch и не переносит au
 
 - [x] R0: сохранённая работа сверена; незавершённого native исполнения нет;
   модель installation owner выбрана после source-inspection архитектором.
-- [ ] Доставка/ACK handoff соседнего чата: UI queued, backend not found.
+- [x] Доставка/ACK handoff соседнего чата после restart: idle/completed, управление передано.
 - [x] R1: private lease реализован вне production package closure.
 - [x] R1:13/13 адресных tests PASS; source review ACCEPT без открытых P1/P2.
-- [ ] R2–R5: реализация и приёмка; устойчивость installed runtime пока не заявлена.
+- [x] R2a: private owner/stdio/IPC,22+22+2 адресных PASS и5routing,
+  source review ACCEPT; [evidence/границы](core-cep-r2-attachments-20261030.md).
+- [ ] R2b–R5: installed wiring/startup/recovery/CEP и приёмка;
+  устойчивость installed runtime пока не заявлена.
 
 ## Decision Log
 
@@ -150,6 +157,6 @@ Restart Core/AE, install и native dispatch этого этапа0. UI попы�
 
 ## Продолжение
 
-R1 завершён. Следующий source/offline блок — R2 по выбранной модели.
+R1/R2a завершены. Следующий source/offline блок — R2b по выбранной модели.
 Прочитать актуальный status/queue перед любым live изменением; сообщения в старой
 UI очереди не считать принятыми. Чужие snapshots/AEP и старые receipts сохранять.

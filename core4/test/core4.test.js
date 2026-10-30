@@ -383,7 +383,11 @@ test('[validation-routing] shared Core dependencies select component consumers w
   const titleKey = before.checks.find(c => c.check === 'titles-owner').evidenceKey;
   rewrite(ws.root, 'core/resources.js', source => source + '\n// changed shared runtime bytes\n');
   assert.notEqual(selectChecks([file], ws.root).checks.find(c => c.check === 'titles-owner').evidenceKey, titleKey);
-  assert.equal(before.executionBatches.length, 6); assert.ok(before.executionBatches.some(batch => batch.checks.includes('manual-runtime'))); assert.ok(before.executionBatches.some(batch => batch.checks.includes('human-window'))); assert.ok(before.executionBatches.some(batch => batch.checks.includes('titles-owner') && batch.checks.includes('titles-executor-contract')));
+  assert.deepEqual(new Set(before.executionBatches.flatMap(batch => batch.checks)), new Set(before.checks.map(check => check.check)));
+  assert.equal(new Set(before.executionBatches.map(batch => batch.command[3])).size, before.executionBatches.length);
+  assert.ok(before.executionBatches.some(batch => batch.checks.includes('owner-attachments')));
+  assert.ok(before.deferredCoverage.some(check => check.check === 'owner-ipc-process'));
+  assert.ok(before.executionBatches.some(batch => batch.checks.includes('manual-runtime'))); assert.ok(before.executionBatches.some(batch => batch.checks.includes('human-window'))); assert.ok(before.executionBatches.some(batch => batch.checks.includes('titles-owner') && batch.checks.includes('titles-executor-contract')));
   for (const changed of ['core4/core/broker.js', 'core4/core/receiver.js', 'core4/core/artifacts.js', 'core4/integrations/cep/host-dispatcher.js']) {
     const repair = selectChecks([changed], ws.root).checks.find(check => check.check === 'audit-repairs');
     assert.ok(repair, changed); assert.ok(repair.dependencies.includes('test/audit-repairs.test.js')); assert.ok(repair.dependencies.includes('test/fixtures/artifact-publish-crash.js'));
