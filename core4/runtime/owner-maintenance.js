@@ -127,12 +127,14 @@ function createOwnerMaintenance({ installation, descriptorPath, lifecycle, freez
   return Object.freeze({ request, requestLocal: () => stop || fault ? status() : request(c.authorization(scope)), status, done, scope: Object.freeze(scope) });
 }
 async function gone(scope) { const o = await observeOwnerProcess(scope.pid); if (!['absent', 'pid-reused'].includes(classifyOwnerProcess({ pid: scope.pid, birthTicks: scope.birthTicks }, o))) fail('maintenance_process_not_dead'); }
-function phaseSnapshot(c, directory) {
+function phaseSnapshot(c, directory, finishing = false) {
   const allowed = ['stopped.json', 'resume-intent.json', 'resume-lease.json', 'resume-completed.json', 'stop-barrier'];
   plain(directory, false, true); const s = fs.lstatSync(directory, { bigint: true }), names = fs.readdirSync(directory).sort(), tree = {};
-  if (names.length > 32) fail('maintenance_budget');
+  if (names.length > (finishing ? 256 : 32)) fail('maintenance_budget');
   for (const name of names) {
-    if (!allowed.includes(name) && !allowed.some(base => name.startsWith(base + '.stage-') && UUID.test(name.slice(base.length + 7)))) fail('maintenance_phase');
+    const base = name.replace(/\.stage-[a-f0-9-]{36}$/, '');
+    const finishFile = finishing && (base === 'finish-commit.json' || /^finish-[a-f0-9-]{36}\.json$/.test(base) && UUID.test(base.slice(7, 43)) || /^finish-[a-f0-9-]{36}-(install|broker)-(old|new)$/.test(base) && UUID.test(base.slice(7, 43)));
+    if ((!allowed.includes(base) && !finishFile) || base !== name && !UUID.test(name.slice(base.length + 7))) fail('maintenance_phase');
     tree[name] = c.info(read(path.join(directory, name), 128 * 1024));
     if (tree[name].hash === null) fail('maintenance_changed');
   }
@@ -254,4 +256,202 @@ async function resumeMaintenance({ installation, descriptorPath, id, expectedPro
   } catch (e) { if (lease) api.retainInstallLease(lease); throw e; }
   finally { permits.delete(capability); }
 }
-module.exports = { PRIVATE_METHODS, createStopAuthorization, createOwnerMaintenance, inspectMaintenance, resumeMaintenance, maintenanceLeasePermit };
+// Forward-only continuation. These records describe filesystem mutex work,
+// never an execution command. Every new actor leaves an immutable chain link
+// before replacing a gate; original resume records remain unchanged.
+const FINISH_LIMIT = 16;
+const nullInfo = () => ({ hash: null, stat: null });
+const inode = (a, b) => a && b && a.dev === b.dev && a.ino === b.ino;
+const stable = (a, b) => a && b && STATS.filter(k => k !== 'ctimeNs').every(k => a[k] === b[k]);
+const encoded = value => typeof value === 'string' && Buffer.from(value, 'base64').toString('base64') === value;
+function gatePaths(c) { return [path.join(c.d.installRoot, 'install.lock'), path.join(c.d.stateDir, 'broker/broker-owner.gate')]; }
+function finishFacts(c, directory) {
+  return { phase: phaseSnapshot(c, directory, true), gates: gatePaths(c).map(file => c.info(read(file))), snapshot: c.snapshot(true).facts, markers: c.markers() };
+}
+function sameFact(a, b) { return a.hash === b.hash && (a.hash === null ? b.stat === null : stable(a.stat, b.stat)); }
+function finishRecord(c, view, kind, fields, id, resumeId) {
+  const body = c.decode(view, kind, fields);
+  if (body.id !== id || body.resumeId !== resumeId) fail('maintenance_record'); return body;
+}
+function readFinish(c, id) {
+  const directory = c.dir(id), facts = finishFacts(c, directory), get = name => read(path.join(directory, name), 128 * 1024);
+  const barrier = read(c.p.barrier), archived = get('stop-barrier'), original = barrier.bytes ? barrier : archived;
+  const b = c.decode(original, 'maintenance-stop', ['id', 'scope', 'protected', 'authorizationHash', 'nonce']); c.scope(b.scope);
+  if (b.id !== id || !UUID.test(b.nonce) || !HEX.test(b.authorizationHash)) fail('maintenance_record');
+  if (barrier.bytes && archived.bytes && (!barrier.bytes.equals(archived.bytes) || !same(barrier.stat, archived.stat))) fail('maintenance_phase');
+  const receiptView = get('stopped.json'), r = c.decode(receiptView, 'maintenance-stopped', ['id', 'stopHash', 'scope', 'protected', 'markers', 'settled']);
+  const intentView = get('resume-intent.json'), intent = c.decode(intentView, 'maintenance-resume-intent', ['id', 'resumeId', 'stopHash', 'snapshot', 'operator', 'gates']);
+  c.scope(intent.operator);
+  if (r.id !== id || r.stopHash !== hash(original.bytes) || canonical(r.scope) !== canonical(b.scope) || intent.id !== id || !UUID.test(intent.resumeId) || intent.stopHash !== r.stopHash || canonical(intent.snapshot) !== canonical(facts.snapshot) || canonical(r.protected) !== canonical(facts.snapshot) || canonical(b.protected) !== canonical(Object.fromEntries(['descriptor', 'origin', 'anchor', 'client'].map(k => [k, facts.snapshot[k]]))) || !Array.isArray(intent.gates) || intent.gates.length !== 2) fail('maintenance_changed');
+  intent.gates.forEach((value, index) => {
+    if (!encoded(value)) fail('maintenance_record');
+    const g = finishRecord(c, { bytes: Buffer.from(value, 'base64') }, 'maintenance-lease-gate', ['id', 'resumeId', 'operator', 'role', 'nonce'], id, intent.resumeId);
+    if (canonical(g.operator) !== canonical(intent.operator) || g.role !== ['install', 'broker'][index] || !UUID.test(g.nonce)) fail('maintenance_record');
+  });
+  const leaseView = get('resume-lease.json'), completionView = get('resume-completed.json'); let originalLease, completion;
+  if (leaseView.bytes) {
+    originalLease = finishRecord(c, leaseView, 'maintenance-resume-lease', ['id', 'resumeId', 'facts'], id, intent.resumeId);
+    if (!Array.isArray(originalLease.facts) || originalLease.facts.length !== 2) fail('maintenance_record');
+    originalLease.facts.forEach((f, i) => { exact(f, ['file', 'hash', 'stat']); if (f.file !== gatePaths(c)[i] || f.hash !== hash(Buffer.from(intent.gates[i], 'base64'))) fail('maintenance_record'); exact(f.stat, STATS); });
+  }
+  if (completionView.bytes) {
+    completion = finishRecord(c, completionView, 'maintenance-resume-completed', ['id', 'resumeId', 'intentHash'], id, intent.resumeId);
+    if (!originalLease || completion.intentHash !== hash(intentView.bytes)) fail('maintenance_phase');
+  }
+  const attempts = new Map(), children = new Map();
+  for (const name of Object.keys(facts.phase.tree).filter(n => /^finish-[a-f0-9-]{36}\.json$/.test(n))) {
+    const view = get(name), a = finishRecord(c, view, 'maintenance-finish-attempt', ['id', 'resumeId', 'attemptId', 'parentHash', 'intentHash', 'actor', 'mode', 'sources', 'targets', 'snapshotHash', 'priorPhase'], id, intent.resumeId);
+    if (name !== 'finish-' + a.attemptId + '.json' || !UUID.test(a.attemptId) || a.parentHash !== null && !HEX.test(a.parentHash) || a.intentHash !== hash(intentView.bytes) || !['commit', 'release'].includes(a.mode) || a.snapshotHash !== hash(facts.snapshot) || !a.priorPhase || Object.getPrototypeOf(a.priorPhase) !== Object.prototype || !Array.isArray(a.sources) || a.sources.length !== 2 || !Array.isArray(a.targets) || a.targets.length !== 2) fail('maintenance_record');
+    c.scope(a.actor); a.sources.forEach((s, i) => { exact(s, ['bytes', 'hash', 'stat']); if (s.bytes === null ? s.hash !== null || s.stat !== null : !encoded(s.bytes) || s.hash !== hash(Buffer.from(s.bytes, 'base64'))) fail('maintenance_record'); if (s.stat) exact(s.stat, STATS); if (a.mode === 'commit') { if (!encoded(a.targets[i])) fail('maintenance_record'); const g = finishRecord(c, { bytes: Buffer.from(a.targets[i], 'base64') }, 'maintenance-finish-gate', ['id', 'resumeId', 'attemptId', 'parentHash', 'actor', 'role', 'nonce'], id, intent.resumeId); if (g.attemptId !== a.attemptId || g.parentHash !== a.parentHash || canonical(g.actor) !== canonical(a.actor) || g.role !== ['install', 'broker'][i] || !UUID.test(g.nonce)) fail('maintenance_record'); } else if (a.targets[i] !== null) fail('maintenance_record'); });
+    const digest = hash(view.bytes); if (attempts.has(digest) || children.has(a.parentHash)) fail('maintenance_phase'); attempts.set(digest, { ...a, hash: digest }); children.set(a.parentHash, digest);
+  }
+  if (attempts.size > FINISH_LIMIT) fail('maintenance_budget');
+  const chain = []; let next = children.get(null);
+  while (next) { if (chain.length >= attempts.size) fail('maintenance_phase'); const a = attempts.get(next); if (!a) fail('maintenance_phase'); chain.push(a); next = children.get(next); }
+  if (chain.length !== attempts.size) fail('maintenance_phase');
+  for (const [index, a] of chain.entries()) {
+    exact(a.priorPhase, ['directory', 'tree', 'barrier']);
+    if (canonical(a.priorPhase.directory) !== canonical(facts.phase.directory) || !a.priorPhase.tree || Object.getPrototypeOf(a.priorPhase.tree) !== Object.prototype || Object.keys(a.priorPhase.tree).length > 256 || Object.hasOwn(a.priorPhase.tree, 'finish-' + a.attemptId + '.json')) fail('maintenance_phase');
+    for (const [name, prior] of Object.entries(a.priorPhase.tree)) {
+      const actual = facts.phase.tree[name]; exact(prior, ['hash', 'stat']);
+      // Only known gate/barrier aliases get ctime changes from our hardlinks.
+      const linked = /-(install|broker)-(old|new)$/.test(name) || name === 'stop-barrier';
+      if (!actual || (linked ? !sameFact(prior, actual) : canonical(prior) !== canonical(actual))) fail('maintenance_changed');
+    }
+    for (const previous of chain.slice(0, index)) if (!Object.hasOwn(a.priorPhase.tree, 'finish-' + previous.attemptId + '.json')) fail('maintenance_phase');
+    for (const name of ['stopped.json', 'resume-intent.json']) if (canonical(a.priorPhase.tree[name]) !== canonical(facts.phase.tree[name])) fail('maintenance_changed');
+  }
+  const gateViews = gatePaths(c).map(file => read(file)), actual = gateViews.map(v => ({ ...c.info(v), bytes: v.bytes?.toString('base64') ?? null }));
+  const firstSources = chain.length ? chain[0].sources : actual;
+  firstSources.forEach((s, i) => { if (s.bytes !== null && s.bytes !== intent.gates[i]) fail('maintenance_gate_busy'); if (originalLease && s.bytes !== null && !sameFact(s, originalLease.facts[i])) fail('maintenance_changed'); });
+  if (firstSources[1].bytes !== null && firstSources[0].bytes === null || originalLease && !completion && firstSources.some(s => s.bytes === null)) fail('maintenance_phase');
+  const commitView = get('finish-commit.json'); let commit;
+  if (commitView.bytes) {
+    commit = finishRecord(c, commitView, 'maintenance-finish-commit', ['id', 'resumeId', 'intentHash', 'attemptHash', 'facts', 'snapshotHash'], id, intent.resumeId);
+    const a = attempts.get(commit.attemptHash);
+    if (completion || commit.intentHash !== hash(intentView.bytes) || !a || a.mode !== 'commit' || commit.snapshotHash !== hash(facts.snapshot) || !Array.isArray(commit.facts) || commit.facts.length !== 2) fail('maintenance_phase');
+    commit.facts.forEach((f, i) => { exact(f, ['file', 'hash', 'stat']); exact(f.stat, STATS); if (f.file !== gatePaths(c)[i] || f.hash !== hash(Buffer.from(a.targets[i], 'base64'))) fail('maintenance_record'); });
+  }
+  const permission = completion || commit;
+  if (!barrier.bytes && (!archived.bytes || !permission) || archived.bytes && !permission) fail('maintenance_phase');
+  for (let n = 0; n < chain.length; n++) {
+    const a = chain[n], end = n + 1 < chain.length ? chain[n + 1].sources : actual;
+    const states = end.map((s, i) => {
+      if (a.mode === 'release' && s.bytes === null) return 'T';
+      if (s.bytes === a.sources[i].bytes && sameFact(s, a.sources[i])) return 'S';
+      if (a.mode === 'release' ? s.bytes === null : s.bytes === a.targets[i]) return 'T';
+      fail('maintenance_phase');
+    }).join('');
+    if (a.mode === 'commit' ? !['SS', 'TS', 'TT'].includes(states) : !permission || barrier.bytes || !['SS', 'ST', 'TT'].includes(states)) fail('maintenance_phase');
+    if (n && chain[n - 1].mode === 'release' && a.mode !== 'release') fail('maintenance_phase');
+    for (let i = 0; i < 2; i++) {
+      const old = get('finish-' + a.attemptId + '-' + ['install', 'broker'][i] + '-old'), prepared = get('finish-' + a.attemptId + '-' + ['install', 'broker'][i] + '-new');
+      if (a.mode === 'release' && (old.bytes || prepared.bytes)) fail('maintenance_phase');
+      if (old.bytes && (a.sources[i].bytes === null || old.bytes.toString('base64') !== a.sources[i].bytes || !sameFact(c.info(old), a.sources[i]))) fail('maintenance_changed');
+      if (a.mode === 'commit' && states[i] === 'T' && a.sources[i].bytes !== null && !old.bytes) fail('maintenance_phase');
+      if (prepared.bytes && (prepared.bytes.toString('base64') !== a.targets[i] || states[i] === 'T' && !sameFact(c.info(prepared), end[i]))) fail('maintenance_changed');
+    }
+  }
+  // No orphan published continuation artifact may be treated as a stage.
+  for (const name of Object.keys(facts.phase.tree).filter(n => /^finish-.*-(old|new)$/.test(n))) if (!chain.some(a => name.startsWith('finish-' + a.attemptId + '-'))) fail('maintenance_phase');
+  if (commit) {
+    const at = chain.findIndex(a => a.hash === commit.attemptHash), end = at + 1 < chain.length ? chain[at + 1].sources : actual;
+    end.forEach((s, i) => { if (s.bytes !== null && s.bytes === chain[at].targets[i] && !sameFact(s, commit.facts[i])) fail('maintenance_changed'); });
+  }
+  if (permission && barrier.bytes && actual.some(s => s.bytes === null)) fail('maintenance_phase');
+  const normalized = structuredClone(facts.markers); normalized['broker/broker-owner.gate'] = nullInfo();
+  if (r.settled !== true || Object.values(normalized).some(v => v.hash !== null) || canonical(normalized) !== canonical(r.markers)) fail('maintenance_unsettled');
+  c.settled(c.snapshot(true));
+  if (canonical(finishFacts(c, directory)) !== canonical(facts)) fail('maintenance_changed');
+  return { c, id, directory, b, intent, intentView, chain, gateViews, facts, permission, barrier, archived, proofHash: hash({ version: 1, id, facts }) };
+}
+async function checkedFinish(c, id) {
+  const first = readFinish(c, id); await gone(first.b.scope); await gone(first.intent.operator);
+  for (const a of first.chain) await gone(a.actor);
+  if (canonical(finishFacts(c, first.directory)) !== canonical(first.facts)) fail('maintenance_changed'); return first;
+}
+async function inspectMaintenanceFinish({ installation, descriptorPath, id }) {
+  const f = await checkedFinish(context(installation, descriptorPath), id);
+  return Object.freeze({ id, phase: f.barrier.bytes ? 'finish-pending' : f.gateViews.some(v => v.bytes !== null) ? 'finish-release-pending' : 'resumed', proofHash: f.proofHash, attempts: f.chain.length, inspectionOnly: true, aeAuthority: false });
+}
+async function finishMaintenance({ installation, descriptorPath, id, expectedProofHash, reservedServer }) {
+  const address = reservedServer instanceof http.Server && reservedServer.listening && reservedServer.address();
+  if (!address || address.address !== '127.0.0.1' || reservedServer.listenerCount('request')) fail('maintenance_endpoint');
+  if (!HEX.test(expectedProofHash)) fail('maintenance_expected_proof');
+  const c = context(installation, descriptorPath), f = await checkedFinish(c, id); if (f.proofHash !== expectedProofHash) fail('maintenance_proof_changed');
+  const self = await observeOwnerProcess(process.pid);
+  if (classifyOwnerProcess({ pid: process.pid, birthTicks: self.birthTicks }, self) !== 'alive' || !self.executablePath || path.resolve(self.executablePath).toLowerCase() !== path.resolve(installation.nodePath).toLowerCase()) fail('maintenance_process_unknown');
+  let expected = f.facts;
+  const check = () => { if (canonical(finishFacts(c, f.directory)) !== canonical(expected)) fail('maintenance_changed'); };
+  check(); c.reverify(); check();
+  if (!f.barrier.bytes && f.gateViews.every(v => v.bytes === null)) return { resumed: true, id, finished: true, runtimeStarted: false, aeAuthority: false };
+  if (f.chain.length >= FINISH_LIMIT - (f.barrier.bytes ? 1 : 0)) fail('maintenance_budget');
+  const attemptId = crypto.randomUUID(), actor = { bootId: crypto.randomUUID(), pid: process.pid, birthTicks: self.birthTicks }, parentHash = f.chain.at(-1)?.hash || null;
+  const mode = f.barrier.bytes ? 'commit' : 'release', sources = f.gateViews.map(v => ({ bytes: v.bytes?.toString('base64') ?? null, ...c.info(v) }));
+  const targets = mode === 'release' ? [null, null] : ['install', 'broker'].map(role => c.seal('maintenance-finish-gate', { id, resumeId: f.intent.resumeId, attemptId, parentHash, actor, role, nonce: crypto.randomUUID() }).toString('base64'));
+  // Update only explicit own filesystem effects. A new foreign tree entry, body,
+  // inode or mtime is never accepted as a fresh baseline after an await/write.
+  function changed({ add = {}, remove = [], gates = {}, barrier, touched = [] } = {}) {
+    const next = structuredClone(expected), actual = finishFacts(c, f.directory);
+    for (const [name, view] of Object.entries(add)) next.phase.tree[name] = c.info(view);
+    for (const name of remove) delete next.phase.tree[name];
+    for (const [i, view] of Object.entries(gates)) next.gates[i] = c.info(view);
+    if (barrier) next.phase.barrier = c.info(barrier);
+    function refresh(wanted, got) { if (wanted.hash !== null && touched.some(s => inode(s, wanted.stat)) && wanted.hash === got.hash && stable(wanted.stat, got.stat)) return got; return wanted; }
+    for (const name of Object.keys(next.phase.tree)) next.phase.tree[name] = refresh(next.phase.tree[name], actual.phase.tree[name] || nullInfo());
+    next.phase.barrier = refresh(next.phase.barrier, actual.phase.barrier);
+    next.gates = next.gates.map((g, i) => refresh(g, actual.gates[i]));
+    next.markers['broker/broker-owner.gate'] = next.gates[1];
+    if (canonical(next) !== canonical(actual)) fail('maintenance_changed'); expected = next;
+  }
+  function publish(name, bytes) { check(); const view = atomic(path.join(f.directory, name), bytes, attemptId); changed({ add: { [name]: view } }); return view; }
+  const attemptView = publish('finish-' + attemptId + '.json', c.seal('maintenance-finish-attempt', { id, resumeId: f.intent.resumeId, attemptId, parentHash, intentHash: hash(f.intentView.bytes), actor, mode, sources, targets, snapshotHash: hash(expected.snapshot), priorPhase: expected.phase }));
+  function takeover(i) {
+    const file = gatePaths(c)[i], prefix = 'finish-' + attemptId + '-' + ['install', 'broker'][i], newName = prefix + '-new', oldName = prefix + '-old';
+    const prepared = publish(newName, Buffer.from(targets[i], 'base64')), source = read(file); check();
+    if (source.bytes) {
+      let fd = fs.openSync(file, 'r');
+      try { if (!same(source.stat, fs.fstatSync(fd, { bigint: true }))) fail('maintenance_changed'); fs.linkSync(file, path.join(f.directory, oldName)); }
+      finally { fs.closeSync(fd); }
+      const archive = read(path.join(f.directory, oldName)), now = read(file);
+      if (!archive.bytes?.equals(source.bytes) || !now.bytes?.equals(source.bytes) || !same(archive.stat, now.stat) || !stable(source.stat, now.stat)) fail('maintenance_changed');
+      changed({ add: { [oldName]: archive }, touched: [source.stat] }); check();
+      fd = fs.openSync(prepared.file, 'r'); let held;
+      try { if (!same(prepared.stat, fs.fstatSync(fd, { bigint: true }))) fail('maintenance_changed'); fs.renameSync(prepared.file, file); held = stamp(fs.fstatSync(fd, { bigint: true })); if (!['dev', 'ino', 'size', 'mtimeNs'].every(k => held[k] === prepared.stat[k]) || !same(held, fs.lstatSync(file, { bigint: true }))) fail('maintenance_changed'); }
+      finally { fs.closeSync(fd); }
+      const result = read(file); if (!result.bytes?.equals(prepared.bytes) || !stable(held, result.stat)) fail('maintenance_changed');
+      changed({ remove: [newName], gates: { [i]: result }, touched: [source.stat] });
+    } else {
+      fs.linkSync(prepared.file, file); const result = read(file), alias = read(prepared.file);
+      if (!result.bytes?.equals(prepared.bytes) || !same(result.stat, alias.stat) || !stable(prepared.stat, result.stat)) fail('maintenance_changed');
+      changed({ gates: { [i]: result }, touched: [prepared.stat] }); check(); fs.unlinkSync(prepared.file);
+      changed({ remove: [newName], touched: [prepared.stat] });
+    }
+  }
+  if (mode === 'commit') { takeover(0); takeover(1); }
+  check(); const api = require('./install-lease'), scope = { installRoot: installation.installRoot, stateDir: installation.stateDir, descriptorPath }, views = gatePaths(c).map(file => read(file));
+  const capability = Object.freeze({}); permits.set(capability, { kind: 'finish', mode, scope, nonce: attemptId, recovery: true, gates: views.map((v, i) => v.bytes || Buffer.from(sources[i].bytes || f.intent.gates[i], 'base64')), facts: views.map((v, i) => ({ file: v.file, hash: v.bytes ? hash(v.bytes) : hash(Buffer.from(sources[i].bytes || f.intent.gates[i], 'base64')), stat: v.stat })) });
+  let lease;
+  try {
+    lease = api.acquireMaintenanceFinishLease(capability); c.reverify(); check(); c.settled(c.snapshot(true));
+    if (mode === 'commit') {
+      if (!f.permission) publish('finish-commit.json', c.seal('maintenance-finish-commit', { id, resumeId: f.intent.resumeId, intentHash: hash(f.intentView.bytes), attemptHash: hash(attemptView.bytes), facts: api.maintenanceLeaseFacts(lease), snapshotHash: hash(expected.snapshot) }));
+      check(); api.assertInstallLease(lease, scope);
+      const original = read(c.p.barrier), target = path.join(f.directory, 'stop-barrier');
+      if (!read(target).bytes) { fs.linkSync(c.p.barrier, target); const archive = read(target), source = read(c.p.barrier); if (!source.bytes?.equals(original.bytes) || !archive.bytes?.equals(original.bytes) || !same(source.stat, archive.stat) || !stable(original.stat, source.stat)) fail('maintenance_changed'); changed({ add: { 'stop-barrier': archive }, touched: [original.stat] }); }
+      check(); fs.unlinkSync(c.p.barrier); changed({ barrier: read(c.p.barrier), touched: [original.stat] });
+    }
+    check(); api.assertInstallLease(lease, scope);
+    if (mode === 'commit') {
+      const releaseId = crypto.randomUUID(), releaseSources = gatePaths(c).map(file => { const v = read(file); return { bytes: v.bytes.toString('base64'), ...c.info(v) }; });
+      // The deletion prefix is separately sealed before the first unlink. The
+      // original commit attempt never ambiguously means both takeover/release.
+      publish('finish-' + releaseId + '.json', c.seal('maintenance-finish-attempt', { id, resumeId: f.intent.resumeId, attemptId: releaseId, parentHash: hash(attemptView.bytes), intentHash: hash(f.intentView.bytes), actor, mode: 'release', sources: releaseSources, targets: [null, null], snapshotHash: hash(expected.snapshot), priorPhase: expected.phase }));
+    }
+    const touched = views.filter(v => v.bytes).map(v => v.stat);
+    api.releaseInstallLease(lease); lease = null; changed({ gates: { 0: read(gatePaths(c)[0]), 1: read(gatePaths(c)[1]) }, touched });
+    return { resumed: true, id, finished: true, sameDescriptor: true, runtimeStarted: false, aeAuthority: false };
+  } catch (e) { if (lease) api.retainInstallLease(lease); throw e; }
+  finally { permits.delete(capability); }
+}
+module.exports = { PRIVATE_METHODS, createStopAuthorization, createOwnerMaintenance, inspectMaintenance, resumeMaintenance, maintenanceLeasePermit, inspectMaintenanceFinish, finishMaintenance };

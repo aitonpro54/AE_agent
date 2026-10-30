@@ -88,8 +88,11 @@ Lifecycle-only intents не возобновляют принятые RPC и н�
 
 R3d1 source добавляет private full-role maintenance stop и same-descriptor resume
 с durable barrier, original drain, process-bound lease и metadata/tree CAS.
-Admin MCP tools не добавляются. Pending resume сохраняет fence до R3d2; update,
-first legacy migration и смена AE adoption ещё требуют завершения. R4 source
+Admin MCP tools не добавляются. R3d2a добавляет explicit forward finish pending
+resume с original intent и bounded sealed continuation;221selectedPASS, без RPC/
+AE replay. B1 installer stages полные до visible switch,100selectedPASS. Update,
+interrupted-stop certification, first legacy migration и смена AE adoption ещё
+требуют завершения. R4 source
 прошёл общий329PASS: bounded idle reconnect с новым channel, truthful states,
 raw latch/UNKNOWN сохранены; actual CEP capability ещё проверяется в R5.
 Настоящий configured-client/CEP/AE и

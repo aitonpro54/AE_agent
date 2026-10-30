@@ -1,8 +1,9 @@
 'use strict';
 // Reviewed local bootstrap: only builtins until every distributed byte passes.
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
-const HELPERS = Object.freeze(['tools/disposition-install-preflight.js', 'tools/install-core4.js', 'tools/maintain-owner.js', 'tools/package-installable.js', 'tools/standalone-installer.js']);
+const HELPERS = Object.freeze(['tools/disposition-install-preflight.js', 'tools/finish-owner-maintenance.js', 'tools/install-core4.js', 'tools/maintain-owner.js', 'tools/package-installable.js', 'tools/standalone-installer.js']);
 const HASH = /^[a-f0-9]{64}$/;
+const maintenanceBootstraps = new WeakMap();
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function canonical(v) { if (v === null || typeof v === 'boolean' || typeof v === 'string' || typeof v === 'number' && Number.isFinite(v)) return JSON.stringify(v); if (Array.isArray(v)) return '[' + v.map(canonical).join(',') + ']'; if (!v || Object.getPrototypeOf(v) !== Object.prototype) fail('standalone_json'); return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canonical(v[k])).join(',') + '}'; }
 function hash(v) { return crypto.createHash('sha256').update(Buffer.isBuffer(v) || typeof v === 'string' ? v : canonical(v)).digest('hex'); }
@@ -53,7 +54,19 @@ function verifyStandalone(root, expectedHash) {
 }
 function main(args = process.argv.slice(2)) {
   const options = {}, mode = args[0];
-  if (!['dry-run', 'apply'].includes(mode) || args.length % 2 !== 1) fail('standalone_usage');
+  const maintenance = ['maintenance-inspect', 'maintenance-finish'].includes(mode);
+  if (!['dry-run', 'apply'].includes(mode) && !maintenance || args.length % 2 !== 1) fail('standalone_usage');
+  if (maintenance) {
+    const allowed = ['--expected-distribution-hash', '--expected-current-package-hash', '--installation', '--operation', ...(mode === 'maintenance-finish' ? ['--expected-proof-hash'] : [])];
+    for (let i = 1; i < args.length; i += 2) { if (!allowed.includes(args[i]) || Object.hasOwn(options, args[i]) || !args[i + 1] || args[i + 1].startsWith('--')) fail('standalone_usage'); options[args[i]] = args[i + 1]; }
+    if (Object.keys(options).length !== allowed.length || !HASH.test(options['--expected-current-package-hash']) || mode === 'maintenance-finish' && !HASH.test(options['--expected-proof-hash']) || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(options['--operation'])) fail('standalone_usage');
+    absolute(options['--installation']);
+    const checked = verifyStandalone(path.resolve(__dirname, '..'), options['--expected-distribution-hash']);
+    for (const name of ['owner-contract.json', 'owner-maintenance.js', 'recovery-inspection.js', 'windows-owner-process.js']) if (!Object.hasOwn(checked.pkg.release.hashes, 'runtime/' + name)) fail('maintenance_distribution_unavailable');
+    const capability = Object.freeze({}); maintenanceBootstraps.set(capability, Object.freeze({ mode, descriptor: options['--installation'], id: options['--operation'], expectedPackageHash: options['--expected-current-package-hash'], expectedProofHash: options['--expected-proof-hash'] }));
+    // The only continuation import is from this exact reviewed distribution.
+    return Promise.resolve(require('./finish-owner-maintenance.js').operate(capability)).finally(() => maintenanceBootstraps.delete(capability));
+  }
   for (let i = 1; i < args.length; i += 2) { const key = args[i], value = args[i + 1]; if (!['--expected-distribution-hash', '--expected-package-hash', '--install-root', '--extensions-dir', '--config'].includes(key) || Object.hasOwn(options, key) || typeof value !== 'string' || value.startsWith('--')) fail('standalone_usage'); options[key] = value; }
   if (!options['--expected-distribution-hash'] || !options['--install-root'] || !options['--extensions-dir'] || !options['--config'] || mode === 'apply' && !options['--expected-package-hash']) fail('standalone_usage');
   const destination = { installRoot: absolute(options['--install-root']), extensionsDir: absolute(options['--extensions-dir']), configPath: absolute(options['--config']) };
@@ -64,5 +77,6 @@ function main(args = process.argv.slice(2)) {
   const plan = planInstall({ ...destination, pkg: checked.pkg, nodePath: process.execPath });
   return mode === 'apply' ? applyInstall(plan) : { dryRun: true, distributionHash: checked.distributionHash, packageHash: checked.packageHash, ...destination, descriptorPath: plan.descriptorPath, stateDir: plan.descriptor.stateDir, cepDir: plan.cepDir, baseline: plan.baseline, liveProof: false };
 }
-if (require.main === module) { try { console.log(canonical(main())); } catch (e) { console.error(canonical({ error: e.code || 'standalone_failed', ...(e.transactionFile ? { transactionFile: e.transactionFile } : {}) })); process.exitCode = 1; } }
-module.exports = { HELPERS, verifyStandalone, main };
+function assertMaintenanceBootstrap(capability) { const value = capability && maintenanceBootstraps.get(capability); if (!value) fail('maintenance_bootstrap_brand'); return value; }
+if (require.main === module) { Promise.resolve().then(() => main()).then(value => console.log(canonical(value))).catch(e => { console.error(canonical({ error: /^[a-z][a-z0-9_]{0,80}$/.test(e.code || '') ? e.code : 'standalone_failed', ...(e.transactionFile ? { transactionFile: e.transactionFile } : {}) })); process.exitCode = 1; }); }
+module.exports = { HELPERS, verifyStandalone, main, assertMaintenanceBootstrap };

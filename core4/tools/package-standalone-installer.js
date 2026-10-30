@@ -10,6 +10,10 @@ Run with the current supported Node (the same executable is bound by installer).
 All destinations are mandatory absolute, canonical native paths:
 node tools/standalone-installer.js dry-run --expected-distribution-hash REVIEWED_DISTRIBUTION_SHA256 --install-root ABS_AEAgentCore4 --extensions-dir ABS_EXTENSIONS --config ABS_CONFIG_TOML
 node tools/standalone-installer.js apply --expected-distribution-hash REVIEWED_DISTRIBUTION_SHA256 --expected-package-hash HASH_FROM_DRY_RUN --install-root ABS_AEAgentCore4 --extensions-dir ABS_EXTENSIONS --config ABS_CONFIG_TOML
+Owner distributions also support explicit same-descriptor pending-resume finish:
+node tools/standalone-installer.js maintenance-inspect --expected-distribution-hash REVIEWED_DISTRIBUTION_SHA256 --expected-current-package-hash CURRENT_HASH --installation ABS_DESCRIPTOR --operation UUID
+node tools/standalone-installer.js maintenance-finish --expected-distribution-hash REVIEWED_DISTRIBUTION_SHA256 --expected-current-package-hash CURRENT_HASH --installation ABS_DESCRIPTOR --operation UUID --expected-proof-hash INSPECT_PROOF
+Maintenance never updates, launches runtime, kills a process or replays an RPC.
 Review distributionHash out of band from package builder output. The manifest
 does not issue authority. Standard install lease/CAS, signed history, owner,
 UNKNOWN/no-replay and runtime-stopped gates remain in the existing installer.

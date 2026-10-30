@@ -36,11 +36,12 @@ interrupted/contradictory phase facts остаются stopped/fenced. Исто�
 gates не reclaim; новый private process-bound resume lease заранее связывается с
 sealed intent/nonces и exact process birth. Lost reply не вызывает resend.
 
-R3d1 ограничивает незавершённый pending resume диагностическим отказом; это не
-объявляется полным interrupted-maintenance recovery. Доказанно completed resume
-может получить отдельную explicit cleanup exact dead lease без повторного action.
-Штатный finish/rollback pending phase остаётся обязательным open item R3d2 до
-installed lifecycle acceptance; ручное удаление marker не становится решением.
+R3d1 ограничивал pending resume диагностическим отказом. R3d2a теперь даёт explicit
+forward finish по original intent и bounded sealed continuation,221selectedPASS;
+[границы](core-cep-r3-maintenance-finish-20261030.md). Доказанно completed resume
+получает exact dead lease cleanup без повторного RPC/native action. Installed
+acceptance и interrupted-stop certification ещё открыты; manual cleanup не нужен
+как штатный путь.
 
 Installer дополнительно отказывает при owner/diagnostic/ownerNext/maintenance
 records, чтобы новый lifecycle нельзя было обойти старой проверкой лишь Broker
@@ -53,6 +54,14 @@ migration и новая host adoption с fresh native witness/CAS. Первое 
 manual3f92 требует нового доказанного stopped перехода; старые exact scripts не
 повторяются. AE не перезапускается, AEP не сохраняется, native dispatch не выдаётся
 как побочный эффект обслуживания runtime.
+
+Перед installed acceptance также закрыть interrupted stop: durable desired-stop
+уже существует, но owner умер до stopped receipt. R3d2a намеренно требует valid
+published resume intent и этого случая не решает. Нужен отдельный stopped
+certification/retirement путь по exact old boot provenance, fresh death proof и
+settled history; receipt нового certifier не объявляется receipt старого процесса.
+При unresolved original outcome этот путь сохраняет fence. Возможное совместное
+использование retirement guards с update/first legacy migration проверяется в B2.
 
 Bounded read-only inspection определило точки расширения:
 
@@ -90,6 +99,29 @@ graceful close не блокируется lease; PID reuse/unavailable/drift/fo
 refuse; crash после каждого rename/visible switch сохраняет fence на двух boots;
 rotation сохраняет original signed UNKNOWN; чужие plan/lease/permit refuse;
 Windows preflight не удерживает descriptor FD до election и ловит последующий CAS.
+
+### Проверенный source compatibility profile manual3f92
+
+Read-only чтение установленного кода как данных подтвердило `install.lock wx`
+до Broker import/construction/receiver store, повторную проверку descriptor под
+gate и exact entry-root guard. После переключения на другой releaseDir старый
+entry отказывает; одна ротация keys при том же releaseDir такого свойства не даёт.
+Неудачный wx расположен до legacy finally и не удаляет чужой install gate.
+
+Constructor receiver refusal при существующем marker монотонно закрывает store:
+reset/reopen отсутствует, append/begin закрыты, все выбранные direct inspection и
+manual sends идут через fenced HTTP submit. Historical terminal/completed ACK
+проверяет корреляцию без journal append. Это само по себе не доказывает, что
+текущий instance именно constructor-refused: перед stop требуются новые реальные
+status/CIM/marker/history facts и отсутствие pending. Другие AE actors остаются
+outside coverage. Legacy EOF/signals — прежний close, не новый drain contract.
+
+Critical source hashes: stdio-entry
+`b756c068a0be8f311d644f38b7b499a94df6fac9972a3f9fc5ccd3e88121ebbf`,
+completion-store`c5678e98b6eea7cb0ad7db605b4bd9a5a4f73080bb1e32f60c6a99420e904835`,
+http-peer`678aa498eee23498d143017834be0be1f60df10d36de39aad6fec91ba7938757`.
+Установленный код не импортировался/не выполнялся в этой инспекции, credentials
+не читались/не переносились; runtime authority этим profile не выдаётся.
 
 ## Progress
 

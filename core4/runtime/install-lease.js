@@ -113,4 +113,9 @@ function maintenanceLeaseFacts(lease) {
   const item = state(lease); if (!item.maintenance) fail('install_lease_brand'); assertInstallLease(lease, item.paths);
   return item.gates.map(g => ({ file: g.file, hash: crypto.createHash('sha256').update(g.bytes).digest('hex'), stat: checkMaintenanceGate(item.io, g) }));
 }
-module.exports = { acquireInstallLease, acquireMaintenanceInstallLease, maintenanceLeaseFacts, assertInstallLease, ownedLeaseGates, checkpointInstallLease, retainInstallLease, releaseInstallLease };
+function acquireMaintenanceFinishLease(capability) {
+  const p = require('./owner-maintenance').maintenanceLeasePermit(capability);
+  if (p.kind !== 'finish' || !p.recovery || !['commit', 'release'].includes(p.mode) || p.mode === 'commit' && p.facts.some(f => f.stat === null)) fail('maintenance_lease_brand');
+  return acquireMaintenanceInstallLease(capability);
+}
+module.exports = { acquireInstallLease, acquireMaintenanceInstallLease, acquireMaintenanceFinishLease, maintenanceLeaseFacts, assertInstallLease, ownedLeaseGates, checkpointInstallLease, retainInstallLease, releaseInstallLease };

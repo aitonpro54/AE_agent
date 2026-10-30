@@ -31,7 +31,7 @@ source freeze package snapshots не считаются финальным valid
   rollback case1PASS. Это development evidence, не final combined closure.
 - [x] Bounded source review ACCEPT, открытых P1/P2 нет.
 - [x] Independent frozen selected100/100PASS и milestone note для commit.
-- [ ] Взаимодействие с R3d2a проверяется его следующим selected packet.
+- [x] Взаимодействие с R3d2a проверено его следующим221selectedPASS packet.
 
 ## Decision Log
 
