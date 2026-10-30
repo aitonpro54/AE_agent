@@ -134,3 +134,63 @@ technical_check/ephemeral_check. Планируемый test text — `TITLES OK
 Proposal/dry-run/run и native confirm выполняет root в пределах поручения
 пользователя; при unknown без повторной mutation, только original reconciliation.
 C1a уже завершён commit `42b8646`; independent capability install/C1b остаётся дальше.
+
+## Продолжение 30 октября 2026: текущий controller
+
+Root controller — чат `01a18b19-bb02-7e02-85bd-7fdce6e38061`.
+Свежий inventory: AE был закрыт; startup клиента в 04:37:44UTC автоматически
+поднял Core24052/parent27944 для прежнего idle чата `01a188ce…`. App log
+подтвердил ready там и два initialize/connection-closed в текущем чате.
+Configured tools здесь отсутствовали; отдельный stdio broker не запускался.
+
+Вчерашний `20261029/live/Titles-T2-test.aep` изменён на диске 29.10 в18:59:56UTC:
+33557830bytes, SHA256 `c887c0c23ecda9b588b38c96edd1ea979a994e99e04dc12b911a13e22fb92401`.
+Изменённая копия сохранена без записи. Для разрешённого T2 создана новая копия
+исходного fixture в `snapshots/titles-product/20261030/live/Titles-T2-test.aep`,
+32001325bytes, прежний original SHA256 `9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f`.
+AE запущен один раз; новый PID6492, точная birth/executable identity — в fresh
+host witness. Новая копия открыта через UI. ReservoirGrunge недоступен,
+уведомление закрыто; после открытия виден dirty marker. Save не выполнялся;
+будущая проверка не заявляет exact typography или save/reopen.
+
+### Progress
+
+- [x] Root заново проверил установленный manual3f92, signed history16settled
+  events, отсутствие broker ledger, exact owners/protected files/native process.
+- [x] Новый private readopt operator адаптирован к текущим root facts;
+  **21/21 TEMP PASS**, syntax и whitespace PASS. Root проверил полный guard diff:
+  изменены только exact bindings/schema names/transaction, CAS/lease/provider/
+  UNKNOWN/no-replay сохранены. Evidence — `snapshots/titles-product/20261030/recovery/`.
+- [x] Core24052 остановлен через retained handle04:49:11UTC. Новый maintenance
+  SHA256 `12b4f0b5809dfe2d18efdb59febb16f0bb34518b1dbd54e48f0cfbc7ac4a48eb`;
+  once-bound helper SHA256 `05fd20875a03df027cbef1743507c20c1667baf27ab7dc47bd3e59a880166590`.
+- [x] Один inspect PASS, один run `readopted`04:49:50UTC. Unique transaction
+  `stopped-readopt-Titles-T2-20261030-c47a91e8`: exact receiver/broker/old adoption
+  архивированы, новая adoption digest
+  `4a453b0f0b04a83bd5248d3a22fbab234150c8232f5f464ba886d6bcafdee30c`.
+  journalUnchanged/projectUnchanged=true, installationChanged=false,
+  nativeDispatch0, mutationGrant/lifecycleEpoch=false. Completion/gate release
+  проверены operator. Нельзя повторять эту или прежние transactions.
+- [ ] Возобновить configured MCP штатным restart клиента с текущим чатом,
+  проверить свежий status, подключить собственную CEP, получить fresh Titles
+  contract/inspection на **новом** exact AEP, затем compiler/build/proposal/
+  dry-run/run/native confirmation/original receipt/read-back.
+
+### Decision Log
+
+Общий restart пока не имеет доказанного per-thread selector; после него
+проверить, что полосу не занял прежний idle чат. Это адресное восстановление
+текущего T2, не универсальное исправление lifecycle. Старую adoption нельзя
+объявлять authority нового процесса; новая adoption также не выдаёт grant.
+UI automation modal с отдельной screenshot region потребовала CUA; source text
+не менялся через UI. Все изменения текста выполняются только через typed MCP.
+
+### Validation и ближайший шаг
+
+Source Core/CEP/products/installer и установленный пакет не изменены.
+TEMP21PASS — проверка maintenance, не live Titles proof. Readoption result
+`readoption-result-1793335790740-dd993a50-b8ac-4086-a296-52488fbc14a4.json`
+сохранён в recovery evidence. Root exact-stop AST/preflight PASS.
+Новая копия, старый изменённый AEP, signed journal и installation защищены.
+Нативная Titles mutation всё ещё0. Следующий шаг — штатное возобновление
+configured MCP текущего чата; stop/readoption/install повторять не нужно.

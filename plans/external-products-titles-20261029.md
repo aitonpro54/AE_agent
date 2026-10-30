@@ -33,6 +33,12 @@ CLI только читает явно переданные файлы и выд
 
 ## Progress
 
+- 30 октября: новый controller `01a18b19…` выявил автоматический захват полосы
+  прежним idle чатом и закрытый AE. Адресный stopped recovery завершён с новой
+  adoption AE6492 и новой test-copy исходного fixture; изменённый вчерашний AEP
+  сохранён. TEMP21/21PASS, signed16events/установка/AEP unchanged, mutation0.
+  Точные bindings и следующий configured reconnect — в [T2](titles-live-20261029.md).
+
 - 29 октября, новое поручение пользователя разрешает T2 live на тестовом проекте
   и продолжение плана. Текущий root controller ведёт [T2 evidence/maintenance](titles-live-20261029.md);
   отдельный writer закрывает C1 standalone closure только offline/source.
