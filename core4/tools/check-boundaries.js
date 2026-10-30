@@ -17,6 +17,26 @@ function checkEntrySource(source) {
   }
   return true;
 }
+function checkClientEntrySource(source) {
+  const verification = source.indexOf('const d = verifyClientDescriptor(descriptor);');
+  const rootGuard = source.indexOf("fail('client_entry_root');", verification);
+  const exportAt = source.indexOf('module.exports =', rootGuard);
+  if (verification < 0 || rootGuard < verification || exportAt < rootGuard) fail('client_entry_verification_layout');
+  for (const match of source.matchAll(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+    if (!match[1].startsWith('node:') && (match.index <= rootGuard || match.index >= exportAt)) fail('unverified_client_import');
+  }
+  return true;
+}
+function checkOwnerEntrySource(source) {
+  const start = source.indexOf('async function startOwner(');
+  const verification = source.indexOf('verifyOwnerInstallation(descriptor);', start);
+  const exportAt = source.indexOf('module.exports =', verification);
+  if (start < 0 || verification < start || exportAt < verification) fail('owner_entry_verification_layout');
+  for (const match of source.matchAll(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+    if (!match[1].startsWith('node:') && (match.index <= verification || match.index >= exportAt)) fail('unverified_owner_import');
+  }
+  return true;
+}
 function checkBoundaries(root = path.resolve(__dirname, '..')) {
   let checked = 0;
   for (const directory of ['modules', 'plan-engine']) for (const file of files(path.join(root, directory)).filter(f => f.endsWith('.js'))) { reviewCode(fs.readFileSync(file, 'utf8')); checked++; }
@@ -42,9 +62,11 @@ function checkBoundaries(root = path.resolve(__dirname, '..')) {
       checkEntrySource(source);
       if (!source.includes('if (manualAsset) {') || source.indexOf("require('./manual-policy.js')") < source.indexOf('if (manualAsset) {') || source.indexOf("require('./windows-reservation-provider.js')") < source.indexOf('if (manualAsset) {')) fail('runtime_optional_policy_import', file);
     }
+    if (path.basename(file) === 'client-entry.js') checkClientEntrySource(source);
+    if (path.basename(file) === 'owner-entry.js') checkOwnerEntrySource(source);
     checked++;
   }
   return { checked, model: 'reviewed-local-code; conservative source guard; not OS sandbox', liveCalls: 0 };
 }
 if (require.main === module) { try { console.log(JSON.stringify(checkBoundaries())); } catch (e) { console.error(e.code || e.message); process.exitCode = 1; } }
-module.exports = { checkBoundaries, checkEntrySource, files };
+module.exports = { checkBoundaries, checkEntrySource, checkClientEntrySource, checkOwnerEntrySource, files };

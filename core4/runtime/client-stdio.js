@@ -55,7 +55,8 @@ function serveAttachment({ client, input, output } = {}) {
       } else fail('method_not_found');
       reply({ jsonrpc: '2.0', id: request.id, result });
     } catch (error) {
-      const message = error?.code === 'ipc_outcome_uncertain' ? 'ipc_outcome_uncertain' : ownErrors.has(error) ? error.message : 'request_failed';
+      const ipcErrors = ['ipc_outcome_uncertain', 'ipc_closed', 'ipc_capacity', 'ipc_payload', 'ipc_frame_size', 'ipc_json'];
+      const message = ipcErrors.includes(error?.code) ? error.code : ownErrors.has(error) ? error.message : 'request_failed';
       const uncertain = message === 'ipc_outcome_uncertain' || message === 'owner_outcome_uncertain';
       reply({ jsonrpc: '2.0', id: request?.id ?? null, error: { code: -32000, message,
         ...(uncertain ? { data: { outcome: 'unknown', requestId: typeof error.requestId === 'string' && /^[a-f0-9]{64}$/.test(error.requestId) ? error.requestId : null } } : {}) } });

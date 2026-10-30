@@ -109,7 +109,9 @@ R3 не использует fake production epoch и не переносит au
 - [x] R1:13/13 адресных tests PASS; source review ACCEPT без открытых P1/P2.
 - [x] R2a: private owner/stdio/IPC,22+22+2 адресных PASS и5routing,
   source review ACCEPT; [evidence/границы](core-cep-r2-attachments-20261030.md).
-- [ ] R2b–R5: installed wiring/startup/recovery/CEP и приёмка;
+- [x] R2b: verified owner execution/physical guards/thin client loader,
+ 129selectedPASS, source review ACCEPT; [границы](core-cep-r2-runtime-20261030.md).
+- [ ] R2c–R5: package/installer/launcher/recovery/CEP и приёмка;
   устойчивость installed runtime пока не заявлена.
 
 ## Decision Log
@@ -157,6 +159,6 @@ Restart Core/AE, install и native dispatch этого этапа0. UI попы�
 
 ## Продолжение
 
-R1/R2a завершены. Следующий source/offline блок — R2b по выбранной модели.
+R1/R2a/R2b завершены. Следующий source/offline блок — R2c package/installer/launcher.
 Прочитать актуальный status/queue перед любым live изменением; сообщения в старой
 UI очереди не считать принятыми. Чужие snapshots/AEP и старые receipts сохранять.

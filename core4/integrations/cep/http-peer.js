@@ -4,7 +4,14 @@ const crypto = require('node:crypto');
 const { hash, canonical, parse, bounded, exact, fail, id, dispatchBinding, decode, encode, envelope } = require('../../core/receiver-api');
 const { openCompletionStore } = require('./completion-store');
 const { mac, validMac, requestBody } = require('./peer-protocol');
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, installationContext }) {
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext }) {
+  if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
+  if (preboundServer !== undefined) {
+    const address = preboundServer instanceof http.Server && preboundServer.listening && preboundServer.address();
+    if (!address || typeof address !== 'object' || address.address !== '127.0.0.1' || !Number.isSafeInteger(address.port) ||
+        address.port < 1 || address.port > 65535 || preboundServer.listenerCount('request') !== 0) fail('http_prebound_server');
+  }
+  const server = preboundServer || http.createServer();
   const store = openCompletionStore({ directory, installationContext });
   const epoch = id('http'), controllerId = id('controller');
   let peer = null, pending = null, closed = false, activePoll = null;
@@ -14,13 +21,19 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   const commandPins = command => ({ ...pins, executorHash: command.executorHash });
   function disconnect(reason) { if (pending) { store.unknown(pending.command.commandId); pending.reject(Object.assign(new Error(reason), { code: reason })); clearTimeout(pending.timer); pending = null; } }
   function frame() { return pending && !pending.delivered ? { assetKey: assets.get(pending.command.executorHash).assetKey, phase: pending.command.phase, typedPayload: pending.command.payload, commandId: pending.command.commandId, originalBinding: pending.binding, pins: commandPins(pending.command) } : null; }
-  function deliver() { if (activePoll && frame()) { const poll = activePoll; activePoll = null; const value = frame(); pending.delivered = true; poll(value); } }
+  function guardDelivery() { admissionGuard(pending.command); pending.deliveryGuard(); }
+  function deliver() {
+    if (!activePoll || !frame()) return;
+    const poll = activePoll; activePoll = null;
+    try { guardDelivery(); const value = frame(); pending.delivered = true; poll(value); }
+    catch (e) { disconnect(e.code || 'physical_admission_closed'); poll(null); }
+  }
   function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId } : { connected: false }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { commandId: pending.command.commandId, delivered: pending.delivered } : null, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
   function reply(res, statusCode, value, origin) {
     if (res.destroyed || res.writableEnded) return;
     res.writeHead(statusCode, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) }); res.end(bounded(value));
   }
-  const server = http.createServer(async (req, res) => {
+  server.on('request', async (req, res) => {
     const origin = req.headers.origin;
     let corsOrigin;
     try {
@@ -57,7 +70,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       function signed(payload) { const body = { epoch, peerId: peer.peerId, sequence: b.sequence, payload }; reply(res, 200, { body, mac: mac(body, installation.panelToken) }, corsOrigin); }
       if (req.url === '/poll') {
         exact(b.payload, []); if (activePoll) fail('concurrent_poll');
-        if (pending && !pending.delivered) { try { admissionGuard(pending.command); } catch (e) { disconnect(e.code || 'physical_admission_closed'); throw e; } }
+        if (pending && !pending.delivered) { try { guardDelivery(); } catch (e) { disconnect(e.code || 'physical_admission_closed'); throw e; } }
         if (frame()) { const value = frame(); pending.delivered = true; signed({ command: value }); return; }
         await new Promise(resolve => {
           const timer = setTimeout(() => { if (activePoll === finish) activePoll = null; signed({ command: null }); resolve(); }, pollTimeout);
@@ -112,10 +125,12 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   function submit(command, broker = false) {
     const selected = assets.get(command.executorHash);
     if (!selected || selected.moduleId && (selected.moduleId !== command.moduleId || selected.operationId !== command.operationId) || !['inspect', 'mutate', 'verify'].includes(command.phase) || command.phase !== 'inspect' && selected.resultProfile !== 'manual-text-v1') fail('http_asset_not_admitted');
-    admissionGuard(command);
+    const deliveryGuard = captureDeliveryGuard(command);
+    if (typeof deliveryGuard !== 'function') fail('physical_delivery_guard');
+    admissionGuard(command); deliveryGuard();
     if (closed || store.closed) fail('receiver_lane_closed'); if (!peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); if (pending) fail('physical_lane_pending');
     const binding = dispatchBinding(command, store.identity); store.begin(command, binding);
-    return new Promise((resolve, reject) => { pending = { command, binding, resolve, reject, broker, delivered: false, timer: setTimeout(() => disconnect('host_callback_timeout'), timeout) }; deliver(); });
+    return new Promise((resolve, reject) => { pending = { command, binding, deliveryGuard, resolve, reject, broker, delivered: false, timer: setTimeout(() => disconnect('host_callback_timeout'), timeout) }; deliver(); });
   }
   return Object.freeze({
     status,
@@ -126,7 +141,10 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       async completion(commandId) { if (!brokerBinding) fail('transport_disconnected'); const c = store.get(commandId); return encode({ commandId, state: c?.state || 'unknown', ...(c?.originalBinding ? { originalBinding: c.originalBinding } : {}), ...(c?.response ? { response: c.response } : {}) }, brokerBinding.secret); },
       async disconnect() { if (pending) fail('physical_lane_pending'); brokerBinding = undefined; }
     }),
-    async listen() { await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); }); return status(); },
+    async listen() {
+      if (preboundServer) { if (!server.listening) fail('http_prebound_server'); return status(); }
+      await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); }); return status();
+    },
     inspect(payload = {}) {
       exact(payload, ['compId']); if (payload.compId !== undefined && (!Number.isSafeInteger(payload.compId) || payload.compId < 1)) fail('invalid_comp_id');
       const command = { protocolVersion: 1, controllerId, channelEpoch: epoch, commandId: id('inspect'), moduleId: 'project-inspection', operationId: 'inspect', executorHash: asset.executorHash, phase: 'inspect', payloadHash: hash(canonical(payload)), payload };

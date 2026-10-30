@@ -135,19 +135,32 @@ function verifyInstallation(file, options = {}) {
   else if (cepDir) verifyCep(d, manifest, cepDir);
   return Object.freeze(d);
 }
-async function start({ descriptor, port = 3457, input = process.stdin, output = process.stdout } = {}) {
+async function start({ descriptor, port = 3457, input = process.stdin, output = process.stdout, mode = 'stdio' } = {}) {
   const installation = verifyInstallation(descriptor), root = installation.releaseDir;
   if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(root)) fail('installation_entry_root_mismatch');
   const installGate = path.join(installation.installRoot, 'install.lock');
   const startupGate = fs.openSync(installGate, 'wx');
-  let broker, peer;
+  let broker, peer, attachmentOwner, ipc, reservedServer;
   try {
   if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');
+  if (!['stdio', 'owner'].includes(mode)) fail('runtime_mode');
+  const release = JSON.parse(fs.readFileSync(path.join(root, 'release.json'), 'utf8'));
+  if (mode === 'owner' && ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js',
+    'runtime/controller-lease.js', 'runtime/attachment-owner.js'].some(file => !Object.hasOwn(release.hashes, file))) fail('owner_composition_unavailable');
+  if (mode === 'owner') {
+    // Elect the physical endpoint while the shared install gate is still held,
+    // before opening either durable execution store. Never displace a listener.
+    reservedServer = require('node:http').createServer();
+    await new Promise((resolve, reject) => {
+      reservedServer.once('error', reject);
+      reservedServer.listen(port, '127.0.0.1', () => { reservedServer.removeListener('error', reject); resolve(); });
+    });
+  }
   const { Broker } = require('../core/broker.js');
   const { serve } = require('../core/stdio.js');
   const { exact, id } = require('../protocol/json.js');
   const { createHttpPeer } = require('../integrations/cep/http-peer.js');
-  const release = JSON.parse(fs.readFileSync(path.join(root, 'release.json'), 'utf8'));
+  const invocationContext = mode === 'owner' ? new (require('node:async_hooks').AsyncLocalStorage)() : null;
   const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
   if (selected.legacy) fail('runtime_composition_required');
   const inspection = selected.assets.find(a => a.policy === 'read-only-current-observation-v1');
@@ -171,7 +184,12 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (broker.ledger.corrupt) fail('ledger_corrupt');
     if (broker.ledger.unresolved().some(c => c.commandId !== command?.commandId)) fail('controller_unresolved');
   };
-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets: manualAsset ? [{ assetKey: manualAsset.assetKey, moduleId: manualAsset.moduleId, operationId: manualAsset.contract.operationId, executorHash: manualAsset.executorHash, resultProfile: 'manual-text-v1' }] : [], timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, installationContext: { descriptorPath: descriptor } });
+  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets: manualAsset ? [{ assetKey: manualAsset.assetKey, moduleId: manualAsset.moduleId, operationId: manualAsset.contract.operationId, executorHash: manualAsset.executorHash, resultProfile: 'manual-text-v1' }] : [], timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
+    const context = invocationContext.getStore();
+    if (!context) fail('owner_controller_required');
+    // Retain this exact operation's grant beyond ALS lifetime, including /poll.
+    return () => context.assertCurrent();
+  } } : {}), installationContext: { descriptorPath: descriptor } });
   const contractId = hash({ packageHash: installation.packageHash, admission, contract }); let closed = false;
   const facade = Object.create(broker);
   const physical = () => { const value = peer.status(); return { ...value, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && !value.storeClosed && !value.storeFault && !value.pending }; };
@@ -182,7 +200,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     const snapshot = physical();
     return { ...(manual ? result : { available: snapshot.inspectionAvailable, reason: snapshot.inspectionAvailable ? null : 'physical_inspection_unavailable', mutationAvailable: false }), automaticLifecycle: 'unavailable', physical: snapshot };
   };
-  facade.disconnect = async () => ({ disconnected: false, reason: 'physical_link_owned_by_stdio_lifetime', physical: physical() });
+  facade.disconnect = async () => ({ disconnected: false, reason: mode === 'owner' ? 'physical_link_owned_by_installation_owner' : 'physical_link_owned_by_stdio_lifetime', physical: physical() });
   facade.listModules = value => { const result = broker.listModules(value); return { ...result, modules: [...result.modules, { id: profile.id, version: '4.0.0', executionPolicy: profile.executionPolicy }] }; };
   facade.getContract = value => { if (value.moduleId !== profile.id) return broker.getContract(value); exact(value, ['moduleId']); return { contractId, moduleId: profile.id, operationId: contract.operationId, modulePin: hash(admission), contract: JSON.parse(canonical(contract)) }; };
   facade.inspect = async value => {
@@ -196,9 +214,37 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   facade.build = value => { if (value.contractId === contractId || value.steps?.some(s => s.contractId === contractId)) fail('read_only_module_build_unsupported'); return broker.build(value); };
   facade.close = async () => { if (closed) return; closed = true; await peer.close(); await broker.close(); };
   try { await peer.listen(); } catch (e) { await facade.close(); throw e; }
+  if (mode === 'owner') {
+    const { createAttachmentOwner, OWNER_METHODS } = require('./attachment-owner.js');
+    const { createIpcServer } = require('./client-ipc.js');
+    const { ownerEndpoint } = require('./client-entry.js');
+    const activity = () => {
+      const physicalState = peer.status();
+      return { pending: !!(broker.running || broker.reconciling || broker.controllerBusy || broker.controlPending || broker.worker.status().pending || physicalState.pending),
+        unresolved: !!(broker.ledger.unresolved().length || physicalState.storeClosed || physicalState.unknown),
+        fault: !!(broker.closed || broker.stateLock.error || broker.ledger.corrupt || physicalState.storeFault) };
+    };
+    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke(method, payload, context) {
+      const receiver = Object.hasOwn(facade, method) ? facade : broker;
+      return invocationContext.run(context, () => { if (!context.observer) context.assertCurrent(); return receiver[method](payload); });
+    } });
+    const endpoint = ownerEndpoint(installation);
+    ipc = createIpcServer({ endpoint, identity: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash },
+      secret: installation.controlToken, bootId: attachmentOwner.bootId, methods: OWNER_METHODS,
+      onAttach: attachmentOwner.onAttach, onDetach: attachmentOwner.onDetach, onRequest: attachmentOwner.onRequest });
+    await ipc.listen();
+    return { endpoint, bootId: attachmentOwner.bootId,
+      close: async () => { await attachmentOwner.close(); await ipc.close(); },
+      status: () => ({ ...facade.status(), attachmentOwner: attachmentOwner.status(), ipc: ipc.status() }) };
+  }
   serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.0.0' } });
   return { close: facade.close, status: facade.status };
-  } catch (e) { if (peer) await peer.close(); if (broker) await broker.close(); throw e; }
+  } catch (e) {
+    if (ipc) await ipc.close();
+    if (peer) await peer.close();
+    else if (reservedServer?.listening) await new Promise(resolve => { reservedServer.close(resolve); reservedServer.closeAllConnections(); });
+    if (broker) await broker.close(); throw e;
+  }
   finally { fs.closeSync(startupGate); fs.unlinkSync(installGate); }
 }
 // Direct-main start imports the historical reader synchronously. Publish these

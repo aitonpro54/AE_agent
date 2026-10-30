@@ -1,5 +1,10 @@
 {
   "owners": [
+    { "prefix": "core4/runtime/client-entry.js", "owner": "client-entry", "checks": ["client-entry", "owner-runtime"] },
+    { "prefix": "core4/test/client-entry.test.js", "owner": "client-entry", "checks": ["client-entry"] },
+    { "prefix": "core4/runtime/owner-entry.js", "owner": "owner-runtime", "checks": ["owner-runtime"] },
+    { "prefix": "core4/test/owner-runtime.test.js", "owner": "owner-runtime", "checks": ["owner-runtime"] },
+    { "prefix": "core4/test/fixtures/owner-runtime-child.js", "owner": "owner-runtime", "checks": ["owner-runtime"] },
     { "prefix": "core4/runtime/client-ipc.js", "owner": "client-ipc", "checks": ["client-ipc", "owner-ipc-process"] },
     { "prefix": "core4/test/client-ipc.test.js", "owner": "client-ipc", "checks": ["client-ipc"] },
     { "prefix": "core4/runtime/attachment-owner.js", "owner": "owner-attachments", "checks": ["owner-attachments", "owner-ipc-process"] },
@@ -57,7 +62,9 @@
       "owner": "runtime-boundaries",
       "checks": [
         "artifact-boundaries",
-        "installed-composition"
+        "installed-composition",
+        "client-entry",
+        "owner-runtime"
       ]
     },
     {
@@ -167,6 +174,7 @@
       "prefix": "core4/runtime/stdio-entry.js",
       "owner": "recovery-integration",
       "checks": [
+        "owner-runtime",
         "native-read-recovery",
         "installable-runtime",
         "installed-composition",
@@ -420,6 +428,7 @@
       "prefix": "core4/integrations/cep/http-peer.js",
       "owner": "installable-runtime",
       "checks": [
+        "owner-runtime",
         "installable-runtime",
         "native-read-recovery"
       ]
@@ -978,6 +987,8 @@
     }
   ],
   "checkDependencies": {
+    "client-entry": ["runtime/client-entry.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/client-ipc.js", "runtime/owner-entry.js", "test/client-entry.test.js", "tools/check-boundaries.js"],
+    "owner-runtime": ["runtime/", "test/owner-runtime.test.js", "test/fixtures/owner-runtime-child.js", "tools/check-boundaries.js", "tools/install-core4.js", "tools/package-installable.js", "tools/disposition-install-preflight.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
     "client-ipc": ["runtime/client-ipc.js", "test/client-ipc.test.js"],
     "owner-attachments": ["runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/controller-lease.js", "test/owner-attachments.test.js", "core/", "protocol/"],
     "owner-ipc-process": ["runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/client-ipc.js", "runtime/controller-lease.js", "test/owner-ipc-process.test.js", "test/fixtures/attachment-process.js", "test/helpers.js", "test/fixtures/ae.js", "test/fixtures/authority.js", "core/", "protocol/", "modules/", "plan-engine/", "config/admissions/", "config/catalog.json", "worker.js"],
@@ -1451,6 +1462,8 @@
     ]
   },
   "checkCommands": {
+    "client-entry": ["node", "--test", "--test-name-pattern=client-entry", "test/client-entry.test.js"],
+    "owner-runtime": ["node", "--test", "--test-name-pattern=owner-runtime", "test/owner-runtime.test.js"],
     "client-ipc": ["node", "--test", "--test-name-pattern=^IPC ", "test/client-ipc.test.js"],
     "owner-attachments": ["node", "--test", "--test-name-pattern=owner-attachments", "test/owner-attachments.test.js"],
     "owner-ipc-process": ["node", "--test", "--test-name-pattern=owner-ipc-process", "test/owner-ipc-process.test.js"],
@@ -1607,6 +1620,8 @@
     ]
   },
   "checkPolicy": {
+    "client-entry": { "kind": "component" },
+    "owner-runtime": { "kind": "integration" },
     "client-ipc": { "kind": "component" },
     "owner-attachments": { "kind": "component" },
     "owner-ipc-process": { "kind": "integration" },
