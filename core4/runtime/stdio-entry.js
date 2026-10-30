@@ -145,11 +145,11 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   if (mode === 'stdio') startupGate = fs.openSync(installGate, 'wx');
   if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');
   const release = JSON.parse(fs.readFileSync(path.join(root, 'release.json'), 'utf8'));
-  const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js'];
+  const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js'];
   const ownerRuntime = Object.hasOwn(release.hashes, 'runtime/owner-contract.json');
   if (ownerRuntime) {
     const bytes = fs.readFileSync(path.join(root, 'runtime/owner-contract.json'));
-    const expected = { version: 2, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+    const expected = { version: 3, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
       ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: ownerFiles };
     if (release.format !== 2 || hash(bytes) !== release.hashes['runtime/owner-contract.json'] || canonical(JSON.parse(bytes)) !== canonical(expected) || ownerFiles.some(file => !Object.hasOwn(release.hashes, file))) fail('owner_contract_schema');
     if (mode !== 'owner') fail('owner_entry_required');
@@ -158,6 +158,9 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (ownerFiles.some(file => Object.hasOwn(release.hashes, file))) fail('owner_contract_required');
   }
   if (mode === 'owner') {
+    // Presence is a fail-closed barrier, including malformed/unreadable records.
+    const maintenance = path.join(installation.stateDir, 'runtime-maintenance.json');
+    try { fs.lstatSync(maintenance); fail('owner_desired_stopped'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
     // HTTP elects the starter before acquiring/recovering a process-bound gate.
     // No execution store opens until lifecycle has verified death/CAS/history.
     reservedServer = require('node:http').createServer();
@@ -172,23 +175,38 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     const { createAttachmentOwner, OWNER_METHODS } = require('./attachment-owner.js');
     const { createIpcServer } = require('./client-ipc.js');
     const { ownerEndpoint } = require('./client-entry.js');
+    const { PRIVATE_METHODS, createOwnerMaintenance } = require('./owner-maintenance.js');
     attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke });
     const endpoint = ownerEndpoint(installation);
+    let closed = false, closing, maintenance;
+    async function closeRuntime() {
+      if (closed) return; if (closing) return closing;
+      if (attachmentOwner.status().accepted || activity().pending) fail('owner_draining');
+      ownerLifecycle.beginClose();
+      closing = (async () => { await attachmentOwner.close(); await ipc.close(); ownerLifecycle.finishClose(); closed = true; })(); return closing;
+    }
+    maintenance = createOwnerMaintenance({ installation, descriptorPath: descriptor, lifecycle: ownerLifecycle, activity,
+      freeze: attachmentOwner.freeze, accepted: () => attachmentOwner.status().accepted, close: closeRuntime });
+    const currentStatus = facade.status, currentDiagnostics = facade.diagnostics;
+    facade.status = () => ({ ...currentStatus(), maintenance: maintenance.status() });
+    facade.diagnostics = () => ({ ...currentDiagnostics(), maintenance: maintenance.status() });
     ipc = createIpcServer({ endpoint, identity: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash },
-      secret: installation.controlToken, bootId: attachmentOwner.bootId, methods: OWNER_METHODS,
-      onAttach: attachmentOwner.onAttach, onDetach: attachmentOwner.onDetach, onRequest: attachmentOwner.onRequest });
+      secret: installation.controlToken, bootId: attachmentOwner.bootId, methods: [...OWNER_METHODS, ...PRIVATE_METHODS],
+      onAttach: attachmentOwner.onAttach, onDetach: attachmentOwner.onDetach, onRequest: request => {
+        if (!PRIVATE_METHODS.includes(request.method)) return attachmentOwner.onRequest(request);
+        try { return { ok: true, value: maintenance.request(request.payload) }; }
+        catch (e) { return { ok: false, code: ['maintenance_authorization', 'maintenance_in_progress', 'maintenance_persist_failed', 'maintenance_schema', 'maintenance_id'].includes(e.code) ? e.code : 'maintenance_refused' }; }
+      } });
     if (ownerLifecycle.mode === 'active') ownerLifecycle.markReady();
     await ipc.listen(); ownerLifecycle.releaseStartup();
-    let closed = false, closing;
     return { endpoint, bootId: attachmentOwner.bootId,
       async close() {
-        if (closed) return; if (closing) return closing;
+        if (closed) return;
+        const value = maintenance.requestLocal(); if (value.fault) fail(value.fault);
         if (attachmentOwner.status().accepted || activity().pending) fail('owner_draining');
-        ownerLifecycle.beginClose();
-        closing = (async () => { await attachmentOwner.close(); await ipc.close(); ownerLifecycle.finishClose(); closed = true; })();
-        return closing;
+        const result = await maintenance.done; if (result.phase !== 'stopped') fail('maintenance_stop_uncertain');
       },
-      status: () => ({ ...facade.status(), attachmentOwner: attachmentOwner.status(), ipc: ipc.status() }) };
+      status: () => ({ ...facade.status(), attachmentOwner: attachmentOwner.status(), ipc: ipc.status(), maintenance: maintenance.status() }) };
   }
   if (ownerLifecycle?.mode === 'diagnostic') {
     // A fenced boot exposes authenticated observations without constructing a

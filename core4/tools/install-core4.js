@@ -199,9 +199,13 @@ function assertBaseline(plan, originPublished = false) {
   if ((client ? hash(client) : null) !== plan.baseline.client || (origin.root ? hash(origin.root) : null) !== rootExpected || (origin.anchor ? hash(origin.anchor) : null) !== anchorExpected || (bytes(plan.configPath) ? hash(bytes(plan.configPath)) : null) !== plan.baseline.config || (bytes(plan.descriptorPath) ? hash(bytes(plan.descriptorPath)) : null) !== plan.baseline.descriptor || treeHash(snapshot(plan.cepDir)) !== plan.baseline.cep) fail('install_baseline_changed');
 }
 function entryExists(file) { try { fs.lstatSync(file); return true; } catch (e) { if (e.code === 'ENOENT') return false; throw e; } }
+function assertNoLifecycleMarkers(stateDir) {
+  for (const name of ['runtime-owner.json', 'runtime-owner.next', 'runtime-diagnostic.json', 'runtime-maintenance.json']) if (entryExists(path.join(stateDir, name))) fail('runtime_lifecycle_owned_or_maintenance');
+}
 function assertRuntimeStopped(stateDir, { lease, descriptorPath, cepDir, plan } = {}) {
   const scope = { installRoot: path.resolve(stateDir, '../..'), stateDir, descriptorPath };
   const owned = lease ? (assertInstallLease(lease, scope), ownedLeaseGates(lease)) : new Map();
+  assertNoLifecycleMarkers(stateDir);
   for (const relative of ['broker/broker-owner.lock', 'broker/broker-owner.gate', 'receiver/owner']) {
     const file = path.join(stateDir, relative);
     if (entryExists(file) && !(relative === 'broker/broker-owner.gate' && owned.has(file) && fs.readFileSync(file).equals(owned.get(file)))) fail('runtime_state_owned_or_unknown');
@@ -238,7 +242,7 @@ function checkRelease(directory, release) {
 function applyInstall(plan, { lease: borrowed } = {}) {
   let fingerprint = assertPreparedInstallPlan(plan);
   assertBaseline(plan);
-  const d = plan.descriptor; fs.mkdirSync(d.installRoot, { recursive: true });
+  const d = plan.descriptor; assertNoLifecycleMarkers(d.stateDir); fs.mkdirSync(d.installRoot, { recursive: true });
   const scope = { installRoot: d.installRoot, stateDir: d.stateDir, descriptorPath: plan.descriptorPath };
   const lease = borrowed || acquireInstallLease(scope); assertInstallLease(lease, scope);
   let txnFile, txn, writes = false;
@@ -346,6 +350,7 @@ function rollback(file) {
   const current = JSON.parse(bytes(t.descriptorPath)), priorBytes = t.previousDescriptor === null ? null : Buffer.from(t.previousDescriptor, 'base64'), target = priorBytes && JSON.parse(priorBytes);
   if (priorBytes && priorBytes.toString('base64') !== t.previousDescriptor) fail('rollback_previous_bytes');
   let client = rollbackBinding(t, current, target);
+  assertNoLifecycleMarkers(t.stateDir);
   const scope = { installRoot: t.installRoot, stateDir: t.stateDir, descriptorPath: t.descriptorPath }, lease = acquireInstallLease(scope); let writes = false;
   try {
     if (hash(bytes(t.descriptorPath)) !== t.appliedDescriptorHash || hash(bytes(t.configPath)) !== t.appliedConfigHash || treeHash(snapshot(t.cepDir)) !== t.appliedCepHash) fail('rollback_baseline_changed');

@@ -38,7 +38,8 @@
         "runtime/attachment-owner.js",
         "runtime/owner-lifecycle.js",
         "runtime/recovery-inspection.js",
-        "runtime/windows-owner-process.js"
+        "runtime/windows-owner-process.js",
+        "runtime/owner-maintenance.js"
       ]
     },
     "manual": {

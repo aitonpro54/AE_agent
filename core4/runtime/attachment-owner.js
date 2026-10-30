@@ -16,7 +16,7 @@ function createAttachmentOwner({ runtime, activity, invoke, clock, ttlMs, drainI
   if (!runtime || typeof runtime.status !== 'function' || typeof activity !== 'function' || typeof invoke !== 'function' || !Number.isSafeInteger(drainIntervalMs) || drainIntervalMs < 1 || drainIntervalMs > 1000) throw new Error('owner_options');
   const lease = createControllerLease({ clock, ttlMs }), sessions = new Map(), accepted = new Set(), timers = new Set(), ownErrors = new WeakSet();
   const refs = { evidence: new Map(), build: new Map(), proposal: new Map(), dryrun: new Map(), task: new Map() };
-  let closed = false;
+  let closed = false, frozen = false;
   function fail(code) { const e = new Error(code); ownErrors.add(e); e.code = code; throw e; }
   function object(value, keys) {
     if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).some(k => !keys.includes(k))) fail('owner_payload');
@@ -28,8 +28,8 @@ function createAttachmentOwner({ runtime, activity, invoke, clock, ttlMs, drainI
       return { pending: value.pending, unresolved: value.unresolved, fault: value.fault };
     } catch { return { pending: true, unresolved: true, fault: true }; }
   }
-  function admitted() { const value = facts(); if (value.fault || value.unresolved) fail('owner_recovery_required'); if (value.pending) fail('owner_draining'); }
-  function status() { return { ...lease.status(), closed, activity: facts(), accepted: accepted.size, attachments: sessions.size }; }
+  function admitted() { if (frozen) fail('owner_draining'); const value = facts(); if (value.fault || value.unresolved) fail('owner_recovery_required'); if (value.pending) fail('owner_draining'); }
+  function status() { return { ...lease.status(), closed, frozen, activity: facts(), accepted: accepted.size, attachments: sessions.size }; }
   function sessionRecord(session) { const record = sessions.get(session); if (!record) fail('owner_attachment_required'); return record; }
   function token(record, payload) {
     object(payload, ['leaseToken']);
@@ -87,7 +87,7 @@ function createAttachmentOwner({ runtime, activity, invoke, clock, ttlMs, drainI
       for (const values of Object.values(refs)) values.clear();
       return { leaseToken: record.token, bootId: record.grant.bootId, generation: record.grant.generation };
     }
-    if (method === 'controller_renew') { token(record, payload); lease.renew(record.grant); return { renewed: true }; }
+    if (method === 'controller_renew') { if (frozen) fail('owner_draining'); token(record, payload); lease.renew(record.grant); return { renewed: true }; }
     if (method === 'controller_release') {
       token(record, payload); admitted(); lease.release(record.grant); record.grant = null; record.token = null; return { released: true };
     }
@@ -127,6 +127,6 @@ function createAttachmentOwner({ runtime, activity, invoke, clock, ttlMs, drainI
     for (const timer of timers) clearTimeout(timer);
     await runtime.close();
   }
-  return Object.freeze({ onAttach, onDetach, onRequest, status, close, bootId: lease.status().bootId });
+  return Object.freeze({ onAttach, onDetach, onRequest, status, close, freeze() { frozen = true; }, bootId: lease.status().bootId });
 }
 module.exports = { createAttachmentOwner, TOOL_METHODS, OWNER_METHODS, OWNER_ERRORS };

@@ -1,7 +1,7 @@
 'use strict';
 // Reviewed local bootstrap: only builtins until every distributed byte passes.
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
-const HELPERS = Object.freeze(['tools/disposition-install-preflight.js', 'tools/install-core4.js', 'tools/package-installable.js', 'tools/standalone-installer.js']);
+const HELPERS = Object.freeze(['tools/disposition-install-preflight.js', 'tools/install-core4.js', 'tools/maintain-owner.js', 'tools/package-installable.js', 'tools/standalone-installer.js']);
 const HASH = /^[a-f0-9]{64}$/;
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function canonical(v) { if (v === null || typeof v === 'boolean' || typeof v === 'string' || typeof v === 'number' && Number.isFinite(v)) return JSON.stringify(v); if (Array.isArray(v)) return '[' + v.map(canonical).join(',') + ']'; if (!v || Object.getPrototypeOf(v) !== Object.prototype) fail('standalone_json'); return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canonical(v[k])).join(',') + '}'; }

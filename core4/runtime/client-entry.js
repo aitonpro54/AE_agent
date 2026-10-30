@@ -103,8 +103,19 @@ async function startClient({ descriptor, input = process.stdin, output = process
   const { spawn } = require('node:child_process');
   const lifetime = new AbortController();
   let linked = null, connecting = null, closed = false, launchAttempted = false;
+  const preSpawnStops = new WeakSet();
   const absent = error => error?.code === 'ipc_endpoint_absent' && error.phase === 'preconnect' && ['ENOENT', 'ECONNREFUSED'].includes(error.reason);
   const unavailable = () => fail('owner_unavailable');
+  function stopped() {
+    // This role cannot verify the full-role maintenance seal. Observed presence
+    // only denies launch; it never asserts a valid stop/death/maintenance grant.
+    for (const dir of [path.join(d.installRoot, 'state'), path.join(d.installRoot, 'state/production')]) {
+      try { plain(dir, true); } catch (e) { if (e.code === 'ENOENT') return false; throw e; }
+    }
+    try { fs.lstatSync(path.join(d.installRoot, 'state/production/runtime-maintenance.json')); return true; }
+    catch (e) { if (e.code === 'ENOENT') return false; throw e; }
+  }
+  function refuseStopped() { const error = Object.assign(new Error('owner_desired_stopped'), { code: 'owner_desired_stopped' }); preSpawnStops.add(error); throw error; }
   function attach(handshakeMs) {
     if (closed) unavailable();
     return createIpcClient({ endpoint: d.ownerEndpoint, identity: { installationId: d.installationId, machineId: d.machineId, packageHash: d.packageHash },
@@ -114,13 +125,14 @@ async function startClient({ descriptor, input = process.stdin, output = process
     // Let an already queued stdio EOF revoke bootstrap before verification/spawn.
     await new Promise(resolve => setImmediate(resolve));
     if (closed) unavailable();
+    if (stopped()) refuseStopped();
     const fresh = verifyClientDescriptor(descriptor);
     if (canonical(fresh) !== canonical(d)) fail('client_descriptor_changed');
     if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(fresh.releaseDir)) fail('client_entry_root_changed');
     const manifestBytes = read(path.join(d.releaseDir, 'release.json'), 1024 * 1024), manifest = JSON.parse(manifestBytes);
-    const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js'];
+    const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js'];
     const contractBytes = read(path.join(d.releaseDir, 'runtime/owner-contract.json'), 8192);
-    const expected = { version: 2, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+    const expected = { version: 3, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
       ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: ownerFiles };
     if (hash(manifestBytes) !== d.packageHash || hash(contractBytes) !== manifest.hashes['runtime/owner-contract.json'] ||
         canonical(JSON.parse(contractBytes)) !== canonical(expected) || ownerFiles.some(file => !hex(manifest.hashes[file]))) fail('client_owner_contract');
@@ -139,6 +151,7 @@ async function startClient({ descriptor, input = process.stdin, output = process
     if (closed) unavailable();
     if (!read(descriptor, 16384).equals(Buffer.from(canonical(d)))) fail('client_descriptor_changed');
     plain(d.releaseDir, true);
+    if (stopped()) refuseStopped();
     if (closed) unavailable();
     await new Promise((resolve, reject) => {
       let child;
@@ -159,7 +172,10 @@ async function startClient({ descriptor, input = process.stdin, output = process
     try { return await attach(); }
     catch (error) {
       if (!absent(error) || closed || launchAttempted) throw error;
-      launchAttempted = true; await launch();
+      if (stopped()) refuseStopped();
+      launchAttempted = true;
+      try { await launch(); }
+      catch (failure) { if (preSpawnStops.has(failure)) launchAttempted = false; throw failure; }
       const deadline = performance.now() + 5000;
       for (let attempt = 0; attempt < 50; attempt++) {
         if (closed) unavailable();

@@ -22,7 +22,7 @@ const { openCompletionStore } = require('../integrations/cep/completion-store');
 const { mac } = require('../integrations/cep/peer-protocol');
 const { checkEntrySource } = require('../tools/check-boundaries');
 const SOURCE = path.resolve(__dirname, '..'), preload = path.join(__dirname, 'fixtures/owner-runtime-child.js');
-const EXTRA = ['owner-entry', 'client-entry', 'client-ipc', 'client-stdio', 'controller-lease', 'attachment-owner', 'owner-lifecycle', 'recovery-inspection', 'windows-owner-process'].map(name => 'runtime/' + name + '.js');
+const EXTRA = ['owner-entry', 'client-entry', 'client-ipc', 'client-stdio', 'controller-lease', 'attachment-owner', 'owner-lifecycle', 'recovery-inspection', 'windows-owner-process', 'owner-maintenance'].map(name => 'runtime/' + name + '.js');
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 function remove(directory) {
   const prefix = path.join(os.tmpdir(), 'core4-owner-');
@@ -331,7 +331,7 @@ test('inherited generic methods execute on the actual Broker so activity observe
   } finally { if (receiver) receiver.controllerBusy = false; Broker.prototype.getTask = getTask; }
 });
 
-test('verified owner captures controller context for physical inspection and completes original work after client detach', async t => {
+test('desired-stop freezes new control while captured original inspection completes after client detach', async t => {
   const f = install(t), runtime = await directOwner(t, f), client = await ipc(t, f), observer = await ipc(t, f);
   const p = await panel(runtime.status().physical.port, f.d); await ok(client.call('controller_acquire', {}));
   const contract = await ok(client.call('get_module_contract', { moduleId: 'project-inspection' }));
@@ -341,14 +341,15 @@ test('verified owner captures controller context for physical inspection and com
   const unknown = assert.rejects(result, e => e.code === 'ipc_outcome_uncertain'); client.close(); await unknown;
   assert.equal((await observer.call('controller_acquire', {})).code, 'owner_draining');
   const ack = await p.request('/complete', completion(frame, vmObservation(f.pkg, frame))); assert.equal(ack.status, 200);
-  await until(() => runtime.status().attachmentOwner.accepted === 0);
-  assert.equal(runtime.status().physical.pending, null); assert.equal(runtime.status().physical.storeClosed, false);
-  assert.equal((await ok(observer.call('controller_acquire', {}))).generation, 2);
+  await until(() => runtime.status().maintenance.phase === 'stopped');
+  assert.equal(runtime.status().physical.pending, null); assert.equal(runtime.status().physical.storeClosed, true);
+  assert.equal(runtime.status().attachmentOwner.frozen, true); assert.equal(runtime.status().attachmentOwner.closed, true);
+  assert.equal(fs.existsSync(path.join(f.d.stateDir, 'runtime-maintenance.json')), true);
   const events = fs.readFileSync(path.join(f.d.stateDir, 'receiver/completions.ndjson'), 'utf8').trim().split('\n').map(JSON.parse);
   assert.deepEqual(events.map(e => e.type), ['origin', 'begin', 'complete']);
 });
 
-test('owner main signal handler refuses pending shutdown and keeps diagnostics/original completion available', async t => {
+test('owner main signal persists desired-stop and drains original completion without a second shutdown request', async t => {
   const f = install(t), main = childMain(t, f); await main.event('ipc');
   const client = await ipc(t, f), observer = await ipc(t, f), status = await ok(observer.call('core_status', {}));
   const p = await panel(status.physical.port, f.d); await ok(client.call('controller_acquire', {}));
@@ -356,11 +357,11 @@ test('owner main signal handler refuses pending shutdown and keeps diagnostics/o
   const result = client.call('inspect_module_target', { moduleId: 'project-inspection', contractId: contract.contractId, target: {} });
   await until(async () => (await ok(observer.call('core_status', {}))).physical.pending);
   main.child.send('signal'); await until(() => main.stderr.includes('owner_draining'));
-  assert.equal(main.child.exitCode, null); assert.equal((await ok(observer.call('core_diagnostics', {}))).pid, main.child.pid);
+  assert.equal(main.child.exitCode, null); const diagnostic = await ok(observer.call('core_diagnostics', {})); assert.equal(diagnostic.pid, main.child.pid); assert.equal(diagnostic.attachmentOwner.frozen, true);
   const frame = (await p.request('/poll', {})).value.command; assert.ok(frame);
   assert.equal((await p.request('/complete', completion(frame, vmObservation(f.pkg, frame)))).status, 200);
   assert.equal((await ok(result)).observation.project.saved, false);
-  main.child.send('signal'); assert.equal((await main.exit).code, 0); assert.equal(main.stderr, 'owner_draining\n');
+  assert.equal((await main.exit).code, 0); assert.equal(main.stderr, 'owner_draining\n'); assert.equal(fs.existsSync(path.join(f.d.stateDir, 'runtime-maintenance.json')), true);
 });
 
 test('later panel poll after controller detach cannot deliver a queued command and keeps the receiver fenced', async t => {

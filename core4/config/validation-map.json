@@ -1,5 +1,9 @@
 {
   "owners": [
+    { "prefix": "core4/runtime/owner-maintenance.js", "owner": "owner-maintenance", "checks": ["owner-maintenance", "owner-runtime", "maintenance-operator"] },
+    { "prefix": "core4/tools/maintain-owner.js", "owner": "maintenance-operator", "checks": ["maintenance-operator", "standalone-installer"] },
+    { "prefix": "core4/test/owner-maintenance.test.js", "owner": "owner-maintenance", "checks": ["owner-maintenance"] },
+    { "prefix": "core4/test/maintenance-operator.test.js", "owner": "maintenance-operator", "checks": ["maintenance-operator"] },
     { "prefix": "core4/runtime/windows-owner-process.js", "owner": "windows-owner-process", "checks": ["windows-owner-process", "owner-runtime"] },
     { "prefix": "core4/test/windows-owner-process.test.js", "owner": "windows-owner-process", "checks": ["windows-owner-process"] },
     { "prefix": "core4/runtime/owner-lifecycle.js", "owner": "owner-lifecycle", "checks": ["owner-lifecycle", "owner-lifecycle-faults", "owner-runtime", "owner-installation", "owner-marker-publication"] },
@@ -1005,6 +1009,8 @@
     }
   ],
   "checkDependencies": {
+    "owner-maintenance": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-maintenance.test.js"],
+    "maintenance-operator": ["runtime/", "core/", "protocol/", "tools/maintain-owner.js", "tools/install-core4.js", "tools/package-installable.js", "tools/check-boundaries.js", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "config/catalog.json", "config/admissions/", "test/maintenance-operator.test.js"],
     "windows-owner-process": ["runtime/windows-owner-process.js", "test/windows-owner-process.test.js"],
     "owner-lifecycle": ["runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "core/state-lock.js", "integrations/cep/completion-store.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-lifecycle.test.js"],
     "owner-lifecycle-faults": ["runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "core/state-lock.js", "integrations/cep/completion-store.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-lifecycle-faults.test.js"],
@@ -1488,6 +1494,8 @@
     ]
   },
   "checkCommands": {
+    "owner-maintenance": ["node", "--test", "--test-name-pattern=owner-maintenance", "test/owner-maintenance.test.js"],
+    "maintenance-operator": ["node", "--test", "--test-name-pattern=maintenance-operator", "test/maintenance-operator.test.js"],
     "windows-owner-process": ["node", "--test", "--test-name-pattern=windows-owner-process", "test/windows-owner-process.test.js"],
     "owner-lifecycle": ["node", "--test", "--test-name-pattern=owner-lifecycle", "test/owner-lifecycle.test.js"],
     "owner-lifecycle-faults": ["node", "--test", "--test-name-pattern=owner-lifecycle-faults", "test/owner-lifecycle-faults.test.js"],
@@ -1654,6 +1662,8 @@
     ]
   },
   "checkPolicy": {
+    "owner-maintenance": { "kind": "component" },
+    "maintenance-operator": { "kind": "integration" },
     "windows-owner-process": { "kind": "component" },
     "owner-lifecycle": { "kind": "component" },
     "owner-lifecycle-faults": { "kind": "component" },

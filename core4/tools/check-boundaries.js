@@ -38,6 +38,18 @@ function checkOwnerEntrySource(source) {
   }
   return true;
 }
+function checkMaintenanceOperatorSource(source) {
+  const barrier = source.indexOf('const d = verifyOwnerInstallation(descriptor, expectedPackageHash);');
+  if (barrier < 0 || source.indexOf("fail('maintenance_package_pin_changed')") < 0 || source.indexOf('visit(d.releaseDir') > barrier) fail('maintenance_operator_verification_layout');
+  for (const match of source.matchAll(/require\s*\(/g)) {
+    const argument = source.slice(match.index).match(/^require\s*\(\s*(['"][^'"]+['"]|path\.join\([^)]*\))\s*\)/);
+    if (!argument) fail('unverified_maintenance_import');
+    const value = argument[1];
+    if (/^['"]node:[^'"]+['"]$/.test(value)) continue;
+    if (match.index < barrier || !/^path\.join\(d\.releaseDir, ['"]runtime\/(stdio-entry|owner-maintenance|client-ipc|client-entry)\.js['"]\)$/.test(value)) fail('unverified_maintenance_import');
+  }
+  return true;
+}
 function checkBoundaries(root = path.resolve(__dirname, '..')) {
   let checked = 0;
   for (const directory of ['modules', 'plan-engine']) for (const file of files(path.join(root, directory)).filter(f => f.endsWith('.js'))) { reviewCode(fs.readFileSync(file, 'utf8')); checked++; }
@@ -67,7 +79,9 @@ function checkBoundaries(root = path.resolve(__dirname, '..')) {
     if (path.basename(file) === 'owner-entry.js') checkOwnerEntrySource(source);
     checked++;
   }
+  const maintenance = path.join(root, 'tools/maintain-owner.js');
+  if (fs.existsSync(maintenance)) { checkMaintenanceOperatorSource(fs.readFileSync(maintenance, 'utf8')); checked++; }
   return { checked, model: 'reviewed-local-code; conservative source guard; not OS sandbox', liveCalls: 0 };
 }
 if (require.main === module) { try { console.log(JSON.stringify(checkBoundaries())); } catch (e) { console.error(e.code || e.message); process.exitCode = 1; } }
-module.exports = { checkBoundaries, checkEntrySource, checkClientEntrySource, checkOwnerEntrySource, files };
+module.exports = { checkBoundaries, checkEntrySource, checkClientEntrySource, checkOwnerEntrySource, checkMaintenanceOperatorSource, files };

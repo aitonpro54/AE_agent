@@ -86,7 +86,10 @@ diagnostic owner без Broker writer при fenced history. Provenance MAC ис
 оба независимых role secrets; не заменяет OS death/election/CAS/semantic proof.
 Lifecycle-only intents не возобновляют принятые RPC и не переносят grants/refs.
 
-R3d ещё должен завершить maintenance/stop/update и смену AE adoption; до R4 панель
-не получает новое reconnect поведение. Настоящий configured-client/CEP/AE и
+R3d1 source добавляет private full-role maintenance stop и same-descriptor resume
+с durable barrier, original drain, process-bound lease и metadata/tree CAS.
+Admin MCP tools не добавляются. Pending resume сохраняет fence до R3d2; update,
+first legacy migration и смена AE adoption ещё требуют завершения. R4 source
+проверяется отдельно с этим packet. Настоящий configured-client/CEP/AE и
 Windows job-lifetime proof требуется в R5 отдельно от TEMP tests. Installed
-manual3f92 пока сохраняется; source packet359PASS не объявляет его исправленным.
+manual3f92 пока сохраняется; source packets359/329PASS не объявляют его исправленным.

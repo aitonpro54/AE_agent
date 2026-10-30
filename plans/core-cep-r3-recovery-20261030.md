@@ -58,7 +58,9 @@ host identity; смена чата или reconnect не объявляет cont
   signed history read-only; [границы](core-cep-r3-inspection-20261030.md).
 - [x] Boot-bound ownership/recovery, crash/CAS/process tests и source review;
   [R3c evidence/границы](core-cep-r3-owner-20261030.md),359selectedPASS.
-- [ ] Maintenance/stop/adoption путь, scoped validation и review.
+- [x] Private maintenance-stop/same-descriptor resume,329selectedPASS вместе с R4,
+  source review ACCEPT; [R3d1](core-cep-r3-maintenance-20261030.md).
+- [ ] Pending maintenance recovery/update/adoption/first legacy migration.
 - [ ] Installed acceptance в R5; old markers пока не изменялись.
 
 ## Decision Log
@@ -76,6 +78,7 @@ host identity; смена чата или reconnect не объявляет cont
 
 R3b:16selectedPASS и read-only actual history unchanged; source review ACCEPT.
 R3c:359selectedPASS, bounded source review ACCEPT, runtime owner/diagnostic wiring
-и crash recovery созданы. Maintenance/stop/update/adoption ещё pending.
+и crash recovery созданы. R3d1:329selectedPASS с R4; штатные private stop и
+same-descriptor resume созданы. Update/adoption/legacy migration ещё pending.
 Статус текущего installed receiver storeClosed/UNKNOWN сохраняется. Stop Core,
 restart AE, install, save и native dispatch этим документом не выполнялись.

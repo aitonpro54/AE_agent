@@ -74,7 +74,7 @@ async function stopOwner(f) {
 function fixture(t, options = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-launcher-')); resources(t).directories.push(root);
   const origin = { installationId: 'fixture-' + randomUUID(), machineId: 'launcher-fixture' }; fs.writeFileSync(path.join(root, 'origin.json'), canonical(origin));
-  const files = Object.fromEntries(['client-entry', 'client-ipc', 'client-stdio', 'attachment-owner', 'controller-lease', 'owner-lifecycle', 'recovery-inspection', 'windows-owner-process'].map(name => ['runtime/' + name + '.js', fs.readFileSync(path.join(SOURCE, 'runtime/' + name + '.js'))]));
+  const files = Object.fromEntries(['client-entry', 'client-ipc', 'client-stdio', 'attachment-owner', 'controller-lease', 'owner-lifecycle', 'recovery-inspection', 'windows-owner-process', 'owner-maintenance'].map(name => ['runtime/' + name + '.js', fs.readFileSync(path.join(SOURCE, 'runtime/' + name + '.js'))]));
   files['runtime/owner-entry.js'] = Buffer.from(ownerSource); files['runtime/owner-contract.json'] = fs.readFileSync(path.join(SOURCE, 'runtime/owner-contract.json'));
   Object.assign(files, options.files);
   if (options.contract) files['runtime/owner-contract.json'] = Buffer.from(canonical(options.contract));
@@ -203,6 +203,41 @@ test('descriptor rotation or wrong owner contract refuses before spawn and prese
   fs.writeFileSync(f.descriptor, canonical(f.d)); await d.call('core_status'); assert.equal(d.observed.length, 0);
   const bad = fixture(t, { files: { 'runtime/client-ipc.js': absenceModule('ipc_endpoint_absent') }, contract: { version: 1, runtimeModel: 'owner' } }), rejected = await driver(t, bad);
   assert.equal((await rejected.call('core_status')).error.message, 'owner_unavailable'); assert.equal(rejected.observed.length, 0);
+});
+
+test('observed maintenance presence blocks autolaunch without asserting a valid seal or process death', async t => {
+  for (const content of ['', '{torn', '{}']) {
+    const f = fixture(t, { files: { 'runtime/client-ipc.js': absenceModule('ipc_endpoint_absent') } });
+    const state = path.join(f.root, 'state/production'); fs.mkdirSync(state, { recursive: true }); fs.writeFileSync(path.join(state, 'runtime-maintenance.json'), content);
+    const d = await driver(t, f); const response = await d.call('core_status'); assert.equal(response.error.message, 'owner_unavailable'); assert.equal(d.observed.length, 0); assert.equal(lines(f.starts).length, 0);
+  }
+});
+
+test('maintenance published during the verification checkpoint still prevents spawn', async t => {
+  const f = fixture(t, { files: { 'runtime/client-ipc.js': absenceModule('ipc_endpoint_absent') } }), d = await driver(t, f);
+  const open = fs.openSync; let queued = false;
+  fs.openSync = function (file, ...args) {
+    const fd = open.call(fs, file, ...args);
+    if (!queued && file === f.d.nodePath) { queued = true; queueMicrotask(() => { const state = path.join(f.root, 'state/production'); fs.mkdirSync(state, { recursive: true }); fs.writeFileSync(path.join(state, 'runtime-maintenance.json'), 'observed stop barrier'); }); }
+    return fd;
+  };
+  try { assert.equal((await d.call('core_status')).error.message, 'owner_unavailable'); } finally { fs.openSync = open; }
+  assert.equal(queued, true); assert.equal(d.observed.length, 0); assert.equal(lines(f.starts).length, 0);
+});
+
+test('same thin client can explicitly launch once after a proven pre-spawn stop barrier is explicitly removed', async t => {
+  for (const mode of ['initial', 'verification']) {
+    const f = fixture(t), d = await driver(t, f), state = path.join(f.root, 'state/production'), barrier = path.join(state, 'runtime-maintenance.json'); fs.mkdirSync(state, { recursive: true });
+    const open = fs.openSync; let inserted = false;
+    if (mode === 'initial') { fs.writeFileSync(barrier, 'synthetic desired-stop'); inserted = true; }
+    else fs.openSync = function (file, ...args) { const fd = open.call(fs, file, ...args); if (!inserted && file === f.d.nodePath) { inserted = true; queueMicrotask(() => fs.writeFileSync(barrier, 'synthetic desired-stop')); } return fd; };
+    try { assert.equal((await d.call('core_status')).error.message, 'owner_unavailable'); } finally { fs.openSync = open; }
+    assert.equal(inserted, true); assert.equal(d.observed.length, 0); assert.equal(lines(f.starts).length, 0);
+    // Fixture-only explicit resume. Production removal requires sealed proof,
+    // process death, settled histories and the branded maintenance lease.
+    fs.unlinkSync(barrier);
+    assert.equal(value(await d.call('core_status')).method, 'core_status'); assert.equal(d.observed.length, 1); assert.equal(lines(f.starts).length, 1);
+  }
 });
 
 test('permission, timeout, wrong MAC/pins and postconnect close never bootstrap or reveal internal errors', async t => {

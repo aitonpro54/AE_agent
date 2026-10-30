@@ -67,7 +67,9 @@ if (require.main === module) {
   if (args.length !== 2 || args[0] !== '--installation') { process.stderr.write('Explicit --installation ABSOLUTE_DESCRIPTOR required.\n'); process.exitCode = 2; }
   else startOwner({ descriptor: args[1] }).then(runtime => {
     for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => {
-      runtime.close().then(() => { process.exitCode = 0; }, e => process.stderr.write((e.code === 'owner_draining' ? e.code : 'owner_shutdown_failed') + '\n'));
+      // Signals request durable desired-stop too; pending work is drained without
+      // force exit. A failed/ambiguous stop keeps its fence and cannot mean resume.
+      runtime.close().then(() => { process.exitCode = 0; }, e => { if (e.code !== 'owner_draining') process.exitCode = 1; process.stderr.write((e.code === 'owner_draining' ? e.code : 'owner_shutdown_failed') + '\n'); });
     });
   }).catch(e => { process.stderr.write((e.code || 'owner_start_failed') + '\n'); process.exitCode = 1; });
 }

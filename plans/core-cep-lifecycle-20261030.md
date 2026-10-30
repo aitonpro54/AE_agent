@@ -121,7 +121,9 @@ R3 не использует fake production epoch и не переносит au
   [границы](core-cep-r2-launcher-20261030.md).
 - [x] R3c: boot-bound owner recovery/diagnostics и atomic markers,
  359selectedPASS, source review ACCEPT; [границы](core-cep-r3-owner-20261030.md).
-- [ ] R3d–R5: maintenance/update/adoption, CEP и приёмка;
+- [x] R3d1: private maintenance stop/same-descriptor resume,329selectedPASS вместе
+  с R4, source review ACCEPT; [границы](core-cep-r3-maintenance-20261030.md).
+- [ ] R3d2–R5: update/adoption/legacy migration и installed CEP/runtime приёмка;
   устойчивость installed runtime пока не заявлена.
 
 ## Decision Log
@@ -169,8 +171,8 @@ Restart Core/AE, install и native dispatch этого этапа0. UI попы�
 
 ## Продолжение
 
-R1/R2a/R2b/R2c1/R2c2 и отдельные R3a/R3b/R3c завершены в source. Следующий
-source/offline блок — R3d maintenance/stop/update/adoption по
-[recovery плану](core-cep-r3-recovery-20261030.md).
+R1/R2a/R2b/R2c1/R2c2 и отдельные R3a/R3b/R3c/R3d1 завершены в source.
+Следующий source/offline блок — R3d2 update/first legacy migration и pending
+maintenance finish/rollback по [плану обслуживания](core-cep-r3-maintenance-20261030.md).
 Прочитать актуальный status/queue перед любым live изменением; сообщения в старой
 UI очереди не считать принятыми. Чужие snapshots/AEP и старые receipts сохранять.
