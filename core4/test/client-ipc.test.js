@@ -318,7 +318,7 @@ test('IPC endpoint collision does not displace the original owner; concurrent cl
   assert.deepEqual(await (await f.client()).call('status', {}), {});
   const address = endpoint(), starting = createIpcServer({ endpoint: address, identity, secret, bootId, methods: ['status'], onRequest: () => null });
   t.after(() => starting.close()); const listen = starting.listen(), close = starting.close(); await listen; await close;
-  assert.equal(starting.status().listening, false); await rejects(createIpcClient({ endpoint: address, identity, secret }), 'ipc_authentication');
+  assert.equal(starting.status().listening, false); await rejects(createIpcClient({ endpoint: address, identity, secret }), 'ipc_endpoint_absent');
 });
 
 test('IPC server enforces its own inflight/history limits even against a client ignoring client-side limits', async t => {
@@ -356,4 +356,56 @@ test('IPC absolute session expiry disconnects a pending caller without cancellin
   const f = await fixture(t, { limits: { sessionMs: 40 }, async onRequest() { await gate.promise; done++; return null; } });
   const client = await f.client(); await rejects(client.call('work', {}), 'ipc_outcome_uncertain');
   assert.equal(f.server.status().pending, 1); gate.resolve(); await until(() => done === 1 && f.server.status().pending === 0);
+});
+
+test('IPC classifies only preconnect ENOENT and ECONNREFUSED as absence and sanitizes permission/unknown failures', async () => {
+  const original = net.createConnection;
+  try {
+    for (const code of ['ENOENT', 'ECONNREFUSED', 'EACCES', 'EPERM', 'ETIMEDOUT']) {
+      net.createConnection = () => {
+        const socket = new net.Socket();
+        process.nextTick(() => socket.destroy(Object.assign(new Error(secret), { code })));
+        return socket;
+      };
+      await assert.rejects(createIpcClient({ endpoint: endpoint(), identity, secret }), error => {
+        if (['ENOENT', 'ECONNREFUSED'].includes(code)) assert.deepEqual({ code: error.code, reason: error.reason, phase: error.phase }, { code: 'ipc_endpoint_absent', reason: code, phase: 'preconnect' });
+        else { assert.equal(error.code, 'ipc_authentication'); assert.equal(error.reason, undefined); }
+        assert.equal(String(error).includes(secret), false); return true;
+      });
+    }
+    net.createConnection = () => { throw new Error(secret); };
+    await rejects(createIpcClient({ endpoint: endpoint(), identity, secret }), 'ipc_authentication');
+  } finally { net.createConnection = original; }
+});
+
+test('IPC errors after a real socket connect and a handshake timeout never count as endpoint absence', async t => {
+  const address = endpoint(), sockets = new Set(), server = net.createServer(socket => { sockets.add(socket); socket.on('error', () => {}); socket.on('close', () => sockets.delete(socket)); });
+  t.after(() => { for (const socket of sockets) socket.destroy(); return new Promise(resolve => server.close(resolve)); });
+  await new Promise(resolve => server.listen(address, resolve));
+  const original = net.createConnection;
+  net.createConnection = (...args) => {
+    const socket = original(...args);
+    socket.once('connect', () => socket.destroy(Object.assign(new Error('synthetic postconnect refusal'), { code: 'ECONNREFUSED' })));
+    return socket;
+  };
+  try { await rejects(createIpcClient({ endpoint: address, identity, secret }), 'ipc_authentication'); }
+  finally { net.createConnection = original; }
+  await rejects(createIpcClient({ endpoint: address, identity, secret, limits: { handshakeMs: 20 } }), 'ipc_authentication');
+  await assert.rejects(createIpcClient({ endpoint: endpoint(), identity, secret }), error => error.code === 'ipc_endpoint_absent' && error.phase === 'preconnect');
+});
+
+test('IPC private AbortSignal cancels handshake and pending delivery without replay or callback cancellation', async t => {
+  const gate = deferred(), controller = new AbortController(); let calls = 0, done = 0;
+  const f = await fixture(t, { async onRequest() { calls++; await gate.promise; done++; return null; } });
+  t.after(() => gate.resolve());
+  const client = await f.client({ signal: controller.signal }), pending = client.call('work', {});
+  await until(() => calls === 1); controller.abort(); await rejects(pending, 'ipc_outcome_uncertain');
+  assert.equal(f.server.status().pending, 1); gate.resolve(); await until(() => done === 1 && f.server.status().pending === 0); assert.equal(calls, 1);
+  const already = new AbortController(); already.abort();
+  await rejects(createIpcClient({ endpoint: endpoint(), identity, secret, signal: already.signal }), 'ipc_connection_cancelled');
+  const address = endpoint(), accepted = deferred(), sockets = new Set(), server = net.createServer(socket => { sockets.add(socket); socket.on('error', () => {}); socket.on('close', () => sockets.delete(socket)); accepted.resolve(); });
+  t.after(() => { for (const socket of sockets) socket.destroy(); return new Promise(resolve => server.close(resolve)); });
+  await new Promise(resolve => server.listen(address, resolve));
+  const stopped = new AbortController(), connecting = createIpcClient({ endpoint: address, identity, secret, signal: stopped.signal });
+  await accepted.promise; stopped.abort(); await rejects(connecting, 'ipc_connection_cancelled');
 });

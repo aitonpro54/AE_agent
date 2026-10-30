@@ -22,6 +22,12 @@ Spawn: shell:false, windowsHide:true, detached:true, stdio:ignore, cwd внут�
 ставятся сразу, unref выполняется после успешного spawn. EOF до spawn отменяет
 bootstrap, EOF после spawn не завершает owner.
 
+Actual Windows child наблюдение потребовало explicit empty значения для PATH,
+HOMEDRIVE/HOMEPATH/LOGONSERVER/SYSTEMDRIVE/USERDOMAIN/USERNAME/USERPROFILE и
+NODE_V8_COVERAGE: простого отсутствия этих keys в opts.env оказалось недостаточно.
+Системные каталоги передаются whitelist; остальные значения не наследуются.
+Происхождение Windows augmentation не объявляется доказанным этим тестом.
+
 Все concurrent запросы одного client разделяют один connector/launch latch.
 Неуспешная попытка старта не сбрасывает latch; сброс возможен только после
 authenticated attach. После spawn допускается ограниченное ожидание attach,
@@ -38,8 +44,8 @@ authenticated attach. После spawn допускается ограничен
 ## Progress
 
 - [x] Ограниченный read-only review дизайна: blockers нет при соблюдении контракта.
-- [ ] Source реализация и адресные adversarial tests.
-- [ ] Selected validation, source review и milestone commit.
+- [x] Source реализация и адресные adversarial tests.
+- [x] Selected93/93PASS, source review ACCEPT; milestone commit.
 - [ ] Установленная Windows/job проверка в R5.
 
 ## Decision Log
@@ -49,10 +55,34 @@ authenticated attach. После spawn допускается ограничен
 - Descriptor rotation обрабатывается отказом старого client; новый config вводится
   штатным MCP startup после завершённой установки.
 - Временный отказ bootstrap не превращается в polling-цикл процессов.
+- После тяжёлой sync verification нужен event-loop checkpoint для queued EOF.
+  Затем bounded16KiB raw descriptor CAS, root/closed check и fixed spawn. Это
+  также отказывает queued config rotation, без второго длинного hash window.
+  Tiny filesystem check/spawn race не объявляется atomic OS sandbox.
 
 ## Validation
 
-До реализации: source-review дизайна. Обязательные проверки: concurrent→spawn1,
-EOF до spawn→0, descriptor rotation→refuse, auth/pin/permission/timeout→spawn0,
-failed-start latch, bounded winner/contender attach и accepted-call loss→resend0.
-Actual install, live AE и job survival не выполнены этим документом.
+Final selected93PASS: routing5, client-entry12, owner-runtime18,
+owner-installation18, IPC25, process2, launcher12, transfer1. Boundaries35/live0,
+syntax и diff-check PASS. Source/dependency hashes unchanged during final checks;
+evidence в `snapshots/core4-lifecycle/20261030/R2c2/summary.json`, selection и logs.
+Launcher key `5486a671c76dce2858f18afabe59e925ec940246c7f266b55d4577029b6c7b9d`.
+
+Проверены concurrent→spawn1; EOF до spawn и queued во время Node hash→0;
+descriptor rotation до bootstrap и queued во время verify→refuse;
+auth/pin/permission/timeout→spawn0; failed latch→no respawn→authenticated reset;
+EOF после spawn; exact args/cwd/environment фактического child; bounded
+fixture-winner/contender attach и accepted-call loss→resend0.
+
+Initial fixture bugs исправлены до final packet; это не production failures.
+Один TEMP IPC-only fixture18948 остался после ошибочного cleanup marker. Попытка
+combined kill/rm была отклонена automatic review с единственным reason `blocked
+by policy`, execution0; её не повторяли. Root восстановил exact fixture identity
+из challenge, подтвердил synthetic-secret authentication/package/boot/PID через
+fixture status и завершил его штатным `fixture_shutdown`. Fresh CIM: PID absent.
+Partial TEMP `core4-launcher-1lZBHw` сохранён как evidence; production endpoint,
+MCP/CEP, AE и installation не затрагивались. Это не production discovery/TOFU.
+
+TEMP fixture не импортирует Broker/HTTP/AE и использует свой synthetic lock;
+он не доказывает Core election. Actual install и Windows/MSIX job survival
+остаются в R5. Deferred integrations не объявляются пройденными; full release0.

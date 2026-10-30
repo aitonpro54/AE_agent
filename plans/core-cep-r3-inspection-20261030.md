@@ -48,7 +48,7 @@ core4/test/recovery-inspection.test.js core4/config/validation-map.json --run`:
 11+5PASS,0fail. Component key
 `862f1c13b640481ac26c4fd7e319afea931f744109ac17b0c4f7a979867eed33`.
 Evidence: `snapshots/core4-lifecycle/20261030/R3b/summary.json`, `selection.json`,
-`selected.log`; exact dependency hashes unchanged during checks. Boundaries34/live0,
+`selected.log`; exact dependency hashes unchanged during checks. Boundaries35/live0,
 syntax и diff-check PASS. Deferred integrations не объявляются пройденными.
 
 Actual read-only observation: manual3f92,16receiver events,7commands:

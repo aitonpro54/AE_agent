@@ -49,9 +49,12 @@ Owner boot после crash сначала читает и проверяет du
 создать свежий in-memory lease и объявить idle при старом pending/UNKNOWN.
 Controller lease — дополнительная сериализация, не замена private brands,
 grants, host identity, checkpoint, receiver intent/receipt или fences.
-Нынешний installation descriptor содержит оба role secrets: до IPC wiring
-нужно определить отдельный credential seam. Текущее чтение общего descriptor
-само по себе не доказывает изоляцию CEP credentials от stdio adapter.
+Installation descriptor остаётся owner-only и содержит оба role secrets.
+R2c задаёт отдельный canonical control-only `core-client.json`: thin client
+проверяет origin/полную release/Node, не читая полный descriptor или AE state.
+Runtime selector и transactional installer включают sidecar в CAS/read-back/rollback;
+guarded launcher запускает только fixed verified owner entry. Это source-контракт;
+installed manual3f92 ещё не переключён. OS ACL/job lifetime не доказаны.
 
 ## Альтернативы
 
@@ -68,14 +71,15 @@ grants, host identity, checkpoint, receiver intent/receipt или fences.
 `core4/runtime/controller-lease.js` — private state machine только памяти процесса:
 opaque object handles, boot/generation, явный acquire/renew/release, quiescent
 detach, draining принятой операции, expiry и sticky fence. Объект нельзя
-восстановить из JSON. Функцию не экспортируют MCP tools, не включают в текущий
-source-package и не используют для выдачи project grants.
+восстановить из JSON. Private handles не экспортируются как project grants.
+Теперь компонент входит только в explicit owner composition; MCP предоставляет
+ограниченные controller operations поверх authenticated attachment.
 
 Обычный TTL не разрешает takeover. При pending outcome старого вызова нужно
 дождаться/выяснить через original flow; UNKNOWN не очищается API этого компонента.
 Отдельно owner обязан учитывать Broker.running/reconciling/controlPending,
 physical queue и durable recovery перед передачей lease.
 
-До R2 этот компонент не исправляет installed restart; до R3 нет штатной смены
-AE adoption; до R4 панель не получает новое reconnect поведение. Настоящий
+R2 source owner/client/installer/launcher завершён; до R3 нет штатного recovery
+и смены AE adoption, до R4 панель не получает новое reconnect поведение. Настоящий
 configured-client/CEP/AE proof требуется в R5 отдельно от TEMP tests.

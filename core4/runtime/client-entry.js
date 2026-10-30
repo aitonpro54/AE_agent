@@ -100,14 +100,84 @@ async function startClient({ descriptor, input = process.stdin, output = process
   // All non-builtin imports are below full release and exact-entry verification.
   const { createIpcClient } = require('./client-ipc');
   const { serveAttachment } = require('./client-stdio');
-  let linked = null, connecting = null, closed = false;
+  const { spawn } = require('node:child_process');
+  const lifetime = new AbortController();
+  let linked = null, connecting = null, closed = false, launchAttempted = false;
+  const absent = error => error?.code === 'ipc_endpoint_absent' && error.phase === 'preconnect' && ['ENOENT', 'ECONNREFUSED'].includes(error.reason);
+  const unavailable = () => fail('owner_unavailable');
+  function attach(handshakeMs) {
+    if (closed) unavailable();
+    return createIpcClient({ endpoint: d.ownerEndpoint, identity: { installationId: d.installationId, machineId: d.machineId, packageHash: d.packageHash },
+      secret: d.controlToken, timeoutMs: 120000, signal: lifetime.signal, ...(handshakeMs ? { limits: { handshakeMs } } : {}) });
+  }
+  async function launch() {
+    // Let an already queued stdio EOF revoke bootstrap before verification/spawn.
+    await new Promise(resolve => setImmediate(resolve));
+    if (closed) unavailable();
+    const fresh = verifyClientDescriptor(descriptor);
+    if (canonical(fresh) !== canonical(d)) fail('client_descriptor_changed');
+    if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(fresh.releaseDir)) fail('client_entry_root_changed');
+    const manifestBytes = read(path.join(d.releaseDir, 'release.json'), 1024 * 1024), manifest = JSON.parse(manifestBytes);
+    const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js'];
+    const contractBytes = read(path.join(d.releaseDir, 'runtime/owner-contract.json'), 8192);
+    const expected = { version: 1, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+      ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: ownerFiles };
+    if (hash(manifestBytes) !== d.packageHash || hash(contractBytes) !== manifest.hashes['runtime/owner-contract.json'] ||
+        canonical(JSON.parse(contractBytes)) !== canonical(expected) || ownerFiles.some(file => !hex(manifest.hashes[file]))) fail('client_owner_contract');
+    const entry = path.join(d.releaseDir, 'runtime/owner-entry.js'), installation = path.join(d.installRoot, 'installation.json');
+    plain(entry); plain(installation);
+    const env = Object.create(null);
+    // Windows process creation may restore omitted OS/user variables; Node also
+    // propagates NODE_V8_COVERAGE. Explicit empties prevent value inheritance.
+    for (const key of ['PATH', 'HOMEDRIVE', 'HOMEPATH', 'LOGONSERVER', 'SYSTEMDRIVE', 'USERDOMAIN', 'USERNAME', 'USERPROFILE', 'NODE_V8_COVERAGE']) env[key] = '';
+    for (const key of ['SystemRoot', 'WINDIR', 'TEMP', 'TMP']) {
+      const value = process.env[key]; if (typeof value === 'string' && path.isAbsolute(value) && !value.includes('\0')) env[key] = value;
+    }
+    // EOF/config rotation queued during the synchronous hash pass must run
+    // before spawn. Finish with a bounded descriptor CAS, not another hash pass.
+    await new Promise(resolve => setImmediate(resolve));
+    if (closed) unavailable();
+    if (!read(descriptor, 16384).equals(Buffer.from(canonical(d)))) fail('client_descriptor_changed');
+    plain(d.releaseDir, true);
+    if (closed) unavailable();
+    await new Promise((resolve, reject) => {
+      let child;
+      try { child = spawn(d.nodePath, [entry, '--installation', installation], { shell: false, windowsHide: true, detached: true, stdio: 'ignore', cwd: d.releaseDir, env }); }
+      catch { reject(Object.assign(new Error('owner_launch_failed'), { code: 'owner_launch_failed' })); return; }
+      child.once('error', () => reject(Object.assign(new Error('owner_launch_failed'), { code: 'owner_launch_failed' })));
+      child.once('spawn', () => { try { child.unref(); resolve(); } catch { reject(Object.assign(new Error('owner_launch_failed'), { code: 'owner_launch_failed' })); } });
+    });
+  }
+  function pause(ms) {
+    return new Promise(resolve => {
+      const done = () => { clearTimeout(timer); lifetime.signal.removeEventListener('abort', done); resolve(); };
+      const timer = setTimeout(done, ms);
+      lifetime.signal.addEventListener('abort', done, { once: true }); if (closed) done();
+    });
+  }
+  async function connect() {
+    try { return await attach(); }
+    catch (error) {
+      if (!absent(error) || closed || launchAttempted) throw error;
+      launchAttempted = true; await launch();
+      const deadline = performance.now() + 5000;
+      for (let attempt = 0; attempt < 50; attempt++) {
+        if (closed) unavailable();
+        const remaining = Math.ceil(deadline - performance.now()); if (remaining < 1) unavailable();
+        try { return await attach(Math.min(3000, remaining)); }
+        catch (next) { if (!absent(next) || attempt === 49) throw next; }
+        await pause(Math.min(100, Math.max(1, deadline - performance.now())));
+      }
+      unavailable();
+    }
+  }
   const client = {
     async call(method, payload) {
       if (closed) fail('owner_unavailable');
       if (!linked) {
-        if (!connecting) connecting = createIpcClient({ endpoint: d.ownerEndpoint, identity: { installationId: d.installationId, machineId: d.machineId, packageHash: d.packageHash }, secret: d.controlToken, timeoutMs: 120000 });
+        if (!connecting) connecting = connect();
         const attempt = connecting;
-        try { linked = await attempt; }
+        try { linked = await attempt; launchAttempted = false; }
         catch { return method === 'owner_status' ? { ok: true, value: { available: false, reason: 'owner_connection_unavailable', coverage: 'unobserved' } } : { ok: false, code: 'owner_unavailable' }; }
         finally { if (connecting === attempt) connecting = null; }
       }
@@ -121,7 +191,7 @@ async function startClient({ descriptor, input = process.stdin, output = process
         throw error;
       }
     },
-    close() { closed = true; if (linked) linked.close(); linked = null; }
+    close() { closed = true; lifetime.abort(); if (linked) linked.close(); linked = null; }
   };
   // Initialize/tools-list remain available without an owner. A failed accepted
   // call is never resent; a later explicit request may make a fresh attachment.

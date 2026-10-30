@@ -197,12 +197,22 @@ function createIpcServer(opts) {
 
 async function createIpcClient(opts) {
   const identity = options(opts), config = limits(opts.limits), timeoutMs = opts.timeoutMs ?? 30000;
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000) fail('ipc_options');
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000 || opts.signal !== undefined && !(opts.signal instanceof AbortSignal)) fail('ipc_options');
+  if (opts.signal?.aborted) fail('ipc_connection_cancelled');
   return new Promise((resolve, reject) => {
-    const socket = net.createConnection(opts.endpoint), pending = new Map();
-    let challenge, clientNonce, key, sessionId, bootId, seq = 0, ready = false, failed = false;
-    const handshakeTimer = setTimeout(() => abort(), config.handshakeMs);
+    let socket;
+    try { socket = net.createConnection(opts.endpoint); } catch { reject(Object.assign(new Error('ipc_authentication'), { code: 'ipc_authentication' })); return; }
+    const pending = new Map();
+    let challenge, clientNonce, key, sessionId, bootId, seq = 0, ready = false, failed = false, connected = false, absence = null, cancelled = false, timedOut = false;
+    socket.once('connect', () => { connected = true; absence = null; });
+    socket.on('error', error => {
+      if (!connected && !cancelled && !timedOut) absence = absence === null && ['ENOENT', 'ECONNREFUSED'].includes(error.code) ? error.code : 'unknown';
+    });
+    const handshakeTimer = setTimeout(() => { timedOut = true; absence = null; abort(); }, config.handshakeMs);
     function abort() { socket.destroy(); }
+    function cancel() { cancelled = true; absence = null; abort(); }
+    opts.signal?.addEventListener('abort', cancel, { once: true });
+    if (opts.signal?.aborted) cancel();
     function uncertain(entry) {
       clearTimeout(entry.timer);
       const error = new Error('ipc_outcome_uncertain');
@@ -251,7 +261,12 @@ async function createIpcClient(opts) {
       entry.resolve(frame.result);
     }, () => {
       failed = true; clearTimeout(handshakeTimer);
-      if (!ready) reject(Object.assign(new Error('ipc_authentication'), { code: 'ipc_authentication' }));
+      opts.signal?.removeEventListener('abort', cancel);
+      if (!ready) {
+        const absent = !connected && !cancelled && !timedOut && ['ENOENT', 'ECONNREFUSED'].includes(absence);
+        const code = cancelled ? 'ipc_connection_cancelled' : absent ? 'ipc_endpoint_absent' : 'ipc_authentication';
+        reject(Object.assign(new Error(code), { code, ...(absent ? { reason: absence, phase: 'preconnect' } : {}) }));
+      }
       for (const entry of pending.values()) uncertain(entry);
       pending.clear();
     }, config);
