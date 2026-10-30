@@ -363,15 +363,16 @@ test('installable-runtime panel VM/WebCrypto shim validates challenge Origin bef
     elements.connect = { addEventListener() {}, set disabled(value) { if (!value) finish(); } };
     let recovered = 0;
     const cryptoShim = { getRandomValues: value => webcrypto.getRandomValues(value), subtle: { importKey: (...args) => webcrypto.subtle.importKey(...args), sign: (...args) => { signed.push(Buffer.from(args[2]).toString()); return webcrypto.subtle.sign(...args); } } };
-    const context = vm.createContext({ crypto: cryptoShim, TextEncoder, Uint8Array, localStorage: memoryStorage(), document: { getElementById: id => elements[id] }, __adobe_cep__: { evalScript() { throw new Error('no native dispatch in shim'); } },
+    const context = vm.createContext({ crypto: cryptoShim, TextEncoder, Uint8Array, AbortController, setTimeout, clearTimeout, localStorage: memoryStorage(), document: { getElementById: id => elements[id] }, __adobe_cep__: { evalScript() { throw new Error('no native dispatch in shim'); } },
       Core4Installation: cfg,
       async fetch(url, options) {
         const route = new URL(url).pathname, value = JSON.parse(options.body); calls.push({ route, options, value });
         assert.deepEqual(Object.keys(options.headers), ['Content-Type']); assert.equal(options.credentials, 'omit'); assert.equal(options.cache, 'no-store');
+        assert.ok(options.signal instanceof AbortSignal);
         if (route === '/challenge') return { ok: true, json: async () => challenge };
         if (route === '/link') {
           assert.equal(canonical(value.challenge), canonical(challenge)); assert.equal(value.proof, mac({ challenge, peerId: value.peerId }, installation.panelToken));
-          const body = { peerId: value.peerId, epoch: challenge.epoch, pins: {} }; return { ok: true, json: async () => ({ body, mac: mac(body, installation.panelToken) }) };
+          const body = { linked: true, peerId: value.peerId, epoch: challenge.epoch, controllerId: challenge.controllerId, pins: { installationId: cfg.installationId, packageHash: cfg.packageHash, executorHash: cfg.executorHash }, receiverStoreIdentity: 'shim-store', laneClosed: false }; return { ok: true, json: async () => ({ body, mac: mac(body, installation.panelToken) }) };
         }
         assert.equal(route, '/poll'); throw new Error('shim_stop_after_poll');
       }
