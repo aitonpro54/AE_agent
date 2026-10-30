@@ -115,6 +115,8 @@ R3 не использует fake production epoch и не переносит au
   source review ACCEPT; [границы](core-cep-r3-transfer-20261030.md).
 - [x] R2c1: transactionally installed owner/client closure и sidecar,
   общий packet169PASS, source review ACCEPT; [границы](core-cep-r2-installation-20261030.md).
+- [x] R3b: receiver/ledger fact readers,16selectedPASS и read-only actual signed
+  history unchanged, source review ACCEPT; [границы](core-cep-r3-inspection-20261030.md).
 - [ ] R2c2–R5: launcher/recovery/CEP и приёмка;
   устойчивость installed runtime пока не заявлена.
 

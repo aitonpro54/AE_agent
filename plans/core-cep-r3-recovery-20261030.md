@@ -54,7 +54,8 @@ host identity; смена чата или reconnect не объявляет cont
 ## Progress
 
 - [x] Read-only архитектурная проверка рисков; границы включены в решение root.
-- [ ] Чистые semantic readers и adversarial tests без filesystem mutation.
+- [x] Receiver/ledger semantic fact readers,11component+5routing PASS и actual
+  signed history read-only; [границы](core-cep-r3-inspection-20261030.md).
 - [ ] Boot-bound ownership/recovery state machine и crash/CAS/process tests.
 - [ ] Maintenance/stop/adoption путь, scoped validation и review.
 - [ ] Installed acceptance в R5; old markers пока не изменялись.
@@ -72,6 +73,7 @@ host identity; смена чата или reconnect не объявляет cont
 
 ## Validation
 
-Пока только source inspection и архитектурный risk review. Код recovery не создан;
+R3b:16selectedPASS и read-only actual history unchanged; source review ACCEPT.
+Control intents и production wiring не покрыты этим компонентом. Код recovery не создан;
 статус текущего installed receiver storeClosed/UNKNOWN сохраняется. Stop Core,
 restart AE, install, save и native dispatch этим документом не выполнялись.

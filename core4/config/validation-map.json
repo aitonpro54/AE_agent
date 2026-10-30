@@ -1,5 +1,7 @@
 {
   "owners": [
+    { "prefix": "core4/runtime/recovery-inspection.js", "owner": "recovery-inspection", "checks": ["recovery-inspection"] },
+    { "prefix": "core4/test/recovery-inspection.test.js", "owner": "recovery-inspection", "checks": ["recovery-inspection"] },
     { "prefix": "core4/runtime/client-entry.js", "owner": "client-entry", "checks": ["client-entry", "owner-runtime", "owner-installation"] },
     { "prefix": "core4/runtime/owner-contract.json", "owner": "owner-installation", "checks": ["owner-installation", "owner-runtime"] },
     { "prefix": "core4/test/owner-installation.test.js", "owner": "owner-installation", "checks": ["owner-installation"] },
@@ -995,6 +997,7 @@
     }
   ],
   "checkDependencies": {
+    "recovery-inspection": ["runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "runtime/windows-reservation-provider.js", "core/ledger.js", "core/broker.js", "core/receiver.js", "core/resources.js", "integrations/cep/http-peer.js", "integrations/cep/completion-store.js", "protocol/", "test/recovery-inspection.test.js"],
     "owner-installation": ["runtime/", "tools/install-core4.js", "tools/package-installable.js", "tools/package-standalone-installer.js", "tools/standalone-installer.js", "tools/disposition-install-preflight.js", "test/owner-installation.test.js", "test/fixtures/fixed-format1-package.js", "test/fixtures/legacy-installation-v1.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
     "controller-transfer": ["runtime/controller-lease.js", "runtime/attachment-owner.js", "runtime/client-ipc.js", "test/controller-transfer-ipc.test.js"],
     "client-entry": ["runtime/client-entry.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/client-ipc.js", "runtime/owner-entry.js", "test/client-entry.test.js", "tools/check-boundaries.js"],
@@ -1472,6 +1475,7 @@
     ]
   },
   "checkCommands": {
+    "recovery-inspection": ["node", "--test", "--test-name-pattern=recovery-inspection", "test/recovery-inspection.test.js"],
     "owner-installation": ["node", "--test", "--test-name-pattern=owner-installation", "test/owner-installation.test.js"],
     "controller-transfer": ["node", "--test", "--test-name-pattern=controller-transfer", "test/controller-transfer-ipc.test.js"],
     "client-entry": ["node", "--test", "--test-name-pattern=client-entry", "test/client-entry.test.js"],
@@ -1632,6 +1636,7 @@
     ]
   },
   "checkPolicy": {
+    "recovery-inspection": { "kind": "component" },
     "owner-installation": { "kind": "integration" },
     "controller-transfer": { "kind": "component" },
     "client-entry": { "kind": "component" },
