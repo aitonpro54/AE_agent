@@ -101,13 +101,15 @@ test('installable-runtime exact release closure rejects extensionless shadow, em
   function rejectedChild() { const result = spawnSync(process.execPath, [path.join(d.releaseDir, 'runtime/stdio-entry.js'), '--installation', installed.descriptorPath], { encoding: 'utf8', timeout: 5000, windowsHide: true }); assert.equal(result.status, 1); assert.match(result.stderr, /release_tree_mismatch|installed_release_bytes/); assert.equal(fs.existsSync(sentinel), false); }
   rejectedChild(); assert.throws(() => verifyInstallation(installed.descriptorPath), /release_tree_mismatch/);
   assert.throws(() => applyInstall(planInstall(args)), /immutable_release_mismatch/);
+  assert.equal(fs.existsSync(path.join(args.installRoot, 'install.lock')), false, 'invalid previous release refuses during planning, before private preparation or a lease');
   fs.unlinkSync(shadow); const extra = path.join(d.releaseDir, 'unlisted-empty'); fs.mkdirSync(extra); rejectedChild(); fs.rmdirSync(extra);
   const core = path.join(d.releaseDir, 'core'), backup = path.join(directory, 'junction-target');
   assert.ok(path.resolve(core).startsWith(path.resolve(directory) + path.sep)); assert.ok(path.resolve(backup).startsWith(path.resolve(directory) + path.sep));
   fs.renameSync(core, backup); fs.writeFileSync(path.join(backup, 'broker.js'), code);
   fs.symlinkSync(backup, core, process.platform === 'win32' ? 'junction' : 'dir');
-  rejectedChild(); assert.throws(() => applyInstall(planInstall(args)), /EEXIST/);
-  assert.equal(fs.existsSync(path.join(args.installRoot, 'install.lock')), true, 'prior private preparation failure stays fenced; no automatic retry');
+  rejectedChild(); assert.throws(() => applyInstall(planInstall(args)), /immutable_release_mismatch/);
+  assert.equal(fs.existsSync(path.join(args.installRoot, 'install.lock')), false, 'junction refusal has no installer writes or newly created fence');
+  assert.equal(fs.existsSync(sentinel), false);
 });
 test('installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies', () => {
   const directory = temp(), pkgA = buildPackage(), { args, plan } = install(directory, pkgA), installedA = applyInstall(plan), descriptorA = JSON.parse(fs.readFileSync(installedA.descriptorPath));

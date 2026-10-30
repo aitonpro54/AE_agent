@@ -25,18 +25,40 @@ function plain(file, directory = false) {
     if (stat.isSymbolicLink() || stat.reparsePoint || fs.realpathSync(cursor) !== cursor || (n < parts.length - 1 || directory ? !stat.isDirectory() : !stat.isFile())) fail('client_path');
   }
 }
-function read(file, limit) { plain(file); const stat = fs.statSync(file); if (stat.size < 1 || stat.size > limit) fail('client_file_budget'); const bytes = fs.readFileSync(file); if (bytes.length !== stat.size) fail('client_file_changed'); return bytes; }
+function read(file, limit) {
+  plain(file); const named = fs.lstatSync(file), fd = fs.openSync(file, 'r');
+  try {
+    const stat = fs.fstatSync(fd);
+    if (!named.isFile() || !stat.isFile() || named.dev !== stat.dev || named.ino !== stat.ino) fail('client_path');
+    if (!Number.isSafeInteger(stat.size) || stat.size < 1 || stat.size > limit) fail('client_file_budget');
+    const bytes = Buffer.alloc(stat.size); let offset = 0;
+    while (offset < bytes.length) { const count = fs.readSync(fd, bytes, offset, bytes.length - offset, offset); if (!count) fail('client_file_changed'); offset += count; }
+    const extra = fs.readSync(fd, Buffer.alloc(1), 0, 1, offset), after = fs.fstatSync(fd);
+    if (extra || ['dev', 'ino', 'size', 'mtimeMs', 'ctimeMs'].some(key => after[key] !== stat[key])) fail('client_file_changed');
+    let final;
+    try { plain(file); final = fs.lstatSync(file); } catch { fail('client_file_changed'); }
+    if (!final.isFile() || ['dev', 'ino', 'size', 'mtimeMs', 'ctimeMs'].some(key => final[key] !== after[key])) fail('client_file_changed');
+    return bytes;
+  } finally { fs.closeSync(fd); }
+}
 function ownerEndpoint({ installationId, machineId }) {
   if (!id(installationId) || !id(machineId)) fail('client_identity');
   return '\\\\.\\pipe\\ae-core4-owner-' + hash(JSON.stringify({ installationId, machineId })).slice(0, 32);
 }
-function projectClientDescriptor(installation) {
+function projectClientDescriptor(installation, options = {}) {
   // Role projection for a verified installer/owner embedding. It does not
   // issue credentials, create files or make a caller-supplied installation safe.
   const { installationId, machineId, installRoot, releaseDir, packageHash, nodePath, nodeHash, controlToken } = installation;
-  if (!id(installationId) || !id(machineId) || !hex(packageHash) || !hex(nodeHash) || !hex(controlToken) || !path.isAbsolute(installRoot) || releaseDir !== path.join(installRoot, 'releases', packageHash) || !path.isAbsolute(nodePath)) fail('client_descriptor');
-  return Object.freeze({ version: 1, role: 'core4-control-client', installationId, machineId, installRoot, releaseDir, packageHash, nodePath, nodeHash, controlToken,
-    originHash: hash(read(path.join(installRoot, 'origin.json'), 8192)), ownerEndpoint: ownerEndpoint({ installationId, machineId }) });
+  if (!id(installationId) || !id(machineId) || !hex(packageHash) || !hex(nodeHash) || !hex(controlToken) || !path.isAbsolute(installRoot) || path.resolve(installRoot) !== installRoot || releaseDir !== path.join(installRoot, 'releases', packageHash) || !path.isAbsolute(nodePath) || path.resolve(nodePath) !== nodePath) fail('client_descriptor');
+  if (!options || Object.getPrototypeOf(options) !== Object.prototype || Object.keys(options).some(key => key !== 'originBytes')) fail('client_projection_options');
+  const originBytes = Object.hasOwn(options, 'originBytes') ? options.originBytes : read(path.join(installRoot, 'origin.json'), 8192);
+  if (!Buffer.isBuffer(originBytes) || originBytes.length < 1 || originBytes.length > 8192 || !Buffer.from(originBytes.toString('utf8')).equals(originBytes)) fail('client_origin');
+  let origin; try { origin = JSON.parse(originBytes.toString('utf8')); } catch { fail('client_origin'); }
+  if (origin?.installationId !== installationId || origin?.machineId !== machineId) fail('client_origin');
+  const descriptor = { version: 1, role: 'core4-control-client', installationId, machineId, installRoot, releaseDir, packageHash, nodePath, nodeHash, controlToken,
+    originHash: hash(originBytes), ownerEndpoint: ownerEndpoint({ installationId, machineId }) };
+  if (Buffer.byteLength(canonical(descriptor)) > 16384) fail('client_file_budget');
+  return Object.freeze(descriptor);
 }
 function verifyClientDescriptor(file) {
   const bytes = read(file, 16384); let descriptor;

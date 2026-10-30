@@ -3,11 +3,27 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { hash, canonical, fail } = require('../protocol/json');
 const { deriveComposition, registrySource } = require('../runtime/stdio-entry.js');
-function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual') {
+const OWNER_FILES = Object.freeze(['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js']);
+function runtimeBinding(release, read) {
+  if (!Object.hasOwn(release.hashes, 'runtime/owner-contract.json')) {
+    if (OWNER_FILES.some(file => Object.hasOwn(release.hashes, file))) fail('owner_contract_required');
+    return Object.freeze({ runtimeModel: 'stdio', clientEntry: 'runtime/stdio-entry.js', clientArgument: '--installation', clientDescriptorFile: null });
+  }
+  const bytes = read('runtime/owner-contract.json');
+  if (release.format !== 2 || hash(bytes) !== release.hashes['runtime/owner-contract.json']) fail('owner_contract_integrity');
+  let contract; try { contract = JSON.parse(bytes); } catch { fail('owner_contract_schema'); }
+  const expected = { version: 1, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+    ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: [...OWNER_FILES] };
+  if (canonical(contract) !== canonical(expected) || OWNER_FILES.some(file => !Object.hasOwn(release.hashes, file))) fail('owner_contract_schema');
+  return Object.freeze(contract);
+}
+function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual', options = {}) {
   if (!['readonly', 'manual'].includes(selector)) fail('composition_selector');
+  if (!options || Object.getPrototypeOf(options) !== Object.prototype || Object.keys(options).some(key => key !== 'runtimeModel')) fail('runtime_selector');
+  const runtimeModel = options.runtimeModel ?? 'stdio'; if (!['stdio', 'owner'].includes(runtimeModel)) fail('runtime_selector');
   const spec = JSON.parse(fs.readFileSync(path.join(root, 'runtime/source-package.json'), 'utf8'));
   const optional = selector === 'manual' ? spec.optional.manual : { files: [], artifactClosures: [] };
-  const paths = new Set([...spec.files, ...optional.files]);
+  const paths = new Set([...spec.files, ...optional.files, ...(runtimeModel === 'owner' ? spec.optional.owner.files : [])]);
   for (const relative of [...spec.artifactClosures, ...optional.artifactClosures]) {
     paths.add(relative);
     const artifact = JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8'));
@@ -40,6 +56,7 @@ function verifyPackage(pkg) {
   for (const [relative, data] of Object.entries(pkg.files)) {
     if (!/^[a-zA-Z0-9_./-]+$/.test(relative) || relative.split('/').includes('..') || path.isAbsolute(relative) || /^(test|experiments|node_modules|\.git|logs|state|tools)\//.test(relative) || hash(Buffer.from(data, 'base64')) !== pkg.release.hashes[relative]) fail('package_integrity');
   }
+  runtimeBinding(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
   const selected = deriveComposition(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
   if (!selected.legacy && Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString('utf8') !== registrySource(selected.assets, Buffer.from(pkg.files['runtime/host/json-codec.jsx'], 'base64').toString('utf8'))) fail('composition_registry');
   return pkg;
@@ -47,9 +64,9 @@ function verifyPackage(pkg) {
 if (require.main === module) {
   try {
     const args = process.argv.slice(2), options = {};
-    for (let n = 0; n < args.length; n += 2) { const key = args[n]; if (!['--output', '--composition'].includes(key) || Object.hasOwn(options, key) || typeof args[n + 1] !== 'string' || args[n + 1].startsWith('--')) fail('package_options'); options[key] = args[n + 1]; }
+    for (let n = 0; n < args.length; n += 2) { const key = args[n]; if (!['--output', '--composition', '--runtime'].includes(key) || Object.hasOwn(options, key) || typeof args[n + 1] !== 'string' || args[n + 1].startsWith('--')) fail('package_options'); options[key] = args[n + 1]; }
     if (!options['--output'] || !path.isAbsolute(options['--output'])) fail('absolute_output_required');
-    const pkg = buildPackage(undefined, options['--composition'] ?? 'manual'); fs.writeFileSync(options['--output'], canonical(pkg), { flag: 'wx' }); console.log(JSON.stringify({ packageHash: pkg.packageHash, files: Object.keys(pkg.files).length, composition: options['--composition'] ?? 'manual', output: options['--output'] }));
+    const pkg = buildPackage(undefined, options['--composition'] ?? 'manual', { runtimeModel: options['--runtime'] ?? 'stdio' }); fs.writeFileSync(options['--output'], canonical(pkg), { flag: 'wx' }); console.log(JSON.stringify({ packageHash: pkg.packageHash, files: Object.keys(pkg.files).length, composition: options['--composition'] ?? 'manual', runtimeModel: options['--runtime'] ?? 'stdio', output: options['--output'] }));
   } catch (e) { console.error(e.code || e.message); process.exitCode = 1; }
 }
-module.exports = { buildPackage, verifyPackage };
+module.exports = { buildPackage, verifyPackage, runtimeBinding };

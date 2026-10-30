@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "runtimeModel": "owner",
+  "clientEntry": "runtime/client-entry.js",
+  "clientArgument": "--client-descriptor",
+  "ownerEntry": "runtime/owner-entry.js",
+  "ownerArgument": "--installation",
+  "clientDescriptorFile": "core-client.json",
+  "requiredFiles": [
+    "runtime/owner-entry.js",
+    "runtime/client-entry.js",
+    "runtime/client-ipc.js",
+    "runtime/client-stdio.js",
+    "runtime/controller-lease.js",
+    "runtime/attachment-owner.js"
+  ]
+}

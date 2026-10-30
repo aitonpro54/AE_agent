@@ -1,6 +1,8 @@
 {
   "owners": [
-    { "prefix": "core4/runtime/client-entry.js", "owner": "client-entry", "checks": ["client-entry", "owner-runtime"] },
+    { "prefix": "core4/runtime/client-entry.js", "owner": "client-entry", "checks": ["client-entry", "owner-runtime", "owner-installation"] },
+    { "prefix": "core4/runtime/owner-contract.json", "owner": "owner-installation", "checks": ["owner-installation", "owner-runtime"] },
+    { "prefix": "core4/test/owner-installation.test.js", "owner": "owner-installation", "checks": ["owner-installation"] },
     { "prefix": "core4/test/client-entry.test.js", "owner": "client-entry", "checks": ["client-entry"] },
     { "prefix": "core4/runtime/owner-entry.js", "owner": "owner-runtime", "checks": ["owner-runtime"] },
     { "prefix": "core4/test/owner-runtime.test.js", "owner": "owner-runtime", "checks": ["owner-runtime"] },
@@ -27,7 +29,8 @@
       "prefix": "core4/tools/package-standalone-installer.js",
       "owner": "standalone-installer",
       "checks": [
-        "standalone-installer"
+        "standalone-installer",
+        "owner-installation"
       ]
     },
     {
@@ -160,7 +163,8 @@
         "native-read-recovery",
         "installable-runtime",
         "installed-composition",
-        "manual-runtime"
+        "manual-runtime",
+        "owner-installation"
       ]
     },
     {
@@ -179,7 +183,8 @@
         "native-read-recovery",
         "installable-runtime",
         "installed-composition",
-        "manual-runtime"
+        "manual-runtime",
+        "owner-installation"
       ]
     },
     {
@@ -411,7 +416,8 @@
         "installable-runtime",
         "installed-composition",
         "manual-runtime",
-        "standalone-installer"
+        "standalone-installer",
+        "owner-installation"
       ]
     },
     {
@@ -422,7 +428,8 @@
         "native-read-recovery",
         "installed-composition",
         "manual-runtime",
-        "standalone-installer"
+        "standalone-installer",
+        "owner-installation"
       ]
     },
     {
@@ -988,6 +995,7 @@
     }
   ],
   "checkDependencies": {
+    "owner-installation": ["runtime/", "tools/install-core4.js", "tools/package-installable.js", "tools/package-standalone-installer.js", "tools/standalone-installer.js", "tools/disposition-install-preflight.js", "test/owner-installation.test.js", "test/fixtures/fixed-format1-package.js", "test/fixtures/legacy-installation-v1.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
     "controller-transfer": ["runtime/controller-lease.js", "runtime/attachment-owner.js", "runtime/client-ipc.js", "test/controller-transfer-ipc.test.js"],
     "client-entry": ["runtime/client-entry.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/client-ipc.js", "runtime/owner-entry.js", "test/client-entry.test.js", "tools/check-boundaries.js"],
     "owner-runtime": ["runtime/", "test/owner-runtime.test.js", "test/fixtures/owner-runtime-child.js", "tools/check-boundaries.js", "tools/install-core4.js", "tools/package-installable.js", "tools/disposition-install-preflight.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
@@ -1464,6 +1472,7 @@
     ]
   },
   "checkCommands": {
+    "owner-installation": ["node", "--test", "--test-name-pattern=owner-installation", "test/owner-installation.test.js"],
     "controller-transfer": ["node", "--test", "--test-name-pattern=controller-transfer", "test/controller-transfer-ipc.test.js"],
     "client-entry": ["node", "--test", "--test-name-pattern=client-entry", "test/client-entry.test.js"],
     "owner-runtime": ["node", "--test", "--test-name-pattern=owner-runtime", "test/owner-runtime.test.js"],
@@ -1623,6 +1632,7 @@
     ]
   },
   "checkPolicy": {
+    "owner-installation": { "kind": "integration" },
     "controller-transfer": { "kind": "component" },
     "client-entry": { "kind": "component" },
     "owner-runtime": { "kind": "integration" },

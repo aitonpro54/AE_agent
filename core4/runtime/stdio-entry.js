@@ -145,8 +145,18 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');
   if (!['stdio', 'owner'].includes(mode)) fail('runtime_mode');
   const release = JSON.parse(fs.readFileSync(path.join(root, 'release.json'), 'utf8'));
-  if (mode === 'owner' && ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js',
-    'runtime/controller-lease.js', 'runtime/attachment-owner.js'].some(file => !Object.hasOwn(release.hashes, file))) fail('owner_composition_unavailable');
+  const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js'];
+  const ownerRuntime = Object.hasOwn(release.hashes, 'runtime/owner-contract.json');
+  if (ownerRuntime) {
+    const bytes = fs.readFileSync(path.join(root, 'runtime/owner-contract.json'));
+    const expected = { version: 1, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+      ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: ownerFiles };
+    if (release.format !== 2 || hash(bytes) !== release.hashes['runtime/owner-contract.json'] || canonical(JSON.parse(bytes)) !== canonical(expected) || ownerFiles.some(file => !Object.hasOwn(release.hashes, file))) fail('owner_contract_schema');
+    if (mode !== 'owner') fail('owner_entry_required');
+  } else {
+    if (mode === 'owner') fail('owner_composition_unavailable');
+    if (ownerFiles.some(file => Object.hasOwn(release.hashes, file))) fail('owner_contract_required');
+  }
   if (mode === 'owner') {
     // Elect the physical endpoint while the shared install gate is still held,
     // before opening either durable execution store. Never displace a listener.

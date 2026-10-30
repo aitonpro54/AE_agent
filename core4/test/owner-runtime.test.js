@@ -55,9 +55,7 @@ function testPackage() {
     fs.mkdirSync(root);
     for (const name of ['core', 'protocol', 'modules', 'plan-engine', 'runtime', 'config', 'cep', 'integrations']) fs.cpSync(path.join(SOURCE, name), path.join(root, name), { recursive: true });
     fs.copyFileSync(path.join(SOURCE, 'worker.js'), path.join(root, 'worker.js'));
-    const file = path.join(root, 'runtime/source-package.json'), spec = JSON.parse(fs.readFileSync(file));
-    spec.files.push(...EXTRA.filter(name => !spec.files.includes(name))); fs.writeFileSync(file, canonical(spec));
-    cachedPackage = buildPackage(root, 'readonly'); return cachedPackage;
+    cachedPackage = buildPackage(root, 'readonly', { runtimeModel: 'owner' }); return cachedPackage;
   } finally { remove(directory); }
 }
 function install(t, pkg = testPackage()) {
@@ -65,7 +63,8 @@ function install(t, pkg = testPackage()) {
   const args = { pkg, installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'),
     configPath: path.join(directory, 'config.toml'), nodePath: fs.realpathSync(process.execPath), machineId: 'owner-runtime-fixture' };
   const applied = applyInstall(planInstall(args)), descriptor = applied.descriptorPath, d = verifyInstallation(descriptor);
-  const clientDescriptor = path.join(d.installRoot, 'core-client.json'); fs.writeFileSync(clientDescriptor, canonical(projectClientDescriptor(d)));
+  const clientDescriptor = path.join(d.installRoot, 'core-client.json');
+  if (Object.hasOwn(pkg.files, 'runtime/owner-contract.json')) assert.equal(fs.readFileSync(clientDescriptor, 'utf8'), canonical(projectClientDescriptor(d)));
   return { directory, pkg, descriptor, clientDescriptor, d };
 }
 function stateBytes(directory) {
@@ -144,7 +143,7 @@ const completion = (frame, result = observation()) => ({ commandId: frame.comman
 test('default verified entry markers remain exact and new owner files stay outside the ordinary source package', async t => {
   assert.equal(checkEntrySource(fs.readFileSync(path.join(SOURCE, 'runtime/stdio-entry.js'), 'utf8')), true);
   assert.ok(EXTRA.every(file => !Object.hasOwn(buildPackage(SOURCE, 'readonly').files, file)));
-  const f = install(t), main = childMain(t, f, 'stdio-entry'); await main.event('http');
+  const f = install(t, buildPackage(SOURCE, 'readonly')), main = childMain(t, f, 'stdio-entry'); await main.event('http');
   const response = once(main.child.stdout, 'data');
   main.child.stdin.write(canonical({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }) + '\n');
   assert.equal(JSON.parse(String((await response)[0])).result.serverInfo.name, 'ae-agent-core4');

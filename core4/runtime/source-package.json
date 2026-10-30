@@ -27,6 +27,17 @@
     "protocol/artifact.json"
   ],
   "optional": {
+    "owner": {
+      "files": [
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/attachment-owner.js"
+      ]
+    },
     "manual": {
       "files": [
         "config/admissions/titles.json",

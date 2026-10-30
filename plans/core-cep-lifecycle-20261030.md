@@ -113,7 +113,9 @@ R3 не использует fake production epoch и не переносит au
  129selectedPASS, source review ACCEPT; [границы](core-cep-r2-runtime-20261030.md).
 - [x] R3a: explicit expired-controller transfer,16lease+24owner+1wire PASS,
   source review ACCEPT; [границы](core-cep-r3-transfer-20261030.md).
-- [ ] R2c–R5: package/installer/launcher/recovery/CEP и приёмка;
+- [x] R2c1: transactionally installed owner/client closure и sidecar,
+  общий packet169PASS, source review ACCEPT; [границы](core-cep-r2-installation-20261030.md).
+- [ ] R2c2–R5: launcher/recovery/CEP и приёмка;
   устойчивость installed runtime пока не заявлена.
 
 ## Decision Log
@@ -161,6 +163,8 @@ Restart Core/AE, install и native dispatch этого этапа0. UI попы�
 
 ## Продолжение
 
-R1/R2a/R2b завершены. Следующий source/offline блок — R2c package/installer/launcher.
+R1/R2a/R2b/R2c1 и отдельный R3a завершены в source. Следующий source/offline блок —
+[R2c2 launcher](core-cep-r2-launcher-20261030.md), затем
+[R3 recovery](core-cep-r3-recovery-20261030.md).
 Прочитать актуальный status/queue перед любым live изменением; сообщения в старой
 UI очереди не считать принятыми. Чужие snapshots/AEP и старые receipts сохранять.

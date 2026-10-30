@@ -38,10 +38,11 @@ function fixture(extraFiles = {}) {
     run(entry = path.join(releaseDir, 'runtime/client-entry.js')) { return spawnSync(process.execPath, [entry, '--client-descriptor', file], { encoding: 'utf8', windowsHide: true }); } };
 }
 test('client-entry projects only the control role and verifies without reading full installation or state', () => {
-  const f = fixture(), original = fs.readFileSync; const reads = [];
-  fs.readFileSync = function (file, ...args) { reads.push(String(file)); return original.call(this, file, ...args); };
-  try { assert.deepEqual(verifyClientDescriptor(f.file), f.descriptor); } finally { fs.readFileSync = original; }
+  const f = fixture(), original = fs.openSync; const reads = [];
+  fs.openSync = function (file, ...args) { reads.push(String(file)); return original.call(this, file, ...args); };
+  try { assert.deepEqual(verifyClientDescriptor(f.file), f.descriptor); } finally { fs.openSync = original; }
   assert.equal('panelToken' in f.descriptor, false); assert.equal('stateDir' in f.descriptor, false); assert.equal('cepDir' in f.descriptor, false);
+  for (const file of [f.file, path.join(f.installRoot, 'origin.json'), path.join(f.releaseDir, 'release.json')]) assert.ok(reads.includes(file), 'bounded reader opens the expected role descriptor/origin/release');
   assert.equal(reads.some(v => /installation\.json$|state[\\/]production/.test(v)), false);
 });
 test('client-entry endpoint is installation scoped and independent of package revision', () => {
