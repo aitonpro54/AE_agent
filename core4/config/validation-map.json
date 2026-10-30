@@ -1,5 +1,12 @@
 {
   "owners": [
+    { "prefix": "core4/runtime/windows-owner-process.js", "owner": "windows-owner-process", "checks": ["windows-owner-process", "owner-runtime"] },
+    { "prefix": "core4/test/windows-owner-process.test.js", "owner": "windows-owner-process", "checks": ["windows-owner-process"] },
+    { "prefix": "core4/runtime/owner-lifecycle.js", "owner": "owner-lifecycle", "checks": ["owner-lifecycle", "owner-lifecycle-faults", "owner-runtime", "owner-installation", "owner-marker-publication"] },
+    { "prefix": "core4/test/owner-lifecycle.test.js", "owner": "owner-lifecycle", "checks": ["owner-lifecycle"] },
+    { "prefix": "core4/test/owner-lifecycle-faults.test.js", "owner": "owner-lifecycle-faults", "checks": ["owner-lifecycle-faults"] },
+    { "prefix": "core4/test/owner-marker-publication.test.js", "owner": "owner-marker-publication", "checks": ["owner-marker-publication"] },
+    { "prefix": "core4/test/fixtures/owner-lifecycle-fixture.js", "owner": "owner-lifecycle-fixture", "checks": ["owner-lifecycle", "owner-lifecycle-faults", "owner-marker-publication"] },
     { "prefix": "core4/test/client-launcher.test.js", "owner": "client-launcher", "checks": ["client-launcher"] },
     { "prefix": "core4/runtime/recovery-inspection.js", "owner": "recovery-inspection", "checks": ["recovery-inspection"] },
     { "prefix": "core4/test/recovery-inspection.test.js", "owner": "recovery-inspection", "checks": ["recovery-inspection"] },
@@ -998,6 +1005,10 @@
     }
   ],
   "checkDependencies": {
+    "windows-owner-process": ["runtime/windows-owner-process.js", "test/windows-owner-process.test.js"],
+    "owner-lifecycle": ["runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "core/state-lock.js", "integrations/cep/completion-store.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-lifecycle.test.js"],
+    "owner-lifecycle-faults": ["runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "core/state-lock.js", "integrations/cep/completion-store.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-lifecycle-faults.test.js"],
+    "owner-marker-publication": ["core/state-lock.js", "integrations/cep/completion-store.js", "runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-marker-publication.test.js"],
     "client-launcher": ["runtime/client-entry.js", "runtime/client-ipc.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/owner-contract.json", "test/client-launcher.test.js"],
     "recovery-inspection": ["runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "runtime/windows-reservation-provider.js", "core/ledger.js", "core/broker.js", "core/receiver.js", "core/resources.js", "integrations/cep/http-peer.js", "integrations/cep/completion-store.js", "protocol/", "test/recovery-inspection.test.js"],
     "owner-installation": ["runtime/", "tools/install-core4.js", "tools/package-installable.js", "tools/package-standalone-installer.js", "tools/standalone-installer.js", "tools/disposition-install-preflight.js", "test/owner-installation.test.js", "test/fixtures/fixed-format1-package.js", "test/fixtures/legacy-installation-v1.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
@@ -1477,6 +1488,10 @@
     ]
   },
   "checkCommands": {
+    "windows-owner-process": ["node", "--test", "--test-name-pattern=windows-owner-process", "test/windows-owner-process.test.js"],
+    "owner-lifecycle": ["node", "--test", "--test-name-pattern=owner-lifecycle", "test/owner-lifecycle.test.js"],
+    "owner-lifecycle-faults": ["node", "--test", "--test-name-pattern=owner-lifecycle-faults", "test/owner-lifecycle-faults.test.js"],
+    "owner-marker-publication": ["node", "--test", "--test-name-pattern=owner-marker-publication", "test/owner-marker-publication.test.js"],
     "client-launcher": ["node", "--test", "--test-name-pattern=client-launcher", "test/client-launcher.test.js"],
     "recovery-inspection": ["node", "--test", "--test-name-pattern=recovery-inspection", "test/recovery-inspection.test.js"],
     "owner-installation": ["node", "--test", "--test-name-pattern=owner-installation", "test/owner-installation.test.js"],
@@ -1639,6 +1654,10 @@
     ]
   },
   "checkPolicy": {
+    "windows-owner-process": { "kind": "component" },
+    "owner-lifecycle": { "kind": "component" },
+    "owner-lifecycle-faults": { "kind": "component" },
+    "owner-marker-publication": { "kind": "component" },
     "client-launcher": { "kind": "component" },
     "recovery-inspection": { "kind": "component" },
     "owner-installation": { "kind": "integration" },

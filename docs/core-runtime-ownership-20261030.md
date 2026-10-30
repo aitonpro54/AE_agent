@@ -80,6 +80,13 @@ detach, draining принятой операции, expiry и sticky fence. Об
 Отдельно owner обязан учитывать Broker.running/reconciling/controlPending,
 physical queue и durable recovery перед передачей lease.
 
-R2 source owner/client/installer/launcher завершён; до R3 нет штатного recovery
-и смены AE adoption, до R4 панель не получает новое reconnect поведение. Настоящий
-configured-client/CEP/AE proof требуется в R5 отдельно от TEMP tests.
+R2 source owner/client/installer/launcher завершён. R3c добавляет versioned
+PID/birth/boot ownership, atomic metadata, settled dead-owner recovery и отдельный
+diagnostic owner без Broker writer при fenced history. Provenance MAC использует
+оба независимых role secrets; не заменяет OS death/election/CAS/semantic proof.
+Lifecycle-only intents не возобновляют принятые RPC и не переносят grants/refs.
+
+R3d ещё должен завершить maintenance/stop/update и смену AE adoption; до R4 панель
+не получает новое reconnect поведение. Настоящий configured-client/CEP/AE и
+Windows job-lifetime proof требуется в R5 отдельно от TEMP tests. Installed
+manual3f92 пока сохраняется; source packet359PASS не объявляет его исправленным.

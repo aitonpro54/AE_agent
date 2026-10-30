@@ -74,7 +74,7 @@ async function stopOwner(f) {
 function fixture(t, options = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-launcher-')); resources(t).directories.push(root);
   const origin = { installationId: 'fixture-' + randomUUID(), machineId: 'launcher-fixture' }; fs.writeFileSync(path.join(root, 'origin.json'), canonical(origin));
-  const files = Object.fromEntries(['client-entry', 'client-ipc', 'client-stdio', 'attachment-owner', 'controller-lease'].map(name => ['runtime/' + name + '.js', fs.readFileSync(path.join(SOURCE, 'runtime/' + name + '.js'))]));
+  const files = Object.fromEntries(['client-entry', 'client-ipc', 'client-stdio', 'attachment-owner', 'controller-lease', 'owner-lifecycle', 'recovery-inspection', 'windows-owner-process'].map(name => ['runtime/' + name + '.js', fs.readFileSync(path.join(SOURCE, 'runtime/' + name + '.js'))]));
   files['runtime/owner-entry.js'] = Buffer.from(ownerSource); files['runtime/owner-contract.json'] = fs.readFileSync(path.join(SOURCE, 'runtime/owner-contract.json'));
   Object.assign(files, options.files);
   if (options.contract) files['runtime/owner-contract.json'] = Buffer.from(canonical(options.contract));

@@ -7,10 +7,11 @@ function files(directory) { return fs.readdirSync(directory, { withFileTypes: tr
 function checkEntrySource(source) {
   // Conservative reviewed-source guard, not a JavaScript or OS sandbox.
   // Exact anchors fail closed when startup's verification layout changes.
-  const markers = ['async function start(', 'const installation = verifyInstallation(descriptor), root = installation.releaseDir;', "fail('installation_entry_root_mismatch');", "const startupGate = fs.openSync(installGate, 'wx');", "if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');", 'finally { fs.closeSync(startupGate); fs.unlinkSync(installGate); }'];
+  const markers = ['async function start(', 'const installation = verifyInstallation(descriptor), root = installation.releaseDir;', "fail('installation_entry_root_mismatch');", "if (mode === 'stdio') startupGate = fs.openSync(installGate, 'wx');", "if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');", 'ownerLifecycle = await createOwnerLifecycle({ installation, descriptorPath: descriptor, reservedServer });', "const { Broker } = require('../core/broker.js');", 'finally { if (startupGate !== undefined) { fs.closeSync(startupGate); fs.unlinkSync(installGate); } }'];
   const offsets = markers.map(marker => source.indexOf(marker));
   if (offsets.some((offset, n) => offset < 0 || source.lastIndexOf(markers[n]) !== offset || n > 0 && offset <= offsets[n - 1])) fail('entry_verification_layout');
-  const barrier = offsets[4] + markers[4].length, tail = offsets[5] + markers[5].length;
+  const barrier = offsets[4] + markers[4].length, tail = offsets[7] + markers[7].length;
+  for (const match of source.slice(barrier, offsets[5]).matchAll(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) if (!match[1].startsWith('node:') && match[1] !== './owner-lifecycle.js') fail('owner_store_before_lifecycle');
   for (const region of [source.slice(0, barrier), source.slice(tail)]) {
     if (/require\s*\(\s*[^'"\s]/.test(region)) fail('unverified_entry_import');
     for (const match of region.matchAll(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) if (!match[1].startsWith('node:')) fail('unverified_entry_import');

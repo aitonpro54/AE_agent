@@ -139,17 +139,17 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const installation = verifyInstallation(descriptor), root = installation.releaseDir;
   if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(root)) fail('installation_entry_root_mismatch');
   const installGate = path.join(installation.installRoot, 'install.lock');
-  const startupGate = fs.openSync(installGate, 'wx');
-  let broker, peer, attachmentOwner, ipc, reservedServer;
+  let startupGate, broker, peer, attachmentOwner, ipc, reservedServer, ownerLifecycle;
   try {
-  if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');
   if (!['stdio', 'owner'].includes(mode)) fail('runtime_mode');
+  if (mode === 'stdio') startupGate = fs.openSync(installGate, 'wx');
+  if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');
   const release = JSON.parse(fs.readFileSync(path.join(root, 'release.json'), 'utf8'));
-  const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js'];
+  const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js'];
   const ownerRuntime = Object.hasOwn(release.hashes, 'runtime/owner-contract.json');
   if (ownerRuntime) {
     const bytes = fs.readFileSync(path.join(root, 'runtime/owner-contract.json'));
-    const expected = { version: 1, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+    const expected = { version: 2, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
       ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: ownerFiles };
     if (release.format !== 2 || hash(bytes) !== release.hashes['runtime/owner-contract.json'] || canonical(JSON.parse(bytes)) !== canonical(expected) || ownerFiles.some(file => !Object.hasOwn(release.hashes, file))) fail('owner_contract_schema');
     if (mode !== 'owner') fail('owner_entry_required');
@@ -158,13 +158,54 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (ownerFiles.some(file => Object.hasOwn(release.hashes, file))) fail('owner_contract_required');
   }
   if (mode === 'owner') {
-    // Elect the physical endpoint while the shared install gate is still held,
-    // before opening either durable execution store. Never displace a listener.
+    // HTTP elects the starter before acquiring/recovering a process-bound gate.
+    // No execution store opens until lifecycle has verified death/CAS/history.
     reservedServer = require('node:http').createServer();
     await new Promise((resolve, reject) => {
       reservedServer.once('error', reject);
       reservedServer.listen(port, '127.0.0.1', () => { reservedServer.removeListener('error', reject); resolve(); });
     });
+    const { createOwnerLifecycle } = require('./owner-lifecycle.js');
+    ownerLifecycle = await createOwnerLifecycle({ installation, descriptorPath: descriptor, reservedServer });
+  }
+  async function exposeOwner(facade, activity, invoke) {
+    const { createAttachmentOwner, OWNER_METHODS } = require('./attachment-owner.js');
+    const { createIpcServer } = require('./client-ipc.js');
+    const { ownerEndpoint } = require('./client-entry.js');
+    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke });
+    const endpoint = ownerEndpoint(installation);
+    ipc = createIpcServer({ endpoint, identity: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash },
+      secret: installation.controlToken, bootId: attachmentOwner.bootId, methods: OWNER_METHODS,
+      onAttach: attachmentOwner.onAttach, onDetach: attachmentOwner.onDetach, onRequest: attachmentOwner.onRequest });
+    if (ownerLifecycle.mode === 'active') ownerLifecycle.markReady();
+    await ipc.listen(); ownerLifecycle.releaseStartup();
+    let closed = false, closing;
+    return { endpoint, bootId: attachmentOwner.bootId,
+      async close() {
+        if (closed) return; if (closing) return closing;
+        if (attachmentOwner.status().accepted || activity().pending) fail('owner_draining');
+        ownerLifecycle.beginClose();
+        closing = (async () => { await attachmentOwner.close(); await ipc.close(); ownerLifecycle.finishClose(); closed = true; })();
+        return closing;
+      },
+      status: () => ({ ...facade.status(), attachmentOwner: attachmentOwner.status(), ipc: ipc.status() }) };
+  }
+  if (ownerLifecycle?.mode === 'diagnostic') {
+    // A fenced boot exposes authenticated observations without constructing a
+    // Broker or opening an execution store. CEP receives only a static refusal.
+    reservedServer.on('request', (req, res) => {
+      req.on('error', () => {}); const origin = req.headers.origin;
+      if (origin === 'null' || origin === 'file://') res.setHeader('Access-Control-Allow-Origin', origin);
+      res.writeHead(503, { 'Content-Type': 'application/json', 'Connection': 'close' });
+      res.on('finish', () => req.socket.destroy()); res.end(JSON.stringify({ error: 'owner_recovery_required' }));
+    });
+    const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.0.0',
+      installation: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash, nodeVerified: true },
+      lifecycle: ownerLifecycle.state(), ownershipFault: 'owner_recovery_required', physical: { listening: reservedServer.listening, port: reservedServer.address()?.port || null, inspectionAvailable: false, storeClosed: true, unknown: true, coverage: 'diagnostic-only; execution queue not reopened' }, externalLegacyCoverage: 'unobserved' });
+    const unavailable = () => ({ available: false, reason: 'owner_recovery_required' });
+    const facade = { status, diagnostics: status, listModules: unavailable, getContract: unavailable, getTask: unavailable,
+      close: () => new Promise(resolve => { reservedServer.close(resolve); reservedServer.closeAllConnections(); }) };
+    return await exposeOwner(facade, () => ({ pending: false, unresolved: true, fault: true }), (method, payload) => facade[method](payload));
   }
   const { Broker } = require('../core/broker.js');
   const { serve } = require('../core/stdio.js');
@@ -187,7 +228,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission: manualAsset.admission }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
     privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };
   }
-  broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, ...(privateEmbedding ? { privateEmbedding } : {}) });
+  broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, ...(ownerLifecycle ? { stateLockToken: ownerLifecycle.brokerToken } : {}), ...(privateEmbedding ? { privateEmbedding } : {}) });
   const admissionGuard = command => {
     if (broker.closed) fail('broker_closed');
     if (broker.stateLock.error) fail(broker.stateLock.error);
@@ -199,11 +240,11 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (!context) fail('owner_controller_required');
     // Retain this exact operation's grant beyond ALS lifetime, including /poll.
     return () => context.assertCurrent();
-  } } : {}), installationContext: { descriptorPath: descriptor } });
+  } } : {}), installationContext: { descriptorPath: descriptor }, ...(ownerLifecycle ? { ownerToken: ownerLifecycle.receiverToken } : {}) });
   const contractId = hash({ packageHash: installation.packageHash, admission, contract }); let closed = false;
   const facade = Object.create(broker);
   const physical = () => { const value = peer.status(); return { ...value, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && !value.storeClosed && !value.storeFault && !value.pending }; };
-  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.0.0', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
+  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.0.0', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
   facade.diagnostics = () => ({ ...broker.diagnostics(), ...facade.status() });
   facade.connect = async () => {
     const result = manual ? await broker.connect() : null;
@@ -225,27 +266,16 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   facade.close = async () => { if (closed) return; closed = true; await peer.close(); await broker.close(); };
   try { await peer.listen(); } catch (e) { await facade.close(); throw e; }
   if (mode === 'owner') {
-    const { createAttachmentOwner, OWNER_METHODS } = require('./attachment-owner.js');
-    const { createIpcServer } = require('./client-ipc.js');
-    const { ownerEndpoint } = require('./client-entry.js');
     const activity = () => {
       const physicalState = peer.status();
       return { pending: !!(broker.running || broker.reconciling || broker.controllerBusy || broker.controlPending || broker.worker.status().pending || physicalState.pending),
         unresolved: !!(broker.ledger.unresolved().length || physicalState.storeClosed || physicalState.unknown),
         fault: !!(broker.closed || broker.stateLock.error || broker.ledger.corrupt || physicalState.storeFault) };
     };
-    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke(method, payload, context) {
+    return await exposeOwner(facade, activity, (method, payload, context) => {
       const receiver = Object.hasOwn(facade, method) ? facade : broker;
       return invocationContext.run(context, () => { if (!context.observer) context.assertCurrent(); return receiver[method](payload); });
-    } });
-    const endpoint = ownerEndpoint(installation);
-    ipc = createIpcServer({ endpoint, identity: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash },
-      secret: installation.controlToken, bootId: attachmentOwner.bootId, methods: OWNER_METHODS,
-      onAttach: attachmentOwner.onAttach, onDetach: attachmentOwner.onDetach, onRequest: attachmentOwner.onRequest });
-    await ipc.listen();
-    return { endpoint, bootId: attachmentOwner.bootId,
-      close: async () => { await attachmentOwner.close(); await ipc.close(); },
-      status: () => ({ ...facade.status(), attachmentOwner: attachmentOwner.status(), ipc: ipc.status() }) };
+    });
   }
   serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.0.0' } });
   return { close: facade.close, status: facade.status };
@@ -253,9 +283,9 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (ipc) await ipc.close();
     if (peer) await peer.close();
     else if (reservedServer?.listening) await new Promise(resolve => { reservedServer.close(resolve); reservedServer.closeAllConnections(); });
-    if (broker) await broker.close(); throw e;
+    if (broker) await broker.close(); if (ownerLifecycle) { try { ownerLifecycle.abortStartup(); } catch {} } throw e;
   }
-  finally { fs.closeSync(startupGate); fs.unlinkSync(installGate); }
+  finally { if (startupGate !== undefined) { fs.closeSync(startupGate); fs.unlinkSync(installGate); } }
 }
 // Direct-main start imports the historical reader synchronously. Publish these
 // builtin verifiers first so its installation.js import sees initialized exports.

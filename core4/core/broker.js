@@ -16,9 +16,9 @@ const { hash, canonical, exact, fail, id, bounded } = require('../protocol/json'
 const clone = value => JSON.parse(canonical(value));
 const pick = (object, fields) => Object.fromEntries(fields.map(k => [k, object[k]]));
 class Broker {
-  constructor({ root = path.resolve(__dirname, '..'), stateDir, trace, workerTimeout, transportTimeout = 2000, privateEmbedding } = {}) {
+  constructor({ root = path.resolve(__dirname, '..'), stateDir, trace, workerTimeout, transportTimeout = 2000, privateEmbedding, stateLockToken } = {}) {
     if (!stateDir) fail('explicit_state_directory_required');
-    this.stateLock = acquireStateLock(stateDir);
+    this.stateLock = acquireStateLock(stateDir, stateLockToken === undefined ? {} : { token: stateLockToken });
     this.closed = false; this.ledger = new Ledger(path.join(stateDir, 'ledger.ndjson')); this.ledger.ownerFault = this.stateLock.error; this.ledger.writeGuard = () => !this.closed;
     try {
       this.artifacts = new Artifacts({ root, store: path.join(stateDir, 'artifacts'), trace, readOnly: !!this.stateLock.error, publicationGuard: () => {

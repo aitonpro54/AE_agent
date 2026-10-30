@@ -22,7 +22,7 @@ const { openCompletionStore } = require('../integrations/cep/completion-store');
 const { mac } = require('../integrations/cep/peer-protocol');
 const { checkEntrySource } = require('../tools/check-boundaries');
 const SOURCE = path.resolve(__dirname, '..'), preload = path.join(__dirname, 'fixtures/owner-runtime-child.js');
-const EXTRA = ['owner-entry', 'client-entry', 'client-ipc', 'client-stdio', 'controller-lease', 'attachment-owner'].map(name => 'runtime/' + name + '.js');
+const EXTRA = ['owner-entry', 'client-entry', 'client-ipc', 'client-stdio', 'controller-lease', 'attachment-owner', 'owner-lifecycle', 'recovery-inspection', 'windows-owner-process'].map(name => 'runtime/' + name + '.js');
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 function remove(directory) {
   const prefix = path.join(os.tmpdir(), 'core4-owner-');
@@ -61,7 +61,7 @@ function testPackage() {
 function install(t, pkg = testPackage()) {
   const directory = temp(t);
   const args = { pkg, installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'),
-    configPath: path.join(directory, 'config.toml'), nodePath: fs.realpathSync(process.execPath), machineId: 'owner-runtime-fixture' };
+    configPath: path.join(directory, 'config.toml'), nodePath: fs.realpathSync(process.execPath), machineId: os.hostname() };
   const applied = applyInstall(planInstall(args)), descriptor = applied.descriptorPath, d = verifyInstallation(descriptor);
   const clientDescriptor = path.join(d.installRoot, 'core-client.json');
   if (Object.hasOwn(pkg.files, 'runtime/owner-contract.json')) assert.equal(fs.readFileSync(clientDescriptor, 'utf8'), canonical(projectClientDescriptor(d)));
@@ -141,7 +141,11 @@ function vmObservation(pkg, frame) {
 const completion = (frame, result = observation()) => ({ commandId: frame.commandId, originalBinding: frame.originalBinding, pins: frame.pins, result });
 
 test('default verified entry markers remain exact and new owner files stay outside the ordinary source package', async t => {
-  assert.equal(checkEntrySource(fs.readFileSync(path.join(SOURCE, 'runtime/stdio-entry.js'), 'utf8')), true);
+  const entrySource = fs.readFileSync(path.join(SOURCE, 'runtime/stdio-entry.js'), 'utf8');
+  assert.equal(checkEntrySource(entrySource), true);
+  const barrier = 'ownerLifecycle = await createOwnerLifecycle({ installation, descriptorPath: descriptor, reservedServer });';
+  assert.throws(() => checkEntrySource(entrySource.replace(barrier, "const unchecked = require('../core/broker.js');\n" + barrier)), /owner_store_before_lifecycle/);
+  assert.throws(() => checkEntrySource(entrySource.replace(barrier, '/* missing process/gate/history admission */')), /entry_verification_layout/);
   assert.ok(EXTRA.every(file => !Object.hasOwn(buildPackage(SOURCE, 'readonly').files, file)));
   const f = install(t, buildPackage(SOURCE, 'readonly')), main = childMain(t, f, 'stdio-entry'); await main.event('http');
   const response = once(main.child.stdout, 'data');
@@ -203,7 +207,7 @@ test('competing starts reserve under the install gate and later owner attempts c
   const attempts = await Promise.allSettled([entry.startOwner({ descriptor: f.descriptor, port: 0 }), entry.startOwner({ descriptor: f.descriptor, port: 0 })]);
   assert.equal(attempts.filter(result => result.status === 'fulfilled').length, 1);
   const winner = attempts.find(result => result.status === 'fulfilled').value;
-  resources(t).closers.push(() => winner.close()); assert.equal(attempts.find(result => result.status === 'rejected').reason.code, 'EEXIST');
+  resources(t).closers.push(() => winner.close()); assert.ok(['EEXIST', 'owner_lifecycle_alive'].includes(attempts.find(result => result.status === 'rejected').reason.code));
   const before = stateBytes(f.d.stateDir), port = winner.status().physical.port, client = await ipc(t, f);
   await assert.rejects(entry.startOwner({ descriptor: f.descriptor, port }), error => error.code === 'EADDRINUSE');
   assert.deepEqual(stateBytes(f.d.stateDir), before);
@@ -214,7 +218,7 @@ test('competing starts reserve under the install gate and later owner attempts c
   assert.deepEqual(events.map(event => event.type), ['origin']);
 });
 
-test('reserved HTTP server closes if Broker construction fails before peer creation', async t => {
+test('reserved HTTP server closes and attributed startup fence remains if Broker construction fails before peer creation', async t => {
   const f = install(t), entry = require(path.join(f.d.releaseDir, 'runtime/owner-entry.js'));
   fs.writeFileSync(path.join(f.d.stateDir, 'broker/artifacts'), 'synthetic-blocked-artifacts-directory');
   const createServer = http.createServer; let reserved;
@@ -223,7 +227,14 @@ test('reserved HTTP server closes if Broker construction fails before peer creat
   try { await assert.rejects(entry.startOwner({ descriptor: f.descriptor, port: 0 }), error => error.code === 'EEXIST'); }
   finally { http.createServer = createServer; }
   assert.ok(reserved instanceof http.Server); assert.equal(reserved.listening, false); assert.equal(reserved.address(), null);
-  assert.equal(fs.existsSync(path.join(f.d.stateDir, 'receiver')), false); assert.equal(fs.existsSync(path.join(f.d.installRoot, 'install.lock')), false);
+  assert.equal(fs.existsSync(path.join(f.d.stateDir, 'receiver')), false);
+  const gate = JSON.parse(fs.readFileSync(path.join(f.d.installRoot, 'install.lock'))), owner = JSON.parse(fs.readFileSync(path.join(f.d.stateDir, 'runtime-owner.json')));
+  assert.equal(gate.body.kind, 'startup-gate'); assert.equal(gate.body.phase, 'startup');
+  assert.equal(owner.body.kind, 'runtime-owner'); assert.equal(owner.body.phase, 'starting');
+  assert.deepEqual(gate.body.scope, owner.body.scope); assert.equal(owner.body.scope.pid, process.pid);
+  const before = stateBytes(f.d.stateDir), gateBefore = fs.readFileSync(path.join(f.d.installRoot, 'install.lock'));
+  await assert.rejects(entry.startOwner({ descriptor: f.descriptor, port: 0 }), error => error.code === 'owner_lifecycle_alive');
+  assert.deepEqual(stateBytes(f.d.stateDir), before); assert.deepEqual(fs.readFileSync(path.join(f.d.installRoot, 'install.lock')), gateBefore);
 });
 
 test('private prebound peer requires a listening native loopback HTTP server and reuses its one listener', async t => {
@@ -253,8 +264,57 @@ test('initial receiver owner marker leaves status available and refuses controll
 test('initial corrupt Broker ledger blocks acquisition while owner diagnostics remain available', async t => {
   const f = install(t), directory = path.join(f.d.stateDir, 'broker'); fs.mkdirSync(directory, { recursive: true }); fs.writeFileSync(path.join(directory, 'ledger.ndjson'), 'corrupt\n');
   await directOwner(t, f); const client = await ipc(t, f), status = await ok(client.call('core_status', {}));
-  assert.equal(status.ledgerFault, true); assert.equal(status.attachmentOwner.activity.fault, true);
+  assert.equal(status.lifecycle.mode, 'diagnostic'); assert.equal(status.lifecycle.reason, 'owner_lifecycle_history_fault'); assert.equal(status.attachmentOwner.activity.fault, true);
+  assert.equal(fs.readFileSync(path.join(directory, 'ledger.ndjson'), 'utf8'), 'corrupt\n'); assert.equal(fs.existsSync(path.join(directory, 'artifacts')), false);
   assert.deepEqual(await client.call('controller_acquire', {}), { ok: false, code: 'owner_recovery_required' });
+});
+
+test('actual dead settled owner restarts with fresh process proof and unchanged journal and installation', async t => {
+  const f = install(t), first = childMain(t, f); await first.event('ipc');
+  const before = await ok((await ipc(t, f)).call('core_status', {}));
+  const journalFile = path.join(f.d.stateDir, 'receiver/completions.ndjson'), originalJournal = fs.readFileSync(journalFile), descriptor = fs.readFileSync(f.descriptor);
+  assert.equal(before.lifecycle.mode, 'active'); assert.equal(typeof before.lifecycle.birthTicks, 'string');
+  // Retained child handle belongs only to this TEMP installed fixture process.
+  assert.equal(first.child.kill('SIGKILL'), true); await first.exit;
+  assert.equal(fs.existsSync(path.join(f.d.stateDir, 'runtime-owner.json')), true);
+  const second = childMain(t, f); await second.event('ipc'); const after = await ok((await ipc(t, f)).call('core_status', {}));
+  assert.equal(after.lifecycle.mode, 'active'); assert.notEqual(after.pid, before.pid); assert.notEqual(after.lifecycle.processBootId, before.lifecycle.processBootId);
+  assert.equal(after.physical.receiverStoreIdentity, before.physical.receiverStoreIdentity); assert.equal(after.physical.storeClosed, false); assert.equal(after.ownershipFault, null);
+  assert.deepEqual(fs.readFileSync(journalFile), originalJournal); assert.deepEqual(fs.readFileSync(f.descriptor), descriptor);
+  const recovery = fs.readdirSync(path.join(f.d.installRoot, 'transactions')).filter(name => name.endsWith('-owner-lifecycle')).map(name => path.join(f.d.installRoot, 'transactions', name, 'intent.json')).filter(file => fs.existsSync(file)).map(file => JSON.parse(fs.readFileSync(file)));
+  assert.ok(recovery.some(r => r.body.kind === 'owner-recovery-intent' && r.body.previousScope.pid === before.pid && r.body.previousScope.birthTicks === before.lifecycle.birthTicks));
+  second.child.send('signal'); assert.equal((await second.exit).code, 0); assert.equal(second.stderr, '');
+});
+
+test('actual legacy receiver fence exposes only recovery diagnostics without a Broker writer or replay', async t => {
+  const f = install(t), directory = path.join(f.d.stateDir, 'receiver'); openCompletionStore({ directory }).close();
+  const marker = path.join(directory, 'owner'), journalFile = path.join(directory, 'completions.ndjson'); fs.writeFileSync(marker, ''); const journal = fs.readFileSync(journalFile);
+  const main = childMain(t, f); await main.event('ipc'); const client = await ipc(t, f), status = await ok(client.call('core_status', {}));
+  assert.equal(status.ready, false); assert.equal(status.lifecycle.mode, 'diagnostic'); assert.equal(status.lifecycle.reason, 'owner_lifecycle_legacy_marker');
+  assert.equal(status.lifecycle.historyAtStartup.receiver.settled, true); assert.equal(fs.existsSync(path.join(f.d.stateDir, 'broker/artifacts')), false);
+  assert.deepEqual(await client.call('controller_acquire', {}), { ok: false, code: 'owner_recovery_required' });
+  const response = await raw(status.physical.port, '/challenge', { role: 'panel' }); assert.equal(response.status, 503); assert.deepEqual(response.value, { error: 'owner_recovery_required' });
+  assert.equal(fs.readFileSync(marker).length, 0); assert.deepEqual(fs.readFileSync(journalFile), journal);
+  main.child.send('signal'); assert.equal((await main.exit).code, 0); assert.equal(fs.readFileSync(marker).length, 0); assert.deepEqual(fs.readFileSync(journalFile), journal);
+});
+
+test('actual owner crash after durable delivery restarts diagnostic and never promotes or replays original ongoing work', async t => {
+  const f = install(t), first = childMain(t, f); await first.event('ipc'); const client = await ipc(t, f), status = await ok(client.call('core_status', {}));
+  const p = await panel(status.physical.port, f.d); await ok(client.call('controller_acquire', {}));
+  const contract = await ok(client.call('get_module_contract', { moduleId: 'project-inspection' }));
+  const request = client.call('inspect_module_target', { moduleId: 'project-inspection', contractId: contract.contractId, target: {} });
+  const lost = assert.rejects(request, e => e.code === 'ipc_outcome_uncertain');
+  const frame = (await p.request('/poll', {})).value.command; assert.ok(frame);
+  const journalFile = path.join(f.d.stateDir, 'receiver/completions.ndjson'), journal = fs.readFileSync(journalFile), marker = fs.readFileSync(path.join(f.d.stateDir, 'receiver/owner'));
+  assert.equal(first.child.kill('SIGKILL'), true); await first.exit; await lost;
+  const second = childMain(t, f); await second.event('ipc'); const observer = await ipc(t, f), diagnostic = await ok(observer.call('core_status', {}));
+  assert.equal(diagnostic.lifecycle.mode, 'diagnostic'); assert.equal(diagnostic.lifecycle.reason, 'owner_lifecycle_unresolved'); assert.equal(diagnostic.lifecycle.historyAtStartup.receiver.unresolvedCount, 1);
+  assert.deepEqual(await observer.call('controller_acquire', {}), { ok: false, code: 'owner_recovery_required' });
+  assert.equal((await raw(diagnostic.physical.port, '/poll', {})).status, 503);
+  assert.equal((await raw(diagnostic.physical.port, '/complete', completion(frame))).status, 503);
+  assert.deepEqual(fs.readFileSync(journalFile), journal); assert.deepEqual(fs.readFileSync(path.join(f.d.stateDir, 'receiver/owner')), marker);
+  assert.deepEqual(journal.toString('utf8').trim().split('\n').map(JSON.parse).map(e => e.type), ['origin', 'begin']);
+  second.child.send('signal'); assert.equal((await second.exit).code, 0); assert.deepEqual(fs.readFileSync(journalFile), journal);
 });
 
 test('inherited generic methods execute on the actual Broker so activity observes its control state', async t => {

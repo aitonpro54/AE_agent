@@ -67,10 +67,11 @@ test('installed-composition entry source guard covers top-level/start/lease-pref
   assert.equal(checkEntrySource(source), true, 'current post-verification and lazy manual imports remain accepted');
   const initial = 'const installation = verifyInstallation(descriptor), root = installation.releaseDir;';
   const barrier = "if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');";
-  const end = 'finally { fs.closeSync(startupGate); fs.unlinkSync(installGate); }';
+  const end = 'finally { if (startupGate !== undefined) { fs.closeSync(startupGate); fs.unlinkSync(installGate); } }';
   const untrusted = "require('../unverified-helper.js');\n";
   for (const modified of [untrusted + source, source.replace(initial, untrusted + initial), source.replace(barrier, untrusted + barrier), source + '\n' + untrusted]) assert.throws(() => checkEntrySource(modified), /unverified_entry_import/);
   for (const marker of ['async function start(', initial, barrier, end]) {
+    assert.ok(source.includes(marker), 'negative guard fixture must mutate a current source anchor');
     assert.throws(() => checkEntrySource(source.replace(marker, '/* removed verification layout marker */')), /entry_verification_layout/);
     assert.throws(() => checkEntrySource(source + '\n/* ' + marker + ' */'), /entry_verification_layout/);
   }

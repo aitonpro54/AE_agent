@@ -1,5 +1,5 @@
 'use strict';
-// Source-only semantic facts. No filesystem observation, store constructor,
+// Supplied-history semantic facts. No filesystem observation, store constructor,
 // ownership recovery, authority issuance or command replay lives here. Signed
 // legacy dispositions retain the existing read-only lineage/crypto validator.
 const { hash, canonical, fail, MAX_FRAME } = require('../protocol/json');

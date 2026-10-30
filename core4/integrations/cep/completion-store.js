@@ -4,14 +4,38 @@ const path = require('node:path');
 const { hash, bounded, parse, canonical, id, fail, sameDispatch } = require('../../core/receiver-api');
 const { validateDisposition } = require('../../runtime/native-read-disposition');
 // No automatic orphan/PID recovery. An abandoned owner permits proof reads only.
-function openCompletionStore({ directory, io = fs, installationContext }) {
+function openCompletionStore({ directory, io = fs, installationContext, ownerToken }) {
   if (!directory || !path.isAbsolute(directory)) fail('explicit_receiver_store_required');
+  if (ownerToken !== undefined && (typeof ownerToken !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(ownerToken))) fail('receiver_owner_token');
   io.mkdirSync(directory, { recursive: true });
   const file = path.join(directory, 'completions.ndjson'), ownerFile = path.join(directory, 'owner');
-  let owner, closed = false, fault = false, events = [], identity;
+  let owner, ownerStat, closed = false, fault = false, events = [], identity;
+  const ownerBytes = ownerToken === undefined ? Buffer.alloc(0) : Buffer.from(canonical({ version: 1, pid: process.pid, token: ownerToken }));
+  const ownerFields = ['dev', 'ino', 'size', 'birthtimeNs', 'mtimeNs', 'ctimeNs'];
+  const sameOwnerStat = (a, b) => ownerFields.every(k => String(a[k]) === String(b[k]));
+  function checkOwner(file, fd) {
+    const held = io.fstatSync(fd, { bigint: true }), named = io.lstatSync(file, { bigint: true });
+    if (!held.isFile() || !named.isFile() || named.isSymbolicLink() || io.realpathSync(file) !== file || held.size !== BigInt(ownerBytes.length) || !sameOwnerStat(held, named)) fail('receiver_owner_changed');
+    const bytes = Buffer.alloc(ownerBytes.length + 1); let offset = 0, count;
+    while (offset < bytes.length && (count = io.readSync(fd, bytes, offset, bytes.length - offset, offset))) offset += count;
+    if (offset !== ownerBytes.length || !bytes.subarray(0, offset).equals(ownerBytes) || !sameOwnerStat(held, io.fstatSync(fd, { bigint: true })) || !sameOwnerStat(held, io.lstatSync(file, { bigint: true }))) fail('receiver_owner_changed');
+    return held;
+  }
   const records = new Map();
   const isSettled = record => record.state === 'completed' || record.state === 'unknown' && !!record.terminalDisposition;
-  try { owner = io.openSync(ownerFile, 'wx'); } catch (e) { if (e.code !== 'EEXIST') throw e; closed = true; }
+  try {
+    if (ownerToken === undefined) owner = io.openSync(ownerFile, 'wx');
+    else {
+      const stage = ownerFile + '.stage-' + ownerToken;
+      owner = io.openSync(stage, 'wx+');
+      if (io.writeSync(owner, ownerBytes) !== ownerBytes.length) fail('receiver_owner_short_write');
+      io.fsyncSync(owner); checkOwner(stage, owner);
+      io.linkSync(stage, ownerFile); checkOwner(stage, owner); checkOwner(ownerFile, owner);
+      io.unlinkSync(stage);
+    }
+    // Hardlink publication/unlink can change timestamps; pin the final inode.
+    ownerStat = ownerToken === undefined ? io.fstatSync(owner, { bigint: true }) : checkOwner(ownerFile, owner);
+  } catch (e) { if (owner !== undefined) { fault = true; closed = true; } else if (e.code === 'EEXIST') closed = true; else throw e; }
   function append(event) {
     if (closed || fault || owner === undefined) fail('receiver_lane_closed');
     const body = { ...event, seq: events.length + 1, previousHash: events.at(-1)?.recordHash || 'origin' };
@@ -81,8 +105,31 @@ function openCompletionStore({ directory, io = fs, installationContext }) {
       closed = true;
       // Retain the owner marker whenever physical lifetime or durability is ambiguous.
       if (owner !== undefined) {
-        io.closeSync(owner); owner = undefined;
-        if (!fault && [...records.values()].every(isSettled)) io.unlinkSync(ownerFile);
+        let reader;
+        try {
+          if (!fault && [...records.values()].every(isSettled)) {
+            const named = io.lstatSync(ownerFile, { bigint: true });
+            if (!named.isFile() || named.isSymbolicLink() || io.realpathSync(ownerFile) !== ownerFile || !sameOwnerStat(ownerStat, named) || !sameOwnerStat(ownerStat, io.fstatSync(owner, { bigint: true }))) fail('receiver_owner_changed');
+            reader = io.openSync(ownerFile, 'r');
+            if (!sameOwnerStat(ownerStat, io.fstatSync(reader, { bigint: true }))) fail('receiver_owner_changed');
+            const bytes = Buffer.alloc(ownerBytes.length + 1); let offset = 0, count;
+            while (offset < bytes.length && (count = io.readSync(reader, bytes, offset, bytes.length - offset, offset))) offset += count;
+            if (offset !== ownerBytes.length || !bytes.subarray(0, offset).equals(ownerBytes) || !sameOwnerStat(ownerStat, io.fstatSync(reader, { bigint: true })) || !sameOwnerStat(ownerStat, io.lstatSync(ownerFile, { bigint: true }))) fail('receiver_owner_changed');
+            const closing = owner; owner = undefined; io.closeSync(closing);
+            const after = checkOwner(ownerFile, reader);
+            // Closing the published write FD may flush Windows hardlink ctime.
+            // Pin that update only after exact content and stable inode checks.
+            if (ownerFields.filter(k => k !== 'ctimeNs').some(k => String(ownerStat[k]) !== String(after[k]))) fail('receiver_owner_changed');
+            ownerStat = after;
+            const current = io.lstatSync(ownerFile, { bigint: true });
+            if (current.isSymbolicLink() || io.realpathSync(ownerFile) !== ownerFile || !sameOwnerStat(ownerStat, current)) fail('receiver_owner_changed');
+            io.unlinkSync(ownerFile);
+          }
+        } catch { fault = true; }
+        finally {
+          if (reader !== undefined) { try { io.closeSync(reader); } catch { fault = true; } }
+          if (owner !== undefined) { const closing = owner; owner = undefined; try { io.closeSync(closing); } catch { fault = true; } }
+        }
       }
     }
   });

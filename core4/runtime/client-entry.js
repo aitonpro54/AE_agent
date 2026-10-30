@@ -118,9 +118,9 @@ async function startClient({ descriptor, input = process.stdin, output = process
     if (canonical(fresh) !== canonical(d)) fail('client_descriptor_changed');
     if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(fresh.releaseDir)) fail('client_entry_root_changed');
     const manifestBytes = read(path.join(d.releaseDir, 'release.json'), 1024 * 1024), manifest = JSON.parse(manifestBytes);
-    const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js'];
+    const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js'];
     const contractBytes = read(path.join(d.releaseDir, 'runtime/owner-contract.json'), 8192);
-    const expected = { version: 1, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+    const expected = { version: 2, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
       ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: ownerFiles };
     if (hash(manifestBytes) !== d.packageHash || hash(contractBytes) !== manifest.hashes['runtime/owner-contract.json'] ||
         canonical(JSON.parse(contractBytes)) !== canonical(expected) || ownerFiles.some(file => !hex(manifest.hashes[file]))) fail('client_owner_contract');

@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { hash, canonical, fail } = require('../protocol/json');
 const { deriveComposition, registrySource } = require('../runtime/stdio-entry.js');
-const OWNER_FILES = Object.freeze(['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js']);
+const OWNER_FILES = Object.freeze(['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js']);
 function runtimeBinding(release, read) {
   if (!Object.hasOwn(release.hashes, 'runtime/owner-contract.json')) {
     if (OWNER_FILES.some(file => Object.hasOwn(release.hashes, file))) fail('owner_contract_required');
@@ -12,7 +12,7 @@ function runtimeBinding(release, read) {
   const bytes = read('runtime/owner-contract.json');
   if (release.format !== 2 || hash(bytes) !== release.hashes['runtime/owner-contract.json']) fail('owner_contract_integrity');
   let contract; try { contract = JSON.parse(bytes); } catch { fail('owner_contract_schema'); }
-  const expected = { version: 1, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+  const expected = { version: 2, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
     ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: [...OWNER_FILES] };
   if (canonical(contract) !== canonical(expected) || OWNER_FILES.some(file => !Object.hasOwn(release.hashes, file))) fail('owner_contract_schema');
   return Object.freeze(contract);

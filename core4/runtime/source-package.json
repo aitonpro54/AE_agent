@@ -35,7 +35,10 @@
         "runtime/client-ipc.js",
         "runtime/client-stdio.js",
         "runtime/controller-lease.js",
-        "runtime/attachment-owner.js"
+        "runtime/attachment-owner.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/recovery-inspection.js",
+        "runtime/windows-owner-process.js"
       ]
     },
     "manual": {

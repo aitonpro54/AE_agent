@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 const { hash, canonical, parse, bounded, exact, fail, id, dispatchBinding, decode, encode, envelope } = require('../../core/receiver-api');
 const { openCompletionStore } = require('./completion-store');
 const { mac, validMac, requestBody } = require('./peer-protocol');
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext }) {
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken }) {
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
   if (preboundServer !== undefined) {
     const address = preboundServer instanceof http.Server && preboundServer.listening && preboundServer.address();
@@ -12,7 +12,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         address.port < 1 || address.port > 65535 || preboundServer.listenerCount('request') !== 0) fail('http_prebound_server');
   }
   const server = preboundServer || http.createServer();
-  const store = openCompletionStore({ directory, installationContext });
+  const store = openCompletionStore({ directory, installationContext, ownerToken });
   const epoch = id('http'), controllerId = id('controller');
   let peer = null, pending = null, closed = false, activePoll = null;
   const challenges = new Map();
