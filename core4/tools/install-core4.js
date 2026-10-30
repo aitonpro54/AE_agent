@@ -36,10 +36,71 @@ function checkedBytes(file, limit = 16384) {
     return value;
   } finally { fs.closeSync(fd); }
 }
-function clientPaths(root) {
+function clientPaths(root, staged) {
   const file = path.join(root, 'core-client.json'); safeFile(file);
-  for (const suffix of ['.next', '.rollback']) if (safeFile(file + suffix)) fail('client_binding_staging_exists');
+  for (const suffix of ['.next', '.rollback']) if (safeFile(file + suffix)) {
+    const owned = staged?.get(file + suffix);
+    if (!owned || owned.file !== file + suffix) fail('client_binding_staging_exists');
+    assertStagedFile(owned);
+  }
   return file;
+}
+function directoryVolume(directory) {
+  let existing = path.resolve(directory);
+  while (!entryExists(existing)) { const parent = path.dirname(existing); if (parent === existing) fail('install_volume_unknown'); existing = parent; }
+  let cursor = path.parse(existing).root;
+  for (const part of ['', ...existing.slice(cursor.length).split(path.sep).filter(Boolean)]) {
+    if (part) cursor = path.join(cursor, part);
+    const stat = fs.lstatSync(cursor, { bigint: true });
+    if (!stat.isDirectory() || stat.isSymbolicLink() || stat.reparsePoint || fs.realpathSync(cursor) !== cursor) fail('install_volume_path');
+  }
+  return String(fs.lstatSync(existing, { bigint: true }).dev);
+}
+function assertSwitchVolumes(installRoot, cepDir) {
+  if (directoryVolume(installRoot) !== directoryVolume(path.dirname(cepDir))) fail('install_cross_volume_unsupported');
+}
+const STAGE_FIELDS = ['dev', 'ino', 'size', 'birthtimeNs', 'mtimeNs', 'ctimeNs'];
+const stageStamp = stat => Object.fromEntries(STAGE_FIELDS.map(k => [k, String(stat[k])]));
+function assertStagedFile(view, file = view.file, renamed = false) {
+  if (!safeFile(file)) fail('install_staging_changed');
+  const held = fs.fstatSync(view.fd, { bigint: true }), named = fs.lstatSync(file, { bigint: true });
+  const stable = renamed ? ['dev', 'ino', 'size', 'mtimeNs'] : STAGE_FIELDS;
+  if (!held.isFile() || stable.some(k => String(held[k]) !== view.stat[k]) || STAGE_FIELDS.some(k => String(held[k]) !== String(named[k]))) fail('install_staging_changed');
+  const bytes = Buffer.alloc(view.bytes.length + 1); let at = 0, n;
+  while (at < bytes.length && (n = fs.readSync(view.fd, bytes, at, bytes.length - at, at))) at += n;
+  if (at !== view.bytes.length || !bytes.subarray(0, at).equals(view.bytes) || STAGE_FIELDS.some(k => String(fs.fstatSync(view.fd, { bigint: true })[k]) !== String(held[k]) || String(fs.lstatSync(file, { bigint: true })[k]) !== String(held[k]))) fail('install_staging_changed');
+  return stageStamp(held);
+}
+function retainStagedFile(file, expected) {
+  const bytes = Buffer.isBuffer(expected) ? expected : Buffer.from(expected), fd = fs.openSync(file, 'r');
+  try {
+    const stat = fs.fstatSync(fd, { bigint: true });
+    if (stat.size !== BigInt(bytes.length)) fail('install_staging_changed');
+    const view = { file, fd, bytes, stat: stageStamp(stat) }; assertStagedFile(view); return view;
+  } catch (error) { fs.closeSync(fd); throw error; }
+}
+function publishStagedFile(view, destination) {
+  const source = view.file; assertStagedFile(view); fs.renameSync(source, destination);
+  const stat = assertStagedFile(view, destination, true);
+  if (entryExists(source)) fail('install_staging_changed'); view.file = destination; view.stat = stat;
+}
+function assertCepStage(directory, expected) {
+  const files = new Set(Object.keys(expected)), dirs = new Set(['']);
+  for (const file of files) for (let dir = path.posix.dirname(file); dir !== '.'; dir = path.posix.dirname(dir)) dirs.add(dir);
+  function visit(dir, relative) {
+    const stat = fs.lstatSync(dir);
+    if (!stat.isDirectory() || stat.isSymbolicLink() || stat.reparsePoint || fs.realpathSync(dir) !== dir || !dirs.delete(relative)) fail('install_staging_changed');
+    for (const name of fs.readdirSync(dir)) {
+      const file = path.join(dir, name), rel = relative ? relative + '/' + name : name, entry = fs.lstatSync(file);
+      if (entry.isDirectory()) visit(file, rel);
+      else {
+        if (!files.delete(rel)) fail('install_staging_changed');
+        const view = retainStagedFile(file, Buffer.from(expected[rel], 'base64'));
+        fs.closeSync(view.fd);
+      }
+    }
+  }
+  visit(directory, ''); if (files.size || dirs.size) fail('install_staging_changed');
 }
 function originState(d) { return { root: checkedBytes(path.join(d.installRoot, 'origin.json'), 8192), anchor: checkedBytes(path.join(d.stateDir, 'origin.json'), 8192) }; }
 function installedBinding(d) {
@@ -165,6 +226,7 @@ function planInstall({ pkg, nodePath, installRoot, extensionsDir, configPath, ma
   const version = process.version;
   if (!/^v(2\d|[3-9]\d)\./.test(version)) fail('node_20_required');
   const releaseDir = path.join(installRoot, 'releases', pkg.packageHash), descriptor = path.join(installRoot, 'installation.json'), stateDir = path.join(installRoot, 'state', 'production'), cepDir = path.join(extensionsDir, BUNDLE);
+  assertSwitchVolumes(installRoot, cepDir);
   const clientDescriptorPath = clientPaths(installRoot), previousClient = checkedBytes(clientDescriptorPath);
   const originBytes = checkedBytes(path.join(installRoot, 'origin.json'), 8192), anchorBytes = checkedBytes(path.join(stateDir, 'origin.json'), 8192);
   if (!!originBytes !== !!anchorBytes || (originBytes && !originBytes.equals(anchorBytes))) fail('stable_state_origin_missing_or_mismatch');
@@ -192,8 +254,9 @@ function planInstall({ pkg, nodePath, installRoot, extensionsDir, configPath, ma
   const plan = { pkg, origin, originBytes: plannedOrigin, clientBinding, nextClient, transactionId, descriptor: d, descriptorPath: descriptor, configPath, nextConfig, cepDir, cep, previousDescriptor, previousConfig, previousCep, baseline: { client: previousClient ? hash(previousClient) : null, rootOrigin: originBytes ? hash(originBytes) : null, anchorOrigin: anchorBytes ? hash(anchorBytes) : null, config: previousConfig ? hash(previousConfig) : null, descriptor: previousDescriptor ? hash(previousDescriptor) : null, cep: treeHash(previousCep) } };
   preparedPlans.set(plan, { digest: planDigest(plan), prepared: null }); return plan;
 }
-function assertBaseline(plan, originPublished = false) {
-  validateClientBinding(plan.clientBinding, plan.descriptor.installRoot); clientPaths(plan.descriptor.installRoot);
+function assertBaseline(plan, originPublished = false, staged) {
+  if (staged) for (const view of staged.values()) assertStagedFile(view);
+  validateClientBinding(plan.clientBinding, plan.descriptor.installRoot); clientPaths(plan.descriptor.installRoot, staged);
   const client = checkedBytes(plan.clientBinding.clientDescriptorPath), origin = originState(plan.descriptor);
   const originHash = hash(plan.originBytes), rootExpected = originPublished && plan.baseline.rootOrigin === null ? originHash : plan.baseline.rootOrigin, anchorExpected = originPublished && plan.baseline.anchorOrigin === null ? originHash : plan.baseline.anchorOrigin;
   if ((client ? hash(client) : null) !== plan.baseline.client || (origin.root ? hash(origin.root) : null) !== rootExpected || (origin.anchor ? hash(origin.anchor) : null) !== anchorExpected || (bytes(plan.configPath) ? hash(bytes(plan.configPath)) : null) !== plan.baseline.config || (bytes(plan.descriptorPath) ? hash(bytes(plan.descriptorPath)) : null) !== plan.baseline.descriptor || treeHash(snapshot(plan.cepDir)) !== plan.baseline.cep) fail('install_baseline_changed');
@@ -242,10 +305,10 @@ function checkRelease(directory, release) {
 function applyInstall(plan, { lease: borrowed } = {}) {
   let fingerprint = assertPreparedInstallPlan(plan);
   assertBaseline(plan);
-  const d = plan.descriptor; assertNoLifecycleMarkers(d.stateDir); fs.mkdirSync(d.installRoot, { recursive: true });
+  const d = plan.descriptor; assertNoLifecycleMarkers(d.stateDir); assertSwitchVolumes(d.installRoot, plan.cepDir); fs.mkdirSync(d.installRoot, { recursive: true });
   const scope = { installRoot: d.installRoot, stateDir: d.stateDir, descriptorPath: plan.descriptorPath };
   const lease = borrowed || acquireInstallLease(scope); assertInstallLease(lease, scope);
-  let txnFile, txn, writes = false;
+  let txnFile, txn, writes = false; const staged = new Map();
   try {
     assertBaseline(plan);
     if (d.version !== 2 || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(plan.transactionId) || (plan.previousDescriptor ? canonical(d.predecessor) !== canonical({ transactionId: plan.transactionId, previousDescriptorHash: hash(plan.previousDescriptor) }) : d.predecessor !== null)) fail('install_lineage_plan');
@@ -268,35 +331,45 @@ function applyInstall(plan, { lease: borrowed } = {}) {
     }
     checkRelease(d.releaseDir, plan.pkg.release);
     const transactionId = plan.transactionId; txnFile = path.join(d.installRoot, 'transactions', transactionId + '.json');
-    const backupCep = path.join(d.installRoot, 'transactions', transactionId + '-cep');
+    const backupCep = path.join(d.installRoot, 'transactions', transactionId + '-cep'), cepStage = path.join(d.installRoot, 'transactions', transactionId + '-cep-next');
     txn = { version: 2, transactionId, preparedPlanHash: fingerprint.preparedPlanHash, preparedStateHash: fingerprint.preparedStateHash, clientBinding: plan.clientBinding, originBinding: { version: 1, rootOriginHash: hash(plan.originBytes), anchorOriginHash: hash(plan.originBytes) }, installRoot: d.installRoot, descriptorPath: plan.descriptorPath, configPath: plan.configPath, cepDir: plan.cepDir, backupCep, previousDescriptor: plan.previousDescriptor?.toString('base64') || null, previousConfig: plan.previousConfig?.toString('base64') || null, previousCepHash: treeHash(plan.previousCep), appliedDescriptorHash: hash(canonical(d)), appliedConfigHash: hash(plan.nextConfig), appliedCepHash: treeHash(plan.cep), stateDir: d.stateDir };
     writes = true;
+    if (entryExists(backupCep) || entryExists(cepStage)) fail('install_staging_exists');
+    fs.mkdirSync(path.dirname(plan.cepDir), { recursive: true }); assertSwitchVolumes(d.installRoot, plan.cepDir);
+    restoreTree(cepStage, plan.cep); assertCepStage(cepStage, plan.cep);
+    durable(plan.descriptorPath + '.next', canonical(d)); staged.set(plan.descriptorPath + '.next', retainStagedFile(plan.descriptorPath + '.next', canonical(d)));
+    if (plan.nextClient) { durable(plan.clientBinding.clientDescriptorPath + '.next', plan.nextClient); staged.set(plan.clientBinding.clientDescriptorPath + '.next', retainStagedFile(plan.clientBinding.clientDescriptorPath + '.next', plan.nextClient)); }
+    durable(plan.configPath + '.core4-next', plan.nextConfig); staged.set(plan.configPath + '.core4-next', retainStagedFile(plan.configPath + '.core4-next', plan.nextConfig));
     durable(txnFile, canonical(txn));
     // Last CAS before any visible switch. Unknown filesystem outcomes are not retried.
-    assertBaseline(plan, true);
+    assertBaseline(plan, true, staged); assertCepStage(cepStage, plan.cep);
+    const cepIdentity = fs.lstatSync(cepStage, { bigint: true });
     if (fs.existsSync(plan.cepDir)) fs.renameSync(plan.cepDir, backupCep);
-    restoreTree(plan.cepDir, plan.cep);
-    durable(plan.descriptorPath + '.next', canonical(d));
-    clientPaths(d.installRoot);
-    if (plan.nextClient) durable(plan.clientBinding.clientDescriptorPath + '.next', plan.nextClient);
-    durable(plan.configPath + '.core4-next', plan.nextConfig);
-    fs.renameSync(plan.descriptorPath + '.next', plan.descriptorPath);
+    fs.renameSync(cepStage, plan.cepDir); assertCepStage(plan.cepDir, plan.cep);
+    const publishedCep = fs.lstatSync(plan.cepDir, { bigint: true }); if (publishedCep.dev !== cepIdentity.dev || publishedCep.ino !== cepIdentity.ino) fail('install_staging_changed');
+    publishStagedFile(staged.get(plan.descriptorPath + '.next'), plan.descriptorPath);
     safeFile(plan.clientBinding.clientDescriptorPath); safeFile(plan.clientBinding.clientDescriptorPath + '.next'); safeFile(plan.clientBinding.clientDescriptorPath + '.rollback');
     const beforeClient = checkedBytes(plan.clientBinding.clientDescriptorPath);
     if ((beforeClient ? hash(beforeClient) : null) !== plan.baseline.client) fail('client_binding_changed');
-    if (plan.nextClient) fs.renameSync(plan.clientBinding.clientDescriptorPath + '.next', plan.clientBinding.clientDescriptorPath);
+    if (plan.nextClient) publishStagedFile(staged.get(plan.clientBinding.clientDescriptorPath + '.next'), plan.clientBinding.clientDescriptorPath);
     else if (plan.clientBinding.previousClient !== null) {
       if (!safeFile(plan.clientBinding.clientDescriptorPath)) fail('client_binding_changed');
       fs.unlinkSync(plan.clientBinding.clientDescriptorPath);
     }
     const appliedClient = checkedBytes(clientPaths(d.installRoot)), appliedOrigin = originState(d);
     if ((appliedClient ? hash(appliedClient) : null) !== txn.clientBinding.appliedClientHash || !appliedOrigin.root || !appliedOrigin.anchor || hash(appliedOrigin.root) !== txn.originBinding.rootOriginHash || hash(appliedOrigin.anchor) !== txn.originBinding.anchorOriginHash || hash(bytes(plan.descriptorPath)) !== txn.appliedDescriptorHash || (bytes(plan.configPath) ? hash(bytes(plan.configPath)) : null) !== plan.baseline.config || treeHash(snapshot(plan.cepDir)) !== txn.appliedCepHash) fail('install_readback_mismatch');
-    fs.renameSync(plan.configPath + '.core4-next', plan.configPath);
+    publishStagedFile(staged.get(plan.configPath + '.core4-next'), plan.configPath);
     if (hash(bytes(plan.configPath)) !== txn.appliedConfigHash) fail('install_readback_mismatch');
     require('../runtime/installation').verifyInstallation(plan.descriptorPath); checkpointInstallLease(lease, 'installed');
     return { installed: true, packageHash: d.packageHash, installationId: d.installationId, descriptorPath: plan.descriptorPath, transactionFile: txnFile, stateDir: d.stateDir, requiresPanelOpen: true, requiresMcpReconnect: true, liveProof: false };
   } catch (e) { if (writes) { retainInstallLease(lease); e.leaseRetained = true; if (txnFile) e.transactionFile = txnFile; } throw e; }
-  finally { if (!borrowed) { const state = assertInstallLease(lease, scope); if (!state.retained) releaseInstallLease(lease); } }
+  finally {
+    let closeFault;
+    for (const view of staged.values()) try { fs.closeSync(view.fd); } catch (e) { closeFault ||= e; }
+    if (closeFault) retainInstallLease(lease);
+    if (!borrowed) { const state = assertInstallLease(lease, scope); if (!state.retained) releaseInstallLease(lease); }
+    if (closeFault) throw Object.assign(new Error('install_stage_close_failed'), { code: 'install_stage_close_failed', leaseRetained: true, cause: closeFault });
+  }
 }
 function rollbackBinding(t, current, target) {
   if (current.installRoot !== t.installRoot || current.stateDir !== t.stateDir || target &&

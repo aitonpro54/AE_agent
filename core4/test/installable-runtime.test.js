@@ -83,6 +83,75 @@ test('installable-runtime package deterministic closure, install CAS, exact roll
   assert.throws(() => applyInstall(planInstall(args)), /runtime_state_owned_or_unknown/); fs.unlinkSync(path.join(d.stateDir, 'receiver/owner'));
   fs.unlinkSync(path.join(d.stateDir, 'origin.json')); assert.throws(() => planInstall(args), /stable_state_origin/);
 });
+
+function stagedFixture() {
+  const directory = temp(), pkg = buildPackage(root, 'manual', { runtimeModel: 'owner' }), fixture = install(directory, pkg);
+  applyInstall(fixture.plan); const plan = planInstall(fixture.args);
+  const live = () => ({ descriptor: fs.readFileSync(plan.descriptorPath).toString('base64'), config: fs.readFileSync(plan.configPath).toString('base64'), client: fs.readFileSync(plan.clientBinding.clientDescriptorPath).toString('base64'), cep: snapshot(plan.cepDir) });
+  return { ...fixture, directory, plan, live, before: live(), cepStage: path.join(plan.descriptor.installRoot, 'transactions', plan.transactionId + '-cep-next'), backup: path.join(plan.descriptor.installRoot, 'transactions', plan.transactionId + '-cep') };
+}
+test('installable-runtime staged update prepares every complete file before its first visible rename and publishes config last', () => {
+  const f = stagedFixture(), original = fs.renameSync, events = [];
+  fs.renameSync = (source, destination) => {
+    if (source === f.plan.cepDir) {
+      assert.deepEqual(f.live(), f.before); assert.deepEqual(snapshot(f.cepStage), f.plan.cep);
+      assert.equal(fs.readFileSync(f.plan.descriptorPath + '.next', 'utf8'), canonical(f.plan.descriptor));
+      assert.deepEqual(fs.readFileSync(f.plan.clientBinding.clientDescriptorPath + '.next'), f.plan.nextClient);
+      assert.equal(fs.readFileSync(f.plan.configPath + '.core4-next', 'utf8'), f.plan.nextConfig); events.push('old-cep');
+    }
+    if (source === f.cepStage) { assert.equal(destination, f.plan.cepDir); assert.deepEqual(snapshot(source), f.plan.cep); events.push('new-cep'); }
+    if (destination === f.plan.descriptorPath) events.push('descriptor');
+    if (destination === f.plan.clientBinding.clientDescriptorPath) events.push('client');
+    if (destination === f.plan.configPath) {
+      assert.equal(fs.readFileSync(f.plan.configPath).toString('base64'), f.before.config);
+      assert.deepEqual(JSON.parse(fs.readFileSync(f.plan.descriptorPath)), f.plan.descriptor); assert.deepEqual(snapshot(f.plan.cepDir), f.plan.cep); events.push('config');
+    }
+    return original(source, destination);
+  };
+  try { const result = applyInstall(f.plan); assert.equal(result.installed, true); }
+  finally { fs.renameSync = original; }
+  assert.deepEqual(events, ['old-cep', 'new-cep', 'descriptor', 'client', 'config']); assert.equal(fs.existsSync(f.cepStage), false);
+  assert.deepEqual(snapshot(f.backup), f.before.cep); verifyInstallation(f.plan.descriptorPath);
+});
+for (const boundary of ['cep', 'descriptor', 'client', 'config']) test('installable-runtime staged short write preserves the whole live installation before switch: ' + boundary, () => {
+  const f = stagedFixture(), target = { cep: path.join(f.cepStage, 'js/panel.js'), descriptor: f.plan.descriptorPath + '.next', client: f.plan.clientBinding.clientDescriptorPath + '.next', config: f.plan.configPath + '.core4-next' }[boundary];
+  const open = fs.openSync, write = fs.writeSync, rename = fs.renameSync; let faultFd, injected = false, visible = 0;
+  fs.openSync = (...args) => { const fd = open(...args); if (args[0] === target && args[1] === 'wx') faultFd = fd; return fd; };
+  fs.writeSync = (fd, data, ...args) => {
+    if (fd === faultFd && !injected) { injected = true; const bytes = Buffer.from(data); return write(fd, bytes, 0, Math.max(1, Math.floor(bytes.length / 2))); }
+    return write(fd, data, ...args);
+  };
+  fs.renameSync = (source, destination) => { if (source === f.plan.cepDir || destination === f.plan.cepDir || destination === f.plan.descriptorPath || destination === f.plan.configPath) visible++; return rename(source, destination); };
+  try { assert.throws(() => applyInstall(f.plan), e => e.code === 'install_short_write' && e.leaseRetained === true); }
+  finally { fs.openSync = open; fs.writeSync = write; fs.renameSync = rename; }
+  assert.equal(injected, true); assert.equal(visible, 0); assert.deepEqual(f.live(), f.before); assert.equal(fs.existsSync(target), true); assert.equal(fs.existsSync(path.join(f.plan.descriptor.installRoot, 'install.lock')), true);
+});
+for (const replacement of [false, true]) test('installable-runtime staged final CAS refuses changed owned client stage without publishing it: ' + replacement, () => {
+  const f = stagedFixture(), transaction = path.join(f.plan.descriptor.installRoot, 'transactions', f.plan.transactionId + '.json'), target = f.plan.clientBinding.clientDescriptorPath + '.next';
+  const open = fs.openSync, sync = fs.fsyncSync; let transactionFd, changed = false;
+  fs.openSync = (...args) => { const fd = open(...args); if (args[0] === transaction && args[1] === 'wx') transactionFd = fd; return fd; };
+  fs.fsyncSync = fd => {
+    sync(fd); if (fd === transactionFd && !changed) { changed = true; if (replacement) fs.renameSync(target, target + '.held-original'); fs.writeFileSync(target, 'foreign-stage'); }
+  };
+  try { assert.throws(() => applyInstall(f.plan), e => e.code === 'install_staging_changed' && e.leaseRetained === true); }
+  finally { fs.openSync = open; fs.fsyncSync = sync; }
+  assert.equal(changed, true); assert.deepEqual(f.live(), f.before); assert.equal(fs.readFileSync(target, 'utf8'), 'foreign-stage'); assert.equal(fs.existsSync(f.backup), false);
+});
+test('installable-runtime staged foreign CEP stage is preserved and never replaces the live panel', () => {
+  const f = stagedFixture(); fs.mkdirSync(f.cepStage); fs.writeFileSync(path.join(f.cepStage, 'foreign.txt'), 'retain');
+  assert.throws(() => applyInstall(f.plan), e => e.code === 'install_staging_exists' && e.leaseRetained === true);
+  assert.deepEqual(f.live(), f.before); assert.equal(fs.readFileSync(path.join(f.cepStage, 'foreign.txt'), 'utf8'), 'retain'); assert.equal(fs.existsSync(f.backup), false);
+});
+test('installable-runtime staged cross-volume planning and apply refuse before any installation writes', () => {
+  const f = install(temp()); fs.mkdirSync(f.args.extensionsDir);
+  const lstat = fs.lstatSync;
+  fs.lstatSync = (file, options) => { const value = lstat(file, options); return file === f.args.extensionsDir && options?.bigint ? new Proxy(value, { get(target, key) { return key === 'dev' ? target.dev + 1n : Reflect.get(target, key); } }) : value; };
+  try {
+    assert.throws(() => planInstall(f.args), e => e.code === 'install_cross_volume_unsupported');
+    assert.throws(() => applyInstall(f.plan), e => e.code === 'install_cross_volume_unsupported');
+  } finally { fs.lstatSync = lstat; }
+  assert.equal(fs.existsSync(f.args.installRoot), false); assert.deepEqual(fs.readdirSync(f.args.extensionsDir), []); assert.equal(fs.existsSync(f.args.configPath + '.core4-next'), false);
+});
 test('installable-runtime full generated host registry parses as ES3 before any host evaluation', () => {
   const pkg = buildPackage(), registry = Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString('utf8');
   // Dev-only parser shipped with Node. Fail closed if unavailable; modern VM

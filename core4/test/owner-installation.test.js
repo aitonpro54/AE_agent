@@ -145,7 +145,7 @@ test('owner-installation staging files and ancestor junctions refuse before read
     assert.throws(() => f.plan(), /client_binding_staging_exists/); assert.deepEqual(snapshot(f.directory), before);
   }
   const f = fixture(t), target = path.join(f.directory, 'target'), alias = path.join(f.directory, 'alias'); fs.mkdirSync(target); fs.symlinkSync(target, alias, process.platform === 'win32' ? 'junction' : 'dir');
-  try { assert.throws(() => planInstall({ ...f.args, pkg: pkg(), installRoot: path.join(alias, 'AEAgentCore4') }), /client_binding_path/); assert.deepEqual(snapshot(target), {}); }
+  try { assert.throws(() => planInstall({ ...f.args, pkg: pkg(), installRoot: path.join(alias, 'AEAgentCore4') }), /install_volume_path/); assert.deepEqual(snapshot(target), {}); }
   finally { fs.unlinkSync(alias); }
 });
 
@@ -200,16 +200,17 @@ test('owner-installation fixed CLI runtime selector reaches package and standalo
   assert.equal(invalid.status, 1); assert.equal(fs.existsSync(refused), false);
 });
 
-test('owner-installation corrupt staged sidecar fails readback before config becomes visible', t => {
+test('owner-installation corrupt staged sidecar refuses before client or config becomes visible', t => {
   const f = fixture(t); f.apply('stdio'); const plan = f.plan(), config = fs.readFileSync(f.args.configPath), rename = fs.renameSync;
   fs.renameSync = function (from, to) {
     const result = rename.call(this, from, to);
     if (to === plan.descriptorPath) fs.appendFileSync(f.client + '.next', 'tamper');
     return result;
   };
-  try { assert.throws(() => applyInstall(plan), error => error.code === 'install_readback_mismatch' && error.leaseRetained === true); }
+  try { assert.throws(() => applyInstall(plan), error => error.code === 'install_staging_changed' && error.leaseRetained === true); }
   finally { fs.renameSync = rename; }
   assert.deepEqual(fs.readFileSync(f.args.configPath), config);
+  assert.equal(fs.existsSync(f.client), false);
 });
 
 function refusesGrowth(file, invoke, code) {

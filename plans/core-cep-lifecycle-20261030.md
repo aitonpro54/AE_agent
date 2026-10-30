@@ -126,6 +126,8 @@ R3 не использует fake production epoch и не переносит au
 - [x] R4 source: bounded idle reconnect, truthful states и сохранение raw latch,
   66component/HTTP и общий329selectedPASS, review ACCEPT;
   [границы](core-cep-r4-panel-20261030.md). Actual CEP proof остаётся в R5.
+- [x] R3d2b1: complete installer staging/config-last, independent100selectedPASS,
+  review ACCEPT; [границы](core-cep-r3-installer-staging-20261031.md).
 - [ ] R3d2–R5: update/adoption/legacy migration и installed CEP/runtime приёмка;
   устойчивость installed runtime пока не заявлена.
 
@@ -175,7 +177,7 @@ Restart Core/AE, install и native dispatch этого этапа0. UI попы�
 ## Продолжение
 
 R1/R2a/R2b/R2c1/R2c2, отдельные R3a/R3b/R3c/R3d1 и R4 завершены в source.
-Следующий source/offline блок — R3d2 update/first legacy migration и pending
+ Следующий source/offline блок — R3d2 update/first legacy migration и pending
 maintenance finish/rollback по [плану обслуживания](core-cep-r3-maintenance-20261030.md).
 Прочитать актуальный status/queue перед любым live изменением; сообщения в старой
 UI очереди не считать принятыми. Чужие snapshots/AEP и старые receipts сохранять.
