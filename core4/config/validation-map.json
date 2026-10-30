@@ -1,6 +1,16 @@
 {
   "owners": [
     {
+      "prefix": "core4/runtime/controller-lease.js",
+      "owner": "controller-lease",
+      "checks": ["controller-lease"]
+    },
+    {
+      "prefix": "core4/test/controller-lease.test.js",
+      "owner": "controller-lease",
+      "checks": ["controller-lease"]
+    },
+    {
       "prefix": "core4/tools/package-standalone-installer.js",
       "owner": "standalone-installer",
       "checks": [
@@ -961,6 +971,7 @@
     }
   ],
   "checkDependencies": {
+    "controller-lease": ["runtime/controller-lease.js", "test/controller-lease.test.js"],
     "panel-reconnect": [
       "cep/js/panel.js",
       "cep/js/poll-dispatcher.js",
@@ -1430,6 +1441,7 @@
     ]
   },
   "checkCommands": {
+    "controller-lease": ["node", "--test", "--test-name-pattern=controller-lease", "test/controller-lease.test.js"],
     "panel-reconnect": [
       "node",
       "--test",
@@ -1582,6 +1594,7 @@
     ]
   },
   "checkPolicy": {
+    "controller-lease": { "kind": "component" },
     "panel-reconnect": {
       "kind": "component"
     },
