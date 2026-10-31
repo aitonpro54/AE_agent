@@ -1,0 +1,11 @@
+{
+  "stopId": "f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8",
+  "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+  "nodePath": "C:\\Program Files\\nodejs\\node.exe",
+  "oldPackageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "newPackageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+  "distribution": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\owner-titles-inspection-5de01291e5dd",
+  "distributionHash": "5de01291e5dd0a7e1d8142f3a64dc4acd466bec8d94eb22f129059f6f88bccf7",
+  "expectedPreviousDescriptorHash": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+  "configPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml"
+}

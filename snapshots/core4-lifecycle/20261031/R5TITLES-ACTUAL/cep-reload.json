@@ -1,0 +1,13 @@
+{
+  "closedOwnCep": 1,
+  "openedOwnCep": 1,
+  "method": "Native frame close and Window -> Extensions -> AE Agent Core 4.0.0 via @oai/sky",
+  "documentAfterOpen": "Канал Core 4.0.0 готов к командам",
+  "automaticPanelConnectObserved": true,
+  "standardStatusConfirmsPeer": "standard-after-cep.json",
+  "configuredProof": false,
+  "aeRestart": 0,
+  "projectPropertyEdits": 0,
+  "save": 0,
+  "standardDurationDefinition": "statusDurationMs includes status send through client EOF/exit; not a separately timestamped response-only benchmark"
+}

@@ -65,10 +65,20 @@ Raw/native mutation не выполнялись. Активный узкий [R5
 Его source freeze02 теперь принят192unique PASS/7Core checks+product8,
 boundaries44 и independent ACCEPT. CharacterRange/full dormant colors proof,
 finite read diagnostics и server-created taskId; owner gates/registry unchanged.
-Candidate packagebe9afe99…/distribution5de01291… (70runtime/87bundle) пока pure build;
-следующий шаг — immutable output и новый stopped update/enable с сохранением
-current adoption/history, затем configured/native read. Full release/deferred
-closures не переобъявлять PASS. Installedcc2f остаётся до actual update.
+Принятый срез: packagebe9afe99…/distribution5de01291… (70runtime/87bundle).
+Official output5de01291… записан/verified. Новый stop`f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8`
+и update`90539075-ff4c-459c-a659-ecfdbb521c7f`/explicit enable завершены; installed
+package теперьbe9afe99…, descriptor50bd6835…/client94d94d77…/configca895a00….
+Штатный installer один раз выдал original-new split credentials, dual old/new
+HMAC8records и exact70runtime/7CEP bytes проверены. Origins/adoption666c79a6…/
+28settled journal/AEP preserved, gates/ledger/pending/UNKNOWN0. Own CEP close/open1
+для установки, новая панель автоматически connected. Real standard clients27816/
+16028 exit0, owner23816 ready/boot44f3b34a…, один3457, old9584 absent. Это пока
+standard proof: configured oldcc2f далowner_unavailable и требует restart Codex
+пользователем;5stale clients подтверждены OS inventory. Затем fresh configured
+acquire/core_connect/contracts/typed Titles read; source tests не подменяют native.
+AE restart/save/mutation0. Не повторять f1b8/9053/c4c0/old transactions и не чистить
+markers. Full release/deferred closures не переобъявлять PASS.
 Не повторять c4c0af30 и old transactions; markers не чистить.
 Standalone proof не подменяет configured.
 **Settled stop/update/recovery/enable не повторять,

@@ -1,0 +1,80 @@
+{
+  "collectedAt": "2026-10-31T20:29:11.615Z",
+  "owner": {
+    "pid": 23816,
+    "birthTicks": "639290751829705860",
+    "bootId": "44f3b34a-9b71-443b-882f-41138203cda4",
+    "sealVerified": true
+  },
+  "prior": {
+    "version": 1,
+    "pid": 9584,
+    "status": "absent",
+    "birthTicks": null,
+    "executablePath": null,
+    "observedAt": "2026-10-31T20:29:08.064Z"
+  },
+  "current": {
+    "version": 1,
+    "pid": 23816,
+    "status": "present",
+    "birthTicks": "639290751829705860",
+    "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+    "observedAt": "2026-10-31T20:29:08.631Z"
+  },
+  "inventory": {
+    "processes": [
+      {
+        "pid": 26308,
+        "kind": "AE",
+        "packageHash": ""
+      },
+      {
+        "pid": 22952,
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 22636,
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 12332,
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 20728,
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 11408,
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 23816,
+        "kind": "owner",
+        "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43"
+      }
+    ],
+    "listeners": [
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 3457,
+        "OwningProcess": 23816
+      }
+    ]
+  },
+  "standardClientsExited": true,
+  "staleConfiguredClientsPresent": true,
+  "configuredProof": false,
+  "cepConnectedObserved": true,
+  "pending": false,
+  "unknown": false,
+  "nativeDispatches": 0,
+  "aeRestart": 0,
+  "save": 0
+}

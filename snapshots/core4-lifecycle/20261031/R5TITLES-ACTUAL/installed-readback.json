@@ -1,0 +1,123 @@
+{
+  "collectedAt": "2026-10-31T20:25:25.240Z",
+  "stopId": "f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8",
+  "updateId": "90539075-ff4c-459c-a659-ecfdbb521c7f",
+  "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+  "distributionHash": "5de01291e5dd0a7e1d8142f3a64dc4acd466bec8d94eb22f129059f6f88bccf7",
+  "runtimeFiles": 70,
+  "records": [
+    {
+      "name": "intent.json",
+      "kind": "update-intent",
+      "hash": "0b41bce5ab313f06141c4c80842306b52f6cd7dcfe99e481318ff22138981c25",
+      "oldAndNewSealVerified": true
+    },
+    {
+      "name": "lease.json",
+      "kind": "update-lease",
+      "hash": "42c49164b444ab86223960b26621319eb82cdb2916a65656cf0731ec4dcddd03",
+      "oldAndNewSealVerified": true
+    },
+    {
+      "name": "switch-ready.json",
+      "kind": "update-switch-ready",
+      "hash": "d594935b69f29abe9799e11c55dd9906f7acadca0944925aaef2a53cd54b6c38",
+      "oldAndNewSealVerified": true
+    },
+    {
+      "name": "verified.json",
+      "kind": "update-verified",
+      "hash": "db901bdd3bebbb0aca1ce6d79e564c009aad4afd897a24fc45aa3209d109a914",
+      "oldAndNewSealVerified": true
+    },
+    {
+      "name": "completed.json",
+      "kind": "update-completed",
+      "hash": "74dcf6079d6f6f18b31caf5e40b398409a4f099d4da7a91f863000f39a89f22a",
+      "oldAndNewSealVerified": true
+    },
+    {
+      "name": "enable-intent.json",
+      "kind": "update-enable-intent",
+      "hash": "de24c88020dc986c78b59ae7a01a56eb36f9062e0cb31c96ef6498fe984987dc",
+      "oldAndNewSealVerified": true
+    },
+    {
+      "name": "enable-ready.json",
+      "kind": "update-enable-ready",
+      "hash": "0713f8b223c99d1bf7a75a766ef97032b707edfea84a6505d5a1576e32e8a0e6",
+      "oldAndNewSealVerified": true
+    },
+    {
+      "name": "enabled.json",
+      "kind": "update-enabled",
+      "hash": "4af727b2f53aebff79fa9438783b877955da8ad6f423de56ae4f2c1a5f536b93",
+      "oldAndNewSealVerified": true
+    }
+  ],
+  "hashes": {
+    "descriptor": "50bd6835edb91cb0edaad9363cbce33e498d3622408b83ef4565c6113b53466c",
+    "client": "94d94d77bd6494ae0d66c048cccd7060db40079832cbfbe091767895a3493047",
+    "config": "ca895a00ebf6c5d92bcc56654f03cfed4d30146ce6ba05568c4e53cc9904e95d",
+    "rootOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "anchorOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "adoption": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+    "journal": "d5d0fcc63a2a6c5102393e47f9724e92d8d761e295e301050df5f5c94e77a82a"
+  },
+  "cepHashes": {
+    "CSXS/manifest.xml": "c80395ab6fdc3d786489066f1d178f652b9da0d1dc5e3c1b6a348418a10f9c50",
+    "index.html": "ac099dc71e3f2a3beed8414d15086a1945579d913f41923d81b2c43d65f9bec9",
+    "installation.js": "663e6708fe9861081790ff5d5a6f8a6da17ea5941aa2dfef54617927e7b67ce3",
+    "js/panel.js": "83884ea03348552f0a99f82eb685e2837464565325a329bbb916cb3f557fd1fe",
+    "js/poll-dispatcher.js": "741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006",
+    "jsx/registry.jsx": "d5afb5c98974c7f1bc3ba180c94e9b4d496aee9cb671037368c4b205f3657857",
+    "panel.css": "a2ce3dd093c72a2641338047151a32a8f3ebb7048aaaa5df0ff2c23a3ca2d9ab"
+  },
+  "credentialRoleSeparationPreserved": true,
+  "credentialValuesMatchOriginalNewDescriptor": true,
+  "credentialValuesRotatedByInstallerOnce": true,
+  "localBindingsPreserved": true,
+  "adoptionPreserved": true,
+  "journalEvents": 28,
+  "receiverSettled": true,
+  "aepHash": "e3b249894cbd602c44483b12b3847e97fa23c358c429687755f88e90d5b9f170",
+  "host": {
+    "machineId": "MSI",
+    "aePid": 26308,
+    "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+    "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71"
+  },
+  "observation": {
+    "version": 1,
+    "hostname": "MSI",
+    "observedAt": "2026-10-31T20:25:25.154Z",
+    "processes": [
+      {
+        "pid": 26308,
+        "birth": "2026-10-31T10:32:49.0521480Z",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executableLength": 5931016
+      }
+    ],
+    "endpoints": [
+      {
+        "port": 3456,
+        "state": "observed-absent"
+      },
+      {
+        "port": 8787,
+        "state": "observed-absent"
+      }
+    ],
+    "completedAt": 1793478325157
+  },
+  "gatesAndLedgerAbsent": true,
+  "runtimeOwnerMarkerPresent": false,
+  "configuredProof": false,
+  "nativeReadAfterUpdate": false,
+  "aeRestart": 0,
+  "aeMutation": 0,
+  "save": 0
+}

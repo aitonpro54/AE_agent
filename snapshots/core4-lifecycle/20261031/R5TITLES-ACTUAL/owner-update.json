@@ -1,0 +1,41 @@
+{
+  "startedAt": "2026-10-31T20:20:40.853Z",
+  "collectedAt": "2026-10-31T20:22:18.267Z",
+  "mode": "owner-update",
+  "operationId": "f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8",
+  "entry": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\owner-titles-inspection-5de01291e5dd\\tools\\standalone-installer.js",
+  "args": [
+    "owner-update",
+    "--expected-distribution-hash",
+    "5de01291e5dd0a7e1d8142f3a64dc4acd466bec8d94eb22f129059f6f88bccf7",
+    "--expected-package-hash",
+    "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+    "--expected-current-package-hash",
+    "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+    "--expected-previous-descriptor-hash",
+    "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+    "--installation",
+    "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "--operation",
+    "f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8",
+    "--config",
+    "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml"
+  ],
+  "exitCode": 0,
+  "signal": null,
+  "error": null,
+  "stdout": "{\"aeAuthority\":false,\"descriptorPath\":\"C:\\\\Users\\\\Ant\\\\AppData\\\\Local\\\\AEAgentCore4\\\\installation.json\",\"expectedPackageHash\":\"be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43\",\"expectedPreviousDescriptorHash\":\"898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0\",\"migrationId\":\"f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8\",\"packageHash\":\"be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43\",\"phase\":\"update-stopped\",\"runtimeStarted\":false,\"transactionId\":\"90539075-ff4c-459c-a659-ecfdbb521c7f\",\"updated\":true}\n",
+  "stderr": "",
+  "result": {
+    "aeAuthority": false,
+    "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "expectedPackageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+    "expectedPreviousDescriptorHash": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+    "migrationId": "f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8",
+    "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+    "phase": "update-stopped",
+    "runtimeStarted": false,
+    "transactionId": "90539075-ff4c-459c-a659-ecfdbb521c7f",
+    "updated": true
+  }
+}

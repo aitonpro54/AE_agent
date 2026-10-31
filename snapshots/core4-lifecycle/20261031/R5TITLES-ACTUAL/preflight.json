@@ -1,0 +1,93 @@
+{
+  "collectedAt": "2026-10-31T20:19:18.639Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "operation": {
+    "stopId": "f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8",
+    "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "nodePath": "C:\\Program Files\\nodejs\\node.exe",
+    "oldPackageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+    "newPackageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+    "distribution": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\owner-titles-inspection-5de01291e5dd",
+    "distributionHash": "5de01291e5dd0a7e1d8142f3a64dc4acd466bec8d94eb22f129059f6f88bccf7",
+    "expectedPreviousDescriptorHash": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+    "configPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml"
+  },
+  "hashes": {
+    "descriptor": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+    "client": "290923023d6297454ba74e91b1d89ba0315fae5b68c57811dcff36bf9fdcdc3d",
+    "config": "320b9e6d61c493a75cdf42da7d32af872bb6f83aa663ebf3894bdb5ac998c50a",
+    "rootOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "anchorOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "adoption": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+    "journal": "d5d0fcc63a2a6c5102393e47f9724e92d8d761e295e301050df5f5c94e77a82a"
+  },
+  "journalEvents": 28,
+  "prefix28": "d5d0fcc63a2a6c5102393e47f9724e92d8d761e295e301050df5f5c94e77a82a",
+  "historySettled": true,
+  "owner": {
+    "pid": 9584,
+    "birthTicks": "639290706521519370",
+    "bootId": "04d9b162-40f5-4812-83b2-d18d3b7c3f84"
+  },
+  "ownerSealVerified": true,
+  "processFact": {
+    "version": 1,
+    "pid": 9584,
+    "status": "present",
+    "birthTicks": "639290706521519370",
+    "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+    "observedAt": "2026-10-31T20:19:18.556Z"
+  },
+  "host": {
+    "machineId": "MSI",
+    "aePid": 26308,
+    "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+    "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71"
+  },
+  "observation": {
+    "version": 1,
+    "hostname": "MSI",
+    "observedAt": "2026-10-31T20:19:18.079Z",
+    "processes": [
+      {
+        "pid": 26308,
+        "birth": "2026-10-31T10:32:49.0521480Z",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executableLength": 5931016
+      }
+    ],
+    "endpoints": [
+      {
+        "port": 3456,
+        "state": "observed-absent"
+      },
+      {
+        "port": 8787,
+        "state": "observed-absent"
+      }
+    ],
+    "completedAt": 1793477958081
+  },
+  "aep": {
+    "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\titles-product\\20261030\\live\\Titles-T2-test.aep",
+    "bytes": 33557830,
+    "hash": "e3b249894cbd602c44483b12b3847e97fa23c358c429687755f88e90d5b9f170",
+    "mtimeNs": "1793389944695834300",
+    "historicalExpectedBytes": 32001325,
+    "historicalExpectedHash": "9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f",
+    "historicalBytesPreserved": true
+  },
+  "adoptionUnchanged": true,
+  "sourceReviewRequired": true,
+  "actualStop": 0,
+  "actualUpdate": 0,
+  "actualEnable": 0,
+  "aeMutation": 0,
+  "save": 0,
+  "aeRestart": 0
+}

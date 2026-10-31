@@ -1,0 +1,8 @@
+{
+  "initialResult": "credential_roles_changed",
+  "cause": "Root reader incorrectly required previous credential values for a package update",
+  "sourceContract": "core4/tools/install-core4.js:250 generates new split roles once; stopped-update pins original new descriptor and verifies dual old/new MACs",
+  "correction": "Require exact original-new credential values, preserved role separation, old descriptor anchor and both MACs; do not issue or restore credentials",
+  "operatorReplays": 0,
+  "runtimeWritesByReader": 0
+}

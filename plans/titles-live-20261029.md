@@ -218,3 +218,14 @@ viewer показывает PAPER TITLES на0:00:02:11/30fps,12.5%/Quarter; э�
 Decision Log: snapshot/API defect выделен в узкий engineering block
 `core4-titles-inspection-20261101.md`. Затем fresh typed inspection и прежний
 compiler/generic plan/native confirmation/read-back; обход через raw/UI text нет.
+
+Source repair принят commit4092929:192selectedPASS/independent ACCEPT. Новый
+runtimebe9afe99… установлен через stopf1b8ca9c…/update90539075…/explicit enable.
+Descriptor50bd6835…, origins/adoption666c79a6…/28settled events/AEP unchanged;
+actual installed read-back70runtime/7CEP bytes и8dual HMAC records PASS.
+Owner23816 ready/boot44f3b34a…, один3457; два standard clients exit0 и новая CEP
+connected после own close/open1. Configured oldcc2f требует restart Codex;
+standalone не подменяет configured. Следом fresh acquire/core_connect/contracts/
+native Titles inspect и compiler с modulePin189c58bf…, server taskId. Purpose
+technical_check/ephemeral_check задать явно. Native mutation/read-back/кадры ещё0;
+AE оставить открытым, settled metadata operations не повторять.

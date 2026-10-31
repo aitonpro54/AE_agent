@@ -68,8 +68,9 @@ NBSP внутри строки и Unicode сохраняются без trim/н�
 ожидания и любые дополнительные поля не принимаются.
 
 Одинаковый job даёт одинаковый результат; ключи входного объекта могут идти в
-другом порядке. `taskId` и `workflowId` равны `titles-<SHA-256 canonical job>`.
-Изменение текста меняет обе identity. `contextId` равен jobId, purpose/lifetime —
+другом порядке. `workflowId` равен `titles-<SHA-256 canonical job>`; изменение
+текста меняет эту identity. `taskId` выдаёт Core при первом build. `contextId`
+равен jobId, purpose/lifetime —
 `user_work/work_context`, resources описывают project/job. Эти metadata не дают
 authority и не снимают fences/UNKNOWN.
 
@@ -80,7 +81,7 @@ authority и не снимают fences/UNKNOWN.
 Его canonical SHA-256 —
 `6226f911063f94f471bff23e9ebb60f1ee49323c2f25d54e6a4bdabf95bbe55b`.
 Module artifact pin версии 4.0.0 —
-`6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46`.
+`189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79`.
 Это public capability identities; packageHash, installation/machine identity и
 credentials здесь не участвуют. Новый несовместимый contract или module pin
 требует явного обновления продукта; fallback отсутствует.

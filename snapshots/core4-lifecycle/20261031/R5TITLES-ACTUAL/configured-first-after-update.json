@@ -1,0 +1,15 @@
+{
+  "collectedAt": "2026-10-31 20:25:32 UTC",
+  "durationMs": 2236,
+  "isError": true,
+  "raw": {
+    "content": [
+      {
+        "type": "text",
+        "text": "tool call error: tool call failed for `after-effects-core4/core_status`\n\nCaused by:\n    Mcp error: -32000: owner_unavailable"
+      }
+    ],
+    "isError": true
+  },
+  "status": null
+}

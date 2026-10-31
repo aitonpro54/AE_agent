@@ -1,0 +1,141 @@
+{
+  "startedAt": "2026-10-31T20:26:21.866Z",
+  "collectedAt": "2026-10-31T20:26:30.131Z",
+  "configuredProof": false,
+  "realStandardStdioClient": true,
+  "clientPid": 27816,
+  "initialize": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {
+      "tools": {
+        "listChanged": false
+      }
+    },
+    "serverInfo": {
+      "name": "ae-agent-core4",
+      "version": "4.0.0"
+    }
+  },
+  "statusDurationMs": 7678,
+  "status": {
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "47af12e2-3b05-49f9-8ec6-fb960db71a04",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 0,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false
+    },
+    "automaticLifecycle": "unavailable",
+    "closed": false,
+    "composition": "manual",
+    "connection": "unavailable",
+    "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionPolicy": "read-only-current-observation-v1",
+    "installation": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "machineId": "MSI",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43"
+    },
+    "ledgerFault": false,
+    "lifecycle": {
+      "birthTicks": "639290751829705860",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "d5d0fcc63a2a6c5102393e47f9724e92d8d761e295e301050df5f5c94e77a82a",
+          "eventCount": 28,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 23816,
+      "processBootId": "44f3b34a-9b71-443b-882f-41138203cda4",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "maintenance": {
+      "fault": null,
+      "id": null,
+      "phase": "running",
+      "requested": false
+    },
+    "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+    "ownershipFault": null,
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": false,
+      "lastReadFailure": null,
+      "listening": true,
+      "peer": {
+        "connected": false
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "pid": 23816,
+    "product": "AE Agent Core 4.0.0",
+    "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+    "ready": true,
+    "resourceProvider": {
+      "adopted": true,
+      "coverage": {
+        "core4Lane": "cooperating-Core4-only",
+        "hostProcess": "adopted-reprobe-required",
+        "legacyEndpoints": "named-probes-only",
+        "legacyPhysicalQueue": "not-proven",
+        "otherAEActors": "outside-coverage",
+        "sharedOutputs": "not-requested"
+      },
+      "origin": {
+        "aePid": 26308,
+        "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "machineId": "MSI"
+      }
+    },
+    "synthetic": false,
+    "unavailableReason": null,
+    "unresolved": [],
+    "worker": {
+      "epoch": 0,
+      "lateReplies": 0,
+      "loaded": [],
+      "pending": 0,
+      "pid": null
+    }
+  },
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "stderr": "",
+  "controllerAcquired": false,
+  "nativeDispatches": 0
+}

@@ -458,3 +458,15 @@ Decision Log: candidate packagebe9afe99…/distribution5de01291…/70runtime87bu
 готов к immutable write и новому штатному stopped update. Currentcc2f/adoption/
 history пока прежние; actual mutation0. Deferred24closures/full release/native
 Titles proof остаются открытыми. Полные детали — core4-titles-inspection-20261101.md.
+
+1ноября — actual R5 source repair update завершён. Progress: source4092929,
+official5de01291…/packagebe9afe99… verified; stopf1b8ca9c… и update90539075…/
+explicit enable settled без replay/finish. Validation:70runtime/7CEP exact bytes,
+8dual old/new HMAC records, original-new credentials match; origins/adoption/
+28settled events/AEP preserved. Standard clients27816/16028 exit0, owner23816
+ready/boot44f3b34a…/один3457, prior9584 absent, pending/UNKNOWN/faults0. New CEP
+автоматически connected после own close/open1; AE restart/save/mutation0.
+Decision Log: configured oldcc2f returned owner_unavailable,5stale clients still
+present; normal restart Codex требуется от пользователя. После него fresh
+configured/native Titles pipeline, не повтор metadata update. Standard proof не
+подменяет configured,192sourcePASS не является native acceptance или release.

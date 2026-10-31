@@ -5,7 +5,25 @@
 подключение текущего чата после обновления app transport. Новый чат не нужен.
 Ниже сохранены прежние checkpoints; актуальное состояние — в первом разделе.
 
-## Текущее состояние: штатная re-adoption завершена, owner9584 ready
+## Текущее состояние: R5 repair be9afe99 установлен, owner23816 ready
+
+1ноября: source4092929 (192selectedPASS/independent ACCEPT), official helper
+5de01291… verified. Новый stopf1b8ca9c… и update90539075…/explicit enable settled,
+packagebe9afe99, descriptor50bd6835…/client94d94d77…/configca895a00….
+Exact70runtime/7CEP files и8dual-MAC records проверены. Original-new split roles
+созданы installer один раз и совпадают с sealed payload; origins/adoption/history/
+AEP preserved,28settled events/SHA d5d0fcc6…, gates/ledger absent.
+Real standard clients27816/16028 exit0, HMAC/native owner23816/
+birth639290751829705860/boot44f3b34a-9b71-443b-882f-41138203cda4 active/ready,
+один listener3457, prior9584 absent. Own CEP close/open1, новая panel-e3b94a02…
+connected/inspectionAvailable=true. AE26308 прежний, mutation/save/restart0.
+Configured first status после update owner_unavailable; OS видит5старыхcc2f
+clients. Требуется restart Codex пользователем, затем fresh configured status и
+typed Titles read после acquire/core_connect. Standard не подменяет configured;
+new native acceptance открыта. Не повторять f1b8/9053/c4c0/old settled operations.
+Evidence — R5TITLES-ACTUAL, active plan core4-titles-inspection-20261101.md.
+
+## Предыдущий checkpoint: re-adoption завершена, owner9584 ready
 
 31 октября19:12UTC: CLI commit8ce5a58, official helperc787e013… verified,
 новая operation`c4c0af30-1260-4e72-b875-74084ae1d0b3` завершила штатные

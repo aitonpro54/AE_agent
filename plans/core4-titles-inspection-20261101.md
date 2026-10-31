@@ -41,8 +41,9 @@ messages/stacks/values не выводятся, дополнительный too
   минимальная корректная обработка подтверждённых TextDocument API ограничений.
 - [x] Scoped source implementation, independent ACCEPT и meaningful validation
   по changed paths:192unique PASS, boundaries44, source freeze02.
-- [ ] Один reviewed installable срез через штатный stopped update, если runtime
-  меняется; затем configured read-back и fresh typed Titles inspection.
+- [x] Reviewed installable срез через штатный stopped update/enable, exact installed
+  read-back и standard client/CEP proof.
+- [ ] Configured client после restart и fresh typed Titles inspection.
 - [ ] Compiler/build/proposal/dry-run и исполнение с локальным подтверждением
   текущей цели, original receipt/read-back и кадр; без save.
 
@@ -152,3 +153,50 @@ Decision Log: source этап принят, official output/installed writes/AE 
 configured/native preflight и один новый штатный stopped update/explicit enable.
 Сохранить current host adoption и28event receiver prefix, не повторять c4c0af30.
 Actual причина прежнего отказа и native Titles acceptance пока не объявляются.
+
+## Actual update — установленный be9afe99
+
+Progress: source commit40929298942fc2f0257160aa36fdc7809398b174; root записал и
+полностью проверил immutable `dist/owner-titles-inspection-5de01291e5dd`:
+distribution5de01291…/packagebe9afe99…,87bundle/88physical files. Fresh configured
+preflight был на9584/cc2f, idle/no pending/UNKNOWN; native AE26308/birth прежний,
+28settled receiver events и все protected bytes совпали с checkpoint.
+
+Один новый stop`f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8`: первый inspect честно
+вернул stop-in-progress, следующий — stopped. Повтор stop не отправлялся.
+Один owner-update завершён97.414с, новая transaction
+`90539075-ff4c-459c-a659-ecfdbb521c7f`; update-inspect подтвердил switchIndex5/
+update-stopped, затем отдельный explicit update-enable enabled/sameDescriptor.
+Finish/replay/forced timeout0; c4c0af30 и old transactions не выполнялись.
+
+Validation: root read-only verifier проверил exact70runtime files,7CEP files,
+descriptor/client/config против подписанного original payload и8records с dual
+old/new HMAC. Hashes: descriptor50bd6835…/client94d94d77…/configca895a00….
+Origins/anchor00d9c5d0…, adoption666c79a6…, receiver28/SHA256 d5d0fcc6… и AEP
+e3b24989… unchanged. Gates/ledger absent. Первый root reader ошибочно требовал
+старые credential values; исходный installer contract выдаёт новую split пару
+один раз при planInstall. Проверка исправлена на exact original-new descriptor
+и dual signatures, key issuance/оператор не повторялись; correction сохранена.
+
+Configured first call после update дал owner_unavailable: действующие5clients
+всё ещё изcc2f. Root не запускал новый Codex app-server и не подменял этим proof.
+Два отдельных real standard stdio observers изbe9afe99 успешно завершены exit0:
+client27816 поднял owner23816, client16028 увидел тот же owner. Status+EOF timings
+7678мс/16мс (не отдельные response-only замеры). Native/HMAC read-back после EOF:
+owner23816/birth639290751829705860/boot44f3b34a-9b71-443b-882f-41138203cda4
+active/ready, один listener3457; prior9584 absent. Lease generation0/idle,
+accepted/pending/UNKNOWN/faults0, lastReadFailure=null. Это standard, **не configured** proof.
+
+Собственная CEP закрыта/открыта1раз для установки. Новая панель автоматически
+подключилась: peer panel-e3b94a02…/inspectionAvailable=true, подтверждено вторым
+standard observer; AE26308 и test-copy открыты прежние, property edits/save/restart0.
+Evidence — R5TITLES-ACTUAL. Actual typed inspection/build/proposal/run после update0.
+
+Decision Log: installation/enable завершены, повторять f1b8/9053/update/readoption
+нельзя, markers не чистить. Следующее необходимое действие — штатная перезагрузка
+configured клиента пользователем (restart Codex, AE не закрывать). Затем root
+проверяет fresh configured status/owner/peer, acquire → core_connect → fresh
+contracts/project/Titles inspection на current exact IDs. После source module
+pin189c58bf… compiler готов; technical_check/ephemeral_check задать явно. Native
+confirmation/read-back/план кадров остаются обязательными. Standalone status,
+192source PASS и connected CEP не закрывают этот оставшийся R5 шаг.

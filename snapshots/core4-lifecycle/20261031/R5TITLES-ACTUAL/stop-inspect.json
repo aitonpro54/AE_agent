@@ -1,0 +1,29 @@
+{
+  "startedAt": "2026-10-31T20:20:21.668Z",
+  "collectedAt": "2026-10-31T20:20:22.795Z",
+  "mode": "stop-inspect",
+  "operationId": "f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8",
+  "entry": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\owner-titles-inspection-5de01291e5dd\\tools\\maintain-owner.js",
+  "args": [
+    "inspect",
+    "--installation",
+    "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "--operation",
+    "f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8",
+    "--expected-package-hash",
+    "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+  ],
+  "exitCode": 0,
+  "signal": null,
+  "error": null,
+  "stdout": "{\"aeAuthority\":false,\"id\":\"f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8\",\"inspectionOnly\":true,\"phase\":\"stop-in-progress\",\"proofHash\":null,\"reason\":\"maintenance_not_stopped\"}\n",
+  "stderr": "",
+  "result": {
+    "aeAuthority": false,
+    "id": "f1b8ca9c-66c7-4b9b-b9a9-0974ea04faf8",
+    "inspectionOnly": true,
+    "phase": "stop-in-progress",
+    "proofHash": null,
+    "reason": "maintenance_not_stopped"
+  }
+}
