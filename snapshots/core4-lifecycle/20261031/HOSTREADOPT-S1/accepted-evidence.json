@@ -1,0 +1,91 @@
+{
+  "collectedAt": "2026-10-31T14:48:49.688Z",
+  "recordContext": {
+    "purpose": "development",
+    "lifetime": "product_change"
+  },
+  "sourceHashes": {
+    "core4/runtime/stopped-certification.js": "25a55e1779f510adf62640fc42479a9f590f389d0c51e28aa4449b2b913cc456",
+    "core4/tools/stopped-update.js": "ae2390aa8c8f0f23aad45fffa9d9db1a197b2dba45646c7351032efab4b58ae0",
+    "core4/tools/stopped-host-readoption.js": "b3e7f9d34deb3a2276bdb5e461e8dbc663806f42a285f29b01ba0ff80bffc1ce",
+    "core4/test/fixtures/stopped-host-readoption.js": "6ff766e593c5f8b72a951a8bd57070b7e32d87f9aed24a43bc2d929c03d4464c",
+    "core4/test/stopped-host-readoption.test.js": "0a91e803f4d75e0769b4d305ebf8085713af5f2d8fd487796f223301ffe1f37c",
+    "core4/config/validation-map.json": "7fb1ea87258af2923b40f8b045dc1869171bf1efc0f73fbac500ad6b6250f0cb"
+  },
+  "sourceReview": "ACCEPT",
+  "selectionRecomputedWithoutRunningTests": true,
+  "currentCheckKeysAndDependenciesMatched": 9,
+  "eligibleReusedChecks": 4,
+  "currentNewChecks": 5,
+  "currentCoverage": {
+    "tests": 212,
+    "pass": 212,
+    "fail": 0
+  },
+  "initialWholeCommandExitCode": 1,
+  "coverageKind": "composed-current-selection-coverage",
+  "fullImmutableRunClaimed": false,
+  "rawInitialOutput": "PARTIAL: first four tool chunks not archived; see summary limitations",
+  "runtimePackageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "runtimePayloadFiles": 70,
+  "copiedFiles": [
+    {
+      "name": "summary.json",
+      "bytes": 7048,
+      "sha256": "0d7f15f617bfa49b65c52ce6b6c47a61b03f80a1f345d1c21861b5b91fc4bf57"
+    },
+    {
+      "name": "selection.json",
+      "bytes": 52804,
+      "sha256": "eaab5e50e42b4c9b0dae99f25684d295f6a5583e4fd6c758d62733b62bd84720"
+    },
+    {
+      "name": "source-hashes.json",
+      "bytes": 671,
+      "sha256": "07d37d8adb075326f412c11a7845fcb3bcfe64c9ec139b0d6c0919b29d399948"
+    },
+    {
+      "name": "closure-comparison.json",
+      "bytes": 2409,
+      "sha256": "82351c9c7407c50d0cb8d50adb2b518fcbcb2b47aa77c0cc4ced3c885a9f20ab"
+    },
+    {
+      "name": "selection-before-routing-fix.json",
+      "bytes": 54986,
+      "sha256": "7423ed35e9b1c8f22cb072e8dca666744b8b68640f92fa5cb5599085de0faa0d"
+    },
+    {
+      "name": "hashes-before-routing-fix.json",
+      "bytes": 671,
+      "sha256": "3982e500dc060aa4856fba45cfcba0816275e60734bc587625459bd474b300a0"
+    },
+    {
+      "name": "stdout-tail.txt",
+      "bytes": 17728,
+      "sha256": "39b6c16936bd91bb8a099af5d560b6c0c7cd659fc19801b65e5970484218fbec"
+    },
+    {
+      "name": "routing-fix.raw.log",
+      "bytes": 13633,
+      "sha256": "7797cbf584f995859b49f08fb7f10f08ccb2e5fc579942638a19b5e33d3f927f"
+    },
+    {
+      "name": "maintenance-finish.raw.log",
+      "bytes": 3749,
+      "sha256": "4d9d0f6f928f2007b54e70c5acba5ea952d6fe3e17069275a9d7baef62445724"
+    },
+    {
+      "name": "owner-maintenance.raw.log",
+      "bytes": 2934,
+      "sha256": "331f79c5065e1deece759fd5aa24aee13bc9b13cdf05fb934477ddb6032ab2e7"
+    },
+    {
+      "name": "maintenance-finish-operator-current.raw.log",
+      "bytes": 1006,
+      "sha256": "b4b8bf99f5462961f567d4788a2c4c4412fa61376f114207ad18502a94d4091d"
+    }
+  ],
+  "testsRepeated": false,
+  "liveCalls": 0,
+  "installedWrites": 0
+}

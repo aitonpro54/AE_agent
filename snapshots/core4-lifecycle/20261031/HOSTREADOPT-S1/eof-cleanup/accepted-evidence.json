@@ -1,0 +1,39 @@
+{
+  "collectedAt": "2026-10-31T14:58:35.370Z",
+  "recordContext": {
+    "purpose": "development",
+    "lifetime": "product_change"
+  },
+  "sourceHashes": {
+    "core4/runtime/stopped-certification.js": "25a55e1779f510adf62640fc42479a9f590f389d0c51e28aa4449b2b913cc456",
+    "core4/tools/stopped-update.js": "ae2390aa8c8f0f23aad45fffa9d9db1a197b2dba45646c7351032efab4b58ae0",
+    "core4/tools/stopped-host-readoption.js": "b3e7f9d34deb3a2276bdb5e461e8dbc663806f42a285f29b01ba0ff80bffc1ce",
+    "core4/test/fixtures/stopped-host-readoption.js": "6ff766e593c5f8b72a951a8bd57070b7e32d87f9aed24a43bc2d929c03d4464c",
+    "core4/test/stopped-host-readoption.test.js": "40d6f9c026240d076cf635ddbede59305b1eb95fd44ba5f9db04aca1819b9962",
+    "core4/config/validation-map.json": "7fb1ea87258af2923b40f8b045dc1869171bf1efc0f73fbac500ad6b6250f0cb"
+  },
+  "currentSelectionKeysMatched": 9,
+  "unchangedReusedCheckKeys": 8,
+  "foundationCurrentRun": {
+    "tests": 25,
+    "pass": 25,
+    "fail": 0,
+    "exitCode": 0
+  },
+  "composedCoverage": {
+    "tests": 212,
+    "pass": 212,
+    "fail": 0
+  },
+  "initialWholeCommandExitCode": 1,
+  "sourceReview": "ACCEPT of prior executable bytes plus exact one-byte EOF-only parent proof",
+  "eofProof": "../eof-cleanup-proof.json",
+  "priorAcceptance": "../accepted-evidence.json",
+  "runtimePackageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "runtimeFiles": 70,
+  "rawInitialLogCoverage": "PARTIAL",
+  "latestManifestSha256": "62ae92727f7fc060cac0893c30c3b7b0297b560310e4d25cef44d1c75750f715",
+  "repeatedTestsByParent": false,
+  "liveCalls": 0,
+  "installedWrites": 0
+}

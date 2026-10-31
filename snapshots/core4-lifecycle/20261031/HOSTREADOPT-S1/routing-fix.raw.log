@@ -1,0 +1,346 @@
+{
+  "mode": "scoped",
+  "certification": "selected-artifacts-only",
+  "releaseCertified": false,
+  "contractImpacts": [],
+  "checks": [
+    {
+      "check": "validation-routing",
+      "reasons": [
+        "changed owner validation: core4/config/validation-map.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/config/validation-map.json",
+          "validation",
+          "validation-routing"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=validation-routing",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "fe2851577a1f38cf0598682006b3f366f9e2a2b09252a865f3dc5e02f2f2a763",
+      "reason": "changed owner validation: core4/config/validation-map.json",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "validation",
+          "validation-routing"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/validation-map.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/core4.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/crash-child.js",
+        "test/fixtures/lock-contender.js",
+        "test/helpers.js",
+        "tools/adopt-host.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "stopped-host-readoption",
+      "reasons": [
+        "changed owner stopped-host-readoption: core4/test/stopped-host-readoption.test.js",
+        "changed component dependency test/stopped-host-readoption.test.js: core4/test/stopped-host-readoption.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/stopped-host-readoption.test.js",
+          "stopped-host-readoption",
+          "stopped-host-readoption"
+        ],
+        [
+          "core4/test/stopped-host-readoption.test.js",
+          "test/stopped-host-readoption.test.js",
+          "stopped-host-readoption"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "evidenceKey": "6ff370a8a408c502ccf4a267086f1e49b29938fc6b203e60cef34f5a25ae50f4",
+      "reason": "changed owner stopped-host-readoption: core4/test/stopped-host-readoption.test.js; changed component dependency test/stopped-host-readoption.test.js: core4/test/stopped-host-readoption.test.js",
+      "dependencyPath": [
+        [
+          "core4/test/stopped-host-readoption.test.js",
+          "stopped-host-readoption",
+          "stopped-host-readoption"
+        ],
+        [
+          "core4/test/stopped-host-readoption.test.js",
+          "test/stopped-host-readoption.test.js",
+          "stopped-host-readoption"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    }
+  ],
+  "executionBatches": [
+    {
+      "checks": [
+        "validation-routing"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:validation-routing)",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "stopped-host-readoption"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-host-readoption)",
+        "test/stopped-host-readoption.test.js"
+      ]
+    }
+  ],
+  "deferredCoverage": [
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/",
+          "owner-installation"
+        ]
+      ]
+    },
+    {
+      "check": "owner-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/",
+          "owner-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "cep-transport"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        },
+        {
+          "file": "core4/test/stopped-host-readoption.test.js",
+          "dependency": "test/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/stopped-host-readoption.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ]
+      ]
+    }
+  ]
+}
+✔ [validation-routing] A4 diff maps single owner reverse contracts and dependency-keyed cache (829.0861ms)
+✔ [artifact-boundaries validation-routing titles-owner] scoped package seal reads only selected module closure while others physically absent (189.3382ms)
+✔ [validation-routing] actual titles-only diff checks pass with photo and engine absent from their source tree (2441.7746ms)
+✔ [validation-routing] shared Core dependencies select component consumers while byte-only integrations remain explicit deferred coverage (2137.0968ms)
+✔ [validation-routing] declared semantic contract impacts select consumers without claiming private-file semantic equivalence (240.3945ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5916.1543
+✔ stopped-host-readoption disk baseline survives a new module generation without rehydrating a normal certificate (5532.6899ms)
+✔ stopped-host-readoption copied capabilities and read-only evidence never issue certificate context or leases (4180.4806ms)
+✔ stopped-host-readoption certificate pull capability is scoped to one awaited inspection and then revoked (3261.7633ms)
+✔ stopped-host-readoption baseline refuses descriptor with zero writes (3257.3202ms)
+✔ stopped-host-readoption baseline refuses origin with zero writes (3389.6092ms)
+✔ stopped-host-readoption baseline refuses anchor with zero writes (3488.2397ms)
+✔ stopped-host-readoption baseline refuses client with zero writes (3395.7417ms)
+✔ stopped-host-readoption baseline refuses journal with zero writes (3340.008ms)
+✔ stopped-host-readoption baseline refuses ledger with zero writes (3306.5602ms)
+✔ stopped-host-readoption baseline refuses stop-bytes with zero writes (3319.3834ms)
+✔ stopped-host-readoption baseline refuses stop-inode with zero writes (4625.7278ms)
+✔ stopped-host-readoption baseline refuses certificate-bytes with zero writes (3849.7085ms)
+✔ stopped-host-readoption baseline refuses certificate-inode with zero writes (4711.8293ms)
+✔ stopped-host-readoption baseline refuses phase with zero writes (3258.7145ms)
+✔ stopped-host-readoption baseline refuses install-gate with zero writes (3635.2553ms)
+✔ stopped-host-readoption baseline refuses broker-gate with zero writes (3387.3803ms)
+✔ stopped-host-readoption new baseline never permits unknown extension or generic certificate/update bypass (2841.2394ms)
+✔ stopped-host-readoption unavailable and live certifier remain fenced without writes (2916.8804ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 1 (2736.7486ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 2 (2866.952ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 3 (2860.5716ms)
+✔ stopped-host-readoption isolated adapter plumbing acquires and releases only fixture-issued permits; production issuer remains closed (2594.2583ms)
+✔ stopped-host-readoption isolated adapter recovery preserves exact gate bytes/inodes and release-only skips only proven missing gates (2781.6819ms)
+✔ stopped-host-readoption isolated adapter recovery refuses gate bytes and revokes temporary capability on failure (2542.5005ms)
+✔ stopped-host-readoption isolated adapter recovery refuses gate inode and revokes temporary capability on failure (2554.4004ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 84707.0621

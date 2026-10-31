@@ -41,8 +41,10 @@ idle прошёл с первого вызова за62мс, same owner/boot, pe
 Wire reconnect отдельно не трассировался. Следующий инженерный шаг — штатная
 fresh host re-adoption: current absent-only adopt-host не заменяет existing adoption.
 Активный [re-adoption план](plans/core-cep-r3-host-readoption-20261031.md): один
-Argon plan review получен/revise и локально разобран; helper-only private evidence/
-lease seams реализуются slice1 без actual stop/adoption и без измененияcc2f.
+Argon plan review получен/revise и локально разобран; source slice1 private
+evidence/lease adapter принят212PASS/9checks composed coverage и independent ACCEPT.
+Production lease issuance закрыт до canonical claim; actual stop/adoption0,
+packagecc2f/70files unchanged. Далее private transaction core2–4, затем CLI wiring.
 Standalone proof не подменяет configured.
 **Settled stop/update/recovery/enable не повторять,
 markers не чистить.** [Installed recovery](plans/core-cep-r3-owner-preready-20261031.md)

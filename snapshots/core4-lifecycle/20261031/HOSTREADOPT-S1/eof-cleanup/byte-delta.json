@@ -1,0 +1,9 @@
+{
+  "beforeBytes": 11505,
+  "afterBytes": 11504,
+  "beforeHash": "0a91e803f4d75e0769b4d305ebf8085713af5f2d8fd487796f223301ffe1f37c",
+  "afterHash": "40d6f9c026240d076cf635ddbede59305b1eb95fd44ba5f9db04aca1819b9962",
+  "removedSuffixHex": "0a",
+  "exactPrefixPreserved": true,
+  "assertionsOrApiChanged": false
+}

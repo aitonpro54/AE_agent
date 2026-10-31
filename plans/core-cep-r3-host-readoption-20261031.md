@@ -154,7 +154,8 @@ raw/save/destructive, AE restart, AME и внешние APIs вне scope. Root 
   raw51969bytes/SHAa93778bf…,8string bindings совпали; external recomputation unproven.
 - [x] Локальный source разбор findings и уточнение scope: private disk verifier,
   inert pre-claim publication, inode anchor, post-CAS release-only/enable.
-- [ ] Slice1: private evidence/lease seams и адресные zero-write/brand tests.
+- [x] Slice1: private disk evidence/lease adapter seams; current coverage212PASS
+  по9checks, independent source ACCEPT. Issuance production lease закрыт доclaim.
 - [ ] Slice2: claim/adoption CAS/freshness parity и bypass/crash tests.
 - [ ] Slice3: apply continuation/receipt/release tails.
 - [ ] Slice4: separate enable/enable-finish и post-unlink recovery.
@@ -175,6 +176,11 @@ raw/save/destructive, AE restart, AME и внешние APIs вне scope. Root 
   cc2f package closure, S02 принят только для authoritative records с exact budget.
 - Для этого самостоятельного этапа выбран один plan review по standing mandate.
   Дополнительное result/fix/final review автоматически не создаётся.
+- Следующий цельный source milestone объединяет внутренние шаги2–4: private
+  transaction core claim/CAS/finish/enable. Между шагами — адресные новые tests;
+  итоговый relevant selection выполняется после целого frozen core, чтобы не
+  повторять неизменённые тяжёлые suites для промежуточных закрытых веток.
+  Public CLI/distribution wiring остаётся отдельным slice5; live не начинается.
 
 ## Validation
 
@@ -195,3 +201,33 @@ nlink2→3→2. Полные stamps/aliases/checks и summary —
 `snapshots/core4-lifecycle/20261031/HOSTREADOPT-FS/`, reportSHA3d41438a….
 Это только filesystem primitives evidence, не Core crash/concurrency/live или
 portability proof; source slice1 verification записывается отдельно.
+
+Slice1:6source paths, helper-only baseline reader и lease adapter. No-claim
+inspection описывает current certified inode facts; stale proof/opaque handle
+ловят drift. Нового durable claim нет, historical inode continuity/lease issuance
+не заявляются. Fixture-only getter substitution проверяет plumbing, не production
+разрешение. Generic readers и runtime payload не менялись.
+
+Current selection coverage212PASS/0FAIL по9checks: reused unchanged closures —
+certificate30/update55/standalone7/legacy29; new current runs — operator7,
+foundation25/routing5/maintenance-finish32/owner-maintenance22. Initial whole
+command завершился exit1 на routing (component dependencies были слишком широки
+из-за full-package case); исправлены только map/test, existing expectations не
+ослаблены. Четыре reused checks сохранили exact dependencies/commands/evidenceKeys;
+пять current checks выполнены адресно. Это composed coverage, не единый
+whole-command immutable PASS. Ранние4tool chunks не архивированы; initial raw
+stdout tail PARTIAL. Полные targeted logs/selection/hash manifests и ограничения
+сохранены в HOSTREADOPT-S1/summary.json и accepted-evidence.json. После staged
+проверки удалён ровно один лишний EOF0a из test (11505→11504bytes, весь prefix
+byte-equal);25cases адресно повторены65.90с/PASS, остальные8keys unchanged.
+Актуальная final coverage/selection/hashes — HOSTREADOPT-S1/eof-cleanup/;
+parent eof-cleanup-proof.json связывает её с independent ACCEPT. Initial evidence
+не переписаны. Raw partial stdout, historical pre-EOF source и archived collector
+script хранят исходный whitespace; full diff check отмечает только3этих artifacts,
+остальные source/docs проверяются отдельно.
+
+Root сверил6final hashes с independent ACCEPT, заново вычислил selector без
+запуска tests и подтвердил9keys/dependency bindings. Actual read-only package
+build снова дал exactcc2f/70files. Boundaries43/live0, syntax/diff PASS. New adoption/
+CAS/enable/CLI/actual stop0; no installed/project changes. Следующий шаг — цельный
+private transaction core2–4 на этой foundation, затем CLI и actual приёмка.

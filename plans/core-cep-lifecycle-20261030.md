@@ -189,7 +189,8 @@ R3 не использует fake production epoch и не переносит au
 - [ ] [Штатный host re-adoption operator](core-cep-r3-host-readoption-20261031.md):
   один Argon plan review received/revise/локальный разбор выполнен. Helper-only
   boundary сохранена, pre-claim/CAS/release semantics уточнены; source slice1
-  private evidence/lease seams выполняется, actual stop/readoption ещё0.
+  private evidence/lease adapter принят212PASS/9checks composed и independent
+  ACCEPT. Issuance закрыт до claim, actual stop/readoption0. Далее private core2–4.
 
 ## Decision Log
 
@@ -237,6 +238,21 @@ R3 не использует fake production epoch и не переносит au
   уже получил timeout. Embedding восстанавливает durable fences до attach/acquire.
 
 ## Validation
+
+Host-readoption slice1:212PASS/0FAIL,9check coverage —4unchanged closure reuses и
+5current targeted runs. Initial full command exit1 на routing сохранён, map/test
+скорректированы без weakening existing expectations; initial stdout PARTIAL,
+ранние4chunks не архивированы. Source final6hashes совпали с independent ACCEPT,
+root recomputed selector без tests подтвердил9keys/closures и packagecc2f/70files.
+Boundaries43/live0/syntax/diff PASS. HOSTREADOPT-S1 содержит full targeted logs,
+partial original tail, before/after selectors/hashes, review и acceptance report.
+Staged check затем выявил лишний1EOF byte в new test: ровно0a удалён, assertions
+byte-equal; foundation25 адресно повторены/PASS, остальные8keys unchanged.
+Final current manifests/coverage — HOSTREADOPT-S1/eof-cleanup/, связаны root
+eof-cleanup-proof.json с reviewed source. Full whitespace check сохраняет explicit
+исключения только для3immutable captures: partial stdout, historical pre-EOF
+test и archived collector script. Current source/docs whitespace PASS.
+Actual host readoption/claim/CAS/enable/CLI ещё не выполнены; issuance закрыт.
 
 Argon review20261031-readoption-plan-01: response51969bytes/SHAa93778bf…,8string
 bindings PASS,1upload/1send/0retries, account/mode/highestUI effort подтверждены
@@ -384,5 +400,6 @@ R5CONFIGURED evidence/reader; production source/runtime/config не меняли
 consistency/credential exclusion, reader syntax и diff check. Следующий шаг —
 штатный fresh host re-adoption operator; bounded read-only design принят, локальный
 COMPLETE plan-review packet получен/revise и разобран локально; source slice1
-выполняется. Production lease issuance до canonical claim в slice2 отсутствует;
-slice1 проверяет read-only evidence/закрытый adapter plumbing, actual stop0.
+принят212PASS/9checks composed coverage и independent ACCEPT. Production lease
+issuance до canonical claim в slice2 отсутствует. Следующий source block —
+private transaction core2–4; CLI/actual adoption следуют после него, actual stop0.

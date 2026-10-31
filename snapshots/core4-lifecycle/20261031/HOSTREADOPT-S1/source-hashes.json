@@ -1,0 +1,8 @@
+{
+  "core4/runtime/stopped-certification.js": "25a55e1779f510adf62640fc42479a9f590f389d0c51e28aa4449b2b913cc456",
+  "core4/tools/stopped-update.js": "ae2390aa8c8f0f23aad45fffa9d9db1a197b2dba45646c7351032efab4b58ae0",
+  "core4/tools/stopped-host-readoption.js": "b3e7f9d34deb3a2276bdb5e461e8dbc663806f42a285f29b01ba0ff80bffc1ce",
+  "core4/test/fixtures/stopped-host-readoption.js": "6ff766e593c5f8b72a951a8bd57070b7e32d87f9aed24a43bc2d929c03d4464c",
+  "core4/test/stopped-host-readoption.test.js": "0a91e803f4d75e0769b4d305ebf8085713af5f2d8fd487796f223301ffe1f37c",
+  "core4/config/validation-map.json": "7fb1ea87258af2923b40f8b045dc1869171bf1efc0f73fbac500ad6b6250f0cb"
+}

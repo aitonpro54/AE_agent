@@ -1,0 +1,18 @@
+{
+  "collectedAt": "2026-10-31T14:56:29.841Z",
+  "recordContext": {
+    "purpose": "development",
+    "lifetime": "product_change"
+  },
+  "file": "core4/test/stopped-host-readoption.test.js",
+  "beforeBytes": 11505,
+  "afterBytes": 11504,
+  "beforeSha256": "0a91e803f4d75e0769b4d305ebf8085713af5f2d8fd487796f223301ffe1f37c",
+  "afterSha256": "40d6f9c026240d076cf635ddbede59305b1eb95fd44ba5f9db04aca1819b9962",
+  "removedBytesHex": "0a",
+  "entireRemainingPrefixEqual": true,
+  "otherFiveSourceHashesUnchanged": true,
+  "priorIndependentReview": "source-review-final.json",
+  "reviewedExecutableAssertionsUnchanged": true,
+  "testsRunByThisCheck": false
+}

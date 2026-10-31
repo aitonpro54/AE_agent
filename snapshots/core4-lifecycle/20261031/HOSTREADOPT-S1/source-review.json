@@ -1,0 +1,25 @@
+{
+  "recordedAt": "2026-10-31T14:25:57.839Z",
+  "scope": "host-readoption slice1",
+  "reviewerRole": "ae_reviewer",
+  "reviewType": "independent bounded read-only source review",
+  "verdict": "ACCEPT",
+  "openP1P2P3": 0,
+  "sourceHashesBeforeAndAfter": {
+    "core4/runtime/stopped-certification.js": "25a55e1779f510adf62640fc42479a9f590f389d0c51e28aa4449b2b913cc456",
+    "core4/tools/stopped-update.js": "ae2390aa8c8f0f23aad45fffa9d9db1a197b2dba45646c7351032efab4b58ae0",
+    "core4/tools/stopped-host-readoption.js": "b3e7f9d34deb3a2276bdb5e461e8dbc663806f42a285f29b01ba0ff80bffc1ce",
+    "core4/test/fixtures/stopped-host-readoption.js": "6ff766e593c5f8b72a951a8bd57070b7e32d87f9aed24a43bc2d929c03d4464c",
+    "core4/test/stopped-host-readoption.test.js": "179536dea0079fbb1a84104fa59ddac8540e73c3e42579cf9a9a48c1b2fce74f",
+    "core4/config/validation-map.json": "d0915c194af29443b1471a6bb1d4abe5cd420a1fbe09458fffb529d902321afd"
+  },
+  "hashTranscriptionCorrection": "В final reviewer была пропущена одна b (63chars); reviewer подтвердил correct64char value по обоим original before/after tool outputs и fresh read 2026-10-31T14:26:47.8041296Z. Source не менялся.",
+  "testsRunByReviewer": false,
+  "liveCalls": 0,
+  "sourceWrites": 0,
+  "limits": [
+    "No production lease issuance; getter intentionally fail-closed until slice2",
+    "Fixture-only permit substitution proves adapter plumbing, not production issuance",
+    "Claim/CAS/enable/CLI/installed acceptance remain open"
+  ]
+}

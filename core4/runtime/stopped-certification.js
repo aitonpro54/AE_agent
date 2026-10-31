@@ -243,4 +243,22 @@ function readStoppedUpdateCertificate(capability) {
     return { facts, actors: [b.b.scope, b.intent.certifier, ...b.attempts.map(a => a.certifier), b.certificate.certifier] };
   } finally { contexts.delete(capability); }
 }
-module.exports = { inspectStoppedCertification, certifyStoppedInstallation, assertStoppedCertificate, stoppedCertificateFacts, stoppedContextPermit, stoppedLifecyclePermit, readStoppedUpdateCertificate };
+function readStoppedReadoptionCertificate(capability) {
+  // Disk-backed evidence only, never a normal certificate brand. Slice1 accepts
+  // only the untouched certified baseline: no claim/extension or owned gates.
+  const p = require('../tools/stopped-host-readoption').stoppedReadoptionCertificateRequest(capability);
+  if (p.mode !== 'baseline') fail('stopped_readoption_phase');
+  contexts.set(capability, p);
+  try {
+    endpoint(p.reservedServer);
+    const c = require('./owner-maintenance').stoppedCertificationContext(capability); c.reverify();
+    const b = readBase(c, p.id), markers = c.markers(), installGate = c.info(c.read(path.join(p.installation.installRoot, 'install.lock')));
+    if (!b.certificate) fail('stopped_certification_phase');
+    if (Object.values(markers).some(v => v.hash !== null) || installGate.hash !== null) fail('stopped_certification_changed');
+    assertLifecycleTransactions(c, b.certificate.lifecycle);
+    if (!equal(b.certificate.lifecycle.markers, Object.fromEntries(['owner', 'ownerNext', 'diagnostic', 'brokerOwner', 'brokerGate', 'receiverOwner', 'gate'].map(name => [name, { name, ...NIL() }])))) fail('stopped_certification_changed');
+    const facts = { id: p.id, stopHash: hash(b.barrier.bytes), stop: c.info(b.barrier), certificateHash: hash(b.certView.bytes), descriptorHash: c.descriptorHash, snapshot: b.snap.facts, phase: b.phase, lifecycle: b.certificate.lifecycle, markers, installGate };
+    return { facts, actors: [b.b.scope, b.intent.certifier, ...b.attempts.map(a => a.certifier), b.certificate.certifier] };
+  } finally { contexts.delete(capability); }
+}
+module.exports = { inspectStoppedCertification, certifyStoppedInstallation, assertStoppedCertificate, stoppedCertificateFacts, stoppedContextPermit, stoppedLifecyclePermit, readStoppedUpdateCertificate, readStoppedReadoptionCertificate };

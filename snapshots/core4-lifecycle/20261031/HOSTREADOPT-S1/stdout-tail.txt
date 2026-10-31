@@ -1,0 +1,258 @@
+✔ stopped-update exact forward recovery after archive rename never rebrands JSON or rotates keys twice (15471.0013ms)
+✔ stopped-update exact forward recovery after cep rename never rebrands JSON or rotates keys twice (14720.6936ms)
+✔ stopped-update exact forward recovery after descriptor rename never rebrands JSON or rotates keys twice (14130.625ms)
+✔ stopped-update exact forward recovery after client rename never rebrands JSON or rotates keys twice (13754.822ms)
+✔ stopped-update exact forward recovery after config rename never rebrands JSON or rotates keys twice (13457.9119ms)
+✔ stopped-update exact forward recovery after barrier rename never rebrands JSON or rotates keys twice (14079.5602ms)
+✔ stopped-update explicit enable verifies the completed new installation and removes only its typed barrier (13368.7022ms)
+✔ stopped-update enable crash intent explicitly finishes the exact saved phase on a new boot (16033.2196ms)
+✔ stopped-update enable crash install explicitly finishes the exact saved phase on a new boot (15505.7189ms)
+
+✔ stopped-update enable crash broker explicitly finishes the exact saved phase on a new boot (16307.4055ms)
+✔ stopped-update enable crash ready explicitly finishes the exact saved phase on a new boot (16228.8221ms)
+✔ stopped-update enable crash archive explicitly finishes the exact saved phase on a new boot (15864.5119ms)
+✔ stopped-update enable crash unlink explicitly finishes the exact saved phase on a new boot (16286.4006ms)
+
+✔ stopped-update enable crash complete explicitly finishes the exact saved phase on a new boot (16133.2137ms)
+✔ stopped-update enable crash releaseBroker explicitly finishes the exact saved phase on a new boot (16540.6592ms)
+✔ stopped-update enable crash releaseInstall explicitly finishes the exact saved phase on a new boot (15952.2422ms)
+✔ stopped-update stage inode replacement, wrong pins, live actors and foreign gate refuse recovery without writes (42878.0451ms)
+
+✔ stopped-update a second crash retains the recovery actor fence until its own death and preserves the original new keys (19439.2786ms)
+✔ stopped-update enable gate inode drift after inspection refuses before any continuation record or barrier unlink (13898.2989ms)
+✔ stopped-update owner pre-ready continues original payload after intent prefix with no new credentials (22650.8209ms)
+
+✔ stopped-update owner pre-ready continues original payload after install prefix with no new credentials (23059.336ms)
+✔ stopped-update owner pre-ready continues original payload after broker prefix with no new credentials (23490.557ms)
+✔ stopped-update owner pre-ready continues original payload after lease prefix with no new credentials (23687.9019ms)
+✔ stopped-update owner pre-ready crash at attempt remains attributed and resumes only after actor death (26833.1835ms)
+
+✔ stopped-update owner pre-ready crash at lease remains attributed and resumes only after actor death (27503.6896ms)
+✔ stopped-update owner pre-ready crash at release-file remains attributed and resumes only after actor death (28697.7381ms)
+✔ stopped-update owner pre-ready crash at prepared-file remains attributed and resumes only after actor death (40306.8803ms)
+
+✔ stopped-update owner pre-ready crash at cep-file remains attributed and resumes only after actor death (40128.8911ms)
+
+✔ stopped-update owner pre-ready crash at ready remains attributed and resumes only after actor death (23145.9715ms)
+✔ stopped-update owner pre-ready refuses foreign-record with zero writes (10724.6579ms)
+✔ stopped-update owner pre-ready refuses foreign-recovery-lease with zero writes (10721.5918ms)
+✔ stopped-update owner pre-ready refuses foreign-prepared with zero writes (10889.1438ms)
+✔ stopped-update owner pre-ready refuses foreign-cep-dir with zero writes (11034.315ms)
+✔ stopped-update owner pre-ready refuses foreign-release with zero writes (10879.7793ms)
+✔ stopped-update owner pre-ready refuses gate-bytes with zero writes (10698.4419ms)
+
+✔ stopped-update owner pre-ready refuses gate-inode with zero writes (12719.6345ms)
+✔ stopped-update owner pre-ready refuses descriptor-inode with zero writes (10811.1564ms)
+✔ stopped-update owner pre-ready refuses config-inode with zero writes (12915.9509ms)
+✔ stopped-update owner pre-ready refuses certificate with zero writes (10937.1714ms)
+
+✔ stopped-update owner pre-ready refuses intent-corrupt with zero writes (10818.1582ms)
+✔ stopped-update owner pre-ready refuses host-adoption with zero writes (12951.7635ms)
+✔ stopped-update owner pre-ready refuses actor-alive with zero writes (11263.4436ms)
+✔ stopped-update owner pre-ready refuses broker-only with zero writes (10937.549ms)
+✔ stopped-update owner pre-ready refuses unavailable with zero writes (11005.6998ms)
+
+✔ stopped-update owner pre-ready rechecks exact proof after each process await and copied proof ports are rejected (11232.7416ms)
+✔ stopped-update owner pre-ready competing processes discard only their own unpublished losing claim stage (130.4573ms)
+ℹ tests 55
+ℹ suites 0
+ℹ pass 55
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 887902.1332
+✔ maintenance-finish-operator source guards pin bootstrap and constant NEW support imports (1.2404ms)
+✔ maintenance-finish-operator JSON clones cannot issue the opaque bootstrap capability or cause installation reads (1.2876ms)
+✔ maintenance-finish-operator NEW reviewed distribution verifies installed poisoned source as DATA and never imports it (1540.8192ms)
+✔ maintenance-finish-operator wrong distribution/current pins and absent owner support refuse before runtime import (1803.6816ms)
+✔ maintenance-finish-operator tampered NEW support helper is rejected before any installed operator import (871.0626ms)
+✔ maintenance-finish-operator stopped certification routes only through verified NEW code and closes election on refusal (2489.6697ms)
+✔ maintenance-finish-operator private election finally closes a real pending request on its TEMP port (1337.2813ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8128.6816
+✔ standalone-installer deterministic manual/readonly distributions include exact eager and lazy closure (1079.3953ms)
+✔ standalone-installer rejects output below an existing ancestor junction before any target writes (139.9944ms)
+✔ standalone-installer refuses oversized files before payload reads or installer import (447.9635ms)
+✔ standalone-installer actual apply and settled-journal update run without any checkout imports or ports (3321.1373ms)
+✔ standalone-installer rejects missing/tampered/extra helpers before importing installer with zero destination writes (1296.241ms)
+✔ standalone-installer reviewed hashes and explicit destinations fail closed before writes (429.0937ms)
+✔ standalone-installer signed historical UNKNOWN survives actual apply; forged MAC and new UNKNOWN still refuse (5187.2054ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11989.082
+
+
+
+✔ legacy-owner-migration inspection is read-only and rejects stale/busy/foreign root evidence (2244.1505ms)
+✔ legacy-owner-migration one root stop promotes the SAME lease and archives only known markers (4767.1568ms)
+✔ legacy-owner-migration drift after the only stop leaves gates/barrier and refuses replay (4187.3102ms)
+✔ legacy-owner-migration lost install gate after native retain refuses before stop (2227.4352ms)
+✔ legacy-owner-migration lost install gate after native inspect refuses before stop (2542.9023ms)
+✔ legacy-owner-migration barrier inode drift before-stop refuses exact CAS (2237.978ms)
+✔ legacy-owner-migration barrier inode drift after-stop refuses exact CAS (3019.7823ms)
+✔ legacy-owner-migration barrier inode drift capability refuses exact CAS (3889.6837ms)
+✔ legacy-owner-migration recovery finishes original intent.json prefix without stop replay or normal plan rebrand (6600.557ms)
+✔ legacy-owner-migration recovery finishes original runtime-maintenance.json prefix without stop replay or normal plan rebrand (7082.4473ms)
+✔ legacy-owner-migration recovery finishes original stop-intent.json prefix without stop replay or normal plan rebrand (7698.7906ms)
+✔ legacy-owner-migration recovery finishes original stop-receipt.json prefix without stop replay or normal plan rebrand (8505.147ms)
+✔ legacy-owner-migration recovery finishes original retirement-intent.json prefix without stop replay or normal plan rebrand (8918.0543ms)
+✔ legacy-owner-migration recovery finishes original broker-owner.lock prefix without stop replay or normal plan rebrand (9108.3896ms)
+✔ legacy-owner-migration recovery finishes original completion.json prefix without stop replay or normal plan rebrand (9148.0031ms)
+✔ legacy-owner-migration unknown stop with still-live exact target refuses and never sends another stop (3556.4157ms)
+✔ legacy-owner-migration native actor ticks are exact; live actor and unavailable observations preserve fences (3900.9329ms)
+✔ legacy-owner-migration interrupted recovery recover-record retains continuous install gate and attributes the next actor (9870.4959ms)
+✔ legacy-owner-migration interrupted recovery gate-replace retains continuous install gate and attributes the next actor (9631.7857ms)
+✔ legacy-owner-migration interrupted recovery archive retains continuous install gate and attributes the next actor (12025.0381ms)
+✔ legacy-owner-migration interrupted recovery completion retains continuous install gate and attributes the next actor (12243.506ms)
+✔ legacy-owner-migration prepared copy, foreign marker and observation drift refuse before recovery writes (11025.6953ms)
+✔ legacy-owner-migration recovered opaque preparation stages the ORIGINAL payload through dedicated update recovery (14012.8313ms)
+✔ legacy-owner-migration normal shared-brand stop prepare apply completes with the ORIGINAL keys and journal (8342.9677ms)
+✔ legacy-owner-migration normal shared-brand refuses unknown client staging before stop or gate publication (1370.1397ms)
+✔ legacy-owner-migration normal shared-brand staged certificate still refuses config drift before visible switch (5654.877ms)
+✔ legacy-owner-migration normal shared-brand staged certificate still refuses config-inode drift before visible switch (6035.193ms)
+✔ legacy-owner-migration normal shared-brand staged certificate still refuses history drift before visible switch (6098.949ms)
+✔ legacy-owner-migration normal shared-brand staged certificate still refuses marker drift before visible switch (6106.7761ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 192143.6653
+
+✔ stopped-host-readoption disk baseline survives a new module generation without rehydrating a normal certificate (3739.9159ms)
+✔ stopped-host-readoption copied capabilities and read-only evidence never issue certificate context or leases (2795.5775ms)
+✔ stopped-host-readoption certificate pull capability is scoped to one awaited inspection and then revoked (2234.8681ms)
+✔ stopped-host-readoption baseline refuses descriptor with zero writes (2501.4834ms)
+✔ stopped-host-readoption baseline refuses origin with zero writes (2687.9713ms)
+✔ stopped-host-readoption baseline refuses anchor with zero writes (2606.1537ms)
+✔ stopped-host-readoption baseline refuses client with zero writes (2585.0127ms)
+✔ stopped-host-readoption baseline refuses journal with zero writes (2547.3357ms)
+✔ stopped-host-readoption baseline refuses ledger with zero writes (2681.5644ms)
+✔ stopped-host-readoption baseline refuses stop-bytes with zero writes (2566.3961ms)
+✔ stopped-host-readoption baseline refuses stop-inode with zero writes (3362.7258ms)
+✔ stopped-host-readoption baseline refuses certificate-bytes with zero writes (2775.9055ms)
+✔ stopped-host-readoption baseline refuses certificate-inode with zero writes (3350.2878ms)
+✔ stopped-host-readoption baseline refuses phase with zero writes (2517.8665ms)
+✔ stopped-host-readoption baseline refuses install-gate with zero writes (2614.257ms)
+✔ stopped-host-readoption baseline refuses broker-gate with zero writes (2650.0207ms)
+✔ stopped-host-readoption new baseline never permits unknown extension or generic certificate/update bypass (2003.1398ms)
+✔ stopped-host-readoption unavailable and live certifier remain fenced without writes (2169.3281ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 1 (2098.7611ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 2 (2124.4789ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 3 (2157.2999ms)
+✔ stopped-host-readoption isolated adapter plumbing acquires and releases only fixture-issued permits; production issuer remains closed (1969.7815ms)
+✔ stopped-host-readoption isolated adapter recovery preserves exact gate bytes/inodes and release-only skips only proven missing gates (2083.0701ms)
+
+✔ stopped-host-readoption isolated adapter recovery refuses gate bytes and revokes temporary capability on failure (1961.0686ms)
+✔ stopped-host-readoption isolated adapter recovery refuses gate inode and revokes temporary capability on failure (2009.4699ms)
+✔ stopped-host-readoption helper-only foundation preserves the exact current manual owner package (32.3751ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62898.4767
+check_dependency_unavailable: plan-engine/
+✖ [validation-routing] A4 diff maps single owner reverse contracts and dependency-keyed cache (127.0794ms)
+✔ [artifact-boundaries validation-routing titles-owner] scoped package seal reads only selected module closure while others physically absent (150.3859ms)
+✖ [validation-routing] actual titles-only diff checks pass with photo and engine absent from their source tree (141.9237ms)
+✖ [validation-routing] shared Core dependencies select component consumers while byte-only integrations remain explicit deferred coverage (1874.6957ms)
+✔ [validation-routing] declared semantic contract impacts select consumers without claiming private-file semantic equivalence (301.3349ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 2
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2669.7762
+
+✖ failing tests:
+
+test at test\core4.test.js:63:1
+✖ [validation-routing] A4 diff maps single owner reverse contracts and dependency-keyed cache (127.0794ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'stopped-host-readoption',
+      'titles-executor-contract',
+      'titles-owner'
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\core4.test.js:66:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'stopped-host-readoption', 'titles-executor-contract', 'titles-owner' ],
+    expected: [ 'titles-executor-contract', 'titles-owner' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test\core4.test.js:366:1
+✖ [validation-routing] actual titles-only diff checks pass with photo and engine absent from their source tree (141.9237ms)
+  Error: Command failed: C:\Program Files\nodejs\node.exe C:\Users\Ant\AppData\Local\Temp\ae-core4-ZlOrYh\core4\tools\validate-diff.js core4/modules/titles/implementation.js --run
+  check_dependency_unavailable: plan-engine/
+  
+      at genericNodeError (node:internal/errors:985:15)
+      at wrappedFn (node:internal/errors:539:14)
+      at checkExecSyncError (node:child_process:925:11)
+      at execFileSync (node:child_process:961:15)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\core4.test.js:368:18)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18) {
+    status: 1,
+    signal: null,
+    output: [ null, '', 'check_dependency_unavailable: plan-engine/\n' ],
+    pid: 372,
+    stdout: '',
+    stderr: 'check_dependency_unavailable: plan-engine/\n'
+  }
+
+test at test\core4.test.js:378:1
+✖ [validation-routing] shared Core dependencies select component consumers while byte-only integrations remain explicit deferred coverage (1874.6957ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'stopped-host-readoption',
+      'titles-executor-contract',
+      'titles-owner'
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\core4.test.js:396:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'stopped-host-readoption', 'titles-executor-contract', 'titles-owner' ],
+    expected: [ 'titles-executor-contract', 'titles-owner' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+

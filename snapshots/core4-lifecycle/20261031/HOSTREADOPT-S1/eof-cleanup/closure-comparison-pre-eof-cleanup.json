@@ -1,0 +1,65 @@
+[
+  {
+    "check": "stopped-certification",
+    "sameEvidenceKey": true,
+    "sameDependencies": true,
+    "before": "90d464e5810f934264f06dcb0c95021a49e844e054dd6f0683356dc7915572cf",
+    "after": "90d464e5810f934264f06dcb0c95021a49e844e054dd6f0683356dc7915572cf"
+  },
+  {
+    "check": "stopped-update",
+    "sameEvidenceKey": true,
+    "sameDependencies": true,
+    "before": "f6c9f4e66e09f9a5774bebc6c27f2a061e7f9e52402983f0d7b93c14571dfe22",
+    "after": "f6c9f4e66e09f9a5774bebc6c27f2a061e7f9e52402983f0d7b93c14571dfe22"
+  },
+  {
+    "check": "maintenance-finish-operator",
+    "sameEvidenceKey": false,
+    "sameDependencies": true,
+    "before": "77cb68db7fb8c444f6b9a7bb0d0dcfe8b83ec6b233835d43dba86a5ef029d6f5",
+    "after": "0558d191b7a78481b7c3c44482115731fefc7131ba9f7d8ebe1b1be229b4c0b8"
+  },
+  {
+    "check": "standalone-installer",
+    "sameEvidenceKey": true,
+    "sameDependencies": true,
+    "before": "4ec2640e668f821611506841534516d92bd9f420a81904788582073a0dbf24d6",
+    "after": "4ec2640e668f821611506841534516d92bd9f420a81904788582073a0dbf24d6"
+  },
+  {
+    "check": "legacy-owner-migration",
+    "sameEvidenceKey": true,
+    "sameDependencies": true,
+    "before": "0c7491e571ae2fbd1ffb01d647cce6ff6fa09a807fb64f283d51b6c07345e4d1",
+    "after": "0c7491e571ae2fbd1ffb01d647cce6ff6fa09a807fb64f283d51b6c07345e4d1"
+  },
+  {
+    "check": "stopped-host-readoption",
+    "sameEvidenceKey": false,
+    "sameDependencies": false,
+    "before": "f7282fcd19bd64048ec66b0a8c45fef52bdd249d4f3b677b3aa4eee0c23f45a3",
+    "after": "6ff370a8a408c502ccf4a267086f1e49b29938fc6b203e60cef34f5a25ae50f4"
+  },
+  {
+    "check": "validation-routing",
+    "sameEvidenceKey": false,
+    "sameDependencies": true,
+    "before": "748428366fe3906522725cff33adb0d5eeeca8d711857da56ce32234a828d390",
+    "after": "fe2851577a1f38cf0598682006b3f366f9e2a2b09252a865f3dc5e02f2f2a763"
+  },
+  {
+    "check": "maintenance-finish",
+    "sameEvidenceKey": true,
+    "sameDependencies": true,
+    "before": "169774721fe1b7a029e9bdd64ecb2c532ad4a42e5037b0c2af9d55c94e9e365a",
+    "after": "169774721fe1b7a029e9bdd64ecb2c532ad4a42e5037b0c2af9d55c94e9e365a"
+  },
+  {
+    "check": "owner-maintenance",
+    "sameEvidenceKey": true,
+    "sameDependencies": true,
+    "before": "e1a3f05fd57e82bdf3c8df87320468bf8aca73e206715f26e42b189341ee9140",
+    "after": "e1a3f05fd57e82bdf3c8df87320468bf8aca73e206715f26e42b189341ee9140"
+  }
+]

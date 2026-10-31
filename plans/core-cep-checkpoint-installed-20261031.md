@@ -67,8 +67,10 @@ wire reconnect не трассировался. Evidence: configured-connected-i
 Следующий шаг — штатная fresh current host re-adoption перед Titles. Source
 `adopt-host` требует stopped runtime и умеет только absent-only create; existing
 adoption нельзя заменить вручную/одноразовым helper. [План оператора](core-cep-r3-host-readoption-20261031.md)
-уточнён после одного Argon review; source slice1 private evidence/lease seams
-выполняется отдельно, без actual stop/adoption и без смены installedcc2f. Historical adoption6492 не
+уточнён после одного Argon review; source slice1 private evidence/lease adapter
+принят212PASS/9checks (composed coverage, partial initial raw log) и independent
+ACCEPT, без actual stop/adoption и без смены installedcc2f. Следующий source шаг —
+private transaction core2–4, затем CLI. Historical adoption6492 не
 переиспользуется как authority. Titles/ordinary cycles/portability/P1–P8/full
 release остаются открытыми. Stop/update/recovery/enable не повторять.
 

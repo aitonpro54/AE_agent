@@ -143,6 +143,14 @@ function checkStop(c) {
   if (!sameFact(v, c.facts.stop) && !(sameFact(archive, c.facts.stop, true) && sameFact(v, c.facts.stop, true) && equal(v.stat, archive.stat))) fail('stopped_update_stop_changed');
 }
 function stoppedUpdateLeasePermit(capability) { const p = leasePermits.get(capability); if (!p) fail('stopped_update_lease_brand'); return p; }
+function acquireStoppedReadoptionLease(capability) {
+  // Helper-only adapter to the unchanged runtime lease consumer. The readoption
+  // module must pull-validate its own private permit; slice1 mints none.
+  const permit = require('./stopped-host-readoption').stoppedReadoptionLeasePermit(capability), local = Object.freeze({});
+  leasePermits.set(local, permit);
+  try { return leases.acquireStoppedUpdateLease(local); }
+  finally { leasePermits.delete(local); }
+}
 function certificateCheck(c) {
   const value = c.source === 'owner' ? require('../runtime/stopped-certification').assertStoppedCertificate(c.certificate, { installation: c.old, descriptorPath: c.descriptorPath, id: c.stopId, lease: c.lease }) : require('./legacy-owner-migration').assertLegacyStoppedCapability(c.certificate, { plan: c.plan, lease: c.lease }).facts;
   if (!equal(value, c.facts)) fail('stopped_update_certificate_changed');
@@ -794,4 +802,4 @@ function stageStoppedRecovery(capability) {
 module.exports = { prepareStoppedUpdate, prepareLegacyStoppedUpdate, applyStoppedUpdate, inspectStoppedUpdate, finishStoppedUpdate,
   enableStoppedUpdate, finishEnableStoppedUpdate, createLegacyStoppedRecovery, stageStoppedRecovery,
   inspectOwnerPreReady, finishOwnerPreReady, ownerPreparedCertificatePermit,
-  assertStoppedUpdatePermit, stoppedUpdateSwitchReady, stoppedUpdateLeasePermit };
+  assertStoppedUpdatePermit, stoppedUpdateSwitchReady, stoppedUpdateLeasePermit, acquireStoppedReadoptionLease };

@@ -63,3 +63,10 @@ continuation; enable continuation; CLI/package/routing. Writer — specialist,
 только assigned source/test paths, без live. Root владеет docs/evidence/Git и
 единственным live controller. Сначала slice1 с адресной проверкой, потом остальные
 без нового Argon review. Runtime/provider/CEP/package boundary сохранена.
+
+Slice1 принят: read-only no-claim evidence и helper adapter без production lease
+issuance. Current coverage212PASS/9checks composed, corrected independent ACCEPT,
+root сверил6hashes/9current keys. Initial overall routing exit1 и partial initial
+stdout сохранены; exact unchanged4check closures reused,5checks current run.
+Следующий implementation milestone — цельный private core2–4; между его шагами
+адресные tests, итоговый relevant selection после frozen core. CLI slice5 отдельно.

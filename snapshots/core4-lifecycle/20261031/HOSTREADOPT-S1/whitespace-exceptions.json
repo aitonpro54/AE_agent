@@ -1,0 +1,13 @@
+{
+  "scope": "slice1 final staged whitespace verification",
+  "fullCheck": "git diff --cached --check",
+  "fullCheckExitCode": 1,
+  "sourceAndDocsCheckExitCode": 0,
+  "preservedArtifactExceptions": [
+    "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S1/stdout-tail.txt",
+    "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S1/eof-cleanup/test-pre-eof-cleanup.js",
+    "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S1/eof-cleanup/collect-eof-evidence.cjs"
+  ],
+  "reason": "Исходные machine/tool captures сохранены по hashes без нормализации; текущие production source/test/docs чистые. Full whitespace PASS не заявляется.",
+  "actualSourceEofFix": "Ровно один лишний0a в current test удалён; whole prefix byte-equal, foundation25 текущих bytes PASS; proof и final manifests в eof-cleanup."
+}
