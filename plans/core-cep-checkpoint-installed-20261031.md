@@ -5,7 +5,25 @@
 подключение текущего чата после обновления app transport. Новый чат не нужен.
 Ниже сохранены прежние checkpoints; актуальное состояние — в первом разделе.
 
-## Текущее состояние: configured cc2f/CEP/native read подтверждены, owner6716 ready
+## Текущее состояние: штатная re-adoption завершена, owner9584 ready
+
+31 октября19:12UTC: CLI commit8ce5a58, official helperc787e013… verified,
+новая operation`c4c0af30-1260-4e72-b875-74084ae1d0b3` завершила штатные
+stop/certify/readopt/explicit enable. Packagecc2f, descriptor/client/config/
+credentials/origins прежние; новая adoptionSHA666c79a6… на AE26308/birth прежний
+и exact текущую test-copy, старая4a453b0f… archived. Первый configured status
+после enable6388мс/первый вызов: owner9584/birth639290706521519370/
+boot04d9b162-40f5-4812-83b2-d18d3b7c3f84 ready, один3457, old6716 absent.
+HMAC11phase records/owner PASS,24events settled/prefix16/18/20 preserved,
+ledger/gates/stage/pending/UNKNOWN/faults0. AEP current33557830bytes/SHAe3b24989…
+сохранён без записи; opening/font notification не выдаются за exact typography.
+CEP исчерпала50с runtime wait во время обслуживания: peer=false, Connect
+запрошен у пользователя. Следующий шаг — Connect → configured native read → R5
+Titles на fresh IDs/baseline с native confirmation/read-back/кадром. Не повторять
+c4c0af30 либо old settled operations, markers не чистить. AE restart/save/mutation0.
+Evidence — `HOSTREADOPT-ACTUAL/`; actual metadata proof не закрывает R5/release.
+
+## Предыдущий checkpoint: configured cc2f/CEP/native read, owner6716
 
 31 октября после продолжения чата первый configured `core_status` успешно
 вернул installed package`cc2f0713…` без предварительного retry/probe. Native

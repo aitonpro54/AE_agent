@@ -1,0 +1,10 @@
+{
+  "initialResult": "owner_binding",
+  "cause": "Root evidence script expected ready instead of runtime-owner active phase",
+  "sourceEvidence": "core4/runtime/owner-lifecycle.js:463",
+  "change": "Require exact active phase; owner PID/birth/boot and HMAC bindings retained",
+  "runtimeWrites": 0,
+  "stopDispatches": 0,
+  "adoptionWrites": 0,
+  "aeMutation": 0
+}

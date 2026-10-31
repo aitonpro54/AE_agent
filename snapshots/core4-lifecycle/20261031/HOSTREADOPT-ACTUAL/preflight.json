@@ -1,0 +1,111 @@
+{
+  "collectedAt": "2026-10-31T19:06:08.937Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "hashes": {
+    "descriptor": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+    "client": "290923023d6297454ba74e91b1d89ba0315fae5b68c57811dcff36bf9fdcdc3d",
+    "config": "320b9e6d61c493a75cdf42da7d32af872bb6f83aa663ebf3894bdb5ac998c50a",
+    "rootOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "anchorOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "adoption": "4a453b0f0b04a83bd5248d3a22fbab234150c8232f5f464ba886d6bcafdee30c",
+    "journal": "25d8b42d7e8ceac769477a40a43a5c400fabf7c6a1b576af0e2a8d0f54ef4feb",
+    "ledger": null
+  },
+  "journalEvents": 24,
+  "original16Hash": "4cfe881718e7255829785e57b604304493b319ba6e68d597074a98454e146f45",
+  "original18Hash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e",
+  "original20Hash": "262a093495e4c789e5465e592a47c74eec82edb31a8215e37327488af37f574c",
+  "receiverSettled": true,
+  "owner": {
+    "pid": 6716,
+    "birthTicks": "639290482462328350",
+    "bootId": "85dfe31b-e54f-4a94-aac4-ca9bc10bb3ff"
+  },
+  "ownerSealVerified": true,
+  "ownerProcess": {
+    "version": 1,
+    "pid": 6716,
+    "status": "present",
+    "birthTicks": "639290482462328350",
+    "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+    "observedAt": "2026-10-31T19:06:08.852Z"
+  },
+  "host": {
+    "machineId": "MSI",
+    "aePid": 26308,
+    "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+    "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71"
+  },
+  "observation": {
+    "version": 1,
+    "hostname": "MSI",
+    "observedAt": "2026-10-31T19:06:08.337Z",
+    "processes": [
+      {
+        "pid": 26308,
+        "birth": "2026-10-31T10:32:49.0521480Z",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executableLength": 5931016
+      }
+    ],
+    "endpoints": [
+      {
+        "port": 3456,
+        "state": "observed-absent"
+      },
+      {
+        "port": 8787,
+        "state": "observed-absent"
+      }
+    ],
+    "completedAt": 1793473568341
+  },
+  "currentAdoption": {
+    "adoptedAt": "2026-10-30T04:49:47.963Z",
+    "allowedProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\titles-product\\20261030\\live\\Titles-T2-test.aep",
+    "host": {
+      "aePid": 6492,
+      "aeProcessBirth": "2026-10-30T04:43:20.6247780Z",
+      "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+      "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+      "machineId": "MSI"
+    },
+    "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+    "machineId": "MSI",
+    "observedDigest": "2ca1724ea0c741a1fe1618472e18c629ab6c87bb20fd3dbdbda2029afbbd3e4b",
+    "policy": "registered-Core4-lane-and-current-target-native-confirmation",
+    "rootObservationDigest": "137882e9d55f5661c2bd260f5a381615886452c560f69b56937953c3bb8a0ddc",
+    "version": 1
+  },
+  "project": {
+    "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\titles-product\\20261030\\live\\Titles-T2-test.aep",
+    "bytes": 33557830,
+    "hash": "e3b249894cbd602c44483b12b3847e97fa23c358c429687755f88e90d5b9f170",
+    "mtimeNs": "1793389944695834300",
+    "historicalExpectedBytes": 32001325,
+    "historicalExpectedHash": "9d5d15a11fccc24b7ca284b6da866bd46f3626d621c80f83c8c1672791ff996f",
+    "historicalBytesPreserved": true
+  },
+  "operation": {
+    "id": "c4c0af30-1260-4e72-b875-74084ae1d0b3",
+    "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "nodePath": "C:\\Program Files\\nodejs\\node.exe",
+    "distribution": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\owner-host-readoption-c787e0134941",
+    "distributionHash": "c787e0134941086fdbf7b1b15ebb16ee6b0684fbaab85ecb586a0958a602e81d",
+    "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+    "witnessPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core4-lifecycle\\20261031\\HOSTREADOPT-ACTUAL\\witness.json",
+    "witnessHash": "7e70209b787a6fcf2dd19b9f1e4d27f5f4b77165b3023b4118bd3c839cd7f7a9"
+  },
+  "actualStop": 0,
+  "actualAdoption": 0,
+  "actualEnable": 0,
+  "aeMutation": 0,
+  "save": 0,
+  "aeRestart": 0,
+  "sanitization": "Owner role nonces omitted; no installation credentials captured"
+}

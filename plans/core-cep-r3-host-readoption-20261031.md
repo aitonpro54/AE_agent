@@ -8,9 +8,11 @@ Helper foundation принята commit`a1fedf3`; runtime payload/package не �
 Private transaction core2–4 принят на freeze05:253PASS/12current checks,
 composed coverage с exact reuse5closures и независимым source/test ACCEPT.
 Terminal read race после last gate release исправлен и проверен.
-CLI slice5 также принят:338unique PASS/19current checks. Actual
-operator пока не выполнялся; официальный immutable output создаётся после commit.
-Runtime packagecc2f прежний. Повторного Argon не было.
+CLI slice5 также принят:338unique PASS/19current checks, commit8ce5a58.
+Official outputc787e013… записан и проверен. Actual operationc4c0af30… завершила
+stop/certify/readopt/explicit enable; первый configured status успешен за6388мс,
+owner9584 ready. Runtime packagecc2f прежний. CEP после bounded wait требует
+Connect; native read после enable и R5 Titles ещё открыты. Повторного Argon не было.
 Source milestone commit: `53200c12a684fe9be3abb7875cc424105795da2c`.
 
 Редакция после единственного plan review20261031-readoption-plan-01: source
@@ -176,9 +178,11 @@ raw/save/destructive, AE restart, AME и внешние APIs вне scope. Root 
   current-key verification:253PASS/12checks (7fresh+5exactreuse).
 - [x] Slice5: CLI/package/boundaries/validation wiring и immutable selection.
 - [x] Source/helper implementation и адресная проверка; private commit53200c1,
-  CLI source milestone фиксируется отдельно.
-- [ ] Official immutable manual/owner distribution и exact hash read-back.
-- [ ] Actual new stop/readoption/explicit enable и fresh configured proof.
+  CLI source milestone8ce5a58.
+- [x] Official immutable manual/owner distribution и exact hash read-back.
+- [x] Actual new stop/readoption/explicit enable и fresh configured Core status.
+- [ ] Повторный Connect CEP и configured native read после enable; затем R5 Titles
+  на текущей test-copy, native confirmation и read-back/кадр.
 
 Завершённый milestone core2–4: цель — штатный recoverable helper core без смены
 runtime. Изменены11source paths (main/store/reducer, narrow certificate port,
@@ -394,3 +398,44 @@ SHA,6owned CLI paths составляют весь source diff от53200c1. Вс
 evidence blobs сохранены exact bytes. Full diff check отметил4diagnostics лишь
 в3immutable capture/raw artifacts; остальные source/docs/artifacts PASS. Точные
 exceptions/hashes — HOSTREADOPT-CLI/staged-checks.json. Captures не форматировались.
+
+### Actual helper и установленная привязка — 31 октября, 19:12 UTC
+
+Progress: source CLI committed8ce5a58; official immutable output
+`dist/owner-host-readoption-c787e0134941`, hash
+`c787e0134941086fdbf7b1b15ebb16ee6b0684fbaab85ecb586a0958a602e81d`,
+87bundle/88physical files, full manifest bytes verified. Packagecc2f/70files,
+установленные CEP/config/credentials не обновлялись. Root открыл выбранный
+`20261030/live/Titles-T2-test.aep` из пустого немодифицированного проекта;
+configured inspection подтвердила exact path/465items/comp218. Файл теперь
+33557830bytes/SHAe3b24989…, отличается от исторического9d5d15a1…; текущие bytes
+сохранены как baseline, старый файл не восстанавливался. ReservoirGrunge отсутствует;
+информационное уведомление закрыто, font install/save не выполнялись.
+
+Fresh fixed Windows witness: AE26308, birth2026-10-31T10:32:49.0521480Z,
+executableSHA8599b665…, единственный AE, endpoints3456/8787 observed-absent.
+Controller generation3 released/idle, faults/pending/UNKNOWN0. Receiver24events
+settled, prefix16/18/20 unchanged. Root один раз отправил stop нового UUID
+`c4c0af30-1260-4e72-b875-74084ae1d0b3`; original old operations не повторялись.
+Maintenance inspect stopped; stopped certification certificateSHAaf805881…;
+readopt-inspect/apply completed-stopped; fresh inspect и отдельный enable enabled.
+Все CLI exit0, automatic replay0/finish0/forced interruption0. Enable terminal
+historical receipt явно не утверждает current runtime/history/barrier.
+
+Validation: первый configured core_status после enable прошёл с первого вызова
+за6388мс. Новый owner9584/birth639290706521519370/boot04d9b162… active/ready,
+same client22952, единственный listener3457; прежний6716 absent. Root read-only
+верификатор проверил HMAC всех11phase records и owner, original operation binding,
+новую adoptionSHA666c79a6… на exact witness/project и archive старой4a453b0f….
+Descriptor/client/config/origins/history/AEP byte hashes unchanged; ledger/gates/
+stage absent,24events settled. В root evidence script исправлены три ошибки
+ожиданий (active phase, отдельный maintenance HMAC domain, exact classifier shape);
+runtime/source guards не менялись, operator не повторялся. Corrections сохранены.
+
+Decision Log: metadata этап завершён без AE restart/save/mutation. Во время
+обслуживания CEP исчерпала штатное50с ожидание и показывает runtime_wait_expired;
+первый status peer=false/inspectionAvailable=false. Пользователю передан отдельный
+запрос Connect; известный cross-process CU отказ не обходился. Actual native read
+после enable/Titles/native confirm/кадр и полная repeated-cycles приёмка открыты.
+Evidence — `snapshots/core4-lifecycle/20261031/HOSTREADOPT-ACTUAL/`.
+Не повторять c4c0af30 или прежние settled stop/update/readoption; markers не чистить.

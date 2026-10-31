@@ -1,0 +1,12 @@
+{
+  "initialResult": "record_seal_or_binding",
+  "cause": "Root evidence script applied lifecycle HMAC namespace to maintenance records",
+  "sourceEvidence": "core4/runtime/owner-maintenance.js:56,70",
+  "change": "Use explicit maintenance domain for operation records and lifecycle domain for normal owner; retain canonical/HMAC/installation/descriptor/original-id checks",
+  "runtimeWrites": 0,
+  "operatorReplays": 0,
+  "secondResult": "owner_processes",
+  "secondCause": "Classifier expected exact pid/birthTicks; root supplied extra bootId",
+  "secondChange": "Project prior scope to the exact classifier contract",
+  "nativeDiagnostic": "Prior 6716 absent; current 9584 present with exact configured birthTicks"
+}

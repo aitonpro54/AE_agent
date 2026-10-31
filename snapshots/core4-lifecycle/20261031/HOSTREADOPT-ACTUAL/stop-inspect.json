@@ -1,0 +1,28 @@
+{
+  "startedAt": "2026-10-31T19:06:33.711Z",
+  "collectedAt": "2026-10-31T19:06:36.332Z",
+  "operationId": "c4c0af30-1260-4e72-b875-74084ae1d0b3",
+  "mode": "maintenance-inspect",
+  "entry": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\owner-host-readoption-c787e0134941\\tools\\maintain-owner.js",
+  "args": [
+    "inspect",
+    "--installation",
+    "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "--operation",
+    "c4c0af30-1260-4e72-b875-74084ae1d0b3",
+    "--expected-package-hash",
+    "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+  ],
+  "exitCode": 0,
+  "signal": null,
+  "error": null,
+  "stdout": "{\"aeAuthority\":false,\"id\":\"c4c0af30-1260-4e72-b875-74084ae1d0b3\",\"inspectionOnly\":true,\"phase\":\"stopped\",\"proofHash\":\"8b4fc5899c66f9fad0b67467b6c40493d019cd0de6f8dbc55a5b74cb4583d3fd\"}\n",
+  "stderr": "",
+  "result": {
+    "aeAuthority": false,
+    "id": "c4c0af30-1260-4e72-b875-74084ae1d0b3",
+    "inspectionOnly": true,
+    "phase": "stopped",
+    "proofHash": "8b4fc5899c66f9fad0b67467b6c40493d019cd0de6f8dbc55a5b74cb4583d3fd"
+  }
+}

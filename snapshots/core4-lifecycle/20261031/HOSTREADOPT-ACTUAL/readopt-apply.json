@@ -1,0 +1,38 @@
+{
+  "startedAt": "2026-10-31T19:08:14.335Z",
+  "collectedAt": "2026-10-31T19:09:13.080Z",
+  "operationId": "c4c0af30-1260-4e72-b875-74084ae1d0b3",
+  "mode": "readopt-apply",
+  "entry": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\owner-host-readoption-c787e0134941\\tools\\standalone-installer.js",
+  "args": [
+    "readopt-apply",
+    "--expected-distribution-hash",
+    "c787e0134941086fdbf7b1b15ebb16ee6b0684fbaab85ecb586a0958a602e81d",
+    "--expected-current-package-hash",
+    "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+    "--installation",
+    "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "--operation",
+    "c4c0af30-1260-4e72-b875-74084ae1d0b3",
+    "--expected-proof-hash",
+    "0d69165ec5bc1906d599f6f9f8a66995bddb32a9ce3e1ac4e6884b3c4e32a0a2",
+    "--witness",
+    "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core4-lifecycle\\20261031\\HOSTREADOPT-ACTUAL\\witness.json",
+    "--expected-witness-hash",
+    "7e70209b787a6fcf2dd19b9f1e4d27f5f4b77165b3023b4118bd3c839cd7f7a9"
+  ],
+  "exitCode": 0,
+  "signal": null,
+  "error": null,
+  "stdout": "{\"aeAuthority\":false,\"id\":\"c4c0af30-1260-4e72-b875-74084ae1d0b3\",\"lifecycleEpoch\":false,\"mutationGrant\":false,\"phase\":\"readopt-completed-stopped\",\"proofHash\":\"950b82112a87898f234fe8160e4979253c2ca710d4aea7e5c534f020b628ddbe\",\"runtimeStarted\":false}\n",
+  "stderr": "",
+  "result": {
+    "aeAuthority": false,
+    "id": "c4c0af30-1260-4e72-b875-74084ae1d0b3",
+    "lifecycleEpoch": false,
+    "mutationGrant": false,
+    "phase": "readopt-completed-stopped",
+    "proofHash": "950b82112a87898f234fe8160e4979253c2ca710d4aea7e5c534f020b628ddbe",
+    "runtimeStarted": false
+  }
+}

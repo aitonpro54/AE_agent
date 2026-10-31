@@ -1,0 +1,235 @@
+{
+  "collectedAt": "2026-10-31T19:12:21.196Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "operationId": "c4c0af30-1260-4e72-b875-74084ae1d0b3",
+  "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "distributionHash": "c787e0134941086fdbf7b1b15ebb16ee6b0684fbaab85ecb586a0958a602e81d",
+  "hashes": {
+    "descriptor": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+    "client": "290923023d6297454ba74e91b1d89ba0315fae5b68c57811dcff36bf9fdcdc3d",
+    "config": "320b9e6d61c493a75cdf42da7d32af872bb6f83aa663ebf3894bdb5ac998c50a",
+    "rootOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "anchorOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "adoption": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+    "journal": "25d8b42d7e8ceac769477a40a43a5c400fabf7c6a1b576af0e2a8d0f54ef4feb",
+    "ledger": null
+  },
+  "oldAdoptionArchived": true,
+  "newAdoption": {
+    "adoptedAt": "2026-10-31T19:08:32.929Z",
+    "allowedProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\titles-product\\20261030\\live\\Titles-T2-test.aep",
+    "host": {
+      "aePid": 26308,
+      "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+      "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+      "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+      "machineId": "MSI"
+    },
+    "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+    "machineId": "MSI",
+    "observedDigest": "fb8f3c6b600134e1107857a00f6c3dc37e88a38812d07b93aed235be156d77d9",
+    "policy": "registered-Core4-lane-and-current-target-native-confirmation",
+    "rootObservationDigest": "86f05182edf5ee1f8ee58024f12d8328b2398435bb0be02725b336db489550a6",
+    "version": 1
+  },
+  "phaseRecords": [
+    {
+      "name": "readopt-cas-ready.json",
+      "hash": "92002174538e599ba32d63692e1e134d5945ba42e367c5864ce8fcfe1b29aa6a",
+      "kind": "maintenance-readopt-cas-ready",
+      "sealVerified": true
+    },
+    {
+      "name": "readopt-completed.json",
+      "hash": "756ae8fd49187e7e4d517b8bcb373cd564a5ff53b312d8113eb90abbda76371a",
+      "kind": "maintenance-readopt-completed",
+      "sealVerified": true
+    },
+    {
+      "name": "readopt-enable-intent.json",
+      "hash": "c40d7267e82a390bdcdec3c6a3d06cd18cc850d837e98cb943aed6c7e2bdbacb",
+      "kind": "maintenance-readopt-enable-intent",
+      "sealVerified": true
+    },
+    {
+      "name": "readopt-enable-ready.json",
+      "hash": "f0bb0121ea3803a0d8442bd71aad45986ea469ee3fa62b8d7fb0ae01b7dbf2f5",
+      "kind": "maintenance-readopt-enable-ready",
+      "sealVerified": true
+    },
+    {
+      "name": "readopt-enabled.json",
+      "hash": "e7c245996bcee5fdbe77093c944586e81c80656eebde77b92f6c3e55194c6c38",
+      "kind": "maintenance-readopt-enabled",
+      "sealVerified": true
+    },
+    {
+      "name": "readopt-intent.json",
+      "hash": "c963cd4245100351e7ed66aa957e2fb2b6efc7f4d1f4c8449cd12d052382f17e",
+      "kind": "maintenance-readopt-intent",
+      "sealVerified": true
+    },
+    {
+      "name": "readopt-lease.json",
+      "hash": "5cf78513c41774db859bfded0f8141cd48b15f95005e890476ca6ef19827a9d1",
+      "kind": "maintenance-readopt-lease",
+      "sealVerified": true
+    },
+    {
+      "name": "readopt-stop.json",
+      "hash": "7790d183a44eda9e3174e006f3f28fd5e324b5868b78f8c8a8311231ddfeb7cc",
+      "kind": "maintenance-stop",
+      "sealVerified": true
+    },
+    {
+      "name": "stopped-certificate.json",
+      "hash": "af805881ec448a404b482d26a3245a54a79792bbd8dcd8a8d1fa05db05a963e9",
+      "kind": "maintenance-stopped-certificate",
+      "sealVerified": true
+    },
+    {
+      "name": "stopped-certification-intent.json",
+      "hash": "cd10fa4e8cd6c858905e3efcfee061ae1ab4eea4153892e233e11dfe4db90d3e",
+      "kind": "maintenance-stopped-certification-intent",
+      "sealVerified": true
+    },
+    {
+      "name": "stopped.json",
+      "hash": "34d8d9242cc9c413396b73b5850e86090beb30029aa3934aeaee1d86b91988c2",
+      "kind": "maintenance-stopped",
+      "sealVerified": true
+    }
+  ],
+  "owner": {
+    "pid": 9584,
+    "birthTicks": "639290706521519370",
+    "bootId": "04d9b162-40f5-4812-83b2-d18d3b7c3f84",
+    "sealVerified": true
+  },
+  "previousOwnerProcess": {
+    "version": 1,
+    "pid": 6716,
+    "status": "absent",
+    "birthTicks": null,
+    "executablePath": null,
+    "observedAt": "2026-10-31T19:12:17.978Z"
+  },
+  "currentOwnerProcess": {
+    "version": 1,
+    "pid": 9584,
+    "status": "present",
+    "birthTicks": "639290706521519370",
+    "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+    "observedAt": "2026-10-31T19:12:18.522Z"
+  },
+  "host": {
+    "machineId": "MSI",
+    "aePid": 26308,
+    "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+    "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71"
+  },
+  "observation": {
+    "version": 1,
+    "hostname": "MSI",
+    "observedAt": "2026-10-31T19:12:17.505Z",
+    "processes": [
+      {
+        "pid": 26308,
+        "birth": "2026-10-31T10:32:49.0521480Z",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executableLength": 5931016
+      }
+    ],
+    "endpoints": [
+      {
+        "port": 3456,
+        "state": "observed-absent"
+      },
+      {
+        "port": 8787,
+        "state": "observed-absent"
+      }
+    ],
+    "completedAt": 1793473937507
+  },
+  "inventory": {
+    "processes": [
+      {
+        "pid": 26308,
+        "parentPid": 26148,
+        "birthTicks": "639290395690521480",
+        "kind": "AE",
+        "packageHash": ""
+      },
+      {
+        "pid": 22952,
+        "parentPid": 18856,
+        "birthTicks": "639290482194458680",
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 22636,
+        "parentPid": 18856,
+        "birthTicks": "639290500670766040",
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 12332,
+        "parentPid": 18856,
+        "birthTicks": "639290526721609600",
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 20728,
+        "parentPid": 18856,
+        "birthTicks": "639290545723425080",
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 11408,
+        "parentPid": 18856,
+        "birthTicks": "639290676789696300",
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 9584,
+        "parentPid": 22952,
+        "birthTicks": "639290706521519370",
+        "kind": "owner",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      }
+    ],
+    "listeners": [
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 3457,
+        "OwningProcess": 9584
+      }
+    ]
+  },
+  "journalEvents": 24,
+  "receiverSettled": true,
+  "protectedBytesPreserved": true,
+  "pending": false,
+  "unknown": false,
+  "mutationGrant": false,
+  "aeAuthority": false,
+  "runtimeStartedByHelper": false,
+  "configuredStartup": true,
+  "aeRestart": 0,
+  "save": 0,
+  "projectMutation": 0,
+  "cepConnected": false,
+  "inspectionAvailable": false,
+  "nativeReadAfterEnable": false
+}

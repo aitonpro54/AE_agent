@@ -1,0 +1,21 @@
+{
+  "collectedAt": "2026-10-31T18:45:23.146Z",
+  "recordContext": {
+    "purpose": "development",
+    "lifetime": "product_change"
+  },
+  "sourceCommit": "8ce5a58b89d78ac3a74d94f35b4e338838205e92",
+  "privateCoreCommit": "53200c12a684fe9be3abb7875cc424105795da2c",
+  "distributionHash": "c787e0134941086fdbf7b1b15ebb16ee6b0684fbaab85ecb586a0958a602e81d",
+  "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "bundleFiles": 87,
+  "physicalFilesIncludingManifest": 88,
+  "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\owner-host-readoption-c787e0134941",
+  "exactClosureVerified": true,
+  "allManifestBytesRehashed": true,
+  "runtimeInstallWrites": 0,
+  "actualStop": 0,
+  "actualAdoption": 0,
+  "actualEnable": 0,
+  "aeOperations": 0
+}

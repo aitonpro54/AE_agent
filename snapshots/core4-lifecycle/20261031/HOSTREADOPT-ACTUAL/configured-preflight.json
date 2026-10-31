@@ -1,0 +1,630 @@
+{
+  "collectedAt": "2026-10-31 19:05:12 UTC",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "beforeFixtureStatus": {
+    "startedAt": "2026-10-31T18:46:38.729Z",
+    "collectedAt": "2026-10-31T18:46:38.745Z",
+    "durationMs": 16,
+    "status": {
+      "attachmentOwner": {
+        "accepted": 0,
+        "activity": {
+          "fault": false,
+          "pending": false,
+          "unresolved": false
+        },
+        "attachments": 1,
+        "bootId": "78d1b37e-6c19-4b9c-b5f1-e2f4e69fa9ed",
+        "closed": false,
+        "fenced": false,
+        "frozen": false,
+        "generation": 1,
+        "holderClientId": null,
+        "mode": "idle",
+        "pending": false
+      },
+      "automaticLifecycle": "unavailable",
+      "closed": false,
+      "composition": "manual",
+      "connection": "unavailable",
+      "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionPolicy": "read-only-current-observation-v1",
+      "installation": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "nodeVerified": true,
+        "nodeVersion": "24.15.0",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      "ledgerFault": false,
+      "lifecycle": {
+        "birthTicks": "639290482462328350",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": null,
+            "eventCount": 0,
+            "present": false,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e",
+            "eventCount": 18,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 6716,
+        "processBootId": "85dfe31b-e54f-4a94-aac4-ca9bc10bb3ff",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "maintenance": {
+        "fault": null,
+        "id": null,
+        "phase": "running",
+        "requested": false
+      },
+      "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+      "ownershipFault": null,
+      "physical": {
+        "automaticLifecycle": "unavailable",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionAvailable": true,
+        "listening": true,
+        "peer": {
+          "connected": true,
+          "peerId": "panel-e3a521b2265cc9ae7ef32c59c564dfde4621626a5b1f5d85"
+        },
+        "pending": null,
+        "port": 3457,
+        "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+        "storeClosed": false,
+        "storeFault": false,
+        "unknown": false
+      },
+      "pid": 6716,
+      "product": "AE Agent Core 4.0.0",
+      "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+      "ready": true,
+      "resourceProvider": {
+        "adopted": true,
+        "coverage": {
+          "core4Lane": "cooperating-Core4-only",
+          "hostProcess": "adopted-reprobe-required",
+          "legacyEndpoints": "named-probes-only",
+          "legacyPhysicalQueue": "not-proven",
+          "otherAEActors": "outside-coverage",
+          "sharedOutputs": "not-requested"
+        },
+        "origin": {
+          "aePid": 6492,
+          "aeProcessBirth": "2026-10-30T04:43:20.6247780Z",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "machineId": "MSI"
+        }
+      },
+      "synthetic": false,
+      "unavailableReason": null,
+      "unresolved": [],
+      "worker": {
+        "epoch": 0,
+        "lateReplies": 0,
+        "loaded": [],
+        "pending": 0,
+        "pid": null
+      }
+    },
+    "isError": false
+  },
+  "beforeFixtureInspection": {
+    "authority": false,
+    "continuity": false,
+    "contractId": "1ccaa27e175b0d0f606dcb23fac1454cbd822420fda1e1ac6eb3560a346d4f3a",
+    "evidenceRef": "observation-a403f727-9da2-4663-8a05-2760ec9e64fa",
+    "moduleId": "project-inspection",
+    "observation": {
+      "aeVersion": "26.3x87",
+      "compositions": [],
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "Несохранённый проект",
+        "numItems": 0,
+        "saved": false
+      },
+      "target": {
+        "compId": null,
+        "projectId": null
+      },
+      "truncated": false
+    },
+    "originalBinding": {
+      "channelEpoch": "http-951ec580-893e-423c-8541-cfd02813867e",
+      "commandId": "inspect-a8faf292-187e-47ed-b308-48da7cae974c",
+      "controllerId": "controller-8056ea6a-3c7b-4829-8b1b-52e6ad16ce50",
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "moduleId": "project-inspection",
+      "operationId": "inspect",
+      "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "phase": "inspect",
+      "receiptRef": "b948ab6f35db544fa1f0fa2d2bea991808a316f4ef1ac3062131320cd8333251",
+      "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4"
+    },
+    "pins": {
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+    }
+  },
+  "loadedStatus": {
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "78d1b37e-6c19-4b9c-b5f1-e2f4e69fa9ed",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 2,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false
+    },
+    "automaticLifecycle": "unavailable",
+    "closed": false,
+    "composition": "manual",
+    "connection": "unavailable",
+    "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionPolicy": "read-only-current-observation-v1",
+    "installation": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "machineId": "MSI",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+    },
+    "ledgerFault": false,
+    "lifecycle": {
+      "birthTicks": "639290482462328350",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e",
+          "eventCount": 18,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 6716,
+      "processBootId": "85dfe31b-e54f-4a94-aac4-ca9bc10bb3ff",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "maintenance": {
+      "fault": null,
+      "id": null,
+      "phase": "running",
+      "requested": false
+    },
+    "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+    "ownershipFault": null,
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": true,
+      "listening": true,
+      "peer": {
+        "connected": true,
+        "peerId": "panel-e3a521b2265cc9ae7ef32c59c564dfde4621626a5b1f5d85"
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "pid": 6716,
+    "product": "AE Agent Core 4.0.0",
+    "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+    "ready": true,
+    "resourceProvider": {
+      "adopted": true,
+      "coverage": {
+        "core4Lane": "cooperating-Core4-only",
+        "hostProcess": "adopted-reprobe-required",
+        "legacyEndpoints": "named-probes-only",
+        "legacyPhysicalQueue": "not-proven",
+        "otherAEActors": "outside-coverage",
+        "sharedOutputs": "not-requested"
+      },
+      "origin": {
+        "aePid": 6492,
+        "aeProcessBirth": "2026-10-30T04:43:20.6247780Z",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "machineId": "MSI"
+      }
+    },
+    "synthetic": false,
+    "unavailableReason": null,
+    "unresolved": [],
+    "worker": {
+      "epoch": 0,
+      "lateReplies": 0,
+      "loaded": [],
+      "pending": 0,
+      "pid": null
+    }
+  },
+  "loadedProject": {
+    "authority": false,
+    "continuity": false,
+    "contractId": "1ccaa27e175b0d0f606dcb23fac1454cbd822420fda1e1ac6eb3560a346d4f3a",
+    "evidenceRef": "observation-bac16263-c64f-4777-923f-b36c0a03feb2",
+    "moduleId": "project-inspection",
+    "observation": {
+      "aeVersion": "26.3x87",
+      "compositions": [
+        {
+          "compId": 1139,
+          "duration": 12.4,
+          "name": "Text_4_1",
+          "numLayers": 1
+        },
+        {
+          "compId": 1155,
+          "duration": 2.66666666666667,
+          "name": "Paper_2 Precomp",
+          "numLayers": 1
+        },
+        {
+          "compId": 1170,
+          "duration": 12.4,
+          "name": "Text_4_1 Comp 1",
+          "numLayers": 1
+        },
+        {
+          "compId": 1183,
+          "duration": 15.4,
+          "name": "text_4_1_anim",
+          "numLayers": 4
+        },
+        {
+          "compId": 69859,
+          "duration": 41,
+          "name": "BG",
+          "numLayers": 3
+        },
+        {
+          "compId": 1203,
+          "duration": 12.4,
+          "name": "Text_4_1",
+          "numLayers": 1
+        },
+        {
+          "compId": 69697,
+          "duration": 12.4,
+          "name": "Text_4_4",
+          "numLayers": 1
+        },
+        {
+          "compId": 69793,
+          "duration": 12.4,
+          "name": "Text_4_5",
+          "numLayers": 1
+        },
+        {
+          "compId": 69819,
+          "duration": 12.4,
+          "name": "Text_4_6",
+          "numLayers": 1
+        },
+        {
+          "compId": 1219,
+          "duration": 2.66666666666667,
+          "name": "Paper_2 Precomp",
+          "numLayers": 1
+        },
+        {
+          "compId": 69832,
+          "duration": 2.66666666666667,
+          "name": "Paper_2 Precomp 2",
+          "numLayers": 1
+        },
+        {
+          "compId": 1234,
+          "duration": 12.4,
+          "name": "Text_4_1 Comp 1",
+          "numLayers": 1
+        },
+        {
+          "compId": 69684,
+          "duration": 12.4,
+          "name": "Text_4_1 Comp 2",
+          "numLayers": 1
+        },
+        {
+          "compId": 69780,
+          "duration": 12.4,
+          "name": "Text_4_1 Comp 3",
+          "numLayers": 1
+        },
+        {
+          "compId": 69806,
+          "duration": 12.4,
+          "name": "Text_4_1 Comp 4",
+          "numLayers": 1
+        },
+        {
+          "compId": 69882,
+          "duration": 10,
+          "name": "plashka_BG",
+          "numLayers": 2
+        },
+        {
+          "compId": 1247,
+          "duration": 15.4,
+          "name": "text_4_1_anim",
+          "numLayers": 6
+        },
+        {
+          "compId": 69762,
+          "duration": 15.4,
+          "name": "text_4_1_anim 2",
+          "numLayers": 7
+        },
+        {
+          "compId": 45022,
+          "duration": 10,
+          "name": "Image 01",
+          "numLayers": 8
+        },
+        {
+          "compId": 45138,
+          "duration": 10,
+          "name": "BG Text 01",
+          "numLayers": 1
+        },
+        {
+          "compId": 42311,
+          "duration": 10,
+          "name": "Person Text 01",
+          "numLayers": 2
+        },
+        {
+          "compId": 3743,
+          "duration": 10,
+          "name": "Assets Position 01",
+          "numLayers": 21
+        },
+        {
+          "compId": 53239,
+          "duration": 10,
+          "name": "B MASK 01",
+          "numLayers": 2
+        },
+        {
+          "compId": 44946,
+          "duration": 10,
+          "name": "BG",
+          "numLayers": 2
+        },
+        {
+          "compId": 45617,
+          "duration": 10,
+          "name": "NEWSPAPER IN",
+          "numLayers": 177
+        },
+        {
+          "compId": 49481,
+          "duration": 10,
+          "name": "GT 02",
+          "numLayers": 1
+        },
+        {
+          "compId": 55734,
+          "duration": 10,
+          "name": "GT 03",
+          "numLayers": 1
+        },
+        {
+          "compId": 51381,
+          "duration": 10,
+          "name": "Image Double  01",
+          "numLayers": 2
+        },
+        {
+          "compId": 51407,
+          "duration": 10,
+          "name": "Image Middle 01",
+          "numLayers": 1
+        },
+        {
+          "compId": 51525,
+          "duration": 10,
+          "name": "Image Start 01",
+          "numLayers": 3
+        },
+        {
+          "compId": 53482,
+          "duration": 10,
+          "name": "Note Paper 01",
+          "numLayers": 4
+        },
+        {
+          "compId": 30300,
+          "duration": 150,
+          "name": "Grunge",
+          "numLayers": 16
+        },
+        {
+          "compId": 49282,
+          "duration": 10,
+          "name": "Shadow Over",
+          "numLayers": 1
+        },
+        {
+          "compId": 55750,
+          "duration": 10,
+          "name": "Pre-comp 2",
+          "numLayers": 2
+        },
+        {
+          "compId": 53195,
+          "duration": 10,
+          "name": "WORK AREA",
+          "numLayers": 4
+        },
+        {
+          "compId": 114,
+          "duration": 10,
+          "name": "Scene 01",
+          "numLayers": 6
+        },
+        {
+          "compId": 69516,
+          "duration": 12.0666666666667,
+          "name": "Bylina_SMPushka",
+          "numLayers": 5
+        },
+        {
+          "compId": 4,
+          "duration": 40,
+          "name": "Title_1_Color",
+          "numLayers": 17
+        },
+        {
+          "compId": 33,
+          "duration": 10.0333333333333,
+          "name": "Title_2_Color",
+          "numLayers": 14
+        },
+        {
+          "compId": 60,
+          "duration": 10.0333333333333,
+          "name": "Title_3_Color",
+          "numLayers": 19
+        },
+        {
+          "compId": 91,
+          "duration": 15.4,
+          "name": "Title_4_Color",
+          "numLayers": 19
+        },
+        {
+          "compId": 133,
+          "duration": 12.4,
+          "name": "TItle_5_Color",
+          "numLayers": 19
+        },
+        {
+          "compId": 165,
+          "duration": 40,
+          "name": "Placeholder_1",
+          "numLayers": 1
+        },
+        {
+          "compId": 178,
+          "duration": 40,
+          "name": "Placeholder_2",
+          "numLayers": 0
+        },
+        {
+          "compId": 190,
+          "duration": 40,
+          "name": "Placeholder_4",
+          "numLayers": 1
+        },
+        {
+          "compId": 203,
+          "duration": 40,
+          "name": "Placeholder_5",
+          "numLayers": 1
+        },
+        {
+          "compId": 218,
+          "duration": 40,
+          "name": "Text_1_1",
+          "numLayers": 1
+        },
+        {
+          "compId": 231,
+          "duration": 40,
+          "name": "Text_1_2",
+          "numLayers": 1
+        },
+        {
+          "compId": 245,
+          "duration": 40,
+          "name": "Text_2_1",
+          "numLayers": 1
+        },
+        {
+          "compId": 258,
+          "duration": 40,
+          "name": "Text_2_2",
+          "numLayers": 1
+        }
+      ],
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "Titles-T2-test.aep",
+        "numItems": 465,
+        "saved": true
+      },
+      "target": {
+        "compId": null,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\titles-product\\20261030\\live\\Titles-T2-test.aep"
+      },
+      "truncated": true
+    },
+    "originalBinding": {
+      "channelEpoch": "http-951ec580-893e-423c-8541-cfd02813867e",
+      "commandId": "inspect-310e22c1-b39a-481a-9339-3d7ddfb3816b",
+      "controllerId": "controller-8056ea6a-3c7b-4829-8b1b-52e6ad16ce50",
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "moduleId": "project-inspection",
+      "operationId": "inspect",
+      "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "phase": "inspect",
+      "receiptRef": "01555ad7b5d28a3a5a51de1d573a3bce1baa846004828f909a23092e85704455",
+      "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4"
+    },
+    "pins": {
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+    }
+  },
+  "controllerReleased": true,
+  "projectUi": {
+    "openedTestCopy": true,
+    "save": false,
+    "missingFont": "ReservoirGrunge",
+    "fontNotificationAcknowledged": true
+  },
+  "authority": false
+}

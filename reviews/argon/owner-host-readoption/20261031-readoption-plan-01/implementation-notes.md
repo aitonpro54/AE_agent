@@ -205,3 +205,16 @@ artifact5 имеют1общий case; union9 посчитан один раз, p
 сохранён. Node packagecc2f/70files и private runtime прежние; pure helper
 distributionc787e013…/87files проверена, official output/actual0. Следующий шаг —
 source commit, immutable write/verify и actual fresh preflight/new stop UUID.
+
+## Actual metadata этап завершён
+
+CLI commit8ce5a58; officialc787e013…/87bundle files записан и verified. Новый UUID
+c4c0af30-1260-4e72-b875-74084ae1d0b3 завершил stop/certify/readopt/explicit enable
+одним запуском каждого action. Configured first-call6388мс: owner9584 ready,
+один listener, old6716 absent. HMAC11phase records/owner, old adoption archive,
+new witness/project adoption и сохранность descriptor/client/config/origins/
+24settled journal events/AEP подтверждены root read-only verifier.
+Production source/runtime packagecc2f/CEP unchanged; AE restart/save/mutation0.
+Повторного Argon не было. CEP bounded wait expired, Connect запрошен; native read
+после enable и R5 Titles открыты. Evidence — HOSTREADOPT-ACTUAL, включая явные
+исправления root reader ожиданий; operator replay/finish0. Settled UUID не повторять.

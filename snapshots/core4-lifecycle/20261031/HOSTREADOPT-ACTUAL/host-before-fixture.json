@@ -1,0 +1,44 @@
+{
+  "collectedAt": "2026-10-31T18:58:10.017Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "method": "fixed read-only probe from verified distribution",
+  "distributionHash": "c787e0134941086fdbf7b1b15ebb16ee6b0684fbaab85ecb586a0958a602e81d",
+  "host": {
+    "machineId": "MSI",
+    "aePid": 26308,
+    "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+    "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71"
+  },
+  "observation": {
+    "version": 1,
+    "hostname": "MSI",
+    "observedAt": "2026-10-31T18:58:10.015Z",
+    "processes": [
+      {
+        "pid": 26308,
+        "birth": "2026-10-31T10:32:49.0521480Z",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executableLength": 5931016
+      }
+    ],
+    "endpoints": [
+      {
+        "port": 3456,
+        "state": "observed-absent"
+      },
+      {
+        "port": 8787,
+        "state": "observed-absent"
+      }
+    ],
+    "completedAt": 1793473090017
+  },
+  "actualStop": 0,
+  "actualAdoption": 0,
+  "aeProjectMutation": 0
+}

@@ -49,8 +49,15 @@ receipt после normal owner startup; current runtime/history/barrier не о
 проверенными и authority не выдаётся. Lease доступен только после canonical claim.
 CLI slice5 принят338unique PASS/19current checks, с9fresh batches и exact reuse;
 общий routing/artifact case counted once. Runtime packagecc2f/70files unchanged.
-Official helper outputc787e013… ещё предстоит записать/проверить; actual stop/
-adoption0. Затем новый stopped flow по fresh preflight; old transactions не повторять.
+Official helper outputc787e013… записан/полностью проверен, CLI commit8ce5a58.
+Actual новый stop`c4c0af30-1260-4e72-b875-74084ae1d0b3`/certify/readopt/explicit enable
+завершён. Adoption теперьAE26308/SHA666c79a6…, old4a453b0f… archived. Первый
+configured status6388мс/первый вызов: owner9584 ready, boot04d9b162…, один3457;
+old6716 absent. HMAC11phase records/owner, descriptor/client/config/origins/AEP
+unchanged, journal24settled/prefix16/18/20 preserved, gates/ledger/pending/UNKNOWN0.
+AE restart/save/mutation0. CEP во время обслуживания дошла до runtime_wait_expired;
+Connect запрошен у пользователя. Native read после enable и R5 Titles/кадр открыты.
+Не повторять c4c0af30 и old transactions; markers не чистить.
 Standalone proof не подменяет configured.
 **Settled stop/update/recovery/enable не повторять,
 markers не чистить.** [Installed recovery](plans/core-cep-r3-owner-preready-20261031.md)

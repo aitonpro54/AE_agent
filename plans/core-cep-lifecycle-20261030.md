@@ -421,3 +421,18 @@ last gate release исправлен, independent source/test ACCEPT. Runtime pa
 Следующий шаг — official immutable helper outputc787e013… и fresh actual
 preflight/new stop. Evidence — re-adoption план/HOSTREADOPT-S234/final02 и
 HOSTREADOPT-CLI/final02. Full release не запускался.
+
+31 октября19:12UTC — следующий actual milestone выполнен. Progress: official
+helperc787e013… записан/verified после CLI commit8ce5a58; новый original stop
+c4c0af30-1260-4e72-b875-74084ae1d0b3/certify/readopt/explicit enable exit0.
+Новая adoption относится к current AE26308 и текущей сохранённой test-copy;
+old adoption archived. Первый configured status6388мс/первый вызов, owner9584
+active/ready, один listener3457; old6716 absent. Validation: HMAC11phase records и
+owner, exact archive/witness/project,24settled receiver events, unchanged descriptor/
+client/config/origins/AEP, no ledger/gates/pending/UNKNOWN/faults. Root reader
+corrections сохранены отдельно, production source/guards не менялись.
+Decision Log: actual metadata flow закрыт; long stop превысил bounded50с CEP wait,
+требуется штатный Connect (запрошен). После него fresh configured native read и
+R5 Titles/native confirmation/read-back/кадр, затем остальные ordinary cycles.
+AE restart/save/mutation0, settled c4c0af30 и old transactions не повторять.
+Evidence — HOSTREADOPT-ACTUAL; полная installed устойчивость/release не объявлены.
