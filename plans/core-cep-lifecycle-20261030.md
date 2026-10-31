@@ -490,3 +490,13 @@ Decision Log: связь проверена; Titles snapshot acceptance оста
 Missing code не различает undefined/null и не доказывает applyStroke. Продолжается
 bounded source/API design сложного native field interaction, без raw/style probes,
 нового Argon и source/install writes до принятого решения. Build/run/mutation/save0.
+
+1ноября — пауза по прямому поручению пользователя до завтра. Progress: bounded
+API review не подтвердил fallback для missing dormant RGB; full-proof не ослаблен.
+Один readonly alternative comp231/layer232 дал тот же terminal отказ;36settled
+events/prefix32 exact, lease3 released, package/protected bytes прежние, mutation0.
+Validation: только test regression8cases, manual-runtime59PASS, sourceSHA8e21bd4d…,
+root verified76deps/181прочийCorefile/raw/selector, parent replay0. Decision Log:
+новый saved minimal AEP предложен, но не разрешён/не создан. После возобновления
+решить тестовую цель и продолжить typed/native flow; full release/native acceptance
+не закрыты. Детали — active R5 plan.

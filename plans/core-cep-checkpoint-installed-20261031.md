@@ -25,6 +25,14 @@ pending/UNKNOWN/faults0. Active R5 продолжает bounded source/API ра�
 цвета CharacterRange; actual new build/run/mutation0, save/AE restart0.
 Evidence — R5TITLES-CONFIGURED; активный R5 план прежний. Settled operations не повторять.
 
+Пауза1ноября по прямому поручению пользователя до завтра. Последний readonly
+alternative comp231/layer232 также rejected/missing_stroke_color, receiver36settled/
+SHA a3996201…/prefix32 exact, same16772/be9afe99/peer; lease generation3 released.
+Production/install changes0, mutation/save/AE restart0. Strict-profile regression
+test-only8cases:59PASS, root verified raw76deps/181прочийCorefile; reinstall не нужен.
+Новый тестовый AEP не создан, разрешение на его save/цель не получено. Новые live
+действия только после возобновления; exact цель ещё предстоит выбрать.
+
 ## Предыдущий checkpoint: R5 repair установлен, standard owner23816 ready
 
 1ноября: source4092929 (192selectedPASS/independent ACCEPT), official helper

@@ -1,0 +1,13 @@
+{
+  "collectedAt": "2026-10-31T20:59:18.954Z",
+  "isError": true,
+  "raw": {
+    "content": [
+      {
+        "type": "text",
+        "text": "tool call error: tool call failed for `after-effects-core4/controller_release`\n\nCaused by:\n    Mcp error: -32000: owner_lease_token"
+      }
+    ],
+    "isError": true
+  }
+}

@@ -129,6 +129,46 @@ test('manual-runtime inactive TextDocument colors throw but are never read; ever
   assert.deepEqual(Object.keys(style.character), Object.keys(diagnosticFields).filter(name => !['justification', 'leading', 'autoLeading'].includes(name))); assert.equal(h.state.counts.titles, 0);
   assert.equal(h.dispatch('verify').protected, snapshot.protected); assert.equal(documentReads, 0);
 });
+for (const [color, flag] of [['strokeColor', 'applyStroke'], ['fillColor', 'applyFill']]) for (const active of [false, true]) for (const missing of [undefined, null]) test('manual-runtime single-character ' + color + ' ' + String(missing) + ' with ' + flag + '=' + active + ' refuses without confirmation or native value normalization', () => {
+  // Neither missing value establishes "no color" or permission to initialize it.
+  // The value objects expose native-shaped getters; every style/text setter is
+  // forbidden independently of the Source Text property's publication setter.
+  let unavailable = false, missingReads = 0;
+  const attempts = { confirmation: 0, propertySetter: 0, documentText: 0, rangeText: 0, style: [] }, ranges = [];
+  function guardValue(object, kind, state) {
+    for (const name of Object.keys(state.style)) {
+      const value = object[name];
+      Object.defineProperty(object, name, {
+        get() {
+          if (kind === 'range' && name === color && unavailable) { missingReads++; return missing; }
+          if (kind === 'document' && (name === 'fillColor' && !state.style.applyFill || name === 'strokeColor' && !state.style.applyStroke)) throw Error('inactive TextDocument color');
+          return value;
+        },
+        set() { attempts.style.push(kind + '.' + name); throw Error('native style normalization forbidden'); }
+      });
+    }
+    Object.defineProperty(object, 'text', { get() { return state.text; }, set() { attempts[kind + 'Text']++; throw Error('native text write forbidden'); } });
+  }
+  const h = diagnosticHost({
+    style: { [flag]: active },
+    changeDocument(doc, state) {
+      const characterRange = doc.characterRange;
+      doc.characterRange = (start, end) => { ranges.push([start, end]); assert.equal(start, 0); assert.equal(end, 1); return characterRange(start, end); };
+      guardValue(doc, 'document', state);
+    },
+    changeRange(range, _index, state) { guardValue(range, 'range', state); },
+    changeEnvironment(_env, prop, state) { state.text = 'P'; prop.setValue = () => { attempts.propertySetter++; throw Error('Source Text publication forbidden'); }; }
+  });
+  h.context.confirm = () => { attempts.confirmation++; throw Error('confirmation must not be reached'); };
+  const before = h.dispatch(); assert.equal(before.text, 'P'); assert.equal(before.readFailureVersion, undefined);
+  const original = structuredClone({ text: h.state.text, style: h.state.style }), proof = { policyId: 'current-matching-target-after-local-confirmation-v1', baselineRevision: before.revision, baselineProtected: before.protected, target: before.target, proposalId: 'fixture', planDigest: 'fixture', taskId: 'fixture', taskEpoch: 0, stepId: 'fixture', checkpointRef: 'fixture', checkpointDigest: 'fixture', baselineDigest: 'fixture' };
+  unavailable = true; ranges.length = 0;
+  for (const phase of ['inspect', 'verify']) assert.deepEqual(h.dispatch(phase), { readFailureVersion: 1, outcome: 'rejected', code: 'titles_missing_' + (color === 'strokeColor' ? 'stroke_color' : 'fill_color') });
+  assert.deepEqual(h.dispatch('mutate', { ...h.target, text: 'After', expectedRevision: before.revision, expectedText: before.text, _execution: proof }), { outcome: 'rejected', code: 'unsupported_style_api' });
+  assert.ok(missingReads >= 3); assert.ok(ranges.length >= 3);
+  assert.deepEqual(attempts, { confirmation: 0, propertySetter: 0, documentText: 0, rangeText: 0, style: [] });
+  assert.deepEqual({ text: h.state.text, style: h.state.style }, original); assert.equal(h.state.counts.titles, 0);
+});
 for (const [name, alias] of Object.entries(diagnosticFields)) for (const failure of ['native', 'missing']) test('manual-runtime finite diagnostic ' + failure + ' ' + alias + ' refuses inspect and verify without style defaults', () => {
   const change = object => Object.defineProperty(object, name, { get() { if (failure === 'native') throw Error('private native message/stack'); return undefined; } });
   const paragraph = ['justification', 'leading', 'autoLeading'].includes(name), h = diagnosticHost(paragraph ? { changeDocument: change } : { changeRange: change });

@@ -1,0 +1,32 @@
+{
+  "collectedAt": "2026-10-31T21:01:38.864Z",
+  "candidate": {
+    "compId": 231,
+    "layerId": 232,
+    "name": "Text_1_2 / NOISE"
+  },
+  "journalEvents": 36,
+  "journalHash": "a39962013031e222da3d455da7c84c51e234e001a2d9d1825bfdb69678a1dcfe",
+  "prefix32Hash": "ddba46ecdbc18238edc58531e3f426e25e27e4b1aa482c31ea7c86518e8824a7",
+  "projectCommandId": "inspect-90647ee7-5925-463b-9835-c4c9a701a90b",
+  "titlesCommandId": "inspect-1201890f-d4f9-4c4c-bb60-625ba1fc3601",
+  "nativeOutcome": {
+    "code": "titles_missing_stroke_color",
+    "outcome": "rejected",
+    "readFailureVersion": 1
+  },
+  "leaseGeneration2": {
+    "projectReadCompleted": true,
+    "titlesAttempt": "owner_controller_required; no native dispatch",
+    "releaseAttempt": "owner_lease_token",
+    "attachmentLossCause": "not traced; no automatic lease transfer was assumed"
+  },
+  "leaseGeneration3": {
+    "titlesReads": 1,
+    "released": true
+  },
+  "physicalUnknown": false,
+  "buildRunMutationSave": 0,
+  "sourceAepUnchanged": true,
+  "userPaused": true
+}

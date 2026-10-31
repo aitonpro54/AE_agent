@@ -1,0 +1,156 @@
+{
+  "at": "2026-10-31T20:58:50.829Z",
+  "file": "core4/test/manual-runtime.test.js",
+  "fileSHA": "8e21bd4db80cb02d4be38a11d9ad87cf83d71e2d9aa4e0dd462ce9d4a5a2773b",
+  "syntax": "PASS parse only",
+  "whitespace": [],
+  "productionByteEqual": true,
+  "productionFileCount": 181,
+  "selection": {
+    "mode": "scoped",
+    "certification": "selected-artifacts-only",
+    "releaseCertified": false,
+    "contractImpacts": [],
+    "checks": [
+      {
+        "check": "manual-runtime",
+        "reasons": [
+          "changed owner manual-runtime: core4/test/manual-runtime.test.js"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/test/manual-runtime.test.js",
+            "manual-runtime",
+            "manual-runtime"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=manual-runtime",
+          "test/manual-runtime.test.js"
+        ],
+        "evidenceKey": "7d6a7738645f2428433a616124c55da63a518e810fe677930d79ed983d8314ab",
+        "reason": "changed owner manual-runtime: core4/test/manual-runtime.test.js",
+        "dependencyPath": [
+          [
+            "core4/test/manual-runtime.test.js",
+            "manual-runtime",
+            "manual-runtime"
+          ]
+        ],
+        "dependencies": [
+          "cep/CSXS/manifest.xml",
+          "cep/index.html",
+          "cep/js/panel.js",
+          "cep/js/poll-dispatcher.js",
+          "cep/panel.css",
+          "config/admissions/photo-placeholder.json",
+          "config/admissions/titles-current-target.json",
+          "config/admissions/titles.json",
+          "config/catalog.json",
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "integrations/cep/completion-store.js",
+          "integrations/cep/http-peer.js",
+          "integrations/cep/peer-protocol.js",
+          "modules/photo-placeholder/artifact.json",
+          "modules/photo-placeholder/contract.json",
+          "modules/photo-placeholder/executor.jsx",
+          "modules/photo-placeholder/implementation.js",
+          "modules/project-inspection/artifact.json",
+          "modules/project-inspection/contract.json",
+          "modules/project-inspection/executor.jsx",
+          "modules/titles-current-target/artifact.json",
+          "modules/titles-current-target/contract.json",
+          "modules/titles-current-target/executor.jsx",
+          "modules/titles-current-target/implementation.js",
+          "modules/titles/artifact.json",
+          "modules/titles/contract.json",
+          "modules/titles/executor.jsx",
+          "modules/titles/implementation.js",
+          "plan-engine/artifact.json",
+          "plan-engine/index.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "runtime/attachment-owner.js",
+          "runtime/client-entry.js",
+          "runtime/client-ipc.js",
+          "runtime/client-stdio.js",
+          "runtime/controller-lease.js",
+          "runtime/host/json-codec.jsx",
+          "runtime/install-lease.js",
+          "runtime/installation-lineage.js",
+          "runtime/installation.js",
+          "runtime/manual-policy.js",
+          "runtime/native-read-disposition.js",
+          "runtime/owner-contract.json",
+          "runtime/owner-entry.js",
+          "runtime/owner-lifecycle.js",
+          "runtime/owner-maintenance.js",
+          "runtime/profiles.json",
+          "runtime/receiver-contract.json",
+          "runtime/recovery-inspection.js",
+          "runtime/source-package.json",
+          "runtime/stdio-entry.js",
+          "runtime/stopped-certification.js",
+          "runtime/windows-host-probe.ps1",
+          "runtime/windows-owner-process.js",
+          "runtime/windows-reservation-provider.js",
+          "test/fixtures/ae.js",
+          "test/fixtures/manual-http-runtime.js",
+          "test/manual-runtime.test.js",
+          "tools/package-installable.js",
+          "worker.js"
+        ]
+      }
+    ],
+    "executionBatches": [
+      {
+        "checks": [
+          "manual-runtime"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:manual-runtime)",
+          "test/manual-runtime.test.js"
+        ]
+      }
+    ],
+    "deferredCoverage": [
+      {
+        "check": "lifecycle-simulation",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/test/manual-runtime.test.js",
+            "dependency": "test/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/test/manual-runtime.test.js",
+            "test/",
+            "lifecycle-simulation"
+          ]
+        ]
+      }
+    ]
+  }
+}

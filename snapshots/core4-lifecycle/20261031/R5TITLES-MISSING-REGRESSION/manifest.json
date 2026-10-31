@@ -1,0 +1,38 @@
+{
+  "at": "2026-10-31T20:59:43.261Z",
+  "classification": "test-only-regression-full-raw; production-and-native-target-unchanged",
+  "files": {
+    "original.test.js": {
+      "sha256": "1221879b886d937e1fb251b6449dd8d18544d924e547f81634f8063a5efdad8b",
+      "bytes": 21007
+    },
+    "original.json": {
+      "sha256": "9b4b8aa42a4443322aa36581463cfd5791b782d837db2222b36403b22d169d00",
+      "bytes": 20474
+    },
+    "frozen.test.js": {
+      "sha256": "8e21bd4db80cb02d4be38a11d9ad87cf83d71e2d9aa4e0dd462ce9d4a5a2773b",
+      "bytes": 24569
+    },
+    "freeze.before.json": {
+      "sha256": "b212562273ed1287b5e42df2179613f0ee6c37f8b819282b76589e6f72ac817c",
+      "bytes": 5311
+    },
+    "capture.before.json": {
+      "sha256": "4764faeeac3d632c321f234239ad0c1cf7952f2787635d4c725674f728c676e4",
+      "bytes": 33784
+    },
+    "capture.after.json": {
+      "sha256": "cc3376ed81cf5ed14eca43ca4190e3961514cff769983e7ad13cd801e71edf10",
+      "bytes": 33784
+    },
+    "manual-runtime.raw.log": {
+      "sha256": "7f806bce9697f754347171c2458147dc0fbb8b297a32b1d76024a65e376548ca",
+      "bytes": 12096
+    },
+    "result.json": {
+      "sha256": "d8fb4662b5ea6c0105d70e7aa4d42206feff86bc5ea489fc1f5dc6e66c5658f0",
+      "bytes": 1388
+    }
+  }
+}

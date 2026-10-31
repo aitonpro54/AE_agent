@@ -1,5 +1,9 @@
 # R5 — причина отказа native Titles inspection
 
+**Пауза по прямому поручению пользователя 1 ноября: «завтра рпазберемся, пока
+сворачивай».** Новых live действий/установок не начинать до продолжения. Выбор
+новой цели и разрешение на сохранение отдельного AEP не получены.
+
 1 ноября 2026, MSI (первичные captures используют UTC 31 октября). Это узкий
 engineering block текущей lifecycle приёмки, не новый пользовательский заказ.
 База: commit0c29739, installed runtimecc2f, helperc787e013. Повторная привязка
@@ -256,3 +260,44 @@ Decision Log: missing-field код означает undefined ИЛИ null; са�
 ae_specialist/XHigh поручен read-only source/API design: полный защищённый proof
 без fabricated/default/dropped colors либо честный контрактный gap. До принятого
 решения source/install повторно не меняются. Новый Argon review не запускается.
+
+## Завершение на паузе — строгий профиль сохранён
+
+Progress: bounded API/source review не подтвердил read-only fallback для
+недоступного strokeColor. No-throw CharacterRange не является гарантией RGB.
+ParagraphRange не даёт отдельного цветового API; конструктор TextDocument из
+строки не копирует native style. Активация applyStroke на user-derived документе
+не доказывает исходный latent RGB. Прежний full13+3 профиль остаётся строгим,
+без defaults/неявного уменьшения гарантии. Причина старого inspection_failed
+не доказана. Источники: [CharacterRange](https://ae-scripting.docsforadobe.dev/text/characterrange/),
+[Adobe Engineering](https://community.adobe.com/questions-534/per-character-scripting-public-beta-announcement-314331).
+
+Один соседний readonly кандидат Text_1_2/comp231/layer232 NOISE также terminal
+rejected/titles_missing_stroke_color, command1201890f…. Project read33/34 и
+Titles35/36 сверены с original replies, receiver36settled/SHA a3996201…,
+prefix32 ddba46ec… exact. Generation2 потеряла attachment между calls:
+Titles отказан owner_controller_required до native dispatch, release — owner_lease_token.
+Причина потери отдельно не трассировалась; переноса grant не предполагалось.
+На fresh generation3 выполнен ровно один Titles read, затем release=true.
+Пакет/descriptor/config/origins/adoption/AEP прежние, pending/UNKNOWN/faults0,
+build/proposal/run/mutation/save/AE restart0. Другие слои не перебирались.
+
+Validation: test-only regression в core4/test/manual-runtime.test.js добавила
+8cases: undefined/null color × active/inactive flag × fill/stroke; single-character
+fixture запрещает style/text/property setters и confirmation при отказе.
+Существующие readable dormant и post-setter UNKNOWN tests сохранены. Один selector
+manual-runtime завершён59PASS/0FAIL, exit0,8.589с; raw Node duration8.362с.
+Root сверил manifest/raw, selector prefix/summary, sourceSHA8e21bd4d…,
+76dependency hashes до/после/current и181прочий Core non-Markdown файл byte-equal.
+Parent replay0, production/package changes0; новый install не нужен.
+Evidence — R5TITLES-MISSING-REGRESSION и R5TITLES-CONFIGURED.
+
+Decision Log/продолжение: пользователь отложил задачу до завтра. Отдельный
+Titles-R5-uniform.aep лишь предложен, не создан/не сохранён; save не разрешён.
+Следующее решение после возобновления — отдельная тестовая цель с наблюдаемыми
+цветами или другая указанная пользователем saved target. Затем fresh configured
+status/acquire/core_connect/contracts/inspection, новый compiler build/proposal/
+dry-run/native confirmation/read-back/кадры по действующим gates. Старые refs не
+переиспользовать; current target не менять и rejected reads не повторять ради
+обхода. Source192PASS и новый regression59PASS — разные runs, не суммировать как
+единый current release. Full release, native mutation acceptance и portability открыты.

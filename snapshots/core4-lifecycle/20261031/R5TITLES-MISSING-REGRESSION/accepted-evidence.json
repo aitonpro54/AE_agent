@@ -1,0 +1,21 @@
+{
+  "collectedAt": "2026-10-31T21:00:49.975Z",
+  "testSHA": "8e21bd4db80cb02d4be38a11d9ad87cf83d71e2d9aa4e0dd462ce9d4a5a2773b",
+  "manifestSHA": "78d052dfe6bcea6a0ec2df810731c2b829244bacfe95139f38c2ffd61a05de7f",
+  "rawSHA": "7f806bce9697f754347171c2458147dc0fbb8b297a32b1d76024a65e376548ca",
+  "checks": 1,
+  "uniquePass": 59,
+  "newCases": 8,
+  "dependencyCount": 76,
+  "otherCoreNonMarkdownFileCount": 181,
+  "currentDependenciesVerified": true,
+  "productionByteEqual": true,
+  "selectorBeforeAfterEqual": true,
+  "rawSelectorPrefixEqual": true,
+  "fullRawVerified": true,
+  "sourceReview": "parent reviewed bounded 40-line regression diff; no production changes",
+  "parentTestReplay": 0,
+  "packageUnchanged": true,
+  "nativeAcceptance": false,
+  "userPaused": true
+}

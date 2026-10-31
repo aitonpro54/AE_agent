@@ -1,0 +1,48 @@
+{
+  "at": "2026-10-31T20:59:21.595Z",
+  "classification": "scoped-TEMP-VM-fixture-regression-only-no-native-AE-no-live-no-production-edits",
+  "command": [
+    "node",
+    "core4/tools/validate-diff.js",
+    "core4/test/manual-runtime.test.js",
+    "--run"
+  ],
+  "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core",
+  "raw": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-titles-missing-color-regression-4E31HT\\manual-runtime.raw.log",
+  "rawSHA": "7f806bce9697f754347171c2458147dc0fbb8b297a32b1d76024a65e376548ca",
+  "startedAt": "2026-10-31T20:59:13.006Z",
+  "elapsedMs": 8589,
+  "exit": 0,
+  "error": null,
+  "fileSHA": "8e21bd4db80cb02d4be38a11d9ad87cf83d71e2d9aa4e0dd462ce9d4a5a2773b",
+  "evidenceKey": "7d6a7738645f2428433a616124c55da63a518e810fe677930d79ed983d8314ab",
+  "summaries": [
+    {
+      "tests": 59,
+      "pass": 59,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 8362.0247
+    }
+  ],
+  "sourceBeforeAfterEqual": true,
+  "dependencyBeforeAfterEqual": true,
+  "selectorBeforeAfterEqual": true,
+  "productionByteEqual": true,
+  "rawSelectorPrefixEqual": true,
+  "syntax": "PASS parse only before run",
+  "whitespace": "PASS before run",
+  "gitDiffCheck": {
+    "command": [
+      "git",
+      "diff",
+      "--check",
+      "--",
+      "core4/test/manual-runtime.test.js"
+    ],
+    "exit": 0,
+    "output": ""
+  }
+}

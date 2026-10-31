@@ -87,6 +87,14 @@ config/origins/adoption/AEP unchanged, ledger/gates/pending/UNKNOWN/faults0, lea
 released. Actual new build/run/mutation0. Active R5 разбирает native CharacterRange
 missing color без fake/default/drop proof и без raw/style probes; source/install
 до принятого решения не менять. Source tests не подменяют native.
+На паузе1ноября по прямому «завтра… пока сворачивай». Bounded review подтвердил
+отсутствие доказанного read-only fallback; строгий профиль не ослаблен. Один
+соседний кандидат comp231/layer232 также missing_stroke_color; journal36settled/
+SHA a3996201…/prefix32 exact, lease3 released, mutation/save0. Test-only8cases
+добавлены в manual-runtime.test.js:59selectedPASS, root verified76deps/181прочий
+Core file unchanged. Packagebe9afe99 прежний, новый install не нужен. Новый
+минимальный AEP только предложен; разрешение на его save/новую цель НЕ получено.
+До пользовательского продолжения новых live действий не делать.
 AE restart/save/mutation0. Не повторять f1b8/9053/c4c0/old transactions и не чистить
 markers. Full release/deferred closures не переобъявлять PASS.
 Не повторять c4c0af30 и old transactions; markers не чистить.

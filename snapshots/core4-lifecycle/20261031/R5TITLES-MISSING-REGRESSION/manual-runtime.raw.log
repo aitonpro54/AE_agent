@@ -1,0 +1,214 @@
+{
+  "mode": "scoped",
+  "certification": "selected-artifacts-only",
+  "releaseCertified": false,
+  "contractImpacts": [],
+  "checks": [
+    {
+      "check": "manual-runtime",
+      "reasons": [
+        "changed owner manual-runtime: core4/test/manual-runtime.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/manual-runtime.test.js",
+          "manual-runtime",
+          "manual-runtime"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-runtime",
+        "test/manual-runtime.test.js"
+      ],
+      "evidenceKey": "7d6a7738645f2428433a616124c55da63a518e810fe677930d79ed983d8314ab",
+      "reason": "changed owner manual-runtime: core4/test/manual-runtime.test.js",
+      "dependencyPath": [
+        [
+          "core4/test/manual-runtime.test.js",
+          "manual-runtime",
+          "manual-runtime"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/manual-http-runtime.js",
+        "test/manual-runtime.test.js",
+        "tools/package-installable.js",
+        "worker.js"
+      ]
+    }
+  ],
+  "executionBatches": [
+    {
+      "checks": [
+        "manual-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:manual-runtime)",
+        "test/manual-runtime.test.js"
+      ]
+    }
+  ],
+  "deferredCoverage": [
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/test/manual-runtime.test.js",
+          "dependency": "test/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/test/manual-runtime.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ]
+      ]
+    }
+  ]
+}
+✔ manual-runtime actual Broker HTTP compiled JSX generic flow uses one native confirm and original local transaction receipt without session (479.5575ms)
+✔ manual-runtime native cancellation and post-confirm drift do not set text; fresh proposal required (637.0854ms)
+✔ manual-runtime absent adoption and ambiguous process/managed writer fail before mutation delivery (524.0976ms)
+✔ manual-runtime setter uncertainty keeps UNKNOWN, durable receiver fence and no replay (463.68ms)
+✔ manual-runtime fresh OS process identity, named managed writers and observation TTL are required before delivery (1742.8039ms)
+✔ manual-runtime v1 UNKNOWN fence still overlaps session-free target; known other-machine constraint is separate (638.1023ms)
+✔ manual-runtime forged policy/reservation JSON never receives a private brand; tampered original receipt cannot succeed and real original proof reconciles without replay (302.3713ms)
+✔ manual-runtime final synchronous reservation guard rejects expiry before send with no setter (2410.628ms)
+✔ manual-runtime authenticated but wrong protocol version cannot certify original completion (331.6761ms)
+✔ manual-runtime explicit oneStep works with physically absent engine and unrelated packages (339.0024ms)
+✔ manual-runtime lexical ES3 JSON codec is data-only, matches native JSON on Unicode/control values and denies malformed/deep/duplicate/prototype input (46.4422ms)
+✔ manual-runtime known paragraph Enumerator is normalized to numeric protected value; unknown host objects fail closed (45.9815ms)
+✔ manual-runtime inactive TextDocument colors throw but are never read; every dormant and active range field remains protected (48.5982ms)
+✔ manual-runtime single-character strokeColor undefined with applyStroke=false refuses without confirmation or native value normalization (2.0966ms)
+✔ manual-runtime single-character strokeColor null with applyStroke=false refuses without confirmation or native value normalization (1.7538ms)
+✔ manual-runtime single-character strokeColor undefined with applyStroke=true refuses without confirmation or native value normalization (1.716ms)
+✔ manual-runtime single-character strokeColor null with applyStroke=true refuses without confirmation or native value normalization (1.7063ms)
+✔ manual-runtime single-character fillColor undefined with applyFill=false refuses without confirmation or native value normalization (1.6406ms)
+✔ manual-runtime single-character fillColor null with applyFill=false refuses without confirmation or native value normalization (1.5775ms)
+✔ manual-runtime single-character fillColor undefined with applyFill=true refuses without confirmation or native value normalization (1.5303ms)
+✔ manual-runtime single-character fillColor null with applyFill=true refuses without confirmation or native value normalization (1.632ms)
+✔ manual-runtime finite diagnostic native font refuses inspect and verify without style defaults (1.3669ms)
+✔ manual-runtime finite diagnostic missing font refuses inspect and verify without style defaults (1.0846ms)
+✔ manual-runtime finite diagnostic native font_size refuses inspect and verify without style defaults (1.0595ms)
+✔ manual-runtime finite diagnostic missing font_size refuses inspect and verify without style defaults (1.0052ms)
+✔ manual-runtime finite diagnostic native apply_fill refuses inspect and verify without style defaults (1.0257ms)
+✔ manual-runtime finite diagnostic missing apply_fill refuses inspect and verify without style defaults (1.1235ms)
+✔ manual-runtime finite diagnostic native fill_color refuses inspect and verify without style defaults (1.1216ms)
+✔ manual-runtime finite diagnostic missing fill_color refuses inspect and verify without style defaults (1.1128ms)
+✔ manual-runtime finite diagnostic native apply_stroke refuses inspect and verify without style defaults (1.0576ms)
+✔ manual-runtime finite diagnostic missing apply_stroke refuses inspect and verify without style defaults (1.0554ms)
+✔ manual-runtime finite diagnostic native stroke_color refuses inspect and verify without style defaults (1.0423ms)
+✔ manual-runtime finite diagnostic missing stroke_color refuses inspect and verify without style defaults (1.1184ms)
+✔ manual-runtime finite diagnostic native stroke_width refuses inspect and verify without style defaults (1.0719ms)
+✔ manual-runtime finite diagnostic missing stroke_width refuses inspect and verify without style defaults (1.0827ms)
+✔ manual-runtime finite diagnostic native tracking refuses inspect and verify without style defaults (1.1086ms)
+✔ manual-runtime finite diagnostic missing tracking refuses inspect and verify without style defaults (1.5284ms)
+✔ manual-runtime finite diagnostic native baseline_shift refuses inspect and verify without style defaults (1.0804ms)
+✔ manual-runtime finite diagnostic missing baseline_shift refuses inspect and verify without style defaults (1.0737ms)
+✔ manual-runtime finite diagnostic native horizontal_scale refuses inspect and verify without style defaults (1.031ms)
+✔ manual-runtime finite diagnostic missing horizontal_scale refuses inspect and verify without style defaults (1.0305ms)
+✔ manual-runtime finite diagnostic native vertical_scale refuses inspect and verify without style defaults (1.0613ms)
+✔ manual-runtime finite diagnostic missing vertical_scale refuses inspect and verify without style defaults (1.1635ms)
+✔ manual-runtime finite diagnostic native faux_bold refuses inspect and verify without style defaults (1.0962ms)
+✔ manual-runtime finite diagnostic missing faux_bold refuses inspect and verify without style defaults (4.147ms)
+✔ manual-runtime finite diagnostic native faux_italic refuses inspect and verify without style defaults (1.1484ms)
+✔ manual-runtime finite diagnostic missing faux_italic refuses inspect and verify without style defaults (1.0244ms)
+✔ manual-runtime finite diagnostic native justification refuses inspect and verify without style defaults (1.6334ms)
+✔ manual-runtime finite diagnostic missing justification refuses inspect and verify without style defaults (5.5215ms)
+✔ manual-runtime finite diagnostic native leading refuses inspect and verify without style defaults (1.6039ms)
+✔ manual-runtime finite diagnostic missing leading refuses inspect and verify without style defaults (1.5559ms)
+✔ manual-runtime finite diagnostic native auto_leading refuses inspect and verify without style defaults (1.5693ms)
+✔ manual-runtime finite diagnostic missing auto_leading refuses inspect and verify without style defaults (1.5626ms)
+✔ manual-runtime mixed active-color still refuses the complete character proof (1.1985ms)
+✔ manual-runtime mixed dormant-color still refuses the complete character proof (1.1118ms)
+✔ manual-runtime mixed paint-flag still refuses the complete character proof (1.131ms)
+✔ manual-runtime native stages are finite and unknown exceptions never export a message or stack (6.7171ms)
+✔ manual-runtime post-setter native getter failure remains UNKNOWN ae_error and never becomes a read rejection (3.0276ms)
+✔ manual-runtime failed typed inspection completes journal diagnostic and never creates Broker evidence or a setter (190.3668ms)
+ℹ tests 59
+ℹ suites 0
+ℹ pass 59
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8362.0247
