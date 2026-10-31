@@ -25,9 +25,17 @@ Installed package теперь`cc2f0713…`; helper distribution`6ae8960f…`. O
 status6108.60мс прошёл с первого запроса; два клиента/EOF/parent exit сохранили owner.
 Journal18events, prefix16events/origins/adoption неизменны. AE26308 не перезапускался,
 собственная CEP закрыта/открыта1раз для установки; project changes/save/mutation0.
-Configured Codex clients пока старые8a79: даже после ready2600 status owner_unavailable.
-Нужен manual restart Codex и fresh configured core_status новогоcc2f; standalone
-proof не подменяет configured. **Settled stop/update/recovery/enable не повторять,
+После restart первый configured core_status новогоcc2f успешен: client22952,
+owner6716 ready, один listener3457. Old2600 отсутствует; completed HMAC recovery
+4abb9cb7/readyfd7af275 связывают exact PID/birth/boot. History/config/origins/adoption
+unchanged, pending/UNKNOWN/faults0. AE26308 прежний. CEP UI остановилась с
+runtime_wait_expired; peer disconnected. Требуется штатная кнопка «Подключить»:
+Computer Use дважды не адресовал child CEPHtmlEngine.exe, input не выполнен;
+пользователю передана просьба нажать кнопку. Первый configured status после314.85с
+idle прошёл с первого вызова за62мс, same owner/boot, pending/UNKNOWN/faults0.
+Wire reconnect отдельно не трассировался; typed read новогоcc2f ещё открыт.
+Standalone proof не подменяет configured.
+**Settled stop/update/recovery/enable не повторять,
 markers не чистить.** [Installed recovery](plans/core-cep-r3-owner-preready-20261031.md)
 содержит source/installed evidence и оставшиеся R5 проверки.
 Прежний configured project-inspection package8a79 прочитал пустой несохранённый

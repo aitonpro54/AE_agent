@@ -159,8 +159,15 @@ R3 не использует fake production epoch и не переносит au
   [границы/evidence](core-cep-r5-client-resilience-20261031.md).
 - [x] Installed client resilience packagecc2f: first cold standard status6108.60мс
   PASS без retry, два clients/EOF/parent exit — один ready owner2600.
-- [ ] Actual configured proof нового client после manual Codex restart; old8a79
-  clients текущего приложения дают owner_unavailable, standalone proof недостаточен.
+- [x] Actual configured proof нового cc2f после restart: первый `core_status`
+  успешен, current client22952/owner6716 cc2f и один listener3457. Owner2600 absent;
+  HMAC recovery4abb9cb7/readyfd7af275 и exact PID/birth/boot подтверждены,
+  journal18events/config/origins/adoption unchanged. Survival2600 не наблюдался.
+- [x] Первый configured status после314.85с idle PASS с первого вызова за62мс;
+  same owner/boot, faults/UNKNOWN/pending0. Wire reconnect отдельно не трассировался.
+- [ ] CEP после долгого отсутствия Core остановилась по `runtime_wait_expired`;
+  ожидается штатная кнопка «Подключить» и typed read нового cc2f. Computer Use
+  не адресовал CEP child: две попытки с fresh binding отклонены до input.
 - [x] Normal stop`b99e2f80…` и update`88e4a61e…`, прерванный root45с timeout,
   завершены через [явный owner pre-ready recovery](core-cep-r3-owner-preready-20261031.md)
   с original payload/credentials, fresh switchIndex5 и explicit enable.
@@ -177,6 +184,10 @@ R3 не использует fake production epoch и не переносит au
 
 ## Decision Log
 
+- Configured cc2f принят непосредственно через MCP tool; standalone proof больше
+  не является единственным evidence. Изменение owner PID классифицировано как
+  attributed recovery по completed HMAC receipts, а не survival. Долгое отсутствие
+  Core исчерпывает bounded CEP wait; ручной Connect не объявляется automatic recovery.
 - После завершения88e4 новые установка/credentials не генерируются повторно.
   Следующий restart обновляет только Codex configured attachment к текущему owner;
   старые stdio processes не считаются proof нового client. App/owner survival либо
@@ -207,6 +218,24 @@ R3 не использует fake production epoch и не переносит au
   уже получил timeout. Embedding восстанавливает durable fences до attach/acquire.
 
 ## Validation
+
+Configured cc2f: первый и последующий `core_status` PASS, owner6716 ready/active,
+pending/UNKNOWN/faults0, controller idle/accepted0. Read-only installed verifier
+проверил descriptor/package/client closure, HMAC seals/bindings и completion→intent
+hashes, native absence2600/current6716/unchanged AE26308, один listener3457 и
+только cc2f clients. Journal18events/prefix16events/origins/config/adoption unchanged;
+maintenance/install/broker gates и ledger отсутствуют. Initial verifier comparison
+исправлено с несуществующего `unresolvedCount` на actual `unresolved.length`;
+повторный read-only run PASS. Runtime/source/credentials не менялись.
+Evidence: `snapshots/core4-lifecycle/20261031/R5CONFIGURED/`.
+Configured idle: gap314850мс, first-call62мс PASS без manual retry; same6716/boot,
+attachments1/controller idle/generation0/accepted0. Между двумя status текущий чат
+не вызывал MCP; production sessionMs300000 подтверждён source. Отдельная wire
+трасса reconnect не снималась. Final read-only installed history/native readback
+после idle сверяется с тем же baseline; полный repeated-cycle proof не заявлен.
+CEP UI показывает runtime_wait_expired; configured peer disconnected. Input на
+«Подключить» отклонён helper из-за CEPHtmlEngine child process, fresh activation
+и одна повторная попытка также отказали. Reload/AE restart/dispatch/save/mutation0.
 
 Actual recovery88e4: original payload target descriptor898261e1… preserved,
 finish recovered/update-stopped, fresh inspect switchIndex5, enable=true;
@@ -285,17 +314,25 @@ Restart Core/AE, install и native dispatch этого этапа0. UI попы�
 ## Продолжение
 
 Installed switch/recovery/enable packagecc2f завершены; standard client cold и CEP
-proof подтверждены. Configured proof нового client ждёт manual Codex restart. Актуальные
+proof подтверждены. Configured proof нового client подтверждён на owner6716;
+attributed recovery2600→6716 проверен по receipts/native facts. Актуальные
 IDs, evidence и границы — в [installed checkpoint](core-cep-checkpoint-installed-20261031.md).
 Migration/update/enable и завершённые one-shot transactions не повторять.
 
 Actual CEP и один configured typed read package8a79 подтверждены ранее. Interrupted
 update88e4 продолжен штатно после209selectedPASS, owner2600/cc2f ready и новая CEP
-подключена; повтор finish/enable не нужен. Активный шаг после manual Codex restart —
-fresh configured core_status нового client, затем new typed read и live ordinary
-cold/idle cycles. Fresh native host probe/adoption нужен до
+подключена; повтор finish/enable не нужен. Теперь CEP UI остановилась после bounded
+runtime wait: нужна штатная кнопка «Подключить» (helper не адресовал child), затем
+new typed read и live ordinary cold/idle cycles. Fresh native host probe/adoption нужен до
 исполнения, R5 Titles на выбранной test-copy с native confirm/read-back и повторные
 ordinary cycles. AE26308 сейчас открыт; root его не запускал/перезапускал.
 Развитие Titles/Slideshow и финальная portability/P1–P8/full release не выполнены.
 Перед live изменением сверить свежие status/queue/authority; сохранить чужие
 snapshots/AEP и старые receipts. Полная installed устойчивость пока не объявлена.
+
+Завершённый блок: configured cc2f first-call/recovery и один production idle
+first-call. Изменены AGENTS, checkpoint, lifecycle/R5/recovery планы и sanitised
+R5CONFIGURED evidence/reader; production source/runtime/config не менялись.
+Проверки: actual MCP calls, signed read-only native/history verifier, JSON
+consistency/credential exclusion, reader syntax и diff check. Следующий шаг —
+штатный Connect панели, затем configured typed read; helper не адресовал CEP child.

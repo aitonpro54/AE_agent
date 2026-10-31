@@ -1,0 +1,211 @@
+{
+  "description": "Configured client cc2f и атрибутированное восстановление owner после restart Codex; read-only evidence.",
+  "collectedAt": "2026-10-31T13:06:03.209Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "configuredClientProof": true,
+  "originalOwnerSurvivalObserved": false,
+  "originalOwnerTerminationCause": "unobserved",
+  "recoveryMeasured": true,
+  "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "descriptorHash": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+  "currentOwner": {
+    "pid": 6716,
+    "birthTicks": "639290482462328350",
+    "bootId": "85dfe31b-e54f-4a94-aac4-ca9bc10bb3ff",
+    "phase": "active",
+    "receiverIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+    "sealVerified": true
+  },
+  "processFacts": [
+    {
+      "version": 1,
+      "pid": 2600,
+      "status": "absent",
+      "birthTicks": null,
+      "executablePath": null,
+      "observedAt": "2026-10-31T13:06:00.760Z"
+    },
+    {
+      "version": 1,
+      "pid": 6716,
+      "status": "present",
+      "birthTicks": "639290482462328350",
+      "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+      "observedAt": "2026-10-31T13:06:00.765Z"
+    },
+    {
+      "version": 1,
+      "pid": 26308,
+      "status": "present",
+      "birthTicks": "639290395690521480",
+      "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+      "observedAt": "2026-10-31T13:06:00.780Z"
+    }
+  ],
+  "inventory": {
+    "processes": [
+      {
+        "pid": 26308,
+        "parentPid": 26148,
+        "birthTicks": "639290395690521480",
+        "kind": "AE",
+        "packageHash": ""
+      },
+      {
+        "pid": 22952,
+        "parentPid": 18856,
+        "birthTicks": "639290482194458680",
+        "kind": "client",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      },
+      {
+        "pid": 6716,
+        "parentPid": 22952,
+        "birthTicks": "639290482462328350",
+        "kind": "owner",
+        "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+      }
+    ],
+    "listeners": [
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 3457,
+        "OwningProcess": 6716
+      }
+    ]
+  },
+  "receipts": [
+    {
+      "directory": "4abb9cb7-ccff-4e55-b9f0-55251220f916-owner-lifecycle",
+      "id": "4abb9cb7-ccff-4e55-b9f0-55251220f916",
+      "kind": "owner-recovery-intent",
+      "previous": {
+        "pid": 2600,
+        "birthTicks": "639290433588621440",
+        "bootId": "fda4b436-ac6e-428a-951c-82d76978afc3"
+      },
+      "intentHash": "8bae9cdc2d78df27786c420b810e5f09aa5e2b39b99e0b0a600771ca8b82ccdf",
+      "completionKind": "owner-recovery-completed",
+      "completionIntentMatches": true,
+      "sealVerified": true,
+      "protected": [
+        {
+          "name": "descriptor",
+          "hash": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0"
+        },
+        {
+          "name": "origin",
+          "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+        },
+        {
+          "name": "anchor",
+          "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+        },
+        {
+          "name": "journal",
+          "hash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e"
+        },
+        {
+          "name": "ledger",
+          "hash": null
+        }
+      ]
+    },
+    {
+      "directory": "f19bf420-e25e-4780-9d90-fd33a822edbd-owner-lifecycle",
+      "id": "f19bf420-e25e-4780-9d90-fd33a822edbd",
+      "kind": "owner-ready-intent",
+      "current": {
+        "pid": 2600,
+        "birthTicks": "639290433588621440",
+        "bootId": "fda4b436-ac6e-428a-951c-82d76978afc3"
+      },
+      "intentHash": "05b805a4cbe121faaaad7b1b16a6717938943c87902de84bb8dc3590c58c850c",
+      "completionKind": "owner-ready-completed",
+      "completionIntentMatches": true,
+      "sealVerified": true,
+      "protected": [
+        {
+          "name": "descriptor",
+          "hash": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0"
+        },
+        {
+          "name": "origin",
+          "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+        },
+        {
+          "name": "anchor",
+          "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+        },
+        {
+          "name": "journal",
+          "hash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e"
+        },
+        {
+          "name": "ledger",
+          "hash": null
+        }
+      ]
+    },
+    {
+      "directory": "fd7af275-4f98-4a94-b547-a78094140ec3-owner-lifecycle",
+      "id": "fd7af275-4f98-4a94-b547-a78094140ec3",
+      "kind": "owner-ready-intent",
+      "current": {
+        "pid": 6716,
+        "birthTicks": "639290482462328350",
+        "bootId": "85dfe31b-e54f-4a94-aac4-ca9bc10bb3ff"
+      },
+      "intentHash": "8e27374911dacf87431fa1dd20176d3243016a921efd4efab1cc89c8cf933f40",
+      "completionKind": "owner-ready-completed",
+      "completionIntentMatches": true,
+      "sealVerified": true,
+      "protected": [
+        {
+          "name": "descriptor",
+          "hash": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0"
+        },
+        {
+          "name": "origin",
+          "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+        },
+        {
+          "name": "anchor",
+          "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+        },
+        {
+          "name": "journal",
+          "hash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e"
+        },
+        {
+          "name": "ledger",
+          "hash": null
+        }
+      ]
+    }
+  ],
+  "hashes": {
+    "configHash": "320b9e6d61c493a75cdf42da7d32af872bb6f83aa663ebf3894bdb5ac998c50a",
+    "rootOriginHash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "anchorOriginHash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "hostAdoptionHash": "4a453b0f0b04a83bd5248d3a22fbab234150c8232f5f464ba886d6bcafdee30c",
+    "journalHash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e"
+  },
+  "journalEvents": 18,
+  "original16EventsHash": "4cfe881718e7255829785e57b604304493b319ba6e68d597074a98454e146f45",
+  "receiverSettled": true,
+  "gatesPresent": {
+    "maintenance": false,
+    "install": false,
+    "broker": false,
+    "ledger": false
+  },
+  "controllerAcquired": false,
+  "aeDispatches": 0,
+  "aeRestarts": 0,
+  "projectChanges": 0,
+  "save": 0
+}

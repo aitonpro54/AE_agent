@@ -31,11 +31,16 @@ live/MCP/UI/install/process-control. Статус текущего проект�
 - [x] Проверка diff, scoped validate-diff selection186/186PASS, boundaries и evidence.
 - [x] Проверяемый пакетcc2f установлен и enabled через original update88e4;
   actual first standard status6108.60мс PASS без retry, два clients/EOF — один owner2600.
-- [ ] Actual configured first-call proof нового client после manual Codex restart;
-  standalone доказательством configured path не объявляется. Live idle cycles открыты.
+- [x] Actual configured first-call proof нового client после restart: первый
+  `core_status` cc2f PASS без retry. Client22952/owner6716 и completed attributed
+  recovery2600→6716 подтверждены native facts/HMAC receipts, history unchanged.
+- [x] Первый configured запрос после314.85с idle:62мс PASS с первого вызова,
+  same owner/boot, no faults/UNKNOWN/pending. Broader cycles остаются открытыми.
 
 ## Decision Log
 
+- Configured proof получен из MCP текущего чата. Owner PID сменился, поэтому
+  принят attributed recovery с preserved history, без заявления survival2600.
 - Cold boot требует большего bounded окна, без второго spawn при неопределённом
   исходе и без retry auth/pin/handshake отказов.
 - Postspawn absence-only окно —15с; прежний двойной лимит5с/50attempts заменён
@@ -51,6 +56,20 @@ live/MCP/UI/install/process-control. Статус текущего проект�
 - Новые product workflows, host adoption и runtime authority сюда не входят.
 
 ## Validation
+
+После restart первый configured status cc2f и последующий read PASS на ready6716.
+Client22952 действительно загружен из cc2f. HMAC recovery4abb9cb7/readyfd7af275
+completed, exact PID/birth/boot bindings PASS; один owner/listener3457,
+journal18events/prefix16/config/origins/adoption unchanged. Evidence:
+`snapshots/core4-lifecycle/20261031/R5CONFIGURED/`. CEP UI runtime_wait_expired
+и peer disconnected; typed read нового cc2f ещё не выполнен. Helper не адресовал
+CEP child, поэтому Connect передан пользователю; UI input/reload/AE restart0.
+Первый configured status после314850мс без MCP вызовов текущего чата прошёл
+за62мс с первого вызова: same6716/process boot, idle/accepted0, faults/UNKNOWN/
+pending0. Production sessionMs300000 подтверждён source; wire reconnect отдельно
+не трассировался. Это один actual idle first-call, а не полная приёмка repeated
+ordinary cycles. `configured-idle-result.json` содержит обе временные метки и
+полный actual ответ; `installed-after-idle.json` — финальные native/history facts.
 
 Direct `node --test core4/test/client-entry.test.js core4/test/client-ipc.test.js
 core4/test/client-launcher.test.js`:60PASS/0FAIL/skipped0. Реальная TEMP readiness
@@ -83,7 +102,7 @@ update gates/desired-stop сохранены; повтор action и ручна�
 update88e4 completed/update-stopped, fresh inspect switchIndex5, explicit enable.
 Installed packagecc2f/owner2600 ready; first standard status6108.60мс с первого
 запроса PASS. CEP после установки подключена, history18events/adoption/origins
-сохранены. Current configured client остаётся8a79 и требует app restart; новый
-configured proof и live idle cycles остаются открытыми.
+сохранены. Этот historical installed checkpoint актуализирован выше: configured
+cc2f принят после restart. Live idle/CEP/Titles cycles остаются своими проверками.
 
 Full release, actual mutation, save/reopen и portability не заявляются.

@@ -5,7 +5,50 @@
 подключение текущего чата после обновления app transport. Новый чат не нужен.
 Ниже сохранены прежние checkpoints; актуальное состояние — в первом разделе.
 
-## Текущее состояние: packagecc2f enabled, owner2600 ready, Codex client reload pending
+## Текущее состояние: configured cc2f подтверждён, owner6716 ready
+
+31 октября после продолжения чата первый configured `core_status` успешно
+вернул installed package`cc2f0713…` без предварительного retry/probe. Native
+inventory подтверждает новый client22952 из cc2f и единственный owner6716,
+birth`639290482462328350`, boot`85dfe31b-e54f-4a94-aac4-ca9bc10bb3ff`,
+один listener3457. Owner2600 отсутствует: это recovery, survival не наблюдался.
+Причина завершения2600 отдельно не установлена.
+
+HMAC/bindings и completion→intent hash проверены для completed recovery
+`4abb9cb7-ccff-4e55-b9f0-55251220f916` от exact2600/birth/boot и ready
+`fd7af275-4f98-4a94-b547-a78094140ec3` к exact6716/birth/boot. Descriptor,
+config, origins/anchor, host adoption и журнал18events/prefix16 unchanged;
+gates/ledger отсутствуют. Ready/active=true, pending/UNKNOWN/faults нет,
+controller idle, lease не приобретался. AE26308/birth прежний.
+
+CEP остаётся открытой, но показывает `Остановлено: runtime_wait_expired`;
+physical peer.connected/inspectionAvailable=false. Это штатное окончание
+bounded50с ожидания, а не успешный автоматический reconnect после долгого
+отсутствия Core. Кнопка «Подключить» доступна. Computer Use дважды отказал
+в адресации клика: `CEPHtmlEngine.exe` child отличается от выбранного окна
+`AfterFX.exe`; между попытками выполнены activation/fresh snapshot. UI-действие
+не выполнено; дальнейшие клики не повторяются. Пользователю передана просьба
+нажать «Подключить». Reload/close/reopen/AE restart/save/mutation0.
+
+Evidence: `snapshots/core4-lifecycle/20261031/R5CONFIGURED/`:
+`idle-baseline.json`, `installed-readback.json`, read-only verifier
+`observe-installed-state.cjs`, `configured-idle-result.json` и финальная
+`installed-after-idle.json`. Native facts/receipts не подменяют configured
+proof; configured proof получен непосредственно доступным MCP tool.
+
+Первый configured status после314850мс без MCP вызовов текущего чата прошёл
+с первого вызова за62мс. Same owner6716/process boot, attachments1/controller idle,
+accepted0/pending/UNKNOWN/faults0. Wire reconnect не трассировался отдельно;
+результат доказывает successful first call после production300с session window,
+но не полную приёмку repeated cycles.
+
+Следующий шаг — после ручного подключения панели fresh status/discovery/contract
+и новый typed project read.
+Fresh current host adoption нужна до исполнения; historical adoption6492 не
+переиспользуется как authority. Titles/ordinary cycles/portability/P1–P8/full
+release остаются открытыми. Stop/update/recovery/enable не повторять.
+
+## История: packagecc2f enabled, owner2600 ready, Codex client reload pending
 
 Source client1a6d442 (186selectedPASS) и owner pre-ready recovery587b49f
 (209selectedPASS) завершены. Original stopb99/update88e4 продолжены штатно с тем же

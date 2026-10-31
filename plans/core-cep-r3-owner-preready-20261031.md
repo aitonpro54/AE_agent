@@ -112,6 +112,17 @@ gates/payload/phase проверены новым private reader без writes/r
 
 ## Installed результат и продолжение
 
+Актуализация после restart: первый configured `core_status` нового cc2f успешен.
+Client22952 и owner6716 из cc2f, один listener3457;2600 absent. Completed HMAC
+recovery4abb9cb7 и readyfd7af275, exact PID/birth/boot и сохранение18events/config/
+origins/adoption проверены. Это attributed recovery, причина завершения2600 не
+установлена. CEP UI после долгого отсутствия Core показывает runtime_wait_expired;
+peer disconnected. Кнопка «Подключить» требует ручного нажатия: helper дважды
+отклонил адресацию CEP child до input. Точные facts и следующий шаг — в
+[installed checkpoint](core-cep-checkpoint-installed-20261031.md), evidence —
+`snapshots/core4-lifecycle/20261031/R5CONFIGURED/`. Ниже сохранён исторический
+installed результат до restart; указанные в нём old-client pending сняты новым proof.
+
 - Source recovery commit587b49f, client source1a6d442. Original update88e4
   продолжен один раз через owner-pre-ready-finish после inspect prooff55b0ba0…;
   result recovered=true/update-stopped/runtimeStarted=false. Fresh update-inspect
