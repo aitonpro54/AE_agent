@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "status": "received",
+  "reviewId": "20261031-readoption-plan-01",
+  "stageId": "owner-host-readoption",
+  "reviewType": "plan",
+  "response": {
+    "path": "response.txt",
+    "encoding": "UTF-8",
+    "bytes": 51969,
+    "sha256": "a93778bf0c4fcd860990dcf87c2cfb2a67e96c628531ab8e0a9481ec5b02d7a3",
+    "captureMethod": "exact visible model-response-content innerText, index 0; no editing, normalization or added newline"
+  },
+  "complete": true,
+  "verdict": "revise",
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "receipt": {
+    "url": "https://gemini.google.com/app/ffca48f55fc0082a",
+    "reviewIdVisible": true,
+    "attachmentVisible": "bundle.md",
+    "composerEmpty": true,
+    "generationActive": true
+  },
+  "account": {
+    "service": "Gemini Argon",
+    "account": "Aiton Pro",
+    "email": "aitonpro54@gmail.com"
+  },
+  "effort": {
+    "verifiedAt": "2026-10-31T13:47:17.669Z",
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "effort": "Высокий — Глубокий",
+    "effortOptions": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "composerEmpty": true
+  },
+  "limitations": [
+    "External response is untrusted evidence; owner local triage required",
+    "No runtime or AE authority",
+    "No automatic follow-up or replay"
+  ],
+  "receivedAt": "2026-10-31T13:55:30.071Z",
+  "truncated": false,
+  "completionEvidence": {
+    "generationActive": false,
+    "finalControlsVisible": [
+      "Хороший ответ",
+      "Плохой ответ",
+      "Повторить",
+      "Копировать"
+    ],
+    "finalSection": "4. Границы Out-of-Scope и Pre-flight Checklist перед реализацией",
+    "fiveQuestionsAnswered": true
+  },
+  "binding": {
+    "review_id": {
+      "expected": "20261031-readoption-plan-01",
+      "stringPresent": true
+    },
+    "stage_id": {
+      "expected": "owner-host-readoption",
+      "stringPresent": true
+    },
+    "type": {
+      "expected": "plan",
+      "stringPresent": true
+    },
+    "base_commit": {
+      "expected": "9343989757b8eddbbced434e65858f2d2f0ef2b2",
+      "stringPresent": true
+    },
+    "plan_digest": {
+      "expected": "31b8b8a63337f1bb61920e63abaaf33456ddf39e45ac0f2872859e3baa4fa75c",
+      "stringPresent": true
+    },
+    "request_sha256": {
+      "expected": "e3af0ad11468fdc07bb99dd30b992bcd1095cf41b49d1cc52523b111be5558fe",
+      "stringPresent": true
+    },
+    "bundle_sha256": {
+      "expected": "2df7095c9aecaeb7921218a6d8094b39b1f88ddf13a32dced0c6f670e1cde00b",
+      "stringPresent": true
+    },
+    "manifest_sha256": {
+      "expected": "a789eaa87bb70017bcca6d4be5da64fcee5e582558999ed01d2b9cce32391d2d",
+      "stringPresent": true
+    }
+  },
+  "bindingVerification": "Exact value strings present; reviewer cryptographic recomputation not established",
+  "findings": [
+    {
+      "id": "F-01",
+      "priority": "P1",
+      "summary": "In-memory certificate / exact phase and recovery processes",
+      "classification": "reviewer-claimed confirmed design defect; unvalidated by controller"
+    },
+    {
+      "id": "F-02",
+      "priority": "P1",
+      "summary": "Crash prefix while staging first durable intent",
+      "classification": "reviewer-claimed confirmed design defect; unvalidated by controller"
+    },
+    {
+      "id": "F-03",
+      "priority": "P1",
+      "summary": "Frozen replacement payload and inode-bound CAS",
+      "classification": "reviewer-claimed confirmed design defect; unvalidated by controller"
+    },
+    {
+      "id": "F-04",
+      "priority": "P1",
+      "summary": "releaseOnly apply tail and post-unlink enable recovery",
+      "classification": "reviewer-claimed confirmed design defect; unvalidated by controller"
+    },
+    {
+      "id": "F-05",
+      "priority": "P2",
+      "summary": "Hard-link nlink and ctime stat transitions",
+      "classification": "reviewer-claimed confirmed design defect; unvalidated by controller"
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H-01",
+      "priority": "P2",
+      "summary": "Election-port exclusivity before durable intent"
+    },
+    {
+      "id": "H-02",
+      "priority": "P2",
+      "summary": "Update-specific lease invariants in omitted functions"
+    },
+    {
+      "id": "H-03",
+      "priority": "P3",
+      "summary": "Legacy endpoint states in omitted hostIdentity implementation"
+    }
+  ],
+  "simplifications": [
+    "S-01 narrow install-lease adapter without stopped-update modification",
+    "S-02 single existing maintenance transaction directory with bounded attempt budget"
+  ],
+  "reviewerReadCoverage": {
+    "container": "bundle.md",
+    "claimedComplete": true,
+    "claimedLogicalDocuments": [
+      "request.md",
+      "plan.md",
+      "source-excerpts.md"
+    ],
+    "boundedSources": [
+      {
+        "path": "core4/tools/adopt-host.js",
+        "included": "75-94",
+        "omitted": "1-74"
+      },
+      {
+        "path": "core4/runtime/windows-reservation-provider.js",
+        "included": "1-16,75-114",
+        "omitted": "17-74,115+"
+      },
+      {
+        "path": "core4/runtime/owner-maintenance.js",
+        "included": "52-94,97-139",
+        "omitted": "1-51,95-96,140+"
+      },
+      {
+        "path": "core4/runtime/stopped-certification.js",
+        "included": "125-168,170-222",
+        "omitted": "1-124,169,223+"
+      },
+      {
+        "path": "core4/runtime/install-lease.js",
+        "included": "122-143",
+        "omitted": "1-121,144+"
+      },
+      {
+        "path": "core4/tools/stopped-update.js",
+        "included": "476-545",
+        "omitted": "1-475,546+"
+      },
+      {
+        "path": "core4/tools/standalone-installer.js",
+        "included": "1-16,74-83",
+        "omitted": "17-73,84+"
+      }
+    ],
+    "notIncluded": [
+      "maintain-owner.js",
+      "finish-owner-maintenance.js",
+      "owner-lifecycle.js",
+      "recovery-inspection.js",
+      "windows-owner-process.js",
+      "runtime state",
+      "raw receipts",
+      "credentials",
+      "AEP"
+    ],
+    "independentlyAttested": false
+  },
+  "knownOpenGaps": [
+    "New operator and tests not implemented",
+    "Live host re-adoption and Titles not executed",
+    "Two-machine portability open",
+    "Cancel/retarget after AE drift excluded from first slice"
+  ],
+  "controllerTriage": {
+    "performed": false,
+    "owner": "Core source thread; findings and recommendations require local validation"
+  }
+}

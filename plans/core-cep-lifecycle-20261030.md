@@ -187,11 +187,18 @@ R3 не использует fake production epoch и не переносит au
   повторные ordinary cycles и Titles/native confirm/read-back;
   устойчивость installed runtime пока не заявлена.
 - [ ] [Штатный host re-adoption operator](core-cep-r3-host-readoption-20261031.md):
-  bounded design готов, helper-only stopped route/claim с первого intent; один
-  план-пакет для первого Argon review нового самостоятельного scope подготовлен.
+  один Argon plan review received/revise/локальный разбор выполнен. Helper-only
+  boundary сохранена, pre-claim/CAS/release semantics уточнены; source slice1
+  private evidence/lease seams выполняется, actual stop/readoption ещё0.
 
 ## Decision Log
 
+- Единственный Argon plan review host-readoption получен и локально разобран.
+  Source build подтверждает cc2f/runtime lease boundary: внешнее предложение
+  изменить install-lease.js отклонено. Canonical claim публикуется атомарным link
+  после inert external preparation; после proven CAS settlement/enable не зависят
+  от live AE и не выдают mutation authority. Дальше локальные source slices/tests,
+  без второго внешнего review; [решения](../reviews/argon/owner-host-readoption/20261031-readoption-plan-01/decisions.md).
 - После user Connect actual typed read подтверждает новый configured cc2f до
   re-adoption, без mutation authority/continuity. Absent-only `adopt-host` не
   обновляет existing adoption; следующий source/design блок определяет штатный
@@ -230,6 +237,12 @@ R3 не использует fake production epoch и не переносит au
   уже получил timeout. Embedding восстанавливает durable fences до attach/acquire.
 
 ## Validation
+
+Argon review20261031-readoption-plan-01: response51969bytes/SHAa93778bf…,8string
+bindings PASS,1upload/1send/0retries, account/mode/highestUI effort подтверждены
+controller. Root прочёл весь bounded ответ и проверил source finding claims;
+read-only manual/owner buildPackage снова дал exactcc2f, runtime install-lease=true,
+helper cert/update=false. Новые source tests/actual readoption ещё не выполнены.
 
 Connected idle observation: baseline13:26:03.764UTC→call13:45:57.772UTC,
 gap1194008мс/response65мс, первый configured core_status PASS. Между ними root не
@@ -370,4 +383,6 @@ R5CONFIGURED evidence/reader; production source/runtime/config не меняли
 Проверки: actual MCP calls, signed read-only native/history verifier, JSON
 consistency/credential exclusion, reader syntax и diff check. Следующий шаг —
 штатный fresh host re-adoption operator; bounded read-only design принят, локальный
-COMPLETE plan-review packet подготовлен. Реализация/новый stop ещё не начаты.
+COMPLETE plan-review packet получен/revise и разобран локально; source slice1
+выполняется. Production lease issuance до canonical claim в slice2 отсутствует;
+slice1 проверяет read-only evidence/закрытый adapter plumbing, actual stop0.

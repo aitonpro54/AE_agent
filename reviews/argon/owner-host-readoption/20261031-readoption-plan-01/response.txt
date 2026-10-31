@@ -1,0 +1,501 @@
+Binding Header & Метаданные ревью
+
+review_id: 20261031-readoption-plan-01   
+bundle.md
+
+stage_id: owner-host-readoption   
+bundle.md
+
+type: plan   
+bundle.md
+
+base_commit: 9343989757b8eddbbced434e65858f2d2f0ef2b2   
+bundle.md
+
+plan_digest: 31b8b8a63337f1bb61920e63abaaf33456ddf39e45ac0f2872859e3baa4fa75c   
+bundle.md
+
+request_sha256: e3af0ad11468fdc07bb99dd30b992bcd1095cf41b49d1cc52523b111be5558fe
+
+bundle_sha256: 2df7095c9aecaeb7921218a6d8094b39b1f88ddf13a32dced0c6f670e1cde00b
+
+manifest_sha256: a789eaa87bb70017bcca6d4be5da64fcee5e582558999ed01d2b9cce32391d2d
+
+Прочитанные / пропущенные файлы и обрезка
+
+Прочитанный контейнер: bundle.md (Completeness: COMPLETE, Included files: 2, Skipped files: 0, Unresolved warnings: 0, Redactions: 0).   
+bundle.md
+
+Полностью прочитанные логические документы внутри бандла:
+
+request.md — задание на ревью плана.   
+bundle.md
+
+reviews\argon\owner-host-readoption\20261031-readoption-plan-01\plan.md — privacy-summarized копия plans/core-cep-r3-host-readoption-20261031.md (SHA-256 31b8b8a63337f1bb61920e63abaaf33456ddf39e45ac0f2872859e3baa4fa75c, заменены только локальные PID labels).   
+bundle.md
+
+reviews\argon\owner-host-readoption\20261031-readoption-plan-01\source-excerpts.md — выбранные фрагменты 7 исходных файлов.   
+bundle.md
+
+Обрезка (bounded excerpts в source-excerpts.md):
+
+core4/tools/adopt-host.js (ad199e684dca13f03f1fbffb5530b453e1913352e6b463e16b676378e52fe670): прочитаны строки 75–94; опущены строки 1–74.   
+bundle.md
+
+core4/runtime/windows-reservation-provider.js (94e49c052119e0d80de3704132ca3cf04749c1d57db2f08b83fec8a97bf08531): прочитаны строки 1–16, 75–114; опущены строки 17–74 (реализация probe, hostIdentity, freshObservation) и 115+.   
+bundle.md
+
+core4/runtime/owner-maintenance.js (0b370cbec8130236d03dd4c3ae2f6d28f9e5b1f3f487c2e340452d0b01168793): прочитаны строки 52–94, 97–139; опущены строки 1–51 (реализация read, same, atomic, plain), 95–96 и 140+ (реализация stoppedCertificationContext, resume, finish).   
+bundle.md
+
+core4/runtime/stopped-certification.js (8bda8eb1e9aaa5879322a4934d43608d0a71a2a268056ef02dec02aed537d8fa): прочитаны строки 125–168, 170–222; опущены строки 1–124 (реализация readBase, baseFacts, continuation, assertRetiredNow), строка 169 (конструктор локального actor) и 223+.   
+bundle.md
+
+core4/runtime/install-lease.js (fe91dfedfafceaa38f0cac72d007f2600d4b82915d07b960c8d3ed6d735bb368): прочитаны строки 122–143; опущены строки 1–121 (реализация publishMaintenanceGate, checkMaintenanceGate, assertInstallLease, releaseInstallLease, retainInstallLease, ownedLeaseGates) и 144+.   
+bundle.md
+
+core4/tools/stopped-update.js (32e676dad591522ab5b14256e06e00e8b517e94c4273f43228f1793ce762172f): прочитаны строки 476–545; опущены строки 1–475 (apply/recovery фазы update и stoppedUpdateLeasePermit) и 546+.   
+bundle.md
+
+core4/tools/standalone-installer.js (b64213a52264ec773e989d85d8337e96bc4f196e318eda7fd671abd0dead45c4): прочитаны строки 1–16, 74–83; опущены строки 17–73 и 84+.   
+bundle.md
+
+Не включённые в бандл файлы (по дизайну allowlist): core4/tools/maintain-owner.js, core4/tools/finish-owner-maintenance.js, core4/runtime/owner-lifecycle.js, core4/runtime/recovery-inspection.js, core4/runtime/windows-owner-process.js, а также runtime state, raw receipts, credentials и AEP.   
+bundle.md
+
+1. Verdict: revise
+
+Выбранная архитектура (helper-only stopped operator поверх существующего runtime-maintenance.json и stopped-certificate.json, с размещением первого durable intent внутри transactions/<id>-owner-maintenance) верна и закрывает базовый обход при 0 gates. Однако в плане есть 5 подтверждённых дефектов проектирования (P1–P2) на стыке с существующим кодом (stopped-certification.js, windows-reservation-provider.js, install-lease.js, stopped-update.js), которые приведут к гарантированному отказу (fail) или невосстановимому клину (permanent wedge) при crash-recovery и в enable/enable-finish без корректировки контракта до кодирования.   
+bundle.md
+Ещё 1
+
+2. Детальный разбор Findings
+A. Confirmed Design Defects (Подтверждённые дефекты дизайна)
+ID	Приоритет	Уверенность	Ссылка (path:line)	Краткая суть
+F-01	P1	Высокая	core4/runtime/stopped-certification.js:196-222	
+
+Private certificate brand хранится в памяти процесса (certificates WeakMap) и привязан к p.actor.pid === process.pid и исходному p.facts.phase, поэтому недоступен в finish / enable / enable-finish. 
+bundle.md
+
+
+F-02	P1	Высокая	core4/runtime/owner-maintenance.js:112,123,130-139, core4/runtime/stopped-certification.js:174	
+
+Использование c.atomic() со stage-файлом *.stage-<uuid> для записи первого readopt-intent.json создаёт невосстановимый клин при crash между созданием .stage-<uuid> и rename/link. 
+bundle.md
+
+
+F-03	P1	Высокая	core4/runtime/windows-reservation-provider.js:110-114, plan.md (п. 3–6, Recovery)	
+
+В provider.adopt() поля observedDigest: hash(actual) и adoptedAt: new Date().toISOString() вычисляются динамически, а atomic запись создаёт новый inode; без жёсткой фиксации payload в intent и hard-link CAS невозможно отличить свой crash-rename от byte-equal foreign файла. 
+bundle.md
+
+
+F-04	P1	Высокая	core4/tools/stopped-update.js:486,498-500,520-526,540, core4/runtime/install-lease.js:134-137	
+
+Пропущен releaseOnly путь для readopt finish при crash после readopt-completed.json до снятия apply-gates, а также конфликт проверки live AE в enable-finish после fs.unlinkSync(barrier). 
+bundle.md
+
+
+F-05	P2	Высокая	core4/tools/stopped-update.js:517-518, core4/runtime/owner-maintenance.js:62	
+
+Hard-link архивация (fs.linkSync) и rename меняют nlink (1 -> 2 -> 1) и ctimeNs у original/replacement inodes; прямое сравнение same(statA, statB) без учёта ожидаемого nlink вызовет ложный fail. 
+bundle.md
+
+F-01 (P1): In-memory брендинг certificate (p.actor.pid === process.pid) и заморозка p.facts.phase блокируют apply после первого файла и все out-of-process фазы (inspect, finish, enable, enable-finish)
+
+Сценарий:
+
+В certifyStoppedInstallation (core4/runtime/stopped-certification.js:196-198) выданный сертификат регистрируется в модульной коллекции certificates.set(result, { ...p, actor: short(actor), facts: structuredClone(facts), c }), где facts.phase фиксирует дерево transactions/<id>-owner-maintenance на момент выпуска сертификата.   
+bundle.md
+
+В assertStoppedCertificate (core4/runtime/stopped-certification.js:205-221) проверяется p.actor.pid !== process.pid и if (!equal(facts, p.facts)) fail('stopped_certification_changed').   
+bundle.md
+
+Как только readopt apply публикует readopt-intent.json в transactions/<id>-owner-maintenance, b.phase.tree меняется и перестаёт совпадать с p.facts.phase.tree.   
+bundle.md
+
+Если же readopt apply падает после публикации readopt-intent.json (или после захвата install.lock / broker-owner.gate), новый процесс readopt finish (или последующий enable) имеет другой process.pid, не имеет объекта certificate в памяти и не может повторно вызвать certifyStoppedInstallation, так как stopped-certification.js:143,190,195 требует нулевых маркеров (Object.values(lifecycle.markers).some(v => v.hash !== null)) и неизменённого b.phase.   
+bundle.md
+
+Уверенность: Высокая (прямое следствие строк 143, 190, 196–198, 205–221 в core4/runtime/stopped-certification.js).   
+bundle.md
+
+Минимальная локальная проверка:
+
+Разделить private port в core4/runtime/stopped-certification.js на два режима, доступных только через pull-capability (WeakMap) из stopped-host-readoption.js:
+
+In-process assertion (apply): принимает live certificate, lease и expectedExtension (точные хеши/stat добавленных файлов readopt-* в b.directory), проверяя, что b.phase.tree за вычетом expectedExtension идентичен p.facts.phase.tree, а сами файлы расширения равны expectedExtension.   
+bundle.md
+
+Disk-backed verification (inspect / finish / enable / enable-finish): не требует in-memory certificates.get(certificate) от process.pid; вместо этого через readBase(c, id, owned, allowedReadoptNames) проверяет на диске запечатанный stopped-certificate.json, stopped.json, смерть originalScope и certifier, owned recovery gates и точное соответствие b.phase.tree базовым файлам сертификации плюс валидированной цепочке readopt-*.
+
+F-02 (P1): Crash во время стадийной записи (*.stage-<uuid>) первого readopt-intent.json внутри transactions/<id>-owner-maintenance создаёт невосстановимый клин
+
+Сценарий:
+
+owner-maintenance.js:112,123 и stopped-certification.js:174 публикуют файлы через c.atomic(path.join(b.directory, name), bytes, nonce), который создаёт временный файл <name>.stage-<uuid> в той же директории transactions/<id>-owner-maintenance.   
+bundle.md
+
+В owner-maintenance.js:135-137 функция phaseSnapshot отрезает суффикс .stage-<uuid> (const base = name.replace(/\.stage-[a-f0-9-]{36}$/, '')) и вызывает fail('maintenance_phase'), если base не входит в allowed.   
+bundle.md
+
+Если процесс readopt apply падает после создания readopt-intent.json.stage-<uuid>, но до его rename/link в readopt-intent.json:
+
+На диске ещё нет readopt-intent.json (нет зафиксированного original intent).   
+bundle.md
+
+При этом в transactions/<id>-owner-maintenance остаётся readopt-intent.json.stage-<uuid>.   
+bundle.md
+
+Повторный apply упадёт на проверке чистого phase (stopped_certification_changed / maintenance_phase), а readopt finish упадёт, так как план требует: «Finish требует ... прежний original payload ... original intent/replacement не переписываются. Никакой ручной очистки markers». Система остаётся навсегда заблокированной без штатного пути выхода.   
+bundle.md
+
+Уверенность: Высокая (core4/runtime/owner-maintenance.js:130-139, core4/runtime/stopped-certification.js:162-167,174).   
+bundle.md
+
+Минимальная локальная проверка:
+
+Проверить реализацию atomic() в core4/runtime/owner-maintenance.js:1-51: если .stage-<uuid> создаётся в целевой директории transactions/<id>-owner-maintenance, то либо:
+
+Стейджинг readopt-intent.json (до финального fs.linkSync(stagePath, intentPath)) должен выполняться вне transactions/<id>-owner-maintenance (например, в детерминированном staging-файле транзакции на том же томе installRoot/transactions), так чтобы в transactions/<id>-owner-maintenance файл появлялся только одной атомарной операцией fs.linkSync уже после полного writeSync + fsyncSync;
+
+Либо в readBase / readopt явно определить детерминированное имя single-slot intent-stage без динамического UUID и правило его дозавершения/отклонения. Вариант (1) с write+fsync во внешний staging на том же filesystem и fs.linkSync в transactions/<id>-owner-maintenance полностью исключает появление полузаписанного или .stage-* файла в дереве фаз.
+
+F-03 (P1): Недетерминированные поля replacement (adoptedAt, observedDigest) и отсутствие hard-link привязки inode не позволяют отличить свой crash-CAS от byte-equal foreign файла
+
+Сценарий:
+
+В core4/runtime/windows-reservation-provider.js:113 запись host-adoption.json формируется как { version: 1, installationId, machineId, host, allowedProject, rootObservationDigest, observedDigest: hash(actual), policy, adoptedAt: new Date().toISOString() }.   
+bundle.md
+
+Если readopt вычисляет adoptedAt или observedDigest в момент самой записи (или пересчитывает их в finish при новом probe()), то байты replacement изменятся относительно readopt-intent.json, нарушив требование «original intent/replacement не переписываются».   
+bundle.md
+
+Далее, так как readopt-intent.json хранит точные байты будущего replacement в открытом виде на диске, если при CAS оператор просто записывает новый temp-файл и делает rename поверх state/production/host-adoption.json, у host-adoption.json появляется новый inode (ino), который не был записан в readopt-intent.json. При падении сразу после rename (до записи readopt-completed.json) readopt finish увидит файл с байтами replacement и новым ino, но не сможет доказать, был ли этот inode создан нашим упавшим процессом или подложен внешним процессом (byte-equal foreign file).   
+bundle.md
+
+Уверенность: Высокая (core4/runtime/windows-reservation-provider.js:10,110-114, plan.md п. 4, 6).   
+bundle.md
+
+Минимальная локальная проверка:
+
+Зафиксировать adoptedAt и observedDigest один раз при формировании readopt-intent.json; последующие probe() (после await в apply, в finish и в enable) проверяют только canonical(hostIdentity(actual)) === canonical(intent.replacement.host) и свежесть наблюдения, но не меняют байты intent.replacement.   
+bundle.md
+
+Материализовать adoption-new.json внутри transactions/<id>-owner-maintenance до публикации readopt-intent.json (через внешний staging + fs.linkSync после readopt-intent.json с фиксацией newInode в pre-CAS записи readopt-cas-ready.json, либо создать adoption-new.json во внешней папке транзакции до readopt-intent.json и запечатать его { dev, ino, size, mtimeNs, birthtimeNs, hash } прямо в readopt-intent.json), а сам CAS выполнять через fs.linkSync(adoptionNewPath, stagePath) + fs.renameSync(stagePath, adoptionFile). Тогда легитимный state/production/host-adoption.json после замены обязан иметь тот же (dev, ino), что и adoption-new.json (nlink === 2), а любой byte-equal foreign файл будет иметь чужой ino и nlink === 1 и будет детерминированно отвергнут.
+
+F-04 (P1): Тупик при crash между readopt-completed.json и снятием apply-gates + конфликт проверки live AE в enable-finish после удаления runtime-maintenance.json
+
+Сценарий:
+
+Тупик после readopt-completed.json: В apply (или finish) запись readopt-completed.json обязана происходить под защитой удерживаемого dual lease (install.lock и broker/broker-owner.gate), после чего вызывается releaseInstallLease. Если процесс падает после создания readopt-completed.json, но до удаления одного или обоих gate-файлов, то enable откажет (по аналогии с stopped-update.js:486: if (... || r.c.present.some(Boolean)) fail('stopped_update_enable_proof')). Если readopt finish считает наличие readopt-completed.json завершённой фазой и отказывается запускаться, оба gate-файла останутся на диске навсегда.   
+bundle.md
+Ещё 1
+
+Тупик в enable-finish после fs.unlinkSync(barrier): В completeEnable (stopped-update.js:517-526) сначала делается fs.linkSync(barrier, savedPath), затем fs.unlinkSync(barrier) (state/production/runtime-maintenance.json удаляется!), затем пишется enabled.json, затем вызывается releaseInstallLease(c.lease). Если процесс падает после fs.unlinkSync(barrier) (до enabled.json или после enabled.json при 1 оставшемся gate) и в этот момент пользователь закрыл/перезапустил AE, то если enable-finish безусловно потребует совпадения живого AE с adoption.host, enable-finish откажет и оставит систему без runtime-maintenance.json, но с застрявшим broker/broker-owner.gate / install.lock (полуразблокированное состояние).   
+bundle.md
+Ещё 1
+
+Уверенность: Высокая (core4/tools/stopped-update.js:486,515-526,540, core4/runtime/install-lease.js:134-137).   
+bundle.md
+
+Минимальная локальная проверка:
+
+В readopt finish добавить releaseOnly: !!completedView.bytes ветку (аналогично stopped-update.js:540), которая при наличии валидного readopt-completed.json и оставшихся apply-gates проверяет смерть актёров, верифицирует host-adoption.json и readopt-completed.json без повторного CAS и штатно освобождает оставшиеся apply-gates.   
+bundle.md
+
+В enable / enable-finish чётко разделить границу коммита:
+
+Пока state/production/runtime-maintenance.json (barrier) существует на диске — проверка живого AE обязательна (при смене AE сохраняется runtime-maintenance.json).
+
+Как только runtime-maintenance.json уже слинкован в архив (stop-barrier) и удалён из state/production/runtime-maintenance.json (точка невозврата enable пройдена, adoption уже давно коммитнут в readopt-completed.json), enable-finish должен завершить запись readopt-enabled.json и освободить enable-gates по releaseOnly пути даже при недоступности/смене AE, так как новая adoption в любом случае не даёт runtime/AE authority, а windows-reservation-provider.js:93-95 проверит живой AE при prepare().   
+bundle.md
+
+F-05 (P2): Изменение nlink и ctimeNs при fs.linkSync / fs.renameSync сломает наивную проверку stat original и replacement файлов
+
+Сценарий:
+
+Когда state/production/host-adoption.json линкуется в архив adoption-old.json через fs.linkSync, у исходного inode поле nlink увеличивается с 1 до 2, а ctimeNs обновляется; после fs.renameSync(stagePath, adoptionFile) у adoption-old.json поле nlink возвращается к 1, а у adoption-new.json и host-adoption.json становится равным 2.
+
+В stopped-update.js:517-518 для этого специально передаётся 3-й аргумент true в sameFact(saved, e.completed.barrier, true) после fs.linkSync. Если в stopped-host-readoption.js использовать стандартный same(statA, statB) из owner-maintenance.js:62 (который сравнивает полный stat), проверка упадёт сразу после fs.linkSync.   
+bundle.md
+Ещё 1
+
+Уверенность: Высокая (core4/tools/stopped-update.js:517-518, core4/runtime/owner-maintenance.js:62).   
+bundle.md
+
+Минимальная локальная проверка:
+
+Явно задать функцию сравнения inode-фактов sameInode(statA, statB, { expectedNlink }), которая строго проверяет неизменность dev, ino, mode, size, mtimeNs, birthtimeNs и точное ожидаемое значение nlink (1 до линка, 2 при наличии пары hard-links, 1 у архива после rename), игнорируя только ctime/ctimeNs сдвиг от самого доказанного link/rename.
+
+B. Hypotheses (Гипотезы, требующие локальной проверки по опущенным строкам)
+
+H-01 (P2, Средняя уверенность — опущены core4/runtime/stopped-certification.js:1-124 и core4/tools/finish-owner-maintenance.js):
+
+Сценарий: Между моментом, когда certifyStoppedInstallation записывает stopped-certificate.json, и моментом, когда readopt apply записывает readopt-intent.json (при 0 gates), другой процесс (stopped-update или finish-owner-maintenance) может попытаться стартовать, если он не захватывает тот же локальный TCP-порт reservedServer (stopped-certification.js:126).   
+bundle.md
+
+Локальная проверка: Проверить в core4/tools/finish-owner-maintenance.js и core4/tools/operate-stopped-update.js, резервируют ли все stopped-операторы один и тот же детерминированный election-порт до вызова inspected и удерживают ли его до завершения процесса; кроме того, readopt apply должен принимать уже существующий stopped-certificate.json или выполнять certify + публикацию readopt-intent.json внутри одного удержания reservedServer без промежуточного освобождения порта.   
+bundle.md
+
+H-02 (P2, Средняя уверенность — опущены core4/runtime/install-lease.js:1-121):
+
+Сценарий: В install-lease.js:126 объект lease создаётся с флагами { maintenance: true, update: true }. Если функции assertInstallLease, maintenanceLeaseFacts или releaseInstallLease в строках 1–121 проверяют специфичные для update инварианты, переиспользование acquireSealedLease потребует корректного флага.   
+bundle.md
+
+Локальная проверка: Проверить строки 1–121 в core4/runtime/install-lease.js при добавлении acquireStoppedReadoptionLease(capability).   
+bundle.md
+
+H-03 (P3, Средняя уверенность — опущены core4/runtime/windows-reservation-provider.js:17-74):
+
+Сценарий: В windows-reservation-provider.js:14 CIM_QUERY запрашивает Win32_Process для AfterFX.exe, а endpoint(port) (строка 11) имеет таймаут 500 мс и возвращает 'unknown' при таймауте или ошибке, отличной от ECONNREFUSED. Если hostIdentity(actual) включает состояния legacy-портов, то кратковременный 'unknown' или переключение локального сокета между intent и finish/enable изменит canonical(host).   
+bundle.md
+Ещё 1
+
+Локальная проверка: Проверить hostIdentity() в core4/runtime/windows-reservation-provider.js:17-74 — требует ли он строго 'observed-absent' для всех legacy endpoints и отвергает ли 'unknown' до создания readopt-intent.json.
+
+C. Simplifications (Рекомендуемые упрощения плана)
+
+S-01 (Не трогать core4/tools/stopped-update.js):
+
+В разделе «Предполагаемые файлы и границы» план предлагает: «Узкий helper adapter к existing sealed install lease в tools/stopped-update.js либо отдельный общий helper primitive».   
+bundle.md
+
+Упрощение: Не модифицировать core4/tools/stopped-update.js и не создавать новый общий helper-файл. В core4/runtime/install-lease.js:143 уже есть однострочный паттерн:
+function acquireStoppedUpdateLease(capability) { return acquireSealedLease(require('../tools/stopped-update').stoppedUpdateLeasePermit(capability)); }.
+Достаточно добавить рядом в core4/runtime/install-lease.js одну строку:
+function acquireStoppedReadoptionLease(capability) { return acquireSealedLease(require('../tools/stopped-host-readoption').stoppedReadoptionLeasePermit(capability)); }
+Это сохраняет stopped-update.js полностью неприкосновенным (no-touch) и не создаёт публичного permit API.   
+bundle.md
+
+S-02 (Размещать все файлы readopt в существующей директории transactions/<id>-owner-maintenance без создания второй транзакционной директории, кроме временного файла для linkSync):
+
+В owner-maintenance.js:133 лимит файлов в transactions/<id>-owner-maintenance составляет 32 (и 256 при finishing = true), а размер каждого файла — до 128 KB (строка 138).   
+bundle.md
+
+Все артефакты (readopt-intent.json, adoption-old.json, adoption-new.json, readopt-completed.json, readopt-finish-<uuid>.json, readopt-enable-intent.json, readopt-enable-ready.json, stop-barrier, readopt-enabled.json, readopt-enable-recovery-<uuid>.json) при бюджете попыток <= 8 гарантированно укладываются в лимит 32 файлов и 128 KB, что избавляет от синхронизации двух разных транзакционных деревьев.
+
+D. Known-Open Gaps (Известные открытые пробелы вне дефектов дизайна плана)
+
+G-01: Реализация core4/tools/stopped-host-readoption.js, изменения в standalone-installer.js (HELPERS в строке 4) и адресные unit/integration тесты ещё не написаны.   
+bundle.md
+
+G-02: Live-проверка повторной привязки текущего процесса AE и сценарий Titles на реальном хосте ещё не выполнялись (запланированы после приёмки исходников).   
+bundle.md
+
+G-03: Two-machine portability и штатный контракт отмены/перенацеливания (cancel/retarget) после публикации readopt-intent.json при смене AE явно оставлены вне первого среза.   
+bundle.md
+
+3. Ответы на 5 вопросов Review Request
+Вопрос 1: Достаточен ли stop-bound claim в original maintenance phase tree с первого durable intent против bypass через generic resume/certification/update? Укажи конкретный crash/concurrency prefix, если нет.
+
+После атомарной публикации readopt-intent.json в transactions/<id>-owner-maintenance — да, против обхода через generic resume / certification / update при 0 gates этого достаточно:
+
+Generic resume / finish в core4/runtime/owner-maintenance.js:130-137 вызывает phaseSnapshot(), где allowed = ['stopped.json', 'resume-intent.json', 'resume-lease.json', 'resume-completed.json', 'stop-barrier']; любой файл readopt-* немедленно вызывает fail('maintenance_phase').   
+bundle.md
+
+Generic inspectStoppedCertification, certifyStoppedInstallation и assertStoppedCertificate (core4/runtime/stopped-certification.js:131,166,221) сверяют b.phase и падают с stopped_certification_changed (или в readBase), что автоматически блокирует и stopped-update.   
+bundle.md
+
+Однако есть два конкретных crash/concurrency префикса, которые необходимо закрыть:
+
+Префикс 1 (Crash при записи .stage-<uuid> до коммита readopt-intent.json, см. F-02): Если readopt-intent.json пишется через c.atomic() непосредственно внутри transactions/<id>-owner-maintenance и процесс падает после создания readopt-intent.json.stage-<uuid> до rename, то generic resume/update заблокированы (phaseSnapshot срезает .stage-<uuid> и отвергает readopt-intent.json в строке 137), но и сам readopt оказывается в вечном клине (нет readopt-intent.json для finish, но есть посторонний .stage-<uuid> файл для apply). Решение: формировать и fsync-ать файл во внешнем staging на том же томе и публиковать в transactions/<id>-owner-maintenance только атомарным fs.linkSync.   
+bundle.md
+
+Префикс 2 (Окно между stopped-certificate.json и readopt-intent.json при 0 gates, см. H-01): Когда stopped-certificate.json уже записан, а readopt-intent.json ещё нет, инсталляция находится в общем состоянии stopped-certified. Чтобы параллельный вызов stopped-update не перехватил сертификат в этом окне, readopt apply обязан удерживать единый локальный порт reservedServer (stopped-certification.js:126) непрерывно от проверки/выпуска сертификата до публикации readopt-intent.json и освобождения dual lease.   
+bundle.md
+Ещё 1
+
+Вопрос 2: Как минимально оформить private certificate/lease seam, не создав публичный permit или ослабление общей phase validation? Что в плане следует упростить?
+
+Минимальный private lease seam (в core4/runtime/install-lease.js):
+
+Не менять core4/tools/stopped-update.js (см. S-01).   
+bundle.md
+
+В core4/runtime/install-lease.js добавить acquireStoppedReadoptionLease(capability), который вызывает существующий внутренний acquireSealedLease(require('../tools/stopped-host-readoption').stoppedReadoptionLeasePermit(capability)) (по образцу строки 143).   
+bundle.md
+
+В core4/tools/stopped-host-readoption.js хранить одноразовый cap -> permit в модульном WeakMap, удаляя ключ в finally сразу после вызова acquireStoppedReadoptionLease(cap) (по образцу stopped-update.js:496-501).   
+bundle.md
+
+Минимальный private certificate seam (в core4/runtime/stopped-certification.js):
+
+Не расширять общий allowed список в owner-maintenance.js:131 и не менять поведение публичных inspectStoppedCertification, certifyStoppedInstallation, assertStoppedCertificate.   
+bundle.md
+
+Добавить в stopped-certification.js одну точку входа verifyStoppedReadoptionPhase(capability), которая через pull-capability (require('../tools/stopped-host-readoption').stoppedReadoptionCertificationRequest(capability)) получает { installation, descriptorPath, id, reservedServer, lease, certificate, expectedExtension } и:
+
+Проверяет endpoint(reservedServer) и c.reverify();   
+bundle.md
+
+Вызывает readBase(c, id, owned, Object.keys(expectedExtension)), где allowedReadoptNames разрешены только при вызове из этой функции и строго ограничены ключами expectedExtension;
+
+Проверяет, что базовая часть b.phase.tree (без expectedExtension) в точности равна фазе на момент stopped-certificate.json, а каждый файл из expectedExtension в b.phase.tree совпадает по { hash, stat };
+
+Поддерживает как live-режим в apply (с проверкой certificate из certificates), так и recovery/enable-режим в новом процессе (по запечатанному stopped-certificate.json на диске + owned gates, см. F-01).   
+bundle.md
+
+Вопрос 3: Какие inode/CAS/archive/continuation facts обязательны, чтобы не принять byte-equal foreign file и не подменить original witness/replacement?
+
+Факты в readopt-intent.json (запечатаны HMAC ключом seal() из owner-maintenance.js:66-68):   
+bundle.md
+
+id (maintenance UUID), stopHash (runtime-maintenance.json), certificateHash (stopped-certificate.json), descriptorHash, snapshot (descriptor, origin, anchor, client, journal, ledger).   
+bundle.md
+
+actor: { pid, birthTicks, bootId, executablePath, startupToken }.
+
+originalAdoption: полные канонические байты/JSON, hash, и stat (dev, ino, mode, nlink: 1, size, mtimeNs, birthtimeNs) текущего state/production/host-adoption.json.
+
+witness: { path, hash, stat, installationId, machineId, allowedProject, rootObservationDigest, host } — со всеми полями host (machineId, aePid, aeProcessBirth, executablePath, named legacy endpoints).   
+bundle.md
+
+replacementAdoption: полностью предвычисленный канонический JSON будущего host-adoption.json (включая зафиксированные в момент intent adoptedAt и observedDigest), его hash, а также stat (dev, ino, mode, size, mtimeNs, birthtimeNs) предсозданного immutable файла adoption-new.json (см. F-03).   
+bundle.md
+
+gates: заранее сгенерированные и запечатанные байты обоих gate-файлов (install, broker) и их SHA-256 хеши (по образцу stopped-update.js:494-495).   
+bundle.md
+
+Факты Archive и CAS (adoption-old.json и state/production/host-adoption.json):
+
+Архивация original: выполняется только через fs.linkSync(stateAdoptionPath, archiveOldPath) под dual lease. Проверяется, что archiveOldPath.stat.(dev, ino, size, mtimeNs, birthtimeNs) равны intent.originalAdoption.stat, а nlink стал 2.   
+bundle.md
+
+CAS замена: выполняется только через fs.linkSync(adoptionNewPath, stagePath) + fs.renameSync(stagePath, stateAdoptionPath). После renameSync:
+
+state/production/host-adoption.json обязан иметь (dev, ino, size, mtimeNs, birthtimeNs) === intent.replacementAdoption.stat и nlink === 2 (разделяя inode с adoption-new.json);
+
+adoption-old.json обязан иметь (dev, ino, size, mtimeNs, birthtimeNs) === intent.originalAdoption.stat и nlink === 1.
+
+Любой byte-equal foreign файл, записанный поверх host-adoption.json или adoption-old.json, будет иметь чужой (dev, ino) и nlink === 1 и немедленно вызовет fail.
+
+Факты в readopt-finish-<uuid>.json (monotonic continuation):
+
+attemptId, parentHash (null для первой попытки или хеш предыдущего readopt-finish-*.json — защита от ветвления), intentHash, proofHash, новый actor, список проверенных мёртвых предшественников (intent.actor + все attempts[].actor), priorPhase, gateFacts и freshHostObservationDigest (доказательство того, что живой AE в момент recovery по-прежнему идентичен intent.replacementAdoption.host).   
+bundle.md
+
+Вопрос 4: Достаточно ли разделения completed-stopped/enable/enable-finish при release обоих gates? Какие crash и actor-death проверки пропущены?
+
+Разделение completed-stopped / enable / enable-finish концептуально верно, но без двух уточнений при release обоих gates возникает клин (см. F-04):
+
+Уточнение 1 (apply/finish gate release tail): readopt-completed.json пишется до releaseInstallLease. Если процесс упал после записи readopt-completed.json, но до удаления install.lock и/или broker/broker-owner.gate, readopt finish должен распознавать этот префикс (completed есть, apply-gates удерживаются нашими байтами) и выполнять releaseOnly освобождение apply-gates без повторной записи adoption.   
+bundle.md
+
+Уточнение 2 (enable/enable-finish точка невозврата): В enable создаются новые enable-gates (отдельные от apply-gates), пишется readopt-enable-intent.json, захватывается dual lease, пишется readopt-enable-ready.json, затем runtime-maintenance.json линкуется в stop-barrier и удаляется (fs.unlinkSync(barrier)), пишется readopt-enabled.json и освобождаются enable-gates (по образцу stopped-update.js:494-526). Если crash произошёл до fs.unlinkSync(barrier) и AE сменился — enable-finish отказывает, оставляя runtime-maintenance.json на месте. Если же crash произошёл после fs.unlinkSync(barrier) — барьер уже снят, и enable-finish обязан завершить запись readopt-enabled.json и снять оставшиеся enable-gates в releaseOnly режиме.   
+bundle.md
+
+Пропущенные в плане проверки crash и actor-death, которые нужно явно включить:
+
+В readopt inspect и readopt finish: проверка смерти (absent или pid-reused по { pid, birthTicks }) не только оригинального runtime owner (stopped.json.scope) и intent.actor, но и всех актёров из цепочки readopt-finish-*.json (attempts), а также certifier из stopped-certification.   
+bundle.md
+
+На входе в readopt enable: проверка, что оба apply-gates отсутствуют на диске, И что актёр, записавший readopt-completed.json (либо intent.actor, либо последний readopt-finish-*.json актёр), уже завершился (dead), чтобы enable не пересёкся с ещё не завершившимся releaseInstallLease предыдущего процесса.
+
+В readopt enable-finish: проверка смерти readopt-enable-intent.json.actor и каждого предыдущего readopt-enable-recovery-*.json актёра до захвата recovery-lease; проверка recoverMissing: !enableReady (если упал между enable-intent.json и enable-ready.json при 0 или 1 gate) и releaseOnly: !!enabledView.bytes (если упал после readopt-enabled.json при 1 или 2 оставшихся gates).   
+bundle.md
+
+Повторная проверка check() после каждого await (после observeOwnerProcess, после probe(installation)) до и после каждой записи на диск.   
+bundle.md
+
+Вопрос 5: Какое предположение слабее всего и какие адресные тесты обязательны до live? Отдели дефекты дизайна от известных отсутствующих live evidence.
+
+Самое слабое предположение плана (Weakest Assumption):
+
+Предположение о том, что внешний GUI-процесс AfterFX.exe гарантированно сохранит тот же aePid и aeProcessBirth на всём протяжении многошаговой ручной операции (readopt apply -> возможный readopt finish -> readopt enable), и поэтому отсутствие механизма отмены (cancel/abort) после публикации readopt-intent.json безопасно для эксплуатации.   
+bundle.md
+
+Почему это критично: как только readopt-intent.json опубликован в transactions/<id>-owner-maintenance, все штатные пути (resume, finish-owner-maintenance, stopped-update, повторный readopt apply с новым witness) заблокированы. Если AfterFX.exe упадёт или будет закрыт пользователем после записи readopt-intent.json, инсталляция навсегда останется в stopped fence без единого штатного CLI-инструмента для выхода (так как ручная очистка маркеров и одноразовые recovery-скрипты запрещены планом).   
+bundle.md
+Ещё 1
+
+Рекомендация для плана: Либо явно зафиксировать в плане, что при гибели целевого AE после readopt-intent.json единственным разрешённым путём разблокировки будет отдельный последующий source-контракт readopt-abort (оставляющий старый host-adoption.json, если CAS ещё не произошёл, или завершающий уже выполненный CAS в completed-stopped), либо разрешить завершение уже выполненного CAS в completed-stopped + enable без живого AE, так как сам по себе host-adoption.json не выдаёт mutation grant, а windows-reservation-provider.js:93-95 всё равно потребует совпадения живого AE при prepare().   
+bundle.md
+
+Обязательные адресные тесты до live-запуска:
+
+T-01 (Happy path & Bootstrap preservation): stop -> certify -> readopt inspect -> readopt apply -> readopt inspect -> readopt enable на существующем host-adoption.json; проверка, что adopt-host.js по-прежнему работает только при отсутствии host-adoption.json (wx).   
+bundle.md
+
+T-02 (Bypass regressions при 0 / 1 / 2 gates): после публикации readopt-intent.json (при 0, 1 и 2 удерживаемых gates) вызовы generic maintain-owner resume, finish-owner-maintenance, certifyStoppedInstallation, stopped-update и adopt-host гарантированно отказывают (fail-closed), не меняя барьер и не перезаписывая gates.   
+bundle.md
+
+T-03 (Pre-intent & Zero-write refusals): отказ без единой записи на диск при несовпадении expectedProofHash, stale/ambiguous AE (0 или 2 процесса AfterFX.exe), активном или 'unknown' legacy endpoint, чужом machineId/installationId/packageHash, несовпадении allowedProject, изменённом origin.json/ledger.ndjson/completions.ndjson.   
+bundle.md
+
+T-04 (Inode & Byte-equal foreign file rejection):
+
+Подмена state/production/host-adoption.json на byte-equal новый файл (с другим ino) до apply, между archive и rename, и перед finish -> гарантированный fail и сохранение stopped fence.   
+bundle.md
+
+Проверка корректной обработки nlink (1 -> 2 -> 1 для adoption-old.json и 1 -> 2 для adoption-new.json / host-adoption.json) без ложного срабатывания stat-проверки (см. F-05).
+
+T-05 (Полная матрица Crash-префиксов apply -> finish):
+
+Crash после readopt-intent.json при 0 gates, при 1 gate (install.lock), при 2 gates (install.lock + broker-owner.gate);
+
+Crash после fs.linkSync архива adoption-old.json до замены host-adoption.json;
+
+Crash после fs.renameSync нового host-adoption.json до readopt-completed.json;
+
+Crash после readopt-completed.json при 2 или 1 удерживаемых apply-gates (releaseOnly путь в finish, см. F-04);
+
+Двойной crash (apply crash -> finish #1 crash -> finish #2 success) с проверкой цепочки parentHash и смерти обоих предыдущих актёров.   
+bundle.md
+
+T-06 (Полная матрица Crash-префиксов enable -> enable-finish):
+
+Crash после readopt-enable-intent.json при 0, 1, 2 gates (до readopt-enable-ready.json, путь recoverMissing: true);
+
+Crash после readopt-enable-ready.json и fs.linkSync(barrier, savedPath) до fs.unlinkSync(barrier);
+
+Crash сразу после fs.unlinkSync(barrier) до readopt-enabled.json;
+
+Crash после readopt-enabled.json при 1 оставшемся gate (broker/broker-owner.gate, путь releaseOnly: true);
+
+Проверка, что enable и enable-finish никогда повторно не пишут в state/production/host-adoption.json.   
+bundle.md
+
+T-07 (Actor liveness / PID reuse / AE drift):
+
+Отказ finish и enable-finish, если предыдущий актёр ещё 'alive', 'unknown' или probe процесса недоступен; разрешение при 'absent' и 'pid-reused' (с отличающимся birthTicks).   
+bundle.md
+
+Отказ apply (после await) и finish (до CAS), если AfterFX.exe сменил aePid/aeProcessBirth после записи readopt-intent.json, с сохранением runtime-maintenance.json и удерживаемых gates.   
+bundle.md
+
+Разделение дефектов дизайна и отсутствующих live-доказательств:
+
+Дефекты дизайна (блокируют написание кода до исправления в плане): F-01 (in-memory PID-bound сертификат недоступен в recovery/enable), F-02 (stage-файл первого intent в дереве фаз), F-03 (динамические adoptedAt/observedDigest и привязка ino для replacement через hard-link CAS), F-04 (releaseOnly хвост после readopt-completed.json и граница unlink(barrier) в enable-finish), F-05 (nlink/ctimeNs при fs.linkSync).
+
+Известные отсутствующие live-доказательства (не являются дефектами дизайна плана, проверяются на следующем этапе): фактический прогон stopped-host-readoption против живого AfterFX.exe, read-back обновлённого host-adoption.json, сценарий Titles и переносимость между двумя машинами (G-01–G-03).   
+bundle.md
+
+4. Границы Out-of-Scope и Pre-flight Checklist перед реализацией
+Что обязано остаться вне scope (Out of Scope)
+
+Любые изменения в core4/runtime/windows-reservation-provider.js, core4/tools/adopt-host.js, core4/tools/stopped-update.js, CEP-расширении, runtime owner и установленном пакете.   
+bundle.md
+
+Выдача mutation grant, смена project/lifecycle epoch, автоматический запуск owner/runtime или рестарт AE.   
+bundle.md
+
+Ручное удаление маркеров/gates, одноразовые recovery-скрипты, операции над пользовательскими AEP, save/destructive действия, AME и внешние API.   
+bundle.md
+
+Pre-flight Checklist (локальная проверка владельцем до кодирования)
+
+[ ] Проверить core4/runtime/stopped-certification.js:1-124 (readBase) и спроектировать verifyStoppedReadoptionPhase(capability) так, чтобы он работал как с live-брендом в apply, так и с дисковым stopped-certificate.json в новых процессах inspect/finish/enable/enable-finish (F-01).   
+bundle.md
+
+[ ] Исключить создание временного .stage-<uuid> внутри transactions/<id>-owner-maintenance до первого коммита readopt-intent.json — выполнять writeSync + fsyncSync во внешний staging на том же томе и публиковать readopt-intent.json через fs.linkSync (F-02).   
+bundle.md
+
+[ ] Зафиксировать adoptedAt и observedDigest внутри readopt-intent.json и выполнять CAS-замену host-adoption.json через fs.linkSync(adoptionNewPath, stagePath) + fs.renameSync(stagePath, adoptionFile) с проверкой совпадения (dev, ino) и nlink (F-03, F-05).   
+bundle.md
+
+[ ] Добавить releaseOnly ветку в readopt finish (для случая crash после readopt-completed.json при неснятых apply-gates) и зафиксировать поведение enable-finish после fs.unlinkSync(barrier) (F-04).   
+bundle.md
+
+[ ] Использовать однострочный acquireStoppedReadoptionLease(capability) в core4/runtime/install-lease.js, оставив core4/tools/stopped-update.js без изменений (S-01).   
+bundle.md

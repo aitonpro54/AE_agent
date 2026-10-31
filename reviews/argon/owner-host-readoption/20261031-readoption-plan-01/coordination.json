@@ -1,0 +1,16 @@
+{
+  "recordedAt": "2026-10-31T13:43:40.438Z",
+  "reviewId": "20261031-readoption-plan-01",
+  "stageId": "owner-host-readoption",
+  "sourceThreadId": "01a19208-e6ba-7a13-a62e-ae8f1b63a837",
+  "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "dispatchedAt": "2026-10-31T13:43:05.493Z",
+  "receipt": {
+    "threadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d"
+  },
+  "coordinationStatus": "delivered_to_existing_controller",
+  "externalSubmissionStatus": "unobserved",
+  "externalSendReplayAllowed": false,
+  "onlyExternalFile": "bundle.md",
+  "runtimeActionsAuthorizedByReview": false
+}

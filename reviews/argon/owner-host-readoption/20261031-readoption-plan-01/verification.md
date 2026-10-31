@@ -43,3 +43,14 @@ Aiton pair сохраняются; перед отправкой он прове
 Prepared; Gemini upload/send ещё не выполнялись на момент freeze. Исход отправки
 фиксирует controller отдельно в submission/response-meta. Неизвестный исход не
 повторяется. Runtime/package/config/CEP/AEP и histories этим этапом не менялись.
+
+## Получение и локальный разбор
+
+Controller completed: received/revise,1upload/1send/retries0. Immutable raw response
+51969bytes/SHAa93778bf0c4fcd860990dcf87c2cfb2a67e96c628531ab8e0a9481ec5b02d7a3;
+все8exact binding values найдены локально. Видимое завершение генерации и final
+controls подтверждены controller; внешнее самостоятельное хеширование не доказано.
+Пять findings разбиты на6утверждений,3hypotheses/2simplifications/known gaps
+разобраны в decisions.md по source9343989. S01 не принят: read-only package builder
+подтвердил runtime install-lease в payload. F02/F04 уточняют план; после local
+source triage разрешена scoped source реализация. Второго внешнего review нет.

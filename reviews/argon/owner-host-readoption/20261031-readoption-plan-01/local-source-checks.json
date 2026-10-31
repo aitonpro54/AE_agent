@@ -1,0 +1,39 @@
+{
+  "collectedAt": "2026-10-31T14:01:26.719Z",
+  "reviewId": "20261031-readoption-plan-01",
+  "recordContext": {
+    "purpose": "development",
+    "lifetime": "product_change"
+  },
+  "sourceBase": "9343989757b8eddbbced434e65858f2d2f0ef2b2",
+  "checks": [
+    {
+      "type": "read-only package builder",
+      "command": "buildPackage(undefined, \"manual\", { runtimeModel: \"owner\" })",
+      "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+      "installLeaseInRuntime": true,
+      "certificateInRuntime": false,
+      "updateInRuntime": false,
+      "result": "PASS"
+    },
+    {
+      "type": "source evidence",
+      "files": [
+        "tools/maintain-owner.js:95",
+        "tools/finish-owner-maintenance.js:19",
+        "tools/operate-stopped-update.js:26"
+      ],
+      "fact": "All existing stopped CLI wrappers reserve127.0.0.1:3457",
+      "result": "confirmed"
+    },
+    {
+      "type": "response binding",
+      "bytes": 51969,
+      "sha256": "a93778bf0c4fcd860990dcf87c2cfb2a67e96c628531ab8e0a9481ec5b02d7a3",
+      "exactValuesPresent": 8,
+      "externalRecomputationEstablished": false
+    }
+  ],
+  "newRuntimeOrAEOperations": 0,
+  "productionSourceChanged": false
+}
