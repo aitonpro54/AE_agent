@@ -18,8 +18,10 @@ Core/CEP](plans/core-cep-lifecycle-20261030.md). Организационный 
 следует после этого этапа. Выбрана модель одного installation-scoped Core owner
 с тонкими stdio clients и явным controller lease. 31 октября installed runtime
 переведён на owner package`8a79e069…`; normal legacy update и explicit enable
-завершены, два штатных stdio clients подтвердили один ready owner. Configured
-transport Codex требует ручного restart приложения (старый `Transport closed`).
+завершены, два штатных stdio clients подтвердили один ready owner. После ручного
+restart Codex configured MCP подтверждён: owner9812 отсутствует, штатный recovery
+завершён, новый owner27112 ready; история16events неизменна. Первый cold status
+вернул `owner_unavailable`, повторные чтения прошли; R5 timing остаётся открытым.
 Точный [installed checkpoint](plans/core-cep-checkpoint-installed-20261031.md)
 содержит settled IDs и следующий read-only шаг; migration/update не повторять.
 Эта запись не выдаёт runtime authority и не снимает pending/UNKNOWN/fences.

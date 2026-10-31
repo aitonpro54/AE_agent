@@ -137,14 +137,19 @@ R3 не использует fake production epoch и не переносит au
   integration продолжается отдельно, installed runtime не переключён.
 - [x] R3d2b2 source: stopped update/rotation/explicit enable, legacy normal и
   dedicated recovery, immutable354selectedPASS после bounded review fixes;
-  [контракт/evidence](core-cep-r3-stopped-update-20261031.md). Actual switch следующий.
+  [контракт/evidence](core-cep-r3-stopped-update-20261031.md). Actual switch завершён ниже.
 - [x] Actual first legacy→owner switch/enable: package8a79e069, owner PID9812,
   ready=true, physical store open/unknown=false, old history16events unchanged.
   Два standard stdio clients — один owner; EOF обоих/parent exit owner не закрыли.
-  Configured-client proof ждёт manual Codex restart: старый transport closed,
-  пользователь подтвердил невозможность переключить MCP toggle и предложил restart.
+  Исходно configured-client proof ждал manual Codex restart: старый transport closed.
   [Продолжение без повторной установки](core-cep-checkpoint-installed-20261031.md).
-- [ ] R3d2–R5: update/adoption/legacy migration и installed CEP/runtime приёмка;
+- [x] После ручного restart Codex: configured MCP восстановлен. Owner9812 absent;
+  штатные attributed recovery/ready receipts завершены, owner27112 active/ready,
+  один listener3457, journal16events/origins/config unchanged. Первый cold status
+  `owner_unavailable`, следующие чтения успешны. Survival9812 не наблюдался;
+  причина завершения процесса отдельно не установлена.
+- [ ] R3d2–R5: fresh host adoption, actual CEP/reconnect, cold-start timing,
+  повторные ordinary cycles и Titles/native confirm/read-back;
   устойчивость installed runtime пока не заявлена.
 
 ## Decision Log
@@ -154,6 +159,10 @@ R3 не использует fake production epoch и не переносит au
   Контакт с owner и право на stateful operation разделены.
 - Данные журналов/authority/credentials остаются machine-local; IPC handle
   ограничен текущим boot и attachment, не переносится между машинами/чатами.
+- После app restart принимается измеренный штатный recovery при сохранённых
+  histories/fences; смена PID не объявляется survival прежнего owner. Первый cold
+  отказ фиксируется отдельно от успешного configured reconnect. Новая ручная
+  установка/очистка markers для этой проверки не потребовалась.
 - Ранее завершённые T1/C1a сохраняются; новые продуктовые функции отложены.
 - R1 не является механизмом снятия durable UNKNOWN и не подключён к stdio-entry.
 - Renew использует один monotonic sample для проверки/продления; boundary
@@ -163,6 +172,20 @@ R3 не использует fake production epoch и не переносит au
   уже получил timeout. Embedding восстанавливает durable fences до attach/acquire.
 
 ## Validation
+
+31 октября, после пользовательского restart Codex: configured `core_status`
+сначала `owner_unavailable`, далее `owner_status` и два `core_status` PASS на owner27112.
+Native probe подтвердил absence9812 и current birth27112; OS inventory — один
+owner/listener3457, AfterFX.exe отсутствует. HMAC seals/descriptor bindings и
+completion→intent hashes recovery`8702b1b6…`/ready`0fff29d9…` PASS. SHA256 config,
+origin/anchor и receiver journal совпали с checkpoint;16events, ledger отсутствует,
+unresolved/faults/UNKNOWN нет. Controller lease не приобретался, AE dispatch0.
+Санитизированное evidence —
+`snapshots/core4-lifecycle/20261031/INSTALLED/configured-restart-observation.json`.
+Первый cold отказ и около5.59с CreationDate→ready intent оставлены открытыми R5
+наблюдениями. Это read-only installed proof; source tests не повторялись.
+Согласованность сохранённого JSON evidence (PID/birth/boot, singleton, receipt links,
+history и отсутствие credential fields) и `git diff --check`: PASS.
 
 На начало этапа tracked tree clean, кроме постороннего `.codex-attachments/`.
 Configured status — реальный control-only ответ installed manual3f92;
@@ -192,16 +215,15 @@ Restart Core/AE, install и native dispatch этого этапа0. UI попы�
 
 ## Продолжение
 
-После паузы 31 октября пользователь явно поручил продолжить с
-[checkpoint](core-cep-checkpoint-20261031.md): подтверждение stopped installation,
-обновление и переход на новую версию. Git/runtime сверены; первая source часть
-certification завершена184selectedPASS. Текущий engineering блок и remaining
-update/legacy/installed scope — в [продолжении](core-cep-r3-stopped-update-20261031.md).
-Installed runtime пока не переключён; завершённые packets и старые one-shot
-transactions не повторять без изменения relevant bytes/условий.
+Installed switch/enable package8a79 завершены; после ручного restart Codex
+configured-client proof и штатный dead-owner recovery подтверждены. Актуальные
+IDs, evidence и границы — в [installed checkpoint](core-cep-checkpoint-installed-20261031.md).
+Migration/update/enable и завершённые one-shot transactions не повторять.
 
-R1/R2a/R2b/R2c1/R2c2, отдельные R3a/R3b/R3c/R3d1 и R4 завершены в source.
-Следующий source/offline блок — R3d2b2 stopped certification/update/first legacy
-migration по [плану обслуживания](core-cep-r3-maintenance-20261030.md).
-Прочитать актуальный status/queue перед любым live изменением; сообщения в старой
-UI очереди не считать принятыми. Чужие snapshots/AEP и старые receipts сохранять.
+Следующий installed блок — actual CEP waiting/reconnect и typed read после
+появления AE, со свежим native host probe/adoption до исполнения. Затем R5 Titles
+на выбранной test-copy с native confirm/read-back и повторные ordinary cycles,
+включая cold-start timing. AE сейчас отсутствует; эта проверка не запускала его.
+Развитие Titles/Slideshow и финальная portability/P1–P8/full release не выполнены.
+Перед live изменением сверить свежие status/queue/authority; сохранить чужие
+snapshots/AEP и старые receipts. Полная installed устойчивость пока не объявлена.

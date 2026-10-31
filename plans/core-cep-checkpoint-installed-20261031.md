@@ -1,8 +1,43 @@
-# Installed owner: checkpoint перед ручным restart Codex
+# Installed owner: checkpoint до и после ручного restart Codex
 
 31 октября 2026, MSI. Пользователь сообщил, что toggle Core MCP не выключается,
 и предложил перезапустить Codex. Новая установка уже готова; требуется подтвердить
 подключение текущего чата после обновления app transport. Новый чат не нужен.
+Ниже сохранён исходный checkpoint; актуальный результат — в разделе после restart.
+
+## Результат после restart — 31 октября 2026
+
+- Пользователь сообщил о ручном restart Codex. Configured `core_status` сначала
+  вернул `owner_unavailable`; затем `owner_status` и два явных `core_status`
+  успешно прочитали один owner27112, ready=true, lifecycle active.
+- Старый owner9812 отсутствует по свежему native process probe. Новый owner27112
+  имеет birth ticks`639290393204376840`, boot`2f91e151-58db-434d-8998-cb89e8cc75aa`;
+  единственный наблюдаемый Core listener3457 принадлежит ему. Это measured recovery,
+  а не survival прежнего процесса; причина завершения9812 отдельно не установлена.
+- Recovery`8702b1b6-6d00-40b4-b35b-23b9160352c8` атрибутирован прежним PID/birth/boot;
+  ready`0fff29d9-caef-4396-a87d-a16ca0341dd7` — новому. Оба completion существуют,
+  HMAC seals/descriptor bindings и ссылки completion→intent hash проверены локально.
+- Package8a79, installation ID, origin/anchor/config hashes и receiver identity
+  прежние. Журнал16events с прежним SHA256`4cfe8817…`; ledger отсутствует.
+  Maintenance/install/broker gates отсутствуют; manual cleanup/update/enable не было.
+- ownershipFault=null, ledgerFault=false, unresolved=[], worker pending0,
+  physical pending=null, storeClosed/storeFault/unknown=false. Controller idle,
+  accepted0, lease не приобретался. AE dispatch/project changes0.
+- Native OS inventory не обнаружил AfterFX.exe; peer.connected=false,
+  inspectionAvailable=false. Сохранённая adoption6492 остаётся historical:
+  fresh host probe/adoption нужны до будущего исполнения. AE не запускался.
+- От CreationDate27112 до ready intent около5.59с; первый cold status отказал.
+  Причина именно этого отказа отдельно не доказана. R5 cold-start timing и
+  повторные ordinary cycles остаются открытыми; полная устойчивость не заявлена.
+
+Санитизированное evidence:
+`snapshots/core4-lifecycle/20261031/INSTALLED/configured-restart-observation.json`.
+Проверка read-only: configured MCP, native process/listener inventory, HMAC receipts,
+hashes/state; runtime credentials и полные transactions не копировались.
+Обновлены этот checkpoint, lifecycle plan и AGENTS; исходники/runtime не менялись.
+Следующий installed шаг — actual CEP waiting/reconnect и typed read после появления
+AE, затем scoped R5 сценарий Titles/native confirm/read-back. Portability/P1–P8/full
+release остаются отдельно. Migration/update/enable повторять не требуется.
 
 ## Что уже завершено
 
@@ -45,7 +80,7 @@ Actual AE dispatch/restart/save/project changes0. Old host adoption6492 оста
 историческими данными; нужен fresh native host probe перед будущим исполнением,
 без переноса old grants/authority. Titles/Slideshow не развивались.
 
-## Продолжение после restart
+## Исходный порядок проверки после restart (выполнен выше)
 
 1. Сверить Git и **configured `core_status`**. Root — sole live/CEP/UI controller.
    Проверить package8a79, current PID/boot, pending/unresolved/faults и фактические

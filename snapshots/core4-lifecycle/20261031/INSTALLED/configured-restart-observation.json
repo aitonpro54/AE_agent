@@ -1,0 +1,333 @@
+{
+  "description": "Configured MCP после ручного перезапуска Codex: штатное восстановление installation owner.",
+  "collectedAt": "2026-10-31T10:30:03.038Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "configuredClientProof": true,
+  "observations": [
+    {
+      "order": 1,
+      "tool": "core_status",
+      "result": "owner_unavailable"
+    },
+    {
+      "order": 2,
+      "tool": "owner_status",
+      "result": "idle",
+      "attachmentBootId": "a05478d9-b4f6-49f1-94cb-33f71670d29a"
+    },
+    {
+      "order": 3,
+      "tool": "core_status",
+      "result": "ready",
+      "pid": 27112
+    },
+    {
+      "order": 4,
+      "tool": "core_status",
+      "result": "ready",
+      "pid": 27112
+    }
+  ],
+  "originalOwnerSurvivalObserved": false,
+  "originalOwnerTerminationCause": "unobserved",
+  "recoveryMeasured": true,
+  "coldStartTiming": "Первый configured status вернул owner_unavailable. Повторное явное чтение прошло. От native CreationDate нового owner до ready intent около 5.59 с; точная причина первого отказа отдельно не доказана.",
+  "readback": {
+    "collectedAt": "2026-10-31T10:30:03.038Z",
+    "packageHash": "8a79e069313f4cf55198a1bfbf0741ef3952579ae091edb8d22697d22cb409a8",
+    "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+    "currentOwner": {
+      "pid": 27112,
+      "birthTicks": "639290393204376840",
+      "bootId": "2f91e151-58db-434d-8998-cb89e8cc75aa",
+      "phase": "active",
+      "receiverIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+      "sealVerified": true
+    },
+    "processFacts": [
+      {
+        "version": 1,
+        "pid": 9812,
+        "status": "absent",
+        "birthTicks": null,
+        "executablePath": null,
+        "observedAt": "2026-10-31T10:30:00.201Z"
+      },
+      {
+        "version": 1,
+        "pid": 27112,
+        "status": "present",
+        "birthTicks": "639290393204376840",
+        "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+        "observedAt": "2026-10-31T10:30:00.198Z"
+      }
+    ],
+    "inventory": {
+      "processes": [
+        {
+          "pid": 16072,
+          "parentPid": 20044,
+          "createdAt": "2026-10-31T10:28:14.3811240Z",
+          "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+          "kind": "client"
+        },
+        {
+          "pid": 1580,
+          "parentPid": 20044,
+          "createdAt": "2026-10-31T10:28:23.2106770Z",
+          "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+          "kind": "client"
+        },
+        {
+          "pid": 26832,
+          "parentPid": 20044,
+          "createdAt": "2026-10-31T10:28:29.0237960Z",
+          "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+          "kind": "client"
+        },
+        {
+          "pid": 27112,
+          "parentPid": 1580,
+          "createdAt": "2026-10-31T10:28:40.4376840Z",
+          "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+          "kind": "owner"
+        }
+      ],
+      "listeners": [
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 3457,
+          "OwningProcess": 27112
+        }
+      ]
+    },
+    "receipts": [
+      {
+        "directory": "0fff29d9-caef-4396-a87d-a16ca0341dd7-owner-lifecycle",
+        "kind": "owner-ready-intent",
+        "id": "0fff29d9-caef-4396-a87d-a16ca0341dd7",
+        "previous": null,
+        "current": {
+          "pid": 27112,
+          "birthTicks": "639290393204376840",
+          "bootId": "2f91e151-58db-434d-8998-cb89e8cc75aa"
+        },
+        "intentHash": "aba6de7d9f647ddd3f0d626fcf36ac3c209203b16119962e74cd5fb96c360967",
+        "completionKind": "owner-ready-completed",
+        "completionIntentMatches": true,
+        "sealVerified": true,
+        "protected": [
+          {
+            "name": "descriptor",
+            "hash": "4a42f5a9e560a329949604fed33dc2489a0149183a50c10d96e6984ec08e4b63"
+          },
+          {
+            "name": "origin",
+            "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+          },
+          {
+            "name": "anchor",
+            "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+          },
+          {
+            "name": "journal",
+            "hash": "4cfe881718e7255829785e57b604304493b319ba6e68d597074a98454e146f45"
+          },
+          {
+            "name": "ledger",
+            "hash": null
+          }
+        ],
+        "createdAt": "2026-10-31T10:28:46.026Z"
+      },
+      {
+        "directory": "8702b1b6-6d00-40b4-b35b-23b9160352c8-owner-lifecycle",
+        "kind": "owner-recovery-intent",
+        "id": "8702b1b6-6d00-40b4-b35b-23b9160352c8",
+        "previous": {
+          "pid": 9812,
+          "birthTicks": "639290385753978120",
+          "bootId": "f266cf21-1b40-4488-b721-e5c7ac5680c9"
+        },
+        "current": null,
+        "intentHash": "70a57f62573f93fac1efcbecede0bf800b45107b100f6d306eea62f257970659",
+        "completionKind": "owner-recovery-completed",
+        "completionIntentMatches": true,
+        "sealVerified": true,
+        "originalNames": [
+          "owner",
+          "brokerOwner",
+          "receiverOwner"
+        ],
+        "protected": [
+          {
+            "name": "descriptor",
+            "hash": "4a42f5a9e560a329949604fed33dc2489a0149183a50c10d96e6984ec08e4b63"
+          },
+          {
+            "name": "origin",
+            "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+          },
+          {
+            "name": "anchor",
+            "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+          },
+          {
+            "name": "journal",
+            "hash": "4cfe881718e7255829785e57b604304493b319ba6e68d597074a98454e146f45"
+          },
+          {
+            "name": "ledger",
+            "hash": null
+          }
+        ],
+        "createdAt": "2026-10-31T10:28:43.747Z"
+      }
+    ],
+    "journal": {
+      "hash": "4cfe881718e7255829785e57b604304493b319ba6e68d597074a98454e146f45",
+      "eventCount": 16,
+      "identity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4"
+    },
+    "rootOriginHash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "anchorOriginHash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "configHash": "e72411106e8ebc66e02788acd33c8a31011b1036d8ec8748ce6937f1761ece9f",
+    "markers": {
+      "maintenanceAbsent": true,
+      "installGateAbsent": true,
+      "brokerGateAbsent": true,
+      "brokerLedgerAbsent": true,
+      "ownerNextAbsent": true,
+      "diagnosticAbsent": true
+    }
+  },
+  "configuredStatus": {
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "a05478d9-b4f6-49f1-94cb-33f71670d29a",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 0,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false
+    },
+    "automaticLifecycle": "unavailable",
+    "closed": false,
+    "composition": "manual",
+    "connection": "unavailable",
+    "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionPolicy": "read-only-current-observation-v1",
+    "installation": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "machineId": "MSI",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "8a79e069313f4cf55198a1bfbf0741ef3952579ae091edb8d22697d22cb409a8"
+    },
+    "ledgerFault": false,
+    "lifecycle": {
+      "birthTicks": "639290393204376840",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "4cfe881718e7255829785e57b604304493b319ba6e68d597074a98454e146f45",
+          "eventCount": 16,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 27112,
+      "processBootId": "2f91e151-58db-434d-8998-cb89e8cc75aa",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "maintenance": {
+      "fault": null,
+      "id": null,
+      "phase": "running",
+      "requested": false
+    },
+    "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+    "ownershipFault": null,
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": false,
+      "listening": true,
+      "peer": {
+        "connected": false
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "pid": 27112,
+    "product": "AE Agent Core 4.0.0",
+    "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+    "ready": true,
+    "resourceProvider": {
+      "adopted": true,
+      "coverage": {
+        "core4Lane": "cooperating-Core4-only",
+        "hostProcess": "adopted-reprobe-required",
+        "legacyEndpoints": "named-probes-only",
+        "legacyPhysicalQueue": "not-proven",
+        "otherAEActors": "outside-coverage",
+        "sharedOutputs": "not-requested"
+      },
+      "origin": {
+        "aePid": 6492,
+        "aeProcessBirth": "2026-10-30T04:43:20.6247780Z",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "machineId": "MSI"
+      }
+    },
+    "synthetic": false,
+    "unavailableReason": null,
+    "unresolved": [],
+    "worker": {
+      "epoch": 0,
+      "lateReplies": 0,
+      "loaded": [],
+      "pending": 0,
+      "pid": null
+    }
+  },
+  "scope": {
+    "controllerAcquired": false,
+    "aeDispatches": 0,
+    "projectChanges": 0,
+    "installationChanges": 0,
+    "manualMarkerChanges": 0
+  },
+  "remaining": [
+    "Actual CEP waiting/reconnect и typed AE read",
+    "Fresh native host probe/adoption перед исполнением",
+    "R5 ordinary cycles и Titles с native confirm/read-back",
+    "Portability/P1-P8/full release"
+  ]
+}
