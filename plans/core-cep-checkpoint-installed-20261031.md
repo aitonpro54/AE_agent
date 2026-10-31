@@ -5,7 +5,23 @@
 подключение текущего чата после обновления app transport. Новый чат не нужен.
 Ниже сохранены прежние checkpoints; актуальное состояние — в первом разделе.
 
-## Текущее состояние: R5 repair be9afe99 установлен, owner23816 ready
+## Текущее состояние: configured be9afe99 после restart, owner16772 ready
+
+1ноября: пользователь перезапустил Codex. Первый configured core_status без retry
+загрузил be9afe99, owner16772/birth639290764154052560/
+boot805165c7-0da7-433e-be27-d5a5196a76c1 active/ready; native inventory:
+один3457 на16772, все5clients изbe9afe99, stalecc2f0, old23816 absent.
+Completed HMAC recovery6b6a3d4c…/readyec7594f2… связывают exact old/new scopes;
+archives/intent→completion/current replacement проверены, ручного recovery0.
+Причина выхода23816 не наблюдалась; app restart survival не заявляется.
+Descriptor/client/config/origins/adoption/AEP и28settled events unchanged,
+ledger/gates/pending/UNKNOWN/faults0, controller generation0/idle.
+AE26308/birth прежний. CEP показывает runtime_wait_expired; peer/inspectionAvailable
+false, Connect запрошен у пользователя. После него acquire→core_connect→fresh
+project/Titles read. Actual new Titles inspection/build/run0, save/mutation/restart0.
+Evidence — R5TITLES-CONFIGURED; активный R5 план прежний. Settled operations не повторять.
+
+## Предыдущий checkpoint: R5 repair установлен, standard owner23816 ready
 
 1ноября: source4092929 (192selectedPASS/independent ACCEPT), official helper
 5de01291… verified. Новый stopf1b8ca9c… и update90539075…/explicit enable settled,

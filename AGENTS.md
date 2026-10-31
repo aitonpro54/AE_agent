@@ -74,9 +74,14 @@ HMAC8records и exact70runtime/7CEP bytes проверены. Origins/adoption66
 28settled journal/AEP preserved, gates/ledger/pending/UNKNOWN0. Own CEP close/open1
 для установки, новая панель автоматически connected. Real standard clients27816/
 16028 exit0, owner23816 ready/boot44f3b34a…, один3457, old9584 absent. Это пока
-standard proof: configured oldcc2f далowner_unavailable и требует restart Codex
-пользователем;5stale clients подтверждены OS inventory. Затем fresh configured
-acquire/core_connect/contracts/typed Titles read; source tests не подменяют native.
+standard proof до restart: configured oldcc2f далowner_unavailable. Пользователь
+перезапустил Codex; первый configured status успешно загрузилbe9afe99. Owner16772/
+birth639290764154052560/boot805165c7… ready, один3457;5clients текущие/stalecc2f0,
+old23816 absent. HMAC recovery6b6a3d4c…/readyec7594f2… и exact archives/current
+replacement подтверждены. Причина выхода23816 не наблюдалась, survival не заявлен.
+History28/config/origins/adoption/AEP unchanged, pending/UNKNOWN/faults0.
+CEP runtime_wait_expired/peer=false; Connect запрошен. Затем fresh configured
+acquire/core_connect/contracts/project/Titles read; source tests не подменяют native.
 AE restart/save/mutation0. Не повторять f1b8/9053/c4c0/old transactions и не чистить
 markers. Full release/deferred closures не переобъявлять PASS.
 Не повторять c4c0af30 и old transactions; markers не чистить.

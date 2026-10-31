@@ -1,0 +1,81 @@
+{
+  "collectedAt": "2026-10-31T20:49:54.399Z",
+  "previous": {
+    "pid": 23816,
+    "birthTicks": "639290751829705860",
+    "bootId": "44f3b34a-9b71-443b-882f-41138203cda4"
+  },
+  "current": {
+    "pid": 16772,
+    "birthTicks": "639290764154052560",
+    "bootId": "805165c7-0da7-433e-be27-d5a5196a76c1"
+  },
+  "recovery": {
+    "id": "6b6a3d4c-d0ab-433d-8ab5-5aed3f1f6ef1",
+    "kind": "owner-recovery-intent",
+    "intentHash": "86ee5cb3a83dc38f31da831e360fa8ff47c54b47624485aa0c2386f78cfbd367",
+    "completionHash": "bb370b815e8b318179fb24b19b4ef003a1ca35fec2b564d6341659de532a19cd",
+    "completionKind": "owner-recovery-completed",
+    "sealVerified": true,
+    "protected": [
+      {
+        "name": "descriptor",
+        "hash": "50bd6835edb91cb0edaad9363cbce33e498d3622408b83ef4565c6113b53466c"
+      },
+      {
+        "name": "origin",
+        "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+      },
+      {
+        "name": "anchor",
+        "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+      },
+      {
+        "name": "journal",
+        "hash": "d5d0fcc63a2a6c5102393e47f9724e92d8d761e295e301050df5f5c94e77a82a"
+      },
+      {
+        "name": "ledger",
+        "hash": null
+      }
+    ]
+  },
+  "ready": {
+    "id": "ec7594f2-866d-4324-a3f0-d97470bb7831",
+    "kind": "owner-ready-intent",
+    "intentHash": "7f0324ceec42163945253324ca52d78ab8622b42e0fa9a20d64ad0eeff145ea8",
+    "completionHash": "9ab27c80d446ca8c3519191a75deb78eb96e054cef905c7cc905b73b908db1f2",
+    "completionKind": "owner-ready-completed",
+    "sealVerified": true,
+    "protected": [
+      {
+        "name": "descriptor",
+        "hash": "50bd6835edb91cb0edaad9363cbce33e498d3622408b83ef4565c6113b53466c"
+      },
+      {
+        "name": "origin",
+        "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+      },
+      {
+        "name": "anchor",
+        "hash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+      },
+      {
+        "name": "journal",
+        "hash": "d5d0fcc63a2a6c5102393e47f9724e92d8d761e295e301050df5f5c94e77a82a"
+      },
+      {
+        "name": "ledger",
+        "hash": null
+      }
+    ]
+  },
+  "archivedMarkersVerified": [
+    "owner",
+    "brokerOwner",
+    "receiverOwner"
+  ],
+  "currentReplacementVerified": true,
+  "manualRecoveryOperations": 0,
+  "coverage": "signed exact previous/current receipts and archive bytes; cause of old process exit not observed"
+}

@@ -1,0 +1,8 @@
+{
+  "reader": "observe-recovery.cjs",
+  "firstReadOutcome": "invalid_json before any output write",
+  "reason": "Reader incorrectly treated archived broker/receiver ownership markers as lifecycle HMAC envelopes. Production contract uses exact PID/token marker bytes instead.",
+  "correction": "Verify original signed intent hash for each archive and exact previous-scope bytes for brokerOwner/brokerGate/receiverOwner; verify lifecycle HMAC only for lifecycle envelopes.",
+  "runtimeOperationsRepeated": 0,
+  "runtimeWrites": 0
+}

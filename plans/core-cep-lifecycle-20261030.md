@@ -470,3 +470,13 @@ Decision Log: configured oldcc2f returned owner_unavailable,5stale clients still
 present; normal restart Codex требуется от пользователя. После него fresh
 configured/native Titles pipeline, не повтор metadata update. Standard proof не
 подменяет configured,192sourcePASS не является native acceptance или release.
+
+1ноября — configured restart milestone. Progress: первый configured status после
+user restart успешно загрузил be9afe99, owner16772 ready; все5clients текущие,
+stalecc2f0. Validation: HMAC recovery6b6a3d4c… от23816 и readyec7594f2… к16772,
+exact PID/birth/boot/archives/completion hashes проверены; один3457, old23816 absent,
+AE26308 прежний,28settled events/config/origins/adoption/AEP unchanged,
+pending/UNKNOWN/faults0. Причина выхода23816 не установлена, survival не заявлен.
+Decision Log: CEP runtime_wait_expired/peer=false; штатный Connect запрошен.
+Затем configured acquire/core_connect/project/Titles read по активному R5 плану;
+new native Titles mutation0, save/AE restart0. Evidence — R5TITLES-CONFIGURED.

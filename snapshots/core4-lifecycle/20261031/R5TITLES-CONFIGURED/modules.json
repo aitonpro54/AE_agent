@@ -1,0 +1,23 @@
+{
+  "catalogRevision": "update-titles-current-target-6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46",
+  "diagnostic": null,
+  "modules": [
+    {
+      "id": "photo-placeholder",
+      "version": "4.0.0-m1"
+    },
+    {
+      "id": "titles",
+      "version": "4.0.0-m1"
+    },
+    {
+      "id": "titles-current-target",
+      "version": "4.0.0"
+    },
+    {
+      "executionPolicy": "read-only-current-observation-v1",
+      "id": "project-inspection",
+      "version": "4.0.0"
+    }
+  ]
+}

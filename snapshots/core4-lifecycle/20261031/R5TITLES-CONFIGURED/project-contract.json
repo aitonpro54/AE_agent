@@ -1,0 +1,33 @@
+{
+  "contract": {
+    "buildSupported": false,
+    "effectPolicy": {
+      "boundedComps": 50,
+      "boundedItemsScanned": 500,
+      "boundedLayers": 100,
+      "continuity": false,
+      "displayNameMaxCodeUnits": 256,
+      "effect": "none",
+      "resultMaxCodeUnits": 40000
+    },
+    "executionPolicy": "read-only-current-observation-v1",
+    "moduleId": "project-inspection",
+    "operationId": "inspect-project",
+    "snapshotProfile": "project-observation-v1",
+    "targetSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "compId": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "version": "4.0.0"
+  },
+  "contractId": "c6e9e93c27766853b6e1bfe8addb37b0a2de3517e5cc6f766aa70ff0b7226501",
+  "moduleId": "project-inspection",
+  "modulePin": "62dc7eb8287135e7702e4836e087ac30944266b3b1db4504afa6f54355c86ce3",
+  "operationId": "inspect-project"
+}

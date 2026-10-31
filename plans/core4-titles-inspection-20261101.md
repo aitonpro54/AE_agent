@@ -43,7 +43,9 @@ messages/stacks/values не выводятся, дополнительный too
   по changed paths:192unique PASS, boundaries44, source freeze02.
 - [x] Reviewed installable срез через штатный stopped update/enable, exact installed
   read-back и standard client/CEP proof.
-- [ ] Configured client после restart и fresh typed Titles inspection.
+- [x] Configured client после restart загрузил be9afe99; exact native/HMAC recovery
+  от23816 к16772 подтверждён, история/привязки сохранены.
+- [ ] CEP Connect и fresh typed Titles inspection на configured be9afe99.
 - [ ] Compiler/build/proposal/dry-run и исполнение с локальным подтверждением
   текущей цели, original receipt/read-back и кадр; без save.
 
@@ -200,3 +202,29 @@ contracts/project/Titles inspection на current exact IDs. После source mo
 pin189c58bf… compiler готов; technical_check/ephemeral_check задать явно. Native
 confirmation/read-back/план кадров остаются обязательными. Standalone status,
 192source PASS и connected CEP не закрывают этот оставшийся R5 шаг.
+
+## Configured restart — be9afe99 подтверждён
+
+Progress: после сообщения пользователя о restart Codex первый configured status
+успешен без retry: packagebe9afe99, owner16772/birth639290764154052560/
+boot805165c7-0da7-433e-be27-d5a5196a76c1 active/ready, lease generation0/idle,
+pending/UNKNOWN/faults0. Все5configured clients уже изbe9afe99; stalecc2f отсутствуют.
+AE26308/birth639290395690521480 прежний, один listener3457 на16772.
+
+Validation: read-only observer независимо проверил native PID/birth, HMAC current
+owner, descriptor/client/config/origins/adoption прежние и receiver28settled/
+SHA d5d0fcc6… (включая точный prefix28), ledger/gates absent, saved AEP e3b24989…
+unchanged. Completed HMAC recovery6b6a3d4c… относится к exact23816/birth/boot,
+readyec7594f2… — к exact16772/birth/boot. Intent→completion hashes,3archived
+markers и current active replacement проверены. Old23816 absent; причина выхода
+не наблюдалась, survival через app restart не заявляется. Ошибка первого root
+reader (plain broker/receiver markers ошибочно считались HMAC envelopes) исправлена
+на exact signed-intent hash и previous-scope marker bytes; runtime writes/replay0.
+
+Decision Log: это configured proof нового пакета, новый stop/update/readoption
+не нужен. CEP peer=false/inspectionAvailable=false; свежий native UI показывает
+«Остановлено: runtime_wait_expired». Пользователю отправлена просьба Connect,
+дочернюю CEP-кнопку CU повторно не адресует. Новый typed Titles read/build/run
+ещё0, controller не приобретался, AE restart/save/mutation0. После Connect
+продолжить acquire→core_connect→fresh project/Titles inspection и заданный R5 flow.
+Evidence — R5TITLES-CONFIGURED; source suites не повторялись.

@@ -1,0 +1,189 @@
+{
+  "admissionPin": "4b5ee2769871308b9645015d04780a9d3d2f23e35ef136c5104d747db07f36d5",
+  "contract": {
+    "buildSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "compId": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "layerId": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "projectId": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "compId",
+        "layerId",
+        "text"
+      ],
+      "type": "object"
+    },
+    "effectPolicy": {
+      "checkpointKind": "manual-text-preimage-v1",
+      "confirmation": "native-current-target",
+      "effect": "layer.text",
+      "expectedBindings": {
+        "expectedRevision": "revision",
+        "expectedText": "text"
+      },
+      "preserve": [
+        "protected"
+      ],
+      "requiresCheckpoint": true,
+      "resultBindings": {
+        "text": "text"
+      },
+      "targetFields": [
+        "projectId",
+        "compId",
+        "layerId"
+      ]
+    },
+    "executionPolicy": "current-matching-target-after-local-confirmation-v1",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "compId": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "expectedRevision": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        },
+        "expectedText": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        },
+        "layerId": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "projectId": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "compId",
+        "layerId",
+        "text",
+        "expectedRevision",
+        "expectedText"
+      ],
+      "type": "object"
+    },
+    "moduleId": "titles-current-target",
+    "operationId": "set-current-text",
+    "protocolVersion": 1,
+    "snapshotSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "protected": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        },
+        "target": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "layerId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "layerId"
+          ],
+          "type": "object"
+        },
+        "text": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "target",
+        "revision",
+        "protected",
+        "text"
+      ],
+      "type": "object"
+    },
+    "targetSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "compId": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "layerId": {
+          "maximum": 2147483647,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "projectId": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "compId",
+        "layerId"
+      ],
+      "type": "object"
+    }
+  },
+  "contractId": "7a26b1632a458c6e73e95514c7f41c8706680aaa5316aee998cc5f81ad56dc20",
+  "moduleId": "titles-current-target",
+  "modulePin": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+  "operationId": "set-current-text"
+}
