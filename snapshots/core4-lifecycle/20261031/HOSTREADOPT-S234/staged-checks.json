@@ -1,0 +1,79 @@
+{
+  "collectedAt": "2026-10-31T17:31:54.337Z",
+  "sourceFilesIndexMatchesTestedBytes": 11,
+  "existingEvidenceFilesIndexMatchesCapturedBytes": 107,
+  "fullIndexDiffCheckExitCode": 2,
+  "immutableCaptureWhitespace": [
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/addressed/remaining-boundaries.raw.log",
+      "line": 22,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/addressed/remaining-boundaries.raw.log",
+      "line": 25,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/addressed/remaining-boundaries.raw.log",
+      "line": 42,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/addressed/remaining-boundaries.raw.log",
+      "line": 45,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/addressed/remaining-boundaries.raw.log",
+      "line": 62,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/addressed/remaining-boundaries.raw.log",
+      "line": 65,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/addressed/remaining-boundaries.raw.log",
+      "line": 83,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/addressed/remaining-boundaries.raw.log",
+      "line": 95,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/final02/capture.cjs",
+      "line": 18,
+      "kind": "new blank line at EOF."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/terminal-addressed/terminal-initial-fix.raw.log",
+      "line": 16,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/terminal-addressed/terminal-initial-fix.raw.log",
+      "line": 18,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/terminal-before-fix/terminal-boundary-before-fix.cjs",
+      "line": 43,
+      "kind": "new blank line at EOF."
+    }
+  ],
+  "exceptionHashes": {
+    "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/addressed/remaining-boundaries.raw.log": "faee806d9fc87179b871bd723fcb6a2803f929a71ff55ff761dfc906e1d024e1",
+    "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/final02/capture.cjs": "8bcb195bbec7d6efe83c250645304d5aa8da530795f5054a30c90c9f74546f18",
+    "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/terminal-addressed/terminal-initial-fix.raw.log": "9d187fbb72beac83ca0173b623b5810b9384117a4520e8ba47659b9309b7ada6",
+    "snapshots/core4-lifecycle/20261031/HOSTREADOPT-S234/terminal-before-fix/terminal-boundary-before-fix.cjs": "fab57e1544595e8c816f15cf3d8cfe2447070083bd9bba4765b63473af88ab82"
+  },
+  "allOtherStagedPathsDiffCheck": "PASS",
+  "notes": [
+    "Первичные raw logs и capture scripts сохранены байт-в-байт; их исходный whitespace не форматировался.",
+    "Исключения ограничены четырьмя перечисленными immutable captures; весь текущий source/docs и остальные artifacts проходят diff check."
+  ]
+}

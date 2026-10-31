@@ -1,0 +1,12 @@
+{
+  "collectedAt": "2026-10-31T16:19:34.847Z",
+  "currentSourceHashesMatched": 11,
+  "currentDependencyHashesMatched": 125,
+  "currentCheckBindingsMatched": 12,
+  "selectorRecomputedWithoutRunningTests": true,
+  "testsRepeated": false,
+  "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "sourceReview": "ACCEPT freeze03 plus test/map and P3 delta",
+  "liveCalls": 0,
+  "installedWrites": 0
+}

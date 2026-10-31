@@ -1,0 +1,6 @@
+
+> ae-agent-core4@4.0.0 check:boundaries
+> node tools/check-boundaries.js
+
+{"checked":43,"model":"reviewed-local-code; conservative source guard; not OS sandbox","liveCalls":0}
+boundaries/syntax/scopeddiff/protected-source PASS

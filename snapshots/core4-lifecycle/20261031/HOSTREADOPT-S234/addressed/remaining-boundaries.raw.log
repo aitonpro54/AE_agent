@@ -1,0 +1,106 @@
+✖ readoption-recovery F02 partial external replacement.json is inert, never a canonical intent (4954.7594ms)
+✖ readoption-recovery F02 partial external candidate.json is inert, never a canonical intent (4898.2635ms)
+✖ readoption-recovery F02 partial external publication.json is inert, never a canonical intent (4800.4155ms)
+✔ readoption-recovery EXDEV first canonical link has no copy fallback and leaves only inert preparation (4901.7444ms)
+✖ readoption-recovery last pre-CAS host await revalidates old manual bytes and never overwrites them (7228.8826ms)
+✔ readoption-recovery H06 bounded attempts preserve every original record and refuse the next publication (73551.1208ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 2
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 100418.7255
+
+✖ failing tests:
+
+test at core4\test\stopped-host-readoption-recovery.test.js:4:28
+✖ readoption-recovery F02 partial external replacement.json is inert, never a canonical intent (4954.7594ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'readopt-preflight'
+  - 'stopped-certified-baseline'
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\stopped-host-readoption-recovery.test.js:56:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'readopt-preflight',
+    expected: 'stopped-certified-baseline',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at core4\test\stopped-host-readoption-recovery.test.js:4:28
+✖ readoption-recovery F02 partial external candidate.json is inert, never a canonical intent (4898.2635ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'readopt-preflight'
+  - 'stopped-certified-baseline'
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\stopped-host-readoption-recovery.test.js:56:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'readopt-preflight',
+    expected: 'stopped-certified-baseline',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at core4\test\stopped-host-readoption-recovery.test.js:4:28
+✖ readoption-recovery F02 partial external publication.json is inert, never a canonical intent (4800.4155ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'readopt-preflight'
+  - 'stopped-certified-baseline'
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\stopped-host-readoption-recovery.test.js:56:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'readopt-preflight',
+    expected: 'stopped-certified-baseline',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at core4\test\stopped-host-readoption-recovery.test.js:4:28
+✖ readoption-recovery last pre-CAS host await revalidates old manual bytes and never overwrites them (7228.8826ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+  + Buffer(760) [Uint8Array] [
+  - Buffer(759) [Uint8Array] [
+      123,
+      34,
+      97,
+      100,
+      111,
+  ...
+      125,
+  +   32
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\stopped-host-readoption-recovery.test.js:102:135)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: <Buffer 7b 22 61 64 6f 70 74 65 64 41 74 22 3a 22 32 30 32 30 2d 30 31 2d 30 31 54 30 30 3a 30 30 3a 30 30 2e 30 30 30 5a 22 2c 22 61 6c 6c 6f 77 65 64 50 72 ... 710 more bytes>,
+    expected: <Buffer 7b 22 61 64 6f 70 74 65 64 41 74 22 3a 22 32 30 32 30 2d 30 31 2d 30 31 54 30 30 3a 30 30 3a 30 30 2e 30 30 30 5a 22 2c 22 61 6c 6c 6f 77 65 64 50 72 ... 709 more bytes>,
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

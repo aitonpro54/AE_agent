@@ -1,0 +1,9 @@
+✔ readoption-core Windows repeatability: two whole stopped cycles preserve prior anchors and close old inode FDs before CAS (27984.2334ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 28058.2941

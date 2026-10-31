@@ -406,13 +406,16 @@ ordinary cycles. AE26308 сейчас открыт; root его не запус�
 Перед live изменением сверить свежие status/queue/authority; сохранить чужие
 snapshots/AEP и старые receipts. Полная installed устойчивость пока не объявлена.
 
-Завершённый блок: configured cc2f first-call/recovery и один production idle
+Предыдущий завершённый блок: configured cc2f first-call/recovery и один production idle
 first-call, затем один configured cc2f/CEP/native read. Изменены AGENTS, checkpoint, lifecycle/R5/recovery планы и sanitised
 R5CONFIGURED evidence/reader; production source/runtime/config не менялись.
 Проверки: actual MCP calls, signed read-only native/history verifier, JSON
 consistency/credential exclusion, reader syntax и diff check. Следующий шаг —
 штатный fresh host re-adoption operator; bounded read-only design принят, локальный
 COMPLETE plan-review packet получен/revise и разобран локально; source slice1
-принят212PASS/9checks composed coverage и independent ACCEPT. Production lease
-issuance до canonical claim в slice2 отсутствует. Следующий source block —
-private transaction core2–4; CLI/actual adoption следуют после него, actual stop0.
+принят212PASS/9checks composed coverage и independent ACCEPT. Private transaction
+core2–4 принят253PASS/12current checks (7fresh+5exactreuse); terminal race после
+last gate release исправлен, independent source/test ACCEPT. Runtime packagecc2f/
+70files прежний, actual stop/adoption0. Следующий source block — CLI slice5 и
+verified helper distribution; после него fresh actual preflight/new stop. Evidence
+и решения — в re-adoption плане/HOSTREADOPT-S234/final02. Full release не запускался.

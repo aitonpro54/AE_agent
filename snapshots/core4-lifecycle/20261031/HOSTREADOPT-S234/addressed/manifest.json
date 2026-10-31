@@ -1,0 +1,135 @@
+{
+  "collectedAt": "2026-10-31T16:49:51.350Z",
+  "purpose": "Исторические адресные прогоны; не current coverage",
+  "limitations": [
+    "Ранние PASS относятся только к записанным source closures.",
+    "remaining-boundaries.raw.log сохраняет исходные2PASS/4FAIL ожиданий assertions; исправленный five-case лог хранится отдельно.",
+    "step2-initial.raw.log записан до последующих P2 исправлений.",
+    "Baseline coverage подтверждает только final01/baseline-run-verification.json; terminal correction ещё открыта."
+  ],
+  "files": [
+    {
+      "name": "apply-critical.pre-hashes.json",
+      "bytes": 713,
+      "sha256": "bccc8519632b3dd6f998a894bc3ac6f22c3bc9e0e3dfbae9bfa35d983958e11c"
+    },
+    {
+      "name": "apply-critical.post-hashes.json",
+      "bytes": 713,
+      "sha256": "bccc8519632b3dd6f998a894bc3ac6f22c3bc9e0e3dfbae9bfa35d983958e11c"
+    },
+    {
+      "name": "apply-critical.raw.log",
+      "bytes": 637,
+      "sha256": "e6338dbf987f91296c64da9bef05540c718aac9d562f71fde7dbe77ae757f7c4"
+    },
+    {
+      "name": "enable-critical.pre-hashes.json",
+      "bytes": 832,
+      "sha256": "82eea82b0d25a36e8069c12689a2c45c53bfe2a5b324e94185eb2dd5b011d679"
+    },
+    {
+      "name": "enable-critical.post-hashes.json",
+      "bytes": 832,
+      "sha256": "82eea82b0d25a36e8069c12689a2c45c53bfe2a5b324e94185eb2dd5b011d679"
+    },
+    {
+      "name": "enable-critical.raw.log",
+      "bytes": 567,
+      "sha256": "dac4abf2f90a62808eaf85df6f9d39927a1404d5015ce268b09a0435dc635c55"
+    },
+    {
+      "name": "p2-corrections.pre-hashes.json",
+      "bytes": 831,
+      "sha256": "2a82d62731ad09418ad3dff4fee7dccf209512916439a56bf0c53be26190b63e"
+    },
+    {
+      "name": "p2-corrections.post-hashes.json",
+      "bytes": 831,
+      "sha256": "2a82d62731ad09418ad3dff4fee7dccf209512916439a56bf0c53be26190b63e"
+    },
+    {
+      "name": "p2-corrections.raw.log",
+      "bytes": 663,
+      "sha256": "a60f81e15380a65913554005de13174cd116e7ac50ac726030a58c26dc0c82a3"
+    },
+    {
+      "name": "preclaim-gate-race.pre-hashes.json",
+      "bytes": 832,
+      "sha256": "82eea82b0d25a36e8069c12689a2c45c53bfe2a5b324e94185eb2dd5b011d679"
+    },
+    {
+      "name": "preclaim-gate-race.post-hashes.json",
+      "bytes": 832,
+      "sha256": "82eea82b0d25a36e8069c12689a2c45c53bfe2a5b324e94185eb2dd5b011d679"
+    },
+    {
+      "name": "preclaim-gate-race.raw.log",
+      "bytes": 367,
+      "sha256": "1a7c2eafb0fad7083ac91b211afe392438ae50436e0cd6c1f14b4f2dc5a4bb55"
+    },
+    {
+      "name": "probe-parity.pre-hashes.json",
+      "bytes": 831,
+      "sha256": "2a82d62731ad09418ad3dff4fee7dccf209512916439a56bf0c53be26190b63e"
+    },
+    {
+      "name": "probe-parity.post-hashes.json",
+      "bytes": 831,
+      "sha256": "2a82d62731ad09418ad3dff4fee7dccf209512916439a56bf0c53be26190b63e"
+    },
+    {
+      "name": "probe-parity.raw.log",
+      "bytes": 230,
+      "sha256": "2f10bc3fc70a731ae8edeae26fe00b2740a780f59f7c610f0de66c20690a4a1b"
+    },
+    {
+      "name": "remaining-boundaries.pre-hashes.json",
+      "bytes": 834,
+      "sha256": "75fd93bc141544de2745fd8107ffeffaf1d984fc79ca164f859da786cf3c8b2d"
+    },
+    {
+      "name": "remaining-boundaries.post-hashes.json",
+      "bytes": 834,
+      "sha256": "75fd93bc141544de2745fd8107ffeffaf1d984fc79ca164f859da786cf3c8b2d"
+    },
+    {
+      "name": "remaining-boundaries.raw.log",
+      "bytes": 4915,
+      "sha256": "faee806d9fc87179b871bd723fcb6a2803f929a71ff55ff761dfc906e1d024e1"
+    },
+    {
+      "name": "repeatability.pre-hashes.json",
+      "bytes": 834,
+      "sha256": "75fd93bc141544de2745fd8107ffeffaf1d984fc79ca164f859da786cf3c8b2d"
+    },
+    {
+      "name": "repeatability.post-hashes.json",
+      "bytes": 834,
+      "sha256": "75fd93bc141544de2745fd8107ffeffaf1d984fc79ca164f859da786cf3c8b2d"
+    },
+    {
+      "name": "repeatability.raw.log",
+      "bytes": 265,
+      "sha256": "6ec8155615d7c67b79aa2be3b617736150ca253371d155aca1531cbfe1917f91"
+    },
+    {
+      "name": "p3-h04-control.raw.log",
+      "bytes": 432,
+      "sha256": "d4f8f5f640d2fb243245fcd7efbfd33e76745b1d19595067292db859bae45abb"
+    },
+    {
+      "name": "remaining-boundaries-corrected.raw.log",
+      "bytes": 704,
+      "sha256": "97f2fa0bcae189b5c858a059520983111292033e5391004eed14f732c299e263"
+    },
+    {
+      "name": "step2-initial.raw.log",
+      "bytes": 665,
+      "sha256": "2cd943a9873a1b7ecfca6d9cc2a7615c78089368c0fa7056d58d1ee754cd1920"
+    }
+  ],
+  "testsRepeatedByParent": false,
+  "liveCalls": 0,
+  "installedWrites": 0
+}

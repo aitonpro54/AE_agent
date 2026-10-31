@@ -1,0 +1,51 @@
+{
+  "classification": "offline-TEMP-existing-defect-probe",
+  "actualInstallation": false,
+  "endpoint3457": false,
+  "cases": [
+    {
+      "name": "enabled receipt with live original finisher",
+      "failure": "readopt_actor_not_dead",
+      "zeroWrites": true
+    },
+    {
+      "name": "new startup install gate is a foreign inode, zero original canonical role aliases",
+      "failure": "readopt_inode_changed",
+      "zeroWrites": true
+    },
+    {
+      "name": "new ready owner markers after last original gate removal",
+      "failure": "stopped_certification_changed",
+      "zeroWrites": true
+    }
+  ],
+  "ownAnchor": {
+    "hash": "55fe7d167b68d807259645f53edb35e6b4ad1507896b502192796afe9d85d9f8",
+    "stat": {
+      "dev": "1042371555",
+      "ino": "9851624186332194",
+      "mode": "33206",
+      "nlink": "1",
+      "size": "524",
+      "birthtimeNs": "1793464847623859000",
+      "mtimeNs": "1793464847623859000",
+      "ctimeNs": "1793464853850828900"
+    }
+  },
+  "foreignStartupGate": {
+    "hash": "07f736dcf0eafd0b19b0f4fd08cab9a539905015932bc13f8b98b0a90d813a53",
+    "stat": {
+      "dev": "1042371555",
+      "ino": "10696049116464115",
+      "mode": "33206",
+      "nlink": "1",
+      "size": "686",
+      "birthtimeNs": "1793464857326154500",
+      "mtimeNs": "1793464857326154500",
+      "ctimeNs": "1793464857333357800"
+    }
+  },
+  "originalGateAliasesAtStartup": 0,
+  "canonicalGatesAtStartup": 1,
+  "privateReservedServerListening": true
+}

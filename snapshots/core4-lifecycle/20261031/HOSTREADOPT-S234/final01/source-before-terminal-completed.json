@@ -1,0 +1,12 @@
+{
+  "collectedAt": "2026-10-31T16:58:59.577Z",
+  "recovered": 11,
+  "missing": [],
+  "completion": {
+    "file": "core4/test/stopped-host-readoption-enable.test.js",
+    "sha256": "b1427ca28397363f968ed69b9499e32f92d8fd9823283f009db118e4098f042b",
+    "bytes": 5834,
+    "method": "writer reverse isolated tail/import delta; parent exact old SHA matched"
+  },
+  "previousManifest": "source-before-terminal-manifest.json"
+}

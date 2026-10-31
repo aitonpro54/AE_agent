@@ -1,0 +1,35 @@
+{
+  "collectedAt": "2026-10-31T17:29:28.316Z",
+  "purpose": "Исторические адресные terminal-прогоны; current coverage только в final02",
+  "notes": [
+    "Первичный1FAIL вызван отсутствующим обязательным proof во входе test; production при исправлении этого test не менялся.",
+    "Ранние PASS относятся к указанным source closures; их не включали вместо current enable22."
+  ],
+  "files": [
+    {
+      "name": "terminal-initial-fix.raw.log",
+      "bytes": 2091,
+      "sha256": "9d187fbb72beac83ca0173b623b5810b9384117a4520e8ba47659b9309b7ada6"
+    },
+    {
+      "name": "terminal-initial-fix-corrected.raw.log",
+      "bytes": 275,
+      "sha256": "f4f89067941216bd8fda51a6638c3cabf459f4213c16824ecb98976d56e4ae98"
+    },
+    {
+      "name": "terminal-opacity.pre-hashes.json",
+      "bytes": 625,
+      "sha256": "3b394b5dd2636cc42ee2d723bb63d2ef23636b02e95f87b58327bf9a7d848e33"
+    },
+    {
+      "name": "terminal-opacity.post-hashes.json",
+      "bytes": 625,
+      "sha256": "3b394b5dd2636cc42ee2d723bb63d2ef23636b02e95f87b58327bf9a7d848e33"
+    },
+    {
+      "name": "terminal-opacity.raw.log",
+      "bytes": 398,
+      "sha256": "2336a534d6729faef754b5ee6ae27eba7329f7e23d1e7b8655f5fd9eba187b11"
+    }
+  ]
+}

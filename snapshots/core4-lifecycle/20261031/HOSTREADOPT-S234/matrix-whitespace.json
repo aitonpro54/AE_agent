@@ -1,0 +1,16 @@
+{
+  "files": [
+    "core4/config/validation-map.json",
+    "core4/test/stopped-host-readoption-core.test.js",
+    "core4/test/stopped-host-readoption-recovery.test.js",
+    "core4/test/stopped-host-readoption-enable.test.js",
+    "core4/test/stopped-host-readoption-probe.test.js",
+    "core4/test/stopped-host-readoption.test.js",
+    "core4/test/fixtures/stopped-host-readoption.js",
+    "core4/tools/stopped-host-readoption.js",
+    "core4/tools/stopped-host-readoption-store.js",
+    "core4/tools/stopped-host-readoption-transaction.js",
+    "core4/runtime/stopped-certification.js"
+  ],
+  "warnings": []
+}

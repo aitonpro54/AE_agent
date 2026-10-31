@@ -1,0 +1,29 @@
+{
+  "observedAt": "2026-10-31T15:37:08.661Z",
+  "base": "a1fedf3",
+  "purpose": "early-independent-source-review-freeze",
+  "scope": "helper-only private core2-4; tests still in progress; no acceptance claim",
+  "facts": [
+    {
+      "file": "core4/tools/stopped-host-readoption.js",
+      "sha256": "057ce89586df06207380bc4b421eb9e200b145034e7cefec05a5a5ff6ccdf7e7",
+      "bytes": 6780
+    },
+    {
+      "file": "core4/tools/stopped-host-readoption-store.js",
+      "sha256": "f9cf3e5137bbf420d63ad929b9e8c53f7d6af0ea152e0d25c4e2a09f962a0b72",
+      "bytes": 7079
+    },
+    {
+      "file": "core4/tools/stopped-host-readoption-transaction.js",
+      "sha256": "6775192d6ca44aff0c38038f2bb908e9366e5a4e5ebb24a7688ca5a92b474217",
+      "bytes": 24908
+    },
+    {
+      "file": "core4/runtime/stopped-certification.js",
+      "sha256": "8c277939cfbe9a4a592c4dbda84c1a3d0d9c9bda21463ed89b5e033ea1ba088d",
+      "bytes": 27238
+    }
+  ],
+  "liveCalls": 0
+}

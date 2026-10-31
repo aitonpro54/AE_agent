@@ -1,0 +1,14 @@
+[
+  {
+    "Path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4\\tools\\stopped-host-readoption-store.js",
+    "Hash": "EA36F48DB1C3895277BF6D4238FA485F8FC2A6C3B16BA0FF7FBEB715EE4CE6DC"
+  },
+  {
+    "Path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4\\tools\\stopped-host-readoption-transaction.js",
+    "Hash": "16C8FB6AE6331BE610D2D2731B4619557680F528E19323BF6C244E11187B2F3E"
+  },
+  {
+    "Path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4\\test\\stopped-host-readoption-enable.test.js",
+    "Hash": "E8F590203071F14CDA0FD09AAC3225A8A7F881C72EDD221FABAE06CF607AAC02"
+  }
+]

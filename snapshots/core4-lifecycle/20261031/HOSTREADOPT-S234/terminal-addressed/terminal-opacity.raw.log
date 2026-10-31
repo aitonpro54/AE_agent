@@ -1,0 +1,10 @@
+✔ readoption-enable terminal after last unlink ignores foreign gate/barrier payload before helper return and never follows direct foreign links (17615.756ms)
+✔ readoption-enable terminal refuses ancestor junctions without following the parent or writing (17396.4377ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35088.0877

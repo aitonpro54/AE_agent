@@ -1,0 +1,13 @@
+✔ readoption-core pinned hardlink gate anchors work with the unchanged sealed lease consumer (2079.3341ms)
+✔ readoption-core H01 one CAS preserves old bytes and supports original baseline nlink 1 (10333.8071ms)
+✔ readoption-core H01 one CAS preserves old bytes and supports original baseline nlink 2 (10399.61ms)
+✔ readoption-core H07 explicit enable changes only barrier/gates and never needs the host after committed CAS (20531.0972ms)
+✔ readoption-core forged operation/context/lease capabilities cannot write (2049.2856ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 45461.7171

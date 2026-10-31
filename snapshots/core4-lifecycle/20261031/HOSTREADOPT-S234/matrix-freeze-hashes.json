@@ -1,0 +1,13 @@
+{
+  "core4/config/validation-map.json": "07ab41cee3240d6b2a00c95fc147e877ff0213f99aea94abab4d3cf4a0142263",
+  "core4/test/stopped-host-readoption-core.test.js": "c4e9a91bd3207c6363bd2345dc9f8fbbc4af6cf927467724964a48d6cb0c3368",
+  "core4/test/stopped-host-readoption-recovery.test.js": "76b0c0e144dc67c521861ce7f25e8f94886354778b40a030df410e76db5098c8",
+  "core4/test/stopped-host-readoption-enable.test.js": "b1427ca28397363f968ed69b9499e32f92d8fd9823283f009db118e4098f042b",
+  "core4/test/stopped-host-readoption-probe.test.js": "1af56b1d1d9d2c2eeddffe4c52f9de952102154e3de7f0356ced75ad110edcae",
+  "core4/test/stopped-host-readoption.test.js": "52640852b1c1e490035c8852b4a7bbfa91746c488bb7ea30bd2876b2d355e2f5",
+  "core4/test/fixtures/stopped-host-readoption.js": "2f0db82fc258b035b6a6107faf34054513df381e12d1591fcfbf7d764cc10600",
+  "core4/tools/stopped-host-readoption.js": "770b12980be9d971d4404cd6b7e068afc47aca8e3e77c0c33d1b6992d039a55c",
+  "core4/tools/stopped-host-readoption-store.js": "9a766417e61c9f48aa207603375b32858a7b5092ee2ccf6d5526f6468c26a985",
+  "core4/tools/stopped-host-readoption-transaction.js": "c68c241771ff73dccffd0afba8d45bb92463242437c56f9d5ee6074edd5d7162",
+  "core4/runtime/stopped-certification.js": "8c277939cfbe9a4a592c4dbda84c1a3d0d9c9bda21463ed89b5e033ea1ba088d"
+}

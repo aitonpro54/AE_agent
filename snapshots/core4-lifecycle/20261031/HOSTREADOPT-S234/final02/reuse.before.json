@@ -1,0 +1,108 @@
+[
+  {
+    "check": "validation-routing",
+    "evidenceKey": "d1254aa9141ace40d756e1f581a0416249445208f796b31fc9031f65a8559c5a",
+    "baselineEvidenceKey": "722560bf9c9ced76af159e2e1a64aab7d1e15af78a9ab6f04aa22ada3be88b2a",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js"
+    ]
+  },
+  {
+    "check": "readoption-core",
+    "evidenceKey": "238b31135cc1ef7d59d8a9a89624e46060861292ffd999c17c3472830b0bf85f",
+    "baselineEvidenceKey": "aea093feb8941d19e4c8dc027831a224dc7351a5b467192874ce7d429275080d",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js"
+    ]
+  },
+  {
+    "check": "readoption-recovery",
+    "evidenceKey": "65daed3f89b9fcbd247b89f94d5fde05a91abaf1abca8251ddef5c249fabddaa",
+    "baselineEvidenceKey": "9d20aa1366e33a9be4bfb1e4ffd99b0158dbf9258143ce9945e9d393fe5a237d",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js"
+    ]
+  },
+  {
+    "check": "readoption-enable",
+    "evidenceKey": "d89109d0b6b1da297da4185d2c7cf3a3473c500a81855371a57be65dbb33d903",
+    "baselineEvidenceKey": "75890c971176a4fbf3053f34445367863b31cb9867655ff8c5d56a198f9505d5",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "test/stopped-host-readoption-enable.test.js",
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js"
+    ]
+  },
+  {
+    "check": "readoption-probe",
+    "evidenceKey": "566200b10c05563c049d36c5edbd0ca3ebf719e3fc042edcaf190e1ce2ef80b7",
+    "baselineEvidenceKey": "8a8d2e0b7a3982ac85ed9d3f91f6488ed85c1dc97fbcada6aeba172b438b2569",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js"
+    ]
+  },
+  {
+    "check": "stopped-host-readoption",
+    "evidenceKey": "4a2ed7b18e882a884c30ee2c15223ac0f392afce6817c1877b82a34dbc7424e9",
+    "baselineEvidenceKey": "90a1f50b450257403500b7f8201f1c02ab8657c705327ac6a28e98e6ce6a370a",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js"
+    ]
+  },
+  {
+    "check": "stopped-certification",
+    "evidenceKey": "70d0eccc6307f134926486b4590fb7b8ff80acfee80dca4f25b4156120cefd87",
+    "baselineEvidenceKey": "70d0eccc6307f134926486b4590fb7b8ff80acfee80dca4f25b4156120cefd87",
+    "eligibleForReuse": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "stopped-update",
+    "evidenceKey": "b6b5fcd1db5ed8f7c961ee838339a780c9e6b3dea5945b29ebe64c0d1504cb27",
+    "baselineEvidenceKey": "b6b5fcd1db5ed8f7c961ee838339a780c9e6b3dea5945b29ebe64c0d1504cb27",
+    "eligibleForReuse": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "maintenance-finish-operator",
+    "evidenceKey": "cd9c1fde7df246f9888665244ed117c7d10d8fbce03fd8b42936542052f0dca3",
+    "baselineEvidenceKey": "1ac76dcbf4cee92121bb545fb8d925262843c5d58a939777d902e8bd2f7c7287",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js"
+    ]
+  },
+  {
+    "check": "standalone-installer",
+    "evidenceKey": "1788d883c4fb9d8af106c000c761a6c52723357173b737b4f24edfc52b1df15b",
+    "baselineEvidenceKey": "1788d883c4fb9d8af106c000c761a6c52723357173b737b4f24edfc52b1df15b",
+    "eligibleForReuse": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "maintenance-finish",
+    "evidenceKey": "f142a757d47fbb0d1817c09648b94ba9dc6668f9c332d12db85aaa2076d4f1f1",
+    "baselineEvidenceKey": "f142a757d47fbb0d1817c09648b94ba9dc6668f9c332d12db85aaa2076d4f1f1",
+    "eligibleForReuse": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "owner-maintenance",
+    "evidenceKey": "e1d3d5ea614476adb69b9986b32ccdbb619b716651a4554caa9ac590943f62b9",
+    "baselineEvidenceKey": "e1d3d5ea614476adb69b9986b32ccdbb619b716651a4554caa9ac590943f62b9",
+    "eligibleForReuse": true,
+    "changedDependencies": []
+  }
+]

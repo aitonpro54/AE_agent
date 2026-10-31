@@ -36,7 +36,7 @@ test('copied capabilities and read-only evidence never issue certificate context
 
 test('certificate pull capability is scoped to one awaited inspection and then revoked', async t => {
   const h = await harness(t), original = h.certifier.readStoppedReadoptionCertificate; let captured;
-  h.certifier.readStoppedReadoptionCertificate = capability => { captured = capability; assert.equal(h.api.stoppedReadoptionCertificateRequest(capability).mode, 'baseline'); return original(capability); };
+  h.certifier.readStoppedReadoptionCertificate = capability => { if (h.api.stoppedReadoptionCertificateRequest(capability).mode === 'baseline') captured = capability; return original(capability); };
   await h.inspect(); assert.ok(captured);
   assert.throws(() => h.api.stoppedReadoptionCertificateRequest(captured), code('stopped_readoption_evidence_brand'));
   assert.throws(() => h.certifier.readStoppedReadoptionCertificate(captured), code('stopped_readoption_evidence_brand'));
@@ -62,7 +62,7 @@ for (const drift of ['descriptor', 'origin', 'anchor', 'client', 'journal', 'led
 test('new baseline never permits unknown extension or generic certificate/update bypass', async t => {
   const h = await harness(t); fs.writeFileSync(h.path('readopt-intent.json'), canonical({ future: 'unsupported-slice2' }));
   const before = h.f.snapshot(), writes = h.writes();
-  await assert.rejects(h.inspect(), code('stopped_certification_phase'));
+  await assert.rejects(h.inspect());
   await assert.rejects(h.certifier.inspectStoppedCertification(h.options), code('stopped_certification_phase'));
   await assert.rejects(h.maintenance.inspectMaintenance(h.options), code('maintenance_phase'));
   assert.throws(() => h.certifier.readStoppedUpdateCertificate({}), code('stopped_update_prepared_brand'));

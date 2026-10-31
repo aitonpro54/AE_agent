@@ -1,0 +1,12 @@
+✔ readoption-enable H08/F04 exact enable prefix unlink finishes locally with host absent (26430.5711ms)
+✔ readoption-enable H08/F04 exact enable prefix enabled finishes locally with host absent (25717.9877ms)
+✔ readoption-enable H08/F04 exact enable prefix releaseBroker finishes locally with host absent (26549.4908ms)
+✔ readoption-enable H08/F04 exact enable prefix releaseInstall finishes locally with host absent (20915.1387ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 99684.3444

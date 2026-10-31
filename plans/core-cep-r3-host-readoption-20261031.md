@@ -2,8 +2,14 @@
 
 31 октября 2026. Самостоятельный source/operator этап `owner-host-readoption`
 после configured cc2f/CEP/native read. Этот план не выдаёт runtime authority.
-База исходников: `9343989757b8eddbbced434e65858f2d2f0ef2b2`.
-Production source/runtime/package пока не менялись.
+База design/review: `9343989757b8eddbbced434e65858f2d2f0ef2b2`.
+Helper foundation принята commit`a1fedf3`; runtime payload/package не менялись.
+
+Private transaction core2–4 принят на freeze05:253PASS/12current checks,
+composed coverage с exact reuse5closures и независимым source/test ACCEPT.
+Terminal read race после last gate release исправлен и проверен. Следующий
+source этап — CLI slice5; actual operator пока не установлен/не выполнялся.
+Runtime packagecc2f прежний. Повторного Argon не было.
 
 Редакция после единственного plan review20261031-readoption-plan-01: source
 границы сохранены, ниже уточнены F01/F02/F04 и concrete CAS proof. Исходная
@@ -156,9 +162,16 @@ raw/save/destructive, AE restart, AME и внешние APIs вне scope. Root 
   inert pre-claim publication, inode anchor, post-CAS release-only/enable.
 - [x] Slice1: private disk evidence/lease adapter seams; current coverage212PASS
   по9checks, independent source ACCEPT. Issuance production lease закрыт доclaim.
-- [ ] Slice2: claim/adoption CAS/freshness parity и bypass/crash tests.
-- [ ] Slice3: apply continuation/receipt/release tails.
-- [ ] Slice4: separate enable/enable-finish и post-unlink recovery.
+  Source commit`a1fedf3`; next block — private transaction core2–4, writer specialist.
+- [x] Slice2: claim/adoption CAS/freshness parity и bypass/crash tests.
+- [x] Slice3: apply continuation/receipt/release tails.
+- [x] Slice4: separate enable/enable-finish и post-unlink recovery.
+- [x] Bounded independent source review core2–4 freeze03 ACCEPT: триP2 исправлены,
+  current tests/CLI/actual acceptance этим review не заявлены.
+- [x] Frozen baseline final01:12selectedchecks/242PASS/0FAIL, exact source/deps
+  неизменны; confirmed terminal race не позволяет объявить functional acceptance.
+- [x] Terminal historical-receipt correction, independent delta review и
+  current-key verification:253PASS/12checks (7fresh+5exactreuse).
 - [ ] Slice5: CLI/package/boundaries/validation wiring и immutable selection.
 - [ ] Source/helper implementation, адресная проверка и reviewable commit.
 - [ ] Actual new stop/readoption/explicit enable и fresh configured proof.
@@ -181,12 +194,45 @@ raw/save/destructive, AE restart, AME и внешние APIs вне scope. Root 
   итоговый relevant selection выполняется после целого frozen core, чтобы не
   повторять неизменённые тяжёлые suites для промежуточных закрытых веток.
   Public CLI/distribution wiring остаётся отдельным slice5; live не начинается.
+- Private library сохраняет existing loopback/listening positive-port semantics;
+  production election127.0.0.1:3457 закрепляет verified CLI. TEMP используетport0,
+  production test flags/fake address не вводятся.
+- Для role gates выбран inert precreated anchor с inode pin в original intent;
+  после canonical claim role path публикуется exclusive hardlink. Reuse unchanged
+  sealed lease consumer требует адресной проверки aliases/release: удаляется
+  только canonical role path, anchor сохраняется, foreign aliases/inodes закрыты.
+  Это избегает partial stage publication внутри стандартного gate producer.
+- Штатный release снимает broker gate перед install gate. Допустимая цепочка
+  освобождения: оба → только install → ни одного; broker-only не признаётся
+  штатным crash prefix. Cold client может попытаться запустить owner между
+  unlink, но оставшийся install gate отклоняется owner lifecycle до публикации
+  новых markers и не удаляется этим отказом. Runtime остаётся неизменённым;
+  TEMP regression должен подтвердить этот pending release путь.
+- Early independent review private core2–4 выявил два P2: certificate-only proof
+  не фиксировал old adoption между inspect/apply; несовпадение input/replay budget
+  позволяло опубликовать нечитаемый claim. Исправления приняты в scope до итоговых
+  suites: единый adoption-bound proof и preclaim replay/budget validation.
+  Original4source/hashes и findings сохранены в HOSTREADOPT-S234; приёмка этого
+  промежуточного source не заявляется.
+- Correction review выявил ещё один preclaim race: foreign canonical gate мог
+  попасть в owned normalization. Перед первым intent link теперь допустимы
+  только0canonical gates, base verification получает empty owned. Combined
+  freeze03 source-review ACCEPT; crash matrix остаётся обязательной.
+- После source review root поднял race: enabled receipt уже опубликован и original
+  gates освобождены, но readState повторно требует stopped current markers/history.
+  Normal cold owner может уже создать свои markers/startup gate; helper ложно
+  отказывает даже на return/settled no-op. Writer подтвердил источник. Correction
+  выделяет authenticated historical terminal receipt, без lease/write/authority;
+  original pending gates сохраняют strict recovery. Условие различает original
+  role aliases и новые foreign/startup gates, которые не присваиваются и не
+  удаляются. Frozen run не меняется; future reuse требует exact current keys.
 
 ## Validation
 
-Design основан на source9343989 и bounded read-only анализе. Actual host re-adoption
-и Titles не выполнялись. Source tests для нового оператора ещё отсутствуют;
-исторические tests/install/live proof не объявляются его приёмкой.
+Исходный design основан на source9343989 и bounded read-only анализе; на момент
+review новых source tests ещё не было. Ниже отдельно записана приёмка slice1.
+Actual host re-adoption и Titles не выполнялись; historical install/live proof
+не объявляются приёмкой нового оператора.
 
 Root read-only buildPackage manual/owner вновь дал exactcc2f; install-lease входит
 payload, stopped-certification/stopped-update не входят. Existing stopped CLI
@@ -208,7 +254,7 @@ inspection описывает current certified inode facts; stale proof/opaque 
 не заявляются. Fixture-only getter substitution проверяет plumbing, не production
 разрешение. Generic readers и runtime payload не менялись.
 
-Current selection coverage212PASS/0FAIL по9checks: reused unchanged closures —
+Slice1 selection coverage212PASS/0FAIL по9checks: reused unchanged closures —
 certificate30/update55/standalone7/legacy29; new current runs — operator7,
 foundation25/routing5/maintenance-finish32/owner-maintenance22. Initial whole
 command завершился exit1 на routing (component dependencies были слишком широки
@@ -230,4 +276,65 @@ Root сверил6final hashes с independent ACCEPT, заново вычисл�
 запуска tests и подтвердил9keys/dependency bindings. Actual read-only package
 build снова дал exactcc2f/70files. Boundaries43/live0, syntax/diff PASS. New adoption/
 CAS/enable/CLI/actual stop0; no installed/project changes. Следующий шаг — цельный
-private transaction core2–4 на этой foundation, затем CLI и actual приёмка.
+private transaction core2–4 на этой foundation, затем CLI и actual приёмка
+(порядок на момент завершения slice1; текущий результат core2–4 ниже).
+
+Private core2–4 early reviews сохранены в HOSTREADOPT-S234: freeze01/02/03,
+immutable source copies и review-01/02/03.md. Original дваP2 (old proof/budgets)
+и correction race P2 закрыты по статике. Freeze03 combined ACCEPT относится к
+main770b1298…/store9a766417…/transactionc68c2417…/certificate8c277939…;
+на момент этого early review matrix ещё выполнялась; CLI/distribution/actual
+operator им не подтверждались. Final01/final02 результаты записаны ниже.
+Read-only package build freeze01 по-прежнему дал cc2f/70files. Отдельный R5
+long-idle checkpoint commit05ae5d7 подтвердил configured first-call83мс после
+7397046мс; source/helpers/проект AE этим checkpoint не изменялись.
+
+Final01 закрыт16:46:11.625Z:12checks/242PASS/0FAIL/0skip, единый frozen selected
+run (releaseCertified=false). Root независимо подтвердил11source hashes,
+125dependency hashes,12keys/commands/deps и полный selector-prefixed rawlog с
+12полными Node summaries. RawSHA3e8906b5…; before/after capture и selection
+связаны exactSHA, packagecc2f/70files. Parent test replay0/live0/install0.
+Итог — `final01/baseline-run-verification.json`, functionalAcceptance=false из-за
+confirmed terminal P2. До correction это historical baseline, не actual допуск.
+Тяжёлый stopped-update55 прошёл885.42с один раз; future reuse разрешён только
+при unchanged effective closure/command/key. Terminal design/diagnostic —
+`terminal-design.md`/`terminal-before-fix/`; helper-only correction выполнен
+после parent baseline verification, отдельный current-key результат ниже.
+
+Final02 закрыт17:19:46.721Z exit0. Current delta5=95PASS: enable22 (11old+11new),
+foundation25/core13/recovery34/probe1 (18variants). Под тем же global frozen
+envelope отдельно выполнены exact current routing5/operator7. Standard delta
+route выбрал5component checks, а global12key comparison выявил ещё2изменённых
+integration keys; эти2 не переиспользовались. Остальные5checks/146tests — exact
+reuse baseline: certificate30/update55/standalone7/maintenance-finish32/owner22.
+Итого **253PASS/12current checks**,0FAIL/skip/cancelled/todo. Это composed current
+coverage, не один whole-global immutable command и не full release.
+
+Root независимо сверил11current source hashes,125dependency hashes,12current
+keys/commands/deps, before/after envelopes,5полных framework summaries/95tests,
+fresh supplemental logs/exit0 и каждый reused check с baseline. Полные rawlogs:
+baselineSHA3e8906b5…/deltaSHAdca17be1…; copied exact artifacts и parent acceptance
+находятся в `HOSTREADOPT-S234/final02/accepted-evidence.json`. Independent writer
+summarySHA9d0ae7be… совпадает с parent coverage. Parent test replay0/live/install0.
+Packagecc2f/70files unchanged; boundaries43, syntax10, untracked-inclusive
+whitespace11/0warnings и source diff PASS.
+
+Freeze05 main770b1298…/storeea36f48d…/transaction1dbf2360…/certificate8c277939…,
+enable teste8f59020… получили independent ACCEPT (review-06-terminal.md).
+Historical terminal path проверяет original records/aliases/protected facts,
+не получает lease/actor/authority и явно возвращает currentRuntimeObserved/
+currentHistoryObserved/currentBarrierObserved=false. Pending original gates
+сохраняют strict recovery. 1первичный terminal test FAIL из-за отсутствовавшего
+required proof исправлен только во входе test; original raw сохраняется.
+
+Actual stop/readoption/enable0, installed/runtime/CEP/project changes0 для этого
+source milestone. Portability round-trip, CLI/distribution и actual acceptance
+остаются открытыми. Следующий определённый шаг — CLI slice5 по brief в
+implementation-notes.md; после него fresh preflight и новый original stop UUID.
+
+Перед source commit root подтвердил exact staged bytes всех11source и107уже
+собранных artifacts. Full staged diff check отметил12whitespace diagnostics
+только в4immutable captures (2rawlogs,2capture scripts); исходные bytes/SHA не
+изменялись. Все остальные staged paths, включая current source/docs, PASS.
+Точные исключения/хеши — HOSTREADOPT-S234/staged-checks.json; это форматирование
+архивных первичных evidence, не product/test failure.

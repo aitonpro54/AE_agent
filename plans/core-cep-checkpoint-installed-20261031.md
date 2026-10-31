@@ -43,6 +43,12 @@ SHA2a7d8b23… и prefix16SHA4cfe8817… прежние, config/origins/adoption
 Current native AE26308/birth и owner6716/birth/boot прежние, listener3457 один.
 Read-only observation не выдаёт mutation grant; historical adoption6492 сохранена.
 
+Private source core2–4 re-adoption принят253PASS/12checks с exact reused closures
+и независимым review. Это helper-only source milestone: installed packagecc2f и
+старая distribution6ae8960f пока не менялись; actual adoption0. Следующий шаг —
+CLI/distribution wiring по re-adoption плану, затем fresh current host/project
+preflight и НОВЫЙ stop UUID. Исторические settled операции не возобновлять.
+
 Evidence: `snapshots/core4-lifecycle/20261031/R5CONFIGURED/`:
 `idle-baseline.json`, `installed-readback.json`, read-only verifier
 `observe-installed-state.cjs`, `configured-idle-result.json` и финальная

@@ -1,0 +1,32 @@
+{
+  "collectedAt": "2026-10-31T16:58:59.575Z",
+  "purpose": "explicit terminal completion/archive pins; review pending",
+  "previous": "review-freeze-04.json",
+  "facts": [
+    {
+      "file": "core4/tools/stopped-host-readoption.js",
+      "sha256": "770b12980be9d971d4404cd6b7e068afc47aca8e3e77c0c33d1b6992d039a55c",
+      "bytes": 7033,
+      "sourceSnapshot": "review-freeze-04-source/core4/tools/stopped-host-readoption.js"
+    },
+    {
+      "file": "core4/tools/stopped-host-readoption-store.js",
+      "sha256": "ea36f48db1c3895277bf6d4238fa485f8fc2a6c3b16ba0ff7fbeb715ee4ce6dc",
+      "bytes": 7899,
+      "sourceSnapshot": "review-freeze-04-source/core4/tools/stopped-host-readoption-store.js"
+    },
+    {
+      "file": "core4/tools/stopped-host-readoption-transaction.js",
+      "sha256": "1dbf2360947088bff61d60a6173771241616d9820202eb8afae0b9db63a54edd",
+      "bytes": 33923,
+      "sourceSnapshot": "review-freeze-05-source/core4/tools/stopped-host-readoption-transaction.js"
+    },
+    {
+      "file": "core4/runtime/stopped-certification.js",
+      "sha256": "8c277939cfbe9a4a592c4dbda84c1a3d0d9c9bda21463ed89b5e033ea1ba088d",
+      "bytes": 27238,
+      "sourceSnapshot": "review-freeze-04-source/core4/runtime/stopped-certification.js"
+    }
+  ],
+  "liveCalls": 0
+}

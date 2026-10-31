@@ -1,0 +1,32 @@
+{
+  "observedAt": "2026-10-31T15:50:19.265Z",
+  "purpose": "preclaim gate-race correction review; acceptance pending",
+  "previous": "review-freeze-02.json",
+  "facts": [
+    {
+      "file": "core4/tools/stopped-host-readoption.js",
+      "sha256": "770b12980be9d971d4404cd6b7e068afc47aca8e3e77c0c33d1b6992d039a55c",
+      "bytes": 7033,
+      "sourceSnapshot": "review-freeze-02-source/core4/tools/stopped-host-readoption.js"
+    },
+    {
+      "file": "core4/tools/stopped-host-readoption-store.js",
+      "sha256": "9a766417e61c9f48aa207603375b32858a7b5092ee2ccf6d5526f6468c26a985",
+      "bytes": 7212,
+      "sourceSnapshot": "review-freeze-02-source/core4/tools/stopped-host-readoption-store.js"
+    },
+    {
+      "file": "core4/tools/stopped-host-readoption-transaction.js",
+      "sha256": "c68c241771ff73dccffd0afba8d45bb92463242437c56f9d5ee6074edd5d7162",
+      "bytes": 28561,
+      "sourceSnapshot": "review-freeze-03-source/core4/tools/stopped-host-readoption-transaction.js"
+    },
+    {
+      "file": "core4/runtime/stopped-certification.js",
+      "sha256": "8c277939cfbe9a4a592c4dbda84c1a3d0d9c9bda21463ed89b5e033ea1ba088d",
+      "bytes": 27238,
+      "sourceSnapshot": "review-freeze-02-source/core4/runtime/stopped-certification.js"
+    }
+  ],
+  "liveCalls": 0
+}

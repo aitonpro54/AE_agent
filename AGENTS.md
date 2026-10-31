@@ -43,8 +43,12 @@ fresh host re-adoption: current absent-only adopt-host не заменяет exi
 Активный [re-adoption план](plans/core-cep-r3-host-readoption-20261031.md): один
 Argon plan review получен/revise и локально разобран; source slice1 private
 evidence/lease adapter принят212PASS/9checks composed coverage и independent ACCEPT.
-Production lease issuance закрыт до canonical claim; actual stop/adoption0,
-packagecc2f/70files unchanged. Далее private transaction core2–4, затем CLI wiring.
+Private transaction core2–4 теперь принят253PASS/12current checks:7fresh checks
+и5exact unchanged reuse, independent code/test ACCEPT. Включён historical terminal
+receipt после normal owner startup; current runtime/history/barrier не объявляются
+проверенными и authority не выдаётся. Lease доступен только после canonical claim.
+Actual stop/adoption0, packagecc2f/70files unchanged. Следующий этап — CLI slice5,
+затем новый stopped flow по fresh preflight; old transactions не повторять.
 Standalone proof не подменяет configured.
 **Settled stop/update/recovery/enable не повторять,
 markers не чистить.** [Installed recovery](plans/core-cep-r3-owner-preready-20261031.md)

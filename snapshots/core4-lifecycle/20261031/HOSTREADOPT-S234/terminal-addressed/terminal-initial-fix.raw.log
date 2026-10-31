@@ -1,0 +1,37 @@
+✖ readoption-enable terminal receipt stays readonly with a live finisher, new startup gate, ready owner and later transaction/history (18215.0542ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 18304.2611
+
+✖ failing tests:
+
+test at core4\test\stopped-host-readoption-enable.test.js:4:28
+✖ readoption-enable terminal receipt stays readonly with a live finisher, new startup gate, ready owner and later transaction/history (18215.0542ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: stopped_readoption_expected_proof
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async terminal (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\stopped-host-readoption-enable.test.js:70:5)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\stopped-host-readoption-enable.test.js:73:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: stopped_readoption_expected_proof
+        at fail (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\protocol\json.js:4:49)
+        at Object.verifyStoppedReadoptionEvidence (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\tools\stopped-host-readoption.js:78:57)
+        at terminal (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\stopped-host-readoption-enable.test.js:70:32)
+        at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\stopped-host-readoption-enable.test.js:73:3)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3),
+    operator: 'rejects',
+    diff: 'simple'
+  }

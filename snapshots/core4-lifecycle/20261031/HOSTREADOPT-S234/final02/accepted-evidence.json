@@ -1,0 +1,290 @@
+{
+  "collectedAt": "2026-10-31T17:21:51.441Z",
+  "recordContext": {
+    "purpose": "development",
+    "lifetime": "product_change"
+  },
+  "currentSourceHashesMatched": 11,
+  "currentDependencyHashesMatched": 125,
+  "sourceHashes": {
+    "core4/config/validation-map.json": "07ab41cee3240d6b2a00c95fc147e877ff0213f99aea94abab4d3cf4a0142263",
+    "core4/test/stopped-host-readoption-core.test.js": "c4e9a91bd3207c6363bd2345dc9f8fbbc4af6cf927467724964a48d6cb0c3368",
+    "core4/test/stopped-host-readoption-recovery.test.js": "d5c78ed000fe079ea2bdda3d6f3970f0d3ce638f74276cd02c9ca4ae78578321",
+    "core4/test/stopped-host-readoption-enable.test.js": "e8f590203071f14cda0fd09aac3225a8a7f881c72edd221fabae06cf607aac02",
+    "core4/test/stopped-host-readoption-probe.test.js": "1af56b1d1d9d2c2eeddffe4c52f9de952102154e3de7f0356ced75ad110edcae",
+    "core4/test/stopped-host-readoption.test.js": "52640852b1c1e490035c8852b4a7bbfa91746c488bb7ea30bd2876b2d355e2f5",
+    "core4/test/fixtures/stopped-host-readoption.js": "2f0db82fc258b035b6a6107faf34054513df381e12d1591fcfbf7d764cc10600",
+    "core4/tools/stopped-host-readoption.js": "770b12980be9d971d4404cd6b7e068afc47aca8e3e77c0c33d1b6992d039a55c",
+    "core4/tools/stopped-host-readoption-store.js": "ea36f48db1c3895277bf6d4238fa485f8fc2a6c3b16ba0ff7fbeb715ee4ce6dc",
+    "core4/tools/stopped-host-readoption-transaction.js": "1dbf2360947088bff61d60a6173771241616d9820202eb8afae0b9db63a54edd",
+    "core4/runtime/stopped-certification.js": "8c277939cfbe9a4a592c4dbda84c1a3d0d9c9bda21463ed89b5e033ea1ba088d"
+  },
+  "currentCheckBindingsMatched": 12,
+  "matrix": [
+    {
+      "check": "validation-routing",
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 4967.2265,
+      "mode": "current-supplemental-shared-envelope",
+      "evidenceKey": "d1254aa9141ace40d756e1f581a0416249445208f796b31fc9031f65a8559c5a"
+    },
+    {
+      "check": "readoption-core",
+      "tests": 13,
+      "pass": 13,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 95381.0433,
+      "mode": "current-delta-run",
+      "evidenceKey": "238b31135cc1ef7d59d8a9a89624e46060861292ffd999c17c3472830b0bf85f"
+    },
+    {
+      "check": "readoption-recovery",
+      "tests": 34,
+      "pass": 34,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 407744.1779,
+      "mode": "current-delta-run",
+      "evidenceKey": "65daed3f89b9fcbd247b89f94d5fde05a91abaf1abca8251ddef5c249fabddaa"
+    },
+    {
+      "check": "readoption-enable",
+      "tests": 22,
+      "pass": 22,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 493367.6539,
+      "mode": "current-delta-run",
+      "evidenceKey": "d89109d0b6b1da297da4185d2c7cf3a3473c500a81855371a57be65dbb33d903"
+    },
+    {
+      "check": "readoption-probe",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 99.6042,
+      "mode": "current-delta-run",
+      "evidenceKey": "566200b10c05563c049d36c5edbd0ca3ebf719e3fc042edcaf190e1ce2ef80b7"
+    },
+    {
+      "check": "stopped-host-readoption",
+      "tests": 25,
+      "pass": 25,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 71774.913,
+      "mode": "current-delta-run",
+      "evidenceKey": "4a2ed7b18e882a884c30ee2c15223ac0f392afce6817c1877b82a34dbc7424e9"
+    },
+    {
+      "check": "stopped-certification",
+      "evidenceKey": "70d0eccc6307f134926486b4590fb7b8ff80acfee80dca4f25b4156120cefd87",
+      "tests": 30,
+      "pass": 30,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 58493.9609,
+      "mode": "reused-unchanged-effective-closure",
+      "baseline": "../final01/baseline-run-verification.json"
+    },
+    {
+      "check": "stopped-update",
+      "evidenceKey": "b6b5fcd1db5ed8f7c961ee838339a780c9e6b3dea5945b29ebe64c0d1504cb27",
+      "tests": 55,
+      "pass": 55,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 885421.5388,
+      "mode": "reused-unchanged-effective-closure",
+      "baseline": "../final01/baseline-run-verification.json"
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 7955.8059,
+      "mode": "current-supplemental-shared-envelope",
+      "evidenceKey": "cd9c1fde7df246f9888665244ed117c7d10d8fbce03fd8b42936542052f0dca3"
+    },
+    {
+      "check": "standalone-installer",
+      "evidenceKey": "1788d883c4fb9d8af106c000c761a6c52723357173b737b4f24edfc52b1df15b",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 12820.1076,
+      "mode": "reused-unchanged-effective-closure",
+      "baseline": "../final01/baseline-run-verification.json"
+    },
+    {
+      "check": "maintenance-finish",
+      "evidenceKey": "f142a757d47fbb0d1817c09648b94ba9dc6668f9c332d12db85aaa2076d4f1f1",
+      "tests": 32,
+      "pass": 32,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 94294.8148,
+      "mode": "reused-unchanged-effective-closure",
+      "baseline": "../final01/baseline-run-verification.json"
+    },
+    {
+      "check": "owner-maintenance",
+      "evidenceKey": "e1d3d5ea614476adb69b9986b32ccdbb619b716651a4554caa9ac590943f62b9",
+      "tests": 22,
+      "pass": 22,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 13688.9447,
+      "mode": "reused-unchanged-effective-closure",
+      "baseline": "../final01/baseline-run-verification.json"
+    }
+  ],
+  "coverage": {
+    "tests": 253,
+    "pass": 253,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0
+  },
+  "coverageKind": "composed-current-selected-coverage",
+  "freshChecks": 7,
+  "reusedChecks": 5,
+  "freshChecksSharedFrozenEnvelope": true,
+  "fullSelectedImmutableRunClaimed": false,
+  "releaseCertified": false,
+  "sourceReview": "ACCEPT terminal freeze05 and 11 new test cases; previous unchanged reviews retained",
+  "terminalFindingClosedInSource": true,
+  "actualOperatorAcceptance": false,
+  "cliDistributionAcceptance": false,
+  "selectorRecomputedWithoutRunningTests": true,
+  "testsRepeatedByParent": false,
+  "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "runtimePayloadFiles": 70,
+  "liveCalls": 0,
+  "installedWrites": 0,
+  "artifacts": [
+    {
+      "name": "capture.before.json",
+      "bytes": 51431,
+      "sha256": "ee3ec55256c2bb503f4eea97357c1d48dcf6ce46420a59487c96b328c39ec850"
+    },
+    {
+      "name": "capture.after.json",
+      "bytes": 51427,
+      "sha256": "b8aa392ca4e055eb425cef39c7ace979c1aba760fc5f823218fcb3e9c15e7223"
+    },
+    {
+      "name": "selection.before.json",
+      "bytes": 84212,
+      "sha256": "f23461d8eeadd6bdabf4ea15d596b3d12e38528d0235e4d96471e52cf78ff18e"
+    },
+    {
+      "name": "selection.after.json",
+      "bytes": 84212,
+      "sha256": "f23461d8eeadd6bdabf4ea15d596b3d12e38528d0235e4d96471e52cf78ff18e"
+    },
+    {
+      "name": "run-selection.before.json",
+      "bytes": 30377,
+      "sha256": "e5344d3d860372b15cf8ef0d891b9d701c3861bbce649b3aed99d6f16968fb52"
+    },
+    {
+      "name": "run-selection.after.json",
+      "bytes": 30377,
+      "sha256": "e5344d3d860372b15cf8ef0d891b9d701c3861bbce649b3aed99d6f16968fb52"
+    },
+    {
+      "name": "reuse.before.json",
+      "bytes": 4245,
+      "sha256": "818b1717450fc271c161fc0bfed47db7515f7e8c0f554df5a8f52992fe948f38"
+    },
+    {
+      "name": "reuse.after.json",
+      "bytes": 4245,
+      "sha256": "818b1717450fc271c161fc0bfed47db7515f7e8c0f554df5a8f52992fe948f38"
+    },
+    {
+      "name": "validate-diff.raw.log",
+      "bytes": 41954,
+      "sha256": "dca17be1df143eef2e93319793765661a6fd49fd22816f99582e3c225847de8f"
+    },
+    {
+      "name": "supplemental.json",
+      "bytes": 8666,
+      "sha256": "43dd4addcdc65c6e7ab07cbc0070de6b462ad72f280c0452d5389d32f1b1cd2e"
+    },
+    {
+      "name": "validation-routing.raw.log",
+      "bytes": 812,
+      "sha256": "ad82732e59d27bf0f1d53550f46d291b0a3d32c67ac12630172f60d7d5bb891a"
+    },
+    {
+      "name": "validation-routing.exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "name": "maintenance-finish-operator.raw.log",
+      "bytes": 1005,
+      "sha256": "46bf4156778a4e129355d11e766209548d195860b986a360e88d16bb53617ee7"
+    },
+    {
+      "name": "maintenance-finish-operator.exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "name": "prechecks.raw.log",
+      "bytes": 234,
+      "sha256": "aa71542f7c19d8fdb298f886a3ca26d78ba6fff458042f8f9c0568ff8bf26de8"
+    },
+    {
+      "name": "protected-source-package.raw.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "whitespace.json",
+      "bytes": 71,
+      "sha256": "a163f0c68ca6bf68a4c522a149be014860de5579bc65e8cdd6a0696ba7dffbe3"
+    },
+    {
+      "name": "capture.cjs",
+      "bytes": 3327,
+      "sha256": "8bcb195bbec7d6efe83c250645304d5aa8da530795f5054a30c90c9f74546f18"
+    }
+  ]
+}

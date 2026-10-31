@@ -1,0 +1,13 @@
+✔ readoption-core H03/P2 inspect-to-apply old adoption valid-bytes is a zero-write refusal (3909.5808ms)
+✔ readoption-core H03/P2 inspect-to-apply old adoption byte-equal-inode is a zero-write refusal (3587.9295ms)
+✔ readoption-core P2 replay whitespace-50k refuses before any preparation or claim (2094.6479ms)
+✔ readoption-core P2 replay canonical-over-budget refuses before any preparation or claim (2189.7632ms)
+✔ readoption-core P2 exact serialized old-byte budget remains replayable through claim and CAS (9166.5639ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21024.1982

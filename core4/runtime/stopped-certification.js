@@ -21,23 +21,27 @@ async function dead(s) {
   const o = await observeOwnerProcess(s.pid);
   if (!['absent', 'pid-reused'].includes(classifyOwnerProcess({ pid: s.pid, birthTicks: s.birthTicks }, o))) fail('stopped_certification_process_not_dead');
 }
-function tree(c, directory) {
+function tree(c, directory, extension = null) {
   c.plain(directory, false, true); const stat = fs.lstatSync(directory, { bigint: true }), names = fs.readdirSync(directory).sort();
   if (names.length > 64) fail('stopped_certification_budget');
   const allowed = ['stopped.json', 'stopped-certification-intent.json', 'stopped-certificate.json', 'retired-install-gate'];
   const entries = {};
   for (const name of names) {
+    if (extension && Object.hasOwn(extension, name)) {
+      if (!/^readopt-(?:[a-z-]+|attempt-[0-9]{2})\.json$/.test(name) || !equal(c.info(c.read(path.join(directory, name), 128 * 1024)), extension[name])) fail('stopped_readoption_extension');
+      continue;
+    }
     const base = name.replace(/\.stage-[a-f0-9-]{36}$/, '');
     if ((!allowed.includes(base) && !/^certify-[a-f0-9-]{36}\.json$/.test(base)) || (base.startsWith('certify-') && !UUID.test(base.slice(8, 44))) || (base !== name && (base === 'retired-install-gate' || !UUID.test(name.slice(base.length + 7))))) fail('stopped_certification_phase');
     const v = c.read(path.join(directory, name), 128 * 1024); if (!v.bytes) fail('stopped_certification_changed'); entries[name] = c.info(v);
   }
   return { directory: { dev: String(stat.dev), ino: String(stat.ino), birthtimeNs: String(stat.birthtimeNs) }, tree: entries };
 }
-function readBase(c, id, owned = new Map()) {
+function readBase(c, id, owned = new Map(), readoption = null) {
   if (!UUID.test(id)) fail('stopped_certification_id');
-  const barrier = c.read(c.p.barrier), b = c.decode(barrier, 'maintenance-stop', ['id', 'scope', 'protected', 'authorizationHash', 'nonce']); c.scope(b.scope);
+  const barrier = readoption?.stop || c.read(c.p.barrier), b = c.decode(barrier, 'maintenance-stop', ['id', 'scope', 'protected', 'authorizationHash', 'nonce']); c.scope(b.scope);
   if (b.id !== id || !HEX.test(b.authorizationHash) || !UUID.test(b.nonce)) fail('stopped_certification_record');
-  const directory = c.dir(id), phase = tree(c, directory), snap = c.snapshot(true);
+  const directory = c.dir(id), phase = tree(c, directory, readoption?.extension), snap = c.snapshot(true);
   const protectedFacts = Object.fromEntries(['descriptor', 'origin', 'anchor', 'client'].map(k => [k, snap.facts[k]]));
   if (!equal(b.protected, protectedFacts)) fail('stopped_certification_changed'); c.settled(snap);
   const receipt = c.read(path.join(directory, 'stopped.json'), 128 * 1024);
@@ -247,17 +251,44 @@ function readStoppedReadoptionCertificate(capability) {
   // Disk-backed evidence only, never a normal certificate brand. Slice1 accepts
   // only the untouched certified baseline: no claim/extension or owned gates.
   const p = require('../tools/stopped-host-readoption').stoppedReadoptionCertificateRequest(capability);
-  if (p.mode !== 'baseline') fail('stopped_readoption_phase');
+  if (!['baseline', 'context', 'transaction'].includes(p.mode)) fail('stopped_readoption_phase');
   contexts.set(capability, p);
   try {
     endpoint(p.reservedServer);
     const c = require('./owner-maintenance').stoppedCertificationContext(capability); c.reverify();
-    const b = readBase(c, p.id), markers = c.markers(), installGate = c.info(c.read(path.join(p.installation.installRoot, 'install.lock')));
+    if (p.mode === 'context') {
+      const result = { descriptorHash: c.descriptorHash };
+      for (const name of ['read', 'atomic', 'plain', 'info', 'snapshot', 'settled', 'reverify', 'scope']) result[name] = (...args) => {
+        if (require('../tools/stopped-host-readoption').stoppedReadoptionCertificateRequest(capability) !== p) fail('stopped_readoption_evidence_brand');
+        return c[name](...args);
+      };
+      for (const name of ['seal', 'decode']) result[name] = (...args) => {
+        if (require('../tools/stopped-host-readoption').stoppedReadoptionCertificateRequest(capability) !== p || !String(args[name === 'seal' ? 0 : 1]).startsWith('maintenance-readopt-')) fail('stopped_readoption_record');
+        return c[name](...args);
+      };
+      return Object.freeze(result);
+    }
+    const owned = p.mode === 'transaction' ? p.owned : new Map(), extension = p.mode === 'transaction' ? p.extension : null;
+    if (!(owned instanceof Map) || extension && (Object.getPrototypeOf(extension) !== Object.prototype || Object.keys(extension).length > 48)) fail('stopped_readoption_extension');
+    const stop = p.mode === 'transaction' && p.archivedStop ? c.read(path.join(c.dir(p.id), 'readopt-stop.json'), 128 * 1024) : c.read(c.p.barrier);
+    const buffers = new Map();
+    for (const [file, fact] of owned) {
+      if (![path.join(p.installation.installRoot, 'install.lock'), path.join(p.installation.stateDir, 'broker/broker-owner.gate')].includes(file)) fail('stopped_readoption_extension');
+      const actual = c.read(file); if (!actual.bytes || !equal(c.info(actual), fact)) fail('stopped_readoption_extension'); buffers.set(file, actual.bytes);
+    }
+    const b = readBase(c, p.id, buffers, extension ? { extension, stop } : null), markers = c.markers(), installGate = c.info(c.read(path.join(p.installation.installRoot, 'install.lock')));
     if (!b.certificate) fail('stopped_certification_phase');
+    if (buffers.has(path.join(p.installation.installRoot, 'install.lock'))) Object.assign(installGate, NIL());
+    if (buffers.has(path.join(p.installation.stateDir, 'broker/broker-owner.gate'))) markers['broker/broker-owner.gate'] = NIL();
     if (Object.values(markers).some(v => v.hash !== null) || installGate.hash !== null) fail('stopped_certification_changed');
     assertLifecycleTransactions(c, b.certificate.lifecycle);
     if (!equal(b.certificate.lifecycle.markers, Object.fromEntries(['owner', 'ownerNext', 'diagnostic', 'brokerOwner', 'brokerGate', 'receiverOwner', 'gate'].map(name => [name, { name, ...NIL() }])))) fail('stopped_certification_changed');
     const facts = { id: p.id, stopHash: hash(b.barrier.bytes), stop: c.info(b.barrier), certificateHash: hash(b.certView.bytes), descriptorHash: c.descriptorHash, snapshot: b.snap.facts, phase: b.phase, lifecycle: b.certificate.lifecycle, markers, installGate };
+    if (p.mode === 'transaction') {
+      if (!p.expectedFacts || facts.stop.hash !== p.expectedFacts.stop.hash || !sameMoved(facts.stop.stat, p.expectedFacts.stop.stat) || facts.stop.stat.birthtimeNs !== p.expectedFacts.stop.stat.birthtimeNs) fail('stopped_readoption_base_changed');
+      facts.stop = structuredClone(p.expectedFacts.stop);
+      if (!equal(facts, p.expectedFacts)) fail('stopped_readoption_base_changed');
+    }
     return { facts, actors: [b.b.scope, b.intent.certifier, ...b.attempts.map(a => a.certifier), b.certificate.certifier] };
   } finally { contexts.delete(capability); }
 }

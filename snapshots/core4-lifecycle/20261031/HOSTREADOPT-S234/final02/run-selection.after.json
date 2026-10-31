@@ -1,0 +1,843 @@
+{
+  "mode": "scoped",
+  "certification": "selected-artifacts-only",
+  "releaseCertified": false,
+  "contractImpacts": [],
+  "checks": [
+    {
+      "check": "readoption-enable",
+      "reasons": [
+        "changed owner readoption-enable: core4/test/stopped-host-readoption-enable.test.js",
+        "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-store.js",
+        "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-transaction.js",
+        "changed component dependency test/stopped-host-readoption-enable.test.js: core4/test/stopped-host-readoption-enable.test.js",
+        "changed component dependency tools/stopped-host-readoption-store.js: core4/tools/stopped-host-readoption-store.js",
+        "changed component dependency tools/stopped-host-readoption-transaction.js: core4/tools/stopped-host-readoption-transaction.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/stopped-host-readoption-enable.test.js",
+          "readoption-enable",
+          "readoption-enable"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption",
+          "readoption-enable"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption",
+          "readoption-enable"
+        ],
+        [
+          "core4/test/stopped-host-readoption-enable.test.js",
+          "test/stopped-host-readoption-enable.test.js",
+          "readoption-enable"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/stopped-host-readoption-store.js",
+          "readoption-enable"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/stopped-host-readoption-transaction.js",
+          "readoption-enable"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-enable",
+        "test/stopped-host-readoption-enable.test.js"
+      ],
+      "evidenceKey": "d89109d0b6b1da297da4185d2c7cf3a3473c500a81855371a57be65dbb33d903",
+      "reason": "changed owner readoption-enable: core4/test/stopped-host-readoption-enable.test.js; changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-store.js; changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-transaction.js; changed component dependency test/stopped-host-readoption-enable.test.js: core4/test/stopped-host-readoption-enable.test.js; changed component dependency tools/stopped-host-readoption-store.js: core4/tools/stopped-host-readoption-store.js; changed component dependency tools/stopped-host-readoption-transaction.js: core4/tools/stopped-host-readoption-transaction.js",
+      "dependencyPath": [
+        [
+          "core4/test/stopped-host-readoption-enable.test.js",
+          "readoption-enable",
+          "readoption-enable"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption",
+          "readoption-enable"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption",
+          "readoption-enable"
+        ],
+        [
+          "core4/test/stopped-host-readoption-enable.test.js",
+          "test/stopped-host-readoption-enable.test.js",
+          "readoption-enable"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/stopped-host-readoption-store.js",
+          "readoption-enable"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/stopped-host-readoption-transaction.js",
+          "readoption-enable"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption-enable.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    },
+    {
+      "check": "stopped-host-readoption",
+      "reasons": [
+        "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-store.js",
+        "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-transaction.js",
+        "changed component dependency tools/stopped-host-readoption-store.js: core4/tools/stopped-host-readoption-store.js",
+        "changed component dependency tools/stopped-host-readoption-transaction.js: core4/tools/stopped-host-readoption-transaction.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption",
+          "stopped-host-readoption"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption",
+          "stopped-host-readoption"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "evidenceKey": "4a2ed7b18e882a884c30ee2c15223ac0f392afce6817c1877b82a34dbc7424e9",
+      "reason": "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-store.js; changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-transaction.js; changed component dependency tools/stopped-host-readoption-store.js: core4/tools/stopped-host-readoption-store.js; changed component dependency tools/stopped-host-readoption-transaction.js: core4/tools/stopped-host-readoption-transaction.js",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption",
+          "stopped-host-readoption"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption",
+          "stopped-host-readoption"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    },
+    {
+      "check": "readoption-core",
+      "reasons": [
+        "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-store.js",
+        "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-transaction.js",
+        "changed component dependency tools/stopped-host-readoption-store.js: core4/tools/stopped-host-readoption-store.js",
+        "changed component dependency tools/stopped-host-readoption-transaction.js: core4/tools/stopped-host-readoption-transaction.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption",
+          "readoption-core"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption",
+          "readoption-core"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/stopped-host-readoption-store.js",
+          "readoption-core"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/stopped-host-readoption-transaction.js",
+          "readoption-core"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-core",
+        "test/stopped-host-readoption-core.test.js"
+      ],
+      "evidenceKey": "238b31135cc1ef7d59d8a9a89624e46060861292ffd999c17c3472830b0bf85f",
+      "reason": "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-store.js; changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-transaction.js; changed component dependency tools/stopped-host-readoption-store.js: core4/tools/stopped-host-readoption-store.js; changed component dependency tools/stopped-host-readoption-transaction.js: core4/tools/stopped-host-readoption-transaction.js",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption",
+          "readoption-core"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption",
+          "readoption-core"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/stopped-host-readoption-store.js",
+          "readoption-core"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/stopped-host-readoption-transaction.js",
+          "readoption-core"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption-core.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    },
+    {
+      "check": "readoption-recovery",
+      "reasons": [
+        "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-store.js",
+        "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-transaction.js",
+        "changed component dependency tools/stopped-host-readoption-store.js: core4/tools/stopped-host-readoption-store.js",
+        "changed component dependency tools/stopped-host-readoption-transaction.js: core4/tools/stopped-host-readoption-transaction.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption",
+          "readoption-recovery"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption",
+          "readoption-recovery"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/stopped-host-readoption-store.js",
+          "readoption-recovery"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/stopped-host-readoption-transaction.js",
+          "readoption-recovery"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-recovery",
+        "test/stopped-host-readoption-recovery.test.js"
+      ],
+      "evidenceKey": "65daed3f89b9fcbd247b89f94d5fde05a91abaf1abca8251ddef5c249fabddaa",
+      "reason": "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-store.js; changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-transaction.js; changed component dependency tools/stopped-host-readoption-store.js: core4/tools/stopped-host-readoption-store.js; changed component dependency tools/stopped-host-readoption-transaction.js: core4/tools/stopped-host-readoption-transaction.js",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption",
+          "readoption-recovery"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption",
+          "readoption-recovery"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/stopped-host-readoption-store.js",
+          "readoption-recovery"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/stopped-host-readoption-transaction.js",
+          "readoption-recovery"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption-recovery.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    },
+    {
+      "check": "readoption-probe",
+      "reasons": [
+        "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-store.js",
+        "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-transaction.js",
+        "changed component dependency tools/stopped-host-readoption-store.js: core4/tools/stopped-host-readoption-store.js",
+        "changed component dependency tools/stopped-host-readoption-transaction.js: core4/tools/stopped-host-readoption-transaction.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption",
+          "readoption-probe"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption",
+          "readoption-probe"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/stopped-host-readoption-store.js",
+          "readoption-probe"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/stopped-host-readoption-transaction.js",
+          "readoption-probe"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-probe",
+        "test/stopped-host-readoption-probe.test.js"
+      ],
+      "evidenceKey": "566200b10c05563c049d36c5edbd0ca3ebf719e3fc042edcaf190e1ce2ef80b7",
+      "reason": "changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-store.js; changed owner stopped-host-readoption: core4/tools/stopped-host-readoption-transaction.js; changed component dependency tools/stopped-host-readoption-store.js: core4/tools/stopped-host-readoption-store.js; changed component dependency tools/stopped-host-readoption-transaction.js: core4/tools/stopped-host-readoption-transaction.js",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "stopped-host-readoption",
+          "readoption-probe"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "stopped-host-readoption",
+          "readoption-probe"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/stopped-host-readoption-store.js",
+          "readoption-probe"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/stopped-host-readoption-transaction.js",
+          "readoption-probe"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption-probe.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    }
+  ],
+  "executionBatches": [
+    {
+      "checks": [
+        "readoption-enable"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-enable)",
+        "test/stopped-host-readoption-enable.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "stopped-host-readoption"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-host-readoption)",
+        "test/stopped-host-readoption.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "readoption-core"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-core)",
+        "test/stopped-host-readoption-core.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "readoption-recovery"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-recovery)",
+        "test/stopped-host-readoption-recovery.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "readoption-probe"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-probe)",
+        "test/stopped-host-readoption-probe.test.js"
+      ]
+    }
+  ],
+  "deferredCoverage": [
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-host-readoption-store.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-transaction.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "core-control",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-host-readoption-store.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-transaction.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/",
+          "core-control"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/",
+          "core-control"
+        ]
+      ]
+    },
+    {
+      "check": "core-admission",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-host-readoption-store.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-transaction.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/",
+          "core-admission"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/",
+          "core-admission"
+        ]
+      ]
+    },
+    {
+      "check": "worker-isolation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-host-readoption-store.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-transaction.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/",
+          "worker-isolation"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/",
+          "worker-isolation"
+        ]
+      ]
+    },
+    {
+      "check": "protocol-codec",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-host-readoption-store.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-transaction.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/",
+          "protocol-codec"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/",
+          "protocol-codec"
+        ]
+      ]
+    },
+    {
+      "check": "workflow-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-host-readoption-store.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-transaction.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/",
+          "workflow-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "validation-routing",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-host-readoption-store.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-transaction.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/",
+          "validation-routing"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/",
+          "validation-routing"
+        ]
+      ]
+    },
+    {
+      "check": "artifact-boundaries",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-host-readoption-store.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-transaction.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/",
+          "artifact-boundaries"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/",
+          "artifact-boundaries"
+        ]
+      ]
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-host-readoption-store.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-transaction.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/",
+          "cep-transport"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/test/stopped-host-readoption-enable.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-store.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/stopped-host-readoption-transaction.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/test/stopped-host-readoption-enable.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-store.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/stopped-host-readoption-transaction.js",
+          "tools/",
+          "lifecycle-simulation"
+        ]
+      ]
+    }
+  ]
+}

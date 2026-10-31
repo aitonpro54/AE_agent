@@ -1,0 +1,13 @@
+✔ [validation-routing] A4 diff maps single owner reverse contracts and dependency-keyed cache (614.9544ms)
+✔ [artifact-boundaries validation-routing titles-owner] scoped package seal reads only selected module closure while others physically absent (171.5359ms)
+✔ [validation-routing] actual titles-only diff checks pass with photo and engine absent from their source tree (1940.64ms)
+✔ [validation-routing] shared Core dependencies select component consumers while byte-only integrations remain explicit deferred coverage (1966.225ms)
+✔ [validation-routing] declared semantic contract impacts select consumers without claiming private-file semantic equivalence (202.2333ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4967.2265

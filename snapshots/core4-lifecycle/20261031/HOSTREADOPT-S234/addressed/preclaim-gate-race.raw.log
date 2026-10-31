@@ -1,0 +1,10 @@
+✔ readoption-core P2 foreign install gate during inert publication cannot become owned or publish a claim (4374.8367ms)
+✔ readoption-core P2 foreign broker gate during inert publication cannot become owned or publish a claim (4233.9122ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8678.5093

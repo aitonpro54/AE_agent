@@ -1,0 +1,28 @@
+{
+  "observedAt": "2026-10-31T15:46:49.288Z",
+  "purpose": "local P2 correction delta review; acceptance pending",
+  "previous": "review-freeze-01.json",
+  "facts": [
+    {
+      "file": "core4/tools/stopped-host-readoption.js",
+      "sha256": "770b12980be9d971d4404cd6b7e068afc47aca8e3e77c0c33d1b6992d039a55c",
+      "bytes": 7033
+    },
+    {
+      "file": "core4/tools/stopped-host-readoption-store.js",
+      "sha256": "9a766417e61c9f48aa207603375b32858a7b5092ee2ccf6d5526f6468c26a985",
+      "bytes": 7212
+    },
+    {
+      "file": "core4/tools/stopped-host-readoption-transaction.js",
+      "sha256": "a9cf7f10741a95114c4be0c77daf58d4f6daa54f1e6f4ac1125a98d011a55f56",
+      "bytes": 28273
+    },
+    {
+      "file": "core4/runtime/stopped-certification.js",
+      "sha256": "8c277939cfbe9a4a592c4dbda84c1a3d0d9c9bda21463ed89b5e033ea1ba088d",
+      "bytes": 27238
+    }
+  ],
+  "liveCalls": 0
+}
