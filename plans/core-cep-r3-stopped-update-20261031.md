@@ -35,7 +35,9 @@
   [milestone](core-cep-r3-stopped-certification-20261031.md).
 - [x] Stopped update/forward recovery и explicit enable/finish, initial legacy
   normal+recovery пути: immutable354selectedPASS, bounded review fixes приняты.
-- [ ] First legacy migration, новая установка и configured-client read-back.
+- [x] First legacy migration, новая установка, read-back и explicit enable.
+- [x] Standard installed stdio clients: ready owner9812, singleton/EOF proof.
+- [ ] Configured-client read-back после ручного Codex restart.
 
 Финальная source closure: UPDATE4 run`e0a8f3d4-5ae6-495b-bf01-890d50a75d1f`,
 354PASS,0FAIL,23checks/22batches, sourceUnchanged=true. 17 успешных batches
@@ -108,4 +110,34 @@ CAS и normal legacy staged admission. New6normal-flow/29legacy/28update cases
 legacy process/profile fixtures синтетические. Реальный initial legacy preflight
 подтверждён отдельно, без stop/dispatch.
 
-Actual install/stop/enable и configured proof пока0; AE/AEP не менялись.
+## Installed result
+
+Source commit`867f506`, certification`573a8fd`. Migration
+`19ebf044-9314-416c-b146-04d49472d61c`, update transaction
+`49a5ec88-50fd-4b6d-8f26-edf265fc080c` settled: updated=true/update-stopped, затем
+fresh inspect switchIndex5 и explicit enabled=true/runtimeStarted=false.
+Original Core12432 остановлен через retained native handle, receipt state stopped.
+Ни один AE dispatch, restart AE, save или изменение AEP не выполнялись.
+
+Новая installation/client/CEP release проверена; installation identity и оба origin
+hashes сохранены, receiver journal тот же16events/SHA2564cfe8817…f45. После enable
+Core PID9812 стартовал штатным client-entry; ready=true, ownershipFault=null,
+ledgerFault=false, unresolved=[], physical pending=null/storeClosed=false/unknown=false.
+Два stdio clients видят тот же PID, EOF обоих оставляет owner alive. Это standalone
+proof; configured-client proof им не подменяется.
+
+Первый cold status исчерпал attach deadline и вернул owner_unavailable, пока owner
+заканчивал boot. Fresh observer затем подключился к уже active9812 без второго
+owner/ручного ремонта. Это open R5 timing observation, не потерянная mutation.
+Старт AE/actual CEP и MSIX/app lifetime ещё не приняты.
+
+Configured core_status после update дал Transport closed. UI toggle пользователь
+не смог переключить; предложен ручной restart Codex. Config verified enabled=true,
+command Node24 и args указывают на новый client-entry/core-client.json; hash
+`e72411106e8ebc66e02788acd33c8a31011b1036d8ec8748ce6937f1761ece9f`.
+Installed receipts/санитизированные наблюдения —
+`snapshots/core4-lifecycle/20261031/INSTALLED/`. Native journals/keys/полные runtime
+transactions остаются только в machine-local installation и не копировались сюда.
+
+Следующий шаг — [checkpoint](core-cep-checkpoint-installed-20261031.md), без повторного
+stop/update/enable. Actual configured proof пока pending, AE/AEP unchanged.

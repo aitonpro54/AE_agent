@@ -16,7 +16,12 @@ Core/CEP](plans/core-cep-lifecycle-20261030.md). Организационный 
 чат `01a18cce-e909-72d1-a327-07743704304e`; прежний T2-маршрут не возобновлять
 автоматически. Titles сохранён как проверочный сценарий, развитие продуктов
 следует после этого этапа. Выбрана модель одного installation-scoped Core owner
-с тонкими stdio clients и явным controller lease; installed runtime пока прежний.
+с тонкими stdio clients и явным controller lease. 31 октября installed runtime
+переведён на owner package`8a79e069…`; normal legacy update и explicit enable
+завершены, два штатных stdio clients подтвердили один ready owner. Configured
+transport Codex требует ручного restart приложения (старый `Transport closed`).
+Точный [installed checkpoint](plans/core-cep-checkpoint-installed-20261031.md)
+содержит settled IDs и следующий read-only шаг; migration/update не повторять.
 Эта запись не выдаёт runtime authority и не снимает pending/UNKNOWN/fences.
 
 В общей схеме Argon достаточно одного review на самостоятельный этап, затем

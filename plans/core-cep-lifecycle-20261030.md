@@ -138,6 +138,12 @@ R3 не использует fake production epoch и не переносит au
 - [x] R3d2b2 source: stopped update/rotation/explicit enable, legacy normal и
   dedicated recovery, immutable354selectedPASS после bounded review fixes;
   [контракт/evidence](core-cep-r3-stopped-update-20261031.md). Actual switch следующий.
+- [x] Actual first legacy→owner switch/enable: package8a79e069, owner PID9812,
+  ready=true, physical store open/unknown=false, old history16events unchanged.
+  Два standard stdio clients — один owner; EOF обоих/parent exit owner не закрыли.
+  Configured-client proof ждёт manual Codex restart: старый transport closed,
+  пользователь подтвердил невозможность переключить MCP toggle и предложил restart.
+  [Продолжение без повторной установки](core-cep-checkpoint-installed-20261031.md).
 - [ ] R3d2–R5: update/adoption/legacy migration и installed CEP/runtime приёмка;
   устойчивость installed runtime пока не заявлена.
 
