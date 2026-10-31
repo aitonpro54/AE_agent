@@ -79,9 +79,14 @@ standard proof до restart: configured oldcc2f далowner_unavailable. Пол�
 birth639290764154052560/boot805165c7… ready, один3457;5clients текущие/stalecc2f0,
 old23816 absent. HMAC recovery6b6a3d4c…/readyec7594f2… и exact archives/current
 replacement подтверждены. Причина выхода23816 не наблюдалась, survival не заявлен.
-History28/config/origins/adoption/AEP unchanged, pending/UNKNOWN/faults0.
-CEP runtime_wait_expired/peer=false; Connect запрошен. Затем fresh configured
-acquire/core_connect/contracts/project/Titles read; source tests не подменяют native.
+После user Connect same16772/peerpanel-60fa36ee… connected, explicit acquire1/
+core_connect available=true. Fresh project-inspection exact comp218/layer219 PASS;
+Titles terminal rejected/titles_missing_stroke_color, command7f249231…/executor6d84….
+Original durable reply/finite diagnostic сверены;32settled events/prefix28 preserved,
+config/origins/adoption/AEP unchanged, ledger/gates/pending/UNKNOWN/faults0, lease1
+released. Actual new build/run/mutation0. Active R5 разбирает native CharacterRange
+missing color без fake/default/drop proof и без raw/style probes; source/install
+до принятого решения не менять. Source tests не подменяют native.
 AE restart/save/mutation0. Не повторять f1b8/9053/c4c0/old transactions и не чистить
 markers. Full release/deferred closures не переобъявлять PASS.
 Не повторять c4c0af30 и old transactions; markers не чистить.

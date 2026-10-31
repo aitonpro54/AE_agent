@@ -1,0 +1,41 @@
+{
+  "collectedAt": "2026-10-31T20:53:27.241Z",
+  "journalEvents": 32,
+  "journalHash": "ddba46ecdbc18238edc58531e3f426e25e27e4b1aa482c31ea7c86518e8824a7",
+  "prefix28Hash": "d5d0fcc63a2a6c5102393e47f9724e92d8d761e295e301050df5f5c94e77a82a",
+  "newCommands": [
+    {
+      "seq": 29,
+      "completeSeq": 30,
+      "commandId": "inspect-aa97720e-3dfd-47cc-8190-df847c3ca9b6",
+      "moduleId": "project-inspection",
+      "phase": "inspect",
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "resultHash": "bf08c29e099e3f26ed567a23ff32cc714d1fe9701bad37f21b8022781d31f01e"
+    },
+    {
+      "seq": 31,
+      "completeSeq": 32,
+      "commandId": "inspect-7f249231-8279-450a-8644-43df98a8253a",
+      "moduleId": "titles-current-target",
+      "phase": "inspect",
+      "executorHash": "6d84fdbbf09352db6b77cf4470e84e785d7cafa30979df98de988ba6a70c8132",
+      "resultHash": "3231c4df58865c24832e2b8fcc7ba2b443349c40841065e88220c5fb35d71fce"
+    }
+  ],
+  "nativeFailure": {
+    "readFailureVersion": 1,
+    "outcome": "rejected",
+    "code": "titles_missing_stroke_color"
+  },
+  "finiteDiagnosticMatchesOriginalReply": true,
+  "physicalUnknown": false,
+  "ledgerPresent": false,
+  "controllerGeneration": 1,
+  "controllerReleased": true,
+  "newMutationDispatches": 0,
+  "buildProposalRun": 0,
+  "aeRestart": 0,
+  "save": 0,
+  "coverageGap": "missing code covers undefined or null; stroke enabled flag, missing value identity and precise native cause are not observed"
+}

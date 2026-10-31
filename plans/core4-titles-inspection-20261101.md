@@ -45,7 +45,8 @@ messages/stacks/values не выводятся, дополнительный too
   read-back и standard client/CEP proof.
 - [x] Configured client после restart загрузил be9afe99; exact native/HMAC recovery
   от23816 к16772 подтверждён, история/привязки сохранены.
-- [ ] CEP Connect и fresh typed Titles inspection на configured be9afe99.
+- [x] CEP Connect и fresh configured project/Titles read: project PASS,
+  Titles terminal rejected/titles_missing_stroke_color; native snapshot acceptance открыта.
 - [ ] Compiler/build/proposal/dry-run и исполнение с локальным подтверждением
   текущей цели, original receipt/read-back и кадр; без save.
 
@@ -228,3 +229,30 @@ Decision Log: это configured proof нового пакета, новый stop
 ещё0, controller не приобретался, AE restart/save/mutation0. После Connect
 продолжить acquire→core_connect→fresh project/Titles inspection и заданный R5 flow.
 Evidence — R5TITLES-CONFIGURED; source suites не повторялись.
+
+## Configured native read — получен точный missing-field отказ
+
+Progress: пользователь нажал Connect; same16772/boot805165c7…/be9afe99,
+peerpanel-60fa36ee… connected/inspectionAvailable=true. Explicit controller
+generation1 acquired, core_connect available=true/synthetic=false; fresh contracts
+подтвердили Titles pin189c58bf…. Project-inspection29/30: exact current test-copy,
+465items, Text_1_1/comp218, PAPER TITLES/layer219. Один Titles inspect31/32
+завершился rejected/titles_missing_stroke_color; command
+inspect-7f249231-8279-450a-8644-43df98a8253a/executor6d84fdbb….
+
+Validation: finite physical.lastReadFailure совпал с original durable reply;
+observer проверил оба exact command/result bindings и32settled receiver events,
+SHA ddba46ec…, prefix28 d5d0fcc6… unchanged. Descriptor/client/config/origins/
+adoption/AEP прежние, ledger/gates absent, pending/UNKNOWN/faults0. Lease generation1
+released. MCP owner_outcome_uncertain в данном случае — скрывающий exception
+generic wrapper; independent receiver evidence доказывает terminal readonly rejection,
+не неизвестную mutation. New mutation/build/proposal/run0, save/AE restart0.
+
+Decision Log: missing-field код означает undefined ИЛИ null; сам native отказ
+не подтверждает значение applyStroke, mixed state или точную причину недоступности.
+Предыдущая гипотеза «CharacterRange всегда даст dormant RGB» не доказана на этой
+цели; установленный executor штатно fail-closed. Новый raw probe, смена цвета или
+включение обводки на пользовательском слое для удобства запрещены. Существующему
+ae_specialist/XHigh поручен read-only source/API design: полный защищённый proof
+без fabricated/default/dropped colors либо честный контрактный gap. До принятого
+решения source/install повторно не меняются. Новый Argon review не запускается.

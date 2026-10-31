@@ -1,0 +1,125 @@
+{
+  "collectedAt": "2026-10-31T20:52:19.732Z",
+  "status": {
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "26337fc2-9eae-440a-ba6e-3b82c6f45f1b",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 1,
+      "holderClientId": "043317a0-0717-4a30-b8cb-76a765e8e504",
+      "mode": "held",
+      "pending": false
+    },
+    "automaticLifecycle": "unavailable",
+    "closed": false,
+    "composition": "manual",
+    "connection": "connected",
+    "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionPolicy": "read-only-current-observation-v1",
+    "installation": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "machineId": "MSI",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43"
+    },
+    "ledgerFault": false,
+    "lifecycle": {
+      "birthTicks": "639290764154052560",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "d5d0fcc63a2a6c5102393e47f9724e92d8d761e295e301050df5f5c94e77a82a",
+          "eventCount": 28,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 16772,
+      "processBootId": "805165c7-0da7-433e-be27-d5a5196a76c1",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "maintenance": {
+      "fault": null,
+      "id": null,
+      "phase": "running",
+      "requested": false
+    },
+    "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+    "ownershipFault": null,
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": true,
+      "lastReadFailure": {
+        "authority": false,
+        "code": "titles_missing_stroke_color",
+        "commandId": "inspect-7f249231-8279-450a-8644-43df98a8253a",
+        "executorHash": "6d84fdbbf09352db6b77cf4470e84e785d7cafa30979df98de988ba6a70c8132",
+        "moduleId": "titles-current-target",
+        "phase": "inspect"
+      },
+      "listening": true,
+      "peer": {
+        "connected": true,
+        "peerId": "panel-60fa36ee829b956578f73d28674d8160f8f60b03e6a8c3c6"
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "pid": 16772,
+    "product": "AE Agent Core 4.0.0",
+    "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+    "ready": true,
+    "resourceProvider": {
+      "adopted": true,
+      "coverage": {
+        "core4Lane": "cooperating-Core4-only",
+        "hostProcess": "adopted-reprobe-required",
+        "legacyEndpoints": "named-probes-only",
+        "legacyPhysicalQueue": "not-proven",
+        "otherAEActors": "outside-coverage",
+        "sharedOutputs": "not-requested"
+      },
+      "origin": {
+        "aePid": 26308,
+        "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "machineId": "MSI"
+      }
+    },
+    "synthetic": false,
+    "unavailableReason": null,
+    "unresolved": [],
+    "worker": {
+      "epoch": 0,
+      "lateReplies": 0,
+      "loaded": [],
+      "pending": 0,
+      "pid": null
+    }
+  }
+}

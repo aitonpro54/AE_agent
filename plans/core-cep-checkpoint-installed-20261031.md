@@ -16,9 +16,13 @@ archives/intent→completion/current replacement проверены, ручно�
 Причина выхода23816 не наблюдалась; app restart survival не заявляется.
 Descriptor/client/config/origins/adoption/AEP и28settled events unchanged,
 ledger/gates/pending/UNKNOWN/faults0, controller generation0/idle.
-AE26308/birth прежний. CEP показывает runtime_wait_expired; peer/inspectionAvailable
-false, Connect запрошен у пользователя. После него acquire→core_connect→fresh
-project/Titles read. Actual new Titles inspection/build/run0, save/mutation/restart0.
+AE26308/birth прежний. После ручного Connect peerpanel-60fa36ee… подключён;
+configured core_connect available=true, project-inspection exact comp218/layer219 PASS.
+Один Titles native read terminal rejected/titles_missing_stroke_color, executor6d84fdbb…;
+32settled events/SHA ddba46ec…, prefix28 прежний. Generic MCP error unknown label
+не подменяет проверенный original readonly terminal reply. Lease generation1 released,
+pending/UNKNOWN/faults0. Active R5 продолжает bounded source/API разбор отсутствующего
+цвета CharacterRange; actual new build/run/mutation0, save/AE restart0.
 Evidence — R5TITLES-CONFIGURED; активный R5 план прежний. Settled operations не повторять.
 
 ## Предыдущий checkpoint: R5 repair установлен, standard owner23816 ready

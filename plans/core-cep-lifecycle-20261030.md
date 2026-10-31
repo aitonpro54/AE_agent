@@ -480,3 +480,13 @@ pending/UNKNOWN/faults0. Причина выхода23816 не установл�
 Decision Log: CEP runtime_wait_expired/peer=false; штатный Connect запрошен.
 Затем configured acquire/core_connect/project/Titles read по активному R5 плану;
 new native Titles mutation0, save/AE restart0. Evidence — R5TITLES-CONFIGURED.
+
+1ноября — после user Connect configured peer/core_connect готовы на16772/be9afe99.
+Progress: native project-inspection29/30 exact test-copy/comp218/layer219 PASS;
+Titles31/32 terminal rejected/titles_missing_stroke_color. Validation: original
+receiver reply совпал с finite status tuple,32settled events/prefix28 unchanged,
+protected bytes прежние, ledger/gates/pending/UNKNOWN/faults0, lease1 released.
+Decision Log: связь проверена; Titles snapshot acceptance остаётся открытой.
+Missing code не различает undefined/null и не доказывает applyStroke. Продолжается
+bounded source/API design сложного native field interaction, без raw/style probes,
+нового Argon и source/install writes до принятого решения. Build/run/mutation/save0.

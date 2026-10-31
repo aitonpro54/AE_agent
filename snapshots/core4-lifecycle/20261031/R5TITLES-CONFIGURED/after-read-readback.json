@@ -1,0 +1,219 @@
+{
+  "collectedAt": "2026-10-31T20:52:25.475Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "phase": "after-read",
+  "configuredPackageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+  "owner": {
+    "pid": 16772,
+    "birthTicks": "639290764154052560",
+    "bootId": "805165c7-0da7-433e-be27-d5a5196a76c1",
+    "sealVerified": true
+  },
+  "prior": {
+    "version": 1,
+    "pid": 23816,
+    "status": "absent",
+    "birthTicks": null,
+    "executablePath": null,
+    "observedAt": "2026-10-31T20:52:22.393Z"
+  },
+  "current": {
+    "version": 1,
+    "pid": 16772,
+    "status": "present",
+    "birthTicks": "639290764154052560",
+    "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+    "observedAt": "2026-10-31T20:52:22.916Z"
+  },
+  "inventory": {
+    "processes": [
+      {
+        "pid": 26308,
+        "kind": "AE",
+        "packageHash": "",
+        "birthTicks": "639290395690521480"
+      },
+      {
+        "pid": 8904,
+        "kind": "client",
+        "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+        "birthTicks": "639290762203813040"
+      },
+      {
+        "pid": 29572,
+        "kind": "client",
+        "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+        "birthTicks": "639290762343843700"
+      },
+      {
+        "pid": 13864,
+        "kind": "client",
+        "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+        "birthTicks": "639290762467658650"
+      },
+      {
+        "pid": 19944,
+        "kind": "client",
+        "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+        "birthTicks": "639290762583181070"
+      },
+      {
+        "pid": 18824,
+        "kind": "client",
+        "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+        "birthTicks": "639290762658062280"
+      },
+      {
+        "pid": 16772,
+        "kind": "owner",
+        "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+        "birthTicks": "639290764154052560"
+      }
+    ],
+    "listeners": [
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 3457,
+        "OwningProcess": 16772
+      }
+    ]
+  },
+  "protectedHashes": {
+    "descriptor": "50bd6835edb91cb0edaad9363cbce33e498d3622408b83ef4565c6113b53466c",
+    "client": "94d94d77bd6494ae0d66c048cccd7060db40079832cbfbe091767895a3493047",
+    "config": "ca895a00ebf6c5d92bcc56654f03cfed4d30146ce6ba05568c4e53cc9904e95d",
+    "rootOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "anchorOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "adoption": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa"
+  },
+  "receiver": {
+    "present": true,
+    "byteHash": "ddba46ecdbc18238edc58531e3f426e25e27e4b1aa482c31ea7c86518e8824a7",
+    "eventCount": 32,
+    "tailHash": "5e65a923ed8c4730aa9e6fc698ae7c59a52cf9f2d3371181a0892640aa7ce949",
+    "coverage": "supplied-history-bytes",
+    "historyFilesObserved": false,
+    "authority": false,
+    "identity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+    "commands": [
+      {
+        "commandId": "inspect-2a2b1fcf-fa87-46fd-a990-0cd26689aa1c",
+        "state": "unknown",
+        "physicalUnknown": false,
+        "terminalDisposition": true
+      },
+      {
+        "commandId": "inspect-c8d064d5-88b8-4fc2-a316-ccd9a99ccea9",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-cb5a4fef-1e45-4f50-9974-e67304de1cbe",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-c5e4cc9b-9c3d-417e-be2f-44ad06b8a197",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-c5486a3b-63bd-433f-99f9-9a399d2db3f6",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-e89130ba-5b3b-43b2-96d8-64813200e850",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-f9b839fe-c85b-4e8d-8730-5a2d218e56f5",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-95ab4c19-063a-4cc9-b7d9-1e049e4b8581",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-6b748da8-e70b-4196-87d2-1a4ba761fcfe",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-a8faf292-187e-47ed-b308-48da7cae974c",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-310e22c1-b39a-481a-9339-3d7ddfb3816b",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-fb7760d7-90d1-4044-a1a8-05e51f393676",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-39e4deea-b0d0-427d-844e-0ef7d4cb2f7b",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-aa97720e-3dfd-47cc-8190-df847c3ca9b6",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      },
+      {
+        "commandId": "inspect-7f249231-8279-450a-8644-43df98a8253a",
+        "state": "completed",
+        "physicalUnknown": false,
+        "terminalDisposition": false
+      }
+    ],
+    "unresolved": [],
+    "settled": true
+  },
+  "ledger": {
+    "present": false,
+    "byteHash": null,
+    "eventCount": 0,
+    "tailHash": null,
+    "coverage": "supplied-history-bytes",
+    "historyFilesObserved": false,
+    "authority": false,
+    "commands": [],
+    "reservations": [],
+    "constraintFences": [],
+    "unresolved": [],
+    "settled": true
+  },
+  "prefix28Hash": "d5d0fcc63a2a6c5102393e47f9724e92d8d761e295e301050df5f5c94e77a82a",
+  "savedAep": {
+    "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\titles-product\\20261030\\live\\Titles-T2-test.aep",
+    "bytes": 33557830,
+    "hash": "e3b249894cbd602c44483b12b3847e97fa23c358c429687755f88e90d5b9f170"
+  },
+  "peerConnectedObserved": true,
+  "aeRestart": 0,
+  "save": 0
+}
