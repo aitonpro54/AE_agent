@@ -1,0 +1,656 @@
+{
+  "collectedAt": "2026-10-31T11:31:25.256Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "sourceBaseline": "e50dbeb",
+  "sourceHashes": {
+    "core4/config/validation-map.json": "90a6c7c6d9a1d6a1dec3d14188995c9436fc3890b5211aa680a94ac7192c7f37",
+    "core4/runtime/stopped-certification.js": "8bda8eb1e9aaa5879322a4934d43608d0a71a2a268056ef02dec02aed537d8fa",
+    "core4/tools/stopped-update.js": "32e676dad591522ab5b14256e06e00e8b517e94c4273f43228f1793ce762172f",
+    "core4/tools/operate-stopped-update.js": "d9630d46e7fc26658e58d8f1e0ab706bcbf524568df05b2c4d580f7d47bd4044",
+    "core4/tools/standalone-installer.js": "b64213a52264ec773e989d85d8337e96bc4f196e318eda7fd671abd0dead45c4",
+    "core4/tools/package-standalone-installer.js": "1f79082f01086ee7b7e0cf82df13acb4563d59238b895c96a18bfd91753d14b3",
+    "core4/test/stopped-update.test.js": "d31ed91414f85a4d300f50bb9fd9efe8fde5bf6d44e9bc89f1754e3fac3be2fc",
+    "core4/test/stopped-update-operator.test.js": "5709bf589e413b92857f8bb76f575e3fdbf2aa04da9f5f2b55d6920c40bbf8b0",
+    "core4/test/fixtures/owner-pre-ready-claim-child.js": "d8ee2c975e761f68e80a0de1cc2267c945f5113fd2c338fe06823b79be2b08da"
+  },
+  "checks": 10,
+  "batches": 10,
+  "totals": {
+    "tests": 209,
+    "pass": 209,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "sourceAndFrozenHashesUnchanged": true,
+  "currentEvidenceKeysMatchFrozen": true,
+  "frozenDistributionMatchesReviewed": true,
+  "validationLogHash": "1288eef462dab238bab712319db193c6fb8b9a207baecda7216018e689228045",
+  "boundaries": {
+    "checked": 43,
+    "liveCalls": 0
+  },
+  "syntaxFiles": 8,
+  "observerSyntax": "PASS",
+  "diffCheck": "PASS",
+  "review": "bounded independent review; both findings fixed and closure confirmed; root narrowed unknown-record regex with refusal regression",
+  "releaseCertified": false,
+  "liveMutationAcceptance": false,
+  "deferredCoverage": [
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "owner-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/"
+        },
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/",
+          "owner-runtime"
+        ],
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "owner-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "windows-cim-probe"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "human-window"
+        ]
+      ]
+    },
+    {
+      "check": "manual-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "manual-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "installable-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "core-control",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-update.js",
+          "tools/",
+          "core-control"
+        ],
+        [
+          "core4/tools/operate-stopped-update.js",
+          "tools/",
+          "core-control"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "core-control"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "core-control"
+        ]
+      ]
+    },
+    {
+      "check": "core-admission",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-update.js",
+          "tools/",
+          "core-admission"
+        ],
+        [
+          "core4/tools/operate-stopped-update.js",
+          "tools/",
+          "core-admission"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "core-admission"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "core-admission"
+        ]
+      ]
+    },
+    {
+      "check": "worker-isolation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-update.js",
+          "tools/",
+          "worker-isolation"
+        ],
+        [
+          "core4/tools/operate-stopped-update.js",
+          "tools/",
+          "worker-isolation"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "worker-isolation"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "worker-isolation"
+        ]
+      ]
+    },
+    {
+      "check": "protocol-codec",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-update.js",
+          "tools/",
+          "protocol-codec"
+        ],
+        [
+          "core4/tools/operate-stopped-update.js",
+          "tools/",
+          "protocol-codec"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "protocol-codec"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "protocol-codec"
+        ]
+      ]
+    },
+    {
+      "check": "workflow-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-update.js",
+          "tools/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/tools/operate-stopped-update.js",
+          "tools/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "workflow-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "artifact-boundaries",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/stopped-update.js",
+          "tools/",
+          "artifact-boundaries"
+        ],
+        [
+          "core4/tools/operate-stopped-update.js",
+          "tools/",
+          "artifact-boundaries"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "artifact-boundaries"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "artifact-boundaries"
+        ]
+      ]
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        },
+        {
+          "file": "core4/tools/stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/stopped-update.js",
+          "tools/",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/operate-stopped-update.js",
+          "tools/",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "cep-transport"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        },
+        {
+          "file": "core4/tools/stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-stopped-update.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/test/stopped-update.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/stopped-update-operator.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/fixtures/owner-pre-ready-claim-child.js",
+          "dependency": "test/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/stopped-update.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/operate-stopped-update.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/stopped-update.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/stopped-update-operator.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/fixtures/owner-pre-ready-claim-child.js",
+          "test/",
+          "lifecycle-simulation"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "native-read-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "installed-composition"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stopped-certification.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stopped-certification.js",
+          "runtime/",
+          "exact-f548-transition"
+        ]
+      ]
+    }
+  ]
+}

@@ -68,6 +68,8 @@ async function operate(capability) {
     if (digest(oldBytes) !== expectedPreviousDescriptorHash || old.packageHash !== expectedCurrentPackageHash || old.installRoot !== installRoot || path.join(old.installRoot, 'installation.json') !== descriptorPath || !Buffer.from(canonical(old)).equals(oldBytes)) fail('update_operator_original_descriptor');
     if (path.resolve(process.execPath).toLowerCase() !== old.nodePath.toLowerCase() || digest(read(old.nodePath, 512 * 1024 * 1024)) !== old.nodeHash) fail('external_node_mismatch');
     const inputs = { installation: old, descriptorPath, transactionId: id, expectedPreviousDescriptorHash, expectedPackageHash, reservedServer, expectedProofHash: options.expectedProofHash };
+    if (mode === 'owner-pre-ready-inspect') return await update.inspectOwnerPreReady(inputs);
+    if (mode === 'owner-pre-ready-finish') return await update.finishOwnerPreReady(inputs);
     if (mode === 'update-inspect') return await update.inspectStoppedUpdate(inputs);
     if (mode === 'update-finish') return await update.finishStoppedUpdate(inputs);
     if (mode === 'update-enable') return await update.enableStoppedUpdate(inputs);

@@ -49,3 +49,14 @@ test('stopped-update-operator recovery awaits verification and closes its TEMP e
   try { assert.equal((await f.main.main(['update-inspect', ...args])).fixtureOnly, true); assert.equal(seen, true); assert.equal(server.listening, false); }
   finally { request?.destroy(); update.inspectStoppedUpdate = inspect; http.createServer = create; if (server?.listening) await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }); }
 });
+
+test('stopped-update-operator owner pre-ready modes require explicit inspection proof and verified bootstrap', async t => {
+  const f = fixture(t), operate = f.operator.operate; let entered = 0;
+  f.operator.operate = async capability => { const p = f.main.assertUpdateBootstrap(capability); entered++; assert.ok(['owner-pre-ready-inspect', 'owner-pre-ready-finish'].includes(p.mode)); return { mode: p.mode, proof: p.expectedProofHash }; };
+  try {
+    assert.equal((await f.main.main(['owner-pre-ready-inspect', ...f.args])).mode, 'owner-pre-ready-inspect');
+    await assert.rejects(Promise.resolve().then(() => f.main.main(['owner-pre-ready-finish', ...f.args])), /standalone_usage/);
+    const result = await f.main.main(['owner-pre-ready-finish', ...f.args, '--expected-proof-hash', 'c'.repeat(64)]);
+    assert.equal(result.proof, 'c'.repeat(64)); assert.equal(entered, 2);
+  } finally { f.operator.operate = operate; }
+});

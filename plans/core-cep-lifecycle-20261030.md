@@ -163,12 +163,20 @@ R3 не использует fake production epoch и не переносит au
   timeout на intent-only phase. Старый descriptor8a79/gates/desired-stop сохранены,
   Core остановлен. [Явный owner pre-ready recovery](core-cep-r3-owner-preready-20261031.md)
   продолжает original payload; stop/update не повторять, markers не чистить.
+- [x] Owner pre-ready source: explicit inspect/finish, original payload/gates/certificate,
+  actor-death/CAS и monotonic attempt lineage;209selectedPASS/10batches,19deferred,
+  review findings исправлены. Runtime targetcc2f unchanged, helper distribution6ae8960f
+  verified. Actual read-only inspect88e4 подтвердил gatePrefix2; finish ещё pending.
 - [ ] R3d2–R5: fresh host adoption, repeated CEP/reconnect, cold-start timing,
   повторные ordinary cycles и Titles/native confirm/read-back;
   устойчивость installed runtime пока не заявлена.
 
 ## Decision Log
 
+- Owner intent-only prefix продолжается отдельным private inspect/finish с exact
+  original payload; JSON не становится normal plan/certificate. Gates сохраняют
+  original role bytes и закреплённые inode facts. Short forced timeout installer
+  больше не используется; outcome проверяется по original durable transaction.
 - Одни retry панели не решают per-chat захват порта и state ownership.
 - Автоматический выбор «первый загрузившийся чат — controller» отклонён.
   Контакт с owner и право на stateful operation разделены.
@@ -191,6 +199,12 @@ R3 не использует fake production epoch и не переносит au
   уже получил timeout. Embedding восстанавливает durable fences до attach/acquire.
 
 ## Validation
+
+Owner pre-ready source:209PASS/0FAIL/skipped0 на immutable export e50dbeb +9paths,
+10checks/10batches,19deferred integrations. Source/frozen hashes и evidence keys
+совпали; boundaries43/live0,8syntax/diff PASS, source review findings закрыты.
+Frozen build даёт exact targetcc2f/helper6ae8960f. Actual read-only inspect получил
+phaseowner-pre-ready/gatePrefix2 без writes. [Evidence/границы](core-cep-r3-owner-preready-20261031.md).
 
 R5 client source:186PASS/0FAIL/skipped0 по scoped selection10checks/10batches;
 16deferred integrations сохранены. Source hashes/evidence keys до/после совпали,

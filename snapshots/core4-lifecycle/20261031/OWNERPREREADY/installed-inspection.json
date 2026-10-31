@@ -1,0 +1,12 @@
+{
+  "collectedAt": "2026-10-31T11:09:52.993Z",
+  "result": {
+    "aeAuthority": false,
+    "gatePrefix": 2,
+    "inspectionOnly": true,
+    "phase": "owner-pre-ready",
+    "proofHash": "f55b0ba0e211f7931bc92f29d893615f70b489b64b01e6b7f1a54d7dbd8c5276",
+    "runtimeStarted": false,
+    "transactionId": "88e4a61e-8ed0-4579-b50e-55aee706a271"
+  }
+}

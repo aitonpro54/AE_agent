@@ -1,0 +1,1904 @@
+{
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "sourceBaseline": "e50dbeb",
+  "sourceHashes": {
+    "core4/config/validation-map.json": "90a6c7c6d9a1d6a1dec3d14188995c9436fc3890b5211aa680a94ac7192c7f37",
+    "core4/runtime/stopped-certification.js": "8bda8eb1e9aaa5879322a4934d43608d0a71a2a268056ef02dec02aed537d8fa",
+    "core4/tools/stopped-update.js": "32e676dad591522ab5b14256e06e00e8b517e94c4273f43228f1793ce762172f",
+    "core4/tools/operate-stopped-update.js": "d9630d46e7fc26658e58d8f1e0ab706bcbf524568df05b2c4d580f7d47bd4044",
+    "core4/tools/standalone-installer.js": "b64213a52264ec773e989d85d8337e96bc4f196e318eda7fd671abd0dead45c4",
+    "core4/tools/package-standalone-installer.js": "1f79082f01086ee7b7e0cf82df13acb4563d59238b895c96a18bfd91753d14b3",
+    "core4/test/stopped-update.test.js": "d31ed91414f85a4d300f50bb9fd9efe8fde5bf6d44e9bc89f1754e3fac3be2fc",
+    "core4/test/stopped-update-operator.test.js": "5709bf589e413b92857f8bb76f575e3fdbf2aa04da9f5f2b55d6920c40bbf8b0",
+    "core4/test/fixtures/owner-pre-ready-claim-child.js": "d8ee2c975e761f68e80a0de1cc2267c945f5113fd2c338fe06823b79be2b08da"
+  },
+  "selection": {
+    "mode": "scoped",
+    "certification": "selected-artifacts-only",
+    "releaseCertified": false,
+    "contractImpacts": [],
+    "checks": [
+      {
+        "check": "validation-routing",
+        "reasons": [
+          "changed owner validation: core4/config/validation-map.json"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/config/validation-map.json",
+            "validation",
+            "validation-routing"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=validation-routing",
+          "test/core4.test.js"
+        ],
+        "evidenceKey": "f86c91bfa7e968315ef7a2917fa2b1abfa2b8a27c53a2a1952a2c11545d4e1e0",
+        "reason": "changed owner validation: core4/config/validation-map.json",
+        "dependencyPath": [
+          [
+            "core4/config/validation-map.json",
+            "validation",
+            "validation-routing"
+          ]
+        ],
+        "dependencies": [
+          "config/admissions/photo-placeholder.json",
+          "config/admissions/titles-current-target.json",
+          "config/admissions/titles.json",
+          "config/catalog.json",
+          "config/validation-map.json",
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "modules/photo-placeholder/artifact.json",
+          "modules/photo-placeholder/contract.json",
+          "modules/photo-placeholder/executor.jsx",
+          "modules/photo-placeholder/implementation.js",
+          "modules/project-inspection/artifact.json",
+          "modules/project-inspection/contract.json",
+          "modules/project-inspection/executor.jsx",
+          "modules/titles-current-target/artifact.json",
+          "modules/titles-current-target/contract.json",
+          "modules/titles-current-target/executor.jsx",
+          "modules/titles-current-target/implementation.js",
+          "modules/titles/artifact.json",
+          "modules/titles/contract.json",
+          "modules/titles/executor.jsx",
+          "modules/titles/implementation.js",
+          "plan-engine/artifact.json",
+          "plan-engine/index.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "test/core4.test.js",
+          "test/fixtures/ae.js",
+          "test/fixtures/authority.js",
+          "test/fixtures/crash-child.js",
+          "test/fixtures/lock-contender.js",
+          "test/helpers.js",
+          "tools/adopt-host.js",
+          "tools/capture-native-read.js",
+          "tools/check-boundaries.js",
+          "tools/check-core4-endpoint.js",
+          "tools/dispose-native-read.js",
+          "tools/disposition-install-preflight.js",
+          "tools/finish-owner-maintenance.js",
+          "tools/install-core4.js",
+          "tools/legacy-owner-migration.js",
+          "tools/maintain-owner.js",
+          "tools/operate-stopped-update.js",
+          "tools/package-installable.js",
+          "tools/package-native-read-operator.js",
+          "tools/package-standalone-installer.js",
+          "tools/recover-zero-dispatch-owner.js",
+          "tools/seal.js",
+          "tools/standalone-installer.js",
+          "tools/stopped-update.js",
+          "tools/validate-diff.js",
+          "tools/windows-retained-process.js",
+          "worker.js"
+        ]
+      },
+      {
+        "check": "stopped-certification",
+        "reasons": [
+          "changed owner stopped-certification: core4/runtime/stopped-certification.js",
+          "changed component dependency runtime/: core4/runtime/stopped-certification.js"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "stopped-certification",
+            "stopped-certification"
+          ],
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "stopped-certification"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-certification",
+          "test/stopped-certification.test.js"
+        ],
+        "evidenceKey": "7ac75f916f071cf0f43f600be296883f58f31b392dbf68ab51fd1c7d896bfdf3",
+        "reason": "changed owner stopped-certification: core4/runtime/stopped-certification.js; changed component dependency runtime/: core4/runtime/stopped-certification.js",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "stopped-certification",
+            "stopped-certification"
+          ],
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "stopped-certification"
+          ]
+        ],
+        "dependencies": [
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "integrations/cep/completion-store.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "runtime/attachment-owner.js",
+          "runtime/client-entry.js",
+          "runtime/client-ipc.js",
+          "runtime/client-stdio.js",
+          "runtime/controller-lease.js",
+          "runtime/host/json-codec.jsx",
+          "runtime/install-lease.js",
+          "runtime/installation-lineage.js",
+          "runtime/installation.js",
+          "runtime/manual-policy.js",
+          "runtime/native-read-disposition.js",
+          "runtime/owner-contract.json",
+          "runtime/owner-entry.js",
+          "runtime/owner-lifecycle.js",
+          "runtime/owner-maintenance.js",
+          "runtime/profiles.json",
+          "runtime/receiver-contract.json",
+          "runtime/recovery-inspection.js",
+          "runtime/source-package.json",
+          "runtime/stdio-entry.js",
+          "runtime/stopped-certification.js",
+          "runtime/windows-host-probe.ps1",
+          "runtime/windows-owner-process.js",
+          "runtime/windows-reservation-provider.js",
+          "test/fixtures/owner-lifecycle-fixture.js",
+          "test/stopped-certification.test.js"
+        ]
+      },
+      {
+        "check": "stopped-update",
+        "reasons": [
+          "changed owner stopped-certification: core4/runtime/stopped-certification.js",
+          "changed owner stopped-update: core4/tools/stopped-update.js",
+          "changed owner stopped-update: core4/test/stopped-update.test.js",
+          "changed owner stopped-update: core4/test/fixtures/owner-pre-ready-claim-child.js"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "stopped-certification",
+            "stopped-update"
+          ],
+          [
+            "core4/tools/stopped-update.js",
+            "stopped-update",
+            "stopped-update"
+          ],
+          [
+            "core4/test/stopped-update.test.js",
+            "stopped-update",
+            "stopped-update"
+          ],
+          [
+            "core4/test/fixtures/owner-pre-ready-claim-child.js",
+            "stopped-update",
+            "stopped-update"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-update",
+          "test/stopped-update.test.js"
+        ],
+        "evidenceKey": "9ae22d416535284fee2401e31d60e964b09127c468b25c2396ee55d177691448",
+        "reason": "changed owner stopped-certification: core4/runtime/stopped-certification.js; changed owner stopped-update: core4/tools/stopped-update.js; changed owner stopped-update: core4/test/stopped-update.test.js; changed owner stopped-update: core4/test/fixtures/owner-pre-ready-claim-child.js",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "stopped-certification",
+            "stopped-update"
+          ],
+          [
+            "core4/tools/stopped-update.js",
+            "stopped-update",
+            "stopped-update"
+          ],
+          [
+            "core4/test/stopped-update.test.js",
+            "stopped-update",
+            "stopped-update"
+          ],
+          [
+            "core4/test/fixtures/owner-pre-ready-claim-child.js",
+            "stopped-update",
+            "stopped-update"
+          ]
+        ],
+        "dependencies": [
+          "cep/CSXS/manifest.xml",
+          "cep/index.html",
+          "cep/js/panel.js",
+          "cep/js/poll-dispatcher.js",
+          "cep/panel.css",
+          "config/admissions/photo-placeholder.json",
+          "config/admissions/titles-current-target.json",
+          "config/admissions/titles.json",
+          "config/catalog.json",
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "integrations/cep/artifact.json",
+          "integrations/cep/completion-store.js",
+          "integrations/cep/host-dispatcher.js",
+          "integrations/cep/http-peer.js",
+          "integrations/cep/manifest.json",
+          "integrations/cep/peer-protocol.js",
+          "integrations/cep/transport.js",
+          "integrations/cep/wire.js",
+          "modules/photo-placeholder/artifact.json",
+          "modules/photo-placeholder/contract.json",
+          "modules/photo-placeholder/executor.jsx",
+          "modules/photo-placeholder/implementation.js",
+          "modules/project-inspection/artifact.json",
+          "modules/project-inspection/contract.json",
+          "modules/project-inspection/executor.jsx",
+          "modules/titles-current-target/artifact.json",
+          "modules/titles-current-target/contract.json",
+          "modules/titles-current-target/executor.jsx",
+          "modules/titles-current-target/implementation.js",
+          "modules/titles/artifact.json",
+          "modules/titles/contract.json",
+          "modules/titles/executor.jsx",
+          "modules/titles/implementation.js",
+          "plan-engine/artifact.json",
+          "plan-engine/index.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "runtime/attachment-owner.js",
+          "runtime/client-entry.js",
+          "runtime/client-ipc.js",
+          "runtime/client-stdio.js",
+          "runtime/controller-lease.js",
+          "runtime/host/json-codec.jsx",
+          "runtime/install-lease.js",
+          "runtime/installation-lineage.js",
+          "runtime/installation.js",
+          "runtime/manual-policy.js",
+          "runtime/native-read-disposition.js",
+          "runtime/owner-contract.json",
+          "runtime/owner-entry.js",
+          "runtime/owner-lifecycle.js",
+          "runtime/owner-maintenance.js",
+          "runtime/profiles.json",
+          "runtime/receiver-contract.json",
+          "runtime/recovery-inspection.js",
+          "runtime/source-package.json",
+          "runtime/stdio-entry.js",
+          "runtime/stopped-certification.js",
+          "runtime/windows-host-probe.ps1",
+          "runtime/windows-owner-process.js",
+          "runtime/windows-reservation-provider.js",
+          "test/fixtures/owner-pre-ready-claim-child.js",
+          "test/stopped-update.test.js",
+          "tools/disposition-install-preflight.js",
+          "tools/install-core4.js",
+          "tools/legacy-owner-migration.js",
+          "tools/package-installable.js",
+          "tools/stopped-update.js",
+          "tools/windows-retained-process.js",
+          "worker.js"
+        ]
+      },
+      {
+        "check": "maintenance-finish-operator",
+        "reasons": [
+          "changed owner stopped-certification: core4/runtime/stopped-certification.js",
+          "changed owner standalone-installer: core4/tools/standalone-installer.js",
+          "changed owner standalone-installer: core4/tools/package-standalone-installer.js"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "stopped-certification",
+            "maintenance-finish-operator"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "standalone-installer",
+            "maintenance-finish-operator"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "standalone-installer",
+            "maintenance-finish-operator"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=maintenance-finish-operator",
+          "test/maintenance-finish-operator.test.js"
+        ],
+        "evidenceKey": "ee7fb1ae515703f453ecffe77eb7fcf1f3e4fc5c2eb8ef4722ff77918d679fa9",
+        "reason": "changed owner stopped-certification: core4/runtime/stopped-certification.js; changed owner standalone-installer: core4/tools/standalone-installer.js; changed owner standalone-installer: core4/tools/package-standalone-installer.js",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "stopped-certification",
+            "maintenance-finish-operator"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "standalone-installer",
+            "maintenance-finish-operator"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "standalone-installer",
+            "maintenance-finish-operator"
+          ]
+        ],
+        "dependencies": [
+          "cep/CSXS/manifest.xml",
+          "cep/index.html",
+          "cep/js/panel.js",
+          "cep/js/poll-dispatcher.js",
+          "cep/panel.css",
+          "config/admissions/photo-placeholder.json",
+          "config/admissions/titles-current-target.json",
+          "config/admissions/titles.json",
+          "config/catalog.json",
+          "config/validation-map.json",
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "integrations/cep/artifact.json",
+          "integrations/cep/completion-store.js",
+          "integrations/cep/host-dispatcher.js",
+          "integrations/cep/http-peer.js",
+          "integrations/cep/manifest.json",
+          "integrations/cep/peer-protocol.js",
+          "integrations/cep/transport.js",
+          "integrations/cep/wire.js",
+          "modules/photo-placeholder/artifact.json",
+          "modules/photo-placeholder/contract.json",
+          "modules/photo-placeholder/executor.jsx",
+          "modules/photo-placeholder/implementation.js",
+          "modules/project-inspection/artifact.json",
+          "modules/project-inspection/contract.json",
+          "modules/project-inspection/executor.jsx",
+          "modules/titles-current-target/artifact.json",
+          "modules/titles-current-target/contract.json",
+          "modules/titles-current-target/executor.jsx",
+          "modules/titles-current-target/implementation.js",
+          "modules/titles/artifact.json",
+          "modules/titles/contract.json",
+          "modules/titles/executor.jsx",
+          "modules/titles/implementation.js",
+          "plan-engine/artifact.json",
+          "plan-engine/index.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "runtime/attachment-owner.js",
+          "runtime/client-entry.js",
+          "runtime/client-ipc.js",
+          "runtime/client-stdio.js",
+          "runtime/controller-lease.js",
+          "runtime/host/json-codec.jsx",
+          "runtime/install-lease.js",
+          "runtime/installation-lineage.js",
+          "runtime/installation.js",
+          "runtime/manual-policy.js",
+          "runtime/native-read-disposition.js",
+          "runtime/owner-contract.json",
+          "runtime/owner-entry.js",
+          "runtime/owner-lifecycle.js",
+          "runtime/owner-maintenance.js",
+          "runtime/profiles.json",
+          "runtime/receiver-contract.json",
+          "runtime/recovery-inspection.js",
+          "runtime/source-package.json",
+          "runtime/stdio-entry.js",
+          "runtime/stopped-certification.js",
+          "runtime/windows-host-probe.ps1",
+          "runtime/windows-owner-process.js",
+          "runtime/windows-reservation-provider.js",
+          "test/maintenance-finish-operator.test.js",
+          "tools/adopt-host.js",
+          "tools/capture-native-read.js",
+          "tools/check-boundaries.js",
+          "tools/check-core4-endpoint.js",
+          "tools/dispose-native-read.js",
+          "tools/disposition-install-preflight.js",
+          "tools/finish-owner-maintenance.js",
+          "tools/install-core4.js",
+          "tools/legacy-owner-migration.js",
+          "tools/maintain-owner.js",
+          "tools/operate-stopped-update.js",
+          "tools/package-installable.js",
+          "tools/package-native-read-operator.js",
+          "tools/package-standalone-installer.js",
+          "tools/recover-zero-dispatch-owner.js",
+          "tools/seal.js",
+          "tools/standalone-installer.js",
+          "tools/stopped-update.js",
+          "tools/validate-diff.js",
+          "tools/windows-retained-process.js",
+          "worker.js"
+        ]
+      },
+      {
+        "check": "standalone-installer",
+        "reasons": [
+          "changed owner stopped-certification: core4/runtime/stopped-certification.js",
+          "changed owner stopped-update: core4/tools/stopped-update.js",
+          "changed owner stopped-update-operator: core4/tools/operate-stopped-update.js",
+          "changed owner standalone-installer: core4/tools/standalone-installer.js",
+          "changed owner standalone-installer: core4/tools/package-standalone-installer.js"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "stopped-certification",
+            "standalone-installer"
+          ],
+          [
+            "core4/tools/stopped-update.js",
+            "stopped-update",
+            "standalone-installer"
+          ],
+          [
+            "core4/tools/operate-stopped-update.js",
+            "stopped-update-operator",
+            "standalone-installer"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "standalone-installer",
+            "standalone-installer"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "standalone-installer",
+            "standalone-installer"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=standalone-installer",
+          "test/standalone-installer.test.js"
+        ],
+        "evidenceKey": "505dc2d6034df36fb47484d8d06c2320786d4950967c7d995442803b3482bbc4",
+        "reason": "changed owner stopped-certification: core4/runtime/stopped-certification.js; changed owner stopped-update: core4/tools/stopped-update.js; changed owner stopped-update-operator: core4/tools/operate-stopped-update.js; changed owner standalone-installer: core4/tools/standalone-installer.js; changed owner standalone-installer: core4/tools/package-standalone-installer.js",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "stopped-certification",
+            "standalone-installer"
+          ],
+          [
+            "core4/tools/stopped-update.js",
+            "stopped-update",
+            "standalone-installer"
+          ],
+          [
+            "core4/tools/operate-stopped-update.js",
+            "stopped-update-operator",
+            "standalone-installer"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "standalone-installer",
+            "standalone-installer"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "standalone-installer",
+            "standalone-installer"
+          ]
+        ],
+        "dependencies": [
+          "cep/CSXS/manifest.xml",
+          "cep/index.html",
+          "cep/js/panel.js",
+          "cep/js/poll-dispatcher.js",
+          "cep/panel.css",
+          "config/admissions/photo-placeholder.json",
+          "config/admissions/titles-current-target.json",
+          "config/admissions/titles.json",
+          "config/catalog.json",
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "integrations/cep/completion-store.js",
+          "integrations/cep/http-peer.js",
+          "integrations/cep/peer-protocol.js",
+          "modules/photo-placeholder/artifact.json",
+          "modules/photo-placeholder/contract.json",
+          "modules/photo-placeholder/executor.jsx",
+          "modules/photo-placeholder/implementation.js",
+          "modules/project-inspection/artifact.json",
+          "modules/project-inspection/contract.json",
+          "modules/project-inspection/executor.jsx",
+          "modules/titles-current-target/artifact.json",
+          "modules/titles-current-target/contract.json",
+          "modules/titles-current-target/executor.jsx",
+          "modules/titles-current-target/implementation.js",
+          "modules/titles/artifact.json",
+          "modules/titles/contract.json",
+          "modules/titles/executor.jsx",
+          "modules/titles/implementation.js",
+          "plan-engine/artifact.json",
+          "plan-engine/index.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "runtime/attachment-owner.js",
+          "runtime/client-entry.js",
+          "runtime/client-ipc.js",
+          "runtime/client-stdio.js",
+          "runtime/controller-lease.js",
+          "runtime/host/json-codec.jsx",
+          "runtime/install-lease.js",
+          "runtime/installation-lineage.js",
+          "runtime/installation.js",
+          "runtime/manual-policy.js",
+          "runtime/native-read-disposition.js",
+          "runtime/owner-contract.json",
+          "runtime/owner-entry.js",
+          "runtime/owner-lifecycle.js",
+          "runtime/owner-maintenance.js",
+          "runtime/profiles.json",
+          "runtime/receiver-contract.json",
+          "runtime/recovery-inspection.js",
+          "runtime/source-package.json",
+          "runtime/stdio-entry.js",
+          "runtime/stopped-certification.js",
+          "runtime/windows-host-probe.ps1",
+          "runtime/windows-owner-process.js",
+          "runtime/windows-reservation-provider.js",
+          "test/fixtures/fixed-format1-package.js",
+          "test/fixtures/legacy-installation-v1.js",
+          "test/fixtures/standalone-history.js",
+          "test/standalone-installer.test.js",
+          "tools/disposition-install-preflight.js",
+          "tools/finish-owner-maintenance.js",
+          "tools/install-core4.js",
+          "tools/maintain-owner.js",
+          "tools/package-installable.js",
+          "tools/package-standalone-installer.js",
+          "tools/standalone-installer.js",
+          "worker.js"
+        ]
+      },
+      {
+        "check": "legacy-owner-migration",
+        "reasons": [
+          "changed owner stopped-update: core4/tools/stopped-update.js"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/tools/stopped-update.js",
+            "stopped-update",
+            "legacy-owner-migration"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=legacy-owner-migration",
+          "test/legacy-owner-migration.test.js"
+        ],
+        "evidenceKey": "2b43c98fed06c0dab40639887273737819f7cc3d396098c13c984e933040dc09",
+        "reason": "changed owner stopped-update: core4/tools/stopped-update.js",
+        "dependencyPath": [
+          [
+            "core4/tools/stopped-update.js",
+            "stopped-update",
+            "legacy-owner-migration"
+          ]
+        ],
+        "dependencies": [
+          "cep/CSXS/manifest.xml",
+          "cep/index.html",
+          "cep/js/panel.js",
+          "cep/js/poll-dispatcher.js",
+          "cep/panel.css",
+          "config/admissions/photo-placeholder.json",
+          "config/admissions/titles-current-target.json",
+          "config/admissions/titles.json",
+          "config/catalog.json",
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "integrations/cep/artifact.json",
+          "integrations/cep/completion-store.js",
+          "integrations/cep/host-dispatcher.js",
+          "integrations/cep/http-peer.js",
+          "integrations/cep/manifest.json",
+          "integrations/cep/peer-protocol.js",
+          "integrations/cep/transport.js",
+          "integrations/cep/wire.js",
+          "modules/photo-placeholder/artifact.json",
+          "modules/photo-placeholder/contract.json",
+          "modules/photo-placeholder/executor.jsx",
+          "modules/photo-placeholder/implementation.js",
+          "modules/project-inspection/artifact.json",
+          "modules/project-inspection/contract.json",
+          "modules/project-inspection/executor.jsx",
+          "modules/titles-current-target/artifact.json",
+          "modules/titles-current-target/contract.json",
+          "modules/titles-current-target/executor.jsx",
+          "modules/titles-current-target/implementation.js",
+          "modules/titles/artifact.json",
+          "modules/titles/contract.json",
+          "modules/titles/executor.jsx",
+          "modules/titles/implementation.js",
+          "plan-engine/artifact.json",
+          "plan-engine/index.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "runtime/attachment-owner.js",
+          "runtime/client-entry.js",
+          "runtime/client-ipc.js",
+          "runtime/client-stdio.js",
+          "runtime/controller-lease.js",
+          "runtime/host/json-codec.jsx",
+          "runtime/install-lease.js",
+          "runtime/installation-lineage.js",
+          "runtime/installation.js",
+          "runtime/manual-policy.js",
+          "runtime/native-read-disposition.js",
+          "runtime/owner-contract.json",
+          "runtime/owner-entry.js",
+          "runtime/owner-lifecycle.js",
+          "runtime/owner-maintenance.js",
+          "runtime/profiles.json",
+          "runtime/receiver-contract.json",
+          "runtime/recovery-inspection.js",
+          "runtime/source-package.json",
+          "runtime/stdio-entry.js",
+          "runtime/stopped-certification.js",
+          "runtime/windows-host-probe.ps1",
+          "runtime/windows-owner-process.js",
+          "runtime/windows-reservation-provider.js",
+          "test/legacy-owner-migration.test.js",
+          "tools/disposition-install-preflight.js",
+          "tools/install-core4.js",
+          "tools/legacy-owner-migration.js",
+          "tools/package-installable.js",
+          "tools/stopped-update.js",
+          "tools/windows-retained-process.js",
+          "worker.js"
+        ]
+      },
+      {
+        "check": "stopped-update-operator",
+        "reasons": [
+          "changed owner stopped-update-operator: core4/tools/operate-stopped-update.js",
+          "changed owner stopped-update-operator: core4/test/stopped-update-operator.test.js"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/tools/operate-stopped-update.js",
+            "stopped-update-operator",
+            "stopped-update-operator"
+          ],
+          [
+            "core4/test/stopped-update-operator.test.js",
+            "stopped-update-operator",
+            "stopped-update-operator"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-update-operator",
+          "test/stopped-update-operator.test.js"
+        ],
+        "evidenceKey": "96b1de2e398aa74cf5f6a296a6b17fcd365e39eecf1affaa9830cd7284563d89",
+        "reason": "changed owner stopped-update-operator: core4/tools/operate-stopped-update.js; changed owner stopped-update-operator: core4/test/stopped-update-operator.test.js",
+        "dependencyPath": [
+          [
+            "core4/tools/operate-stopped-update.js",
+            "stopped-update-operator",
+            "stopped-update-operator"
+          ],
+          [
+            "core4/test/stopped-update-operator.test.js",
+            "stopped-update-operator",
+            "stopped-update-operator"
+          ]
+        ],
+        "dependencies": [
+          "cep/CSXS/manifest.xml",
+          "cep/index.html",
+          "cep/js/panel.js",
+          "cep/js/poll-dispatcher.js",
+          "cep/panel.css",
+          "config/admissions/photo-placeholder.json",
+          "config/admissions/titles-current-target.json",
+          "config/admissions/titles.json",
+          "config/catalog.json",
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "integrations/cep/artifact.json",
+          "integrations/cep/completion-store.js",
+          "integrations/cep/host-dispatcher.js",
+          "integrations/cep/http-peer.js",
+          "integrations/cep/manifest.json",
+          "integrations/cep/peer-protocol.js",
+          "integrations/cep/transport.js",
+          "integrations/cep/wire.js",
+          "modules/photo-placeholder/artifact.json",
+          "modules/photo-placeholder/contract.json",
+          "modules/photo-placeholder/executor.jsx",
+          "modules/photo-placeholder/implementation.js",
+          "modules/project-inspection/artifact.json",
+          "modules/project-inspection/contract.json",
+          "modules/project-inspection/executor.jsx",
+          "modules/titles-current-target/artifact.json",
+          "modules/titles-current-target/contract.json",
+          "modules/titles-current-target/executor.jsx",
+          "modules/titles-current-target/implementation.js",
+          "modules/titles/artifact.json",
+          "modules/titles/contract.json",
+          "modules/titles/executor.jsx",
+          "modules/titles/implementation.js",
+          "plan-engine/artifact.json",
+          "plan-engine/index.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "runtime/attachment-owner.js",
+          "runtime/client-entry.js",
+          "runtime/client-ipc.js",
+          "runtime/client-stdio.js",
+          "runtime/controller-lease.js",
+          "runtime/host/json-codec.jsx",
+          "runtime/install-lease.js",
+          "runtime/installation-lineage.js",
+          "runtime/installation.js",
+          "runtime/manual-policy.js",
+          "runtime/native-read-disposition.js",
+          "runtime/owner-contract.json",
+          "runtime/owner-entry.js",
+          "runtime/owner-lifecycle.js",
+          "runtime/owner-maintenance.js",
+          "runtime/profiles.json",
+          "runtime/receiver-contract.json",
+          "runtime/recovery-inspection.js",
+          "runtime/source-package.json",
+          "runtime/stdio-entry.js",
+          "runtime/stopped-certification.js",
+          "runtime/windows-host-probe.ps1",
+          "runtime/windows-owner-process.js",
+          "runtime/windows-reservation-provider.js",
+          "test/stopped-update-operator.test.js",
+          "tools/check-boundaries.js",
+          "tools/disposition-install-preflight.js",
+          "tools/finish-owner-maintenance.js",
+          "tools/install-core4.js",
+          "tools/legacy-owner-migration.js",
+          "tools/maintain-owner.js",
+          "tools/operate-stopped-update.js",
+          "tools/package-installable.js",
+          "tools/package-standalone-installer.js",
+          "tools/standalone-installer.js",
+          "tools/stopped-update.js",
+          "tools/windows-retained-process.js",
+          "worker.js"
+        ]
+      },
+      {
+        "check": "owner-installation",
+        "reasons": [
+          "changed owner standalone-installer: core4/tools/package-standalone-installer.js"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/tools/package-standalone-installer.js",
+            "standalone-installer",
+            "owner-installation"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-installation",
+          "test/owner-installation.test.js"
+        ],
+        "evidenceKey": "c04e56ab7c8f23681b2a567744289a9e68d0de3c3d303a4ed2c3c10b7b6fa0b4",
+        "reason": "changed owner standalone-installer: core4/tools/package-standalone-installer.js",
+        "dependencyPath": [
+          [
+            "core4/tools/package-standalone-installer.js",
+            "standalone-installer",
+            "owner-installation"
+          ]
+        ],
+        "dependencies": [
+          "cep/CSXS/manifest.xml",
+          "cep/index.html",
+          "cep/js/panel.js",
+          "cep/js/poll-dispatcher.js",
+          "cep/panel.css",
+          "config/admissions/photo-placeholder.json",
+          "config/admissions/titles-current-target.json",
+          "config/admissions/titles.json",
+          "config/catalog.json",
+          "config/validation-map.json",
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "integrations/cep/artifact.json",
+          "integrations/cep/completion-store.js",
+          "integrations/cep/host-dispatcher.js",
+          "integrations/cep/http-peer.js",
+          "integrations/cep/manifest.json",
+          "integrations/cep/peer-protocol.js",
+          "integrations/cep/transport.js",
+          "integrations/cep/wire.js",
+          "modules/photo-placeholder/artifact.json",
+          "modules/photo-placeholder/contract.json",
+          "modules/photo-placeholder/executor.jsx",
+          "modules/photo-placeholder/implementation.js",
+          "modules/project-inspection/artifact.json",
+          "modules/project-inspection/contract.json",
+          "modules/project-inspection/executor.jsx",
+          "modules/titles-current-target/artifact.json",
+          "modules/titles-current-target/contract.json",
+          "modules/titles-current-target/executor.jsx",
+          "modules/titles-current-target/implementation.js",
+          "modules/titles/artifact.json",
+          "modules/titles/contract.json",
+          "modules/titles/executor.jsx",
+          "modules/titles/implementation.js",
+          "plan-engine/artifact.json",
+          "plan-engine/index.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "runtime/attachment-owner.js",
+          "runtime/client-entry.js",
+          "runtime/client-ipc.js",
+          "runtime/client-stdio.js",
+          "runtime/controller-lease.js",
+          "runtime/host/json-codec.jsx",
+          "runtime/install-lease.js",
+          "runtime/installation-lineage.js",
+          "runtime/installation.js",
+          "runtime/manual-policy.js",
+          "runtime/native-read-disposition.js",
+          "runtime/owner-contract.json",
+          "runtime/owner-entry.js",
+          "runtime/owner-lifecycle.js",
+          "runtime/owner-maintenance.js",
+          "runtime/profiles.json",
+          "runtime/receiver-contract.json",
+          "runtime/recovery-inspection.js",
+          "runtime/source-package.json",
+          "runtime/stdio-entry.js",
+          "runtime/stopped-certification.js",
+          "runtime/windows-host-probe.ps1",
+          "runtime/windows-owner-process.js",
+          "runtime/windows-reservation-provider.js",
+          "test/fixtures/fixed-format1-package.js",
+          "test/fixtures/legacy-installation-v1.js",
+          "test/owner-installation.test.js",
+          "tools/disposition-install-preflight.js",
+          "tools/install-core4.js",
+          "tools/package-installable.js",
+          "tools/package-standalone-installer.js",
+          "tools/standalone-installer.js",
+          "worker.js"
+        ]
+      },
+      {
+        "check": "maintenance-finish",
+        "reasons": [
+          "changed component dependency runtime/: core4/runtime/stopped-certification.js"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "maintenance-finish"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=maintenance-finish",
+          "test/maintenance-finish.test.js"
+        ],
+        "evidenceKey": "512d30e974007a09512b84db16ac982e191a096fe218056ef30964d37f2c7ad8",
+        "reason": "changed component dependency runtime/: core4/runtime/stopped-certification.js",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "maintenance-finish"
+          ]
+        ],
+        "dependencies": [
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "integrations/cep/completion-store.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "runtime/attachment-owner.js",
+          "runtime/client-entry.js",
+          "runtime/client-ipc.js",
+          "runtime/client-stdio.js",
+          "runtime/controller-lease.js",
+          "runtime/host/json-codec.jsx",
+          "runtime/install-lease.js",
+          "runtime/installation-lineage.js",
+          "runtime/installation.js",
+          "runtime/manual-policy.js",
+          "runtime/native-read-disposition.js",
+          "runtime/owner-contract.json",
+          "runtime/owner-entry.js",
+          "runtime/owner-lifecycle.js",
+          "runtime/owner-maintenance.js",
+          "runtime/profiles.json",
+          "runtime/receiver-contract.json",
+          "runtime/recovery-inspection.js",
+          "runtime/source-package.json",
+          "runtime/stdio-entry.js",
+          "runtime/stopped-certification.js",
+          "runtime/windows-host-probe.ps1",
+          "runtime/windows-owner-process.js",
+          "runtime/windows-reservation-provider.js",
+          "test/fixtures/maintenance-finish.js",
+          "test/fixtures/owner-lifecycle-fixture.js",
+          "test/maintenance-finish.test.js"
+        ]
+      },
+      {
+        "check": "owner-maintenance",
+        "reasons": [
+          "changed component dependency runtime/: core4/runtime/stopped-certification.js"
+        ],
+        "dependencyPaths": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "owner-maintenance"
+          ]
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-maintenance",
+          "test/owner-maintenance.test.js"
+        ],
+        "evidenceKey": "1bb4b19afb98fd7128639391b1a93342c247b9310f82e8db08eede723e851196",
+        "reason": "changed component dependency runtime/: core4/runtime/stopped-certification.js",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "owner-maintenance"
+          ]
+        ],
+        "dependencies": [
+          "core/artifact.json",
+          "core/artifacts.js",
+          "core/authority.js",
+          "core/broker.js",
+          "core/ledger.js",
+          "core/receiver-api.js",
+          "core/receiver.js",
+          "core/record-context.js",
+          "core/resources.js",
+          "core/state-lock.js",
+          "core/stdio.js",
+          "core/worker-client.js",
+          "integrations/cep/completion-store.js",
+          "protocol/artifact.json",
+          "protocol/codec.js",
+          "protocol/dispatch.js",
+          "protocol/json.js",
+          "protocol/schema.js",
+          "protocol/target-contract.json",
+          "runtime/attachment-owner.js",
+          "runtime/client-entry.js",
+          "runtime/client-ipc.js",
+          "runtime/client-stdio.js",
+          "runtime/controller-lease.js",
+          "runtime/host/json-codec.jsx",
+          "runtime/install-lease.js",
+          "runtime/installation-lineage.js",
+          "runtime/installation.js",
+          "runtime/manual-policy.js",
+          "runtime/native-read-disposition.js",
+          "runtime/owner-contract.json",
+          "runtime/owner-entry.js",
+          "runtime/owner-lifecycle.js",
+          "runtime/owner-maintenance.js",
+          "runtime/profiles.json",
+          "runtime/receiver-contract.json",
+          "runtime/recovery-inspection.js",
+          "runtime/source-package.json",
+          "runtime/stdio-entry.js",
+          "runtime/stopped-certification.js",
+          "runtime/windows-host-probe.ps1",
+          "runtime/windows-owner-process.js",
+          "runtime/windows-reservation-provider.js",
+          "test/fixtures/owner-lifecycle-fixture.js",
+          "test/owner-maintenance.test.js"
+        ]
+      }
+    ],
+    "executionBatches": [
+      {
+        "checks": [
+          "validation-routing"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:validation-routing)",
+          "test/core4.test.js"
+        ]
+      },
+      {
+        "checks": [
+          "stopped-certification"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:stopped-certification)",
+          "test/stopped-certification.test.js"
+        ]
+      },
+      {
+        "checks": [
+          "stopped-update"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:stopped-update)",
+          "test/stopped-update.test.js"
+        ]
+      },
+      {
+        "checks": [
+          "maintenance-finish-operator"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:maintenance-finish-operator)",
+          "test/maintenance-finish-operator.test.js"
+        ]
+      },
+      {
+        "checks": [
+          "standalone-installer"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:standalone-installer)",
+          "test/standalone-installer.test.js"
+        ]
+      },
+      {
+        "checks": [
+          "legacy-owner-migration"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:legacy-owner-migration)",
+          "test/legacy-owner-migration.test.js"
+        ]
+      },
+      {
+        "checks": [
+          "stopped-update-operator"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:stopped-update-operator)",
+          "test/stopped-update-operator.test.js"
+        ]
+      },
+      {
+        "checks": [
+          "owner-installation"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:owner-installation)",
+          "test/owner-installation.test.js"
+        ]
+      },
+      {
+        "checks": [
+          "maintenance-finish"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:maintenance-finish)",
+          "test/maintenance-finish.test.js"
+        ]
+      },
+      {
+        "checks": [
+          "owner-maintenance"
+        ],
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:owner-maintenance)",
+          "test/owner-maintenance.test.js"
+        ]
+      }
+    ],
+    "deferredCoverage": [
+      {
+        "check": "maintenance-operator",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "maintenance-operator"
+          ]
+        ]
+      },
+      {
+        "check": "owner-runtime",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/config/validation-map.json",
+            "dependency": "config/"
+          },
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/config/validation-map.json",
+            "config/",
+            "owner-runtime"
+          ],
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "owner-runtime"
+          ]
+        ]
+      },
+      {
+        "check": "native-read-capture",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "native-read-capture"
+          ]
+        ]
+      },
+      {
+        "check": "windows-cim-probe",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "windows-cim-probe"
+          ]
+        ]
+      },
+      {
+        "check": "zero-dispatch-recovery",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "zero-dispatch-recovery"
+          ]
+        ]
+      },
+      {
+        "check": "human-window",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "human-window"
+          ]
+        ]
+      },
+      {
+        "check": "manual-runtime",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "manual-runtime"
+          ]
+        ]
+      },
+      {
+        "check": "installable-runtime",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "installable-runtime"
+          ]
+        ]
+      },
+      {
+        "check": "core-control",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/tools/stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/operate-stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/standalone-installer.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/package-standalone-installer.js",
+            "dependency": "tools/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/tools/stopped-update.js",
+            "tools/",
+            "core-control"
+          ],
+          [
+            "core4/tools/operate-stopped-update.js",
+            "tools/",
+            "core-control"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "tools/",
+            "core-control"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "tools/",
+            "core-control"
+          ]
+        ]
+      },
+      {
+        "check": "core-admission",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/tools/stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/operate-stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/standalone-installer.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/package-standalone-installer.js",
+            "dependency": "tools/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/tools/stopped-update.js",
+            "tools/",
+            "core-admission"
+          ],
+          [
+            "core4/tools/operate-stopped-update.js",
+            "tools/",
+            "core-admission"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "tools/",
+            "core-admission"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "tools/",
+            "core-admission"
+          ]
+        ]
+      },
+      {
+        "check": "worker-isolation",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/tools/stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/operate-stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/standalone-installer.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/package-standalone-installer.js",
+            "dependency": "tools/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/tools/stopped-update.js",
+            "tools/",
+            "worker-isolation"
+          ],
+          [
+            "core4/tools/operate-stopped-update.js",
+            "tools/",
+            "worker-isolation"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "tools/",
+            "worker-isolation"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "tools/",
+            "worker-isolation"
+          ]
+        ]
+      },
+      {
+        "check": "protocol-codec",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/tools/stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/operate-stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/standalone-installer.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/package-standalone-installer.js",
+            "dependency": "tools/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/tools/stopped-update.js",
+            "tools/",
+            "protocol-codec"
+          ],
+          [
+            "core4/tools/operate-stopped-update.js",
+            "tools/",
+            "protocol-codec"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "tools/",
+            "protocol-codec"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "tools/",
+            "protocol-codec"
+          ]
+        ]
+      },
+      {
+        "check": "workflow-recovery",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/tools/stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/operate-stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/standalone-installer.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/package-standalone-installer.js",
+            "dependency": "tools/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/tools/stopped-update.js",
+            "tools/",
+            "workflow-recovery"
+          ],
+          [
+            "core4/tools/operate-stopped-update.js",
+            "tools/",
+            "workflow-recovery"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "tools/",
+            "workflow-recovery"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "tools/",
+            "workflow-recovery"
+          ]
+        ]
+      },
+      {
+        "check": "artifact-boundaries",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/tools/stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/operate-stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/standalone-installer.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/package-standalone-installer.js",
+            "dependency": "tools/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/tools/stopped-update.js",
+            "tools/",
+            "artifact-boundaries"
+          ],
+          [
+            "core4/tools/operate-stopped-update.js",
+            "tools/",
+            "artifact-boundaries"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "tools/",
+            "artifact-boundaries"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "tools/",
+            "artifact-boundaries"
+          ]
+        ]
+      },
+      {
+        "check": "cep-transport",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/config/validation-map.json",
+            "dependency": "config/validation-map.json"
+          },
+          {
+            "file": "core4/tools/stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/operate-stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/standalone-installer.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/package-standalone-installer.js",
+            "dependency": "tools/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/config/validation-map.json",
+            "config/validation-map.json",
+            "cep-transport"
+          ],
+          [
+            "core4/tools/stopped-update.js",
+            "tools/",
+            "cep-transport"
+          ],
+          [
+            "core4/tools/operate-stopped-update.js",
+            "tools/",
+            "cep-transport"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "tools/",
+            "cep-transport"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "tools/",
+            "cep-transport"
+          ]
+        ]
+      },
+      {
+        "check": "lifecycle-simulation",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/config/validation-map.json",
+            "dependency": "config/validation-map.json"
+          },
+          {
+            "file": "core4/tools/stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/operate-stopped-update.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/standalone-installer.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/tools/package-standalone-installer.js",
+            "dependency": "tools/"
+          },
+          {
+            "file": "core4/test/stopped-update.test.js",
+            "dependency": "test/"
+          },
+          {
+            "file": "core4/test/stopped-update-operator.test.js",
+            "dependency": "test/"
+          },
+          {
+            "file": "core4/test/fixtures/owner-pre-ready-claim-child.js",
+            "dependency": "test/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/config/validation-map.json",
+            "config/validation-map.json",
+            "lifecycle-simulation"
+          ],
+          [
+            "core4/tools/stopped-update.js",
+            "tools/",
+            "lifecycle-simulation"
+          ],
+          [
+            "core4/tools/operate-stopped-update.js",
+            "tools/",
+            "lifecycle-simulation"
+          ],
+          [
+            "core4/tools/standalone-installer.js",
+            "tools/",
+            "lifecycle-simulation"
+          ],
+          [
+            "core4/tools/package-standalone-installer.js",
+            "tools/",
+            "lifecycle-simulation"
+          ],
+          [
+            "core4/test/stopped-update.test.js",
+            "test/",
+            "lifecycle-simulation"
+          ],
+          [
+            "core4/test/stopped-update-operator.test.js",
+            "test/",
+            "lifecycle-simulation"
+          ],
+          [
+            "core4/test/fixtures/owner-pre-ready-claim-child.js",
+            "test/",
+            "lifecycle-simulation"
+          ]
+        ]
+      },
+      {
+        "check": "native-read-recovery",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "native-read-recovery"
+          ]
+        ]
+      },
+      {
+        "check": "installed-composition",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "installed-composition"
+          ]
+        ]
+      },
+      {
+        "check": "exact-f548-transition",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/stopped-certification.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/stopped-certification.js",
+            "runtime/",
+            "exact-f548-transition"
+          ]
+        ]
+      }
+    ]
+  },
+  "frozenSource": "snapshots/core4-lifecycle/20261031/OWNERPREREADY/source"
+}

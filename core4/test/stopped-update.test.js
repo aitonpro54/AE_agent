@@ -40,7 +40,7 @@ async function harness(t) {
   t.after(async () => { for (const fd of tracked) { try { fs.closeSync(fd); } catch {} } tracked.clear(); await new Promise(resolve => server.close(resolve)); assert.ok(base.startsWith(path.join(os.tmpdir(), 'core4-stopped-update-')) && path.resolve(base) === base); fs.rmSync(base, { recursive: true, force: true }); });
   return { base, args, d, descriptorPath, cert, plan, options, api, installer, io, names, barrier, recovery, load, server, certifier,
     legacyPort(port) { legacyPort = port; },
-    dead() { for (const fd of [...tracked]) io.closeSync(fd); birth += 10n; }, onProbe(fn) { probeHook = fn; }, unavailable(v) { unavailable = v; },
+    dead() { for (const fd of [...tracked]) io.closeSync(fd); birth += 10n; }, reviveFixtureActor() { birth -= 10n; }, onProbe(fn) { probeHook = fn; }, unavailable(v) { unavailable = v; },
     async prepared() { return api.prepareStoppedUpdate(options); } };
 }
 const code = v => e => e.code === v;
@@ -203,4 +203,100 @@ test('enable gate inode drift after inspection refuses before any continuation r
   const before = h.installer.snapshot(h.base);
   await assert.rejects(h.api.finishEnableStoppedUpdate({ ...h.recovery(), expectedProofHash: inspection.proofHash }), code('stopped_update_enable_proof'));
   assert.deepEqual(h.installer.snapshot(h.base), before); assert.ok(fs.existsSync(h.barrier));
+});
+
+async function ownerInterrupted(t, phase = 'broker') {
+  const h = await harness(t), directory = path.join(h.d.installRoot, 'transactions', h.plan.transactionId + '-stopped-update');
+  const target = { intent: path.join(directory, 'intent.json'), install: path.join(h.d.installRoot, 'install.lock'), broker: path.join(h.d.stateDir, 'broker/broker-owner.gate'), lease: path.join(directory, 'lease.json') }[phase];
+  let hit = false;
+  const restore = intercept(h, 'linkSync', (link, from, to) => { const value = link(from, to); if (to === target && !hit) { hit = true; throw Object.assign(Error('owner pre-ready interrupted'), { code: 'fixture_owner_interrupted' }); } return value; });
+  try { await assert.rejects(h.prepared(), code('fixture_owner_interrupted')); } finally { restore(); }
+  assert.equal(hit, true); h.dead(); return { h, directory };
+}
+function protectedOwnerFiles(h) {
+  return [path.join(h.d.installRoot, 'origin.json'), path.join(h.d.stateDir, 'origin.json'), path.join(h.d.stateDir, 'receiver/completions.ndjson'), path.join(h.d.stateDir, 'broker/ledger.ndjson'), h.barrier, path.join(h.d.installRoot, 'transactions', h.options.id + '-owner-maintenance/stopped-certificate.json')];
+}
+for (const phase of ['intent', 'install', 'broker', 'lease']) test('owner pre-ready continues original payload after ' + phase + ' prefix with no new credentials', async t => {
+  const { h, directory } = await ownerInterrupted(t, phase), intent = fs.readFileSync(path.join(directory, 'intent.json'));
+  const protectedFiles = protectedOwnerFiles(h), before = protectedFiles.map(file => fs.existsSync(file) ? fs.readFileSync(file) : null), expected = Buffer.from(h.installer.preparedInstallPayload(h.plan).descriptorBytes, 'base64');
+  const inspected = await h.api.inspectOwnerPreReady(h.recovery());
+  assert.equal(inspected.phase, 'owner-pre-ready'); assert.equal(inspected.gatePrefix, phase === 'intent' ? 0 : phase === 'install' ? 1 : 2);
+  await assert.rejects(h.api.finishOwnerPreReady({ ...h.recovery(), expectedProofHash: 'f'.repeat(64) }), code('stopped_update_proof_changed'));
+  const result = await h.api.finishOwnerPreReady({ ...h.recovery(), expectedProofHash: inspected.proofHash });
+  assert.equal(result.phase, 'update-stopped'); assert.equal(result.runtimeStarted, false); assert.equal(result.aeAuthority, false);
+  assert.deepEqual(fs.readFileSync(h.descriptorPath), expected); assert.deepEqual(fs.readFileSync(path.join(directory, 'intent.json')), intent);
+  protectedFiles.forEach((file, i) => { if (file !== h.barrier) assert.deepEqual(fs.existsSync(file) ? fs.readFileSync(file) : null, before[i], file); });
+  assert.deepEqual(fs.readFileSync(path.join(directory, 'original-stop')), before[4]);
+  assert.equal(fs.existsSync(path.join(h.d.installRoot, 'install.lock')), false);
+  await assert.rejects(h.api.inspectOwnerPreReady(h.recovery()), code('stopped_update_prepared_phase'));
+  h.dead(); assert.equal((await h.api.inspectStoppedUpdate(h.recovery())).phase, 'update-stopped');
+});
+for (const crash of ['attempt', 'lease', 'release-file', 'prepared-file', 'cep-file', 'ready']) test('owner pre-ready crash at ' + crash + ' remains attributed and resumes only after actor death', async t => {
+  const { h, directory } = await ownerInterrupted(t, 'intent'), inspection = await h.api.inspectOwnerPreReady(h.recovery());
+  const release = h.plan.descriptor.releaseDir, prepared = path.join(h.d.installRoot, 'transactions', h.plan.transactionId + '-prepared'), cep = path.join(h.d.installRoot, 'transactions', h.plan.transactionId + '-cep-next');
+  let hit = false;
+  const fileCrash = ['release-file', 'prepared-file', 'cep-file'].includes(crash);
+  const restore = intercept(h, fileCrash ? 'unlinkSync' : 'linkSync', (operation, ...args) => { const value = operation(...args), to = fileCrash ? args[0] : args[1], name = path.basename(to); const matches = crash === 'attempt' ? /^pre-ready-[a-f0-9-]{36}\.json$/.test(name) : crash === 'lease' ? /-lease\.json$/.test(name) : crash === 'release-file' ? to.startsWith(release + path.sep) : crash === 'prepared-file' ? to.startsWith(prepared + path.sep) : crash === 'cep-file' ? to.startsWith(cep + path.sep) : name === 'switch-ready.json'; if (matches && !hit) { hit = true; throw Object.assign(Error('owner recovery interrupted'), { code: 'fixture_owner_recovery_crash' }); } return value; });
+  try { await assert.rejects(h.api.finishOwnerPreReady({ ...h.recovery(), expectedProofHash: inspection.proofHash }), code('fixture_owner_recovery_crash')); } finally { restore(); }
+  assert.equal(hit, true);
+  if (crash === 'ready') {
+    await assert.rejects(h.api.inspectStoppedUpdate(h.recovery()), code('stopped_update_process_not_dead')); h.dead();
+    const proof = await h.api.inspectStoppedUpdate(h.recovery()); await h.api.finishStoppedUpdate({ ...h.recovery(), expectedProofHash: proof.proofHash });
+  } else {
+    await assert.rejects(h.api.inspectOwnerPreReady(h.recovery()), code('stopped_update_process_not_dead')); h.dead();
+    const proof = await h.api.inspectOwnerPreReady(h.recovery()); await h.api.finishOwnerPreReady({ ...h.recovery(), expectedProofHash: proof.proofHash });
+  }
+  assert.equal(JSON.parse(fs.readFileSync(h.barrier)).body.kind, 'update-stopped');
+});
+for (const drift of ['foreign-record', 'foreign-recovery-lease', 'foreign-prepared', 'foreign-cep-dir', 'foreign-release', 'gate-bytes', 'gate-inode', 'descriptor-inode', 'config-inode', 'certificate', 'intent-corrupt', 'host-adoption', 'actor-alive', 'broker-only', 'unavailable']) test('owner pre-ready refuses ' + drift + ' with zero writes', async t => {
+  const { h, directory } = await ownerInterrupted(t), inspection = await h.api.inspectOwnerPreReady(h.recovery());
+  const replace = file => { const tmp = file + '.replacement'; fs.writeFileSync(tmp, fs.readFileSync(file)); fs.renameSync(tmp, file); };
+  const gate = path.join(h.d.installRoot, 'install.lock');
+  if (drift === 'foreign-record') fs.writeFileSync(path.join(directory, 'foreign.json'), '{}');
+  if (drift === 'foreign-recovery-lease') fs.writeFileSync(path.join(directory, 'recovery-' + crypto.randomUUID() + '-lease.json'), '{}');
+  if (drift === 'foreign-prepared') { const dir = path.join(h.d.installRoot, 'transactions', h.plan.transactionId + '-prepared'); fs.mkdirSync(dir); fs.writeFileSync(path.join(dir, 'foreign'), 'x'); }
+  if (drift === 'foreign-cep-dir') { const dir = path.join(h.d.installRoot, 'transactions', h.plan.transactionId + '-cep-next'); fs.mkdirSync(dir); fs.mkdirSync(path.join(dir, 'foreign-empty')); }
+  if (drift === 'foreign-release') { fs.mkdirSync(h.plan.descriptor.releaseDir); fs.writeFileSync(path.join(h.plan.descriptor.releaseDir, 'foreign'), 'x'); }
+  if (drift === 'gate-bytes') fs.writeFileSync(gate, 'foreign');
+  if (drift === 'gate-inode') replace(gate);
+  if (drift === 'descriptor-inode') replace(h.descriptorPath);
+  if (drift === 'config-inode') replace(h.args.configPath);
+  if (drift === 'certificate') fs.appendFileSync(protectedOwnerFiles(h).at(-1), ' ');
+  if (drift === 'intent-corrupt') fs.appendFileSync(path.join(directory, 'intent.json'), ' ');
+  if (drift === 'host-adoption') fs.writeFileSync(path.join(h.d.stateDir, 'host-adoption.json'), '{}');
+  if (drift === 'actor-alive') h.reviveFixtureActor();
+  if (drift === 'broker-only') fs.unlinkSync(gate);
+  if (drift === 'unavailable') h.unavailable(true);
+  const before = h.installer.snapshot(h.base), original = h.io.openSync; let writes = 0;
+  h.io.openSync = (file, flags, ...args) => { if (typeof flags === 'string' && /[wax+]/.test(flags)) writes++; return original(file, flags, ...args); };
+  try { await assert.rejects(h.api.finishOwnerPreReady({ ...h.recovery(), expectedProofHash: inspection.proofHash })); } finally { h.io.openSync = original; }
+  assert.equal(writes, 0); assert.deepEqual(h.installer.snapshot(h.base), before);
+});
+
+test('owner pre-ready rechecks exact proof after each process await and copied proof ports are rejected', async t => {
+  const { h } = await ownerInterrupted(t), inspection = await h.api.inspectOwnerPreReady(h.recovery());
+  assert.throws(() => h.api.ownerPreparedCertificatePermit({}), code('stopped_update_prepared_brand'));
+  assert.throws(() => h.certifier.readStoppedUpdateCertificate({}), code('stopped_update_prepared_brand'));
+  let changed = false; h.onProbe(() => { if (!changed) { changed = true; fs.appendFileSync(h.args.configPath, '\n# race\n'); } });
+  const original = h.io.openSync; let writes = 0; h.io.openSync = (file, flags, ...args) => { if (typeof flags === 'string' && /[wax+]/.test(flags)) writes++; return original(file, flags, ...args); };
+  try { await assert.rejects(h.api.finishOwnerPreReady({ ...h.recovery(), expectedProofHash: inspection.proofHash })); } finally { h.io.openSync = original; }
+  assert.equal(writes, 0);
+});
+
+test('owner pre-ready competing processes discard only their own unpublished losing claim stage', async t => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-owner-claim-'));
+  t.after(() => { assert.ok(base.startsWith(path.join(os.tmpdir(), 'core4-owner-claim-'))); fs.rmSync(base, { recursive: true, force: true }); });
+  const file = path.join(base, 'claim.json'), child = path.join(__dirname, 'fixtures/owner-pre-ready-claim-child.js'), cp = require('node:child_process');
+  const start = name => {
+    const signal = path.join(base, name + '.ready'), go = path.join(base, name + '.go'), bytes = Buffer.from(name);
+    const p = cp.spawn(process.execPath, [child, file, bytes.toString('base64'), signal, go], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }); let output = '', stderr = '';
+    p.stdout.on('data', b => { output += b; }); p.stderr.on('data', b => { stderr += b; });
+    const done = new Promise((resolve, reject) => { p.once('error', reject); p.once('exit', code => code === 0 ? resolve(output) : reject(Error(stderr))); });
+    return { signal, go, done };
+  };
+  const a = start('winner'), b = start('loser'), deadline = Date.now() + 10000;
+  while (!fs.existsSync(a.signal) || !fs.existsSync(b.signal)) { if (Date.now() > deadline) throw Error('fixture claim readiness timeout'); await new Promise(resolve => setTimeout(resolve, 10)); }
+  fs.writeFileSync(a.go, 'go'); assert.equal(await a.done, 'claimed');
+  fs.writeFileSync(b.go, 'go'); assert.equal(await b.done, 'EEXIST');
+  assert.equal(fs.readFileSync(file, 'utf8'), 'winner'); assert.equal(fs.readdirSync(base).some(name => name.includes('.stage-')), false);
 });

@@ -32,6 +32,12 @@ update-inspect принимает transaction UUID; update-finish продолж
 новой установки с тем же proof flag; enable-finish завершает прерванный enable.
 legacy-inspect / legacy-finish используют исходный migration UUID для ранней фазы;
 finish требует --expected-proof-hash. Новые ключи при продолжении не генерируются.
+owner-pre-ready-inspect / owner-pre-ready-finish используют исходный update
+transaction UUID до switch-ready; finish требует --expected-proof-hash. Допускаются
+только исходные sealed role gates: отсутствуют оба, install-only, либо оба.
+Живые actors, изменённые inode/bytes, неизвестные records/stages запрещены.
+Продолжение использует исходный payload/credentials и сохраняет stop barrier;
+после switch-ready применяется отдельный update-inspect / update-finish.
 Успешное обновление сохраняет stopped barrier. Explicit enable не запускает Core;
 обычный thin client делает это после enable. Неизвестные исходы не повторяются.
 Review distributionHash out of band from package builder output. The manifest

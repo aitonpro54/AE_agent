@@ -221,4 +221,26 @@ function assertStoppedCertificate(certificate, { installation, descriptorPath, i
   if (!equal(facts, p.facts)) fail('stopped_certification_changed');
   return stoppedCertificateFacts(certificate);
 }
-module.exports = { inspectStoppedCertification, certifyStoppedInstallation, assertStoppedCertificate, stoppedCertificateFacts, stoppedContextPermit, stoppedLifecyclePermit };
+function readStoppedUpdateCertificate(capability) {
+  // This read-only port cannot mint a certificate or retire lifecycle state.
+  // Only the update module can brand the exact, already attributed gate bytes.
+  const p = require('../tools/stopped-update').ownerPreparedCertificatePermit(capability);
+  contexts.set(capability, p);
+  try {
+    endpoint(p.reservedServer);
+    const c = require('./owner-maintenance').stoppedCertificationContext(capability); c.reverify();
+    const b = readBase(c, p.id, p.owned), markers = c.markers(), installGate = c.info(c.read(path.join(p.installation.installRoot, 'install.lock')));
+    if (!b.certificate) fail('stopped_certification_phase');
+    for (const file of [path.join(p.installation.installRoot, 'install.lock'), path.join(p.installation.stateDir, 'broker/broker-owner.gate')]) {
+      const v = c.read(file), bytes = p.owned.get(file);
+      if (v.bytes && !v.bytes.equals(bytes || Buffer.alloc(0))) fail('stopped_certification_changed');
+      if (file === path.join(p.installation.installRoot, 'install.lock')) Object.assign(installGate, NIL()); else markers['broker/broker-owner.gate'] = NIL();
+    }
+    if (Object.values(markers).some(v => v.hash !== null)) fail('stopped_certification_changed');
+    assertLifecycleTransactions(c, b.certificate.lifecycle);
+    const facts = { id: p.id, stopHash: hash(b.barrier.bytes), stop: c.info(b.barrier), certificateHash: hash(b.certView.bytes), descriptorHash: c.descriptorHash, snapshot: b.snap.facts, phase: b.phase, lifecycle: b.certificate.lifecycle, markers, installGate };
+    if (!equal(facts, p.expectedFacts)) fail('stopped_certification_changed');
+    return { facts, actors: [b.b.scope, b.intent.certifier, ...b.attempts.map(a => a.certifier), b.certificate.certifier] };
+  } finally { contexts.delete(capability); }
+}
+module.exports = { inspectStoppedCertification, certifyStoppedInstallation, assertStoppedCertificate, stoppedCertificateFacts, stoppedContextPermit, stoppedLifecyclePermit, readStoppedUpdateCertificate };

@@ -7,6 +7,7 @@ const { verifyPackage, runtimeBinding } = require('./package-installable');
 const { observeOwnerProcess, classifyOwnerProcess } = require('../runtime/windows-owner-process');
 const permits = new WeakMap(), leasePermits = new WeakMap(), recoveries = new WeakMap();
 const preparedRecoveries = new WeakMap();
+const ownerCertificatePermits = new WeakMap(), ownerPreparedSources = new WeakMap();
 const HEX = /^[a-f0-9]{64}$/, UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 const FIELDS = ['dev', 'ino', 'size', 'birthtimeNs', 'mtimeNs', 'ctimeNs'];
 const stamp = s => Object.fromEntries(FIELDS.map(k => [k, String(s[k])]));
@@ -62,13 +63,25 @@ function sameTree(actual, expected, moved = false) {
     return b.directory ? a.directory === true && FIELDS.filter(f => !(moved && k === '' && f === 'ctimeNs')).every(f => a.stat[f] === b.stat[f]) : sameFact(a, b);
   });
 }
-function atomic(file, bytes) {
+function atomic(file, bytes, exclusiveClaim = false) {
   plain(path.dirname(file), true); if (plain(file, false, true)) fail('stopped_update_destination');
   const stage = file + '.stage-' + crypto.randomUUID(); let fd = fs.openSync(stage, 'wx+');
   try {
     if (fs.writeSync(fd, bytes) !== bytes.length) fail('stopped_update_short_write'); fs.fsyncSync(fd);
     const before = read(stage); if (!before.bytes.equals(bytes) || !equal(stamp(fs.fstatSync(fd, { bigint: true })), before.stat)) fail('stopped_update_changed');
-    fs.linkSync(stage, file); const linked = read(file);
+    try { fs.linkSync(stage, file); }
+    catch (error) {
+      if (exclusiveClaim && error.code === 'EEXIST') {
+        // A losing claim may discard only its own still-unpublished stage.
+        // No generic stage retirement and no removal of the winning record.
+        const own = read(stage), held = fs.fstatSync(fd, { bigint: true }), winner = read(file);
+        if (!sameFact(own, before) || !equal(own.stat, stamp(held)) || held.nlink !== 1n || !winner.bytes || winner.stat.dev === own.stat.dev && winner.stat.ino === own.stat.ino) fail('stopped_update_claim_changed');
+        fs.unlinkSync(stage);
+        if (fs.fstatSync(fd, { bigint: true }).nlink !== 0n) fail('stopped_update_claim_changed');
+      }
+      throw error;
+    }
+    const linked = read(file);
     if (!sameFact(linked, before, true)) fail('stopped_update_changed');
     fs.unlinkSync(stage); const closing = fd; fd = undefined; fs.closeSync(closing);
     const final = read(file); if (!sameFact(final, before, true)) fail('stopped_update_changed'); return final;
@@ -247,9 +260,9 @@ function updateDirectoryFacts(c) {
   const actual = tree(c.directory), allowed = ['intent.json', 'lease.json', 'switch-ready.json', 'verified.json', 'update-stopped.json', 'original-stop', 'completed.json', 'enable-intent.json', 'enable-ready.json', 'update-stop', 'enabled.json'];
   if (!actual) fail('stopped_update_phase');
   for (const name of Object.keys(actual).filter(Boolean)) {
-    if (allowed.includes(name) || /^(?:(?:enable-)?recovery|pre-ready)-[a-f0-9-]{36}\.json$/.test(name)) continue;
+    if (allowed.includes(name) || /^(?:(?:enable-)?recovery-[a-f0-9-]{36}|pre-ready-[a-f0-9-]{36}(?:-lease)?)\.json$/.test(name)) continue;
     const base = name.replace(/\.stage-[a-f0-9-]{36}$/, '');
-    if (base === name || !allowed.includes(base) && !/^(?:(?:enable-)?recovery|pre-ready)-[a-f0-9-]{36}\.json$/.test(base)) fail('stopped_update_phase');
+    if (base === name || !allowed.includes(base) && !/^(?:(?:enable-)?recovery-[a-f0-9-]{36}|pre-ready-[a-f0-9-]{36}(?:-lease)?)\.json$/.test(base)) fail('stopped_update_phase');
     const target = base === 'update-stopped.json' && !actual[base] ? info(read(path.join(c.old.stateDir, 'runtime-maintenance.json'))) : actual[base];
     if (!target || !sameFact(actual[name], target) || !equal(actual[name].stat, target.stat)) fail('stopped_update_phase');
   }
@@ -309,7 +322,9 @@ function readRecovery(options) {
   c.preAttempts = preparedChain(c, intent); const pre = c.preAttempts.at(-1);
   if (pre) c.facts = pre.facts;
   if (c.facts.descriptorHash !== expectedPreviousDescriptorHash || c.facts.stopHash !== c.facts.stop?.hash) fail('stopped_update_record');
-  const leaseView = pre ? { hash: pre.hash, stat: pre.stat } : read(path.join(directory, 'lease.json')), leaseRecord = pre ? { intentHash: pre.intentHash, actor: pre.actor, facts: pre.leaseFacts, fingerprint: pre.fingerprint } : decode(c, leaseView, 'update-lease');
+  const ownerLease = pre && intent.source === 'owner' ? read(path.join(directory, 'pre-ready-' + pre.attemptId + '-lease.json')) : null;
+  const leaseView = ownerLease || (pre ? { hash: pre.hash, stat: pre.stat } : read(path.join(directory, 'lease.json'))), leaseRecord = ownerLease ? decode(c, ownerLease, 'update-pre-ready-lease') : pre ? { intentHash: pre.intentHash, actor: pre.actor, facts: pre.leaseFacts, fingerprint: pre.fingerprint } : decode(c, leaseView, 'update-lease');
+  if (ownerLease && leaseRecord.attemptHash !== pre.hash) fail('stopped_update_record');
   const effectiveActor = pre?.actor || intent.actor;
   if (leaseRecord.intentHash !== c.intent.hash || !equal(leaseRecord.actor, effectiveActor) || !Array.isArray(leaseRecord.facts) || leaseRecord.facts.length !== 2) fail('stopped_update_record');
   c.leaseRecord = info(leaseView); c.gateFacts = leaseRecord.facts; c.gateBytes = (pre?.gates || intent.gates).map(s => Buffer.from(s, 'base64'));
@@ -530,19 +545,19 @@ async function finishEnableStoppedUpdate(options) {
   finally { leasePermits.delete(cap); }
 }
 function checkPreparedRecovery(c) {
-  const p = require('./legacy-owner-migration').assertLegacyPreparedRecovery(c.sourceCapability);
+  const p = c.source === 'owner' ? assertOwnerPreparedSource(c.sourceCapability) : require('./legacy-owner-migration').assertLegacyPreparedRecovery(c.sourceCapability);
   if (p.lease !== c.lease || p.installation !== c.old || p.descriptorPath !== c.descriptorPath || p.id !== c.stopId || !equal(p.facts, c.facts) || hash(canonical(p.payload)) !== c.payloadHash || p.reservedServer !== c.server) fail('stopped_update_prepared_brand');
   endpoint(c.server); leases.assertInstallLease(c.lease, scope(c.old, c.descriptorPath), { full: true }); checkStop(c);
   const pld = c.payload;
   if (!sameFact(read(c.descriptorPath), c.facts.snapshot.descriptor) || !sameFact(read(path.join(c.old.installRoot, 'core-client.json')), c.facts.snapshot.client) || read(pld.configPath).hash !== pld.baseline.config || hash(installer.snapshot(pld.cepDir)) !== pld.baseline.cep) fail('stopped_update_baseline_changed');
 }
-async function createLegacyStoppedRecovery(sourceCapability) {
-  const p = require('./legacy-owner-migration').assertLegacyPreparedRecovery(sourceCapability), payload = structuredClone(p.payload);
+function preparedRecoveryContext(p, source, sourceCapability) {
+  const payload = structuredClone(p.payload);
   verifyPackage(payload.package);
   const oldBytes = Buffer.from(payload.previousDescriptor || '', 'base64'), old = p.installation, next = JSON.parse(Buffer.from(payload.descriptorBytes, 'base64'));
   if (!Buffer.from(canonical(next)).equals(Buffer.from(payload.descriptorBytes, 'base64'))) fail('stopped_update_prepared_payload');
   if (!old || old.machineId !== os.hostname() || !UUID.test(payload.transactionId) || payload.version !== 1 || !equal(JSON.parse(oldBytes), old) || p.descriptorPath !== path.join(old.installRoot, 'installation.json') || payload.descriptorPath !== p.descriptorPath || next.installRoot !== old.installRoot || next.stateDir !== old.stateDir || next.installationId !== old.installationId || next.machineId !== old.machineId || next.releaseDir !== path.join(old.installRoot, 'releases', payload.package.packageHash) || next.packageHash !== payload.package.packageHash || next.cepDir !== payload.cepDir || next.cepDir !== old.cepDir || next.predecessor?.transactionId !== payload.transactionId || next.predecessor?.previousDescriptorHash !== hash(oldBytes) || payloadDigest(payload) !== payload.preparedPlanHash || runtimeBinding(payload.package.release, f => Buffer.from(payload.package.files[f], 'base64')).runtimeModel !== 'owner' || !payload.nextClient || payload.clientBinding.clientDescriptorPath !== path.join(old.installRoot, 'core-client.json') || p.facts.descriptorHash !== hash(oldBytes)) fail('stopped_update_prepared_payload');
-  const c = { source: 'legacy', sourceCapability, old, oldBytes, next, descriptorPath: p.descriptorPath, stopId: p.id, facts: structuredClone(p.facts), server: p.reservedServer, lease: p.lease, payload, payloadHash: hash(canonical(payload)), binding: binding(old, next, payload.transactionId, oldBytes), directory: path.join(old.installRoot, 'transactions', payload.transactionId + '-stopped-update') };
+  const c = { source, sourceCapability, old, oldBytes, next, descriptorPath: p.descriptorPath, stopId: p.id, facts: structuredClone(p.facts), server: p.reservedServer, lease: p.lease, payload, payloadHash: hash(canonical(payload)), binding: binding(old, next, payload.transactionId, oldBytes), directory: path.join(old.installRoot, 'transactions', payload.transactionId + '-stopped-update') };
   const runtime = runtimeBinding(payload.package.release, f => Buffer.from(payload.package.files[f], 'base64')), stdio = require('../runtime/stdio-entry');
   const expectedCep = Object.fromEntries(Object.entries(payload.package.files).filter(([file]) => file.startsWith('cep/')).map(([file, value]) => [file.slice(4), value]));
   expectedCep['installation.js'] = Buffer.from('window.Core4Installation=' + canonical(stdio.installationConfig(next, stdio.deriveComposition(payload.package.release, f => Buffer.from(payload.package.files[f], 'base64')))) + ';\n').toString('base64');
@@ -550,6 +565,10 @@ async function createLegacyStoppedRecovery(sourceCapability) {
   if (!equal(payload.cep, expectedCep) || !Buffer.from(payload.nextClient, 'base64').equals(Buffer.from(canonical(expectedClient))) || !path.isAbsolute(payload.configPath) || path.resolve(payload.configPath) !== payload.configPath || !Buffer.from(payload.configBytes, 'base64').equals(Buffer.from(installer.configText(payload.previousConfig ? Buffer.from(payload.previousConfig, 'base64') : null, payload.clientBinding.clientDescriptorPath, next.nodePath, path.join(next.releaseDir, runtime.clientEntry), runtime.clientArgument))) || payload.baseline.descriptor !== hash(oldBytes) || payload.baseline.config !== (payload.previousConfig ? hash(Buffer.from(payload.previousConfig, 'base64')) : null) || payload.baseline.cep !== hash(payload.previousCep)) fail('stopped_update_prepared_payload');
   plain(old.installRoot, true); plain(path.dirname(next.cepDir), true);
   if (fs.lstatSync(old.installRoot, { bigint: true }).dev !== fs.lstatSync(path.dirname(next.cepDir), { bigint: true }).dev) fail('install_cross_volume_unsupported');
+  return c;
+}
+async function createLegacyStoppedRecovery(sourceCapability) {
+  const p = require('./legacy-owner-migration').assertLegacyPreparedRecovery(sourceCapability), c = preparedRecoveryContext(p, 'legacy', sourceCapability), { payload, old, oldBytes, next } = c;
   checkPreparedRecovery(c); let a = await actor(old); checkPreparedRecovery(c); c.actor = a;
   const fingerprint = { transactionId: payload.transactionId, packageHash: next.packageHash, appliedDescriptorHash: hash(Buffer.from(payload.descriptorBytes, 'base64')), previousDescriptorHash: hash(oldBytes), preparedPlanHash: payload.preparedPlanHash, preparedStateHash: c.payloadHash };
   c.fingerprint = fingerprint;
@@ -576,6 +595,138 @@ async function createLegacyStoppedRecovery(sourceCapability) {
   updateDirectoryFacts(c);
   const capability = Object.freeze({}); preparedRecoveries.set(capability, c); return capability;
   } catch (error) { leases.retainInstallLease(c.lease); error.leaseRetained = true; throw error; }
+}
+function ownerPreparedCertificatePermit(capability) {
+  const p = ownerCertificatePermits.get(capability); if (!p) fail('stopped_update_prepared_brand'); return p;
+}
+function ownerCertificate(c) {
+  const cap = Object.freeze({});
+  ownerCertificatePermits.set(cap, { installation: c.old, descriptorPath: c.descriptorPath, reservedServer: c.server, id: c.stopId, expectedFacts: c.facts, owned: c.gates });
+  try { return require('../runtime/stopped-certification').readStoppedUpdateCertificate(cap); }
+  finally { ownerCertificatePermits.delete(cap); }
+}
+function exactKeys(value, keys) {
+  if (!value || !equal(Object.keys(value).sort(), [...keys].sort())) fail('stopped_update_record');
+}
+function ownerAttemptId(parentHash) {
+  // One exclusive publication name per parent serializes competing actors.
+  const h = hash('ae-core4/owner-pre-ready/claim/v1\0' + parentHash);
+  return h.slice(0, 8) + '-' + h.slice(8, 12) + '-4' + h.slice(13, 16) + '-8' + h.slice(17, 20) + '-' + h.slice(20, 32);
+}
+function ownerPaths(c) {
+  const p = c.payload, root = c.old.installRoot, id = p.transactionId;
+  return { descriptorPath: c.descriptorPath, clientPath: p.clientBinding.clientDescriptorPath, configPath: p.configPath, cepDir: p.cepDir, cepStage: path.join(root, 'transactions', id + '-cep-next'), backupCep: path.join(root, 'transactions', id + '-cep'), txnFile: path.join(root, 'transactions', id + '.json') };
+}
+function preparedTransaction(c, paths) {
+  const p = c.payload, d = c.next;
+  return { version: 2, transactionId: p.transactionId, preparedPlanHash: p.preparedPlanHash, preparedStateHash: c.payloadHash, clientBinding: p.clientBinding, originBinding: { version: 1, rootOriginHash: hash(Buffer.from(p.originBytes, 'base64')), anchorOriginHash: hash(Buffer.from(p.originBytes, 'base64')) }, installRoot: d.installRoot, descriptorPath: c.descriptorPath, configPath: p.configPath, cepDir: p.cepDir, backupCep: paths.backupCep, previousDescriptor: p.previousDescriptor, previousConfig: p.previousConfig, previousCepHash: hash(p.previousCep), appliedDescriptorHash: hash(Buffer.from(p.descriptorBytes, 'base64')), appliedConfigHash: hash(Buffer.from(p.configBytes, 'base64')), appliedCepHash: hash(p.cep), stateDir: d.stateDir };
+}
+function ownerStaging(c) {
+  const p = c.payload, paths = ownerPaths(c), prepared = path.join(c.old.installRoot, 'transactions', p.transactionId + '-prepared');
+  if (plain(paths.backupCep, true, true)) fail('stopped_update_prepared_phase');
+  const encoded = value => Buffer.from(value).toString('base64');
+  const expectedPrepared = { 'prepared.json': encoded(canonical(p)), 'descriptor.json': p.descriptorBytes, 'client.json': p.nextClient };
+  assertCepStageSubset(prepared, expectedPrepared); assertCepStageSubset(paths.cepStage, p.cep);
+  assertCepStageSubset(c.next.releaseDir, { ...p.package.files, 'release.json': encoded(canonical(p.package.release)) });
+  for (const [file, bytes] of [[c.descriptorPath + '.next', p.descriptorBytes], [paths.clientPath + '.next', p.nextClient], [p.configPath + '.core4-next', p.configBytes], [paths.txnFile, encoded(canonical(preparedTransaction(c, paths)))]]) {
+    const v = read(file); if (v.bytes && !v.bytes.equals(Buffer.from(bytes, 'base64'))) fail('stopped_update_staging_changed');
+  }
+  if (!sameFact(read(c.descriptorPath), c.facts.snapshot.descriptor) || !sameFact(read(paths.clientPath), c.facts.snapshot.client) || read(p.configPath).hash !== p.baseline.config || hash(installer.snapshot(p.cepDir)) !== p.baseline.cep) fail('stopped_update_baseline_changed');
+  return { visible: switchViews(c, paths), prepared: tree(prepared), transaction: info(read(paths.txnFile)), release: tree(c.next.releaseDir) };
+}
+function readOwnerPreReady(options) {
+  const { installation: old, descriptorPath, transactionId, expectedPreviousDescriptorHash, expectedPackageHash, reservedServer } = options;
+  endpoint(reservedServer);
+  if (!old || old.machineId !== os.hostname() || !UUID.test(transactionId) || !HEX.test(expectedPreviousDescriptorHash) || !HEX.test(expectedPackageHash) || descriptorPath !== path.join(old.installRoot, 'installation.json') || old.stateDir !== path.join(old.installRoot, 'state/production')) fail('stopped_update_recovery_scope');
+  const directory = path.join(old.installRoot, 'transactions', transactionId + '-stopped-update'), v = read(path.join(directory, 'intent.json'));
+  let raw; try { raw = JSON.parse(v.bytes).body; } catch { fail('stopped_update_record'); }
+  const c = preparedRecoveryContext({ installation: old, descriptorPath, id: raw.stopId, facts: raw.facts, reservedServer, payload: raw.payload, lease: null }, 'owner', null);
+  if (c.directory !== directory || hash(c.oldBytes) !== expectedPreviousDescriptorHash || c.next.packageHash !== expectedPackageHash || c.next.packageHash === old.packageHash || raw.oldDescriptor !== c.payload.previousDescriptor || raw.newDescriptor !== c.payload.descriptorBytes) fail('stopped_update_recovery_scope');
+  const intent = decode(c, v, 'update-intent');
+  exactKeys(intent, [...Object.keys(c.binding), 'kind', 'source', 'stopId', 'actor', 'oldDescriptor', 'newDescriptor', 'fingerprint', 'facts', 'gates', 'externalLease', 'payload']);
+  exactKeys(c.payload, ['version', 'transactionId', 'preparedPlanHash', 'package', 'origin', 'originBytes', 'clientBinding', 'nextClient', 'descriptorBytes', 'descriptorPath', 'configPath', 'configBytes', 'cepDir', 'cep', 'previousDescriptor', 'previousConfig', 'previousCep', 'baseline']);
+  if (intent.source !== 'owner' || intent.externalLease !== false || !UUID.test(intent.stopId) || !Array.isArray(intent.gates) || intent.gates.length !== 2 || read(path.join(directory, 'switch-ready.json')).bytes) fail('stopped_update_prepared_phase');
+  c.intent = info(v); c.originalActor = intent.actor;
+  c.fingerprint = { transactionId, packageHash: c.next.packageHash, appliedDescriptorHash: hash(Buffer.from(c.payload.descriptorBytes, 'base64')), previousDescriptorHash: hash(c.oldBytes), preparedPlanHash: c.payload.preparedPlanHash, preparedStateHash: c.payloadHash };
+  if (!equal(intent.fingerprint, { ...c.fingerprint, preparedStateHash: null })) fail('stopped_update_record');
+  c.gateBytes = intent.gates.map(s => { const b = Buffer.from(s, 'base64'); if (b.toString('base64') !== s) fail('stopped_update_record'); return b; });
+  c.gateBytes.forEach((bytes, index) => { const b = decode(c, { bytes }, 'update-lease-gate'); exactKeys(b, [...Object.keys(c.binding), 'kind', 'actor', 'role', 'nonce']); if (b.role !== ['install', 'broker'][index] || !equal(b.actor, intent.actor) || !UUID.test(b.nonce)) fail('stopped_update_record'); });
+  c.preAttempts = preparedChain(c, intent);
+  let expected = null;
+  const lease = read(path.join(directory, 'lease.json'));
+  if (lease.bytes) { const b = decode(c, lease, 'update-lease'); if (b.intentHash !== v.hash || !equal(b.actor, intent.actor) || !equal(b.fingerprint, c.fingerprint)) fail('stopped_update_record'); expected = b.facts; }
+  const allowed = new Set(['', 'intent.json', ...(lease.bytes ? ['lease.json'] : [])]);
+  for (const [index, a] of c.preAttempts.entries()) {
+    exactKeys(a, [...Object.keys(c.binding), 'kind', 'attemptId', 'parentHash', 'intentHash', 'actor', 'payloadHash', 'facts', 'gates', 'leaseFacts', 'fingerprint', 'hash', 'stat']);
+    if (a.attemptId !== ownerAttemptId(index ? c.preAttempts[index - 1].hash : v.hash) || !equal(a.facts, intent.facts) || !equal(a.gates, intent.gates) || !equal(a.fingerprint, c.fingerprint)) fail('stopped_update_prepared_chain');
+    allowed.add('pre-ready-' + a.attemptId + '.json');
+    if (expected) for (const [i, fact] of expected.entries()) if (fact.stat && !equal(fact, a.leaseFacts[i])) fail('stopped_update_lease_changed');
+    expected = a.leaseFacts;
+    const receiptName = 'pre-ready-' + a.attemptId + '-lease.json', receipt = read(path.join(directory, receiptName));
+    if (receipt.bytes) {
+      const b = decode(c, receipt, 'update-pre-ready-lease');
+      exactKeys(b, [...Object.keys(c.binding), 'kind', 'intentHash', 'attemptHash', 'actor', 'facts', 'fingerprint']);
+      if (b.intentHash !== v.hash || b.attemptHash !== a.hash || !equal(b.actor, a.actor) || !equal(b.fingerprint, c.fingerprint) || !Array.isArray(b.facts) || b.facts.length !== 2 || b.facts.some(f => !f.stat)) fail('stopped_update_record');
+      for (const [i, fact] of expected.entries()) if (fact.stat && !equal(fact, b.facts[i])) fail('stopped_update_lease_changed');
+      expected = b.facts; allowed.add(receiptName);
+    }
+  }
+  const update = updateDirectoryFacts(c);
+  for (const name of Object.keys(update)) { const base = name.replace(/\.stage-[a-f0-9-]{36}$/, ''); if (!allowed.has(base)) fail('stopped_update_prepared_phase'); }
+  c.gates = new Map(); c.gateFacts = [];
+  for (const [index, file] of [path.join(old.installRoot, 'install.lock'), path.join(old.stateDir, 'broker/broker-owner.gate')].entries()) {
+    const actual = read(file), prior = expected?.[index];
+    if (actual.bytes && !actual.bytes.equals(c.gateBytes[index]) || prior && (prior.file !== file || prior.hash !== hash(c.gateBytes[index]) || prior.stat && !sameFact(actual, prior))) fail('stopped_update_lease_changed');
+    c.gateFacts.push({ file, hash: hash(c.gateBytes[index]), stat: actual.stat }); if (actual.bytes) c.gates.set(file, c.gateBytes[index]);
+  }
+  if (!c.gateFacts[0].stat && c.gateFacts[1].stat) fail('stopped_update_lease_changed');
+  const certificate = ownerCertificate(c), staging = ownerStaging(c); checkStop(c);
+  c.hostAdoption = info(read(path.join(old.stateDir, 'host-adoption.json')));
+  const facts = { update, ...staging, hostAdoption: c.hostAdoption, gates: c.gateFacts, certificate: certificate.facts, barrier: info(read(path.join(old.stateDir, 'runtime-maintenance.json'))) };
+  return { c, facts, certificateActors: certificate.actors, proofHash: hash({ binding: c.binding, facts }) };
+}
+async function inspectedOwnerPreReady(options) {
+  const first = readOwnerPreReady(options);
+  for (const a of [first.c.originalActor, ...first.c.preAttempts.map(a => a.actor), ...first.certificateActors]) {
+    await dead(a); const current = readOwnerPreReady(options); if (!equal(current.facts, first.facts)) fail('stopped_update_proof_changed');
+  }
+  const final = readOwnerPreReady(options); if (!equal(final.facts, first.facts)) fail('stopped_update_proof_changed'); return final;
+}
+async function inspectOwnerPreReady(options) {
+  const r = await inspectedOwnerPreReady(options);
+  return Object.freeze({ transactionId: r.c.binding.transactionId, phase: 'owner-pre-ready', proofHash: r.proofHash, gatePrefix: r.c.gateFacts.filter(f => f.stat).length, inspectionOnly: true, runtimeStarted: false, aeAuthority: false });
+}
+function assertOwnerPreparedSource(capability) {
+  const c = ownerPreparedSources.get(capability); if (!c || !c.lease) fail('stopped_update_prepared_brand');
+  endpoint(c.server); leases.assertInstallLease(c.lease, scope(c.old, c.descriptorPath), { full: true }); ownerCertificate(c);
+  if (!equal(tree(c.directory), c.ownerRecordFacts)) fail('stopped_update_proof_changed');
+  if (!sameFact(read(path.join(c.old.stateDir, 'host-adoption.json')), c.hostAdoption)) fail('stopped_update_proof_changed');
+  ownerStaging(c);
+  return { lease: c.lease, installation: c.old, descriptorPath: c.descriptorPath, id: c.stopId, facts: c.facts, payload: c.payload, reservedServer: c.server };
+}
+async function finishOwnerPreReady(options) {
+  if (!HEX.test(options.expectedProofHash)) fail('stopped_update_expected_proof');
+  const r = await inspectedOwnerPreReady(options); if (r.proofHash !== options.expectedProofHash) fail('stopped_update_proof_changed');
+  const a = await actor(r.c.old), now = readOwnerPreReady(options);
+  if (!equal(now.facts, r.facts)) fail('stopped_update_proof_changed');
+  const c = now.c, parentHash = c.preAttempts.at(-1)?.hash || null, attemptId = ownerAttemptId(parentHash || c.intent.hash), cap = Object.freeze({});
+  if (c.preAttempts.length >= 16) fail('stopped_update_budget');
+  c.actor = a;
+  // Before filling even a missing gate, identify the new operator durably.
+  // The original role bytes remain unchanged and continuously held once present.
+  const attempt = atomic(path.join(c.directory, 'pre-ready-' + attemptId + '.json'), seal(c, 'update-pre-ready-recovery', { attemptId, parentHash, intentHash: c.intent.hash, actor: a, payloadHash: c.payloadHash, facts: c.facts, gates: c.gateBytes.map(b => b.toString('base64')), leaseFacts: c.gateFacts, fingerprint: c.fingerprint }), true);
+  try {
+    leasePermits.set(cap, { scope: scope(c.old, c.descriptorPath), nonce: a.bootId, gates: c.gateBytes, facts: c.gateFacts, recovery: true, recoverMissing: true });
+    c.lease = leases.acquireStoppedUpdateLease(cap); leases.assertInstallLease(c.lease, scope(c.old, c.descriptorPath), { full: true });
+    c.gates = leases.ownedLeaseGates(c.lease); ownerCertificate(c); ownerStaging(c); checkStop(c);
+    c.leaseRecord = info(atomic(path.join(c.directory, 'pre-ready-' + attemptId + '-lease.json'), seal(c, 'update-pre-ready-lease', { intentHash: c.intent.hash, attemptHash: attempt.hash, actor: a, facts: leases.maintenanceLeaseFacts(c.lease), fingerprint: c.fingerprint })));
+    const final = readOwnerPreReady(options);
+    for (const key of ['visible', 'prepared', 'transaction', 'release', 'hostAdoption', 'certificate', 'barrier']) if (!equal(final.facts[key], r.facts[key])) fail('stopped_update_proof_changed');
+    for (const [name, fact] of Object.entries(r.facts.update).filter(([name]) => name)) if (!equal(final.facts.update[name], fact)) fail('stopped_update_proof_changed');
+    c.sourceCapability = cap; c.ownerRecordFacts = final.facts.update; ownerPreparedSources.set(cap, c); preparedRecoveries.set(cap, c);
+    return stageStoppedRecovery(cap);
+  } catch (error) { if (c.lease) leases.retainInstallLease(c.lease); error.leaseRetained = true; error.transactionId = c.binding.transactionId; throw error; }
+  finally { leasePermits.delete(cap); ownerPreparedSources.delete(cap); }
 }
 function writeExact(file, expected) {
   const bytes = Buffer.isBuffer(expected) ? expected : Buffer.from(expected), current = read(file);
@@ -608,7 +759,13 @@ function stageStoppedRecovery(capability) {
     // Validate the whole existing subset before any fill writes; foreign files,
     // empty directories and modified bytes remain untouched and fenced.
     assertCepStageSubset(paths.cepStage, p.cep);
-    if (!plain(d.releaseDir, true, true)) {
+    if (c.source === 'owner') {
+      // Under the stopped gate, this exact target can retain a validated prefix
+      // after a crash. No random release stage or new payload is introduced.
+      assertCepStageSubset(d.releaseDir, { ...p.package.files, 'release.json': Buffer.from(canonical(p.package.release)).toString('base64') });
+      for (const [file, bytes] of Object.entries(p.package.files)) writeExact(path.join(d.releaseDir, file), Buffer.from(bytes, 'base64'));
+      writeExact(path.join(d.releaseDir, 'release.json'), canonical(p.package.release));
+    } else if (!plain(d.releaseDir, true, true)) {
       const releaseStage = path.join(d.installRoot, 'releases', '.stage-' + crypto.randomUUID());
       for (const [file, bytes] of Object.entries(p.package.files)) writeExact(path.join(releaseStage, file), Buffer.from(bytes, 'base64'));
       writeExact(path.join(releaseStage, 'release.json'), canonical(p.package.release)); installer.checkRelease(releaseStage, p.package.release); fs.renameSync(releaseStage, d.releaseDir);
@@ -636,4 +793,5 @@ function stageStoppedRecovery(capability) {
 }
 module.exports = { prepareStoppedUpdate, prepareLegacyStoppedUpdate, applyStoppedUpdate, inspectStoppedUpdate, finishStoppedUpdate,
   enableStoppedUpdate, finishEnableStoppedUpdate, createLegacyStoppedRecovery, stageStoppedRecovery,
+  inspectOwnerPreReady, finishOwnerPreReady, ownerPreparedCertificatePermit,
   assertStoppedUpdatePermit, stoppedUpdateSwitchReady, stoppedUpdateLeasePermit };

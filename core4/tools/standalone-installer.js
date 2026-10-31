@@ -56,11 +56,11 @@ function verifyStandalone(root, expectedHash) {
 function main(args = process.argv.slice(2)) {
   const options = {}, mode = args[0];
   const maintenance = ['maintenance-inspect', 'maintenance-finish', 'stopped-inspect', 'stopped-certify'].includes(mode);
-  const update = ['migrate-legacy', 'owner-update', 'update-inspect', 'update-finish', 'update-enable', 'enable-finish', 'legacy-inspect', 'legacy-finish'].includes(mode);
+  const update = ['migrate-legacy', 'owner-update', 'update-inspect', 'update-finish', 'update-enable', 'enable-finish', 'legacy-inspect', 'legacy-finish', 'owner-pre-ready-inspect', 'owner-pre-ready-finish'].includes(mode);
   const action = ['maintenance-finish', 'stopped-certify'].includes(mode);
   if (!['dry-run', 'apply'].includes(mode) && !maintenance && !update || args.length % 2 !== 1) fail('standalone_usage');
   if (update) {
-    const primary = ['migrate-legacy', 'owner-update'].includes(mode), inspecting = ['update-inspect', 'legacy-inspect'].includes(mode);
+    const primary = ['migrate-legacy', 'owner-update'].includes(mode), inspecting = ['update-inspect', 'legacy-inspect', 'owner-pre-ready-inspect'].includes(mode);
     const allowed = ['--expected-distribution-hash', '--expected-package-hash', '--expected-current-package-hash', '--expected-previous-descriptor-hash', '--installation', '--operation', ...(primary ? ['--config'] : []), ...(mode === 'migrate-legacy' ? ['--root-status', '--expected-root-status-hash'] : []), ...(!primary && !inspecting ? ['--expected-proof-hash'] : [])];
     for (let i = 1; i < args.length; i += 2) { if (!allowed.includes(args[i]) || Object.hasOwn(options, args[i]) || !args[i + 1] || args[i + 1].startsWith('--')) fail('standalone_usage'); options[args[i]] = args[i + 1]; }
     if (Object.keys(options).length !== allowed.length || allowed.filter(k => k.includes('hash')).some(k => !HASH.test(options[k])) || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(options['--operation'])) fail('standalone_usage');
