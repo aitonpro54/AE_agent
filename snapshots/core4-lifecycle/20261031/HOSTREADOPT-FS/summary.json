@@ -1,0 +1,163 @@
+{
+  "collectedAt": "2026-10-31T14:15:42.778Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check",
+    "context": "host-readoption filesystem semantics; self-created tiny files only"
+  },
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "node": "v24.15.0",
+    "filesystemObservation": {
+      "source": "fs.statfsSync(os.tmpdir())",
+      "type": "0",
+      "bsize": "4096",
+      "blocks": "499785215",
+      "note": "Windows Node statfs type value retained verbatim; no external filesystem-identification tool used."
+    },
+    "tempLocationDisclosure": "One or more fresh os.mkdtempSync directories under os.tmpdir(); absolute paths intentionally omitted."
+  },
+  "reportSha256": "3d41438ab6c6935fe57d650e89c9c5b6e00ed9c6ae649db0c6591f2e63e8e562",
+  "cases": [
+    {
+      "label": "replace-existing-target",
+      "pass": true,
+      "operations": [
+        {
+          "operation": "rename-over-existing-while-old-read-fd-open",
+          "result": "error",
+          "code": "EPERM",
+          "name": "Error"
+        },
+        {
+          "operation": "rename-over-existing-after-old-read-fd-close",
+          "result": "success"
+        }
+      ],
+      "checks": {
+        "targetHasNewBytes": true,
+        "archiveHasOldBytes": true,
+        "anchorBytesUnchanged": true,
+        "targetAndAnchorSameIdentity": true,
+        "archiveRetainsOldInitialIdentity": true,
+        "targetDiffersFromOldIdentity": true,
+        "expectedNlinkSequenceObserved": true
+      },
+      "expectedNlinks": {
+        "initial": {
+          "old": 1
+        },
+        "afterOldLink": {
+          "old": 2
+        },
+        "afterAnchorLink": {
+          "old": 2,
+          "replacement": 2
+        },
+        "afterRename": {
+          "old": 1,
+          "replacement": 2
+        },
+        "afterClose": {
+          "old": 1,
+          "replacement": 2
+        }
+      }
+    },
+    {
+      "label": "rename-into-recently-freed-target",
+      "pass": true,
+      "operations": [
+        {
+          "operation": "unlink-target-before-rename",
+          "result": "success"
+        },
+        {
+          "operation": "rename-into-recently-freed-target",
+          "result": "success"
+        }
+      ],
+      "checks": {
+        "targetHasNewBytes": true,
+        "archiveHasOldBytes": true,
+        "anchorBytesUnchanged": true,
+        "targetAndAnchorSameIdentity": true,
+        "archiveRetainsOldInitialIdentity": true,
+        "targetDiffersFromOldIdentity": true,
+        "expectedNlinkSequenceObserved": true
+      },
+      "expectedNlinks": {
+        "initial": {
+          "old": 1
+        },
+        "afterOldLink": {
+          "old": 2
+        },
+        "afterAnchorLink": {
+          "old": 2,
+          "replacement": 2
+        },
+        "afterRename": {
+          "old": 1,
+          "replacement": 2
+        },
+        "afterClose": {
+          "old": 1,
+          "replacement": 2
+        }
+      },
+      "newAnchorBirthtimeBefore": "1793456006114130600",
+      "newAnchorBirthtimeAfter": "1793456006113056600"
+    },
+    {
+      "label": "replace-existing-target-with-prior-old-anchor",
+      "pass": true,
+      "operations": [
+        {
+          "operation": "hardlink-old-target-to-prior-anchor",
+          "result": "success"
+        },
+        {
+          "operation": "hardlink-old-target-to-archive",
+          "result": "success"
+        },
+        {
+          "operation": "close-retained-old-read-fd",
+          "result": "success"
+        },
+        {
+          "operation": "rename-stage-over-existing-target",
+          "result": "success"
+        }
+      ],
+      "checks": {
+        "oldIdentityNlinkIs2Then3Then2": true,
+        "priorAnchorAndArchiveRetainOldIdentity": true,
+        "targetAndNewAnchorShareReplacementIdentity": true,
+        "targetAndNewAnchorBytesUnchanged": true,
+        "oldAliasesRetainOriginalBytes": true,
+        "replacementNlinkIs2": true
+      },
+      "expectedNlinks": {
+        "oldOriginal": {
+          "initialTargetAndPriorAnchor": 2,
+          "afterArchiveAliasAdded": 3,
+          "afterTargetReplacement": 2
+        },
+        "replacement": {
+          "afterStageLink": 2,
+          "afterRename": 2
+        }
+      }
+    }
+  ],
+  "conclusion": "PASS: observed hardlink/rename identity, alias nlink, retained-read-FD behavior, and bytes matched assertions in all bounded cases.",
+  "limits": [
+    "Single Windows host, volume, Node build, and short run; this is not cross-machine portability evidence.",
+    "Only tiny regular files and built-in Node fs calls were exercised; no directory replacement, crash/power-loss, concurrent writers, ACLs, antivirus filters, network filesystems, or Core lifecycle code.",
+    "Timestamps are collected as reported by Node/Windows; no normalization or inference beyond exact recorded fields.",
+    "No installed runtime, project, After Effects, MCP, process control, or user data was accessed or changed."
+  ]
+}

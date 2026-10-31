@@ -1,0 +1,3699 @@
+{
+  "schema": "host-readoption-fs-observation/v1",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check",
+    "context": "host-readoption filesystem semantics; self-created tiny files only"
+  },
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "node": "v24.15.0",
+    "filesystemObservation": {
+      "source": "fs.statfsSync(os.tmpdir())",
+      "type": "0",
+      "bsize": "4096",
+      "blocks": "499785215",
+      "note": "Windows Node statfs type value retained verbatim; no external filesystem-identification tool used."
+    },
+    "tempLocationDisclosure": "One or more fresh os.mkdtempSync directories under os.tmpdir(); absolute paths intentionally omitted."
+  },
+  "cases": [
+    {
+      "label": "replace-existing-target",
+      "recentlyFreedName": false,
+      "operations": [
+        {
+          "operation": "rename-over-existing-while-old-read-fd-open",
+          "result": "error",
+          "code": "EPERM",
+          "name": "Error"
+        },
+        {
+          "operation": "rename-over-existing-after-old-read-fd-close",
+          "result": "success"
+        }
+      ],
+      "observations": [
+        {
+          "point": "old-initial",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [],
+            "replacement": []
+          },
+          "stamps": {
+            "oldPath": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006106056500"
+            },
+            "oldRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006106056500"
+            }
+          },
+          "deltas": {}
+        },
+        {
+          "point": "old-linked-to-archive",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "replacement": []
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006107055800"
+            },
+            "oldArchive": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006107055800"
+            },
+            "oldRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006107055800"
+            }
+          },
+          "deltas": {
+            "oldRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "3377699721982597",
+                "to": "3377699721982597",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "1",
+                "to": "2",
+                "changed": true
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006107055800",
+                "changed": true
+              }
+            }
+          }
+        },
+        {
+          "point": "new-anchor-initial",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "newAnchor": [
+              "replacement"
+            ],
+            "replacement": [
+              "newAnchor"
+            ]
+          },
+          "stamps": {
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006108055200"
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006108055200"
+            }
+          },
+          "deltas": {}
+        },
+        {
+          "point": "anchor-linked-to-stage",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "replacement": [
+              "newAnchor",
+              "stage"
+            ]
+          },
+          "stamps": {
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006109056200"
+            },
+            "stage": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006109056200"
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006109056200"
+            }
+          },
+          "deltas": {
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "1",
+                "to": "2",
+                "changed": true
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006109056200",
+                "changed": true
+              }
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "1",
+                "to": "2",
+                "changed": true
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006109056200",
+                "changed": true
+              }
+            }
+          }
+        },
+        {
+          "point": "after-rename-attempt-with-old-read-fd-open",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "replacement": [
+              "newAnchor",
+              "stage"
+            ]
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006107055800"
+            },
+            "oldArchive": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006107055800"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006109056200"
+            },
+            "stageName": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006109056200"
+            },
+            "oldRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006107055800"
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006109056200"
+            }
+          },
+          "deltas": {
+            "target": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "3377699721982597",
+                "to": "3377699721982597",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006107055800",
+                "to": "1793456006107055800",
+                "changed": false
+              }
+            },
+            "oldArchive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "3377699721982597",
+                "to": "3377699721982597",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006107055800",
+                "to": "1793456006107055800",
+                "changed": false
+              }
+            },
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006109056200",
+                "to": "1793456006109056200",
+                "changed": false
+              }
+            },
+            "oldRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "3377699721982597",
+                "to": "3377699721982597",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006107055800",
+                "to": "1793456006107055800",
+                "changed": false
+              }
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006109056200",
+                "to": "1793456006109056200",
+                "changed": false
+              }
+            }
+          }
+        },
+        {
+          "point": "after-old-read-fd-close-before-name-release-or-rename",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "replacement": [
+              "newAnchor",
+              "stage"
+            ]
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006107055800"
+            },
+            "oldArchive": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006107055800"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006109056200"
+            },
+            "stage": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006109056200"
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006109056200"
+            }
+          },
+          "deltas": {
+            "target": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "3377699721982597",
+                "to": "3377699721982597",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006107055800",
+                "to": "1793456006107055800",
+                "changed": false
+              }
+            },
+            "oldArchive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "3377699721982597",
+                "to": "3377699721982597",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006107055800",
+                "to": "1793456006107055800",
+                "changed": false
+              }
+            },
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006109056200",
+                "to": "1793456006109056200",
+                "changed": false
+              }
+            },
+            "stage": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006109056200",
+                "to": "1793456006109056200",
+                "changed": false
+              }
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006109056200",
+                "to": "1793456006109056200",
+                "changed": false
+              }
+            }
+          }
+        },
+        {
+          "point": "stage-renamed-over-existing-target",
+          "aliases": {
+            "target": [
+              "replacement"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "newAnchor": [
+              "replacement"
+            ],
+            "stage": []
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006111056200"
+            },
+            "oldArchive": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006111056200"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006111056200"
+            },
+            "stageName": null,
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006111056200"
+            }
+          },
+          "deltas": {
+            "target": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "3377699721982597",
+                "to": "2814749768561286",
+                "changed": true
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "21",
+                "changed": true
+              },
+              "birthtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006108055200",
+                "changed": true
+              },
+              "mtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006108055200",
+                "changed": true
+              },
+              "ctimeNs": {
+                "from": "1793456006107055800",
+                "to": "1793456006111056200",
+                "changed": true
+              }
+            },
+            "oldArchive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "3377699721982597",
+                "to": "3377699721982597",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "1",
+                "changed": true
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006107055800",
+                "to": "1793456006111056200",
+                "changed": true
+              }
+            },
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006109056200",
+                "to": "1793456006111056200",
+                "changed": true
+              }
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006109056200",
+                "to": "1793456006111056200",
+                "changed": true
+              }
+            }
+          }
+        },
+        {
+          "point": "after-anchor-read-fd-close",
+          "aliases": {
+            "target": [
+              "replacement"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "newAnchor": [
+              "replacement"
+            ]
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006111056200"
+            },
+            "oldArchive": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006111056200"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006111056200"
+            }
+          },
+          "deltas": {
+            "target": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006111056200",
+                "to": "1793456006111056200",
+                "changed": false
+              }
+            },
+            "oldArchive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "3377699721982597",
+                "to": "3377699721982597",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "1",
+                "to": "1",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006106056500",
+                "to": "1793456006106056500",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006111056200",
+                "to": "1793456006111056200",
+                "changed": false
+              }
+            },
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "2814749768561286",
+                "to": "2814749768561286",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006108055200",
+                "to": "1793456006108055200",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006111056200",
+                "to": "1793456006111056200",
+                "changed": false
+              }
+            }
+          }
+        },
+        {
+          "point": "fresh-read-target-archive-anchor",
+          "aliases": {
+            "target": [
+              "replacement"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "newAnchor": [
+              "replacement"
+            ]
+          },
+          "stamps": {
+            "targetPath": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006111056200"
+            },
+            "oldArchivePath": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006111056200"
+            },
+            "newAnchorPath": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006111056200"
+            },
+            "targetFreshReadFd": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006111056200"
+            },
+            "archiveFreshReadFd": {
+              "dev": "1042371555",
+              "ino": "3377699721982597",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006106056500",
+              "mtimeNs": "1793456006106056500",
+              "ctimeNs": "1793456006111056200"
+            },
+            "anchorFreshReadFd": {
+              "dev": "1042371555",
+              "ino": "2814749768561286",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006108055200",
+              "mtimeNs": "1793456006108055200",
+              "ctimeNs": "1793456006111056200"
+            }
+          },
+          "deltas": {}
+        }
+      ],
+      "expectedNlinks": {
+        "initial": {
+          "old": 1
+        },
+        "afterOldLink": {
+          "old": 2
+        },
+        "afterAnchorLink": {
+          "old": 2,
+          "replacement": 2
+        },
+        "afterRename": {
+          "old": 1,
+          "replacement": 2
+        },
+        "afterClose": {
+          "old": 1,
+          "replacement": 2
+        }
+      },
+      "freshBytes": {
+        "target": "NEW-IMMUTABLE-ANCHOR\n",
+        "oldArchive": "OLD-ORIGINAL\n",
+        "newAnchor": "NEW-IMMUTABLE-ANCHOR\n"
+      },
+      "checks": {
+        "targetHasNewBytes": true,
+        "archiveHasOldBytes": true,
+        "anchorBytesUnchanged": true,
+        "targetAndAnchorSameIdentity": true,
+        "archiveRetainsOldInitialIdentity": true,
+        "targetDiffersFromOldIdentity": true,
+        "expectedNlinkSequenceObserved": true
+      },
+      "pass": true
+    },
+    {
+      "label": "rename-into-recently-freed-target",
+      "recentlyFreedName": true,
+      "operations": [
+        {
+          "operation": "unlink-target-before-rename",
+          "result": "success"
+        },
+        {
+          "operation": "rename-into-recently-freed-target",
+          "result": "success"
+        }
+      ],
+      "observations": [
+        {
+          "point": "old-initial",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [],
+            "replacement": []
+          },
+          "stamps": {
+            "oldPath": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006113056600"
+            },
+            "oldRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006113056600"
+            }
+          },
+          "deltas": {}
+        },
+        {
+          "point": "old-linked-to-archive",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "replacement": []
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006114130600"
+            },
+            "oldArchive": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006114130600"
+            },
+            "oldRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006114130600"
+            }
+          },
+          "deltas": {
+            "oldRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1407374885008008",
+                "to": "1407374885008008",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "1",
+                "to": "2",
+                "changed": true
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006114130600",
+                "changed": true
+              }
+            }
+          }
+        },
+        {
+          "point": "new-anchor-initial",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "newAnchor": [
+              "replacement"
+            ],
+            "replacement": [
+              "newAnchor"
+            ]
+          },
+          "stamps": {
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006114130600"
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006114130600"
+            }
+          },
+          "deltas": {}
+        },
+        {
+          "point": "anchor-linked-to-stage",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "replacement": [
+              "newAnchor",
+              "stage"
+            ]
+          },
+          "stamps": {
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006115393900"
+            },
+            "stage": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006115393900"
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006115393900"
+            }
+          },
+          "deltas": {
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "1",
+                "to": "2",
+                "changed": true
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006115393900",
+                "changed": true
+              }
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "1",
+                "to": "2",
+                "changed": true
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006115393900",
+                "changed": true
+              }
+            }
+          }
+        },
+        {
+          "point": "after-old-read-fd-close-before-name-release-or-rename",
+          "aliases": {
+            "target": [
+              "oldOriginal"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "replacement": [
+              "newAnchor",
+              "stage"
+            ]
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006114130600"
+            },
+            "oldArchive": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006114130600"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006115393900"
+            },
+            "stage": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006115393900"
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006115393900"
+            }
+          },
+          "deltas": {
+            "target": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1407374885008008",
+                "to": "1407374885008008",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              }
+            },
+            "oldArchive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1407374885008008",
+                "to": "1407374885008008",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              }
+            },
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006115393900",
+                "to": "1793456006115393900",
+                "changed": false
+              }
+            },
+            "stage": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006115393900",
+                "to": "1793456006115393900",
+                "changed": false
+              }
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006115393900",
+                "to": "1793456006115393900",
+                "changed": false
+              }
+            }
+          }
+        },
+        {
+          "point": "after-target-unlink-before-rename",
+          "aliases": {
+            "target": [],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "replacement": [
+              "newAnchor",
+              "stage"
+            ]
+          },
+          "stamps": {
+            "oldArchive": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006115393900"
+            },
+            "stage": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006115393900"
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006114130600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006115393900"
+            }
+          },
+          "deltas": {
+            "oldArchive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1407374885008008",
+                "to": "1407374885008008",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "1",
+                "changed": true
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006116399400",
+                "changed": true
+              }
+            },
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006115393900",
+                "to": "1793456006115393900",
+                "changed": false
+              }
+            },
+            "stage": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006115393900",
+                "to": "1793456006115393900",
+                "changed": false
+              }
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006115393900",
+                "to": "1793456006115393900",
+                "changed": false
+              }
+            }
+          }
+        },
+        {
+          "point": "stage-renamed-into-recently-freed-target",
+          "aliases": {
+            "target": [
+              "replacement"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "newAnchor": [
+              "replacement"
+            ],
+            "stage": []
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "oldArchive": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "stageName": null,
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006116399400"
+            }
+          },
+          "deltas": {
+            "target": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1407374885008008",
+                "to": "1125899908297353",
+                "changed": true
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "21",
+                "changed": true
+              },
+              "birthtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006114130600",
+                "changed": true
+              },
+              "ctimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006116399400",
+                "changed": true
+              }
+            },
+            "oldArchive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1407374885008008",
+                "to": "1407374885008008",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "1",
+                "to": "1",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006116399400",
+                "to": "1793456006116399400",
+                "changed": false
+              }
+            },
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006113056600",
+                "changed": true
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006115393900",
+                "to": "1793456006116399400",
+                "changed": true
+              }
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006113056600",
+                "changed": true
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006115393900",
+                "to": "1793456006116399400",
+                "changed": true
+              }
+            }
+          }
+        },
+        {
+          "point": "after-anchor-read-fd-close",
+          "aliases": {
+            "target": [
+              "replacement"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "newAnchor": [
+              "replacement"
+            ]
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "oldArchive": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006116399400"
+            }
+          },
+          "deltas": {
+            "target": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006116399400",
+                "to": "1793456006116399400",
+                "changed": false
+              }
+            },
+            "oldArchive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1407374885008008",
+                "to": "1407374885008008",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "1",
+                "to": "1",
+                "changed": false
+              },
+              "size": {
+                "from": "13",
+                "to": "13",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006116399400",
+                "to": "1793456006116399400",
+                "changed": false
+              }
+            },
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "1125899908297353",
+                "to": "1125899908297353",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "21",
+                "to": "21",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006113056600",
+                "to": "1793456006113056600",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006114130600",
+                "to": "1793456006114130600",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006116399400",
+                "to": "1793456006116399400",
+                "changed": false
+              }
+            }
+          }
+        },
+        {
+          "point": "fresh-read-target-archive-anchor",
+          "aliases": {
+            "target": [
+              "replacement"
+            ],
+            "oldArchive": [
+              "oldOriginal"
+            ],
+            "newAnchor": [
+              "replacement"
+            ]
+          },
+          "stamps": {
+            "targetPath": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "oldArchivePath": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "newAnchorPath": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "targetFreshReadFd": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "archiveFreshReadFd": {
+              "dev": "1042371555",
+              "ino": "1407374885008008",
+              "mode": "33206",
+              "nlink": "1",
+              "size": "13",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006113056600",
+              "ctimeNs": "1793456006116399400"
+            },
+            "anchorFreshReadFd": {
+              "dev": "1042371555",
+              "ino": "1125899908297353",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "21",
+              "birthtimeNs": "1793456006113056600",
+              "mtimeNs": "1793456006114130600",
+              "ctimeNs": "1793456006116399400"
+            }
+          },
+          "deltas": {}
+        }
+      ],
+      "expectedNlinks": {
+        "initial": {
+          "old": 1
+        },
+        "afterOldLink": {
+          "old": 2
+        },
+        "afterAnchorLink": {
+          "old": 2,
+          "replacement": 2
+        },
+        "afterRename": {
+          "old": 1,
+          "replacement": 2
+        },
+        "afterClose": {
+          "old": 1,
+          "replacement": 2
+        }
+      },
+      "freshBytes": {
+        "target": "NEW-IMMUTABLE-ANCHOR\n",
+        "oldArchive": "OLD-ORIGINAL\n",
+        "newAnchor": "NEW-IMMUTABLE-ANCHOR\n"
+      },
+      "checks": {
+        "targetHasNewBytes": true,
+        "archiveHasOldBytes": true,
+        "anchorBytesUnchanged": true,
+        "targetAndAnchorSameIdentity": true,
+        "archiveRetainsOldInitialIdentity": true,
+        "targetDiffersFromOldIdentity": true,
+        "expectedNlinkSequenceObserved": true
+      },
+      "pass": true
+    },
+    {
+      "label": "replace-existing-target-with-prior-old-anchor",
+      "priorAnchorAlreadyPresent": true,
+      "operations": [
+        {
+          "operation": "hardlink-old-target-to-prior-anchor",
+          "result": "success"
+        },
+        {
+          "operation": "hardlink-old-target-to-archive",
+          "result": "success"
+        },
+        {
+          "operation": "close-retained-old-read-fd",
+          "result": "success"
+        },
+        {
+          "operation": "rename-stage-over-existing-target",
+          "result": "success"
+        }
+      ],
+      "expectedNlinks": {
+        "oldOriginal": {
+          "initialTargetAndPriorAnchor": 2,
+          "afterArchiveAliasAdded": 3,
+          "afterTargetReplacement": 2
+        },
+        "replacement": {
+          "afterStageLink": 2,
+          "afterRename": 2
+        }
+      },
+      "observations": [
+        {
+          "point": "old-target-with-prior-anchor-initial",
+          "aliases": {
+            "oldOriginal": [
+              "target",
+              "priorAnchor"
+            ]
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006119400400"
+            },
+            "priorAnchor": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006119400400"
+            },
+            "oldRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006119400400"
+            }
+          },
+          "deltas": {}
+        },
+        {
+          "point": "third-old-alias-added",
+          "aliases": {
+            "oldOriginal": [
+              "target",
+              "priorAnchor",
+              "archive"
+            ]
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "3",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006120748700"
+            },
+            "priorAnchor": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "3",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006120748700"
+            },
+            "archive": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "3",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006120748700"
+            },
+            "oldRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "3",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006120748700"
+            }
+          },
+          "deltas": {
+            "target": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586699",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "3",
+                "changed": true
+              },
+              "size": {
+                "from": "17",
+                "to": "17",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006120748700",
+                "changed": true
+              }
+            },
+            "priorAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586699",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "3",
+                "changed": true
+              },
+              "size": {
+                "from": "17",
+                "to": "17",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006120748700",
+                "changed": true
+              }
+            },
+            "oldRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586699",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "3",
+                "changed": true
+              },
+              "size": {
+                "from": "17",
+                "to": "17",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006120748700",
+                "changed": true
+              }
+            }
+          }
+        },
+        {
+          "point": "replacement-stage-linked",
+          "aliases": {
+            "oldOriginal": [
+              "target",
+              "priorAnchor",
+              "archive"
+            ],
+            "replacement": [
+              "newAnchor",
+              "stage"
+            ]
+          },
+          "stamps": {
+            "oldTarget": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "3",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006120748700"
+            },
+            "priorAnchor": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "3",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006120748700"
+            },
+            "archive": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "3",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006120748700"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "844424931586700",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "22",
+              "birthtimeNs": "1793456006120748700",
+              "mtimeNs": "1793456006121753700",
+              "ctimeNs": "1793456006121753700"
+            },
+            "stage": {
+              "dev": "1042371555",
+              "ino": "844424931586700",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "22",
+              "birthtimeNs": "1793456006120748700",
+              "mtimeNs": "1793456006121753700",
+              "ctimeNs": "1793456006121753700"
+            },
+            "oldRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "3",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006120748700"
+            },
+            "newAnchorRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "844424931586700",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "22",
+              "birthtimeNs": "1793456006120748700",
+              "mtimeNs": "1793456006121753700",
+              "ctimeNs": "1793456006121753700"
+            }
+          },
+          "deltas": {
+            "priorAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586699",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "3",
+                "to": "3",
+                "changed": false
+              },
+              "size": {
+                "from": "17",
+                "to": "17",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006120748700",
+                "to": "1793456006120748700",
+                "changed": false
+              }
+            },
+            "archive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586699",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "3",
+                "to": "3",
+                "changed": false
+              },
+              "size": {
+                "from": "17",
+                "to": "17",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006120748700",
+                "to": "1793456006120748700",
+                "changed": false
+              }
+            },
+            "oldRetainedReadFd": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586699",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "3",
+                "to": "3",
+                "changed": false
+              },
+              "size": {
+                "from": "17",
+                "to": "17",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006120748700",
+                "to": "1793456006120748700",
+                "changed": false
+              }
+            }
+          }
+        },
+        {
+          "point": "replacement-renamed-over-existing-target",
+          "aliases": {
+            "oldOriginal": [
+              "priorAnchor",
+              "archive"
+            ],
+            "replacement": [
+              "target",
+              "newAnchor"
+            ]
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "844424931586700",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "22",
+              "birthtimeNs": "1793456006120748700",
+              "mtimeNs": "1793456006121753700",
+              "ctimeNs": "1793456006122754200"
+            },
+            "priorAnchor": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006122754200"
+            },
+            "archive": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006122754200"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "844424931586700",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "22",
+              "birthtimeNs": "1793456006120748700",
+              "mtimeNs": "1793456006121753700",
+              "ctimeNs": "1793456006122754200"
+            },
+            "newRetainedReadFd": {
+              "dev": "1042371555",
+              "ino": "844424931586700",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "22",
+              "birthtimeNs": "1793456006120748700",
+              "mtimeNs": "1793456006121753700",
+              "ctimeNs": "1793456006122754200"
+            }
+          },
+          "deltas": {
+            "target": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586700",
+                "changed": true
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "3",
+                "to": "2",
+                "changed": true
+              },
+              "size": {
+                "from": "17",
+                "to": "22",
+                "changed": true
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006120748700",
+                "changed": true
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006121753700",
+                "changed": true
+              },
+              "ctimeNs": {
+                "from": "1793456006120748700",
+                "to": "1793456006122754200",
+                "changed": true
+              }
+            },
+            "priorAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586699",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "3",
+                "to": "2",
+                "changed": true
+              },
+              "size": {
+                "from": "17",
+                "to": "17",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006120748700",
+                "to": "1793456006122754200",
+                "changed": true
+              }
+            },
+            "archive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586699",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "3",
+                "to": "2",
+                "changed": true
+              },
+              "size": {
+                "from": "17",
+                "to": "17",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006120748700",
+                "to": "1793456006122754200",
+                "changed": true
+              }
+            },
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586700",
+                "to": "844424931586700",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "22",
+                "to": "22",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006120748700",
+                "to": "1793456006120748700",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006121753700",
+                "to": "1793456006121753700",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006121753700",
+                "to": "1793456006122754200",
+                "changed": true
+              }
+            }
+          }
+        },
+        {
+          "point": "after-read-fd-close",
+          "aliases": {
+            "oldOriginal": [
+              "priorAnchor",
+              "archive"
+            ],
+            "replacement": [
+              "target",
+              "newAnchor"
+            ]
+          },
+          "stamps": {
+            "target": {
+              "dev": "1042371555",
+              "ino": "844424931586700",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "22",
+              "birthtimeNs": "1793456006120748700",
+              "mtimeNs": "1793456006121753700",
+              "ctimeNs": "1793456006122754200"
+            },
+            "priorAnchor": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006122754200"
+            },
+            "archive": {
+              "dev": "1042371555",
+              "ino": "844424931586699",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "17",
+              "birthtimeNs": "1793456006119400400",
+              "mtimeNs": "1793456006119400400",
+              "ctimeNs": "1793456006122754200"
+            },
+            "newAnchor": {
+              "dev": "1042371555",
+              "ino": "844424931586700",
+              "mode": "33206",
+              "nlink": "2",
+              "size": "22",
+              "birthtimeNs": "1793456006120748700",
+              "mtimeNs": "1793456006121753700",
+              "ctimeNs": "1793456006122754200"
+            }
+          },
+          "deltas": {
+            "target": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586700",
+                "to": "844424931586700",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "22",
+                "to": "22",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006120748700",
+                "to": "1793456006120748700",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006121753700",
+                "to": "1793456006121753700",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006122754200",
+                "to": "1793456006122754200",
+                "changed": false
+              }
+            },
+            "priorAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586699",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "17",
+                "to": "17",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006122754200",
+                "to": "1793456006122754200",
+                "changed": false
+              }
+            },
+            "archive": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586699",
+                "to": "844424931586699",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "17",
+                "to": "17",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006119400400",
+                "to": "1793456006119400400",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006122754200",
+                "to": "1793456006122754200",
+                "changed": false
+              }
+            },
+            "newAnchor": {
+              "dev": {
+                "from": "1042371555",
+                "to": "1042371555",
+                "changed": false
+              },
+              "ino": {
+                "from": "844424931586700",
+                "to": "844424931586700",
+                "changed": false
+              },
+              "mode": {
+                "from": "33206",
+                "to": "33206",
+                "changed": false
+              },
+              "nlink": {
+                "from": "2",
+                "to": "2",
+                "changed": false
+              },
+              "size": {
+                "from": "22",
+                "to": "22",
+                "changed": false
+              },
+              "birthtimeNs": {
+                "from": "1793456006120748700",
+                "to": "1793456006120748700",
+                "changed": false
+              },
+              "mtimeNs": {
+                "from": "1793456006121753700",
+                "to": "1793456006121753700",
+                "changed": false
+              },
+              "ctimeNs": {
+                "from": "1793456006122754200",
+                "to": "1793456006122754200",
+                "changed": false
+              }
+            }
+          }
+        }
+      ],
+      "bytes": {
+        "target": "NEW-PRIOR-ANCHOR-CASE\n",
+        "priorAnchor": "OLD-PRIOR-ANCHOR\n",
+        "archive": "OLD-PRIOR-ANCHOR\n",
+        "newAnchor": "NEW-PRIOR-ANCHOR-CASE\n"
+      },
+      "checks": {
+        "oldIdentityNlinkIs2Then3Then2": true,
+        "priorAnchorAndArchiveRetainOldIdentity": true,
+        "targetAndNewAnchorShareReplacementIdentity": true,
+        "targetAndNewAnchorBytesUnchanged": true,
+        "oldAliasesRetainOriginalBytes": true,
+        "replacementNlinkIs2": true
+      },
+      "pass": true
+    }
+  ],
+  "conclusion": "PASS: observed hardlink/rename identity, alias nlink, retained-read-FD behavior, and bytes matched assertions in all bounded cases.",
+  "limits": [
+    "Single Windows host, volume, Node build, and short run; this is not cross-machine portability evidence.",
+    "Only tiny regular files and built-in Node fs calls were exercised; no directory replacement, crash/power-loss, concurrent writers, ACLs, antivirus filters, network filesystems, or Core lifecycle code.",
+    "Timestamps are collected as reported by Node/Windows; no normalization or inference beyond exact recorded fields.",
+    "No installed runtime, project, After Effects, MCP, process control, or user data was accessed or changed."
+  ]
+}

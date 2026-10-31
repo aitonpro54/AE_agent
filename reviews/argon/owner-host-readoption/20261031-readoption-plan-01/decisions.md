@@ -42,6 +42,15 @@ Windows metadata сравнивается по собственным доказ
 не по unconditional old birthtime из внешней рекомендации. Exact alias inventory
 и bounded attempts/file budget обязательны.
 
+F05 local evidence получено отдельно: HOSTREADOPT-FS,3own-TEMPcases PASS на MSI/
+Node24.15.0/NTFS. Retained old-target read FD блокировал rename-over-existing
+ошибкойEPERM; после close rename прошёл. Freed-name rename сохранил new inode/
+bytes, но изменил birthtime target и anchor на значение old destination.
+Prior-anchor baseline показалnlink2→3→2, replacement2. Поэтому unconditional
+strict old birthtime и hardcode initial nlink1 из внешнего предложения не приняты.
+ReportSHA3d41438ab6c6935fe57d650e89c9c5b6e00ed9c6ae649db0c6591f2e63e8e562.
+Это primitives proof; новый operator/CAS/crash acceptance ещё не выполнен.
+
 До CAS host loss сохраняет explicit stopped fence, cancel/retarget не добавляется.
 После доказанного CAS finish/enable только завершают локальные facts/barrier/gates,
 не переписывают adoption и не выдают AE authority. Runtime prepare заново проверит

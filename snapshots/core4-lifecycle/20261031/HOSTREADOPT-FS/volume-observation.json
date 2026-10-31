@@ -1,0 +1,10 @@
+{
+  "collectedAt": "2026-10-31T14:15:44.435Z",
+  "method": "Get-Volume for os TEMP volume only",
+  "observation": {
+    "DriveLetter": "C",
+    "FileSystemType": "NTFS",
+    "HealthStatus": "Healthy"
+  },
+  "readOnly": true
+}

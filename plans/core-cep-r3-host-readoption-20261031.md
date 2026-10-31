@@ -98,6 +98,13 @@ admin и не новый broker. Existing provider/bootstrap остаётся ab
   release-only tail: missing gates допускаются только как proven release prefix,
   заново не создаются. После barrier unlink enable никогда не возвращает barrier
   и завершает только receipt/release tail, даже если AE уже отсутствует.
+- Windows TEMP evidence требует закрыть собственные read FD старого target до
+  rename-over-existing: иначе observed EPERM. New anchor FD может сохраняться.
+  После known rename в недавно freed имя birthtime нового inode/anchor может
+  стать old destination birthtime; generic ignore birthtime не вводится, но
+  собственный переход проверяется по dev/ino/bytes/alias inventory и закрепляется.
+  Initial original nlink может быть2 из предыдущего pinned anchor; учитывать
+  observed baseline и собственные aliases, не hardcode1→2→1.
 - Если AE сменился после original intent, но до CAS, срез отказывает и оставляет
   stopped fence. Нельзя подменить witness/replacement; штатная отмена — отдельный
   будущий контракт. Это явный operational limit первого среза.
@@ -180,3 +187,11 @@ payload, stopped-certification/stopped-update не входят. Existing stoppe
 резервируют3457. Immutable response/bindings и весь bounded ответ прочитаны;
 разбор каждого finding — review packet/decisions.md. Ни runtime/source изменения,
 ни actual stop/readoption не выполнялись до принятия этой редакции.
+
+F05 адресный Windows filesystem probe:3own-TEMPcases PASS на Node24.15.0/NTFS
+текущего MSI. EPERM при own old-target read FD, успешный rename после close;
+same new inode/bytes при changed birthtime после freed-name rename; prior-anchor
+nlink2→3→2. Полные stamps/aliases/checks и summary —
+`snapshots/core4-lifecycle/20261031/HOSTREADOPT-FS/`, reportSHA3d41438a….
+Это только filesystem primitives evidence, не Core crash/concurrency/live или
+portability proof; source slice1 verification записывается отдельно.
