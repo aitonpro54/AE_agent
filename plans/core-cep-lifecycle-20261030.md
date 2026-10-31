@@ -165,9 +165,11 @@ R3 не использует fake production epoch и не переносит au
   journal18events/config/origins/adoption unchanged. Survival2600 не наблюдался.
 - [x] Первый configured status после314.85с idle PASS с первого вызова за62мс;
   same owner/boot, faults/UNKNOWN/pending0. Wire reconnect отдельно не трассировался.
-- [ ] CEP после долгого отсутствия Core остановилась по `runtime_wait_expired`;
-  ожидается штатная кнопка «Подключить» и typed read нового cc2f. Computer Use
-  не адресовал CEP child: две попытки с fresh binding отклонены до input.
+- [x] После runtime_wait_expired пользователь нажал штатный Connect; configured
+  peer connected/inspectionAvailable. Новый cc2f typed project-inspection PASS:
+ 0items/несохранённый проект, authority/continuity=false, explicit lease released.
+  Journal20events, prefix18 unchanged, mutation/save/restart0. Это manual Connect,
+  не proof автоматического reconnect после долгого отсутствия Core.
 - [x] Normal stop`b99e2f80…` и update`88e4a61e…`, прерванный root45с timeout,
   завершены через [явный owner pre-ready recovery](core-cep-r3-owner-preready-20261031.md)
   с original payload/credentials, fresh switchIndex5 и explicit enable.
@@ -184,6 +186,10 @@ R3 не использует fake production epoch и не переносит au
 
 ## Decision Log
 
+- После user Connect actual typed read подтверждает новый configured cc2f до
+  re-adoption, без mutation authority/continuity. Absent-only `adopt-host` не
+  обновляет existing adoption; следующий source/design блок определяет штатный
+  stopped/quiescent re-adoption operator, без повторения старых transactions.
 - Configured cc2f принят непосредственно через MCP tool; standalone proof больше
   не является единственным evidence. Изменение owner PID классифицировано как
   attributed recovery по completed HMAC receipts, а не survival. Долгое отсутствие
@@ -219,6 +225,18 @@ R3 не использует fake production epoch и не переносит au
 
 ## Validation
 
+Configured cc2f/CEP read: discovery→contract1ccaa27e…→explicit controller gen1→
+один project-inspection→release→final status PASS. Commandinspect-6b748da8…,
+observation1a859892…, AE26.3x87/0items. Receiver begin19/complete20 exact command/
+originalBinding/result совпали с configured reply; semantic reader settled,
+unresolved0. Current journal20events SHA262a0934…, prefix18SHA2a7d8b23… и
+prefix16SHA4cfe8817… прежние. Native6716/26308 birth unchanged, listener3457 один,
+config/origins/adoption unchanged, gates/ledger отсутствуют. Controller released/
+idle/accepted0, peer connected, pending/UNKNOWN/faults0. Mutation/save/restart0;
+native inspection1. Evidence: R5CONFIGURED/configured-cep-inspection.json и
+installed-after-inspection.json. Reader syntax/diff, JSON consistency/credential
+exclusion PASS; production source tests не повторялись, source не менялся.
+
 Configured cc2f: первый и последующий `core_status` PASS, owner6716 ready/active,
 pending/UNKNOWN/faults0, controller idle/accepted0. Read-only installed verifier
 проверил descriptor/package/client closure, HMAC seals/bindings и completion→intent
@@ -233,7 +251,7 @@ attachments1/controller idle/generation0/accepted0. Между двумя status
 не вызывал MCP; production sessionMs300000 подтверждён source. Отдельная wire
 трасса reconnect не снималась. Final read-only installed history/native readback
 после idle сверяется с тем же baseline; полный repeated-cycle proof не заявлен.
-CEP UI показывает runtime_wait_expired; configured peer disconnected. Input на
+На checkpoint до user Connect CEP UI показывала runtime_wait_expired; configured peer disconnected. Input на
 «Подключить» отклонён helper из-за CEPHtmlEngine child process, fresh activation
 и одна повторная попытка также отказали. Reload/AE restart/dispatch/save/mutation0.
 
@@ -321,9 +339,11 @@ Migration/update/enable и завершённые one-shot transactions не п�
 
 Actual CEP и один configured typed read package8a79 подтверждены ранее. Interrupted
 update88e4 продолжен штатно после209selectedPASS, owner2600/cc2f ready и новая CEP
-подключена; повтор finish/enable не нужен. Теперь CEP UI остановилась после bounded
-runtime wait: нужна штатная кнопка «Подключить» (helper не адресовал child), затем
-new typed read и live ordinary cold/idle cycles. Fresh native host probe/adoption нужен до
+подключена; повтор finish/enable не нужен. После bounded runtime wait пользователь
+нажал Connect; новый cc2f configured typed read подтверждён без mutation/save.
+Следующий блок — штатная fresh host re-adoption: existing adoption6492 не
+обновляется absent-only helper и не является authority текущего AE26308. Fresh
+native host probe/adoption нужен до
 исполнения, R5 Titles на выбранной test-copy с native confirm/read-back и повторные
 ordinary cycles. AE26308 сейчас открыт; root его не запускал/перезапускал.
 Развитие Titles/Slideshow и финальная portability/P1–P8/full release не выполнены.
@@ -331,8 +351,8 @@ ordinary cycles. AE26308 сейчас открыт; root его не запус�
 snapshots/AEP и старые receipts. Полная installed устойчивость пока не объявлена.
 
 Завершённый блок: configured cc2f first-call/recovery и один production idle
-first-call. Изменены AGENTS, checkpoint, lifecycle/R5/recovery планы и sanitised
+first-call, затем один configured cc2f/CEP/native read. Изменены AGENTS, checkpoint, lifecycle/R5/recovery планы и sanitised
 R5CONFIGURED evidence/reader; production source/runtime/config не менялись.
 Проверки: actual MCP calls, signed read-only native/history verifier, JSON
 consistency/credential exclusion, reader syntax и diff check. Следующий шаг —
-штатный Connect панели, затем configured typed read; helper не адресовал CEP child.
+штатный fresh host re-adoption operator; read-only design поручен специалисту.

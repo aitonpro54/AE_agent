@@ -123,6 +123,13 @@ peer disconnected. Кнопка «Подключить» требует ручн
 `snapshots/core4-lifecycle/20261031/R5CONFIGURED/`. Ниже сохранён исторический
 installed результат до restart; указанные в нём old-client pending сняты новым proof.
 
+После user Connect configured cc2f/CEP/native project read также подтверждён:
+observation1a859892…/commandinspect-6b748da8…,0items/unsaved, authority/continuity=false.
+Leasegen1 released, peer connected, native AE/owner прежние, pending/UNKNOWN/faults0.
+Journal20events/SHA262a0934…, prefix18SHA2a7d8b23… preserved, origins/config/adoption
+unchanged. Mutation/save/restart0. Следующий блок — штатная fresh host re-adoption;
+absent-only adopt-host не заменяет existing adoption6492.
+
 - Source recovery commit587b49f, client source1a6d442. Original update88e4
   продолжен один раз через owner-pre-ready-finish после inspect prooff55b0ba0…;
   result recovered=true/update-stopped/runtimeStarted=false. Fresh update-inspect

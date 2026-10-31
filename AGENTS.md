@@ -28,12 +28,16 @@ Journal18events, prefix16events/origins/adoption неизменны. AE26308 н�
 После restart первый configured core_status новогоcc2f успешен: client22952,
 owner6716 ready, один listener3457. Old2600 отсутствует; completed HMAC recovery
 4abb9cb7/readyfd7af275 связывают exact PID/birth/boot. History/config/origins/adoption
-unchanged, pending/UNKNOWN/faults0. AE26308 прежний. CEP UI остановилась с
-runtime_wait_expired; peer disconnected. Требуется штатная кнопка «Подключить»:
-Computer Use дважды не адресовал child CEPHtmlEngine.exe, input не выполнен;
-пользователю передана просьба нажать кнопку. Первый configured status после314.85с
+unchanged, pending/UNKNOWN/faults0. AE26308 прежний. После runtime_wait_expired
+пользователь нажал «Подключить»: configured peer connected/inspectionAvailable.
+Новый cc2f read-only project-inspection прочитал0items/несохранённый проект,
+authority/continuity=false; explicit lease generation1 освобождён. Журнал теперь
+20events: begin19/complete20 ровно этой inspection, prefix18 прежний2a7d8b23…;
+current SHA262a0934…, origins/config/adoption unchanged. Mutation/save/restart0.
+Первый configured status после314.85с
 idle прошёл с первого вызова за62мс, same owner/boot, pending/UNKNOWN/faults0.
-Wire reconnect отдельно не трассировался; typed read новогоcc2f ещё открыт.
+Wire reconnect отдельно не трассировался. Следующий инженерный шаг — штатная
+fresh host re-adoption: current absent-only adopt-host не заменяет existing adoption.
 Standalone proof не подменяет configured.
 **Settled stop/update/recovery/enable не повторять,
 markers не чистить.** [Installed recovery](plans/core-cep-r3-owner-preready-20261031.md)

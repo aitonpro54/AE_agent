@@ -36,6 +36,9 @@ live/MCP/UI/install/process-control. Статус текущего проект�
   recovery2600→6716 подтверждены native facts/HMAC receipts, history unchanged.
 - [x] Первый configured запрос после314.85с idle:62мс PASS с первого вызова,
   same owner/boot, no faults/UNKNOWN/pending. Broader cycles остаются открытыми.
+- [x] После user Connect configured cc2f project-inspection через actual CEP/AE
+  PASS,0items/несохранённый проект; explicit lease released, journal20events с
+  preserved18events prefix. Это manual Connect, automatic reconnect не заявлен.
 
 ## Decision Log
 
@@ -57,11 +60,19 @@ live/MCP/UI/install/process-control. Статус текущего проект�
 
 ## Validation
 
+После user Connect actual configured cc2f read PASS: observation1a859892…,
+inspect-6b748da8…,0items/AE26.3x87, authority/continuity=false. Leasegen1 released,
+current owner6716/AE26308 unchanged, peer connected, no pending/UNKNOWN/faults.
+Journalbegin19/complete20 exact binding/result совпали с configured response;
+20events/SHA262a0934…, prefix18SHA2a7d8b23… unchanged, origins/config/adoption
+unchanged. Mutation/save/AE restart0, native read1. R5CONFIGURED содержит actual
+configured-cep-inspection.json и final installed-after-inspection.json.
+
 После restart первый configured status cc2f и последующий read PASS на ready6716.
 Client22952 действительно загружен из cc2f. HMAC recovery4abb9cb7/readyfd7af275
 completed, exact PID/birth/boot bindings PASS; один owner/listener3457,
 journal18events/prefix16/config/origins/adoption unchanged. Evidence:
-`snapshots/core4-lifecycle/20261031/R5CONFIGURED/`. CEP UI runtime_wait_expired
+`snapshots/core4-lifecycle/20261031/R5CONFIGURED/`. На checkpoint до user Connect CEP UI runtime_wait_expired
 и peer disconnected; typed read нового cc2f ещё не выполнен. Helper не адресовал
 CEP child, поэтому Connect передан пользователю; UI input/reload/AE restart0.
 Первый configured status после314850мс без MCP вызовов текущего чата прошёл

@@ -1,8 +1,8 @@
 'use strict';
 // Read-only installed facts. The only write is a sanitised, exclusive snapshot.
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto'), cp = require('node:child_process');
-const afterIdle = process.argv[2] === 'after-idle';
-if (process.argv.length > (afterIdle ? 3 : 2)) throw Error('unsupported_observation_mode');
+const mode = process.argv[2] || 'baseline', afterInspection = mode === 'after-inspection';
+if (!['baseline', 'after-idle', 'after-inspection'].includes(mode) || process.argv.length > 3) throw Error('unsupported_observation_mode');
 const baseline = JSON.parse(fs.readFileSync(path.join(__dirname, 'idle-baseline.json')));
 const previous = JSON.parse(fs.readFileSync(path.join(__dirname, '../OWNERPREREADY/installed-readback.json')));
 const meta = JSON.parse(fs.readFileSync(path.join(__dirname, '../OWNERPREREADY/transition.json')));
@@ -55,9 +55,19 @@ check(receipts.some(r => r.kind === 'owner-ready-intent' && r.current?.bootId ==
 check(receipts.some(r => r.kind === 'owner-recovery-intent' && r.previous?.pid === 2600 && r.previous.birthTicks === '639290433588621440' && r.previous.bootId === 'fda4b436-ac6e-428a-951c-82d76978afc3'), 'previous_recovery_receipt_missing');
 const files = { config: path.resolve(__dirname, '../../../../.codex/config.toml'), rootOrigin: path.join(d.installRoot, 'origin.json'), anchorOrigin: path.join(d.stateDir, 'origin.json'), hostAdoption: path.join(d.stateDir, 'host-adoption.json'), journal: path.join(d.stateDir, 'receiver/completions.ndjson') };
 const hashes = Object.fromEntries(Object.entries(files).map(([name, file]) => [name + 'Hash', digest(read(file))]));
-for (const name of ['configHash', 'rootOriginHash', 'anchorOriginHash', 'hostAdoptionHash', 'journalHash']) check(hashes[name] === previous[name], name + '_changed');
+for (const name of ['configHash', 'rootOriginHash', 'anchorOriginHash', 'hostAdoptionHash', ...(afterInspection ? [] : ['journalHash'])]) check(hashes[name] === previous[name], name + '_changed');
 const journal = fs.readFileSync(files.journal), lines = journal.toString('utf8').trimEnd().split('\n');
-check(lines.length === 18 && digest(Buffer.from(lines.slice(0, 16).join('\n') + '\n')) === previous.original16EventsHash, 'receiver_history_changed');
+check(lines.length === (afterInspection ? 20 : 18) && digest(Buffer.from(lines.slice(0, 16).join('\n') + '\n')) === previous.original16EventsHash, 'receiver_history_changed');
+const original18EventsHash = digest(Buffer.from(lines.slice(0, 18).join('\n') + '\n'));
+check(original18EventsHash === previous.journalHash, 'original18_history_changed');
+let inspectedCommand = null;
+if (afterInspection) {
+  const proof = JSON.parse(fs.readFileSync(path.join(__dirname, 'configured-cep-inspection.json'))), begin = JSON.parse(lines[18]), complete = JSON.parse(lines[19]);
+  check(begin.type === 'begin' && begin.seq === 19 && complete.type === 'complete' && complete.seq === 20 && begin.commandId === complete.commandId && begin.commandId === proof.inspection.originalBinding.commandId, 'inspection_command_binding');
+  check(canonical(begin.originalBinding) === canonical(proof.inspection.originalBinding) && canonical(complete.response.result) === canonical(proof.inspection.observation), 'inspection_result_binding');
+  check(begin.command.phase === 'inspect' && begin.command.moduleId === 'project-inspection' && proof.inspection.authority === false && proof.inspection.continuity === false && proof.controllerRelease.released === true, 'inspection_effect_or_authority');
+  inspectedCommand = { commandId: begin.commandId, beginSeq: 19, completeSeq: 20, resultMatchesConfigured: true, originalBindingMatches: true };
+}
 const gates = { maintenance: path.join(d.stateDir, 'runtime-maintenance.json'), install: path.join(d.installRoot, 'install.lock'), broker: path.join(d.stateDir, 'broker/broker-owner.gate'), ledger: path.join(d.stateDir, 'broker/ledger.ndjson') };
 const present = Object.fromEntries(Object.entries(gates).map(([name, file]) => [name, read(file) !== null]));
 check(Object.values(present).every(v => v === false), 'unexpected_gate_or_ledger');
@@ -77,7 +87,8 @@ check(receiver.settled && receiver.unresolved.length === 0, 'receiver_unsettled'
     const after = fs.lstatSync(file, { bigint: true });
     check(['dev', 'ino', 'size', 'mtimeNs', 'ctimeNs'].every(k => before.stat[k] === after[k]) && digest(fs.readFileSync(file)) === before.digest, 'protected_readback_changed');
   }
-  const report = { description: 'Configured client cc2f и атрибутированное восстановление owner после restart Codex; read-only evidence.', collectedAt: new Date().toISOString(), recordContext: { purpose: 'technical_check', lifetime: 'ephemeral_check' }, configuredClientProof: true, originalOwnerSurvivalObserved: false, originalOwnerTerminationCause: 'unobserved', recoveryMeasured: true, packageHash: d.packageHash, descriptorHash, currentOwner: { ...identity(owner.scope), phase: owner.phase, receiverIdentity: owner.receiverIdentity, sealVerified: true }, processFacts, inventory, receipts, hashes, journalEvents: lines.length, original16EventsHash: previous.original16EventsHash, receiverSettled: receiver.settled, gatesPresent: present, controllerAcquired: false, aeDispatches: 0, aeRestarts: 0, projectChanges: 0, save: 0 };
-  fs.writeFileSync(path.join(__dirname, afterIdle ? 'installed-after-idle.json' : 'installed-readback.json'), JSON.stringify(report, null, 2) + '\n', { flag: 'wx' });
+  const report = { description: 'Configured client cc2f и атрибутированное восстановление owner после restart Codex; read-only evidence.', collectedAt: new Date().toISOString(), recordContext: { purpose: 'technical_check', lifetime: 'ephemeral_check' }, mode, configuredClientProof: true, originalOwnerSurvivalObserved: false, originalOwnerTerminationCause: 'unobserved', recoveryMeasured: true, packageHash: d.packageHash, descriptorHash, currentOwner: { ...identity(owner.scope), phase: owner.phase, receiverIdentity: owner.receiverIdentity, sealVerified: true }, processFacts, inventory, receipts, hashes, journalEvents: lines.length, original16EventsHash: previous.original16EventsHash, original18EventsHash, inspectedCommand, receiverSettled: receiver.settled, gatesPresent: present, controllerAcquired: afterInspection, aeDispatches: afterInspection ? 1 : 0, aeMutationDispatches: 0, aeRestarts: 0, projectChanges: 0, save: 0 };
+  const output = { baseline: 'installed-readback.json', 'after-idle': 'installed-after-idle.json', 'after-inspection': 'installed-after-inspection.json' }[mode];
+  fs.writeFileSync(path.join(__dirname, output), JSON.stringify(report, null, 2) + '\n', { flag: 'wx' });
   console.log(JSON.stringify(report));
 })().catch(error => { console.error(JSON.stringify({ error: error.message })); process.exitCode = 1; });

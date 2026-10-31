@@ -5,7 +5,7 @@
 подключение текущего чата после обновления app transport. Новый чат не нужен.
 Ниже сохранены прежние checkpoints; актуальное состояние — в первом разделе.
 
-## Текущее состояние: configured cc2f подтверждён, owner6716 ready
+## Текущее состояние: configured cc2f/CEP/native read подтверждены, owner6716 ready
 
 31 октября после продолжения чата первый configured `core_status` успешно
 вернул installed package`cc2f0713…` без предварительного retry/probe. Native
@@ -17,24 +17,38 @@ birth`639290482462328350`, boot`85dfe31b-e54f-4a94-aac4-ca9bc10bb3ff`,
 HMAC/bindings и completion→intent hash проверены для completed recovery
 `4abb9cb7-ccff-4e55-b9f0-55251220f916` от exact2600/birth/boot и ready
 `fd7af275-4f98-4a94-b547-a78094140ec3` к exact6716/birth/boot. Descriptor,
-config, origins/anchor, host adoption и журнал18events/prefix16 unchanged;
+config, origins/anchor, host adoption и до новой inspection журнал18events/prefix16 unchanged;
 gates/ledger отсутствуют. Ready/active=true, pending/UNKNOWN/faults нет,
-controller idle, lease не приобретался. AE26308/birth прежний.
+controller idle; на этом checkpoint lease ещё не приобретался. AE26308/birth прежний.
 
-CEP остаётся открытой, но показывает `Остановлено: runtime_wait_expired`;
+До ручного Connect CEP показывала `Остановлено: runtime_wait_expired`;
 physical peer.connected/inspectionAvailable=false. Это штатное окончание
 bounded50с ожидания, а не успешный автоматический reconnect после долгого
 отсутствия Core. Кнопка «Подключить» доступна. Computer Use дважды отказал
 в адресации клика: `CEPHtmlEngine.exe` child отличается от выбранного окна
 `AfterFX.exe`; между попытками выполнены activation/fresh snapshot. UI-действие
 не выполнено; дальнейшие клики не повторяются. Пользователю передана просьба
-нажать «Подключить». Reload/close/reopen/AE restart/save/mutation0.
+нажать «Подключить». Затем пользователь сообщил «Нажал, канал готов».
+Fresh configured status подтвердил peer.connected/inspectionAvailable=true на том
+же owner6716. Reload/close/reopen/AE restart/save/mutation0.
+
+Через actual discovery/contract cc2f, explicit controller generation1 выполнен
+один `project-inspection` с target{}: observation`1a859892…`, command
+`inspect-6b748da8-e70b-4196-87d2-1a4ba761fcfe`. AE26.3x87 вернул пустой
+несохранённый проект0items/compositions[]/layers[], authority/continuity=false.
+Lease released, final configured idle/accepted0, peer connected, faults/UNKNOWN/
+pending0. History20events/SHA256`262a093495e4c789e5465e592a47c74eec82edb31a8215e37327488af37f574c`;
+begin19/complete20 exact binding/result совпали с configured inspection. Prefix18
+SHA2a7d8b23… и prefix16SHA4cfe8817… прежние, config/origins/adoption unchanged.
+Current native AE26308/birth и owner6716/birth/boot прежние, listener3457 один.
+Read-only observation не выдаёт mutation grant; historical adoption6492 сохранена.
 
 Evidence: `snapshots/core4-lifecycle/20261031/R5CONFIGURED/`:
 `idle-baseline.json`, `installed-readback.json`, read-only verifier
 `observe-installed-state.cjs`, `configured-idle-result.json` и финальная
 `installed-after-idle.json`. Native facts/receipts не подменяют configured
 proof; configured proof получен непосредственно доступным MCP tool.
+Новый read: `configured-cep-inspection.json` и `installed-after-inspection.json`.
 
 Первый configured status после314850мс без MCP вызовов текущего чата прошёл
 с первого вызова за62мс. Same owner6716/process boot, attachments1/controller idle,
@@ -42,9 +56,10 @@ accepted0/pending/UNKNOWN/faults0. Wire reconnect не трассировалс�
 результат доказывает successful first call после production300с session window,
 но не полную приёмку repeated cycles.
 
-Следующий шаг — после ручного подключения панели fresh status/discovery/contract
-и новый typed project read.
-Fresh current host adoption нужна до исполнения; historical adoption6492 не
+Следующий шаг — штатная fresh current host re-adoption перед Titles. Source
+`adopt-host` требует stopped runtime и умеет только absent-only create; existing
+adoption нельзя заменить вручную/одноразовым helper. Выполняется bounded read-only
+design проверяемого operator пути. Historical adoption6492 не
 переиспользуется как authority. Titles/ordinary cycles/portability/P1–P8/full
 release остаются открытыми. Stop/update/recovery/enable не повторять.
 
