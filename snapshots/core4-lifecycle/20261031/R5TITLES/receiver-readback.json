@@ -1,0 +1,44 @@
+{
+  "collectedAt": "2026-10-31T19:28:43.475Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "journalHash": "d5d0fcc63a2a6c5102393e47f9724e92d8d761e295e301050df5f5c94e77a82a",
+  "journalEvents": 28,
+  "prefix24Hash": "25d8b42d7e8ceac769477a40a43a5c400fabf7c6a1b576af0e2a8d0f54ef4feb",
+  "settled": true,
+  "unresolved": [],
+  "newCommands": [
+    {
+      "commandId": "inspect-fb7760d7-90d1-4044-a1a8-05e51f393676",
+      "phase": "inspect",
+      "moduleId": "project-inspection"
+    },
+    {
+      "commandId": "inspect-39e4deea-b0d0-427d-844e-0ef7d4cb2f7b",
+      "phase": "inspect",
+      "moduleId": "titles-current-target"
+    }
+  ],
+  "projectObservationMatchesConfigured": true,
+  "titlesReadFailure": {
+    "code": "inspection_failed",
+    "outcome": "rejected",
+    "readFailureVersion": 1
+  },
+  "firstTitlesCallNativeDispatch": false,
+  "protectedHashes": {
+    "descriptor": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+    "client": "290923023d6297454ba74e91b1d89ba0315fae5b68c57811dcff36bf9fdcdc3d",
+    "config": "320b9e6d61c493a75cdf42da7d32af872bb6f83aa663ebf3894bdb5ac998c50a",
+    "rootOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "anchorOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "adoption": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa"
+  },
+  "aepHash": "e3b249894cbd602c44483b12b3847e97fa23c358c429687755f88e90d5b9f170",
+  "mutationDispatches": 0,
+  "save": 0,
+  "aeRestart": 0,
+  "ledgerPresent": false
+}

@@ -1,0 +1,17 @@
+{
+  "surface": "Native After Effects Composition Viewer via @oai/sky",
+  "project": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\titles-product\\20261030\\live\\Titles-T2-test.aep",
+  "composition": "Text_1_1",
+  "frame": "0:00:02:11",
+  "frameRate": 30,
+  "magnification": "12.5%",
+  "resolution": "Quarter",
+  "observed": "White PAPER TITLES visible on a black horizontal field; timeline contains one PAPER TITLES layer",
+  "uiActions": ["Activate and maximize native AE window", "Search Project for Text_1_1", "Open existing Text_1_1", "Move own floating CEP frame right to expose viewer"],
+  "propertyEdits": 0,
+  "save": 0,
+  "readbackOfMutation": false,
+  "uniformStyleProven": false,
+  "exactTypographyProven": false,
+  "missingFontOnOpen": "ReservoirGrunge"
+}

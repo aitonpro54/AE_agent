@@ -55,8 +55,13 @@ Actual новый stop`c4c0af30-1260-4e72-b875-74084ae1d0b3`/certify/readopt/exp
 configured status6388мс/первый вызов: owner9584 ready, boot04d9b162…, один3457;
 old6716 absent. HMAC11phase records/owner, descriptor/client/config/origins/AEP
 unchanged, journal24settled/prefix16/18/20 preserved, gates/ledger/pending/UNKNOWN0.
-AE restart/save/mutation0. CEP во время обслуживания дошла до runtime_wait_expired;
-Connect запрошен у пользователя. Native read после enable и R5 Titles/кадр открыты.
+AE restart/save/mutation0. После runtime_wait_expired пользователь снова нажал
+Connect: same owner9584, configured29мс, peer/inspectionAvailable=true. Fresh
+project-inspection подтвердила Text_1_1/comp218/layer219 на current test-copy.
+После штатного core_connect один Titles inspect завершился rejected/inspection_failed;
+журнал28settled/prefix24 unchanged, controller gen2 released, pending/UNKNOWN0.
+Raw/native mutation не выполнялись. Активный узкий [R5 engineering block](plans/core4-titles-inspection-20261101.md)
+устанавливает безопасную диагностику причины, затем Titles compiler/native gate/read-back.
 Не повторять c4c0af30 и old transactions; markers не чистить.
 Standalone proof не подменяет configured.
 **Settled stop/update/recovery/enable не повторять,

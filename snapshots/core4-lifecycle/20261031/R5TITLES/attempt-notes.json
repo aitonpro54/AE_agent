@@ -1,0 +1,26 @@
+{
+  "firstTitlesInspect": {
+    "result": "Root JSON parser failed on MCP text error; exact first error text was not captured",
+    "nativeDispatches": 0,
+    "reasonAttribution": "Source ensureConnection plus journal evidence; Broker transport was unavailable before core_connect"
+  },
+  "secondTitlesInspect": {
+    "coreConnectSucceeded": true,
+    "commandId": "inspect-39e4deea-b0d0-427d-844e-0ef7d4cb2f7b",
+    "beginSeq": 27,
+    "completeSeq": 28,
+    "result": {
+      "code": "inspection_failed",
+      "outcome": "rejected",
+      "readFailureVersion": 1
+    }
+  },
+  "controllerGenerations": [
+    1,
+    2
+  ],
+  "controllerReleased": true,
+  "mutationDispatches": 0,
+  "save": 0,
+  "aeRestart": 0
+}

@@ -1,0 +1,348 @@
+{
+  "authority": false,
+  "continuity": false,
+  "contractId": "1ccaa27e175b0d0f606dcb23fac1454cbd822420fda1e1ac6eb3560a346d4f3a",
+  "evidenceRef": "observation-d448a0bd-0d9c-4205-b6b4-89ea4985cc18",
+  "moduleId": "project-inspection",
+  "observation": {
+    "aeVersion": "26.3x87",
+    "compositions": [
+      {
+        "compId": 1139,
+        "duration": 12.4,
+        "name": "Text_4_1",
+        "numLayers": 1
+      },
+      {
+        "compId": 1155,
+        "duration": 2.66666666666667,
+        "name": "Paper_2 Precomp",
+        "numLayers": 1
+      },
+      {
+        "compId": 1170,
+        "duration": 12.4,
+        "name": "Text_4_1 Comp 1",
+        "numLayers": 1
+      },
+      {
+        "compId": 1183,
+        "duration": 15.4,
+        "name": "text_4_1_anim",
+        "numLayers": 4
+      },
+      {
+        "compId": 69859,
+        "duration": 41,
+        "name": "BG",
+        "numLayers": 3
+      },
+      {
+        "compId": 1203,
+        "duration": 12.4,
+        "name": "Text_4_1",
+        "numLayers": 1
+      },
+      {
+        "compId": 69697,
+        "duration": 12.4,
+        "name": "Text_4_4",
+        "numLayers": 1
+      },
+      {
+        "compId": 69793,
+        "duration": 12.4,
+        "name": "Text_4_5",
+        "numLayers": 1
+      },
+      {
+        "compId": 69819,
+        "duration": 12.4,
+        "name": "Text_4_6",
+        "numLayers": 1
+      },
+      {
+        "compId": 1219,
+        "duration": 2.66666666666667,
+        "name": "Paper_2 Precomp",
+        "numLayers": 1
+      },
+      {
+        "compId": 69832,
+        "duration": 2.66666666666667,
+        "name": "Paper_2 Precomp 2",
+        "numLayers": 1
+      },
+      {
+        "compId": 1234,
+        "duration": 12.4,
+        "name": "Text_4_1 Comp 1",
+        "numLayers": 1
+      },
+      {
+        "compId": 69684,
+        "duration": 12.4,
+        "name": "Text_4_1 Comp 2",
+        "numLayers": 1
+      },
+      {
+        "compId": 69780,
+        "duration": 12.4,
+        "name": "Text_4_1 Comp 3",
+        "numLayers": 1
+      },
+      {
+        "compId": 69806,
+        "duration": 12.4,
+        "name": "Text_4_1 Comp 4",
+        "numLayers": 1
+      },
+      {
+        "compId": 69882,
+        "duration": 10,
+        "name": "plashka_BG",
+        "numLayers": 2
+      },
+      {
+        "compId": 1247,
+        "duration": 15.4,
+        "name": "text_4_1_anim",
+        "numLayers": 6
+      },
+      {
+        "compId": 69762,
+        "duration": 15.4,
+        "name": "text_4_1_anim 2",
+        "numLayers": 7
+      },
+      {
+        "compId": 45022,
+        "duration": 10,
+        "name": "Image 01",
+        "numLayers": 8
+      },
+      {
+        "compId": 45138,
+        "duration": 10,
+        "name": "BG Text 01",
+        "numLayers": 1
+      },
+      {
+        "compId": 42311,
+        "duration": 10,
+        "name": "Person Text 01",
+        "numLayers": 2
+      },
+      {
+        "compId": 3743,
+        "duration": 10,
+        "name": "Assets Position 01",
+        "numLayers": 21
+      },
+      {
+        "compId": 53239,
+        "duration": 10,
+        "name": "B MASK 01",
+        "numLayers": 2
+      },
+      {
+        "compId": 44946,
+        "duration": 10,
+        "name": "BG",
+        "numLayers": 2
+      },
+      {
+        "compId": 45617,
+        "duration": 10,
+        "name": "NEWSPAPER IN",
+        "numLayers": 177
+      },
+      {
+        "compId": 49481,
+        "duration": 10,
+        "name": "GT 02",
+        "numLayers": 1
+      },
+      {
+        "compId": 55734,
+        "duration": 10,
+        "name": "GT 03",
+        "numLayers": 1
+      },
+      {
+        "compId": 51381,
+        "duration": 10,
+        "name": "Image Double  01",
+        "numLayers": 2
+      },
+      {
+        "compId": 51407,
+        "duration": 10,
+        "name": "Image Middle 01",
+        "numLayers": 1
+      },
+      {
+        "compId": 51525,
+        "duration": 10,
+        "name": "Image Start 01",
+        "numLayers": 3
+      },
+      {
+        "compId": 53482,
+        "duration": 10,
+        "name": "Note Paper 01",
+        "numLayers": 4
+      },
+      {
+        "compId": 30300,
+        "duration": 150,
+        "name": "Grunge",
+        "numLayers": 16
+      },
+      {
+        "compId": 49282,
+        "duration": 10,
+        "name": "Shadow Over",
+        "numLayers": 1
+      },
+      {
+        "compId": 55750,
+        "duration": 10,
+        "name": "Pre-comp 2",
+        "numLayers": 2
+      },
+      {
+        "compId": 53195,
+        "duration": 10,
+        "name": "WORK AREA",
+        "numLayers": 4
+      },
+      {
+        "compId": 114,
+        "duration": 10,
+        "name": "Scene 01",
+        "numLayers": 6
+      },
+      {
+        "compId": 69516,
+        "duration": 12.0666666666667,
+        "name": "Bylina_SMPushka",
+        "numLayers": 5
+      },
+      {
+        "compId": 4,
+        "duration": 40,
+        "name": "Title_1_Color",
+        "numLayers": 17
+      },
+      {
+        "compId": 33,
+        "duration": 10.0333333333333,
+        "name": "Title_2_Color",
+        "numLayers": 14
+      },
+      {
+        "compId": 60,
+        "duration": 10.0333333333333,
+        "name": "Title_3_Color",
+        "numLayers": 19
+      },
+      {
+        "compId": 91,
+        "duration": 15.4,
+        "name": "Title_4_Color",
+        "numLayers": 19
+      },
+      {
+        "compId": 133,
+        "duration": 12.4,
+        "name": "TItle_5_Color",
+        "numLayers": 19
+      },
+      {
+        "compId": 165,
+        "duration": 40,
+        "name": "Placeholder_1",
+        "numLayers": 1
+      },
+      {
+        "compId": 178,
+        "duration": 40,
+        "name": "Placeholder_2",
+        "numLayers": 0
+      },
+      {
+        "compId": 190,
+        "duration": 40,
+        "name": "Placeholder_4",
+        "numLayers": 1
+      },
+      {
+        "compId": 203,
+        "duration": 40,
+        "name": "Placeholder_5",
+        "numLayers": 1
+      },
+      {
+        "compId": 218,
+        "duration": 40,
+        "name": "Text_1_1",
+        "numLayers": 1
+      },
+      {
+        "compId": 231,
+        "duration": 40,
+        "name": "Text_1_2",
+        "numLayers": 1
+      },
+      {
+        "compId": 245,
+        "duration": 40,
+        "name": "Text_2_1",
+        "numLayers": 1
+      },
+      {
+        "compId": 258,
+        "duration": 40,
+        "name": "Text_2_2",
+        "numLayers": 1
+      }
+    ],
+    "layers": [
+      {
+        "index": 1,
+        "layerId": 219,
+        "name": "PAPER TITLES",
+        "textLayer": true
+      }
+    ],
+    "observationVersion": 1,
+    "project": {
+      "name": "Titles-T2-test.aep",
+      "numItems": 465,
+      "saved": true
+    },
+    "target": {
+      "compId": 218,
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\titles-product\\20261030\\live\\Titles-T2-test.aep"
+    },
+    "truncated": true
+  },
+  "originalBinding": {
+    "channelEpoch": "http-d47ee1f7-ee2e-42da-85a7-826859dbffab",
+    "commandId": "inspect-fb7760d7-90d1-4044-a1a8-05e51f393676",
+    "controllerId": "controller-0c68ab3c-a464-483f-a6ae-4e3dbed00725",
+    "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+    "moduleId": "project-inspection",
+    "operationId": "inspect",
+    "payloadHash": "cc326bea4cbca2a8e1e0c169ec125e4678b5f6e1c61be93a86e8455f5eec8ab0",
+    "phase": "inspect",
+    "receiptRef": "cd14088dae176932174321034d6337bf4d467003adbd6f8548ba79b22f4d5fa5",
+    "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4"
+  },
+  "pins": {
+    "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+    "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+    "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac"
+  }
+}

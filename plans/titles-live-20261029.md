@@ -200,3 +200,21 @@ TEMP21PASS — проверка maintenance, не live Titles proof. Readoption 
 Новая копия, старый изменённый AEP, signed journal и installation защищены.
 Нативная Titles mutation всё ещё0. Следующий шаг — штатное возобновление
 configured MCP текущего чата; stop/readoption/install повторять не нужно.
+
+## R5 lifecycle checkpoint — 1 ноября 2026
+
+Titles используется как проверочный сценарий lifecycle по текущему плану, прежний
+T2 controller route автоматически не возобновляется. Helper re-adoption c4c0af30
+завершена штатно; пользовательский Connect и configured project-inspection
+подтвердили exact нынешнюю `20261030/live/Titles-T2-test.aep`,465items,
+comp218 Text_1_1/layer219 PAPER TITLES. Current файл33557830bytes/SHAe3b24989…
+отличается от исторического baseline и сохранён без записи/восстановления старых bytes.
+
+Progress: core_connect available=true/synthetic=false; один Titles native inspect
+завершён rejected/inspection_failed до build/proposal/run. Validation: журнал28
+settled/prefix24 unchanged, pending/UNKNOWN/faults0, lease gen2 released. Native
+viewer показывает PAPER TITLES на0:00:02:11/30fps,12.5%/Quarter; это baseline,
+не успешная mutation. Source/package/AEP не менялись, save/restart/mutation0.
+Decision Log: snapshot/API defect выделен в узкий engineering block
+`core4-titles-inspection-20261101.md`. Затем fresh typed inspection и прежний
+compiler/generic plan/native confirmation/read-back; обход через raw/UI text нет.

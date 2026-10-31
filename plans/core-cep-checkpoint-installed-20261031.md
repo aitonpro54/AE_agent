@@ -17,11 +17,19 @@ boot04d9b162-40f5-4812-83b2-d18d3b7c3f84 ready, один3457, old6716 absent.
 HMAC11phase records/owner PASS,24events settled/prefix16/18/20 preserved,
 ledger/gates/stage/pending/UNKNOWN/faults0. AEP current33557830bytes/SHAe3b24989…
 сохранён без записи; opening/font notification не выдаются за exact typography.
-CEP исчерпала50с runtime wait во время обслуживания: peer=false, Connect
-запрошен у пользователя. Следующий шаг — Connect → configured native read → R5
-Titles на fresh IDs/baseline с native confirmation/read-back/кадром. Не повторять
+CEP исчерпала50с runtime wait во время обслуживания: peer=false, Connect был
+запрошен у пользователя. Последующий успешный reconnect описан ниже. Не повторять
 c4c0af30 либо old settled operations, markers не чистить. AE restart/save/mutation0.
 Evidence — `HOSTREADOPT-ACTUAL/`; actual metadata proof не закрывает R5/release.
+
+Дополнение к текущему9584 checkpoint,1ноября: пользователь подтвердил новый
+Connect. Configured status29мс, peer connected; actual project-inspection на
+current comp218/layer219 PASS. Затем штатный core_connect available=true;
+один native Titles inspect rejected/inspection_failed, journal28settled,
+prefix24/SHA25d8b42d… preserved. Lease gen2 released, faults/pending/UNKNOWN0;
+config/package/adoption/AEP unchanged, mutation/save/restart0. Helper этап закрыт,
+следующий R5 snapshot repair описан в core4-titles-inspection-20261101.md.
+Ни stop/readoption/update c4c0af30, ни old operations не повторять.
 
 ## Предыдущий checkpoint: configured cc2f/CEP/native read, owner6716
 

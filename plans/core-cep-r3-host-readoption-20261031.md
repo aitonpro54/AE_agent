@@ -11,8 +11,9 @@ Terminal read race после last gate release исправлен и прове
 CLI slice5 также принят:338unique PASS/19current checks, commit8ce5a58.
 Official outputc787e013… записан и проверен. Actual operationc4c0af30… завершила
 stop/certify/readopt/explicit enable; первый configured status успешен за6388мс,
-owner9584 ready. Runtime packagecc2f прежний. CEP после bounded wait требует
-Connect; native read после enable и R5 Titles ещё открыты. Повторного Argon не было.
+owner9584 ready. Runtime packagecc2f прежний. После пользовательского Connect
+configured native project read успешен; Titles inspect завершён безопасным отказом.
+R5 Titles engineering продолжается отдельно. Повторного Argon не было.
 Source milestone commit: `53200c12a684fe9be3abb7875cc424105795da2c`.
 
 Редакция после единственного plan review20261031-readoption-plan-01: source
@@ -181,8 +182,9 @@ raw/save/destructive, AE restart, AME и внешние APIs вне scope. Root 
   CLI source milestone8ce5a58.
 - [x] Official immutable manual/owner distribution и exact hash read-back.
 - [x] Actual new stop/readoption/explicit enable и fresh configured Core status.
-- [ ] Повторный Connect CEP и configured native read после enable; затем R5 Titles
-  на текущей test-copy, native confirmation и read-back/кадр.
+- [x] Повторный Connect CEP и configured native project read после enable.
+- [ ] R5 Titles на текущей test-copy, native confirmation и read-back/кадр;
+  отказ inspection_failed разбирается в core4-titles-inspection-20261101.md.
 
 Завершённый milestone core2–4: цель — штатный recoverable helper core без смены
 runtime. Изменены11source paths (main/store/reducer, narrow certificate port,
@@ -439,3 +441,13 @@ Decision Log: metadata этап завершён без AE restart/save/mutation
 после enable/Titles/native confirm/кадр и полная repeated-cycles приёмка открыты.
 Evidence — `snapshots/core4-lifecycle/20261031/HOSTREADOPT-ACTUAL/`.
 Не повторять c4c0af30 или прежние settled stop/update/readoption; markers не чистить.
+
+1 ноября, после Connect пользователя: configured status29мс, same9584/boot/peer
+connected, затем project-inspection comp218 PASS. Metadata/helper acceptance и
+configured native read после enable теперь закрыты, commit блока0c29739.
+Дальнейший R5 Titles inspect после отдельного core_connect вернул rejected/
+inspection_failed; receiver28settled/prefix24 unchanged, pending/UNKNOWN/faults0,
+lease gen2 released. Это module snapshot отказ, не неизвестный AE-эффект. Root
+visual baseline PAPER TITLES на0:00:02:11 получен без properties/save/mutation.
+Новый узкий engineering план — core4-titles-inspection-20261101.md; source guards
+этим read-only checkpoint не менялись. Evidence — R5TITLES.

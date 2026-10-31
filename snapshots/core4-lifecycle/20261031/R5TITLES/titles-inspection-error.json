@@ -1,0 +1,14 @@
+{
+  "collectedAt": "2026-10-31 19:26:53 UTC",
+  "raw": {
+    "content": [
+      {
+        "type": "text",
+        "text": "tool call error: tool call failed for `after-effects-core4/inspect_module_target`\n\nCaused by:\n    Mcp error: -32000: owner_outcome_uncertain({\"outcome\":\"unknown\",\"requestId\":\"8908983fc994467952ad9f0e658c7f32d5d2ff877ff2e5714cc576415c427b15\"})"
+      }
+    ],
+    "isError": true
+  },
+  "effect": "read-only",
+  "mutationDispatches": 0
+}

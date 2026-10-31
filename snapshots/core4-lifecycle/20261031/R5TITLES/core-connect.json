@@ -1,0 +1,21 @@
+{
+  "automaticLifecycle": "unavailable",
+  "available": true,
+  "physical": {
+    "automaticLifecycle": "unavailable",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionAvailable": true,
+    "listening": true,
+    "peer": {
+      "connected": true,
+      "peerId": "panel-13baf992d50e8db5275f48dfa015807d6c2862f6a16ea09f"
+    },
+    "pending": null,
+    "port": 3457,
+    "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+    "storeClosed": false,
+    "storeFault": false,
+    "unknown": false
+  },
+  "synthetic": false
+}

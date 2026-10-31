@@ -436,3 +436,14 @@ Decision Log: actual metadata flow закрыт; long stop превысил boun
 R5 Titles/native confirmation/read-back/кадр, затем остальные ordinary cycles.
 AE restart/save/mutation0, settled c4c0af30 и old transactions не повторять.
 Evidence — HOSTREADOPT-ACTUAL; полная installed устойчивость/release не объявлены.
+
+1ноября — Progress: после ручного Connect configured status29мс и fresh native
+project-inspection current test-copy/comp218/layer219 PASS на same9584/boot.
+Helper re-adoption с configured native read теперь завершена (actual commit0c29739).
+Validation: journal28settled/prefix24 unchanged, protected hashes unchanged,
+controller gen2 released, pending/UNKNOWN/faults0; source/runtime changes0.
+Decision Log: Titles snapshot после явного core_connect штатно rejected/
+inspection_failed. Отдельный узкий engineering block
+`core4-titles-inspection-20261101.md` получает bounded причину через typed путь и
+исправляет подтверждённый source defect перед продолжением R5. Visual baseline
+PAPER TITLES на0:00:02:11 осмотрен, mutation/save/restart0. Full release не заявлен.
