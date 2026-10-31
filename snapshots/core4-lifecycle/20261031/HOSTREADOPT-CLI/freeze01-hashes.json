@@ -1,0 +1,11 @@
+{
+  "files": {
+    "core4/tools/standalone-installer.js": "8021045fbcea74727a422e9323396b0ab0b9498837d71555a96bcad9c3ad7369",
+    "core4/tools/operate-stopped-readoption.js": "a939e1ea46f11247a1c3e7bd612ab86d7edc79bf0c1ae939547948241f52b681",
+    "core4/tools/package-standalone-installer.js": "b744adc9aad3168475991e5aea7e93de72abdefbc19740539b36a5b151375ca5",
+    "core4/tools/check-boundaries.js": "8d4d66a947260496550108d1092e91b02153881e39db720a203bd274a2ee8cd8",
+    "core4/test/stopped-host-readoption-operator.test.js": "1c4a9a1b51bea5acc7a645bd84c6cd39aae14b14bcfab0ab2739ae9bb1fbff75",
+    "core4/config/validation-map.json": "d7d02fa271d317cd5b2b362f544c02848147072d2e5bfdfdf67eae387d352d35"
+  },
+  "whitespace": []
+}

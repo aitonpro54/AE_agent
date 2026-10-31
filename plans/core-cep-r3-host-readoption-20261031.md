@@ -7,9 +7,11 @@ Helper foundation принята commit`a1fedf3`; runtime payload/package не �
 
 Private transaction core2–4 принят на freeze05:253PASS/12current checks,
 composed coverage с exact reuse5closures и независимым source/test ACCEPT.
-Terminal read race после last gate release исправлен и проверен. Следующий
-source этап — CLI slice5; actual operator пока не установлен/не выполнялся.
+Terminal read race после last gate release исправлен и проверен.
+CLI slice5 также принят:338unique PASS/19current checks. Actual
+operator пока не выполнялся; официальный immutable output создаётся после commit.
 Runtime packagecc2f прежний. Повторного Argon не было.
+Source milestone commit: `53200c12a684fe9be3abb7875cc424105795da2c`.
 
 Редакция после единственного plan review20261031-readoption-plan-01: source
 границы сохранены, ниже уточнены F01/F02/F04 и concrete CAS proof. Исходная
@@ -172,9 +174,19 @@ raw/save/destructive, AE restart, AME и внешние APIs вне scope. Root 
   неизменны; confirmed terminal race не позволяет объявить functional acceptance.
 - [x] Terminal historical-receipt correction, independent delta review и
   current-key verification:253PASS/12checks (7fresh+5exactreuse).
-- [ ] Slice5: CLI/package/boundaries/validation wiring и immutable selection.
-- [ ] Source/helper implementation, адресная проверка и reviewable commit.
+- [x] Slice5: CLI/package/boundaries/validation wiring и immutable selection.
+- [x] Source/helper implementation и адресная проверка; private commit53200c1,
+  CLI source milestone фиксируется отдельно.
+- [ ] Official immutable manual/owner distribution и exact hash read-back.
 - [ ] Actual new stop/readoption/explicit enable и fresh configured proof.
+
+Завершённый milestone core2–4: цель — штатный recoverable helper core без смены
+runtime. Изменены11source paths (main/store/reducer, narrow certificate port,
+fixture/5test files и routing), планы/AGENTS и sanitised evidence. Validation —
+253current PASS, independent reviews, exact committed bytes, packagecc2f unchanged.
+Commit53200c1; следующий определённый этап — CLI slice5. Работа продолжается в
+текущем чате; root сохраняет Git/live ownership, source writer получает только
+CLI/package/test wiring.
 
 ## Decision Log
 
@@ -338,3 +350,47 @@ implementation-notes.md; после него fresh preflight и новый origi
 изменялись. Все остальные staged paths, включая current source/docs, PASS.
 Точные исключения/хеши — HOSTREADOPT-S234/staged-checks.json; это форматирование
 архивных первичных evidence, не product/test failure.
+
+### CLI slice5 — source приёмка
+
+Добавлены readopt-inspect/apply/finish/enable/enable-finish, private bootstrap
+capability и verified data-only operator. Общие/actions/apply flags описаны в
+[operator guide](../docs/core-host-readoption.md). Election3457 непрерывная;
+witness16KiB/hash pin; readonly/manual-stdio distributions отказывают до operator
+import. Four-helper union main/store/transaction/operator включён в standalone,
+runtime packagecc2f/70files прежний. Independent review6paths ACCEPT; P3 guide
+уточнил обязательную CLI election даже для historical query.
+
+Initial frozen CLI run завершился exit1 на existing lexical HELPERS assertion.
+Исправлен только порядок store→transaction→main в bootstrap; assertions прежние.
+Full rawSHA7884b3fb… сохранён:5executed batches/6check bindings,43PASS/1FAIL,
+остальные4bindings не выполнялись. Shared routing/artifact batch9 ошибочно
+назывался routing9 в промежуточном сообщении; standalone routing5/artifact5 имеют
+один общий case. Current данные ниже считаются по executionBatches.
+
+Corrected final02: source16/dependencies139/global19checks, actualdelta10bindings
+в9batches,104fresh unique PASS. Exact reuse9unchanged baseline closures —234tests.
+Итог **338unique PASS/19current checks**,0FAIL/skip/cancelled/todo. Per-check
+assignments339 содержат общий routing/artifact case; в338 он посчитан один раз.
+Current whole-global command не заявляется, full release не запускался.
+
+Parent batch-aware verifier независимо подтвердил source/dependency/key/command
+bindings до/после/current,9полных Node summaries и actual test names общегоcase,
+каждый reused dependency hash и отсутствие fresh/reused overlaps в global batches.
+RawSHA4722d3fd…; writer summarySHA37d8fb34… совпадает с parent result.
+Evidence — HOSTREADOPT-CLI/final02/accepted-evidence.json; source freezes/reviews
+и initial failure сохранены отдельно. Parent tests replay/live/install0.
+Boundaries44, syntax5, whitespace16/0warnings, protected private/runtime diff0.
+
+Current bootstrapSHAa8b3c527…; остальные5CLI hashes соответствуют freeze01.
+Детерминированный manual/owner distribution hash
+`c787e0134941086fdbf7b1b15ebb16ee6b0684fbaab85ecb586a0958a602e81d`,87bundle files.
+Пока это pure build; official directory и actual new stop/adoption/enable ещё0.
+Следующий шаг: commit source CLI, записать/проверить immutable distribution,
+получить fresh configured/native host+project preflight и выполнить новый UUID.
+
+CLI staged source verification: все16cumulative source blobs совпали с tested
+SHA,6owned CLI paths составляют весь source diff от53200c1. Все47собранных
+evidence blobs сохранены exact bytes. Full diff check отметил4diagnostics лишь
+в3immutable capture/raw artifacts; остальные source/docs/artifacts PASS. Точные
+exceptions/hashes — HOSTREADOPT-CLI/staged-checks.json. Captures не форматировались.

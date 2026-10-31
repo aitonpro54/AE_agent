@@ -1,0 +1,11 @@
+✔ stopped-host-readoption-operator source guards require private bootstrap before all nonbuiltins and constant reviewed imports (1.933ms)
+✔ stopped-host-readoption-operator all four helpers have one exact union entry; build/write/verifier retain unchanged runtime package (276.4488ms)
+✔ stopped-host-readoption-operator bootstrap capability remains private through await, then revokes on resolve/reject/synchronous throw (455.8564ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 807.2177

@@ -1,0 +1,39 @@
+{
+  "collectedAt": "2026-10-31T18:43:02.813Z",
+  "globalSourceIndexMatchesTestedBytes": 16,
+  "ownedCLIPaths": 6,
+  "existingEvidenceIndexBytesMatched": 47,
+  "fullIndexDiffCheckExitCode": 2,
+  "immutableCaptureWhitespace": [
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-CLI/final02/capture.cjs",
+      "line": 15,
+      "kind": "new blank line at EOF."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-CLI/initial-failed-run/capture.cjs",
+      "line": 15,
+      "kind": "new blank line at EOF."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-CLI/initial-failed-run/validate-diff.raw.log",
+      "line": 1780,
+      "kind": "trailing whitespace."
+    },
+    {
+      "file": "snapshots/core4-lifecycle/20261031/HOSTREADOPT-CLI/initial-failed-run/validate-diff.raw.log",
+      "line": 1795,
+      "kind": "trailing whitespace."
+    }
+  ],
+  "exceptionHashes": {
+    "snapshots/core4-lifecycle/20261031/HOSTREADOPT-CLI/final02/capture.cjs": "dd66b3cd06bed056bc5d77359e32c1fe402fe6f174116b403ea7457a89e609b0",
+    "snapshots/core4-lifecycle/20261031/HOSTREADOPT-CLI/initial-failed-run/capture.cjs": "dd66b3cd06bed056bc5d77359e32c1fe402fe6f174116b403ea7457a89e609b0",
+    "snapshots/core4-lifecycle/20261031/HOSTREADOPT-CLI/initial-failed-run/validate-diff.raw.log": "7884b3fb56f8c25af06ba8b0366d127d6933a0aef1d8cc7ba08d94f9543a8960"
+  },
+  "allOtherStagedPathsDiffCheck": "PASS",
+  "notes": [
+    "Исходные raw/capture bytes сохранены; formatting этих3artifacts не менялся.",
+    "Current source/docs и остальные staged paths прошли diff check."
+  ]
+}

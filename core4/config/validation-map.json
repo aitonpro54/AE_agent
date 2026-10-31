@@ -1,5 +1,7 @@
 {
   "owners": [
+    { "prefix": "core4/tools/operate-stopped-readoption.js", "owner": "stopped-host-readoption-operator", "checks": ["stopped-host-readoption-operator", "standalone-installer"] },
+    { "prefix": "core4/test/stopped-host-readoption-operator.test.js", "owner": "stopped-host-readoption-operator", "checks": ["stopped-host-readoption-operator"] },
     { "prefix": "core4/tools/stopped-host-readoption.js", "owner": "stopped-host-readoption", "checks": ["stopped-host-readoption", "readoption-core", "readoption-recovery", "readoption-enable", "readoption-probe"] },
     { "prefix": "core4/tools/stopped-host-readoption-store.js", "owner": "stopped-host-readoption", "checks": ["stopped-host-readoption", "readoption-core", "readoption-recovery", "readoption-enable", "readoption-probe"] },
     { "prefix": "core4/tools/stopped-host-readoption-transaction.js", "owner": "stopped-host-readoption", "checks": ["stopped-host-readoption", "readoption-core", "readoption-recovery", "readoption-enable", "readoption-probe"] },
@@ -67,6 +69,8 @@
       "prefix": "core4/tools/package-standalone-installer.js",
       "owner": "standalone-installer",
       "checks": [
+        "stopped-host-readoption-operator",
+        "stopped-update-operator",
         "maintenance-finish-operator",
         "standalone-installer",
         "owner-installation"
@@ -76,6 +80,8 @@
       "prefix": "core4/tools/standalone-installer.js",
       "owner": "standalone-installer",
       "checks": [
+        "stopped-host-readoption-operator",
+        "stopped-update-operator",
         "maintenance-finish-operator",
         "standalone-installer"
       ]
@@ -105,6 +111,7 @@
       "prefix": "core4/tools/check-boundaries.js",
       "owner": "runtime-boundaries",
       "checks": [
+        "stopped-host-readoption-operator",
         "maintenance-finish-operator",
         "artifact-boundaries",
         "installed-composition",
@@ -1040,12 +1047,41 @@
     }
   ],
   "checkDependencies": {
+    "stopped-host-readoption-operator": ["tools/", "runtime/", "core/", "protocol/", "config/", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "test/stopped-host-readoption-operator.test.js"],
     "stopped-host-readoption": ["tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","runtime/stopped-certification.js","runtime/owner-maintenance.js","runtime/owner-lifecycle.js","runtime/install-lease.js","runtime/recovery-inspection.js","runtime/windows-owner-process.js","runtime/windows-reservation-provider.js","runtime/native-read-disposition.js","runtime/installation-lineage.js","runtime/installation.js","runtime/stdio-entry.js","protocol/","core/state-lock.js","core/receiver-api.js","core/receiver.js","core/authority.js","core/resources.js","integrations/cep/completion-store.js","test/fixtures/owner-lifecycle-fixture.js","test/fixtures/stopped-host-readoption.js","test/stopped-host-readoption.test.js"],
     "readoption-core": ["tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","runtime/stopped-certification.js","runtime/owner-maintenance.js","runtime/owner-lifecycle.js","runtime/install-lease.js","runtime/recovery-inspection.js","runtime/windows-owner-process.js","runtime/windows-reservation-provider.js","runtime/native-read-disposition.js","runtime/installation-lineage.js","runtime/installation.js","runtime/stdio-entry.js","protocol/","core/state-lock.js","core/receiver-api.js","core/receiver.js","core/authority.js","core/resources.js","integrations/cep/completion-store.js","test/fixtures/owner-lifecycle-fixture.js","test/fixtures/stopped-host-readoption.js","test/stopped-host-readoption-core.test.js"],
     "readoption-recovery": ["tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","runtime/stopped-certification.js","runtime/owner-maintenance.js","runtime/owner-lifecycle.js","runtime/install-lease.js","runtime/recovery-inspection.js","runtime/windows-owner-process.js","runtime/windows-reservation-provider.js","runtime/native-read-disposition.js","runtime/installation-lineage.js","runtime/installation.js","runtime/stdio-entry.js","protocol/","core/state-lock.js","core/receiver-api.js","core/receiver.js","core/authority.js","core/resources.js","integrations/cep/completion-store.js","test/fixtures/owner-lifecycle-fixture.js","test/fixtures/stopped-host-readoption.js","test/stopped-host-readoption-recovery.test.js"],
     "readoption-enable": ["tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","runtime/stopped-certification.js","runtime/owner-maintenance.js","runtime/owner-lifecycle.js","runtime/install-lease.js","runtime/recovery-inspection.js","runtime/windows-owner-process.js","runtime/windows-reservation-provider.js","runtime/native-read-disposition.js","runtime/installation-lineage.js","runtime/installation.js","runtime/stdio-entry.js","protocol/","core/state-lock.js","core/receiver-api.js","core/receiver.js","core/authority.js","core/resources.js","integrations/cep/completion-store.js","test/fixtures/owner-lifecycle-fixture.js","test/fixtures/stopped-host-readoption.js","test/stopped-host-readoption-enable.test.js"],
     "readoption-probe": ["tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","runtime/stopped-certification.js","runtime/owner-maintenance.js","runtime/owner-lifecycle.js","runtime/install-lease.js","runtime/recovery-inspection.js","runtime/windows-owner-process.js","runtime/windows-reservation-provider.js","runtime/native-read-disposition.js","runtime/installation-lineage.js","runtime/installation.js","runtime/stdio-entry.js","protocol/","core/state-lock.js","core/receiver-api.js","core/receiver.js","core/authority.js","core/resources.js","integrations/cep/completion-store.js","test/fixtures/owner-lifecycle-fixture.js","test/fixtures/stopped-host-readoption.js","test/stopped-host-readoption-probe.test.js"],
-    "stopped-update-operator": ["tools/operate-stopped-update.js","tools/standalone-installer.js","tools/package-standalone-installer.js","tools/package-installable.js","tools/install-core4.js","tools/stopped-update.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","tools/check-boundaries.js","runtime/","core/","protocol/","test/stopped-update-operator.test.js","tools/finish-owner-maintenance.js","tools/maintain-owner.js","tools/disposition-install-preflight.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
+    "stopped-update-operator": [
+      "tools/operate-stopped-update.js",
+      "tools/standalone-installer.js",
+      "tools/package-standalone-installer.js",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "tools/stopped-update.js",
+      "tools/legacy-owner-migration.js",
+      "tools/windows-retained-process.js",
+      "tools/check-boundaries.js",
+      "runtime/",
+      "core/",
+      "protocol/",
+      "test/stopped-update-operator.test.js",
+      "tools/finish-owner-maintenance.js",
+      "tools/maintain-owner.js",
+      "tools/disposition-install-preflight.js",
+      "cep/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "integrations/",
+      "tools/operate-stopped-readoption.js",
+      "tools/stopped-host-readoption.js",
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js"
+    ],
     "stopped-update": ["tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/stopped-update.test.js","test/fixtures/owner-pre-ready-claim-child.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
     "legacy-owner-migration": ["tools/legacy-owner-migration.js","tools/windows-retained-process.js","tools/install-core4.js","tools/package-installable.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/legacy-owner-migration.test.js","tools/stopped-update.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
     "windows-retained-process": ["tools/windows-retained-process.js", "runtime/windows-owner-process.js", "test/windows-retained-process.test.js"],
@@ -1060,7 +1096,35 @@
     "owner-marker-publication": ["core/state-lock.js", "integrations/cep/completion-store.js", "runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-marker-publication.test.js"],
     "client-launcher": ["runtime/client-entry.js", "runtime/client-ipc.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/owner-contract.json", "test/client-launcher.test.js"],
     "recovery-inspection": ["runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "runtime/windows-reservation-provider.js", "core/ledger.js", "core/broker.js", "core/receiver.js", "core/resources.js", "integrations/cep/http-peer.js", "integrations/cep/completion-store.js", "protocol/", "test/recovery-inspection.test.js"],
-    "owner-installation": ["runtime/", "tools/install-core4.js", "tools/package-installable.js", "tools/package-standalone-installer.js", "tools/standalone-installer.js", "tools/disposition-install-preflight.js", "test/owner-installation.test.js", "test/fixtures/fixed-format1-package.js", "test/fixtures/legacy-installation-v1.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
+    "owner-installation": [
+      "runtime/",
+      "tools/install-core4.js",
+      "tools/package-installable.js",
+      "tools/package-standalone-installer.js",
+      "tools/standalone-installer.js",
+      "tools/disposition-install-preflight.js",
+      "test/owner-installation.test.js",
+      "test/fixtures/fixed-format1-package.js",
+      "test/fixtures/legacy-installation-v1.js",
+      "core/",
+      "protocol/",
+      "config/",
+      "modules/",
+      "plan-engine/",
+      "cep/",
+      "integrations/",
+      "worker.js",
+      "tools/finish-owner-maintenance.js",
+      "tools/legacy-owner-migration.js",
+      "tools/maintain-owner.js",
+      "tools/operate-stopped-readoption.js",
+      "tools/operate-stopped-update.js",
+      "tools/stopped-host-readoption.js",
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js",
+      "tools/stopped-update.js",
+      "tools/windows-retained-process.js"
+    ],
     "controller-transfer": ["runtime/controller-lease.js", "runtime/attachment-owner.js", "runtime/client-ipc.js", "test/controller-transfer-ipc.test.js"],
     "client-entry": ["runtime/client-entry.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/client-ipc.js", "runtime/owner-entry.js", "test/client-entry.test.js", "tools/check-boundaries.js"],
     "owner-runtime": ["runtime/", "test/owner-runtime.test.js", "test/fixtures/owner-runtime-child.js", "tools/check-boundaries.js", "tools/install-core4.js", "tools/package-installable.js", "tools/disposition-install-preflight.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
@@ -1535,10 +1599,19 @@
       "integrations/cep/completion-store.js",
       "worker.js",
       "config/catalog.json",
-      "config/admissions/"
+      "config/admissions/",
+      "tools/legacy-owner-migration.js",
+      "tools/operate-stopped-readoption.js",
+      "tools/operate-stopped-update.js",
+      "tools/stopped-host-readoption.js",
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js",
+      "tools/stopped-update.js",
+      "tools/windows-retained-process.js"
     ]
   },
   "checkCommands": {
+    "stopped-host-readoption-operator": ["node", "--test", "--test-name-pattern=stopped-host-readoption-operator", "test/stopped-host-readoption-operator.test.js"],
     "readoption-core": ["node", "--test", "--test-name-pattern=readoption-core", "test/stopped-host-readoption-core.test.js"],
     "readoption-recovery": ["node", "--test", "--test-name-pattern=readoption-recovery", "test/stopped-host-readoption-recovery.test.js"],
     "readoption-enable": ["node", "--test", "--test-name-pattern=readoption-enable", "test/stopped-host-readoption-enable.test.js"],
@@ -1719,6 +1792,7 @@
     ]
   },
   "checkPolicy": {
+    "stopped-host-readoption-operator": { "kind": "integration" },
     "readoption-core": { "kind": "component" },
     "readoption-recovery": { "kind": "component" },
     "readoption-enable": { "kind": "component" },

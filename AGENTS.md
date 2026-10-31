@@ -47,8 +47,10 @@ Private transaction core2–4 теперь принят253PASS/12current checks:
 и5exact unchanged reuse, independent code/test ACCEPT. Включён historical terminal
 receipt после normal owner startup; current runtime/history/barrier не объявляются
 проверенными и authority не выдаётся. Lease доступен только после canonical claim.
-Actual stop/adoption0, packagecc2f/70files unchanged. Следующий этап — CLI slice5,
-затем новый stopped flow по fresh preflight; old transactions не повторять.
+CLI slice5 принят338unique PASS/19current checks, с9fresh batches и exact reuse;
+общий routing/artifact case counted once. Runtime packagecc2f/70files unchanged.
+Official helper outputc787e013… ещё предстоит записать/проверить; actual stop/
+adoption0. Затем новый stopped flow по fresh preflight; old transactions не повторять.
 Standalone proof не подменяет configured.
 **Settled stop/update/recovery/enable не повторять,
 markers не чистить.** [Installed recovery](plans/core-cep-r3-owner-preready-20261031.md)

@@ -1,0 +1,69 @@
+{
+  "collectedAt": "2026-10-31T18:25:01.007Z",
+  "classification": "Исторический frozen partial run с известным HELPERS order FAIL",
+  "exitCode": 1,
+  "executedBatches": 5,
+  "executedCheckBindings": 6,
+  "notRunCheckBindings": 4,
+  "uniqueTests": 44,
+  "pass": 43,
+  "fail": 1,
+  "sharedRoutingArtifactCountedOnce": true,
+  "sourceAndDependencyHashesFrozen": true,
+  "failedCheck": "standalone-installer",
+  "correction": "Только lexical order HELPERS; assertions не менялись",
+  "functionalAcceptance": false,
+  "testsRepeatedByParent": false,
+  "files": [
+    {
+      "name": "capture.before.json",
+      "bytes": 105965,
+      "sha256": "ce5e95a1988f5fa28a615286b364de35456bc3346fc71c70fc558d66659c08c1"
+    },
+    {
+      "name": "capture.after.json",
+      "bytes": 105961,
+      "sha256": "fc9407f57976cbd0e3fbc17d3001220a1a37486681c30fb0071e8dacb188bcd2"
+    },
+    {
+      "name": "selection.before.json",
+      "bytes": 122426,
+      "sha256": "d65fa701db661e7260acf05c670cb66b73f701e595d6978d143d6a2762f14e80"
+    },
+    {
+      "name": "selection.after.json",
+      "bytes": 122426,
+      "sha256": "d65fa701db661e7260acf05c670cb66b73f701e595d6978d143d6a2762f14e80"
+    },
+    {
+      "name": "run-selection.before.json",
+      "bytes": 57867,
+      "sha256": "987db45cb4ac6140c0825af980ca39f5a895f9c7b700b9f58a7728a93e01d9b8"
+    },
+    {
+      "name": "run-selection.after.json",
+      "bytes": 57867,
+      "sha256": "987db45cb4ac6140c0825af980ca39f5a895f9c7b700b9f58a7728a93e01d9b8"
+    },
+    {
+      "name": "reuse.before.json",
+      "bytes": 7298,
+      "sha256": "9681dd5471086e9b3de4c84d6cf00b6fb05d927fff92c31b105b0aa26bf6539f"
+    },
+    {
+      "name": "reuse.after.json",
+      "bytes": 7298,
+      "sha256": "9681dd5471086e9b3de4c84d6cf00b6fb05d927fff92c31b105b0aa26bf6539f"
+    },
+    {
+      "name": "validate-diff.raw.log",
+      "bytes": 68379,
+      "sha256": "7884b3fb56f8c25af06ba8b0366d127d6933a0aef1d8cc7ba08d94f9543a8960"
+    },
+    {
+      "name": "capture.cjs",
+      "bytes": 3872,
+      "sha256": "dd66b3cd06bed056bc5d77359e32c1fe402fe6f174116b403ea7457a89e609b0"
+    }
+  ]
+}

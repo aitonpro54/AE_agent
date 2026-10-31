@@ -1,0 +1,31 @@
+{
+  "collectedAt": "2026-10-31T18:25:01.011Z",
+  "purpose": "Ранние адресные прогоны; current coverage подтверждает только final02",
+  "files": [
+    {
+      "name": "bootstrap-initial.raw.log",
+      "bytes": 564,
+      "sha256": "53fe5bd757c360c6e3b4ab94fb95b9cef196d0965ccde13bf7c7cb0a228ff60d"
+    },
+    {
+      "name": "refusal-initial.raw.log",
+      "bytes": 1260,
+      "sha256": "a2888ce1b0bad0fcab206c6707915e0f84af808b7a073c54777a8e3ad3e748d9"
+    },
+    {
+      "name": "dispatch-initial.raw.log",
+      "bytes": 951,
+      "sha256": "974886bc6b488abbd194f0f850db87df9f493d69d32a67f7f5df93951d99fa60"
+    },
+    {
+      "name": "initial-delta-selection.json",
+      "bytes": 57868,
+      "sha256": "dd549ba3469e21bf398c5aa43c13d15b27fe406a584dc1c4b65739b9e6f509a7"
+    },
+    {
+      "name": "dependency-patch.json",
+      "bytes": 6538,
+      "sha256": "363ada1b06d3520023030fc066303373b4ca79ed044c7f9305b3f517df995340"
+    }
+  ]
+}

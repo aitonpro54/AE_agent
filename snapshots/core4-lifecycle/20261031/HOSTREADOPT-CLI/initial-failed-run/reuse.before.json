@@ -1,0 +1,204 @@
+[
+  {
+    "check": "validation-routing",
+    "evidenceKey": "fa1a0b3db3b944d1be87308e371e7789bf1b22b0a276bc0c4f768b2da4c93bbd",
+    "baselineEvidenceKey": "d1254aa9141ace40d756e1f581a0416249445208f796b31fc9031f65a8559c5a",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "config/validation-map.json",
+      "tools/check-boundaries.js",
+      "tools/operate-stopped-readoption.js",
+      "tools/package-standalone-installer.js",
+      "tools/standalone-installer.js"
+    ],
+    "acceptedTests": null
+  },
+  {
+    "check": "readoption-core",
+    "evidenceKey": "238b31135cc1ef7d59d8a9a89624e46060861292ffd999c17c3472830b0bf85f",
+    "baselineEvidenceKey": "238b31135cc1ef7d59d8a9a89624e46060861292ffd999c17c3472830b0bf85f",
+    "eligibleForReuse": true,
+    "changedDependencies": [],
+    "acceptedTests": 13
+  },
+  {
+    "check": "readoption-recovery",
+    "evidenceKey": "65daed3f89b9fcbd247b89f94d5fde05a91abaf1abca8251ddef5c249fabddaa",
+    "baselineEvidenceKey": "65daed3f89b9fcbd247b89f94d5fde05a91abaf1abca8251ddef5c249fabddaa",
+    "eligibleForReuse": true,
+    "changedDependencies": [],
+    "acceptedTests": 34
+  },
+  {
+    "check": "readoption-enable",
+    "evidenceKey": "d89109d0b6b1da297da4185d2c7cf3a3473c500a81855371a57be65dbb33d903",
+    "baselineEvidenceKey": "d89109d0b6b1da297da4185d2c7cf3a3473c500a81855371a57be65dbb33d903",
+    "eligibleForReuse": true,
+    "changedDependencies": [],
+    "acceptedTests": 22
+  },
+  {
+    "check": "readoption-probe",
+    "evidenceKey": "566200b10c05563c049d36c5edbd0ca3ebf719e3fc042edcaf190e1ce2ef80b7",
+    "baselineEvidenceKey": "566200b10c05563c049d36c5edbd0ca3ebf719e3fc042edcaf190e1ce2ef80b7",
+    "eligibleForReuse": true,
+    "changedDependencies": [],
+    "acceptedTests": 1
+  },
+  {
+    "check": "stopped-host-readoption",
+    "evidenceKey": "4a2ed7b18e882a884c30ee2c15223ac0f392afce6817c1877b82a34dbc7424e9",
+    "baselineEvidenceKey": "4a2ed7b18e882a884c30ee2c15223ac0f392afce6817c1877b82a34dbc7424e9",
+    "eligibleForReuse": true,
+    "changedDependencies": [],
+    "acceptedTests": 25
+  },
+  {
+    "check": "stopped-certification",
+    "evidenceKey": "70d0eccc6307f134926486b4590fb7b8ff80acfee80dca4f25b4156120cefd87",
+    "baselineEvidenceKey": "70d0eccc6307f134926486b4590fb7b8ff80acfee80dca4f25b4156120cefd87",
+    "eligibleForReuse": true,
+    "changedDependencies": [],
+    "acceptedTests": 30
+  },
+  {
+    "check": "stopped-update",
+    "evidenceKey": "b6b5fcd1db5ed8f7c961ee838339a780c9e6b3dea5945b29ebe64c0d1504cb27",
+    "baselineEvidenceKey": "b6b5fcd1db5ed8f7c961ee838339a780c9e6b3dea5945b29ebe64c0d1504cb27",
+    "eligibleForReuse": true,
+    "changedDependencies": [],
+    "acceptedTests": 55
+  },
+  {
+    "check": "maintenance-finish-operator",
+    "evidenceKey": "15c329fa4de8628de14597af61783b05806492d6274ac2706519624e939f1e54",
+    "baselineEvidenceKey": "cd9c1fde7df246f9888665244ed117c7d10d8fbce03fd8b42936542052f0dca3",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "config/validation-map.json",
+      "tools/check-boundaries.js",
+      "tools/operate-stopped-readoption.js",
+      "tools/package-standalone-installer.js",
+      "tools/standalone-installer.js"
+    ],
+    "acceptedTests": null
+  },
+  {
+    "check": "standalone-installer",
+    "evidenceKey": "0de6f6bf61bbb0a898676bd24af69c59065db7a6b1c7699771235628244d1410",
+    "baselineEvidenceKey": "1788d883c4fb9d8af106c000c761a6c52723357173b737b4f24edfc52b1df15b",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "tools/operate-stopped-readoption.js",
+      "tools/package-standalone-installer.js",
+      "tools/standalone-installer.js"
+    ],
+    "acceptedTests": null
+  },
+  {
+    "check": "stopped-host-readoption-operator",
+    "evidenceKey": "872c816eac1c690958dded1e8a43dad0675bda7b28425c594f5301d57f1bed53",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "config/validation-map.json",
+      "test/stopped-host-readoption-operator.test.js",
+      "tools/check-boundaries.js",
+      "tools/operate-stopped-readoption.js",
+      "tools/package-standalone-installer.js",
+      "tools/standalone-installer.js"
+    ],
+    "acceptedTests": null
+  },
+  {
+    "check": "stopped-update-operator",
+    "evidenceKey": "9c9d3c74d7d7de17703c85ee7932e2c96987060fdcb0c15cc81cab8ef7886512",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "test/stopped-update-operator.test.js",
+      "tools/check-boundaries.js",
+      "tools/operate-stopped-readoption.js",
+      "tools/package-standalone-installer.js",
+      "tools/standalone-installer.js"
+    ],
+    "acceptedTests": null
+  },
+  {
+    "check": "owner-installation",
+    "evidenceKey": "ef9a6f87848b7e326850db3ef460412fb2dd9e2e680fc66de8f6e4f238c0af46",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "config/validation-map.json",
+      "test/owner-installation.test.js",
+      "tools/operate-stopped-readoption.js",
+      "tools/package-standalone-installer.js",
+      "tools/standalone-installer.js"
+    ],
+    "acceptedTests": null
+  },
+  {
+    "check": "artifact-boundaries",
+    "evidenceKey": "90a4a40fc41a96cd90b11a5653d0b35da90c12eb3ae28f45a29bc9ea745dd52c",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "package.json",
+      "tools/check-boundaries.js",
+      "tools/operate-stopped-readoption.js",
+      "tools/package-standalone-installer.js",
+      "tools/standalone-installer.js"
+    ],
+    "acceptedTests": null
+  },
+  {
+    "check": "installed-composition",
+    "evidenceKey": "baa938aec78631052f9346ff5093ec6c0a5dbe340b839be93ad601c107f466d4",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "test/fixtures/disposition-child.js",
+      "test/fixtures/installed-composition-child.js",
+      "test/fixtures/installed-composition-transition.js",
+      "test/fixtures/manual-capture-driver-source.txt",
+      "test/fixtures/native-read-recovery.js",
+      "test/installed-composition.test.js",
+      "tools/check-boundaries.js"
+    ],
+    "acceptedTests": null
+  },
+  {
+    "check": "client-entry",
+    "evidenceKey": "abfba0c71450764c851dd4308c35db82dd1e2451698a688099f0dd89d41fe344",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "test/client-entry.test.js",
+      "tools/check-boundaries.js"
+    ],
+    "acceptedTests": null
+  },
+  {
+    "check": "owner-runtime",
+    "evidenceKey": "cb0ce73b2dbb91721d0e74319bd0480025dbf2ab4f7aeb12f46d46f67c778117",
+    "eligibleForReuse": false,
+    "changedDependencies": [
+      "config/validation-map.json",
+      "test/fixtures/owner-runtime-child.js",
+      "test/owner-runtime.test.js",
+      "tools/check-boundaries.js"
+    ],
+    "acceptedTests": null
+  },
+  {
+    "check": "maintenance-finish",
+    "evidenceKey": "f142a757d47fbb0d1817c09648b94ba9dc6668f9c332d12db85aaa2076d4f1f1",
+    "baselineEvidenceKey": "f142a757d47fbb0d1817c09648b94ba9dc6668f9c332d12db85aaa2076d4f1f1",
+    "eligibleForReuse": true,
+    "changedDependencies": [],
+    "acceptedTests": 32
+  },
+  {
+    "check": "owner-maintenance",
+    "evidenceKey": "e1d3d5ea614476adb69b9986b32ccdbb619b716651a4554caa9ac590943f62b9",
+    "baselineEvidenceKey": "e1d3d5ea614476adb69b9986b32ccdbb619b716651a4554caa9ac590943f62b9",
+    "eligibleForReuse": true,
+    "changedDependencies": [],
+    "acceptedTests": 22
+  }
+]

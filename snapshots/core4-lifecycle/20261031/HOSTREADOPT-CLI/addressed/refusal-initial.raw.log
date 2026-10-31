@@ -1,0 +1,16 @@
+✔ stopped-host-readoption-operator readonly/stdio support and wrong distribution/current pin refuse before operator or native module import (857.9529ms)
+✔ stopped-host-readoption-operator unknown flags duplicates invalid hashes UUID paths and cross-mode witness flags are zero-write early refusals (2241.1846ms)
+✔ stopped-host-readoption-operator tampered distributed stopped-host-readoption.js refuses before operator import (275.7258ms)
+✔ stopped-host-readoption-operator tampered distributed stopped-host-readoption-store.js refuses before operator import (276.2841ms)
+✔ stopped-host-readoption-operator tampered distributed stopped-host-readoption-transaction.js refuses before operator import (256.2352ms)
+✔ stopped-host-readoption-operator tampered distributed operate-stopped-readoption.js refuses before operator import (267.7976ms)
+✔ stopped-host-readoption-operator a validly hashed extra closure file is refused before operator import (283.0121ms)
+✔ stopped-host-readoption-operator valid hashed poisoned installed owner source is only data; failures never output descriptor or credentials (1974.2701ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6504.917

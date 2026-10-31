@@ -416,6 +416,8 @@ COMPLETE plan-review packet получен/revise и разобран локал
 принят212PASS/9checks composed coverage и independent ACCEPT. Private transaction
 core2–4 принят253PASS/12current checks (7fresh+5exactreuse); terminal race после
 last gate release исправлен, independent source/test ACCEPT. Runtime packagecc2f/
-70files прежний, actual stop/adoption0. Следующий source block — CLI slice5 и
-verified helper distribution; после него fresh actual preflight/new stop. Evidence
-и решения — в re-adoption плане/HOSTREADOPT-S234/final02. Full release не запускался.
+70files прежний, actual stop/adoption0. CLI slice5 принят338unique PASS/19checks:
+104fresh unique+234exactreuse, shared routing/artifact case counted once.
+Следующий шаг — official immutable helper outputc787e013… и fresh actual
+preflight/new stop. Evidence — re-adoption план/HOSTREADOPT-S234/final02 и
+HOSTREADOPT-CLI/final02. Full release не запускался.

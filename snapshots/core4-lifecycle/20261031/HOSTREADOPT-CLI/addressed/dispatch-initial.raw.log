@@ -1,0 +1,14 @@
+✔ stopped-host-readoption-operator apply witness hash refuses before election/library import and preserves installed data (1590.7131ms)
+✔ stopped-host-readoption-operator apply witness budget refuses before election/library import and preserves installed data (1505.3357ms)
+✔ stopped-host-readoption-operator apply witness UTF8 refuses before election/library import and preserves installed data (1527.6171ms)
+✔ stopped-host-readoption-operator pinned witness read detects in-place byte drift before any election (1453.7803ms)
+✔ stopped-host-readoption-operator all five modes dispatch exact frozen options and an owned witness snapshot while election stays held (4729.27ms)
+✔ stopped-host-readoption-operator continuous reservation closes pending HTTP and rebinds after awaited success or refusal (2423.6267ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13295.55

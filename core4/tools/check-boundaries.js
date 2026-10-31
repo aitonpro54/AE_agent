@@ -58,8 +58,8 @@ function checkFinishOperatorSource(source) {
 }
 function checkStandaloneSource(source) {
   const barrier = source.indexOf("const checked = verifyStandalone(path.resolve(__dirname, '..'), options['--expected-distribution-hash']);");
-  if (barrier < 0 || !source.includes('const maintenanceBootstraps = new WeakMap();') || !source.includes('maintenanceBootstraps.set(capability, Object.freeze(')) fail('standalone_verification_layout');
-  for (const match of source.matchAll(/require\s*\(\s*(['"])([^'"]+)\1\s*\)/g)) if (!match[2].startsWith('node:') && (match.index < barrier || !['./finish-owner-maintenance.js', './install-core4.js', './operate-stopped-update.js'].includes(match[2]))) fail('unverified_standalone_import');
+  if (barrier < 0 || !source.includes('const maintenanceBootstraps = new WeakMap();') || !source.includes('maintenanceBootstraps.set(capability, Object.freeze(') || !source.includes('const readoptionBootstraps = new WeakMap();') || !source.includes('readoptionBootstraps.set(capability, Object.freeze(')) fail('standalone_verification_layout');
+  for (const match of source.matchAll(/require\s*\(\s*(['"])([^'"]+)\1\s*\)/g)) if (!match[2].startsWith('node:') && (match.index < barrier || !['./finish-owner-maintenance.js', './install-core4.js', './operate-stopped-update.js', './operate-stopped-readoption.js'].includes(match[2]))) fail('unverified_standalone_import');
   if (/require\s*\(\s*[^'"\s]/.test(source)) fail('unverified_standalone_import'); return true;
 }
 function checkUpdateOperatorSource(source) {
@@ -68,6 +68,13 @@ function checkUpdateOperatorSource(source) {
   const allowed = ['./standalone-installer', '../protocol/json', './stopped-update', './legacy-owner-migration', '../runtime/stdio-entry', './install-core4', '../runtime/stopped-certification', '../runtime/install-lease'];
   for (const match of source.matchAll(/require\s*\(\s*(['"])([^'"]+)\1\s*\)/g)) if (!match[2].startsWith('node:') && (match.index < barrier || !allowed.includes(match[2]))) fail('unverified_update_import');
   if (/require\s*\(\s*[^'"\s]/.test(source)) fail('unverified_update_import'); return true;
+}
+function checkReadoptionOperatorSource(source) {
+  const marker = "const options = require('./standalone-installer').assertReadoptionBootstrap(capability);", barrier = source.indexOf(marker);
+  if (barrier < 0 || source.lastIndexOf(marker) !== barrier) fail('readoption_operator_verification_layout');
+  const allowed = ['./standalone-installer', './maintain-owner', '../protocol/json', '../runtime/stdio-entry', './stopped-host-readoption'];
+  for (const match of source.matchAll(/require\s*\(\s*(['"])([^'"]+)\1\s*\)/g)) if (!match[2].startsWith('node:') && (match.index < barrier || !allowed.includes(match[2]))) fail('unverified_readoption_import');
+  if (/require\s*\(\s*[^'"\s]/.test(source)) fail('unverified_readoption_import'); return true;
 }
 function checkBoundaries(root = path.resolve(__dirname, '..')) {
   let checked = 0;
@@ -100,8 +107,8 @@ function checkBoundaries(root = path.resolve(__dirname, '..')) {
   }
   const maintenance = path.join(root, 'tools/maintain-owner.js');
   if (fs.existsSync(maintenance)) { checkMaintenanceOperatorSource(fs.readFileSync(maintenance, 'utf8')); checked++; }
-  for (const [file, check] of [['finish-owner-maintenance.js', checkFinishOperatorSource], ['standalone-installer.js', checkStandaloneSource], ['operate-stopped-update.js', checkUpdateOperatorSource]]) { check(fs.readFileSync(path.join(root, 'tools', file), 'utf8')); checked++; }
+  for (const [file, check] of [['finish-owner-maintenance.js', checkFinishOperatorSource], ['standalone-installer.js', checkStandaloneSource], ['operate-stopped-update.js', checkUpdateOperatorSource], ['operate-stopped-readoption.js', checkReadoptionOperatorSource]]) { check(fs.readFileSync(path.join(root, 'tools', file), 'utf8')); checked++; }
   return { checked, model: 'reviewed-local-code; conservative source guard; not OS sandbox', liveCalls: 0 };
 }
 if (require.main === module) { try { console.log(JSON.stringify(checkBoundaries())); } catch (e) { console.error(e.code || e.message); process.exitCode = 1; } }
-module.exports = { checkBoundaries, checkEntrySource, checkClientEntrySource, checkOwnerEntrySource, checkMaintenanceOperatorSource, checkFinishOperatorSource, checkStandaloneSource, checkUpdateOperatorSource, files };
+module.exports = { checkBoundaries, checkEntrySource, checkClientEntrySource, checkOwnerEntrySource, checkMaintenanceOperatorSource, checkFinishOperatorSource, checkStandaloneSource, checkUpdateOperatorSource, checkReadoptionOperatorSource, files };

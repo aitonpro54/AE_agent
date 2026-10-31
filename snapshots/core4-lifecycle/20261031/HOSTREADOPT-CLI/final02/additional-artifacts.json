@@ -1,0 +1,22 @@
+{
+  "collectedAt": "2026-10-31T18:40:00.335Z",
+  "purpose": "Дополнительные prechecks и сравнение после HELPERS ordering correction",
+  "files": [
+    {
+      "name": "prechecks.raw.log",
+      "bytes": 237,
+      "sha256": "50d21f3d53b072fcd652050c12ab62401fb9e223a7789d436f39eea9cf545b41"
+    },
+    {
+      "name": "whitespace.json",
+      "bytes": 70,
+      "sha256": "78a6a0ae95ba0cca4165db62aecce9c0c4ffc967a21e24e43400c9004cbef5fe"
+    },
+    {
+      "name": "initial-key-comparison.json",
+      "bytes": 6126,
+      "sha256": "fb0f9e978c5cb7631fd84b18bfdd072a489be15a10f8ef984e58df73ad18070e"
+    }
+  ],
+  "testsRepeatedByParent": false
+}

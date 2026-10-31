@@ -45,9 +45,11 @@ Read-only observation не выдаёт mutation grant; historical adoption6492 
 
 Private source core2–4 re-adoption принят253PASS/12checks с exact reused closures
 и независимым review. Это helper-only source milestone: installed packagecc2f и
-старая distribution6ae8960f пока не менялись; actual adoption0. Следующий шаг —
-CLI/distribution wiring по re-adoption плану, затем fresh current host/project
-preflight и НОВЫЙ stop UUID. Исторические settled операции не возобновлять.
+старая distribution6ae8960f пока не менялись; actual adoption0.
+CLI wiring также принято338unique PASS/19checks, candidate helper distribution
+c787e013…/87files пока только pure build. Следующий шаг — official immutable
+output, fresh current host/project preflight и НОВЫЙ stop UUID. Исторические
+settled операции не возобновлять.
 
 Evidence: `snapshots/core4-lifecycle/20261031/R5CONFIGURED/`:
 `idle-baseline.json`, `installed-readback.json`, read-only verifier

@@ -1,0 +1,149 @@
+[
+  {
+    "check": "validation-routing",
+    "initialEvidenceKey": "fa1a0b3db3b944d1be87308e371e7789bf1b22b0a276bc0c4f768b2da4c93bbd",
+    "currentEvidenceKey": "9fe2aed873878a138643cffa0b7dcfbf4306d27c1a9c2e13effe49d3d5c98a62",
+    "sameDefinitionAndEffectiveKey": false,
+    "changedDependencies": [
+      "tools/standalone-installer.js"
+    ]
+  },
+  {
+    "check": "readoption-core",
+    "initialEvidenceKey": "238b31135cc1ef7d59d8a9a89624e46060861292ffd999c17c3472830b0bf85f",
+    "currentEvidenceKey": "238b31135cc1ef7d59d8a9a89624e46060861292ffd999c17c3472830b0bf85f",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "readoption-recovery",
+    "initialEvidenceKey": "65daed3f89b9fcbd247b89f94d5fde05a91abaf1abca8251ddef5c249fabddaa",
+    "currentEvidenceKey": "65daed3f89b9fcbd247b89f94d5fde05a91abaf1abca8251ddef5c249fabddaa",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "readoption-enable",
+    "initialEvidenceKey": "d89109d0b6b1da297da4185d2c7cf3a3473c500a81855371a57be65dbb33d903",
+    "currentEvidenceKey": "d89109d0b6b1da297da4185d2c7cf3a3473c500a81855371a57be65dbb33d903",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "readoption-probe",
+    "initialEvidenceKey": "566200b10c05563c049d36c5edbd0ca3ebf719e3fc042edcaf190e1ce2ef80b7",
+    "currentEvidenceKey": "566200b10c05563c049d36c5edbd0ca3ebf719e3fc042edcaf190e1ce2ef80b7",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "stopped-host-readoption",
+    "initialEvidenceKey": "4a2ed7b18e882a884c30ee2c15223ac0f392afce6817c1877b82a34dbc7424e9",
+    "currentEvidenceKey": "4a2ed7b18e882a884c30ee2c15223ac0f392afce6817c1877b82a34dbc7424e9",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "stopped-certification",
+    "initialEvidenceKey": "70d0eccc6307f134926486b4590fb7b8ff80acfee80dca4f25b4156120cefd87",
+    "currentEvidenceKey": "70d0eccc6307f134926486b4590fb7b8ff80acfee80dca4f25b4156120cefd87",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "stopped-update",
+    "initialEvidenceKey": "b6b5fcd1db5ed8f7c961ee838339a780c9e6b3dea5945b29ebe64c0d1504cb27",
+    "currentEvidenceKey": "b6b5fcd1db5ed8f7c961ee838339a780c9e6b3dea5945b29ebe64c0d1504cb27",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "maintenance-finish-operator",
+    "initialEvidenceKey": "15c329fa4de8628de14597af61783b05806492d6274ac2706519624e939f1e54",
+    "currentEvidenceKey": "a9889847e9b316166fb9f7fed3bb1de578cc3e6dbaa4eefe34cd68b7405c4687",
+    "sameDefinitionAndEffectiveKey": false,
+    "changedDependencies": [
+      "tools/standalone-installer.js"
+    ]
+  },
+  {
+    "check": "standalone-installer",
+    "initialEvidenceKey": "0de6f6bf61bbb0a898676bd24af69c59065db7a6b1c7699771235628244d1410",
+    "currentEvidenceKey": "df739ab1e44420f7cdcff78074cf5b561b36679737c2b2dffa940052cc83381d",
+    "sameDefinitionAndEffectiveKey": false,
+    "changedDependencies": [
+      "tools/standalone-installer.js"
+    ]
+  },
+  {
+    "check": "stopped-host-readoption-operator",
+    "initialEvidenceKey": "872c816eac1c690958dded1e8a43dad0675bda7b28425c594f5301d57f1bed53",
+    "currentEvidenceKey": "f09687ebc920ab034d73e4474e5d79e0135dbf195c106d9bb6acaf8b67b2e358",
+    "sameDefinitionAndEffectiveKey": false,
+    "changedDependencies": [
+      "tools/standalone-installer.js"
+    ]
+  },
+  {
+    "check": "stopped-update-operator",
+    "initialEvidenceKey": "9c9d3c74d7d7de17703c85ee7932e2c96987060fdcb0c15cc81cab8ef7886512",
+    "currentEvidenceKey": "15c3363dab8f58899aeb426a671fcc7ad097e49b9e27b395130f9c12f279cdaa",
+    "sameDefinitionAndEffectiveKey": false,
+    "changedDependencies": [
+      "tools/standalone-installer.js"
+    ]
+  },
+  {
+    "check": "owner-installation",
+    "initialEvidenceKey": "ef9a6f87848b7e326850db3ef460412fb2dd9e2e680fc66de8f6e4f238c0af46",
+    "currentEvidenceKey": "3dd3de1e1462aa542fa7496e2af2ae5cb8164a66a19959a11f2a0f03f6dffd42",
+    "sameDefinitionAndEffectiveKey": false,
+    "changedDependencies": [
+      "tools/standalone-installer.js"
+    ]
+  },
+  {
+    "check": "artifact-boundaries",
+    "initialEvidenceKey": "90a4a40fc41a96cd90b11a5653d0b35da90c12eb3ae28f45a29bc9ea745dd52c",
+    "currentEvidenceKey": "2265013ab2dd510bb68369f09c17f065201d3075eac45e42727b1349286cc27b",
+    "sameDefinitionAndEffectiveKey": false,
+    "changedDependencies": [
+      "tools/standalone-installer.js"
+    ]
+  },
+  {
+    "check": "installed-composition",
+    "initialEvidenceKey": "baa938aec78631052f9346ff5093ec6c0a5dbe340b839be93ad601c107f466d4",
+    "currentEvidenceKey": "baa938aec78631052f9346ff5093ec6c0a5dbe340b839be93ad601c107f466d4",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "client-entry",
+    "initialEvidenceKey": "abfba0c71450764c851dd4308c35db82dd1e2451698a688099f0dd89d41fe344",
+    "currentEvidenceKey": "abfba0c71450764c851dd4308c35db82dd1e2451698a688099f0dd89d41fe344",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "owner-runtime",
+    "initialEvidenceKey": "cb0ce73b2dbb91721d0e74319bd0480025dbf2ab4f7aeb12f46d46f67c778117",
+    "currentEvidenceKey": "cb0ce73b2dbb91721d0e74319bd0480025dbf2ab4f7aeb12f46d46f67c778117",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "maintenance-finish",
+    "initialEvidenceKey": "f142a757d47fbb0d1817c09648b94ba9dc6668f9c332d12db85aaa2076d4f1f1",
+    "currentEvidenceKey": "f142a757d47fbb0d1817c09648b94ba9dc6668f9c332d12db85aaa2076d4f1f1",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  },
+  {
+    "check": "owner-maintenance",
+    "initialEvidenceKey": "e1d3d5ea614476adb69b9986b32ccdbb619b716651a4554caa9ac590943f62b9",
+    "currentEvidenceKey": "e1d3d5ea614476adb69b9986b32ccdbb619b716651a4554caa9ac590943f62b9",
+    "sameDefinitionAndEffectiveKey": true,
+    "changedDependencies": []
+  }
+]

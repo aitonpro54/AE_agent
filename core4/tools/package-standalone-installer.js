@@ -36,6 +36,18 @@ owner-pre-ready-inspect / owner-pre-ready-finish используют исход
 transaction UUID до switch-ready; finish требует --expected-proof-hash. Допускаются
 только исходные sealed role gates: отсутствуют оба, install-only, либо оба.
 Живые actors, изменённые inode/bytes, неизвестные records/stages запрещены.
+Metadata-only fresh host re-adoption требует manual/owner distribution с тем же
+package hash. Modes: readopt-inspect / readopt-apply / readopt-finish /
+readopt-enable / readopt-enable-finish. Общие обязательные flags:
+--expected-distribution-hash DIST --expected-current-package-hash CURRENT
+--installation ABS_DESCRIPTOR --operation ORIGINAL_STOP_UUID.
+Все actions кроме readopt-inspect требуют --expected-proof-hash FRESH_PROOF.
+Только readopt-apply требует --witness ABS_UTF8_JSON --expected-witness-hash SHA256;
+witness snapshot ограничен16KiB. Finish/enable не принимают новый witness/target.
+Apply сохраняет stopped barrier; enable — отдельный filesystem commit без запуска
+Core. Historical enabled receipt не утверждает current runtime/history/barrier
+или отсутствие pending/UNKNOWN и не выдаёт AE authority. Неизвестный pre-CAS
+исход сохраняет stopped fence; повтор apply вместо inspect/finish запрещён.
 Продолжение использует исходный payload/credentials и сохраняет stop barrier;
 после switch-ready применяется отдельный update-inspect / update-finish.
 Успешное обновление сохраняет stopped barrier. Explicit enable не запускает Core;

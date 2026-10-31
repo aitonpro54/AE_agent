@@ -1,0 +1,1935 @@
+{
+  "owners": [
+    { "prefix": "core4/tools/operate-stopped-readoption.js", "owner": "stopped-host-readoption-operator", "checks": ["stopped-host-readoption-operator", "standalone-installer"] },
+    { "prefix": "core4/test/stopped-host-readoption-operator.test.js", "owner": "stopped-host-readoption-operator", "checks": ["stopped-host-readoption-operator"] },
+    { "prefix": "core4/tools/stopped-host-readoption.js", "owner": "stopped-host-readoption", "checks": ["stopped-host-readoption", "readoption-core", "readoption-recovery", "readoption-enable", "readoption-probe"] },
+    { "prefix": "core4/tools/stopped-host-readoption-store.js", "owner": "stopped-host-readoption", "checks": ["stopped-host-readoption", "readoption-core", "readoption-recovery", "readoption-enable", "readoption-probe"] },
+    { "prefix": "core4/tools/stopped-host-readoption-transaction.js", "owner": "stopped-host-readoption", "checks": ["stopped-host-readoption", "readoption-core", "readoption-recovery", "readoption-enable", "readoption-probe"] },
+    { "prefix": "core4/test/stopped-host-readoption.test.js", "owner": "stopped-host-readoption", "checks": ["stopped-host-readoption"] },
+    { "prefix": "core4/test/fixtures/stopped-host-readoption.js", "owner": "stopped-host-readoption", "checks": ["stopped-host-readoption", "readoption-core", "readoption-recovery", "readoption-enable", "readoption-probe"] },
+    { "prefix": "core4/test/stopped-host-readoption-core.test.js", "owner": "readoption-core", "checks": ["readoption-core"] },
+    { "prefix": "core4/test/stopped-host-readoption-recovery.test.js", "owner": "readoption-recovery", "checks": ["readoption-recovery"] },
+    { "prefix": "core4/test/stopped-host-readoption-enable.test.js", "owner": "readoption-enable", "checks": ["readoption-enable"] },
+    { "prefix": "core4/test/stopped-host-readoption-probe.test.js", "owner": "readoption-probe", "checks": ["readoption-probe"] },
+    { "prefix": "core4/tools/operate-stopped-update.js", "owner": "stopped-update-operator", "checks": ["stopped-update-operator", "standalone-installer"] },
+    { "prefix": "core4/test/stopped-update-operator.test.js", "owner": "stopped-update-operator", "checks": ["stopped-update-operator"] },
+    { "prefix": "core4/tools/stopped-update.js", "owner": "stopped-update", "checks": ["stopped-update", "legacy-owner-migration", "standalone-installer"] },
+    { "prefix": "core4/test/stopped-update.test.js", "owner": "stopped-update", "checks": ["stopped-update"] },
+    { "prefix": "core4/test/fixtures/owner-pre-ready-claim-child.js", "owner": "stopped-update", "checks": ["stopped-update"] },
+    { "prefix": "core4/tools/legacy-owner-migration.js", "owner": "legacy-owner-migration", "checks": ["legacy-owner-migration", "standalone-installer"] },
+    { "prefix": "core4/test/legacy-owner-migration.test.js", "owner": "legacy-owner-migration", "checks": ["legacy-owner-migration"] },
+    { "prefix": "core4/tools/windows-retained-process.js", "owner": "windows-retained-process", "checks": ["windows-retained-process"] },
+    { "prefix": "core4/test/windows-retained-process.test.js", "owner": "windows-retained-process", "checks": ["windows-retained-process"] },
+    { "prefix": "core4/runtime/stopped-certification.js", "owner": "stopped-certification", "checks": ["stopped-certification", "stopped-update", "maintenance-finish-operator", "standalone-installer"] },
+    { "prefix": "core4/test/stopped-certification.test.js", "owner": "stopped-certification", "checks": ["stopped-certification"] },
+    { "prefix": "core4/tools/finish-owner-maintenance.js", "owner": "maintenance-finish", "checks": ["maintenance-finish-operator", "standalone-installer"] },
+    { "prefix": "core4/test/maintenance-finish.test.js", "owner": "maintenance-finish", "checks": ["maintenance-finish"] },
+    { "prefix": "core4/test/maintenance-finish-operator.test.js", "owner": "maintenance-finish", "checks": ["maintenance-finish-operator"] },
+    { "prefix": "core4/test/fixtures/maintenance-finish.js", "owner": "maintenance-finish", "checks": ["maintenance-finish"] },
+    { "prefix": "core4/runtime/owner-maintenance.js", "owner": "owner-maintenance", "checks": ["owner-maintenance", "maintenance-finish", "maintenance-finish-operator", "owner-runtime", "maintenance-operator"] },
+    { "prefix": "core4/tools/maintain-owner.js", "owner": "maintenance-operator", "checks": ["maintenance-operator", "standalone-installer"] },
+    { "prefix": "core4/test/owner-maintenance.test.js", "owner": "owner-maintenance", "checks": ["owner-maintenance"] },
+    { "prefix": "core4/test/maintenance-operator.test.js", "owner": "maintenance-operator", "checks": ["maintenance-operator"] },
+    { "prefix": "core4/runtime/windows-owner-process.js", "owner": "windows-owner-process", "checks": ["windows-owner-process", "owner-runtime"] },
+    { "prefix": "core4/test/windows-owner-process.test.js", "owner": "windows-owner-process", "checks": ["windows-owner-process"] },
+    { "prefix": "core4/runtime/owner-lifecycle.js", "owner": "owner-lifecycle", "checks": ["owner-lifecycle", "owner-lifecycle-faults", "owner-runtime", "owner-installation", "owner-marker-publication"] },
+    { "prefix": "core4/test/owner-lifecycle.test.js", "owner": "owner-lifecycle", "checks": ["owner-lifecycle"] },
+    { "prefix": "core4/test/owner-lifecycle-faults.test.js", "owner": "owner-lifecycle-faults", "checks": ["owner-lifecycle-faults"] },
+    { "prefix": "core4/test/owner-marker-publication.test.js", "owner": "owner-marker-publication", "checks": ["owner-marker-publication"] },
+    { "prefix": "core4/test/fixtures/owner-lifecycle-fixture.js", "owner": "owner-lifecycle-fixture", "checks": ["owner-lifecycle", "owner-lifecycle-faults", "owner-marker-publication", "maintenance-finish"] },
+    { "prefix": "core4/test/client-launcher.test.js", "owner": "client-launcher", "checks": ["client-launcher"] },
+    { "prefix": "core4/runtime/recovery-inspection.js", "owner": "recovery-inspection", "checks": ["recovery-inspection"] },
+    { "prefix": "core4/test/recovery-inspection.test.js", "owner": "recovery-inspection", "checks": ["recovery-inspection"] },
+    { "prefix": "core4/runtime/client-entry.js", "owner": "client-entry", "checks": ["client-entry", "owner-runtime", "owner-installation"] },
+    { "prefix": "core4/runtime/owner-contract.json", "owner": "owner-installation", "checks": ["owner-installation", "owner-runtime"] },
+    { "prefix": "core4/test/owner-installation.test.js", "owner": "owner-installation", "checks": ["owner-installation"] },
+    { "prefix": "core4/test/client-entry.test.js", "owner": "client-entry", "checks": ["client-entry"] },
+    { "prefix": "core4/runtime/owner-entry.js", "owner": "owner-runtime", "checks": ["owner-runtime"] },
+    { "prefix": "core4/test/owner-runtime.test.js", "owner": "owner-runtime", "checks": ["owner-runtime"] },
+    { "prefix": "core4/test/fixtures/owner-runtime-child.js", "owner": "owner-runtime", "checks": ["owner-runtime"] },
+    { "prefix": "core4/runtime/client-ipc.js", "owner": "client-ipc", "checks": ["client-ipc", "owner-ipc-process"] },
+    { "prefix": "core4/test/client-ipc.test.js", "owner": "client-ipc", "checks": ["client-ipc"] },
+    { "prefix": "core4/runtime/attachment-owner.js", "owner": "owner-attachments", "checks": ["owner-attachments", "owner-ipc-process", "controller-transfer"] },
+    { "prefix": "core4/runtime/client-stdio.js", "owner": "owner-attachments", "checks": ["owner-attachments", "owner-ipc-process"] },
+    { "prefix": "core4/test/owner-attachments.test.js", "owner": "owner-attachments", "checks": ["owner-attachments"] },
+    { "prefix": "core4/test/owner-ipc-process.test.js", "owner": "owner-ipc-process", "checks": ["owner-ipc-process"] },
+    { "prefix": "core4/test/controller-transfer-ipc.test.js", "owner": "controller-transfer", "checks": ["controller-transfer"] },
+    { "prefix": "core4/test/fixtures/attachment-process.js", "owner": "owner-ipc-process", "checks": ["owner-ipc-process"] },
+    {
+      "prefix": "core4/runtime/controller-lease.js",
+      "owner": "controller-lease",
+      "checks": ["controller-lease"]
+    },
+    {
+      "prefix": "core4/test/controller-lease.test.js",
+      "owner": "controller-lease",
+      "checks": ["controller-lease"]
+    },
+    {
+      "prefix": "core4/tools/package-standalone-installer.js",
+      "owner": "standalone-installer",
+      "checks": [
+        "stopped-host-readoption-operator",
+        "stopped-update-operator",
+        "maintenance-finish-operator",
+        "standalone-installer",
+        "owner-installation"
+      ]
+    },
+    {
+      "prefix": "core4/tools/standalone-installer.js",
+      "owner": "standalone-installer",
+      "checks": [
+        "stopped-host-readoption-operator",
+        "stopped-update-operator",
+        "maintenance-finish-operator",
+        "standalone-installer"
+      ]
+    },
+    {
+      "prefix": "core4/test/standalone-installer.test.js",
+      "owner": "standalone-installer",
+      "checks": [
+        "standalone-installer"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/standalone-history.js",
+      "owner": "standalone-installer",
+      "checks": [
+        "standalone-installer"
+      ]
+    },
+    {
+      "prefix": "core4/test/exact-f548-transition.test.js",
+      "owner": "exact-historical-code-fixture",
+      "checks": [
+        "exact-f548-transition"
+      ]
+    },
+    {
+      "prefix": "core4/tools/check-boundaries.js",
+      "owner": "runtime-boundaries",
+      "checks": [
+        "stopped-host-readoption-operator",
+        "maintenance-finish-operator",
+        "artifact-boundaries",
+        "installed-composition",
+        "client-entry",
+        "owner-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/fixed-format1-package.js",
+      "owner": "installed-composition",
+      "checks": [
+        "installed-composition"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/exact-f548-transition.js",
+      "owner": "installed-composition",
+      "checks": [
+        "exact-f548-transition"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/installed-composition-transition.js",
+      "owner": "installed-composition",
+      "checks": [
+        "installed-composition"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/installed-composition-child.js",
+      "owner": "installed-composition",
+      "checks": [
+        "installed-composition"
+      ]
+    },
+    {
+      "prefix": "core4/test/installed-composition.test.js",
+      "owner": "installed-composition",
+      "checks": [
+        "installed-composition"
+      ]
+    },
+    {
+      "prefix": "core4/cep/js/panel.js",
+      "owner": "panel-reconnect",
+      "checks": [
+        "panel-reconnect"
+      ]
+    },
+    {
+      "prefix": "core4/test/panel-reconnect.test.js",
+      "owner": "panel-reconnect",
+      "checks": [
+        "panel-reconnect"
+      ]
+    },
+    {
+      "prefix": "core4/tools/check-core4-endpoint.js",
+      "owner": "endpoint-observation",
+      "checks": [
+        "endpoint-observation"
+      ]
+    },
+    {
+      "prefix": "core4/test/endpoint-observation.test.js",
+      "owner": "endpoint-observation",
+      "checks": [
+        "endpoint-observation"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/endpoint-observation-preload.js",
+      "owner": "endpoint-observation",
+      "checks": [
+        "endpoint-observation"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/stdio-main-ephemeral.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/completion-store.js",
+      "owner": "recovery-integration",
+      "checks": [
+        "native-read-recovery",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/source-package.json",
+      "owner": "recovery-integration",
+      "checks": [
+        "native-read-recovery",
+        "installable-runtime",
+        "installed-composition",
+        "manual-runtime",
+        "owner-installation"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/installation.js",
+      "owner": "recovery-integration",
+      "checks": [
+        "native-read-recovery",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/stdio-entry.js",
+      "owner": "recovery-integration",
+      "checks": [
+        "owner-runtime",
+        "native-read-recovery",
+        "installable-runtime",
+        "installed-composition",
+        "manual-runtime",
+        "owner-installation"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/install-lease.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "stopped-update",
+        "legacy-owner-migration",
+        "maintenance-finish",
+        "owner-maintenance",
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/installation-lineage.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/native-read-disposition.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/receiver-contract.json",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/tools/dispose-native-read.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/tools/disposition-install-preflight.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery",
+        "standalone-installer"
+      ]
+    },
+    {
+      "prefix": "core4/tools/package-native-read-operator.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/native-read-recovery.test.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/native-read-recovery.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/disposition-child.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/legacy-completion-store.js",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/manual-capture-driver-source.txt",
+      "owner": "native-read-recovery",
+      "checks": [
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/legacy-installation-v1.js",
+      "owner": "legacy-installation-test-data",
+      "checks": [
+        "native-read-capture",
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/tools/capture-native-read.js",
+      "owner": "native-read-capture",
+      "checks": [
+        "native-read-capture"
+      ]
+    },
+    {
+      "prefix": "core4/test/native-read-capture.test.js",
+      "owner": "native-read-capture",
+      "checks": [
+        "native-read-capture"
+      ]
+    },
+    {
+      "prefix": "core4/test/windows-cim-probe.test.js",
+      "owner": "windows-cim-probe",
+      "checks": [
+        "windows-cim-probe"
+      ]
+    },
+    {
+      "prefix": "core4/tools/recover-zero-dispatch-owner.js",
+      "owner": "zero-dispatch-recovery",
+      "checks": [
+        "zero-dispatch-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/recover-zero-dispatch-owner.test.js",
+      "owner": "zero-dispatch-recovery",
+      "checks": [
+        "zero-dispatch-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/human-window.test.js",
+      "owner": "human-window",
+      "checks": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/human-window-stdio.js",
+      "owner": "human-window",
+      "checks": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/manual-http-runtime.js",
+      "owner": "human-window",
+      "checks": [
+        "human-window",
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles-current-target/",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/config/admissions/titles-current-target.json",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/manual-policy.js",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/windows-reservation-provider.js",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime",
+        "windows-cim-probe"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/windows-host-probe.ps1",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/tools/adopt-host.js",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/test/manual-runtime.test.js",
+      "owner": "manual-runtime",
+      "checks": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/runtime/",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/cep/",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/modules/project-inspection/",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/tools/package-installable.js",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime",
+        "installed-composition",
+        "manual-runtime",
+        "standalone-installer",
+        "owner-installation"
+      ]
+    },
+    {
+      "prefix": "core4/tools/install-core4.js",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime",
+        "native-read-recovery",
+        "installed-composition",
+        "manual-runtime",
+        "standalone-installer",
+        "owner-installation"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/http-peer.js",
+      "owner": "installable-runtime",
+      "checks": [
+        "owner-runtime",
+        "installable-runtime",
+        "native-read-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/peer-protocol.js",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/test/installable-runtime.test.js",
+      "owner": "installable-runtime",
+      "checks": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/experiments/manual-current-target/",
+      "owner": "manual-current-target-experiment",
+      "checks": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/manual-current-target.js",
+      "owner": "manual-current-target-experiment",
+      "checks": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/test/manual-current-target.test.js",
+      "owner": "manual-current-target-experiment",
+      "checks": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/test/audit-repairs.test.js",
+      "owner": "audit-repairs",
+      "checks": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/artifact-publish-crash.js",
+      "owner": "audit-repairs",
+      "checks": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/core/",
+      "owner": "core",
+      "checks": [
+        "core-control",
+        "core-admission"
+      ]
+    },
+    {
+      "prefix": "core4/worker.js",
+      "owner": "worker",
+      "checks": [
+        "worker-isolation"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/",
+      "owner": "protocol",
+      "checks": [
+        "protocol-codec"
+      ]
+    },
+    {
+      "prefix": "core4/plan-engine/",
+      "owner": "plan-engine",
+      "checks": [
+        "workflow-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/modules/photo-placeholder/",
+      "owner": "photo-placeholder",
+      "checks": [
+        "photo-owner",
+        "photo-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles/",
+      "owner": "titles",
+      "checks": [
+        "titles-owner",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/config/catalog.json",
+      "owner": "catalog",
+      "checks": [
+        "catalog-discovery"
+      ]
+    },
+    {
+      "prefix": "core4/config/admissions/photo-placeholder.json",
+      "owner": "photo-placeholder",
+      "checks": [
+        "photo-owner",
+        "photo-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/config/admissions/titles.json",
+      "owner": "titles",
+      "checks": [
+        "titles-owner",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/config/validation-map.json",
+      "owner": "validation",
+      "checks": [
+        "validation-routing"
+      ]
+    },
+    {
+      "prefix": "core4/tools/",
+      "owner": "validation",
+      "checks": [
+        "validation-routing",
+        "artifact-boundaries"
+      ]
+    },
+    {
+      "prefix": "core4/test/",
+      "owner": "validation",
+      "checks": [
+        "validation-routing"
+      ]
+    },
+    {
+      "prefix": "core4/README.md",
+      "owner": "documentation",
+      "checks": [
+        "documentation"
+      ]
+    },
+    {
+      "prefix": "core4/package.json",
+      "owner": "packaging",
+      "checks": [
+        "artifact-boundaries"
+      ]
+    },
+    {
+      "prefix": "core4/test/modules/titles.test.js",
+      "owner": "titles",
+      "checks": [
+        "titles-owner",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/test/modules/photo-placeholder.test.js",
+      "owner": "photo-placeholder",
+      "checks": [
+        "photo-owner",
+        "photo-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/",
+      "owner": "cep-bridge",
+      "checks": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/test/integration/cep-transport.test.js",
+      "owner": "cep-bridge",
+      "checks": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/cep-",
+      "owner": "cep-bridge",
+      "checks": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/test/lifecycle-simulation.test.js",
+      "owner": "lifecycle-contract",
+      "checks": [
+        "lifecycle-simulation"
+      ]
+    }
+  ],
+  "contracts": [
+    {
+      "prefix": "core4/runtime/stdio-entry.js",
+      "id": "private-production-human-window-v1",
+      "consumers": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/tools/install-core4.js",
+      "id": "private-production-human-window-config-v1",
+      "consumers": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/core/broker.js",
+      "id": "human-window-core-consumer-v1",
+      "consumers": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/core/authority.js",
+      "id": "human-window-core-consumer-v1",
+      "consumers": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/core/resources.js",
+      "id": "human-window-core-consumer-v1",
+      "consumers": [
+        "human-window"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles-current-target/contract.json",
+      "id": "manual-current-target-module-v1",
+      "consumers": [
+        "manual-runtime",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles-current-target/artifact.json",
+      "id": "manual-current-target-module-v1",
+      "consumers": [
+        "manual-runtime",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/config/admissions/titles-current-target.json",
+      "id": "manual-current-target-module-v1",
+      "consumers": [
+        "manual-runtime",
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/core/authority.js",
+      "id": "private-current-target-policy-v1",
+      "consumers": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/core/broker.js",
+      "id": "private-current-target-policy-v1",
+      "consumers": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/core/resources.js",
+      "id": "current-target-resource-v2",
+      "consumers": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/http-peer.js",
+      "id": "fixed-http-manual-asset-v1",
+      "consumers": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/cep/js/poll-dispatcher.js",
+      "id": "fixed-http-manual-asset-v1",
+      "consumers": [
+        "manual-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/core/stdio.js",
+      "id": "private-stdio-composition-v1",
+      "consumers": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/completion-store.js",
+      "id": "http-durable-receiver-store-v1",
+      "consumers": [
+        "installable-runtime"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles/executor.jsx",
+      "id": "manual-current-target-reviewed-dependency",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/config/admissions/titles.json",
+      "id": "manual-current-target-reviewed-dependency",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver-api.js",
+      "id": "manual-current-target-dispatch",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver.js",
+      "id": "manual-current-target-dispatch",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/",
+      "id": "manual-current-target-dispatch",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/host-dispatcher.js",
+      "id": "manual-current-target-dispatch",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/completion-store.js",
+      "id": "manual-current-target-dispatch",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/ae.js",
+      "id": "manual-current-target-synthetic-host",
+      "consumers": [
+        "manual-current-target"
+      ]
+    },
+    {
+      "prefix": "core4/core/broker.js",
+      "id": "audit-repair-control-boundary",
+      "consumers": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver.js",
+      "id": "audit-repair-read-boundary",
+      "consumers": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/core/resources.js",
+      "id": "audit-repair-resource-boundary",
+      "consumers": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/core/artifacts.js",
+      "id": "audit-repair-publication-boundary",
+      "consumers": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/integrations/cep/host-dispatcher.js",
+      "id": "audit-repair-read-boundary",
+      "consumers": [
+        "audit-repairs"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/target-contract.json",
+      "id": "exact-target-v1",
+      "consumers": [
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/codec.js",
+      "id": "closed-typed-envelope-v1",
+      "consumers": [
+        "core-admission",
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/json.js",
+      "id": "bounded-json-v1",
+      "consumers": [
+        "core-control",
+        "worker-isolation",
+        "workflow-recovery",
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/schema.js",
+      "id": "closed-schema-v1",
+      "consumers": [
+        "core-admission",
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/worker.js",
+      "id": "worker-ipc-v1",
+      "consumers": [
+        "core-control",
+        "workflow-recovery",
+        "photo-owner",
+        "titles-owner"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver.js",
+      "id": "receiver-v1",
+      "consumers": [
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/modules/titles/contract.json",
+      "id": "titles-public-contract",
+      "consumers": [
+        "workflow-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/modules/photo-placeholder/contract.json",
+      "id": "photo-placeholder-public-contract",
+      "consumers": [
+        "workflow-recovery"
+      ]
+    },
+    {
+      "prefix": "core4/test/module-harness.js",
+      "id": "module-fixture-driver",
+      "consumers": [
+        "titles-owner",
+        "titles-executor-contract",
+        "photo-owner",
+        "photo-executor-contract"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/ae.js",
+      "id": "synthetic-ae-environment",
+      "consumers": [
+        "titles-owner",
+        "titles-executor-contract",
+        "photo-owner",
+        "photo-executor-contract",
+        "workflow-recovery",
+        "lifecycle-simulation"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver-api.js",
+      "id": "closed-receiver-v2",
+      "consumers": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/core/receiver.js",
+      "id": "closed-receiver-v2",
+      "consumers": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/core/broker.js",
+      "id": "closed-receiver-v2",
+      "consumers": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/core/authority.js",
+      "id": "closed-receiver-v2",
+      "consumers": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/dispatch.js",
+      "id": "closed-receiver-v2",
+      "consumers": [
+        "cep-transport"
+      ]
+    },
+    {
+      "prefix": "core4/core/authority.js",
+      "id": "project-lifecycle-and-approval-v1",
+      "consumers": [
+        "lifecycle-simulation"
+      ]
+    },
+    {
+      "prefix": "core4/core/broker.js",
+      "id": "project-lifecycle-and-approval-v1",
+      "consumers": [
+        "lifecycle-simulation"
+      ]
+    },
+    {
+      "prefix": "core4/test/fixtures/authority.js",
+      "id": "synthetic-exact-approval",
+      "consumers": [
+        "lifecycle-simulation"
+      ]
+    },
+    {
+      "prefix": "core4/test/helpers.js",
+      "id": "lifecycle-fixture-driver",
+      "consumers": [
+        "lifecycle-simulation"
+      ]
+    }
+  ],
+  "checkDependencies": {
+    "stopped-host-readoption-operator": ["tools/", "runtime/", "core/", "protocol/", "config/", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "test/stopped-host-readoption-operator.test.js"],
+    "stopped-host-readoption": ["tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","runtime/stopped-certification.js","runtime/owner-maintenance.js","runtime/owner-lifecycle.js","runtime/install-lease.js","runtime/recovery-inspection.js","runtime/windows-owner-process.js","runtime/windows-reservation-provider.js","runtime/native-read-disposition.js","runtime/installation-lineage.js","runtime/installation.js","runtime/stdio-entry.js","protocol/","core/state-lock.js","core/receiver-api.js","core/receiver.js","core/authority.js","core/resources.js","integrations/cep/completion-store.js","test/fixtures/owner-lifecycle-fixture.js","test/fixtures/stopped-host-readoption.js","test/stopped-host-readoption.test.js"],
+    "readoption-core": ["tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","runtime/stopped-certification.js","runtime/owner-maintenance.js","runtime/owner-lifecycle.js","runtime/install-lease.js","runtime/recovery-inspection.js","runtime/windows-owner-process.js","runtime/windows-reservation-provider.js","runtime/native-read-disposition.js","runtime/installation-lineage.js","runtime/installation.js","runtime/stdio-entry.js","protocol/","core/state-lock.js","core/receiver-api.js","core/receiver.js","core/authority.js","core/resources.js","integrations/cep/completion-store.js","test/fixtures/owner-lifecycle-fixture.js","test/fixtures/stopped-host-readoption.js","test/stopped-host-readoption-core.test.js"],
+    "readoption-recovery": ["tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","runtime/stopped-certification.js","runtime/owner-maintenance.js","runtime/owner-lifecycle.js","runtime/install-lease.js","runtime/recovery-inspection.js","runtime/windows-owner-process.js","runtime/windows-reservation-provider.js","runtime/native-read-disposition.js","runtime/installation-lineage.js","runtime/installation.js","runtime/stdio-entry.js","protocol/","core/state-lock.js","core/receiver-api.js","core/receiver.js","core/authority.js","core/resources.js","integrations/cep/completion-store.js","test/fixtures/owner-lifecycle-fixture.js","test/fixtures/stopped-host-readoption.js","test/stopped-host-readoption-recovery.test.js"],
+    "readoption-enable": ["tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","runtime/stopped-certification.js","runtime/owner-maintenance.js","runtime/owner-lifecycle.js","runtime/install-lease.js","runtime/recovery-inspection.js","runtime/windows-owner-process.js","runtime/windows-reservation-provider.js","runtime/native-read-disposition.js","runtime/installation-lineage.js","runtime/installation.js","runtime/stdio-entry.js","protocol/","core/state-lock.js","core/receiver-api.js","core/receiver.js","core/authority.js","core/resources.js","integrations/cep/completion-store.js","test/fixtures/owner-lifecycle-fixture.js","test/fixtures/stopped-host-readoption.js","test/stopped-host-readoption-enable.test.js"],
+    "readoption-probe": ["tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","runtime/stopped-certification.js","runtime/owner-maintenance.js","runtime/owner-lifecycle.js","runtime/install-lease.js","runtime/recovery-inspection.js","runtime/windows-owner-process.js","runtime/windows-reservation-provider.js","runtime/native-read-disposition.js","runtime/installation-lineage.js","runtime/installation.js","runtime/stdio-entry.js","protocol/","core/state-lock.js","core/receiver-api.js","core/receiver.js","core/authority.js","core/resources.js","integrations/cep/completion-store.js","test/fixtures/owner-lifecycle-fixture.js","test/fixtures/stopped-host-readoption.js","test/stopped-host-readoption-probe.test.js"],
+    "stopped-update-operator": [
+      "tools/operate-stopped-update.js",
+      "tools/standalone-installer.js",
+      "tools/package-standalone-installer.js",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "tools/stopped-update.js",
+      "tools/legacy-owner-migration.js",
+      "tools/windows-retained-process.js",
+      "tools/check-boundaries.js",
+      "runtime/",
+      "core/",
+      "protocol/",
+      "test/stopped-update-operator.test.js",
+      "tools/finish-owner-maintenance.js",
+      "tools/maintain-owner.js",
+      "tools/disposition-install-preflight.js",
+      "cep/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "integrations/",
+      "tools/operate-stopped-readoption.js",
+      "tools/stopped-host-readoption.js",
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js"
+    ],
+    "stopped-update": ["tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/stopped-update.test.js","test/fixtures/owner-pre-ready-claim-child.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
+    "legacy-owner-migration": ["tools/legacy-owner-migration.js","tools/windows-retained-process.js","tools/install-core4.js","tools/package-installable.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/legacy-owner-migration.test.js","tools/stopped-update.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
+    "windows-retained-process": ["tools/windows-retained-process.js", "runtime/windows-owner-process.js", "test/windows-retained-process.test.js"],
+    "stopped-certification": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/stopped-certification.test.js"],
+    "maintenance-finish": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/fixtures/maintenance-finish.js", "test/maintenance-finish.test.js"],
+    "maintenance-finish-operator": ["runtime/", "core/", "protocol/", "tools/", "config/", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "test/maintenance-finish-operator.test.js"],
+    "owner-maintenance": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-maintenance.test.js"],
+    "maintenance-operator": ["runtime/", "core/", "protocol/", "tools/maintain-owner.js", "tools/install-core4.js", "tools/package-installable.js", "tools/check-boundaries.js", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "config/catalog.json", "config/admissions/", "test/maintenance-operator.test.js"],
+    "windows-owner-process": ["runtime/windows-owner-process.js", "test/windows-owner-process.test.js"],
+    "owner-lifecycle": ["runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "core/state-lock.js", "integrations/cep/completion-store.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-lifecycle.test.js"],
+    "owner-lifecycle-faults": ["runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "core/state-lock.js", "integrations/cep/completion-store.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-lifecycle-faults.test.js"],
+    "owner-marker-publication": ["core/state-lock.js", "integrations/cep/completion-store.js", "runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-marker-publication.test.js"],
+    "client-launcher": ["runtime/client-entry.js", "runtime/client-ipc.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/owner-contract.json", "test/client-launcher.test.js"],
+    "recovery-inspection": ["runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "runtime/windows-reservation-provider.js", "core/ledger.js", "core/broker.js", "core/receiver.js", "core/resources.js", "integrations/cep/http-peer.js", "integrations/cep/completion-store.js", "protocol/", "test/recovery-inspection.test.js"],
+    "owner-installation": [
+      "runtime/",
+      "tools/install-core4.js",
+      "tools/package-installable.js",
+      "tools/package-standalone-installer.js",
+      "tools/standalone-installer.js",
+      "tools/disposition-install-preflight.js",
+      "test/owner-installation.test.js",
+      "test/fixtures/fixed-format1-package.js",
+      "test/fixtures/legacy-installation-v1.js",
+      "core/",
+      "protocol/",
+      "config/",
+      "modules/",
+      "plan-engine/",
+      "cep/",
+      "integrations/",
+      "worker.js",
+      "tools/finish-owner-maintenance.js",
+      "tools/legacy-owner-migration.js",
+      "tools/maintain-owner.js",
+      "tools/operate-stopped-readoption.js",
+      "tools/operate-stopped-update.js",
+      "tools/stopped-host-readoption.js",
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js",
+      "tools/stopped-update.js",
+      "tools/windows-retained-process.js"
+    ],
+    "controller-transfer": ["runtime/controller-lease.js", "runtime/attachment-owner.js", "runtime/client-ipc.js", "test/controller-transfer-ipc.test.js"],
+    "client-entry": ["runtime/client-entry.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/client-ipc.js", "runtime/owner-entry.js", "test/client-entry.test.js", "tools/check-boundaries.js"],
+    "owner-runtime": ["runtime/", "test/owner-runtime.test.js", "test/fixtures/owner-runtime-child.js", "tools/check-boundaries.js", "tools/install-core4.js", "tools/package-installable.js", "tools/disposition-install-preflight.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
+    "client-ipc": ["runtime/client-ipc.js", "test/client-ipc.test.js"],
+    "owner-attachments": ["runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/controller-lease.js", "test/owner-attachments.test.js", "core/", "protocol/"],
+    "owner-ipc-process": ["runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/client-ipc.js", "runtime/controller-lease.js", "test/owner-ipc-process.test.js", "test/fixtures/attachment-process.js", "test/helpers.js", "test/fixtures/ae.js", "test/fixtures/authority.js", "core/", "protocol/", "modules/", "plan-engine/", "config/admissions/", "config/catalog.json", "worker.js"],
+    "controller-lease": ["runtime/controller-lease.js", "test/controller-lease.test.js"],
+    "panel-reconnect": [
+      "cep/js/panel.js",
+      "cep/js/poll-dispatcher.js",
+      "protocol/json.js",
+      "test/panel-reconnect.test.js"
+    ],
+    "endpoint-observation": [
+      "tools/check-core4-endpoint.js",
+      "test/endpoint-observation.test.js",
+      "test/fixtures/endpoint-observation-preload.js"
+    ],
+    "native-read-capture": [
+      "tools/capture-native-read.js",
+      "test/native-read-capture.test.js",
+      "tools/install-core4.js",
+      "tools/package-installable.js",
+      "runtime/",
+      "cep/",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "test/fixtures/legacy-installation-v1.js"
+    ],
+    "windows-cim-probe": [
+      "runtime/",
+      "test/windows-cim-probe.test.js",
+      "tools/package-installable.js",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "cep/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js"
+    ],
+    "zero-dispatch-recovery": [
+      "tools/recover-zero-dispatch-owner.js",
+      "test/recover-zero-dispatch-owner.test.js",
+      "tools/install-core4.js",
+      "tools/package-installable.js",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "runtime/",
+      "cep/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js"
+    ],
+    "human-window": [
+      "test/human-window.test.js",
+      "test/fixtures/human-window-stdio.js",
+      "test/fixtures/manual-http-runtime.js",
+      "test/fixtures/ae.js",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "runtime/",
+      "cep/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js"
+    ],
+    "manual-runtime": [
+      "core/",
+      "protocol/",
+      "worker.js",
+      "runtime/",
+      "cep/",
+      "modules/",
+      "config/catalog.json",
+      "config/admissions/",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js",
+      "plan-engine/",
+      "tools/package-installable.js",
+      "test/manual-runtime.test.js",
+      "test/fixtures/manual-http-runtime.js",
+      "test/fixtures/ae.js"
+    ],
+    "installable-runtime": [
+      "runtime/",
+      "cep/",
+      "modules/project-inspection/",
+      "test/installable-runtime.test.js",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "tools/adopt-host.js",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/titles/",
+      "modules/photo-placeholder/",
+      "modules/titles-current-target/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/"
+    ],
+    "manual-current-target": [
+      "experiments/manual-current-target/",
+      "test/manual-current-target.test.js",
+      "test/fixtures/manual-current-target.js",
+      "test/fixtures/ae.js",
+      "core/receiver-api.js",
+      "core/receiver.js",
+      "core/authority.js",
+      "protocol/",
+      "modules/titles/executor.jsx",
+      "config/admissions/titles.json",
+      "integrations/cep/host-dispatcher.js",
+      "integrations/cep/completion-store.js",
+      "runtime/native-read-disposition.js",
+      "runtime/installation-lineage.js",
+      "runtime/installation.js",
+      "runtime/stdio-entry.js",
+      "runtime/install-lease.js",
+      "runtime/receiver-contract.json"
+    ],
+    "audit-repairs": [
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "integrations/cep/",
+      "config/catalog.json",
+      "config/admissions/",
+      "test/audit-repairs.test.js",
+      "test/fixtures/artifact-publish-crash.js",
+      "test/fixtures/cep-host.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/helpers.js"
+    ],
+    "core-control": [
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "core-admission": [
+      "core/",
+      "protocol/",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "worker-isolation": [
+      "core/worker-client.js",
+      "worker.js",
+      "protocol/json.js",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
+      "core/",
+      "protocol/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "protocol-codec": [
+      "protocol/",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
+      "core/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "workflow-recovery": [
+      "plan-engine/",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
+      "modules/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "photo-owner": [
+      "modules/photo-placeholder/",
+      "config/admissions/photo-placeholder.json",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/modules/photo-placeholder.test.js",
+      "test/module-harness.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js"
+    ],
+    "titles-owner": [
+      "modules/titles/",
+      "config/admissions/titles.json",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/modules/titles.test.js",
+      "test/module-harness.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js"
+    ],
+    "photo-executor-contract": [
+      "modules/photo-placeholder/",
+      "config/admissions/photo-placeholder.json",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/modules/photo-placeholder.test.js",
+      "test/module-harness.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js"
+    ],
+    "titles-executor-contract": [
+      "modules/titles/",
+      "config/admissions/titles.json",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "test/modules/titles.test.js",
+      "test/module-harness.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js"
+    ],
+    "catalog-discovery": [
+      "config/catalog.json",
+      "core/artifacts.js",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js"
+    ],
+    "validation-routing": [
+      "config/validation-map.json",
+      "tools/",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/"
+    ],
+    "artifact-boundaries": [
+      "tools/check-boundaries.js",
+      "tools/seal.js",
+      "package.json",
+      "test/core4.test.js",
+      "test/helpers.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/crash-child.js",
+      "test/fixtures/lock-contender.js",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/"
+    ],
+    "documentation": [
+      "README.md",
+      "test/core4.test.js"
+    ],
+    "cep-transport": [
+      "integrations/cep/",
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "config/validation-map.json",
+      "tools/",
+      "test/helpers.js",
+      "test/fixtures/ae.js",
+      "test/fixtures/authority.js",
+      "test/fixtures/cep-host.js",
+      "test/fixtures/cep-crash-child.js",
+      "test/integration/cep-transport.test.js"
+    ],
+    "lifecycle-simulation": [
+      "core/",
+      "protocol/",
+      "worker.js",
+      "modules/",
+      "plan-engine/",
+      "integrations/cep/",
+      "config/catalog.json",
+      "config/admissions/",
+      "config/validation-map.json",
+      "tools/",
+      "test/"
+    ],
+    "native-read-recovery": [
+      "test/native-read-recovery.test.js",
+      "test/fixtures/native-read-recovery.js",
+      "test/fixtures/disposition-child.js",
+      "test/fixtures/legacy-installation-v1.js",
+      "test/fixtures/legacy-completion-store.js",
+      "test/fixtures/manual-capture-driver-source.txt",
+      "tools/dispose-native-read.js",
+      "tools/disposition-install-preflight.js",
+      "tools/package-native-read-operator.js",
+      "tools/capture-native-read.js",
+      "tools/install-core4.js",
+      "tools/package-installable.js",
+      "runtime/",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js",
+      "core/",
+      "protocol/",
+      "modules/",
+      "plan-engine/",
+      "cep/",
+      "worker.js",
+      "config/catalog.json",
+      "config/admissions/",
+      "test/fixtures/stdio-main-ephemeral.js",
+      "test/fixtures/fixed-format1-package.js"
+    ],
+    "installed-composition": [
+      "runtime/",
+      "cep/",
+      "core/",
+      "protocol/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "worker.js",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "tools/dispose-native-read.js",
+      "tools/capture-native-read.js",
+      "tools/disposition-install-preflight.js",
+      "tools/package-native-read-operator.js",
+      "test/installed-composition.test.js",
+      "test/fixtures/installed-composition-child.js",
+      "test/fixtures/installed-composition-transition.js",
+      "test/fixtures/native-read-recovery.js",
+      "test/fixtures/fixed-format1-package.js",
+      "test/fixtures/legacy-installation-v1.js",
+      "test/fixtures/disposition-child.js",
+      "test/fixtures/manual-capture-driver-source.txt",
+      "tools/check-boundaries.js"
+    ],
+    "exact-f548-transition": [
+      "runtime/",
+      "cep/",
+      "core/",
+      "protocol/",
+      "modules/",
+      "plan-engine/",
+      "config/catalog.json",
+      "config/admissions/",
+      "worker.js",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "tools/dispose-native-read.js",
+      "tools/capture-native-read.js",
+      "tools/disposition-install-preflight.js",
+      "tools/package-native-read-operator.js",
+      "test/installed-composition.test.js",
+      "test/fixtures/installed-composition-child.js",
+      "test/fixtures/installed-composition-transition.js",
+      "test/fixtures/native-read-recovery.js",
+      "test/fixtures/fixed-format1-package.js",
+      "test/fixtures/legacy-installation-v1.js",
+      "test/fixtures/disposition-child.js",
+      "test/fixtures/manual-capture-driver-source.txt",
+      "test/fixtures/exact-f548-transition.js",
+      "test/exact-f548-transition.test.js"
+    ],
+    "standalone-installer": [
+      "tools/package-standalone-installer.js",
+      "tools/finish-owner-maintenance.js",
+      "tools/maintain-owner.js",
+      "tools/standalone-installer.js",
+      "tools/package-installable.js",
+      "tools/install-core4.js",
+      "tools/disposition-install-preflight.js",
+      "test/standalone-installer.test.js",
+      "test/fixtures/standalone-history.js",
+      "test/fixtures/fixed-format1-package.js",
+      "test/fixtures/legacy-installation-v1.js",
+      "runtime/",
+      "cep/",
+      "core/",
+      "protocol/",
+      "modules/",
+      "plan-engine/",
+      "integrations/cep/http-peer.js",
+      "integrations/cep/peer-protocol.js",
+      "integrations/cep/completion-store.js",
+      "worker.js",
+      "config/catalog.json",
+      "config/admissions/",
+      "tools/legacy-owner-migration.js",
+      "tools/operate-stopped-readoption.js",
+      "tools/operate-stopped-update.js",
+      "tools/stopped-host-readoption.js",
+      "tools/stopped-host-readoption-store.js",
+      "tools/stopped-host-readoption-transaction.js",
+      "tools/stopped-update.js",
+      "tools/windows-retained-process.js"
+    ]
+  },
+  "checkCommands": {
+    "stopped-host-readoption-operator": ["node", "--test", "--test-name-pattern=stopped-host-readoption-operator", "test/stopped-host-readoption-operator.test.js"],
+    "readoption-core": ["node", "--test", "--test-name-pattern=readoption-core", "test/stopped-host-readoption-core.test.js"],
+    "readoption-recovery": ["node", "--test", "--test-name-pattern=readoption-recovery", "test/stopped-host-readoption-recovery.test.js"],
+    "readoption-enable": ["node", "--test", "--test-name-pattern=readoption-enable", "test/stopped-host-readoption-enable.test.js"],
+    "readoption-probe": ["node", "--test", "--test-name-pattern=readoption-probe", "test/stopped-host-readoption-probe.test.js"],
+    "stopped-host-readoption": ["node", "--test", "--test-name-pattern=stopped-host-readoption", "test/stopped-host-readoption.test.js"],
+    "stopped-update-operator": ["node", "--test", "--test-name-pattern=stopped-update-operator", "test/stopped-update-operator.test.js"],
+    "stopped-update": ["node", "--test", "--test-name-pattern=stopped-update", "test/stopped-update.test.js"],
+    "legacy-owner-migration": ["node", "--test", "--test-name-pattern=legacy-owner-migration", "test/legacy-owner-migration.test.js"],
+    "windows-retained-process": ["node", "--test", "--test-name-pattern=windows-retained-process", "test/windows-retained-process.test.js"],
+    "stopped-certification": ["node", "--test", "--test-name-pattern=stopped-certification", "test/stopped-certification.test.js"],
+    "maintenance-finish": ["node", "--test", "--test-name-pattern=maintenance-finish", "test/maintenance-finish.test.js"],
+    "maintenance-finish-operator": ["node", "--test", "--test-name-pattern=maintenance-finish-operator", "test/maintenance-finish-operator.test.js"],
+    "owner-maintenance": ["node", "--test", "--test-name-pattern=owner-maintenance", "test/owner-maintenance.test.js"],
+    "maintenance-operator": ["node", "--test", "--test-name-pattern=maintenance-operator", "test/maintenance-operator.test.js"],
+    "windows-owner-process": ["node", "--test", "--test-name-pattern=windows-owner-process", "test/windows-owner-process.test.js"],
+    "owner-lifecycle": ["node", "--test", "--test-name-pattern=owner-lifecycle", "test/owner-lifecycle.test.js"],
+    "owner-lifecycle-faults": ["node", "--test", "--test-name-pattern=owner-lifecycle-faults", "test/owner-lifecycle-faults.test.js"],
+    "owner-marker-publication": ["node", "--test", "--test-name-pattern=owner-marker-publication", "test/owner-marker-publication.test.js"],
+    "client-launcher": ["node", "--test", "--test-name-pattern=client-launcher", "test/client-launcher.test.js"],
+    "recovery-inspection": ["node", "--test", "--test-name-pattern=recovery-inspection", "test/recovery-inspection.test.js"],
+    "owner-installation": ["node", "--test", "--test-name-pattern=owner-installation", "test/owner-installation.test.js"],
+    "controller-transfer": ["node", "--test", "--test-name-pattern=controller-transfer", "test/controller-transfer-ipc.test.js"],
+    "client-entry": ["node", "--test", "--test-name-pattern=client-entry", "test/client-entry.test.js"],
+    "owner-runtime": ["node", "--test", "--test-name-pattern=owner-runtime", "test/owner-runtime.test.js"],
+    "client-ipc": ["node", "--test", "--test-name-pattern=^IPC ", "test/client-ipc.test.js"],
+    "owner-attachments": ["node", "--test", "--test-name-pattern=owner-attachments", "test/owner-attachments.test.js"],
+    "owner-ipc-process": ["node", "--test", "--test-name-pattern=owner-ipc-process", "test/owner-ipc-process.test.js"],
+    "controller-lease": ["node", "--test", "--test-name-pattern=controller-lease", "test/controller-lease.test.js"],
+    "panel-reconnect": [
+      "node",
+      "--test",
+      "--test-name-pattern=panel-reconnect",
+      "test/panel-reconnect.test.js"
+    ],
+    "endpoint-observation": [
+      "node",
+      "--test",
+      "--test-name-pattern=endpoint-observation",
+      "test/endpoint-observation.test.js"
+    ],
+    "native-read-capture": [
+      "node",
+      "--test",
+      "--test-name-pattern=native-read-capture",
+      "test/native-read-capture.test.js"
+    ],
+    "windows-cim-probe": [
+      "node",
+      "--test",
+      "--test-name-pattern=windows-cim-probe",
+      "test/windows-cim-probe.test.js"
+    ],
+    "zero-dispatch-recovery": [
+      "node",
+      "--test",
+      "--test-name-pattern=zero-dispatch",
+      "test/recover-zero-dispatch-owner.test.js"
+    ],
+    "human-window": [
+      "node",
+      "--test",
+      "--test-name-pattern=human-window",
+      "test/human-window.test.js"
+    ],
+    "manual-runtime": [
+      "node",
+      "--test",
+      "--test-name-pattern=manual-runtime",
+      "test/manual-runtime.test.js"
+    ],
+    "installable-runtime": [
+      "node",
+      "--test",
+      "--test-name-pattern=installable-runtime",
+      "test/installable-runtime.test.js"
+    ],
+    "manual-current-target": [
+      "node",
+      "--test",
+      "--test-name-pattern=manual-current-target",
+      "test/manual-current-target.test.js"
+    ],
+    "audit-repairs": [
+      "node",
+      "--test",
+      "--test-name-pattern=audit-repairs",
+      "test/audit-repairs.test.js"
+    ],
+    "titles-owner": [
+      "node",
+      "--test",
+      "--test-name-pattern=titles-owner",
+      "test/modules/titles.test.js"
+    ],
+    "titles-executor-contract": [
+      "node",
+      "--test",
+      "--test-name-pattern=titles-executor-contract",
+      "test/modules/titles.test.js"
+    ],
+    "photo-owner": [
+      "node",
+      "--test",
+      "--test-name-pattern=photo-owner",
+      "test/modules/photo-placeholder.test.js"
+    ],
+    "photo-executor-contract": [
+      "node",
+      "--test",
+      "--test-name-pattern=photo-executor-contract",
+      "test/modules/photo-placeholder.test.js"
+    ],
+    "cep-transport": [
+      "node",
+      "--test",
+      "--test-name-pattern=cep-transport",
+      "test/integration/cep-transport.test.js"
+    ],
+    "lifecycle-simulation": [
+      "node",
+      "--test",
+      "--test-name-pattern=lifecycle-simulation",
+      "test/lifecycle-simulation.test.js"
+    ],
+    "native-read-recovery": [
+      "node",
+      "--test",
+      "--test-name-pattern=native-read-recovery",
+      "test/native-read-recovery.test.js"
+    ],
+    "installed-composition": [
+      "node",
+      "--test",
+      "--test-name-pattern=installed-composition",
+      "test/installed-composition.test.js"
+    ],
+    "exact-f548-transition": [
+      "node",
+      "--test",
+      "--test-name-pattern=exact-f548-transition",
+      "test/exact-f548-transition.test.js"
+    ],
+    "standalone-installer": [
+      "node",
+      "--test",
+      "--test-name-pattern=standalone-installer",
+      "test/standalone-installer.test.js"
+    ]
+  },
+  "checkProjections": {
+    "titles-owner": [
+      {
+        "file": "config/catalog.json",
+        "key": "modules",
+        "id": "titles"
+      }
+    ],
+    "titles-executor-contract": [
+      {
+        "file": "config/catalog.json",
+        "key": "modules",
+        "id": "titles"
+      }
+    ],
+    "photo-owner": [
+      {
+        "file": "config/catalog.json",
+        "key": "modules",
+        "id": "photo-placeholder"
+      }
+    ],
+    "photo-executor-contract": [
+      {
+        "file": "config/catalog.json",
+        "key": "modules",
+        "id": "photo-placeholder"
+      }
+    ]
+  },
+  "checkPolicy": {
+    "stopped-host-readoption-operator": { "kind": "integration" },
+    "readoption-core": { "kind": "component" },
+    "readoption-recovery": { "kind": "component" },
+    "readoption-enable": { "kind": "component" },
+    "readoption-probe": { "kind": "component" },
+    "stopped-host-readoption": { "kind": "component" },
+    "stopped-update-operator": { "kind": "integration" },
+    "stopped-update": { "kind": "integration" },
+    "legacy-owner-migration": { "kind": "integration" },
+    "windows-retained-process": { "kind": "component" },
+    "stopped-certification": { "kind": "component" },
+    "maintenance-finish": { "kind": "component" },
+    "maintenance-finish-operator": { "kind": "integration" },
+    "owner-maintenance": { "kind": "component" },
+    "maintenance-operator": { "kind": "integration" },
+    "windows-owner-process": { "kind": "component" },
+    "owner-lifecycle": { "kind": "component" },
+    "owner-lifecycle-faults": { "kind": "component" },
+    "owner-marker-publication": { "kind": "component" },
+    "client-launcher": { "kind": "component" },
+    "recovery-inspection": { "kind": "component" },
+    "owner-installation": { "kind": "integration" },
+    "controller-transfer": { "kind": "component" },
+    "client-entry": { "kind": "component" },
+    "owner-runtime": { "kind": "integration" },
+    "client-ipc": { "kind": "component" },
+    "owner-attachments": { "kind": "component" },
+    "owner-ipc-process": { "kind": "integration" },
+    "controller-lease": { "kind": "component" },
+    "panel-reconnect": {
+      "kind": "component"
+    },
+    "endpoint-observation": {
+      "kind": "component"
+    },
+    "native-read-capture": {
+      "kind": "integration"
+    },
+    "windows-cim-probe": {
+      "kind": "integration"
+    },
+    "zero-dispatch-recovery": {
+      "kind": "integration"
+    },
+    "human-window": {
+      "kind": "integration"
+    },
+    "manual-runtime": {
+      "kind": "integration"
+    },
+    "installable-runtime": {
+      "kind": "integration"
+    },
+    "manual-current-target": {
+      "kind": "integration"
+    },
+    "audit-repairs": {
+      "kind": "integration"
+    },
+    "core-control": {
+      "kind": "integration"
+    },
+    "core-admission": {
+      "kind": "integration"
+    },
+    "worker-isolation": {
+      "kind": "integration"
+    },
+    "protocol-codec": {
+      "kind": "integration"
+    },
+    "workflow-recovery": {
+      "kind": "integration"
+    },
+    "photo-owner": {
+      "kind": "component"
+    },
+    "titles-owner": {
+      "kind": "component"
+    },
+    "photo-executor-contract": {
+      "kind": "component"
+    },
+    "titles-executor-contract": {
+      "kind": "component"
+    },
+    "catalog-discovery": {
+      "kind": "integration"
+    },
+    "validation-routing": {
+      "kind": "integration"
+    },
+    "artifact-boundaries": {
+      "kind": "integration"
+    },
+    "documentation": {
+      "kind": "component"
+    },
+    "cep-transport": {
+      "kind": "integration"
+    },
+    "lifecycle-simulation": {
+      "kind": "integration"
+    },
+    "native-read-recovery": {
+      "kind": "integration"
+    },
+    "installed-composition": {
+      "kind": "integration"
+    },
+    "exact-f548-transition": {
+      "kind": "integration"
+    },
+    "standalone-installer": {
+      "kind": "integration"
+    }
+  },
+  "sharedRuntimeEdges": [
+    {
+      "prefix": "core4/core/",
+      "id": "permanent-core-runtime",
+      "consumers": [
+        "workflow-recovery",
+        "worker-isolation",
+        "protocol-codec",
+        "artifact-boundaries"
+      ]
+    },
+    {
+      "prefix": "core4/protocol/",
+      "id": "shared-neutral-protocol",
+      "consumers": [
+        "core-control",
+        "core-admission",
+        "worker-isolation",
+        "workflow-recovery",
+        "artifact-boundaries"
+      ]
+    }
+  ]
+}

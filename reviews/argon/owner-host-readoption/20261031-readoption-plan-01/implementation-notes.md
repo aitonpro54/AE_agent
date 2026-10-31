@@ -186,3 +186,22 @@ coverage253PASS/12checks подтверждена parent:95delta+12freshsuppleme
 runtime packagecc2f/70files прежний. Это composed coverage, full release/live0.
 Подробности и raw SHA — HOSTREADOPT-S234/final02/accepted-evidence.json.
 CLI brief выше остаётся следующим source scope; original stop/adoption пока0.
+
+## CLI5 принят локально
+
+Все5modes реализованы через complete-byte bootstrap/private awaited capability и
+data-only operator с непрерывной election3457. Source6paths получили independent
+ACCEPT; затем existing standalone test нашёл lexical HELPERS order. Исправлен
+только порядок трёх entries, новый bootstrapSHAa8b3c527… отдельно принят reviewer.
+P3 operator guide закрыл границу library historical semantics/занятого CLI порта;
+нового history viewer или port override не добавлено.
+
+Parent batch-aware current coverage —338unique PASS/19check bindings:9fresh
+batches/104unique cases и9exact baseline closures/234tests. Shared routing5+
+artifact5 имеют1общий case; union9 посчитан один раз, per-check assignments339
+не объявляются339tests. Current source16/dependencies139/19keys/commands frozen
+до/после, actual delta10checks, whole-global command/release не заявлены.
+Подробности — HOSTREADOPT-CLI/final02/accepted-evidence.json; initial exit1/fullraw
+сохранён. Node packagecc2f/70files и private runtime прежние; pure helper
+distributionc787e013…/87files проверена, official output/actual0. Следующий шаг —
+source commit, immutable write/verify и actual fresh preflight/new stop UUID.

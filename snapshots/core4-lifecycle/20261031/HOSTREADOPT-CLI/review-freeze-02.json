@@ -1,0 +1,44 @@
+{
+  "collectedAt": "2026-10-31T18:12:53.348Z",
+  "sourceBase": "53200c12a684fe9be3abb7875cc424105795da2c",
+  "purpose": "HELPERS lexical-order correction; delta review pending",
+  "facts": [
+    {
+      "file": "core4/tools/standalone-installer.js",
+      "sha256": "a8b3c5271cff33d5f9013d7c4be7f5f58c8addd868e6162681a5097d542bcbdc",
+      "bytes": 14918,
+      "sourceSnapshot": "review-freeze-02-source/core4/tools/standalone-installer.js"
+    },
+    {
+      "file": "core4/tools/operate-stopped-readoption.js",
+      "sha256": "a939e1ea46f11247a1c3e7bd612ab86d7edc79bf0c1ae939547948241f52b681",
+      "bytes": 4206,
+      "sourceSnapshot": "review-freeze-01-source/core4/tools/operate-stopped-readoption.js"
+    },
+    {
+      "file": "core4/tools/package-standalone-installer.js",
+      "sha256": "b744adc9aad3168475991e5aea7e93de72abdefbc19740539b36a5b151375ca5",
+      "bytes": 9898,
+      "sourceSnapshot": "review-freeze-01-source/core4/tools/package-standalone-installer.js"
+    },
+    {
+      "file": "core4/tools/check-boundaries.js",
+      "sha256": "8d4d66a947260496550108d1092e91b02153881e39db720a203bd274a2ee8cd8",
+      "bytes": 10704,
+      "sourceSnapshot": "review-freeze-01-source/core4/tools/check-boundaries.js"
+    },
+    {
+      "file": "core4/test/stopped-host-readoption-operator.test.js",
+      "sha256": "1c4a9a1b51bea5acc7a645bd84c6cd39aae14b14bcfab0ab2739ae9bb1fbff75",
+      "bytes": 20863,
+      "sourceSnapshot": "review-freeze-01-source/core4/test/stopped-host-readoption-operator.test.js"
+    },
+    {
+      "file": "core4/config/validation-map.json",
+      "sha256": "d7d02fa271d317cd5b2b362f544c02848147072d2e5bfdfdf67eae387d352d35",
+      "bytes": 68303,
+      "sourceSnapshot": "review-freeze-01-source/core4/config/validation-map.json"
+    }
+  ],
+  "liveCalls": 0
+}
