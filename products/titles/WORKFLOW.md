@@ -11,6 +11,11 @@
    `compile --job FILE`, проверить preview и literal text. Один job — один слой.
 2. Единственный действующий Core MCP controller проверяет своё подключение,
    unresolved/pending и доступный module catalog по актуальным проектным gates.
+   В owner composition сначала получить `controller_acquire` с пустым payload,
+   затем выполнить `core_connect` и проверить `available:true`. Подключённая CEP
+   сама по себе не устанавливает транспорт Broker для Titles. Удерживать lease
+   через штатный `controller_renew` в пределах его срока; после release/acquire
+   заново получить inspection/build/proposal refs текущего поколения.
    Получить свежий `get_module_contract` с
    `payload:{moduleId:"titles-current-target"}`. Сохранить только JSON результата.
 3. Тем же controller вызвать `inspect_module_target` с
@@ -24,7 +29,9 @@
    остановить данный build и разобрать конкретное несовпадение; не подставлять pins
    или выдумывать evidence, ожидания, grants и timestamps.
 5. Существующий controller вызывает `build_solution_plan` с возвращённым payload.
-   Core сам создаёт ожидания из server-owned evidence. Далее controller ведёт
+   Core сам создаёт ожидания из server-owned evidence. Новый taskId возвращает
+   сервер; workflowId и описательный contextId сохраняют связь с job. Не передавать
+   заранее выдуманный taskId для обхода owner refs. Далее controller ведёт
    `propose_plan` → `dry_run_plan` → разрешённый `run_plan` по действующим gates.
    Пятисекундная свежесть dry-run проверяется Core перед отправкой. Native
    confirmation текущей совпадающей цели остаётся внутри mutate; ручное

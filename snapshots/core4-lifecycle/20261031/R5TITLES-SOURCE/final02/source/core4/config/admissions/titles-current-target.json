@@ -1,0 +1,12 @@
+{
+  "moduleId": "titles-current-target",
+  "operationId": "set-current-text",
+  "artifactHash": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+  "schemaHash": "a7e30a791d0584a1e512eb14766545aca8eb26f6504214065799ca6a67cddde1",
+  "resultSchemaHash": "4bc17d85c2f755387cbff3dacc49936549a94f002bdb3ed7a18d34919e9edd7b",
+  "effectPolicyHash": "2dce26553f76310412f1e4e4e53a487b23d0da68bdf6abf1edd22ccc0bbd3d2f",
+  "executorHash": "6d84fdbbf09352db6b77cf4470e84e785d7cafa30979df98de988ba6a70c8132",
+  "protocolVersion": 1,
+  "trustApprovalId": "titles-inspection-source-review-20261101",
+  "revoked": false
+}

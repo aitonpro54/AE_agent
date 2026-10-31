@@ -36,6 +36,14 @@ test('owner-attachments generic tool map remains compatible and observer attachm
   assert.equal(f.owner.status().mode, 'idle'); assert.equal(f.owner.status().generation, 0);
   await denied(f.call(a, 'core_connect'), 'owner_controller_required'); await f.owner.close();
 });
+test('owner-attachments first workflow build omits taskId and binds only the server task; unbound product task is refused before invoke', async () => {
+  const f = fixture(), session = f.attach(); await ok(f.call(session, 'controller_acquire'));
+  const evidence = await ok(f.call(session, 'inspect_module_target'));
+  const payload = { workflowId: 'titles-deterministic-job', oneStep: true, recordContext: { purpose: 'user_work', lifetime: 'work_context', contextId: 'product-job' }, steps: [{ stepId: 'set-title', evidenceRef: evidence.evidenceRef }] };
+  const built = await ok(f.call(session, 'build_solution_plan', payload)); assert.match(built.taskId, /^task-/);
+  const calls = f.calls.length; await denied(f.call(session, 'build_solution_plan', { ...payload, taskId: 'titles-unbound-task' }), 'owner_reference_generation'); assert.equal(f.calls.length, calls);
+  await ok(f.call(session, 'build_solution_plan', { ...payload, taskId: built.taskId })); assert.equal(f.calls.length, calls + 1); await f.owner.close();
+});
 test('owner-attachments copied sessions and unlisted RPC cannot reach runtime', async () => {
   const f = fixture(), a = f.attach();
   await denied(f.call({ ...a }, 'core_status'), 'owner_attachment_required');

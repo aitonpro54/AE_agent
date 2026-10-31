@@ -1,0 +1,1111 @@
+{
+  "collectedAt": "2026-10-31T20:17:21.239Z",
+  "sourceHashes": {
+    "core4/modules/titles-current-target/executor.jsx": "6d84fdbbf09352db6b77cf4470e84e785d7cafa30979df98de988ba6a70c8132",
+    "core4/modules/titles-current-target/artifact.json": "aa80e8f2921859f15ac9ba7d1481ce3f6039f60de6590a5ffee6b2666cfb1e57",
+    "core4/config/admissions/titles-current-target.json": "bf15afe29225094a1a9426786b50e2c8d03ab4305483c8453f5c468bc123e0f8",
+    "core4/integrations/cep/http-peer.js": "0b40242f453a69d5cdb6f0537e4ce960d4af92413249e3cf13e4b0a61da18a1c",
+    "core4/test/manual-runtime.test.js": "1221879b886d937e1fb251b6449dd8d18544d924e547f81634f8063a5efdad8b",
+    "core4/test/installable-runtime.test.js": "bfa1ebae757f728da5c295c8ee54913105c914ecd4e0c5d851a010ce4b8b351f",
+    "core4/test/owner-attachments.test.js": "8eff6ac62b802d84314aa986586b603afd7b2c66ab277fa5f8133ad7ebac8b44",
+    "products/titles/src/compiler.js": "1adf06aa1a92ecf108c487b2fdb7bc33d3c4e814dcc7d22505ffd87bd3ae55cc",
+    "products/titles/test/compiler.test.js": "bbdd9a3999580fe3e72ae86e03e750a3ec3a84e259be66bd2ab7fad165018add",
+    "core4/test/stopped-host-readoption-operator.test.js": "a6c8f7696020769f7d1fd6b84e4aeedd6daf592f9b909a7eccbd65e848dc8de7"
+  },
+  "dependencyCount": 189,
+  "currentChecks": 7,
+  "currentExecutionBatches": 7,
+  "coreCounts": [
+    51,
+    40,
+    21,
+    19,
+    25,
+    17,
+    11
+  ],
+  "productCount": 8,
+  "uniquePass": 192,
+  "fail": 0,
+  "commands": [
+    {
+      "command": [
+        "node",
+        "core4/tools/validate-diff.js",
+        "core4/modules/titles-current-target/executor.jsx",
+        "core4/modules/titles-current-target/artifact.json",
+        "core4/config/admissions/titles-current-target.json",
+        "core4/integrations/cep/http-peer.js",
+        "core4/test/manual-runtime.test.js",
+        "core4/test/installable-runtime.test.js",
+        "core4/test/owner-attachments.test.js",
+        "core4/test/stopped-host-readoption-operator.test.js",
+        "--run"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core",
+      "exit": 0,
+      "rawSHA": "6291cda93676b8a013a35104cc191bf380a513a6d9f68f9399253e8652aaabc2"
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "test/compiler.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\products\\titles",
+      "exit": 0,
+      "rawSHA": "bef359bf4340f043731d11b8be880bf5658b599ac3a712b7c959772ebfffe8e2"
+    },
+    {
+      "command": [
+        "node",
+        "tools/check-boundaries.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+      "exit": 0,
+      "rawSHA": "5f5cea8dcd9f14517905497379e6ab41edd66676cb4cd2e7f47849e476abc5b7"
+    }
+  ],
+  "beforeAfterAndCurrentMatched": true,
+  "rawSelectorPrefixMatched": true,
+  "testFilesDisjoint": true,
+  "boundaries": {
+    "checked": 44,
+    "model": "reviewed-local-code; conservative source guard; not OS sandbox",
+    "liveCalls": 0
+  },
+  "sourceReview": "ACCEPT freeze02; review-freeze02.md",
+  "candidate": {
+    "classification": "pure-in-memory-candidate-not-official-output-not-installed",
+    "at": "2026-10-31T20:01:43.299Z",
+    "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+    "distributionHash": "5de01291e5dd0a7e1d8142f3a64dc4acd466bec8d94eb22f129059f6f88bccf7",
+    "releaseFiles": 70,
+    "bundleFiles": 87,
+    "candidatePackageMatches": true
+  },
+  "testsReplayedByParent": 0,
+  "officialOutputWritten": false,
+  "installedWrites": 0,
+  "aeCalls": 0,
+  "releaseCertified": false,
+  "deferredCoverage": [
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "stopped-update-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "stopped-update"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "stopped-update"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "stopped-update"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "stopped-update"
+        ]
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "legacy-owner-migration"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "owner-installation"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "owner-installation"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/",
+          "owner-installation"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "owner-installation"
+        ]
+      ]
+    },
+    {
+      "check": "owner-ipc-process",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "owner-ipc-process"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "owner-ipc-process"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "owner-ipc-process"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "native-read-capture"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "native-read-capture"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/http-peer.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "windows-cim-probe"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/http-peer.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/http-peer.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "human-window"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "human-window"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "human-window"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "human-window"
+        ]
+      ]
+    },
+    {
+      "check": "audit-repairs",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "audit-repairs"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "audit-repairs"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "audit-repairs"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/",
+          "audit-repairs"
+        ]
+      ]
+    },
+    {
+      "check": "core-control",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "core-control"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "core-control"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "core-control"
+        ]
+      ]
+    },
+    {
+      "check": "core-admission",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "core-admission"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "core-admission"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "core-admission"
+        ]
+      ]
+    },
+    {
+      "check": "worker-isolation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "worker-isolation"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "worker-isolation"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "worker-isolation"
+        ]
+      ]
+    },
+    {
+      "check": "protocol-codec",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "protocol-codec"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "protocol-codec"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "protocol-codec"
+        ]
+      ]
+    },
+    {
+      "check": "workflow-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "workflow-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "validation-routing",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "validation-routing"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "validation-routing"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "validation-routing"
+        ]
+      ]
+    },
+    {
+      "check": "artifact-boundaries",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "artifact-boundaries"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "artifact-boundaries"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "artifact-boundaries"
+        ]
+      ]
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "cep-transport"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "cep-transport"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "cep-transport"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/",
+          "cep-transport"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/"
+        },
+        {
+          "file": "core4/test/manual-runtime.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/installable-runtime.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/owner-attachments.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/stopped-host-readoption-operator.test.js",
+          "dependency": "test/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/manual-runtime.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/installable-runtime.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/owner-attachments.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/stopped-host-readoption-operator.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ]
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "installed-composition"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "installed-composition"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "installed-composition"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "exact-f548-transition"
+        ]
+      ]
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/http-peer.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "standalone-installer"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "standalone-installer"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "standalone-installer"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "standalone-installer"
+        ]
+      ]
+    }
+  ]
+}

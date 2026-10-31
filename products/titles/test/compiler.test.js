@@ -11,7 +11,7 @@ const publicContract = require('../compat/titles-current-target.contract.json');
 const clone = value => JSON.parse(JSON.stringify(value));
 const productRoot = path.resolve(__dirname, '..');
 const coreRoot = path.resolve(productRoot, '../../core4');
-const modulePin = '6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46';
+const modulePin = '189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79';
 function inputs() {
   return { contract: { contractId: '1'.repeat(64), moduleId: 'titles-current-target', operationId: 'set-current-text',
     modulePin, admissionPin: '2'.repeat(64), contract: clone(publicContract) },
@@ -51,7 +51,7 @@ test('independent deterministic preview and exact build; fresh desired text chan
   assert.equal(payload.recordContext.purpose, 'user_work'); assert.equal(payload.recordContext.lifetime, 'work_context');
   assert.equal(payload.recordContext.contextId, job.jobId);
   const changed = { ...job, text: 'Другой текст' }, other = prepareBuild(changed, contract, inspection);
-  assert.notEqual(other.taskId, payload.taskId); assert.notEqual(other.workflowId, payload.workflowId);
+  assert.equal(Object.hasOwn(payload, 'taskId'), false); assert.equal(Object.hasOwn(other, 'taskId'), false); assert.notEqual(other.workflowId, payload.workflowId);
   assert.equal(other.steps[0].input.text, changed.text);
   assert.deepEqual({ job, contract, inspection }, originals);
 });
@@ -150,16 +150,20 @@ test('production import closure is own files + allowed Node builtins; contract p
   assert.equal(visited.size, 2);
   assert.deepEqual(publicContract, JSON.parse(fs.readFileSync(path.join(coreRoot, 'modules/titles-current-target/contract.json'))));
 });
-test('actual Core4 Broker accepts one-step payload, supplies expectations and rejects forged reference; VM only', async t => {
+test('actual owner boundary accepts first compiler payload with server taskId and Broker rejects forged evidence; VM only', async t => {
   // All Core imports below are TEST-ONLY. This never uses an installed Broker,
   // network listener, CEP process, native UI, public grants or a mutating phase.
   const { Broker } = require('../../../core4/core/broker');
   const { brandAuthorityPort, brandExecutionPolicyPort } = require('../../../core4/core/authority');
   const { encode, decode } = require('../../../core4/protocol/codec');
   const { initialState, environment } = require('../../../core4/test/fixtures/ae');
-  let broker;
-  const vm = require('node:vm'), directory = temporary(t, () => broker?.close()), state = initialState();
-  const sourceBefore = tree(coreRoot), executorSource = fs.readFileSync(path.join(coreRoot, 'modules/titles-current-target/executor.jsx'), 'utf8');
+  const { createAttachmentOwner } = require('../../../core4/runtime/attachment-owner');
+  let broker, owner;
+  const vm = require('node:vm'), directory = temporary(t, async () => { await owner?.close(); await broker?.close(); }), state = initialState();
+  // The parent owns concurrent Markdown progress/docs. Every executable, asset
+  // and JSON byte remains covered by this source-immutability assertion.
+  const sourceTree = () => Object.fromEntries(Object.entries(tree(coreRoot)).filter(([file]) => !file.endsWith('.md')));
+  const sourceBefore = sourceTree(), executorSource = fs.readFileSync(path.join(coreRoot, 'modules/titles-current-target/executor.jsx'), 'utf8');
   let channel, inspected = 0;
   const transport = {
     async connect(binding) { channel = binding; return { receiverStoreIdentity: 'offline-titles-store' }; },
@@ -177,10 +181,16 @@ test('actual Core4 Broker accepts one-step payload, supplies expectations and re
   const policy = brandExecutionPolicyPort({ describe: () => ({ policyId: publicContract.executionPolicy, provenance: 'offline-build-test-only' }), assertCurrent() {}, prepareReservation: deny, assertReservation: deny, verifyCompletion: deny });
   const stateDir = path.join(directory, 'broker-state');
   broker = new Broker({ root: coreRoot, stateDir, privateEmbedding: { authority, executionPolicy: policy, transport } });
-  await broker.connect();
-  const contract = broker.getContract({ moduleId: 'titles-current-target' });
+  let buildCalls = 0;
+  owner = createAttachmentOwner({ runtime: { status: () => broker.status(), close() {} }, activity: () => ({ pending: !!broker.controllerBusy || !!broker.worker.status().pending, unresolved: !!broker.ledger.unresolved().length, fault: !!broker.ledger.corrupt }),
+    async invoke(method, payload, context) { if (!context.observer) context.assertCurrent(); if (method === 'build') buildCalls++; return broker[method](payload); } });
+  const session = Object.freeze({ clientSessionId: 'titles-product-fixture' }); owner.onAttach(session);
+  const request = (method, payload = {}) => owner.onRequest({ session, method, payload });
+  async function call(method, payload) { const result = await request(method, payload); assert.equal(result.ok, true, JSON.stringify(result)); return result.value; }
+  await call('controller_acquire'); await call('core_connect');
+  const contract = await call('get_module_contract', { moduleId: 'titles-current-target' });
   const fixtureJob = { ...job, target: { projectId: state.projectId, compId: 1, layerId: 102 } };
-  const evidence = await broker.inspect({ moduleId: contract.moduleId, contractId: contract.contractId, target: fixtureJob.target });
+  const evidence = await call('inspect_module_target', { moduleId: contract.moduleId, contractId: contract.contractId, target: fixtureJob.target });
   assert.equal(evidence.synthetic, true);
   assert.throws(() => prepareBuild(fixtureJob, contract, evidence), /synthetic_inspection/);
   // Explicitly alter untrusted export metadata ONLY to exercise production-shape
@@ -189,7 +199,12 @@ test('actual Core4 Broker accepts one-step payload, supplies expectations and re
   const projected = { ...evidence, synthetic: false }, payload = prepareBuild(fixtureJob, contract, projected);
   const testPayload = { ...payload, recordContext: { ...payload.recordContext,
     purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: 'titles-offline-broker-build' } };
-  const built = await broker.build(testPayload), plan = broker.builds.get(built.buildId);
+  assert.equal(Object.hasOwn(testPayload, 'taskId'), false);
+  const built = await call('build_solution_plan', testPayload), plan = broker.builds.get(built.buildId);
+  assert.match(built.taskId, /^task-/); assert.equal(plan.taskId, built.taskId); assert.equal(buildCalls, 1);
+  const beforeForeign = fs.readFileSync(path.join(stateDir, 'ledger.ndjson'));
+  assert.deepEqual(await request('build_solution_plan', { ...testPayload, taskId: 'titles-unbound-product-task' }), { ok: false, code: 'owner_reference_generation' });
+  assert.equal(buildCalls, 1); assert.deepEqual(fs.readFileSync(path.join(stateDir, 'ledger.ndjson')), beforeForeign);
   assert.equal(plan.oneStep, true); assert.equal(plan.engine, null);
   assert.equal(plan.recordContext.purpose, 'technical_check');
   assert.equal(plan.recordContext.lifetime, 'ephemeral_check');
@@ -200,6 +215,7 @@ test('actual Core4 Broker accepts one-step payload, supplies expectations and re
   const forged = prepareBuild(fixtureJob, contract, { ...projected, evidenceRef: 'evidence-11111111-1111-4111-8111-111111111111' });
   const forgedTestPayload = { ...forged, recordContext: { ...forged.recordContext,
     purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: 'titles-offline-broker-build' } };
+  assert.deepEqual(await request('build_solution_plan', forgedTestPayload), { ok: false, code: 'owner_reference_generation' }); assert.equal(buildCalls, 1);
   await assert.rejects(broker.build(forgedTestPayload), /server_evidence_required/);
   const retained = tree(stateDir);
   const workflowCopy = path.join(directory, 'removable-product'); fs.cpSync(productRoot, workflowCopy, { recursive: true });
@@ -209,5 +225,5 @@ test('actual Core4 Broker accepts one-step payload, supplies expectations and re
   fs.rmSync(workflowCopy, { recursive: true }); assert.deepEqual(tree(stateDir), retained);
   assert.equal(fs.existsSync(path.join(stateDir, 'ledger.ndjson')), true);
   assert.equal(state.text, 'Before'); assert.equal(state.counts.titles, 0); assert.equal(inspected, 1);
-  assert.deepEqual(tree(coreRoot), sourceBefore, 'Core/CEP source bytes unchanged');
+  assert.deepEqual(sourceTree(), sourceBefore, 'Core/CEP executable and data source bytes unchanged');
 });

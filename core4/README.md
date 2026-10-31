@@ -112,7 +112,15 @@ Permanent worker тоже запускается из закреплённой �
 
 Worker выполняет admitted local code под тем же OS user: это изоляция event loop, **не OS sandbox**. Guard консервативно запрещает imports/require, Node/global ports и dynamic evaluation у modules/engine. Он сильнее literal-require карты, но не доказывает отсутствие всех возможных JS escape; доверие по-прежнему требует review закреплённых bytes. Core не принимает script/executor paths, claims о resource/effect/grant или `verified:true`. Public API не содержит synthetic issuer, raw JSX, save, destructive или issuance grants.
 
-Публичные tools: `core_status`, `core_connect`, `core_disconnect`, `core_diagnostics`, `list_modules`, `get_module_contract`, `inspect_module_target`, `build_solution_plan`, `propose_plan`, `dry_run_plan`, `run_plan`, `get_task`, `reset_task`, `reconcile_task`. `tools/call` принимает `{name, arguments:{payload:{...}}}`. Contracts выбираются через exact contractId; build с `steps` принимает server evidenceRef, target/desired input, dependencies и ограниченные typed bindings. Proposal создаёт только broker. Confirmation/ownership/checkpoint предоставляет private trusted embedding port, недоступный MCP; единственная реализация issuer в этом срезе находится в `test/fixtures/authority.js` и явно synthetic.
+Публичные tools: `core_status`, `core_connect`, `core_disconnect`, `core_diagnostics`, `list_modules`, `get_module_contract`, `inspect_module_target`, `build_solution_plan`, `propose_plan`, `dry_run_plan`, `run_plan`, `get_task`, `reset_task`, `reconcile_task`. `tools/call` принимает `{name, arguments:{payload:{...}}}`. Contracts выбираются через exact contractId; build с `steps` принимает server evidenceRef, target/desired input, dependencies и ограниченные typed bindings. Proposal создаёт только broker. Confirmation/ownership/checkpoint предоставляет private trusted embedding port, недоступный MCP. Generic automatic-lifecycle issuer остаётся synthetic fixture; current manual composition использует отдельный production `runtime/manual-policy.js` с native confirmation и без project-incarnation continuity.
+
+В owner/manual composition для Titles сначала приобретается controller lease,
+затем вызывается `core_connect` с проверкой `available:true`. CEP Connected и
+read-only project-inspection не означают, что транспорт Broker уже подключён.
+Новый taskId выдаёт build; переданный taskId owner принимает только как ранее
+привязанный server ref текущего lease generation. После release/acquire прежние
+inspection/build/proposal/dry-run refs не используются; lease продлевается штатным
+`controller_renew`. Эти шаги не заменяют host reservation и native подтверждение.
 
 Closed receiver в `core/receiver.js` принимает authenticated protocol/controller/channel/command/executor/payload bindings и только три fixed entry points `inspect/mutate/verify`. Executor bytes provisioned отдельно через private installation seam, не приходят от worker. Реальная CEP доставка не подключена. Fixtures используют этот receiver/codec и actual JSX executor через VM с fake AE APIs.
 

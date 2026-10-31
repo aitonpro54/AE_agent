@@ -447,3 +447,14 @@ inspection_failed. Отдельный узкий engineering block
 `core4-titles-inspection-20261101.md` получает bounded причину через typed путь и
 исправляет подтверждённый source defect перед продолжением R5. Visual baseline
 PAPER TITLES на0:00:02:11 осмотрен, mutation/save/restart0. Full release не заявлен.
+
+1ноября — source R5 snapshot repair freeze02 принят. Progress: CharacterRange
+full character proof (active/dormant colors), finite readonly diagnostic tuple,
+первый compiler build без taskId;10source/test paths, registry/owner gates unchanged.
+Validation: один frozen current Core7checks184PASS + product8 =192uniquePASS,
+boundaries44, syntax/whitespace PASS; root verified10source/189deps/7keys до/после/
+current, full raw/framework summaries, parent replay0. Independent ACCEPT.
+Decision Log: candidate packagebe9afe99…/distribution5de01291…/70runtime87bundle
+готов к immutable write и новому штатному stopped update. Currentcc2f/adoption/
+history пока прежние; actual mutation0. Deferred24closures/full release/native
+Titles proof остаются открытыми. Полные детали — core4-titles-inspection-20261101.md.

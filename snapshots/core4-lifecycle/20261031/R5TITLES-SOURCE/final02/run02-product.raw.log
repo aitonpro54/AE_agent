@@ -1,0 +1,16 @@
+✔ independent deterministic preview and exact build; fresh desired text changes payload identity (3.6249ms)
+✔ strict job rejects unknown/mixed/unsupported input, types, budgets and version (1.1274ms)
+✔ single-line Unicode text preserves meaningful whitespace and rejects control/blank inputs (0.3884ms)
+✔ contract/profile mismatch and malformed evidence fail before producing a payload (5.9773ms)
+✔ contract references require strings without RegExp coercion (4.8013ms)
+✔ CLI explicit files only: deterministic stdout, strict arguments, byte budgets, no workspace writes (671.0757ms)
+✔ production import closure is own files + allowed Node builtins; contract profile equals public source (0.8398ms)
+✔ actual owner boundary accepts first compiler payload with server taskId and Broker rejects forged evidence; VM only (323.1457ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1072.2389

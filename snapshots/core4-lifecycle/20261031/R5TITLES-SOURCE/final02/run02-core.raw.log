@@ -1,0 +1,2133 @@
+{
+  "mode": "scoped",
+  "certification": "selected-artifacts-only",
+  "releaseCertified": false,
+  "contractImpacts": [],
+  "checks": [
+    {
+      "check": "manual-runtime",
+      "reasons": [
+        "changed owner manual-runtime: core4/modules/titles-current-target/executor.jsx",
+        "changed owner manual-runtime: core4/modules/titles-current-target/artifact.json",
+        "changed public contract manual-current-target-module-v1: core4/modules/titles-current-target/artifact.json",
+        "changed owner manual-runtime: core4/config/admissions/titles-current-target.json",
+        "changed public contract manual-current-target-module-v1: core4/config/admissions/titles-current-target.json",
+        "changed public contract fixed-http-manual-asset-v1: core4/integrations/cep/http-peer.js",
+        "changed owner manual-runtime: core4/test/manual-runtime.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "manual-runtime",
+          "manual-runtime"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "manual-runtime",
+          "manual-runtime"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "manual-current-target-module-v1",
+          "manual-runtime"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "manual-runtime",
+          "manual-runtime"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "manual-current-target-module-v1",
+          "manual-runtime"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "fixed-http-manual-asset-v1",
+          "manual-runtime"
+        ],
+        [
+          "core4/test/manual-runtime.test.js",
+          "manual-runtime",
+          "manual-runtime"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-runtime",
+        "test/manual-runtime.test.js"
+      ],
+      "evidenceKey": "aea2d6b8c069382f71a9554e9dd87b56ea3761ac188772d2472b9a3a8148a850",
+      "reason": "changed owner manual-runtime: core4/modules/titles-current-target/executor.jsx; changed owner manual-runtime: core4/modules/titles-current-target/artifact.json; changed public contract manual-current-target-module-v1: core4/modules/titles-current-target/artifact.json; changed owner manual-runtime: core4/config/admissions/titles-current-target.json; changed public contract manual-current-target-module-v1: core4/config/admissions/titles-current-target.json; changed public contract fixed-http-manual-asset-v1: core4/integrations/cep/http-peer.js; changed owner manual-runtime: core4/test/manual-runtime.test.js",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "manual-runtime",
+          "manual-runtime"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "manual-runtime",
+          "manual-runtime"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "manual-current-target-module-v1",
+          "manual-runtime"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "manual-runtime",
+          "manual-runtime"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "manual-current-target-module-v1",
+          "manual-runtime"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "fixed-http-manual-asset-v1",
+          "manual-runtime"
+        ],
+        [
+          "core4/test/manual-runtime.test.js",
+          "manual-runtime",
+          "manual-runtime"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/manual-http-runtime.js",
+        "test/manual-runtime.test.js",
+        "tools/package-installable.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "installable-runtime",
+      "reasons": [
+        "changed public contract manual-current-target-module-v1: core4/modules/titles-current-target/artifact.json",
+        "changed public contract manual-current-target-module-v1: core4/config/admissions/titles-current-target.json",
+        "changed owner installable-runtime: core4/integrations/cep/http-peer.js",
+        "changed owner installable-runtime: core4/test/installable-runtime.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "manual-current-target-module-v1",
+          "installable-runtime"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "manual-current-target-module-v1",
+          "installable-runtime"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "installable-runtime",
+          "installable-runtime"
+        ],
+        [
+          "core4/test/installable-runtime.test.js",
+          "installable-runtime",
+          "installable-runtime"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ],
+      "evidenceKey": "d511ba3d27cca00fba82b4bb657aee4131e8bbd1cf7ea3c1234276f7fdfc5b36",
+      "reason": "changed public contract manual-current-target-module-v1: core4/modules/titles-current-target/artifact.json; changed public contract manual-current-target-module-v1: core4/config/admissions/titles-current-target.json; changed owner installable-runtime: core4/integrations/cep/http-peer.js; changed owner installable-runtime: core4/test/installable-runtime.test.js",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "manual-current-target-module-v1",
+          "installable-runtime"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "manual-current-target-module-v1",
+          "installable-runtime"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "installable-runtime",
+          "installable-runtime"
+        ],
+        [
+          "core4/test/installable-runtime.test.js",
+          "installable-runtime",
+          "installable-runtime"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/installable-runtime.test.js",
+        "tools/adopt-host.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "owner-runtime",
+      "reasons": [
+        "changed owner installable-runtime: core4/integrations/cep/http-peer.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/integrations/cep/http-peer.js",
+          "installable-runtime",
+          "owner-runtime"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-runtime",
+        "test/owner-runtime.test.js"
+      ],
+      "evidenceKey": "849053b6eef823d677a07ce2b7d69a9ae5d117d5e3e61430bc3205abc00952db",
+      "reason": "changed owner installable-runtime: core4/integrations/cep/http-peer.js",
+      "dependencyPath": [
+        [
+          "core4/integrations/cep/http-peer.js",
+          "installable-runtime",
+          "owner-runtime"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/validation-map.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/artifact.json",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/host-dispatcher.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/manifest.json",
+        "integrations/cep/peer-protocol.js",
+        "integrations/cep/transport.js",
+        "integrations/cep/wire.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-runtime-child.js",
+        "test/owner-runtime.test.js",
+        "tools/check-boundaries.js",
+        "tools/disposition-install-preflight.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "native-read-recovery",
+      "reasons": [
+        "changed owner installable-runtime: core4/integrations/cep/http-peer.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/integrations/cep/http-peer.js",
+          "installable-runtime",
+          "native-read-recovery"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-recovery",
+        "test/native-read-recovery.test.js"
+      ],
+      "evidenceKey": "57a11fbe9be3f555eb4c0e9d74a8bf08285fce1cbfd20a8acfd9c34f0b04cde7",
+      "reason": "changed owner installable-runtime: core4/integrations/cep/http-peer.js",
+      "dependencyPath": [
+        [
+          "core4/integrations/cep/http-peer.js",
+          "installable-runtime",
+          "native-read-recovery"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/disposition-child.js",
+        "test/fixtures/fixed-format1-package.js",
+        "test/fixtures/legacy-completion-store.js",
+        "test/fixtures/legacy-installation-v1.js",
+        "test/fixtures/manual-capture-driver-source.txt",
+        "test/fixtures/native-read-recovery.js",
+        "test/fixtures/stdio-main-ephemeral.js",
+        "test/native-read-recovery.test.js",
+        "tools/capture-native-read.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "owner-attachments",
+      "reasons": [
+        "changed owner owner-attachments: core4/test/owner-attachments.test.js",
+        "changed component dependency test/owner-attachments.test.js: core4/test/owner-attachments.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/owner-attachments.test.js",
+          "owner-attachments",
+          "owner-attachments"
+        ],
+        [
+          "core4/test/owner-attachments.test.js",
+          "test/owner-attachments.test.js",
+          "owner-attachments"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-attachments",
+        "test/owner-attachments.test.js"
+      ],
+      "evidenceKey": "8c519e11c705c9c170f2e8213b95d74ce8b61d1e8198b4a848a3328abeae724d",
+      "reason": "changed owner owner-attachments: core4/test/owner-attachments.test.js; changed component dependency test/owner-attachments.test.js: core4/test/owner-attachments.test.js",
+      "dependencyPath": [
+        [
+          "core4/test/owner-attachments.test.js",
+          "owner-attachments",
+          "owner-attachments"
+        ],
+        [
+          "core4/test/owner-attachments.test.js",
+          "test/owner-attachments.test.js",
+          "owner-attachments"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "test/owner-attachments.test.js"
+      ]
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "reasons": [
+        "changed owner stopped-host-readoption-operator: core4/test/stopped-host-readoption-operator.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/stopped-host-readoption-operator.test.js",
+          "stopped-host-readoption-operator",
+          "stopped-host-readoption-operator"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption-operator",
+        "test/stopped-host-readoption-operator.test.js"
+      ],
+      "evidenceKey": "38df1175f4e30fd12aa8a8743559ee1cf0e41ba967efe5f8ff1d1d24cbe822a1",
+      "reason": "changed owner stopped-host-readoption-operator: core4/test/stopped-host-readoption-operator.test.js",
+      "dependencyPath": [
+        [
+          "core4/test/stopped-host-readoption-operator.test.js",
+          "stopped-host-readoption-operator",
+          "stopped-host-readoption-operator"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/validation-map.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/artifact.json",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/host-dispatcher.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/manifest.json",
+        "integrations/cep/peer-protocol.js",
+        "integrations/cep/transport.js",
+        "integrations/cep/wire.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/stopped-host-readoption-operator.test.js",
+        "tools/adopt-host.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "recovery-inspection",
+      "reasons": [
+        "changed component dependency integrations/cep/http-peer.js: core4/integrations/cep/http-peer.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "recovery-inspection"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=recovery-inspection",
+        "test/recovery-inspection.test.js"
+      ],
+      "evidenceKey": "44c785225bba4b5453c50014f409b8ea414aea843106a671e633775160147435",
+      "reason": "changed component dependency integrations/cep/http-peer.js: core4/integrations/cep/http-peer.js",
+      "dependencyPath": [
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "recovery-inspection"
+        ]
+      ],
+      "dependencies": [
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-reservation-provider.js",
+        "test/recovery-inspection.test.js"
+      ]
+    }
+  ],
+  "executionBatches": [
+    {
+      "checks": [
+        "manual-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:manual-runtime)",
+        "test/manual-runtime.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "installable-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:installable-runtime)",
+        "test/installable-runtime.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "owner-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-runtime)",
+        "test/owner-runtime.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "native-read-recovery"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:native-read-recovery)",
+        "test/native-read-recovery.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "owner-attachments"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-attachments)",
+        "test/owner-attachments.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "stopped-host-readoption-operator"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-host-readoption-operator)",
+        "test/stopped-host-readoption-operator.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "recovery-inspection"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:recovery-inspection)",
+        "test/recovery-inspection.test.js"
+      ]
+    }
+  ],
+  "deferredCoverage": [
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "stopped-update-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "stopped-update"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "stopped-update"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "stopped-update"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "stopped-update"
+        ]
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "legacy-owner-migration"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "owner-installation"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "owner-installation"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/",
+          "owner-installation"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "owner-installation"
+        ]
+      ]
+    },
+    {
+      "check": "owner-ipc-process",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "owner-ipc-process"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "owner-ipc-process"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "owner-ipc-process"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "native-read-capture"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "native-read-capture"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/http-peer.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "windows-cim-probe"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/http-peer.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/http-peer.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "human-window"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "human-window"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "human-window"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "human-window"
+        ]
+      ]
+    },
+    {
+      "check": "audit-repairs",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "audit-repairs"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "audit-repairs"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "audit-repairs"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/",
+          "audit-repairs"
+        ]
+      ]
+    },
+    {
+      "check": "core-control",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "core-control"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "core-control"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "core-control"
+        ]
+      ]
+    },
+    {
+      "check": "core-admission",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "core-admission"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "core-admission"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "core-admission"
+        ]
+      ]
+    },
+    {
+      "check": "worker-isolation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "worker-isolation"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "worker-isolation"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "worker-isolation"
+        ]
+      ]
+    },
+    {
+      "check": "protocol-codec",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "protocol-codec"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "protocol-codec"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "protocol-codec"
+        ]
+      ]
+    },
+    {
+      "check": "workflow-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "workflow-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "validation-routing",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "validation-routing"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "validation-routing"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "validation-routing"
+        ]
+      ]
+    },
+    {
+      "check": "artifact-boundaries",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "artifact-boundaries"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "artifact-boundaries"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "artifact-boundaries"
+        ]
+      ]
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "cep-transport"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "cep-transport"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "cep-transport"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/",
+          "cep-transport"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/"
+        },
+        {
+          "file": "core4/test/manual-runtime.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/installable-runtime.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/owner-attachments.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/stopped-host-readoption-operator.test.js",
+          "dependency": "test/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/manual-runtime.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/installable-runtime.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/owner-attachments.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/stopped-host-readoption-operator.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ]
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "installed-composition"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "installed-composition"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "installed-composition"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "exact-f548-transition"
+        ]
+      ]
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/modules/titles-current-target/executor.jsx",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/modules/titles-current-target/artifact.json",
+          "dependency": "modules/"
+        },
+        {
+          "file": "core4/config/admissions/titles-current-target.json",
+          "dependency": "config/admissions/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/http-peer.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/modules/titles-current-target/executor.jsx",
+          "modules/",
+          "standalone-installer"
+        ],
+        [
+          "core4/modules/titles-current-target/artifact.json",
+          "modules/",
+          "standalone-installer"
+        ],
+        [
+          "core4/config/admissions/titles-current-target.json",
+          "config/admissions/",
+          "standalone-installer"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "standalone-installer"
+        ]
+      ]
+    }
+  ]
+}
+✔ manual-runtime actual Broker HTTP compiled JSX generic flow uses one native confirm and original local transaction receipt without session (440.4062ms)
+✔ manual-runtime native cancellation and post-confirm drift do not set text; fresh proposal required (587.2046ms)
+✔ manual-runtime absent adoption and ambiguous process/managed writer fail before mutation delivery (473.2693ms)
+✔ manual-runtime setter uncertainty keeps UNKNOWN, durable receiver fence and no replay (284.8592ms)
+✔ manual-runtime fresh OS process identity, named managed writers and observation TTL are required before delivery (1490.7579ms)
+✔ manual-runtime v1 UNKNOWN fence still overlaps session-free target; known other-machine constraint is separate (1365.5341ms)
+✔ manual-runtime forged policy/reservation JSON never receives a private brand; tampered original receipt cannot succeed and real original proof reconciles without replay (716.8835ms)
+✔ manual-runtime final synchronous reservation guard rejects expiry before send with no setter (2637.8688ms)
+✔ manual-runtime authenticated but wrong protocol version cannot certify original completion (534.1263ms)
+✔ manual-runtime explicit oneStep works with physically absent engine and unrelated packages (658.6458ms)
+✔ manual-runtime lexical ES3 JSON codec is data-only, matches native JSON on Unicode/control values and denies malformed/deep/duplicate/prototype input (80.9134ms)
+✔ manual-runtime known paragraph Enumerator is normalized to numeric protected value; unknown host objects fail closed (73.5413ms)
+✔ manual-runtime inactive TextDocument colors throw but are never read; every dormant and active range field remains protected (62.9553ms)
+✔ manual-runtime finite diagnostic native font refuses inspect and verify without style defaults (8.8182ms)
+✔ manual-runtime finite diagnostic missing font refuses inspect and verify without style defaults (4.2978ms)
+✔ manual-runtime finite diagnostic native font_size refuses inspect and verify without style defaults (6.4178ms)
+✔ manual-runtime finite diagnostic missing font_size refuses inspect and verify without style defaults (6.9019ms)
+✔ manual-runtime finite diagnostic native apply_fill refuses inspect and verify without style defaults (7.5667ms)
+✔ manual-runtime finite diagnostic missing apply_fill refuses inspect and verify without style defaults (5.1262ms)
+✔ manual-runtime finite diagnostic native fill_color refuses inspect and verify without style defaults (4.1786ms)
+✔ manual-runtime finite diagnostic missing fill_color refuses inspect and verify without style defaults (3.8011ms)
+✔ manual-runtime finite diagnostic native apply_stroke refuses inspect and verify without style defaults (3.4123ms)
+✔ manual-runtime finite diagnostic missing apply_stroke refuses inspect and verify without style defaults (2.5512ms)
+✔ manual-runtime finite diagnostic native stroke_color refuses inspect and verify without style defaults (3.1881ms)
+✔ manual-runtime finite diagnostic missing stroke_color refuses inspect and verify without style defaults (3.214ms)
+✔ manual-runtime finite diagnostic native stroke_width refuses inspect and verify without style defaults (2.2923ms)
+✔ manual-runtime finite diagnostic missing stroke_width refuses inspect and verify without style defaults (3.0422ms)
+✔ manual-runtime finite diagnostic native tracking refuses inspect and verify without style defaults (5.1263ms)
+✔ manual-runtime finite diagnostic missing tracking refuses inspect and verify without style defaults (3.5229ms)
+✔ manual-runtime finite diagnostic native baseline_shift refuses inspect and verify without style defaults (2.6727ms)
+✔ manual-runtime finite diagnostic missing baseline_shift refuses inspect and verify without style defaults (2.2892ms)
+✔ manual-runtime finite diagnostic native horizontal_scale refuses inspect and verify without style defaults (2.5744ms)
+✔ manual-runtime finite diagnostic missing horizontal_scale refuses inspect and verify without style defaults (2.1123ms)
+✔ manual-runtime finite diagnostic native vertical_scale refuses inspect and verify without style defaults (2.0934ms)
+✔ manual-runtime finite diagnostic missing vertical_scale refuses inspect and verify without style defaults (1.9274ms)
+✔ manual-runtime finite diagnostic native faux_bold refuses inspect and verify without style defaults (2.0921ms)
+✔ manual-runtime finite diagnostic missing faux_bold refuses inspect and verify without style defaults (2.1669ms)
+✔ manual-runtime finite diagnostic native faux_italic refuses inspect and verify without style defaults (2.537ms)
+✔ manual-runtime finite diagnostic missing faux_italic refuses inspect and verify without style defaults (3.8441ms)
+✔ manual-runtime finite diagnostic native justification refuses inspect and verify without style defaults (3.646ms)
+✔ manual-runtime finite diagnostic missing justification refuses inspect and verify without style defaults (4.317ms)
+✔ manual-runtime finite diagnostic native leading refuses inspect and verify without style defaults (4.1669ms)
+✔ manual-runtime finite diagnostic missing leading refuses inspect and verify without style defaults (3.4746ms)
+✔ manual-runtime finite diagnostic native auto_leading refuses inspect and verify without style defaults (3.798ms)
+✔ manual-runtime finite diagnostic missing auto_leading refuses inspect and verify without style defaults (3.0049ms)
+✔ manual-runtime mixed active-color still refuses the complete character proof (1.8637ms)
+✔ manual-runtime mixed dormant-color still refuses the complete character proof (1.3988ms)
+✔ manual-runtime mixed paint-flag still refuses the complete character proof (1.676ms)
+✔ manual-runtime native stages are finite and unknown exceptions never export a message or stack (12.2341ms)
+✔ manual-runtime post-setter native getter failure remains UNKNOWN ae_error and never becomes a read rejection (7.0839ms)
+✔ manual-runtime failed typed inspection completes journal diagnostic and never creates Broker evidence or a setter (506.4225ms)
+ℹ tests 51
+ℹ suites 0
+ℹ pass 51
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10134.8134
+✔ installable-runtime finite Titles read codes complete only admitted read phases and publish bounded diagnostics after durability (628.3211ms)
+✔ installable-runtime read diagnostic rejects unknown codes extra fields and bad correlation without journal or status promotion (49.5484ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for project (25.6221ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for foreign-key (23.8827ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for foreign-module (22.3568ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for foreign-operation (22.6768ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for foreign-profile (17.5099ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for mutate (30.5145ms)
+✔ installable-runtime package deterministic closure, install CAS, exact rollback and stable origin (2828.8424ms)
+✔ installable-runtime staged update prepares every complete file before its first visible rename and publishes config last (4843.8955ms)
+✔ installable-runtime staged short write preserves the whole live installation before switch: cep (2379.5632ms)
+✔ installable-runtime staged short write preserves the whole live installation before switch: descriptor (2927.3063ms)
+✔ installable-runtime staged short write preserves the whole live installation before switch: client (2963.5214ms)
+✔ installable-runtime staged short write preserves the whole live installation before switch: config (2918.4473ms)
+✔ installable-runtime staged final CAS refuses changed owned client stage without publishing it: false (2321.0163ms)
+✔ installable-runtime staged final CAS refuses changed owned client stage without publishing it: true (2497.7313ms)
+✔ installable-runtime staged foreign CEP stage is preserved and never replaces the live panel (2598.8845ms)
+✔ installable-runtime staged cross-volume planning and apply refuse before any installation writes (288.7925ms)
+✔ installable-runtime full generated host registry parses as ES3 before any host evaluation (107.2866ms)
+✔ installable-runtime exact release closure rejects extensionless shadow, empty directory and junction before package imports (2858.5548ms)
+✔ installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies (3914.0479ms)
+✔ installable-runtime descriptor changed at startup gate is rejected before package imports (2411.0733ms)
+✔ installable-runtime bounded TOML edit preserves indented neighboring servers and inline-commented Core4 header bytes (660.1626ms)
+✔ installable-runtime CLI apply requires reviewed package hash and mismatches have zero installation writes (234.8161ms)
+✔ installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node (594.7032ms)
+✔ installable-runtime CLI explicit workspace requires an absolute marked source layout before writes (1595.466ms)
+✔ installable-runtime unknown Broker owner, ledger fault or unresolved intent permits diagnostics but no new physical read begin (8007.8564ms)
+✔ installable-runtime actual HTTP auth role, origin, challenge, epoch, replay, bounded input and duplicate peer (112.5403ms)
+✔ installable-runtime exact CEP Origin ingress and CORS success/error/OPTIONS matrix at Node HTTP boundary (115.1199ms)
+✔ installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: null (150.2628ms)
+✔ installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: file:// (200.6309ms)
+✔ installable-runtime panel VM/WebCrypto shim validates challenge Origin before signing or link and signs full original challenge (44.3895ms)
+✔ installable-runtime real HTTP and compiled registry VM: begin before evaluate, receipt before POST, durable ACK then latch clear (130.1616ms)
+✔ installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: null (133.9306ms)
+✔ installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: file:// (178.0214ms)
+✔ installable-runtime missing fixed host registry returns known read rejection after durable begin, no raw fallback (78.8021ms)
+✔ installable-runtime long Cyrillic display names and total inspection budget stay bounded at actual HTTP boundary; next read survives known budget refusal (637.3057ms)
+✔ installable-runtime real stdio child consumes generated MCP config, advertises generic API, status without panel, then typed module inspect via HTTP + VM (3263.087ms)
+✔ installable-runtime private adoption bootstrap imports no mutable operator-relative provider before verified release preflight (2156.827ms)
+✔ installable-runtime real stdio process crash after delivery preserves original ongoing record and blocks new reads after restart (2744.0034ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 57805.0006
+✔ owner-runtime default verified entry markers remain exact and new owner files stay outside the ordinary source package (1501.1662ms)
+✔ owner-runtime normal package without the complete owner cluster refuses private owner mode before any listener or store opens (992.3851ms)
+✔ owner-runtime TEMP installed owner and two real thin Node clients retain the same owner after both client EOF and owner stdin EOF (4342.8264ms)
+✔ owner-runtime foreign HTTP endpoint refuses owner startup before stores open and preserves both empty and retained state byte for byte (4942.0753ms)
+✔ owner-runtime competing starts reserve under the install gate and later owner attempts cannot displace the winner or rewrite its markers (10508.0843ms)
+✔ owner-runtime reserved HTTP server closes and attributed startup fence remains if Broker construction fails before peer creation (6658.6312ms)
+✔ owner-runtime private prebound peer requires a listening native loopback HTTP server and reuses its one listener (54.1544ms)
+✔ owner-runtime initial receiver owner marker leaves status available and refuses controller acquisition without clearing the marker (6035.1816ms)
+✔ owner-runtime initial corrupt Broker ledger blocks acquisition while owner diagnostics remain available (5191.6371ms)
+✔ owner-runtime actual dead settled owner restarts with fresh process proof and unchanged journal and installation (8034.5506ms)
+✔ owner-runtime actual legacy receiver fence exposes only recovery diagnostics without a Broker writer or replay (4363.3147ms)
+✔ owner-runtime actual owner crash after durable delivery restarts diagnostic and never promotes or replays original ongoing work (6709.4242ms)
+✔ owner-runtime inherited generic methods execute on the actual Broker so activity observes its control state (6257.9743ms)
+✔ owner-runtime desired-stop freezes new control while captured original inspection completes after client detach (6668.3656ms)
+✔ owner-runtime owner main signal persists desired-stop and drains original completion without a second shutdown request (4880.2868ms)
+✔ owner-runtime later panel poll after controller detach cannot deliver a queued command and keeps the receiver fenced (6757.0828ms)
+✔ owner-runtime captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry (40.2298ms)
+✔ owner-runtime active poll delivery checks the captured lease again immediately after store.begin (94.5908ms)
+✔ owner-runtime lease expiry across a trusted await is checked at physical submit before durable begin (48.1989ms)
+✔ owner-runtime no captured controller context rejects before durable begin; original completion remains accepted after lease expiry (42.3242ms)
+✔ owner-runtime owner bootstrap rejects complete-tree tampering before importing a modified Broker (1863.7521ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 86100.0155
+✔ native-read-recovery actual Node IPC approval commits one unknown disposition, archives owner and publishes v2 reachable lineage (107466.6435ms)
+✔ native-read-recovery IPC mismatch retains exact prepared plan and gates without journal/owner mutation (31812.6733ms)
+✔ native-read-recovery IPC duplicate retains exact prepared plan and gates without journal/owner mutation (50800.4648ms)
+✔ native-read-recovery IPC disconnect retains exact prepared plan and gates without journal/owner mutation (44902.6397ms)
+✔ native-read-recovery IPC timeout retains exact prepared plan and gates without journal/owner mutation (41981.8238ms)
+✔ native-read-recovery append-short retains gates/evidence and original UNKNOWN without automatic recovery (48031.7836ms)
+✔ native-read-recovery append-fsync retains gates/evidence and original UNKNOWN without automatic recovery (39830.6706ms)
+✔ native-read-recovery archive retains gates/evidence and original UNKNOWN without automatic recovery (36135.0765ms)
+✔ native-read-recovery install-switch retains gates/evidence and original UNKNOWN without automatic recovery (42641.6994ms)
+✔ native-read-recovery approval does not waive fresh original CAS, new owners or additional UNKNOWN (48108.2278ms)
+✔ native-read-recovery private plan and shared lease reject JSON forgery, mutation, foreign scope and startup while held (2125.8729ms)
+✔ native-read-recovery historical Node binding is data, explicit lineage rejects missing/tampered edges and runtime has no data-only selector (4488.3722ms)
+✔ native-read-recovery rollback partial visible switch retains both lease gates and transaction without automatic rollback (3036.8862ms)
+✔ native-read-recovery operator inspect rejects modified managed witness, producer profile and closure before issuance (53374.989ms)
+✔ native-read-recovery owner identity ABA owner-between-inspect-apply refuses C and preserves original history/foreign marker (33807.4448ms)
+✔ native-read-recovery owner identity ABA owner-after-ipc refuses C and preserves original history/foreign marker (39752.5626ms)
+✔ native-read-recovery owner identity ABA owner-after-append refuses C and preserves original history/foreign marker (44050.8605ms)
+✔ native-read-recovery owner identity ABA owner-wrong-archive refuses C and preserves original history/foreign marker (41235.4886ms)
+✔ native-read-recovery owner identity ABA owner-after-rename refuses C and preserves original history/foreign marker (51235.7629ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 764956.8714
+✔ owner-attachments generic tool map remains compatible and observer attachment never acquires (1.6547ms)
+✔ owner-attachments first workflow build omits taskId and binds only the server task; unbound product task is refused before invoke (0.6099ms)
+✔ owner-attachments copied sessions and unlisted RPC cannot reach runtime (0.1709ms)
+✔ owner-attachments refresh requires control while default discovery stays observer (0.2588ms)
+✔ owner-attachments explicit acquisition excludes other clients and exact token governs release (0.3971ms)
+✔ owner-attachments boot durable fault or unresolved forbids acquisition while status remains readable (0.2608ms)
+✔ owner-attachments expired controller cannot execute or renew and does not transfer itself (0.3067ms)
+✔ owner-attachments detached client cannot continue physical send after awaited preparation (0.2651ms)
+✔ owner-attachments caller completion does not release accepted physical/control pending (3.2187ms)
+✔ owner-attachments UNKNOWN after original callback holds sticky fence across detach (0.3199ms)
+✔ owner-attachments prior generation evidence/build/proposal/dryrun cannot become executable (0.3591ms)
+✔ owner-attachments runtime secret messages and arbitrary error codes do not cross attachment (0.1207ms)
+✔ owner-attachments observer context cannot be used for physical access (0.0896ms)
+✔ owner-attachments accepted stateful throw reports uncertainty but preserves actual clean outcome facts (0.1427ms)
+✔ owner-attachments stdio initialize and discovery do not invoke owner or acquire (4.68ms)
+✔ owner-attachments stdio EOF only closes attachment; accepted call is neither cancelled nor retried (31.3356ms)
+✔ owner-attachments stdio metadata never enters domain payload or controller selection (16.8965ms)
+✔ owner-attachments stdio connection loss reports uncertain outcome without resend (1.34ms)
+✔ owner-attachments stdio preserves accepted-owner uncertainty and original request correlation (14.1481ms)
+✔ owner-attachments stdio oversized unterminated frame closes only attachment (7.0247ms)
+✔ owner-attachments stdio secret-shaped handler message or envelope code is never exposed (7.6573ms)
+✔ owner-attachments blocked stdout has bounded buffering and detaches without retry (15.536ms)
+✔ owner-attachments oversized response and long request identity always produce bounded error (7.213ms)
+✔ owner-attachments explicit expired transfer requires fresh holder CAS and invalidates prior references (0.4139ms)
+✔ owner-attachments expired transfer cannot waive actual physical/control pending, unresolved or fault (0.1927ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 181.7697
+✔ stopped-host-readoption-operator source guards require private bootstrap before all nonbuiltins and constant reviewed imports (2.0655ms)
+✔ stopped-host-readoption-operator all four helpers have one exact union entry; build/write/verifier retain unchanged runtime package (322.706ms)
+✔ stopped-host-readoption-operator bootstrap capability remains private through await, then revokes on resolve/reject/synchronous throw (382.6708ms)
+✔ stopped-host-readoption-operator readonly/stdio support and wrong distribution/current pin refuse before operator or native module import (802.1927ms)
+✔ stopped-host-readoption-operator unknown flags duplicates invalid hashes UUID paths and cross-mode witness flags are zero-write early refusals (2882.8844ms)
+✔ stopped-host-readoption-operator tampered distributed stopped-host-readoption.js refuses before operator import (462.1489ms)
+✔ stopped-host-readoption-operator tampered distributed stopped-host-readoption-store.js refuses before operator import (559.0869ms)
+✔ stopped-host-readoption-operator tampered distributed stopped-host-readoption-transaction.js refuses before operator import (463.8283ms)
+✔ stopped-host-readoption-operator tampered distributed operate-stopped-readoption.js refuses before operator import (516.2454ms)
+✔ stopped-host-readoption-operator a validly hashed extra closure file is refused before operator import (497.2239ms)
+✔ stopped-host-readoption-operator valid hashed poisoned installed owner source is only data; failures never output descriptor or credentials (3229.6483ms)
+✔ stopped-host-readoption-operator apply witness hash refuses before election/library import and preserves installed data (5303.6585ms)
+✔ stopped-host-readoption-operator apply witness budget refuses before election/library import and preserves installed data (4602.8495ms)
+✔ stopped-host-readoption-operator apply witness UTF8 refuses before election/library import and preserves installed data (5315.4297ms)
+✔ stopped-host-readoption-operator pinned witness read detects in-place byte drift before any election (4874.8951ms)
+✔ stopped-host-readoption-operator all five modes dispatch exact frozen options and an owned witness snapshot while election stays held (16934.5587ms)
+✔ stopped-host-readoption-operator continuous reservation closes pending HTTP and rebinds after awaited success or refusal (9264.3976ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 56504.8601
+✔ recovery-inspection explicit missing histories and empty ledger report coverage without authority or a ready runtime (1.4323ms)
+✔ recovery-inspection receiver origin and bound original completion settle supplied bytes and freeze facts (1.8146ms)
+✔ recovery-inspection ongoing and UNKNOWN remain unsettled without converting or discarding original history (0.4851ms)
+✔ recovery-inspection receiver checks dispatch, response, payload digest and terminal ordering rather than only checksum (1.17ms)
+✔ recovery-inspection a self-hashed forged terminal disposition is never accepted as settlement (0.5539ms)
+✔ recovery-inspection durable transport completion with unknown physical effect retains reply and remains fenced (0.8071ms)
+✔ recovery-inspection torn UTF8 checksum sequence and oversized line histories fail closed (4.2171ms)
+✔ recovery-inspection ledger acknowledged command remains unresolved and original terminal outcome settles it (0.9058ms)
+✔ recovery-inspection open reservation blocks even a succeeded command and only its original terminal ref settles it (0.7912ms)
+✔ recovery-inspection latest durable constraints preserve unresolved foreign and unfamiliar fences (0.8997ms)
+✔ recovery-inspection does not construct execution stores create directories write files or probe processes (0.3964ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 113.0643

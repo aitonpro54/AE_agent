@@ -1,0 +1,9 @@
+{
+  "classification": "pure-in-memory-candidate-not-official-output-not-installed",
+  "at": "2026-10-31T20:01:43.299Z",
+  "packageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+  "distributionHash": "5de01291e5dd0a7e1d8142f3a64dc4acd466bec8d94eb22f129059f6f88bccf7",
+  "releaseFiles": 70,
+  "bundleFiles": 87,
+  "candidatePackageMatches": true
+}

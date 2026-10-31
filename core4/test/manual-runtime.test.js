@@ -109,3 +109,56 @@ test('manual-runtime known paragraph Enumerator is normalized to numeric protect
   const snapshot = JSON.parse(context.AECore4Host.dispatch(request)); assert.equal(JSON.parse(snapshot.protected).paragraph.justification, 17);
   current = new EnumFixture(999, 'UnknownHostObject'); const refused = JSON.parse(context.AECore4Host.dispatch(request)); assert.equal(refused.readFailureVersion, 1); assert.equal(state.counts.titles, 0);
 });
+
+let diagnosticPackage;
+const diagnosticFields = { font: 'font', fontSize: 'font_size', applyFill: 'apply_fill', fillColor: 'fill_color', applyStroke: 'apply_stroke', strokeColor: 'stroke_color', strokeWidth: 'stroke_width', tracking: 'tracking', baselineShift: 'baseline_shift', horizontalScale: 'horizontal_scale', verticalScale: 'vertical_scale', fauxBold: 'faux_bold', fauxItalic: 'faux_italic', justification: 'justification', leading: 'leading', autoLeading: 'auto_leading' };
+function diagnosticHost({ changeDocument = () => {}, changeRange = () => {}, changeEnvironment = () => {}, style = {} } = {}) {
+  const state = initialState(); Object.assign(state.style, style); delete state.sessionId;
+  const env = environment(state, () => {}), comp = env.app.project.item(1), prop = comp.layer(2).property('ADBE Text Properties').property('ADBE Text Document');
+  Object.defineProperty(prop, 'value', { get() { const doc = { text: state.text, ...state.style, characterRange(index) { const value = { ...state.style }; changeRange(value, index, state); return value; } }; changeDocument(doc, state); return doc; } });
+  changeEnvironment(env, prop, state);
+  const context = vm.createContext({ ...env, JSON: undefined, confirm: () => true }); vm.runInContext('Object.keys=undefined;', context);
+  diagnosticPackage ||= buildPackage(); vm.runInContext(Buffer.from(diagnosticPackage.files['cep/jsx/registry.jsx'], 'base64').toString(), context);
+  const admission = JSON.parse(fs.readFileSync(path.join(root, 'config/admissions/titles-current-target.json'))), target = { projectId: state.projectId, compId: 1, layerId: 102 };
+  return { state, prop, context, target, dispatch(phase = 'inspect', payload = target) { return JSON.parse(context.AECore4Host.dispatch(JSON.stringify({ assetKey: 'titles-current-target-v1', phase, typedPayload: payload, pins: { executorHash: admission.executorHash } }))); } };
+}
+test('manual-runtime inactive TextDocument colors throw but are never read; every dormant and active range field remains protected', () => {
+  let documentReads = 0; const h = diagnosticHost({ style: { applyFill: false, applyStroke: false }, changeDocument(doc) { for (const name of ['fillColor', 'strokeColor']) Object.defineProperty(doc, name, { get() { documentReads++; throw Error('inactive TextDocument color'); } }); } });
+  const snapshot = h.dispatch(), style = JSON.parse(snapshot.protected); assert.equal(snapshot.readFailureVersion, undefined); assert.equal(documentReads, 0);
+  assert.equal(style.character.applyFill, false); assert.equal(style.character.applyStroke, false); assert.deepEqual(style.character.fillColor, h.state.style.fillColor); assert.deepEqual(style.character.strokeColor, h.state.style.strokeColor);
+  assert.deepEqual(Object.keys(style.character), Object.keys(diagnosticFields).filter(name => !['justification', 'leading', 'autoLeading'].includes(name))); assert.equal(h.state.counts.titles, 0);
+  assert.equal(h.dispatch('verify').protected, snapshot.protected); assert.equal(documentReads, 0);
+});
+for (const [name, alias] of Object.entries(diagnosticFields)) for (const failure of ['native', 'missing']) test('manual-runtime finite diagnostic ' + failure + ' ' + alias + ' refuses inspect and verify without style defaults', () => {
+  const change = object => Object.defineProperty(object, name, { get() { if (failure === 'native') throw Error('private native message/stack'); return undefined; } });
+  const paragraph = ['justification', 'leading', 'autoLeading'].includes(name), h = diagnosticHost(paragraph ? { changeDocument: change } : { changeRange: change });
+  for (const phase of ['inspect', 'verify']) assert.deepEqual(h.dispatch(phase), { readFailureVersion: 1, outcome: 'rejected', code: 'titles_' + failure + '_' + alias });
+  assert.equal(h.state.counts.titles, 0);
+});
+for (const mode of ['active-color', 'dormant-color', 'paint-flag']) test('manual-runtime mixed ' + mode + ' still refuses the complete character proof', () => {
+  const h = diagnosticHost({ style: mode === 'dormant-color' ? { applyStroke: false } : {}, changeRange(range, index) { if (index > 0) { if (mode === 'active-color') range.fillColor = [0.5, 0, 0]; else if (mode === 'dormant-color') range.strokeColor = [0.5, 0, 0]; else range.applyFill = false; } } });
+  assert.deepEqual(h.dispatch(), { readFailureVersion: 1, outcome: 'rejected', code: 'unsupported_mixed_style' }); assert.equal(h.state.counts.titles, 0);
+});
+test('manual-runtime native stages are finite and unknown exceptions never export a message or stack', () => {
+  const fixtures = [
+    ['titles_native_target', { changeEnvironment(env) { Object.defineProperty(env.app, 'project', { get() { throw Error('private'); } }); } }],
+    ['titles_native_document', { changeEnvironment(_env, prop) { Object.defineProperty(prop, 'value', { get() { throw Error('private'); } }); } }],
+    ['titles_native_text', { changeDocument(doc) { Object.defineProperty(doc, 'text', { get() { throw Error('private'); } }); } }],
+    ['titles_native_range', { changeDocument(doc) { doc.characterRange = () => { throw Error('private'); }; } }],
+    ['titles_native_serialization', { changeRange(range) { range.font = new (class OpaqueHostValue {})(); } }],
+    ['inspection_failed', { changeEnvironment(env) { const comp = env.app.project.item(1); let reads = 0; Object.defineProperty(comp, 'id', { get() { if (++reads > 1) throw Object.assign(Error('private'), { coreCode: 'private_unlisted_code' }); return 1; } }); } }]
+  ];
+  for (const [code, options] of fixtures) { const h = diagnosticHost(options); assert.deepEqual(h.dispatch(), { readFailureVersion: 1, outcome: 'rejected', code }); assert.equal(h.state.counts.titles, 0); }
+});
+test('manual-runtime post-setter native getter failure remains UNKNOWN ae_error and never becomes a read rejection', () => {
+  const h = diagnosticHost({ changeRange(range, _index, state) { if (state.counts.titles) Object.defineProperty(range, 'font', { get() { throw Error('private post-setter getter'); } }); } });
+  const before = h.dispatch(), proof = { policyId: 'current-matching-target-after-local-confirmation-v1', baselineRevision: before.revision, baselineProtected: before.protected, target: before.target, proposalId: 'fixture', planDigest: 'fixture', taskId: 'fixture', taskEpoch: 0, stepId: 'fixture', checkpointRef: 'fixture', checkpointDigest: 'fixture', baselineDigest: 'fixture' };
+  const result = h.dispatch('mutate', { ...h.target, text: 'After', expectedRevision: before.revision, expectedText: before.text, _execution: proof });
+  assert.deepEqual(result, { outcome: 'unknown', code: 'ae_error' }); assert.equal(h.state.counts.titles, 1); assert.equal(h.state.text, 'After');
+});
+test('manual-runtime failed typed inspection completes journal diagnostic and never creates Broker evidence or a setter', async t => {
+  const h = await harness({ flags: { noCharacterRange: true } }); t.after(() => h.close());
+  await assert.rejects(h.proposal(), error => error.code === 'unsupported_style_proof');
+  assert.equal(h.broker.evidence.size, 0); assert.equal(h.broker.ledger.events.some(event => event.type === 'evidence'), false); assert.equal(h.broker.ledger.commands().length, 0); assert.equal(h.state.counts.titles, 0);
+  const diagnostic = h.peer.status().lastReadFailure; assert.equal(diagnostic.code, 'unsupported_style_proof'); assert.equal(diagnostic.moduleId, 'titles-current-target'); assert.equal(diagnostic.phase, 'inspect'); assert.equal(diagnostic.authority, false); assert.equal(h.peer.status().pending, null); assert.equal(h.peer.status().unknown, false);
+});

@@ -1,0 +1,215 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { PassThrough } = require('node:stream');
+const { createAttachmentOwner, TOOL_METHODS } = require('../runtime/attachment-owner');
+const { serveAttachment } = require('../runtime/client-stdio');
+const { TOOL_METHODS: ORIGINAL_METHODS } = require('../core/stdio');
+
+function fixture(options = {}) {
+  const calls = [], facts = { pending: false, unresolved: false, fault: false }; let closes = 0, time = 0, serial = 0;
+  const runtime = { status: () => ({ ready: true, store: 'fixture-single-store' }), close() { closes++; } };
+  const owner = createAttachmentOwner({ runtime, activity: () => ({ ...facts }), clock: () => time, ttlMs: 1000, drainIntervalMs: 1,
+    async invoke(method, payload, context) {
+      calls.push({ method, payload, context });
+      if (options.invoke) return options.invoke(method, payload, context);
+      if (method === 'status' || method === 'diagnostics') return runtime.status();
+      if (method === 'inspect') return { evidenceRef: 'evidence-' + ++serial };
+      if (method === 'build') return { buildId: 'build-' + ++serial, taskId: 'task-' + serial };
+      if (method === 'propose') return { proposalId: 'proposal-' + ++serial };
+      if (method === 'dryrun') return { dryrunRef: 'dryrun-' + ++serial };
+      return { completed: true };
+    } });
+  function attach() { const session = Object.freeze({ clientSessionId: 'session-' + ++serial }); owner.onAttach(session); return session; }
+  const call = (session, method, payload = {}) => owner.onRequest({ session, method, payload });
+  return { owner, facts, calls, attach, call, at(value) { time = value; }, get closes() { return closes; } };
+}
+async function ok(promise) { const reply = await promise; assert.equal(reply.ok, true, JSON.stringify(reply)); return reply.value; }
+async function denied(promise, code) { const reply = await promise; assert.deepEqual(reply, code === 'owner_outcome_uncertain' ? { ok: false, code, outcome: 'unknown', requestId: null } : { ok: false, code }); }
+async function until(fn) { for (let i = 0; i < 100; i++) { if (fn()) return; await new Promise(resolve => setTimeout(resolve, 2)); } assert.fail('fixture_wait'); }
+
+test('owner-attachments generic tool map remains compatible and observer attachment never acquires', async () => {
+  assert.deepEqual(TOOL_METHODS, ORIGINAL_METHODS);
+  const f = fixture(), a = f.attach(), b = f.attach();
+  const one = await ok(f.call(a, 'core_status')), two = await ok(f.call(b, 'core_status'));
+  assert.equal(one.attachmentOwner.bootId, two.attachmentOwner.bootId); assert.equal(one.store, two.store);
+  assert.equal(f.owner.status().mode, 'idle'); assert.equal(f.owner.status().generation, 0);
+  await denied(f.call(a, 'core_connect'), 'owner_controller_required'); await f.owner.close();
+});
+test('owner-attachments first workflow build omits taskId and binds only the server task; unbound product task is refused before invoke', async () => {
+  const f = fixture(), session = f.attach(); await ok(f.call(session, 'controller_acquire'));
+  const evidence = await ok(f.call(session, 'inspect_module_target'));
+  const payload = { workflowId: 'titles-deterministic-job', oneStep: true, recordContext: { purpose: 'user_work', lifetime: 'work_context', contextId: 'product-job' }, steps: [{ stepId: 'set-title', evidenceRef: evidence.evidenceRef }] };
+  const built = await ok(f.call(session, 'build_solution_plan', payload)); assert.match(built.taskId, /^task-/);
+  const calls = f.calls.length; await denied(f.call(session, 'build_solution_plan', { ...payload, taskId: 'titles-unbound-task' }), 'owner_reference_generation'); assert.equal(f.calls.length, calls);
+  await ok(f.call(session, 'build_solution_plan', { ...payload, taskId: built.taskId })); assert.equal(f.calls.length, calls + 1); await f.owner.close();
+});
+test('owner-attachments copied sessions and unlisted RPC cannot reach runtime', async () => {
+  const f = fixture(), a = f.attach();
+  await denied(f.call({ ...a }, 'core_status'), 'owner_attachment_required');
+  await denied(f.call(a, 'eval_script', { source: 'evil' }), 'owner_method'); assert.equal(f.calls.length, 0); await f.owner.close();
+});
+test('owner-attachments refresh requires control while default discovery stays observer', async () => {
+  const f = fixture(), a = f.attach();
+  await ok(f.call(a, 'list_modules')); await ok(f.call(a, 'list_modules', { refresh: false }));
+  await denied(f.call(a, 'list_modules', { refresh: true }), 'owner_controller_required');
+  await ok(f.call(a, 'controller_acquire')); await ok(f.call(a, 'list_modules', { refresh: true })); await f.owner.close();
+});
+test('owner-attachments explicit acquisition excludes other clients and exact token governs release', async () => {
+  const f = fixture(), a = f.attach(), b = f.attach(), first = await ok(f.call(a, 'controller_acquire'));
+  await denied(f.call(b, 'controller_acquire'), 'controller_busy');
+  await denied(f.call(b, 'controller_release', { leaseToken: first.leaseToken }), 'owner_lease_token');
+  await denied(f.call(a, 'controller_release', { leaseToken: 'wrong' }), 'owner_lease_token');
+  await ok(f.call(a, 'controller_release', { leaseToken: first.leaseToken }));
+  const second = await ok(f.call(b, 'controller_acquire')); assert.equal(second.generation, first.generation + 1); await f.owner.close();
+});
+test('owner-attachments boot durable fault or unresolved forbids acquisition while status remains readable', async () => {
+  for (const field of ['unresolved', 'fault']) {
+    const f = fixture(), a = f.attach(); f.facts[field] = true;
+    await denied(f.call(a, 'controller_acquire'), 'owner_recovery_required');
+    assert.equal((await ok(f.call(a, 'owner_status'))).activity[field], true);
+    f.facts[field] = false; await f.owner.close();
+  }
+});
+test('owner-attachments expired controller cannot execute or renew and does not transfer itself', async () => {
+  const f = fixture(), a = f.attach(), b = f.attach(), lease = await ok(f.call(a, 'controller_acquire')); f.at(1000);
+  await denied(f.call(a, 'core_connect'), 'controller_lease_expired');
+  await denied(f.call(a, 'controller_renew', { leaseToken: lease.leaseToken }), 'controller_lease_expired');
+  await denied(f.call(b, 'controller_acquire'), 'controller_busy'); f.owner.onDetach(a);
+  await ok(f.call(b, 'controller_acquire')); await f.owner.close();
+});
+test('owner-attachments detached client cannot continue physical send after awaited preparation', async () => {
+  let resume; const wait = new Promise(resolve => { resume = resolve; }); let evaluations = 0;
+  const f = fixture({ async invoke(_method, _payload, context) { await wait; context.assertCurrent(); evaluations++; return {}; } });
+  const a = f.attach(), b = f.attach(); await ok(f.call(a, 'controller_acquire'));
+  const request = f.call(a, 'core_connect'); f.owner.onDetach(a);
+  await denied(f.call(b, 'controller_acquire'), 'controller_busy'); resume();
+  await denied(request, 'owner_outcome_uncertain'); assert.equal(evaluations, 0);
+  await ok(f.call(b, 'controller_acquire')); await f.owner.close();
+});
+test('owner-attachments caller completion does not release accepted physical/control pending', async () => {
+  const f = fixture(), a = f.attach(), b = f.attach(); await ok(f.call(a, 'controller_acquire'));
+  f.facts.pending = false; const call = f.call(a, 'core_connect'); f.facts.pending = true;
+  await denied(call, 'owner_outcome_uncertain'); f.owner.onDetach(a);
+  assert.equal(f.owner.status().accepted, 1); assert.equal(f.owner.status().mode, 'draining');
+  await assert.rejects(f.owner.close(), /owner_draining/); assert.equal(f.closes, 0);
+  await denied(f.call(b, 'controller_acquire'), 'owner_draining'); f.facts.pending = false;
+  await until(() => f.owner.status().accepted === 0); await ok(f.call(b, 'controller_acquire')); await f.owner.close();
+});
+test('owner-attachments UNKNOWN after original callback holds sticky fence across detach', async () => {
+  const f = fixture(), a = f.attach(), b = f.attach(); const lease = await ok(f.call(a, 'controller_acquire'));
+  const request = f.call(a, 'core_connect'); f.facts.unresolved = true; await denied(request, 'owner_outcome_uncertain');
+  assert.equal(f.owner.status().fenced, true); f.owner.onDetach(a); f.facts.unresolved = false;
+  await denied(f.call(b, 'controller_acquire'), 'controller_fenced');
+  await denied(f.call(b, 'controller_release', { leaseToken: lease.leaseToken }), 'owner_lease_token'); await f.owner.close();
+});
+test('owner-attachments prior generation evidence/build/proposal/dryrun cannot become executable', async () => {
+  const f = fixture(), a = f.attach(), b = f.attach(); const lease = await ok(f.call(a, 'controller_acquire'));
+  const evidence = await ok(f.call(a, 'inspect_module_target'));
+  const built = await ok(f.call(a, 'build_solution_plan', { steps: [{ evidenceRef: evidence.evidenceRef }] }));
+  const proposed = await ok(f.call(a, 'propose_plan', { buildId: built.buildId }));
+  const dry = await ok(f.call(a, 'dry_run_plan', { proposalId: proposed.proposalId }));
+  await ok(f.call(a, 'controller_release', { leaseToken: lease.leaseToken })); await ok(f.call(b, 'controller_acquire'));
+  await denied(f.call(b, 'build_solution_plan', { steps: [{ evidenceRef: evidence.evidenceRef }] }), 'owner_reference_generation');
+  await denied(f.call(b, 'propose_plan', { buildId: built.buildId }), 'owner_reference_generation');
+  await denied(f.call(b, 'run_plan', { proposalId: proposed.proposalId, dryrunRef: dry.dryrunRef }), 'owner_reference_generation');
+  await denied(f.call(b, 'reset_task', { taskId: built.taskId }), 'owner_reference_generation'); await f.owner.close();
+});
+test('owner-attachments runtime secret messages and arbitrary error codes do not cross attachment', async () => {
+  const f = fixture({ invoke() { throw Object.assign(new Error('secret-fixture-value'), { code: 'secret-fixture-value' }); } }), a = f.attach();
+  await denied(f.call(a, 'core_status'), 'runtime_request_failed'); await f.owner.close();
+});
+test('owner-attachments observer context cannot be used for physical access', async () => {
+  const f = fixture({ invoke(_method, _payload, context) { context.assertCurrent(); } }), a = f.attach();
+  await denied(f.call(a, 'get_module_contract'), 'owner_observer_physical_access'); await f.owner.close();
+});
+test('owner-attachments accepted stateful throw reports uncertainty but preserves actual clean outcome facts', async () => {
+  let effects = 0;
+  const f = fixture({ invoke() { effects++; throw new Error('secret_fixture_value'); } }), a = f.attach();
+  await ok(f.call(a, 'controller_acquire'));
+  const reply = await f.owner.onRequest({ session: a, method: 'core_connect', payload: {}, requestId: 'a'.repeat(64) });
+  assert.deepEqual(reply, { ok: false, code: 'owner_outcome_uncertain', outcome: 'unknown', requestId: 'a'.repeat(64) });
+  assert.equal(effects, 1); assert.equal(f.owner.status().fenced, false); assert.equal(f.owner.status().accepted, 0); await f.owner.close();
+});
+
+function stdioFixture(call) {
+  const input = new PassThrough(), output = new PassThrough(), replies = []; let buffer = '', closes = 0;
+  output.on('data', chunk => { buffer += chunk; for (;;) { const at = buffer.indexOf('\n'); if (at < 0) break; replies.push(JSON.parse(buffer.slice(0, at))); buffer = buffer.slice(at + 1); } });
+  const adapter = serveAttachment({ input, output, client: { call, close() { closes++; } } });
+  return { input, output, replies, adapter, get closes() { return closes; }, send(request) { input.write(JSON.stringify({ jsonrpc: '2.0', ...request }) + '\n'); } };
+}
+test('owner-attachments stdio initialize and discovery do not invoke owner or acquire', async () => {
+  const f = stdioFixture(() => assert.fail('no IPC calls'));
+  f.send({ id: 1, method: 'initialize' }); f.send({ id: 2, method: 'tools/list' }); await until(() => f.replies.length === 2);
+  assert.equal(f.replies[1].result.tools.some(tool => tool.name === 'controller_acquire'), true);
+  f.input.end(); await until(() => f.closes === 1); assert.equal(f.adapter.status().closed, true);
+});
+test('owner-attachments stdio EOF only closes attachment; accepted call is neither cancelled nor retried', async () => {
+  let resolve; let calls = 0; const f = stdioFixture(() => { calls++; return new Promise(done => { resolve = done; }); });
+  f.send({ id: 1, method: 'tools/call', params: { name: 'core_connect', arguments: {} } });
+  await until(() => calls === 1); f.input.end(); await until(() => f.closes === 1);
+  resolve({ ok: true, value: { original: true } }); await until(() => f.adapter.status().pending === 0);
+  assert.equal(f.replies.length, 0); assert.equal(calls, 1);
+});
+test('owner-attachments stdio metadata never enters domain payload or controller selection', async () => {
+  let received; const f = stdioFixture((method, payload) => { received = { method, payload }; return { ok: true, value: {} }; });
+  f.send({ id: 'meta', method: 'tools/call', params: { name: 'core_status', arguments: { payload: { a: 1 } }, _meta: { threadId: 'forged-controller' } } });
+  await until(() => f.replies.length === 1); assert.deepEqual(received, { method: 'core_status', payload: { a: 1 } }); f.adapter.close();
+});
+test('owner-attachments stdio connection loss reports uncertain outcome without resend', async () => {
+  let calls = 0; const f = stdioFixture(() => { calls++; throw Object.assign(new Error('private transport info'), { code: 'ipc_outcome_uncertain' }); });
+  f.send({ id: 1, method: 'tools/call', params: { name: 'run_plan', arguments: {} } });
+  await until(() => f.replies.length === 1); assert.equal(f.replies[0].error.message, 'ipc_outcome_uncertain'); assert.equal(f.replies[0].error.data.outcome, 'unknown'); assert.equal(calls, 1); f.adapter.close();
+});
+test('owner-attachments stdio preserves accepted-owner uncertainty and original request correlation', async () => {
+  const f = stdioFixture(async () => ({ ok: false, code: 'owner_outcome_uncertain', outcome: 'unknown', requestId: 'a'.repeat(64) }));
+  f.send({ id: 1, method: 'tools/call', params: { name: 'core_connect' } });
+  await until(() => f.replies.length === 1);
+  assert.deepEqual(f.replies[0].error.data, { outcome: 'unknown', requestId: 'a'.repeat(64) }); f.adapter.close();
+});
+test('owner-attachments stdio oversized unterminated frame closes only attachment', async () => {
+  const f = stdioFixture(() => assert.fail('oversize cannot call')); f.input.write('x'.repeat(256 * 1024 + 1));
+  await until(() => f.closes === 1); assert.equal(f.replies.length, 0); f.adapter.close(); assert.equal(f.closes, 1);
+});
+test('owner-attachments stdio secret-shaped handler message or envelope code is never exposed', async () => {
+  for (const mode of ['throw', 'envelope']) {
+    const f = stdioFixture(() => { if (mode === 'throw') throw new Error('secret_fixture_value'); return { ok: false, code: 'secret_fixture_value' }; });
+    f.send({ id: 1, method: 'tools/call', params: { name: 'core_status', arguments: {} } });
+    await until(() => f.replies.length === 1); assert.doesNotMatch(JSON.stringify(f.replies), /secret_fixture_value/); f.adapter.close();
+  }
+});
+test('owner-attachments blocked stdout has bounded buffering and detaches without retry', async () => {
+  const input = new PassThrough(), output = new PassThrough(); let closes = 0;
+  const adapter = serveAttachment({ input, output, client: { call: async () => ({ ok: true, value: { text: 'x'.repeat(180000) } }), close() { closes++; } } });
+  for (let id = 0; id < 100; id++) input.write(JSON.stringify({ jsonrpc: '2.0', id, method: 'tools/call', params: { name: 'core_status' } }) + '\n');
+  await until(() => closes === 1); assert.ok(output.writableLength <= 4 * 256 * 1024); assert.equal(adapter.status().closed, true); adapter.close();
+});
+test('owner-attachments oversized response and long request identity always produce bounded error', async () => {
+  const f = stdioFixture(async () => ({ ok: true, value: { text: 'x'.repeat(300000) } }));
+  f.send({ id: 1, method: 'tools/call', params: { name: 'core_status' } });
+  await until(() => f.replies.length === 1); assert.equal(f.replies[0].error.message, 'frame_too_large');
+  f.send({ id: 'x'.repeat(250000), method: 'ping' });
+  await until(() => f.replies.length === 2); assert.equal(f.replies[1].id, null); assert.ok(Buffer.byteLength(JSON.stringify(f.replies[1])) < 1024); f.adapter.close();
+});
+test('owner-attachments explicit expired transfer requires fresh holder CAS and invalidates prior references', async () => {
+  const f = fixture(), a = f.attach(), b = f.attach(), grant = await ok(f.call(a, 'controller_acquire'));
+  const evidence = await ok(f.call(a, 'inspect_module_target')), observed = f.owner.status();
+  const expected = { bootId: observed.bootId, generation: observed.generation, holderClientId: observed.holderClientId };
+  await denied(f.call(b, 'controller_transfer', { expected }), 'controller_not_expired'); f.at(1000);
+  const next = await ok(f.call(b, 'controller_transfer', { expected })); assert.equal(next.generation, grant.generation + 1);
+  await denied(f.call(a, 'controller_release', { leaseToken: grant.leaseToken }), 'controller_lease_identity');
+  await denied(f.call(a, 'controller_transfer', { expected }), 'controller_transfer_changed');
+  await denied(f.call(b, 'build_solution_plan', { steps: [{ evidenceRef: evidence.evidenceRef }] }), 'owner_reference_generation');
+  f.owner.onDetach(a); await ok(f.call(b, 'core_connect')); await f.owner.close();
+});
+test('owner-attachments expired transfer cannot waive actual physical/control pending, unresolved or fault', async () => {
+  const f = fixture(), a = f.attach(), b = f.attach(); await ok(f.call(a, 'controller_acquire')); const observed = f.owner.status(); f.at(1000);
+  const expected = { bootId: observed.bootId, generation: observed.generation, holderClientId: observed.holderClientId };
+  for (const field of ['pending', 'unresolved', 'fault']) {
+    f.facts[field] = true;
+    await denied(f.call(b, 'controller_transfer', { expected }), field === 'pending' ? 'owner_draining' : 'owner_recovery_required');
+    f.facts[field] = false;
+  }
+  assert.equal(f.owner.status().generation, observed.generation);
+  await denied(f.call(b, 'controller_transfer', { expected: { ...expected, safe: true } }), 'controller_expected'); await f.owner.close();
+});

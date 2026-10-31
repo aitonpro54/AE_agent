@@ -1,0 +1,11 @@
+{
+  "core4/modules/titles-current-target/executor.jsx": "69546bb0dde44ad4441920058ae7c3b385aaf95ef94a742a1782f036d4b91429",
+  "core4/modules/titles-current-target/artifact.json": "7abd444db3848710937ea0e23e3d517492a3c03c21ed2a0f11a3eaa2a055ed33",
+  "core4/config/admissions/titles-current-target.json": "aa975dd915bc019a7e4449f5290eaa10e9e4cc5060f8c7ca79330908d3c13e1f",
+  "core4/integrations/cep/http-peer.js": "74ea570997d0d8d239c2add19254eb33a922683875d1999309697a9221d62f27",
+  "core4/test/manual-runtime.test.js": "04927c16637304d1fc6280e7449127e446e5746bdb4484adc22a227ce74c6a5c",
+  "core4/test/installable-runtime.test.js": "c5d0f18891fb345554b4810f3fdbb0c9202063eec87741ec7a2b0e0db53b2338",
+  "core4/test/owner-attachments.test.js": "99b42c610b3fe6335d7c8c43d955a672e81bab18d61b55a7d322072018ba0b8a",
+  "products/titles/src/compiler.js": "26ff910a504614fc62358d03976ffab193a8f267b8ab52c1e920ef9307b4e28c",
+  "products/titles/test/compiler.test.js": "ba112a12dda967a6046cca0570bc8954abb7b1e70658c6d2400048aad00ef923"
+}

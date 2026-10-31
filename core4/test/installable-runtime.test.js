@@ -12,6 +12,7 @@ const { PassThrough } = require('node:stream');
 const { once } = require('node:events');
 const { hash, canonical } = require('../protocol/json');
 const { mac } = require('../integrations/cep/peer-protocol');
+const { encode, decode } = require('../protocol/codec');
 const { createHttpPeer } = require('../integrations/cep/http-peer');
 const { buildPackage, verifyPackage } = require('../tools/package-installable');
 const { planInstall, applyInstall, rollback, configText, snapshot } = require('../tools/install-core4');
@@ -64,6 +65,53 @@ function dispatcher(pkg, options) {
   return context.Core4PollDispatcher.createDispatcher(options);
 }
 function memoryStorage() { const map = new Map(); return { getItem: k => map.get(k) || null, setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) }; }
+
+const titlesReadAliases = ['font', 'font_size', 'apply_fill', 'fill_color', 'apply_stroke', 'stroke_color', 'stroke_width', 'tracking', 'baseline_shift', 'horizontal_scale', 'vertical_scale', 'faux_bold', 'faux_italic', 'justification', 'leading', 'auto_leading'];
+const titlesReadCodes = ['project_cas', 'comp_cas', 'layer_cas', 'unsupported_animated_text', 'unsupported_style_proof', 'unsupported_style_api', 'unsupported_mixed_style', 'unsupported_justification_enum', 'titles_native_target', 'titles_native_document', 'titles_native_text', 'titles_native_range', 'titles_native_serialization', ...titlesReadAliases.flatMap(field => ['titles_native_' + field, 'titles_missing_' + field])];
+async function readDiagnosticPeer(t, changes = {}) {
+  const directory = temp(), manual = { assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', operationId: 'set-current-text', executorHash: '7'.repeat(64), resultProfile: 'manual-text-v1', ...changes };
+  const peer = createHttpPeer({ installation, directory, asset, additionalAssets: [manual], port: 0, timeout: 5000 }); await peer.listen(); t.after(() => peer.close());
+  const c = await client(peer.status().port), binding = { controllerId: 'diagnostic-controller', channelEpoch: 'diagnostic-channel', secret: '4'.repeat(64) }; await peer.transport.connect(binding); let serial = 0;
+  async function begin(phase = 'inspect', selected = manual) {
+    const payload = {}, command = { protocolVersion: 1, controllerId: binding.controllerId, channelEpoch: binding.channelEpoch, commandId: 'diagnostic-' + ++serial, moduleId: selected.moduleId || 'project-inspection', operationId: selected.operationId || 'inspect', executorHash: selected.executorHash, phase, payloadHash: hash(canonical(payload)), payload };
+    const promise = peer.transport.send(encode(command, binding.secret)); const frame = (await c.call('/poll', {})).command; assert.equal(frame.commandId, command.commandId);
+    return { command, frame, promise, receipt(result) { return { commandId: frame.commandId, originalBinding: structuredClone(frame.originalBinding), pins: structuredClone(frame.pins), result }; } };
+  }
+  return { directory, peer, c, manual, binding, begin };
+}
+test('installable-runtime finite Titles read codes complete only admitted read phases and publish bounded diagnostics after durability', async t => {
+  const f = await readDiagnosticPeer(t); assert.equal(f.peer.status().lastReadFailure, null);
+  let previous = null, firstReceipt;
+  for (const [index, code] of titlesReadCodes.entries()) {
+    assert.match(code, /^[a-z][a-z0-9_]{0,63}$/); const phase = index % 2 ? 'verify' : 'inspect', q = await f.begin(phase), observed = assert.rejects(q.promise, error => error.code === code);
+    const receipt = q.receipt({ readFailureVersion: 1, outcome: 'rejected', code }); firstReceipt ||= receipt;
+    const write = fs.writeSync, sync = fs.fsyncSync; let completing = false, sawDurability = false;
+    fs.writeSync = (fd, value, ...args) => { if (typeof value === 'string' && value.includes('"type":"complete"')) completing = true; return write(fd, value, ...args); };
+    fs.fsyncSync = fd => { if (completing) { sawDurability = true; assert.deepEqual(f.peer.status().lastReadFailure, previous); } return sync(fd); };
+    try { await f.c.call('/complete', receipt); } finally { fs.writeSync = write; fs.fsyncSync = sync; }
+    await observed; assert.equal(sawDurability, true);
+    previous = { commandId: q.command.commandId, moduleId: 'titles-current-target', phase, executorHash: f.manual.executorHash, code, authority: false };
+    assert.deepEqual(f.peer.status().lastReadFailure, previous); assert.equal(Object.isFrozen(f.peer.status().lastReadFailure), true); assert.equal(f.peer.status().pending, null); assert.equal(f.peer.status().unknown, false);
+    const records = fs.readFileSync(path.join(f.directory, 'completions.ndjson'), 'utf8').trim().split('\n').map(JSON.parse); assert.equal(records.at(-1).type, 'complete'); assert.equal(records.at(-1).response.result.code, code);
+  }
+  await f.c.call('/complete', firstReceipt); assert.deepEqual(f.peer.status().lastReadFailure, previous, 'duplicate older completion must not replace the current diagnostic');
+});
+test('installable-runtime read diagnostic rejects unknown codes extra fields and bad correlation without journal or status promotion', async t => {
+  const f = await readDiagnosticPeer(t), q = await f.begin(), observed = assert.rejects(q.promise, /titles_native_stroke_color/), result = { readFailureVersion: 1, outcome: 'rejected', code: 'titles_native_stroke_color' };
+  const before = fs.readFileSync(path.join(f.directory, 'completions.ndjson'));
+  for (const change of [r => { r.result.code = 'titles_native_arbitrary'; }, r => { r.result.code = 'private native message'; }, r => { r.result.message = 'private'; }, r => { r.result.authority = true; }, r => { r.result.readFailureVersion = 2; }, r => { r.pins.executorHash = '0'.repeat(64); }, r => { r.originalBinding.receiptRef = '0'.repeat(64); }, r => { r.commandId = 'other'; }]) {
+    const receipt = q.receipt(structuredClone(result)); change(receipt); const response = await f.c.raw('/complete', f.c.envelope('/complete', receipt)); assert.equal(response.status, 403); assert.equal(f.peer.status().lastReadFailure, null); assert.deepEqual(fs.readFileSync(path.join(f.directory, 'completions.ndjson')), before);
+  }
+  await f.c.call('/complete', q.receipt(result)); await observed; assert.equal(f.peer.status().lastReadFailure.code, result.code);
+});
+for (const scope of ['project', 'foreign-key', 'foreign-module', 'foreign-operation', 'foreign-profile', 'mutate']) test('installable-runtime Titles diagnostic vocabulary is refused for ' + scope, async t => {
+  const changes = scope === 'foreign-key' ? { assetKey: 'other-text-v1' } : scope === 'foreign-module' ? { moduleId: 'other-text' } : scope === 'foreign-operation' ? { operationId: 'other-operation' } : scope === 'foreign-profile' ? { resultProfile: 'other-profile' } : {};
+  const f = await readDiagnosticPeer(t, changes), q = await f.begin(scope === 'mutate' ? 'mutate' : 'inspect', scope === 'project' ? asset : f.manual), observed = scope === 'mutate' ? q.promise : assert.rejects(q.promise, /inspection_failed/);
+  const result = { readFailureVersion: 1, outcome: 'rejected', code: 'titles_native_font' }, before = fs.readFileSync(path.join(f.directory, 'completions.ndjson'));
+  const refused = await f.c.raw('/complete', f.c.envelope('/complete', q.receipt(result))); assert.equal(refused.status, 403); assert.equal(refused.value.error, 'inspection_result'); assert.equal(f.peer.status().lastReadFailure, null); assert.deepEqual(fs.readFileSync(path.join(f.directory, 'completions.ndjson')), before);
+  await f.c.call('/complete', q.receipt(scope === 'mutate' ? { outcome: 'rejected', code: 'fixture_cancelled' } : { readFailureVersion: 1, outcome: 'rejected', code: 'inspection_failed' }));
+  if (scope === 'mutate') { assert.equal(decode(await observed, f.binding.secret).result.code, 'fixture_cancelled'); assert.equal(f.peer.status().lastReadFailure, null); } else await observed;
+});
 test('installable-runtime package deterministic closure, install CAS, exact rollback and stable origin', () => {
   const directory = temp(), pkg = buildPackage(); assert.equal(pkg.packageHash, buildPackage().packageHash);
   assert.ok(Object.keys(pkg.files).every(f => !/^(test|experiments|node_modules|tools)\//.test(f)));

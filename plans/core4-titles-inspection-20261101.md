@@ -14,6 +14,13 @@ Raw probes/JSX, fake epoch/grants, изменение установленног
 save/destructive/AE restart/AME/full release и новый внешний review вне этого блока.
 Read-only диагностика не выдаёт authority для изменения текста.
 
+Выбран узкий diagnostic путь: module-owned inspect/verify wrapper возвращает
+existing readFailureVersion с конечным набором безопасных кодов. Общий generated
+registry и owner catch/refs не меняются. Peer принимает новые коды лишь для
+точного manual asset и read-only phase; после validated durable completion может
+показывать bounded lastReadFailure в существующем physical status. Произвольные
+messages/stacks/values не выводятся, дополнительный tool/grant не вводится.
+
 ## Progress
 
 - [x] После пользовательского Connect configured status29мс: same owner9584/boot,
@@ -30,13 +37,22 @@ Read-only диагностика не выдаёт authority для измене
   adoption/AEP hashes unchanged; ledger/gates absent; controller generation2 released.
 - [x] Visual baseline в Composition Viewer: `Text_1_1`,0:00:02:11 при30fps,
  12.5%/Quarter, белый PAPER TITLES. Это не typed snapshot или uniform-style proof.
-- [ ] Bounded read-only source/API brief: finite native error vocabulary и
+- [x] Bounded read-only source/API brief: finite native error vocabulary и
   минимальная корректная обработка подтверждённых TextDocument API ограничений.
-- [ ] Scoped source implementation и meaningful validation по changed paths.
+- [x] Scoped source implementation, independent ACCEPT и meaningful validation
+  по changed paths:192unique PASS, boundaries44, source freeze02.
 - [ ] Один reviewed installable срез через штатный stopped update, если runtime
   меняется; затем configured read-back и fresh typed Titles inspection.
 - [ ] Compiler/build/proposal/dry-run и исполнение с локальным подтверждением
   текущей цели, original receipt/read-back и кадр; без save.
+
+План кадров R5 перед mutation: direct `Text_1_1` на0:00:02:11 (30fps), затем
+известные по native breadcrumb родительские `Title_1_Color` и `Title_1` на том
+же кадре; если переход скрывает текст, дополнительно0:00:05:17. Core discovery
+уже подтвердил Title_1_Color как comp4; `Title_1` выбирается лишь по свежему
+однозначному UI-наблюдению, его ID не угадывается. Это проверки отображения
+изменённого текста на тестовой копии, без render/save и без заявления о полной
+типографике или корректности всей анимации/прочих сцен. Пробелы фиксируются явно.
 
 ## Decision Log
 
@@ -49,11 +65,39 @@ Current package registry catch скрывает readonly module/native getter ex
 не различается; сырой error message/stack или произвольный coreCode наружу не
 выдаются. Временный raw probe или patch установленного registry не используется.
 
-Hypothesis inactive fill/stroke getters проверяется по первичному API contract
-и source fixtures; к live target она пока не атрибутирована. Source brief поручен
-существующему ae_specialist/XHigh из-за связи native API/protected style/packaged
-registry. Writer пока read-only, tests/live0, новых helpers нет. Root docs/evidence
-не пересекаются с будущим source ownership. Повторного Argon нет.
+Первичный [Adobe AE Engineering post](https://community.adobe.com/questions-534/per-character-scripting-public-beta-announcement-314331)
+подтверждает: inactive TextDocument fillColor/strokeColor могут throw, а
+CharacterRange возвращает эти значения; API выпущен в24.3. Исходный executor
+безусловно читает их через TextDocument, fixture с applyStroke=false сохраняет
+plain strokeColor и не моделирует native throw. Это подтверждённый source defect,
+но причина именно текущего native отказа остаётся гипотезой до нового typed read.
+
+Принятый fix сохраняет полный protection representation: character baseline из
+doc.characterRange(0,1), затем сравнение каждого range. Все13character fields,
+включая flags, active и dormant colors, остаются наблюдаемыми и сравниваемыми.
+TextDocument используется для text и3paragraph fields; missing/mixed/недоступный
+range означает отказ. Fake RGB, defaults и исключения dormant fields не вводятся.
+Mutate вызывает throwing snapshot напрямую; внутренние readonly diagnostic codes
+не меняют mutate coreCode/started/catch/UNKNOWN. Contract/compat остаются byte-equal
+при сохранении этой representation, module/admission/compiler pins обновляются.
+
+В том же product compiler срезе optional taskId первого build опускается, stable
+workflowId/contextId остаются. Server taskId берётся из build result. Owner gate
+для чужих/старых task refs не меняется; требуется meaningful real owner regression.
+Документация оператора добавляет acquire/core_connect/renew/current-generation refs.
+
+Brief принят root; scoped implementation/tests поручены существующему
+ae_specialist/XHigh из-за связи native API/protected style/diagnostic admission.
+Root docs/README/workflow/evidence и Git не пересекаются с source ownership.
+Новых helpers и повторного Argon нет. Installed files/live остаются только у root.
+
+Перед actual update требуется frozen source/адресная matrix, root review и один
+official immutable distribution. Новые stop/update UUID не заменяют уже settled
+c4c0af30; current adoption сохраняется. Client entry проверяет exact release root,
+поэтому после нового package может потребоваться штатный reload configured клиента
+пользователем. Такой запрос делается после готовой проверенной установки, AE не
+перезапускается. Native text confirmation остаётся отдельным действием в AE;
+lease при долгом ожидании продлевается штатным renew, без снятия timeout/fences.
 
 ## Validation
 
@@ -63,3 +107,48 @@ current protected bytes и28settled events. Source/runtime/package не меня
 source suites не повторялись. Actual mutation/build/proposal/run0, save/restart0.
 Следующий шаг задан планом: закончить bounded source brief и реализовать принятый
 минимальный срез, сохранив native gates; пользователю не требуется выбирать этап.
+
+Дополнительный ordinary-cycle checkpoint на новом owner: minimum323000мс без
+configured AE calls этого чата, затем first-call core_status44мс, same9584/
+boot04d9b162…/peer, controller idle, pending/UNKNOWN/faults0. Evidence —
+R5TITLES/configured-owner9584-idle.json. Это actual successful first call;
+wire reconnect отдельно не инструментирован, history/native inventory этим
+вызовом не перечитывались. Полная repeated-cycles устойчивость не объявляется.
+
+## Source milestone — freeze02 принят
+
+Progress: изменены10согласованных source/test paths: executor/artifact/admission,
+peer diagnostics, compiler и5test files. CharacterRange даёт полный character
+proof; readSnapshot ограничен inspect/verify; readonly tuple публикуется после
+validated durable completion. Optional taskId первого build удалён. Registry
+generator, owner catch/refs/grants, contract/compat и validation-map unchanged.
+Дополнительная test-only правка убрала stale package==cc2f expectation: текущие
+package/release/files независимо сверяются с buildPackage и verified standalone;
+70files/helper union/provider assertions сохранены. Это единственное расширение
+исходного9path ownership; production freeze01/02 byte-equal.
+
+Validation: один frozen current запуск выбрал7checks/7disjoint batches:
+manual51/installable40/owner-runtime21/native-read-recovery19/owner-attachments25/
+readopt-operator17/recovery-inspection11 =184PASS; отдельно product8PASS.
+Итого192unique PASS/0FAIL/skip/cancel/todo. Все3commands exit0, без исправлений
+или повторов. Core976.287с/product1.130с/boundaries0.092с; boundaries44/liveCalls0.
+Root независимо сверил10source/189dependency hashes до/после/current,7keys/
+commands, полный selector prefix и framework summaries/rawSHA. Tests replay0.
+Source syntax/whitespace/EOF10 PASS. Текущая source приёмка адресная;24deferred
+closures (включая stopped-update55) остаются current-closure-unverified, прежние
+338PASS не переобъявляются результатом новой версии; full release не запускался.
+
+Independent review freeze02 ACCEPT, без открытых P1/P2/P3, все10SHA совпали.
+Module pin189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79;
+executorSHA6d84fdbb…/peer0b40242f…/compiler1adf06aa…; CONTRACT_HASH6226f911…
+прежний. Root и writer pure builds независимо дали package
+`be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43`, distribution
+`5de01291e5dd0a7e1d8142f3a64dc4acd466bec8d94eb22f129059f6f88bccf7`,70runtime/87bundle.
+Evidence — R5TITLES-SOURCE/final02 и accepted-evidence.json; parent verifier
+verify-source-evidence.cjs не запускает tests/runtime operators.
+
+Decision Log: source этап принят, official output/installed writes/AE mutation0
+на этой точке. Следующий шаг — source commit, immutable write/verify, fresh
+configured/native preflight и один новый штатный stopped update/explicit enable.
+Сохранить current host adoption и28event receiver prefix, не повторять c4c0af30.
+Actual причина прежнего отказа и native Titles acceptance пока не объявляются.

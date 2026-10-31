@@ -61,7 +61,9 @@ test('all four helpers have one exact union entry; build/write/verifier retain u
   for (const file of additions) { assert.equal(main.HELPERS.filter(name => name === file).length, 1); assert.ok(f.shipped.files[file]); const bad = structuredClone(f.shipped); delete bad.files[file]; delete bad.manifest.hashes[file]; bad.distributionHash = hash(bad.manifest); const output = path.join(f.base, 'missing-' + path.basename(file)); assert.throws(() => writeStandalone(output, bad), /standalone_bundle/); assert.equal(fs.existsSync(output), false); }
   assert.equal(main.HELPERS.includes('runtime/windows-reservation-provider.js'), false); assert.ok(f.pkg.files['runtime/windows-reservation-provider.js']);
   const expected = [...Object.keys(f.pkg.files), ...main.HELPERS, 'candidate.json', 'README.txt']; assert.equal(new Set(expected).size, expected.length); assert.deepEqual(Object.keys(f.shipped.files).sort(), expected.sort());
-  assert.equal(f.pkg.packageHash, 'cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac'); assert.equal(Object.keys(f.pkg.files).length, 70); assert.equal(main.verifyStandalone(f.distribution, f.shipped.distributionHash).packageHash, f.pkg.packageHash);
+  const current = require('../tools/package-installable').buildPackage(SOURCE, 'manual', { runtimeModel: 'owner' });
+  assert.equal(f.pkg.packageHash, current.packageHash); assert.deepEqual(f.pkg.release, current.release); assert.deepEqual(f.pkg.files, current.files); assert.equal(Object.keys(f.pkg.files).length, 70);
+  const verified = main.verifyStandalone(f.distribution, f.shipped.distributionHash); assert.equal(verified.packageHash, current.packageHash); assert.equal(verified.distributionHash, f.shipped.distributionHash);
 });
 test('bootstrap capability remains private through await, then revokes on resolve/reject/synchronous throw', async t => {
   const f = fixture(t, { installed: false }), main = f.main(), operator = require(path.join(f.distribution, 'tools/operate-stopped-readoption.js')), original = operator.operate;

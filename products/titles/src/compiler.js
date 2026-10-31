@@ -7,7 +7,7 @@ const MODULE = 'titles-current-target';
 const OPERATION = 'set-current-text';
 const POLICY = 'current-matching-target-after-local-confirmation-v1';
 // Public module artifact identity, not installer/package/machine identity.
-const MODULE_PIN = '6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46';
+const MODULE_PIN = '189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79';
 const CONTRACT_HASH = '6226f911063f94f471bff23e9ebb60f1ee49323c2f25d54e6a4bdabf95bbe55b';
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function canonical(value, depth = 0, seen = new Set()) {
@@ -84,7 +84,7 @@ function prepareBuild(value, contractResponse, inspectionResponse) {
   if (canonical(inspection.snapshot.target) !== canonical(job.target)) fail('inspection_target');
   if (/[\r\n\u0085\u2028\u2029]/u.test(inspection.snapshot.text)) fail('unsupported_observed_text');
   const identity = 'titles-' + hash(job);
-  return { taskId: identity, workflowId: identity, oneStep: true, recordContext: context(job),
+  return { workflowId: identity, oneStep: true, recordContext: context(job),
     steps: [{ stepId: 'set-title', moduleId: MODULE, contractId: response.contractId,
       evidenceRef: inspection.evidenceRef, input: { ...job.target, text: job.text } }] };
 }

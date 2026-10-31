@@ -1,0 +1,14 @@
+{
+  "sourceHashes": {
+    "core4/modules/titles-current-target/executor.jsx": "6d84fdbbf09352db6b77cf4470e84e785d7cafa30979df98de988ba6a70c8132",
+    "core4/modules/titles-current-target/artifact.json": "aa80e8f2921859f15ac9ba7d1481ce3f6039f60de6590a5ffee6b2666cfb1e57",
+    "core4/config/admissions/titles-current-target.json": "bf15afe29225094a1a9426786b50e2c8d03ab4305483c8453f5c468bc123e0f8",
+    "core4/integrations/cep/http-peer.js": "0b40242f453a69d5cdb6f0537e4ce960d4af92413249e3cf13e4b0a61da18a1c",
+    "core4/test/manual-runtime.test.js": "1221879b886d937e1fb251b6449dd8d18544d924e547f81634f8063a5efdad8b",
+    "core4/test/installable-runtime.test.js": "bfa1ebae757f728da5c295c8ee54913105c914ecd4e0c5d851a010ce4b8b351f",
+    "core4/test/owner-attachments.test.js": "8eff6ac62b802d84314aa986586b603afd7b2c66ab277fa5f8133ad7ebac8b44",
+    "products/titles/src/compiler.js": "1adf06aa1a92ecf108c487b2fdb7bc33d3c4e814dcc7d22505ffd87bd3ae55cc",
+    "products/titles/test/compiler.test.js": "bbdd9a3999580fe3e72ae86e03e750a3ec3a84e259be66bd2ab7fad165018add"
+  },
+  "whitespace": []
+}

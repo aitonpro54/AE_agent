@@ -1,0 +1,16 @@
+{
+  "name": "run02-boundaries",
+  "command": [
+    "node",
+    "tools/check-boundaries.js"
+  ],
+  "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+  "raw": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-titles-inspection-7aaeafb8-3612-4538-95b3-488a94393e64\\run02-boundaries.raw.log",
+  "startedAt": "2026-10-31T20:14:59.394Z",
+  "endedAt": "2026-10-31T20:14:59.486Z",
+  "elapsedMs": 92,
+  "exit": 0,
+  "signal": null,
+  "error": null,
+  "rawSHA": "5f5cea8dcd9f14517905497379e6ab41edd66676cb4cd2e7f47849e476abc5b7"
+}

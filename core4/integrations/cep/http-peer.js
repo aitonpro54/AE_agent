@@ -4,6 +4,11 @@ const crypto = require('node:crypto');
 const { hash, canonical, parse, bounded, exact, fail, id, dispatchBinding, decode, encode, envelope } = require('../../core/receiver-api');
 const { openCompletionStore } = require('./completion-store');
 const { mac, validMac, requestBody } = require('./peer-protocol');
+const TITLES_READ_FIELDS = ['font', 'font_size', 'apply_fill', 'fill_color', 'apply_stroke', 'stroke_color', 'stroke_width', 'tracking', 'baseline_shift', 'horizontal_scale', 'vertical_scale', 'faux_bold', 'faux_italic', 'justification', 'leading', 'auto_leading'];
+const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsupported_animated_text', 'unsupported_style_proof', 'unsupported_style_api', 'unsupported_mixed_style', 'unsupported_justification_enum', 'titles_native_target', 'titles_native_document', 'titles_native_text', 'titles_native_range', 'titles_native_serialization', ...TITLES_READ_FIELDS.flatMap(field => ['titles_native_' + field, 'titles_missing_' + field])]);
+function titlesReadCommand(command, selected) {
+  return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
+}
 function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken }) {
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
   if (preboundServer !== undefined) {
@@ -14,7 +19,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   const server = preboundServer || http.createServer();
   const store = openCompletionStore({ directory, installationContext, ownerToken });
   const epoch = id('http'), controllerId = id('controller');
-  let peer = null, pending = null, closed = false, activePoll = null;
+  let peer = null, pending = null, closed = false, activePoll = null, lastReadFailure = null;
   const challenges = new Map();
   const assets = new Map([asset, ...additionalAssets].map(a => [a.executorHash, a])); let brokerBinding;
   const pins = Object.freeze({ packageHash: installation.packageHash, executorHash: asset.executorHash, installationId: installation.installationId });
@@ -28,7 +33,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     try { guardDelivery(); const value = frame(); pending.delivered = true; poll(value); }
     catch (e) { disconnect(e.code || 'physical_admission_closed'); poll(null); }
   }
-  function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId } : { connected: false }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { commandId: pending.command.commandId, delivered: pending.delivered } : null, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
+  function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId } : { connected: false }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { commandId: pending.command.commandId, delivered: pending.delivered } : null, lastReadFailure, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
   function reply(res, statusCode, value, origin) {
     if (res.destroyed || res.writableEnded) return;
     res.writeHead(statusCode, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) }); res.end(bounded(value));
@@ -96,7 +101,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         const selectedAsset = assets.get(c.command.executorHash);
         if (result.readFailureVersion === 1) {
           exact(result, ['readFailureVersion', 'outcome', 'code']);
-          if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code)) fail('inspection_result');
+          if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code) && !(titlesReadCommand(c.command, selectedAsset) && TITLES_READ_CODES.has(result.code))) fail('inspection_result');
         } else if (selectedAsset.resultProfile === 'manual-text-v1') {
           if (c.command.phase === 'mutate') {
             exact(result, ['outcome', 'snapshot', 'code', 'transactionReceipt']);
@@ -114,6 +119,9 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
           for (const item of result.layers) { exact(item, ['layerId', 'index', 'name', 'textLayer']); if (!Number.isSafeInteger(item.layerId) || item.layerId < 1 || !Number.isSafeInteger(item.index) || item.index < 1 || typeof item.name !== 'string' || typeof item.textLayer !== 'boolean') fail('inspection_result'); }
         }
         const response = { protocolVersion: 1, commandId: c.command.commandId, executorHash: c.command.executorHash, payloadHash: c.command.payloadHash, result }; store.complete(b.payload.commandId, response);
+        // One bounded observation of an already durable, authenticated completion.
+        // It is not evidence/grant or a statement about current runtime/history.
+        if (result.readFailureVersion === 1 && ['inspect', 'verify'].includes(c.command.phase)) lastReadFailure = Object.freeze({ commandId: c.command.commandId, moduleId: c.command.moduleId, phase: c.command.phase, executorHash: c.command.executorHash, code: result.code, authority: false });
         const done = pending; pending = null; clearTimeout(done.timer);
         signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } });
         if (result.readFailureVersion === 1) done.reject(Object.assign(new Error(result.code || 'inspection_failed'), { code: result.code || 'inspection_failed' })); else done.resolve(done.broker ? response : { observation: result, originalBinding: c.originalBinding, pins: commandPins(c.command), continuity: false });

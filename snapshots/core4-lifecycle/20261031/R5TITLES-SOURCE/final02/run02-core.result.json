@@ -1,0 +1,25 @@
+{
+  "name": "run02-core",
+  "command": [
+    "node",
+    "core4/tools/validate-diff.js",
+    "core4/modules/titles-current-target/executor.jsx",
+    "core4/modules/titles-current-target/artifact.json",
+    "core4/config/admissions/titles-current-target.json",
+    "core4/integrations/cep/http-peer.js",
+    "core4/test/manual-runtime.test.js",
+    "core4/test/installable-runtime.test.js",
+    "core4/test/owner-attachments.test.js",
+    "core4/test/stopped-host-readoption-operator.test.js",
+    "--run"
+  ],
+  "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core",
+  "raw": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-titles-inspection-7aaeafb8-3612-4538-95b3-488a94393e64\\run02-core.raw.log",
+  "startedAt": "2026-10-31T19:58:41.968Z",
+  "endedAt": "2026-10-31T20:14:58.255Z",
+  "elapsedMs": 976287,
+  "exit": 0,
+  "signal": null,
+  "error": null,
+  "rawSHA": "6291cda93676b8a013a35104cc191bf380a513a6d9f68f9399253e8652aaabc2"
+}
