@@ -1,6 +1,6 @@
 'use strict';
 const nodeTest = require('node:test');
-const test = (name, fn) => nodeTest('client-launcher ' + name, { timeout: 15000, skip: process.platform !== 'win32' }, fn);
+const test = (name, fn) => nodeTest('client-launcher ' + name, { timeout: 25000, skip: process.platform !== 'win32' }, fn);
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), net = require('node:net');
 const cp = require('node:child_process');
@@ -8,6 +8,7 @@ const { PassThrough } = require('node:stream');
 const { randomUUID, createHash } = require('node:crypto');
 const { projectClientDescriptor } = require('../runtime/client-entry');
 const { createIpcClient, createIpcServer } = require('../runtime/client-ipc');
+const { createAttachmentOwner, OWNER_METHODS } = require('../runtime/attachment-owner');
 const SOURCE = path.resolve(__dirname, '..'), spawn = cp.spawn;
 const canonical = v => v && typeof v === 'object' ? Array.isArray(v) ? '[' + v.map(canonical).join(',') + ']' : '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canonical(v[k])).join(',') + '}' : JSON.stringify(v);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex'), nodeHash = hash(fs.readFileSync(process.execPath));
@@ -34,7 +35,7 @@ const server=createIpcServer({endpoint:c.endpoint,identity,secret:c.secret,bootI
 methods:['core_status','owner_status','core_connect','fixture_shutdown'],async onRequest({method,requestId}){
  fs.appendFileSync(path.join(root,'owner-calls.ndjson'),JSON.stringify({method,requestId})+'\n');
  if(method==='fixture_shutdown'){setTimeout(async()=>{await server.close();finish();},10);return {ok:true,value:{stopped:true}};}
- if(method==='core_connect'&&c.mode==='drop'){setImmediate(()=>server.close());await new Promise(r=>setTimeout(r,100));finish();return {ok:true,value:{completed:true}};}
+ if((method==='core_connect'||method==='core_status')&&c.mode==='drop'){setImmediate(()=>server.close());await new Promise(r=>setTimeout(r,100));finish();return {ok:true,value:{completed:true}};}
  return {ok:true,value:{pid:process.pid,bootId:'fixture-'+process.pid,method}};
 }});
 setTimeout(()=>server.listen().catch(()=>{finish();process.exitCode=1;}),c.delayMs||0);
@@ -168,6 +169,75 @@ test('concurrent requests share one actual spawn; authenticated child receives o
   assert.equal(actual.cwd, f.releaseDir);
 });
 
+test('first ordinary request waits for fixture readiness beyond five seconds with one guarded launch', async t => {
+  const f = fixture(t, { delayMs: 5600 }), d = await driver(t, f), started = performance.now();
+  const status = value(await d.call('core_status'));
+  assert.equal(status.method, 'core_status'); assert.ok(performance.now() - started >= 5600);
+  assert.equal(d.observed.length, 1); assert.equal(lines(f.starts).length, 1);
+  assert.equal(lines(f.calls).filter(row => row.method === 'core_status').length, 1);
+});
+
+test('first request after idle session expiry gets one fresh attachment without reacquiring controller state', async t => {
+  const f = fixture(t), sessions = [], methods = [];
+  const owner = createAttachmentOwner({ runtime: { status: () => ({}), close() {} }, activity: () => ({ pending: false, unresolved: false, fault: false }),
+    invoke(method) { assert.equal(method, 'status'); return { ready: true }; } });
+  resources(t).closers.push(() => owner.close());
+  const server = createIpcServer({ endpoint: f.d.ownerEndpoint, identity: f.identity, secret: f.d.controlToken, bootId: owner.bootId,
+    limits: { sessionMs: 300 }, methods: OWNER_METHODS,
+    onAttach(session) { sessions.push(session); owner.onAttach(session); }, onDetach: owner.onDetach,
+    onRequest({ session, method }) {
+      methods.push(method);
+      return owner.onRequest({ session, method, payload: {} });
+    } });
+  await server.listen(); resources(t).closers.push(() => server.close());
+  const d = await driver(t, f), grant = value(await d.call('controller_acquire')), holder = owner.status().holderClientId;
+  assert.equal(typeof grant.leaseToken, 'string'); assert.equal(typeof holder, 'string');
+  await until(() => server.status().sessions === 0); await new Promise(resolve => setTimeout(resolve, 30));
+  const statuses = (await Promise.all(Array.from({ length: 6 }, () => d.call('core_status')))).map(value), after = statuses[0];
+  assert.equal(after.ready, true); assert.equal(sessions.length, 2); assert.notEqual(sessions[0], sessions[1]);
+  assert.equal(after.attachmentOwner.bootId, grant.bootId); assert.equal(after.attachmentOwner.generation, grant.generation);
+  assert.equal((await d.call('core_connect')).error.message, 'owner_controller_required');
+  assert.deepEqual(methods, ['controller_acquire', ...Array(6).fill('core_status'), 'core_connect']); assert.equal(d.observed.length, 0);
+});
+
+test('unbranded ipc_closed strings and properties never authorize a retry', async t => {
+  const f = fixture(t, { files: { 'runtime/client-ipc.js': Buffer.from("let attaches=0;exports.isPreSendClosed=()=>false;exports.createIpcClient=async()=>{attaches++;return {close(){},call(){if(attaches>1)throw Error('unexpected replay');throw Object.assign(Error('ipc_closed'),{code:'ipc_closed',phase:'pre-send',outcome:'not_sent'})}}};") } });
+  const d = await driver(t, f); assert.equal((await d.call('core_status')).error.message, 'ipc_closed');
+  assert.equal(d.observed.length, 0);
+});
+
+test('a request gets at most one fresh attachment even when both close before send', async t => {
+  const f = fixture(t, { files: { 'runtime/client-ipc.js': Buffer.from("const proof=new WeakSet();let attaches=0;exports.isPreSendClosed=e=>proof.has(e);exports.createIpcClient=async()=>{attaches++;return {close(){},call(){if(attaches>2)return {ok:true,value:{unexpectedReplay:true}};const e=Object.assign(Error('ipc_closed'),{code:'ipc_closed'});proof.add(e);throw e}}};") } });
+  const d = await driver(t, f); assert.equal((await d.call('core_status')).error.message, 'ipc_closed'); assert.equal(d.observed.length, 0);
+});
+
+test('failed authentication on fresh attachment is terminal for that request and does not launch', async t => {
+  for (const variant of ['secret', 'pins']) {
+    const f = fixture(t); let calls = 0;
+    const make = (identity = f.identity, secret = f.d.controlToken) => createIpcServer({ endpoint: f.d.ownerEndpoint, identity, secret,
+      bootId: 'fixture-replacement', methods: ['core_status'], onRequest() { calls++; return { ok: true, value: {} }; } });
+    const first = make(); await first.listen(); resources(t).closers.push(() => first.close());
+    const d = await driver(t, f); value(await d.call('core_status')); await first.close(); await new Promise(resolve => setTimeout(resolve, 30));
+    const foreign = make(variant === 'pins' ? { ...f.identity, packageHash: 'f'.repeat(64) } : f.identity, variant === 'secret' ? 'b'.repeat(64) : f.d.controlToken);
+    await foreign.listen(); resources(t).closers.push(() => foreign.close());
+    assert.equal((await d.call('core_status')).error.message, 'owner_unavailable'); assert.equal(calls, 1); assert.equal(d.observed.length, 0);
+  }
+});
+
+test('EOF during fresh attachment handshake cancels it without send or launch', async t => {
+  const f = fixture(t), first = createIpcServer({ endpoint: f.d.ownerEndpoint, identity: f.identity, secret: f.d.controlToken,
+    bootId: 'fixture-first', methods: ['core_status'], onRequest: () => ({ ok: true, value: {} }) });
+  await first.listen(); resources(t).closers.push(() => first.close());
+  const d = await driver(t, f); value(await d.call('core_status')); await first.close(); await new Promise(resolve => setTimeout(resolve, 30));
+  let accepted = false, bytes = 0; const sockets = new Set(), hanging = net.createServer(socket => {
+    accepted = true; sockets.add(socket); socket.on('error', () => {}); socket.on('close', () => sockets.delete(socket)); socket.on('data', data => { bytes += data.length; });
+  });
+  await new Promise(resolve => hanging.listen(f.d.ownerEndpoint, resolve));
+  resources(t).closers.push(() => { for (const socket of sockets) socket.destroy(); return new Promise(resolve => hanging.close(resolve)); });
+  void d.call('core_status'); await until(() => accepted); d.input.end(); await until(() => d.runtime.status().closed && sockets.size === 0);
+  assert.equal(bytes, 0); assert.equal(d.observed.length, 0);
+});
+
 test('EOF after spawn exits the thin process while the IPC-only fixture owner survives', async t => {
   const f = fixture(t, { delayMs: 400 }), child = thinChild(t, f); void child.call('core_status');
   await until(() => lines(child.report).some(row => row.event === 'spawn')); child.child.stdin.end();
@@ -183,8 +253,9 @@ test('EOF after spawn exits the thin process while the IPC-only fixture owner su
 });
 
 test('failed actual start stays latched and later explicit requests never spawn a second process', async t => {
-  const f = fixture(t, { mode: 'fail' }), d = await driver(t, f);
+  const f = fixture(t, { mode: 'fail' }), d = await driver(t, f), started = performance.now();
   assert.equal((await d.call('core_status')).error.message, 'owner_unavailable'); assert.equal(d.observed.length, 1); assert.equal(lines(f.starts).length, 1);
+  assert.ok(performance.now() - started >= 15000); assert.ok(performance.now() - started < 20000);
   assert.equal((await d.call('core_status')).error.message, 'owner_unavailable'); assert.equal(d.observed.length, 1);
   const winner = createIpcServer({ endpoint: f.d.ownerEndpoint, identity: f.identity, secret: f.d.controlToken, bootId: 'external-fixture-winner', methods: ['core_status'], onRequest: () => ({ ok: true, value: { external: true } }) });
   await winner.listen(); resources(t).closers.push(() => winner.close());
@@ -277,10 +348,12 @@ test('two actual clients attach the bounded fixture winner; fixture election is 
 });
 
 test('accepted-call connection loss returns uncertainty with its original request id and never resends', async t => {
-  const f = fixture(t, { mode: 'drop' }), d = await driver(t, f), response = await d.call('core_connect');
-  assert.equal(response.error.message, 'ipc_outcome_uncertain'); assert.equal(response.error.data.outcome, 'unknown');
-  await until(() => fs.existsSync(path.join(f.root, 'owner-stopped')));
-  const calls = lines(f.calls).filter(row => row.method === 'core_connect'); assert.equal(calls.length, 1); assert.equal(calls[0].requestId, response.error.data.requestId); assert.equal(d.observed.length, 1);
+  for (const method of ['core_connect', 'core_status']) {
+    const f = fixture(t, { mode: 'drop' }), d = await driver(t, f), response = await d.call(method);
+    assert.equal(response.error.message, 'ipc_outcome_uncertain'); assert.equal(response.error.data.outcome, 'unknown');
+    await until(() => fs.existsSync(path.join(f.root, 'owner-stopped')));
+    const calls = lines(f.calls).filter(row => row.method === method); assert.equal(calls.length, 1); assert.equal(calls[0].requestId, response.error.data.requestId); assert.equal(d.observed.length, 1);
+  }
 });
 
 test('authenticated attachment permits a later distinct startup after the owner closes', async t => {

@@ -9,6 +9,10 @@ const { createHmac, randomBytes, timingSafeEqual } = require('node:crypto');
 // Session keys bind both fresh nonces, exact pins and owner boot. Responses may
 // finish out of order, but must match an outstanding request's id AND sequence.
 const DOMAIN = 'ae-core4/local-client-ipc/v1\0';
+// Only this transport can prove that a particular call failed before send.
+// Error strings/properties from another source cannot authorize reattachment.
+const preSendClosures = new WeakSet();
+const isPreSendClosed = error => preSendClosures.has(error);
 const IPC_LIMITS = Object.freeze({ frameBytes: 65536, connections: 64, sessions: 32,
   inflight: 8, pending: 64, requests: 4096, handshakeMs: 3000, frameMs: 3000, sessionMs: 300000 });
 const nonce = () => randomBytes(32).toString('hex');
@@ -70,10 +74,10 @@ function limits(input = {}) {
   return result;
 }
 function transport(socket, onFrame, onClose, config) {
-  let parts = [], length = 0, partialTimer = null, closed = false;
+  let parts = [], length = 0, partialTimer = null, closed = false, faulted = false;
   function stopPartial() { clearTimeout(partialTimer); partialTimer = null; }
-  socket.on('error', () => socket.destroy());
-  socket.once('close', () => { closed = true; stopPartial(); parts = []; onClose(); });
+  socket.on('error', () => { faulted = true; socket.destroy(); });
+  socket.once('close', () => { closed = true; stopPartial(); parts = []; onClose(faulted || length !== 0); });
   socket.on('data', data => {
     try {
       let offset = 0;
@@ -84,7 +88,7 @@ function transport(socket, onFrame, onClose, config) {
         if (length >= config.frameBytes) fail('ipc_frame_size');
         parts.push(part);
         if (end < 0) {
-          if (!partialTimer) partialTimer = setTimeout(() => socket.destroy(), config.frameMs);
+          if (!partialTimer) partialTimer = setTimeout(() => { faulted = true; socket.destroy(); }, config.frameMs);
           break;
         }
         stopPartial();
@@ -94,15 +98,15 @@ function transport(socket, onFrame, onClose, config) {
         if (!bytes.equals(Buffer.from(raw)) || canonical(frame) !== raw) fail('ipc_frame');
         onFrame(frame); offset = end + 1;
       }
-    } catch { socket.destroy(); }
+    } catch { faulted = true; socket.destroy(); }
   });
   return body => {
     if (closed || socket.destroyed) return false;
     try {
       const bytes = Buffer.from(canonical(body) + '\n');
-      if (socket.writableLength + bytes.length > config.frameBytes * config.inflight) { socket.destroy(); return false; }
+      if (socket.writableLength + bytes.length > config.frameBytes * config.inflight) { faulted = true; socket.destroy(); return false; }
       socket.write(bytes); return true;
-    } catch { socket.destroy(); return false; }
+    } catch { faulted = true; socket.destroy(); return false; }
   };
 }
 
@@ -203,13 +207,13 @@ async function createIpcClient(opts) {
     let socket;
     try { socket = net.createConnection(opts.endpoint); } catch { reject(Object.assign(new Error('ipc_authentication'), { code: 'ipc_authentication' })); return; }
     const pending = new Map();
-    let challenge, clientNonce, key, sessionId, bootId, seq = 0, ready = false, failed = false, connected = false, absence = null, cancelled = false, timedOut = false;
+    let challenge, clientNonce, key, sessionId, bootId, seq = 0, ready = false, failed = false, connected = false, absence = null, cancelled = false, timedOut = false, cleanClosure = false, locallyClosed = false;
     socket.once('connect', () => { connected = true; absence = null; });
     socket.on('error', error => {
       if (!connected && !cancelled && !timedOut) absence = absence === null && ['ENOENT', 'ECONNREFUSED'].includes(error.code) ? error.code : 'unknown';
     });
     const handshakeTimer = setTimeout(() => { timedOut = true; absence = null; abort(); }, config.handshakeMs);
-    function abort() { socket.destroy(); }
+    function abort() { locallyClosed = true; cleanClosure = false; socket.destroy(); }
     function cancel() { cancelled = true; absence = null; abort(); }
     opts.signal?.addEventListener('abort', cancel, { once: true });
     if (opts.signal?.aborted) cancel();
@@ -236,8 +240,15 @@ async function createIpcClient(opts) {
         if (!verified(key, 'ready', frame)) fail('ipc_authentication');
         ready = true; clearTimeout(handshakeTimer);
         resolve(Object.freeze({ bootId, sessionId, close: abort,
-          call(method, payload) {
-            if (failed || socket.destroyed) return Promise.reject(Object.assign(new Error('ipc_closed'), { code: 'ipc_closed' }));
+          async call(method, payload) {
+            // Destruction may precede the close event in the same turn. Observe
+            // that close before deciding whether this unsent call has proof.
+            if (socket.destroyed && !failed) await new Promise(done => socket.once('close', done));
+            if (failed || socket.destroyed) {
+              const error = Object.assign(new Error('ipc_closed'), { code: 'ipc_closed' });
+              if (cleanClosure && !cancelled && !opts.signal?.aborted) preSendClosures.add(error);
+              return Promise.reject(error);
+            }
             let frame;
             try {
               if (!token(method) || !payload || Object.getPrototypeOf(payload) !== Object.prototype) fail('ipc_payload');
@@ -259,7 +270,10 @@ async function createIpcClient(opts) {
           !verified(key, 'response', frame)) fail('ipc_response');
       pending.delete(frame.requestId); clearTimeout(entry.timer);
       entry.resolve(frame.result);
-    }, () => {
+    }, faulted => {
+      // A clean, fully observed close can retire an idle attachment. No call
+      // already in pending is eligible: every such outcome remains unknown.
+      cleanClosure = ready && !faulted && !cancelled && !locallyClosed && !socket.writableLength && pending.size === 0;
       failed = true; clearTimeout(handshakeTimer);
       opts.signal?.removeEventListener('abort', cancel);
       if (!ready) {
@@ -272,4 +286,4 @@ async function createIpcClient(opts) {
     }, config);
   });
 }
-module.exports = { createIpcServer, createIpcClient, IPC_LIMITS };
+module.exports = { createIpcServer, createIpcClient, IPC_LIMITS, isPreSendClosed };

@@ -1,0 +1,469 @@
+{
+  "collectedAt": "2026-10-31T10:49:06.932Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "sourceBaseline": "4c7e8d4",
+  "sourceHashes": {
+    "core4/runtime/client-entry.js": "08a199f38144524a3ec1bc7358ccad6af1c603580bb2fb18243ad576a90060cd",
+    "core4/runtime/client-ipc.js": "ac3586857ab2d96aedd5efdfd0fba330e94fcbaad4f101dc2323cc8c1b453d5b",
+    "core4/test/client-ipc.test.js": "8bdc5b0474c7a65ec4509614b63b9e99bce5c20b25f39a0526414b731fd93cfb",
+    "core4/test/client-launcher.test.js": "0b25c3017ad9a94c2079521f1164465e904b8893d8734ad72cb50211c96fff17"
+  },
+  "checks": 10,
+  "batches": 10,
+  "totals": {
+    "tests": 186,
+    "pass": 186,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "sourceHashesUnchanged": true,
+  "evidenceKeysUnchanged": true,
+  "validationLogHash": "2559bb74b9da92f18d260e517259f5d6752ea57a5cee8abad27eb30d5f2b01db",
+  "boundaries": {
+    "checked": 43,
+    "liveCalls": 0
+  },
+  "syntaxFiles": 4,
+  "diffCheck": "PASS",
+  "review": "bounded independent source review ACCEPT; no confirmed defects",
+  "releaseCertified": false,
+  "liveAcceptance": false,
+  "deferredCoverage": [
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "stopped-update-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "stopped-update"
+        ]
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "windows-cim-probe"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "human-window"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "human-window"
+        ]
+      ]
+    },
+    {
+      "check": "manual-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "manual-runtime"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "manual-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "installable-runtime"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "installable-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/test/client-ipc.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/client-launcher.test.js",
+          "dependency": "test/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/test/client-ipc.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/client-launcher.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "native-read-recovery"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "native-read-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "installed-composition"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "installed-composition"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "exact-f548-transition"
+        ]
+      ]
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-ipc.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "standalone-installer"
+        ],
+        [
+          "core4/runtime/client-ipc.js",
+          "runtime/",
+          "standalone-installer"
+        ]
+      ]
+    }
+  ]
+}

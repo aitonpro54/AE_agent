@@ -98,7 +98,7 @@ async function startClient({ descriptor, input = process.stdin, output = process
   const d = verifyClientDescriptor(descriptor);
   if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(d.releaseDir)) fail('client_entry_root');
   // All non-builtin imports are below full release and exact-entry verification.
-  const { createIpcClient } = require('./client-ipc');
+  const { createIpcClient, isPreSendClosed } = require('./client-ipc');
   const { serveAttachment } = require('./client-stdio');
   const { spawn } = require('node:child_process');
   const lifetime = new AbortController();
@@ -176,12 +176,13 @@ async function startClient({ descriptor, input = process.stdin, output = process
       launchAttempted = true;
       try { await launch(); }
       catch (failure) { if (preSpawnStops.has(failure)) launchAttempted = false; throw failure; }
-      const deadline = performance.now() + 5000;
-      for (let attempt = 0; attempt < 50; attempt++) {
-        if (closed) unavailable();
+      // Cold owner verification/recovery may exceed five seconds. This is one
+      // bounded, absence-only boot wait following the one guarded launch.
+      const deadline = performance.now() + 15000;
+      while (!closed) {
         const remaining = Math.ceil(deadline - performance.now()); if (remaining < 1) unavailable();
         try { return await attach(Math.min(3000, remaining)); }
-        catch (next) { if (!absent(next) || attempt === 49) throw next; }
+        catch (next) { if (!absent(next)) throw next; }
         await pause(Math.min(100, Math.max(1, deadline - performance.now())));
       }
       unavailable();
@@ -189,28 +190,34 @@ async function startClient({ descriptor, input = process.stdin, output = process
   }
   const client = {
     async call(method, payload) {
-      if (closed) fail('owner_unavailable');
-      if (!linked) {
-        if (!connecting) connecting = connect();
-        const attempt = connecting;
-        try { linked = await attempt; launchAttempted = false; }
-        catch { return method === 'owner_status' ? { ok: true, value: { available: false, reason: 'owner_connection_unavailable', coverage: 'unobserved' } } : { ok: false, code: 'owner_unavailable' }; }
-        finally { if (connecting === attempt) connecting = null; }
-      }
-      if (closed) { linked.close(); linked = null; fail('owner_unavailable'); }
-      const connection = linked;
-      try { return await connection.call(method, payload); }
-      catch (error) {
-        if (error?.code === 'ipc_outcome_uncertain' || error?.code === 'ipc_closed') {
-          connection.close(); if (linked === connection) linked = null;
+      // A fresh attachment may serve this same request only with private proof
+      // that the old call never reached send. It never transfers lease state.
+      for (let attachment = 0; attachment < 2; attachment++) {
+        if (closed) fail('owner_unavailable');
+        if (!linked) {
+          if (!connecting) connecting = connect();
+          const attempt = connecting;
+          try { linked = await attempt; launchAttempted = false; }
+          catch { return method === 'owner_status' ? { ok: true, value: { available: false, reason: 'owner_connection_unavailable', coverage: 'unobserved' } } : { ok: false, code: 'owner_unavailable' }; }
+          finally { if (connecting === attempt) connecting = null; }
         }
-        throw error;
+        if (closed) { linked.close(); linked = null; fail('owner_unavailable'); }
+        const connection = linked;
+        try { return await connection.call(method, payload); }
+        catch (error) {
+          if (error?.code === 'ipc_outcome_uncertain' || error?.code === 'ipc_closed') {
+            connection.close(); if (linked === connection) linked = null;
+          }
+          if (attachment === 0 && !closed && typeof isPreSendClosed === 'function' && isPreSendClosed(error)) continue;
+          throw error;
+        }
       }
     },
     close() { closed = true; lifetime.abort(); if (linked) linked.close(); linked = null; }
   };
   // Initialize/tools-list remain available without an owner. A failed accepted
-  // call is never resent; a later explicit request may make a fresh attachment.
+  // call is never resent. Only a privately proven pre-send idle closure permits
+  // one fresh attachment within a request; other losses need explicit requests.
   try { return serveAttachment({ client, input, output }); } catch (error) { client.close(); throw error; }
 }
 module.exports = { ownerEndpoint, projectClientDescriptor, verifyClientDescriptor, startClient };

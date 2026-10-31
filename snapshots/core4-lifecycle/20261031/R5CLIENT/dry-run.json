@@ -1,0 +1,20 @@
+{
+  "baseline": {
+    "anchorOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "cep": "6073c08baad83536b207b3174bd15c46957615125086e242cbfaef3e89e7f2d2",
+    "client": "c8c84ad8cbe830446a582d4f86a635278941e46e9144361fc6109e3d0949c79d",
+    "config": "e72411106e8ebc66e02788acd33c8a31011b1036d8ec8748ce6937f1761ece9f",
+    "descriptor": "4a42f5a9e560a329949604fed33dc2489a0149183a50c10d96e6984ec08e4b63",
+    "rootOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+  },
+  "cepDir": "C:\\Users\\Ant\\AppData\\Roaming\\Adobe\\CEP\\extensions\\com.codex.aeagentcore4",
+  "configPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml",
+  "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+  "distributionHash": "f799501263ff3bd449ab0af6c7b0e20ec4a65ee687219585e47e734e088d288b",
+  "dryRun": true,
+  "extensionsDir": "C:\\Users\\Ant\\AppData\\Roaming\\Adobe\\CEP\\extensions",
+  "installRoot": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4",
+  "liveProof": false,
+  "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "stateDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production"
+}

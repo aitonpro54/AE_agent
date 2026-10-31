@@ -6,7 +6,7 @@ const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
 const { randomUUID, randomBytes, createHmac } = require('node:crypto');
-const { createIpcServer, createIpcClient, IPC_LIMITS } = require('../runtime/client-ipc');
+const { createIpcServer, createIpcClient, IPC_LIMITS, isPreSendClosed } = require('../runtime/client-ipc');
 
 const secret = 'synthetic-control-secret-'.repeat(3), panelSecret = 'synthetic-panel-secret-'.repeat(3);
 const identity = Object.freeze({ installationId: 'installation-fixture', machineId: 'machine-fixture', packageHash: 'a'.repeat(64) });
@@ -237,7 +237,36 @@ test('IPC handshake/absolute session deadlines are bounded and do not infer auth
   let attaches = 0; const f = await fixture(t, { limits: { handshakeMs: 30, sessionMs: 40 }, onAttach() { attaches++; } });
   const idle = connect(t, f.endpoint); await idle.next(); await idle.closed; assert.equal(attaches, 0);
   const client = await f.client(); await until(() => f.server.status().sessions === 0);
-  await rejects(client.call('status', {}), 'ipc_closed'); assert.equal(attaches, 1);
+  await new Promise(resolve => setTimeout(resolve, 20));
+  await assert.rejects(client.call('status', {}), error => error.code === 'ipc_closed' && isPreSendClosed(error)); assert.equal(attaches, 1);
+});
+
+test('IPC private pre-send closure proof excludes forged errors, explicit close, cancellation and protocol failures', async t => {
+  assert.equal(isPreSendClosed(Object.assign(new Error('ipc_closed'), { code: 'ipc_closed', phase: 'pre-send' })), false);
+  assert.equal(isPreSendClosed(null), false);
+  for (const variant of ['close', 'abort']) {
+    const controller = new AbortController(), f = await fixture(t), client = await f.client({ signal: controller.signal });
+    if (variant === 'close') client.close(); else controller.abort();
+    await until(() => f.server.status().sessions === 0); await new Promise(resolve => setTimeout(resolve, 20));
+    await assert.rejects(client.call('status', {}), error => error.code === 'ipc_closed' && !isPreSendClosed(error));
+  }
+  for (const variant of ['mac', 'partial']) {
+    const sent = deferred(), opts = await fakeOwner(t, async peer => {
+      await sent.promise;
+      if (variant === 'partial') peer.socket.write('{', () => peer.socket.destroy());
+      else peer.send({ type: 'forged', mac: '0'.repeat(64) });
+    });
+    const client = await createIpcClient(opts); t.after(() => client.close()); sent.resolve();
+    await new Promise(resolve => setTimeout(resolve, 40));
+    await assert.rejects(client.call('status', {}), error => error.code === 'ipc_closed' && !isPreSendClosed(error));
+  }
+});
+
+test('IPC submitted response loss never acquires pre-send proof after pending state is cleared', async t => {
+  const opts = await fakeOwner(t, async peer => { await peer.next(); peer.socket.end(); });
+  const client = await createIpcClient(opts); t.after(() => client.close());
+  await assert.rejects(client.call('status', {}), error => error.code === 'ipc_outcome_uncertain' && !isPreSendClosed(error));
+  await assert.rejects(client.call('status', {}), error => error.code === 'ipc_closed' && !isPreSendClosed(error));
 });
 
 test('IPC preserves uncertainty for handler errors/invalid results and refuses non-JSON payloads before send', async t => {

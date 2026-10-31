@@ -153,8 +153,12 @@ R3 не использует fake production epoch и не переносит au
   authority/continuity=false. Один physical read, mutation/save/reload0; lease released,
   journal18events с сохранённым prefix16events. Первый idle status `ipc_closed`,
   новое явное чтение успешно; требуется адресное исправление source client.
-- [ ] R5 source: client first-call resilience (bounded cold readiness и idle reconnect,
-  без replay accepted/unknown и переноса leases/reference generation).
+- [x] R5 source: client first-call resilience (bounded cold readiness15с и один
+  proven pre-send idle reconnect, без replay accepted/unknown и переноса leases).
+  186selectedPASS,10checks/10batches, source review ACCEPT;
+  [границы/evidence](core-cep-r5-client-resilience-20261031.md).
+- [ ] Installed client resilience packagecc2f0713 и actual configured proof;
+  source/offline PASS не подменяет installed acceptance.
 - [ ] R3d2–R5: fresh host adoption, repeated CEP/reconnect, cold-start timing,
   повторные ordinary cycles и Titles/native confirm/read-back;
   устойчивость installed runtime пока не заявлена.
@@ -183,6 +187,12 @@ R3 не использует fake production epoch и не переносит au
   уже получил timeout. Embedding восстанавливает durable fences до attach/acquire.
 
 ## Validation
+
+R5 client source:186PASS/0FAIL/skipped0 по scoped selection10checks/10batches;
+16deferred integrations сохранены. Source hashes/evidence keys до/после совпали,
+boundaries43/live0,4syntax/diff PASS, bounded source review ACCEPT. Runtime package
+cc2f0713 отличается от installed8a79 только двумя client files; standalone build
+и dry-run PASS. [Подробности](core-cep-r5-client-resilience-20261031.md).
 
 После открытия AE: configured discovery/contract, explicit lease, один typed
 project-inspection и release PASS; observation`d46dad6f…`, AE26.3x87/0items.
@@ -244,9 +254,9 @@ IDs, evidence и границы — в [installed checkpoint](core-cep-checkpoin
 Migration/update/enable и завершённые one-shot transactions не повторять.
 
 Actual CEP и один typed read после пользовательского открытия AE подтверждены;
-Core owner27112 не сменился. Следующий source/offline блок — bounded client
-first-call resilience при cold boot и закрытой idle IPC session, без replay.
-Затем installed обновление нужного среза и fresh native host probe/adoption до
+Core owner27112 не сменился. Source/offline client first-call resilience завершён
+186selectedPASS; следующий шаг — installed обновление подготовленного packagecc2f
+и actual configured first-call proof. Затем fresh native host probe/adoption до
 исполнения, R5 Titles на выбранной test-copy с native confirm/read-back и повторные
 ordinary cycles. AE26308 сейчас открыт; root его не запускал/перезапускал.
 Развитие Titles/Slideshow и финальная portability/P1–P8/full release не выполнены.
