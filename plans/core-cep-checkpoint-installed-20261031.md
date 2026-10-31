@@ -5,6 +5,32 @@
 подключение текущего чата после обновления app transport. Новый чат не нужен.
 Ниже сохранён исходный checkpoint; актуальный результат — в разделе после restart.
 
+## После открытия AE — configured typed read
+
+- Пользователь сообщил об открытии AE. Native process — PID26308, birth ticks
+  `639290395690521480`; Core owner27112/birth/boot прежние, listener3457 один.
+- Первый `core_status` вернул `ipc_closed`; следующее явное чтение успешно
+  reattached: physical peer.connected=true, inspectionAvailable=true. Закрытие IPC
+  согласуется с source sessionMs300000; полная временная трасса не снималась.
+- Через discovery/contract и explicit controller lease generation1 выполнен один
+  `project-inspection/inspect-project`, observation`d46dad6f…`, command
+  `inspect-95ab4c19-063a-4cc9-b7d9-1e049e4b8581`. AE26.3x87 вернул пустой
+  несохранённый проект:0items, compositions=[], layers=[], authority/continuity=false.
+- Lease освобождён, owner idle, accepted/pending0, faults/unresolved/UNKNOWN нет.
+  Native mutation/save/restart/panel reload0. Broker connection=unavailable не
+  объявляется готовностью mutating/manual lane; read-only профиль работает отдельно.
+- Receiver journal теперь18events: только begin17/complete18 этой inspection.
+  SHA256 исходного prefix16events прежний`4cfe8817…`; origin/anchor/config неизменны,
+  broker ledger отсутствует. Full journal hash`2a7d8b23…` сохранён в evidence.
+- Host adoption6492 остаётся historical, её файл не менялся. Перед будущим
+  исполнением нужны fresh witness и штатная новая adoption, без old grants.
+
+Evidence: `snapshots/core4-lifecycle/20261031/INSTALLED/configured-cep-inspection-observation.json`.
+Проверка actual read-only CEP/AE завершена. Следующий source/offline блок —
+client first-call resilience: bounded cold startup и idle reconnect без replay
+accepted/unknown. Затем installed host adoption/Titles и ordinary cycles;
+повторять migration/update/enable текущего checkpoint не требуется.
+
 ## Результат после restart — 31 октября 2026
 
 - Пользователь сообщил о ручном restart Codex. Configured `core_status` сначала

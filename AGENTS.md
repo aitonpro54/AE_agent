@@ -22,6 +22,11 @@ Core/CEP](plans/core-cep-lifecycle-20261030.md). Организационный 
 restart Codex configured MCP подтверждён: owner9812 отсутствует, штатный recovery
 завершён, новый owner27112 ready; история16events неизменна. Первый cold status
 вернул `owner_unavailable`, повторные чтения прошли; R5 timing остаётся открытым.
+После открытия AE26308 actual CEP подключилась к тому же owner; configured
+`project-inspection` прочитал пустой несохранённый проект без mutation. Журнал18events,
+исходный prefix16events прежний. Первый idle-запрос вернул `ipc_closed`, следующее
+чтение прошло; адресное исправление client first-call входит в текущий R5 scope.
+Старая adoption6492 не заменяет current host witness/новую adoption перед исполнением.
 Точный [installed checkpoint](plans/core-cep-checkpoint-installed-20261031.md)
 содержит settled IDs и следующий read-only шаг; migration/update не повторять.
 Эта запись не выдаёт runtime authority и не снимает pending/UNKNOWN/fences.

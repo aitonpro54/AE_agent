@@ -148,7 +148,14 @@ R3 не использует fake production epoch и не переносит au
   один listener3457, journal16events/origins/config unchanged. Первый cold status
   `owner_unavailable`, следующие чтения успешны. Survival9812 не наблюдался;
   причина завершения процесса отдельно не установлена.
-- [ ] R3d2–R5: fresh host adoption, actual CEP/reconnect, cold-start timing,
+- [x] Actual CEP после пользовательского открытия AE26308 подключилась к owner27112;
+  configured typed `project-inspection` прочитал пустой несохранённый проект,
+  authority/continuity=false. Один physical read, mutation/save/reload0; lease released,
+  journal18events с сохранённым prefix16events. Первый idle status `ipc_closed`,
+  новое явное чтение успешно; требуется адресное исправление source client.
+- [ ] R5 source: client first-call resilience (bounded cold readiness и idle reconnect,
+  без replay accepted/unknown и переноса leases/reference generation).
+- [ ] R3d2–R5: fresh host adoption, repeated CEP/reconnect, cold-start timing,
   повторные ordinary cycles и Titles/native confirm/read-back;
   устойчивость installed runtime пока не заявлена.
 
@@ -163,6 +170,10 @@ R3 не использует fake production epoch и не переносит au
   histories/fences; смена PID не объявляется survival прежнего owner. Первый cold
   отказ фиксируется отдельно от успешного configured reconnect. Новая ручная
   установка/очистка markers для этой проверки не потребовалась.
+- Actual project-inspection — read-only observation с authority/continuity=false.
+  Она допустима до новой host adoption и не выдаёт mutating grant для AE26308.
+  Первые client failures устраняются source/offline в отдельном ограниченном блоке;
+  автоматическое повторение отправленных операций исключено.
 - Ранее завершённые T1/C1a сохраняются; новые продуктовые функции отложены.
 - R1 не является механизмом снятия durable UNKNOWN и не подключён к stdio-entry.
 - Renew использует один monotonic sample для проверки/продления; boundary
@@ -172,6 +183,18 @@ R3 не использует fake production epoch и не переносит au
   уже получил timeout. Embedding восстанавливает durable fences до attach/acquire.
 
 ## Validation
+
+После открытия AE: configured discovery/contract, explicit lease, один typed
+project-inspection и release PASS; observation`d46dad6f…`, AE26.3x87/0items.
+Fresh status — тот же owner27112, peer.connected/inspectionAvailable=true,
+controller idle, unresolved/faults/UNKNOWN нет. Native process26308/birth зафиксирован;
+сохранённая adoption6492 не менялась. Receiver history18events, prefix16events
+SHA256 прежний; новые begin17/complete18 соответствуют ровно этой inspection.
+Evidence: `snapshots/core4-lifecycle/20261031/INSTALLED/configured-cep-inspection-observation.json`.
+Первый idle `core_status` получил `ipc_closed`; следующий fresh read прошёл.
+Отправленную inspection не повторяли; mutation/save/restart/reload0.
+Согласованность JSON evidence (receipt command binding, prefix history, native PID,
+released lease и отсутствие credential fields) и `git diff --check`: PASS.
 
 31 октября, после пользовательского restart Codex: configured `core_status`
 сначала `owner_unavailable`, далее `owner_status` и два `core_status` PASS на owner27112.
@@ -220,10 +243,12 @@ configured-client proof и штатный dead-owner recovery подтвержд
 IDs, evidence и границы — в [installed checkpoint](core-cep-checkpoint-installed-20261031.md).
 Migration/update/enable и завершённые one-shot transactions не повторять.
 
-Следующий installed блок — actual CEP waiting/reconnect и typed read после
-появления AE, со свежим native host probe/adoption до исполнения. Затем R5 Titles
-на выбранной test-copy с native confirm/read-back и повторные ordinary cycles,
-включая cold-start timing. AE сейчас отсутствует; эта проверка не запускала его.
+Actual CEP и один typed read после пользовательского открытия AE подтверждены;
+Core owner27112 не сменился. Следующий source/offline блок — bounded client
+first-call resilience при cold boot и закрытой idle IPC session, без replay.
+Затем installed обновление нужного среза и fresh native host probe/adoption до
+исполнения, R5 Titles на выбранной test-copy с native confirm/read-back и повторные
+ordinary cycles. AE26308 сейчас открыт; root его не запускал/перезапускал.
 Развитие Titles/Slideshow и финальная portability/P1–P8/full release не выполнены.
 Перед live изменением сверить свежие status/queue/authority; сохранить чужие
 snapshots/AEP и старые receipts. Полная installed устойчивость пока не объявлена.
