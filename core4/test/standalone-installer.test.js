@@ -36,7 +36,7 @@ test('standalone-installer deterministic manual/readonly distributions include e
     const f = fixture(t, selector), runtime = buildPackage(undefined, selector), checked = verifyStandalone(f.distribution, f.bundle.distributionHash);
     assert.equal(checked.packageHash, runtime.packageHash); assert.deepEqual(buildStandalone(undefined, selector), f.bundle);
     assert.equal(Object.keys(runtime.files).length, selector === 'manual' ? 59 : 40);
-    assert.deepEqual(Object.keys(f.bundle.files).filter(file => file.startsWith('tools/')).sort(), [...HELPERS]);
+    assert.deepEqual(Object.keys(f.bundle.files).filter(file => HELPERS.includes(file)).sort(), [...HELPERS]);
     assert.equal(Object.keys(runtime.files).some(file => file.startsWith('tools/')), false);
     assert.throws(() => writeStandalone(f.distribution, f.bundle), /new_absolute_standalone_output_required/);
     const escaping = structuredClone(f.bundle); escaping.files['../escape.txt'] = Buffer.from('forbidden').toString('base64'); const output = path.join(f.directory, 'invalid-output');

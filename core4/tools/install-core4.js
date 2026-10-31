@@ -137,12 +137,16 @@ function assertPreparedInstallPlan(plan) {
   if (!entry || entry.digest !== digest) fail('prepared_install_plan_brand_or_changed');
   return Object.freeze({ transactionId: plan.transactionId, packageHash: plan.pkg.packageHash, appliedDescriptorHash: hash(canonical(plan.descriptor)), previousDescriptorHash: plan.baseline.descriptor, preparedPlanHash: entry.digest, preparedStateHash: entry.prepared?.hash || null });
 }
+function preparedInstallPayload(plan) {
+  const fingerprint = assertPreparedInstallPlan(plan);
+  return { version: 1, transactionId: plan.transactionId, preparedPlanHash: fingerprint.preparedPlanHash, package: plan.pkg, origin: plan.origin, originBytes: plan.originBytes.toString('base64'), clientBinding: plan.clientBinding, nextClient: plan.nextClient?.toString('base64') ?? null, descriptorBytes: Buffer.from(canonical(plan.descriptor)).toString('base64'), descriptorPath: plan.descriptorPath, configPath: plan.configPath, configBytes: Buffer.from(plan.nextConfig).toString('base64'), cepDir: plan.cepDir, cep: plan.cep, previousDescriptor: plan.previousDescriptor?.toString('base64') || null, previousConfig: plan.previousConfig?.toString('base64') || null, previousCep: plan.previousCep, baseline: plan.baseline };
+}
 function prepareInstallPlan(plan, { lease }) {
   const fingerprint = assertPreparedInstallPlan(plan), scope = { installRoot: plan.descriptor.installRoot, stateDir: plan.descriptor.stateDir, descriptorPath: plan.descriptorPath };
   assertInstallLease(lease, scope); const entry = preparedPlans.get(plan);
   if (!entry.prepared) {
     const directory = path.join(scope.installRoot, 'transactions', plan.transactionId + '-prepared');
-    const payload = { version: 1, transactionId: plan.transactionId, preparedPlanHash: fingerprint.preparedPlanHash, package: plan.pkg, origin: plan.origin, originBytes: plan.originBytes.toString('base64'), clientBinding: plan.clientBinding, nextClient: plan.nextClient?.toString('base64') ?? null, descriptorBytes: Buffer.from(canonical(plan.descriptor)).toString('base64'), descriptorPath: plan.descriptorPath, configPath: plan.configPath, configBytes: Buffer.from(plan.nextConfig).toString('base64'), cepDir: plan.cepDir, cep: plan.cep, previousDescriptor: plan.previousDescriptor?.toString('base64') || null, previousConfig: plan.previousConfig?.toString('base64') || null, previousCep: plan.previousCep, baseline: plan.baseline };
+    const payload = preparedInstallPayload(plan);
     try {
       const parent = path.dirname(directory); if (!fs.lstatSync(parent).isDirectory() || fs.lstatSync(parent).isSymbolicLink() || fs.realpathSync(parent) !== parent) fail('prepared_install_path');
       fs.mkdirSync(directory, { recursive: false });
@@ -261,14 +265,16 @@ function assertBaseline(plan, originPublished = false, staged) {
   const originHash = hash(plan.originBytes), rootExpected = originPublished && plan.baseline.rootOrigin === null ? originHash : plan.baseline.rootOrigin, anchorExpected = originPublished && plan.baseline.anchorOrigin === null ? originHash : plan.baseline.anchorOrigin;
   if ((client ? hash(client) : null) !== plan.baseline.client || (origin.root ? hash(origin.root) : null) !== rootExpected || (origin.anchor ? hash(origin.anchor) : null) !== anchorExpected || (bytes(plan.configPath) ? hash(bytes(plan.configPath)) : null) !== plan.baseline.config || (bytes(plan.descriptorPath) ? hash(bytes(plan.descriptorPath)) : null) !== plan.baseline.descriptor || treeHash(snapshot(plan.cepDir)) !== plan.baseline.cep) fail('install_baseline_changed');
 }
+function assertPreparedInstallBaseline(plan) { const fingerprint = assertPreparedInstallPlan(plan); assertBaseline(plan); return fingerprint; }
 function entryExists(file) { try { fs.lstatSync(file); return true; } catch (e) { if (e.code === 'ENOENT') return false; throw e; } }
-function assertNoLifecycleMarkers(stateDir) {
-  for (const name of ['runtime-owner.json', 'runtime-owner.next', 'runtime-diagnostic.json', 'runtime-maintenance.json']) if (entryExists(path.join(stateDir, name))) fail('runtime_lifecycle_owned_or_maintenance');
+function assertNoLifecycleMarkers(stateDir, certifiedStop = false) {
+  for (const name of ['runtime-owner.json', 'runtime-owner.next', 'runtime-diagnostic.json', ...(certifiedStop ? [] : ['runtime-maintenance.json'])]) if (entryExists(path.join(stateDir, name))) fail('runtime_lifecycle_owned_or_maintenance');
 }
-function assertRuntimeStopped(stateDir, { lease, descriptorPath, cepDir, plan } = {}) {
+function assertRuntimeStopped(stateDir, { lease, descriptorPath, cepDir, plan, stoppedPermit } = {}) {
   const scope = { installRoot: path.resolve(stateDir, '../..'), stateDir, descriptorPath };
-  const owned = lease ? (assertInstallLease(lease, scope), ownedLeaseGates(lease)) : new Map();
-  assertNoLifecycleMarkers(stateDir);
+  const owned = lease ? (assertInstallLease(lease, scope, { full: true }), ownedLeaseGates(lease)) : new Map();
+  const certified = stoppedPermit && require('./stopped-update').assertStoppedUpdatePermit(stoppedPermit, { plan, lease });
+  assertNoLifecycleMarkers(stateDir, !!certified);
   for (const relative of ['broker/broker-owner.lock', 'broker/broker-owner.gate', 'receiver/owner']) {
     const file = path.join(stateDir, relative);
     if (entryExists(file) && !(relative === 'broker/broker-owner.gate' && owned.has(file) && fs.readFileSync(file).equals(owned.get(file)))) fail('runtime_state_owned_or_unknown');
@@ -302,17 +308,18 @@ function checkRelease(directory, release) {
   }
   visit(path.resolve(directory), ''); if (expectedFiles.size || expectedDirs.size) fail('immutable_release_mismatch');
 }
-function applyInstall(plan, { lease: borrowed } = {}) {
+function applyInstall(plan, { lease: borrowed, stoppedPermit } = {}) {
   let fingerprint = assertPreparedInstallPlan(plan);
   assertBaseline(plan);
-  const d = plan.descriptor; assertNoLifecycleMarkers(d.stateDir); assertSwitchVolumes(d.installRoot, plan.cepDir); fs.mkdirSync(d.installRoot, { recursive: true });
+  const certified = stoppedPermit && require('./stopped-update').assertStoppedUpdatePermit(stoppedPermit, { plan, lease: borrowed });
+  const d = plan.descriptor; assertNoLifecycleMarkers(d.stateDir, !!certified); assertSwitchVolumes(d.installRoot, plan.cepDir); fs.mkdirSync(d.installRoot, { recursive: true });
   const scope = { installRoot: d.installRoot, stateDir: d.stateDir, descriptorPath: plan.descriptorPath };
-  const lease = borrowed || acquireInstallLease(scope); assertInstallLease(lease, scope);
+  const lease = borrowed || acquireInstallLease(scope); assertInstallLease(lease, scope, { full: true });
   let txnFile, txn, writes = false; const staged = new Map();
   try {
     assertBaseline(plan);
     if (d.version !== 2 || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(plan.transactionId) || (plan.previousDescriptor ? canonical(d.predecessor) !== canonical({ transactionId: plan.transactionId, previousDescriptorHash: hash(plan.previousDescriptor) }) : d.predecessor !== null)) fail('install_lineage_plan');
-    assertRuntimeStopped(d.stateDir, { lease, descriptorPath: plan.descriptorPath, cepDir: plan.cepDir, plan });
+    assertRuntimeStopped(d.stateDir, { lease, descriptorPath: plan.descriptorPath, cepDir: plan.cepDir, plan, stoppedPermit });
     writes = true;
     fs.mkdirSync(path.join(d.installRoot, 'transactions'), { recursive: true });
     fingerprint = prepareInstallPlan(plan, { lease });
@@ -343,6 +350,7 @@ function applyInstall(plan, { lease: borrowed } = {}) {
     durable(txnFile, canonical(txn));
     // Last CAS before any visible switch. Unknown filesystem outcomes are not retried.
     assertBaseline(plan, true, staged); assertCepStage(cepStage, plan.cep);
+    if (stoppedPermit) require('./stopped-update').stoppedUpdateSwitchReady(stoppedPermit, { plan, lease, txnFile, cepStage, backupCep });
     const cepIdentity = fs.lstatSync(cepStage, { bigint: true });
     if (fs.existsSync(plan.cepDir)) fs.renameSync(plan.cepDir, backupCep);
     fs.renameSync(cepStage, plan.cepDir); assertCepStage(plan.cepDir, plan.cep);
@@ -479,4 +487,4 @@ if (require.main === module) {
     }
   } catch (e) { console.error(canonical({ error: e.code || 'install_failed', ...(e.transactionFile ? { transactionFile: e.transactionFile } : {}) })); process.exitCode = 1; }
 }
-module.exports = { planInstall, assertPreparedInstallPlan, prepareInstallPlan, assertDurablePreparedInstallPlan, applyInstall, rollback, snapshot, configText, checkRelease };
+module.exports = { planInstall, assertPreparedInstallPlan, assertPreparedInstallBaseline, preparedInstallPayload, prepareInstallPlan, assertDurablePreparedInstallPlan, applyInstall, rollback, snapshot, configText, checkRelease };

@@ -1,6 +1,14 @@
 {
   "owners": [
-    { "prefix": "core4/runtime/stopped-certification.js", "owner": "stopped-certification", "checks": ["stopped-certification"] },
+    { "prefix": "core4/tools/operate-stopped-update.js", "owner": "stopped-update-operator", "checks": ["stopped-update-operator", "standalone-installer"] },
+    { "prefix": "core4/test/stopped-update-operator.test.js", "owner": "stopped-update-operator", "checks": ["stopped-update-operator"] },
+    { "prefix": "core4/tools/stopped-update.js", "owner": "stopped-update", "checks": ["stopped-update", "legacy-owner-migration", "standalone-installer"] },
+    { "prefix": "core4/test/stopped-update.test.js", "owner": "stopped-update", "checks": ["stopped-update"] },
+    { "prefix": "core4/tools/legacy-owner-migration.js", "owner": "legacy-owner-migration", "checks": ["legacy-owner-migration", "standalone-installer"] },
+    { "prefix": "core4/test/legacy-owner-migration.test.js", "owner": "legacy-owner-migration", "checks": ["legacy-owner-migration"] },
+    { "prefix": "core4/tools/windows-retained-process.js", "owner": "windows-retained-process", "checks": ["windows-retained-process"] },
+    { "prefix": "core4/test/windows-retained-process.test.js", "owner": "windows-retained-process", "checks": ["windows-retained-process"] },
+    { "prefix": "core4/runtime/stopped-certification.js", "owner": "stopped-certification", "checks": ["stopped-certification", "maintenance-finish-operator", "standalone-installer"] },
     { "prefix": "core4/test/stopped-certification.test.js", "owner": "stopped-certification", "checks": ["stopped-certification"] },
     { "prefix": "core4/tools/finish-owner-maintenance.js", "owner": "maintenance-finish", "checks": ["maintenance-finish-operator", "standalone-installer"] },
     { "prefix": "core4/test/maintenance-finish.test.js", "owner": "maintenance-finish", "checks": ["maintenance-finish"] },
@@ -214,6 +222,8 @@
       "prefix": "core4/runtime/install-lease.js",
       "owner": "native-read-recovery",
       "checks": [
+        "stopped-update",
+        "legacy-owner-migration",
         "maintenance-finish",
         "owner-maintenance",
         "native-read-recovery"
@@ -1020,6 +1030,10 @@
     }
   ],
   "checkDependencies": {
+    "stopped-update-operator": ["tools/operate-stopped-update.js","tools/standalone-installer.js","tools/package-standalone-installer.js","tools/package-installable.js","tools/install-core4.js","tools/stopped-update.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","tools/check-boundaries.js","runtime/","core/","protocol/","test/stopped-update-operator.test.js","tools/finish-owner-maintenance.js","tools/maintain-owner.js","tools/disposition-install-preflight.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
+    "stopped-update": ["tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/stopped-update.test.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
+    "legacy-owner-migration": ["tools/legacy-owner-migration.js","tools/windows-retained-process.js","tools/install-core4.js","tools/package-installable.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/legacy-owner-migration.test.js","tools/stopped-update.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
+    "windows-retained-process": ["tools/windows-retained-process.js", "runtime/windows-owner-process.js", "test/windows-retained-process.test.js"],
     "stopped-certification": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/stopped-certification.test.js"],
     "maintenance-finish": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/fixtures/maintenance-finish.js", "test/maintenance-finish.test.js"],
     "maintenance-finish-operator": ["runtime/", "core/", "protocol/", "tools/", "config/", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "test/maintenance-finish-operator.test.js"],
@@ -1510,6 +1524,10 @@
     ]
   },
   "checkCommands": {
+    "stopped-update-operator": ["node", "--test", "--test-name-pattern=stopped-update-operator", "test/stopped-update-operator.test.js"],
+    "stopped-update": ["node", "--test", "--test-name-pattern=stopped-update", "test/stopped-update.test.js"],
+    "legacy-owner-migration": ["node", "--test", "--test-name-pattern=legacy-owner-migration", "test/legacy-owner-migration.test.js"],
+    "windows-retained-process": ["node", "--test", "--test-name-pattern=windows-retained-process", "test/windows-retained-process.test.js"],
     "stopped-certification": ["node", "--test", "--test-name-pattern=stopped-certification", "test/stopped-certification.test.js"],
     "maintenance-finish": ["node", "--test", "--test-name-pattern=maintenance-finish", "test/maintenance-finish.test.js"],
     "maintenance-finish-operator": ["node", "--test", "--test-name-pattern=maintenance-finish-operator", "test/maintenance-finish-operator.test.js"],
@@ -1681,6 +1699,10 @@
     ]
   },
   "checkPolicy": {
+    "stopped-update-operator": { "kind": "integration" },
+    "stopped-update": { "kind": "integration" },
+    "legacy-owner-migration": { "kind": "integration" },
+    "windows-retained-process": { "kind": "component" },
     "stopped-certification": { "kind": "component" },
     "maintenance-finish": { "kind": "component" },
     "maintenance-finish-operator": { "kind": "integration" },

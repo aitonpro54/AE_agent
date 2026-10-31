@@ -14,6 +14,26 @@ Owner distributions also support explicit same-descriptor pending-resume finish:
 node tools/standalone-installer.js maintenance-inspect --expected-distribution-hash REVIEWED_DISTRIBUTION_SHA256 --expected-current-package-hash CURRENT_HASH --installation ABS_DESCRIPTOR --operation UUID
 node tools/standalone-installer.js maintenance-finish --expected-distribution-hash REVIEWED_DISTRIBUTION_SHA256 --expected-current-package-hash CURRENT_HASH --installation ABS_DESCRIPTOR --operation UUID --expected-proof-hash INSPECT_PROOF
 Maintenance never updates, launches runtime, kills a process or replays an RPC.
+For an interrupted stop use stopped-inspect / stopped-certify with the same
+arguments as maintenance-inspect / maintenance-finish. Certification requires
+a durable desired-stop, fresh process-death proof and settled original history;
+it preserves the stop barrier and issues its own certificate, not an old receipt.
+Явные команды обновления owner distributions:
+Общие flags: --expected-distribution-hash DIST --expected-package-hash NEW
+--expected-current-package-hash OLD --expected-previous-descriptor-hash OLD_DESC
+--installation ABS_DESCRIPTOR --operation UUID.
+owner-update дополнительно требует --config ABS_CONFIG и существующий stop UUID.
+migrate-legacy дополнительно требует --config ABS_CONFIG --root-status ABS_JSON
+--expected-root-status-hash STATUS_HASH; JSON: {observedAt,status} из свежего
+configured core_status. Только этот режим может один раз остановить проверенную
+Core incarnation через удерживаемый native handle. AE не останавливается.
+update-inspect принимает transaction UUID; update-finish продолжает только известную
+фазу с --expected-proof-hash INSPECT_PROOF. update-enable отдельно разрешает старт
+новой установки с тем же proof flag; enable-finish завершает прерванный enable.
+legacy-inspect / legacy-finish используют исходный migration UUID для ранней фазы;
+finish требует --expected-proof-hash. Новые ключи при продолжении не генерируются.
+Успешное обновление сохраняет stopped barrier. Explicit enable не запускает Core;
+обычный thin client делает это после enable. Неизвестные исходы не повторяются.
 Review distributionHash out of band from package builder output. The manifest
 does not issue authority. Standard install lease/CAS, signed history, owner,
 UNKNOWN/no-replay and runtime-stopped gates remain in the existing installer.

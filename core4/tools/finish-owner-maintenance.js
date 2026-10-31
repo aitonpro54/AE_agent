@@ -13,11 +13,16 @@ async function operate(capability) {
   const maintenance = require('../runtime/owner-maintenance');
   const options = { installation: d, descriptorPath: descriptor, id };
   if (mode === 'maintenance-inspect') return maintenance.inspectMaintenanceFinish(options);
-  if (mode !== 'maintenance-finish') throw Object.assign(Error('maintenance_command'), { code: 'maintenance_command' });
+  if (!['maintenance-finish', 'stopped-inspect', 'stopped-certify'].includes(mode)) throw Object.assign(Error('maintenance_command'), { code: 'maintenance_command' });
   const server = http.createServer();
   try {
     await new Promise((resolve, reject) => { server.once('error', reject); server.listen(3457, '127.0.0.1', () => { server.removeListener('error', reject); resolve(); }); });
-    return await maintenance.finishMaintenance({ ...options, expectedProofHash, reservedServer: server });
+    if (mode === 'maintenance-finish') return await maintenance.finishMaintenance({ ...options, expectedProofHash, reservedServer: server });
+    const certification = require('../runtime/stopped-certification');
+    if (mode === 'stopped-inspect') return await certification.inspectStoppedCertification({ ...options, reservedServer: server });
+    const certificate = await certification.certifyStoppedInstallation({ ...options, expectedProofHash, reservedServer: server });
+    const facts = certification.assertStoppedCertificate(certificate, options);
+    return { certified: true, id, certificateHash: facts.certificateHash, stopped: true, runtimeStarted: false, aeAuthority: false };
   } finally {
     // Election only: no request handler or execution lane. Do not let a request
     // that arrived during CIM inspection keep the operator/port alive.

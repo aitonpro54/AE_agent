@@ -135,6 +135,9 @@ R3 не использует fake production epoch и не переносит au
   immutable184selectedPASS после local review fixes;
   [границы](core-cep-r3-stopped-certification-20261031.md). Installer/update/legacy
   integration продолжается отдельно, installed runtime не переключён.
+- [x] R3d2b2 source: stopped update/rotation/explicit enable, legacy normal и
+  dedicated recovery, immutable354selectedPASS после bounded review fixes;
+  [контракт/evidence](core-cep-r3-stopped-update-20261031.md). Actual switch следующий.
 - [ ] R3d2–R5: update/adoption/legacy migration и installed CEP/runtime приёмка;
   устойчивость installed runtime пока не заявлена.
 

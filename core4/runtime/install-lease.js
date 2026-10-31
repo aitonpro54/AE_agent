@@ -36,9 +36,10 @@ function acquireInstallLease(scope, ...unsupported) {
   }
 }
 function state(lease) { const value = lease && leases.get(lease); if (!value || value.released) fail('install_lease_brand'); return value; }
-function assertInstallLease(lease, scope) {
+function assertInstallLease(lease, scope, { full = false } = {}) {
   const item = state(lease), expected = pathsFor(scope);
   if (Object.keys(expected).some(k => expected[k] !== item.paths[k])) fail('install_lease_scope');
+  if (full && item.gates.length !== 2) fail('install_lease_incomplete');
   for (const gate of item.gates) {
     if (item.maintenance) { checkMaintenanceGate(item.io, gate); continue; }
     const stat = item.io.lstatSync(gate.file, { bigint: true }), held = item.io.fstatSync(gate.fd, { bigint: true });
@@ -118,4 +119,51 @@ function acquireMaintenanceFinishLease(capability) {
   if (p.kind !== 'finish' || !p.recovery || !['commit', 'release'].includes(p.mode) || p.mode === 'commit' && p.facts.some(f => f.stat === null)) fail('maintenance_lease_brand');
   return acquireMaintenanceInstallLease(capability);
 }
-module.exports = { acquireInstallLease, acquireMaintenanceInstallLease, acquireMaintenanceFinishLease, maintenanceLeaseFacts, assertInstallLease, ownedLeaseGates, checkpointInstallLease, retainInstallLease, releaseInstallLease };
+function acquireSealedLease(permit, installOnly = false) {
+  const paths = pathsFor(permit.scope);
+  if (!Array.isArray(permit.gates) || permit.gates.length !== 2 || permit.gates.some(b => !Buffer.isBuffer(b) || !b.length || b.length > 16384) || !/^[a-f0-9-]{36}$/.test(permit.nonce)) fail('install_lease_brand');
+  safeDirectory(paths.installRoot, fs); safeDirectory(path.join(paths.stateDir, 'broker'), fs);
+  const lease = Object.freeze({}), item = { paths, io: fs, gates: [], phase: 'acquired', retained: false, released: false, checkpoint: null, maintenance: true, update: true };
+  try {
+    for (const [index, file] of [paths.installGate, paths.brokerGate].entries()) {
+      if (installOnly && index === 1) break;
+      if (!permit.recovery) item.gates.push(publishMaintenanceGate(file, permit.gates[index], permit.nonce));
+      else {
+        const expected = permit.facts?.[index];
+        if (!expected || expected.file !== file || expected.hash !== crypto.createHash('sha256').update(permit.gates[index]).digest('hex')) fail('install_lease_changed');
+        if (permit.recoverMissing && expected.stat === null) { item.gates.push(publishMaintenanceGate(file, permit.gates[index], permit.nonce)); continue; }
+        if (permit.releaseOnly) { try { fs.lstatSync(file); } catch (error) { if (error.code === 'ENOENT') continue; throw error; } }
+        const fd = fs.openSync(file, 'r'), gate = { file, fd, bytes: permit.gates[index], stat: expected.stat };
+        item.gates.push(gate); checkMaintenanceGate(fs, gate);
+      }
+    }
+    leases.set(lease, item); assertInstallLease(lease, permit.scope); return lease;
+  } catch (error) { for (const gate of item.gates) try { fs.closeSync(gate.fd); } catch {} error.leaseRetained = true; throw error; }
+}
+function acquireStoppedUpdateLease(capability) { return acquireSealedLease(require('../tools/stopped-update').stoppedUpdateLeasePermit(capability)); }
+function acquireLegacyMigrationInstallLease(capability) {
+  const p = require('../tools/legacy-owner-migration').legacyMigrationLeasePermit(capability);
+  if (p.installOnly !== true || p.recovery) fail('install_lease_brand');
+  return acquireSealedLease(p, true);
+}
+function acquireLegacyMigrationRecoveryLease(capability) {
+  const p = require('../tools/legacy-owner-migration').legacyMigrationLeasePermit(capability);
+  if (p.recovery !== true || typeof p.installOnly !== 'boolean') fail('install_lease_brand');
+  return acquireSealedLease(p, p.installOnly);
+}
+function promoteLegacyMigrationInstallLease(lease, capability) {
+  const p = require('../tools/legacy-owner-migration').legacyMigrationLeasePermit(capability), item = state(lease);
+  assertInstallLease(lease, p.scope);
+  if (!item.update || p.installOnly !== false || item.gates.length !== 1 || !item.gates[0].bytes.equals(p.gates[0])) fail('install_lease_brand');
+  try {
+    const expected = p.facts?.[1];
+    if (p.recovery && expected?.stat) {
+      if (expected.file !== item.paths.brokerGate || expected.hash !== crypto.createHash('sha256').update(p.gates[1]).digest('hex')) fail('install_lease_changed');
+      const fd = fs.openSync(item.paths.brokerGate, 'r'), gate = { file: item.paths.brokerGate, fd, bytes: p.gates[1], stat: expected.stat }; item.gates.push(gate); checkMaintenanceGate(fs, gate);
+    } else item.gates.push(publishMaintenanceGate(item.paths.brokerGate, p.gates[1], p.nonce));
+    assertInstallLease(lease, p.scope, { full: true }); return lease;
+  }
+  catch (error) { item.retained = true; error.leaseRetained = true; throw error; }
+}
+module.exports = { acquireInstallLease, acquireMaintenanceInstallLease, acquireMaintenanceFinishLease, maintenanceLeaseFacts, assertInstallLease, ownedLeaseGates, checkpointInstallLease, retainInstallLease, releaseInstallLease,
+  acquireStoppedUpdateLease, acquireLegacyMigrationInstallLease, acquireLegacyMigrationRecoveryLease, promoteLegacyMigrationInstallLease };

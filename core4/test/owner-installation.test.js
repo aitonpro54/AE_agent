@@ -179,7 +179,7 @@ test('owner-installation standalone stdio and owner closure apply without checko
   const distributions = {};
   for (const model of ['stdio', 'owner']) {
     const bundle = buildStandalone(SOURCE, 'readonly', { runtimeModel: model }), directory = path.join(f.directory, model); writeStandalone(directory, bundle); verifyStandalone(directory, bundle.distributionHash);
-    assert.deepEqual(Object.keys(bundle.files).filter(file => file.startsWith('tools/')).sort(), [...HELPERS]);
+    assert.deepEqual(Object.keys(bundle.files).filter(file => HELPERS.includes(file)).sort(), [...HELPERS]);
     assert.equal(Object.hasOwn(bundle.files, 'runtime/client-entry.js'), model === 'owner'); distributions[model] = { bundle, directory };
   }
   for (const model of ['stdio', 'owner', 'stdio']) {

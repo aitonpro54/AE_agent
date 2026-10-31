@@ -66,6 +66,25 @@ test('tampered NEW support helper is rejected before any installed operator impo
   const f = fixture(t); fs.appendFileSync(path.join(f.distribution, 'tools/finish-owner-maintenance.js'), "\nthrow Error('TAMPERED_SUPPORT_EXECUTED');");
   const r = f.run(); assert.equal(r.report.error, 'standalone_closure_bytes'); assert.equal(r.imports.includes(path.join(f.distribution, 'tools/finish-owner-maintenance.js')), false);
 });
+test('stopped certification routes only through verified NEW code and closes election on refusal', async t => {
+  const f = fixture(t), bootstrap = require(path.join(f.distribution, 'tools/standalone-installer.js'));
+  const cert = require(path.join(f.distribution, 'runtime/stopped-certification.js'));
+  const create = http.createServer, inspect = cert.inspectStoppedCertification, certify = cert.certifyStoppedInstallation, check = cert.assertStoppedCertificate;
+  let server, calls = 0; const id = crypto.randomUUID(), opaque = Object.freeze({});
+  http.createServer = () => { server = create.call(http); const listen = server.listen; server.listen = function (port, host, ...args) { assert.equal(port, 3457); return listen.call(this, 0, host, ...args); }; return server; };
+  const base = ['--expected-distribution-hash', f.shipped.distributionHash, '--expected-current-package-hash', f.d.packageHash, '--installation', f.descriptor, '--operation', id];
+  cert.inspectStoppedCertification = async options => { calls++; assert.equal(options.id, id); assert.equal(options.reservedServer, server); return { proofHash: 'a'.repeat(64), inspectionOnly: true }; };
+  cert.certifyStoppedInstallation = async options => { calls++; assert.equal(options.expectedProofHash, 'a'.repeat(64)); assert.equal(options.reservedServer, server); return opaque; };
+  cert.assertStoppedCertificate = (value, options) => { assert.equal(value, opaque); assert.equal(options.id, id); return { certificateHash: 'b'.repeat(64) }; };
+  try {
+    assert.equal((await bootstrap.main(['stopped-inspect', ...base])).inspectionOnly, true); assert.equal(server.listening, false);
+    const result = await bootstrap.main(['stopped-certify', ...base, '--expected-proof-hash', 'a'.repeat(64)]);
+    assert.deepEqual(result, { certified: true, id, certificateHash: 'b'.repeat(64), stopped: true, runtimeStarted: false, aeAuthority: false }); assert.equal(server.listening, false); assert.equal(calls, 2);
+    cert.certifyStoppedInstallation = async () => { throw Object.assign(Error('stopped_changed'), { code: 'stopped_changed' }); };
+    await assert.rejects(bootstrap.main(['stopped-certify', ...base, '--expected-proof-hash', 'a'.repeat(64)]), /stopped_changed/); assert.equal(server.listening, false);
+    await assert.rejects(Promise.resolve().then(() => bootstrap.main(['stopped-certify', ...base])), /standalone_usage/);
+  } finally { cert.inspectStoppedCertification = inspect; cert.certifyStoppedInstallation = certify; cert.assertStoppedCertificate = check; http.createServer = create; if (server?.listening) await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }); }
+});
 test('private election finally closes a real pending request on its TEMP port', async t => {
   const f = fixture(t), bootstrap = require(path.join(f.distribution, 'tools/standalone-installer.js')), maintenance = require(path.join(f.distribution, 'runtime/owner-maintenance.js'));
   const create = http.createServer, finish = maintenance.finishMaintenance; let server, request, closed = false, port, timer;
