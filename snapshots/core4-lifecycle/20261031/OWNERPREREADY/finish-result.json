@@ -1,0 +1,13 @@
+{
+  "collectedAt": "2026-10-31T11:33:12.783Z",
+  "result": {
+    "aeAuthority": false,
+    "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+    "phase": "update-stopped",
+    "recovered": true,
+    "runtimeStarted": false,
+    "transactionId": "88e4a61e-8ed0-4579-b50e-55aee706a271",
+    "updated": true
+  }
+}

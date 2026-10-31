@@ -1,0 +1,11 @@
+{
+  "collectedAt": "2026-10-31T11:35:17.615Z",
+  "result": {
+    "aeAuthority": false,
+    "enabled": true,
+    "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+    "runtimeStarted": false,
+    "sameDescriptor": true,
+    "transactionId": "88e4a61e-8ed0-4579-b50e-55aee706a271"
+  }
+}

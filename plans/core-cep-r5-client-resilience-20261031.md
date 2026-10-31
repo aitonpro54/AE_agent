@@ -29,8 +29,10 @@ live/MCP/UI/install/process-control. Статус текущего проект�
 - [x] Узкое source исправление в двух runtime files; regression/direct tests60/60PASS.
 - [x] Независимый bounded source review: ACCEPT, подтверждённых defects нет.
 - [x] Проверка diff, scoped validate-diff selection186/186PASS, boundaries и evidence.
-- [ ] Проверяемый пакет/установка и actual configured first-call proof нового client;
-  source/offline проверки сами этот пункт не закрывают.
+- [x] Проверяемый пакетcc2f установлен и enabled через original update88e4;
+  actual first standard status6108.60мс PASS без retry, два clients/EOF — один owner2600.
+- [ ] Actual configured first-call proof нового client после manual Codex restart;
+  standalone доказательством configured path не объявляется. Live idle cycles открыты.
 
 ## Decision Log
 
@@ -76,8 +78,12 @@ Source hashes/selection/package/dry-run — в
 Normal installed stop`b99e2f80…` завершён; owner-update`88e4a61e…` прерван root
 timeout45с в intent-only фазе до lease/switch-ready. Descriptor8a79 прежний,
 update gates/desired-stop сохранены; повтор action и ручная очистка исключены.
-Штатный pre-ready owner continuation реализуется отдельным
-[recovery блоком](core-cep-r3-owner-preready-20261031.md). Этот source block принят;
-installed proof нового client пока отсутствует.
+Штатный pre-ready owner continuation реализован и принят209selectedPASS отдельным
+[recovery блоком](core-cep-r3-owner-preready-20261031.md), commit587b49f. Original
+update88e4 completed/update-stopped, fresh inspect switchIndex5, explicit enable.
+Installed packagecc2f/owner2600 ready; first standard status6108.60мс с первого
+запроса PASS. CEP после установки подключена, history18events/adoption/origins
+сохранены. Current configured client остаётся8a79 и требует app restart; новый
+configured proof и live idle cycles остаются открытыми.
 
 Full release, actual mutation, save/reopen и portability не заявляются.

@@ -1,0 +1,9 @@
+{
+  "dispatchedAt": "2026-10-31T11:32:45.046Z",
+  "sourceCommit": "587b49f",
+  "transactionId": "88e4a61e-8ed0-4579-b50e-55aee706a271",
+  "proofHash": "f55b0ba0e211f7931bc92f29d893615f70b489b64b01e6b7f1a54d7dbd8c5276",
+  "distributionHash": "6ae8960ffc6b89ded2971aca517b42f5792876bb6fac0161e2127565dddf6b15",
+  "forcedTimeout": false,
+  "automaticReplay": false
+}

@@ -3,9 +3,56 @@
 31 октября 2026, MSI. Пользователь сообщил, что toggle Core MCP не выключается,
 и предложил перезапустить Codex. Новая установка уже готова; требуется подтвердить
 подключение текущего чата после обновления app transport. Новый чат не нужен.
-Ниже сохранён исходный checkpoint; актуальный результат — в разделе после restart.
+Ниже сохранены прежние checkpoints; актуальное состояние — в первом разделе.
 
-## Текущее состояние: owner update intent-only, Core остановлен
+## Текущее состояние: packagecc2f enabled, owner2600 ready, Codex client reload pending
+
+Source client1a6d442 (186selectedPASS) и owner pre-ready recovery587b49f
+(209selectedPASS) завершены. Original stopb99/update88e4 продолжены штатно с тем же
+payload/credentials, fresh inspect switchIndex5 и explicit enable завершены.
+**Stop/update/pre-ready finish/enable повторять не требуется; markers не чистить.**
+
+- Package`cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac`;
+  verified helper distribution`6ae8960ffc6b89ded2971aca517b42f5792876bb6fac0161e2127565dddf6b15`,
+  `dist/owner-pre-ready-6ae8960ffc6b/`. Старые distribution для этого продолжения не нужны.
+- Owner2600, birth`639290433588621440`, boot`fda4b436-ac6e-428a-951c-82d76978afc3`,
+  active/ready=true; один listener3457. Faults/unresolved/UNKNOWN нет, physical pending=null,
+  worker pending0, storeClosed/storeFault=false. Controller authority не приобреталась.
+- Первый standard MCP status после cold start6108.60мс, PASS без retry. Два clients
+  видят одного owner, EOF обоих/parent exit owner не закрыли. Это standalone proof.
+- CEP после одного собственного close/reopen подключилась к тому же2600;
+  peer.connected/inspectionAvailable=true. Новый configured/native project read
+  после update ещё не выполнялся. Broker manual lane connection=unavailable не
+  объявляется готовностью mutating operations.
+- AE26308/birth639290395690521480 прежний, AEP changes/save/AE restart/mutation0.
+  Adoption6492 historical и неизменна, fresh current host witness/adoption нужны
+  до будущего исполнения. Новая owner incarnation не переносит прежние grants.
+- Journal18events/SHA256`2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e`;
+  prefix16events SHA4cfe8817… и origins00d9c5d0… прежние. Ledger и maintenance/install/
+  broker gates отсутствуют. Receiver identity receiver-store-65535962… прежний.
+- Descriptor SHA256`898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0`
+  совпал с original intent newDescriptor. Config hash`320b9e6d61c493a75cdf42da7d32af872bb6f83aa663ebf3894bdb5ac998c50a`;
+  enabled=true, entry — installed releases/cc2f…/runtime/client-entry.js.
+- Configured Codex пока содержит clients16072/1580/26832/24084 из8a79. После enable
+  status дал ipc_closed, затем owner_unavailable; после ready2600 повторный fresh
+  configured status снова owner_unavailable. Ручной restart Codex нужен для reload
+  нового client, его успешный configured proof остаётся pending.
+
+Следующий шаг после пользовательского restart: fresh configured core_status,
+сверка current package/PID/birth/boot/peer/pending/history. Survival2600 либо штатный
+attributed recovery измерить по свежим receipts/process facts; не предполагать
+survival и не повторять update. Затем live idle/ordinary cycles и fresh host
+adoption/Titles; final portability/P1–P8/full release открыты. Новый чат не нужен.
+
+Evidence: `snapshots/core4-lifecycle/20261031/OWNERPREREADY/`; полный разбор и
+границы — [recovery milestone](core-cep-r3-owner-preready-20261031.md).
+Штатного MCP reload tool в доступном inventory нет. Прочитанный
+[computer-use/SKILL.md](C:/Users/Ant/.codex/plugins/cache/openai-bundled/computer-use/26.1027.30824/skills/computer-use/SKILL.md)
+требует следовать [guidance.md](C:/Users/Ant/.codex/plugins/cache/openai-bundled/computer-use/26.1027.30824/docs/guidance.md),
+где сказано: «Do not automate the ChatGPT desktop app UI or Codex CLI or Codex
+extensions within Windows apps.» Поэтому restart выполняет пользователь.
+
+## История: owner update был прерван до switch-ready
 
 После успешного typed read и client source fix1a6d442 начато новое normal update
 на packagecc2f. Desired-stop`b99e2f80-034e-49b8-9ee5-ed7d68755f86` завершён,
@@ -15,10 +62,11 @@ root timeout45с без ответа actor28152. Установлен exact inte
 Descriptor8a79, config/origins/host adoption и journal18events прежние.
 AE26308/birth639290395690521480 открыт; собственная CEP закрыта, проект не менялся.
 
-**Stop/owner-update не повторять, gates/markers не чистить.** Активный путь —
+**Stop/owner-update не повторять, gates/markers не чистить.** Был выбран путь —
 [owner pre-ready recovery](core-cep-r3-owner-preready-20261031.md) той же transaction,
 того же original payload/credentials и targetcc2f, с private inspect/proof/finish.
-Ранние успешные status/CEP proofs ниже являются историей до этого stop.
+Этот prefix уже завершён по текущему разделу выше. Ранние successful status/CEP
+proofs ниже относятся к package8a79 до этого stop.
 Evidence: `snapshots/core4-lifecycle/20261031/R5CLIENT/update-timeout-readback.json`.
 
 ## После открытия AE — configured typed read

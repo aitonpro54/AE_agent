@@ -1,0 +1,15 @@
+{
+  "configuredClientProof": false,
+  "ownerReadyVerifiedViaStandardClient": true,
+  "ownerPid": 2600,
+  "peerConnectedVerifiedViaStandardClient": true,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "tool call error: tool call failed for `after-effects-core4/core_status`\n\nCaused by:\n    Mcp error: -32000: owner_unavailable"
+      }
+    ],
+    "isError": true
+  }
+}

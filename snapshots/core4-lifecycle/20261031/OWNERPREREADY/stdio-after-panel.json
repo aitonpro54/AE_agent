@@ -1,0 +1,60 @@
+{
+  "collectedAt": "2026-10-31T11:38:03.590Z",
+  "mode": "after-panel",
+  "firstCallMs": 5.154599999999846,
+  "standaloneProof": true,
+  "configuredClientProof": false,
+  "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "pid": 2600,
+  "ready": true,
+  "connection": "unavailable",
+  "ownershipFault": null,
+  "ledgerFault": false,
+  "unresolved": [],
+  "physical": {
+    "automaticLifecycle": "unavailable",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionAvailable": true,
+    "listening": true,
+    "peer": {
+      "connected": true,
+      "peerId": "panel-e8b95a80f1511da2810cb117eb4a9770a5747551f39a4e46"
+    },
+    "pending": null,
+    "port": 3457,
+    "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+    "storeClosed": false,
+    "storeFault": false,
+    "unknown": false
+  },
+  "lifecycle": {
+    "birthTicks": "639290433588621440",
+    "historyAtStartup": {
+      "ledger": {
+        "byteHash": null,
+        "eventCount": 0,
+        "present": false,
+        "settled": true,
+        "unresolvedCount": 0
+      },
+      "receiver": {
+        "byteHash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e",
+        "eventCount": 18,
+        "present": true,
+        "settled": true,
+        "unresolvedCount": 0
+      }
+    },
+    "mode": "active",
+    "pid": 2600,
+    "processBootId": "fda4b436-ac6e-428a-951c-82d76978afc3",
+    "reason": null,
+    "recoveryRequired": false
+  },
+  "twoClientsSameOwner": true,
+  "firstEOFKeptOwner": true,
+  "bothClientsEOF": true,
+  "processAfterEOF": "present",
+  "automaticLifecycle": "unavailable",
+  "aeDispatches": 0
+}

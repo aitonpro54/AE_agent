@@ -152,27 +152,35 @@ R3 не использует fake production epoch и не переносит au
   configured typed `project-inspection` прочитал пустой несохранённый проект,
   authority/continuity=false. Один physical read, mutation/save/reload0; lease released,
   journal18events с сохранённым prefix16events. Первый idle status `ipc_closed`,
-  новое явное чтение успешно; требуется адресное исправление source client.
+  новое явное чтение успешно; это стало основанием для source client блока.
 - [x] R5 source: client first-call resilience (bounded cold readiness15с и один
   proven pre-send idle reconnect, без replay accepted/unknown и переноса leases).
   186selectedPASS,10checks/10batches, source review ACCEPT;
   [границы/evidence](core-cep-r5-client-resilience-20261031.md).
-- [ ] Installed client resilience packagecc2f0713 и actual configured proof;
-  source/offline PASS не подменяет installed acceptance.
-- [ ] Normal stop`b99e2f80…` завершён; owner-update`88e4a61e…` прерван root45с
-  timeout на intent-only phase. Старый descriptor8a79/gates/desired-stop сохранены,
-  Core остановлен. [Явный owner pre-ready recovery](core-cep-r3-owner-preready-20261031.md)
-  продолжает original payload; stop/update не повторять, markers не чистить.
+- [x] Installed client resilience packagecc2f: first cold standard status6108.60мс
+  PASS без retry, два clients/EOF/parent exit — один ready owner2600.
+- [ ] Actual configured proof нового client после manual Codex restart; old8a79
+  clients текущего приложения дают owner_unavailable, standalone proof недостаточен.
+- [x] Normal stop`b99e2f80…` и update`88e4a61e…`, прерванный root45с timeout,
+  завершены через [явный owner pre-ready recovery](core-cep-r3-owner-preready-20261031.md)
+  с original payload/credentials, fresh switchIndex5 и explicit enable.
 - [x] Owner pre-ready source: explicit inspect/finish, original payload/gates/certificate,
   actor-death/CAS и monotonic attempt lineage;209selectedPASS/10batches,19deferred,
   review findings исправлены. Runtime targetcc2f unchanged, helper distribution6ae8960f
-  verified. Actual read-only inspect88e4 подтвердил gatePrefix2; finish ещё pending.
-- [ ] R3d2–R5: fresh host adoption, repeated CEP/reconnect, cold-start timing,
+  verified. Actual inspect gatePrefix2 → finish/update-stopped → enable завершены.
+- [x] Actual installed CEP после1close/reopen подключилась к ready2600;
+  history18events/adoption/origins unchanged, gates отсутствуют, AE26308 прежний,
+  mutation/save/AE restart0. Это installation reload, не proof idle recovery.
+- [ ] R3d2–R5: fresh host adoption, repeated CEP/reconnect, cold/idle ordinary cycles,
   повторные ordinary cycles и Titles/native confirm/read-back;
   устойчивость installed runtime пока не заявлена.
 
 ## Decision Log
 
+- После завершения88e4 новые установка/credentials не генерируются повторно.
+  Следующий restart обновляет только Codex configured attachment к текущему owner;
+  старые stdio processes не считаются proof нового client. App/owner survival либо
+  recovery определяется fresh facts; old host adoption не становится grant.
 - Owner intent-only prefix продолжается отдельным private inspect/finish с exact
   original payload; JSON не становится normal plan/certificate. Gates сохраняют
   original role bytes и закреплённые inode facts. Short forced timeout installer
@@ -199,6 +207,16 @@ R3 не использует fake production epoch и не переносит au
   уже получил timeout. Embedding восстанавливает durable fences до attach/acquire.
 
 ## Validation
+
+Actual recovery88e4: original payload target descriptor898261e1… preserved,
+finish recovered/update-stopped, fresh inspect switchIndex5, enable=true;
+journal18events/origins/hostadoption unchanged, gates отсутствуют. New owner2600
+active/ready, cold first standard status6108.60мс PASS; two clients/EOF/parent exit
+один owner. CEP peer connected/inspectionAvailable, unknown/faults/pending нет.
+AE26308 birth прежний; mutation/save/AE restart0. Configured client после ready2600
+остаётся old8a79/owner_unavailable, manual Codex restart pending.
+Evidence: `OWNERPREREADY/installed-readback.json`, stdio-first-call/stdio-after-panel,
+finish/enable results и configured-after-owner-ready.json.
 
 Owner pre-ready source:209PASS/0FAIL/skipped0 на immutable export e50dbeb +9paths,
 10checks/10batches,19deferred integrations. Source/frozen hashes и evidence keys
@@ -266,18 +284,16 @@ Restart Core/AE, install и native dispatch этого этапа0. UI попы�
 
 ## Продолжение
 
-Installed switch/enable package8a79 завершены; после ручного restart Codex
-configured-client proof и штатный dead-owner recovery подтверждены. Актуальные
+Installed switch/recovery/enable packagecc2f завершены; standard client cold и CEP
+proof подтверждены. Configured proof нового client ждёт manual Codex restart. Актуальные
 IDs, evidence и границы — в [installed checkpoint](core-cep-checkpoint-installed-20261031.md).
 Migration/update/enable и завершённые one-shot transactions не повторять.
 
-Actual CEP и один typed read после пользовательского открытия AE подтверждены;
-после этого normal update остановил Core27112 и был прерван root timeout в ранней
-intent-only фазе. Активный шаг — [owner pre-ready continuation](core-cep-r3-owner-preready-20261031.md)
-той же transaction88e4a61e/original packagecc2f, без replay owner-update и удаления
-gates. Source/offline client first-call resilience завершён186selectedPASS;
-после recovery нужны explicit enable и actual configured first-call proof.
-Затем fresh native host probe/adoption до
+Actual CEP и один configured typed read package8a79 подтверждены ранее. Interrupted
+update88e4 продолжен штатно после209selectedPASS, owner2600/cc2f ready и новая CEP
+подключена; повтор finish/enable не нужен. Активный шаг после manual Codex restart —
+fresh configured core_status нового client, затем new typed read и live ordinary
+cold/idle cycles. Fresh native host probe/adoption нужен до
 исполнения, R5 Titles на выбранной test-copy с native confirm/read-back и повторные
 ordinary cycles. AE26308 сейчас открыт; root его не запускал/перезапускал.
 Развитие Titles/Slideshow и финальная portability/P1–P8/full release не выполнены.

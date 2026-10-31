@@ -1,0 +1,41 @@
+{
+  "collectedAt": "2026-10-31T11:38:06.663Z",
+  "inventory": {
+    "processes": [
+      {
+        "pid": 26308,
+        "birthTicks": "639290395690521480",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"
+      },
+      {
+        "pid": 2600,
+        "birthTicks": "639290433588621440",
+        "executablePath": "C:\\Program Files\\nodejs\\node.exe"
+      }
+    ],
+    "listeners": [
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 3457,
+        "OwningProcess": 2600
+      }
+    ]
+  },
+  "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "descriptorHash": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+  "configHash": "320b9e6d61c493a75cdf42da7d32af872bb6f83aa663ebf3894bdb5ac998c50a",
+  "journalHash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e",
+  "journalEvents": 18,
+  "original16EventsHash": "4cfe881718e7255829785e57b604304493b319ba6e68d597074a98454e146f45",
+  "hostAdoptionHash": "4a453b0f0b04a83bd5248d3a22fbab234150c8232f5f464ba886d6bcafdee30c",
+  "rootOriginHash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+  "anchorOriginHash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+  "maintenancePresent": false,
+  "installGatePresent": false,
+  "brokerGatePresent": false,
+  "brokerLedgerPresent": false,
+  "aeRestarts": 0,
+  "aeMutationDispatches": 0,
+  "projectChanges": 0,
+  "panelCloseReopen": 1
+}

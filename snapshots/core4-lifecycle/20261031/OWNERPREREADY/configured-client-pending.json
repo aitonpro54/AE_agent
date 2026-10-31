@@ -1,0 +1,27 @@
+{
+  "description": "После explicit enable packagecc2f configured attachment текущего Codex осталась старой; новый standalone standard client прошёл отдельно.",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "configuredClientProof": false,
+  "observations": [
+    {
+      "order": 1,
+      "tool": "core_status",
+      "isError": true,
+      "content": [
+        "tool call error: tool call failed for `after-effects-core4/core_status`\n\nCaused by:\n    Mcp error: -32000: ipc_closed"
+      ]
+    },
+    {
+      "order": 2,
+      "tool": "core_status",
+      "isError": true,
+      "content": [
+        "tool call error: tool call failed for `after-effects-core4/core_status`\n\nCaused by:\n    Mcp error: -32000: owner_unavailable"
+      ]
+    }
+  ],
+  "next": "Ручной restart Codex, затем fresh configured core_status. Не повторять settled stop/update/recovery/enable."
+}

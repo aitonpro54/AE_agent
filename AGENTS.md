@@ -16,24 +16,23 @@ Core/CEP](plans/core-cep-lifecycle-20261030.md). Организационный 
 чат `01a18cce-e909-72d1-a327-07743704304e`; прежний T2-маршрут не возобновлять
 автоматически. Titles сохранён как проверочный сценарий, развитие продуктов
 следует после этого этапа. Выбрана модель одного installation-scoped Core owner
-с тонкими stdio clients и явным controller lease. 31 октября installed runtime
-переведён на owner package`8a79e069…`; normal legacy update и explicit enable
-завершены, два штатных stdio clients подтвердили один ready owner. После ручного
-restart Codex configured MCP подтверждён: owner9812 отсутствует, штатный recovery
-завершён, новый owner27112 ready; история16events неизменна. Первый cold status
-вернул `owner_unavailable`, повторные чтения прошли; R5 timing остаётся открытым.
-После открытия AE26308 actual CEP подключилась к тому же owner; configured
-`project-inspection` прочитал пустой несохранённый проект без mutation. Журнал18events,
-исходный prefix16events прежний. Первый idle-запрос вернул `ipc_closed`, следующее
-чтение прошло; адресное исправление client first-call входит в текущий R5 scope.
-Старая adoption6492 не заменяет current host witness/новую adoption перед исполнением.
-Текущий installed checkpoint после client source fix1a6d442: normal owner stop
-`b99e2f80…` завершён; update`88e4a61e…` прерван root timeout в intent-only фазе до
-lease/switch-ready. Descriptor8a79 прежний, update gates/desired-stop сохранены,
-Core остановлен; AE26308 открыт, CEP закрыта. **Owner-update/stop не повторять,
-markers не чистить.** Активное продолжение —
-[owner pre-ready recovery](plans/core-cep-r3-owner-preready-20261031.md), targetcc2f
-с тем же original payload. Это не runtime authority.
+с тонкими stdio clients и явным controller lease. 31 октября client resilience
+source1a6d442 принят186selectedPASS; interrupted owner pre-ready recovery587b49f —
+209selectedPASS. Original stop`b99e2f80…` и update`88e4a61e…` штатно завершены через
+новый inspect/finish и explicit enable с тем же original payload/credentials.
+Installed package теперь`cc2f0713…`; helper distribution`6ae8960f…`. Owner2600 ready,
+один listener3457, peer connected, pending/UNKNOWN/faults нет. Первый cold standard
+status6108.60мс прошёл с первого запроса; два клиента/EOF/parent exit сохранили owner.
+Journal18events, prefix16events/origins/adoption неизменны. AE26308 не перезапускался,
+собственная CEP закрыта/открыта1раз для установки; project changes/save/mutation0.
+Configured Codex clients пока старые8a79: даже после ready2600 status owner_unavailable.
+Нужен manual restart Codex и fresh configured core_status новогоcc2f; standalone
+proof не подменяет configured. **Settled stop/update/recovery/enable не повторять,
+markers не чистить.** [Installed recovery](plans/core-cep-r3-owner-preready-20261031.md)
+содержит source/installed evidence и оставшиеся R5 проверки.
+Прежний configured project-inspection package8a79 прочитал пустой несохранённый
+проект без authority/continuity. Старая adoption6492 не заменяет current host
+witness/новую adoption перед исполнением. Эта запись не выдаёт runtime authority.
 Точный [installed checkpoint](plans/core-cep-checkpoint-installed-20261031.md)
 содержит settled IDs и следующий read-only шаг; migration/update не повторять.
 Эта запись не выдаёт runtime authority и не снимает pending/UNKNOWN/fences.
