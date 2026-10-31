@@ -1,0 +1,24 @@
+{
+  "recordedAt": "2026-10-31T13:40:23.955Z",
+  "source": "Прямые user-provided AGENTS instructions в текущем чате, 31 октября 2026; standing mandate первого review нового самостоятельного этапа сохраняется.",
+  "sourceThreadId": "01a19208-e6ba-7a13-a62e-ae8f1b63a837",
+  "sourceThreadIdVerifiedBy": "nodeRepl.requestMeta.threadId текущего tool call",
+  "quote": "Уже данное поручение на первые review следующих самостоятельных этапов сохраняет силу; автоматического второго result/fix/final review нет. Не создавать новые точки согласия для уже разрешённой работы.",
+  "scope": "One bounded first Argon plan review of owner-host-readoption; local triage/fixes after response; no second review, retries, runtime or AE authority",
+  "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "recipient": "Argon via existing MSI controller; selected Aiton account; maximum available UI effort",
+  "reviewId": "20261031-readoption-plan-01",
+  "stageId": "owner-host-readoption",
+  "baseCommit": "9343989757b8eddbbced434e65858f2d2f0ef2b2",
+  "planDigest": "31b8b8a63337f1bb61920e63abaaf33456ddf39e45ac0f2872859e3baa4fa75c",
+  "requestSha256": "e3af0ad11468fdc07bb99dd30b992bcd1095cf41b49d1cc52523b111be5558fe",
+  "bundleSha256": "2df7095c9aecaeb7921218a6d8094b39b1f88ddf13a32dced0c6f670e1cde00b",
+  "manifestSha256": "a789eaa87bb70017bcca6d4be5da64fcee5e582558999ed01d2b9cce32391d2d",
+  "externalAllowlist": [
+    "bundle.md"
+  ],
+  "maximumUploads": 1,
+  "maximumSends": 1,
+  "automaticRetry": false,
+  "runtimeAuthority": false
+}

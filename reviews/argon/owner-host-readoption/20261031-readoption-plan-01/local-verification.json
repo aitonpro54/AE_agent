@@ -1,0 +1,36 @@
+{
+  "status": "COMPLETE",
+  "sourceFilesVerified": 7,
+  "sourceLinesVerified": 377,
+  "secretHits": 0,
+  "unresolvedPossiblePii": 0,
+  "resolvedTechnicalIdentifierWarnings": [
+    {
+      "file": "request.md",
+      "kind": "phone_like",
+      "line": 12,
+      "classification": "immutable source hash digit run"
+    },
+    {
+      "file": "plan.md",
+      "kind": "phone_like",
+      "line": 5,
+      "classification": "immutable source hash digit run"
+    },
+    {
+      "file": "source-excerpts.md",
+      "kind": "phone_like",
+      "line": 4,
+      "classification": "immutable source hash digit run"
+    },
+    {
+      "file": "source-excerpts.md",
+      "kind": "phone_like",
+      "line": 140,
+      "classification": "DateTime tick limit constant"
+    }
+  ],
+  "skippedFiles": 0,
+  "redactions": 0,
+  "privacySummary": "Only logical host labels; no runtime state/credentials/user assets/account or personal paths. Source excerpt allowlist intentionally omits unchanged actor-constructor line."
+}

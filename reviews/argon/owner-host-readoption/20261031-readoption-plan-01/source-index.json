@@ -1,0 +1,95 @@
+[
+  {
+    "path": "core4/tools/adopt-host.js",
+    "baseCommit": "9343989757b8eddbbced434e65858f2d2f0ef2b2",
+    "sha256": "ad199e684dca13f03f1fbffb5530b453e1913352e6b463e16b676378e52fe670",
+    "ranges": [
+      [
+        75,
+        94
+      ]
+    ]
+  },
+  {
+    "path": "core4/runtime/windows-reservation-provider.js",
+    "baseCommit": "9343989757b8eddbbced434e65858f2d2f0ef2b2",
+    "sha256": "94e49c052119e0d80de3704132ca3cf04749c1d57db2f08b83fec8a97bf08531",
+    "ranges": [
+      [
+        1,
+        16
+      ],
+      [
+        75,
+        114
+      ]
+    ]
+  },
+  {
+    "path": "core4/runtime/owner-maintenance.js",
+    "baseCommit": "9343989757b8eddbbced434e65858f2d2f0ef2b2",
+    "sha256": "0b370cbec8130236d03dd4c3ae2f6d28f9e5b1f3f487c2e340452d0b01168793",
+    "ranges": [
+      [
+        52,
+        94
+      ],
+      [
+        97,
+        139
+      ]
+    ]
+  },
+  {
+    "path": "core4/runtime/stopped-certification.js",
+    "baseCommit": "9343989757b8eddbbced434e65858f2d2f0ef2b2",
+    "sha256": "8bda8eb1e9aaa5879322a4934d43608d0a71a2a268056ef02dec02aed537d8fa",
+    "ranges": [
+      [
+        125,
+        168
+      ],
+      [
+        170,
+        222
+      ]
+    ]
+  },
+  {
+    "path": "core4/runtime/install-lease.js",
+    "baseCommit": "9343989757b8eddbbced434e65858f2d2f0ef2b2",
+    "sha256": "fe91dfedfafceaa38f0cac72d007f2600d4b82915d07b960c8d3ed6d735bb368",
+    "ranges": [
+      [
+        122,
+        143
+      ]
+    ]
+  },
+  {
+    "path": "core4/tools/stopped-update.js",
+    "baseCommit": "9343989757b8eddbbced434e65858f2d2f0ef2b2",
+    "sha256": "32e676dad591522ab5b14256e06e00e8b517e94c4273f43228f1793ce762172f",
+    "ranges": [
+      [
+        476,
+        545
+      ]
+    ]
+  },
+  {
+    "path": "core4/tools/standalone-installer.js",
+    "baseCommit": "9343989757b8eddbbced434e65858f2d2f0ef2b2",
+    "sha256": "b64213a52264ec773e989d85d8337e96bc4f196e318eda7fd671abd0dead45c4",
+    "ranges": [
+      [
+        1,
+        16
+      ],
+      [
+        74,
+        83
+      ]
+    ]
+  }
+]

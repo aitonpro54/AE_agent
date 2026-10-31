@@ -183,6 +183,9 @@ R3 не использует fake production epoch и не переносит au
 - [ ] R3d2–R5: fresh host adoption, repeated CEP/reconnect, cold/idle ordinary cycles,
   повторные ordinary cycles и Titles/native confirm/read-back;
   устойчивость installed runtime пока не заявлена.
+- [ ] [Штатный host re-adoption operator](core-cep-r3-host-readoption-20261031.md):
+  bounded design готов, helper-only stopped route/claim с первого intent; один
+  план-пакет для первого Argon review нового самостоятельного scope подготовлен.
 
 ## Decision Log
 
@@ -355,4 +358,5 @@ first-call, затем один configured cc2f/CEP/native read. Изменен�
 R5CONFIGURED evidence/reader; production source/runtime/config не менялись.
 Проверки: actual MCP calls, signed read-only native/history verifier, JSON
 consistency/credential exclusion, reader syntax и diff check. Следующий шаг —
-штатный fresh host re-adoption operator; read-only design поручен специалисту.
+штатный fresh host re-adoption operator; bounded read-only design принят, локальный
+COMPLETE plan-review packet подготовлен. Реализация/новый stop ещё не начаты.
