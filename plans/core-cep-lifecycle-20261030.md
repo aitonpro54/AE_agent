@@ -159,6 +159,10 @@ R3 не использует fake production epoch и не переносит au
   [границы/evidence](core-cep-r5-client-resilience-20261031.md).
 - [ ] Installed client resilience packagecc2f0713 и actual configured proof;
   source/offline PASS не подменяет installed acceptance.
+- [ ] Normal stop`b99e2f80…` завершён; owner-update`88e4a61e…` прерван root45с
+  timeout на intent-only phase. Старый descriptor8a79/gates/desired-stop сохранены,
+  Core остановлен. [Явный owner pre-ready recovery](core-cep-r3-owner-preready-20261031.md)
+  продолжает original payload; stop/update не повторять, markers не чистить.
 - [ ] R3d2–R5: fresh host adoption, repeated CEP/reconnect, cold-start timing,
   повторные ordinary cycles и Titles/native confirm/read-back;
   устойчивость installed runtime пока не заявлена.
@@ -254,9 +258,12 @@ IDs, evidence и границы — в [installed checkpoint](core-cep-checkpoin
 Migration/update/enable и завершённые one-shot transactions не повторять.
 
 Actual CEP и один typed read после пользовательского открытия AE подтверждены;
-Core owner27112 не сменился. Source/offline client first-call resilience завершён
-186selectedPASS; следующий шаг — installed обновление подготовленного packagecc2f
-и actual configured first-call proof. Затем fresh native host probe/adoption до
+после этого normal update остановил Core27112 и был прерван root timeout в ранней
+intent-only фазе. Активный шаг — [owner pre-ready continuation](core-cep-r3-owner-preready-20261031.md)
+той же transaction88e4a61e/original packagecc2f, без replay owner-update и удаления
+gates. Source/offline client first-call resilience завершён186selectedPASS;
+после recovery нужны explicit enable и actual configured first-call proof.
+Затем fresh native host probe/adoption до
 исполнения, R5 Titles на выбранной test-copy с native confirm/read-back и повторные
 ordinary cycles. AE26308 сейчас открыт; root его не запускал/перезапускал.
 Развитие Titles/Slideshow и финальная portability/P1–P8/full release не выполнены.

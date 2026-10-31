@@ -1,0 +1,18 @@
+{
+  "collectedAt": "2026-10-31T10:50:44.661Z",
+  "sourceCommit": "1a6d442",
+  "operation": "b99e2f80-034e-49b8-9ee5-ed7d68755f86",
+  "mode": "owner-update",
+  "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+  "oldPackageHash": "8a79e069313f4cf55198a1bfbf0741ef3952579ae091edb8d22697d22cb409a8",
+  "expectedPreviousDescriptorHash": "4a42f5a9e560a329949604fed33dc2489a0149183a50c10d96e6984ec08e4b63",
+  "packageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "distributionHash": "f799501263ff3bd449ab0af6c7b0e20ec4a65ee687219585e47e734e088d288b",
+  "distributionPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\owner-client-resilience-f799501263ff",
+  "configPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml",
+  "baselineJournalHash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e",
+  "baselineHostAdoptionHash": "4a453b0f0b04a83bd5248d3a22fbab234150c8232f5f464ba886d6bcafdee30c",
+  "rootControlledStop": true,
+  "aeRestartAllowed": false,
+  "aeMutationAllowed": false
+}

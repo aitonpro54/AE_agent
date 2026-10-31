@@ -5,6 +5,22 @@
 подключение текущего чата после обновления app transport. Новый чат не нужен.
 Ниже сохранён исходный checkpoint; актуальный результат — в разделе после restart.
 
+## Текущее состояние: owner update intent-only, Core остановлен
+
+После успешного typed read и client source fix1a6d442 начато новое normal update
+на packagecc2f. Desired-stop`b99e2f80-034e-49b8-9ee5-ed7d68755f86` завершён,
+owner27112 отсутствует. Update`88e4a61e-8ed0-4579-b50e-55aee706a271` прерван
+root timeout45с без ответа actor28152. Установлен exact intent-only prefix:
+`intent.json` и два update gates, без lease/switch-ready/new release/staging.
+Descriptor8a79, config/origins/host adoption и journal18events прежние.
+AE26308/birth639290395690521480 открыт; собственная CEP закрыта, проект не менялся.
+
+**Stop/owner-update не повторять, gates/markers не чистить.** Активный путь —
+[owner pre-ready recovery](core-cep-r3-owner-preready-20261031.md) той же transaction,
+того же original payload/credentials и targetcc2f, с private inspect/proof/finish.
+Ранние успешные status/CEP proofs ниже являются историей до этого stop.
+Evidence: `snapshots/core4-lifecycle/20261031/R5CLIENT/update-timeout-readback.json`.
+
 ## После открытия AE — configured typed read
 
 - Пользователь сообщил об открытии AE. Native process — PID26308, birth ticks

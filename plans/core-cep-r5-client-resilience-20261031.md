@@ -71,6 +71,13 @@ Verified standalone build/dry-run: package
 От installed8a79 runtime closure отличается только client-entry/client-ipc,
 новых runtime paths нет. Пакет — `dist/owner-client-resilience-f799501263ff/`.
 Source hashes/selection/package/dry-run — в
-`snapshots/core4-lifecycle/20261031/R5CLIENT/`. Установка пока не менялась.
+`snapshots/core4-lifecycle/20261031/R5CLIENT/`. Source milestone commit1a6d442.
+
+Normal installed stop`b99e2f80…` завершён; owner-update`88e4a61e…` прерван root
+timeout45с в intent-only фазе до lease/switch-ready. Descriptor8a79 прежний,
+update gates/desired-stop сохранены; повтор action и ручная очистка исключены.
+Штатный pre-ready owner continuation реализуется отдельным
+[recovery блоком](core-cep-r3-owner-preready-20261031.md). Этот source block принят;
+installed proof нового client пока отсутствует.
 
 Full release, actual mutation, save/reopen и portability не заявляются.

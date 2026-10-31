@@ -27,6 +27,13 @@ restart Codex configured MCP подтверждён: owner9812 отсутств�
 исходный prefix16events прежний. Первый idle-запрос вернул `ipc_closed`, следующее
 чтение прошло; адресное исправление client first-call входит в текущий R5 scope.
 Старая adoption6492 не заменяет current host witness/новую adoption перед исполнением.
+Текущий installed checkpoint после client source fix1a6d442: normal owner stop
+`b99e2f80…` завершён; update`88e4a61e…` прерван root timeout в intent-only фазе до
+lease/switch-ready. Descriptor8a79 прежний, update gates/desired-stop сохранены,
+Core остановлен; AE26308 открыт, CEP закрыта. **Owner-update/stop не повторять,
+markers не чистить.** Активное продолжение —
+[owner pre-ready recovery](plans/core-cep-r3-owner-preready-20261031.md), targetcc2f
+с тем же original payload. Это не runtime authority.
 Точный [installed checkpoint](plans/core-cep-checkpoint-installed-20261031.md)
 содержит settled IDs и следующий read-only шаг; migration/update не повторять.
 Эта запись не выдаёт runtime authority и не снимает pending/UNKNOWN/fences.

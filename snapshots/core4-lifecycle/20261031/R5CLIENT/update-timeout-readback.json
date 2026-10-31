@@ -1,0 +1,109 @@
+{
+  "collectedAt": "2026-10-31T10:54:50.662Z",
+  "interruption": {
+    "operatorPid": 28152,
+    "reason": "root-imposed_execFileSync_timeout_45000ms",
+    "reportedCode": "ETIMEDOUT",
+    "reportedSignal": "SIGTERM",
+    "resultReceived": false,
+    "replayed": false
+  },
+  "transactionId": "88e4a61e-8ed0-4579-b50e-55aee706a271",
+  "stopId": "b99e2f80-034e-49b8-9ee5-ed7d68755f86",
+  "source": "owner",
+  "phase": "intent-only-before-lease-and-switch-ready",
+  "intentHash": "2defc13f963326e689ee1158f45f47da6e040587a5f84836655a117250b0894f",
+  "intentSealsVerified": true,
+  "actor": {
+    "pid": 28152,
+    "birthTicks": "639290406754247450",
+    "bootId": "453a382e-ef88-418e-ba40-200240789040"
+  },
+  "externalLease": false,
+  "payloadHash": "745bf2e4e5e816c7af92e24763f824e79d253b18e6a398cc929429e553bcf208",
+  "oldDescriptorHash": "4a42f5a9e560a329949604fed33dc2489a0149183a50c10d96e6984ec08e4b63",
+  "newDescriptorHash": "898261e1095ee1c030f8a304ecb8230f97ba692ec6125a933a38b6aca10c21f0",
+  "currentDescriptor": {
+    "present": true,
+    "hash": "4a42f5a9e560a329949604fed33dc2489a0149183a50c10d96e6984ec08e4b63",
+    "stat": {
+      "dev": "1042371555",
+      "ino": "12103424000009256",
+      "size": "1050",
+      "birthtimeNs": "1793441400370153000",
+      "mtimeNs": "1793441400370153000",
+      "ctimeNs": "1793441401709625100"
+    }
+  },
+  "oldPackageHash": "8a79e069313f4cf55198a1bfbf0741ef3952579ae091edb8d22697d22cb409a8",
+  "newPackageHash": "cc2f07132209317bed89a529109dc06036559e4328950e5c04ca1be273c7cfac",
+  "gates": [
+    {
+      "role": "install",
+      "expectedBytesMatch": true,
+      "present": true,
+      "hash": "9e010f6673e5650a068bab4796be30d71ccadf92923d1dfcc225df26b4c0e0f6",
+      "stat": {
+        "dev": "1042371555",
+        "ino": "3096224745269499",
+        "size": "685",
+        "birthtimeNs": "1793443919701990800",
+        "mtimeNs": "1793443919701990800",
+        "ctimeNs": "1793443919707991100"
+      }
+    },
+    {
+      "role": "broker",
+      "expectedBytesMatch": true,
+      "present": true,
+      "hash": "6eb3642c8ab9a6abb5312778b596114690f39899c8e242c05c6779110ec73b5f",
+      "stat": {
+        "dev": "1042371555",
+        "ino": "2814749768558844",
+        "size": "684",
+        "birthtimeNs": "1793443919708991000",
+        "mtimeNs": "1793443919708991000",
+        "ctimeNs": "1793443919715989500"
+      }
+    }
+  ],
+  "updateEntries": [
+    "intent.json"
+  ],
+  "maintenanceEntries": [
+    "stopped-certificate.json",
+    "stopped-certification-intent.json",
+    "stopped.json"
+  ],
+  "journal": {
+    "present": true,
+    "hash": "2a7d8b2333ff7fa97c2830cfbb0dcddc396b865e96032dc456a088025dde3e9e",
+    "stat": {
+      "dev": "1042371555",
+      "ino": "1970324837726721",
+      "size": "77032",
+      "birthtimeNs": "1793123048287688800",
+      "mtimeNs": "1793442959751215000",
+      "ctimeNs": "1793442959751215000"
+    }
+  },
+  "hostAdoption": {
+    "present": true,
+    "hash": "4a453b0f0b04a83bd5248d3a22fbab234150c8232f5f464ba886d6bcafdee30c",
+    "stat": {
+      "dev": "1042371555",
+      "ino": "2251799814988004",
+      "size": "786",
+      "birthtimeNs": "1793127531525944100",
+      "mtimeNs": "1793335787963893000",
+      "ctimeNs": "1793335787963893000"
+    }
+  },
+  "configHash": "e72411106e8ebc66e02788acd33c8a31011b1036d8ec8748ce6937f1761ece9f",
+  "rootOriginHash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+  "candidateReleasePresent": false,
+  "descriptorStagePresent": false,
+  "clientStagePresent": false,
+  "aeMutations": 0,
+  "manualMarkerChanges": 0
+}

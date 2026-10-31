@@ -1,0 +1,26 @@
+{
+  "collectedAt": "2026-10-31T10:51:07.057Z",
+  "maintenance": {
+    "aeAuthority": false,
+    "id": "b99e2f80-034e-49b8-9ee5-ed7d68755f86",
+    "inspectionOnly": true,
+    "phase": "stopped",
+    "proofHash": "35ed2bbd03cb60a70bf662d7b414d556991ac1f507a7dfbcd7fc51b24296cd09"
+  },
+  "oldOwner": {
+    "version": 1,
+    "pid": 27112,
+    "status": "absent",
+    "birthTicks": null,
+    "executablePath": null,
+    "observedAt": "2026-10-31T10:51:07.010Z"
+  },
+  "ae": {
+    "version": 1,
+    "pid": 26308,
+    "status": "present",
+    "birthTicks": "639290395690521480",
+    "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "observedAt": "2026-10-31T10:51:06.995Z"
+  }
+}
