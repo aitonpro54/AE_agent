@@ -374,6 +374,19 @@ Restart Core/AE, install и native dispatch этого этапа0. UI попы�
 
 ## Продолжение
 
+Дополнительный read-only checkpoint31октября15:49:14.966Z:
+
+- Progress: configured long-idle first-call PASS после7397046мс без AE MCP вызовов
+  этого чата,83мс, same owner6716/boot, CEP connected, idle gen1, faults/pending/
+  UNKNOWN0. Runtime/source package и проект AE не изменялись.
+- Decision Log: сохраняется приоритет fresh readoption; этот checkpoint не
+  закрывает Titles/native-confirm или полную repeated-cycles приёмку. Source
+  transaction core2–4 продолжает отдельный engineering блок.
+- Validation: actual configured tool response, JSON/time/owner/boot bindings и
+  credential-field exclusion проверены. Evidence —
+  `R5CONFIGURED/configured-long-idle-result.json`; wire reconnect, native inventory
+  и history hashes отдельно в этой проверке не измерялись.
+
 Installed switch/recovery/enable packagecc2f завершены; standard client cold и CEP
 proof подтверждены. Configured proof нового client подтверждён на owner6716;
 attributed recovery2600→6716 проверен по receipts/native facts. Актуальные

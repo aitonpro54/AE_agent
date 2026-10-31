@@ -56,6 +56,14 @@ accepted0/pending/UNKNOWN/faults0. Wire reconnect не трассировалс�
 результат доказывает successful first call после production300с session window,
 но не полную приёмку repeated cycles.
 
+После следующего интервала7397046мс (2ч03м17с) без AE MCP вызовов этого чата
+первый configured status15:49:14.966Z прошёл за83мс, без retry. Same owner6716/
+process boot/attachment boot, peer connected, idle gen1, accepted0, faults/
+pending/UNKNOWN0. Это actual configured read; wire reconnect отдельно не
+инструментирован, native inventory/history hashes этим вызовом не повторялись.
+Evidence: `R5CONFIGURED/configured-long-idle-result.json`. Сохранённая adoption6492
+по-прежнему требует fresh readoption; статус не даёт mutation authority.
+
 Второй обычный idle first-call уже после configured native read: пауза1194008мс,
 ответ65мс с первого вызова, same owner6716/boot/peer, inspectionAvailable=true,
 controller idle/gen1/accepted0, no pending/UNKNOWN/faults. Свежий filesystem hash
