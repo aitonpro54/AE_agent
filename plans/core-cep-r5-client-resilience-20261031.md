@@ -39,6 +39,8 @@ live/MCP/UI/install/process-control. Статус текущего проект�
 - [x] После user Connect configured cc2f project-inspection через actual CEP/AE
   PASS,0items/несохранённый проект; explicit lease released, journal20events с
   preserved18events prefix. Это manual Connect, automatic reconnect не заявлен.
+- [x] Второй configured first-call с connected CEP после1194.008с idle —65мс PASS,
+  same owner/boot/peer, no faults/UNKNOWN/pending, journal20events unchanged.
 
 ## Decision Log
 
@@ -59,6 +61,13 @@ live/MCP/UI/install/process-control. Статус текущего проект�
 - Новые product workflows, host adoption и runtime authority сюда не входят.
 
 ## Validation
+
+Повторный ordinary idle после user Connect/native read: first configured call
+после1194008мс прошёл за65мс без ручного повтора, same6716/boot/peer connected,
+controllergen1 idle/accepted0, no faults/UNKNOWN/pending. Fresh hash read подтвердил
+20events/SHA262a0934…/config/origins/adoption unchanged; AE dispatch/mutation/save/
+restart0. R5CONFIGURED/configured-connected-idle-result.json и connected-idle-history.json.
+Broader ordinary startup/order/restart/Titles proof остаётся открытым.
 
 После user Connect actual configured cc2f read PASS: observation1a859892…,
 inspect-6b748da8…,0items/AE26.3x87, authority/continuity=false. Leasegen1 released,

@@ -165,6 +165,9 @@ R3 не использует fake production epoch и не переносит au
   journal18events/config/origins/adoption unchanged. Survival2600 не наблюдался.
 - [x] Первый configured status после314.85с idle PASS с первого вызова за62мс;
   same owner/boot, faults/UNKNOWN/pending0. Wire reconnect отдельно не трассировался.
+- [x] Второй configured idle с уже подключённой CEP: gap1194.008с, first-call65мс
+  PASS без manual retry; same owner/boot/peer, history20events/config/origins/adoption
+  unchanged. Broader cold/restart/order/Titles acceptance этим не закрыта.
 - [x] После runtime_wait_expired пользователь нажал штатный Connect; configured
   peer connected/inspectionAvailable. Новый cc2f typed project-inspection PASS:
  0items/несохранённый проект, authority/continuity=false, explicit lease released.
@@ -227,6 +230,14 @@ R3 не использует fake production epoch и не переносит au
   уже получил timeout. Embedding восстанавливает durable fences до attach/acquire.
 
 ## Validation
+
+Connected idle observation: baseline13:26:03.764UTC→call13:45:57.772UTC,
+gap1194008мс/response65мс, первый configured core_status PASS. Между ними root не
+вызывал AE MCP; status оставил owner6716/boot/peer connected, controller gen1 idle,
+accepted0 и no faults/UNKNOWN/pending. Filesystem read сверил journal20events/
+SHA262a0934… и config/origins/adoption unchanged. Нового physical read0, mutation/
+save/restart0. Evidence: R5CONFIGURED/configured-connected-idle-result.json и
+connected-idle-history.json; wire reconnect отдельно не трассировался.
 
 Configured cc2f/CEP read: discovery→contract1ccaa27e…→explicit controller gen1→
 один project-inspection→release→final status PASS. Commandinspect-6b748da8…,

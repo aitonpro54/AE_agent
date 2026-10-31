@@ -36,6 +36,8 @@ authority/continuity=false; explicit lease generation1 освобождён. Ж�
 current SHA262a0934…, origins/config/adoption unchanged. Mutation/save/restart0.
 Первый configured status после314.85с
 idle прошёл с первого вызова за62мс, same owner/boot, pending/UNKNOWN/faults0.
+Второй configured first-call после1194.008с idle с подключённой CEP прошёл за65мс;
+тот же owner/boot/peer, history20events/config/origins/adoption unchanged.
 Wire reconnect отдельно не трассировался. Следующий инженерный шаг — штатная
 fresh host re-adoption: current absent-only adopt-host не заменяет existing adoption.
 Standalone proof не подменяет configured.

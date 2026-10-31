@@ -56,6 +56,14 @@ accepted0/pending/UNKNOWN/faults0. Wire reconnect не трассировалс�
 результат доказывает successful first call после production300с session window,
 но не полную приёмку repeated cycles.
 
+Второй обычный idle first-call уже после configured native read: пауза1194008мс,
+ответ65мс с первого вызова, same owner6716/boot/peer, inspectionAvailable=true,
+controller idle/gen1/accepted0, no pending/UNKNOWN/faults. Свежий filesystem hash
+read подтвердил20events/SHA262a0934… и неизменные config/origins/adoption.
+Это отдельное bounded observation с подключённой CEP, без нового physical read;
+wire reconnect не трассировался. Evidence: configured-connected-idle-result.json
+и connected-idle-history.json в R5CONFIGURED.
+
 Следующий шаг — штатная fresh current host re-adoption перед Titles. Source
 `adopt-host` требует stopped runtime и умеет только absent-only create; existing
 adoption нельзя заменить вручную/одноразовым helper. Выполняется bounded read-only

@@ -1,0 +1,17 @@
+{
+  "collectedAt": "2026-10-31T13:46:27.650Z",
+  "recordContext": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check"
+  },
+  "journalEvents": 20,
+  "hashes": {
+    "journalHash": "262a093495e4c789e5465e592a47c74eec82edb31a8215e37327488af37f574c",
+    "hostAdoptionHash": "4a453b0f0b04a83bd5248d3a22fbab234150c8232f5f464ba886d6bcafdee30c",
+    "rootOriginHash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "anchorOriginHash": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "configHash": "320b9e6d61c493a75cdf42da7d32af872bb6f83aa663ebf3894bdb5ac998c50a"
+  },
+  "allHashesUnchanged": true,
+  "aeDispatches": 0
+}
