@@ -1,5 +1,7 @@
 {
   "owners": [
+    { "prefix": "core4/runtime/stopped-certification.js", "owner": "stopped-certification", "checks": ["stopped-certification"] },
+    { "prefix": "core4/test/stopped-certification.test.js", "owner": "stopped-certification", "checks": ["stopped-certification"] },
     { "prefix": "core4/tools/finish-owner-maintenance.js", "owner": "maintenance-finish", "checks": ["maintenance-finish-operator", "standalone-installer"] },
     { "prefix": "core4/test/maintenance-finish.test.js", "owner": "maintenance-finish", "checks": ["maintenance-finish"] },
     { "prefix": "core4/test/maintenance-finish-operator.test.js", "owner": "maintenance-finish", "checks": ["maintenance-finish-operator"] },
@@ -1018,6 +1020,7 @@
     }
   ],
   "checkDependencies": {
+    "stopped-certification": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/stopped-certification.test.js"],
     "maintenance-finish": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/fixtures/maintenance-finish.js", "test/maintenance-finish.test.js"],
     "maintenance-finish-operator": ["runtime/", "core/", "protocol/", "tools/", "config/", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "test/maintenance-finish-operator.test.js"],
     "owner-maintenance": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-maintenance.test.js"],
@@ -1507,6 +1510,7 @@
     ]
   },
   "checkCommands": {
+    "stopped-certification": ["node", "--test", "--test-name-pattern=stopped-certification", "test/stopped-certification.test.js"],
     "maintenance-finish": ["node", "--test", "--test-name-pattern=maintenance-finish", "test/maintenance-finish.test.js"],
     "maintenance-finish-operator": ["node", "--test", "--test-name-pattern=maintenance-finish-operator", "test/maintenance-finish-operator.test.js"],
     "owner-maintenance": ["node", "--test", "--test-name-pattern=owner-maintenance", "test/owner-maintenance.test.js"],
@@ -1677,6 +1681,7 @@
     ]
   },
   "checkPolicy": {
+    "stopped-certification": { "kind": "component" },
     "maintenance-finish": { "kind": "component" },
     "maintenance-finish-operator": { "kind": "integration" },
     "owner-maintenance": { "kind": "component" },

@@ -454,4 +454,8 @@ async function finishMaintenance({ installation, descriptorPath, id, expectedPro
   } catch (e) { if (lease) api.retainInstallLease(lease); throw e; }
   finally { permits.delete(capability); }
 }
-module.exports = { PRIVATE_METHODS, createStopAuthorization, createOwnerMaintenance, inspectMaintenance, resumeMaintenance, maintenanceLeasePermit, inspectMaintenanceFinish, finishMaintenance };
+function stoppedCertificationContext(capability) {
+  const p = require('./stopped-certification').stoppedContextPermit(capability);
+  return { ...context(p.installation, p.descriptorPath), read, atomic, plain, same };
+}
+module.exports = { PRIVATE_METHODS, createStopAuthorization, createOwnerMaintenance, inspectMaintenance, resumeMaintenance, maintenanceLeasePermit, inspectMaintenanceFinish, finishMaintenance, stoppedCertificationContext };

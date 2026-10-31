@@ -131,6 +131,10 @@ R3 не использует fake production epoch и не переносит au
 - [x] R3d2a: explicit interrupted-resume finish с sealed continuation,
   221selectedPASS, review ACCEPT;
   [границы](core-cep-r3-maintenance-finish-20261030.md).
+- [x] R3d2b2a: private interrupted-stop certification и bounded actor continuation,
+  immutable184selectedPASS после local review fixes;
+  [границы](core-cep-r3-stopped-certification-20261031.md). Installer/update/legacy
+  integration продолжается отдельно, installed runtime не переключён.
 - [ ] R3d2–R5: update/adoption/legacy migration и installed CEP/runtime приёмка;
   устойчивость installed runtime пока не заявлена.
 
@@ -179,11 +183,13 @@ Restart Core/AE, install и native dispatch этого этапа0. UI попы�
 
 ## Продолжение
 
-31 октября пользователь поручил остановиться до завтра. Проверенный source
-checkpoint и точный следующий B2 scope сохранены в
-[checkpoint](core-cep-checkpoint-20261031.md). Installed runtime не переключён;
-после возобновления сначала сверить git/runtime, не повторять завершённые packets
-и старые one-shot transactions без изменения relevant bytes/условий.
+После паузы 31 октября пользователь явно поручил продолжить с
+[checkpoint](core-cep-checkpoint-20261031.md): подтверждение stopped installation,
+обновление и переход на новую версию. Git/runtime сверены; первая source часть
+certification завершена184selectedPASS. Текущий engineering блок и remaining
+update/legacy/installed scope — в [продолжении](core-cep-r3-stopped-update-20261031.md).
+Installed runtime пока не переключён; завершённые packets и старые one-shot
+transactions не повторять без изменения relevant bytes/условий.
 
 R1/R2a/R2b/R2c1/R2c2, отдельные R3a/R3b/R3c/R3d1 и R4 завершены в source.
 Следующий source/offline блок — R3d2b2 stopped certification/update/first legacy

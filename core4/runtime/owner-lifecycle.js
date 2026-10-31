@@ -38,7 +38,7 @@ function plain(file, missing = false, directory = false) {
 }
 const stamp = stat => Object.fromEntries(STATS.map(k => [k, String(stat[k])]));
 function sameStats(a, b, renamed = false) { return STATS.filter(k => !renamed || k !== 'ctimeNs').every(k => String(a[k]) === String(b[k])); }
-async function createOwnerLifecycle({ installation, descriptorPath, reservedServer } = {}) {
+async function lifecycleOperation({ installation, descriptorPath, reservedServer } = {}, stopped = null) {
   const d = installation;
   const address = reservedServer instanceof http.Server && reservedServer.listening && reservedServer.address();
   if (!address || address.address !== '127.0.0.1' || !Number.isInteger(address.port) || address.port < 1 || reservedServer.listenerCount('request')) fail('owner_lifecycle_endpoint');
@@ -222,7 +222,7 @@ async function createOwnerLifecycle({ installation, descriptorPath, reservedServ
     const body = decode(value, 'startup-gate', ['scope', 'recoveryId', 'readyId', 'takeoverId', 'phase']); scope(body.scope);
     if (!UUID.test(body.recoveryId) || body.readyId !== null && !UUID.test(body.readyId) || body.takeoverId !== null && !UUID.test(body.takeoverId) || !['startup', 'shutdown'].includes(body.phase)) fail('owner_lifecycle_schema'); return body;
   }
-  function finishReady(id) {
+  function finishReady(id, inspectOnly = false, retiredId = null) {
     const dir = transaction(id), intentView = view(path.join(dir, 'intent.json'), 128 * 1024), intent = decode(intentView, 'owner-ready-intent', ['id', 'scope', 'original', 'replacement', 'protected']);
     transactionTree(dir, ['intent.json', 'starting-owner', 'completion.json']);
     if (intent.id !== id || !Array.isArray(intent.protected) || canonical(intent.protected.map(v => v.name).sort()) !== canonical([...PROTECTED].sort())) fail('owner_lifecycle_transaction');
@@ -233,7 +233,13 @@ async function createOwnerLifecycle({ installation, descriptorPath, reservedServ
     const done = view(path.join(dir, 'completion.json'));
     if (done.bytes) { const body = decode(done, 'owner-ready-completed', ['id', 'intentHash']); if (body.id !== id || body.intentHash !== hash(intentView.bytes)) fail('owner_lifecycle_transaction'); return; }
     for (const item of intent.protected) { validSerial(item, false); const now = view(paths[item.name], ['journal', 'ledger'].includes(item.name) ? 64 * 1024 * 1024 : 16384); if (!matches(now, item)) fail('owner_lifecycle_changed'); }
-    const archive = path.join(dir, 'starting-owner'), original = view(archive), current = view(paths.owner), staged = view(paths.ownerNext);
+    function retiredMarker(name) { const live = view(paths[name]); return inspectOnly && retiredId && live.bytes === null ? view(path.join(transaction(retiredId), name)) : live; }
+    const archive = path.join(dir, 'starting-owner'), original = view(archive), current = retiredMarker('owner'), staged = retiredMarker('ownerNext');
+    if (inspectOnly) {
+      if (original.bytes === null ? !matches(current, intent.original) || !staged.bytes?.equals(replacement) : !matches(original, intent.original, true)) fail('owner_lifecycle_phase');
+      if (original.bytes !== null && (current.bytes === null ? !staged.bytes?.equals(replacement) : !current.bytes.equals(replacement) || staged.bytes !== null)) fail('owner_lifecycle_phase');
+      return;
+    }
     if (original.bytes === null) {
       if (!matches(current, intent.original) || !staged.bytes?.equals(replacement)) fail('owner_lifecycle_phase');
       assertView(current); fs.renameSync(paths.owner, archive); assertView(current, archive);
@@ -244,7 +250,7 @@ async function createOwnerLifecycle({ installation, descriptorPath, reservedServ
     } else if (!target.bytes.equals(replacement) || staged.bytes !== null) fail('owner_lifecycle_phase');
     durable(path.join(dir, 'completion.json'), seal('owner-ready-completed', { id, intentHash: hash(intentView.bytes) }));
   }
-  function finishRecovery(id) {
+  function finishRecovery(id, inspectOnly = false) {
     const dir = transaction(id), intentView = view(path.join(dir, 'intent.json'), 128 * 1024);
     const intent = decode(intentView, 'owner-recovery-intent', ['id', 'previousScope', 'originals', 'protected']);
     if (intent.id !== id || !Array.isArray(intent.originals) || !Array.isArray(intent.protected) || intent.originals.length > MARKERS.length || intent.protected.length !== PROTECTED.length) fail('owner_lifecycle_transaction');
@@ -255,17 +261,17 @@ async function createOwnerLifecycle({ installation, descriptorPath, reservedServ
     for (const item of intent.originals) validSerial(item, true);
     for (const item of intent.protected) validSerial(item, false);
     const completed = view(path.join(dir, 'completion.json'));
-    if (completed.bytes) { const done = decode(completed, 'owner-recovery-completed', ['id', 'intentHash']); if (done.id !== id || done.intentHash !== hash(intentView.bytes)) fail('owner_lifecycle_transaction'); return; }
+    if (completed.bytes) { const done = decode(completed, 'owner-recovery-completed', ['id', 'intentHash']); if (done.id !== id || done.intentHash !== hash(intentView.bytes)) fail('owner_lifecycle_transaction'); if (!inspectOnly) return; }
     for (const item of intent.protected) { const current = view(paths[item.name], ['journal', 'ledger'].includes(item.name) ? 64 * 1024 * 1024 : 16384); if (!matches(current, item)) fail('owner_lifecycle_changed'); }
     for (const item of intent.originals) {
       validSerial(item, true); if (item.hash === null) fail('owner_lifecycle_transaction');
       const source = view(paths[item.name]), targetFile = path.join(dir, item.name), target = view(targetFile);
       if (source.bytes && target.bytes || !source.bytes && !target.bytes) fail('owner_lifecycle_phase');
-      if (source.bytes) { if (!matches(source, item)) fail('owner_lifecycle_changed'); assertView(source); fs.renameSync(source.file, targetFile); assertView(source, targetFile); }
+      if (source.bytes) { if (completed.bytes || !matches(source, item)) fail('owner_lifecycle_changed'); assertView(source); if (!inspectOnly) { fs.renameSync(source.file, targetFile); assertView(source, targetFile); } }
       else if (!matches(target, item, true)) fail('owner_lifecycle_changed');
     }
     for (const item of intent.protected) { const current = view(paths[item.name], ['journal', 'ledger'].includes(item.name) ? 64 * 1024 * 1024 : 16384); if (!matches(current, item)) fail('owner_lifecycle_changed'); }
-    durable(path.join(dir, 'completion.json'), seal('owner-recovery-completed', { id, intentHash: hash(intentView.bytes) }));
+    if (!inspectOnly) durable(path.join(dir, 'completion.json'), seal('owner-recovery-completed', { id, intentHash: hash(intentView.bytes) }));
   }
   async function resumeReferenced(previous, previousView) {
     // Resolve old pointers before replacing their gate. A crash or refusal then
@@ -290,6 +296,92 @@ async function createOwnerLifecycle({ installation, descriptorPath, reservedServ
     assertView(previousView); reverify();
   }
   let boot, recoveryId, readyId;
+  if (stopped) {
+    // This branch is reachable only with an in-memory certification brand. It
+    // never elects/publishes an execution owner, starts stores or issues tokens.
+    try {
+      const request = require('./stopped-certification').stoppedLifecyclePermit(stopped.capability);
+      const short = s => ({ bootId: s.bootId, pid: s.pid, birthTicks: s.birthTicks });
+      let originalFullScope;
+      const ownScope = s => { scope(s); if (canonical(short(s)) !== canonical(request.originalScope) || originalFullScope && canonical(originalFullScope) !== canonical(s)) fail('owner_lifecycle_foreign_stop'); originalFullScope ||= s; };
+      reverify(); pinInitial(); request.check();
+      boot = request.actor;
+      const snap = historySnapshot(); settled(snap); assertHistory(snap);
+      const initial = Object.fromEntries([...MARKERS, 'gate'].map(n => [n, view(paths[n])]));
+      const referenced = [];
+      let gateRecord, ownerRecord, diagnosticRecord;
+      if (initial.gate.bytes) {
+        gateRecord = gateBody(initial.gate); ownScope(gateRecord.scope);
+        if (gateRecord.takeoverId !== null || gateRecord.phase === 'shutdown' && gateRecord.readyId !== null) fail('owner_lifecycle_phase');
+      }
+      if (initial.owner.bytes) {
+        ownerRecord = decode(initial.owner, 'runtime-owner', ['scope', 'phase', 'receiverIdentity']); ownScope(ownerRecord.scope);
+        if (!['starting', 'active'].includes(ownerRecord.phase) || ownerRecord.receiverIdentity !== null && typeof ownerRecord.receiverIdentity !== 'string' || ownerRecord.phase === 'active' && !ownerRecord.receiverIdentity) fail('owner_lifecycle_record');
+        if (ownerRecord.receiverIdentity !== null && (!snap.receiver.present || ownerRecord.receiverIdentity !== snap.receiver.identity)) fail('owner_lifecycle_history_missing');
+      }
+      if (initial.diagnostic.bytes) { diagnosticRecord = decode(initial.diagnostic, 'diagnostic-owner', ['scope', 'reason']); ownScope(diagnosticRecord.scope); if (ownerRecord) fail('owner_lifecycle_foreign_stop'); }
+      function referencedIntent(id, kind, fields) {
+        const dir = path.join(d.installRoot, 'transactions', id + '-owner-lifecycle');
+        if (!plain(dir, true, true)) return null;
+        const intent = view(path.join(dir, 'intent.json'), METADATA_LIMIT);
+        if (!intent.bytes) { transactionTree(dir, ['intent.json']); return null; }
+        const body = decode(intent, kind, fields); if (body.id !== id) fail('owner_lifecycle_transaction');
+        referenced.push({ id, kind, dir }); return body;
+      }
+      const prior = referencedIntent(request.id, 'owner-recovery-intent', ['id', 'previousScope', 'originals', 'protected']);
+      if (prior) { ownScope(prior.previousScope); finishRecovery(prior.id, true); }
+      if (gateRecord?.readyId) {
+        const r = referencedIntent(gateRecord.readyId, 'owner-ready-intent', ['id', 'scope', 'original', 'replacement', 'protected']);
+        if (r) { ownScope(r.scope); finishReady(r.id, true, prior ? request.id : null); if (view(path.join(transaction(r.id), 'completion.json')).bytes && (initial.ownerNext.bytes || ownerRecord?.phase === 'starting')) fail('owner_lifecycle_phase'); }
+        else if (initial.ownerNext.bytes) fail('owner_lifecycle_phase');
+      } else if (initial.ownerNext.bytes) fail('owner_lifecycle_phase');
+      if (initial.ownerNext.bytes) { const n = decode(initial.ownerNext, 'runtime-owner', ['scope', 'phase', 'receiverIdentity']); ownScope(n.scope); if (n.phase !== 'active' || !snap.receiver.present || n.receiverIdentity !== snap.receiver.identity) fail('owner_lifecycle_record'); }
+      if (gateRecord) {
+        const r = referencedIntent(gateRecord.recoveryId, 'owner-recovery-intent', ['id', 'previousScope', 'originals', 'protected']);
+        if (r) { ownScope(r.previousScope); finishRecovery(r.id, true); }
+      }
+      for (const item of request.references || []) {
+        if (item.id === request.id || referenced.some(r => r.id === item.id)) continue;
+        const fields = item.kind === 'owner-ready-intent' ? ['id', 'scope', 'original', 'replacement', 'protected'] : ['id', 'previousScope', 'originals', 'protected'];
+        if (!['owner-ready-intent', 'owner-recovery-intent'].includes(item.kind)) fail('owner_lifecycle_transaction');
+        const r = referencedIntent(item.id, item.kind, fields); if (!r) fail('owner_lifecycle_phase');
+        ownScope(r.scope || r.previousScope); if (r.scope) finishReady(r.id, true, prior ? request.id : null); else finishRecovery(r.id, true);
+      }
+      const producer = ownerRecord?.scope || (gateRecord && !diagnosticRecord ? gateRecord.scope : null) || (!diagnosticRecord && prior?.previousScope);
+      const expected = producer && { brokerOwner: JSON.stringify({ pid: producer.pid, token: producer.brokerToken }), brokerGate: producer.brokerToken, receiverOwner: canonical({ version: 1, pid: producer.pid, token: producer.receiverToken }) };
+      for (const n of ['brokerOwner', 'brokerGate', 'receiverOwner']) if (initial[n].bytes && (!expected || !initial[n].bytes.equals(Buffer.from(expected[n])))) fail('owner_lifecycle_marker');
+      if (!producer && !diagnosticRecord && MARKERS.some(n => initial[n].bytes)) fail('owner_lifecycle_legacy_marker');
+      function facts() {
+        const transactions = {};
+        for (const item of referenced) {
+          const s = fs.lstatSync(item.dir, { bigint: true }), names = fs.readdirSync(item.dir).sort();
+          if (names.length > 32) fail('owner_lifecycle_budget');
+          transactions[item.id] = { kind: item.kind, directory: { dev: String(s.dev), ino: String(s.ino), birthtimeNs: String(s.birthtimeNs) }, tree: Object.fromEntries(names.map(n => [n, serial(view(path.join(item.dir, n), METADATA_LIMIT), n)])) };
+        }
+        return { markers: Object.fromEntries([...MARKERS, 'gate'].map(n => [n, serial(view(paths[n]), n)])), transactions };
+      }
+      const before = facts();
+      if (stopped.inspectOnly) return before;
+      if (canonical(before) !== canonical(request.expected)) fail('owner_lifecycle_changed');
+      request.check(); reverify(); assertHistory(snap); for (const v of Object.values(initial)) assertView(v);
+      for (const item of referenced.filter(r => r.id !== request.id)) { if (item.kind === 'owner-ready-intent') finishReady(item.id, true, prior ? request.id : null); else finishRecovery(item.id); }
+      const originals = Object.fromEntries(MARKERS.map(n => [n, view(paths[n])]));
+      if (prior) finishRecovery(request.id);
+      else if (Object.values(originals).some(v => v.bytes !== null)) {
+        const dir = transaction(request.id, true);
+        durable(path.join(dir, 'intent.json'), seal('owner-recovery-intent', { id: request.id, previousScope: producer || diagnosticRecord.scope,
+          originals: Object.entries(originals).filter(([, v]) => v.bytes !== null).map(([n, v]) => serial(v, n, true)), protected: PROTECTED.map(n => serial(snap.values[n], n)) }));
+        finishRecovery(request.id);
+      }
+      for (const n of MARKERS) if (view(paths[n]).bytes !== null) fail('owner_lifecycle_phase');
+      if (initial.gate.bytes) {
+        const target = path.join(request.directory, 'retired-install-gate');
+        if (view(target).bytes !== null) fail('owner_lifecycle_phase');
+        request.check(); assertView(initial.gate); fs.renameSync(paths.gate, target); assertView(initial.gate, target);
+      }
+      request.check(); assertHistory(snap); reverify(); return { retired: true, runtimeStarted: false, aeAuthority: false };
+    } finally { for (const fd of held) { try { fs.closeSync(fd); } catch {} } held.clear(); }
+  }
   try {
     reverify();
     if (view(paths.maintenance).bytes) fail('owner_lifecycle_maintenance');
@@ -399,4 +491,7 @@ async function createOwnerLifecycle({ installation, descriptorPath, reservedServ
     for (const fd of held) { try { fs.closeSync(fd); } catch {} } held.clear(); throw error;
   }
 }
-module.exports = { createOwnerLifecycle };
+function createOwnerLifecycle({ installation, descriptorPath, reservedServer } = {}) { return lifecycleOperation({ installation, descriptorPath, reservedServer }); }
+function inspectStoppedLifecycle(capability) { return lifecycleOperation(require('./stopped-certification').stoppedLifecyclePermit(capability), { capability, inspectOnly: true }); }
+function retireStoppedLifecycle(capability) { const p = require('./stopped-certification').stoppedLifecyclePermit(capability); if (p.inspectionOnly) fail('stopped_certification_brand'); return lifecycleOperation(p, { capability, inspectOnly: false }); }
+module.exports = { createOwnerLifecycle, inspectStoppedLifecycle, retireStoppedLifecycle };
