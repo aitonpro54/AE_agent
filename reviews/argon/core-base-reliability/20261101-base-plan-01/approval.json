@@ -1,0 +1,10 @@
+{
+  "reviewId": "20261101-base-plan-01",
+  "sourceThreadId": "01a19665-19c8-7301-9869-f0db66042251",
+  "authorization": "Этот вопрос также задай Аргону.",
+  "scope": "One original request in a separate Argon conversation; existing sole controller; no follow-up/retry",
+  "requestSha256": "91e6367369f99e04ce248905ff8270c6159bf0308b2ccf40f72fd5f7b43b046d",
+  "payloadSha256": "91e6367369f99e04ce248905ff8270c6159bf0308b2ccf40f72fd5f7b43b046d",
+  "manifestSha256": "1c4aa0b9fbb520c24e378abb8ef20f7a281271e7097fb48e3cb330307b4fa3ca",
+  "createdAt": "2026-11-01T09:59:15.218Z"
+}

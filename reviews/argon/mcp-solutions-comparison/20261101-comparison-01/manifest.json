@@ -1,0 +1,43 @@
+{
+  "status": "COMPLETE",
+  "stageId": "mcp-solutions-comparison",
+  "reviewId": "20261101-comparison-01",
+  "type": "research",
+  "baseCommit": "6fcee4cdd213759e6e1f351657b19f6b919f15df",
+  "targetCommit": null,
+  "planDigest": null,
+  "snapshot": "Sanitised author summary at base commit; no source files transmitted",
+  "files": [
+    {
+      "path": "request.md",
+      "bytes": 6301,
+      "sha256": "74374245161eedd8b3a4724008c8d87cc580652b5bc82cd4065a70aaf0e98815",
+      "classification": "INTERNAL sanitised summary / PUBLIC source URLs"
+    },
+    {
+      "path": "bundle.md",
+      "bytes": 6301,
+      "sha256": "74374245161eedd8b3a4724008c8d87cc580652b5bc82cd4065a70aaf0e98815",
+      "classification": "INTERNAL sanitised summary / PUBLIC source URLs"
+    }
+  ],
+  "externalAllowlist": [
+    "bundle.md"
+  ],
+  "recipient": "Argon via existing ARGON_BrowserUse controller, Aiton account",
+  "exclusions": [
+    "credentials",
+    "runtime state",
+    "user AEP/assets",
+    "raw logs",
+    "private local paths",
+    "source code"
+  ],
+  "limitations": [
+    "summary-only consultation; no complete code audit",
+    "no live benchmark",
+    "external claims require primary-source verification"
+  ],
+  "builder": "Bundled Python script attempted; environment has no Python executable. Reviewed UTF-8 request copied exactly using Node builtins; content scanned and hashes read back.",
+  "workingTree": "M AGENTS.md\n M plans/core-cep-lifecycle-20261030.md\n M plans/external-products-titles-20261029.md\n?? .codex-attachments/\n?? plans/core-base-reliability-20261101.md\n?? reviews/argon/core-base-reliability/\n?? reviews/argon/mcp-solutions-comparison/"
+}

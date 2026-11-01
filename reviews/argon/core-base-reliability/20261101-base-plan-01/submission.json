@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "reviewId": "20261101-base-plan-01",
+  "stageId": "core-base-reliability",
+  "type": "plan",
+  "status": "received",
+  "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "authorization": {
+    "reviewId": "20261101-base-plan-01",
+    "sourceThreadId": "01a19665-19c8-7301-9869-f0db66042251",
+    "authorization": "Этот вопрос также задай Аргону.",
+    "scope": "One original request in a separate Argon conversation; existing sole controller; no follow-up/retry",
+    "requestSha256": "91e6367369f99e04ce248905ff8270c6159bf0308b2ccf40f72fd5f7b43b046d",
+    "payloadSha256": "91e6367369f99e04ce248905ff8270c6159bf0308b2ccf40f72fd5f7b43b046d",
+    "manifestSha256": "1c4aa0b9fbb520c24e378abb8ef20f7a281271e7097fb48e3cb330307b4fa3ca",
+    "createdAt": "2026-11-01T09:59:15.218Z",
+    "trustedUserMessageIds": [
+      "01a19686-d875-7d22-8c07-b50dcdd2563d",
+      "01a19688-43c3-7ca3-b332-671c5b42dcd8"
+    ]
+  },
+  "recipient": {
+    "service": "Gemini Argon",
+    "account": "Aiton Pro",
+    "email": "aitonpro54@gmail.com"
+  },
+  "baseCommit": "6fcee4cdd213759e6e1f351657b19f6b919f15df",
+  "prompt": "Выполни единственную консультацию по приложенному bundle.md, Review ID 20261101-base-plan-01. Ответ по-русски. Это план базы, сравнительный каталог отдельно заказан в другом диалоге. Сохрани границы запроса",
+  "promptSha256": "d60b4e302124159b22bae1c843441c5fbfea67cf28cd0b0898e13895fe0ae1d2",
+  "payload": {
+    "name": "bundle.md",
+    "bytes": 6484,
+    "sha256": "91e6367369f99e04ce248905ff8270c6159bf0308b2ccf40f72fd5f7b43b046d"
+  },
+  "baseline": {
+    "bundle.md": {
+      "bytes": 6484,
+      "sha256": "91e6367369f99e04ce248905ff8270c6159bf0308b2ccf40f72fd5f7b43b046d"
+    },
+    "request.md": {
+      "bytes": 6484,
+      "sha256": "91e6367369f99e04ce248905ff8270c6159bf0308b2ccf40f72fd5f7b43b046d"
+    },
+    "manifest.json": {
+      "bytes": 1726,
+      "sha256": "1c4aa0b9fbb520c24e378abb8ef20f7a281271e7097fb48e3cb330307b4fa3ca"
+    },
+    "approval.json": {
+      "bytes": 601,
+      "sha256": "83f42df3451c405cd14a87531a468bee057b402ad895c8b05e97a7678f73b6fe"
+    },
+    "verification.md": {
+      "bytes": 648,
+      "sha256": "08b7a6c117ca6e568a02cf26b3ea66966a1229fcf5991438496a5a6b07589a98"
+    }
+  },
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "preparedAt": "2026-11-01T10:01:16.823Z",
+  "uploadInvokedAt": "2026-11-01T10:01:26.400Z",
+  "readiness": {
+    "verifiedAt": "2026-11-01T10:02:09.175Z",
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "effort": "Высокий — Глубокий",
+    "effortOptions": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "conversation": "new empty Chat",
+    "previousResponses": 0
+  },
+  "sendInvokedAt": "2026-11-01T10:02:09.175Z",
+  "confirmedAt": "2026-11-01T10:02:30.039Z",
+  "receipt": {
+    "url": "https://gemini.google.com/app/7d1635ce3da41f9c",
+    "reviewIdVisible": true,
+    "attachment": "bundle.md",
+    "composerEmpty": true,
+    "generationActive": true
+  },
+  "receivedAt": "2026-11-01T10:04:48.418Z",
+  "response": {
+    "path": "response.txt",
+    "bytes": 21362,
+    "sha256": "d6e0efddae3c60305dca9161eddae05dd554771adcfeccd1b5a858a4c666d85a",
+    "capturedAt": "2026-11-01T10:04:48.418Z",
+    "captureMethod": "exact visible model-response-content index 0 innerText; UTF-8, no editing or normalization or added newline"
+  },
+  "verdict": "Утвердить план с сокращением (Approve with Scope Reduction)"
+}

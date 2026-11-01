@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "reviewId": "20261101-comparison-01",
+  "status": "received-refusal",
+  "response": {
+    "path": "response.txt",
+    "bytes": 81,
+    "sha256": "4f29fa2ce02e44bf75ab8444bf96eb77fb593431e340d56882dd426dcc0f2509",
+    "capturedAt": "2026-11-01T10:03:41.798Z",
+    "captureMethod": "exact visible model-response-content index 0 innerText; UTF-8, no editing or normalization or added newline"
+  },
+  "complete": true,
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "receipt": {
+    "url": "https://gemini.google.com/app/09aee013f4e3730a",
+    "reviewIdVisible": true,
+    "attachment": "bundle.md",
+    "composerEmpty": true,
+    "generationActive": true
+  },
+  "limitations": [
+    "Summary-only external research, no live benchmark or complete code audit",
+    "External source claims require owner verification"
+  ],
+  "receivedAt": "2026-11-01T10:03:41.798Z",
+  "truncated": false,
+  "outcome": "refusal-no-substantive-research",
+  "verdict": null,
+  "binding": {
+    "reviewIdInResponse": false,
+    "baseCommitInResponse": false,
+    "note": "Refusal contains no review bindings; associated by submitted user message and same-chat response"
+  },
+  "completionEvidence": {
+    "generationActive": false,
+    "finalControlsVisible": true
+  },
+  "sourceCoverage": {
+    "sourcesProvided": [],
+    "liveResearchConfirmed": false
+  }
+}

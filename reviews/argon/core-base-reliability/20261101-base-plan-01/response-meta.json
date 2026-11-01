@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "reviewId": "20261101-base-plan-01",
+  "status": "received",
+  "response": {
+    "path": "response.txt",
+    "bytes": 21362,
+    "sha256": "d6e0efddae3c60305dca9161eddae05dd554771adcfeccd1b5a858a4c666d85a",
+    "capturedAt": "2026-11-01T10:04:48.418Z",
+    "captureMethod": "exact visible model-response-content index 0 innerText; UTF-8, no editing or normalization or added newline"
+  },
+  "complete": true,
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "receipt": {
+    "url": "https://gemini.google.com/app/7d1635ce3da41f9c",
+    "reviewIdVisible": true,
+    "attachment": "bundle.md",
+    "composerEmpty": true,
+    "generationActive": true
+  },
+  "limitations": [
+    "Внешний ответ — недоверенное evidence; локальный разбор выполняет владелец Core",
+    "Рекомендации по миграции/CEP/SDK не проверены контроллером",
+    "Никакого разрешения на AE/runtime/установку ответ не выдаёт"
+  ],
+  "receivedAt": "2026-11-01T10:04:48.418Z",
+  "truncated": false,
+  "verdict": "Утвердить план с сокращением (Approve with Scope Reduction)",
+  "binding": {
+    "reviewId": true,
+    "stageId": true,
+    "baseCommit": true,
+    "type": true,
+    "hashRecomputationClaimed": false
+  },
+  "completionEvidence": {
+    "generationActive": false,
+    "finalControlsVisible": true,
+    "finalSection": "6. Первичные источники для внешних утверждений",
+    "sixQuestionsAnswered": true
+  },
+  "findings": [
+    {
+      "id": "F-01",
+      "confidence": "High",
+      "summary": "Известные отказы чтения превращаются в owner_outcome_uncertain"
+    },
+    {
+      "id": "F-02",
+      "confidence": "High",
+      "summary": "Разграничить завершённый отказ чтения и неопределённость мутации"
+    },
+    {
+      "id": "F-03",
+      "confidence": "High",
+      "summary": "Причина потери attachment не установлена; нужна диагностика"
+    },
+    {
+      "id": "F-04",
+      "confidence": "High",
+      "summary": "Утверждение об ограничениях CEP/project lifecycle требует проверки владельцем"
+    }
+  ],
+  "sourcesProvided": [
+    {
+      "title": "MCP Specification — Tools",
+      "url": "https://modelcontextprotocol.io/specification/2025-03-26/server/tools"
+    },
+    {
+      "title": "MCP TypeScript SDK",
+      "url": "https://github.com/modelcontextprotocol/typescript-sdk"
+    },
+    {
+      "title": "Adobe CEP Resources",
+      "url": "https://github.com/Adobe-CEP/CEP-Resources"
+    },
+    {
+      "title": "After Effects Scripting Guide",
+      "url": "https://ae-scripting.docsforadobe.dev/"
+    }
+  ],
+  "sourceVerification": "Ссылки извлечены из видимого ответа. Фактическое чтение, актуальность и соответствие внешних утверждений контроллером не подтверждены.",
+  "readCoverage": {
+    "input": "Только bundle.md — очищенное авторское резюме",
+    "codeAudit": false,
+    "liveBenchmark": false,
+    "comparativeCatalogExcluded": true
+  },
+  "knownOpenGaps": [
+    "Причина потери attachment",
+    "Реализация и локальная проверка патча",
+    "Полная ordinary-cycle устойчивость owner",
+    "Native mutation/recovery acceptance",
+    "Надёжность same-path lifecycle не доказана"
+  ]
+}

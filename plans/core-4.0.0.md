@@ -1,5 +1,12 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Актуальное уточнение, 1 ноября:** [база отдельно от Titles](core-base-reliability-20261101.md).
+Пользователь отложил Titles/Slideshow; сначала comparative MCP research, затем
+connection/recovery/diagnostics с ограниченными проверками. Project lifecycle —
+отдельный research. R5 text mutation ниже сохраняется открытой, но не блокирует
+обычные read-only циклы базы. Два отдельных Argon обращения завершены: plan ответ
+получен и локально разобран, comparative ответ — отказ без исследования.
+
 **Актуальный приоритет, 30 октября:**
 [устойчивый запуск и восстановление Core/CEP](core-cep-lifecycle-20261030.md).
 Один installation owner, тонкие stdio attachments и явный controller lease;
