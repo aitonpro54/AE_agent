@@ -80,6 +80,9 @@ remaining, с привязкой к версии. Не запускать crash/
 
 ## Progress
 
+- [x] Исследован [offline AEP модуль](../docs/offline-aep-module-research-20261101.md):
+  upstream py-aep найден, local install пока не подтверждён. Подготовлено
+  предложение файлового backend без панели; реализация не добавлена в B1/B2.
 - [x] По дополнительному вопросу пользователя исследованы
   [панель, другие AI-клиенты и локальные модели](../docs/panel-and-client-portability-20261101.md):
   Atom/OnePrism подтверждают совместимость панели с внешним MCP;
@@ -105,6 +108,9 @@ remaining, с привязкой к версии. Не запускать crash/
 
 ## Decision Log
 
+- Работа с закрытыми AEP требует отдельной offline capability и файлового
+  ресурса; это не CEP fallback и не live authority. Первое возможное применение —
+  новый candidate-файл с отдельными structural/native/visual результатами.
 - Панель не считать зависимостью от Codex. Установщик пока Codex-specific;
   смена AI-клиента не требует сама по себе замены CEP. Опциональный UI остаётся
   архитектурной рекомендацией, а два production transport не добавляются в B1.
