@@ -92,6 +92,9 @@ remaining, с привязкой к версии. Не запускать crash/
 - [x] B0: собственные первичные источники и исходы двух запросов зафиксированы;
   содержательного comparative ответа Argon нет, самостоятельно research выполнен.
 - [ ] B1: узкая реализация после разбора research.
+- [x] B1 начат: [source brief и стоимость до реализации](../docs/core-base-b1-brief-20261101.md)
+  готовы.4production/3test paths;24selected batches, без запуска tests.
+  Следующий шаг — bounded проверка причин selection; затем frozen source slice.
 - [ ] B2: матрица обычных циклов и диагностика.
 - [x] L0 bounded research без реализации: дешёвый exact detector не доказан;
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
@@ -124,3 +127,8 @@ AE/MCP/CEP действия не выполнялись; текущая runtime 
 проверены. Python builder не запустился (в среде только Windows alias); выполнены
 Node built-in copy/hash и content scan, без установки Python/зависимостей.
 Это подготовка research, не техническая приёмка нового runtime.
+Source brief проверил direct project-inspection путь без Broker/Titles changes.
+Один штатный selectChecks без --run; broad suites и установленный runtime не
+запускались. Документальный milestone B0 — commit `e467ca2`; после него только
+brief/plan, без production edits. Root проверил local links, response/payload
+hashes и git diff --check; чужая .codex-attachments сохранена.
