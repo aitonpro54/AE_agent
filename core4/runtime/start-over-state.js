@@ -63,7 +63,7 @@ function context(options) {
   const verify = () => { if (!equal(require('./installation').verifyInstallation(descriptorPath), d)) fail('start_over_installation'); };
   verify(); const descriptorHash = descriptor.hash;
   const key = purpose => crypto.createHmac('sha256', Buffer.from(d.panelToken, 'hex')).update('ae-core4/' + purpose + '-key/v1\0').update(Buffer.from(d.controlToken, 'hex')).digest();
-  const mac = (purpose, body) => crypto.createHmac('sha256', key(purpose)).update('ae-core4/' + (purpose === 'lifecycle' ? 'lifecycle' : 'start-over') + '-record/v1\0' + canonical(body)).digest('hex');
+  const mac = (purpose, body) => crypto.createHmac('sha256', key(purpose)).update('ae-core4/' + purpose + '-record/v1\0' + canonical(body)).digest('hex');
   const common = { version: 1, installationId: d.installationId, machineId: d.machineId, descriptorHash };
   function seal(kind, value) { const body = { ...common, kind, ...value }; return Buffer.from(canonical({ body, mac: mac('start-over', body) })); }
   function decode(v, kind, fields, purpose = 'start-over') {
@@ -94,7 +94,7 @@ function context(options) {
     if (values['runtime-diagnostic.json'].bytes) { const b = decode(values['runtime-diagnostic.json'], 'diagnostic-owner', ['scope', 'reason'], 'lifecycle'); add(b.scope); if (typeof b.reason !== 'string' || !b.reason) fail('start_over_marker_scope'); }
     const expected = owner && { 'broker/broker-owner.lock': JSON.stringify({ pid: owner.scope.pid, token: owner.scope.brokerToken }), 'broker/broker-owner.gate': owner.scope.brokerToken, 'receiver/owner': canonical({ version: 1, pid: owner.scope.pid, token: owner.scope.receiverToken }) };
     for (const name of MARKERS.slice(3)) if (values[name].bytes && (!expected || !values[name].bytes.equals(Buffer.from(expected[name])))) fail('start_over_foreign_marker');
-    return { values, owner, actors, facts: Object.fromEntries(MARKERS.map(name => [name, { ...info(values[name]), bytes: values[name].bytes?.toString('base64') ?? null }])) };
+    return { values, owner, actors, scopes: [...full.values()], facts: Object.fromEntries(MARKERS.map(name => [name, { ...info(values[name]), bytes: values[name].bytes?.toString('base64') ?? null }])) };
   }
   function markers() { return attributeMarkers(Object.fromEntries(MARKERS.map(name => [name, read(path.join(d.stateDir, name))]))); }
   function markerSnapshot(value) {
@@ -140,8 +140,8 @@ function context(options) {
     const names = fs.readdirSync(dir); if (names.length > 64) fail('start_over_phase');
     for (const name of names) {
       const anchor = ['receiver', 'ledger'].find(k => name === 'original-' + k && body.prefix[k].hash !== null);
-      if (!anchor && !['intent.json', 'inventory.json', 'stop-requested.json'].includes(name)) {
-        const match = name.match(/^(?:inventory|stop-requested)\.json\.stage-([a-f0-9-]{36})$/); if (!match || !UUID.test(match[1])) fail('start_over_phase');
+      if (!anchor && !['intent.json', 'inventory.json', 'continuation-inventory.json', 'stop-requested.json'].includes(name)) {
+        const match = name.match(/^(?:inventory|continuation-inventory|stop-requested)\.json\.stage-([a-f0-9-]{36})$/); if (!match || !UUID.test(match[1])) fail('start_over_phase');
       }
       // Unpublished stages remain inert evidence, but never opaque symlinks,
       // directories or unbounded files inside an otherwise accepted phase.
@@ -166,13 +166,35 @@ function context(options) {
     if (!result.archiveEligibleHistory) fail('start_over_resource_fenced');
     return result;
   }
-  function record(a, name, kind, fields) { const v = read(path.join(a.dir, name)); if (!v.bytes) return null; const b = decode(v, kind, ['id', 'intentHash', ...fields]); if (b.id !== a.body.id || b.intentHash !== a.barrier.hash) fail('start_over_record'); if (kind === 'start-over-inventory') validateInventory(b.observation); return b; }
-  return { d, descriptorPath, protectedFacts, histories, historyOptions, markers, active, continuation, directory, seal, decode, record, validateInventory };
+  function record(a, name, kind, fields) { const v = read(path.join(a.dir, name)); if (!v.bytes) return null; const b = decode(v, kind, ['id', 'intentHash', ...fields]); if (b.id !== a.body.id || b.intentHash !== a.barrier.hash) fail('start_over_record'); if (['start-over-inventory', 'start-over-continuation-inventory'].includes(kind)) validateInventory(b.observation); return b; }
+  function stoppedMarkers(a) {
+    const original = markerSnapshot(a.body.markers), values = Object.fromEntries(MARKERS.map(name => [name, read(path.join(d.stateDir, name))]));
+    const owner = original.owner?.scope, expected = owner && { 'broker/broker-owner.lock': JSON.stringify({ pid: owner.pid, token: owner.brokerToken }), 'broker/broker-owner.gate': owner.brokerToken, 'receiver/owner': canonical({ version: 1, pid: owner.pid, token: owner.receiverToken }) };
+    for (const [name, v] of Object.entries(values)) if (v.bytes !== null) {
+      const wanted = expected?.[name] ?? (a.body.markers[name].bytes === null ? null : Buffer.from(a.body.markers[name].bytes, 'base64'));
+      if (wanted === null || !v.bytes.equals(Buffer.isBuffer(wanted) ? wanted : Buffer.from(wanted))) fail('start_over_foreign_marker');
+    }
+    const gate = read(path.join(d.installRoot, 'install.lock'));
+    if (gate.bytes) {
+      const b = decode(gate, 'startup-gate', ['scope', 'recoveryId', 'readyId', 'takeoverId', 'phase'], 'lifecycle'); scope(b.scope, true);
+      const creator = original.scopes.find(s => equal(short(s), a.body.requestor));
+      if (b.phase !== 'shutdown' || b.readyId !== null || b.takeoverId !== null || !UUID.test(b.recoveryId) || !creator || !equal(b.scope, creator)) fail('start_over_foreign_marker');
+    }
+    const maintenance = read(path.join(d.stateDir, 'runtime-maintenance.json'));
+    if (maintenance.bytes) {
+      const b = decode(maintenance, 'maintenance-stop', ['id', 'scope', 'protected', 'authorizationHash', 'nonce'], 'maintenance'); scope(b.scope);
+      if (!equal(b.scope, a.body.requestor) || !UUID.test(b.id) || !UUID.test(b.nonce) || !HEX.test(b.authorizationHash)) fail('start_over_foreign_marker');
+    }
+    return { markers: Object.fromEntries(MARKERS.map(n => [n, info(values[n])])), installGate: info(gate), maintenance: info(maintenance) };
+  }
+  function phaseFacts(a) { return Object.fromEntries(fs.readdirSync(a.dir).sort().map(name => [name, info(read(path.join(a.dir, name), name.startsWith('original-') ? 64 * 1024 * 1024 : 128 * 1024))])); }
+  return { d, descriptorPath, protectedFacts, histories, historyOptions, markers, active, continuation, directory, seal, decode, record, validateInventory, stoppedMarkers, phaseFacts, read, info, plain, atomic };
 }
 function inspect(c) {
   const a = c.active(); if (!a) return Object.freeze({ phase: 'running', id: null, resetComplete: false, resetPermit: false, aeAuthority: false });
-  const h = c.continuation(a), inventory = c.record(a, 'inventory.json', 'start-over-inventory', ['observation']), stop = c.record(a, 'stop-requested.json', 'start-over-stop-requested', []);
-  return Object.freeze({ id: a.body.id, newSessionId: a.body.newSessionId, phase: stop ? 'stop-requested' : inventory ? 'intent-with-inventory' : 'intent-without-inventory', requiresAEExit: h.requiresAEExit, inventoryRecorded: !!inventory, actors: Object.freeze(a.body.actors.map(s => Object.freeze({ ...s }))), resetComplete: false, resetPermit: false, aeAuthority: false });
+  const h = c.continuation(a), primary = c.record(a, 'inventory.json', 'start-over-inventory', ['observation']), recovered = c.record(a, 'continuation-inventory.json', 'start-over-continuation-inventory', ['observation', 'nativeStop']), stop = c.record(a, 'stop-requested.json', 'start-over-stop-requested', []);
+  if (primary && recovered) fail('start_over_phase'); const inventory = primary || recovered;
+  return Object.freeze({ id: a.body.id, intentHash: a.barrier.hash, newSessionId: a.body.newSessionId, phase: stop ? 'stop-requested' : inventory ? 'intent-with-inventory' : 'intent-without-inventory', requiresAEExit: h.requiresAEExit, inventoryRecorded: !!inventory, actors: Object.freeze(a.body.actors.map(s => Object.freeze({ ...s }))), resetComplete: false, resetPermit: false, aeAuthority: false });
 }
 function inspectStartOver(options) { return inspect(context(options)); }
 function createOwnerStartOver(options) {
@@ -216,4 +238,8 @@ function createOwnerStartOver(options) {
   }
   return Object.freeze({ request() { if (!pending) pending = begin(); return pending; }, inspect: () => inspect(c), status: () => Object.freeze({ requested: !!pending, id, fault, resetComplete: false, aeAuthority: false }) });
 }
-module.exports = { createOwnerStartOver, inspectStartOver };
+function startOverBarrierContext(capability) {
+  const p = require('./start-over-barrier').startOverBarrierRequest(capability);
+  return context({ installation: p.installation, descriptorPath: p.descriptorPath });
+}
+module.exports = { createOwnerStartOver, inspectStartOver, startOverBarrierContext };

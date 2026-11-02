@@ -95,7 +95,8 @@ test('publication failure retains freeze and unpublished preparation without rem
   assert.equal(fs.readdirSync(path.join(f.root, 'transactions')).some(n => n.endsWith('-start-over')), true);
 });
 test('source API has no native injection finisher restart or fence removal and foreign-machine descriptor cannot enter local scope', async t => {
-  const f = await harness(t); assert.deepEqual(Object.keys(f.api).sort(), ['createOwnerStartOver', 'inspectStartOver']);
+  const f = await harness(t); assert.deepEqual(Object.keys(f.api).sort(), ['createOwnerStartOver', 'inspectStartOver', 'startOverBarrierContext']);
+  assert.throws(() => f.api.startOverBarrierContext({}), error('start_over_barrier_brand'));
   assert.throws(() => f.api.createOwnerStartOver({ ...f.options, probe: () => [] }), error('start_over_schema'));
   assert.throws(() => f.api.inspectStartOver({ installation: { ...f.d, machineId: 'foreign-machine' }, descriptorPath: f.descriptorPath }), error('start_over_installation'));
   assert.equal(f.inspect().phase, 'running'); assert.deepEqual(f.calls, []);

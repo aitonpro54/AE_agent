@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-02T19:04:50.644Z",
+  "scope": "B3a3 private process/endpoint barrier; synthetic native observations and logical canonical HTTP port; real TEMP files, loopback and fixture-specific named IPC",
+  "selectedArtifactsOnly": true,
+  "releaseCertified": false,
+  "changed": [
+    "core4/runtime/start-over-state.js",
+    "core4/runtime/start-over-barrier.js",
+    "core4/test/start-over-state.test.js",
+    "core4/test/start-over-barrier.test.js",
+    "core4/test/fixtures/start-over-barrier.js",
+    "core4/config/validation-map.json"
+  ],
+  "selectedChecks": [
+    {
+      "check": "start-over-state",
+      "evidenceKey": "fe72003b65483a4db84bb77ef70da275d2668ccd1d994e3d07408bd225a92d79",
+      "result": "PASS",
+      "cases": 17,
+      "mode": "fresh",
+      "logHash": "900f406e1b6f5e0ed0c2d056e6f317b031c1ac83706aed922d637c207d566fa2"
+    },
+    {
+      "check": "start-over-barrier",
+      "evidenceKey": "0194f83f4d974046e08ee9b3f4fea180a8363d4bf17d5fd5193936a330113fc8",
+      "result": "PASS",
+      "cases": 12,
+      "mode": "fresh",
+      "logHash": "89156647776a0ff0b28fc9df9b0f2ce245ed7bcec32b0f003def9adbf9cedafe"
+    },
+    {
+      "check": "validation-routing",
+      "evidenceKey": "2e3dd9e3cbacf85e107498b7d0bef3b6de0b37ea6854be35f5501b34156a7952",
+      "result": "PASS",
+      "cases": 5,
+      "mode": "exact-unchanged-reuse",
+      "logHash": "152979615edf88d7419d029526b4ff9b1ff5a3096a52664bb668637352b174fb"
+    },
+    {
+      "check": "stopped-certification",
+      "evidenceKey": "045ff25825be6f7d955937bc35a77593a9be6bead6342dae1505f677d7236d29",
+      "result": "PASS",
+      "cases": 30,
+      "mode": "fresh",
+      "logHash": "5c29e513d498cd6d2296a63932f100d87a4734ccf1468829d12b2fdb858341c6"
+    },
+    {
+      "check": "maintenance-finish",
+      "evidenceKey": "46e30ac04f825c82384c5c75db75cb7e4c60f723bd31a67138a4906930ac2dbd",
+      "result": "PASS",
+      "cases": 32,
+      "mode": "fresh",
+      "logHash": "aa4c6f93983020b16612696600c797e19f48736038dae26248fa9667e8e18e0a"
+    },
+    {
+      "check": "owner-maintenance",
+      "evidenceKey": "cc3c1c77e751d881d9111ae9c090cece4cbbc340c0ef14477b8a9563e1c31546",
+      "result": "PASS",
+      "cases": 22,
+      "mode": "fresh",
+      "logHash": "bed721586c9fa4ea607400509c21a7832a882618f59625a700002c5fd5584e9f"
+    }
+  ],
+  "totalCases": 118,
+  "boundaries": {
+    "checked": 48,
+    "model": "reviewed-local-code; conservative source guard; not OS sandbox",
+    "liveCalls": 0
+  },
+  "deferredCoverage": [
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "owner-runtime",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "manual-runtime",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    }
+  ],
+  "installedPackageUnchanged": "2fb5aebe3780215d8cd8af0fcd0927445f2a5bb475fdbb77cb2b7afb50b9f988",
+  "resetCount": 0,
+  "mutationCount": 0,
+  "limitations": [
+    "source/TEMP proof; not installed process-death/reset acceptance",
+    "no install lease, archive finisher, new-session baseline or production entry yet",
+    "fixed native backend separately covered by B3a1; this suite uses explicit loader observations only"
+  ]
+}

@@ -109,6 +109,16 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- 3 ноября, B3a3: private process/endpoint barrier принят6selected checks/
+  118cases (113fresh+5exact reuse), boundaries48. Включены обе Node identities,
+  exact AE birth, crash-before-inventory, no stopped receipt, strengthened risk,
+  phase drift и full shutdown role scope. Install lease/archive/new session ещё
+  не реализованы; следующий срез B3a4, затем B3b composition.
+- 3 ноября, natural idle: первый configured status после≥3460.720с прошёл без
+  retry. Same owner24160/bootc9a04982…, peer connected/inspectionAvailable,
+  controller idle, pending/UNKNOWN/fault0.46events и protected hashes unchanged.
+  Нового project read или runtime mutation не было.
+
 - B3a2: private durable owner request/inspection в runtime/start-over-state.js.
   Signed intent и journal inode anchors, обе producer identities, повтор того же
   UUID, prefix/CAS/failure retention проверены17new TEMP cases.5selected checks/
@@ -174,6 +184,12 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- B3a3 фиксирует AE inventory один раз после смерти producers, если owner не
+  успел сделать это сам. Новая AE incarnation не вызывает бесконечный restart;
+  вновь обнаруженный UNKNOWN не использует прежнее дешёвое idle observation.
+  Barrier capability относится к native/endpoint proof; install lease и archive
+  пока отсутствуют и отдельным JSON flag не подменяются.
 
 - При B3a2 intent публикуется только полным hardlink record; исходные journal
   inodes удерживаются anchors, prefix bytes допускают append completion.
@@ -258,6 +274,15 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+B3a3,3ноября:6current selected checks/118cases PASS, boundaries48/diff-check.
+[Source evidence](../docs/evidence/core-base-b3a3-barrier-20261103.json).
+Native data/логический3457 в этом component suite синтетические; настоящий
+native backend отдельно проверен B3a1. Installed package не обновлялся.
+[Configured idle evidence](../docs/evidence/core-base-configured-idle-20261103.json):
+первый status после≥3460.720с, same boot, один реальный listener3457/owner24160,
+history46events и protected bindings unchanged. Это status/file proof, без
+нового AE target observation, B3 reset или mutation recovery acceptance.
 
 B3a2:5current selected checks/106fresh cases PASS; source closures проверены
 до/после прогона exact evidence keys. Boundaries47/diff-check PASS.

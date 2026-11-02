@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-02T19:07:03.603Z",
+  "packageHash": "2fb5aebe3780215d8cd8af0fcd0927445f2a5bb475fdbb77cb2b7afb50b9f988",
+  "idleMinimumMs": 3460720,
+  "idleBounds": {
+    "beganAfterLastConfiguredCall": "2026-11-02T18:07:09.924Z",
+    "endedBeforeFreshConfiguredCall": "2026-11-02T19:04:50.644Z"
+  },
+  "firstConfiguredCallSucceeded": true,
+  "retryCount": 0,
+  "ownerPid": 24160,
+  "birthTicks": "639292395293906370",
+  "processBootId": "c9a04982-b031-481d-81f2-14a3ac936264",
+  "attachmentBootId": "90092ad7-774e-4368-9c96-3a855bf4963a",
+  "sameOwnerBoot": true,
+  "nativeListener": { "address": "127.0.0.1", "port": 3457, "owningProcess": 24160, "observedCount": 1, "source": "Get-NetTCPConnection" },
+  "ready": true,
+  "peerConnected": true,
+  "inspectionAvailable": true,
+  "controllerMode": "idle",
+  "leaseHolder": null,
+  "pending": false,
+  "unresolved": false,
+  "fault": false,
+  "receiver": {
+    "eventCount": 46,
+    "byteHash": "84bf3f34e99ee2c1a5e0dbad00734472a5247a517b871e13f89561c4a8dc204e"
+  },
+  "protectedHashes": {
+    "origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "state/production/origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "state/production/host-adoption.json": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+    "state/production/broker/ledger.ndjson": null
+  },
+  "bindings": {
+    "descriptor": "17f5fb7473c1bdbd526b27c5f872caaf60d97734a32fc542ad6897ffb8c33fa3",
+    "client": "834eb4f29b0133e91ff139d33a2033d1a97710d9231f16cbd64c25939f8f87ba",
+    "config": "f439f8f4dcbdbf768a7007daa7506a7596468bfd48fb3eb65f3d8feeb49a7b8e"
+  },
+  "readCommands": 0,
+  "mutationCommands": 0,
+  "resetCount": 0,
+  "installedUpdateCount": 0,
+  "limitations": [
+    "status and file-history check only; no new AE project observation",
+    "no B3 installed reset, mutation recovery or release/portability proof"
+  ]
+}

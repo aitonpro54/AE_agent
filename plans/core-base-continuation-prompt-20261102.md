@@ -6,7 +6,8 @@
 B1/B2 source завершены (`264522c`/`2d08c71`), package2fb5aebe штатно установлен.
 После restart Codex configured status/read package2fb5aebe принят: owner24160,
 AE9472/пустой unsaved project, lease released, history46/prefix44 preserved.
-Следующий шаг — B3a, не повторная реализация/установка B1. B3 пока только контракт; один plan review
+Следующий шаг — B3a4, не повторная реализация/установка B1. Private B3 source
+частично реализован; production integration ещё нет. Один plan review
 Argon получен, verdict revise и шесть замечаний локально разобраны, контракт
 уточнён. Браузерный blocker снят, новых sends/review нет. Полные settled IDs, fresh
 границы evidence и действия — в
@@ -14,7 +15,8 @@ Argon получен, verdict revise и шесть замечаний локал
 Не создавать новый чат автоматически. B3a1 history/process inspection source
 принят118selectedPASS/46boundaries; B3a2 durable intent/inspection —106selectedPASS/
 47boundaries. Архивный finisher и production integration ещё нет.
-Продолжить B3a3 по уточнённому контракту и
+3ноября B3a3 process/endpoint barrier принят118selectedPASS/48boundaries.
+Продолжить B3a4 (lease/архивный finisher) по уточнённому контракту и
 decisions/triage.json, без дополнительного review или replay прежней отправки.
 
 ## Исходная постановка

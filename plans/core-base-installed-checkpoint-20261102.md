@@ -3,6 +3,14 @@
 Работа продолжена в текущем чате `01a19c6c-1e7d-7751-93cc-cb38dadb85ab`;
 новый чат/проект не создавался. Root единственный AE/CEP controller.
 
+## Дополнение 3 ноября
+
+Первый configured status после≥3460.720с idle прошёл без retry: тот же owner24160/
+bootc9a04982…, peer connected, controller idle, pending/UNKNOWN/fault0. Один
+реальный listener3457/owner24160; history46events и protected bindings unchanged.
+Нового AE project read не было.
+[Evidence](../docs/evidence/core-base-configured-idle-20261103.json).
+
 ## Завершено
 
 - B1 source commit `264522c`: exact terminal read rejection через owner/IPC/MCP.
@@ -51,8 +59,9 @@ Descriptor SHA17f5fb74…, client834eb4f2…, configf439f8f4…; полный ev
    локально разобраны в review decisions/triage.json; новый upload/send0.
    Прежний Debugger unattached сохранён как история. Повтор review не нужен.
 3. B3a1 history/process inspection source принят118selectedPASS/46boundaries;
-   B3a2 durable intent/inspection —106selectedPASS/47boundaries. Finisher и
-   production integration ещё нет. Продолжить B3a3 по
+   B3a2 durable intent/inspection —106selectedPASS/47boundaries;
+   B3a3 process/endpoint barrier —118selectedPASS/48boundaries. Finisher и
+   production integration ещё нет. Продолжить B3a4 по
    локально уточнённому
    [контракту](../docs/core-base-b3-20261102.md) и активному плану.
    Installed B3/reset пока0. Общая готовность базы, recovery mutation/full release и
