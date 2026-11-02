@@ -1,0 +1,652 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-02T18:25:03.076Z",
+  "scope": "B3a1 history semantics and native process observation; no reset writer or production composition",
+  "selectedArtifactsOnly": true,
+  "releaseCertified": false,
+  "changed": [
+    "core4/runtime/start-over-inspection.js",
+    "core4/runtime/start-over-process.js",
+    "core4/test/start-over-inspection.test.js",
+    "core4/test/start-over-process.test.js",
+    "core4/config/validation-map.json"
+  ],
+  "selectedChecks": [
+    {
+      "check": "start-over-inspection",
+      "evidenceKey": "19688cc85c7f445da44c4153500047efbd8c21d35194b6b2af51746fbb1e5a50",
+      "result": "PASS",
+      "cases": 19,
+      "mode": "fresh",
+      "logHash": "fe9d322780bbb69034e7a833cd099fe3ea6568e1bd73c72608923db9769bad25"
+    },
+    {
+      "check": "start-over-process",
+      "evidenceKey": "be4cdba7650d826cbbee2725d9c40eb49e0272b01d5702e91e682bc1bb64300a",
+      "result": "PASS",
+      "cases": 10,
+      "mode": "exact-unchanged-reuse",
+      "logHash": "c0ba284a20afd2ed42f949f4380d3d930596caa7d50d7144fb9ff97ea1475349"
+    },
+    {
+      "check": "validation-routing",
+      "evidenceKey": "3929e10aaf77a027d7841b9cad397ffa14279c67a8220bc3e5797eeb024b0fbf",
+      "result": "PASS",
+      "cases": 5,
+      "mode": "exact-unchanged-reuse",
+      "logHash": "c0ba284a20afd2ed42f949f4380d3d930596caa7d50d7144fb9ff97ea1475349"
+    },
+    {
+      "check": "stopped-certification",
+      "evidenceKey": "db051817bf358a9c8b2045d675086a8ae2827cee52f9fe5a94faaffdff9c37fe",
+      "result": "PASS",
+      "cases": 30,
+      "mode": "fresh",
+      "logHash": "c81fd8de7e3bad17597f56985b295486241c7463f592c9f18f9db8dfc7e66173"
+    },
+    {
+      "check": "maintenance-finish",
+      "evidenceKey": "f798c75e8694b465df65a55ec1b53e51b0674c27399caf4c66d80a06f73f512f",
+      "result": "PASS",
+      "cases": 32,
+      "mode": "fresh",
+      "logHash": "8580333c7c4ab88233746ebd67c97bcd411afbdea8c5527a1d74ae73bd522e6c"
+    },
+    {
+      "check": "owner-maintenance",
+      "evidenceKey": "4adfb0b96b1f633fb00fd16c51fc8103ccb91b9d3aff0693e0d3a6ce36f44393",
+      "result": "PASS",
+      "cases": 22,
+      "mode": "fresh",
+      "logHash": "09a3b5cfd341c999bb3551ac561ed5efa7cda81b5bc721f9020b77c3784e5ced"
+    }
+  ],
+  "totalCases": 118,
+  "deferredCoverage": [
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "stopped-host-readoption-operator"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "stopped-host-readoption-operator"
+        ],
+        [
+          "core4/config/validation-map.json",
+          "config/",
+          "stopped-host-readoption-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "stopped-update-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "stopped-update"
+        ]
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/config/validation-map.json",
+          "config/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "owner-installation"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "owner-installation"
+        ],
+        [
+          "core4/config/validation-map.json",
+          "config/",
+          "owner-installation"
+        ]
+      ]
+    },
+    {
+      "check": "owner-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "owner-runtime"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "owner-runtime"
+        ],
+        [
+          "core4/config/validation-map.json",
+          "config/",
+          "owner-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "windows-cim-probe"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "human-window"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "human-window"
+        ]
+      ]
+    },
+    {
+      "check": "manual-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "manual-runtime"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "manual-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "installable-runtime"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "installable-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "cep-transport"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/test/start-over-inspection.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/start-over-process.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/test/start-over-inspection.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/start-over-process.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "lifecycle-simulation"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "native-read-recovery"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "native-read-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "installed-composition"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "installed-composition"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "exact-f548-transition"
+        ]
+      ]
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/start-over-inspection.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-process.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/start-over-inspection.js",
+          "runtime/",
+          "standalone-installer"
+        ],
+        [
+          "core4/runtime/start-over-process.js",
+          "runtime/",
+          "standalone-installer"
+        ]
+      ]
+    }
+  ],
+  "boundaries": {
+    "checked": 46,
+    "liveCalls": 0
+  },
+  "installedPackageUnchanged": "2fb5aebe3780215d8cd8af0fcd0927445f2a5bb475fdbb77cb2b7afb50b9f988",
+  "resetCount": 0,
+  "mutationCount": 0
+}

@@ -109,6 +109,13 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- B3a1: отдельные supplied-history semantics и fixed native process observation
+  реализованы в runtime/start-over-inspection.js и start-over-process.js.
+  Проверены prefix/late completion/no-new-begin, UNKNOWN без relabel, combined
+  receiver/Broker bindings, foreign/shared/unknown-origin fences и точные
+  PID/birth all-AE/старых producers.6selected checks118cases PASS, boundaries46.
+  Это source foundation; durable transaction/finisher/production reset ещё нет.
+
 - 2 ноября, после restart Codex: configured package2fb5aebe принят первым
   core_status и свежей project-inspection через автоматически подключившуюся CEP.
   Новый owner24160, один3457; AE9472/пустой unsaved project прежний. Lease1
@@ -161,6 +168,12 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- B3a1 отделён от destructive archive writer. Семантические и process facts не
+  выдают permit. Новый receiver begin после reset prefix — нарушение admission,
+  не допустимый drain. Нельзя локальным новым record скрыть исходный foreign
+  fence; первая реализация откажет с точной причиной. История другой машины или
+  legacy constraint без точной AE origin не снимается смертью текущего AE.
 
 - Configured B1/B2 proof завершён без повторной установки. Новый owner после
   restart подтверждён fresh PID/birth; прежний19892 отсутствует, его survival
@@ -234,6 +247,13 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+B3a1:19history cases и10process cases, включая actual Windows inventory/self-PID,
+PASS. Final selected closure6checks/118cases:103fresh и15exact unchanged reuse;
+evidence keys перепроверены до/после fresh batches. Boundaries46 и diff-check PASS.
+[Evidence](../docs/evidence/core-base-b3a1-20261102.json). Никаких reset/AE/save/
+mutation/install; installed package2fb5aebe прежний.3existing maintenance/component
+closures перепроверены после финального history fix; full release не запускался.
 
 После restart2ноября: configured status/connect/contract/read/release PASS,
 46receiver events и точные prefix44/36, descriptor/client/config/origins/adoption/

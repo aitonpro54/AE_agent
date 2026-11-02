@@ -20,7 +20,9 @@ AE9472/пустой проект, peer connected, pending/UNKNOWN/fault0; histor
 package2fb5aebe/owner24160 ready, fresh project-inspection пустого AE9472 PASS;
 lease1 released, pending/UNKNOWN/fault0. History46events/prefix44 exact,
 bindings/origins/adoption/ledger unchanged; install повторять не нужно.
-B3 только спроектирован: исходный Argon
+B3a1 source history/process inspection принят118selectedPASS/46boundaries;
+durable intent/archive/finisher/session/UI ещё не реализованы, installed B3 нет.
+Исходный Argon
 plan review получен2ноября21:19, verdict revise; шесть замечаний локально разобраны,
 контракт уточнён, повторных отправок нет. Debugger unattached остался историей
 предыдущего retrieval. Актуальные IDs, действия и предел proof —

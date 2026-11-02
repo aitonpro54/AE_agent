@@ -50,9 +50,11 @@ Descriptor SHA17f5fb74…, client834eb4f2…, configf439f8f4…; полный ev
    Argon/Высокий. Raw41896bytes/SHA35c4e7ce…, verdict revise. Шесть findings
    локально разобраны в review decisions/triage.json; новый upload/send0.
    Прежний Debugger unattached сохранён как история. Повтор review не нужен.
-3. Продолжить B3a по локально уточнённому
+3. B3a1 history/process inspection source принят118selectedPASS/46boundaries.
+   Durable transaction/finisher и production integration ещё нет. Продолжить B3a2 по
+   локально уточнённому
    [контракту](../docs/core-base-b3-20261102.md) и активному плану.
-   B3 code/reset пока0. Общая готовность базы, recovery mutation/full release и
+   Installed B3/reset пока0. Общая готовность базы, recovery mutation/full release и
    portability не объявлены PASS.
 
 Это история evidence, а не текущий preflight или перенос runtime authority.
