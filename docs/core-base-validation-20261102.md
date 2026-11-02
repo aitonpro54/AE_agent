@@ -17,7 +17,7 @@ distribution `d8d77c3876ef29121acb3063b713888d8ebf4cb8015fd6c9d6839921282c334d`.
 | Известный отказ чтения | Private provenance/one-shot/forgery, lease expiry, pending/fault/unresolved cases PASS | Пустой test project → inspect отсутствующей comp → native inspection_failed, MCP isError:true/outcome:rejected/nextAction:core_diagnostics. Следующее чтение PASS | Configured read/rejection пока не проверены новым пакетом |
 | Потеря ответа / незавершённая команда | B1 selected callback-loss/UNKNOWN/no-replay cases PASS | Новая destructive fault injection в пользовательский AE не выполнялась | Offline/temp не считать installed mutation recovery |
 | Мёртвый owner / stale client | Selected lifecycle/recovery cases PASS; исторический installed proof отдельно | Штатные stop/update/enable и same-descriptor stop/resume завершены. Старый configured be9afe99 возвращает owner_unavailable | Перезапустить Codex; не повторять install/settled transactions |
-| Начать заново: очередь / UNKNOWN / поздний ответ | Только контракт B3 и отправленный plan review | B3 code/reset отсутствуют | Получить исходный ответ Argon, реализовать и проверить B3 |
+| Начать заново: очередь / UNKNOWN / поздний ответ | Контракт B3 уточнён после полученного plan review и локального разбора | B3 code/reset отсутствуют | Реализовать и проверить B3 по decisions/triage.json; повторного review нет |
 | Прерывание самого сброса | Не реализовано | Не выполнялось | B3 fault cases после выбора механизма |
 
 ## Сохранность и предел результата
@@ -45,3 +45,8 @@ B1 selected24batches/473cases, B2 selected1batch/69cases и boundaries44PASS
 относятся к указанным source slices. Deferred closures не объявлены общим
 current release proof. Standard native proof не заменяет configured MCP proof,
 B3 recovery mutation, полную release-проверку или desktop/MSI round-trip.
+
+Дополнение21:19: исходный ответ Argon получен без новых sends, verdict revise,
+замечания локально разобраны. Историческое поле B3/reviewStatus в installed
+evidence JSON описывает момент приёмки B1/B2; актуальный разбор —
+[decisions](../reviews/argon/core-base-start-over/20261102-b3-plan-01/decisions.md).

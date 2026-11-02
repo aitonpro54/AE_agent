@@ -41,12 +41,12 @@ Descriptor SHA17f5fb74…, client834eb4f2…, configf439f8f4…; полный ev
    После restart первый configured core_status должен показать package2fb5aebe;
    затем acquire → module contract → fresh project-inspection → release.
    Не повторять install, stop/update/enable ради обновления MCP клиента.
-2. **Чтение Argon:** B3 plan review отправлен ровно1раз, receipt
-   https://gemini.google.com/app/9ff4479f1258260b. Чтение заблокировано
-   Debugger unattached; response/verdict отсутствуют. После восстановления
-   extension connection поручить существующему controller получить этот же ответ,
-   без upload/send/reload/retry старого запроса.
-3. Затем локально разобрать findings и продолжить B3 по
+2. **Argon получен:**2ноября21:19 чтение исходного B3 review восстановилось,
+   https://gemini.google.com/app/9ff4479f1258260b. Уже были выбраны обычный «Чат»,
+   Argon/Высокий. Raw41896bytes/SHA35c4e7ce…, verdict revise. Шесть findings
+   локально разобраны в review decisions/triage.json; новый upload/send0.
+   Прежний Debugger unattached сохранён как история. Повтор review не нужен.
+3. Продолжить B3a по локально уточнённому
    [контракту](../docs/core-base-b3-20261102.md) и активному плану.
    B3 code/reset пока0. Общая готовность базы, recovery mutation/full release и
    portability не объявлены PASS.

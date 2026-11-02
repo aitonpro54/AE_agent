@@ -142,7 +142,8 @@ fault-сценарии проводить на собственных тесто
 - [x] B3: [минимальный контракт](../docs/core-base-b3-20261102.md) подготовлен до
   production write; первое [ограниченное plan review](../reviews/argon/core-base-start-over/20261102-b3-plan-01/request.md)
   передано единственному ARGON controller по новому human поручению.
-  Одна загрузка/одна отправка; чтение ответа blocked/Debugger unattached,
+  Одна загрузка/одна отправка; исходный ответ получен2ноября21:19 без новых sends.
+  Verdict revise, шесть findings сверены локально, контракт уточнён;
   [локальное решение](../reviews/argon/core-base-start-over/20261102-b3-plan-01/decisions.md).
 - [x] B1/B2 установленный standard/native путь: package2fb5aebe, typed read,
   finite rejected read, follow-up read и auto reconnect после96.622с без Core
@@ -155,6 +156,14 @@ fault-сценарии проводить на собственных тесто
 
 ## Decision Log
 
+- 2 ноября, получение B3 review: через тот же ARGON controller подтверждены
+  Aiton/обычный «Чат»/Argon/Высокий, переключения не требовались. Raw41896bytes,
+  SHA35c4e7ce…; payload и7source hashes exact. F1–F6/S1 разобраны как требования
+  нового механизма, не текущая production acceptance. Приняты physical reset fence,
+  diagnostic/unclean barriers, persistent startup/baseline gates и window latch;
+  новый aborted-before-delivery status автоматически не принят. Дополнительно
+  уточнены archive snapshot после death и явное new-session подтверждение control
+  после reconnect старого клиента. Следующий source срез — B3a; второго review нет.
 - 2 ноября, installed B1/B2: из-за недоступного чтения B3 review выполнена
   независимая приёмка уже готовой обычной базы. Штатный новый stop/update/enable
   и same-descriptor stop/resume завершены; B3 reset не имитировался. Пакет2fb5aebe
@@ -215,6 +224,12 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+Получение review2ноября: read-back raw bytes/SHA и исходных request/bundle/manifest
+PASS,7current source hashes совпали с reviewed snapshot. Все5ответов/финальная
+секция получены; typo hash owner-maintenance.js в raw отмечен без исправления.
+Изменены review records/контракт/continuation docs; новых runtime/tests/AE/install0.
+Fresh configured core_status всё ещё owner_unavailable; требуется restart Codex.
 
 Последний checkpoint2ноября: installed2fb5aebe, owner19892/boot3c61188f…,
 один3457/peer connected, lease released/idle, pending/UNKNOWN/fault0.

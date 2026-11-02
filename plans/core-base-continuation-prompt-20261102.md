@@ -6,11 +6,12 @@
 B1/B2 source завершены (`264522c`/`2d08c71`), package2fb5aebe штатно установлен.
 Первый следующий шаг после restart Codex — configured status/read этого пакета,
 не повторная реализация/установка B1. B3 пока только контракт; один plan review
-отправлен в Argon, чтение blocked/Debugger unattached. Полные settled IDs, fresh
+Argon получен, verdict revise и шесть замечаний локально разобраны, контракт
+уточнён. Браузерный blocker снят, новых sends/review нет. Полные settled IDs, fresh
 границы evidence и действия — в
 [checkpoint2ноября](core-base-installed-checkpoint-20261102.md).
-Не создавать новый чат автоматически. После получения исходного ответа продолжить
-локальный разбор и B3, без дополнительного review или replay прежней отправки.
+Не создавать новый чат автоматически. Продолжить B3a по уточнённому контракту и
+decisions/triage.json, без дополнительного review или replay прежней отправки.
 
 ## Исходная постановка
 

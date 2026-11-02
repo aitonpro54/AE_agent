@@ -1,0 +1,527 @@
+Метаданные ревью и артефактов
+
+review_id: 20261102-b3-plan-01   
+bundle.md
+
+stage_id: core-base-start-over   
+bundle.md
+
+type: plan   
+bundle.md
+
+base_commit: ad12e125e01b2be89ec7298b32c69a366cc390d2   
+bundle.md
+
+plan_sha256: d8a621daa6fe4582ad3795d67d8ae7dc5d4baeaa74122987537d34876deab5ab
+
+request_sha256: 8777f3b5ca9e8ab2a4ce99e832fe405b600362959465aee281081de248897544
+
+bundle_sha256: 2efcca78a49fc365572e7a549ff6af78686f585fab47945ce7264fef63378530
+
+manifest_sha256: 00d24ff8585a4b2aeb6e0d1396f24b0892ecef01935df4866018ced2ffb86822
+
+Статус полномочий: Данное ревью не выдаёт runtime authority и не является поводом для повторного ревью после внесения локальных правок.   
+bundle.md
+
+Перечень прочитанного и пропущенного
+
+Прочитано (из bundle.md):
+
+Описание цели, текущего состояния, кандидата, вопросов и точного контракта B3 («B3: прекращение прежней работы и новый сеанс»).   
+bundle.md
+
+core4/runtime/attachment-owner.js (SHA-256: 4ee78b14a71633e93eaa742fdbdaa85d07a9e7e2938006cfd9a642e8bd69fba1), строки 9–33, 101–145.   
+bundle.md
+
+core4/runtime/stdio-entry.js (SHA-256: e2cd0c2bbf6c0bb772f5563ad694470b33f0370e9d155f41b9d62015233f9127), строки 174–230, 276–310.   
+bundle.md
+
+core4/runtime/owner-maintenance.js (SHA-256: 0b370cbec8130236d03dd4c3ae2f6d28f9e5b1f3f487c2e340452d0b011168793), строки 97–129.   
+bundle.md
+
+core4/runtime/owner-lifecycle.js (SHA-256: 29f525aefc8768ef3cc37a87caa0e802afa5da1d31fe2592cef1f613f5da8746), строки 469–488.   
+bundle.md
+
+core4/integrations/cep/http-peer.js (SHA-256: 067e4c789e847940ef5760fd7d5240f8648f011cc81a9cb39a0e8ed34e8b3d16), строки 25–36, 87–110, 135–175.   
+bundle.md
+
+core4/core/broker.js (SHA-256: 432f7438b6ccd53e4f9b71cc4cc4624fa86f2cbae89528e7c29bf8cc00857352), строки 390–402.   
+bundle.md
+
+core4/cep/js/poll-dispatcher.js (SHA-256: 741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006), строки 10–44.   
+bundle.md
+
+Пропущено / не передано (intentional bounds):
+
+Строки вне указанных диапазонов в перечисленных 7 файлах (включая lines 1–8, 34–100 в attachment-owner.js; lines 1–173, 231–275 в stdio-entry.js; lines 1–96 в owner-maintenance.js; lines 1–468 в owner-lifecycle.js; lines 1–24, 37–86, 111–134 в http-peer.js; lines 1–389 в broker.js; lines 1–9 в poll-dispatcher.js).   
+bundle.md
+
+Реализация receiver store (store.begin, store.unknown, store.get), broker.ledger, broker.worker, client-ipc.js, client-entry.js, controller-lease и native process probe (observeOwnerProcess, classifyOwnerProcess).   
+bundle.md
+
+Production-код B3 и live/installed evidence для B3 (пока не существуют и относятся к будущей приёмке B3a–B3c).   
+bundle.md
+
+Verdict: revise
+
+Архитектурное направление (durable reset intent → freeze/maintenance stop → проверка барьеров прекращения исполнения → полный архив broker/ и receiver/ вместе с маркерами в историю транзакций → новый подписанный sessionId и чистые stores → обязательная свежая project-inspection до допуска мутаций) выбрано верно и согласуется с текущими инвариантами owner-lifecycle.js и owner-maintenance.js. Однако в плане есть ряд конкретных краевых уязвимостей на стыке http-peer.js, owner-lifecycle.js и poll-dispatcher.js, которые необходимо зафиксировать в контракте и учесть локально при реализации B3a/B3b без повторного ревью.   
+bundle.md
+Ещё 1
+
+Ответы на пять вопросов запроса
+1. Достаточность пути archive/new-session, конкретные barrier proofs для queued-unsent и delivered/UNKNOWN, поздний /poll и /complete callback
+
+Путь archive + new-session достаточен только при разделении барьеров для Node-очереди и физического канала CEP/AE и закрытии гонки доставки в http-peer.js:   
+bundle.md
+
+Гонка позднего /poll при queued-unsent vs submitted-undelivered:
+
+В stdio-entry.js:188-189 createOwnerMaintenance получает freeze: attachmentOwner.freeze. Вызов freeze() в attachment-owner.js:143 устанавливает только frozen = true для новых внешних IPC-запросов (admitted() на строке 33), но не блокирует admissionGuard / deliveryGuard в http-peer.js:30, 147 и не сбрасывает уже созданный pending с pending.delivered === false (http-peer.js:29, 34, 150).   
+bundle.md
+Ещё 1
+
+Если команда уже вызвала submit() (http-peer.js:142-150), она записала store.begin(command, binding) (строка 149) и ждёт в pending с delivered: false. Если после записи reset intent в момент drain() придёт поздний /poll от панели, deliver() (http-peer.js:31-36) отдаст фрейм в CEP после начала сброса.   
+bundle.md
+Ещё 1
+
+Кроме того, при disconnect() (http-peer.js:28) или close() (http-peer.js:173) любая команда в pending (даже с pending.delivered === false, то есть ни разу не забранная через /poll) переводится в store.unknown(pending.command.commandId). [Гипотеза: в store.begin и store.unknown на диске не сохраняется отдельный бит deliveredToPoll, так как в http-peer.js:34 pending.delivered = true меняет только поле в памяти].   
+bundle.md
+
+Требуемые конкретные barrier proofs:
+
+Для queued-unsent (в broker до http-peer.submit): синхронное закрытие физического admissionGuard/deliveryGuard в момент фиксации reset intent (до drain()), отмена выдачи в deliver() при pending && !pending.delivered, завершение drain() и доказательство смерти прежнего Node owner (gone(scope) в owner-maintenance.js:129 по pid + birthTicks) плюс stopped.json (если owner закрылся штатно). Если в receiver/ нет записей в состоянии ongoing или unknown (все команды либо не дошли до store.begin, либо имеют state === 'completed'), перезапуск AE не требуется.   
+bundle.md
+Ещё 1
+
+Для delivered / UNKNOWN (или ongoing в receiver/, либо когда прежний owner работал в diagnostic mode с externalLegacyCoverage: 'unobserved', stdio-entry.js:222):
+
+Либо наличие в receiver/ верифицированного terminalDisposition (http-peer.js:94-96), доказывающего, что callback evalScript уже вернул управление из AE;   
+bundle.md
+
+Либо (во всех остальных случаях ongoing/unknown, включая diagnostic mode, где список прежних in-flight команд в памяти не наблюдался) — доказательство прекращения всех процессов After Effects (pid + birthTicks), существовавших на момент фиксации reset intent (и записанных в маркерах прежнего сеанса).   
+bundle.md
+
+Поздний /complete callback:
+
+В poll-dispatcher.js:36-37 callback csInterface.evalScript держит record в замыкании и при завершении вызывает save(record) и post(record) (options.complete).   
+bundle.md
+
+Если поздний /complete приходит в новый сеанс: новый http-peer обязан проверять sessionId (в составе аутентифицированного канала/pins) и работать с чистым receiver/ store. Запрос со старым commandId/sessionId получит отказ (completion_correlation на http-peer.js:98 или session_mismatch), не промоутится (unknown_no_promotion, строка 100) и не удалит старый latch в poll-dispatcher.js:18, так как reply.ack не вернётся.   
+bundle.md
+Ещё 1
+
+2. Частичная разблокировка при crash между stop, archive и publish: forward-only схема и fault cases
+
+Где возможна частичная разблокировка в текущем коде:
+
+Освобождение startup-gate при нечистом закрытии (owner-lifecycle.js:474-485): В finishClose() при наличии UNKNOWN проверка settled(snap) (строка 477) выбрасывает исключение, поэтому clean остаётся false, старые published и brokerOwner/brokerGate/receiverOwner удерживаются на диске, но releaseGate() (строка 484) всё равно вызывается. В режиме mode === 'diagnostic' (owner-lifecycle.js:476) clean вообще инициализируется в true (let snap, clean = mode === 'diagnostic'), что архивирует маркер diagnostic при закрытии.   
+bundle.md
+Ещё 1
+
+Частичный перенос файлов в archive: Если Finisher начнёт перемещать (rename) broker/, receiver/ и маркеры (brokerOwner, brokerGate, receiverOwner, published) в архив до того, как запишет собственный нестираемый startup-fence сброса, и упадёт после перемещения broker/ и receiver/, то следующий обычный запуск Node owner (stdio-entry.js) может увидеть отсутствие грязных stores/маркеров и ошибочно стартовать как чистый active owner без завершения публикации нового sessionId и без флага обязательной baseline-инспекции.   
+bundle.md
+
+Падение owner между reset-intent и stopped.json: В owner-maintenance.js:112-114 stopped.json пишется только в конце drain(). Если прежний owner упал (SIGKILL/crash) после записи reset-intent, но до записи stopped.json, ожидание stopped.json навсегда заблокирует Finisher.   
+bundle.md
+Ещё 1
+
+Минимальная forward-only схема (5 атомарных фаз на диске):
+Все переходы выполняются идемпотентно по одному resetId под эксклюзивным файловым допуском инсталляции:   
+bundle.md
+
+INTENT_RECORDED (reset-intent.json + startup-gate с phase: 'resetting', resetId):
+
+Содержит resetId (UUID), installationId, machineId, packageHash, descriptorHash, previousOwnerScope (bootId, pid, birthTicks), список наблюдаемых AE процессов observedAeProcesses: [{ pid, birthTicks }], флаг requiresAeExit: boolean и криптографический манифест исходных объектов sources: [{ name, relPath, sha256OrTreeDigest, present: true }].   
+bundle.md
+
+Пока существует незавершённый reset-intent.json, любой обычный старт owner-lifecycle.js обязан быть заблокирован (fail-closed в состояние reset_in_progress), даже если часть файлов уже перемещена в архив.   
+bundle.md
+
+BARRIER_VERIFIED (reset-barrier.json):
+
+Проверяет gone(previousOwnerScope) (owner-maintenance.js:129) и свободный IPC endpoint (stdio-entry.js:180). stopped.json сохраняется в архив, если успел записаться, но его отсутствие при доказанной смерти pid + birthTicks не блокирует переход.   
+bundle.md
+Ещё 1
+
+Если requiresAeExit === true, проверяет, что все записи из observedAeProcesses классифицированы как absent или pid-reused. Если хотя бы один AE жив — Finisher оставляет фазу закрытой и возвращает детерминированный статус awaiting_ae_exit с PID процесса.   
+bundle.md
+Ещё 1
+
+ARCHIVING → ARCHIVED (archive/<resetId>/... + reset-archive.json):
+
+Для каждого элемента из intent.sources выполняется идемпотентный шаг:
+
+если источник на месте и архивная копия отсутствует → верифицировать дайджест и выполнить fs.renameSync(src, dst);   
+bundle.md
+
+если источник уже отсутствует, а dst в archive/<resetId>/ присутствует и его дайджест совпадает с intent.sources → считать шаг уже выполненным при прошлой попытке того же resetId;   
+bundle.md
+
+при любом несовпадении дайджеста или появлении нового неатрибутированного файла → fail-closed (reset_archive_integrity_fault).   
+bundle.md
+
+В archive/<resetId>/reset-manifest.json записывается запечатанный HMAC-манифест с явной пометкой disposition: 'session_abandoned_unknown_preserved' и точным списком всех commandId/taskId в статусе unknown (без изменения байтов самих журналов broker/ и receiver/).   
+bundle.md
+
+SESSION_PUBLISHED (session-state.json):
+
+Создаются чистые директории/журналы broker/ и receiver/.   
+bundle.md
+
+Атомарно публикуется запечатанный session-state.json с новым sessionId, previousResetId: resetId, continuity: false, baselineInspectionCompleted: false.   
+bundle.md
+
+READY (снятие reset-intent.json / перевод в archive/<resetId>/completed.json и освобождение startup-gate):
+
+Только после успешного fsync session-state.json снимается блокирующий startup-gate сброса и стартует новый owner.   
+bundle.md
+
+Таблица адресных fault cases:
+
+Fault Case	Момент сбоя	Поведение при повторе continue(resetId) или рестарте
+FC-1	Crash после записи reset-intent.json, до stopped.json прежнего owner	
+
+Finisher проверяет gone(previousOwnerScope) по pid + birthTicks; при смерти процесса переходит к проверке AE-барьера без ожидания stopped.json. 
+bundle.md
+
+
+FC-2	AE открыт с UNKNOWN, пользователь ещё не закрыл AE; Finisher перезапущен	
+
+reset-intent.json удерживает admission закрытым; повторный вызов видит живой pid + birthTicks из observedAeProcesses и снова возвращает awaiting_ae_exit. 
+bundle.md
+
+
+FC-3	Crash после rename broker/, но до rename receiver/ и маркеров	
+
+Обычный boot заблокирован наличием reset-intent.json; Finisher сверяет уже перемещённый archive/<resetId>/broker по дайджесту из intent и допереносит receiver/ и маркеры. 
+bundle.md
+
+
+FC-4	Crash после переноса всех файлов в архив, до записи session-state.json	
+
+Исключена ложная «чистая» разблокировка за счёт активного reset-intent.json; Finisher завершает генерацию session-state.json и только затем открывает gate. 
+bundle.md
+
+
+FC-5	Подмена байтов в archive/<resetId>/ или reset-intent.json между попытками	
+
+Несовпадение HMAC или SHA-256 дайджеста с reset-intent.json переводит сброс в терминальный отказ reset_integrity_fault без удаления улик. 
+bundle.md
+
+3. Отзыв старых clients/proposals/grants и browser latch без подмены UNKNOWN и без ложной project continuity
+
+Старые IPC-клиенты, controller lease grants и ссылки (refs):
+
+При завершении прежнего owner (stdio-entry.js:186) вызывается attachmentOwner.close() (attachment-owner.js:136-142), который вызывает onDetach(session) для всех подключённых сессий, и закрывается IPC-сервер.   
+bundle.md
+
+Новый owner при старте создаёт новый экземпляр createAttachmentOwner (attachment-owner.js:16-20) с новым bootId (lease.status().bootId, строка 143) и пустыми картами refs = { evidence, build, proposal, dryrun, task } (строка 20).   
+bundle.md
+
+Любой тонкий клиент со старым grant или ссылкой (proposalRef, evidenceRef, buildRef, dryrunRef, taskId) от прежнего сеанса получит отказ по bootId/lease token (owner_lease_token / controller_lease_identity, строки 11–12) или отсутствие ссылки в текущем сеансе.   
+bundle.md
+
+Сохранение видимости архивных UNKNOWN без подмены статуса:
+
+В archive/<resetId>/ журналы broker/ и receiver/ сохраняются побайтово: записи state: 'unknown' остаются unknown.   
+bundle.md
+
+В core_status и core_diagnostics (stdio-entry.js:190-192, 220-222) нового сеанса добавляется сводка resetHistory: { lastResetId, sessionId, archivedUnknownCount, archivedUnknownCommandIds, continuity: false }, чтобы наблюдатели видели факт сброса и список прежних неизвестных исходов, не путая чистый текущий журнал с успешным завершением старых задач.   
+bundle.md
+
+Отзыв и изоляция browser latch в CEP (poll-dispatcher.js):
+
+Сейчас в poll-dispatcher.js:12 ключ localStorage имеет вид var key = 'aeagentcore4-physical-' + options.installationId;.   
+bundle.md
+
+В B3 ключ диспетчера должен формироваться как 'aeagentcore4-physical-' + options.installationId + '-' + options.sessionId, где options.sessionId принимается панелью только из MAC-верифицированного handshake с привязкой к installationId и packageHash.   
+bundle.md
+
+Старый ключ (включая legacy-ключ 'aeagentcore4-physical-' + options.installationId и ключи прежних sessionId) никогда не удаляется и не очищается при сбросе.   
+bundle.md
+
+Критическая защита внутри одного процесса CEP/AE (при idle reset без перезапуска AE): если в текущем экземпляре window панели прежний диспетчер когда-либо переходил в active = true (poll-dispatcher.js:13, 30) и не получил подтверждённый reply.ack (строка 17), панель в этом же window не имеет права переключаться на новый sessionId без перезапуска AE (бросает physical_latch_present_in_window).   
+bundle.md
+
+Запрет выдачи нового sessionId за project continuity / AE authority:
+
+До тех пор, пока в рамках нового sessionId не выполнен успешный вызов facade.inspect (project-inspection, stdio-entry.js:276-291, который сам возвращает authority: false на строке 290), attachmentOwner / facade.build (stdio-entry.js:292) обязан блокировать любые вызовы build / мутаций с кодом отказа (например, baseline_inspection_required).   
+bundle.md
+
+4. Внешние и shared resource fences, которые нельзя архивировать вместе с сеансом
+
+Следующие барьеры и ресурсы выходят за рамки одного сеанса; Finisher обязан либо сохранять их ограничение для новой работы, либо давать явный отказ (fail-closed):   
+bundle.md
+
+Категория ресурса / fence	Почему нельзя архивировать со старым сеансом	Действие Finisher / Нового сеанса
+Живой процесс AE (pid + birthTicks) при ongoing/unknown или после diagnostic boot (stdio-entry.js:222)	
+
+В однопоточном движке AE может всё ещё исполняться старый evalScript (poll-dispatcher.js:36), способный мутировать проект во время новой работы. 
+bundle.md
+
+	
+
+Явный отказ перехода к ARCHIVE (awaiting_ae_exit): удерживать admission закрытым, пока пользователь не сохранит проект и не закроет указанный PID AE. 
+bundle.md
+
+
+Живой прежний Node owner (pid + birthTicks) или занятый IPC/HTTP порт (owner-maintenance.js:129, http-peer.js:166)	
+
+Два активных писателя повредят журналы и устроят гонку на /poll. 
+bundle.md
+
+	
+
+Явный отказ (maintenance_process_not_dead / endpoint_busy): ждать завершения или требовать остановки процесса. 
+bundle.md
+
+
+Неатрибутированные, повреждённые или чужие маркеры (owner-lifecycle.js:475-484, owner-maintenance.js:123)	
+
+Файл с невалидным HMAC, чужим installationId/machineId/packageHash или повреждённый журнал (broker.ledger.corrupt, physicalState.storeFault, stdio-entry.js:300) не может быть безопасно скрыт в архив по имени файла. 
+bundle.md
+
+	
+
+Терминальный отказ сброса (reset_refused_unattributed_or_corrupt_state): оставить diagnostic/fenced режим без перемещения файлов. 
+bundle.md
+
+
+Состояние открытого проекта AEP и внешних ассетов на диске (http-peer.js:107-110)	
+
+Сброс сеанса не откатывает изменения в памяти AE или в файле .aep, сделанные прежней командой mutate. 
+bundle.md
+
+	
+
+Сохранение ограничения в новом сеансе: continuity: false, инвалидация всех прежних evidenceRef/compId/receipts, запрет build/мутаций до новой project-inspection. 
+bundle.md
+
+
+Инсталляционные секреты и привязки (installationId, machineId, packageHash, controlToken, descriptor)	
+
+Это корневая идентичность установки (stdio-entry.js:193-194), а не состояние сеанса. 
+bundle.md
+
+	
+
+Сохранять неизменными; при изменении packageHash или descriptor относительно reset-intent.json — отказ продолжения (reset_binding_mismatch). 
+bundle.md
+
+5. Сравнение с меньшим срезом / append-only abandonment markers и конечная минимальная матрица приёмки
+
+Сравнение с append-only abandonment markers в прежних журналах:
+
+В broker.js:395-398 reset({ taskId }) уже дописывает { type: 'task', taskId, epoch: previous.epoch + 1, reset: true } только для queued-unsent.   
+bundle.md
+
+Попытка расширить этот подход до append-only маркера session_abandoned внутри тех же активных файлов broker/ и receiver/ в текущей композиции опаснее и сложнее, чем перенос директорий в архив:
+
+В stdio-entry.js:299 (broker.ledger.unresolved().length || physicalState.storeClosed || physicalState.unknown), в owner-lifecycle.js:477 (settled(snap); assertHistory(snap)) и в http-peer.js:90-100 инварианты проверяют весь активный store.   
+bundle.md
+
+Фильтрация «старых забытых UNKNOWN» от «новых активных UNKNOWN» внутри одного живого журнала потребовала бы менять логику unresolved(), settled(), reconcile() и /complete, создавая риск случайно проигнорировать настоящий текущий UNKNOWN.   
+bundle.md
+
+Архивация broker/ и receiver/ целиком в archive/<resetId>/ сохраняет код чтения активных журналов и проверку settled(snap) в owner-lifecycle.js без ослабления инвариантов, а старые байты UNKNOWN остаются в архиве неизменными.   
+bundle.md
+
+Есть ли меньший безопасный срез внутри выбранной архитектуры?
+
+Да (упрощение топологии Finisher): вместо двух разных реализаций координатора сброса (внутри процесса owner и во внешнем helper) логику фаз BARRIER_VERIFIED → ARCHIVED → SESSION_PUBLISHED → READY следует оформить как единый идемпотентный модуль в core4/runtime/ (срез B3a), который вызывается штатным operator helper / CLI (и при необходимости запускается после maintenance.done в stdio-entry.js:207) на одном и том же reset-intent.json.   
+bundle.md
+
+Конечная минимальная матрица приёмки (B3a / B3b / B3c):
+
+Уровень	ID теста	Сценарий	Проверяемый инвариант (Pass Criteria)
+Component (B3a)	C-1	Очередь queued-unsent + submitted-undelivered при старте сброса	
+
+admissionGuard закрывается синхронно; поздний /poll получает null; AE restart не требуется, если команда не доставлялась в /poll. 
+bundle.md
+
+
+Component (B3a)	C-2	Наличие ongoing/unknown в receiver/ или вход из diagnostic mode	
+
+requiresAeExit === true; пока тестовое наблюдение pid + birthTicks AE живо, переход в ARCHIVED заблокирован (awaiting_ae_exit); PID без birthTicks отвергается. 
+bundle.md
+
+
+Component (B3a)	C-3	Инъекция сбоя (fault injection) после каждого шага: INTENT, BARRIER, частичный rename (broker перенесён, receiver нет), ARCHIVED, PUBLISHED	
+
+В каждом промежуточном состоянии обычный старт owner закрыт (reset_in_progress); повтор continue(resetId) завершает тот же сброс без дублирования; архив содержит точные UNKNOWN. 
+bundle.md
+
+
+Component (B3a)	C-4	Чужой/повреждённый маркер, изменённый архив или изменённый reset-intent	
+
+Немедленный fail-closed отказ без архивации по имени файла и без очистки блокировок. 
+bundle.md
+
+
+Integration (B3b)	I-1	Отзыв старых clients, lease grants, proposalRef/evidenceRef/taskId и поздний /complete	
+
+Старый клиент получает отказ по bootId/lease; поздний /complete со старым commandId/sessionId отвергается без промоушена UNKNOWN. 
+bundle.md
+
+
+Integration (B3b)	I-2	Изоляция browser latch в poll-dispatcher.js и защита baseline inspection	
+
+Старый latch остаётся в storage под старым ключом; новый диспетчер работает под новым подписанным sessionId; вызов build до новой project-inspection отвергается. 
+bundle.md
+
+
+Installed / Live (B3c)	L-1	Реальный сброс из панели/Core на защищённой копии тестового AEP	
+
+Сохранение/защита пользовательского AEP; штатный package/install; выполнение «Начать заново»; успешная свежая project-inspection в новом сеансе без повтора прежних транзакций. 
+bundle.md
+
+Структурированные Findings (разделены по категориям)
+А. Дефекты плана и контракта (требуют локального уточнения при реализации)
+
+ID: B3-F1
+
+Приоритет: P0
+
+Категория: Дефект плана/контракта
+
+Сценарий: При вызове maintenance.request() вызывается freeze: attachmentOwner.freeze (stdio-entry.js:189, owner-maintenance.js:120), который блокирует только новые IPC-запросы в attachment-owner.js:33, 143. Если в http-peer.js:149-150 уже находится команда в pending с pending.delivered === false (записана в store.begin, но ещё не забиралась панелью), поздний /poll во время drain() пройдёт через deliver() (http-peer.js:31-36) и отправит команду в AE уже после нажатия «Начать заново». А если она отменится по close() (http-peer.js:28, 173), disconnect() запишет store.unknown(), из-за чего неотправленная команда станет неотличима от доставленной в AE.   
+bundle.md
+Ещё 2
+
+Локация: core4/integrations/cep/http-peer.js:28-36, 147-150, 173; core4/runtime/stdio-entry.js:188-189. [Гипотеза: store.begin не сохраняет отдельный признак фактической выдачи в /poll].   
+bundle.md
+Ещё 1
+
+Уверенность: Высокая.
+
+Минимальное исправление и локальная проверка: При фиксации reset intent синхронно закрывать физический admission в http-peer и немедленно отменять pending, если pending.delivered === false, с записью в receiver store статуса aborted_before_delivery (или явного маркера недоставки), чтобы не требовать ложного перезапуска AE; добавить unit-тест C-1 с поздним /poll после freeze().
+
+ID: B3-F2
+
+Приоритет: P0
+
+Категория: Дефект плана/контракта
+
+Сценарий: Если прежний owner после UNKNOWN уже перезапускался и сейчас работает в ownerLifecycle.mode === 'diagnostic' (stdio-entry.js:211-227), он не открывал Broker и receiver store и имеет externalLegacyCoverage: 'unobserved' (строка 222). Кроме того, при закрытии diagnostic owner в owner-lifecycle.js:476 clean равен true (let snap, clean = mode === 'diagnostic'). Если пользователь запускает «Начать заново» из diagnostic mode, текущий процесс owner не знает, какой процесс AE исполнял команду до падения прежнего active owner.   
+bundle.md
+Ещё 2
+
+Локация: core4/runtime/stdio-entry.js:211-227; core4/runtime/owner-lifecycle.js:476-483.   
+bundle.md
+
+Уверенность: Высокая.
+
+Минимальное исправление и локальная проверка: Зафиксировать в B3a, что при наличии неразрешённых записей в receiver//broker/ на диске или при старте сброса из diagnostic mode (externalLegacyCoverage: 'unobserved') Finisher обязан считать физическую работу неизвестной (requiresAeExit = true) и требовать завершения всех процессов AE (pid + birthTicks), наблюдаемых на момент создания reset-intent (а также записанных в прежних маркерах, если они есть). Проверить тестом C-2.   
+bundle.md
+
+ID: B3-F3
+
+Приоритет: P1
+
+Категория: Дефект плана/контракта
+
+Сценарий: При падении Finisher в середине фазы archive (после перемещения broker/, receiver/ и маркеров brokerOwner/receiverOwner/published, но до записи session-state.json) новый процесс Node owner может быть запущен внешним клиентом и увидеть «чистую» директорию без удерживаемых fences, если reset-intent.json не проверяется как блокирующий gate при старте owner-lifecycle.js.   
+bundle.md
+
+Локация: core4/runtime/owner-lifecycle.js:469-488. [Гипотеза: стартовая проверка owner-lifecycle.js в строках 1–468 ещё не знает о типе маркера reset-intent].   
+bundle.md
+Ещё 1
+
+Уверенность: Высокая.
+
+Минимальное исправление и локальная проверка: Включить reset-intent.json (или startup-gate с phase: 'resetting') в список обязательных блокирующих маркеров старта owner-lifecycle.js, которые запрещают вход в active mode до полной публикации session-state.json и финализации resetId. Проверить fault-тестами FC-3 и FC-4 (C-3).   
+bundle.md
+
+ID: B3-F4
+
+Приоритет: P1
+
+Категория: Дефект плана/контракта
+
+Сценарий: При падении прежнего Node owner между записью reset-intent / maintenance-stop (owner-maintenance.js:123) и записью stopped.json (owner-maintenance.js:112) файл stopped.json никогда не появится. Если Finisher ждёт только stopped.json, сброс зависнет навсегда, нарушая требование «Потеря helper/owner должна оставлять восстановимый закрытый сброс».   
+bundle.md
+Ещё 1
+
+Локация: core4/runtime/owner-maintenance.js:109-115, 129.   
+bundle.md
+
+Уверенность: Высокая.
+
+Минимальное исправление и локальная проверка: Разрешить Finisher переходить через барьер остановки Node owner по доказательству gone(previousOwnerScope) (pid + birthTicks в статусе absent или pid-reused, строка 129) + захвату эксклюзивного lifecycle-допуска, даже если stopped.json отсутствует (отмечая ownerStopReceipt: 'process_gone_unclean' в манифесте архива). Проверить в FC-1 (C-3).   
+bundle.md
+
+ID: B3-F5
+
+Приоритет: P1
+
+Категория: Дефект плана/контракта
+
+Сценарий: В poll-dispatcher.js:12-13 active хранится в памяти замыкания, а key — в localStorage. Если в окне CEP панели без перезапуска AE создаётся новый инстанс диспетчера с новым sessionId, но в этом же window старый диспетчер находился в active === true без полученного результата (зависший evalScript), переключение ключа в localStorage обойдёт защиту в рамках живого окна CEP.   
+bundle.md
+Ещё 1
+
+Локация: core4/cep/js/poll-dispatcher.js:11-42.   
+bundle.md
+
+Уверенность: Высокая.
+
+Минимальное исправление и локальная проверка: Хранить модульный in-memory флаг windowUnresolvedLatch в Core4PollDispatcher (poll-dispatcher.js:43): если в текущем window любой dispatch() начался (line 30) и не дошёл до валидного JSON-ответа из evalScript (line 37), запрещать создание/использование диспетчера для нового sessionId до перезагрузки окна CEP (перезапуска AE). Проверить в I-2.   
+bundle.md
+
+ID: B3-F6
+
+Приоритет: P2
+
+Категория: Дефект плана/контракта
+
+Сценарий: В stdio-entry.js:276-292 facade.inspect возвращает наблюдение с authority: false (строка 290), а facade.build делегирует в broker.build(value) (строка 292). В представленных фрагментах нет явного вентиля на уровне owner/facade, который бы гарантированно блокировал вызов build в новом сеансе до первого успешного facade.inspect (project-inspection) именно этого sessionId.   
+bundle.md
+Ещё 1
+
+Локация: core4/runtime/stdio-entry.js:276-292; core4/runtime/attachment-owner.js:101-125. [Гипотеза: проверка evidenceRef внутри broker.build в непрочитанных строках broker.js:1-389 проверяет наличие evidenceRef, но может не знать о барьере после B3 reset].   
+bundle.md
+Ещё 1
+
+Уверенность: Средняя (из-за непрочитанных строк broker.js:1-389).
+
+Минимальное исправление и локальная проверка: Явно фиксировать в состоянии нового сеанса (session-state.json и в памяти stdio-entry.js) флаг baselineInspectionCompleted = false, переводить его в true только после успешного завершения facade.inspect (project-inspection) в текущем sessionId, и до этого момента отклонять facade.build с явным кодом ошибки. Проверить в I-2.   
+bundle.md
+
+Б. Упрощения (не являются дефектами безопасности)
+
+ID: B3-S1
+
+Приоритет: P3
+
+Категория: Упрощение
+
+Сценарий: Единая реализация Finisher в core4/runtime/ (вызываемая как из operator helper, так и при штатном сбросе через owner) вместо двух отдельных реализаций логики архивации.   
+bundle.md
+
+Локация: Контракт B3, раздел «Срезы и файлы» (B3a/B3b).   
+bundle.md
+
+Уверенность: Высокая.
+
+Минимальная локальная проверка: Покрытие одного модуля Finisher компонентным набором C-1..C-4 в B3a.   
+bundle.md
+
+В. Отсутствующее live-доказательство (предмет будущей приёмки B3c, не дефект ревью плана)
+
+ID: B3-E1
+
+Приоритет: Информационно (гейт закрытия B3c)
+
+Категория: Отсутствующее live-доказательство
+
+Сценарий: Production-код B3, установленный пакет и live-доказательство прохождения полного цикла «Начать заново» с реальным After Effects и CEP-панелью на момент ревью плана отсутствуют намеренно. Незакоммиченные B1 и B2 также должны завершить свои проверки до финальной сборки пакета в B3b/B3c.   
+bundle.md
+Ещё 1
+
+Локация: Раздел «Текущее состояние» и срез B3c в bundle.md.   
+bundle.md
+
+Уверенность: Высокая.
+
+Минимальная локальная проверка: Выполнение среза B3c (L-1) владельцем локально после прохождения B3a и B3b (с предварительным сохранением/копией тестового AEP).   
+bundle.md

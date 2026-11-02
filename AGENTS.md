@@ -18,9 +18,10 @@ read и auto reconnect после96с без Core проверены. После
 AE9472/пустой проект, peer connected, pending/UNKNOWN/fault0; history44events с
 точным prefix36, origins/adoption/ledger preserved. Configured клиент текущего
 чата ещё oldbe9afe99/owner_unavailable — требуется restart Codex и fresh configured
-status/read; install повторять не нужно. B3 только спроектирован: один Argon
-plan review отправлен, чтение ответа blocked/Debugger unattached, без повторной
-отправки. Актуальные IDs, действия и предел proof —
+status/read; install повторять не нужно. B3 только спроектирован: исходный Argon
+plan review получен2ноября21:19, verdict revise; шесть замечаний локально разобраны,
+контракт уточнён, повторных отправок нет. Debugger unattached остался историей
+предыдущего retrieval. Актуальные IDs, действия и предел proof —
 [checkpoint](plans/core-base-installed-checkpoint-20261102.md). История ниже
 сохраняет provenance; она не выдаёт authority новому AE или B3 reset.
 

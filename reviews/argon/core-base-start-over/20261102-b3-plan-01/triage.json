@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "reviewId": "20261102-b3-plan-01",
+  "reviewedBaseCommit": "ad12e125e01b2be89ec7298b32c69a366cc390d2",
+  "originalPlanSha256": "d8a621daa6fe4582ad3795d67d8ae7dc5d4baeaa74122987537d34876deab5ab",
+  "responseSha256": "35c4e7cecd75f92d9bdc6dd9cde07f453f682f92399f699e834c939bdb028ea3",
+  "responseBytes": 41896,
+  "responseBinding": "original receipt + string bindings; reviewer hash claims are not independent attestation",
+  "sourceSnapshot": [
+    {
+      "path": "core4/runtime/attachment-owner.js",
+      "reviewedHash": "4ee78b14a71633e93eaa742fdbdaa85d07a9e7e2938006cfd9a642e8bd69fba1",
+      "currentHash": "4ee78b14a71633e93eaa742fdbdaa85d07a9e7e2938006cfd9a642e8bd69fba1",
+      "matches": true
+    },
+    {
+      "path": "core4/runtime/stdio-entry.js",
+      "reviewedHash": "e2cd0c2bbf6c0bb772f5563ad694470b33f0370e9d155f41b9d62015233f9127",
+      "currentHash": "e2cd0c2bbf6c0bb772f5563ad694470b33f0370e9d155f41b9d62015233f9127",
+      "matches": true
+    },
+    {
+      "path": "core4/runtime/owner-maintenance.js",
+      "reviewedHash": "0b370cbec8130236d03dd4c3ae2f6d28f9e5b1f3f487c2e340452d0b01168793",
+      "currentHash": "0b370cbec8130236d03dd4c3ae2f6d28f9e5b1f3f487c2e340452d0b01168793",
+      "matches": true
+    },
+    {
+      "path": "core4/runtime/owner-lifecycle.js",
+      "reviewedHash": "29f525aefc8768ef3cc37a87caa0e802afa5da1d31fe2592cef1f613f5da8746",
+      "currentHash": "29f525aefc8768ef3cc37a87caa0e802afa5da1d31fe2592cef1f613f5da8746",
+      "matches": true
+    },
+    {
+      "path": "core4/integrations/cep/http-peer.js",
+      "reviewedHash": "067e4c789e847940ef5760fd7d5240f8648f011cc81a9cb39a0e8ed34e8b3d16",
+      "currentHash": "067e4c789e847940ef5760fd7d5240f8648f011cc81a9cb39a0e8ed34e8b3d16",
+      "matches": true
+    },
+    {
+      "path": "core4/core/broker.js",
+      "reviewedHash": "432f7438b6ccd53e4f9b71cc4cc4624fa86f2cbae89528e7c29bf8cc00857352",
+      "currentHash": "432f7438b6ccd53e4f9b71cc4cc4624fa86f2cbae89528e7c29bf8cc00857352",
+      "matches": true
+    },
+    {
+      "path": "core4/cep/js/poll-dispatcher.js",
+      "reviewedHash": "741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006",
+      "currentHash": "741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006",
+      "matches": true
+    }
+  ],
+  "updatedPlanSha256": "a73f618ca0771b2cbfa09efebc378b541f214a6559a24a97a54684d114db3716",
+  "findings": [
+    {
+      "id": "B3-F1",
+      "priority": "P0",
+      "disposition": "accepted-as-B3-design-requirement",
+      "productionDefectClaimed": false
+    },
+    {
+      "id": "B3-F2",
+      "priority": "P0",
+      "disposition": "accepted-as-B3-design-requirement",
+      "productionDefectClaimed": false
+    },
+    {
+      "id": "B3-F3",
+      "priority": "P1",
+      "disposition": "accepted-as-B3-design-requirement",
+      "productionDefectClaimed": false
+    },
+    {
+      "id": "B3-F4",
+      "priority": "P1",
+      "disposition": "accepted-as-B3-design-requirement",
+      "productionDefectClaimed": false
+    },
+    {
+      "id": "B3-F5",
+      "priority": "P1",
+      "disposition": "accepted-as-B3-design-requirement",
+      "productionDefectClaimed": false
+    },
+    {
+      "id": "B3-F6",
+      "priority": "P2",
+      "disposition": "accepted-as-B3-design-requirement",
+      "productionDefectClaimed": false
+    }
+  ],
+  "implementationExceptions": [
+    "No automatic aborted_before_delivery journal state; conservative AE exit accepted for submitted/unknown work",
+    "Do not alter ordinary maintenance drain behavior to implement B3 physical freeze",
+    "Seal final archive snapshot after writer death; validate append-only original prefix during drain",
+    "CEP reload alone is not physical execution termination proof"
+  ],
+  "simplifications": [
+    {
+      "id": "B3-S1",
+      "disposition": "accepted-single-private-finisher"
+    }
+  ],
+  "evidenceGaps": [
+    {
+      "id": "B3-E1",
+      "b1b2Status": "now committed/standard-installed verified",
+      "b3Status": "not implemented; future acceptance open"
+    }
+  ],
+  "verification": {
+    "responseHash": true,
+    "immutablePayloads": true,
+    "sourceHashes": true,
+    "liveActions": 0,
+    "newTests": 0,
+    "newSends": 0
+  },
+  "remainingBlocker": "configured MCP old client: restart Codex, then fresh configured status/inspection",
+  "additionalLocalFindings": [
+    {
+      "id": "B3-L1",
+      "summary": "A new owner boot does not revoke the ability of old thin clients to reconnect with unchanged installation credentials",
+      "disposition": "explicit current-session acknowledgement before post-reset control; future I-1"
+    }
+  ]
+}
