@@ -132,7 +132,9 @@ fault-сценарии проводить на собственных тесто
 - [x] B1 начат: [source brief и стоимость до реализации](../docs/core-base-b1-brief-20261101.md)
   готовы.4production/3test paths;24selected batches, без запуска tests.
   Следующий шаг — bounded проверка причин selection; затем frozen source slice.
-- [ ] B2: матрица обычных циклов и диагностика.
+- [ ] B2: завершить installed-часть матрицы обычных циклов и диагностики.
+- [x] B2 source: [фоновое ожидание и disconnect contract](../docs/core-base-b2-20261102.md)
+  реализованы; один selected batch69/69PASS, установленная проверка впереди.
 - [x] 2 ноября: требование B3 и новые разрешения отладки включены в план,
   AGENTS.md и обновлённый промпт продолжения; прежний промпт найден в чате
   `01a19bda-e7a1-7f91-836b-14e3ac611ba6`, turn `01a19c42-41ff-73f1-a836-2c108b01dfc6`.
@@ -141,6 +143,11 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- 2 ноября, B2: transport absence после50с продолжает ожидаться с паузой15с
+  перед новым ограниченным окном. Auth/pins/HTTP refusal/duplicate-peer бюджет
+  и latch/UNKNOWN gates не ослаблены. Existing disconnect facade сохраняет
+  физический peer; detach, controller release и owner stop — разные действия.
 
 - 2 ноября, B1: private exact Error → durable completion → operation context/contract/target
   сохраняет finite rejected code без выдачи evidence/grants. pending/UNKNOWN/fault
@@ -182,6 +189,13 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+B2,2ноября: node --check, один selected panel-reconnect batch69/69PASS и
+git diff --check. Проверены late Core, idle outage, unload и latch во время
+background wait, сохранены strict refusal/no-replay cases.
+[Evidence](../docs/evidence/core-base-b2-20261102.json). Это offline VM/TEMP HTTP;
+installedbe9afe99 не менялся. Затронутые deferred integration closures не
+объявляются текущими PASS; следующий инженерный шаг — B3 и installed матрица.
 
 B1,2ноября:24selected batches/473cases PASS, boundaries44PASS и git diff --check.
 Production owner → IPC → stdio в TEMP установке передаёт четыре finite read

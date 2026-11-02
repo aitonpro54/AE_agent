@@ -219,10 +219,28 @@ test('panel-reconnect idle transport loss uses a fresh channel and sequence with
   assert.notEqual(links[0].value.peerId, links[1].value.peerId); assert.deepEqual(requests.map(c => c.value.body.sequence), [1, 1]);
   assert.notEqual(requests[0].value.mac, requests[1].value.mac); assert.deepEqual(p.waits, [3000]); assert.equal(p.dispatches, 0); assert.equal(p.recovered, 2);
 });
-test('panel-reconnect initial missing Core has a finite transport retry budget', async () => {
-  const p = panel({ challenge() { throw new TypeError('Failed to fetch'); } }); await p.finish();
-  assert.equal(p.count('/challenge'), 17); assert.equal(p.count('/link'), 0); assert.equal(p.now, 50000);
-  assert.equal(p.elements.status.textContent, 'Остановлено: runtime_wait_expired'); assert.equal(p.elements.status.dataset.state, 'stopped');
+test('panel-reconnect missing Core enters slow background wait and connects after more than one initial window', async () => {
+  const p = panel({ challenge({ challenge, attempt, reply }) { if (attempt <= 20) throw new TypeError('Failed to fetch'); return reply(200, challenge); } });
+  for (let turn = 0; turn < 17; turn++) await p.tick();
+  await p.waitForTurn(); assert.equal(p.now, 50000); assert.equal(p.finished, false); assert.equal(p.count('/challenge'), 17);
+  assert.equal(p.elements.status.dataset.state, 'waiting'); assert.match(p.elements.detail.textContent, /15 с/);
+  await p.finish(); assert.equal(p.count('/challenge'), 21); assert.equal(p.count('/link'), 1); assert.equal(p.count('/poll'), 1);
+  assert.equal(p.now, 74000); assert.ok(p.waits.includes(15000)); assert.equal(p.nativeCalls, 0);
+});
+test('panel-reconnect runtime missing long after idle also reaches background recovery without a manual click', async () => {
+  let absent = false, attempts = 0;
+  const p = panel({ challenge({ challenge, reply }) { if (absent && ++attempts <= 18) throw new TypeError('Failed to fetch'); return reply(200, challenge); },
+    channel() { if (!absent) { absent = true; p.elapse(120000); throw new TypeError('Failed to fetch'); } throw new Error('fixture_stop_after_poll'); } });
+  await p.finish(); assert.equal(p.count('/link'), 2); assert.equal(p.count('/poll'), 2); assert.ok(p.waits.filter(ms => ms === 15000).length >= 2);
+  assert.equal(p.recovered, 2); assert.equal(p.dispatches, 0);
+});
+for (const latch of [false, true]) test('panel-reconnect background wait stops on ' + (latch ? 'a new physical latch' : 'unload'), async () => {
+  const p = panel({ challenge() { throw new TypeError('Failed to fetch'); } });
+  for (let turn = 0; turn < 17; turn++) await p.tick(); await p.waitForTurn();
+  const before = p.calls.length;
+  if (latch) { p.storage.setItem(latchKey, JSON.stringify({ frame: frame() })); await p.tick(); await p.finish(); assert.equal(p.elements.status.dataset.state, 'recovery'); assert.notEqual(p.storage.getItem(latchKey), null); }
+  else { p.unload(); await until(() => p.timers.length === 0); }
+  assert.equal(p.calls.length, before); assert.equal(p.nativeCalls, 0);
 });
 test('panel-reconnect aborts a hanging fetch and ignores its late response after a new generation', async () => {
   let release, oldSignal;

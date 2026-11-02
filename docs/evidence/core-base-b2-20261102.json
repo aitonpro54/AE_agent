@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "baseCommit": "264522c728da5b8a5a621426de270a86263291c4",
+  "scope": "B2 automatic wait for absent Core; strict failure/latch boundaries unchanged",
+  "releaseCertified": false,
+  "source": [
+    {
+      "path": "core4/cep/js/panel.js",
+      "sha256": "8ee7446ec1bf9a667c5e7d578dba0a0545453cb6d1ac1404eb6514f937e40e1d"
+    },
+    {
+      "path": "core4/test/panel-reconnect.test.js",
+      "sha256": "18eaeb1fb3fe39903acce58510813d19fef66a465f8c4eaa10fd66cf58816c90"
+    }
+  ],
+  "checks": [
+    {
+      "check": "panel-reconnect",
+      "evidenceKey": "882ef3915fa592e2f8f980fcd6b8f8b565a9659e26160d4aa84aaa64ae2566b6",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-reconnect",
+        "test/panel-reconnect.test.js"
+      ]
+    }
+  ],
+  "pass": 69,
+  "exitCode": 0,
+  "log": {
+    "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core-base-b2-selected-20261102.log",
+    "sha256": "0ea57b08dbb57474e5c5525f276586083e9f531e815cc77127caec401bfcd205"
+  },
+  "limitations": [
+    "offline signed-fetch VM plus TEMP loopback HTTP; installed CEP/AE not updated",
+    "affected unselected integration closures remain unverified",
+    "no B3 reset, release or portability proof"
+  ]
+}

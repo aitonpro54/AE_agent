@@ -43,13 +43,21 @@
   }
   async function waitRetry(budget, duplicate) {
     var remaining = budget.deadline - Date.now(); budget.reason = duplicate ? 'duplicate_peer_wait_expired' : 'runtime_wait_expired';
-    if (remaining <= 0) throw error(budget.reason);
-    show('waiting', duplicate ? 'Ожидание завершения прежнего подключения Core 4.0.0' : 'Ожидание Core 4.0.0');
-    detail.textContent = 'Повтор подключения каждые 3 с, до 50 с. Состояние команд и UNKNOWN не меняется.';
+    if (duplicate && remaining <= 0) throw error(budget.reason);
+    var background = !duplicate && (remaining <= 0 || budget.background === true);
+    if (!duplicate && latched()) throw error('physical_latch_present');
+    show('waiting', duplicate ? 'Ожидание завершения прежнего подключения Core 4.0.0' : background ? 'Core пока недоступен; подключение возобновится автоматически' : 'Ожидание Core 4.0.0');
+    detail.textContent = background ? 'Следующая попытка через 15 с. Оставьте панель открытой и запустите Core через MCP. Состояние команд и UNKNOWN не меняется.' : 'Повтор подключения каждые 3 с, до 50 с. Состояние команд и UNKNOWN не меняется.';
     var g = generation;
-    await new Promise(function (resolve, reject) { cancelWait = function () { reject(error('stale_channel')); }; retryTimer = setTimeout(resolve, Math.min(3000, remaining)); });
+    await new Promise(function (resolve, reject) { cancelWait = function () { reject(error('stale_channel')); }; retryTimer = setTimeout(resolve, background ? 15000 : Math.min(3000, remaining)); });
     retryTimer = null; cancelWait = null; current(g);
-    if (Date.now() >= budget.deadline || budget.attempts >= 17) throw error(budget.reason);
+    if (!duplicate && latched()) throw error('physical_latch_present');
+    if (background) { budget.deadline = Date.now() + 50000; budget.attempts = 0; budget.background = false; }
+    else if (Date.now() >= budget.deadline || budget.attempts >= 17) {
+      if (duplicate) throw error(budget.reason);
+      budget.background = true;
+      await waitRetry(budget, false);
+    }
   }
   async function link(budget) {
     while (true) {
@@ -82,7 +90,7 @@
         current(g); epoch = response.body.epoch; sequence = 0; show('connected', 'Подключено к Core 4.0.0');
         var dispatcher = api.createDispatcher({ installationId: cfg.installationId, assetKey: cfg.assetKey, assets: cfg.assets, pins: response.body.pins, storage: localStorage, csInterface: { evalScript: function (s, cb) { __adobe_cep__.evalScript(s, cb); } }, complete: (function (channel) { return function (p) { return authenticated('/complete', p, channel); }; }(g)) });
         await dispatcher.recover(); current(g); if (latched()) throw error('physical_latch_present'); if (response.body.laneClosed) throw error('receiver_lane_closed');
-        show('ready', 'Канал Core 4.0.0 готов к командам'); detail.textContent = 'Изменения текста требуют подтверждения в After Effects';
+        show('ready', 'Канал Core 4.0.0 готов к командам'); detail.textContent = 'Подключение готово. Допуск к изменению проекта выдаётся отдельно.';
         while (true) {
           if (latched()) throw error('physical_latch_present');
           var next;
@@ -102,7 +110,7 @@
             await dispatcher.dispatch(next.command); current(g); delivered = false;
             if (latched()) throw error('physical_latch_present');
             budget = { deadline: Date.now() + 50000, attempts: 0 };
-            show('ready', 'Канал Core 4.0.0 готов к командам'); detail.textContent = 'Изменения текста требуют подтверждения в After Effects';
+            show('ready', 'Канал Core 4.0.0 готов к командам'); detail.textContent = 'Подключение готово. Допуск к изменению проекта выдаётся отдельно.';
           }
         }
       }
