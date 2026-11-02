@@ -109,6 +109,14 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- 3 ноября, B3b2: private work-session и durable initial baseline, explicit current
+  sessionId для acquire/transfer приняты360fresh cases/18checks, boundaries51.
+  Базу снимает только one-shot proof точного успешного durable direct project
+  read; copied/foreign/Broker/manual/rejected/stale результаты отказываются.
+  Production composition пока legacy, новый session runtime ещё не packaged.
+  Далее B3b3 startup/observer/panel/packaging, затем installed reset и оставшиеся
+  задачи плана по прямому поручению пользователя «по окончанию… переходи».
+
 - 3 ноября, B3b1: synchronous physical reset fence и window-global Native callback
   guard с отдельными session storage keys приняты264fresh cases/10checks,
   boundaries50. Старый callback использует свой исходный key/channel; normal
@@ -197,12 +205,20 @@ fault-сценарии проводить на собственных тесто
   finite rejected read, follow-up read и auto reconnect после96.622с без Core
   проверены. [Матрица](../docs/core-base-validation-20261102.md),
   [checkpoint](core-base-installed-checkpoint-20261102.md).
-- [ ] Configured MCP новый package: текущий клиент oldbe9afe99, требуется
-  restart Codex. B3 implementation/installed reset, full release и portability открыты.
+- [x] Configured MCP package2fb5aebe после restart: status/read и natural idle
+  проверены; oldbe9afe99 — исторический blocker, не текущая задача.
+  B3 production/installed reset, full release и portability остаются открыты.
 - [x] L0 bounded research без реализации: дешёвый exact detector не доказан;
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- Work session — отдельный logical namespace, не AE epoch/grant. Legacy mode
+  явно ограничен установкой до первого сброса. Новые acquire/transfer требуют
+  точного sessionId, thin client не подставляет его автоматически. Initial
+  baseline хранится отдельным signed receipt и не переписывается при каждом
+  owner boot; текущие target/authority gates сохраняются. Старые credentials
+  разрешаются только существующей verified installation lineage как DATA.
 
 - Physical reset switch отделён от ordinary attachment freeze: принятая, но
   недоставленная команда больше не выдаётся по poll; уже доставленный callback
@@ -310,6 +326,12 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+B3b2,3ноября:18current checks/360fresh cases PASS, boundaries51/diff-check.
+[Evidence](../docs/evidence/core-base-b3b2-session-20261103.json). Новые25cases
+проверяют TEMP/HTTP и явно synthetic installation/lineage; остальные335cases
+проверяют затронутые existing component/integration closures. Actual package
+rotation новых session records и installed B3 ещё не проверены.
 
 B3b1,3ноября:10current checks/264fresh cases PASS, boundaries50/diff-check.
 [Evidence](../docs/evidence/core-base-b3b1-channel-20261103.json). Реальные TEMP

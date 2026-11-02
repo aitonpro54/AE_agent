@@ -5,6 +5,11 @@
 
 ## Дополнение 3 ноября
 
+B3b2 session ack/private successful project baseline source принят360fresh cases/
+18checks, boundaries51; [evidence](../docs/evidence/core-base-b3b2-session-20261103.json).
+Новая библиотека ещё не packaged/wired. Далее B3b3 startup/panel/observer; actual
+installed package2fb5aebe прежний, reset/install0.
+
 B3b1 physical switch/callback isolation source принят264fresh cases/10checks,
 boundaries50; [evidence](../docs/evidence/core-base-b3b1-channel-20261103.json).
 Далее B3b2 session ack/baseline; production composition и installed reset ещё нет.

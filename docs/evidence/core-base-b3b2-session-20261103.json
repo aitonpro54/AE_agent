@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-02T21:24:12.438Z",
+  "scope": "B3b2 explicit current work session acknowledgement, initial fresh project baseline and private durable successful-read provenance",
+  "selectedArtifactsOnly": true,
+  "releaseCertified": false,
+  "changed": [
+    "core4/runtime/work-session.js",
+    "core4/runtime/attachment-owner.js",
+    "core4/integrations/cep/http-peer.js",
+    "core4/test/work-session.test.js",
+    "core4/test/work-session-owner.test.js",
+    "core4/config/validation-map.json"
+  ],
+  "selectedChecks": [
+    {
+      "check": "work-session",
+      "evidenceKey": "60ce991099c300c83b01e66274f42f8002782593e47624e4d83f610fd2c9afad",
+      "cases": 17,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "work-session-owner",
+      "evidenceKey": "66078294ffeda2f12e3b09caee7cddce3301374ae6e03d4dbc520054080cc14c",
+      "cases": 8,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "owner-attachments",
+      "evidenceKey": "a2977f62b818619661990cb06c3eb10498949250d471e0ced89b1f0e51112e5e",
+      "cases": 29,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "owner-ipc-process",
+      "evidenceKey": "1e4934c29ab64d7248ebd76c01c5308f151c698e2ced67284fefe5de211a8909",
+      "cases": 2,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "controller-transfer",
+      "evidenceKey": "439f09330b50449332d89dd39e5b55b62012edd067be21e71075503f953210fc",
+      "cases": 1,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "owner-runtime",
+      "evidenceKey": "4fa1631031ab4eabbf2947f70b1f0ae5d3e602ed615aec1293c595c5433ae6c5",
+      "cases": 22,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "installable-runtime",
+      "evidenceKey": "bac2834c9f81b715a01f10a7f6d38b952ee0c16b4f54023f58b08090dd0c8c4e",
+      "cases": 41,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "native-read-recovery",
+      "evidenceKey": "82426130b9adc61e6adc1cd180d7e9b1bba36c212e2da53163fa49c6d5fb55ff",
+      "cases": 19,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "manual-runtime",
+      "evidenceKey": "97bb27655c6825345cb0992455f8df735d09163abf1ff73ece1afcb2d7b73bfc",
+      "cases": 59,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "validation-routing",
+      "evidenceKey": "3699245d16e67828d59979382e17d2c4e02c9ee098bdb220307a148762d41579",
+      "cases": 5,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "start-over-channel",
+      "evidenceKey": "b69a6f83bad8d97d5a91d78fc5253eaf9e5f95c16be8109e9e1a3404658939ac",
+      "cases": 10,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "start-over-inspection",
+      "evidenceKey": "9efef1695cc7f77f8e171556e284d2ddb4d905ca357753b535558cd0724997b4",
+      "cases": 19,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "stopped-certification",
+      "evidenceKey": "c0594e172da6ed5e747929c5943a414ea298c25fb4b5e5fbb26d4d18e4579190",
+      "cases": 30,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "maintenance-finish",
+      "evidenceKey": "b7d6a23e8874cf18485d6ab54264918e7891cdc6d60d8bd8f7598299f0b4bf55",
+      "cases": 32,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "owner-maintenance",
+      "evidenceKey": "747caecc229bea962c35eb0445fb646283f2078d933b22b062fce2bda7b08086",
+      "cases": 22,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "client-launcher",
+      "evidenceKey": "8813c1627ce0dd66e5e96e41af57e9b4a8173ca9ac7d7ccd4d091676afb71d86",
+      "cases": 21,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "recovery-inspection",
+      "evidenceKey": "4530783fa6e8b9c3ae3918893f1d92755ecdff3b4d90d26437b1886e75274531",
+      "cases": 11,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "client-entry",
+      "evidenceKey": "4aff855fb42478c0c4a6a382c06c36cb37b15ea9f8f56fde686fe39b54e48ce8",
+      "cases": 12,
+      "result": "PASS",
+      "mode": "fresh"
+    }
+  ],
+  "totalCases": 360,
+  "logHash": "1518d39f90cbdec0951fb4f535993130afe0d4337ec720d5f1da31d5a301c22f",
+  "boundaries": {
+    "checked": 51,
+    "model": "reviewed-local-code; conservative source guard; not OS sandbox",
+    "liveCalls": 0
+  },
+  "deferredCoverage": [
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "audit-repairs",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified"
+    }
+  ],
+  "installedUpdateCount": 0,
+  "resetCount": 0,
+  "decisions": [
+    "legacy pre-reset installation explicitly retains empty acquire compatibility; nonlegacy acquire and transfer require exact server-owned sessionId",
+    "effects/build paths remain blocked until successful direct project inspection; connection and fresh project inspection stay available",
+    "one-shot WeakMap proof is emitted only after durable authenticated direct project completion; foreign peer, copies, mutation, Broker reads, manual profiles and rejections cannot clear baseline",
+    "signed session master remains immutable, baseline receipt is separate and initial-only; historical credentials are resolved as verified lineage DATA, never old executable authority"
+  ],
+  "limitations": [
+    "work-session component uses real TEMP stores/HTTP with explicit synthetic installation/lineage verifier; actual package rotation of this new record is not certified",
+    "owner composition still defaults to explicit legacy mode until B3b3 wiring; new work session library not yet included in runtime package",
+    "production reset request/startup/observer/panel and installed reset remain pending",
+    "initial direct negative-profile test found a wrongly placed observationVersion condition in draft; actual B1 rejection and positive-proof branches corrected before this frozen selected run"
+  ]
+}

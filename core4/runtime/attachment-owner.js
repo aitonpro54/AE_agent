@@ -9,12 +9,12 @@ const TOOL_METHODS = Object.freeze({ core_status: 'status', core_connect: 'conne
 const CONTROL_METHODS = Object.freeze(['owner_status', 'controller_acquire', 'controller_renew', 'controller_release', 'controller_transfer']);
 const OWNER_METHODS = Object.freeze([...Object.keys(TOOL_METHODS), ...CONTROL_METHODS]);
 const LEASE_ERRORS = Object.freeze(['controller_busy', 'controller_fenced', 'controller_lease_identity', 'controller_lease_expired', 'controller_draining', 'controller_client_detached', 'controller_clock_fault', 'controller_operation_pending', 'controller_expected', 'controller_transfer_changed', 'controller_not_expired']);
-const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed']);
+const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed', 'owner_work_session_required', 'owner_work_session_changed', 'owner_work_session_unavailable', 'owner_baseline_required']);
 const OBSERVERS = new Set(['core_status', 'core_diagnostics', 'list_modules', 'get_module_contract', 'get_task']);
 const READ_REJECTION_CODES = Object.freeze(['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']);
 
-function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, clock, ttlMs, drainIntervalMs = 100 } = {}) {
-  if (!runtime || typeof runtime.status !== 'function' || typeof activity !== 'function' || typeof invoke !== 'function' || !Number.isSafeInteger(drainIntervalMs) || drainIntervalMs < 1 || drainIntervalMs > 1000) throw new Error('owner_options');
+function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, workSession = () => ({ sessionId: null, baselineRequired: false, resetPending: false }), clock, ttlMs, drainIntervalMs = 100 } = {}) {
+  if (!runtime || typeof runtime.status !== 'function' || typeof activity !== 'function' || typeof invoke !== 'function' || typeof workSession !== 'function' || !Number.isSafeInteger(drainIntervalMs) || drainIntervalMs < 1 || drainIntervalMs > 1000) throw new Error('owner_options');
   const lease = createControllerLease({ clock, ttlMs }), sessions = new Map(), accepted = new Set(), timers = new Set(), ownErrors = new WeakSet();
   const rejectedReads = new WeakSet();
   const refs = { evidence: new Map(), build: new Map(), proposal: new Map(), dryrun: new Map(), task: new Map() };
@@ -30,8 +30,21 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
       return { pending: value.pending, unresolved: value.unresolved, fault: value.fault };
     } catch { return { pending: true, unresolved: true, fault: true }; }
   }
-  function admitted() { if (frozen) fail('owner_draining'); const value = facts(); if (value.fault || value.unresolved) fail('owner_recovery_required'); if (value.pending) fail('owner_draining'); }
-  function status() { return { ...lease.status(), closed, frozen, activity: facts(), accepted: accepted.size, attachments: sessions.size }; }
+  function workFacts() {
+    let value; try { value = workSession(); } catch { fail('owner_work_session_unavailable'); }
+    if (!value || value.sessionId !== null && (typeof value.sessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(value.sessionId)) || typeof value.baselineRequired !== 'boolean' || typeof value.resetPending !== 'boolean' || value.sessionId === null && value.baselineRequired && !value.resetPending) fail('owner_work_session_unavailable');
+    return { sessionId: value.sessionId, baselineRequired: value.baselineRequired, resetPending: value.resetPending };
+  }
+  function admitted() { if (frozen || workFacts().resetPending) fail('owner_draining'); const value = facts(); if (value.fault || value.unresolved) fail('owner_recovery_required'); if (value.pending) fail('owner_draining'); }
+  function status() { return { ...lease.status(), closed, frozen, activity: facts(), accepted: accepted.size, attachments: sessions.size, workSession: workFacts() }; }
+  function acknowledge(payload) {
+    const value = workFacts();
+    if (value.sessionId !== null && payload.sessionId === undefined) fail('owner_work_session_required');
+    if ((payload.sessionId ?? null) !== value.sessionId) fail('owner_work_session_changed'); return value.sessionId;
+  }
+  function currentWork(record) {
+    const value = workFacts(); if (value.resetPending) fail('owner_draining'); if (record.sessionId !== value.sessionId) fail('owner_work_session_changed'); return value;
+  }
   function sessionRecord(session) { const record = sessions.get(session); if (!record) fail('owner_attachment_required'); return record; }
   function token(record, payload) {
     object(payload, ['leaseToken']);
@@ -66,7 +79,7 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
   }
   function onAttach(session) {
     if (closed || sessions.size >= 32 || !session || typeof session !== 'object' || sessions.has(session)) fail('owner_attachment_refused');
-    sessions.set(session, { attachment: lease.attach(), grant: null, token: null });
+    sessions.set(session, { attachment: lease.attach(), grant: null, token: null, sessionId: undefined });
   }
   function onDetach(session) {
     const record = sessions.get(session); if (!record) return;
@@ -79,19 +92,19 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
     if (!payload || Object.getPrototypeOf(payload) !== Object.prototype) fail('owner_payload');
     if (method === 'owner_status') { object(payload, []); return status(); }
     if (method === 'controller_acquire') {
-      object(payload, []); admitted(); record.grant = lease.acquire(record.attachment); record.token = randomBytes(32).toString('hex');
+      object(payload, ['sessionId']); admitted(); const sessionId = acknowledge(payload); record.grant = lease.acquire(record.attachment); record.token = randomBytes(32).toString('hex'); record.sessionId = sessionId;
       for (const values of Object.values(refs)) values.clear();
-      return { leaseToken: record.token, bootId: record.grant.bootId, generation: record.grant.generation };
+      return { leaseToken: record.token, bootId: record.grant.bootId, generation: record.grant.generation, ...(sessionId === null ? {} : { sessionId }) };
     }
     if (method === 'controller_transfer') {
-      object(payload, ['expected']); admitted();
-      record.grant = lease.transferExpired(record.attachment, payload.expected); record.token = randomBytes(32).toString('hex');
+      object(payload, ['expected', 'sessionId']); admitted(); const sessionId = acknowledge(payload);
+      record.grant = lease.transferExpired(record.attachment, payload.expected); record.token = randomBytes(32).toString('hex'); record.sessionId = sessionId;
       for (const values of Object.values(refs)) values.clear();
-      return { leaseToken: record.token, bootId: record.grant.bootId, generation: record.grant.generation };
+      return { leaseToken: record.token, bootId: record.grant.bootId, generation: record.grant.generation, ...(sessionId === null ? {} : { sessionId }) };
     }
-    if (method === 'controller_renew') { if (frozen) fail('owner_draining'); token(record, payload); lease.renew(record.grant); return { renewed: true }; }
+    if (method === 'controller_renew') { if (frozen) fail('owner_draining'); token(record, payload); currentWork(record); lease.renew(record.grant); return { renewed: true }; }
     if (method === 'controller_release') {
-      token(record, payload); admitted(); lease.release(record.grant); record.grant = null; record.token = null; return { released: true };
+      token(record, payload); admitted(); currentWork(record); lease.release(record.grant); record.grant = null; record.token = null; record.sessionId = undefined; return { released: true };
     }
     const stateful = !OBSERVERS.has(method) || method === 'list_modules' && payload.refresh !== undefined && payload.refresh !== false;
     if (!stateful) {
@@ -100,10 +113,12 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
     }
     admitted();
     if (!record.grant) fail('owner_controller_required');
+    const work = currentWork(record);
+    if (work.baselineRequired && !['core_connect', 'core_disconnect'].includes(method) && !(method === 'inspect_module_target' && payload.moduleId === 'project-inspection')) fail('owner_baseline_required');
     if (Object.values(refs).some(values => values.size >= 4096)) fail('owner_reference_budget');
     lease.assertCurrent(record.grant); inputs(method, payload, record.grant);
     const grant = record.grant, operation = lease.begin(grant); accepted.add(operation);
-    const context = { observer: false, generation: grant.generation, assertCurrent() { if (closed) fail('owner_closed'); lease.assertCurrent(grant); } };
+    const context = { observer: false, generation: grant.generation, sessionId: work.sessionId, assertCurrent() { if (closed) fail('owner_closed'); currentWork(record); lease.assertCurrent(grant); } };
     try {
       let result;
       try { result = await invoke(TOOL_METHODS[method], payload, context); }

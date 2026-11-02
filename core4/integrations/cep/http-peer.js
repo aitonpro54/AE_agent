@@ -4,12 +4,19 @@ const crypto = require('node:crypto');
 const { hash, canonical, parse, bounded, exact, fail, id, dispatchBinding, decode, encode, envelope } = require('../../core/receiver-api');
 const { openCompletionStore } = require('./completion-store');
 const { mac, validMac, requestBody } = require('./peer-protocol');
+const observationPeers = new WeakMap();
+function consumeProjectObservation(peer, result) {
+  const records = observationPeers.get(peer), proof = records?.get(result); records?.delete(result);
+  if (!proof || hash(result) !== proof.resultHash) return null;
+  const { resultHash, ...value } = proof; return Object.freeze(value);
+}
 const TITLES_READ_FIELDS = ['font', 'font_size', 'apply_fill', 'fill_color', 'apply_stroke', 'stroke_color', 'stroke_width', 'tracking', 'baseline_shift', 'horizontal_scale', 'vertical_scale', 'faux_bold', 'faux_italic', 'justification', 'leading', 'auto_leading'];
 const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsupported_animated_text', 'unsupported_style_proof', 'unsupported_style_api', 'unsupported_mixed_style', 'unsupported_justification_enum', 'titles_native_target', 'titles_native_document', 'titles_native_text', 'titles_native_range', 'titles_native_serialization', ...TITLES_READ_FIELDS.flatMap(field => ['titles_native_' + field, 'titles_missing_' + field])]);
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
 }
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken }) {
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null }) {
+  if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
   if (preboundServer !== undefined) {
     const address = preboundServer instanceof http.Server && preboundServer.listening && preboundServer.address();
@@ -22,6 +29,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   let peer = null, pending = null, closed = false, activePoll = null, lastReadFailure = null, startOverFrozen = false;
   const challenges = new Map();
   const completedReadErrors = new WeakMap();
+  const completedProjectReads = new WeakMap();
   const assets = new Map([asset, ...additionalAssets].map(a => [a.executorHash, a])); let brokerBinding;
   const pins = Object.freeze({ packageHash: installation.packageHash, executorHash: asset.executorHash, installationId: installation.installationId });
   const commandPins = command => ({ ...pins, executorHash: command.executorHash });
@@ -134,7 +142,13 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
             completedReadErrors.set(error, Object.freeze({ code: result.code, commandId: c.command.commandId, executorHash: c.command.executorHash, payloadHash: c.command.payloadHash }));
           }
           done.reject(error);
-        } else done.resolve(done.broker ? response : { observation: result, originalBinding: c.originalBinding, pins: commandPins(c.command), continuity: false });
+        } else {
+          const value = done.broker ? response : { observation: result, originalBinding: c.originalBinding, pins: commandPins(c.command), continuity: false };
+          if (!done.broker && result.observationVersion === 1 && selectedAsset === asset && asset.assetKey === 'project-inspection-v1' && c.command.moduleId === 'project-inspection' && c.command.operationId === 'inspect' && c.command.phase === 'inspect') {
+            completedProjectReads.set(value, Object.freeze({ sessionId: workSessionId, commandId: c.command.commandId, executorHash: c.command.executorHash, payloadHash: c.command.payloadHash, receiverStoreIdentity: c.originalBinding.receiverStoreIdentity, observationHash: hash(result), channelEpoch: epoch, resultHash: hash(value) }));
+          }
+          done.resolve(value);
+        }
         return;
       }
       fail('unknown_peer_route');
@@ -151,7 +165,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     const binding = dispatchBinding(command, store.identity); store.begin(command, binding);
     return new Promise((resolve, reject) => { pending = { command, binding, deliveryGuard, resolve, reject, broker, delivered: false, timer: setTimeout(() => disconnect('host_callback_timeout'), timeout) }; deliver(); });
   }
-  return Object.freeze({
+  const api = Object.freeze({
     status,
     // B3 has a stronger physical fence than normal maintenance drain. This
     // synchronous private switch covers previously accepted, undelivered work.
@@ -182,5 +196,6 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     },
     async close() { closed = true; disconnect('runtime_closed'); if (activePoll) { const poll = activePoll; activePoll = null; poll(null); } await new Promise(resolve => server.close(resolve)); store.close(); }
   });
+  observationPeers.set(api, completedProjectReads); return api;
 }
-module.exports = { createHttpPeer };
+module.exports = { createHttpPeer, consumeProjectObservation };

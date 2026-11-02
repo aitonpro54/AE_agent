@@ -29,7 +29,10 @@ B3a4 private install lease/archive/finisher принят140fresh selectedPASS/
 проверены на TEMP. Production startup/physical callbacks, session ack/baseline/UI
 ещё не подключены, installed B3 нет. B3b1 physical reset fence и CEP callback/
 session-key isolation приняты264fresh selectedPASS/50boundaries. Следующий срез
-B3b2 — явный session ack и fresh baseline, затем startup/panel composition.
+B3b2 session ack/private successful-read baseline приняты360fresh selectedPASS/
+18checks, boundaries51. Пока actual composition использует legacy default;
+новая библиотека ещё не включена в package. Далее B3b3 startup/panel composition,
+штатная установка и installed reset; продолжать последующие задачи по плану.
 3ноября первый configured status после≥3460с idle сохранил owner24160/тот же boot,
 peer connected, pending/UNKNOWN/fault0; один3457,46events/protected files unchanged.
 Исходный Argon
