@@ -171,12 +171,12 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     const { createOwnerLifecycle } = require('./owner-lifecycle.js');
     ownerLifecycle = await createOwnerLifecycle({ installation, descriptorPath: descriptor, reservedServer });
   }
-  async function exposeOwner(facade, activity, invoke) {
+  async function exposeOwner(facade, activity, invoke, consumeReadRejection) {
     const { createAttachmentOwner, OWNER_METHODS } = require('./attachment-owner.js');
     const { createIpcServer } = require('./client-ipc.js');
     const { ownerEndpoint } = require('./client-entry.js');
     const { PRIVATE_METHODS, createOwnerMaintenance } = require('./owner-maintenance.js');
-    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke });
+    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke, consumeReadRejection });
     const endpoint = ownerEndpoint(installation);
     let closed = false, closing, maintenance;
     async function closeRuntime() {
@@ -230,6 +230,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const { exact, id } = require('../protocol/json.js');
   const { createHttpPeer } = require('../integrations/cep/http-peer.js');
   const invocationContext = mode === 'owner' ? new (require('node:async_hooks').AsyncLocalStorage)() : null;
+  const completedReadErrors = new WeakMap();
   const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
   if (selected.legacy) fail('runtime_composition_required');
   const inspection = selected.assets.find(a => a.policy === 'read-only-current-observation-v1');
@@ -276,7 +277,15 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (value.contractId !== contractId) return broker.inspect(value);
     exact(value, ['moduleId', 'contractId', 'target']);
     if (value.moduleId !== profile.id) fail('contract_identity');
-    const result = await peer.inspect(value.target || {});
+    let result;
+    try { result = await peer.inspect(value.target || {}); }
+    catch (error) {
+      const rejection = peer.consumeReadRejection(error), context = invocationContext?.getStore();
+      if (rejection && context && !context.observer && rejection.executorHash === asset.executorHash && rejection.payloadHash === hash(canonical(value.target || {}))) {
+        completedReadErrors.set(error, { context, moduleId: value.moduleId, contractId, targetHash: rejection.payloadHash, code: rejection.code });
+      }
+      throw error;
+    }
     if (result.observation?.readFailureVersion === 1) fail(result.observation.code || 'inspection_failed');
     return { evidenceRef: id('observation'), moduleId: profile.id, contractId, ...result, authority: false };
   };
@@ -293,6 +302,10 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     return await exposeOwner(facade, activity, (method, payload, context) => {
       const receiver = Object.hasOwn(facade, method) ? facade : broker;
       return invocationContext.run(context, () => { if (!context.observer) context.assertCurrent(); return receiver[method](payload); });
+    }, (error, request) => {
+      const record = completedReadErrors.get(error); completedReadErrors.delete(error);
+      if (!record || request.context !== record.context || request.method !== 'inspect_module_target' || request.payload.moduleId !== record.moduleId || request.payload.contractId !== record.contractId || hash(canonical(request.payload.target || {})) !== record.targetHash) return null;
+      return { code: record.code };
     });
   }
   serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.0.0' } });

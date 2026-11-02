@@ -10,6 +10,7 @@ function fixture(options = {}) {
   const calls = [], facts = { pending: false, unresolved: false, fault: false }; let closes = 0, time = 0, serial = 0;
   const runtime = { status: () => ({ ready: true, store: 'fixture-single-store' }), close() { closes++; } };
   const owner = createAttachmentOwner({ runtime, activity: () => ({ ...facts }), clock: () => time, ttlMs: 1000, drainIntervalMs: 1,
+    consumeReadRejection: options.consumeReadRejection,
     async invoke(method, payload, context) {
       calls.push({ method, payload, context });
       if (options.invoke) return options.invoke(method, payload, context);
@@ -132,6 +133,36 @@ test('owner-attachments accepted stateful throw reports uncertainty but preserve
   assert.equal(effects, 1); assert.equal(f.owner.status().fenced, false); assert.equal(f.owner.status().accepted, 0); await f.owner.close();
 });
 
+test('owner-attachments completed read classification is private one-shot and survives lease expiry', async () => {
+  for (const code of ['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']) {
+    const records = new WeakMap(), error = Object.assign(new Error('private detail'), { code, completed: true }); let first = true, f;
+    f = fixture({ invoke(_method, _payload, context) { if (first) { first = false; records.set(error, context); f.at(1000); } throw error; },
+      consumeReadRejection(value, request) { const context = records.get(value); records.delete(value); return context === request.context ? { code } : null; } });
+    const a = f.attach(), grant = await ok(f.call(a, 'controller_acquire'));
+    assert.deepEqual(await f.call(a, 'inspect_module_target'), { ok: false, outcome: 'rejected', code, nextAction: 'core_diagnostics' });
+    assert.equal(f.owner.status().accepted, 0); assert.equal(f.owner.status().fenced, false);
+    await ok(f.call(a, 'controller_release', { leaseToken: grant.leaseToken })); await ok(f.call(a, 'controller_acquire'));
+    await denied(f.call(a, 'inspect_module_target'), 'owner_outcome_uncertain'); await f.owner.close();
+  }
+});
+test('owner-attachments terminal flag clean facts wrong operation and verifier failure never prove completion', async () => {
+  for (const mode of ['forged', 'wrong-method', 'verifier-throws', 'unknown-code']) {
+    const f = fixture({ invoke() { throw Object.assign(new Error('private'), { code: 'inspection_failed', outcome: 'rejected', completed: true }); },
+      consumeReadRejection(_error, request) { if (mode === 'verifier-throws') throw new Error('private'); return mode === 'wrong-method' ? { code: 'inspection_failed' } : mode === 'unknown-code' ? { code: 'private' } : null; } });
+    const a = f.attach(); await ok(f.call(a, 'controller_acquire'));
+    await denied(f.call(a, mode === 'wrong-method' ? 'core_connect' : 'inspect_module_target'), 'owner_outcome_uncertain'); await f.owner.close();
+  }
+});
+test('owner-attachments consumes completed read proof even when pending unresolved or fault prevents classification', async () => {
+  for (const field of ['pending', 'unresolved', 'fault']) {
+    let consumed = 0, f;
+    f = fixture({ invoke() { f.facts[field] = true; throw new Error('completed'); }, consumeReadRejection() { consumed++; return { code: 'inspection_failed' }; } });
+    const a = f.attach(); await ok(f.call(a, 'controller_acquire'));
+    await denied(f.call(a, 'inspect_module_target'), 'owner_outcome_uncertain'); assert.equal(consumed, 1);
+    f.facts[field] = false; await until(() => f.owner.status().accepted === 0); await f.owner.close();
+  }
+});
+
 function stdioFixture(call) {
   const input = new PassThrough(), output = new PassThrough(), replies = []; let buffer = '', closes = 0;
   output.on('data', chunk => { buffer += chunk; for (;;) { const at = buffer.indexOf('\n'); if (at < 0) break; replies.push(JSON.parse(buffer.slice(0, at))); buffer = buffer.slice(at + 1); } });
@@ -166,6 +197,21 @@ test('owner-attachments stdio preserves accepted-owner uncertainty and original 
   f.send({ id: 1, method: 'tools/call', params: { name: 'core_connect' } });
   await until(() => f.replies.length === 1);
   assert.deepEqual(f.replies[0].error.data, { outcome: 'unknown', requestId: 'a'.repeat(64) }); f.adapter.close();
+});
+test('owner-attachments stdio projects only exact finite rejected inspection as an MCP tool error', async () => {
+  const rejection = { ok: false, outcome: 'rejected', code: 'inspection_result_budget', nextAction: 'core_diagnostics' };
+  for (const [name, response, accepted] of [
+    ['inspect_module_target', rejection, true], ['core_connect', rejection, false],
+    ['inspect_module_target', { ...rejection, code: 'secret_fixture_value' }, false],
+    ['inspect_module_target', { ...rejection, authority: true }, false],
+    ['inspect_module_target', { ...rejection, outcome: 'unknown' }, false]
+  ]) {
+    const f = stdioFixture(async () => response); f.send({ id: 1, method: 'tools/call', params: { name } });
+    await until(() => f.replies.length === 1);
+    if (accepted) { assert.equal(f.replies[0].error, undefined); assert.equal(f.replies[0].result.isError, true); assert.deepEqual(JSON.parse(f.replies[0].result.content[0].text), { outcome: 'rejected', code: rejection.code, nextAction: 'core_diagnostics' }); }
+    else assert.equal(f.replies[0].error.message, 'owner_request_failed');
+    assert.doesNotMatch(JSON.stringify(f.replies), /secret_fixture_value|authority/); f.adapter.close();
+  }
 });
 test('owner-attachments stdio oversized unterminated frame closes only attachment', async () => {
   const f = stdioFixture(() => assert.fail('oversize cannot call')); f.input.write('x'.repeat(256 * 1024 + 1));

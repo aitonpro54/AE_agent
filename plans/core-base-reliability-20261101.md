@@ -127,7 +127,8 @@ fault-сценарии проводить на собственных тесто
   По1upload/1send, retries0. Findings локально разобраны в decisions.md пакетов.
 - [x] B0: собственные первичные источники и исходы двух запросов зафиксированы;
   содержательного comparative ответа Argon нет, самостоятельно research выполнен.
-- [ ] B1: узкая реализация после разбора research.
+- [x] B1: узкая source-реализация и selected offline-проверки завершены;
+  installed proof остаётся отдельным следующим действием.
 - [x] B1 начат: [source brief и стоимость до реализации](../docs/core-base-b1-brief-20261101.md)
   готовы.4production/3test paths;24selected batches, без запуска tests.
   Следующий шаг — bounded проверка причин selection; затем frozen source slice.
@@ -140,6 +141,13 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- 2 ноября, B1: private exact Error → durable completion → operation context/contract/target
+  сохраняет finite rejected code без выдачи evidence/grants. pending/UNKNOWN/fault
+  остаются uncertain; Broker/receiver semantics/Titles не изменены. Selector audit
+  сохранил24checks. До B2 edits все24 evidence keys исходного среза и frozen copy
+  совпали;12 complete batches переиспользованы, незавершённый batch не засчитан
+  и выполнен заново. Остальные проверки завершены на том же frozen source.
 
 - 2 ноября: прекращение старого заказа не требует разгадать все старые исходы.
   Для новой работы требуется доказать прекращение возможности старого исполнения;
@@ -174,6 +182,13 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+B1,2ноября:24selected batches/473cases PASS, boundaries44PASS и git diff --check.
+Production owner → IPC → stdio в TEMP установке передаёт четыре finite read
+rejections; следующее чтение успешно. Проверены one-shot/forgery/lease expiry
+и pending/unresolved/fault отказ. [Постоянное evidence](../docs/evidence/core-base-b1-20261102.json).
+Installedbe9afe99 не менялся; это source/temp proof, без live reset/mutation,
+full release и two-machine portability. Следующий шаг по плану — B2.
 
 2 ноября: документальная редакция требований и промпта, без реализации B3.
 Сверены reset_task/reconcile_task в core4/core/broker.js и owner admission в

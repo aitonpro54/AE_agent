@@ -1,6 +1,7 @@
 # B1: известный отказ базовой inspection
 
-1 ноября 2026. Read-only source design после B0; реализация не выполнена.
+1 ноября 2026: source design после B0. 2 ноября: реализация и адресная
+offline-приёмка завершены; установленная проверка остаётся открытой.
 Baseline runtime source `6fcee4c`, документальный milestone `e467ca2`.
 
 ## Минимальный подтверждённый scope
@@ -26,12 +27,12 @@ Promise обычным Error. Attachment-owner теряет классифика
 4. Client projection: точный finite rejected result становится MCP isError:true
    с code и следующим шагом core_diagnostics. Остальные ошибки сохраняются.
 
-## Ownership и файлы будущего среза
+## Ownership и файлы среза
 
 Production: integrations/cep/http-peer.js, runtime/stdio-entry.js,
 runtime/attachment-owner.js, runtime/client-stdio.js (всё под core4/).
 Tests: test/installable-runtime.test.js, test/owner-runtime.test.js,
-test/owner-attachments.test.js. Source writer ещё не назначен; root владеет
+test/owner-attachments.test.js. Source writer — root; он владеет
 документами/Git и единолично live control. Никакой installed update отсюда не следует.
 
 Четыре смысловых сценария: полный production-owner/IPC/stdio known rejection;
@@ -73,3 +74,22 @@ error в trusted invoke в принципе допустим без ALS, но в
 и выполнять один frozen запуск, без broad release и повторных suites. Не создавать
 новый framework или переносить файлы только ради обхода проверки. B2 reconnect
 и disconnect contract идут отдельным изменением; L0 не блокирует B1.
+
+## Результат B1 — 2 ноября
+
+Четыре planned production и три test files реализованы без изменения Broker,
+receiver journal semantics, Titles и grants. Точный Error прямой inspection
+получает one-shot private record после durable complete. Composition связывает
+его с исходным operation context/contract/target; owner сохраняет finite code
+только при чистых facts. MCP возвращает `isError:true`, `outcome:rejected`, точный
+code и `nextAction:core_diagnostics`. Остальные ошибки остаются uncertain.
+
+Проверены provenance/one-shot/forgery, lease expiry после delivery, pending/fault/
+unresolved refusal, production owner → IPC → stdio и успешное следующее чтение.
+Выбранные24 batches прошли473 cases; boundaries44PASS, git diff --check PASS.
+Первые12 batches завершены на исходном срезе, остаток — на exact frozen copy с
+совпавшими24 evidence keys. Незавершённый batch после остановки родительского
+runner не засчитан и выполнен заново. Логи и selection/report сохранены в
+`snapshots/core-base-b1-20261102/`; постоянная сводка —
+[evidence](evidence/core-base-b1-20261102.json). Это source/temp proof.
+Installedbe9afe99 не изменён, live known rejection этим результатом не доказан.

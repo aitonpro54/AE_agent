@@ -1,0 +1,491 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "baseCommit": "ad12e125e01b2be89ec7298b32c69a366cc390d2",
+  "scope": "B1 private terminal project read rejection; source/temp proof only",
+  "releaseCertified": false,
+  "source": [
+    {
+      "path": "core4/integrations/cep/http-peer.js",
+      "sha256": "067e4c789e847940ef5760fd7d5240f8648f011cc81a9cb39a0e8ed34e8b3d16"
+    },
+    {
+      "path": "core4/runtime/stdio-entry.js",
+      "sha256": "e2cd0c2bbf6c0bb772f5563ad694470b33f0370e9d155f41b9d62015233f9127"
+    },
+    {
+      "path": "core4/runtime/attachment-owner.js",
+      "sha256": "4ee78b14a71633e93eaa742fdbdaa85d07a9e7e2938006cfd9a642e8bd69fba1"
+    },
+    {
+      "path": "core4/runtime/client-stdio.js",
+      "sha256": "4c1cac3f183c28e3583fcc13c995c036c3c911eae93b9ec0a730bc0db9ff621b"
+    },
+    {
+      "path": "core4/test/installable-runtime.test.js",
+      "sha256": "7a8f8429973b5957438f059abab628013c77275aadf97f2f362f341000ad8bac"
+    },
+    {
+      "path": "core4/test/owner-runtime.test.js",
+      "sha256": "e88af8bdf8079448337effbfcae4d825b4fce8a2196c97b04a84872e40f73bab"
+    },
+    {
+      "path": "core4/test/owner-attachments.test.js",
+      "sha256": "7efbac78b4dc90ed181e87ec21e31283ad68b45bf49825b554af9f62b1633a03"
+    }
+  ],
+  "checks": [
+    {
+      "check": "owner-runtime",
+      "evidenceKey": "4c9ce0d9b6fff15f9a26498ee52d487d66b474b2a34d794c52b43646f477c03f"
+    },
+    {
+      "check": "installable-runtime",
+      "evidenceKey": "01be888c0cc92eb700ee8c7ca9de9d58845442daa878ce490acc15ddd8a92a4e"
+    },
+    {
+      "check": "native-read-recovery",
+      "evidenceKey": "196e9dcf60388f56c4dd39b5d22f3df2667dfeaf120dd5e989a08ee6cabf7cdb"
+    },
+    {
+      "check": "manual-runtime",
+      "evidenceKey": "98b5ec96439d23b13049dba5271c1c02547365fd3613ca277d9aafd185a43ea3"
+    },
+    {
+      "check": "installed-composition",
+      "evidenceKey": "fed8ed13c2418ac625c30830df987c9df91dbd9412d07bae4469a264185ec30c"
+    },
+    {
+      "check": "owner-installation",
+      "evidenceKey": "314d563f3c6be7c370c25a0d0027e60584371e90d69e895b6a50551a91faba83"
+    },
+    {
+      "check": "human-window",
+      "evidenceKey": "c6dc9be0a9d4856fbf834b3f23a24af7fda159d3cc17840baf431b782b9ae1a2"
+    },
+    {
+      "check": "owner-attachments",
+      "evidenceKey": "835b82753643e7fe70c5fc047800c19c6f55fc2aa9378ba00a9fcf9f25adadaf"
+    },
+    {
+      "check": "owner-ipc-process",
+      "evidenceKey": "063f070538c190d179ad1854d3875ad02e1807852879b8a99cc524668fa60dba"
+    },
+    {
+      "check": "controller-transfer",
+      "evidenceKey": "b75d75a3682408b4cc59f0bbe3c23813f58fad5604175e532a976ce7a3705077"
+    },
+    {
+      "check": "stopped-host-readoption",
+      "evidenceKey": "a4eac7571e6c23ef43956a574bb105051ea454913c800a2096e66ed4c803ced0"
+    },
+    {
+      "check": "readoption-core",
+      "evidenceKey": "cab85fd0abc0770ced125e661f0829612be50edc194b4ac745566550c4235ad8"
+    },
+    {
+      "check": "readoption-recovery",
+      "evidenceKey": "bf61ff210d583cfcc5452e0113906e6406386a50343cbbe3022bc46a3ce4243a"
+    },
+    {
+      "check": "readoption-enable",
+      "evidenceKey": "1f67c541a99bdd1c9503a02df9b1a811191376119bad524f0b5a78afd038e2e2"
+    },
+    {
+      "check": "readoption-probe",
+      "evidenceKey": "f987e735de38e24fc7c6a218076a1308405811cab9d7ded7404d69d9432cf40d"
+    },
+    {
+      "check": "stopped-certification",
+      "evidenceKey": "819b2ca8315ca522f66871051f9af72d54db79a15ebabcd355d7df1f9dc1b3c8"
+    },
+    {
+      "check": "maintenance-finish",
+      "evidenceKey": "623f3d6d946a689f6f55e89f02868ddc1c681b0f2decfcd35303367b4c0a978c"
+    },
+    {
+      "check": "owner-maintenance",
+      "evidenceKey": "fd06ed4fb02cad798010d6a435e58c9d92e9502f59d40c27dbcedcf998dc8022"
+    },
+    {
+      "check": "owner-lifecycle",
+      "evidenceKey": "b346e8fe8219674cf858295afb55fe75c13874fc0d3684ad6e649a6c3408f925"
+    },
+    {
+      "check": "owner-lifecycle-faults",
+      "evidenceKey": "5ceeffde10f1cb99cdaa590867781d1d0501ba7a2b94b1dbe66f609f7144fc45"
+    },
+    {
+      "check": "owner-marker-publication",
+      "evidenceKey": "523e3c2154f4e74e1a5b30dbca01919e55c334c1daedd989b92c0db5761ff041"
+    },
+    {
+      "check": "client-launcher",
+      "evidenceKey": "4047356d6ee9b3e9406a762ab9716d2ff94ad25d46bd0299a8c28484652215e9"
+    },
+    {
+      "check": "recovery-inspection",
+      "evidenceKey": "fcfa1e10240f52bade4f646c24308813eada199d90a5d9cacf4f962781a27f1d"
+    },
+    {
+      "check": "client-entry",
+      "evidenceKey": "56a8fd9834735ab61faf404be52f0897b0997da7a691ea00b4f757321ff34ddc"
+    }
+  ],
+  "batches": [
+    {
+      "checks": [
+        "owner-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-runtime)",
+        "test/owner-runtime.test.js"
+      ],
+      "pass": 22,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "installable-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:installable-runtime)",
+        "test/installable-runtime.test.js"
+      ],
+      "pass": 41,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "native-read-recovery"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:native-read-recovery)",
+        "test/native-read-recovery.test.js"
+      ],
+      "pass": 19,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "manual-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:manual-runtime)",
+        "test/manual-runtime.test.js"
+      ],
+      "pass": 59,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "installed-composition"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:installed-composition)",
+        "test/installed-composition.test.js"
+      ],
+      "pass": 9,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "owner-installation"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-installation)",
+        "test/owner-installation.test.js"
+      ],
+      "pass": 18,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "human-window"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:human-window)",
+        "test/human-window.test.js"
+      ],
+      "pass": 3,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "owner-attachments"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-attachments)",
+        "test/owner-attachments.test.js"
+      ],
+      "pass": 29,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "owner-ipc-process"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-ipc-process)",
+        "test/owner-ipc-process.test.js"
+      ],
+      "pass": 2,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "controller-transfer"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:controller-transfer)",
+        "test/controller-transfer-ipc.test.js"
+      ],
+      "pass": 1,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "stopped-host-readoption"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-host-readoption)",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "pass": 25,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "readoption-core"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-core)",
+        "test/stopped-host-readoption-core.test.js"
+      ],
+      "pass": 13,
+      "exitCode": 0,
+      "reused": true
+    },
+    {
+      "checks": [
+        "readoption-recovery"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-recovery)",
+        "test/stopped-host-readoption-recovery.test.js"
+      ],
+      "pass": 34,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "readoption-enable"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-enable)",
+        "test/stopped-host-readoption-enable.test.js"
+      ],
+      "pass": 22,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "readoption-probe"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-probe)",
+        "test/stopped-host-readoption-probe.test.js"
+      ],
+      "pass": 1,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "stopped-certification"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-certification)",
+        "test/stopped-certification.test.js"
+      ],
+      "pass": 30,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "maintenance-finish"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:maintenance-finish)",
+        "test/maintenance-finish.test.js"
+      ],
+      "pass": 32,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "owner-maintenance"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-maintenance)",
+        "test/owner-maintenance.test.js"
+      ],
+      "pass": 22,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "owner-lifecycle"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-lifecycle)",
+        "test/owner-lifecycle.test.js"
+      ],
+      "pass": 12,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "owner-lifecycle-faults"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-lifecycle-faults)",
+        "test/owner-lifecycle-faults.test.js"
+      ],
+      "pass": 21,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "owner-marker-publication"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-marker-publication)",
+        "test/owner-marker-publication.test.js"
+      ],
+      "pass": 14,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "client-launcher"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:client-launcher)",
+        "test/client-launcher.test.js"
+      ],
+      "pass": 21,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "recovery-inspection"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:recovery-inspection)",
+        "test/recovery-inspection.test.js"
+      ],
+      "pass": 11,
+      "exitCode": 0,
+      "reused": false
+    },
+    {
+      "checks": [
+        "client-entry"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:client-entry)",
+        "test/client-entry.test.js"
+      ],
+      "pass": 12,
+      "exitCode": 0,
+      "reused": false
+    }
+  ],
+  "selectedPass": 473,
+  "boundaries": {
+    "checked": 44,
+    "exitCode": 0
+  },
+  "initialRunner": "12 complete batches reused; parent stopped to freeze source; incomplete batch not accepted and rerun",
+  "logs": {
+    "initial": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core-base-b1-selected-20261102.log",
+    "continuationReport": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b1-20261102\\report.json",
+    "reportSha256": "0acaea87ca600b5d448959b6cfd36bcf5b24c57cc3583639c8e40943dbdfb307"
+  },
+  "limitations": [
+    "installed runtime unchanged",
+    "not live known rejection proof",
+    "B2 later changes make affected integration closures unverified until relevant evidence",
+    "no full release or two-machine portability"
+  ]
+}

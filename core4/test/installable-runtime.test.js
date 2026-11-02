@@ -79,6 +79,28 @@ async function readDiagnosticPeer(t, changes = {}) {
   }
   return { directory, peer, c, manual, binding, begin };
 }
+test('installable-runtime private completed read proof belongs to one exact direct error and is consumed once', async t => {
+  const f = await readDiagnosticPeer(t), other = await readDiagnosticPeer(t);
+  for (const code of ['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']) {
+    const read = f.peer.inspect({ compId: 7 }), observed = read.catch(error => error), frame = (await f.c.call('/poll', {})).command;
+    const receipt = { commandId: frame.commandId, originalBinding: frame.originalBinding, pins: frame.pins, result: { readFailureVersion: 1, outcome: 'rejected', code } };
+    const before = fs.readFileSync(path.join(f.directory, 'completions.ndjson'));
+    const bad = structuredClone(receipt); bad.pins.executorHash = '0'.repeat(64);
+    assert.equal((await f.c.raw('/complete', f.c.envelope('/complete', bad))).status, 403);
+    assert.deepEqual(fs.readFileSync(path.join(f.directory, 'completions.ndjson')), before);
+    assert.equal(f.peer.consumeReadRejection(Object.assign(new Error(code), { code, completed: true })), null);
+    await f.c.call('/complete', receipt); const error = await observed;
+    assert.equal(other.peer.consumeReadRejection(error), null);
+    assert.equal(f.peer.consumeReadRejection({ ...error }), null);
+    assert.deepEqual(f.peer.consumeReadRejection(error), { code, commandId: frame.commandId, executorHash: asset.executorHash, payloadHash: hash(canonical({ compId: 7 })) });
+    assert.equal(f.peer.consumeReadRejection(error), null);
+  }
+  for (const selected of [asset, f.manual]) {
+    const q = await f.begin('inspect', selected), observed = q.promise.catch(error => error);
+    await f.c.call('/complete', q.receipt({ readFailureVersion: 1, outcome: 'rejected', code: 'inspection_failed' }));
+    assert.equal(f.peer.consumeReadRejection(await observed), null, 'Broker reads do not mint direct inspection proof');
+  }
+});
 test('installable-runtime finite Titles read codes complete only admitted read phases and publish bounded diagnostics after durability', async t => {
   const f = await readDiagnosticPeer(t); assert.equal(f.peer.status().lastReadFailure, null);
   let previous = null, firstReceipt;

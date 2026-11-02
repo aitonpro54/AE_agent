@@ -1,6 +1,6 @@
 'use strict';
 const { createInterface } = require('node:readline');
-const { OWNER_METHODS, OWNER_ERRORS } = require('./attachment-owner');
+const { OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES } = require('./attachment-owner');
 
 // Thin private fixture/embedding adapter, not the configured production entry.
 // EOF closes this authenticated attachment only. No Broker/HTTP/store/bootstrap.
@@ -50,8 +50,12 @@ function serveAttachment({ client, input, output } = {}) {
         const payload = args.payload === undefined ? {} : args.payload;
         if (!payload || Object.getPrototypeOf(payload) !== Object.prototype) fail('invalid_payload');
         const response = await client.call(request.params.name, payload);
-        if (!response || response.ok !== true) fail(OWNER_ERRORS.includes(response?.code) ? response.code : 'owner_request_failed', response?.requestId);
-        result = { content: [{ type: 'text', text: JSON.stringify(response.value) }], isError: false };
+        if (request.params.name === 'inspect_module_target' && response?.ok === false && response.outcome === 'rejected' && READ_REJECTION_CODES.includes(response.code) && response.nextAction === 'core_diagnostics' && Object.keys(response).every(key => ['ok', 'outcome', 'code', 'nextAction'].includes(key))) {
+          result = { content: [{ type: 'text', text: JSON.stringify({ outcome: 'rejected', code: response.code, nextAction: response.nextAction }) }], isError: true };
+        } else {
+          if (!response || response.ok !== true) fail(OWNER_ERRORS.includes(response?.code) ? response.code : 'owner_request_failed', response?.requestId);
+          result = { content: [{ type: 'text', text: JSON.stringify(response.value) }], isError: false };
+        }
       } else fail('method_not_found');
       reply({ jsonrpc: '2.0', id: request.id, result });
     } catch (error) {

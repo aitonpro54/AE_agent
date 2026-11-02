@@ -140,6 +140,29 @@ function vmObservation(pkg, frame) {
 }
 const completion = (frame, result = observation()) => ({ commandId: frame.commandId, originalBinding: frame.originalBinding, pins: frame.pins, result });
 
+test('durable project read rejections cross the production owner IPC and stdio without uncertainty or grants', async t => {
+  const f = install(t), runtime = await directOwner(t, f), c = rpcProcess(t, f), p = await panel(runtime.status().physical.port, f.d);
+  const grant = await c.call('controller_acquire'), contract = await c.call('get_module_contract', { moduleId: 'project-inspection' });
+  const journalFile = path.join(f.d.stateDir, 'receiver/completions.ndjson');
+  for (const code of ['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']) {
+    const read = c.rpc('tools/call', { name: 'inspect_module_target', arguments: { payload: { moduleId: 'project-inspection', contractId: contract.contractId, target: {} } } });
+    const frame = (await p.request('/poll', {})).value.command; assert.ok(frame);
+    assert.equal((await p.request('/complete', completion(frame, { readFailureVersion: 1, outcome: 'rejected', code }))).status, 200);
+    const response = await read; assert.equal(response.error, undefined); assert.equal(response.result.isError, true);
+    assert.deepEqual(JSON.parse(response.result.content[0].text), { outcome: 'rejected', code, nextAction: 'core_diagnostics' });
+    const events = fs.readFileSync(journalFile, 'utf8').trim().split('\n').map(JSON.parse);
+    assert.equal(events.at(-1).type, 'complete'); assert.equal(events.at(-1).response.result.code, code);
+    assert.equal(runtime.status().attachmentOwner.fenced, false); assert.equal(runtime.status().attachmentOwner.accepted, 0);
+    assert.equal(runtime.status().physical.pending, null); assert.equal(runtime.status().physical.storeClosed, false);
+  }
+  const read = c.call('inspect_module_target', { moduleId: 'project-inspection', contractId: contract.contractId, target: {} });
+  const frame = (await p.request('/poll', {})).value.command;
+  assert.equal((await p.request('/complete', completion(frame, vmObservation(f.pkg, frame)))).status, 200);
+  assert.equal((await read).authority, false);
+  await c.call('controller_release', { leaseToken: grant.leaseToken });
+  assert.deepEqual(fs.readFileSync(journalFile, 'utf8').trim().split('\n').map(JSON.parse).map(e => e.type), ['origin', ...Array(5).fill(['begin', 'complete']).flat()]);
+});
+
 test('default verified entry markers remain exact and new owner files stay outside the ordinary source package', async t => {
   const entrySource = fs.readFileSync(path.join(SOURCE, 'runtime/stdio-entry.js'), 'utf8');
   assert.equal(checkEntrySource(entrySource), true);

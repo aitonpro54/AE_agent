@@ -21,6 +21,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   const epoch = id('http'), controllerId = id('controller');
   let peer = null, pending = null, closed = false, activePoll = null, lastReadFailure = null;
   const challenges = new Map();
+  const completedReadErrors = new WeakMap();
   const assets = new Map([asset, ...additionalAssets].map(a => [a.executorHash, a])); let brokerBinding;
   const pins = Object.freeze({ packageHash: installation.packageHash, executorHash: asset.executorHash, installationId: installation.installationId });
   const commandPins = command => ({ ...pins, executorHash: command.executorHash });
@@ -124,7 +125,15 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         if (result.readFailureVersion === 1 && ['inspect', 'verify'].includes(c.command.phase)) lastReadFailure = Object.freeze({ commandId: c.command.commandId, moduleId: c.command.moduleId, phase: c.command.phase, executorHash: c.command.executorHash, code: result.code, authority: false });
         const done = pending; pending = null; clearTimeout(done.timer);
         signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } });
-        if (result.readFailureVersion === 1) done.reject(Object.assign(new Error(result.code || 'inspection_failed'), { code: result.code || 'inspection_failed' })); else done.resolve(done.broker ? response : { observation: result, originalBinding: c.originalBinding, pins: commandPins(c.command), continuity: false });
+        if (result.readFailureVersion === 1) {
+          const error = Object.assign(new Error(result.code), { code: result.code });
+          // Only this exact direct read, after store.complete has durably returned.
+          // Serialized errors, Broker reads and other assets cannot mint this proof.
+          if (!done.broker && selectedAsset === asset && asset.assetKey === 'project-inspection-v1' && c.command.moduleId === 'project-inspection' && c.command.operationId === 'inspect' && c.command.phase === 'inspect') {
+            completedReadErrors.set(error, Object.freeze({ code: result.code, commandId: c.command.commandId, executorHash: c.command.executorHash, payloadHash: c.command.payloadHash }));
+          }
+          done.reject(error);
+        } else done.resolve(done.broker ? response : { observation: result, originalBinding: c.originalBinding, pins: commandPins(c.command), continuity: false });
         return;
       }
       fail('unknown_peer_route');
@@ -142,6 +151,9 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   }
   return Object.freeze({
     status,
+    consumeReadRejection(error) {
+      const record = completedReadErrors.get(error); completedReadErrors.delete(error); return record || null;
+    },
     identity: hash({ packageHash: installation.packageHash, assets: [...assets.values()] }),
     transport: Object.freeze({
       async connect(value) { if (store.closed || !peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); exact(value, ['controllerId', 'channelEpoch', 'secret']); brokerBinding = Object.freeze({ ...value }); return { receiverStoreIdentity: store.identity }; },

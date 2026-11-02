@@ -11,10 +11,12 @@ const OWNER_METHODS = Object.freeze([...Object.keys(TOOL_METHODS), ...CONTROL_ME
 const LEASE_ERRORS = Object.freeze(['controller_busy', 'controller_fenced', 'controller_lease_identity', 'controller_lease_expired', 'controller_draining', 'controller_client_detached', 'controller_clock_fault', 'controller_operation_pending', 'controller_expected', 'controller_transfer_changed', 'controller_not_expired']);
 const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed']);
 const OBSERVERS = new Set(['core_status', 'core_diagnostics', 'list_modules', 'get_module_contract', 'get_task']);
+const READ_REJECTION_CODES = Object.freeze(['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']);
 
-function createAttachmentOwner({ runtime, activity, invoke, clock, ttlMs, drainIntervalMs = 100 } = {}) {
+function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, clock, ttlMs, drainIntervalMs = 100 } = {}) {
   if (!runtime || typeof runtime.status !== 'function' || typeof activity !== 'function' || typeof invoke !== 'function' || !Number.isSafeInteger(drainIntervalMs) || drainIntervalMs < 1 || drainIntervalMs > 1000) throw new Error('owner_options');
   const lease = createControllerLease({ clock, ttlMs }), sessions = new Map(), accepted = new Set(), timers = new Set(), ownErrors = new WeakSet();
+  const rejectedReads = new WeakSet();
   const refs = { evidence: new Map(), build: new Map(), proposal: new Map(), dryrun: new Map(), task: new Map() };
   let closed = false, frozen = false;
   function fail(code) { const e = new Error(code); ownErrors.add(e); e.code = code; throw e; }
@@ -105,7 +107,17 @@ function createAttachmentOwner({ runtime, activity, invoke, clock, ttlMs, drainI
     try {
       let result;
       try { result = await invoke(TOOL_METHODS[method], payload, context); }
-      catch { fail('owner_outcome_uncertain'); }
+      catch (error) {
+        // Consume even if facts/context prevent classification. Clean facts alone
+        // never prove completion, and the original grant need not still be live.
+        let rejection;
+        try { rejection = consumeReadRejection(error, { method, payload, context }); } catch {}
+        const value = facts();
+        if (method === 'inspect_module_target' && READ_REJECTION_CODES.includes(rejection?.code) && !value.pending && !value.unresolved && !value.fault) {
+          const rejected = new Error(rejection.code); rejected.code = rejection.code; rejectedReads.add(rejected); throw rejected;
+        }
+        fail('owner_outcome_uncertain');
+      }
       const value = facts();
       if (value.pending || value.unresolved || value.fault) fail('owner_outcome_uncertain');
       outputs(method, result, grant); return result;
@@ -115,6 +127,7 @@ function createAttachmentOwner({ runtime, activity, invoke, clock, ttlMs, drainI
   async function onRequest(request) {
     try { return { ok: true, value: await dispatch(request) }; }
     catch (error) {
+      if (rejectedReads.has(error)) return { ok: false, outcome: 'rejected', code: error.code, nextAction: 'core_diagnostics' };
       // Only our own errors and the fixed private lease vocabulary cross IPC.
       const code = ownErrors.has(error) || LEASE_ERRORS.includes(error?.code) ? error.code : 'runtime_request_failed';
       return code === 'owner_outcome_uncertain' ? { ok: false, code, outcome: 'unknown', requestId: request.requestId || null } : { ok: false, code };
@@ -129,4 +142,4 @@ function createAttachmentOwner({ runtime, activity, invoke, clock, ttlMs, drainI
   }
   return Object.freeze({ onAttach, onDetach, onRequest, status, close, freeze() { frozen = true; }, bootId: lease.status().bootId });
 }
-module.exports = { createAttachmentOwner, TOOL_METHODS, OWNER_METHODS, OWNER_ERRORS };
+module.exports = { createAttachmentOwner, TOOL_METHODS, OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES };
