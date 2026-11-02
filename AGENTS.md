@@ -16,9 +16,11 @@
 `d8d77c38…`. Standard thin client → CEP → native project-inspection, known rejected
 read и auto reconnect после96с без Core проверены. Последний owner19892/один3457,
 AE9472/пустой проект, peer connected, pending/UNKNOWN/fault0; history44events с
-точным prefix36, origins/adoption/ledger preserved. Configured клиент текущего
-чата ещё oldbe9afe99/owner_unavailable — требуется restart Codex и fresh configured
-status/read; install повторять не нужно. B3 только спроектирован: исходный Argon
+точным prefix36, origins/adoption/ledger preserved. После restart Codex configured
+package2fb5aebe/owner24160 ready, fresh project-inspection пустого AE9472 PASS;
+lease1 released, pending/UNKNOWN/fault0. History46events/prefix44 exact,
+bindings/origins/adoption/ledger unchanged; install повторять не нужно.
+B3 только спроектирован: исходный Argon
 plan review получен2ноября21:19, verdict revise; шесть замечаний локально разобраны,
 контракт уточнён, повторных отправок нет. Debugger unattached остался историей
 предыдущего retrieval. Актуальные IDs, действия и предел proof —

@@ -4,8 +4,9 @@
 
 Исходный промпт ниже сохраняет постановку, но его начальное состояние устарело:
 B1/B2 source завершены (`264522c`/`2d08c71`), package2fb5aebe штатно установлен.
-Первый следующий шаг после restart Codex — configured status/read этого пакета,
-не повторная реализация/установка B1. B3 пока только контракт; один plan review
+После restart Codex configured status/read package2fb5aebe принят: owner24160,
+AE9472/пустой unsaved project, lease released, history46/prefix44 preserved.
+Следующий шаг — B3a, не повторная реализация/установка B1. B3 пока только контракт; один plan review
 Argon получен, verdict revise и шесть замечаний локально разобраны, контракт
 уточнён. Браузерный blocker снят, новых sends/review нет. Полные settled IDs, fresh
 границы evidence и действия — в

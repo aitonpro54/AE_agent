@@ -36,11 +36,15 @@ Descriptor SHA17f5fb74…, client834eb4f2…, configf439f8f4…; полный ev
 
 ## Что требуется для продолжения
 
-1. **Перезапуск Codex:** configured MCP текущего чата сохранил oldbe9afe99 и
-   после update вернул owner_unavailable. Новый standard client работает.
-   После restart первый configured core_status должен показать package2fb5aebe;
-   затем acquire → module contract → fresh project-inspection → release.
-   Не повторять install, stop/update/enable ради обновления MCP клиента.
+1. **Configured proof завершён после restart:** первый core_status успешно
+   загрузил package2fb5aebe, новый owner24160/birth639292395293906370,
+   process bootc9a04982… ready; old19892 absent, причина выхода не наблюдалась.
+   Один listener3457. CEP автоматически подключилась; acquire1 → core_connect →
+   module contract → fresh empty project-inspection → release PASS.
+   pending/UNKNOWN/fault0; AE9472 прежний, save/mutation/restart0.
+   History46events/SHA84bf3f34… с точными prefix44/36. Bindings, origins, adoption
+   и ledger unchanged. [Evidence](../docs/evidence/core-base-configured-20261102.json).
+   Не повторять install, stop/update/enable.
 2. **Argon получен:**2ноября21:19 чтение исходного B3 review восстановилось,
    https://gemini.google.com/app/9ff4479f1258260b. Уже были выбраны обычный «Чат»,
    Argon/Высокий. Raw41896bytes/SHA35c4e7ce…, verdict revise. Шесть findings

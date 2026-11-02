@@ -109,6 +109,12 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- 2 ноября, после restart Codex: configured package2fb5aebe принят первым
+  core_status и свежей project-inspection через автоматически подключившуюся CEP.
+  Новый owner24160, один3457; AE9472/пустой unsaved project прежний. Lease1
+  освобождён, pending/UNKNOWN/fault0. History46events/prefix44 и protected bindings
+  проверены. Следующий source срез — B3a; installed reset ещё не выполнялся.
+
 - [x] Исследован [offline AEP модуль](../docs/offline-aep-module-research-20261101.md):
   upstream py-aep найден, local install пока не подтверждён. Подготовлено
   предложение файлового backend без панели; реализация не добавлена в B1/B2.
@@ -155,6 +161,10 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- Configured B1/B2 proof завершён без повторной установки. Новый owner после
+  restart подтверждён fresh PID/birth; прежний19892 отсутствует, его survival
+  и причина выхода не заявляются. Native read не выдаёт mutation authority.
 
 - 2 ноября, получение B3 review: через тот же ARGON controller подтверждены
   Aiton/обычный «Чат»/Argon/Высокий, переключения не требовались. Raw41896bytes,
@@ -224,6 +234,12 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+После restart2ноября: configured status/connect/contract/read/release PASS,
+46receiver events и точные prefix44/36, descriptor/client/config/origins/adoption/
+ledger unchanged. Native PID/birth и один listener3457 проверены read-only.
+[Evidence](../docs/evidence/core-base-configured-20261102.json).
+Ниже сохранена история проверок до restart; прежний blocker снят.
 
 Получение review2ноября: read-back raw bytes/SHA и исходных request/bundle/manifest
 PASS,7current source hashes совпали с reviewed snapshot. Все5ответов/финальная

@@ -6,6 +6,15 @@ distribution `d8d77c3876ef29121acb3063b713888d8ebf4cb8015fd6c9d6839921282c334d`.
 70runtime/87bundle files, exact standalone и installed release/CEP bytes проверены.
 [Постоянное installed evidence](evidence/core-base-installed-20261102.json).
 
+После restart Codex configured2fb5aebe подтверждён первым status, автоматическим
+подключением CEP и свежей project-inspection: owner24160, AE9472 прежний,
+пустой unsaved project, lease1 released, pending/UNKNOWN/fault0. History46events
+с точными prefix44/36, защищённые файлы unchanged.
+[Configured evidence](evidence/core-base-configured-20261102.json).
+Матрица ниже фиксирует исходный installed этап до restart; пробел первого
+configured status/read теперь закрыт. Rejection/reconnect source/standard proof
+не переобъявляется новым configured fault injection.
+
 ## Конечная матрица
 
 | Сценарий | Source/offline | Наблюдение установленного runtime | Осталось |
