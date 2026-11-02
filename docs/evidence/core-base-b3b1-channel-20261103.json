@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-02T21:05:22.842Z",
+  "scope": "B3b1 physical delivery reset fence and same-window native callback/session key isolation",
+  "selectedArtifactsOnly": true,
+  "releaseCertified": false,
+  "changed": [
+    "core4/integrations/cep/http-peer.js",
+    "core4/cep/js/poll-dispatcher.js",
+    "core4/test/start-over-channel.test.js",
+    "core4/test/fixtures/fixed-format1-package.js",
+    "core4/test/fixtures/legacy-poll-dispatcher-v1.txt",
+    "core4/config/validation-map.json"
+  ],
+  "selectedChecks": [
+    {
+      "check": "owner-runtime",
+      "evidenceKey": "b7ff02c3124c613e62e197abaebe75373de8cb1540790f62f7dd9e5be2dd4640",
+      "cases": 22,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "installable-runtime",
+      "evidenceKey": "efc5753cf3661d50683004109ef7ca7431bede6b429b6147e569f2c8ea617fc3",
+      "cases": 41,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "native-read-recovery",
+      "evidenceKey": "69b4123b5a133f4bccb300e146c9b9eac182b61c3e09981121ed73a94416975e",
+      "cases": 19,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "manual-runtime",
+      "evidenceKey": "9d5a037622001fa07ee7523363a1170beff0475df1355e589677dab84a7678c6",
+      "cases": 59,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "start-over-channel",
+      "evidenceKey": "5beb00b3b33ef1995bb79d692e0c2a42d4865fbe66b2810554470f2e74ee6dd6",
+      "cases": 10,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "installed-composition",
+      "evidenceKey": "79a637d77839db29df0ae46964e0495294189d70318a52d48b5885ae8e2e5a4d",
+      "cases": 9,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "validation-routing",
+      "evidenceKey": "ef62e24709eaf216008f9d4657d676ef3f86a299f78574459a65fcea506a062a",
+      "cases": 5,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "start-over-inspection",
+      "evidenceKey": "7d8f3326914270217b383ca1905fbd0830aa14e2b782847c75e8b183e521f471",
+      "cases": 19,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "recovery-inspection",
+      "evidenceKey": "7182222897f05c797dc12d33d22cafe2f543d7eb16a7029b8da22a9cd866326f",
+      "cases": 11,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "panel-reconnect",
+      "evidenceKey": "fbb9f1d1dfcb45947f221065cfcbfdbf661dc78e1a2b1f5c5da1c9bac2c56a53",
+      "cases": 69,
+      "result": "PASS",
+      "mode": "fresh"
+    }
+  ],
+  "totalCases": 264,
+  "logHash": "e335e0810d1f007746b3c423b62c3341ecfeaac006f79b15a2550af143812735",
+  "boundaries": {
+    "checked": 50,
+    "model": "reviewed-local-code; conservative source guard; not OS sandbox",
+    "liveCalls": 0
+  },
+  "deferredCoverage": [
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "audit-repairs",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified"
+    }
+  ],
+  "installedUpdateCount": 0,
+  "resetCount": 0,
+  "decisions": [
+    "separate synchronous reset switch refuses all new submits before durable begin and all late delivery; ordinary maintenance drain stays unchanged",
+    "already delivered native callback may settle only in the old durable journal; undelivered timeout remains UNKNOWN",
+    "CEP window global callback guard survives dispatcher script reload; each dispatcher retains its original session storage key and completion closure",
+    "historical format1 fixture pins the unchanged legacy dispatcher SHA741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006; production historical validator unchanged"
+  ],
+  "limitations": [
+    "real TEMP HTTP/IPC/processes and VM synthetic native results; no installed AE reset proof",
+    "reset request/startup/observer/panel composition, explicit work session acknowledgement and baseline gate still pending",
+    "initial exploratory failure disposition_fixed_asset came from mutable synthetic old fixture; corrected by exact historical test data; failed and interrupted runs not counted"
+  ]
+}

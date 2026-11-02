@@ -5,6 +5,10 @@
 
 ## Дополнение 3 ноября
 
+B3b1 physical switch/callback isolation source принят264fresh cases/10checks,
+boundaries50; [evidence](../docs/evidence/core-base-b3b1-channel-20261103.json).
+Далее B3b2 session ack/baseline; production composition и installed reset ещё нет.
+
 B3a4 private lease/archive/finisher source принят140fresh selected cases/
 7checks, boundaries50; [evidence](../docs/evidence/core-base-b3a4-20261103.json).
 Installed package2fb5aebe прежний, actual reset/install0. Продолжать B3b:

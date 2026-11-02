@@ -109,6 +109,12 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- 3 ноября, B3b1: synchronous physical reset fence и window-global Native callback
+  guard с отдельными session storage keys приняты264fresh cases/10checks,
+  boundaries50. Старый callback использует свой исходный key/channel; normal
+  maintenance drain сохранён. Production reset request/startup/panel ещё не
+  подключены. Далее B3b2 session ack/baseline, затем composition.
+
 - 3 ноября, B3a4: один private finisher с process-bound install lease, сохранением
   точных старых stores и UNKNOWN, signed archive/session receipts принят:
   7current checks/140fresh cases, boundaries50.11crash prefixes продолжаются
@@ -197,6 +203,12 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- Physical reset switch отделён от ordinary attachment freeze: принятая, но
+  недоставленная команда больше не выдаётся по poll; уже доставленный callback
+  может завершить только старую запись. Timeout сохраняет UNKNOWN. Historical
+  format1 test fixture теперь хранит exact прежний dispatcher741824cf…; source
+  исторического disposition validator не менялся.
 
 - Архивные rename выполняются только под собственным sealed mutex и двумя
   удерживаемыми endpoints; старые producers и прежние finisher actors должны
@@ -298,6 +310,12 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+B3b1,3ноября:10current checks/264fresh cases PASS, boundaries50/diff-check.
+[Evidence](../docs/evidence/core-base-b3b1-channel-20261103.json). Реальные TEMP
+HTTP/IPC/Node и VM native fixtures; installed reset/install0. Initial
+disposition_fixed_asset оказался изменяемой old-package fixture; exact legacy
+bytes восстановлены в test data. Неуспешный/прерванный прогон в PASS не включён.
 
 B3a4,3ноября:7current checks/140fresh cases PASS, boundaries50/diff-check.
 [Evidence](../docs/evidence/core-base-b3a4-20261103.json). Реальная TEMP filesystem,

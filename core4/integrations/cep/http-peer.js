@@ -19,22 +19,22 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   const server = preboundServer || http.createServer();
   const store = openCompletionStore({ directory, installationContext, ownerToken });
   const epoch = id('http'), controllerId = id('controller');
-  let peer = null, pending = null, closed = false, activePoll = null, lastReadFailure = null;
+  let peer = null, pending = null, closed = false, activePoll = null, lastReadFailure = null, startOverFrozen = false;
   const challenges = new Map();
   const completedReadErrors = new WeakMap();
   const assets = new Map([asset, ...additionalAssets].map(a => [a.executorHash, a])); let brokerBinding;
   const pins = Object.freeze({ packageHash: installation.packageHash, executorHash: asset.executorHash, installationId: installation.installationId });
   const commandPins = command => ({ ...pins, executorHash: command.executorHash });
   function disconnect(reason) { if (pending) { store.unknown(pending.command.commandId); pending.reject(Object.assign(new Error(reason), { code: reason })); clearTimeout(pending.timer); pending = null; } }
-  function frame() { return pending && !pending.delivered ? { assetKey: assets.get(pending.command.executorHash).assetKey, phase: pending.command.phase, typedPayload: pending.command.payload, commandId: pending.command.commandId, originalBinding: pending.binding, pins: commandPins(pending.command) } : null; }
-  function guardDelivery() { admissionGuard(pending.command); pending.deliveryGuard(); }
+  function frame() { return !startOverFrozen && pending && !pending.delivered ? { assetKey: assets.get(pending.command.executorHash).assetKey, phase: pending.command.phase, typedPayload: pending.command.payload, commandId: pending.command.commandId, originalBinding: pending.binding, pins: commandPins(pending.command) } : null; }
+  function guardDelivery() { if (startOverFrozen) fail('start_over_frozen'); admissionGuard(pending.command); pending.deliveryGuard(); }
   function deliver() {
     if (!activePoll || !frame()) return;
     const poll = activePoll; activePoll = null;
     try { guardDelivery(); const value = frame(); pending.delivered = true; poll(value); }
     catch (e) { disconnect(e.code || 'physical_admission_closed'); poll(null); }
   }
-  function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId } : { connected: false }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { commandId: pending.command.commandId, delivered: pending.delivered } : null, lastReadFailure, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
+  function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId } : { connected: false }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { commandId: pending.command.commandId, delivered: pending.delivered } : null, lastReadFailure, startOverFrozen, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
   function reply(res, statusCode, value, origin) {
     if (res.destroyed || res.writableEnded) return;
     res.writeHead(statusCode, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) }); res.end(bounded(value));
@@ -76,6 +76,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       function signed(payload) { const body = { epoch, peerId: peer.peerId, sequence: b.sequence, payload }; reply(res, 200, { body, mac: mac(body, installation.panelToken) }, corsOrigin); }
       if (req.url === '/poll') {
         exact(b.payload, []); if (activePoll) fail('concurrent_poll');
+        if (startOverFrozen) { signed({ command: null }); return; }
         if (pending && !pending.delivered) { try { guardDelivery(); } catch (e) { disconnect(e.code || 'physical_admission_closed'); throw e; } }
         if (frame()) { const value = frame(); pending.delivered = true; signed({ command: value }); return; }
         await new Promise(resolve => {
@@ -140,6 +141,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     } catch (e) { reply(res, e.code === 'frame_too_large' ? 413 : 403, { error: e.code || 'peer_request_failed' }, corsOrigin); }
   });
   function submit(command, broker = false) {
+    if (startOverFrozen) fail('start_over_frozen');
     const selected = assets.get(command.executorHash);
     if (!selected || selected.moduleId && (selected.moduleId !== command.moduleId || selected.operationId !== command.operationId) || !['inspect', 'mutate', 'verify'].includes(command.phase) || command.phase !== 'inspect' && selected.resultProfile !== 'manual-text-v1') fail('http_asset_not_admitted');
     const deliveryGuard = captureDeliveryGuard(command);
@@ -151,6 +153,14 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   }
   return Object.freeze({
     status,
+    // B3 has a stronger physical fence than normal maintenance drain. This
+    // synchronous private switch covers previously accepted, undelivered work.
+    // Already delivered native callbacks may still settle in the OLD journal;
+    // timeout/UNKNOWN and real process death remain authoritative.
+    fenceForStartOver() {
+      startOverFrozen = true;
+      if (activePoll) { const poll = activePoll; activePoll = null; poll(null); }
+    },
     consumeReadRejection(error) {
       const record = completedReadErrors.get(error); completedReadErrors.delete(error); return record || null;
     },

@@ -3,10 +3,16 @@
 // Current reviewed code bytes retain the fixed format1 two-asset CEP contract.
 const { buildPackage, verifyPackage } = require('../../tools/package-installable');
 const { hash, canonical } = require('../../protocol/json');
+const fs = require('node:fs'), path = require('node:path');
 function fixedFormat1Package() {
   const pkg = structuredClone(buildPackage());
   delete pkg.files['runtime/composition.json']; delete pkg.release.hashes['runtime/composition.json']; pkg.release.format = 1;
   const add = (file, value) => { const bytes = typeof value === 'string' ? value : canonical(value); pkg.files[file] = Buffer.from(bytes).toString('base64'); pkg.release.hashes[file] = hash(bytes); };
+  // Historical read-disposition proof pins this dispatcher. Future production
+  // session support must not silently rewrite the synthetic OLD package bytes.
+  const dispatcher = fs.readFileSync(path.join(__dirname, 'legacy-poll-dispatcher-v1.txt'), 'utf8');
+  if (hash(dispatcher) !== '741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006') throw new Error('historical_dispatcher_fixture_bytes');
+  add('cep/js/poll-dispatcher.js', dispatcher);
   add('runtime/profiles.json', { profiles: [{ id: 'project-inspection', path: 'modules/project-inspection', executionPolicy: 'read-only-current-observation-v1' }] });
   add('runtime/source-package.json', { version: 1, files: Object.keys(pkg.files).sort(), artifactClosures: [] });
   const read = file => Buffer.from(pkg.files[file], 'base64').toString();

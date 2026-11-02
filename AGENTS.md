@@ -27,7 +27,9 @@ B3a3 process/endpoint barrier принят3ноября118selectedPASS/48boundar
 B3a4 private install lease/archive/finisher принят140fresh selectedPASS/
 50boundaries; UNKNOWN сохранён, partial-prefix recovery и session publication
 проверены на TEMP. Production startup/physical callbacks, session ack/baseline/UI
-ещё не подключены, installed B3 нет. Следующий срез B3b — production composition.
+ещё не подключены, installed B3 нет. B3b1 physical reset fence и CEP callback/
+session-key isolation приняты264fresh selectedPASS/50boundaries. Следующий срез
+B3b2 — явный session ack и fresh baseline, затем startup/panel composition.
 3ноября первый configured status после≥3460с idle сохранил owner24160/тот же boot,
 peer connected, pending/UNKNOWN/fault0; один3457,46events/protected files unchanged.
 Исходный Argon
