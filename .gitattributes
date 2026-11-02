@@ -3,3 +3,5 @@
 # Точные bytes переданного/полученного review сохраняют Markdown-пробелы и EOF.
 reviews/argon/**/response.txt -whitespace
 reviews/argon/**/bundle.md -whitespace
+# Сохранить точные bytes уже отправленного excerpt: номер пустой строки и пробел.
+reviews/argon/core-base-start-over/20261102-b3-plan-01/context/source-excerpts.md -whitespace

@@ -28,3 +28,8 @@ Payload/request/manifest/approval/verification/context не менялись п�
 5. Восстановить чтение существующего review, локально разобрать его на exact
    snapshot, уточнить B3 contract/files/checks и продолжить реализацию. Повторного
    result/fix/final review автоматически не заказывать.
+
+Финальный diff-check обнаружил пробел после номера пустой source line в
+immutable context/source-excerpts.md. Отправленные bytes/manifest не изменены;
+для этого одного evidence-файла добавлено узкое `-whitespace` в .gitattributes,
+как уже сделано для raw response/bundle. Проверка остальных paths сохраняется.
