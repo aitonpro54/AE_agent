@@ -50,8 +50,9 @@ Descriptor SHA17f5fb74…, client834eb4f2…, configf439f8f4…; полный ev
    Argon/Высокий. Raw41896bytes/SHA35c4e7ce…, verdict revise. Шесть findings
    локально разобраны в review decisions/triage.json; новый upload/send0.
    Прежний Debugger unattached сохранён как история. Повтор review не нужен.
-3. B3a1 history/process inspection source принят118selectedPASS/46boundaries.
-   Durable transaction/finisher и production integration ещё нет. Продолжить B3a2 по
+3. B3a1 history/process inspection source принят118selectedPASS/46boundaries;
+   B3a2 durable intent/inspection —106selectedPASS/47boundaries. Finisher и
+   production integration ещё нет. Продолжить B3a3 по
    локально уточнённому
    [контракту](../docs/core-base-b3-20261102.md) и активному плану.
    Installed B3/reset пока0. Общая готовность базы, recovery mutation/full release и

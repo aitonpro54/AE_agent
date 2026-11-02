@@ -12,8 +12,9 @@ Argon получен, verdict revise и шесть замечаний локал
 границы evidence и действия — в
 [checkpoint2ноября](core-base-installed-checkpoint-20261102.md).
 Не создавать новый чат автоматически. B3a1 history/process inspection source
-принят118selectedPASS/46boundaries; durable transaction/finisher ещё нет.
-Продолжить B3a2 по уточнённому контракту и
+принят118selectedPASS/46boundaries; B3a2 durable intent/inspection —106selectedPASS/
+47boundaries. Архивный finisher и production integration ещё нет.
+Продолжить B3a3 по уточнённому контракту и
 decisions/triage.json, без дополнительного review или replay прежней отправки.
 
 ## Исходная постановка

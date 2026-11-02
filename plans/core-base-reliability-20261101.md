@@ -109,6 +109,12 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- B3a2: private durable owner request/inspection в runtime/start-over-state.js.
+  Signed intent и journal inode anchors, обе producer identities, повтор того же
+  UUID, prefix/CAS/failure retention проверены17new TEMP cases.5selected checks/
+  106fresh cases PASS, boundaries47. Production entry/physical fence/finisher ещё
+  не подключены. Следующий срез B3a3 — barrier и архивный finisher, затем B3b.
+
 - B3a1: отдельные supplied-history semantics и fixed native process observation
   реализованы в runtime/start-over-inspection.js и start-over-process.js.
   Проверены prefix/late completion/no-new-begin, UNKNOWN без relabel, combined
@@ -168,6 +174,11 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- При B3a2 intent публикуется только полным hardlink record; исходные journal
+  inodes удерживаются anchors, prefix bytes допускают append completion.
+  Inspection/stopped request не объявляются доказательством смерти producers.
+  Никакой UI/RPC заглушки до finisher и реальной композиции не добавлено.
 
 - B3a1 отделён от destructive archive writer. Семантические и process facts не
   выдают permit. Новый receiver begin после reset prefix — нарушение admission,
@@ -247,6 +258,13 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+B3a2:5current selected checks/106fresh cases PASS; source closures проверены
+до/после прогона exact evidence keys. Boundaries47/diff-check PASS.
+[Evidence](../docs/evidence/core-base-b3a2-20261102.json). Synthetic verifier/
+lifecycle/inventory только в test loader; real TEMP filesystem. Installed package
+не обновлялся; новых live/reset/install0. Последнее configured наблюдение
+AE9472/receiver46events остаётся историческим checkpoint, не новым preflight.
 
 B3a1:19history cases и10process cases, включая actual Windows inventory/self-PID,
 PASS. Final selected closure6checks/118cases:103fresh и15exact unchanged reuse;

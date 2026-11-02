@@ -21,7 +21,9 @@ package2fb5aebe/owner24160 ready, fresh project-inspection пустого AE9472
 lease1 released, pending/UNKNOWN/fault0. History46events/prefix44 exact,
 bindings/origins/adoption/ledger unchanged; install повторять не нужно.
 B3a1 source history/process inspection принят118selectedPASS/46boundaries;
-durable intent/archive/finisher/session/UI ещё не реализованы, installed B3 нет.
+B3a2 private durable intent/inspection принят106selectedPASS/47boundaries.
+Production startup/physical callbacks, archive/finisher/session/UI ещё не
+реализованы, installed B3 нет. Следующий срез B3a3 — barrier и архивный finisher.
 Исходный Argon
 plan review получен2ноября21:19, verdict revise; шесть замечаний локально разобраны,
 контракт уточнён, повторных отправок нет. Debugger unattached остался историей
