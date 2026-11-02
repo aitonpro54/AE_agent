@@ -5,12 +5,13 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 const { canonical, hash } = require('../../protocol/json'), { dispatchBinding } = require('../../protocol/dispatch');
 const { fixture } = require('./owner-lifecycle-fixture');
 const { ownerEndpoint } = require('../../runtime/client-entry');
-async function harness(t, { unknown = false, diagnostic = false, noInventory = false } = {}) {
+async function harness(t, { unknown = false, diagnostic = false, noInventory = false, adoption = null } = {}) {
   const f = await fixture(t); f.d.packageHash = 'c'.repeat(64); fs.writeFileSync(f.descriptorPath, canonical(f.d)); fs.writeFileSync(path.join(f.root, 'core-client.json'), canonical({ fixture: 'client' }));
   let cap = await f.create(), stores = f.stores(cap); cap.markReady(); cap.releaseStartup();
   const c = { protocolVersion: 1, controllerId: 'controller-test', channelEpoch: 'epoch-test', commandId: 'old-read', moduleId: 'project-inspection', operationId: 'inspect', executorHash: 'a'.repeat(64), phase: 'inspect', payloadHash: hash({}), payload: {} }, receiverIdentity = stores.store.identity;
   if (unknown || diagnostic) { stores.store.begin(c, dispatchBinding(c, receiverIdentity)); stores.store.unknown(c.commandId); }
   if (diagnostic) { await f.crash(); cap = await f.create(); cap.releaseStartup(); stores = null; }
+  if (adoption) fs.writeFileSync(f.path('host-adoption.json'), canonical({ version: 1, installationId: f.d.installationId, machineId: f.d.machineId, host: { machineId: f.d.machineId, aePid: 66, aeProcessBirth: '2026-11-02T14:10:25.3597850Z', executablePath: 'C:\\AE\\AfterFX.exe', executableHash: 'd'.repeat(64), ...adoption }, allowedProject: 'C:\\Checks\\test.aep', rootObservationDigest: 'e'.repeat(64), observedDigest: 'f'.repeat(64), policy: 'registered-Core4-lane-and-current-target-native-confirmation', adoptedAt: new Date().toISOString() }));
   const modules = new Map(), servers = [], probes = []; let hook, actorsAlive = [], aeAlive = [], currentAE = [], inventoryFailure = noInventory;
   const observation = () => ({ version: 1, machineId: f.d.machineId, observedAt: new Date().toISOString(), processes: currentAE.map(s => ({ ...s, executablePath: 'C:\\AE\\AfterFX.exe' })) });
   const rootAE = { pid: 42, birthTicks: '639292254253597850' };

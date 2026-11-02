@@ -23,6 +23,7 @@ bindings/origins/adoption/ledger unchanged; install повторять не ну
 B3a1 source history/process inspection принят118selectedPASS/46boundaries;
 B3a2 private durable intent/inspection принят106selectedPASS/47boundaries.
 B3a3 process/endpoint barrier принят3ноября118selectedPASS/48boundaries.
+Дополнение F2 exact historical adoption host —115selectedPASS/48boundaries.
 Production startup/physical callbacks, archive/finisher/session/UI ещё не
 реализованы, installed B3 нет. Следующий срез B3a4 — lease и архивный finisher.
 3ноября первый configured status после≥3460с idle сохранил owner24160/тот же boot,

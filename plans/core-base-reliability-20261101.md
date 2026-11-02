@@ -109,6 +109,12 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- 3 ноября, F2: exact historical AE из adoption добавлен к required death
+  targets при UNKNOWN. Missing-in-inventory не означает death; foreign machine
+  или imprecise birth не принимаются.5selected checks/115fresh cases,
+  boundaries48 PASS. Архивный reducer пока только ignored draft/TEMP prototype;
+  его6exploratory cases не засчитаны как production source или installed proof.
+
 - 3 ноября, B3a3: private process/endpoint barrier принят6selected checks/
   118cases (113fresh+5exact reuse), boundaries48. Включены обе Node identities,
   exact AE birth, crash-before-inventory, no stopped receipt, strengthened risk,
@@ -184,6 +190,10 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- Known host-adoption origin — отдельный death target вместе с current inventory
+  и constraint origins. Сохранённая adoption не выдаёт authority свежему AE.
+  В B3a4 потребуется также death proof прежних finisher actors до takeover lease.
 
 - B3a3 фиксирует AE inventory один раз после смерти producers, если owner не
   успел сделать это сам. Новая AE incarnation не вызывает бесконечный restart;
@@ -274,6 +284,10 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+F2 host origin,3ноября:5current selected checks/115fresh cases PASS,
+boundaries48/diff-check. [Evidence](../docs/evidence/core-base-b3-host-origin-20261103.json).
+Production reset/install/AE mutation0; архивные drafts не импортируются runtime.
 
 B3a3,3ноября:6current selected checks/118cases PASS, boundaries48/diff-check.
 [Source evidence](../docs/evidence/core-base-b3a3-barrier-20261103.json).

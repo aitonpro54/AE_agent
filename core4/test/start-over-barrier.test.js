@@ -79,3 +79,15 @@ test('a shutdown gate binds the exact full original scope and never just matchin
     else { const cap = await f.api.acquireStartOverBarrier(f.options); assert.deepEqual(fs.readFileSync(file), bytes); await f.api.releaseStartOverBarrier(cap); }
   }
 });
+test('historical adoption AE is observed explicitly even when absent from the current AfterFX inventory', async t => {
+  const f = await harness(t, { unknown: true, adoption: {} }), historical = { pid: 66, birthTicks: '639292254253597850' };
+  f.set({ currentAE: [f.rootAE], aeAlive: [historical] });
+  await assert.rejects(f.api.acquireStartOverBarrier(f.options), e => e.code === 'start_over_requires_ae_exit' && e.ae.some(s => s.pid === historical.pid));
+  assert.deepEqual(f.probes.at(-1).ae, [f.rootAE, historical]);
+});
+test('imprecise or foreign historical host identity does not become local death proof', async t => {
+  for (const adoption of [{ machineId: 'foreign-machine' }, { aeProcessBirth: '2026-11-02T14:10:25.359Z' }]) {
+    const f = await harness(t, { unknown: true, adoption });
+    await assert.rejects(f.api.acquireStartOverBarrier(f.options), error('start_over_host_origin')); assert.equal(f.probes.length, 0);
+  }
+});

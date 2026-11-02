@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-02T19:42:27.458Z",
+  "scope": "B3 F2 precise historical host-adoption identity included in required native death targets; no authority transfer",
+  "selectedArtifactsOnly": true,
+  "releaseCertified": false,
+  "changed": [
+    "core4/runtime/start-over-state.js",
+    "core4/runtime/start-over-barrier.js",
+    "core4/test/fixtures/start-over-barrier.js",
+    "core4/test/start-over-barrier.test.js"
+  ],
+  "selectedChecks": [
+    {
+      "check": "start-over-state",
+      "evidenceKey": "8f2b787613640094cb78bac51f35b44f219a947cffde3a7e45595ffa3a2e1e16",
+      "cases": 17,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "start-over-barrier",
+      "evidenceKey": "d3d901bed14d856b15438d573dce8ab59ea3c28ae0ecc7289becb66b7de0786b",
+      "cases": 14,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "stopped-certification",
+      "evidenceKey": "4c450f13735bc5f006ce2bcfd3884d4e0ac312c3c48b17829d8989316d21389d",
+      "cases": 30,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "maintenance-finish",
+      "evidenceKey": "83310126c6a59b02aecd262fb3caa3758a65c98ae9fc1f5af58c444ed659ae73",
+      "cases": 32,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "owner-maintenance",
+      "evidenceKey": "ce2d96c70efed6b41d5a69337c1db279d1908f5aae4bbc21810a1994d64f6398",
+      "cases": 22,
+      "result": "PASS",
+      "mode": "fresh"
+    }
+  ],
+  "totalCases": 115,
+  "logHash": "a26d8310ab4912d07dec5730b0eddddd13994622267c299f5a968108b90e49c1",
+  "boundaries": {
+    "checked": 48,
+    "model": "reviewed-local-code; conservative source guard; not OS sandbox",
+    "liveCalls": 0
+  },
+  "deferredCoverage": [
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "owner-runtime",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "manual-runtime",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified"
+    }
+  ],
+  "installedUpdateCount": 0,
+  "resetCount": 0,
+  "limitations": [
+    "synthetic host/native observations on real TEMP fixtures; not installed reset proof",
+    "archive/finisher drafts remain ignored and are not counted as selected evidence"
+  ]
+}

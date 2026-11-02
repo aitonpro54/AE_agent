@@ -38,7 +38,7 @@ async function acquireStartOverBarrier(options) {
     const recovered = c.record(a, 'continuation-inventory.json', 'start-over-continuation-inventory', ['observation', 'nativeStop']);
     if (inventory && recovered) fail('start_over_phase'); inventory ||= recovered;
     if (inventory) c.validateInventory(inventory.observation);
-    let ae = before.continuation.requiresAEExit ? unique([...(inventory?.observation.processes || []), ...before.continuation.requiredAE]) : [];
+    let ae = before.continuation.requiresAEExit ? unique([...(inventory?.observation.processes || []), ...before.continuation.requiredAE, ...c.historicalAE()]) : [];
     let native = await observeStartOverStop({ actors, ae }), after = state(c, a);
     const nodesGone = value => {
       if (value.inventory.machineId !== c.d.machineId) fail('start_over_process_machine');
@@ -48,7 +48,7 @@ async function acquireStartOverBarrier(options) {
     // The final history is read AFTER native producer death. If a last accepted
     // callback strengthened its risk during the await, probe the full new AE
     // set; never reuse a cheap idle observation for a newly unknown command.
-    const finalAE = after.continuation.requiresAEExit ? unique([...(inventory?.observation.processes || []), ...after.continuation.requiredAE]) : [];
+    const finalAE = after.continuation.requiresAEExit ? unique([...(inventory?.observation.processes || []), ...after.continuation.requiredAE, ...c.historicalAE()]) : [];
     if (!equal(finalAE, ae)) {
       ae = finalAE; native = await observeStartOverStop({ actors, ae }); nodesGone(native);
       const again = state(c, a); if (!equal(again.facts, after.facts)) fail('start_over_barrier_changed'); after = again;

@@ -188,7 +188,18 @@ function context(options) {
     return { markers: Object.fromEntries(MARKERS.map(n => [n, info(values[n])])), installGate: info(gate), maintenance: info(maintenance) };
   }
   function phaseFacts(a) { return Object.fromEntries(fs.readdirSync(a.dir).sort().map(name => [name, info(read(path.join(a.dir, name), name.startsWith('original-') ? 64 * 1024 * 1024 : 128 * 1024))])); }
-  return { d, descriptorPath, protectedFacts, histories, historyOptions, markers, active, continuation, directory, seal, decode, record, validateInventory, stoppedMarkers, phaseFacts, read, info, plain, atomic };
+  function historicalAE() {
+    const v = read(path.join(d.stateDir, 'host-adoption.json')); if (v.bytes === null) return [];
+    if (!Buffer.from(v.bytes.toString('utf8')).equals(v.bytes)) fail('start_over_host_origin');
+    let b; try { b = JSON.parse(v.bytes); } catch { fail('start_over_host_origin'); }
+    exact(b, ['version', 'installationId', 'machineId', 'host', 'allowedProject', 'rootObservationDigest', 'observedDigest', 'policy', 'adoptedAt']);
+    const h = b.host; exact(h, ['machineId', 'aePid', 'aeProcessBirth', 'executablePath', 'executableHash']);
+    if (!Buffer.from(canonical(b)).equals(v.bytes) || b.version !== 1 || b.installationId !== d.installationId || b.machineId !== d.machineId || h.machineId !== d.machineId || b.policy !== 'registered-Core4-lane-and-current-target-native-confirmation' || typeof b.allowedProject !== 'string' || !path.win32.isAbsolute(b.allowedProject) || !HEX.test(b.rootObservationDigest) || !HEX.test(b.observedDigest) || !Number.isFinite(Date.parse(b.adoptedAt)) || new Date(b.adoptedAt).toISOString() !== b.adoptedAt || !Number.isSafeInteger(h.aePid) || h.aePid < 1 || h.aePid > 0xffffffff || typeof h.aeProcessBirth !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z$/.test(h.aeProcessBirth) || typeof h.executablePath !== 'string' || !path.win32.isAbsolute(h.executablePath) || !HEX.test(h.executableHash)) fail('start_over_host_origin');
+    const time = Date.parse(h.aeProcessBirth); if (!Number.isFinite(time) || new Date(time).toISOString() !== h.aeProcessBirth.slice(0, 23) + 'Z') fail('start_over_host_origin');
+    const ticks = BigInt(time) * 10000n + 621355968000000000n + BigInt(h.aeProcessBirth.slice(23, 27)); if (ticks < 1n || ticks > 3155378975999999999n) fail('start_over_host_origin');
+    return [{ pid: h.aePid, birthTicks: String(ticks) }];
+  }
+  return { d, descriptorPath, protectedFacts, histories, historyOptions, markers, active, continuation, directory, seal, decode, record, validateInventory, stoppedMarkers, phaseFacts, historicalAE, read, info, plain, atomic };
 }
 function inspect(c) {
   const a = c.active(); if (!a) return Object.freeze({ phase: 'running', id: null, resetComplete: false, resetPermit: false, aeAuthority: false });
