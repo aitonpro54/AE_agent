@@ -132,17 +132,43 @@ fault-сценарии проводить на собственных тесто
 - [x] B1 начат: [source brief и стоимость до реализации](../docs/core-base-b1-brief-20261101.md)
   готовы.4production/3test paths;24selected batches, без запуска tests.
   Следующий шаг — bounded проверка причин selection; затем frozen source slice.
-- [ ] B2: завершить installed-часть матрицы обычных циклов и диагностики.
+- [ ] B2: завершить configured-часть матрицы после restart Codex.
 - [x] B2 source: [фоновое ожидание и disconnect contract](../docs/core-base-b2-20261102.md)
   реализованы; один selected batch69/69PASS, установленная проверка впереди.
 - [x] 2 ноября: требование B3 и новые разрешения отладки включены в план,
   AGENTS.md и обновлённый промпт продолжения; прежний промпт найден в чате
   `01a19bda-e7a1-7f91-836b-14e3ac611ba6`, turn `01a19c42-41ff-73f1-a836-2c108b01dfc6`.
-- [ ] B3: контракт, реализация Core/панели и адресная приёмка «Начать заново».
+- [ ] B3: реализация Core/панели и адресная приёмка «Начать заново».
+- [x] B3: [минимальный контракт](../docs/core-base-b3-20261102.md) подготовлен до
+  production write; первое [ограниченное plan review](../reviews/argon/core-base-start-over/20261102-b3-plan-01/request.md)
+  передано единственному ARGON controller по новому human поручению.
+  Одна загрузка/одна отправка; чтение ответа blocked/Debugger unattached,
+  [локальное решение](../reviews/argon/core-base-start-over/20261102-b3-plan-01/decisions.md).
+- [x] B1/B2 установленный standard/native путь: package2fb5aebe, typed read,
+  finite rejected read, follow-up read и auto reconnect после96.622с без Core
+  проверены. [Матрица](../docs/core-base-validation-20261102.md),
+  [checkpoint](core-base-installed-checkpoint-20261102.md).
+- [ ] Configured MCP новый package: текущий клиент oldbe9afe99, требуется
+  restart Codex. B3 implementation/installed reset, full release и portability открыты.
 - [x] L0 bounded research без реализации: дешёвый exact detector не доказан;
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- 2 ноября, installed B1/B2: из-за недоступного чтения B3 review выполнена
+  независимая приёмка уже готовой обычной базы. Штатный новый stop/update/enable
+  и same-descriptor stop/resume завершены; B3 reset не имитировался. Пакет2fb5aebe
+  работает через real standard client/CEP/AE; configured proof требует restart
+  app transport и не заменяется этим результатом. Старые transactions не повторять.
+- 2 ноября, Argon: первая B3 отправка подтверждена receipt, полный ответ и verdict
+  не получены из-за Debugger unattached. После восстановления читать существующий
+  диалог без новой загрузки/отправки. B1/B2 работа не зависела от этого ответа;
+  B3 остаётся отдельным незавершённым инженерным срезом.
+- 2 ноября, B3: выбран кандидат archive/new-session после доказанного прекращения
+  старого исполнения. По прямому human поручению текущего чата первое review
+  самостоятельного B3 этапа отправлено в Aiton/Argon/максимальный доступный effort.
+  Immutable payload45298bytes, без credentials/runtime/PII. Повторного review нет;
+  до разбора ответа B3 production code не писать.
 
 - 2 ноября, B2: transport absence после50с продолжает ожидаться с паузой15с
   перед новым ограниченным окном. Auth/pins/HTTP refusal/duplicate-peer бюджет
@@ -189,6 +215,20 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+Последний checkpoint2ноября: installed2fb5aebe, owner19892/boot3c61188f…,
+один3457/peer connected, lease released/idle, pending/UNKNOWN/fault0.
+AE9472/26.3x87/пустой unsaved project. Четыре native direct inspection commands
+дали8новых событий;44events/prefix36 exact. Origins/adoption/ledger unchanged,
+mutation/save0. Standard known rejection и read-after-rejection PASS;
+ожидание96.622с и reconnect без Connect подтверждены GUI и свежим typed read.
+Configured2fb5aebe, B3, mutation recovery, full release/portability не доказаны.
+
+Configured core_status2ноября: installedbe9afe99, owner33380/boot8f70f0f6… ready,
+pending/UNKNOWN/fault0, peer disconnected. Это fresh observation до обновления;
+AE/CEP connect/reset/save/mutation и installed update в текущем блоке не было.
+B3 пакет COMPLETE:4payload files/7source excerpt sets, полный content scan и
+read-back SHA-256 PASS. Выбранный внешний файл — только bundle.md.
 
 B2,2ноября: node --check, один selected panel-reconnect batch69/69PASS и
 git diff --check. Проверены late Core, idle outage, unload и latch во время

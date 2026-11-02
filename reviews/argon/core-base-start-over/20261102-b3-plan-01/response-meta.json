@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "reviewId": "20261102-b3-plan-01",
+  "stageId": "core-base-start-over",
+  "type": "plan",
+  "status": "blocked-response-read",
+  "response": null,
+  "complete": false,
+  "verdict": null,
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "receipt": {
+    "url": "https://gemini.google.com/app/9ff4479f1258260b",
+    "reviewIdVisible": true,
+    "attachment": "bundle.md",
+    "composerEmpty": true,
+    "generationActiveAtSubmission": true,
+    "permanentUrlObservedAt": "2026-11-02T13:55:24.353Z"
+  },
+  "account": {
+    "service": "Gemini Argon",
+    "account": "Aiton Pro",
+    "email": "aitonpro54@gmail.com"
+  },
+  "effort": "Высокий — Глубокий",
+  "limitations": [
+    "Ограниченное внешнее plan review; выводы требуют локальной проверки владельцем",
+    "Не является code audit, live evidence или runtime authority"
+  ],
+  "retrievalHistory": [
+    {
+      "recordedAt": "2026-11-02T13:58:45.5086996Z",
+      "stage": "response-read",
+      "events": [
+        "Playwright count: Timed out after 3000ms waiting for CDP command Runtime.evaluate",
+        "Same-tab getAXState: 30-second execution timeout and kernel reset"
+      ],
+      "lastKnownGenerationActive": true,
+      "lastKnownResponseCount": 1,
+      "sendRepeated": false,
+      "reloadPerformed": false,
+      "recovery": "Fresh inventory and one bounded same-channel screenshot pending"
+    },
+    {
+      "recordedAt": "2026-11-02T13:59:37.4201549Z",
+      "stage": "response-read",
+      "freshInventory": "Same Chrome extension instance, tab 1490139228 and receipt URL still present",
+      "action": "One screenshot of same tab using documented browser.tabs.get and tab.screenshot",
+      "error": "Debugger unattached",
+      "outcome": "Stopped browser actions; no bypass, navigation, reload or replay"
+    }
+  ],
+  "responseOutcome": "unknown",
+  "retrievalStoppedAt": "2026-11-02T13:59:37.4201549Z",
+  "binding": null,
+  "responseFileCreated": false,
+  "blocker": "Debugger unattached after Runtime.evaluate timeout and getAXState kernel reset; response unreadable through existing extension"
+}

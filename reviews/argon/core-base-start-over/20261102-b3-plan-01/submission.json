@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "reviewId": "20261102-b3-plan-01",
+  "stageId": "core-base-start-over",
+  "type": "plan",
+  "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "status": "submitted",
+  "attempt": 1,
+  "counts": {
+    "uploadInvocations": 1,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "recipient": {
+    "service": "Gemini Argon",
+    "account": "Aiton Pro",
+    "email": "aitonpro54@gmail.com"
+  },
+  "authorization": {
+    "reviewId": "20261102-b3-plan-01",
+    "sourceThreadId": "01a19c6c-1e7d-7751-93cc-cb38dadb85ab",
+    "sourceUserMessageId": "01a19c83-20eb-7df0-87d9-0c67f1896214",
+    "authorization": "К Аргуну, кстати, тоже там обращайся, когда того требуют ревью стороннее, например.",
+    "authorizationScope": "First bounded review of new independent B3 stage under current human instruction and standing mandate. No automatic result/fix/final review or retry.",
+    "requestSha256": "8777f3b5ca9e8ab2a4ce99e832fe405b600362959465aee281081de248897544",
+    "payloadSha256": "2efcca78a49fc365572e7a549ff6af78686f585fab47945ce7264fef63378530",
+    "manifestSha256": "00d24ff8585a4b2aeb6e0d1396f24b0892ecef01935df4866018ced2ffb86822",
+    "externalPrompt": "Проведи одно ограниченное ревью плана из приложенного bundle.md. review_id=20261102-b3-plan-01; stage_id=core-base-start-over; type=plan; base_commit=ad12e125e01b2be89ec7298b32c69a366cc390d2; plan_sha256=d8a621daa6fe4582ad3795d67d8ae7dc5d4baeaa74122987537d34876deab5ab; request_sha256=8777f3b5ca9e8ab2a4ce99e832fe405b600362959465aee281081de248897544; bundle_sha256=2efcca78a49fc365572e7a549ff6af78686f585fab47945ce7264fef63378530; manifest_sha256=00d24ff8585a4b2aeb6e0d1396f24b0892ecef01935df4866018ced2ffb86822. Ответь по-русски на пять вопросов запроса. Фрагменты исходников ограничены указанными ranges; неподтверждённые места пометь гипотезами. Дай verdict и конкретные минимальные исправления/проверки. Это не разрешение исполнения или повод для второго ревью.",
+    "createdAt": "2026-11-02T13:49:50.594Z",
+    "trustedUserMessageVerified": true
+  },
+  "readiness": {
+    "verifiedAt": "2026-11-02T13:52:09.98Z",
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "effort": "Высокий — Глубокий",
+    "effortOptions": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "conversation": "new empty Chat",
+    "previousResponses": 0
+  },
+  "baseCommit": "ad12e125e01b2be89ec7298b32c69a366cc390d2",
+  "targetCommit": null,
+  "planDigest": "d8a621daa6fe4582ad3795d67d8ae7dc5d4baeaa74122987537d34876deab5ab",
+  "requestSha256": "8777f3b5ca9e8ab2a4ce99e832fe405b600362959465aee281081de248897544",
+  "manifestSha256": "00d24ff8585a4b2aeb6e0d1396f24b0892ecef01935df4866018ced2ffb86822",
+  "payload": {
+    "name": "bundle.md",
+    "bytes": 45298,
+    "sha256": "2efcca78a49fc365572e7a549ff6af78686f585fab47945ce7264fef63378530"
+  },
+  "baseline": {
+    "request.md": {
+      "bytes": 6991,
+      "sha256": "8777f3b5ca9e8ab2a4ce99e832fe405b600362959465aee281081de248897544"
+    },
+    "bundle.md": {
+      "bytes": 45298,
+      "sha256": "2efcca78a49fc365572e7a549ff6af78686f585fab47945ce7264fef63378530"
+    },
+    "manifest.json": {
+      "bytes": 4633,
+      "sha256": "00d24ff8585a4b2aeb6e0d1396f24b0892ecef01935df4866018ced2ffb86822"
+    },
+    "approval.json": {
+      "bytes": 1859,
+      "sha256": "3819068f3acfb26d1b6267222d199d849d9a33589e042bb738fb285489309448"
+    },
+    "verification.md": {
+      "bytes": 2582,
+      "sha256": "66de22728d73028a0ad61a032ac1dfd9f6da4508f0e77ee4cfde2c7204314710"
+    },
+    "build-local.js": {
+      "bytes": 6482,
+      "sha256": "5d2a3a0f06eb7b29e16563d13e6bf832ad547069a2a78e2b17dd6001b37b10cd"
+    },
+    "context/plan.md": {
+      "bytes": 5961,
+      "sha256": "d8a621daa6fe4582ad3795d67d8ae7dc5d4baeaa74122987537d34876deab5ab"
+    },
+    "context/source-excerpts.md": {
+      "bytes": 32306,
+      "sha256": "59c2dc4115af8f983c5331fe816cbae4a57ddd486f4bfcac17378675d4035826"
+    }
+  },
+  "prompt": "Проведи одно ограниченное ревью плана из приложенного bundle.md. review_id=20261102-b3-plan-01; stage_id=core-base-start-over; type=plan; base_commit=ad12e125e01b2be89ec7298b32c69a366cc390d2; plan_sha256=d8a621daa6fe4582ad3795d67d8ae7dc5d4baeaa74122987537d34876deab5ab; request_sha256=8777f3b5ca9e8ab2a4ce99e832fe405b600362959465aee281081de248897544; bundle_sha256=2efcca78a49fc365572e7a549ff6af78686f585fab47945ce7264fef63378530; manifest_sha256=00d24ff8585a4b2aeb6e0d1396f24b0892ecef01935df4866018ced2ffb86822. Ответь по-русски на пять вопросов запроса. Фрагменты исходников ограничены указанными ranges; неподтверждённые места пометь гипотезами. Дай verdict и конкретные минимальные исправления/проверки. Это не разрешение исполнения или повод для второго ревью.",
+  "promptSha256": "4e75771330d9ca0a1746e149d56db29cdfa03e73fe503d9a2294fe616ec41d0a",
+  "preparedAt": "2026-11-02T13:52:09.98Z",
+  "uploadInvokedAt": "2026-11-02T13:52:19.757Z",
+  "promptVerifiedAt": "2026-11-02T13:53:03.813Z",
+  "uploadCompletedAt": "2026-11-02T13:53:03.813Z",
+  "sendInvokedAt": "2026-11-02T13:53:03.813Z",
+  "confirmedAt": "2026-11-02T13:53:21.038Z",
+  "receipt": {
+    "url": "https://gemini.google.com/app/9ff4479f1258260b",
+    "reviewIdVisible": true,
+    "attachment": "bundle.md",
+    "composerEmpty": true,
+    "generationActiveAtSubmission": true,
+    "permanentUrlObservedAt": "2026-11-02T13:55:24.353Z"
+  },
+  "retrievalHistory": [
+    {
+      "recordedAt": "2026-11-02T13:58:45.5086996Z",
+      "stage": "response-read",
+      "events": [
+        "Playwright count: Timed out after 3000ms waiting for CDP command Runtime.evaluate",
+        "Same-tab getAXState: 30-second execution timeout and kernel reset"
+      ],
+      "lastKnownGenerationActive": true,
+      "lastKnownResponseCount": 1,
+      "sendRepeated": false,
+      "reloadPerformed": false,
+      "recovery": "Fresh inventory and one bounded same-channel screenshot pending"
+    },
+    {
+      "recordedAt": "2026-11-02T13:59:37.4201549Z",
+      "stage": "response-read",
+      "freshInventory": "Same Chrome extension instance, tab 1490139228 and receipt URL still present",
+      "action": "One screenshot of same tab using documented browser.tabs.get and tab.screenshot",
+      "error": "Debugger unattached",
+      "outcome": "Stopped browser actions; no bypass, navigation, reload or replay"
+    }
+  ],
+  "retrieval": "blocked",
+  "responseOutcome": "unknown",
+  "retrievalStoppedAt": "2026-11-02T13:59:37.4201549Z"
+}

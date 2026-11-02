@@ -5,7 +5,18 @@
 подключение текущего чата после обновления app transport. Новый чат не нужен.
 Ниже сохранены прежние checkpoints; актуальное состояние — в первом разделе.
 
-## Текущее состояние: configured be9afe99 после restart, owner16772 ready
+## Текущее состояние — 2 ноября: B1/B2 package2fb5aebe, configured restart pending
+
+Установлен и явно включён package2fb5aebe…/distributiond8d77c38…; старые settled
+transactions не повторялись. Новый стандартный thin client читает native AE и
+known read rejection, панель сама восстановилась после96с без Core. Owner19892,
+один3457, AE9472/пустой проект,44settled events/prefix36 exact. Configured MCP
+этого чата ещё oldbe9afe99/owner_unavailable. Актуальные IDs/evidence, ручной
+restart Codex и B3/Argon blocker — в
+[новом checkpoint](core-base-installed-checkpoint-20261102.md).
+Не повторять update/enable и не переносить historical adoption как authority.
+
+## Предыдущее состояние: configured be9afe99 после restart, owner16772 ready
 
 1ноября: пользователь перезапустил Codex. Первый configured core_status без retry
 загрузил be9afe99, owner16772/birth639290764154052560/

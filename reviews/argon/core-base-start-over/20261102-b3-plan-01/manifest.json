@@ -1,0 +1,152 @@
+{
+  "status": "COMPLETE",
+  "stageId": "core-base-start-over",
+  "reviewId": "20261102-b3-plan-01",
+  "type": "plan",
+  "baseCommit": "ad12e125e01b2be89ec7298b32c69a366cc390d2",
+  "targetCommit": null,
+  "planDigest": "d8a621daa6fe4582ad3795d67d8ae7dc5d4baeaa74122987537d34876deab5ab",
+  "requestDigest": "8777f3b5ca9e8ab2a4ce99e832fe405b600362959465aee281081de248897544",
+  "files": [
+    {
+      "path": "request.md",
+      "bytes": 6991,
+      "sha256": "8777f3b5ca9e8ab2a4ce99e832fe405b600362959465aee281081de248897544",
+      "classification": "INTERNAL source/plan, no runtime state"
+    },
+    {
+      "path": "context/plan.md",
+      "bytes": 5961,
+      "sha256": "d8a621daa6fe4582ad3795d67d8ae7dc5d4baeaa74122987537d34876deab5ab",
+      "classification": "INTERNAL source/plan, no runtime state"
+    },
+    {
+      "path": "context/source-excerpts.md",
+      "bytes": 32306,
+      "sha256": "59c2dc4115af8f983c5331fe816cbae4a57ddd486f4bfcac17378675d4035826",
+      "classification": "INTERNAL source/plan, no runtime state"
+    },
+    {
+      "path": "bundle.md",
+      "bytes": 45298,
+      "sha256": "2efcca78a49fc365572e7a549ff6af78686f585fab47945ce7264fef63378530",
+      "classification": "INTERNAL source/plan, no runtime state"
+    }
+  ],
+  "sourceSnapshot": [
+    {
+      "path": "core4/runtime/attachment-owner.js",
+      "sha256": "4ee78b14a71633e93eaa742fdbdaa85d07a9e7e2938006cfd9a642e8bd69fba1",
+      "ranges": [
+        [
+          9,
+          33
+        ],
+        [
+          101,
+          145
+        ]
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "path": "core4/runtime/stdio-entry.js",
+      "sha256": "e2cd0c2bbf6c0bb772f5563ad694470b33f0370e9d155f41b9d62015233f9127",
+      "ranges": [
+        [
+          174,
+          230
+        ],
+        [
+          276,
+          310
+        ]
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "path": "core4/runtime/owner-maintenance.js",
+      "sha256": "0b370cbec8130236d03dd4c3ae2f6d28f9e5b1f3f487c2e340452d0b01168793",
+      "ranges": [
+        [
+          97,
+          129
+        ]
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "path": "core4/runtime/owner-lifecycle.js",
+      "sha256": "29f525aefc8768ef3cc37a87caa0e802afa5da1d31fe2592cef1f613f5da8746",
+      "ranges": [
+        [
+          469,
+          488
+        ]
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "path": "core4/integrations/cep/http-peer.js",
+      "sha256": "067e4c789e847940ef5760fd7d5240f8648f011cc81a9cb39a0e8ed34e8b3d16",
+      "ranges": [
+        [
+          25,
+          36
+        ],
+        [
+          87,
+          110
+        ],
+        [
+          135,
+          175
+        ]
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "path": "core4/core/broker.js",
+      "sha256": "432f7438b6ccd53e4f9b71cc4cc4624fa86f2cbae89528e7c29bf8cc00857352",
+      "ranges": [
+        [
+          390,
+          402
+        ]
+      ],
+      "classification": "INTERNAL"
+    },
+    {
+      "path": "core4/cep/js/poll-dispatcher.js",
+      "sha256": "741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006",
+      "ranges": [
+        [
+          10,
+          44
+        ]
+      ],
+      "classification": "INTERNAL"
+    }
+  ],
+  "externalAllowlist": [
+    "bundle.md"
+  ],
+  "recipient": "Argon via existing sole ARGON_BrowserUse controller; existing selected account and maximum available effort",
+  "exclusions": [
+    "credentials and token values",
+    "runtime/browser/auth state",
+    "AEP/assets",
+    "full logs",
+    "private absolute paths and account identifiers",
+    "unlisted source ranges",
+    "local builder and approval records"
+  ],
+  "limitations": [
+    "bounded plan review; not full code audit",
+    "B3 implementation and native/reset/installed evidence do not yet exist",
+    "B1 validation still in progress; B2 offline evidence only",
+    "dirty source snippets are individually SHA-256 bound; no claim of committed implementation"
+  ],
+  "builder": "Node builtins used because bundled Python builder is unavailable in this host environment; exact allowlist and full output content scan/read-back applied",
+  "workingTree": "M core4/cep/js/panel.js\n M core4/integrations/cep/http-peer.js\n M core4/runtime/attachment-owner.js\n M core4/runtime/client-stdio.js\n M core4/runtime/stdio-entry.js\n M core4/test/installable-runtime.test.js\n M core4/test/owner-attachments.test.js\n M core4/test/owner-runtime.test.js\n M core4/test/panel-reconnect.test.js\n?? docs/core-base-b2-20261102.md\n?? docs/core-base-b3-20261102.md\n?? reviews/argon/core-base-start-over/"
+}

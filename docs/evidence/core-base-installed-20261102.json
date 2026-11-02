@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "sourceCommits": [
+    "264522c728da5b8a5a621426de270a86263291c4",
+    "2d08c71ac8a0383d4c726d9f5be8621bd72ce012"
+  ],
+  "packageHash": "2fb5aebe3780215d8cd8af0fcd0927445f2a5bb475fdbb77cb2b7afb50b9f988",
+  "distributionHash": "d8d77c3876ef29121acb3063b713888d8ebf4cb8015fd6c9d6839921282c334d",
+  "runtimeFiles": 70,
+  "bundleFiles": 87,
+  "stopId": "fdfd33e5-1d57-436d-a5fb-dd2a6e17a3bd",
+  "updateId": "1515c112-9b17-4f76-acf8-2b9f36f6d338",
+  "updateEnabled": true,
+  "standaloneVerified": true,
+  "baselineProtectedHashes": {
+    "origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "state/production/origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "state/production/host-adoption.json": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+    "state/production/broker/ledger.ndjson": null
+  },
+  "currentBindings": {
+    "descriptor": "17f5fb7473c1bdbd526b27c5f872caaf60d97734a32fc542ad6897ffb8c33fa3",
+    "client": "834eb4f29b0133e91ff139d33a2033d1a97710d9231f16cbd64c25939f8f87ba",
+    "config": "f439f8f4dcbdbf768a7007daa7506a7596468bfd48fb3eb65f3d8feeb49a7b8e"
+  },
+  "standardClient": {
+    "initialPid": 21176,
+    "initialOwner": 12696,
+    "initialBootId": "bc565251-522b-4f8a-a41c-0a62c8cca9aa",
+    "afterClientEOF": true,
+    "knownRejection": {
+      "isError": true,
+      "value": {
+        "outcome": "rejected",
+        "code": "inspection_failed",
+        "nextAction": "core_diagnostics"
+      }
+    },
+    "readAfterRejectionSucceeded": true,
+    "disconnect": {
+      "disconnected": false,
+      "physical": {
+        "automaticLifecycle": "unavailable",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionAvailable": true,
+        "lastReadFailure": {
+          "authority": false,
+          "code": "inspection_failed",
+          "commandId": "inspect-33ee9bc0-8d09-4d6b-ad4d-2de347e96fdb",
+          "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+          "moduleId": "project-inspection",
+          "phase": "inspect"
+        },
+        "listening": true,
+        "peer": {
+          "connected": true,
+          "peerId": "panel-d106149602a38cc998fc933222b9e37ec89f5cdf715d9bf0"
+        },
+        "pending": null,
+        "port": 3457,
+        "receiverStoreIdentity": "receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4",
+        "storeClosed": false,
+        "storeFault": false,
+        "unknown": false
+      },
+      "reason": "physical_link_owned_by_installation_owner"
+    },
+    "released": true
+  },
+  "idleCycle": {
+    "stopId": "996bf46b-5940-4051-858a-9c0fb0f0a9c8",
+    "waitingElapsedMs": 96622,
+    "manualConnectClicks": 0,
+    "autoReconnected": true,
+    "ownerPid": 19892,
+    "bootId": "3c61188f-0bf8-442c-bf1e-eda2b66af1f4",
+    "afterActivity": {
+      "fault": false,
+      "pending": false,
+      "unresolved": false
+    },
+    "controllerMode": "idle",
+    "peer": {
+      "connected": true,
+      "peerId": "panel-9c5b8cd60f683dc93ba9a9f2451d52582d32c2683e3e0636"
+    },
+    "freshRead": {
+      "aeVersion": "26.3x87",
+      "compositions": [],
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "Несохранённый проект",
+        "numItems": 0,
+        "saved": false
+      },
+      "target": {
+        "compId": null,
+        "projectId": null
+      },
+      "truncated": false
+    }
+  },
+  "receiver": {
+    "eventCount": 44,
+    "byteHash": "94f88c2e8c092141c0fd80e73ea6b1944d9172d810dd4575c19a07466f49fb38",
+    "prefix36Hash": "a39962013031e222da3d455da7c84c51e234e001a2d9d1825bfdb69678a1dcfe",
+    "addedCommands": 4,
+    "addedTypes": [
+      "begin",
+      "complete",
+      "begin",
+      "complete",
+      "begin",
+      "complete",
+      "begin",
+      "complete"
+    ]
+  },
+  "ae": {
+    "pid": 9472,
+    "startedForThisCheck": true,
+    "project": "empty unsaved test project",
+    "aeVersion": "26.3x87",
+    "saveCount": 0,
+    "projectMutationCommands": 0
+  },
+  "configured": {
+    "verified": false,
+    "oldPackageHash": "be9afe99d4b04fa480477af288bb0b3e8dfc15c493add2e0da3225fe4940ad43",
+    "observedError": "owner_unavailable",
+    "requiredAction": "restart Codex; first configured core_status and fresh project-inspection"
+  },
+  "b3": {
+    "implemented": false,
+    "reviewStatus": "blocked-response-read",
+    "receipt": "https://gemini.google.com/app/9ff4479f1258260b",
+    "requiredAction": "restore existing browser extension and retrieve original answer; no resend"
+  },
+  "limitations": [
+    "standard native proof does not replace configured MCP proof",
+    "no B3 reset or recovery mutation acceptance",
+    "no full release/two-machine portability",
+    "host adoption still belongs to historical AE; no current mutation authority"
+  ],
+  "earlyConnectAttempt": {
+    "outcome": "unknown",
+    "code": "owner_outcome_uncertain",
+    "phase": "core_connect before CEP ready",
+    "physicalInspectionSubmitted": false,
+    "receiverEventsUnchanged": 42,
+    "newReadStartedOnlyAfterFreshReady": true
+  }
+}

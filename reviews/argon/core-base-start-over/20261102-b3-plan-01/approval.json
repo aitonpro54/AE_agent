@@ -1,0 +1,12 @@
+{
+  "reviewId": "20261102-b3-plan-01",
+  "sourceThreadId": "01a19c6c-1e7d-7751-93cc-cb38dadb85ab",
+  "sourceUserMessageId": "01a19c83-20eb-7df0-87d9-0c67f1896214",
+  "authorization": "К Аргуну, кстати, тоже там обращайся, когда того требуют ревью стороннее, например.",
+  "authorizationScope": "First bounded review of new independent B3 stage under current human instruction and standing mandate. No automatic result/fix/final review or retry.",
+  "requestSha256": "8777f3b5ca9e8ab2a4ce99e832fe405b600362959465aee281081de248897544",
+  "payloadSha256": "2efcca78a49fc365572e7a549ff6af78686f585fab47945ce7264fef63378530",
+  "manifestSha256": "00d24ff8585a4b2aeb6e0d1396f24b0892ecef01935df4866018ced2ffb86822",
+  "externalPrompt": "Проведи одно ограниченное ревью плана из приложенного bundle.md. review_id=20261102-b3-plan-01; stage_id=core-base-start-over; type=plan; base_commit=ad12e125e01b2be89ec7298b32c69a366cc390d2; plan_sha256=d8a621daa6fe4582ad3795d67d8ae7dc5d4baeaa74122987537d34876deab5ab; request_sha256=8777f3b5ca9e8ab2a4ce99e832fe405b600362959465aee281081de248897544; bundle_sha256=2efcca78a49fc365572e7a549ff6af78686f585fab47945ce7264fef63378530; manifest_sha256=00d24ff8585a4b2aeb6e0d1396f24b0892ecef01935df4866018ced2ffb86822. Ответь по-русски на пять вопросов запроса. Фрагменты исходников ограничены указанными ranges; неподтверждённые места пометь гипотезами. Дай verdict и конкретные минимальные исправления/проверки. Это не разрешение исполнения или повод для второго ревью.",
+  "createdAt": "2026-11-02T13:49:50.594Z"
+}

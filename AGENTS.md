@@ -11,6 +11,19 @@
 
 ## Текущий scope и правила
 
+**2 ноября, installed checkpoint B1/B2:** source commits `264522c`/`2d08c71`
+приняты адресными checks; штатно установлен package `2fb5aebe…`, distribution
+`d8d77c38…`. Standard thin client → CEP → native project-inspection, known rejected
+read и auto reconnect после96с без Core проверены. Последний owner19892/один3457,
+AE9472/пустой проект, peer connected, pending/UNKNOWN/fault0; history44events с
+точным prefix36, origins/adoption/ledger preserved. Configured клиент текущего
+чата ещё oldbe9afe99/owner_unavailable — требуется restart Codex и fresh configured
+status/read; install повторять не нужно. B3 только спроектирован: один Argon
+plan review отправлен, чтение ответа blocked/Debugger unattached, без повторной
+отправки. Актуальные IDs, действия и предел proof —
+[checkpoint](plans/core-base-installed-checkpoint-20261102.md). История ниже
+сохраняет provenance; она не выдаёт authority новому AE или B3 reset.
+
 **2 ноября, уточнение пользователя в чате `01a19c49-8b10-7fe2-af4b-ce58f19219d5`:**
 в базу добавлен обязательный режим «Начать заново»: прекратить прежнюю работу,
 исключить позднее исполнение старых команд, сохранить неизвестные исходы в истории
