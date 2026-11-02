@@ -140,19 +140,27 @@ function context(options) {
     const names = fs.readdirSync(dir); if (names.length > 64) fail('start_over_phase');
     for (const name of names) {
       const anchor = ['receiver', 'ledger'].find(k => name === 'original-' + k && body.prefix[k].hash !== null);
-      if (!anchor && !['intent.json', 'inventory.json', 'continuation-inventory.json', 'stop-requested.json'].includes(name)) {
-        const match = name.match(/^(?:inventory|continuation-inventory|stop-requested)\.json\.stage-([a-f0-9-]{36})$/); if (!match || !UUID.test(match[1])) fail('start_over_phase');
-      }
+      const archiveDirectory = ['archive-broker', 'archive-receiver'].includes(name), archiveFile = ['archive-owner', 'archive-owner-next', 'archive-diagnostic', 'archive-maintenance', 'archive-session', 'archive-baseline'].includes(name);
+      const published = ['intent.json', 'inventory.json', 'continuation-inventory.json', 'stop-requested.json', 'archive-plan.json', 'archive-completed.json', 'session-candidate.json', 'session-publish-intent.json', 'session-published.json', 'reset-completed.json', 'enable-intent.json'].includes(name) || /^archive-0[0-7]-(?:intent|done)\.json$/.test(name);
+      const leased = /^(?:lease|claim|prior-gate)-([a-f0-9-]{36})$/.exec(name) || /^attempt-([a-f0-9-]{36})\.json$/.exec(name);
+      const staged = name.match(/^(.+)\.stage-([a-f0-9-]{36})$/);
+      const validStage = staged && UUID.test(staged[2]) && (/^(?:inventory|continuation-inventory|stop-requested|archive-plan|archive-completed|session-candidate|session-publish-intent|session-published|reset-completed|enable-intent|archive-0[0-7]-(?:intent|done))\.json$/.test(staged[1]) || /^(?:lease-([a-f0-9-]{36})|attempt-([a-f0-9-]{36})\.json)$/.test(staged[1]));
+      if (!anchor && !archiveDirectory && !archiveFile && !published && !(leased && UUID.test(leased[1])) && !validStage) fail('start_over_phase');
       // Unpublished stages remain inert evidence, but never opaque symlinks,
       // directories or unbounded files inside an otherwise accepted phase.
-      read(path.join(dir, name), anchor ? 64 * 1024 * 1024 : 128 * 1024);
+      if (archiveDirectory) plain(path.join(dir, name), false, true); else read(path.join(dir, name), anchor ? 64 * 1024 * 1024 : 128 * 1024);
     }
     return { barrier, body, dir };
   }
   function continuation(a) {
     const currentIntent = active(); if (!currentIntent || !equal(info(currentIntent.barrier), info(a.barrier))) fail('start_over_intent_identity');
-    if (!equal(protectedFacts(), a.body.protected)) fail('start_over_changed');
-    const now = histories(), initial = {};
+    const archive = require('./start-over-archive').readArchive(api, a), currentProtected = protectedFacts();
+    if (archive) {
+      for (const key of Object.keys(a.body.protected)) if (key !== 'state/production/work-session.json' && !equal(currentProtected[key], a.body.protected[key])) fail('start_over_changed');
+      const r = archive.p.body.roles.find(r => r.role === 'session'), original = r.original.type === 'absent' ? { hash: null, stat: null } : { hash: r.original.hash, stat: r.original.stat };
+      if (!equal(original, a.body.protected['state/production/work-session.json'])) fail('start_over_changed');
+    } else if (!equal(currentProtected, a.body.protected)) fail('start_over_changed');
+    const now = archive ? require('./start-over-archive').readArchiveHistories(api, a) : histories(), initial = {};
     exact(a.body.prefix, ['receiver', 'ledger']);
     for (const k of ['receiver', 'ledger']) {
       const p = a.body.prefix[k], v = now[k]; exact(p, ['hash', 'stat', 'byteLength']);
@@ -164,7 +172,7 @@ function context(options) {
     const current = { receiverBytes: now.receiver.bytes, ledgerBytes: now.ledger.bytes };
     const result = assertStartOverHistoryContinuation({ installationId: d.installationId, machineId: d.machineId, descriptorPath, initial, current });
     if (!result.archiveEligibleHistory) fail('start_over_resource_fenced');
-    return result;
+    return { ...result, archiveProofHash: archive?.proofHash ?? null };
   }
   function record(a, name, kind, fields) { const v = read(path.join(a.dir, name)); if (!v.bytes) return null; const b = decode(v, kind, ['id', 'intentHash', ...fields]); if (b.id !== a.body.id || b.intentHash !== a.barrier.hash) fail('start_over_record'); if (['start-over-inventory', 'start-over-continuation-inventory'].includes(kind)) validateInventory(b.observation); return b; }
   function stoppedMarkers(a) {
@@ -174,20 +182,22 @@ function context(options) {
       const wanted = expected?.[name] ?? (a.body.markers[name].bytes === null ? null : Buffer.from(a.body.markers[name].bytes, 'base64'));
       if (wanted === null || !v.bytes.equals(Buffer.isBuffer(wanted) ? wanted : Buffer.from(wanted))) fail('start_over_foreign_marker');
     }
-    const gate = read(path.join(d.installRoot, 'install.lock'));
+    const leases = require('./start-over-finisher').inspectStartOverLeases(api, a), gate = leases.gate;
     if (gate.bytes) {
-      const b = decode(gate, 'startup-gate', ['scope', 'recoveryId', 'readyId', 'takeoverId', 'phase'], 'lifecycle'); scope(b.scope, true);
-      const creator = original.scopes.find(s => equal(short(s), a.body.requestor));
-      if (b.phase !== 'shutdown' || b.readyId !== null || b.takeoverId !== null || !UUID.test(b.recoveryId) || !creator || !equal(b.scope, creator)) fail('start_over_foreign_marker');
+      if (!leases.current) {
+        const b = decode(gate, 'startup-gate', ['scope', 'recoveryId', 'readyId', 'takeoverId', 'phase'], 'lifecycle'); scope(b.scope, true);
+        const creator = original.scopes.find(s => equal(short(s), a.body.requestor));
+        if (b.phase !== 'shutdown' || b.readyId !== null || b.takeoverId !== null || !UUID.test(b.recoveryId) || !creator || !equal(b.scope, creator)) fail('start_over_foreign_marker');
+      }
     }
     const maintenance = read(path.join(d.stateDir, 'runtime-maintenance.json'));
     if (maintenance.bytes) {
       const b = decode(maintenance, 'maintenance-stop', ['id', 'scope', 'protected', 'authorizationHash', 'nonce'], 'maintenance'); scope(b.scope);
       if (!equal(b.scope, a.body.requestor) || !UUID.test(b.id) || !UUID.test(b.nonce) || !HEX.test(b.authorizationHash)) fail('start_over_foreign_marker');
     }
-    return { markers: Object.fromEntries(MARKERS.map(n => [n, info(values[n])])), installGate: info(gate), maintenance: info(maintenance) };
+    return { markers: Object.fromEntries(MARKERS.map(n => [n, info(values[n])])), installGate: info(gate), maintenance: info(maintenance), finisherActors: leases.actors };
   }
-  function phaseFacts(a) { return Object.fromEntries(fs.readdirSync(a.dir).sort().map(name => [name, info(read(path.join(a.dir, name), name.startsWith('original-') ? 64 * 1024 * 1024 : 128 * 1024))])); }
+  function phaseFacts(a) { return Object.fromEntries(fs.readdirSync(a.dir).sort().map(name => [name, ['archive-broker', 'archive-receiver'].includes(name) ? require('./start-over-archive').snapshot(api, path.join(a.dir, name)) : info(read(path.join(a.dir, name), name.startsWith('original-') ? 64 * 1024 * 1024 : 128 * 1024))])); }
   function historicalAE() {
     const v = read(path.join(d.stateDir, 'host-adoption.json')); if (v.bytes === null) return [];
     if (!Buffer.from(v.bytes.toString('utf8')).equals(v.bytes)) fail('start_over_host_origin');
@@ -199,7 +209,13 @@ function context(options) {
     const ticks = BigInt(time) * 10000n + 621355968000000000n + BigInt(h.aeProcessBirth.slice(23, 27)); if (ticks < 1n || ticks > 3155378975999999999n) fail('start_over_host_origin');
     return [{ pid: h.aePid, birthTicks: String(ticks) }];
   }
-  return { d, descriptorPath, protectedFacts, histories, historyOptions, markers, active, continuation, directory, seal, decode, record, validateInventory, stoppedMarkers, phaseFacts, historicalAE, read, info, plain, atomic };
+  function effectiveHistories(a) { return require('./start-over-archive').readArchiveHistories(api, a) || histories(); }
+  function archivedIntent(id) {
+    const dir = directory(id), original = read(path.join(dir, 'intent.json')), body = decode(original, 'start-over-intent', INTENT); scope(body.requestor);
+    if (body.id !== id || !UUID.test(body.newSessionId) || !equal(directoryStamp(fs.lstatSync(dir, { bigint: true })), body.directory) || !equal(markerSnapshot(body.markers).actors, body.actors)) fail('start_over_intent_identity');
+    return { dir, body, barrier: original };
+  }
+  const api = { d, descriptorPath, protectedFacts, histories, effectiveHistories, historyOptions, markers, active, archivedIntent, continuation, directory, seal, decode, record, validateInventory, stoppedMarkers, phaseFacts, historicalAE, read, info, plain, atomic }; return api;
 }
 function inspect(c) {
   const a = c.active(); if (!a) return Object.freeze({ phase: 'running', id: null, resetComplete: false, resetPermit: false, aeAuthority: false });
@@ -253,4 +269,7 @@ function startOverBarrierContext(capability) {
   const p = require('./start-over-barrier').startOverBarrierRequest(capability);
   return context({ installation: p.installation, descriptorPath: p.descriptorPath });
 }
-module.exports = { createOwnerStartOver, inspectStartOver, startOverBarrierContext };
+function startOverFinisherContext(capability) {
+  const p = require('./start-over-finisher').startOverFinisherRequest(capability); return context({ installation: p.installation, descriptorPath: p.descriptorPath });
+}
+module.exports = { createOwnerStartOver, inspectStartOver, startOverBarrierContext, startOverFinisherContext };

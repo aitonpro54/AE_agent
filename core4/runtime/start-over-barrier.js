@@ -16,7 +16,7 @@ async function listen(server, target) {
 async function close(server) { if (!server?.listening) return; await new Promise(resolve => { server.close(resolve); server.closeAllConnections?.(); }); }
 function state(c, a) {
   const now = c.active(); if (!now || !equal(c.info(now.barrier), c.info(a.barrier))) fail('start_over_intent_identity');
-  const continuation = c.continuation(a), histories = c.histories(), markers = c.stoppedMarkers(a);
+  const continuation = c.continuation(a), histories = c.effectiveHistories(a), markers = c.stoppedMarkers(a);
   return { continuation, facts: { intent: c.info(now.barrier), protected: c.protectedFacts(), phase: c.phaseFacts(a), histories: Object.fromEntries(Object.entries(histories).map(([n, v]) => [n, c.info(v)])), ...markers } };
 }
 async function acquireStartOverBarrier(options) {
@@ -32,7 +32,7 @@ async function acquireStartOverBarrier(options) {
     physical = http.createServer((_req, res) => { res.writeHead(503, { Connection: 'close' }); res.end(); });
     await listen(physical, { host: '127.0.0.1', port: 3457 });
     const endpoint = require('./client-entry').ownerEndpoint(c.d); ipc = net.createServer(socket => socket.destroy()); await listen(ipc, endpoint);
-    const before = state(c, a), actors = unique(a.body.actors);
+    const before = state(c, a), actors = unique([...a.body.actors, ...before.facts.finisherActors]);
     c.record(a, 'stop-requested.json', 'start-over-stop-requested', []);
     let inventory = c.record(a, 'inventory.json', 'start-over-inventory', ['observation']);
     const recovered = c.record(a, 'continuation-inventory.json', 'start-over-continuation-inventory', ['observation', 'nativeStop']);
@@ -45,6 +45,7 @@ async function acquireStartOverBarrier(options) {
       if (value.actors.some(s => s.state === 'alive')) refusal('start_over_producer_still_alive', { actors: value.actors.filter(s => s.state === 'alive').map(s => ({ pid: s.pid, birthTicks: s.birthTicks })) });
     };
     nodesGone(native);
+    if (!equal(before.facts.finisherActors, after.facts.finisherActors)) fail('start_over_barrier_changed');
     // The final history is read AFTER native producer death. If a last accepted
     // callback strengthened its risk during the await, probe the full new AE
     // set; never reuse a cheap idle observation for a newly unknown command.
@@ -67,15 +68,18 @@ async function acquireStartOverBarrier(options) {
     await close(ipc); await close(physical); barriers.delete(capability); requests.delete(capability); throw e;
   }
 }
-function assertStartOverBarrier(capability) {
+function assertStartOverEndpoints(capability) {
   const value = barriers.get(capability); if (!value || value.released) fail('start_over_barrier_brand');
   const address = value.physical.listening && value.physical.address();
   if (!address || address.address !== '127.0.0.1' || address.port !== 3457 || !value.ipc.listening || value.ipc.address() !== value.endpoint) fail('start_over_endpoint_lost');
-  if (!equal(state(value.c, value.a).facts, value.facts)) fail('start_over_barrier_changed'); return value;
+  const current = value.c.active(); if (!current || !equal(value.c.info(current.barrier), value.c.info(value.a.barrier))) fail('start_over_intent_identity'); return value;
+}
+function assertStartOverBarrier(capability) {
+  const value = assertStartOverEndpoints(capability); if (!equal(state(value.c, value.a).facts, value.facts)) fail('start_over_barrier_changed'); return value;
 }
 function startOverBarrierFacts(capability) { const v = assertStartOverBarrier(capability); return Object.freeze({ id: v.a.body.id, intentHash: v.a.barrier.hash, proofHash: hash(v.facts), processCoverage: 'native-process-snapshot', endpointsReserved: true, resetComplete: false, aeAuthority: false }); }
 async function releaseStartOverBarrier(capability) {
   const v = barriers.get(capability); if (!v || v.released) fail('start_over_barrier_brand'); v.released = true;
   try { await close(v.ipc); await close(v.physical); } finally { barriers.delete(capability); requests.delete(capability); }
 }
-module.exports = { acquireStartOverBarrier, assertStartOverBarrier, startOverBarrierFacts, releaseStartOverBarrier, startOverBarrierRequest };
+module.exports = { acquireStartOverBarrier, assertStartOverBarrier, assertStartOverEndpoints, startOverBarrierFacts, releaseStartOverBarrier, startOverBarrierRequest };

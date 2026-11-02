@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-02T20:49:04.010Z",
+  "scope": "B3a4 single private durable archive/finisher, bounded native-death lease takeover and baseline-required session publication",
+  "selectedArtifactsOnly": true,
+  "releaseCertified": false,
+  "changed": [
+    "core4/runtime/start-over-finisher.js",
+    "core4/runtime/start-over-archive.js",
+    "core4/runtime/start-over-state.js",
+    "core4/runtime/start-over-barrier.js",
+    "core4/test/start-over-state.test.js",
+    "core4/test/start-over-finisher.test.js",
+    "core4/test/fixtures/start-over-finisher.js",
+    "core4/config/validation-map.json"
+  ],
+  "selectedChecks": [
+    {
+      "check": "start-over-finisher",
+      "evidenceKey": "6e0353aa14867f58340657fd8c57ca9578202593509bbae403b877931376b8cf",
+      "cases": 20,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "start-over-state",
+      "evidenceKey": "d32fe0707f4c23bfdaf61b794b5cfe3019c17688604640a153d6d9b8ba4ec429",
+      "cases": 17,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "start-over-barrier",
+      "evidenceKey": "8d433badd7cee4522431dd17a5beb6260e3b6a64f0b8be49f5287fd3b215aa7a",
+      "cases": 14,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "validation-routing",
+      "evidenceKey": "3a12779a4d33a2b6465e271a8c814e008088e630fb04c4811861c0ab964b7844",
+      "cases": 5,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "stopped-certification",
+      "evidenceKey": "fd3d7a194ccafe3b09d970cf1502cad1590df2fed9183222b8f18c7c85179e10",
+      "cases": 30,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "maintenance-finish",
+      "evidenceKey": "27f0c38d943e69acc8268c98e995afa7a92d2ff294662ac10def4bfecf641dd8",
+      "cases": 32,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "owner-maintenance",
+      "evidenceKey": "0162501c6325889e1721a32a4fcff25476d6ce5d36aa05a1d86a7360d3d5ac8e",
+      "cases": 22,
+      "result": "PASS",
+      "mode": "fresh"
+    }
+  ],
+  "totalCases": 140,
+  "logHash": "5aea09bd781ea7f93c48c4349a28bd54e24989a2abeb33b155db8ccdf6df2322",
+  "boundaries": {
+    "checked": 50,
+    "model": "reviewed-local-code; conservative source guard; not OS sandbox",
+    "liveCalls": 0
+  },
+  "deferredCoverage": [
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "owner-runtime",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "manual-runtime",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified"
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified"
+    }
+  ],
+  "installedUpdateCount": 0,
+  "resetCount": 0,
+  "limitations": [
+    "real TEMP filesystem/loopback/unique named IPC with explicit synthetic native observations and logical canonical port; not installed AE reset proof",
+    "production startup, actual physical delivery fence, panel UI, session acknowledgement and fresh baseline composition remain B3b",
+    "same-ID historical completion does not inspect current work stores or grant runtime authority; package-update lineage integration remains B3b"
+  ]
+}

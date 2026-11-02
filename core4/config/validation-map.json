@@ -1,5 +1,9 @@
 {
   "owners": [
+    { "prefix": "core4/runtime/start-over-finisher.js", "owner": "start-over-finisher", "checks": ["start-over-finisher"] },
+    { "prefix": "core4/runtime/start-over-archive.js", "owner": "start-over-finisher", "checks": ["start-over-finisher"] },
+    { "prefix": "core4/test/start-over-finisher.test.js", "owner": "start-over-finisher", "checks": ["start-over-finisher"] },
+    { "prefix": "core4/test/fixtures/start-over-finisher.js", "owner": "start-over-finisher", "checks": ["start-over-finisher"] },
     { "prefix": "core4/runtime/start-over-barrier.js", "owner": "start-over-barrier", "checks": ["start-over-barrier"] },
     { "prefix": "core4/test/start-over-barrier.test.js", "owner": "start-over-barrier", "checks": ["start-over-barrier"] },
     { "prefix": "core4/test/fixtures/start-over-barrier.js", "owner": "start-over-barrier", "checks": ["start-over-barrier"] },
@@ -1056,8 +1060,9 @@
     }
   ],
   "checkDependencies": {
-    "start-over-state": ["runtime/start-over-state.js", "runtime/start-over-barrier.js", "runtime/start-over-process.js", "runtime/start-over-inspection.js", "runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "runtime/windows-reservation-provider.js", "core/", "integrations/cep/completion-store.js", "protocol/", "runtime/owner-lifecycle.js", "runtime/windows-owner-process.js", "test/fixtures/owner-lifecycle-fixture.js", "test/start-over-state.test.js"],
-    "start-over-barrier": ["runtime/start-over-barrier.js", "runtime/start-over-state.js", "runtime/start-over-process.js", "runtime/start-over-inspection.js", "runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "runtime/windows-reservation-provider.js", "runtime/windows-owner-process.js", "runtime/client-entry.js", "runtime/owner-lifecycle.js", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/fixtures/start-over-barrier.js", "test/start-over-barrier.test.js"],
+    "start-over-finisher": ["runtime/start-over-finisher.js", "runtime/start-over-archive.js", "runtime/start-over-state.js", "runtime/start-over-barrier.js", "runtime/start-over-process.js", "runtime/start-over-inspection.js", "runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "runtime/windows-reservation-provider.js", "runtime/windows-owner-process.js", "runtime/client-entry.js", "runtime/owner-lifecycle.js", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/fixtures/start-over-finisher.js", "test/start-over-finisher.test.js"],
+    "start-over-state": ["runtime/start-over-state.js", "runtime/start-over-barrier.js", "runtime/start-over-archive.js", "runtime/start-over-finisher.js", "runtime/start-over-process.js", "runtime/start-over-inspection.js", "runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "runtime/windows-reservation-provider.js", "core/", "integrations/cep/completion-store.js", "protocol/", "runtime/owner-lifecycle.js", "runtime/windows-owner-process.js", "test/fixtures/owner-lifecycle-fixture.js", "test/start-over-state.test.js"],
+    "start-over-barrier": ["runtime/start-over-barrier.js", "runtime/start-over-state.js", "runtime/start-over-archive.js", "runtime/start-over-finisher.js", "runtime/start-over-process.js", "runtime/start-over-inspection.js", "runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "runtime/windows-reservation-provider.js", "runtime/windows-owner-process.js", "runtime/client-entry.js", "runtime/owner-lifecycle.js", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/fixtures/start-over-barrier.js", "test/start-over-barrier.test.js"],
     "start-over-inspection": ["runtime/start-over-inspection.js", "runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "runtime/windows-reservation-provider.js", "core/ledger.js", "core/broker.js", "core/receiver.js", "core/resources.js", "integrations/cep/http-peer.js", "integrations/cep/completion-store.js", "protocol/", "test/start-over-inspection.test.js"],
     "start-over-process": ["runtime/start-over-process.js", "test/start-over-process.test.js"],
     "stopped-host-readoption-operator": ["tools/", "runtime/", "core/", "protocol/", "config/", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "test/stopped-host-readoption-operator.test.js"],
@@ -1624,6 +1629,7 @@
     ]
   },
   "checkCommands": {
+    "start-over-finisher": ["node", "--test", "--test-name-pattern=start-over-finisher", "test/start-over-finisher.test.js"],
     "start-over-barrier": ["node", "--test", "--test-name-pattern=start-over-barrier", "test/start-over-barrier.test.js"],
     "start-over-state": ["node", "--test", "--test-name-pattern=start-over-state", "test/start-over-state.test.js"],
     "start-over-process": ["node", "--test", "--test-name-pattern=start-over-process", "test/start-over-process.test.js"],
@@ -1809,6 +1815,7 @@
     ]
   },
   "checkPolicy": {
+    "start-over-finisher": { "kind": "component" },
     "start-over-barrier": { "kind": "component" },
     "start-over-state": { "kind": "component" },
     "start-over-process": { "kind": "component" },

@@ -109,6 +109,13 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- 3 ноября, B3a4: один private finisher с process-bound install lease, сохранением
+  точных старых stores и UNKNOWN, signed archive/session receipts принят:
+  7current checks/140fresh cases, boundaries50.11crash prefixes продолжаются
+  только после смерти прежнего helper; same-ID completed receipt — historical
+  data без доступа к новой работе. Production composition и installed reset ещё
+  нет; следующий срез B3b.
+
 - 3 ноября, F2: exact historical AE из adoption добавлен к required death
   targets при UNKNOWN. Missing-in-inventory не означает death; foreign machine
   или imprecise birth не принимаются.5selected checks/115fresh cases,
@@ -190,6 +197,13 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- Архивные rename выполняются только под собственным sealed mutex и двумя
+  удерживаемыми endpoints; старые producers и прежние finisher actors должны
+  прекратиться по exact native identity. Ограниченная цепочка12attempts не
+  допускает бесконечных takeover. Новый work session остаётся baselineRequired
+  и не выдаёт AE authority. Собственный inert atomic stage допустим только как
+  точный локальный alias; внешняя hardlink блокирует продолжение.
 
 - Known host-adoption origin — отдельный death target вместе с current inventory
   и constraint origins. Сохранённая adoption не выдаёт authority свежему AE.
@@ -284,6 +298,13 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+B3a4,3ноября:7current checks/140fresh cases PASS, boundaries50/diff-check.
+[Evidence](../docs/evidence/core-base-b3a4-20261103.json). Реальная TEMP filesystem,
+loopback/уникальный named IPC, synthetic native observations/логический3457.
+Проверены11crash prefixes, partial archive collisions, чужой inode/alias,
+historical repeat без обращения к новой работе. Installed reset/install0;
+production delivery/startup/session/baseline/UI ещё не входят в proof.
 
 F2 host origin,3ноября:5current selected checks/115fresh cases PASS,
 boundaries48/diff-check. [Evidence](../docs/evidence/core-base-b3-host-origin-20261103.json).

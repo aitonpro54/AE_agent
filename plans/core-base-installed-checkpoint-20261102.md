@@ -5,6 +5,11 @@
 
 ## Дополнение 3 ноября
 
+B3a4 private lease/archive/finisher source принят140fresh selected cases/
+7checks, boundaries50; [evidence](../docs/evidence/core-base-b3a4-20261103.json).
+Installed package2fb5aebe прежний, actual reset/install0. Продолжать B3b:
+production startup/physical fence/session acknowledgement/baseline/panel.
+
 Первый configured status после≥3460.720с idle прошёл без retry: тот же owner24160/
 bootc9a04982…, peer connected, controller idle, pending/UNKNOWN/fault0. Один
 реальный listener3457/owner24160; history46events и protected bindings unchanged.
@@ -60,8 +65,9 @@ Descriptor SHA17f5fb74…, client834eb4f2…, configf439f8f4…; полный ev
    Прежний Debugger unattached сохранён как история. Повтор review не нужен.
 3. B3a1 history/process inspection source принят118selectedPASS/46boundaries;
    B3a2 durable intent/inspection —106selectedPASS/47boundaries;
-   B3a3 process/endpoint barrier —118selectedPASS/48boundaries. Finisher и
-   production integration ещё нет. Продолжить B3a4 по
+   B3a3 process/endpoint barrier —118selectedPASS/48boundaries; B3a4 private
+   lease/archive/finisher —140selectedPASS/50boundaries. Production integration
+   ещё нет. Продолжить B3b по
    локально уточнённому
    [контракту](../docs/core-base-b3-20261102.md) и активному плану.
    Installed B3/reset пока0. Общая готовность базы, recovery mutation/full release и

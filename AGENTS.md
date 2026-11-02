@@ -24,8 +24,10 @@ B3a1 source history/process inspection принят118selectedPASS/46boundaries;
 B3a2 private durable intent/inspection принят106selectedPASS/47boundaries.
 B3a3 process/endpoint barrier принят3ноября118selectedPASS/48boundaries.
 Дополнение F2 exact historical adoption host —115selectedPASS/48boundaries.
-Production startup/physical callbacks, archive/finisher/session/UI ещё не
-реализованы, installed B3 нет. Следующий срез B3a4 — lease и архивный finisher.
+B3a4 private install lease/archive/finisher принят140fresh selectedPASS/
+50boundaries; UNKNOWN сохранён, partial-prefix recovery и session publication
+проверены на TEMP. Production startup/physical callbacks, session ack/baseline/UI
+ещё не подключены, installed B3 нет. Следующий срез B3b — production composition.
 3ноября первый configured status после≥3460с idle сохранил owner24160/тот же boot,
 peer connected, pending/UNKNOWN/fault0; один3457,46events/protected files unchanged.
 Исходный Argon
