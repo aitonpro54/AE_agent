@@ -64,6 +64,11 @@ test('owner-ipc-process actual TEMP Broker inspection/build flow is scoped to co
   const contract = await a.tool('get_module_contract', { moduleId: 'titles' });
   // Exact identity comes from this child synthetic host, never a production adoption.
   const resource = f.owner.rows[0].fixtureTarget;
+  const stateFile = path.join(f.owner.rows[0].fixtureStateDir, 'ledger.ndjson'), before = fs.readFileSync(stateFile);
+  const invalid = await a.rpc('tools/call', { name: 'inspect_module_target', arguments: { payload: { moduleId: 'titles', target: resource } } });
+  assert.equal(invalid.error.message, 'owner_inspection_contract_required');
+  assert.deepEqual(invalid.error.data, { nextAction: 'get_module_contract' });
+  assert.ok(fs.readFileSync(stateFile).equals(before)); assert.equal((await a.tool('owner_status')).accepted, 0);
   const observed = await a.tool('inspect_module_target', { moduleId: 'titles', contractId: contract.contractId, target: resource });
   const built = await a.tool('build_solution_plan', { workflowId: 'owner-fixture', recordContext: { purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: 'owner-ipc-process', project: { file: resource.projectId }, resources: [{ kind: 'project', identity: resource.projectId }] }, steps: [{ stepId: 'title', moduleId: 'titles', contractId: contract.contractId, evidenceRef: observed.evidenceRef, input: { ...resource, text: 'R2 fixture' }, dependsOn: [] }] });
   const proposed = await a.tool('propose_plan', { buildId: built.buildId }); assert.equal(typeof proposed.proposalId, 'string');

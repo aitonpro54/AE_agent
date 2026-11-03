@@ -43,7 +43,7 @@ test('start-over-channel delivered native completion settles only the old journa
 test('start-over-channel normal attachment freeze still drains an already accepted physical command',async t=>{
   const f=await fixture(t),owner=createAttachmentOwner({runtime:{status:f.peer.status,close:async()=>{}},activity:()=>({pending:!!f.peer.status().pending,unresolved:f.peer.status().storeClosed,fault:f.peer.status().storeFault}),invoke:()=>f.peer.inspect({})});
   const session={};owner.onAttach(session);assert.equal((await owner.onRequest({session,method:'controller_acquire',payload:{}})).ok,true);
-  const result=owner.onRequest({session,method:'inspect_module_target',payload:{}});owner.freeze();const frame=(await f.call('/poll',{})).command;assert.ok(frame);assert.equal(f.peer.status().startOverFrozen,false);
+  const result=owner.onRequest({session,method:'inspect_module_target',payload:{contractId:'a'.repeat(64)}});owner.freeze();const frame=(await f.call('/poll',{})).command;assert.ok(frame);assert.equal(f.peer.status().startOverFrozen,false);
   await f.call('/complete',completion(frame));assert.equal((await result).ok,true);await owner.close();
 });
 function dispatcherWindow() {

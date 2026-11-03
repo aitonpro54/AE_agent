@@ -5,6 +5,7 @@ const { PassThrough } = require('node:stream');
 const { createAttachmentOwner, TOOL_METHODS } = require('../runtime/attachment-owner');
 const { serveAttachment } = require('../runtime/client-stdio');
 const { TOOL_METHODS: ORIGINAL_METHODS } = require('../core/stdio');
+const inspection = { moduleId: 'fixture-module', contractId: 'a'.repeat(64), target: {} };
 
 function fixture(options = {}) {
   const calls = [], facts = { pending: false, unresolved: false, fault: false }; let closes = 0, time = 0, serial = 0;
@@ -29,6 +30,28 @@ async function ok(promise) { const reply = await promise; assert.equal(reply.ok,
 async function denied(promise, code) { const reply = await promise; assert.deepEqual(reply, code === 'owner_outcome_uncertain' ? { ok: false, code, outcome: 'unknown', requestId: null } : { ok: false, code }); }
 async function until(fn) { for (let i = 0; i < 100; i++) { if (fn()) return; await new Promise(resolve => setTimeout(resolve, 2)); } assert.fail('fixture_wait'); }
 
+test('owner-attachments inspection contract shape is rejected before runtime acceptance and leaves the lease usable', async () => {
+  const f = fixture(), a = f.attach(), grant = await ok(f.call(a, 'controller_acquire'));
+  for (const contractId of [undefined, null, '', 42, {}, [], 'a'.repeat(63), 'G'.repeat(64)]) {
+    const payload = { ...inspection, contractId }; if (contractId === undefined) delete payload.contractId;
+    await denied(f.call(a, 'inspect_module_target', payload), 'owner_inspection_contract_required');
+    assert.equal(f.calls.length, 0); assert.equal(f.owner.status().accepted, 0); assert.equal(f.owner.status().mode, 'held');
+  }
+  assert.match((await ok(f.call(a, 'inspect_module_target', inspection))).evidenceRef, /^evidence-/);
+  assert.equal(f.calls.length, 1); await ok(f.call(a, 'controller_release', { leaseToken: grant.leaseToken })); await f.owner.close();
+});
+
+test('owner-attachments inspection contract validation preserves control gates and never trusts a runtime error with the same code', async () => {
+  const f = fixture(), a = f.attach(); await denied(f.call(a, 'inspect_module_target'), 'owner_controller_required');
+  await ok(f.call(a, 'controller_acquire'));
+  for (const field of ['pending', 'unresolved', 'fault']) {
+    f.facts[field] = true; await denied(f.call(a, 'inspect_module_target'), field === 'pending' ? 'owner_draining' : 'owner_recovery_required'); f.facts[field] = false;
+  }
+  f.at(1000); await denied(f.call(a, 'inspect_module_target'), 'controller_lease_expired'); assert.equal(f.calls.length, 0); await f.owner.close();
+  const forged = fixture({ invoke() { throw Object.assign(new Error('private'), { code: 'owner_inspection_contract_required' }); } }), b = forged.attach();
+  await ok(forged.call(b, 'controller_acquire')); await denied(forged.call(b, 'inspect_module_target', inspection), 'owner_outcome_uncertain'); await forged.owner.close();
+});
+
 test('owner-attachments generic tool map remains compatible and observer attachment never acquires', async () => {
   assert.deepEqual(TOOL_METHODS, ORIGINAL_METHODS);
   const f = fixture(), a = f.attach(), b = f.attach();
@@ -39,7 +62,7 @@ test('owner-attachments generic tool map remains compatible and observer attachm
 });
 test('owner-attachments first workflow build omits taskId and binds only the server task; unbound product task is refused before invoke', async () => {
   const f = fixture(), session = f.attach(); await ok(f.call(session, 'controller_acquire'));
-  const evidence = await ok(f.call(session, 'inspect_module_target'));
+  const evidence = await ok(f.call(session, 'inspect_module_target', inspection));
   const payload = { workflowId: 'titles-deterministic-job', oneStep: true, recordContext: { purpose: 'user_work', lifetime: 'work_context', contextId: 'product-job' }, steps: [{ stepId: 'set-title', evidenceRef: evidence.evidenceRef }] };
   const built = await ok(f.call(session, 'build_solution_plan', payload)); assert.match(built.taskId, /^task-/);
   const calls = f.calls.length; await denied(f.call(session, 'build_solution_plan', { ...payload, taskId: 'titles-unbound-task' }), 'owner_reference_generation'); assert.equal(f.calls.length, calls);
@@ -106,7 +129,7 @@ test('owner-attachments UNKNOWN after original callback holds sticky fence acros
 });
 test('owner-attachments prior generation evidence/build/proposal/dryrun cannot become executable', async () => {
   const f = fixture(), a = f.attach(), b = f.attach(); const lease = await ok(f.call(a, 'controller_acquire'));
-  const evidence = await ok(f.call(a, 'inspect_module_target'));
+  const evidence = await ok(f.call(a, 'inspect_module_target', inspection));
   const built = await ok(f.call(a, 'build_solution_plan', { steps: [{ evidenceRef: evidence.evidenceRef }] }));
   const proposed = await ok(f.call(a, 'propose_plan', { buildId: built.buildId }));
   const dry = await ok(f.call(a, 'dry_run_plan', { proposalId: proposed.proposalId }));
@@ -139,10 +162,10 @@ test('owner-attachments completed read classification is private one-shot and su
     f = fixture({ invoke(_method, _payload, context) { if (first) { first = false; records.set(error, context); f.at(1000); } throw error; },
       consumeReadRejection(value, request) { const context = records.get(value); records.delete(value); return context === request.context ? { code } : null; } });
     const a = f.attach(), grant = await ok(f.call(a, 'controller_acquire'));
-    assert.deepEqual(await f.call(a, 'inspect_module_target'), { ok: false, outcome: 'rejected', code, nextAction: 'core_diagnostics' });
+    assert.deepEqual(await f.call(a, 'inspect_module_target', inspection), { ok: false, outcome: 'rejected', code, nextAction: 'core_diagnostics' });
     assert.equal(f.owner.status().accepted, 0); assert.equal(f.owner.status().fenced, false);
     await ok(f.call(a, 'controller_release', { leaseToken: grant.leaseToken })); await ok(f.call(a, 'controller_acquire'));
-    await denied(f.call(a, 'inspect_module_target'), 'owner_outcome_uncertain'); await f.owner.close();
+    await denied(f.call(a, 'inspect_module_target', inspection), 'owner_outcome_uncertain'); await f.owner.close();
   }
 });
 test('owner-attachments terminal flag clean facts wrong operation and verifier failure never prove completion', async () => {
@@ -150,7 +173,7 @@ test('owner-attachments terminal flag clean facts wrong operation and verifier f
     const f = fixture({ invoke() { throw Object.assign(new Error('private'), { code: 'inspection_failed', outcome: 'rejected', completed: true }); },
       consumeReadRejection(_error, request) { if (mode === 'verifier-throws') throw new Error('private'); return mode === 'wrong-method' ? { code: 'inspection_failed' } : mode === 'unknown-code' ? { code: 'private' } : null; } });
     const a = f.attach(); await ok(f.call(a, 'controller_acquire'));
-    await denied(f.call(a, mode === 'wrong-method' ? 'core_connect' : 'inspect_module_target'), 'owner_outcome_uncertain'); await f.owner.close();
+    await denied(f.call(a, mode === 'wrong-method' ? 'core_connect' : 'inspect_module_target', inspection), 'owner_outcome_uncertain'); await f.owner.close();
   }
 });
 test('owner-attachments consumes completed read proof even when pending unresolved or fault prevents classification', async () => {
@@ -158,7 +181,7 @@ test('owner-attachments consumes completed read proof even when pending unresolv
     let consumed = 0, f;
     f = fixture({ invoke() { f.facts[field] = true; throw new Error('completed'); }, consumeReadRejection() { consumed++; return { code: 'inspection_failed' }; } });
     const a = f.attach(); await ok(f.call(a, 'controller_acquire'));
-    await denied(f.call(a, 'inspect_module_target'), 'owner_outcome_uncertain'); assert.equal(consumed, 1);
+    await denied(f.call(a, 'inspect_module_target', inspection), 'owner_outcome_uncertain'); assert.equal(consumed, 1);
     f.facts[field] = false; await until(() => f.owner.status().accepted === 0); await f.owner.close();
   }
 });
@@ -174,6 +197,24 @@ test('owner-attachments stdio initialize and discovery do not invoke owner or ac
   f.send({ id: 1, method: 'initialize' }); f.send({ id: 2, method: 'tools/list' }); await until(() => f.replies.length === 2);
   assert.equal(f.replies[1].result.tools.some(tool => tool.name === 'controller_acquire'), true);
   f.input.end(); await until(() => f.closes === 1); assert.equal(f.adapter.status().closed, true);
+});
+
+test('owner-attachments stdio inspection discovery and missing contract error explain the next action without UNKNOWN', async () => {
+  const owner = fixture(), a = owner.attach(); await ok(owner.call(a, 'controller_acquire'));
+  const f = stdioFixture((method, payload) => owner.call(a, method, payload));
+  f.send({ id: 1, method: 'tools/list' }); await until(() => f.replies.length === 1);
+  const tool = f.replies[0].result.tools.find(tool => tool.name === 'inspect_module_target');
+  assert.deepEqual(tool.inputSchema.required, ['payload']); assert.deepEqual(tool.inputSchema.properties.payload.required, ['contractId']);
+  assert.equal(tool.inputSchema.properties.payload.properties.contractId.type, 'string');
+  assert.equal(new RegExp(tool.inputSchema.properties.payload.properties.contractId.pattern).test(inspection.contractId), true);
+  assert.match(tool.description, /get_module_contract/);
+  f.send({ id: 2, method: 'tools/call', params: { name: 'inspect_module_target', arguments: { payload: { moduleId: 'fixture-module', target: {} } } } });
+  await until(() => f.replies.length === 2);
+  assert.equal(f.replies[1].error.message, 'owner_inspection_contract_required'); assert.deepEqual(f.replies[1].error.data, { nextAction: 'get_module_contract' });
+  assert.equal(owner.calls.length, 0); assert.equal(owner.owner.status().accepted, 0);
+  f.send({ id: 3, method: 'tools/call', params: { name: 'inspect_module_target', arguments: { payload: inspection } } });
+  await until(() => f.replies.length === 3); assert.equal(f.replies[2].result.isError, false); assert.equal(owner.calls.length, 1);
+  f.adapter.close(); await owner.owner.close();
 });
 test('owner-attachments stdio EOF only closes attachment; accepted call is neither cancelled nor retried', async () => {
   let resolve; let calls = 0; const f = stdioFixture(() => { calls++; return new Promise(done => { resolve = done; }); });
@@ -239,7 +280,7 @@ test('owner-attachments oversized response and long request identity always prod
 });
 test('owner-attachments explicit expired transfer requires fresh holder CAS and invalidates prior references', async () => {
   const f = fixture(), a = f.attach(), b = f.attach(), grant = await ok(f.call(a, 'controller_acquire'));
-  const evidence = await ok(f.call(a, 'inspect_module_target')), observed = f.owner.status();
+  const evidence = await ok(f.call(a, 'inspect_module_target', inspection)), observed = f.owner.status();
   const expected = { bootId: observed.bootId, generation: observed.generation, holderClientId: observed.holderClientId };
   await denied(f.call(b, 'controller_transfer', { expected }), 'controller_not_expired'); f.at(1000);
   const next = await ok(f.call(b, 'controller_transfer', { expected })); assert.equal(next.generation, grant.generation + 1);

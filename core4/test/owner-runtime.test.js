@@ -144,6 +144,11 @@ test('durable project read rejections cross the production owner IPC and stdio w
   const f = install(t), runtime = await directOwner(t, f), c = rpcProcess(t, f), p = await panel(runtime.status().physical.port, f.d);
   const grant = await c.call('controller_acquire'), contract = await c.call('get_module_contract', { moduleId: 'project-inspection' });
   const journalFile = path.join(f.d.stateDir, 'receiver/completions.ndjson');
+  const before = fs.readFileSync(journalFile);
+  const missing = await c.rpc('tools/call', { name: 'inspect_module_target', arguments: { payload: { moduleId: 'project-inspection', target: {} } } });
+  assert.equal(missing.error.message, 'owner_inspection_contract_required'); assert.deepEqual(missing.error.data, { nextAction: 'get_module_contract' });
+  assert.ok(fs.readFileSync(journalFile).equals(before)); assert.equal(runtime.status().attachmentOwner.accepted, 0);
+  assert.equal(runtime.status().physical.pending, null);
   for (const code of ['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']) {
     const read = c.rpc('tools/call', { name: 'inspect_module_target', arguments: { payload: { moduleId: 'project-inspection', contractId: contract.contractId, target: {} } } });
     const frame = (await p.request('/poll', {})).value.command; assert.ok(frame);
@@ -412,7 +417,7 @@ async function guardedFixture(t, { expireAtBegin = false, beforeSubmit } = {}) {
   await peer.listen();
   owner = createAttachmentOwner({ runtime: { status: peer.status, close: peer.close }, clock: () => time, ttlMs: 1000, drainIntervalMs: 1,
     activity() { const status = peer.status(); return { pending: !!status.pending, unresolved: status.storeClosed, fault: status.storeFault }; },
-    invoke(method, payload, context) { return als.run(context, async () => { if (beforeSubmit) await beforeSubmit; return peer.inspect(payload); }); } });
+    invoke(method, payload, context) { return als.run(context, async () => { if (beforeSubmit) await beforeSubmit; return peer.inspect(payload.target || {}); }); } });
   const session = Object.freeze({ clientSessionId: 'guard-session' }); owner.onAttach(session);
   resources(t).closers.push(() => owner.close()); const p = await panel(peer.status().port, installation);
   const call = (method, payload = {}) => owner.onRequest({ session, method, payload });
@@ -421,7 +426,7 @@ async function guardedFixture(t, { expireAtBegin = false, beforeSubmit } = {}) {
 }
 
 test('captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry', async t => {
-  const f = await guardedFixture(t), result = f.call('inspect_module_target'); await until(() => f.peer.status().pending); f.at(1000);
+  const f = await guardedFixture(t), result = f.call('inspect_module_target', { contractId: 'a'.repeat(64), target: {} }); await until(() => f.peer.status().pending); f.at(1000);
   const denied = await f.p.request('/poll', {}); assert.equal(denied.status, 403); assert.equal(denied.value.error, 'controller_lease_expired');
   assert.equal((await result).code, 'owner_outcome_uncertain'); await until(() => f.owner.status().accepted === 0);
   assert.equal(f.peer.status().storeClosed, true); assert.equal(f.checks(), 1);
@@ -430,13 +435,13 @@ test('captured lease guard survives absent ALS during a delayed poll and blocks 
 test('active poll delivery checks the captured lease again immediately after store.begin', async t => {
   const f = await guardedFixture(t, { expireAtBegin: true }), waitingPoll = f.p.request('/poll', {});
   await new Promise(resolve => setTimeout(resolve, 10));
-  const result = await f.call('inspect_module_target'); assert.equal(result.code, 'owner_outcome_uncertain');
+  const result = await f.call('inspect_module_target', { contractId: 'a'.repeat(64), target: {} }); assert.equal(result.code, 'owner_outcome_uncertain');
   assert.equal((await waitingPoll).value.command, null); assert.equal(f.peer.status().pending, null); assert.equal(f.peer.status().storeClosed, true);
 });
 
 test('lease expiry across a trusted await is checked at physical submit before durable begin', async t => {
   const gate = deferred(), f = await guardedFixture(t, { beforeSubmit: gate.promise });
-  const result = f.call('inspect_module_target'); await until(() => f.owner.status().accepted === 1);
+  const result = f.call('inspect_module_target', { contractId: 'a'.repeat(64), target: {} }); await until(() => f.owner.status().accepted === 1);
   f.at(1000); gate.resolve(); assert.equal((await result).code, 'owner_outcome_uncertain');
   assert.equal(f.peer.status().pending, null); assert.equal(f.peer.status().storeClosed, false); assert.equal(f.checks(), 0);
   assert.deepEqual(fs.readFileSync(path.join(f.directory, 'receiver/completions.ndjson'), 'utf8').trim().split('\n').map(JSON.parse).map(e => e.type), ['origin']);
@@ -446,7 +451,7 @@ test('no captured controller context rejects before durable begin; original comp
   const f = await guardedFixture(t);
   assert.throws(() => f.peer.inspect({}), e => e.code === 'missing_context');
   assert.deepEqual(fs.readFileSync(path.join(f.directory, 'receiver/completions.ndjson'), 'utf8').trim().split('\n').map(JSON.parse).map(e => e.type), ['origin']);
-  const result = f.call('inspect_module_target'); await until(() => f.peer.status().pending);
+  const result = f.call('inspect_module_target', { contractId: 'a'.repeat(64), target: {} }); await until(() => f.peer.status().pending);
   const frame = (await f.p.request('/poll', {})).value.command; assert.ok(frame); assert.equal(f.checks(), 2); f.at(1000);
   const complete = await f.p.request('/complete', completion(frame)); assert.equal(complete.status, 200); assert.equal((await result).ok, true);
   assert.equal(f.checks(), 2); assert.equal(f.peer.status().storeClosed, false); assert.equal(f.peer.status().pending, null);

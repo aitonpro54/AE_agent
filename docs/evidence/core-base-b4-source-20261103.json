@@ -1,0 +1,813 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T07:19:49.577Z",
+  "baselineCommit": "17af595",
+  "sourceFiles": {
+    "core4/runtime/attachment-owner.js": "0e994b984df7c1374e55d2411e95d9da59215b732c84b06ce0ca5e19db965e38",
+    "core4/runtime/client-stdio.js": "eb940b217bfbf9f568874f75ad5d80d15c89b5b174d0481d5c624c8e95d98750",
+    "core4/test/controller-transfer-ipc.test.js": "aca890a2f04e1ab57d2879b2cabc391875afe6eec7e9af685f40a5d572fc1115",
+    "core4/test/owner-attachments.test.js": "630f122eacbf283c5bafbb1a7bbe16660c5eca19470804bf60d7bee7a3f27a25",
+    "core4/test/owner-ipc-process.test.js": "aa89f0cff48a341a09a8ccacf1c8aa8e137a4e8ca957065338b14a248beb1742",
+    "core4/test/owner-runtime.test.js": "540d119d702a6599d62181c7290f8ba3c36e291bf00ddd80cf5a5906b25c0a1a",
+    "core4/test/start-over-channel.test.js": "871219c7e7c66a94c446a036d7d891c79b3e3a8acddd14b8e4bd27d6683dae85",
+    "core4/test/work-session-owner.test.js": "3c3c57586d41506e9d6f5a48a3d5b2e5821cb16b95f8aa8fce1872346cf56ad8"
+  },
+  "selectedChecks": 13,
+  "executionBatches": 13,
+  "uniqueCases": 214,
+  "allKeysRecheckedAfterExecution": true,
+  "checks": [
+    {
+      "check": "owner-attachments",
+      "evidenceKey": "60e4d88c6341dc4283333c616b6f82e1a5012a114619db3d57998ef66975d19d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-attachments)",
+        "test/owner-attachments.test.js"
+      ],
+      "cases": 32,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-validation.log",
+      "exactKeyReuse": true,
+      "logHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96"
+    },
+    {
+      "check": "owner-ipc-process",
+      "evidenceKey": "fe2f779c917a429e67e56b70d5073da56db9b77a0a0d02c857a5ddd85aa89ddb",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-ipc-process)",
+        "test/owner-ipc-process.test.js"
+      ],
+      "cases": 2,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-validation.log",
+      "exactKeyReuse": true,
+      "logHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96"
+    },
+    {
+      "check": "controller-transfer",
+      "evidenceKey": "7323823cfcdf1875f08012ec86bddef28b3f730f4465dcf6f7ba84de97324e4a",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:controller-transfer)",
+        "test/controller-transfer-ipc.test.js"
+      ],
+      "cases": 1,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-validation.log",
+      "exactKeyReuse": true,
+      "logHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96"
+    },
+    {
+      "check": "owner-runtime",
+      "evidenceKey": "f196f4d240436049e623841d35eec0f18a480c0251745acf07697823703e325a",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-runtime)",
+        "test/owner-runtime.test.js"
+      ],
+      "cases": 22,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-owner-runtime-retry.log",
+      "exactKeyReuse": true,
+      "logHash": "10f28a42f5d585c706f25883eee3f9296c8affb7def368c4368b94c09ece5295"
+    },
+    {
+      "check": "start-over-channel",
+      "evidenceKey": "d0d6e571d8c95bbd32f891f30c661cf142bb4b3769130dd9a58b1dd6304ad635",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-channel)",
+        "test/start-over-channel.test.js"
+      ],
+      "cases": 12,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-validation.log",
+      "exactKeyReuse": true,
+      "logHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96"
+    },
+    {
+      "check": "work-session-owner",
+      "evidenceKey": "74a0f60e6b65172abf7a7e1c4a93e1d3411fa9cc75b03d3f6110d89bc18d3036",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:work-session)",
+        "test/work-session-owner.test.js"
+      ],
+      "cases": 8,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-validation.log",
+      "exactKeyReuse": true,
+      "logHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96"
+    },
+    {
+      "check": "start-over-driver",
+      "evidenceKey": "2cbb04652234df8d45cb69b485b465d00e66db47a182a8326a9283fa3a857037",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-driver)",
+        "test/start-over-driver.test.js"
+      ],
+      "cases": 3,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-start-over-driver.log",
+      "exactKeyReuse": false,
+      "logHash": "bb2b29e40060bf7ffb0e575d19c96cffba1fe3a696d583c05ab372365c440327"
+    },
+    {
+      "check": "work-session",
+      "evidenceKey": "b62c7a83450425b0be805f6256d5d187a71fb6638f5149930f3fab62b4db583f",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:work-session)",
+        "test/work-session.test.js"
+      ],
+      "cases": 17,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-work-session.log",
+      "exactKeyReuse": false,
+      "logHash": "ada4fffb8ea154ea069ebdafebd971ad4ccc19455e556ffee3724e267846ceaf"
+    },
+    {
+      "check": "stopped-certification",
+      "evidenceKey": "be3f136f6d574ebcc4185f7e17d7f82dccf199a763bd1dabea201b73962d7685",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-certification)",
+        "test/stopped-certification.test.js"
+      ],
+      "cases": 30,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-stopped-certification.log",
+      "exactKeyReuse": false,
+      "logHash": "41063cbd4c2dd7e773a3d8e551da44ab958551b76cf3c5eb6f780e3552642f1c"
+    },
+    {
+      "check": "maintenance-finish",
+      "evidenceKey": "a960a475b7f7de4b66a66a96c1ad82a830604cff01ef971f00bda1ba64372574",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:maintenance-finish)",
+        "test/maintenance-finish.test.js"
+      ],
+      "cases": 32,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-maintenance-finish.log",
+      "exactKeyReuse": false,
+      "logHash": "6c113f702b91b250fcfb8f0a325b54ff8dd7b60c9afc7f780aa7278147762659"
+    },
+    {
+      "check": "owner-maintenance",
+      "evidenceKey": "0d284bd3c439324984ed79487acb8c26294667d36214db63129bd61fced55fc0",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-maintenance)",
+        "test/owner-maintenance.test.js"
+      ],
+      "cases": 22,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-owner-maintenance.log",
+      "exactKeyReuse": false,
+      "logHash": "e73a10316cc8e8bd3b1179020c4d5d581685ca2758849a4f7284e46c8221c58d"
+    },
+    {
+      "check": "client-launcher",
+      "evidenceKey": "6015d87c4603c10ebae482ab12056967ba8e78d030b532ed92ece6c155db4287",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:client-launcher)",
+        "test/client-launcher.test.js"
+      ],
+      "cases": 21,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-client-launcher.log",
+      "exactKeyReuse": false,
+      "logHash": "76800cd17a364c8c41934119f073da1bdad51e3522abaa2d5e3113772123d1b9"
+    },
+    {
+      "check": "client-entry",
+      "evidenceKey": "adc918920dcdccd286c04758f1817a48a4b32218d31f18a9f1f6495c3b99133e",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:client-entry)",
+        "test/client-entry.test.js"
+      ],
+      "cases": 12,
+      "outcome": "PASS",
+      "source": ".codex-runtime/b4-client-entry.log",
+      "exactKeyReuse": false,
+      "logHash": "2db127132e50e6f78f24bb480ea16afd27f6d8cd062498b1e449e49473cb5a60"
+    }
+  ],
+  "boundaries": {
+    "checked": 55,
+    "result": "PASS",
+    "liveCalls": 0
+  },
+  "regressionBeforeFix": {
+    "ownerUnitFailed": true,
+    "actualTempStdioIpcReturned": "owner_outcome_uncertain"
+  },
+  "failedAttempt": {
+    "check": "owner-runtime",
+    "cancelled": 1,
+    "cause": "Добавленный пустой poll ждал15с; лишнее ожидание удалено, полный batch22cases перепроверен успешно.",
+    "acceptedAsPass": false
+  },
+  "coverage": "Real TEMP filesystem/stdio/IPC/Node processes, synthetic AE/VM host; no installed update or native AE command in this source validation.",
+  "deferredCoverage": [
+    {
+      "check": "start-over-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "start-over-runtime"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "start-over-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "start-over-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "start-over-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "start-over-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "stopped-host-readoption-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "stopped-host-readoption-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "stopped-update-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "stopped-update"
+        ]
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "owner-installation"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "owner-installation"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "windows-cim-probe"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "human-window"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "human-window"
+        ]
+      ]
+    },
+    {
+      "check": "manual-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "manual-runtime"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "manual-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "installable-runtime"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "installable-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/test/controller-transfer-ipc.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/owner-attachments.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/owner-ipc-process.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/owner-runtime.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/start-over-channel.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/work-session-owner.test.js",
+          "dependency": "test/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/test/controller-transfer-ipc.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/owner-attachments.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/owner-ipc-process.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/owner-runtime.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/start-over-channel.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/work-session-owner.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "native-read-recovery"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "native-read-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "installed-composition"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "installed-composition"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "exact-f548-transition"
+        ]
+      ]
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "standalone-installer"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "standalone-installer"
+        ]
+      ]
+    }
+  ],
+  "releaseCertified": false
+}

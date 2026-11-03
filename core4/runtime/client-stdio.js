@@ -22,7 +22,18 @@ function serveAttachment({ client, input, output } = {}) {
   function description(name) {
     if (name === 'controller_acquire' || name === 'controller_transfer') return 'Явное получение управления. Сначала прочитайте core_status; для нового сеанса передайте его workSession.sessionId в payload.sessionId. Это не допуск к изменению AE.';
     if (name === 'core_status') return 'Статус Core, текущего сеанса и сброса. baselineRequired снимается свежей project-inspection; старое управление автоматически не восстанавливается.';
+    if (name === 'inspect_module_target') return 'Прочитайте get_module_contract и передайте его moduleId и обязательный contractId в payload вместе с target по контракту. Требуется действующий controller lease; чтение не выдаёт допуск к изменению AE.';
+    if (name === 'controller_release' || name === 'controller_renew') return 'Передайте в payload.leaseToken точный токен, полученный от controller_acquire/controller_transfer текущим клиентом.';
     return 'Подключение к owner Core4; управление требует явного controller_acquire.';
+  }
+  function inputSchema(name) {
+    const schema = { type: 'object', properties: { payload: { type: 'object', additionalProperties: true } }, additionalProperties: false };
+    if (name === 'inspect_module_target') {
+      schema.required = ['payload'];
+      schema.properties.payload.properties = { contractId: { type: 'string', pattern: '^[a-f0-9]{64}$' } };
+      schema.properties.payload.required = ['contractId'];
+    }
+    return schema;
   }
   function ingest(chunk) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
@@ -44,7 +55,7 @@ function serveAttachment({ client, input, output } = {}) {
       let result;
       if (request.method === 'initialize') result = { protocolVersion: '2024-11-05', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'ae-agent-core4', version: '4.0.0' } };
       else if (request.method === 'ping') result = {};
-      else if (request.method === 'tools/list') result = { tools: OWNER_METHODS.map(name => ({ name, description: description(name), inputSchema: { type: 'object', properties: { payload: { type: 'object', additionalProperties: true } }, additionalProperties: false } })) };
+      else if (request.method === 'tools/list') result = { tools: OWNER_METHODS.map(name => ({ name, description: description(name), inputSchema: inputSchema(name) })) };
       else if (request.method === 'tools/call') {
         exact(request.params, ['name', 'arguments', '_meta']);
         if (!OWNER_METHODS.includes(request.params.name)) fail('unknown_tool');
@@ -68,7 +79,7 @@ function serveAttachment({ client, input, output } = {}) {
       const message = ipcErrors.includes(error?.code) ? error.code : ownErrors.has(error) ? error.message : 'request_failed';
       const uncertain = message === 'ipc_outcome_uncertain' || message === 'owner_outcome_uncertain';
       reply({ jsonrpc: '2.0', id: request?.id ?? null, error: { code: -32000, message,
-        ...(uncertain ? { data: { outcome: 'unknown', requestId: typeof error.requestId === 'string' && /^[a-f0-9]{64}$/.test(error.requestId) ? error.requestId : null } } : {}) } });
+        ...(uncertain ? { data: { outcome: 'unknown', requestId: typeof error.requestId === 'string' && /^[a-f0-9]{64}$/.test(error.requestId) ? error.requestId : null } } : message === 'owner_inspection_contract_required' ? { data: { nextAction: 'get_module_contract' } } : {}) } });
     } finally { if (counted) pending--; }
   });
   return Object.freeze({ close() { finish(); lines.close(); }, status() { return { closed: ended, pending }; } });

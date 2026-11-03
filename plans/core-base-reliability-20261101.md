@@ -109,6 +109,15 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- B4 source принят: обязательный inspection contractId проверяется до invoke,
+  ошибка owner_inspection_contract_required указывает get_module_contract;
+  настоящий UNKNOWN и все controller/session/reset gates сохранены.
+  [Scope и контракт](../docs/core-base-b4-request-validation-20261103.md),
+  [source evidence](../docs/evidence/core-base-b4-source-20261103.json).
+ 13selected checks/214fresh cases/55boundaries PASS; новый80runtime/98bundle
+  package21a884fa…/distribution41d4812c… verified/dry-run. Далее штатная новая
+  установка и configured proof. Installed327faaac… пока прежний; Titles на паузе.
+
 - 3 ноября, после restart Codex: первый configured status327faaac… PASS,
   owner25380/один3457/old31404 absent; CEP подключилась автоматически. Stale session
   отказан, current8fe8b332…/fresh project-inspection/release generation3 PASS.
@@ -258,6 +267,14 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- B4: форма обязательного аргумента проверяется generic owner до принятия
+  операции; module-specific логика и новый proof/issuer не нужны. Проверка не
+  классифицирует исключения после invoke и не ослабляет private native read
+  rejection proof. Рабочий контракт по-прежнему берётся из get_module_contract.
+- Source-поставка B4 меняет ровно2runtime files; остальные native/AE assets
+  побайтно прежние. Новый install выполняется отдельной новой транзакцией после
+  source commit; historical327faaac… acceptance сохраняет provenance.
 
 - 3 ноября: configured proof закрывает последний пробел текущей приёмки базы.
   Установку/reset не повторять; новый owner25380 не выдавать за surviving31404.
@@ -420,6 +437,13 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- B4 source:13selected checks/214fresh cases/55boundaries, node --check/diff-check
+  PASS. Original failing regression включал настоящий TEMP stdio/IPC. Исправлен
+  один test-only empty-poll timeout; весь отменённый batch22cases выполнен заново.
+  Accepted prior batches переиспользованы с exact current keys, после всех runs
+  closure keys проверены ещё раз. [Evidence](../docs/evidence/core-base-b4-source-20261103.json).
+  Build/verify/dry-run нового80/98file пакета PASS; installed proof ещё не выполнен.
 
 - Configured B3 после restart PASS: first status327faaac…/native PID-birth/
   один listener, автоматический peer connect, stale-session refusal и свежий

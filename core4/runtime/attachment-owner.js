@@ -9,7 +9,7 @@ const TOOL_METHODS = Object.freeze({ core_status: 'status', core_connect: 'conne
 const CONTROL_METHODS = Object.freeze(['owner_status', 'controller_acquire', 'controller_renew', 'controller_release', 'controller_transfer']);
 const OWNER_METHODS = Object.freeze([...Object.keys(TOOL_METHODS), ...CONTROL_METHODS]);
 const LEASE_ERRORS = Object.freeze(['controller_busy', 'controller_fenced', 'controller_lease_identity', 'controller_lease_expired', 'controller_draining', 'controller_client_detached', 'controller_clock_fault', 'controller_operation_pending', 'controller_expected', 'controller_transfer_changed', 'controller_not_expired']);
-const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed', 'owner_work_session_required', 'owner_work_session_changed', 'owner_work_session_unavailable', 'owner_baseline_required']);
+const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_inspection_contract_required', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed', 'owner_work_session_required', 'owner_work_session_changed', 'owner_work_session_unavailable', 'owner_baseline_required']);
 const OBSERVERS = new Set(['core_status', 'core_diagnostics', 'list_modules', 'get_module_contract', 'get_task']);
 const READ_REJECTION_CODES = Object.freeze(['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']);
 
@@ -116,7 +116,11 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
     const work = currentWork(record);
     if (work.baselineRequired && !['core_connect', 'core_disconnect'].includes(method) && !(method === 'inspect_module_target' && payload.moduleId === 'project-inspection')) fail('owner_baseline_required');
     if (Object.values(refs).some(values => values.size >= 4096)) fail('owner_reference_budget');
-    lease.assertCurrent(record.grant); inputs(method, payload, record.grant);
+    lease.assertCurrent(record.grant);
+    // This argument check precedes acceptance/invoke. It says nothing about a
+    // runtime exception or the outcome of any command that was already sent.
+    if (method === 'inspect_module_target' && (typeof payload.contractId !== 'string' || !/^[a-f0-9]{64}$/.test(payload.contractId))) fail('owner_inspection_contract_required');
+    inputs(method, payload, record.grant);
     const grant = record.grant, operation = lease.begin(grant); accepted.add(operation);
     const context = { observer: false, generation: grant.generation, sessionId: work.sessionId, assertCurrent() { if (closed) fail('owner_closed'); currentWork(record); lease.assertCurrent(grant); } };
     try {

@@ -26,7 +26,7 @@ test('controller-transfer actual authenticated clients require exact expired hol
   const connect = async () => { const client = await createIpcClient({ endpoint, identity, secret }); clients.push(client); return client; };
   const a = await connect(), b = await connect(), c = await connect();
   const lease = (await a.call('controller_acquire', {})).value;
-  const before = (await a.call('inspect_module_target', {})).value;
+  const before = (await a.call('inspect_module_target', { contractId: 'a'.repeat(64) })).value;
   const snapshot = (await b.call('owner_status', {})).value;
   const expected = { bootId: snapshot.bootId, generation: snapshot.generation, holderClientId: snapshot.holderClientId };
   assert.deepEqual(await b.call('controller_transfer', { expected }), { ok: false, code: 'controller_not_expired' });

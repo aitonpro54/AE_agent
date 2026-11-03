@@ -11,6 +11,15 @@
 
 ## Текущий scope и правила
 
+**3 ноября, B4 source принят по «Продолжай дальше»:** missing/malformed
+inspection contractId отказывает до runtime invoke, без ложного UNKNOWN;
+nextAction=get_module_contract и discovery schema уточнены.13checks/214fresh
+cases/55boundaries PASS, включая настоящий TEMP owner/IPC/stdio;2runtime files
+изменены. Package21a884fa…/distribution41d4812c… (80/98) built/verified/dry-run,
+actual installed327faaac… пока прежний. Далее новая штатная stop/update/enable
+и configured proof; old settled IDs не повторять. Titles/Slideshow на паузе.
+[B4 scope/evidence](docs/core-base-b4-request-validation-20261103.md).
+
 **3 ноября, configured proof после restart Codex завершён:** первый configured
 status загрузил327faaac…/owner25380/birth639292859519548860/bootceb47b71…;
 один3457, old31404 absent (причина выхода не наблюдалась). CEP подключилась сама.
