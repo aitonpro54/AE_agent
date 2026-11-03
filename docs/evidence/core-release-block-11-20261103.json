@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:30:20.122Z",
+  "blockId": "source-candidate-11",
+  "baselineCommit": "427c060310b2f2e60b2c307965c6c813581899d0",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=owner-installation",
+      "test/owner-installation.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:29:28.944Z",
+    "finishedAt": "2026-11-03T18:30:00.385Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 18,
+      "pass": 18,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 31381.3528
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-11-owner-installation.log",
+      "sha256": "0ea0462558c861a964ddfd2168c5895316aca1744b2b8fa7f304a7fdf256fcfb",
+      "bytes": 2367
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-11-owner-installation-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "owner-installation",
+      "evidenceKey": "0f22f2dcd9dad940440e6c33adfb46928152a07770e3a32b4f558e2185b1f41f",
+      "result": "PASS",
+      "cases": 18,
+      "skipped": 0,
+      "matchedTestNames": [
+        "owner-installation runtime selector is independent of composition and owner contract is a closed admitted cluster",
+        "owner-installation fresh-root planning projects exact origin bytes without destination reads or writes",
+        "owner-installation TEMP readonly/manual apply stages exact role sidecar before publishing config last",
+        "owner-installation legacy to owner to legacy and both rollbacks preserve exact sidecar bytes and stable origin",
+        "owner-installation first owner rollback removes only its exact sidecar and retains stable state origin",
+        "owner-installation branded plans bind client bytes, origin bytes and binding metadata; durable prepared client tampering refuses",
+        "owner-installation client and origin CAS detect drift before writes, including drift while acquiring the install lease",
+        "owner-installation noncanonical existing origin bytes are retained and pinned exactly",
+        "owner-installation foreign or missing sidecar never permits replacement or owner to stdio deletion",
+        "owner-installation staging files and ancestor junctions refuse before reading or changing destinations",
+        "owner-installation rollback refuses sidecar/origin/prepared drift and missing owner transaction extension before writes",
+        "owner-installation owner package cannot execute through the legacy stdio entry before listener or store open",
+        "owner-installation standalone stdio and owner closure apply without checkout code, launcher or listeners",
+        "owner-installation fixed CLI runtime selector reaches package and standalone builders and rejects unknown models",
+        "owner-installation corrupt staged sidecar refuses before client or config becomes visible",
+        "owner-installation bounded readers reject growth after fd sampling before installer writes and close their fd",
+        "owner-installation byte-exact ownership rejects invalid UTF8 that decodes to the same client descriptor",
+        "owner-installation all rollback restore inputs and stamped transaction paths are bound before any destination writes"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-installation",
+        "test/owner-installation.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "3f0f456c0b04e21c64009e2d7198714c7bc7cdb7b5a8480e96aa7b0bcb136558",
+      "key": "0f22f2dcd9dad940440e6c33adfb46928152a07770e3a32b4f558e2185b1f41f"
+    },
+    "dependencyCount": 106,
+    "dependencyDigestBefore": "abd06ee97b0c67b813e67ce1ae638fc958d542ada6d835cb63bf2d7923eff1dc",
+    "dependencyDigestAfter": "abd06ee97b0c67b813e67ce1ae638fc958d542ada6d835cb63bf2d7923eff1dc",
+    "dependencyHashesStable": true,
+    "testHashBefore": "f90404ad055f011e937ca713294ffb80afba75be140437018efdc9f719b0f8f1",
+    "testHashAfter": "f90404ad055f011e937ca713294ffb80afba75be140437018efdc9f719b0f8f1"
+  },
+  "isolation": {
+    "ownTempInstallationConfigExtensionsStateCredentials": true,
+    "junction": "Own alias and own target inside same fixture; exact alias unlinked in finally before own-root removal",
+    "childCli": "10/15 s own TEMP package/install CLI; preload denies listener and nested spawn",
+    "listenersForbidden": true,
+    "nativeAe": false,
+    "productionState": false,
+    "testExplicitCaseTimeout": null,
+    "internalCliTimeoutsMs": [
+      10000,
+      15000
+    ],
+    "tempBase": "C:\\Users\\Ant\\AppData\\Local\\Temp",
+    "fixturePrefixes": [
+      "core4-owner-install-"
+    ],
+    "externalTimeout": null
+  },
+  "cleanup": {
+    "resourceProofKind": "terminal assertions, synchronous own child completion and guarded own TEMP hooks",
+    "sourceEvidence": "Own junction alias unlink in finally; CLI spawnSync exited; bounded readers assert fd closure; t.after exact resolved own-prefix recursive removal",
+    "retentionExpectedByPreflight": false,
+    "observedNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-hCLZ0C",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-vpyXqc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-ZYGz6B",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-7AQXs2",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-GJxAb4",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-WgoPaT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-RGvtok",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-VWt3Zl",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-etC3iV",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-8JpS8N",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-fYbUGp",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-T0OQzC",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-R7sjVB",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-JLB0lr",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-tkdB4g",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-dTGzym",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-DszZPX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-TK2uaD",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-C4Fuvi",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-odDuJK",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-SnfQic",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-J9aF9V",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-SXpDzw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-UB9JTX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-KEEV0T",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-M76HbC",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-5iWowo",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-cJVhX9",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-279Cfu",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-r1FnVv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-WVRo7H",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-qSNoPw"
+    ],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "manualCleanup": false,
+    "observationLimit": "Directory sampling may miss short fixtures; hook assertions plus terminal results and remaining new directory sample are the evidence."
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-11-owner-installation-reducer.json",
+    "sha256": "8b28b2fdf1c0044dc66d367ab769c4dd6dbb8984dfde5e5e4bba9695e591f06f"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
