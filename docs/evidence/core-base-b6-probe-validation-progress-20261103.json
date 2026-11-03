@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T11:00:13.679Z",
+  "scope": "Промежуточный checkpoint только полностью завершённых selected batches; текущий check ещё не принят",
+  "inProgress": true,
+  "releaseCertified": false,
+  "changed": [
+    "core4/runtime/windows-reservation-provider.js",
+    "core4/test/windows-cim-probe.test.js"
+  ],
+  "sourceFiles": {
+    "core4/runtime/windows-reservation-provider.js": "a0f2565005fdbec4d9e94b7fe5140209d36f5f1f3051d50a230d85295f97362f",
+    "core4/test/windows-cim-probe.test.js": "e2a3b2cbf5120f6501cf0a3f305a62628fe3a7803e9aa5a37c7cb745bf28b9e4"
+  },
+  "completedChecks": 9,
+  "uniqueCases": 212,
+  "checks": [
+    {
+      "check": "manual-runtime",
+      "evidenceKey": "cc2d65e234165b9b4ce0df76df5666ca4a977bc70247b50cae39ad79eb6c72ed",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:manual-runtime)",
+        "test/manual-runtime.test.js"
+      ],
+      "cases": 59,
+      "result": "PASS",
+      "durationMs": 11104.9192
+    },
+    {
+      "check": "windows-cim-probe",
+      "evidenceKey": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:windows-cim-probe)",
+        "test/windows-cim-probe.test.js"
+      ],
+      "cases": 8,
+      "result": "PASS",
+      "durationMs": 170.5726
+    },
+    {
+      "check": "start-over-finisher",
+      "evidenceKey": "bb1ee3b16550cf7d379ca99ba46fd2706e2a6e3c97d54aab81bef74ecadcb296",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-finisher)",
+        "test/start-over-finisher.test.js"
+      ],
+      "cases": 20,
+      "result": "PASS",
+      "durationMs": 389602.1959
+    },
+    {
+      "check": "start-over-state",
+      "evidenceKey": "7b19a013598755c6b5715bc32a14bc16e51ace2eb7a61105139a5d45cb07295b",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-state)",
+        "test/start-over-state.test.js"
+      ],
+      "cases": 20,
+      "result": "PASS",
+      "durationMs": 19201.9618
+    },
+    {
+      "check": "start-over-barrier",
+      "evidenceKey": "1129ec2d35b48b0c4e93475efdc4d0143c57471b9213464afb23e94330729bfe",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-barrier)",
+        "test/start-over-barrier.test.js"
+      ],
+      "cases": 14,
+      "result": "PASS",
+      "durationMs": 26054.7787
+    },
+    {
+      "check": "start-over-inspection",
+      "evidenceKey": "f7280cdaaf2f5b2d649306e62b5ec917bb47df2f54072dd40d1a09b6b91c4552",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-inspection)",
+        "test/start-over-inspection.test.js"
+      ],
+      "cases": 19,
+      "result": "PASS",
+      "durationMs": 105.6146
+    },
+    {
+      "check": "stopped-host-readoption",
+      "evidenceKey": "16c1307bfa04af8b4b6fc3e2bdd119eae59f746fabd1d07b997cad467e7a733d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-host-readoption)",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "cases": 25,
+      "result": "PASS",
+      "durationMs": 273423.2404
+    },
+    {
+      "check": "readoption-core",
+      "evidenceKey": "fe7e12ea2f5a3738bae2a910dd1be3a815949e2c3c1804b050ed55128ebb878f",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-core)",
+        "test/stopped-host-readoption-core.test.js"
+      ],
+      "cases": 13,
+      "result": "PASS",
+      "durationMs": 393402.0072
+    },
+    {
+      "check": "readoption-recovery",
+      "evidenceKey": "580db69c5298de40a059503e414a4a8500aa076c070c1533760240db361924be",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-recovery)",
+        "test/stopped-host-readoption-recovery.test.js"
+      ],
+      "cases": 34,
+      "result": "PASS",
+      "durationMs": 2439427.2945
+    }
+  ],
+  "pendingChecks": [
+    "readoption-enable",
+    "readoption-probe",
+    "stopped-certification",
+    "maintenance-finish",
+    "owner-maintenance",
+    "recovery-inspection"
+  ],
+  "logPrefix": {
+    "path": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+    "bytes": 82404,
+    "sha256": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb",
+    "exactPrefixVerified": true
+  },
+  "allKeysRechecked": true
+}

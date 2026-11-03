@@ -5,7 +5,7 @@ const { canonical, hash } = require('../protocol/json');
 const { dispatchBinding } = require('../protocol/dispatch');
 const { fixture } = require('./fixtures/owner-lifecycle-fixture');
 const { classifyOwnerProcess } = require('../runtime/windows-owner-process');
-const test = (name, fn) => nodeTest('stopped-certification ' + name, { timeout: 15000 }, fn);
+const test = (name, fn, options = {}) => nodeTest('stopped-certification ' + name, { timeout: 15000, ...options }, fn);
 const bytes = file => fs.existsSync(file) ? fs.readFileSync(file) : null;
 const code = expected => e => e.code === expected;
 const syntheticCrash = () => Object.assign(Error('synthetic phase crash'), { code: 'fixture_phase_crash' });
@@ -199,7 +199,8 @@ test('certificate assertion detects archived lifecycle drift and replaced stop i
     const original = fs.readFileSync(file); fs.renameSync(file, file + '.saved'); fs.writeFileSync(file, original);
     assert.throws(() => h.assert(cert), code('stopped_certification_changed'));
   }
-});
+// Two durable fixture lifecycles can exceed 15s on a busy Windows volume.
+}, { timeout: 90000 });
 
 test('a second interrupted certifier is individually sealed and must die before the next continuation', async t => {
   const h = await harness(t, 'owner'); await h.dead();

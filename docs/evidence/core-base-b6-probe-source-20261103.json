@@ -1,0 +1,1351 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T12:14:01.956Z",
+  "baselineCommit": "ae3f8a0bdafe8647b8244072814ca7b1717a7eb5",
+  "scope": "B6 Windows probe native USERPROFILE under the scrubbed installation owner; targeted test-only budget repair",
+  "changed": [
+    "core4/runtime/windows-reservation-provider.js",
+    "core4/test/windows-cim-probe.test.js",
+    "core4/test/stopped-host-readoption-enable.test.js",
+    "core4/test/stopped-certification.test.js",
+    "core4/test/maintenance-finish.test.js"
+  ],
+  "sourceFiles": {
+    "core4/runtime/windows-reservation-provider.js": "a0f2565005fdbec4d9e94b7fe5140209d36f5f1f3051d50a230d85295f97362f",
+    "core4/test/windows-cim-probe.test.js": "e2a3b2cbf5120f6501cf0a3f305a62628fe3a7803e9aa5a37c7cb745bf28b9e4",
+    "core4/test/stopped-host-readoption-enable.test.js": "208f55bbbc51670f8af433581df99ceb152f454e345d74aeab414e37f49b51ba",
+    "core4/test/stopped-certification.test.js": "8e44a1be3df6b952252ea6ac43d9d5c3528230fee163b94429e388971ddcd963",
+    "core4/test/maintenance-finish.test.js": "6ea0b46c6fc21027b4c87f2039bef57f4422c1cfe407ea96c7bb5285885f29a1"
+  },
+  "selectedChecks": 15,
+  "executionBatches": 15,
+  "uniqueCases": 330,
+  "freshCases": 87,
+  "exactCurrentKeyReuseCases": 243,
+  "checks": [
+    {
+      "check": "manual-runtime",
+      "evidenceKey": "cc2d65e234165b9b4ce0df76df5666ca4a977bc70247b50cae39ad79eb6c72ed",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:manual-runtime)",
+        "test/manual-runtime.test.js"
+      ],
+      "cases": 59,
+      "result": "PASS",
+      "durationMs": 11104.9192,
+      "mode": "exact-current-key-reuse",
+      "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+      "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb"
+    },
+    {
+      "check": "windows-cim-probe",
+      "evidenceKey": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:windows-cim-probe)",
+        "test/windows-cim-probe.test.js"
+      ],
+      "cases": 8,
+      "result": "PASS",
+      "durationMs": 170.5726,
+      "mode": "exact-current-key-reuse",
+      "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+      "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb"
+    },
+    {
+      "check": "readoption-enable",
+      "evidenceKey": "9b839724035334ac22a5ec3239ee6064b63ac43e8e199ecff2c46832932d066d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-enable)",
+        "test/stopped-host-readoption-enable.test.js"
+      ],
+      "startedAt": "2026-11-03T11:14:32.007Z",
+      "cases": 22,
+      "log": ".codex-runtime/b6-enable-rerun.log",
+      "logHash": "c9bede551e5bf1b545cdcf7747c35a18fd884d248362868452ba96314e4c4824",
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "stopped-certification",
+      "evidenceKey": "9836627c44c975bca36af7e8bbd08797a3dc0fb4ce0960e81495c0a9cfb27440",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-certification)",
+        "test/stopped-certification.test.js"
+      ],
+      "cases": 30,
+      "log": ".codex-runtime/b6-rest-resumed-stopped-certification.log",
+      "logHash": "86082428ba8d93883e1f4c0dce373da633758b2ee7a835f8c37b259c8340fb29",
+      "result": "PASS",
+      "mode": "exact-current-key-reuse"
+    },
+    {
+      "check": "maintenance-finish",
+      "evidenceKey": "d44c357cacc1497fb43c79bedaa82e466907d1793b867b8701c35f44b40de8a2",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:maintenance-finish)",
+        "test/maintenance-finish.test.js"
+      ],
+      "cases": 32,
+      "log": ".codex-runtime/b6-rest-final-maintenance-finish.log",
+      "logHash": "38076d4b68d58f94212bcd02be6e1161d124cb76804524cb7ce66a540ffc81da",
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "start-over-finisher",
+      "evidenceKey": "bb1ee3b16550cf7d379ca99ba46fd2706e2a6e3c97d54aab81bef74ecadcb296",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-finisher)",
+        "test/start-over-finisher.test.js"
+      ],
+      "cases": 20,
+      "result": "PASS",
+      "durationMs": 389602.1959,
+      "mode": "exact-current-key-reuse",
+      "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+      "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb"
+    },
+    {
+      "check": "start-over-state",
+      "evidenceKey": "7b19a013598755c6b5715bc32a14bc16e51ace2eb7a61105139a5d45cb07295b",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-state)",
+        "test/start-over-state.test.js"
+      ],
+      "cases": 20,
+      "result": "PASS",
+      "durationMs": 19201.9618,
+      "mode": "exact-current-key-reuse",
+      "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+      "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb"
+    },
+    {
+      "check": "start-over-barrier",
+      "evidenceKey": "1129ec2d35b48b0c4e93475efdc4d0143c57471b9213464afb23e94330729bfe",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-barrier)",
+        "test/start-over-barrier.test.js"
+      ],
+      "cases": 14,
+      "result": "PASS",
+      "durationMs": 26054.7787,
+      "mode": "exact-current-key-reuse",
+      "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+      "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb"
+    },
+    {
+      "check": "start-over-inspection",
+      "evidenceKey": "f7280cdaaf2f5b2d649306e62b5ec917bb47df2f54072dd40d1a09b6b91c4552",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-inspection)",
+        "test/start-over-inspection.test.js"
+      ],
+      "cases": 19,
+      "result": "PASS",
+      "durationMs": 105.6146,
+      "mode": "exact-current-key-reuse",
+      "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+      "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb"
+    },
+    {
+      "check": "stopped-host-readoption",
+      "evidenceKey": "16c1307bfa04af8b4b6fc3e2bdd119eae59f746fabd1d07b997cad467e7a733d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-host-readoption)",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "cases": 25,
+      "result": "PASS",
+      "durationMs": 273423.2404,
+      "mode": "exact-current-key-reuse",
+      "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+      "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb"
+    },
+    {
+      "check": "readoption-core",
+      "evidenceKey": "fe7e12ea2f5a3738bae2a910dd1be3a815949e2c3c1804b050ed55128ebb878f",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-core)",
+        "test/stopped-host-readoption-core.test.js"
+      ],
+      "cases": 13,
+      "result": "PASS",
+      "durationMs": 393402.0072,
+      "mode": "exact-current-key-reuse",
+      "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+      "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb"
+    },
+    {
+      "check": "readoption-recovery",
+      "evidenceKey": "580db69c5298de40a059503e414a4a8500aa076c070c1533760240db361924be",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-recovery)",
+        "test/stopped-host-readoption-recovery.test.js"
+      ],
+      "cases": 34,
+      "result": "PASS",
+      "durationMs": 2439427.2945,
+      "mode": "exact-current-key-reuse",
+      "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+      "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb"
+    },
+    {
+      "check": "readoption-probe",
+      "evidenceKey": "ce47992831533ff3cdf936e12e2e4c805effcea66bc35ce1d50805cc174b13c0",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-probe)",
+        "test/stopped-host-readoption-probe.test.js"
+      ],
+      "cases": 1,
+      "log": ".codex-runtime/b6-rest-readoption-probe.log",
+      "logHash": "9bbc4a1a2cdf9b2e7cffac3ef8f0a99bd24c212de5dfdcf35d155a78b29be9c9",
+      "result": "PASS",
+      "mode": "exact-current-key-reuse"
+    },
+    {
+      "check": "owner-maintenance",
+      "evidenceKey": "a23300c32b6e0e5530c9f0fdc1a2b42161fd6d8c2a9d033c2980f7097f16dabb",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-maintenance)",
+        "test/owner-maintenance.test.js"
+      ],
+      "cases": 22,
+      "log": ".codex-runtime/b6-rest-final-owner-maintenance.log",
+      "logHash": "66a10f685e0292fe3c29c793d7efd851be615ac4b4e92dbb33da59ac70e96659",
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "recovery-inspection",
+      "evidenceKey": "da9b1ccf99f71edd3edbcdabd0777426bd12c077d929846377052000c3ba372d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:recovery-inspection)",
+        "test/recovery-inspection.test.js"
+      ],
+      "cases": 11,
+      "log": ".codex-runtime/b6-rest-final-recovery-inspection.log",
+      "logHash": "fe5087c4d2a06e2299d75cab03eb09f9399bd39059b27f0c4d538659faeebd43",
+      "result": "PASS",
+      "mode": "fresh"
+    }
+  ],
+  "allKeysRecheckedAfterExecution": true,
+  "baselineRegression": {
+    "result": "expected FAIL",
+    "code": "host_probe_failed",
+    "logHash": "85394e634c63e452051bcdba76fab2a8fce99c99c5f3885d2567d4961b4ef850"
+  },
+  "nativeProcessReproduction": {
+    "before": {
+      "collectedAt": "2026-11-03T09:22:53.983Z",
+      "scope": "read-only Windows probe in exact owner-like environment; no AE command",
+      "results": [
+        {
+          "mode": "owner",
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "result": {
+            "mode": "owner",
+            "ok": false,
+            "error": "host_probe_failed",
+            "native": {
+              "code": 4294901760,
+              "signal": null,
+              "killed": false,
+              "stderr": "W\u0000i\u0000n\u0000d\u0000o\u0000w\u0000s\u0000 \u0000P\u0000o\u0000w\u0000e\u0000r\u0000S\u0000h\u0000e\u0000l\u0000l\u0000 \u00007\u00040\u00042\u00045\u0004@\u0004H\u00045\u0004=\u00040\u0004 \u00008\u00047\u0004-\u00007\u00040\u0004 \u0000A\u0004;\u00045\u00044\u0004C\u0004N\u0004I\u00045\u00049\u0004 \u0000>\u0004H\u00048\u00041\u0004:\u00048\u0004:\u0000 \u0000\r\u0000\n\u0000 \u0000\u0018\u0004=\u00048\u0004F\u00048\u00040\u0004;\u00048\u00047\u00040\u0004B\u0004>\u0004@\u0004 \u0000B\u00048\u0004?\u00040\u0004 \u0000\"\u0000S\u0000y\u0000s\u0000t\u0000e\u0000m\u0000.\u0000M\u0000a\u0000n\u0000a\u0000g\u0000e\u0000m\u0000e\u0000n\u0000t\u0000.\u0000A\u0000u\u0000t\u0000o\u0000m\u0000a\u0000t\u0000i\u0000o\u0000n\u0000.\u0000U\u0000t\u0000i\u0000l\u0000s\u0000\"\u0000 \u00002\u0004K\u00044\u00040\u0004;\u0004 \u00008\u0004A\u0004:\u0004;\u0004N\u0004G\u00045\u0004=\u00048\u00045\u0004.\u0000\r\u0000\n\u0000",
+              "stdoutBytes": 0
+            }
+          },
+          "stderr": ""
+        },
+        {
+          "mode": "profile",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "result": {
+            "mode": "profile",
+            "ok": true,
+            "processes": [
+              {
+                "pid": 21960,
+                "birth": "2026-11-03T06:03:11.2075250Z"
+              }
+            ],
+            "endpoints": [
+              {
+                "port": 3456,
+                "state": "observed-absent"
+              },
+              {
+                "port": 8787,
+                "state": "observed-absent"
+              }
+            ],
+            "native": {
+              "code": null,
+              "signal": null,
+              "killed": false,
+              "stderr": "",
+              "stdoutBytes": 202
+            }
+          },
+          "stderr": ""
+        }
+      ]
+    },
+    "after": {
+      "collectedAt": "2026-11-03T09:24:50.366Z",
+      "scope": "read-only Windows probe in exact owner-like environment; no AE command",
+      "results": [
+        {
+          "mode": "owner",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "result": {
+            "mode": "owner",
+            "ok": true,
+            "processes": [
+              {
+                "pid": 21960,
+                "birth": "2026-11-03T06:03:11.2075250Z"
+              }
+            ],
+            "endpoints": [
+              {
+                "port": 3456,
+                "state": "observed-absent"
+              },
+              {
+                "port": 8787,
+                "state": "observed-absent"
+              }
+            ],
+            "native": {
+              "code": null,
+              "signal": null,
+              "killed": false,
+              "stderr": "",
+              "stdoutBytes": 202
+            }
+          },
+          "stderr": ""
+        },
+        {
+          "mode": "profile",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "result": {
+            "mode": "profile",
+            "ok": true,
+            "processes": [
+              {
+                "pid": 21960,
+                "birth": "2026-11-03T06:03:11.2075250Z"
+              }
+            ],
+            "endpoints": [
+              {
+                "port": 3456,
+                "state": "observed-absent"
+              },
+              {
+                "port": 8787,
+                "state": "observed-absent"
+              }
+            ],
+            "native": {
+              "code": null,
+              "signal": null,
+              "killed": false,
+              "stderr": "",
+              "stdoutBytes": 202
+            }
+          },
+          "stderr": ""
+        }
+      ]
+    },
+    "aeCommands": 0
+  },
+  "failedInstalledRun": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check",
+    "startedAt": "2026-11-03T09:20:00.350Z",
+    "target": {
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+      "compId": 1,
+      "layerId": 13
+    },
+    "desiredText": "BASE_B",
+    "actions": [],
+    "runAttempts": 1,
+    "clientPid": 24412,
+    "status": {
+      "attachmentOwner": {
+        "accepted": 0,
+        "activity": {
+          "fault": false,
+          "pending": false,
+          "unresolved": false
+        },
+        "attachments": 1,
+        "bootId": "75b119e5-ac4f-4adf-b25d-b0fa1f98606b",
+        "closed": false,
+        "fenced": false,
+        "frozen": false,
+        "generation": 1,
+        "holderClientId": null,
+        "mode": "idle",
+        "pending": false,
+        "workSession": {
+          "baselineRequired": false,
+          "resetPending": false,
+          "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+        }
+      },
+      "automaticLifecycle": "unavailable",
+      "closed": false,
+      "composition": "manual",
+      "connection": "connected",
+      "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionPolicy": "read-only-current-observation-v1",
+      "installation": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "nodeVerified": true,
+        "nodeVersion": "24.15.0",
+        "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652"
+      },
+      "ledgerFault": false,
+      "lifecycle": {
+        "birthTicks": "639292940466114520",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": "1b2f575e7fec520da93bc52e1db35cbbe5b66c8e8accb126d88af9c53c6b700f",
+            "eventCount": 1,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": "5b4e88b7699aaa1bed3eba90e8d6aa150ad0be173c439e4ba137feff571c4028",
+            "eventCount": 15,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 22188,
+        "processBootId": "ed18a535-a168-4bea-98af-6e2137ec6075",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "maintenance": {
+        "fault": null,
+        "id": null,
+        "phase": "running",
+        "requested": false
+      },
+      "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+      "ownershipFault": null,
+      "physical": {
+        "automaticLifecycle": "unavailable",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionAvailable": true,
+        "lastPhysicalFault": null,
+        "lastReadFailure": null,
+        "listening": true,
+        "peer": {
+          "connected": true,
+          "peerId": "panel-20d41d0c9c8c246e1a829b47bb5c8816a17ad3a53228622c"
+        },
+        "pending": null,
+        "port": 3457,
+        "receiverStoreIdentity": "receiver-store-34940d50-b91c-4deb-9e88-a11096cd1eab",
+        "startOverFrozen": false,
+        "storeClosed": false,
+        "storeFault": false,
+        "unknown": false
+      },
+      "pid": 22188,
+      "product": "AE Agent Core 4.0.0",
+      "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+      "ready": true,
+      "resourceProvider": {
+        "adopted": true,
+        "coverage": {
+          "core4Lane": "cooperating-Core4-only",
+          "hostProcess": "adopted-reprobe-required",
+          "legacyEndpoints": "named-probes-only",
+          "legacyPhysicalQueue": "not-proven",
+          "otherAEActors": "outside-coverage",
+          "sharedOutputs": "not-requested"
+        },
+        "origin": {
+          "aePid": 21960,
+          "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "machineId": "MSI"
+        }
+      },
+      "startOver": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "fault": null,
+        "id": "69facd01-2b95-4983-a110-4209acabda31",
+        "phase": "ready",
+        "requiresAEExit": false,
+        "resetComplete": true,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      },
+      "synthetic": false,
+      "unavailableReason": null,
+      "unresolved": [],
+      "workSession": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "mode": "work-session",
+        "resetId": "69facd01-2b95-4983-a110-4209acabda31",
+        "resetPending": false,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      },
+      "worker": {
+        "epoch": 1,
+        "lateReplies": 0,
+        "loaded": [
+          "titles-current-target@189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79"
+        ],
+        "pending": 0,
+        "pid": 19292
+      }
+    },
+    "controller": {
+      "generation": 2
+    },
+    "contract": {
+      "admissionPin": "4b5ee2769871308b9645015d04780a9d3d2f23e35ef136c5104d747db07f36d5",
+      "contract": {
+        "buildSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "layerId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "text": {
+              "maxLength": 2048,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "layerId",
+            "text"
+          ],
+          "type": "object"
+        },
+        "effectPolicy": {
+          "checkpointKind": "manual-text-preimage-v1",
+          "confirmation": "native-current-target",
+          "effect": "layer.text",
+          "expectedBindings": {
+            "expectedRevision": "revision",
+            "expectedText": "text"
+          },
+          "preserve": [
+            "protected"
+          ],
+          "requiresCheckpoint": true,
+          "resultBindings": {
+            "text": "text"
+          },
+          "targetFields": [
+            "projectId",
+            "compId",
+            "layerId"
+          ]
+        },
+        "executionPolicy": "current-matching-target-after-local-confirmation-v1",
+        "inputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "expectedRevision": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "expectedText": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "layerId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "text": {
+              "maxLength": 2048,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "layerId",
+            "text",
+            "expectedRevision",
+            "expectedText"
+          ],
+          "type": "object"
+        },
+        "moduleId": "titles-current-target",
+        "operationId": "set-current-text",
+        "protocolVersion": 1,
+        "snapshotSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "protected": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "revision": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "target": {
+              "additionalProperties": false,
+              "properties": {
+                "compId": {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "layerId": {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "projectId": {
+                  "maxLength": 8192,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "projectId",
+                "compId",
+                "layerId"
+              ],
+              "type": "object"
+            },
+            "text": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "target",
+            "revision",
+            "protected",
+            "text"
+          ],
+          "type": "object"
+        },
+        "targetSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "layerId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "layerId"
+          ],
+          "type": "object"
+        }
+      },
+      "contractId": "7a26b1632a458c6e73e95514c7f41c8706680aaa5316aee998cc5f81ad56dc20",
+      "moduleId": "titles-current-target",
+      "modulePin": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+      "operationId": "set-current-text"
+    },
+    "inspection": {
+      "evidenceRef": "evidence-650d2893-1367-4607-ae81-34ff67b21d94",
+      "modulePin": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+      "snapshot": {
+        "protected": "{\"character\":{\"font\":\"CenturyGothic\",\"fontSize\":56,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0,0,0],\"strokeWidth\":2,\"tracking\":0,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":56,\"autoLeading\":false}}",
+        "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_agent_core\\\\snapshots\\\\core-base-b6-recovery-native-20261103.aep\",\"compId\":1,\"layerId\":13},\"BASE_A\",{\"character\":{\"font\":\"CenturyGothic\",\"fontSize\":56,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0,0,0],\"strokeWidth\":2,\"tracking\":0,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":56,\"autoLeading\":false}}]",
+        "target": {
+          "compId": 1,
+          "layerId": 13,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+        },
+        "text": "BASE_A"
+      },
+      "synthetic": false
+    },
+    "build": {
+      "buildId": "build-17fe80bc-2644-4217-b387-c1d801bca555",
+      "deterministicDigest": "7a1df9339627a39cbf72b638092a2c352d87531f001e27b8746942d6e71bc16e",
+      "pins": {
+        "core": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+        "engine": null,
+        "modules": [
+          {
+            "admission": "4b5ee2769871308b9645015d04780a9d3d2f23e35ef136c5104d747db07f36d5",
+            "dependencies": {},
+            "executionPolicy": {
+              "executionScope": {
+                "origin": {
+                  "aePid": 21960,
+                  "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+                  "machineId": "MSI"
+                },
+                "schemaVersion": 2,
+                "target": {
+                  "compId": 1,
+                  "layerId": 13,
+                  "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+                }
+              },
+              "pin": "2ccfddcf33e9a75894bc49d5f358da72d957310a14ceb5b320b9c81a50edfe46",
+              "policyId": "current-matching-target-after-local-confirmation-v1",
+              "verificationKind": "local-transaction-receipt"
+            },
+            "module": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+            "stepId": "base-recovery-text"
+          }
+        ],
+        "protocol": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "transport": "601072e977420d4f8bd34a8725c361c4226373b8824fb72e0e0b0d16f1228ef2"
+      },
+      "planRevision": "revision-ea35d846-27cb-4425-b2c1-e192fa607c67",
+      "recordContext": {
+        "contextId": "core-base-b6-native-delivery-recovery-20261103",
+        "lifetime": "ephemeral_check",
+        "project": {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+        },
+        "purpose": "technical_check",
+        "resources": [
+          {
+            "identity": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+            "kind": "project"
+          }
+        ]
+      },
+      "taskId": "task-2e0d60d4-3385-40d5-a1f8-9fb0f1e379f9",
+      "workflowId": "workflow-e3d44443-7ae2-48f2-8dcf-b1f33d06983c"
+    },
+    "proposal": {
+      "confirmationRequired": true,
+      "effects": [
+        {
+          "effect": "layer.text",
+          "expectedSnapshotDigest": "03a5db14fefcea4fd8ccb60984f8810d7a5103166420182f9dcc67518ed06745",
+          "input": {
+            "compId": 1,
+            "expectedRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_agent_core\\\\snapshots\\\\core-base-b6-recovery-native-20261103.aep\",\"compId\":1,\"layerId\":13},\"BASE_A\",{\"character\":{\"font\":\"CenturyGothic\",\"fontSize\":56,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0,0,0],\"strokeWidth\":2,\"tracking\":0,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":56,\"autoLeading\":false}}]",
+            "expectedText": "BASE_A",
+            "layerId": 13,
+            "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+            "text": "BASE_B"
+          },
+          "modulePin": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+          "stepId": "base-recovery-text",
+          "target": {
+            "compId": 1,
+            "layerId": 13,
+            "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+          }
+        }
+      ],
+      "pins": {
+        "core": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+        "engine": null,
+        "modules": [
+          {
+            "admission": "4b5ee2769871308b9645015d04780a9d3d2f23e35ef136c5104d747db07f36d5",
+            "dependencies": {},
+            "executionPolicy": {
+              "executionScope": {
+                "origin": {
+                  "aePid": 21960,
+                  "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+                  "machineId": "MSI"
+                },
+                "schemaVersion": 2,
+                "target": {
+                  "compId": 1,
+                  "layerId": 13,
+                  "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+                }
+              },
+              "pin": "2ccfddcf33e9a75894bc49d5f358da72d957310a14ceb5b320b9c81a50edfe46",
+              "policyId": "current-matching-target-after-local-confirmation-v1",
+              "verificationKind": "local-transaction-receipt"
+            },
+            "module": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+            "stepId": "base-recovery-text"
+          }
+        ],
+        "protocol": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "transport": "601072e977420d4f8bd34a8725c361c4226373b8824fb72e0e0b0d16f1228ef2"
+      },
+      "planRevision": "revision-ea35d846-27cb-4425-b2c1-e192fa607c67",
+      "proposalId": "proposal-c4ec0189-bf70-4609-b759-b07e71ebaacf",
+      "taskId": "task-2e0d60d4-3385-40d5-a1f8-9fb0f1e379f9"
+    },
+    "dryrun": {
+      "createdAt": 1793697677608,
+      "dryrunRef": "dryrun-e2485852-8873-4632-a4a8-ff5e5cf9501f",
+      "freshness": "each-step-reinspected-immediately-before-send",
+      "proposalId": "proposal-c4ec0189-bf70-4609-b759-b07e71ebaacf",
+      "structural": true,
+      "taskEpoch": 0
+    },
+    "runSubmittedAt": "2026-11-03T09:21:17.609Z",
+    "runResult": {
+      "code": "host_probe_failed",
+      "message": "host_probe_failed",
+      "runId": "run-596ad0c4-d641-4e55-86a0-713ae2be834d",
+      "state": "stopped",
+      "task": {
+        "commands": [],
+        "epoch": 0,
+        "reset": false,
+        "taskId": "task-2e0d60d4-3385-40d5-a1f8-9fb0f1e379f9"
+      },
+      "workflowId": "workflow-e3d44443-7ae2-48f2-8dcf-b1f33d06983c"
+    },
+    "runReturnedAt": "2026-11-03T09:21:18.176Z",
+    "release": {
+      "released": true
+    },
+    "exit": {
+      "code": 0,
+      "signal": null,
+      "stderr": ""
+    },
+    "classification": "pre-intent/pre-mutation-submit refusal; no native confirmation or owner fault"
+  },
+  "package": {
+    "distributionHash": "85c3d95a0dc33f6fad7901c6f6b8a70f58b20297b3e66d8eb8cdc13e39d39f63",
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "files": 98,
+    "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\core4\\4.0.0-base-b6-probe-cdf7338f5761",
+    "liveProof": false,
+    "runtimeFiles": 80,
+    "currentPackageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652",
+    "changedRuntimeFiles": [
+      "runtime/windows-reservation-provider.js"
+    ],
+    "sourceHash": "a0f2565005fdbec4d9e94b7fe5140209d36f5f1f3051d50a230d85295f97362f",
+    "dryRun": true,
+    "actualInstall": false
+  },
+  "configurationReview": {
+    "scope": "Core MCP entry only; generated in memory, not applied",
+    "beforeHash": "57f8a8d293cc59e3d7fd1264811e9f46445f1cbde190be2d84a59f69c47c0f96",
+    "afterHash": "ab01a50576f0c553ca06895f967ee907841ee683e4b6b04229e75401905f359e",
+    "beforeKeys": [
+      "enabled",
+      "tool_timeout_sec",
+      "command",
+      "args"
+    ],
+    "afterKeys": [
+      "enabled",
+      "tool_timeout_sec",
+      "command",
+      "args"
+    ],
+    "outsideCoreUnchanged": true,
+    "changedLines": [
+      "args = [\"C:\\\\Users\\\\Ant\\\\AppData\\\\Local\\\\AEAgentCore4\\\\releases\\\\cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944\\\\runtime\\\\client-entry.js\",\"--client-descriptor\",\"C:\\\\Users\\\\Ant\\\\AppData\\\\Local\\\\AEAgentCore4\\\\core-client.json\"]"
+    ],
+    "removedKeys": [],
+    "removedLines": [
+      "args = [\"C:\\\\Users\\\\Ant\\\\AppData\\\\Local\\\\AEAgentCore4\\\\releases\\\\21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652\\\\runtime\\\\client-entry.js\",\"--client-descriptor\",\"C:\\\\Users\\\\Ant\\\\AppData\\\\Local\\\\AEAgentCore4\\\\core-client.json\"]"
+    ]
+  },
+  "closingProtection": {
+    "collectedAt": "2026-11-03T12:06:33.165Z",
+    "files": {
+      "descriptor": {
+        "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+        "sha256": "c82f44e647f2126e0b2080ed1fc9c811bcb0ccdd9ee18462fbe1446497ef34d9"
+      },
+      "client": {
+        "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json",
+        "sha256": "f046655f99db975c3c6ed149bfb35e7dd47d7117a0606a1f0f02b1944276c72e"
+      },
+      "config": {
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml",
+        "sha256": "57f8a8d293cc59e3d7fd1264811e9f46445f1cbde190be2d84a59f69c47c0f96"
+      },
+      "receiver": {
+        "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\receiver\\completions.ndjson",
+        "sha256": "b1b4eb6f982c074f611c820ab3a1f9a1b51c65877b850d8ab465518b21035d9f"
+      },
+      "ledger": {
+        "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+        "sha256": "cd53a5128ab28cac4d739d415c49bfa3e9b7045c06ba0bdb65ea40e4f422b699"
+      },
+      "adoption": {
+        "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\host-adoption.json",
+        "sha256": "4840b0e8096dd315df42b31bdcc8dd742f92961e75985aef1970218a8b0554c0"
+      },
+      "aep": {
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+        "sha256": "3d19acd024ca3508e4389d368ba5a9532a79fdb5c7bc3033dbb83acab1a7b405"
+      }
+    },
+    "receiver": {
+      "events": 21,
+      "prefixEvents": 15,
+      "prefixHash": "5b4e88b7699aaa1bed3eba90e8d6aa150ad0be173c439e4ba137feff571c4028",
+      "mutateBegins": 0
+    },
+    "ledger": {
+      "events": 11,
+      "prefixEvents": 1,
+      "prefixHash": "1b2f575e7fec520da93bc52e1db35cbbe5b66c8e8accb126d88af9c53c6b700f",
+      "types": {
+        "evidence": 3,
+        "task": 2,
+        "build": 2,
+        "proposal": 2,
+        "engine": 1,
+        "checkpoint": 1
+      },
+      "physicalCommandIntents": 0,
+      "explanation": "Appended inspection/build/proposal/run/checkpoint metadata, no reservation or physical command intent."
+    },
+    "ledgerUnchangedFromReadoption": false,
+    "configuredStatus": {
+      "purpose": "technical_check",
+      "lifetime": "ephemeral_check",
+      "collectedAt": "2026-11-03T12:05:12.006Z",
+      "status": {
+        "attachmentOwner": {
+          "accepted": 0,
+          "activity": {
+            "fault": false,
+            "pending": false,
+            "unresolved": false
+          },
+          "attachments": 1,
+          "bootId": "75b119e5-ac4f-4adf-b25d-b0fa1f98606b",
+          "closed": false,
+          "fenced": false,
+          "frozen": false,
+          "generation": 2,
+          "holderClientId": null,
+          "mode": "idle",
+          "pending": false,
+          "workSession": {
+            "baselineRequired": false,
+            "resetPending": false,
+            "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+          }
+        },
+        "automaticLifecycle": "unavailable",
+        "closed": false,
+        "composition": "manual",
+        "connection": "connected",
+        "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionPolicy": "read-only-current-observation-v1",
+        "installation": {
+          "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+          "machineId": "MSI",
+          "nodeVerified": true,
+          "nodeVersion": "24.15.0",
+          "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652"
+        },
+        "ledgerFault": false,
+        "lifecycle": {
+          "birthTicks": "639292940466114520",
+          "historyAtStartup": {
+            "ledger": {
+              "byteHash": "1b2f575e7fec520da93bc52e1db35cbbe5b66c8e8accb126d88af9c53c6b700f",
+              "eventCount": 1,
+              "present": true,
+              "settled": true,
+              "unresolvedCount": 0
+            },
+            "receiver": {
+              "byteHash": "5b4e88b7699aaa1bed3eba90e8d6aa150ad0be173c439e4ba137feff571c4028",
+              "eventCount": 15,
+              "present": true,
+              "settled": true,
+              "unresolvedCount": 0
+            }
+          },
+          "mode": "active",
+          "pid": 22188,
+          "processBootId": "ed18a535-a168-4bea-98af-6e2137ec6075",
+          "reason": null,
+          "recoveryRequired": false
+        },
+        "maintenance": {
+          "fault": null,
+          "id": null,
+          "phase": "running",
+          "requested": false
+        },
+        "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+        "ownershipFault": null,
+        "physical": {
+          "automaticLifecycle": "unavailable",
+          "externalLegacyCoverage": "unobserved",
+          "inspectionAvailable": true,
+          "lastPhysicalFault": null,
+          "lastReadFailure": null,
+          "listening": true,
+          "peer": {
+            "connected": true,
+            "peerId": "panel-20d41d0c9c8c246e1a829b47bb5c8816a17ad3a53228622c"
+          },
+          "pending": null,
+          "port": 3457,
+          "receiverStoreIdentity": "receiver-store-34940d50-b91c-4deb-9e88-a11096cd1eab",
+          "startOverFrozen": false,
+          "storeClosed": false,
+          "storeFault": false,
+          "unknown": false
+        },
+        "pid": 22188,
+        "product": "AE Agent Core 4.0.0",
+        "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "ready": true,
+        "resourceProvider": {
+          "adopted": true,
+          "coverage": {
+            "core4Lane": "cooperating-Core4-only",
+            "hostProcess": "adopted-reprobe-required",
+            "legacyEndpoints": "named-probes-only",
+            "legacyPhysicalQueue": "not-proven",
+            "otherAEActors": "outside-coverage",
+            "sharedOutputs": "not-requested"
+          },
+          "origin": {
+            "aePid": 21960,
+            "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+            "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+            "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+            "machineId": "MSI"
+          }
+        },
+        "startOver": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "fault": null,
+          "id": "69facd01-2b95-4983-a110-4209acabda31",
+          "phase": "ready",
+          "requiresAEExit": false,
+          "resetComplete": true,
+          "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+        },
+        "synthetic": false,
+        "unavailableReason": null,
+        "unresolved": [],
+        "workSession": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "mode": "work-session",
+          "resetId": "69facd01-2b95-4983-a110-4209acabda31",
+          "resetPending": false,
+          "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+        },
+        "worker": {
+          "epoch": 1,
+          "lateReplies": 0,
+          "loaded": [
+            "titles-current-target@189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79"
+          ],
+          "pending": 0,
+          "pid": 19292
+        }
+      }
+    },
+    "actualPackageUpdate": 0,
+    "actualMcpConfigWrites": 0,
+    "nativeMutationSubmissions": 0,
+    "nativeOwnerFaults": 0
+  },
+  "boundaries": {
+    "checked": 55,
+    "result": "PASS",
+    "liveCalls": 0
+  },
+  "budgetCorrection": [
+    {
+      "check": "readoption-enable",
+      "case": "terminal receipt stays readonly with a live finisher, new startup gate, ready owner and later transaction/history",
+      "beforeMs": 90000,
+      "afterMs": 300000,
+      "assertionsChanged": false,
+      "diagnosticFailureLogHash": "51a2d42f4cc47f49716421790bc149add3fe23f4ac289f1ab30b7a0e537c34af",
+      "targetedPassLogHash": "0c6db9a15442efa2d3da4474233da6c231548f7f29b333687af2fc9ad4d1baf6",
+      "interruptedBatchAccepted": false,
+      "interruptedBatchHash": "dd10f315f8c3c12cfea5ffe8041cb29cc03949fa6785f2f40c0c6b72cfbd6401",
+      "ownedTestProcessStop": {
+        "purpose": "technical_check",
+        "lifetime": "ephemeral_check",
+        "at": "2026-11-03T11:06:14.1277946Z",
+        "reason": "failed unfinished readoption-enable batch; completed9/212 retained by exact keys",
+        "targets": [
+          {
+            "pid": 34760,
+            "birthTicks": "639292946992738343"
+          },
+          {
+            "pid": 2948,
+            "birthTicks": "639292982527482124"
+          },
+          {
+            "pid": 4368,
+            "birthTicks": "639292982527100353"
+          }
+        ],
+        "coreAndAEActions": 0,
+        "validatorStopped": true,
+        "workerStopped": true,
+        "runnerStopped": true
+      }
+    },
+    {
+      "check": "stopped-certification",
+      "case": "certificate assertion detects archived lifecycle drift and replaced stop inode",
+      "beforeMs": 15000,
+      "afterMs": 90000,
+      "assertionsChanged": false,
+      "failedBatchAccepted": false,
+      "failedBatchHash": "9048a1262fa94167a15d295b3e947714954b05fb54a7995d743b092227737a13",
+      "targetedPassLogHash": "620fe39a7b1979ec307b8fdc4350fd42a7c0fa748b7cb26830ab93da93916d75",
+      "ownedTestProcessStop": {
+        "purpose": "technical_check",
+        "lifetime": "ephemeral_check",
+        "at": "2026-11-03T11:28:22.0404333Z",
+        "reason": "failed unfinished certification batch held worker after timeout; no PASS claimed",
+        "targets": [
+          {
+            "pid": 29564,
+            "birthTicks": "639293010534848288"
+          },
+          {
+            "pid": 27564,
+            "birthTicks": "639293010534326637"
+          }
+        ],
+        "coreAndAEActions": 0
+      }
+    },
+    {
+      "check": "maintenance-finish",
+      "case": "corrupt published continuation and original records fence two further explicit attempts",
+      "beforeMs": 15000,
+      "afterMs": 90000,
+      "assertionsChanged": false,
+      "failedBatchAccepted": false,
+      "failedBatchHash": "5777e6cdc6b6dc6c30cc7f497d8fd0c3e290c06ecb709ee358171429b3007050"
+    },
+    {
+      "check": "maintenance-finish",
+      "case": "completed finish permits a fresh lifecycle while keeping keys and history unchanged",
+      "beforeMs": 15000,
+      "afterMs": 90000,
+      "assertionsChanged": false,
+      "failedBatchAccepted": false,
+      "failedBatchHash": "5777e6cdc6b6dc6c30cc7f497d8fd0c3e290c06ecb709ee358171429b3007050"
+    }
+  ],
+  "deferredCoverage": [
+    {
+      "check": "start-over-runtime",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "start-over-operator",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "owner-runtime",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    }
+  ],
+  "selectedArtifactsOnly": true,
+  "releaseCertified": false,
+  "limits": [
+    "Runtime delta: one Windows probe file. Test delta: two regressions plus four scenario-specific budgets, with all assertions preserved.",
+    "Source/native-process proof only; fixed candidate is not installed.",
+    "Installed21a884fa still contains the reproduced probe defect; no native mutation command, confirmation or owner fault has been submitted.",
+    "Native late callback/mutation recovery, configured fixed-package acceptance, full release and portability remain open."
+  ]
+}

@@ -40,6 +40,20 @@ native mutation proof. При недоступном поддержанном п
 
 ## Progress
 
+- B6 source fix принят: 15checks/330unique cases (87fresh/243exact current-key reuse)/55boundaries PASS. Один runtime file
+  восстанавливает native USERPROFILE только для fixed PowerShell probe в scrubbed
+  owner env. Две regression cases; четыре named test budgets изменены после
+  подтверждённых timeout, все assertions сохранены. Failed batches не приняты;
+  полные affected checks прошли заново.
+  [Scope/evidence](../docs/core-base-b6-windows-probe-20261103.md).
+- Первая native typed run task2e0d60d4…/proposalc4ec0189… отказала host_probe_failed
+  до intent/send, commands0; original run не повторяется. Client released/exit0.
+  Prepared-only task3d683015… не отправлялся. Native modal/fault/mutation0.
+- Candidatecdf7338f…/distribution85c3d95a… (80/98) built/verified/dry-run. Actual
+  install0; штатное обновление меняет одну args-line существующего Core MCP entry,
+  что требует узкого уточнения в связи с паузой MCP/Codex config. После разрешённой
+  поставки — fresh inspection/build/proposal и native сценарий пунктов4–6.
+
 - Own fixture создан адресным gated JSX один раз и сохранён отдельно:
   `snapshots/core-base-b6-recovery-native-20261103.aep`/SHA3d19acd0…,
   comp1/layer13, текстBASE_A, реальные active fill/stroke. Native typed manual
@@ -64,6 +78,14 @@ native mutation proof. При недоступном поддержанном п
 
 ## Decision Log
 
+- Тестовые timeout не выдаются за production defect. Изменяются только бюджеты
+  четырёх named tests; прочие проверки и guards сохранены. Accepted9/212 reuse
+  разрешён после сравнения exact current keys; прерванный failed check не принят.
+
+- Pre-submit host probe отказ не является UNKNOWN принятой mutation. Fault helper
+  не запускался. Source-исправление env-причины подтверждено; далее новая package
+  поставка и fresh proposal/inspection. Не отправлять прежний run повторно.
+
 - Старый host adoption не соответствует новому AE/test path; перед mutation
   выполнена существующая stopped re-adoption, без bypass provider и без package/
   MCP/Codex config changes. Typed native inspect нового target не ослабляет
@@ -78,6 +100,16 @@ native mutation proof. При недоступном поддержанном п
   Titles; отказы полного native proof не исправлять типографическим fallback.
 
 ## Validation
+
+- Итоговое evidence содержит15current keys/commands, результаты полных checks,
+  exact reused prefix и hashes всех логов; cancelled/failed batches исключены.
+  [Scope и состояние source-проверок](../docs/core-base-b6-windows-probe-20261103.md).
+
+- Actual owner-like env reproduction: baseline FAIL, one-field native profile
+  correction PASS, оба без AE команд. Результаты и regression/tests зафиксированы
+  в постоянном source evidence. Closing status подтвердил прежний owner/boot,
+  connected peer, pending/UNKNOWN/fault0; receiver21/prefix15 exact, ledger11/prefix1
+  exact без физических command intents/reservations, protected bindings/AEP intact.
 
 - Fixture native inspection и fixed Windows probe PASS; штатный helper distribution
  41d4812c… verified. Stop certificate a4f8d170…; exact witness/phase proofs завершили

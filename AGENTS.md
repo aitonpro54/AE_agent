@@ -11,6 +11,19 @@
 
 ## Текущий scope и правила
 
+**3 ноября, B6 source fix принят:** один native run task2e0d60d4…/proposal
+c4ec0189… остановился host_probe_failed до intent/send, commands0; не replay.
+Причина воспроизведена в owner-like scrubbed env: PowerShell startup требует
+USERPROFILE. Один runtime file получает native os.userInfo().homedir; fail-closed
+и fixed query/4с/AE gates сохранены. Две regression cases и четыре named test budgets;
+15checks/330unique cases (87fresh/243exact current-key reuse)/55boundaries PASS, current keys сверены.
+Три cancelled timeout batches не приняты; полные affected checks прошли заново.
+Candidatecdf7338f…/distribution85c3d95a… (80/98) built/verified/dry-run; actual install0.
+Установка меняет одну args-line Core MCP entry; explicit pause MCP/Codex config
+требует узкого уточнения перед actual update. Native delivery/mutation/recovery
+нового B6 ещё открыты; Core/AE не faulted.
+[Scope/evidence](docs/core-base-b6-windows-probe-20261103.md).
+
 **3 ноября, B6 native fixture/re-adoption:** own test AEP
 `snapshots/core-base-b6-recovery-native-20261103.aep`/SHA3d19acd0… создан/сохранён1раз
 адресным gated setup; comp1/layer13/BASE_A, full native style proof с active

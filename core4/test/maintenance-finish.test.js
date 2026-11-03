@@ -1,7 +1,7 @@
 'use strict';
 const nodeTest = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
 const { harness, inject } = require('./fixtures/maintenance-finish');
-const test = (name, fn) => nodeTest('maintenance-finish ' + name, { timeout: 15000 }, fn);
+const test = (name, fn, options = {}) => nodeTest('maintenance-finish ' + name, { timeout: 15000, ...options }, fn);
 const bytes = file => fs.existsSync(file) ? fs.readFileSync(file) : null;
 const dir = (h, id) => path.join(h.f.root, 'transactions', id + '-owner-maintenance');
 const protectedFiles = h => [h.f.descriptorPath, path.join(h.f.root, 'origin.json'), h.f.path('origin.json'), path.join(h.f.root, 'core-client.json'), h.f.path('receiver/completions.ndjson'), h.f.path('broker/ledger.ndjson')];
@@ -90,7 +90,8 @@ test('corrupt published continuation and original records fence two further expl
     assert.ok(file); fs.appendFileSync(file, 'torn'); const before = h.f.snapshot();
     for (let n = 0; n < 2; n++) { await assert.rejects(finish(h, id)); assert.deepEqual(h.f.snapshot(), before); }
   }
-});
+// Four durable fixtures exceed 15s on the supported Windows volume.
+}, { timeout: 90000 });
 test('sealed forks and an unexpected archive refuse without guessing a continuation', async t => {
   const h = await harness(t), id = await pending(h); let published;
   const restore = inject(h, 'linkSync', (link, from, to) => { const value = link(from, to); if (/finish-[a-f0-9-]{36}\.json$/.test(to)) { published = to; throw Error('crash after intent'); } return value; });
@@ -116,7 +117,8 @@ test('completed finish permits a fresh lifecycle while keeping keys and history 
   await finish(h, id); finished(h, id, before);
   for (const name of fs.readdirSync(dir(h, id))) { const value = fs.readFileSync(path.join(dir(h, id), name), 'utf8'); for (const secret of [h.f.d.panelToken, h.f.d.controlToken, 'panelToken', 'controlToken']) assert.equal(value.includes(secret), false); }
   await h.next(); assert.notEqual(h.scope().bootId, oldBoot); protectedFiles(h).forEach((file, i) => assert.deepEqual(bytes(file), before[i])); await h.stop();
-});
+// Include the fresh owner/stop cycle in this scenario's fixture budget.
+}, { timeout: 90000 });
 test('unavailable process observation preserves every pending file and never infers absence', async t => {
   const h = await harness(t), id = await pending(h), before = h.f.snapshot();
   h.onObserve(() => { throw Object.assign(Error('owner_process_probe_unavailable'), { code: 'owner_process_probe_unavailable' }); });

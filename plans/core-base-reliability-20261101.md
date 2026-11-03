@@ -1,5 +1,14 @@
 # База Core: подключение, восстановление и диагностика
 
+**B6 source checkpoint,3ноября:** 15checks/330unique cases (87fresh/243exact current-key reuse)/55boundaries PASS.
+Исправлен подтверждённый PowerShell startup отказ в очищенном env owner, runtime
+delta1file; четыре named test budgets скорректированы после timeout, assertions
+сохранены. Candidatecdf7338f… built/verified/dry-run, actual install0. Штатная
+поставка меняет одну args-line Core MCP entry и требует узкого уточнения scope
+из-за действующей паузы MCP/Codex config. Native delivery/late callback/mutation
+recovery остаются открытыми; старый pre-submit run не повторять.
+[Точный срез и evidence](../docs/core-base-b6-windows-probe-20261103.md).
+
 1 ноября 2026. Прямое поручение пользователя в чате
 `01a19665-19c8-7301-9869-f0db66042251`. Исходный commit
 `6fcee4cdd213759e6e1f351657b19f6b919f15df`.

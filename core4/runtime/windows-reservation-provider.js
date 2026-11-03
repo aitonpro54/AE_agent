@@ -51,6 +51,12 @@ async function probeWindows() {
   const records = await new Promise((resolve, reject) => {
     const env = Object.fromEntries(['SystemRoot', 'WINDIR', 'TEMP', 'TMP'].filter(k => process.env[k]).map(k => [k, process.env[k]]));
     try {
+      // The installation owner deliberately clears inherited user variables.
+      // PowerShell still needs a real profile for its own initialization; take
+      // it from the OS, never a caller or the scrubbed parent environment.
+      const profile = os.userInfo().homedir;
+      if (typeof profile !== 'string' || !path.isAbsolute(profile) || profile.includes('\0')) probeFailure();
+      env.USERPROFILE = profile;
       childProcess.execFile(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', CIM_QUERY], { windowsHide: true, timeout: 4000, maxBuffer: 64 * 1024, env }, (error, stdout, stderr) => {
         if (error || stderr !== undefined && typeof stderr !== 'string' || typeof stderr === 'string' && stderr.trim()) { reject(Object.assign(new Error('host_probe_failed'), { code: 'host_probe_failed' })); return; }
         try { resolve(decodeCimWire(stdout)); }

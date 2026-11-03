@@ -1,7 +1,7 @@
 'use strict';
 const nodeTest = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
 const { harness } = require('./fixtures/stopped-host-readoption');
-const test = (name, fn) => nodeTest('readoption-enable ' + name, { timeout: 90000 }, fn);
+const test = (name, fn, options = {}) => nodeTest('readoption-enable ' + name, { timeout: 90000, ...options }, fn);
 const code = c => e => e.code === c;
 const synthetic = () => Object.assign(Error('explicit TEMP enable crash'), { code: 'fixture_enable_crash' });
 async function applied(h) { const p = await h.inspect(); await h.api.applyStoppedReadoption({ ...h.options, expectedProofHash: p.proofHash, witness: h.witness }); h.nextActor(); return h.inspect(); }
@@ -82,7 +82,9 @@ test('terminal receipt stays readonly with a live finisher, new startup gate, re
   // an old receipt never asserts current admission, settlement or UNKNOWN=0.
   fs.appendFileSync(h.f.path('receiver/completions.ndjson'), 'opaque later history\n'); fs.appendFileSync(h.f.path('broker/ledger.ndjson'), 'opaque later history\n');
   await terminal();
-});
+// Multiple complete startup/stop cycles plus immutable-history checks exceed
+// 90 seconds on the supported Windows host. Keep every refusal assertion.
+}, { timeout: 300000 });
 test('terminal after last unlink ignores foreign gate/barrier payload before helper return and never follows direct foreign links', async t => {
   const h = await harness(t, { hostAdoption: true }), seen = await applied(h), gate = path.join(h.f.root, 'install.lock'), barrier = h.f.path('runtime-maintenance.json');
   const unlink = h.f.io.unlinkSync, open = h.f.io.openSync, realpath = h.f.io.realpathSync; let foreign = false;

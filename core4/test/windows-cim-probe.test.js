@@ -41,6 +41,33 @@ test('windows-cim-probe actual wrapper uses one literal query, Node hostname/has
   assert.equal(hostIdentity(result).aeProcessBirth, '2026-10-27T09:35:15.6028207Z'); assert.ok(Number.isFinite(Date.parse(result.observedAt))); assert.ok(Number.isFinite(result.completedAt));
   assert.deepEqual(endpoints.map(call => call.port).sort(), [3456, 8787]); assert.ok(result.endpoints.every(value => value.state === 'observed-absent'));
 });
+
+test('windows-cim-probe scrubbed owner profile uses native homedir for PowerShell without inheriting caller variables', async t => {
+  const f = fixture(), calls = [], endpoints = mockEndpoints(t), prior = process.env.USERPROFILE;
+  process.env.USERPROFILE = '';
+  t.after(() => { if (prior === undefined) delete process.env.USERPROFILE; else process.env.USERPROFILE = prior; });
+  t.mock.method(os, 'userInfo', () => ({ homedir: f.directory }));
+  t.mock.method(childProcess, 'execFile', (executable, args, options, callback) => {
+    calls.push({ executable, args, options });
+    // This reproduces the native PowerShell initialization boundary seen under
+    // the scrubbed installation owner, not a simulated AE result or authority.
+    if (options.env.USERPROFILE !== f.directory) { queueMicrotask(() => callback(Object.assign(Error('PowerShell profile initialization'), { code: 4294901760 }), '', 'Utils initializer')); return; }
+    queueMicrotask(() => callback(null, wire(f.record), ''));
+  });
+  const result = await probeWindows();
+  assert.equal(calls.length, 1); assert.equal(result.processes[0].pid, f.record.pid);
+  assert.equal(calls[0].options.env.USERPROFILE, f.directory); assert.equal(calls[0].args.at(-1), CIM_QUERY);
+  assert.ok(Object.keys(calls[0].options.env).every(key => ['SystemRoot', 'WINDIR', 'TEMP', 'TMP', 'USERPROFILE'].includes(key)));
+  assert.equal(endpoints.length, 2);
+});
+
+test('windows-cim-probe unavailable or malformed native profile fails before child launch with no environment fallback', async t => {
+  const endpoints = mockEndpoints(t); let calls = 0, profile;
+  t.mock.method(childProcess, 'execFile', () => { calls++; });
+  t.mock.method(os, 'userInfo', () => { if (profile instanceof Error) throw profile; return { homedir: profile }; });
+  for (profile of [undefined, '', 'relative-profile', path.join(os.tmpdir(), 'bad\0profile'), Error('native profile unavailable')]) await assert.rejects(probeWindows(), error => error.code === 'host_probe_failed');
+  assert.equal(calls, 0); assert.equal(endpoints.length, 0);
+});
 test('windows-cim-probe bounded canonical data decode handles arrays/Unicode/date and rejects malformed wire or projection fields', () => {
   const f = fixture(); assert.deepEqual(decodeCimWire(wire(f.record)), [f.record]); assert.deepEqual(decodeCimWire(wire([f.record, { ...f.record, pid: 654321 }])).map(r => r.pid), [123456, 654321]); assert.deepEqual(decodeCimWire(' \r\n'), []); assert.deepEqual(decodeCimWire(wire([])), []);
   const malformed = ['not base64', 'QQ', 'QQ==', 'A'.repeat(65540), Buffer.from([0xc3, 0x28]).toString('base64'), wire(null), wire({ ...f.record, CommandLine: 'must never be accepted' }), wire({ ...f.record, pid: 0 }), wire({ ...f.record, pid: 1.5 }), wire({ ...f.record, pid: 0x100000000 }), wire({ ...f.record, birth: '2026-10-27T09:35:15.602Z' }), wire({ ...f.record, birth: '2026-02-30T09:35:15.6028207Z' }), wire({ ...f.record, birth: '2026-10-27T09:35:15.6028207+00:00' }), wire({ ...f.record, executablePath: 'relative/AfterFX.exe' }), wire({ ...f.record, executablePath: 'C:\\bad\u0000path.exe' }), wire({ ...f.record, executablePath: 'C:\\' + 'я'.repeat(8193) }), wire(Array.from({ length: 17 }, () => f.record))];
