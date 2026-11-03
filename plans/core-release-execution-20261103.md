@@ -30,7 +30,7 @@ push/PR и запуска dedicated продуктов. Штатные внут�
 own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup проверены.
 
 <!-- EXECUTION_STATUS -->
-Принято блоков: 3; проверок по именам: 3. Применимое evidence: 34 exact-key + 2 byte-command-bound. Открыто: 35 (без hold: 33, Titles под паузой: 2). Следующий блок: source-candidate-04.
+Принято блоков: 4; проверок по именам: 4. Применимое evidence: 35 exact-key + 2 byte-command-bound. Открыто: 34 (без hold: 32, Titles под паузой: 2). Следующий блок: source-candidate-05.
 <!-- /EXECUTION_STATUS -->
 
 <!-- EXECUTION_BLOCKS -->
@@ -39,6 +39,7 @@ own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup пр�
 | source-candidate-01 | `start-over-runtime` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-01-20261103.json) |
 | source-candidate-02 | `start-over-operator` | PASS: 6 pass / 0 skip | [JSON](../docs/evidence/core-release-block-02-20261103.json) |
 | source-candidate-03 | `stopped-host-readoption-operator` | PASS: 17 pass / 0 skip | [JSON](../docs/evidence/core-release-block-03-20261103.json) |
+| source-candidate-04 | `stopped-update-operator` | PASS: 4 pass / 0 skip | [JSON](../docs/evidence/core-release-block-04-20261103.json) |
 <!-- /EXECUTION_BLOCKS -->
 
 ## Decision Log

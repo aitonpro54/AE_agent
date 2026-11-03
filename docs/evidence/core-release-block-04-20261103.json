@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:01:05.942Z",
+  "blockId": "source-candidate-04",
+  "baselineCommit": "0af346d521aaec83f0a27b66248de53b27bc2f2b",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=stopped-update-operator",
+      "test/stopped-update-operator.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:00:37.397Z",
+    "finishedAt": "2026-11-03T18:00:39.594Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 4,
+      "pass": 4,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 2131.4121
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-04-stopped-update-operator.log",
+      "sha256": "b817c80ba6be63d3c72ae9960518ce3f85db6105bc808f6ef124414fc86d53f5",
+      "bytes": 566
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-04-stopped-update-operator-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "stopped-update-operator",
+      "evidenceKey": "258748b0526785cdff0a7ddf5806455a9c6f9ca7da650972897356405391410f",
+      "result": "PASS",
+      "cases": 4,
+      "skipped": 0,
+      "matchedTestNames": [
+        "stopped-update-operator source pins private bootstrap before support imports",
+        "stopped-update-operator bootstrap remains opaque and scoped until the awaited operation settles",
+        "stopped-update-operator recovery awaits verification and closes its TEMP election including pending requests",
+        "stopped-update-operator owner pre-ready modes require explicit inspection proof and verified bootstrap"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-update-operator",
+        "test/stopped-update-operator.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "efc44a7c5ff63e9eb82210816a89e2cd8ad8bb88eb7d262c46be2c45dc7f653a",
+      "key": "258748b0526785cdff0a7ddf5806455a9c6f9ca7da650972897356405391410f"
+    },
+    "dependencyCount": 104,
+    "dependencyDigestBefore": "686a2b0d7aee94ce23fc4113c30cd38074f29714b6039b3291259598ea495836",
+    "dependencyDigestAfter": "686a2b0d7aee94ce23fc4113c30cd38074f29714b6039b3291259598ea495836",
+    "dependencyHashesStable": true,
+    "testHashBefore": "5709bf589e413b92857f8bb76f575e3fdbf2aa04da9f5f2b55d6920c40bbf8b0",
+    "testHashAfter": "5709bf589e413b92857f8bb76f575e3fdbf2aa04da9f5f2b55d6920c40bbf8b0"
+  },
+  "isolation": {
+    "ownTempInstallationConfigExtensionsStateCredentials": true,
+    "tempBase": "C:\\Users\\Ant\\AppData\\Local\\Temp",
+    "fixturePrefix": "core4-update-operator-",
+    "nativeStopUpdateInvoked": false,
+    "actualUpdateMocked": true,
+    "canonicalPort3457": "Sole test election mapped to ephemeral0",
+    "ownPendingRequestClosed": true,
+    "ownLoopbackFixturesOnly": true,
+    "nativeAe": false,
+    "productionState": false,
+    "externalTimeout": null,
+    "cleanupGuard": "mkdtemp own prefix; t.after own-prefix check before recursive removal; request destroy and own server close in finally",
+    "harnessManualCleanup": false
+  },
+  "cleanup": {
+    "observedNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-update-operator-TvWNvb",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-update-operator-2kweGK",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-update-operator-SvbuCj"
+    ],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "fixtureHooksOutcome": "Included in terminal test results; pending request/sole election closure assertions passed with case PASS",
+    "observationLimit": "Directory sampling can miss short fixtures; hook assertions and no remaining new directories supply cleanup evidence"
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-04-stopped-update-operator-reducer.json",
+    "sha256": "f16f1ce840410ee26afdb505c4203b822cbf2fe199a6fb524244ff8c6d5e5a1b"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "networkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
