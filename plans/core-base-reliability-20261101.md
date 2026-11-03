@@ -109,6 +109,13 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- Configured B4 подтверждён штатным текущим MCP без service refresh: package21a884fa…,
+  owner16712/один3457, sameAE21960, auto peer connect. Malformed contract до submit
+  и fresh native read/release1 PASS.11settled/prefix9/protected/archive/AEP exact.
+  [Evidence](../docs/evidence/core-base-b4-configured-20261103.json).
+  Следующий [bounded native блок](core-base-delivery-recovery-20261103.md) использует
+  отдельный own test AEP и existing manual operation для проверки базы.
+
 - 3 ноября, B5: production HTTP receiver и VM dispatcher соединены в двух новых
   сценариях доставки/late callback. После timeout UNKNOWN journal сохранён
   побайтно; старый completion не принимается свежим receiver, новая команда
@@ -298,6 +305,11 @@ fault-сценарии проводить на собственных тесто
 
 ## Decision Log
 
+- Configured B4 закрыт обычным клиентом нового текущего чата, без Codex/MCP
+  restart/config. Прежняя отложенная maintenance задача не нужна для этого proof
+  и не возобновляется. Новый native fault требует своей exact observed цели,
+  своего commandId и нового server-owned reset; old settled IDs не повторяются.
+
 - B5 использует реальные TEMP HTTP/HMAC/journal и явно synthetic AE callback/
   session replacement. Составной PASS дополняет B3b1, но не закрывает native
   delivery/late callback или recovery mutation. Production delta не требуется.
@@ -483,6 +495,11 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- Configured B4: one native read/one malformed-contract refusal; journals9→11,
+  только begin/complete этой inspection. Native CIM PID/birth и один3457
+  совпадают со status; защищённые hashes и own AEP прежние. Mutation/reset/save/
+  AE restart/install/config changes0. Source suites после doc-only diff не повторялись.
 
 - B5:14fresh cases PASS в одном selected start-over-channel check; evidence key
   повторно совпал после выполнения. Node syntax/55boundaries PASS, production

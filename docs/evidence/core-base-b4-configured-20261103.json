@@ -1,0 +1,546 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T09:04:15.736Z",
+  "baselineCommit": "4a88129",
+  "scope": "Configured B4 status/refusal/native read без restart или config changes MCP/Codex",
+  "beforeStatus": {
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "e35611a9-ddf6-4598-84f7-52479ae6d005",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 0,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false,
+      "workSession": {
+        "baselineRequired": false,
+        "resetPending": false,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      }
+    },
+    "automaticLifecycle": "unavailable",
+    "closed": false,
+    "composition": "manual",
+    "connection": "unavailable",
+    "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionPolicy": "read-only-current-observation-v1",
+    "installation": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "machineId": "MSI",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652"
+    },
+    "ledgerFault": false,
+    "lifecycle": {
+      "birthTicks": "639292930363178560",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "478d66aaefc81c6ddd47ef29fa8485998c9187294582353fff62cd32103ff249",
+          "eventCount": 9,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 16712,
+      "processBootId": "b85c94a9-85c6-4016-a3e2-7d8be4adfff1",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "maintenance": {
+      "fault": null,
+      "id": null,
+      "phase": "running",
+      "requested": false
+    },
+    "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+    "ownershipFault": null,
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": true,
+      "lastPhysicalFault": null,
+      "lastReadFailure": null,
+      "listening": true,
+      "peer": {
+        "connected": true,
+        "peerId": "panel-ae7343d827ebc7a46312be3b423b24069bfe6bbd4a744d85"
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-34940d50-b91c-4deb-9e88-a11096cd1eab",
+      "startOverFrozen": false,
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "pid": 16712,
+    "product": "AE Agent Core 4.0.0",
+    "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+    "ready": true,
+    "resourceProvider": {
+      "adopted": true,
+      "coverage": {
+        "core4Lane": "cooperating-Core4-only",
+        "hostProcess": "adopted-reprobe-required",
+        "legacyEndpoints": "named-probes-only",
+        "legacyPhysicalQueue": "not-proven",
+        "otherAEActors": "outside-coverage",
+        "sharedOutputs": "not-requested"
+      },
+      "origin": {
+        "aePid": 26308,
+        "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "machineId": "MSI"
+      }
+    },
+    "startOver": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "fault": null,
+      "id": "69facd01-2b95-4983-a110-4209acabda31",
+      "phase": "ready",
+      "requiresAEExit": false,
+      "resetComplete": true,
+      "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+    },
+    "synthetic": false,
+    "unavailableReason": null,
+    "unresolved": [],
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "work-session",
+      "resetId": "69facd01-2b95-4983-a110-4209acabda31",
+      "resetPending": false,
+      "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+    },
+    "worker": {
+      "epoch": 0,
+      "lateReplies": 0,
+      "loaded": [],
+      "pending": 0,
+      "pid": null
+    }
+  },
+  "contract": {
+    "contract": {
+      "buildSupported": false,
+      "effectPolicy": {
+        "boundedComps": 50,
+        "boundedItemsScanned": 500,
+        "boundedLayers": 100,
+        "continuity": false,
+        "displayNameMaxCodeUnits": 256,
+        "effect": "none",
+        "resultMaxCodeUnits": 40000
+      },
+      "executionPolicy": "read-only-current-observation-v1",
+      "moduleId": "project-inspection",
+      "operationId": "inspect-project",
+      "snapshotProfile": "project-observation-v1",
+      "targetSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "compId": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "version": "4.0.0"
+    },
+    "contractId": "b924fc4034b78f699ee27e03652f53dd3f0efa00974608f1693afde3de2dbffa",
+    "moduleId": "project-inspection",
+    "modulePin": "62dc7eb8287135e7702e4836e087ac30944266b3b1db4504afa6f54355c86ce3",
+    "operationId": "inspect-project"
+  },
+  "malformedContract": {
+    "contractId": "",
+    "message": "owner_inspection_contract_required",
+    "nextAction": "get_module_contract",
+    "durableCommandsCreated": 0
+  },
+  "read": {
+    "authority": false,
+    "continuity": false,
+    "contractId": "b924fc4034b78f699ee27e03652f53dd3f0efa00974608f1693afde3de2dbffa",
+    "evidenceRef": "observation-aa994adf-5e73-4a46-bcc5-2c23fb675815",
+    "moduleId": "project-inspection",
+    "observation": {
+      "aeVersion": "26.3x87",
+      "compositions": [],
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "core-base-b3-native-20261103.aep",
+        "numItems": 0,
+        "saved": true
+      },
+      "target": {
+        "compId": null,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep"
+      },
+      "truncated": false
+    },
+    "originalBinding": {
+      "channelEpoch": "http-d38a9664-8af8-4c30-baa2-8ab3fdb86b7b",
+      "commandId": "inspect-8a823045-0361-4c58-845b-5b39020182f6",
+      "controllerId": "controller-f8efbc53-709f-4996-bfe6-750c9baff5aa",
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "moduleId": "project-inspection",
+      "operationId": "inspect",
+      "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "phase": "inspect",
+      "receiptRef": "49ecb47fe285eb25cbfeb87de99375e83d22c25cf705d5f95cac1d0085950729",
+      "receiverStoreIdentity": "receiver-store-34940d50-b91c-4deb-9e88-a11096cd1eab"
+    },
+    "pins": {
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652"
+    }
+  },
+  "controller": {
+    "generation": 1,
+    "released": true,
+    "tokenOmitted": true
+  },
+  "afterStatus": {
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "e35611a9-ddf6-4598-84f7-52479ae6d005",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 1,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false,
+      "workSession": {
+        "baselineRequired": false,
+        "resetPending": false,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      }
+    },
+    "automaticLifecycle": "unavailable",
+    "closed": false,
+    "composition": "manual",
+    "connection": "connected",
+    "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionPolicy": "read-only-current-observation-v1",
+    "installation": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "machineId": "MSI",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652"
+    },
+    "ledgerFault": false,
+    "lifecycle": {
+      "birthTicks": "639292930363178560",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "478d66aaefc81c6ddd47ef29fa8485998c9187294582353fff62cd32103ff249",
+          "eventCount": 9,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 16712,
+      "processBootId": "b85c94a9-85c6-4016-a3e2-7d8be4adfff1",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "maintenance": {
+      "fault": null,
+      "id": null,
+      "phase": "running",
+      "requested": false
+    },
+    "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+    "ownershipFault": null,
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": true,
+      "lastPhysicalFault": null,
+      "lastReadFailure": null,
+      "listening": true,
+      "peer": {
+        "connected": true,
+        "peerId": "panel-ae7343d827ebc7a46312be3b423b24069bfe6bbd4a744d85"
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-34940d50-b91c-4deb-9e88-a11096cd1eab",
+      "startOverFrozen": false,
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "pid": 16712,
+    "product": "AE Agent Core 4.0.0",
+    "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+    "ready": true,
+    "resourceProvider": {
+      "adopted": true,
+      "coverage": {
+        "core4Lane": "cooperating-Core4-only",
+        "hostProcess": "adopted-reprobe-required",
+        "legacyEndpoints": "named-probes-only",
+        "legacyPhysicalQueue": "not-proven",
+        "otherAEActors": "outside-coverage",
+        "sharedOutputs": "not-requested"
+      },
+      "origin": {
+        "aePid": 26308,
+        "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "machineId": "MSI"
+      }
+    },
+    "startOver": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "fault": null,
+      "id": "69facd01-2b95-4983-a110-4209acabda31",
+      "phase": "ready",
+      "requiresAEExit": false,
+      "resetComplete": true,
+      "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+    },
+    "synthetic": false,
+    "unavailableReason": null,
+    "unresolved": [],
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "work-session",
+      "resetId": "69facd01-2b95-4983-a110-4209acabda31",
+      "resetPending": false,
+      "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+    },
+    "worker": {
+      "epoch": 0,
+      "lateReplies": 0,
+      "loaded": [],
+      "pending": 0,
+      "pid": null
+    }
+  },
+  "native": {
+    "owner": {
+      "pid": 16712,
+      "birthTicks": "639292930363178560"
+    },
+    "ae": {
+      "pid": 21960,
+      "birthTicks": "639292825912075250"
+    },
+    "listeners": [
+      {
+        "address": "127.0.0.1",
+        "port": 3457,
+        "pid": 16712
+      }
+    ],
+    "observedThrough": "read-only CIM and Get-NetTCPConnection"
+  },
+  "snapshotFiles": {
+    "before": ".codex-runtime/b5-native-before.json",
+    "after": ".codex-runtime/b5-native-after.json"
+  },
+  "actions": {
+    "configuredStatus": true,
+    "configuredNativeReads": 1,
+    "preSubmitRefusals": 1,
+    "controllerAcquire": 1,
+    "controllerRelease": 1,
+    "mcpRestart": 0,
+    "codexRestart": 0,
+    "configChanges": 0,
+    "install": 0,
+    "reset": 0,
+    "aeRestart": 0,
+    "aeSave": 0,
+    "aeMutation": 0,
+    "panelClicks": 0,
+    "argonSends": 0
+  },
+  "limits": [
+    "Штатный configured client этого чата уже загрузил B4; причина прежнего выхода6340 не установлена.",
+    "Read-only proof не доказывает late callback, accepted mutation recovery, Titles acceptance, full release или portability.",
+    "Новый runtime chat UUID не устанавливался и не заимствовался из старого checkpoint."
+  ],
+  "files": {
+    "before": {
+      "collectedAt": "2026-11-03T08:59:32.982Z",
+      "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652",
+      "bindings": {
+        "descriptor": "c82f44e647f2126e0b2080ed1fc9c811bcb0ccdd9ee18462fbe1446497ef34d9",
+        "client": "f046655f99db975c3c6ed149bfb35e7dd47d7117a0606a1f0f02b1944276c72e",
+        "config": "57f8a8d293cc59e3d7fd1264811e9f46445f1cbde190be2d84a59f69c47c0f96"
+      },
+      "protectedHashes": {
+        "origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+        "state/production/origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+        "state/production/host-adoption.json": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+        "state/production/work-session.json": "87e775bb4de64911a2d3a896d67ba9d227f6b4976859d0d01257f4c75c9c8539",
+        "state/production/work-session-baseline.json": "a1587e014d3805ec500922f25b1a2f8bccdf9b4b4489304bcbdc0f9ab2a6929d",
+        "state/production/broker/ledger.ndjson": null,
+        "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-receiver/completions.ndjson": "638fbd1bbb97a142541f1d98915f40a758bd4453f3b22b75d6a9252acdf8fe67",
+        "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-receiver/completions.ndjson": "e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437"
+      },
+      "protectedUnchanged": true,
+      "aep": {
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep",
+        "sha256": "8299fd9faf046e21911739430e304599c4e8f3690fc6314c21b9fa8f8a15c237",
+        "size": 8367
+      },
+      "aepUnchanged": true,
+      "receiver": {
+        "eventCount": 9,
+        "byteHash": "478d66aaefc81c6ddd47ef29fa8485998c9187294582353fff62cd32103ff249",
+        "prefix9Hash": "478d66aaefc81c6ddd47ef29fa8485998c9187294582353fff62cd32103ff249",
+        "prefix9Exact": true,
+        "events": []
+      }
+    },
+    "after": {
+      "collectedAt": "2026-11-03T09:00:25.018Z",
+      "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652",
+      "bindings": {
+        "descriptor": "c82f44e647f2126e0b2080ed1fc9c811bcb0ccdd9ee18462fbe1446497ef34d9",
+        "client": "f046655f99db975c3c6ed149bfb35e7dd47d7117a0606a1f0f02b1944276c72e",
+        "config": "57f8a8d293cc59e3d7fd1264811e9f46445f1cbde190be2d84a59f69c47c0f96"
+      },
+      "protectedHashes": {
+        "origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+        "state/production/origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+        "state/production/host-adoption.json": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+        "state/production/work-session.json": "87e775bb4de64911a2d3a896d67ba9d227f6b4976859d0d01257f4c75c9c8539",
+        "state/production/work-session-baseline.json": "a1587e014d3805ec500922f25b1a2f8bccdf9b4b4489304bcbdc0f9ab2a6929d",
+        "state/production/broker/ledger.ndjson": null,
+        "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-receiver/completions.ndjson": "638fbd1bbb97a142541f1d98915f40a758bd4453f3b22b75d6a9252acdf8fe67",
+        "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-receiver/completions.ndjson": "e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437"
+      },
+      "protectedUnchanged": true,
+      "aep": {
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep",
+        "sha256": "8299fd9faf046e21911739430e304599c4e8f3690fc6314c21b9fa8f8a15c237",
+        "size": 8367
+      },
+      "aepUnchanged": true,
+      "receiver": {
+        "eventCount": 11,
+        "byteHash": "7a71d413fe61ac4949bdc0977abef4dcd248f210daaba978e779400daea13550",
+        "prefix9Hash": "478d66aaefc81c6ddd47ef29fa8485998c9187294582353fff62cd32103ff249",
+        "prefix9Exact": true,
+        "events": [
+          {
+            "command": {
+              "channelEpoch": "http-d38a9664-8af8-4c30-baa2-8ab3fdb86b7b",
+              "commandId": "inspect-8a823045-0361-4c58-845b-5b39020182f6",
+              "controllerId": "controller-f8efbc53-709f-4996-bfe6-750c9baff5aa",
+              "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+              "moduleId": "project-inspection",
+              "operationId": "inspect",
+              "payload": {},
+              "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+              "phase": "inspect",
+              "protocolVersion": 1
+            },
+            "commandDigest": "0e315ec341642dff9fc9e9e16c9e7e115e2b35917f4fabbf7725a385d7fb7cdd",
+            "commandId": "inspect-8a823045-0361-4c58-845b-5b39020182f6",
+            "originalBinding": {
+              "channelEpoch": "http-d38a9664-8af8-4c30-baa2-8ab3fdb86b7b",
+              "commandId": "inspect-8a823045-0361-4c58-845b-5b39020182f6",
+              "controllerId": "controller-f8efbc53-709f-4996-bfe6-750c9baff5aa",
+              "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+              "moduleId": "project-inspection",
+              "operationId": "inspect",
+              "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+              "phase": "inspect",
+              "receiptRef": "49ecb47fe285eb25cbfeb87de99375e83d22c25cf705d5f95cac1d0085950729",
+              "receiverStoreIdentity": "receiver-store-34940d50-b91c-4deb-9e88-a11096cd1eab"
+            },
+            "previousHash": "90a97a751ce09df66410e46c89ac5708a63e31f6e64c7f60239ce5135f39db20",
+            "recordHash": "277d694b9dbd92306406f8237245a474d1e7fef812a3a2eb83a4f0a55ee4672b",
+            "seq": 10,
+            "type": "begin"
+          },
+          {
+            "commandId": "inspect-8a823045-0361-4c58-845b-5b39020182f6",
+            "previousHash": "277d694b9dbd92306406f8237245a474d1e7fef812a3a2eb83a4f0a55ee4672b",
+            "recordHash": "7cc1d11746eca7be8ffacbbe86bcd746c7d72cbdc5e99ecd7213ac61f0cd5752",
+            "response": {
+              "commandId": "inspect-8a823045-0361-4c58-845b-5b39020182f6",
+              "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+              "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+              "protocolVersion": 1,
+              "result": {
+                "aeVersion": "26.3x87",
+                "compositions": [],
+                "layers": [],
+                "observationVersion": 1,
+                "project": {
+                  "name": "core-base-b3-native-20261103.aep",
+                  "numItems": 0,
+                  "saved": true
+                },
+                "target": {
+                  "compId": null,
+                  "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep"
+                },
+                "truncated": false
+              }
+            },
+            "seq": 11,
+            "type": "complete"
+          }
+        ]
+      }
+    }
+  }
+}

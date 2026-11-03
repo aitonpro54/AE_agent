@@ -11,6 +11,17 @@
 
 ## Текущий scope и правила
 
+**3 ноября, configured B4 подтверждён без maintenance:** текущий штатный MCP уже
+загрузил21a884fa…/owner16712/birth639292930363178560/bootb85c94a9…; один3457,
+CEP auto connected, sameAE21960. Malformed contract отказ до submit и fresh
+native saved empty project read/release generation1 PASS.11settled events/
+prefix9 exact, bindings/origins/adoption/session/baseline/14+52archives/AEP unchanged.
+MCP/Codex restart/config/install/reset/AE restart/save/mutation0. Service maintenance
+остаётся отложенным, configured B4 больше его не требует. Следующий bounded блок —
+[native delivery/recovery](plans/core-base-delivery-recovery-20261103.md) на отдельном
+own test AEP; Titles development на паузе, existing text executor только тест базы.
+[Evidence](docs/evidence/core-base-b4-configured-20261103.json).
+
 **3 ноября, активный следующий scope подтверждён пользователем:** продолжать
 доводку базы — доставка, поздние ответы и recovery. Titles/Slideshow и MCP/Codex
 maintenance остаются отложенными. B5 test-only: составной production HTTP receiver

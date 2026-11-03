@@ -1,5 +1,18 @@
 # Installed checkpoint B1/B2 — 2 ноября
 
+**Актуально3ноября: configured B4 PASS без maintenance.** Текущий MCP загрузил
+package21a884fa…/owner16712/birth639292930363178560/bootb85c94a9…; один3457,
+sameAE21960/auto peer connect. Malformed contract отказ до submit, fresh native
+saved empty read и release1 PASS. Current11settled/SHA7a71d413…/prefix9 exact;
+bindings/session/baseline/origins/adoption/14+52archives/AEP unchanged.
+MCP/Codex restart/config/install/reset/AE restart/save/mutation0. Отложенный
+service refresh не продолжать: configured proof теперь закрыт обычным клиентом.
+[Evidence](../docs/evidence/core-base-b4-configured-20261103.json).
+Следующий scope — [доставка/late callback/recovery](core-base-delivery-recovery-20261103.md)
+на отдельном own test AEP. Старые UUID/PID ниже — история, не текущая authority.
+
+## Исторические snapshots
+
 Работа продолжена в текущем чате `01a19c6c-1e7d-7751-93cc-cb38dadb85ab`;
 новый чат/проект не создавался. Root единственный AE/CEP controller.
 
