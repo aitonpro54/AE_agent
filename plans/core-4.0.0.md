@@ -2,10 +2,12 @@
 
 **Актуально, 3 ноября:** продолжается [доводка базы](core-base-reliability-20261101.md),
 по прямому уточнению пользователя — доставка, поздние ответы и recovery.
-B1–B3 ограниченно приняты; B4 installed/standard принят, configured B4 отложен
-вместе с MCP/Codex maintenance. B5 добавляет составной TEMP HTTP/VM proof,
+B1–B3 ограниченно приняты; B4 configured теперь подтверждён обычным текущим клиентом
+без отложенного MCP/Codex maintenance. B5 добавляет составной TEMP HTTP/VM proof,
 14fresh cases/55boundaries PASS, production unchanged; native delivery/late
-callback и mutation recovery остаются открытыми. Titles/Slideshow на паузе.
+callback и mutation recovery остаются открытыми. Дальше —
+[native B6](core-base-delivery-recovery-20261103.md); own fixture и fresh re-adoption
+готовы. Titles/Slideshow на паузе.
 Актуальные pins и запреты повторов — [checkpoint](core-base-installed-checkpoint-20261102.md).
 Ниже сохранена история приоритетов; она не возобновляет отложенные действия.
 

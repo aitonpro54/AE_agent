@@ -40,6 +40,19 @@ native mutation proof. При недоступном поддержанном п
 
 ## Progress
 
+- Own fixture создан адресным gated JSX один раз и сохранён отдельно:
+  `snapshots/core-base-b6-recovery-native-20261103.aep`/SHA3d19acd0…,
+  comp1/layer13, текстBASE_A, реальные active fill/stroke. Native typed manual
+  inspection приняла полный style proof; project-inspection подтвердила1item/1layer.
+  Исходный пустой AEP8299fd9f… сохранён без изменений; setup не является typed proof.
+- Новая штатная re-adoption `b25b5fef-ebed-406d-bf24-6e7e6cee13b5`:
+  stop/certify/readopt-apply/enable settled, все primary attempts1. Adoption теперь
+  exactAE21960/birth2026-11-03T06:03:11.2075250Z и own test path. Package21a884fa…,
+  descriptor/client/config/receiver15settled/ledger1event/AEP unchanged across metadata
+  operation. Fresh configured owner22188/birth639292940466114520/booted18a535…,
+  peer auto connected, activity clean. Эту settled operation не повторять.
+  [Evidence](../docs/evidence/core-base-b6-fixture-readoption-20261103.json).
+
 - B5 составной TEMP HTTP/VM срез принят commit `4a88129`:14fresh cases,
   55boundaries, production delta0.
 - Штатный configured B4 уже доступен без maintenance: owner16712, package21a884fa…,
@@ -51,6 +64,11 @@ native mutation proof. При недоступном поддержанном п
 
 ## Decision Log
 
+- Старый host adoption не соответствует новому AE/test path; перед mutation
+  выполнена существующая stopped re-adoption, без bypass provider и без package/
+  MCP/Codex config changes. Typed native inspect нового target не ослабляет
+  исторический missing dormant color отказ и не возобновляет Titles development.
+
 - Configured B4 пробел снят обычным текущим клиентом; отложенный service refresh
   для этого не выполнялся и не возобновляется. Причина выхода старого owner6340
   по новым observations не устанавливается.
@@ -60,6 +78,11 @@ native mutation proof. При недоступном поддержанном п
   Titles; отказы полного native proof не исправлять типографическим fallback.
 
 ## Validation
+
+- Fixture native inspection и fixed Windows probe PASS; штатный helper distribution
+ 41d4812c… verified. Stop certificate a4f8d170…; exact witness/phase proofs завершили
+  enable. Новый configured owner22188 читает ту же session/history15+1, auto peer
+  connection. Сохранность six bindings/history/AEP проверена helper orchestration.
 
 - Configured read выполнен один раз; journal добавил только begin10/complete11.
   Malformed contract не создал physical command. Два защищённых архива14/52events,

@@ -11,6 +11,20 @@
 
 ## Текущий scope и правила
 
+**3 ноября, B6 native fixture/re-adoption:** own test AEP
+`snapshots/core-base-b6-recovery-native-20261103.aep`/SHA3d19acd0… создан/сохранён1раз
+адресным gated setup; comp1/layer13/BASE_A, full native style proof с active
+fill/stroke PASS, исходный empty AEP8299fd9f… untouched. Новый штатный stop/readopt
+`b25b5fef-ebed-406d-bf24-6e7e6cee13b5` certified/applied/enabled, attempts1;
+не повторять. Adoption currentAE21960/own test path, package21a884fa… прежний.
+Новый configured owner22188/birth639292940466114520/booted18a535… ready, auto peer,
+receiver15settled/ledger1evidence unchanged across readopt; bindings/AEP preserved.
+Native mutation/fault/reset нового B6 ещё0. Следующий шаг по
+[focused плану](plans/core-base-delivery-recovery-20261103.md) — fresh
+inspect/build/propose/dry-run и native confirmation на этой единственной own цели.
+Это тест базы, Titles development и MCP/Codex maintenance остаются отложенными.
+[Evidence](docs/evidence/core-base-b6-fixture-readoption-20261103.json).
+
 **3 ноября, configured B4 подтверждён без maintenance:** текущий штатный MCP уже
 загрузил21a884fa…/owner16712/birth639292930363178560/bootb85c94a9…; один3457,
 CEP auto connected, sameAE21960. Malformed contract отказ до submit и fresh

@@ -109,6 +109,12 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- B6 fixture/re-adoption готовы: own saved comp1/layer13/BASE_A/full native style
+  proof PASS; штатная новая b25b5fef… enabled, currentAE21960/test path. Fresh
+  configured owner22188/auto peer/15receiver+1ledger settled, package/bindings/history/
+  AEP unchanged across metadata operation. Native fault/mutation/reset0.
+  [Evidence](../docs/evidence/core-base-b6-fixture-readoption-20261103.json).
+
 - Configured B4 подтверждён штатным текущим MCP без service refresh: package21a884fa…,
   owner16712/один3457, sameAE21960, auto peer connect. Malformed contract до submit
   и fresh native read/release1 PASS.11settled/prefix9/protected/archive/AEP exact.
@@ -305,6 +311,10 @@ fault-сценарии проводить на собственных тесто
 
 ## Decision Log
 
+- B6 использует existing text operation только как инструмент native recovery базы.
+  Before mutation новый exact host/project adoption получен существующим stopped
+  протоколом; нет переноса old host authority, ослабления style proof или нового ingress.
+
 - Configured B4 закрыт обычным клиентом нового текущего чата, без Codex/MCP
   restart/config. Прежняя отложенная maintenance задача не нужна для этого proof
   и не возобновляется. Новый native fault требует своей exact observed цели,
@@ -495,6 +505,10 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- B6 setup raw/own отдельно от typed: fixture save1, native style/project reads2;
+  fixed native probe и verified standalone readopt/enable PASS. Истории15+1 и
+  bindings/AEP exact across re-adoption; source suites без production diff не повторялись.
 
 - Configured B4: one native read/one malformed-contract refusal; journals9→11,
   только begin/complete этой inspection. Native CIM PID/birth и один3457

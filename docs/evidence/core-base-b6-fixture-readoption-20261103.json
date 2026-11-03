@@ -1,0 +1,580 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T09:14:43.979Z",
+  "baselineCommit": "70f8fa0",
+  "scope": "Own B6 native fixture + штатная fresh host re-adoption; fault/mutation команды ещё не отправлялись",
+  "setup": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check",
+    "phase": "complete",
+    "attempted": true,
+    "saved": true,
+    "compId": 1,
+    "layerId": 13,
+    "text": "BASE_A",
+    "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+    "numItems": 1,
+    "aeVersion": "26.3x87"
+  },
+  "setupSubmission": {
+    "submittedAt": "2026-11-03T09:08:48.0716515Z",
+    "aePid": 21960,
+    "aeBirth": "639292825912075250",
+    "scriptHash": "c9e219dce5b1506eb77dcd22dbc4f523b6733edfec53160a93f4a14706069605",
+    "sourceHash": "8299fd9faf046e21911739430e304599c4e8f3690fc6314c21b9fa8f8a15c237",
+    "attempts": 1
+  },
+  "setupScript": {
+    "sha256": "c9e219dce5b1506eb77dcd22dbc4f523b6733edfec53160a93f4a14706069605",
+    "source": "(function () {\n    var source = 'C:/Users/Ant/Documents/Codex/AE_agent_core/snapshots/core-base-b3-native-20261103.aep';\n    var destination = 'C:/Users/Ant/Documents/Codex/AE_agent_core/snapshots/core-base-b6-recovery-native-20261103.aep';\n    var report = new File('C:/Users/Ant/Documents/Codex/AE_agent_core/.codex-runtime/b6-fixture-created.json');\n    var result = { purpose: 'technical_check', lifetime: 'ephemeral_check', phase: 'preflight', attempted: false, saved: false };\n    function normalized(value) { return String(value).replace(/\\\\/g, '/'); }\n    function quote(value) { return '\"' + String(value).replace(/\\\\/g, '\\\\\\\\').replace(/\"/g, '\\\\\"').replace(/\\r/g, '\\\\r').replace(/\\n/g, '\\\\n') + '\"'; }\n    function json(value) {\n        if (value === null) return 'null';\n        if (typeof value === 'string') return quote(value);\n        if (typeof value === 'number' || typeof value === 'boolean') return String(value);\n        var parts = []; for (var key in value) if (value.hasOwnProperty(key)) parts.push(quote(key) + ':' + json(value[key]));\n        return '{' + parts.join(',') + '}';\n    }\n    if (report.exists) return;\n    try {\n        if (!app.project || !app.project.file || normalized(app.project.file.fsName) !== source || app.project.numItems !== 0 || new File(destination).exists) throw new Error('fixture_target_changed');\n        result.attempted = true; result.phase = 'create';\n        app.beginUndoGroup('Core base B6 own recovery fixture');\n        try {\n            var comp = app.project.items.addComp('CoreBase_B6_Recovery', 1280, 720, 1, 5, 25);\n            var layer = comp.layers.addText('BASE_A'); layer.name = 'CoreBase_B6_Text';\n            var prop = layer.property('ADBE Text Properties').property('ADBE Text Document');\n            var doc = prop.value; doc.fontSize = 56; doc.applyFill = true; doc.fillColor = [1, 1, 1];\n            doc.applyStroke = true; doc.strokeColor = [0, 0, 0]; doc.strokeWidth = 2;\n            prop.setValue(doc);\n            layer.property('ADBE Transform Group').property('ADBE Position').setValue([220, 360]);\n            result.compId = comp.id; result.layerId = layer.id; result.text = prop.value.text;\n        } finally { app.endUndoGroup(); }\n        result.phase = 'save'; app.project.save(new File(destination)); result.saved = true;\n        result.projectId = String(app.project.file.fsName); result.numItems = app.project.numItems; result.aeVersion = app.version;\n        comp.openInViewer(); result.phase = 'complete';\n    } catch (error) { result.error = String(error); }\n    report.encoding = 'UTF-8'; if (report.open('w')) { report.write(json(result)); report.close(); }\n}());\n"
+  },
+  "rootObservation": {
+    "at": "2026-11-03T09:10:42.579Z",
+    "ownerStatus": {
+      "attachmentOwner": {
+        "accepted": 0,
+        "activity": {
+          "fault": false,
+          "pending": false,
+          "unresolved": false
+        },
+        "attachments": 1,
+        "bootId": "e35611a9-ddf6-4598-84f7-52479ae6d005",
+        "closed": false,
+        "fenced": false,
+        "frozen": false,
+        "generation": 2,
+        "holderClientId": null,
+        "mode": "idle",
+        "pending": false,
+        "workSession": {
+          "baselineRequired": false,
+          "resetPending": false,
+          "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+        }
+      },
+      "automaticLifecycle": "unavailable",
+      "closed": false,
+      "composition": "manual",
+      "connection": "connected",
+      "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionPolicy": "read-only-current-observation-v1",
+      "installation": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "nodeVerified": true,
+        "nodeVersion": "24.15.0",
+        "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652"
+      },
+      "ledgerFault": false,
+      "lifecycle": {
+        "birthTicks": "639292930363178560",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": null,
+            "eventCount": 0,
+            "present": false,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": "478d66aaefc81c6ddd47ef29fa8485998c9187294582353fff62cd32103ff249",
+            "eventCount": 9,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 16712,
+        "processBootId": "b85c94a9-85c6-4016-a3e2-7d8be4adfff1",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "maintenance": {
+        "fault": null,
+        "id": null,
+        "phase": "running",
+        "requested": false
+      },
+      "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+      "ownershipFault": null,
+      "physical": {
+        "automaticLifecycle": "unavailable",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionAvailable": true,
+        "lastPhysicalFault": null,
+        "lastReadFailure": null,
+        "listening": true,
+        "peer": {
+          "connected": true,
+          "peerId": "panel-ae7343d827ebc7a46312be3b423b24069bfe6bbd4a744d85"
+        },
+        "pending": null,
+        "port": 3457,
+        "receiverStoreIdentity": "receiver-store-34940d50-b91c-4deb-9e88-a11096cd1eab",
+        "startOverFrozen": false,
+        "storeClosed": false,
+        "storeFault": false,
+        "unknown": false
+      },
+      "pid": 16712,
+      "product": "AE Agent Core 4.0.0",
+      "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+      "ready": true,
+      "resourceProvider": {
+        "adopted": true,
+        "coverage": {
+          "core4Lane": "cooperating-Core4-only",
+          "hostProcess": "adopted-reprobe-required",
+          "legacyEndpoints": "named-probes-only",
+          "legacyPhysicalQueue": "not-proven",
+          "otherAEActors": "outside-coverage",
+          "sharedOutputs": "not-requested"
+        },
+        "origin": {
+          "aePid": 26308,
+          "aeProcessBirth": "2026-10-31T10:32:49.0521480Z",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "machineId": "MSI"
+        }
+      },
+      "startOver": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "fault": null,
+        "id": "69facd01-2b95-4983-a110-4209acabda31",
+        "phase": "ready",
+        "requiresAEExit": false,
+        "resetComplete": true,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      },
+      "synthetic": false,
+      "unavailableReason": null,
+      "unresolved": [],
+      "workSession": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "mode": "work-session",
+        "resetId": "69facd01-2b95-4983-a110-4209acabda31",
+        "resetPending": false,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      },
+      "worker": {
+        "epoch": 0,
+        "lateReplies": 0,
+        "loaded": [],
+        "pending": 0,
+        "pid": null
+      }
+    },
+    "read": {
+      "authority": false,
+      "continuity": false,
+      "contractId": "b924fc4034b78f699ee27e03652f53dd3f0efa00974608f1693afde3de2dbffa",
+      "evidenceRef": "observation-fcba48e8-aae4-4624-b3b5-7ccf6e115145",
+      "moduleId": "project-inspection",
+      "observation": {
+        "aeVersion": "26.3x87",
+        "compositions": [
+          {
+            "compId": 1,
+            "duration": 5,
+            "name": "CoreBase_B6_Recovery",
+            "numLayers": 1
+          }
+        ],
+        "layers": [
+          {
+            "index": 1,
+            "layerId": 13,
+            "name": "CoreBase_B6_Text",
+            "textLayer": true
+          }
+        ],
+        "observationVersion": 1,
+        "project": {
+          "name": "core-base-b6-recovery-native-20261103.aep",
+          "numItems": 1,
+          "saved": true
+        },
+        "target": {
+          "compId": 1,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+        },
+        "truncated": false
+      },
+      "originalBinding": {
+        "channelEpoch": "http-d38a9664-8af8-4c30-baa2-8ab3fdb86b7b",
+        "commandId": "inspect-7c56b8b8-92b6-4b44-a734-9df178b7ca29",
+        "controllerId": "controller-f8efbc53-709f-4996-bfe6-750c9baff5aa",
+        "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+        "moduleId": "project-inspection",
+        "operationId": "inspect",
+        "payloadHash": "49ef41ec44d3b9e87d2ba173ba9a04724d29a085dc68637d3939d94a2566f4dc",
+        "phase": "inspect",
+        "receiptRef": "0f78012e48b6f756a6d503fff76684c70b9c4aed6612dc7d4e3218aeb47b5fbf",
+        "receiverStoreIdentity": "receiver-store-34940d50-b91c-4deb-9e88-a11096cd1eab"
+      },
+      "pins": {
+        "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652"
+      }
+    },
+    "styleInspection": {
+      "evidenceRef": "evidence-7ca628ef-6b8f-452a-92f0-0e204f895260",
+      "modulePin": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+      "snapshot": {
+        "protected": "{\"character\":{\"font\":\"CenturyGothic\",\"fontSize\":56,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0,0,0],\"strokeWidth\":2,\"tracking\":0,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":56,\"autoLeading\":false}}",
+        "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_agent_core\\\\snapshots\\\\core-base-b6-recovery-native-20261103.aep\",\"compId\":1,\"layerId\":13},\"BASE_A\",{\"character\":{\"font\":\"CenturyGothic\",\"fontSize\":56,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0,0,0],\"strokeWidth\":2,\"tracking\":0,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":56,\"autoLeading\":false}}]",
+        "target": {
+          "compId": 1,
+          "layerId": 13,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+        },
+        "text": "BASE_A"
+      },
+      "synthetic": false
+    }
+  },
+  "readoption": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check",
+    "id": "b25b5fef-ebed-406d-bf24-6e7e6cee13b5",
+    "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652",
+    "distributionHash": "41d4812c8e89693fa4650cc23fc0074d0520b9efd31170915ee302c019aff11b",
+    "startedAt": "2026-11-03T09:11:52.309Z",
+    "steps": [
+      {
+        "mode": "stop",
+        "attempts": 1,
+        "submittedAt": "2026-11-03T09:11:53.074Z",
+        "result": {
+          "accepted": true,
+          "aeAuthority": false,
+          "automaticReplay": false,
+          "id": "b25b5fef-ebed-406d-bf24-6e7e6cee13b5",
+          "phase": "draining"
+        },
+        "finishedAt": "2026-11-03T09:11:54.374Z"
+      },
+      {
+        "mode": "stopped-inspect",
+        "attempts": 1,
+        "submittedAt": "2026-11-03T09:11:56.313Z",
+        "result": {
+          "aeAuthority": false,
+          "id": "b25b5fef-ebed-406d-bf24-6e7e6cee13b5",
+          "inspectionOnly": true,
+          "phase": "stopped-certifiable",
+          "proofHash": "61d6a6f47c1d693e5bac2a12f5100f2d7c2771977c96281ddd65a8675353f2a9",
+          "runtimeStarted": false
+        },
+        "finishedAt": "2026-11-03T09:12:01.140Z"
+      },
+      {
+        "mode": "stopped-certify",
+        "attempts": 1,
+        "submittedAt": "2026-11-03T09:12:01.140Z",
+        "result": {
+          "aeAuthority": false,
+          "certificateHash": "a4f8d1706e62349b8c0026cdef0812323de9f1a8a542577864c94db851e5f5a1",
+          "certified": true,
+          "id": "b25b5fef-ebed-406d-bf24-6e7e6cee13b5",
+          "runtimeStarted": false,
+          "stopped": true
+        },
+        "finishedAt": "2026-11-03T09:12:13.853Z"
+      },
+      {
+        "mode": "readopt-inspect",
+        "attempts": 1,
+        "submittedAt": "2026-11-03T09:12:13.853Z",
+        "result": {
+          "aeAuthority": false,
+          "id": "b25b5fef-ebed-406d-bf24-6e7e6cee13b5",
+          "inspectionOnly": true,
+          "lifecycleEpoch": false,
+          "mutationGrant": false,
+          "phase": "readopt-preflight",
+          "proofHash": "05967af1d8b06bdb9ec85420b632c4725532145c7a1ed3ffad0995400f7c22a2",
+          "runtimeStarted": false
+        },
+        "finishedAt": "2026-11-03T09:12:20.423Z"
+      },
+      {
+        "mode": "readopt-apply",
+        "attempts": 1,
+        "submittedAt": "2026-11-03T09:12:20.424Z",
+        "result": {
+          "aeAuthority": false,
+          "id": "b25b5fef-ebed-406d-bf24-6e7e6cee13b5",
+          "lifecycleEpoch": false,
+          "mutationGrant": false,
+          "phase": "readopt-completed-stopped",
+          "proofHash": "eb6934c754fb325f8800eb82f7efec8cf9bbb6398c3a8d440abf9d9a95c6f520",
+          "runtimeStarted": false
+        },
+        "finishedAt": "2026-11-03T09:12:45.396Z"
+      },
+      {
+        "mode": "readopt-inspect",
+        "attempts": 1,
+        "submittedAt": "2026-11-03T09:12:45.397Z",
+        "result": {
+          "aeAuthority": false,
+          "id": "b25b5fef-ebed-406d-bf24-6e7e6cee13b5",
+          "inspectionOnly": true,
+          "lifecycleEpoch": false,
+          "mutationGrant": false,
+          "phase": "readopt-completed-stopped",
+          "proofHash": "eb6934c754fb325f8800eb82f7efec8cf9bbb6398c3a8d440abf9d9a95c6f520",
+          "runtimeStarted": false
+        },
+        "finishedAt": "2026-11-03T09:12:53.798Z"
+      },
+      {
+        "mode": "readopt-enable",
+        "attempts": 1,
+        "submittedAt": "2026-11-03T09:12:53.798Z",
+        "result": {
+          "aeAuthority": false,
+          "currentBarrierObserved": false,
+          "currentHistoryObserved": false,
+          "currentRuntimeObserved": false,
+          "id": "b25b5fef-ebed-406d-bf24-6e7e6cee13b5",
+          "lifecycleEpoch": false,
+          "mutationGrant": false,
+          "phase": "enabled",
+          "proofHash": "25fe79a33c77d8f49cd64b715849616bcb8c899f1c2ba6f3ad490fcbd564ccbf",
+          "runtimeStarted": false,
+          "terminalHistorical": true
+        },
+        "finishedAt": "2026-11-03T09:13:18.840Z"
+      }
+    ],
+    "before": {
+      "descriptor": "c82f44e647f2126e0b2080ed1fc9c811bcb0ccdd9ee18462fbe1446497ef34d9",
+      "client": "f046655f99db975c3c6ed149bfb35e7dd47d7117a0606a1f0f02b1944276c72e",
+      "config": "57f8a8d293cc59e3d7fd1264811e9f46445f1cbde190be2d84a59f69c47c0f96",
+      "receiver": "5b4e88b7699aaa1bed3eba90e8d6aa150ad0be173c439e4ba137feff571c4028",
+      "ledger": "1b2f575e7fec520da93bc52e1db35cbbe5b66c8e8accb126d88af9c53c6b700f",
+      "adoption": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+      "aep": "3d19acd024ca3508e4389d368ba5a9532a79fdb5c7bc3033dbb83acab1a7b405"
+    },
+    "native": {
+      "version": 1,
+      "hostname": "MSI",
+      "observedAt": "2026-11-03T09:11:53.071Z",
+      "processes": [
+        {
+          "pid": 21960,
+          "birth": "2026-11-03T06:03:11.2075250Z",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executableLength": 5931016
+        }
+      ],
+      "endpoints": [
+        {
+          "port": 3456,
+          "state": "observed-absent"
+        },
+        {
+          "port": 8787,
+          "state": "observed-absent"
+        }
+      ],
+      "completedAt": 1793697113073
+    },
+    "witnessHash": "8f043761edfb3873cd7f18350f2b2efda6ca233be01360bbe6afd51ee332f928",
+    "witness": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "machineId": "MSI",
+      "host": {
+        "machineId": "MSI",
+        "aePid": 21960,
+        "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71"
+      },
+      "allowedProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+      "rootObservationDigest": "08b8e1dfd0e9d518a3a558c4511378122ba2b48c2fab96a50d897b2fe53d08dd"
+    },
+    "stopInspection": {
+      "id": "b25b5fef-ebed-406d-bf24-6e7e6cee13b5",
+      "phase": "stopped",
+      "proofHash": "5b6554780300bf74e9eeca4e4afaa4cc28627c5691c4e9bcdfcc2ce173d8fa90",
+      "inspectionOnly": true,
+      "aeAuthority": false
+    },
+    "after": {
+      "adoption": "4840b0e8096dd315df42b31bdcc8dd742f92961e75985aef1970218a8b0554c0"
+    },
+    "finishedAt": "2026-11-03T09:13:18.843Z"
+  },
+  "configuredAfter": {
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "75b119e5-ac4f-4adf-b25d-b0fa1f98606b",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 0,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false,
+      "workSession": {
+        "baselineRequired": false,
+        "resetPending": false,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      }
+    },
+    "automaticLifecycle": "unavailable",
+    "closed": false,
+    "composition": "manual",
+    "connection": "unavailable",
+    "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionPolicy": "read-only-current-observation-v1",
+    "installation": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "machineId": "MSI",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652"
+    },
+    "ledgerFault": false,
+    "lifecycle": {
+      "birthTicks": "639292940466114520",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": "1b2f575e7fec520da93bc52e1db35cbbe5b66c8e8accb126d88af9c53c6b700f",
+          "eventCount": 1,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "5b4e88b7699aaa1bed3eba90e8d6aa150ad0be173c439e4ba137feff571c4028",
+          "eventCount": 15,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 22188,
+      "processBootId": "ed18a535-a168-4bea-98af-6e2137ec6075",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "maintenance": {
+      "fault": null,
+      "id": null,
+      "phase": "running",
+      "requested": false
+    },
+    "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+    "ownershipFault": null,
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": true,
+      "lastPhysicalFault": null,
+      "lastReadFailure": null,
+      "listening": true,
+      "peer": {
+        "connected": true,
+        "peerId": "panel-20d41d0c9c8c246e1a829b47bb5c8816a17ad3a53228622c"
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-34940d50-b91c-4deb-9e88-a11096cd1eab",
+      "startOverFrozen": false,
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "pid": 22188,
+    "product": "AE Agent Core 4.0.0",
+    "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+    "ready": true,
+    "resourceProvider": {
+      "adopted": true,
+      "coverage": {
+        "core4Lane": "cooperating-Core4-only",
+        "hostProcess": "adopted-reprobe-required",
+        "legacyEndpoints": "named-probes-only",
+        "legacyPhysicalQueue": "not-proven",
+        "otherAEActors": "outside-coverage",
+        "sharedOutputs": "not-requested"
+      },
+      "origin": {
+        "aePid": 21960,
+        "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "machineId": "MSI"
+      }
+    },
+    "startOver": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "fault": null,
+      "id": "69facd01-2b95-4983-a110-4209acabda31",
+      "phase": "ready",
+      "requiresAEExit": false,
+      "resetComplete": true,
+      "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+    },
+    "synthetic": false,
+    "unavailableReason": null,
+    "unresolved": [],
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "work-session",
+      "resetId": "69facd01-2b95-4983-a110-4209acabda31",
+      "resetPending": false,
+      "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+    },
+    "worker": {
+      "epoch": 0,
+      "lateReplies": 0,
+      "loaded": [],
+      "pending": 0,
+      "pid": null
+    }
+  },
+  "actions": {
+    "sourceChanges": 0,
+    "install": 0,
+    "aeRestart": 0,
+    "ownFixtureSetup": 1,
+    "ownFixtureSave": 1,
+    "nativeTypedMutationCommands": 0,
+    "ownerFault": 0,
+    "reset": 0,
+    "mcpCodexRestart": 0,
+    "configChanges": 0,
+    "argonSends": 0
+  },
+  "limits": [
+    "Raw setup только собственных тестовых объектов, не typed mutation proof.",
+    "Реальные active fill/stroke приняты full style proof; historical dormant-color отказ не исправлялся.",
+    "Re-adoption не выдаёт mutation grant или continuity; native confirmation и fresh CAS обязательны.",
+    "Settled readoption b25b5fef не повторять; native fault и recovery остаются следующим шагом."
+  ]
+}
