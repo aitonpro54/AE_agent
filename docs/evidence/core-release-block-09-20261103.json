@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:28:09.360Z",
+  "blockId": "source-candidate-09",
+  "baselineCommit": "44d97d3cf77f20114f4a91b01ecad0e7c4078f3a",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=maintenance-operator",
+      "test/maintenance-operator.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:27:36.408Z",
+    "finishedAt": "2026-11-03T18:27:52.779Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 8,
+      "pass": 8,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 16286.8312
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-09-maintenance-operator.log",
+      "sha256": "8bd87550858dbaa08d32287a725e0584db60fa46fc641bcb1ae59db3effe953b",
+      "bytes": 1185
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-09-maintenance-operator-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "maintenance-operator",
+      "evidenceKey": "dcfba59c4c07afee659a34876673e9c28eda4dbfd6deec8ff2d7d4772aae10ce",
+      "result": "PASS",
+      "cases": 8,
+      "skipped": 0,
+      "matchedTestNames": [
+        "maintenance-operator operator guard requires reviewed package pin and rejects imports before complete verification",
+        "maintenance-operator wrong package pin and poisoned installed import bytes refuse before evaluating trusted imports",
+        "maintenance-operator real owner IPC rejects control-only maintenance proof and keeps private methods out of MCP",
+        "maintenance-operator actual pinned operator stop uses private IPC once and prints no credentials or raw descriptor",
+        "maintenance-operator desired-stop refuses owner before listen and refuses installer before acquiring any lease",
+        "maintenance-operator private election cleanup closes an actual unhandled HTTP request and releases its ephemeral port",
+        "maintenance-operator private election bind refusal cleans its server without touching the foreign listener or installation",
+        "maintenance-operator operator builtin verifier refuses matching foreign-machine origin before probes or trusted imports"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-operator",
+        "test/maintenance-operator.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "40c7969b2cef3b40b5d2c6fa3b7c0e8baee6c8ab194a049eaab2b7756d46dcac",
+      "key": "dcfba59c4c07afee659a34876673e9c28eda4dbfd6deec8ff2d7d4772aae10ce"
+    },
+    "dependencyCount": 92,
+    "dependencyDigestBefore": "e63a3030027a64d649007a1f66e8fd387b78f0a0443ce447576510a56cc3255e",
+    "dependencyDigestAfter": "e63a3030027a64d649007a1f66e8fd387b78f0a0443ce447576510a56cc3255e",
+    "dependencyHashesStable": true,
+    "testHashBefore": "fc612c9dfca886ac96e094056a88f13a747a7859408a686e3568bb38ab045e52",
+    "testHashAfter": "fc612c9dfca886ac96e094056a88f13a747a7859408a686e3568bb38ab045e52"
+  },
+  "isolation": {
+    "ownTempInstallData": true,
+    "actualOwnOwner": "port0 and installation-scoped unique IPC",
+    "processObservation": "CIM only own test actors",
+    "cliStop": "own private IPC; no process terminate",
+    "resumeElection": "3457 seam mapped to ephemeral0; full resume transaction not claimed",
+    "ownRequestsAndServersOnly": true,
+    "nativeAe": false,
+    "productionState": false,
+    "testTimeoutEachMs": 20000,
+    "internalCliTimeoutMs": 10000,
+    "tempBase": "C:\\Users\\Ant\\AppData\\Local\\Temp",
+    "fixturePrefixes": [
+      "core4-maintenance-operator-"
+    ],
+    "externalTimeout": null
+  },
+  "cleanup": {
+    "resourceProofKind": "reverse-awaited own closers plus terminal assertions",
+    "sourceEvidence": "fixture t.after awaits reverse client/runtime closers before own-prefix rm; pending request closure/port rebind and foreign-listener preservation asserted",
+    "retentionExpectedByPreflight": false,
+    "observedNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-maintenance-operator-O2IzNZ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-maintenance-operator-ldOfGe",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-maintenance-operator-IxutmX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-maintenance-operator-wOoI47",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-maintenance-operator-haFC64",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-maintenance-operator-pTUczY",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-maintenance-operator-y8NTTr"
+    ],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "manualCleanup": false,
+    "observationLimit": "Directory sampling may miss short fixtures; hook assertions plus terminal results and remaining new directory sample are the evidence."
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-09-maintenance-operator-reducer.json",
+    "sha256": "0b304f9ba1283054ed392e44b1eab80ff4379024cbb6f33e81729773ab517b1f"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
