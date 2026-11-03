@@ -5,6 +5,35 @@
 
 ## Дополнение 3 ноября
 
+**Native B3 idle PASS; UNKNOWN reset ожидает действия панели.** Idle reset
+`9b128005-8e75-43a0-80ff-f800326c83c6` отправлен пользователем один раз и
+завершён; session `aeddb9ee-cac3-4df3-8a25-279896812fe0`. Old15584 exact gone,
+new30888/birth639292802617851780/bootceee2c7a… ready. SameAE9472/birth
+639292254253597850, restart0, AEP8299fd9f… unchanged. Archived receiver52events
+побайтно exact/e095765c…; missing ack → owner_work_session_required,
+old/null ack → owner_work_session_changed. Explicit acquire/native direct read
+inspect-8a3dae1e…/release PASS; new receiver-store-b9c7f3c2…/3events
+(origin/begin/complete), baselineRequiredtrue→false.
+[Evidence](../docs/evidence/core-base-b3-idle-reset-20261103.json).
+
+UNKNOWN scenario: alert/$.sleep/busyloop не задержали CEP reads; они завершены
+без fault/mutation, как и два безуспешных подготовительных watcher runs.
+Единственная actual fault: held native Node30888 с fresh CIM scope и pinned
+image остановлен при новом journal begin. Native result TerminateProcess=true,
+wait0, old PID/birth gone. Client10312 → ipc_outcome_uncertain, command
+`inspect-facaa741-2174-43a2-b6a5-73e7a680dff9` НЕ повторялся.14events/SHA
+638fbd1bbb97a142541f1d98915f40a758bd4453f3b22b75d6a9252acdf8fe67,
+13event prefix exact, last begin без terminal. Delivery в AE не наблюдалась.
+Standard client26960 прочитал recovered diagnostic owner19452/birth
+639292813727819050/bootd3f60d93…: unresolved1, physical unknown/storeClosedtrue,
+execution queue not reopened; old sessionaeddb9ee… сохраняется как logical data.
+AE9472/AEP unchanged. [Fault evidence](../docs/evidence/core-base-b3-unknown-fault-20261103.json).
+Запрошено отдельное новое нажатие «Начать заново» в панели с подтверждением.
+Не повторять idle reset или inspect-facaa741; после действия сначала status и
+original intent, затем required exact AE death/архив/new session/baseline.
+
+Ниже — исходный checkpoint установки до native reset.
+
 **B3c — установлен и enabled; native reset остаётся открытым.** Source commit `0cddee2`;
 official candidate327faaac97f8…/distribution4975c36a1a53… verified/dry-run.
 Fresh configured/preflight same24160/9472, receiver50/SHA94f31e18… и protected

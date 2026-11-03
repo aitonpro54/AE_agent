@@ -109,6 +109,15 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- Native B3 idle: reset9b128005…/sessionaeddb9ee… completed, exact52events
+  archived, old15584 gone/new30888, sameAE9472 без restart. Missing/old session
+  ack denied; explicit acquire/fresh native project baseline/release PASS,
+  isolated new3event receiver. Далее actual read UNKNOWN воспроизведён одним
+  точным Node fault: ipc_outcome_uncertain,14events/last begin inspect-facaa741…
+  без terminal, diagnostic owner19452/queue closed. Delivery не наблюдалась.
+  Ждём отдельное действие панели для UNKNOWN reset, затем exact AE death и
+  original history archive/new session/baseline. Общую приёмку B3 не закрывать.
+
 - B3c,3ноября: source `0cddee2` принят; stop49b423d9…/updateaf65ee78…/
   explicit enable завершены. Прерванный90с wrapper восстановлен official original
   pre-ready inspect/finish без повторного apply. Installed327faaac…/4975c36a…,
@@ -230,6 +239,12 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- Native сценарии: alert/$.sleep/busyloop в AE допускают параллельное CEP read;
+  successful exploratory reads не переименованы в UNKNOWN. Actual Node fault
+  привязан к появлению новой journaled read-команды через retained handle и
+  fresh exact CIM scope. Подтверждены persisted begin/no terminal и native death;
+  доставка/late callback не наблюдались и не входят в этот native proof.
 
 - B3c: original interrupted update завершать только official pre-ready recovery
   с exact intent/pins; wrapper timeout не разрешает повтор owner-update.
@@ -367,6 +382,14 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- Native idle reset PASS: signed transaction records, archived52events exact,
+  old Node death/sameAE9472, missing/old ack refusal и successful fresh durable
+  baseline/lease release. Read UNKNOWN fault: один actual termination,14events
+  preserved, diagnostic startup/no replay. Evidence
+  [idle](../docs/evidence/core-base-b3-idle-reset-20261103.json) и
+  [UNKNOWN fault](../docs/evidence/core-base-b3-unknown-fault-20261103.json).
+  UNKNOWN reset/AE death/new baseline и configured proof ещё открыты.
 
 - B3c installed: exact80runtime/CEP verify и original pre-ready finish/enable PASS;
   cold standard status11.960с/first call, owner15584/один3457; automatic CEP

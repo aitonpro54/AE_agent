@@ -2,6 +2,15 @@
 
 ## Актуализация после B3b3 source
 
+3ноября native idle reset9b128005… completed, old15584/new30888, sessionaeddb9ee…,
+52events exact archived, sameAE9472 без restart, explicit ack/native baseline PASS.
+Затем один retained-handle Node fault породил native read UNKNOWN: inspect-facaa741…,
+14events/SHA638fbd1b…/last begin без terminal, recovered diagnostic owner19452.
+Delivery не наблюдалась. Отправлен async запрос пользователю отдельно нажать
+«Начать заново»/подтвердить для UNKNOWN scenario. После ответа только status и
+same-intent continuation, затем required exact old AE death/archive/new baseline.
+Ниже — pre-idle checkpoint установки; актуальные IDs/limits выше и в checkpoint.
+
 B1/B2 installed/configured package2fb5aebe принят. B3a1–a4/b1/b2 и production
 B3b3 source завершены; 42checks/41batches/721unique cases (212fresh/509exact reuse) PASS, boundaries55.
 [Evidence](../docs/evidence/core-base-b3b3-20261103.json). Owner-v4 candidate

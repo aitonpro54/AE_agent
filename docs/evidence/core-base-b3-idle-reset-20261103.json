@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T05:28:26.825Z",
+  "sourceCommit": "0cddee2b80b16ad80eafa93fd9b1720337b26607",
+  "packageHash": "327faaac97f8f4c5e17c20dfbf30082b1be242f59be566c72ef7e3d4970f88cd",
+  "resetId": "9b128005-8e75-43a0-80ff-f800326c83c6",
+  "sessionId": "aeddb9ee-cac3-4df3-8a25-279896812fe0",
+  "requestSentBy": "user clicked and confirmed actual installed CEP panel once",
+  "resetComplete": true,
+  "requiresAEExit": false,
+  "oldOwner": {
+    "pid": 15584,
+    "birthTicks": "639292661152752430",
+    "processBootId": "16749b0f-6511-4ff1-85ce-11bcf79da644"
+  },
+  "newOwner": {
+    "pid": 30888,
+    "birthTicks": "639292802617851780",
+    "processBootId": "ceee2c7a-2487-46d8-a57e-5a2f1aa0e049"
+  },
+  "nativeOldNodeDeath": {
+    "coverage": "native-process-snapshot",
+    "inventory": {
+      "version": 1,
+      "machineId": "MSI",
+      "observedAt": "2026-11-03T05:28:26.266Z",
+      "processes": [
+        {
+          "pid": 9472,
+          "birthTicks": "639292254253597850",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"
+        }
+      ]
+    },
+    "actors": [
+      {
+        "pid": 15584,
+        "birthTicks": "639292661152752430",
+        "state": "absent",
+        "observedBirthTicks": null
+      }
+    ],
+    "ae": [],
+    "allObservedIncarnationsGone": true,
+    "resetPermit": false,
+    "aeAuthority": false
+  },
+  "aeRestarts": 0,
+  "projectMutations": 0,
+  "aeAuthority": false,
+  "continuity": false,
+  "archive": {
+    "receiverEvents": 52,
+    "receiverHash": "e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437",
+    "exactOldBytes": true
+  },
+  "newReceiver": {
+    "eventCount": 3,
+    "sha256": "60bdaaf52ea7d9f42fae27ee2e74cd5a0e405eca55ba9f639e5d4dbff53819b3",
+    "identity": "receiver-store-b9c7f3c2-8892-4d7b-b081-44e71320f612",
+    "onlyFreshBaselineCommand": "inspect-8a3dae1e-be8f-416e-ac2c-d07b1c19523a"
+  },
+  "baseline": {
+    "beforeRequired": true,
+    "explicitAcquire": true,
+    "afterRequired": false,
+    "released": true,
+    "nativeObservation": {
+      "aeVersion": "26.3x87",
+      "compositions": [],
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "core-base-b3-native-20261103.aep",
+        "numItems": 0,
+        "saved": true
+      },
+      "target": {
+        "compId": null,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep"
+      },
+      "truncated": false
+    }
+  },
+  "records": {
+    "intent.json": {
+      "sha256": "323ecc422fe1a15b17edd27fb10b248ff0dbb41c2caa500c1242fd22e9bea33b",
+      "kind": "start-over-intent"
+    },
+    "inventory.json": {
+      "sha256": "779d13ee59fb6bd22ee8a579275b4471c62f0d32a347c8d500b7ca47d680e099",
+      "kind": "start-over-inventory"
+    },
+    "archive-completed.json": {
+      "sha256": "5f822deaa69d67349bb104c90a74ac3cdfa70857c77f30268c724c31e99483aa",
+      "kind": "start-over-archive-completed"
+    },
+    "session-candidate.json": {
+      "sha256": "a119d340364f7ae10f53124cc5c14f8d9723fd7a45214c9655d82d0fc4e0f0e0",
+      "kind": "work-session"
+    },
+    "session-published.json": {
+      "sha256": "33a5d28f5cbc6000e229ba61979f7e58b447ebd659954aa4321ad885f35ff5a6",
+      "kind": "start-over-session-published"
+    },
+    "reset-completed.json": {
+      "sha256": "5002775b51d5ab8fa0a359d798320f4a1230f9bd9e921429df8ccdc5b349c49f",
+      "kind": "start-over-completed"
+    },
+    "enable-intent.json": {
+      "sha256": "976a9c0a82b6ac5756681d9db7f05d3e595db8d1d645496d1b44ee02949682d0",
+      "kind": "start-over-enable-intent"
+    }
+  },
+  "protectedBytesUnchanged": true,
+  "aep": {
+    "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep",
+    "size": 8367,
+    "sha256": "8299fd9faf046e21911739430e304599c4e8f3690fc6314c21b9fa8f8a15c237"
+  },
+  "transientStatusFailuresDuringFinishing": [
+    "b3-native-status-12784.json",
+    "b3-native-status-5468.json"
+  ],
+  "limits": [
+    "idle reset only; UNKNOWN/old AE death scenario still required",
+    "standard client proof; configured client remains old cached package",
+    "no mutation recovery/full release/portability claim"
+  ]
+}

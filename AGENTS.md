@@ -22,8 +22,16 @@
 Собственная новая CEP открыта/автоматически connected; native direct project
 read saved empty test AEP PASS, lease1 released. History52settled/prefix50 exact,
 origins/adoption/ledger/AEP preserved. AE9472 прежний, restart/mutation0.
-Actual B3 reset пока0: computer-use не адресует CEPHtmlEngine child; клик
-отклонён до input, ожидается ручное нажатие пользователем «Начать заново».
+Native idle reset `9b128005-8e75-43a0-80ff-f800326c83c6` завершён после
+одного пользовательского нажатия: sessionaeddb9ee…, old15584 gone/new30888,
+same AE9472 без restart; exact52events archived. Missing/old session acquire
+отклонены; explicit acquire/fresh native baseline/release PASS, new3events.
+Затем на том же own AEP воспроизведён read UNKNOWN: exact Node30888 остановлен
+один раз после journal begin inspect-facaa741…; ipc_outcome_uncertain,14events/
+SHA638fbd1b… без terminal. Diagnostic owner19452, queue не открыта. Delivery в
+AE не наблюдалась; mutation/late-callback proof не заявлен. Для отдельного
+UNKNOWN reset запрошено новое пользовательское нажатие; computer-use не адресует
+CEPHtmlEngine child. Затем exact old AE exit/архив/fresh session baseline.
 Configured MCP всё ещё old2fb/owner_unavailable; нужен Restart MCP после
 установки, install повторять не нужно. Далее native idle/UNKNOWN reset,
 fresh session/baseline и configured proof. Точные pins — checkpoint.

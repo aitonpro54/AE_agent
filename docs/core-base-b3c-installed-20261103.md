@@ -1,5 +1,14 @@
 # B3c: установка и первое нативное чтение
 
+**Дополнение:** native idle reset9b128005… завершён:52events archived exact,
+sameAE9472 без restart, новый sessionaeddb9ee…/explicit ack/fresh baseline PASS.
+Затем один exact Node fault создал read UNKNOWN с14events/no terminal;
+recovered diagnostic owner19452 не открыл execution queue. Отдельный UNKNOWN
+reset и fresh configured proof остаются открытыми. Точные сведения —
+[idle evidence](evidence/core-base-b3-idle-reset-20261103.json) и
+[fault evidence](evidence/core-base-b3-unknown-fault-20261103.json).
+Содержание ниже фиксирует исходный момент установки до этих native сценариев.
+
 3 ноября 2026. Source commit `0cddee2b80b16ad80eafa93fd9b1720337b26607`.
 Этап установки завершён; приёмка установленного «Начать заново» ещё открыта.
 [Проверяемые факты и hashes](evidence/core-base-b3c-installed-20261103.json).
