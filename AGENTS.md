@@ -11,6 +11,21 @@
 
 ## Текущий scope и правила
 
+**3 ноября, MCP/Codex maintenance завершён:** по прямому выбору пользователя
+«Вернуться к MCP/Codex maintenance» историческая пауза снята. Свежие configured
+status/diagnostics и effective CLI config PASS: Corecdf7338f… enabled/timeout120,
+same owner27100/bootb76c6e87…, CEP connected, pending/UNKNOWN/fault0, controller free.
+App-server16688/birth639292921882045310 прежний; CodexMSIX26.1027.3384.0,
+CLI0.166.0-alpha.5.1. В ограниченном окне345 log records текущего чата WARN/ERROR0;
+узкая MCP/Core-выборка пуста.143protected files+bindings/AEP/current7/1+UNKNOWN26/20
+exact unchanged. Ремонт/restart/config/auth/AE commands0; исторический deferred
+service refresh больше не нужен, ожидающих действий нет. Прежний28148 settled,
+не повторять. Current chat01a1a098-6ee6-7af1-8ca5-7b03adfbcec5 подтверждён
+metadata/read_thread; старые chat IDs и PID не дают authority. Titles/Slideshow
+остаются на паузе; завершение maintenance не вводит новую паузу этой работы.
+[План и evidence](plans/core-codex-mcp-maintenance-20261103.md).
+Записи ниже сохраняют историю прежних scope и checkpoints.
+
 **3 ноября, B7 configuredcdf и сводная база приняты:** обычный текущий MCP
 уже используетcdf7338f…, без restart/config/service refresh. Same owner27100/
 birth639293110869903720/bootb76c6e87…, sameAE30024, один3457, CEP connected.

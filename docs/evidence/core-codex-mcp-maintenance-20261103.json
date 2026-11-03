@@ -1,0 +1,543 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T14:51:02.307Z",
+  "baselineCommit": "57e1795",
+  "userScope": "Вернуться к MCP/Codex maintenance",
+  "outcome": "healthy; historical deferred service refresh no longer required; no repair/restart/config changes",
+  "runtime": {
+    "at": "2026-11-03T14:49:52.940Z",
+    "runtimeIdentity": {
+      "threadId": "01a1a098-6ee6-7af1-8ca5-7b03adfbcec5",
+      "hostId": "local",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core",
+      "status": {
+        "type": "active",
+        "activeFlags": []
+      }
+    },
+    "coreStatus": {
+      "attachmentOwner": {
+        "accepted": 0,
+        "activity": {
+          "fault": false,
+          "pending": false,
+          "unresolved": false
+        },
+        "attachments": 1,
+        "bootId": "f0df251c-3813-4d1f-a061-4877924828e4",
+        "closed": false,
+        "fenced": false,
+        "frozen": false,
+        "generation": 1,
+        "holderClientId": null,
+        "mode": "idle",
+        "pending": false,
+        "workSession": {
+          "baselineRequired": false,
+          "resetPending": false,
+          "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+        }
+      },
+      "automaticLifecycle": "unavailable",
+      "closed": false,
+      "composition": "manual",
+      "connection": "unavailable",
+      "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionPolicy": "read-only-current-observation-v1",
+      "installation": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "nodeVerified": true,
+        "nodeVersion": "24.15.0",
+        "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      },
+      "ledgerFault": false,
+      "lifecycle": {
+        "birthTicks": "639293110869903720",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+            "eventCount": 1,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": "fbdc3eadfed3fd314358b2eed23f6d715b95ec023b96be17e84f3cf6e0f043e4",
+            "eventCount": 5,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 27100,
+        "processBootId": "b76c6e87-321f-4e10-a0df-806f969cbe8b",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "maintenance": {
+        "fault": null,
+        "id": null,
+        "phase": "running",
+        "requested": false
+      },
+      "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+      "ownershipFault": null,
+      "physical": {
+        "automaticLifecycle": "unavailable",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionAvailable": true,
+        "lastPhysicalFault": null,
+        "lastReadFailure": null,
+        "listening": true,
+        "peer": {
+          "connected": true,
+          "peerId": "panel-e4293c8b9e12e641db45521b48be54bf5dd8276ab801a4fe"
+        },
+        "pending": null,
+        "port": 3457,
+        "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726",
+        "startOverFrozen": false,
+        "storeClosed": false,
+        "storeFault": false,
+        "unknown": false
+      },
+      "pid": 27100,
+      "product": "AE Agent Core 4.0.0",
+      "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+      "ready": true,
+      "resourceProvider": {
+        "adopted": true,
+        "coverage": {
+          "core4Lane": "cooperating-Core4-only",
+          "hostProcess": "adopted-reprobe-required",
+          "legacyEndpoints": "named-probes-only",
+          "legacyPhysicalQueue": "not-proven",
+          "otherAEActors": "outside-coverage",
+          "sharedOutputs": "not-requested"
+        },
+        "origin": {
+          "aePid": 30024,
+          "aeProcessBirth": "2026-11-03T13:45:22.9905750Z",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "machineId": "MSI"
+        }
+      },
+      "startOver": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "fault": null,
+        "id": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+        "phase": "ready",
+        "requiresAEExit": false,
+        "resetComplete": true,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "synthetic": false,
+      "unavailableReason": null,
+      "unresolved": [],
+      "workSession": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "mode": "work-session",
+        "resetId": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+        "resetPending": false,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "worker": {
+        "epoch": 0,
+        "lateReplies": 0,
+        "loaded": [],
+        "pending": 0,
+        "pid": null
+      }
+    },
+    "coreDiagnostics": {
+      "attachmentOwner": {
+        "accepted": 0,
+        "activity": {
+          "fault": false,
+          "pending": false,
+          "unresolved": false
+        },
+        "attachments": 1,
+        "bootId": "f0df251c-3813-4d1f-a061-4877924828e4",
+        "closed": false,
+        "fenced": false,
+        "frozen": false,
+        "generation": 1,
+        "holderClientId": null,
+        "mode": "idle",
+        "pending": false,
+        "workSession": {
+          "baselineRequired": false,
+          "resetPending": false,
+          "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+        }
+      },
+      "automaticLifecycle": "unavailable",
+      "catalogError": null,
+      "catalogRevision": "update-titles-current-target-6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46",
+      "closed": false,
+      "composition": "manual",
+      "connection": "unavailable",
+      "controllerBusy": false,
+      "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionPolicy": "read-only-current-observation-v1",
+      "installation": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "nodeVerified": true,
+        "nodeVersion": "24.15.0",
+        "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      },
+      "ledgerFault": false,
+      "lifecycle": {
+        "birthTicks": "639293110869903720",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+            "eventCount": 1,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": "fbdc3eadfed3fd314358b2eed23f6d715b95ec023b96be17e84f3cf6e0f043e4",
+            "eventCount": 5,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 27100,
+        "processBootId": "b76c6e87-321f-4e10-a0df-806f969cbe8b",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "maintenance": {
+        "fault": null,
+        "id": null,
+        "phase": "running",
+        "requested": false
+      },
+      "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+      "ownershipFault": null,
+      "physical": {
+        "automaticLifecycle": "unavailable",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionAvailable": true,
+        "lastPhysicalFault": null,
+        "lastReadFailure": null,
+        "listening": true,
+        "peer": {
+          "connected": true,
+          "peerId": "panel-e4293c8b9e12e641db45521b48be54bf5dd8276ab801a4fe"
+        },
+        "pending": null,
+        "port": 3457,
+        "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726",
+        "startOverFrozen": false,
+        "storeClosed": false,
+        "storeFault": false,
+        "unknown": false
+      },
+      "pid": 27100,
+      "product": "AE Agent Core 4.0.0",
+      "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+      "ready": true,
+      "resourceDiagnostics": [],
+      "resourceProvider": {
+        "adopted": true,
+        "coverage": {
+          "core4Lane": "cooperating-Core4-only",
+          "hostProcess": "adopted-reprobe-required",
+          "legacyEndpoints": "named-probes-only",
+          "legacyPhysicalQueue": "not-proven",
+          "otherAEActors": "outside-coverage",
+          "sharedOutputs": "not-requested"
+        },
+        "origin": {
+          "aePid": 30024,
+          "aeProcessBirth": "2026-11-03T13:45:22.9905750Z",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "machineId": "MSI"
+        }
+      },
+      "startOver": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "fault": null,
+        "id": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+        "phase": "ready",
+        "requiresAEExit": false,
+        "resetComplete": true,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "synthetic": false,
+      "unavailableReason": null,
+      "unresolved": [],
+      "workSession": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "mode": "work-session",
+        "resetId": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+        "resetPending": false,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "worker": {
+        "epoch": 0,
+        "lateReplies": 0,
+        "loaded": [],
+        "pending": 0,
+        "pid": null
+      }
+    }
+  },
+  "cli": {
+    "at": "2026-11-03T14:46:07.919Z",
+    "scope": "effective Core MCP configuration only; no server start or login",
+    "cliPath": "C:/Users/Ant/AppData/Local/OpenAI/Codex/bin/22cfb1d302613eae/codex.exe",
+    "cliHash": "3097c909fb6d5cd63510d44aceb1d42df9f6e85722a3e447e477def1ecf60e16",
+    "configuredServerCount": 6,
+    "core": {
+      "name": "after-effects-core4",
+      "enabled": true,
+      "transportType": "stdio",
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944\\runtime\\client-entry.js",
+        "--client-descriptor",
+        "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json"
+      ],
+      "cwd": null,
+      "environmentVariableNames": [],
+      "startupTimeoutSec": null,
+      "toolTimeoutSec": 120,
+      "authStatus": "unsupported"
+    },
+    "stderrPresent": false,
+    "configHashBefore": "ab01a50576f0c553ca06895f967ee907841ee683e4b6b04229e75401905f359e",
+    "configHashAfter": "ab01a50576f0c553ca06895f967ee907841ee683e4b6b04229e75401905f359e"
+  },
+  "versions": {
+    "codexMsix": "26.1027.3384.0",
+    "codexCli": "0.166.0-alpha.5.1",
+    "source": "local Get-AppxPackage/CIM/current binary --version; latest/updater not checked"
+  },
+  "actors": [
+    {
+      "pid": 3272,
+      "birthTicks": "639292921862776500",
+      "parentPid": 30912,
+      "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1027.3384.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+    },
+    {
+      "pid": 16688,
+      "birthTicks": "639292921882045310",
+      "parentPid": 3272,
+      "executablePath": "C:\\Users\\Ant\\AppData\\Local\\OpenAI\\Codex\\bin\\22cfb1d302613eae\\codex.exe"
+    },
+    {
+      "pid": 30024,
+      "birthTicks": "639293103229905750",
+      "parentPid": 30224,
+      "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"
+    },
+    {
+      "pid": 27100,
+      "birthTicks": "639293110869903720",
+      "parentPid": 32788,
+      "executablePath": "C:\\Program Files\\nodejs\\node.exe"
+    }
+  ],
+  "logs": {
+    "at": "2026-11-03T14:49:52.868Z",
+    "currentThreadLevels": [
+      {
+        "level": "DEBUG",
+        "count": 205
+      },
+      {
+        "level": "INFO",
+        "count": 97
+      },
+      {
+        "level": "TRACE",
+        "count": 43
+      }
+    ],
+    "lastDatabaseRecordAt": "2026-11-03T14:49:48.000Z",
+    "readOnly": true,
+    "queryOnly": true,
+    "database": "C:/Users/Ant/.codex/logs_2.sqlite",
+    "threadId": "01a1a098-6ee6-7af1-8ca5-7b03adfbcec5",
+    "since": "2026-11-03T14:31:07.122Z",
+    "coverage": "current thread plus unbound MCP/Core log records since B7; other-thread bodies and raw messages not exported",
+    "summary": [],
+    "findings": [],
+    "truncated": false,
+    "rawMessageExports": 0
+  },
+  "historyProtection": {
+    "receiverEvents": 7,
+    "receiverHash": "ccec4ab8f1f290ce8bbb93ab2cbf7beea22d9f3b3598ed7c78962b8d554a5f73",
+    "ledgerEvents": 1,
+    "ledgerHash": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+    "protectedStateFiles": 143,
+    "bindingsAndAep": {
+      "descriptor": "fc625b3fde5579976e8cfd4d860322bdba43b3a49b1baa36f020bb6b5d1ade12",
+      "client": "9b780d33dcf7e4851f07880193e228337ff2c5b3b29dd5443248d321d9d27cac",
+      "config": "ab01a50576f0c553ca06895f967ee907841ee683e4b6b04229e75401905f359e",
+      "aep": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5"
+    },
+    "unknownArchives": {
+      "archivedReceiver": {
+        "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\2fecd11c-faef-4651-9f27-e88e4498fb20-start-over\\archive-receiver\\completions.ndjson",
+        "sha256": "80fb36e45885909d9b560a807744374cc03b61bc8a151572681bac96e98ad1ec",
+        "events": 26,
+        "settled": false,
+        "unresolvedCount": 1,
+        "commands": [
+          {
+            "commandId": "inspect-e3e17158-319f-42df-91d6-37a9bbde1646",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-635877a3-e65f-4860-b7d6-29c5e4d8462e",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-73c57020-e98a-47dd-b838-a37df96d9b7e",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-e3a56277-cea5-4075-9395-5106d3d2dfb5",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-8a823045-0361-4c58-845b-5b39020182f6",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-9dbd8737-a68c-437e-868d-d404a6f3ca7c",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-7c56b8b8-92b6-4b44-a734-9df178b7ca29",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-c87c0694-6cc3-431b-9b45-f900e1897b23",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-7e644bbe-5820-402a-a264-6678b3c47760",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-cc6d29f0-e7d3-4a6e-ae4e-b867d34ce151",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-7f52767d-8e4c-4691-ac21-cc5488ddd9ff",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "inspect-9ec87727-5cae-413d-860e-c59db3e784e8",
+            "state": "completed",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          },
+          {
+            "commandId": "command-7c78e9fb-c0e9-4c15-9cb7-f5c252a1d81c",
+            "state": "ongoing",
+            "physicalUnknown": false,
+            "terminalDisposition": false
+          }
+        ],
+        "mutateBegins": 1,
+        "verifiedUnchangedFromCommit": "85daf8f"
+      },
+      "archivedLedger": {
+        "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\2fecd11c-faef-4651-9f27-e88e4498fb20-start-over\\archive-broker\\ledger.ndjson",
+        "sha256": "709722e4791e6ec32e9b0479f3a7695988441a62fa4a077058086af12e9b6a7f",
+        "events": 20,
+        "settled": false,
+        "unresolvedCount": 2,
+        "commands": [
+          {
+            "commandId": "command-7c78e9fb-c0e9-4c15-9cb7-f5c252a1d81c",
+            "state": "UNKNOWN"
+          }
+        ],
+        "verifiedUnchangedFromCommit": "85daf8f"
+      }
+    }
+  },
+  "deferredRefresh": {
+    "historicalTargetPid": 28148,
+    "historicalOperationAlreadySettled": true,
+    "currentAppServerPid": 16688,
+    "currentAppServerSameBirth": true,
+    "configuredFaultSupersededBy": "B7 current configured cdf native read/release",
+    "action": "no restart scheduled"
+  },
+  "actions": {
+    "effectiveCliConfigReads": 2,
+    "configuredCoreStatus": 1,
+    "configuredCoreDiagnostics": 1,
+    "logDatabaseMode": "readOnly + query_only",
+    "rawLogMessageExports": 0,
+    "agentRequestedDesktopRestarts": 0,
+    "agentRequestedAppServerRestarts": 0,
+    "agentRequestedMcpRestarts": 0,
+    "configChanges": 0,
+    "authChanges": 0,
+    "coreOwnerStops": 0,
+    "aeCommands": 0,
+    "sourceTests": 0
+  },
+  "officialReference": {
+    "url": "https://learn.chatgpt.com/docs/extend/mcp?surface=cli",
+    "usedFor": "mcp list and project config semantics only; local state established independently"
+  },
+  "limits": [
+    "Read-only scoped Core/Codex maintenance, not an audit of every unrelated configured MCP/plugin or other chat.",
+    "The MCP-specific log subset is empty; current-thread level counts cover the recorded window only, not a global absence-of-errors guarantee.",
+    "Three earlier observed cdf thin-client processes were not classified as orphaned or terminated.",
+    "CLI OAuth auth_status unsupported is not a failure of this stdio server private role authentication.",
+    "No latest-version/update assessment, model/effort changes, credentials export or security/trust changes.",
+    "Full release and two-machine portability remain open; Titles/Slideshow remain paused."
+  ]
+}

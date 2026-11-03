@@ -1,5 +1,12 @@
 # Installed checkpoint B1/B2 — 2 ноября
 
+**Актуально3ноября: MCP/Codex maintenance завершён по новому прямому поручению.**
+Свежие configured status/diagnostics/effective config PASS; ремонт/restart/config
+changes0. Current receiver7/ledger1,143protected files+bindings/AEP и UNKNOWN26/20
+сохранены exact; прежний service refresh больше не нужен, ожидающих действий нет.
+[План и evidence](core-codex-mcp-maintenance-20261103.md). Titles/Slideshow на паузе;
+историческая пауза maintenance ниже заменена прямым поручением пользователя.
+
 **Актуально3ноября: B7 configuredcdf PASS без maintenance.** Normal current MCP
 status → explicit acquire sessionce977de2…/generation1 → exact-contract native
 project-inspection own saved AEP/1item → release/clean status. Same owner27100/

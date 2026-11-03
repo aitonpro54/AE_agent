@@ -1,5 +1,15 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
+**Maintenance,3ноября — последнее поручение завершено:** пользователь явно выбрал
+возврат к MCP/Codex maintenance. Свежие configured status/diagnostics/effective
+config PASS; same Core27100/bootb76c6e87…, app-server16688 прежний. Current7/1,
+143protected files+bindings/AEP и UNKNOWN26/20 сохранены exact. Подтверждённого
+дефекта нет, restart/config/auth/AE commands0; deferred refresh закрыт как
+утративший необходимость. [Результат и границы](core-codex-mcp-maintenance-20261103.md).
+Ожидающих maintenance действий нет; новая пауза maintenance не вводилась.
+Titles/Slideshow остаются на паузе. Записи ниже сохраняют прежние состояния;
+актуальные runtime pins всегда требуют свежей проверки.
+
 **B7,3ноября — актуальная база:** configuredcdf7338f… принят обычным текущим MCP,
 без service/AE restart/config. Native saved project-inspection/release1 PASS;
 owner27100/birth639293110869903720/bootb76c6e87… и AE30024 прежние, один3457,
@@ -38,7 +48,7 @@ delta1file; четыре named test budgets скорректированы по�
 recovery остаются открытыми; старый pre-submit run не повторять.
 [Точный срез и evidence](../docs/core-base-b6-windows-probe-20261103.md).
 
-## Актуальное состояние — 3 ноября
+## Историческое состояние — 3 ноября, до B6/B7 и возврата к maintenance
 
 Единственный рабочий корень — `C:/Users/Ant/Documents/Codex/AE_agent_core`.
 B1–B3 ограниченно приняты; installed B4 package21a884fa…/distribution41d4812c…

@@ -1,5 +1,13 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Maintenance,3ноября — актуально:** по прямому поручению пользователя проверено
+текущее MCP/Codex подключение. Configured status/diagnostics/effective config PASS,
+защищённые файлы и история сохранены; ремонт/restart/config changes0. Исторический
+deferred service refresh больше не нужен, ожидающих действий нет. Maintenance
+не возвращён на паузу; Titles/Slideshow остаются на паузе.
+[План, решения и проверки](core-codex-mcp-maintenance-20261103.md).
+Следующие записи — история checkpoints; прежняя пауза maintenance заменена этим поручением.
+
 **B7,3ноября:** configuredcdf proof закрыт обычным текущим MCP: same owner/boot,
 fresh native project-inspection/release1, current receiver7/ledger1settled.
 Ограниченная база B1–B7 принята по [сводной матрице](../docs/core-base-b7-configured-matrix-20261103.md).
