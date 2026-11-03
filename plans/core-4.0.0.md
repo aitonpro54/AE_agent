@@ -1,5 +1,10 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**B6 installed,3ноября:** approved packagecdf7338f… installed/enabled,
+80runtime/7CEP exact,145protected files preserved. Standard native inspection PASS;
+prepared proposal ещё не submitted. MCP/Codex services без restart/refresh.
+[Native delivery/recovery](core-base-delivery-recovery-20261103.md).
+
 **B6 source checkpoint,3ноября:** 15checks/330unique cases (87fresh/243exact current-key reuse)/55boundaries PASS.
 Исправлен подтверждённый PowerShell startup отказ в очищенном env owner, runtime
 delta1file; четыре named test budgets скорректированы после timeout, assertions

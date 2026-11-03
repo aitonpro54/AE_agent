@@ -1,5 +1,12 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
+**B6 installed,3ноября:** approved packagecdf7338f… installed/enabled.
+Не повторять settled stopf41dbe21…/update806719be…. Standard owner15616/bootbed482de…
+и sameAE21960 наблюдались ready; native inspection BASE_A PASS. Prepared
+task0558d0cf…/proposalc477c55e… ещё runAttempts0, root client поддерживает lease.
+Далее fresh dry-run/run и native scenario по [focused плану](core-base-delivery-recovery-20261103.md).
+MCP/Codex service refresh/restarts остаются отложенными; pins не выдаются за future authority.
+
 **B6 source checkpoint,3ноября:** 15checks/330unique cases (87fresh/243exact current-key reuse)/55boundaries PASS.
 Исправлен подтверждённый PowerShell startup отказ в очищенном env owner, runtime
 delta1file; четыре named test budgets скорректированы после timeout, assertions

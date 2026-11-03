@@ -1,5 +1,10 @@
 # База Core: подключение, восстановление и диагностика
 
+**B6 installed,3ноября:** approved packagecdf7338f… штатно installed/enabled,
+80runtime/7CEP exact и145protected files preserved. Новый standard native read PASS;
+prepared proposal не submitted. Следующий шаг — [native delivery/recovery](core-base-delivery-recovery-20261103.md).
+MCP/Codex services без restart/refresh; configured proof нового package не заявлен.
+
 **B6 source checkpoint,3ноября:** 15checks/330unique cases (87fresh/243exact current-key reuse)/55boundaries PASS.
 Исправлен подтверждённый PowerShell startup отказ в очищенном env owner, runtime
 delta1file; четыре named test budgets скорректированы после timeout, assertions

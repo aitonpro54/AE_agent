@@ -11,6 +11,27 @@
 
 ## Текущий scope и правила
 
+**3 ноября, B6 установлен:** packagecdf7338f…/distribution85c3d95a… штатно
+installed/enabled, exact80runtime/7CEP verified. Новый stop
+`f41dbe21-504a-447b-92d4-f66694dadc91` и update
+`806719be-fe2b-4d8c-a31e-f27e191ddf57` settled, primary attempts1; не повторять.
+Config diff — только согласованный args-path.145protected files unchanged across
+update; после новой inspection receiver23/prefix21 exact, ledger15/prefix11 exact.
+Own CEP close/open1, auto connected; sameAE21960/AEP3d19acd0… untouched.
+Fresh standard owner15616/birth639293094416076820/bootbed482de… ready. Prepared
+task0558d0cf…/proposalc477c55e… на comp1/layer13/BASE_A→BASE_B, runAttempts0;
+root держит единственный client/controller и продолжает native scenario.
+Configured proof нового package не заявлен; MCP/Codex services не перезапускались.
+[Evidence](docs/evidence/core-base-b6-installed-20261103.json).
+
+**3 ноября, узкое разрешение на B6 update:** пользователь выбрал «Установить и
+обновить только путь Core». Разрешена штатная установка подготовленного
+packagecdf7338f… и замена только args-path существующего Core MCP entry
+21a884fa…→cdf7338f…. Остальное обслуживание и перезапуски MCP/Codex остаются
+на паузе; native proof — новым штатным клиентом. Новый stop/update с новыми IDs,
+сохранением journals/архивов/session/adoption/AEP; прежние settled IDs не повторять.
+Эта запись уточняет историческое ожидание разрешения ниже.
+
 **3 ноября, B6 source fix принят:** один native run task2e0d60d4…/proposal
 c4ec0189… остановился host_probe_failed до intent/send, commands0; не replay.
 Причина воспроизведена в owner-like scrubbed env: PowerShell startup требует

@@ -2,8 +2,9 @@
 
 3 ноября 2026. Продолжение основного плана по прямому выбору пользователя:
 «Дальше доводить базу: доставка, поздние ответы и recovery».
-Root — единственный controller/writer. MCP/Codex restart/config и разработка
-Titles/Slideshow остаются отложенными. Существующий manual text executor можно
+Root — единственный controller/writer. Пользователь разрешил штатный B6 update
+с изменением только args-path Core MCP entry; остальные MCP/Codex restart/config
+и разработка Titles/Slideshow остаются отложенными. Existing manual text executor можно
 использовать только как тестовую операцию базы, без изменения его style proof.
 
 ## Последовательность и критерии
@@ -40,6 +41,16 @@ native mutation proof. При недоступном поддержанном п
 
 ## Progress
 
+- B6 packagecdf7338f… установлен/enabled: новый stopf41dbe21… и update806719be…
+  settled с primary attempts1.80runtime/7CEP exact;145protected files preserved.
+  MCP-config изменил только согласованный args-path. Own CEP close/open1,
+  auto connected, sameAE21960/AEP3d19acd0…. Новый standard owner15616/bootbed482de….
+  Native inspection comp1/layer13/BASE_A PASS; prepared task0558d0cf…/
+  proposalc477c55e…, runAttempts0. Далее — пункты4–6 без replay прежних IDs.
+  [Installed evidence](../docs/evidence/core-base-b6-installed-20261103.json).
+- Пользователь разрешил установку подготовленного packagecdf7338f… и обновление
+  только пути Core-клиента. Новый preflight подтвердил owner22188/booted18a535…,
+  connected CEP, pending/UNKNOWN/fault0; installed21a884fa… прежний до update.
 - B6 source fix принят: 15checks/330unique cases (87fresh/243exact current-key reuse)/55boundaries PASS. Один runtime file
   восстанавливает native USERPROFILE только для fixed PowerShell probe в scrubbed
   owner env. Две regression cases; четыре named test budgets изменены после
@@ -78,6 +89,14 @@ native mutation proof. При недоступном поддержанном п
 
 ## Decision Log
 
+- Установка выполнена по явному узкому ответу пользователя. MCP/Codex services
+  остаются без refresh/restart. Новый thin client — standard proof; он не
+  переобъявляется configured proof. Prepared proposal поддерживает lease renew;
+  dry-run будет свежим непосредственно перед единственной run отправкой.
+- Блок ведёт root: штатная поставка и native fault/recovery образуют одну цепочку
+  live ownership, поэтому controller и writer не передаются помощнику. Разрешение
+  args-path не возобновляет MCP/Codex service refresh; proof выполняется новым
+  штатным thin client, configured proof нового package отдельно не обещается.
 - Тестовые timeout не выдаются за production defect. Изменяются только бюджеты
   четырёх named tests; прочие проверки и guards сохранены. Accepted9/212 reuse
   разрешён после сравнения exact current keys; прерванный failed check не принят.
@@ -101,6 +120,10 @@ native mutation proof. При недоступном поддержанном п
 
 ## Validation
 
+- Installed80runtime/7CEP verified; protected bindings/session/adoption/AEP и
+  все прежние start-over records/архивы145files сохранены через update.
+  Последующая inspection добавила только begin22/complete23; prefix21 exact.
+  Ledger15/prefix11 exact — metadata подготовки, mutation intent0.
 - Итоговое evidence содержит15current keys/commands, результаты полных checks,
   exact reused prefix и hashes всех логов; cancelled/failed batches исключены.
   [Scope и состояние source-проверок](../docs/core-base-b6-windows-probe-20261103.md).

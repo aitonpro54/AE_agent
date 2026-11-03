@@ -1,5 +1,11 @@
 # B6 — Windows probe в очищенном окружении owner
 
+**Installed checkpoint,3ноября:** после отдельного разрешения packagecdf7338f…
+штатно установлен/enabled,80runtime/7CEP exact; изменён только согласованный
+MCP args-path. Native inspection PASS, run ещё не отправлен.
+[Installed evidence](evidence/core-base-b6-installed-20261103.json).
+Ниже сохранён исходный source checkpoint d6dcd75 до установки.
+
 3 ноября 2026. Исправление воспроизведённого отказа базы перед native mutation.
 Исходный commit `ae3f8a0`; цель — продолжение
 [доставки и recovery](../plans/core-base-delivery-recovery-20261103.md).
