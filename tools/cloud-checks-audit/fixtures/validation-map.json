@@ -1,0 +1,41 @@
+{
+  "checkDependencies": {
+    "portable": ["portable.test.js", "helper.cjs"],
+    "windows": ["probe.ps1"],
+    "vm-mock": ["vm-mock.test.js", "executor.jsx"],
+    "unknown": ["unknown.test.js"],
+    "missing-dependency": ["absent.cjs"],
+    "native-ae": ["executor.jsx"],
+    "untrusted-source": ["untrusted.test.js"],
+    "windows-mentioned": ["windows-mentioned.test.js"],
+    "missing-entry": ["helper.cjs"],
+    "dynamic": ["dynamic.test.js"],
+    "unsupported-command": ["portable.test.js"]
+  },
+  "checkCommands": {
+    "portable": ["node", "--test", "--test-name-pattern=portable", "portable.test.js"],
+    "windows": ["powershell.exe", "-NoProfile", "-File", "probe.ps1"],
+    "vm-mock": ["node", "--test", "--test-name-pattern=mock", "vm-mock.test.js"],
+    "unknown": ["node", "--test", "--test-name-pattern=unknown", "unknown.test.js"],
+    "missing-dependency": ["node", "--test", "--test-name-pattern=missing", "absent.cjs"],
+    "native-ae": ["AfterFX.exe", "-r", "executor.jsx"],
+    "untrusted-source": ["node", "--test", "--test-name-pattern=untrusted", "untrusted.test.js"],
+    "windows-mentioned": ["node", "--test", "--test-name-pattern=portable", "windows-mentioned.test.js"],
+    "missing-entry": ["node", "--test", "--test-name-pattern=missing", "absent.test.js"],
+    "dynamic": ["node", "--test", "--test-name-pattern=dynamic", "dynamic.test.js"],
+    "unsupported-command": ["npm", "test"]
+  },
+  "checkPolicy": {
+    "portable": {"kind": "component"},
+    "windows": {"kind": "integration"},
+    "vm-mock": {"kind": "component"},
+    "unknown": {"kind": "component"},
+    "missing-dependency": {"kind": "component"},
+    "native-ae": {"kind": "integration"},
+    "untrusted-source": {"kind": "component"},
+    "windows-mentioned": {"kind": "component"},
+    "missing-entry": {"kind": "component"},
+    "dynamic": {"kind": "component"},
+    "unsupported-command": {"kind": "integration"}
+  }
+}

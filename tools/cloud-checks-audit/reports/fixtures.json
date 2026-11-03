@@ -1,0 +1,1137 @@
+{
+  "schemaVersion": 1,
+  "mode": "static-read-only",
+  "disclaimer": "Только статический аудит: команды не исполнялись, runtime не импортировался. Это не результат тестов и не сертификат переносимости.",
+  "commandsExecuted": false,
+  "runtimeImported": false,
+  "root": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\tools\\cloud-checks-audit\\fixtures",
+  "input": {
+    "file": "validation-map.json",
+    "sha256": "a7a9bcdd46cca7fa91a6999c5781f339543e5192b317c21a548ec34b8e7b7f60"
+  },
+  "checkout": null,
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "release": "10.0.26200",
+    "node": "v24.15.0"
+  },
+  "summary": {
+    "cloud-candidate": 2,
+    "platform-dependency": 1,
+    "native-ae-evidence-required": 1,
+    "insufficient-information": 7
+  },
+  "checks": [
+    {
+      "check": "dynamic",
+      "category": "insufficient-information",
+      "categoryLabel": "недостаточно сведений",
+      "basis": "heuristic",
+      "reason": "Не установлена среда всей группы: вычисляемые imports. Подмены, достижимость и выбранные ветки не доказаны.",
+      "command": {
+        "argv": [
+          "node",
+          "--test",
+          "--test-name-pattern=dynamic",
+          "dynamic.test.js"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "component"
+      },
+      "dependencies": [
+        {
+          "path": "dynamic.test.js",
+          "files": [
+            "dynamic.test.js"
+          ]
+        }
+      ],
+      "projections": [],
+      "entrypoint": "dynamic.test.js",
+      "reachableFiles": [
+        "dynamic.test.js"
+      ],
+      "importEdgeCount": 0,
+      "nativeEvidence": {
+        "status": "not-established",
+        "reason": "Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/dynamic",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/dynamic",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "dynamic.test.js",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "dynamic.test.js",
+          "basis": "explicit",
+          "kind": "entrypoint",
+          "detail": "Файл указан в argv; прочитан без выполнения, hash приведён в sources."
+        },
+        {
+          "file": "dynamic.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "dynamic-import",
+          "basis": "heuristic",
+          "line": 3,
+          "detail": "Вычисляемый require не разрешается статически."
+        }
+      ],
+      "issues": [],
+      "observationCount": 1,
+      "observations": [
+        {
+          "file": "dynamic.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "dynamic-import",
+          "basis": "heuristic",
+          "line": 3,
+          "detail": "Вычисляемый require не разрешается статически."
+        }
+      ]
+    },
+    {
+      "check": "missing-dependency",
+      "category": "insufficient-information",
+      "categoryLabel": "недостаточно сведений",
+      "basis": "heuristic",
+      "reason": "Не установлена среда всей группы: неразрешённых зависимостей/команд: 2; Подмены, достижимость и выбранные ветки не доказаны.",
+      "command": {
+        "argv": [
+          "node",
+          "--test",
+          "--test-name-pattern=missing",
+          "absent.cjs"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "component"
+      },
+      "dependencies": [
+        {
+          "path": "absent.cjs",
+          "files": []
+        }
+      ],
+      "projections": [],
+      "entrypoint": "absent.cjs",
+      "reachableFiles": [
+        "absent.cjs"
+      ],
+      "importEdgeCount": 0,
+      "nativeEvidence": {
+        "status": "not-established",
+        "reason": "Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/missing-dependency",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/missing-dependency",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "absent.cjs",
+          "basis": "explicit",
+          "kind": "entrypoint",
+          "detail": "Файл указан в argv; прочитан без выполнения, hash приведён в sources."
+        },
+        {
+          "file": "absent.cjs",
+          "basis": "explicit",
+          "kind": "unresolved",
+          "detail": "ENOENT: no such file or directory, lstat 'C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\tools\\cloud-checks-audit\\fixtures\\absent.cjs'"
+        },
+        {
+          "file": "absent.cjs",
+          "basis": "explicit",
+          "kind": "unresolved",
+          "detail": "ENOENT: no such file or directory, lstat 'C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\tools\\cloud-checks-audit\\fixtures\\absent.cjs'"
+        }
+      ],
+      "issues": [
+        {
+          "file": "absent.cjs",
+          "code": "ENOENT",
+          "detail": "ENOENT: no such file or directory, lstat 'C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\tools\\cloud-checks-audit\\fixtures\\absent.cjs'"
+        },
+        {
+          "file": "absent.cjs",
+          "code": "ENOENT",
+          "detail": "ENOENT: no such file or directory, lstat 'C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\tools\\cloud-checks-audit\\fixtures\\absent.cjs'"
+        }
+      ],
+      "observationCount": 0,
+      "observations": []
+    },
+    {
+      "check": "missing-entry",
+      "category": "insufficient-information",
+      "categoryLabel": "недостаточно сведений",
+      "basis": "heuristic",
+      "reason": "Не установлена среда всей группы: неразрешённых зависимостей/команд: 1; Подмены, достижимость и выбранные ветки не доказаны.",
+      "command": {
+        "argv": [
+          "node",
+          "--test",
+          "--test-name-pattern=missing",
+          "absent.test.js"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "component"
+      },
+      "dependencies": [
+        {
+          "path": "helper.cjs",
+          "files": [
+            "helper.cjs"
+          ]
+        }
+      ],
+      "projections": [],
+      "entrypoint": "absent.test.js",
+      "reachableFiles": [
+        "absent.test.js"
+      ],
+      "importEdgeCount": 0,
+      "nativeEvidence": {
+        "status": "not-established",
+        "reason": "Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/missing-entry",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/missing-entry",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "helper.cjs",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "absent.test.js",
+          "basis": "explicit",
+          "kind": "entrypoint",
+          "detail": "Файл указан в argv; прочитан без выполнения, hash приведён в sources."
+        },
+        {
+          "file": "absent.test.js",
+          "basis": "explicit",
+          "kind": "unresolved",
+          "detail": "ENOENT: no such file or directory, lstat 'C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\tools\\cloud-checks-audit\\fixtures\\absent.test.js'"
+        }
+      ],
+      "issues": [
+        {
+          "file": "absent.test.js",
+          "code": "ENOENT",
+          "detail": "ENOENT: no such file or directory, lstat 'C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\tools\\cloud-checks-audit\\fixtures\\absent.test.js'"
+        }
+      ],
+      "observationCount": 0,
+      "observations": []
+    },
+    {
+      "check": "native-ae",
+      "category": "native-ae-evidence-required",
+      "categoryLabel": "необходима отдельная проверка в настоящем AE",
+      "basis": "explicit",
+      "reason": "В argv явно указан executable Adobe AE; фактическое поведение требует отдельного native evidence.",
+      "command": {
+        "argv": [
+          "AfterFX.exe",
+          "-r",
+          "executor.jsx"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "integration"
+      },
+      "dependencies": [
+        {
+          "path": "executor.jsx",
+          "files": [
+            "executor.jsx"
+          ]
+        }
+      ],
+      "projections": [],
+      "entrypoint": null,
+      "reachableFiles": [],
+      "importEdgeCount": 0,
+      "nativeEvidence": {
+        "status": "separate-required",
+        "reason": "Явный AE executable в команде."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/native-ae",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/native-ae",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "executor.jsx",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "executor.jsx",
+          "scope": "declared-only",
+          "kind": "ae-hint",
+          "basis": "heuristic",
+          "line": 2,
+          "detail": "Упоминание AE/JSX допускает VM/mock и не доказывает необходимость AE."
+        }
+      ],
+      "issues": [],
+      "observationCount": 1,
+      "observations": [
+        {
+          "file": "executor.jsx",
+          "scope": "declared-only",
+          "kind": "ae-hint",
+          "basis": "heuristic",
+          "line": 2,
+          "detail": "Упоминание AE/JSX допускает VM/mock и не доказывает необходимость AE."
+        }
+      ]
+    },
+    {
+      "check": "portable",
+      "category": "cloud-candidate",
+      "categoryLabel": "кандидат для облачной проверки",
+      "basis": "heuristic",
+      "reason": "Поддержанный Node --test argv и literal imports исследованы; явных препятствий в этом ограниченном обзоре не найдено. Нужен отдельный разрешённый запуск.",
+      "command": {
+        "argv": [
+          "node",
+          "--test",
+          "--test-name-pattern=portable",
+          "portable.test.js"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "component"
+      },
+      "dependencies": [
+        {
+          "path": "portable.test.js",
+          "files": [
+            "portable.test.js"
+          ]
+        },
+        {
+          "path": "helper.cjs",
+          "files": [
+            "helper.cjs"
+          ]
+        }
+      ],
+      "projections": [],
+      "entrypoint": "portable.test.js",
+      "reachableFiles": [
+        "helper.cjs",
+        "portable.test.js"
+      ],
+      "importEdgeCount": 3,
+      "nativeEvidence": {
+        "status": "not-established",
+        "reason": "Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/portable",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/portable",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "portable.test.js",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "helper.cjs",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "portable.test.js",
+          "basis": "explicit",
+          "kind": "entrypoint",
+          "detail": "Файл указан в argv; прочитан без выполнения, hash приведён в sources."
+        }
+      ],
+      "issues": [],
+      "observationCount": 0,
+      "observations": []
+    },
+    {
+      "check": "unknown",
+      "category": "insufficient-information",
+      "categoryLabel": "недостаточно сведений",
+      "basis": "heuristic",
+      "reason": "Не установлена среда всей группы: неразрешённых зависимостей/команд: 1; Подмены, достижимость и выбранные ветки не доказаны.",
+      "command": {
+        "argv": [
+          "node",
+          "--test",
+          "--test-name-pattern=unknown",
+          "unknown.test.js"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "component"
+      },
+      "dependencies": [
+        {
+          "path": "unknown.test.js",
+          "files": [
+            "unknown.test.js"
+          ]
+        }
+      ],
+      "projections": [],
+      "entrypoint": "unknown.test.js",
+      "reachableFiles": [
+        "unknown.test.js"
+      ],
+      "importEdgeCount": 1,
+      "nativeEvidence": {
+        "status": "not-established",
+        "reason": "Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/unknown",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/unknown",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "unknown.test.js",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "unknown.test.js",
+          "basis": "explicit",
+          "kind": "entrypoint",
+          "detail": "Файл указан в argv; прочитан без выполнения, hash приведён в sources."
+        },
+        {
+          "file": "unknown.test.js",
+          "basis": "explicit",
+          "kind": "unresolved",
+          "detail": "Не исследован внешний import: unresolved-audit-fixture-package"
+        }
+      ],
+      "issues": [
+        {
+          "file": "unknown.test.js",
+          "code": "external-import",
+          "detail": "Не исследован внешний import: unresolved-audit-fixture-package"
+        }
+      ],
+      "observationCount": 0,
+      "observations": []
+    },
+    {
+      "check": "unsupported-command",
+      "category": "insufficient-information",
+      "categoryLabel": "недостаточно сведений",
+      "basis": "heuristic",
+      "reason": "Не установлена среда всей группы: неразрешённых зависимостей/команд: 1; Подмены, достижимость и выбранные ветки не доказаны.",
+      "command": {
+        "argv": [
+          "npm",
+          "test"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "integration"
+      },
+      "dependencies": [
+        {
+          "path": "portable.test.js",
+          "files": [
+            "portable.test.js"
+          ]
+        }
+      ],
+      "projections": [],
+      "entrypoint": null,
+      "reachableFiles": [],
+      "importEdgeCount": 0,
+      "nativeEvidence": {
+        "status": "not-established",
+        "reason": "Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/unsupported-command",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/unsupported-command",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "portable.test.js",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "validation-map.json",
+          "basis": "explicit",
+          "kind": "unresolved",
+          "detail": "Argv не входит в поддержанную форму Node --test; команда не раскрывалась."
+        }
+      ],
+      "issues": [
+        {
+          "file": "validation-map.json",
+          "code": "unsupported-command",
+          "detail": "Argv не входит в поддержанную форму Node --test; команда не раскрывалась."
+        }
+      ],
+      "observationCount": 0,
+      "observations": []
+    },
+    {
+      "check": "untrusted-source",
+      "category": "cloud-candidate",
+      "categoryLabel": "кандидат для облачной проверки",
+      "basis": "heuristic",
+      "reason": "Поддержанный Node --test argv и literal imports исследованы; явных препятствий в этом ограниченном обзоре не найдено. Нужен отдельный разрешённый запуск.",
+      "command": {
+        "argv": [
+          "node",
+          "--test",
+          "--test-name-pattern=untrusted",
+          "untrusted.test.js"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "component"
+      },
+      "dependencies": [
+        {
+          "path": "untrusted.test.js",
+          "files": [
+            "untrusted.test.js"
+          ]
+        }
+      ],
+      "projections": [],
+      "entrypoint": "untrusted.test.js",
+      "reachableFiles": [
+        "untrusted.test.js"
+      ],
+      "importEdgeCount": 0,
+      "nativeEvidence": {
+        "status": "not-established",
+        "reason": "Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/untrusted-source",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/untrusted-source",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "untrusted.test.js",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "untrusted.test.js",
+          "basis": "explicit",
+          "kind": "entrypoint",
+          "detail": "Файл указан в argv; прочитан без выполнения, hash приведён в sources."
+        }
+      ],
+      "issues": [],
+      "observationCount": 0,
+      "observations": []
+    },
+    {
+      "check": "vm-mock",
+      "category": "insufficient-information",
+      "categoryLabel": "недостаточно сведений",
+      "basis": "heuristic",
+      "reason": "Не установлена среда всей группы: упоминания AE/JSX, VM/mock, встроенные модули с внешними возможностями, упоминания Windows. Подмены, достижимость и выбранные ветки не доказаны.",
+      "command": {
+        "argv": [
+          "node",
+          "--test",
+          "--test-name-pattern=mock",
+          "vm-mock.test.js"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "component"
+      },
+      "dependencies": [
+        {
+          "path": "vm-mock.test.js",
+          "files": [
+            "vm-mock.test.js"
+          ]
+        },
+        {
+          "path": "executor.jsx",
+          "files": [
+            "executor.jsx"
+          ]
+        }
+      ],
+      "projections": [],
+      "entrypoint": "vm-mock.test.js",
+      "reachableFiles": [
+        "vm-mock.test.js"
+      ],
+      "importEdgeCount": 5,
+      "nativeEvidence": {
+        "status": "not-established",
+        "reason": "Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/vm-mock",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/vm-mock",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "vm-mock.test.js",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "executor.jsx",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "vm-mock.test.js",
+          "basis": "explicit",
+          "kind": "entrypoint",
+          "detail": "Файл указан в argv; прочитан без выполнения, hash приведён в sources."
+        },
+        {
+          "file": "vm-mock.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "capability",
+          "basis": "heuristic",
+          "line": 2,
+          "detail": "Builtin vm требует отдельного разбора среды/подмен."
+        },
+        {
+          "file": "vm-mock.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "simulation",
+          "basis": "heuristic",
+          "line": 9,
+          "detail": "Найден признак mock/VM/fixture; полнота подмен не доказана."
+        },
+        {
+          "file": "vm-mock.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "windows-hint",
+          "basis": "heuristic",
+          "line": 7,
+          "detail": "Упоминание Windows само по себе не доказывает зависимость проверки."
+        },
+        {
+          "file": "vm-mock.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "ae-hint",
+          "basis": "heuristic",
+          "line": 10,
+          "detail": "Упоминание AE/JSX допускает VM/mock и не доказывает необходимость AE."
+        }
+      ],
+      "issues": [],
+      "observationCount": 5,
+      "observations": [
+        {
+          "file": "vm-mock.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "capability",
+          "basis": "heuristic",
+          "line": 2,
+          "detail": "Builtin vm требует отдельного разбора среды/подмен."
+        },
+        {
+          "file": "vm-mock.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "simulation",
+          "basis": "heuristic",
+          "line": 9,
+          "detail": "Найден признак mock/VM/fixture; полнота подмен не доказана."
+        },
+        {
+          "file": "vm-mock.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "windows-hint",
+          "basis": "heuristic",
+          "line": 7,
+          "detail": "Упоминание Windows само по себе не доказывает зависимость проверки."
+        },
+        {
+          "file": "vm-mock.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "ae-hint",
+          "basis": "heuristic",
+          "line": 10,
+          "detail": "Упоминание AE/JSX допускает VM/mock и не доказывает необходимость AE."
+        }
+      ]
+    },
+    {
+      "check": "windows",
+      "category": "platform-dependency",
+      "categoryLabel": "обнаруженная платформенная зависимость",
+      "basis": "explicit",
+      "reason": "В argv явно указан Windows executable powershell.exe.",
+      "command": {
+        "argv": [
+          "powershell.exe",
+          "-NoProfile",
+          "-File",
+          "probe.ps1"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "integration"
+      },
+      "dependencies": [
+        {
+          "path": "probe.ps1",
+          "files": [
+            "probe.ps1"
+          ]
+        }
+      ],
+      "projections": [],
+      "entrypoint": null,
+      "reachableFiles": [],
+      "importEdgeCount": 0,
+      "nativeEvidence": {
+        "status": "not-established",
+        "reason": "Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/windows",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/windows",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "probe.ps1",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        }
+      ],
+      "issues": [],
+      "observationCount": 0,
+      "observations": []
+    },
+    {
+      "check": "windows-mentioned",
+      "category": "insufficient-information",
+      "categoryLabel": "недостаточно сведений",
+      "basis": "heuristic",
+      "reason": "Не установлена среда всей группы: упоминания Windows. Подмены, достижимость и выбранные ветки не доказаны.",
+      "command": {
+        "argv": [
+          "node",
+          "--test",
+          "--test-name-pattern=portable",
+          "windows-mentioned.test.js"
+        ],
+        "source": "map",
+        "executed": false
+      },
+      "policy": {
+        "kind": "component"
+      },
+      "dependencies": [
+        {
+          "path": "windows-mentioned.test.js",
+          "files": [
+            "windows-mentioned.test.js"
+          ]
+        }
+      ],
+      "projections": [],
+      "entrypoint": "windows-mentioned.test.js",
+      "reachableFiles": [
+        "windows-mentioned.test.js"
+      ],
+      "importEdgeCount": 2,
+      "nativeEvidence": {
+        "status": "not-established",
+        "reason": "Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof."
+      },
+      "evidence": [
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkDependencies/windows-mentioned",
+          "basis": "explicit",
+          "kind": "declaration",
+          "detail": "Объявленные зависимости; достижимость не следует из карты."
+        },
+        {
+          "file": "validation-map.json",
+          "pointer": "/checkCommands/windows-mentioned",
+          "basis": "explicit",
+          "kind": "command",
+          "detail": "Команда прочитана как данные."
+        },
+        {
+          "file": "windows-mentioned.test.js",
+          "basis": "explicit",
+          "kind": "declared-file",
+          "detail": "Объявленный файл прочитан как данные; вызов не установлен."
+        },
+        {
+          "file": "windows-mentioned.test.js",
+          "basis": "explicit",
+          "kind": "entrypoint",
+          "detail": "Файл указан в argv; прочитан без выполнения, hash приведён в sources."
+        },
+        {
+          "file": "windows-mentioned.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "windows-hint",
+          "basis": "heuristic",
+          "line": 2,
+          "detail": "Упоминание Windows само по себе не доказывает зависимость проверки."
+        }
+      ],
+      "issues": [],
+      "observationCount": 1,
+      "observations": [
+        {
+          "file": "windows-mentioned.test.js",
+          "scope": "entry-or-literal-import",
+          "kind": "windows-hint",
+          "basis": "heuristic",
+          "line": 2,
+          "detail": "Упоминание Windows само по себе не доказывает зависимость проверки."
+        }
+      ]
+    }
+  ],
+  "imports": [
+    {
+      "from": "portable.test.js",
+      "specifier": "node:test",
+      "line": 2,
+      "kind": "builtin"
+    },
+    {
+      "from": "portable.test.js",
+      "specifier": "node:assert/strict",
+      "line": 3,
+      "kind": "builtin"
+    },
+    {
+      "from": "portable.test.js",
+      "specifier": "./helper.cjs",
+      "line": 4,
+      "kind": "local",
+      "to": "helper.cjs"
+    },
+    {
+      "from": "unknown.test.js",
+      "specifier": "unresolved-audit-fixture-package",
+      "line": 2,
+      "kind": "external"
+    },
+    {
+      "from": "vm-mock.test.js",
+      "specifier": "node:vm",
+      "line": 2,
+      "kind": "builtin"
+    },
+    {
+      "from": "vm-mock.test.js",
+      "specifier": "node:fs",
+      "line": 3,
+      "kind": "builtin"
+    },
+    {
+      "from": "vm-mock.test.js",
+      "specifier": "node:path",
+      "line": 4,
+      "kind": "builtin"
+    },
+    {
+      "from": "vm-mock.test.js",
+      "specifier": "node:test",
+      "line": 5,
+      "kind": "builtin"
+    },
+    {
+      "from": "vm-mock.test.js",
+      "specifier": "node:assert/strict",
+      "line": 6,
+      "kind": "builtin"
+    },
+    {
+      "from": "windows-mentioned.test.js",
+      "specifier": "node:test",
+      "line": 3,
+      "kind": "builtin"
+    },
+    {
+      "from": "windows-mentioned.test.js",
+      "specifier": "node:assert/strict",
+      "line": 4,
+      "kind": "builtin"
+    }
+  ],
+  "sources": [
+    {
+      "file": "dynamic.test.js",
+      "sha256": "1d44f6721993940b1ea9c68f2d430710297ab58f8302edde2ca3be73a911d8b5",
+      "bytes": 62,
+      "findings": [
+        {
+          "kind": "dynamic-import",
+          "basis": "heuristic",
+          "line": 3,
+          "detail": "Вычисляемый require не разрешается статически."
+        }
+      ]
+    },
+    {
+      "file": "executor.jsx",
+      "sha256": "d9ba319316826e100824356b261d1277f4d7281fa79f2d8c7e7a9f70e01ee76b",
+      "bytes": 132,
+      "findings": [
+        {
+          "kind": "ae-hint",
+          "basis": "heuristic",
+          "line": 2,
+          "detail": "Упоминание AE/JSX допускает VM/mock и не доказывает необходимость AE."
+        }
+      ]
+    },
+    {
+      "file": "helper.cjs",
+      "sha256": "32cc464e9ac1aad987d93e9eacaeec13341642a5c9faee0e1c683771e8eb4be5",
+      "bytes": 50,
+      "findings": []
+    },
+    {
+      "file": "portable.test.js",
+      "sha256": "04c43538f3755511e06ad036fee8798308c8107783e4e2ae4e5c60a82e5321f1",
+      "bytes": 189,
+      "findings": []
+    },
+    {
+      "file": "probe.ps1",
+      "sha256": "db09358b8694ea61a3873e4f196f1cdd4dfcd1215531b77397f9fa933741fe6b",
+      "bytes": 148,
+      "findings": []
+    },
+    {
+      "file": "unknown.test.js",
+      "sha256": "c9566cca1f6e96da8e7dc38aea6168fc34aec9c08796e6afb8adb0b5b243598a",
+      "bytes": 59,
+      "findings": []
+    },
+    {
+      "file": "untrusted.test.js",
+      "sha256": "901166ca772ae6a90167969db3dbe5f01e8b09afd5f90f8e4195b3d5f8419f2c",
+      "bytes": 220,
+      "findings": []
+    },
+    {
+      "file": "validation-map.json",
+      "sha256": "a7a9bcdd46cca7fa91a6999c5781f339543e5192b317c21a548ec34b8e7b7f60",
+      "bytes": 1923,
+      "findings": []
+    },
+    {
+      "file": "vm-mock.test.js",
+      "sha256": "4cde131292ab3c81792d1d3ba761caa8e19ce4e4eec1e199ec3b0a4bea57c1ab",
+      "bytes": 560,
+      "findings": [
+        {
+          "kind": "simulation",
+          "basis": "heuristic",
+          "line": 9,
+          "detail": "Найден признак mock/VM/fixture; полнота подмен не доказана."
+        },
+        {
+          "kind": "capability",
+          "basis": "heuristic",
+          "line": 2,
+          "detail": "Builtin vm требует отдельного разбора среды/подмен."
+        },
+        {
+          "kind": "windows-hint",
+          "basis": "heuristic",
+          "line": 7,
+          "detail": "Упоминание Windows само по себе не доказывает зависимость проверки."
+        },
+        {
+          "kind": "ae-hint",
+          "basis": "heuristic",
+          "line": 10,
+          "detail": "Упоминание AE/JSX допускает VM/mock и не доказывает необходимость AE."
+        }
+      ]
+    },
+    {
+      "file": "windows-mentioned.test.js",
+      "sha256": "d40b7aa5ebc72ced4a6c3fec79b7decff70d839c89fed832a0dc0bc4bfc64bba",
+      "bytes": 283,
+      "findings": [
+        {
+          "kind": "windows-hint",
+          "basis": "heuristic",
+          "line": 2,
+          "detail": "Упоминание Windows само по себе не доказывает зависимость проверки."
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Категория относится ко всей группе файла; --test-name-pattern не вычисляется, отдельные выбранные тесты и ветки не выделяются.",
+    "Lexer не является JS parser. Неясный regexp, шаблоны, dynamic loading, capability builtins и host conditions оставляют неопределённость.",
+    "В observations выбран один пример каждого вида признаков; все признаки доступны в sources[].findings, edges — в imports.",
+    "Declared-only файлы не доказывают достижимость; literal imports тоже не доказывают фактический вызов.",
+    "Чтение файлов как данных, generated assets, package exports, loaders и targets процессов полностью не восстанавливаются.",
+    "Хеши относятся к прочитанным bytes рабочего дерева; HEAD только метка. Атомарный snapshot при параллельных изменениях не гарантируется.",
+    "Windows-only ветки, реальные AE/CEP/native delivery/recovery и двухмашинный P1–P8 требуют отдельного evidence."
+  ]
+}

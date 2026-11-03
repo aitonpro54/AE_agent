@@ -1,0 +1,66 @@
+Аудит пригодности проверок к облачному запуску
+Только статический аудит: команды не исполнялись, runtime не импортировался. Это не результат тестов и не сертификат переносимости.
+Input: validation-map.json (SHA-256 a7a9bcdd46cca7fa91a6999c5781f339543e5192b317c21a548ec34b8e7b7f60)
+Checkout HEAD: не установлен; ветка: не установлена
+Среда: win32/x64; Node v24.15.0
+кандидат для облачной проверки: 2
+обнаруженная платформенная зависимость: 1
+необходима отдельная проверка в настоящем AE: 1
+недостаточно сведений: 7
+
+dynamic — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: вычисляемые imports. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: validation-map.json#/checkDependencies/dynamic, validation-map.json#/checkCommands/dynamic, dynamic.test.js, dynamic.test.js:3
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+missing-dependency — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: неразрешённых зависимостей/команд: 2; Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: validation-map.json#/checkDependencies/missing-dependency, validation-map.json#/checkCommands/missing-dependency, absent.cjs
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+missing-entry — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: неразрешённых зависимостей/команд: 1; Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: validation-map.json#/checkDependencies/missing-entry, validation-map.json#/checkCommands/missing-entry, helper.cjs, absent.test.js
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+native-ae — необходима отдельная проверка в настоящем AE [явные сведения]
+  Причина: В argv явно указан executable Adobe AE; фактическое поведение требует отдельного native evidence.
+  Основания: validation-map.json#/checkDependencies/native-ae, validation-map.json#/checkCommands/native-ae, executor.jsx, executor.jsx:2
+  AE evidence: Явный AE executable в команде.
+portable — кандидат для облачной проверки [эвристика]
+  Причина: Поддержанный Node --test argv и literal imports исследованы; явных препятствий в этом ограниченном обзоре не найдено. Нужен отдельный разрешённый запуск.
+  Основания: validation-map.json#/checkDependencies/portable, validation-map.json#/checkCommands/portable, portable.test.js, helper.cjs
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+unknown — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: неразрешённых зависимостей/команд: 1; Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: validation-map.json#/checkDependencies/unknown, validation-map.json#/checkCommands/unknown, unknown.test.js
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+unsupported-command — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: неразрешённых зависимостей/команд: 1; Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: validation-map.json#/checkDependencies/unsupported-command, validation-map.json#/checkCommands/unsupported-command, portable.test.js, validation-map.json
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+untrusted-source — кандидат для облачной проверки [эвристика]
+  Причина: Поддержанный Node --test argv и literal imports исследованы; явных препятствий в этом ограниченном обзоре не найдено. Нужен отдельный разрешённый запуск.
+  Основания: validation-map.json#/checkDependencies/untrusted-source, validation-map.json#/checkCommands/untrusted-source, untrusted.test.js
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+vm-mock — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, VM/mock, встроенные модули с внешними возможностями, упоминания Windows. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: validation-map.json#/checkDependencies/vm-mock, validation-map.json#/checkCommands/vm-mock, vm-mock.test.js, executor.jsx, vm-mock.test.js:2, vm-mock.test.js:9, vm-mock.test.js:7, vm-mock.test.js:10
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+windows — обнаруженная платформенная зависимость [явные сведения]
+  Причина: В argv явно указан Windows executable powershell.exe.
+  Основания: validation-map.json#/checkDependencies/windows, validation-map.json#/checkCommands/windows, probe.ps1
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+windows-mentioned — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания Windows. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: validation-map.json#/checkDependencies/windows-mentioned, validation-map.json#/checkCommands/windows-mentioned, windows-mentioned.test.js, windows-mentioned.test.js:2
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+
+Ограничения:
+- Категория относится ко всей группе файла; --test-name-pattern не вычисляется, отдельные выбранные тесты и ветки не выделяются.
+- Lexer не является JS parser. Неясный regexp, шаблоны, dynamic loading, capability builtins и host conditions оставляют неопределённость.
+- В observations выбран один пример каждого вида признаков; все признаки доступны в sources[].findings, edges — в imports.
+- Declared-only файлы не доказывают достижимость; literal imports тоже не доказывают фактический вызов.
+- Чтение файлов как данных, generated assets, package exports, loaders и targets процессов полностью не восстанавливаются.
+- Хеши относятся к прочитанным bytes рабочего дерева; HEAD только метка. Атомарный snapshot при параллельных изменениях не гарантируется.
+- Windows-only ветки, реальные AE/CEP/native delivery/recovery и двухмашинный P1–P8 требуют отдельного evidence.

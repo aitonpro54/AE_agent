@@ -1,5 +1,28 @@
 # Core4 — создание устанавливаемого runtime на MSI
 
+## 3 ноября: три облачных offline-инструмента перенесены на MSI
+
+### Progress
+
+Приняты package-location checker, cloud-checks-audit и cloud-result-preflight
+из трёх завершённых облачных задач поверх локальной базы `db68140380f52fc630078317512e5ae1df3c273c`.
+Исходники, инструкции и заново созданные Windows отчёты находятся в текущем
+проекте. [Focused milestone](core-cloud-intake-20261103.md) содержит source
+chat/commit provenance, состав и ограничения.
+
+### Decision Log
+
+Перенос добавочный: более новая локальная история и production source сохранены.
+Preflight получил подтверждённый Windows-origin fix с regression. Исходные Linux
+отчёты не объявляются локальным evidence; runtime/установка не обновлялись.
+
+### Validation
+
+Windows/Node24.15/Git2.54: package-location 3 PASS, audit 15 PASS, preflight
+25 PASS/1 POSIX-only SKIP, scoped Core 9 PASS; syntax14 и boundaries55 PASS.
+214 source hashes текущего audit сверены; исходные tracked bytes, кроме этой
+записи плана, unchanged. P1–P8 и full release остаются открытыми.
+
 **Приоритет 30 октября:** [устойчивый Core/CEP lifecycle](core-cep-lifecycle-20261030.md)
 по прямому поручению пользователя. Сначала runtime ownership/startup/recovery,
 затем новые продукты. Titles сохранён для сквозной проверки; installed manual3f92

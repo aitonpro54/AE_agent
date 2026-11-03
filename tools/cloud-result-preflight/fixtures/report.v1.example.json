@@ -1,0 +1,183 @@
+{
+  "reportVersion": 1,
+  "toolVersion": "1.0.0",
+  "generatedAt": "2026-11-03T16:56:55.939Z",
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "node": "v24.15.0",
+    "git": "git version 2.54.0.windows.1"
+  },
+  "decision": "manual_review_required",
+  "integrationAllowed": false,
+  "checks": [
+    {
+      "id": "manifest",
+      "status": "passed",
+      "message": "Манифест соответствует формату v1; это заявление отправителя, без доказательства подлинности."
+    },
+    {
+      "id": "bundle_sha256",
+      "status": "passed",
+      "message": "SHA-256 совпадает с отдельно переданным значением.",
+      "actualSha256": "004af99606c2240d574da751cb4091efcb68eb2c4ae6bb36296a5ce460b6df47"
+    },
+    {
+      "id": "bundle_header",
+      "status": "passed",
+      "message": "Прочитан заголовок bundle v2/v3."
+    },
+    {
+      "id": "bundle_pack_checksum",
+      "status": "passed",
+      "message": "Контрольная сумма потока PACK совпадает; объекты не распаковывались."
+    },
+    {
+      "id": "object_format",
+      "status": "passed",
+      "message": "Формат SHA манифеста сопоставлен с bundle.",
+      "expected": "sha1",
+      "actual": "sha1"
+    },
+    {
+      "id": "target_repository",
+      "status": "passed",
+      "message": "Указанный путь является корнем рабочего репозитория."
+    },
+    {
+      "id": "target_object_format",
+      "status": "passed",
+      "message": "Формат объектов цели сопоставлен с bundle отдельно от git bundle verify.",
+      "expected": "sha1",
+      "actual": "sha1"
+    },
+    {
+      "id": "repository_identity",
+      "status": "passed",
+      "message": "Identity сопоставлена с единственным прямым local origin; это локальный locator, не криптографическая identity."
+    },
+    {
+      "id": "origin",
+      "status": "passed",
+      "message": "Сопоставлены host/port/path origin без credentials и различия HTTPS/SSH."
+    },
+    {
+      "id": "target_branch",
+      "status": "passed",
+      "message": "Текущая ветка сопоставлена с sourceBranch."
+    },
+    {
+      "id": "working_tree",
+      "status": "passed",
+      "message": "Рабочее дерево и индекс чисты в проверенной области."
+    },
+    {
+      "id": "base_commit",
+      "status": "passed",
+      "message": "Base commit доступен в целевом репозитории."
+    },
+    {
+      "id": "head_vs_base",
+      "status": "passed",
+      "message": "HEAD точно совпадает с заявленной базой."
+    },
+    {
+      "id": "prerequisites",
+      "status": "passed",
+      "message": "Все заявленные prerequisites доступны как commits.",
+      "required": [
+        "6b504532366bb4c094caa5db5027abcb29ca6d1e"
+      ],
+      "missing": []
+    },
+    {
+      "id": "git_bundle_verify",
+      "status": "passed",
+      "message": "Штатный git bundle verify принял bundle относительно целевого репозитория.",
+      "gitExitCode": 0
+    },
+    {
+      "id": "git_bundle_list_heads",
+      "status": "passed",
+      "message": "Штатный git bundle list-heads выполнен.",
+      "gitExitCode": 0
+    },
+    {
+      "id": "bundle_refs",
+      "status": "passed",
+      "message": "Полный набор refs bundle точно совпадает с манифестом."
+    },
+    {
+      "id": "result_commit",
+      "status": "passed",
+      "message": "resultCommit сопоставлен с SHA вершины refs/heads в заголовке bundle; это не проверка содержимого commit."
+    },
+    {
+      "id": "target_observation_stability",
+      "status": "passed",
+      "message": "Наблюдаемые branch/HEAD/refs/origin/config layers/status до и после совпадают; это не полный снимок файлов."
+    },
+    {
+      "id": "bundle_stability",
+      "status": "passed",
+      "message": "Метаданные bundle сопоставлены до и после проверки. Это не блокировка от параллельной записи."
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "authenticity",
+      "status": "unverified",
+      "message": "Манифест и совпадение хеша не удостоверяют автора. Доверие к отдельно полученному SHA-256 проверяется вне инструмента."
+    },
+    {
+      "id": "ae_compatibility",
+      "status": "unverified",
+      "message": "Качество кода, runtime state, credentials, сборка, AE/CEP/MCP и совместимость установки не проверялись."
+    },
+    {
+      "id": "pack_objects",
+      "status": "unverified",
+      "message": "Контрольная сумма PACK не доказывает корректность всех объектов. Распаковка, fsck и импорт не выполнялись."
+    },
+    {
+      "id": "ignored_files",
+      "status": "unverified",
+      "message": "Игнорируемые файлы и содержимое вложенных репозиториев не проверялись."
+    },
+    {
+      "id": "base_to_result",
+      "status": "unverified",
+      "message": "Связь base → result и тип объекта result не подтверждены: нужны локальные commits и полная история. Bundle не импортировался."
+    }
+  ],
+  "nextSteps": [
+    "Проверить доверенный источник отдельно переданного SHA-256, diff/result commit, связь с базой и релевантные тесты в отдельно разрешённом процессе.",
+    "Выбрать условия интеграции вручную с учётом локального HEAD/ветки/рабочего дерева; этот отчёт не разрешает применение."
+  ],
+  "inputs": {
+    "bundle": "<temporary fixture>\\входящий результат.bundle",
+    "manifest": "<temporary fixture>\\манифест.json",
+    "target": "<temporary fixture>\\локальный AE Core",
+    "expectedSha256": "004af99606c2240d574da751cb4091efcb68eb2c4ae6bb36296a5ce460b6df47"
+  },
+  "claims": {
+    "repositoryIdentity": "github.com/aitonpro54/AE_agent",
+    "sourceBranch": "AE-Agent-Core-4.0.1",
+    "baseCommit": "6b504532366bb4c094caa5db5027abcb29ca6d1e",
+    "resultCommit": "da3b68e34ed768a7f0df882b38c097fda8855b69",
+    "refs": [
+      {
+        "name": "refs/heads/AE-Agent-Core-4.0.1",
+        "commit": "da3b68e34ed768a7f0df882b38c097fda8855b69"
+      }
+    ]
+  },
+  "target": {
+    "repositoryIdentity": "github.com/aitonpro54/AE_agent",
+    "branch": "AE-Agent-Core-4.0.1",
+    "head": "6b504532366bb4c094caa5db5027abcb29ca6d1e"
+  },
+  "summary": "Предварительные проверки пройдены. Требуется ручное рассмотрение кода и условий интеграции; автоматическое применение не разрешено.",
+  "exitCode": 0,
+  "exampleOnly": true
+}

@@ -1,0 +1,405 @@
+Аудит пригодности проверок к облачному запуску
+Только статический аудит: команды не исполнялись, runtime не импортировался. Это не результат тестов и не сертификат переносимости.
+Input: config/validation-map.json (SHA-256 fc5c8e166f03ab5d3797796cfe86fb0a7b7d514dd7e2fda3a29701986d897a18)
+Checkout HEAD: db68140380f52fc630078317512e5ae1df3c273c; ветка: AE-Agent-Core-4.0.1
+Среда: win32/x64; Node v24.15.0
+кандидат для облачной проверки: 3
+обнаруженная платформенная зависимость: 0
+необходима отдельная проверка в настоящем AE: 0
+недостаточно сведений: 68
+
+artifact-boundaries — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/artifact-boundaries, tools/validate-diff.js, tools/check-boundaries.js, tools/seal.js, test/core4.test.js, tools/adopt-host.js:84, test/core4.test.js:224, test/core4.test.js:6, core/worker-client.js:13, test/core4.test.js:17
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+audit-repairs — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/audit-repairs, config/validation-map.json#/checkCommands/audit-repairs, core/artifact.json, core/artifacts.js, test/audit-repairs.test.js, worker.js:17, test/audit-repairs.test.js:240, test/audit-repairs.test.js:8, core/worker-client.js:13, test/audit-repairs.test.js:39
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+catalog-discovery — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/catalog-discovery, tools/validate-diff.js, config/catalog.json, core/artifacts.js, test/core4.test.js, test/core4.test.js:224, test/core4.test.js:6, core/worker-client.js:13, test/core4.test.js:17
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+cep-transport — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/cep-transport, config/validation-map.json#/checkCommands/cep-transport, integrations/cep/artifact.json, integrations/cep/completion-store.js, test/integration/cep-transport.test.js, tools/adopt-host.js:84, test/integration/cep-transport.test.js:39, test/integration/cep-transport.test.js:7, core/worker-client.js:13, test/fixtures/ae.js:50
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+client-entry — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, данные/ветки среды, возможные внешние процессы, встроенные модули с внешними возможностями. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/client-entry, config/validation-map.json#/checkCommands/client-entry, runtime/client-entry.js, runtime/client-stdio.js, test/client-entry.test.js, test/client-entry.test.js:82, test/client-entry.test.js:38, test/client-entry.test.js:8
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+client-ipc — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: данные/ветки среды, встроенные модули с внешними возможностями, упоминания Windows. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/client-ipc, config/validation-map.json#/checkCommands/client-ipc, runtime/client-ipc.js, test/client-ipc.test.js, test/client-ipc.test.js:5, test/client-ipc.test.js:20
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+client-launcher — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: данные/ветки среды, возможные внешние процессы, встроенные модули с внешними возможностями, упоминания Windows. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/client-launcher, config/validation-map.json#/checkCommands/client-launcher, runtime/client-entry.js, runtime/client-ipc.js, test/client-launcher.test.js, test/client-launcher.test.js:3, test/client-launcher.test.js:100, test/client-launcher.test.js:109, test/client-launcher.test.js:5
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+controller-lease — кандидат для облачной проверки [эвристика]
+  Причина: Поддержанный Node --test argv и literal imports исследованы; явных препятствий в этом ограниченном обзоре не найдено. Нужен отдельный разрешённый запуск.
+  Основания: config/validation-map.json#/checkDependencies/controller-lease, config/validation-map.json#/checkCommands/controller-lease, runtime/controller-lease.js, test/controller-lease.test.js
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+controller-transfer — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: данные/ветки среды, встроенные модули с внешними возможностями, упоминания Windows. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/controller-transfer, config/validation-map.json#/checkCommands/controller-transfer, runtime/controller-lease.js, runtime/attachment-owner.js, test/controller-transfer-ipc.test.js, runtime/client-ipc.js:2, test/controller-transfer-ipc.test.js:20
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+core-admission — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/core-admission, tools/validate-diff.js, core/artifact.json, core/artifacts.js, test/core4.test.js, tools/adopt-host.js:84, test/core4.test.js:224, test/core4.test.js:6, core/worker-client.js:13, test/core4.test.js:17
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+core-control — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/core-control, tools/validate-diff.js, core/artifact.json, core/artifacts.js, test/core4.test.js, tools/adopt-host.js:84, test/core4.test.js:224, test/core4.test.js:6, core/worker-client.js:13, test/core4.test.js:17
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+documentation — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/documentation, tools/validate-diff.js, README.md, test/core4.test.js, test/core4.test.js:224, test/core4.test.js:6, core/worker-client.js:13, test/core4.test.js:17
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+endpoint-observation — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: VM/mock, возможные внешние процессы, данные/ветки среды, встроенные модули с внешними возможностями. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/endpoint-observation, config/validation-map.json#/checkCommands/endpoint-observation, tools/check-core4-endpoint.js, test/endpoint-observation.test.js, test/endpoint-observation.test.js:115, test/endpoint-observation.test.js:7, test/endpoint-observation.test.js:116, test/endpoint-observation.test.js:30
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+exact-f548-transition — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/exact-f548-transition, config/validation-map.json#/checkCommands/exact-f548-transition, runtime/attachment-owner.js, runtime/client-entry.js, test/exact-f548-transition.test.js, test/fixtures/disposition-child.js:5, cep/js/poll-dispatcher.js:24, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+human-window — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/human-window, config/validation-map.json#/checkCommands/human-window, test/human-window.test.js, test/fixtures/human-window-stdio.js, worker.js:17, cep/js/poll-dispatcher.js:24, test/human-window.test.js:11, test/human-window.test.js:5, core/worker-client.js:13
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+installable-runtime — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/installable-runtime, config/validation-map.json#/checkCommands/installable-runtime, runtime/attachment-owner.js, runtime/client-entry.js, test/installable-runtime.test.js, test/installable-runtime.test.js:266, cep/js/poll-dispatcher.js:24, test/installable-runtime.test.js:230, test/installable-runtime.test.js:7, test/installable-runtime.test.js:248
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+installed-composition — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/installed-composition, config/validation-map.json#/checkCommands/installed-composition, runtime/attachment-owner.js, runtime/client-entry.js, test/installed-composition.test.js, test/fixtures/disposition-child.js:5, cep/js/poll-dispatcher.js:24, test/installed-composition.test.js:29, test/installed-composition.test.js:3, core/worker-client.js:13
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+legacy-owner-migration — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/legacy-owner-migration, config/validation-map.json#/checkCommands/legacy-owner-migration, tools/legacy-owner-migration.js, tools/windows-retained-process.js, test/legacy-owner-migration.test.js, test/legacy-owner-migration.test.js:46, test/legacy-owner-migration.test.js:13, test/legacy-owner-migration.test.js:34, test/legacy-owner-migration.test.js:4, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+lifecycle-simulation — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/lifecycle-simulation, config/validation-map.json#/checkCommands/lifecycle-simulation, core/artifact.json, core/artifacts.js, test/lifecycle-simulation.test.js, test/client-entry.test.js:82, test/client-launcher.test.js:100, test/fixtures/maintenance-finish.js:13, core/worker-client.js:15, core/worker-client.js:2
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+maintenance-finish — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/maintenance-finish, config/validation-map.json#/checkCommands/maintenance-finish, runtime/attachment-owner.js, runtime/client-entry.js, test/maintenance-finish.test.js, test/fixtures/maintenance-finish.js:21, test/fixtures/maintenance-finish.js:13, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+maintenance-finish-operator — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/maintenance-finish-operator, config/validation-map.json#/checkCommands/maintenance-finish-operator, runtime/attachment-owner.js, runtime/client-entry.js, test/maintenance-finish-operator.test.js, test/maintenance-finish-operator.test.js:70, test/maintenance-finish-operator.test.js:25, test/maintenance-finish-operator.test.js:32, test/maintenance-finish-operator.test.js:3, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+maintenance-operator — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/maintenance-operator, config/validation-map.json#/checkCommands/maintenance-operator, runtime/attachment-owner.js, runtime/client-entry.js, test/maintenance-operator.test.js, test/maintenance-operator.test.js:18, cep/js/poll-dispatcher.js:24, test/maintenance-operator.test.js:56, test/maintenance-operator.test.js:5, test/maintenance-operator.test.js:55
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+manual-current-target — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/manual-current-target, config/validation-map.json#/checkCommands/manual-current-target, experiments/manual-current-target/transaction.jsx, test/manual-current-target.test.js, test/fixtures/manual-current-target.js:33, core/worker-client.js:15, test/manual-current-target.test.js:7, core/worker-client.js:13, test/manual-current-target.test.js:77
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+manual-runtime — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/manual-runtime, config/validation-map.json#/checkCommands/manual-runtime, core/artifact.json, core/artifacts.js, test/manual-runtime.test.js, worker.js:17, cep/js/poll-dispatcher.js:24, core/worker-client.js:15, test/manual-runtime.test.js:7, core/worker-client.js:13
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+native-read-capture — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/native-read-capture, config/validation-map.json#/checkCommands/native-read-capture, tools/capture-native-read.js, test/native-read-capture.test.js, test/native-read-capture.test.js:198, worker.js:17, cep/js/poll-dispatcher.js:24, test/native-read-capture.test.js:204, test/native-read-capture.test.js:7
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+native-read-recovery — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/native-read-recovery, config/validation-map.json#/checkCommands/native-read-recovery, test/native-read-recovery.test.js, test/fixtures/native-read-recovery.js, tools/dispose-native-read.js:31, cep/js/poll-dispatcher.js:24, test/native-read-recovery.test.js:25, test/native-read-recovery.test.js:3, test/native-read-recovery.test.js:118
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+owner-attachments — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/owner-attachments, config/validation-map.json#/checkCommands/owner-attachments, runtime/attachment-owner.js, runtime/client-stdio.js, test/owner-attachments.test.js, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13, core/state-lock.js:53, core/artifacts.js:86
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+owner-installation — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/owner-installation, config/validation-map.json#/checkCommands/owner-installation, runtime/attachment-owner.js, runtime/client-entry.js, test/owner-installation.test.js, test/owner-installation.test.js:167, cep/js/poll-dispatcher.js:24, test/owner-installation.test.js:32, test/owner-installation.test.js:4, test/owner-installation.test.js:147
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+owner-ipc-process — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/owner-ipc-process, config/validation-map.json#/checkCommands/owner-ipc-process, runtime/attachment-owner.js, runtime/client-stdio.js, test/owner-ipc-process.test.js, worker.js:17, test/owner-ipc-process.test.js:13, test/owner-ipc-process.test.js:8, test/owner-ipc-process.test.js:40, test/fixtures/ae.js:50
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+owner-lifecycle — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/owner-lifecycle, config/validation-map.json#/checkCommands/owner-lifecycle, runtime/owner-lifecycle.js, runtime/recovery-inspection.js, test/owner-lifecycle.test.js, test/fixtures/owner-lifecycle-fixture.js:34, test/fixtures/owner-lifecycle-fixture.js:25, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+owner-lifecycle-faults — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/owner-lifecycle-faults, config/validation-map.json#/checkCommands/owner-lifecycle-faults, runtime/owner-lifecycle.js, runtime/recovery-inspection.js, test/owner-lifecycle-faults.test.js, test/fixtures/owner-lifecycle-fixture.js:34, test/fixtures/owner-lifecycle-fixture.js:25, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+owner-maintenance — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/owner-maintenance, config/validation-map.json#/checkCommands/owner-maintenance, runtime/attachment-owner.js, runtime/client-entry.js, test/owner-maintenance.test.js, test/owner-maintenance.test.js:24, test/owner-maintenance.test.js:16, core/worker-client.js:15, test/owner-maintenance.test.js:3, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+owner-marker-publication — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/owner-marker-publication, config/validation-map.json#/checkCommands/owner-marker-publication, core/state-lock.js, integrations/cep/completion-store.js, test/owner-marker-publication.test.js, test/owner-marker-publication.test.js:18, test/owner-marker-publication.test.js:15, core/worker-client.js:15, test/owner-marker-publication.test.js:3, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+owner-runtime — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/owner-runtime, config/validation-map.json#/checkCommands/owner-runtime, runtime/attachment-owner.js, runtime/client-entry.js, test/owner-runtime.test.js, test/owner-runtime.test.js:114, cep/js/poll-dispatcher.js:24, test/owner-runtime.test.js:82, test/owner-runtime.test.js:8, core/worker-client.js:13
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+panel-reconnect — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/panel-reconnect, config/validation-map.json#/checkCommands/panel-reconnect, cep/js/panel.js, cep/js/poll-dispatcher.js, test/panel-reconnect.test.js, cep/js/poll-dispatcher.js:24, core/worker-client.js:15, test/panel-reconnect.test.js:6, core/worker-client.js:13, test/panel-reconnect.test.js:38
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+panel-start-over — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, встроенные модули с внешними возможностями, упоминания Windows. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/panel-start-over, config/validation-map.json#/checkCommands/panel-start-over, cep/js/panel.js, cep/js/poll-dispatcher.js, test/panel-start-over.test.js, cep/js/poll-dispatcher.js:24, test/panel-start-over.test.js:4, test/panel-start-over.test.js:19, runtime/stdio-entry.js:62, test/panel-start-over.test.js:20
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+photo-executor-contract — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/photo-executor-contract, config/validation-map.json#/checkCommands/photo-executor-contract, modules/photo-placeholder/artifact.json, modules/photo-placeholder/contract.json, test/modules/photo-placeholder.test.js, worker.js:17, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13, test/fixtures/ae.js:50
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+photo-owner — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/photo-owner, config/validation-map.json#/checkCommands/photo-owner, modules/photo-placeholder/artifact.json, modules/photo-placeholder/contract.json, test/modules/photo-placeholder.test.js, worker.js:17, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13, test/fixtures/ae.js:50
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+protocol-codec — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/protocol-codec, tools/validate-diff.js, protocol/artifact.json, protocol/codec.js, test/core4.test.js, tools/adopt-host.js:84, test/core4.test.js:224, test/core4.test.js:6, core/worker-client.js:13, test/core4.test.js:17
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+readoption-core — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/readoption-core, config/validation-map.json#/checkCommands/readoption-core, tools/stopped-host-readoption.js, tools/stopped-host-readoption-store.js, test/stopped-host-readoption-core.test.js, test/fixtures/owner-lifecycle-fixture.js:34, test/stopped-host-readoption-core.test.js:53, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+readoption-enable — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/readoption-enable, config/validation-map.json#/checkCommands/readoption-enable, tools/stopped-host-readoption.js, tools/stopped-host-readoption-store.js, test/stopped-host-readoption-enable.test.js, test/fixtures/owner-lifecycle-fixture.js:34, test/fixtures/owner-lifecycle-fixture.js:25, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+readoption-probe — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/readoption-probe, config/validation-map.json#/checkCommands/readoption-probe, tools/stopped-host-readoption.js, tools/stopped-host-readoption-store.js, test/stopped-host-readoption-probe.test.js, test/fixtures/owner-lifecycle-fixture.js:34, test/fixtures/owner-lifecycle-fixture.js:25, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+readoption-recovery — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/readoption-recovery, config/validation-map.json#/checkCommands/readoption-recovery, tools/stopped-host-readoption.js, tools/stopped-host-readoption-store.js, test/stopped-host-readoption-recovery.test.js, test/fixtures/owner-lifecycle-fixture.js:34, test/fixtures/owner-lifecycle-fixture.js:25, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+recovery-inspection — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/recovery-inspection, config/validation-map.json#/checkCommands/recovery-inspection, runtime/recovery-inspection.js, runtime/native-read-disposition.js, test/recovery-inspection.test.js, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13, core/state-lock.js:53, core/artifacts.js:86
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+standalone-installer — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/standalone-installer, config/validation-map.json#/checkCommands/standalone-installer, tools/package-standalone-installer.js, tools/finish-owner-maintenance.js, test/standalone-installer.test.js, tools/maintain-owner.js:76, test/standalone-installer.test.js:18, test/standalone-installer.test.js:28, test/standalone-installer.test.js:4
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+start-over-barrier — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/start-over-barrier, config/validation-map.json#/checkCommands/start-over-barrier, runtime/start-over-barrier.js, runtime/start-over-state.js, test/start-over-barrier.test.js, test/fixtures/owner-lifecycle-fixture.js:34, test/fixtures/owner-lifecycle-fixture.js:25, core/worker-client.js:15, test/start-over-barrier.test.js:2, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+start-over-channel — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: непрозрачные выражения/загрузчики, упоминания AE/JSX, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/start-over-channel, config/validation-map.json#/checkCommands/start-over-channel, integrations/cep/http-peer.js, integrations/cep/completion-store.js, test/start-over-channel.test.js, test/start-over-channel.test.js:138, test/start-over-channel.test.js:52, core/worker-client.js:15, test/start-over-channel.test.js:2, core/worker-client.js:13
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+start-over-driver — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/start-over-driver, config/validation-map.json#/checkCommands/start-over-driver, runtime/start-over-driver.js, runtime/start-over-panel-control.js, test/start-over-driver.test.js, test/fixtures/owner-lifecycle-fixture.js:34, test/start-over-driver.test.js:15, core/worker-client.js:15, test/start-over-driver.test.js:4, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+start-over-finisher — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/start-over-finisher, config/validation-map.json#/checkCommands/start-over-finisher, runtime/start-over-finisher.js, runtime/start-over-archive.js, test/start-over-finisher.test.js, test/fixtures/owner-lifecycle-fixture.js:34, test/fixtures/owner-lifecycle-fixture.js:25, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+start-over-inspection — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/start-over-inspection, config/validation-map.json#/checkCommands/start-over-inspection, runtime/start-over-inspection.js, runtime/recovery-inspection.js, test/start-over-inspection.test.js, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13, core/state-lock.js:53, core/artifacts.js:86
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+start-over-operator — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/start-over-operator, config/validation-map.json#/checkCommands/start-over-operator, runtime/attachment-owner.js, runtime/client-entry.js, test/start-over-operator.test.js, tools/maintain-owner.js:76, cep/js/poll-dispatcher.js:24, test/start-over-operator.test.js:12, test/start-over-operator.test.js:4, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+start-over-panel-control — кандидат для облачной проверки [эвристика]
+  Причина: Поддержанный Node --test argv и literal imports исследованы; явных препятствий в этом ограниченном обзоре не найдено. Нужен отдельный разрешённый запуск.
+  Основания: config/validation-map.json#/checkDependencies/start-over-panel-control, config/validation-map.json#/checkCommands/start-over-panel-control, runtime/start-over-panel-control.js, protocol/artifact.json, test/start-over-panel-control.test.js
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+start-over-process — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: данные/ветки среды, возможные внешние процессы, встроенные модули с внешними возможностями, упоминания Windows. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/start-over-process, config/validation-map.json#/checkCommands/start-over-process, runtime/start-over-process.js, test/start-over-process.test.js, test/start-over-process.test.js:73, test/start-over-process.test.js:13, runtime/start-over-process.js:65, test/start-over-process.test.js:3
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+start-over-runtime — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/start-over-runtime, config/validation-map.json#/checkCommands/start-over-runtime, runtime/attachment-owner.js, runtime/client-entry.js, test/start-over-runtime.test.js, tools/maintain-owner.js:76, cep/js/poll-dispatcher.js:24, test/start-over-runtime.test.js:18, test/start-over-runtime.test.js:5, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+start-over-state — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/start-over-state, config/validation-map.json#/checkCommands/start-over-state, runtime/start-over-state.js, runtime/start-over-barrier.js, test/start-over-state.test.js, test/start-over-state.test.js:21, test/fixtures/owner-lifecycle-fixture.js:25, core/worker-client.js:15, test/start-over-state.test.js:4, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+stopped-certification — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/stopped-certification, config/validation-map.json#/checkCommands/stopped-certification, runtime/attachment-owner.js, runtime/client-entry.js, test/stopped-certification.test.js, test/stopped-certification.test.js:35, test/stopped-certification.test.js:23, core/worker-client.js:15, test/stopped-certification.test.js:3, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+stopped-host-readoption — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/stopped-host-readoption, config/validation-map.json#/checkCommands/stopped-host-readoption, tools/stopped-host-readoption.js, tools/stopped-host-readoption-store.js, test/stopped-host-readoption.test.js, test/fixtures/owner-lifecycle-fixture.js:34, test/fixtures/owner-lifecycle-fixture.js:25, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+stopped-host-readoption-operator — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/stopped-host-readoption-operator, config/validation-map.json#/checkCommands/stopped-host-readoption-operator, tools/adopt-host.js, tools/capture-native-read.js, test/stopped-host-readoption-operator.test.js, test/stopped-host-readoption-operator.test.js:29, test/stopped-host-readoption-operator.test.js:33, test/stopped-host-readoption-operator.test.js:39, test/stopped-host-readoption-operator.test.js:3, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+stopped-update — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/stopped-update, config/validation-map.json#/checkCommands/stopped-update, tools/stopped-update.js, tools/install-core4.js, test/stopped-update.test.js, test/stopped-update.test.js:23, test/stopped-update.test.js:14, test/stopped-update.test.js:292, test/stopped-update.test.js:3, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+stopped-update-operator — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/stopped-update-operator, config/validation-map.json#/checkCommands/stopped-update-operator, tools/operate-stopped-update.js, tools/standalone-installer.js, test/stopped-update-operator.test.js, test/stopped-update-operator.test.js:11, cep/js/poll-dispatcher.js:24, core/worker-client.js:15, test/stopped-update-operator.test.js:3, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+titles-executor-contract — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/titles-executor-contract, config/validation-map.json#/checkCommands/titles-executor-contract, modules/titles/artifact.json, modules/titles/contract.json, test/modules/titles.test.js, worker.js:17, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13, test/fixtures/ae.js:50
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+titles-owner — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/titles-owner, config/validation-map.json#/checkCommands/titles-owner, modules/titles/artifact.json, modules/titles/contract.json, test/modules/titles.test.js, worker.js:17, core/worker-client.js:15, core/worker-client.js:2, core/worker-client.js:13, test/fixtures/ae.js:50
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+validation-routing — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/validation-routing, tools/validate-diff.js, config/validation-map.json, tools/adopt-host.js, test/core4.test.js, tools/adopt-host.js:84, test/core4.test.js:224, test/core4.test.js:6, core/worker-client.js:13, test/core4.test.js:17
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+windows-cim-probe — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/windows-cim-probe, config/validation-map.json#/checkCommands/windows-cim-probe, runtime/attachment-owner.js, runtime/client-entry.js, test/windows-cim-probe.test.js, worker.js:17, cep/js/poll-dispatcher.js:24, core/worker-client.js:15, test/windows-cim-probe.test.js:7, test/windows-cim-probe.test.js:46
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+windows-owner-process — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: данные/ветки среды, возможные внешние процессы, встроенные модули с внешними возможностями, упоминания Windows. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/windows-owner-process, config/validation-map.json#/checkCommands/windows-owner-process, runtime/windows-owner-process.js, test/windows-owner-process.test.js, test/windows-owner-process.test.js:102, test/windows-owner-process.test.js:13, runtime/windows-owner-process.js:78, test/windows-owner-process.test.js:4
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+windows-retained-process — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/windows-retained-process, config/validation-map.json#/checkCommands/windows-retained-process, tools/windows-retained-process.js, runtime/windows-owner-process.js, test/windows-retained-process.test.js, test/windows-retained-process.test.js:23, test/windows-retained-process.test.js:34, test/windows-retained-process.test.js:7, test/windows-retained-process.test.js:3, test/windows-retained-process.test.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+work-session — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/work-session, config/validation-map.json#/checkCommands/work-session, runtime/work-session.js, runtime/attachment-owner.js, test/work-session.test.js, test/work-session.test.js:5, test/fixtures/owner-lifecycle-fixture.js:25, core/worker-client.js:15, test/work-session.test.js:2, core/worker-client.js:13
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+work-session-owner — кандидат для облачной проверки [эвристика]
+  Причина: Поддержанный Node --test argv и literal imports исследованы; явных препятствий в этом ограниченном обзоре не найдено. Нужен отдельный разрешённый запуск.
+  Основания: config/validation-map.json#/checkDependencies/work-session-owner, config/validation-map.json#/checkCommands/work-session-owner, runtime/work-session.js, runtime/attachment-owner.js, test/work-session-owner.test.js
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+worker-isolation — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/worker-isolation, tools/validate-diff.js, core/worker-client.js, worker.js, test/core4.test.js, tools/adopt-host.js:84, test/core4.test.js:224, test/core4.test.js:6, core/worker-client.js:13, test/core4.test.js:17
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+workflow-recovery — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, упоминания Windows, данные/ветки среды, возможные внешние процессы. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/workflow-recovery, tools/validate-diff.js, plan-engine/artifact.json, plan-engine/index.js, test/core4.test.js, tools/adopt-host.js:84, test/core4.test.js:224, test/core4.test.js:6, core/worker-client.js:13, test/core4.test.js:17
+  Есть признаки VM/mock; полнота подмен не установлена.
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+zero-dispatch-recovery — недостаточно сведений [эвристика]
+  Причина: Не установлена среда всей группы: упоминания AE/JSX, непрозрачные выражения/загрузчики, упоминания Windows, данные/ветки среды. Подмены, достижимость и выбранные ветки не доказаны.
+  Основания: config/validation-map.json#/checkDependencies/zero-dispatch-recovery, config/validation-map.json#/checkCommands/zero-dispatch-recovery, tools/recover-zero-dispatch-owner.js, test/recover-zero-dispatch-owner.test.js, worker.js:17, cep/js/poll-dispatcher.js:24, test/recover-zero-dispatch-owner.test.js:79, test/recover-zero-dispatch-owner.test.js:7, test/recover-zero-dispatch-owner.test.js:61
+  Есть Windows-признаки; необходимость Windows для всей группы не доказана.
+  AE evidence: Из статического обзора необходимость настоящего AE не установлена; VM/mock/JSX не являются native proof.
+
+Ограничения:
+- Категория относится ко всей группе файла; --test-name-pattern не вычисляется, отдельные выбранные тесты и ветки не выделяются.
+- Lexer не является JS parser. Неясный regexp, шаблоны, dynamic loading, capability builtins и host conditions оставляют неопределённость.
+- В observations выбран один пример каждого вида признаков; все признаки доступны в sources[].findings, edges — в imports.
+- Declared-only файлы не доказывают достижимость; literal imports тоже не доказывают фактический вызов.
+- Чтение файлов как данных, generated assets, package exports, loaders и targets процессов полностью не восстанавливаются.
+- Хеши относятся к прочитанным bytes рабочего дерева; HEAD только метка. Атомарный snapshot при параллельных изменениях не гарантируется.
+- Windows-only ветки, реальные AE/CEP/native delivery/recovery и двухмашинный P1–P8 требуют отдельного evidence.

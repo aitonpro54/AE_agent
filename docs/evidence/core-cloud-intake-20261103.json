@@ -1,0 +1,508 @@
+{
+  "schemaVersion": 1,
+  "collectedAt": "2026-11-03T16:58:36.891Z",
+  "purpose": "development/product_change",
+  "objective": "Перенос трёх готовых облачных offline-инструментов в существующий AE_agent_core",
+  "repository": "github.com/aitonpro54/AE_agent",
+  "branch": "AE-Agent-Core-4.0.1",
+  "sourceBaseline": "2b285133136f0e728bc0cf0a33c652bfce316667",
+  "localBaseline": "db68140380f52fc630078317512e5ae1df3c273c",
+  "method": "Полные fileChange records поддерживаемого read_thread API, последовательное точное восстановление hunks, проверка Windows и добавочное копирование только свободных paths",
+  "originalCommits": {
+    "packageLocation": {
+      "expected": "c0a4d1e9dc17c46d4c8b0b043431368372c757e0",
+      "actual": "c0a4d1e9dc17c46d4c8b0b043431368372c757e0",
+      "tree": "e8f4ddc9c81e36a66949fff1ca04ab554ebcf312",
+      "exact": true,
+      "retainedRef": "refs/cloud-intake/20261103/package-location"
+    },
+    "otherCommits": "IDs сохранены как provenance; исходные commit objects и исторические generated reports не импортировались"
+  },
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "node": "v24.15.0",
+    "git": "git version 2.54.0.windows.1"
+  },
+  "sources": [
+    {
+      "threadId": "01a1a15a-4532-75ae-b486-4d7c88820050",
+      "commitId": "c0a4d1e9dc17c46d4c8b0b043431368372c757e0",
+      "files": [
+        {
+          "path": "core4/test/package-location.test.js",
+          "sha256": "d6b98264dc16b4677ecb51a401ad414b0d9237e436141769b86b037e8c7bf06a"
+        },
+        {
+          "path": "core4/tools/check-package-location.js",
+          "sha256": "c8307f821aa9bebdef5bbd6ca7b96024c4b7b25c1e5272c3a504b5555f104299"
+        },
+        {
+          "path": "docs/package-location-check.md",
+          "sha256": "823fad28c1692b11102e4938d5953f300f08221f1e570a665e0de94ade369cf0"
+        }
+      ]
+    },
+    {
+      "threadId": "01a1a160-4250-77a5-8cdf-7fcf10ccb061",
+      "commitId": "befee80744f7fbfe9a88f09e3c6f7ce9e2643eff",
+      "files": [
+        {
+          "path": "docs/cloud-checks-audit.md",
+          "sha256": "80be655a093f5b609dbc0c63338e435781fc99bd1ca4cd7df0d3b10027a1b56f"
+        },
+        {
+          "path": "tools/cloud-checks-audit/audit.cjs",
+          "sha256": "bf6511e1366dc02ebd98b5cbea7be0fd9d628af1d9338f923b086d03ab685cc7"
+        },
+        {
+          "path": "tools/cloud-checks-audit/cli.cjs",
+          "sha256": "ab4e970eb9eef8515eba531783136939f4adf0766908f04aa1d6ceb57e0a2760"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/dynamic.test.js",
+          "sha256": "1d44f6721993940b1ea9c68f2d430710297ab58f8302edde2ca3be73a911d8b5"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/executor.jsx",
+          "sha256": "d9ba319316826e100824356b261d1277f4d7281fa79f2d8c7e7a9f70e01ee76b"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/helper.cjs",
+          "sha256": "32cc464e9ac1aad987d93e9eacaeec13341642a5c9faee0e1c683771e8eb4be5"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/invalid.json",
+          "sha256": "0ff6050f4290c7f7bcf3c9118f590f50d810e69170e0b871e696ad5d08b2a459"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/portable.test.js",
+          "sha256": "04c43538f3755511e06ad036fee8798308c8107783e4e2ae4e5c60a82e5321f1"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/probe.ps1",
+          "sha256": "db09358b8694ea61a3873e4f196f1cdd4dfcd1215531b77397f9fa933741fe6b"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/unknown.test.js",
+          "sha256": "c9566cca1f6e96da8e7dc38aea6168fc34aec9c08796e6afb8adb0b5b243598a"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/untrusted.test.js",
+          "sha256": "901166ca772ae6a90167969db3dbe5f01e8b09afd5f90f8e4195b3d5f8419f2c"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/validation-map.json",
+          "sha256": "a7a9bcdd46cca7fa91a6999c5781f339543e5192b317c21a548ec34b8e7b7f60"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/vm-mock.test.js",
+          "sha256": "4cde131292ab3c81792d1d3ba761caa8e19ce4e4eec1e199ec3b0a4bea57c1ab"
+        },
+        {
+          "path": "tools/cloud-checks-audit/fixtures/windows-mentioned.test.js",
+          "sha256": "d40b7aa5ebc72ced4a6c3fec79b7decff70d839c89fed832a0dc0bc4bfc64bba"
+        },
+        {
+          "path": "tools/cloud-checks-audit/source.cjs",
+          "sha256": "96e3f4a21125646e8501213e08d0953713126074ac008060afc8e6f5851ead35"
+        },
+        {
+          "path": "tools/cloud-checks-audit/test/audit.test.cjs",
+          "sha256": "c31fffd7955da7df323b43db0bba15a4d194cd64b11f66dcb789fc2b5e4a2642"
+        }
+      ]
+    },
+    {
+      "threadId": "01a1a167-6df9-7679-b865-3303c9676061",
+      "commitId": "694731c71b499461ce32a61b062470effb58313d",
+      "files": [
+        {
+          "path": "docs/cloud-result-preflight.md",
+          "sha256": "aa7cd2df610b1d0cbb5545dbd1a937728cb80ffda1185ae9e56609f6d0af1320"
+        },
+        {
+          "path": "tools/cloud-result-preflight/bundle.mjs",
+          "sha256": "d0910fcc3c6bdfc3480823b07f7e038de3125c7ca506ed28445b29cea1b94d88"
+        },
+        {
+          "path": "tools/cloud-result-preflight/cli.mjs",
+          "sha256": "be490bd54f694ef1a995d6116dd820a59b070185956382993b3f5b702ce545c0"
+        },
+        {
+          "path": "tools/cloud-result-preflight/git.mjs",
+          "sha256": "d1ef4976709e92f984e88fdf9e0bf1b7a171336d39e74554cf00f5b85de05390"
+        },
+        {
+          "path": "tools/cloud-result-preflight/manifest.mjs",
+          "sha256": "0fff93140c93fbeb4911379adb0fdbedf15fffddc86fd5f561f479c2da7ff10b"
+        },
+        {
+          "path": "tools/cloud-result-preflight/preflight.mjs",
+          "sha256": "cc2cd816d0371a7f78f08c1b7f6052b83c0f30083c5d5e4757883b3b03e43128"
+        },
+        {
+          "path": "tools/cloud-result-preflight/test/example.mjs",
+          "sha256": "24d066d9fa097f2e62a9722f69d16af202628f423b6ddfb23df18e727dc63feb"
+        },
+        {
+          "path": "tools/cloud-result-preflight/test/helpers.mjs",
+          "sha256": "66d1d6e5f99decf0e51c0cac4ac6c9e9bdf18cc0cd0cd9dfce146971be2e1528"
+        },
+        {
+          "path": "tools/cloud-result-preflight/test/preflight.test.mjs",
+          "sha256": "85faf2d0c52009bd7a013b45007281633efdfddd3d47b25b473267ea95dab68d"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "core4/test/package-location.test.js",
+      "bytes": 5485,
+      "sha256": "d6b98264dc16b4677ecb51a401ad414b0d9237e436141769b86b037e8c7bf06a",
+      "sourceSha256": "d6b98264dc16b4677ecb51a401ad414b0d9237e436141769b86b037e8c7bf06a",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "core4/tools/check-package-location.js",
+      "bytes": 11729,
+      "sha256": "c8307f821aa9bebdef5bbd6ca7b96024c4b7b25c1e5272c3a504b5555f104299",
+      "sourceSha256": "c8307f821aa9bebdef5bbd6ca7b96024c4b7b25c1e5272c3a504b5555f104299",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "docs/cloud-checks-audit.md",
+      "bytes": 22353,
+      "sha256": "5cee303d754e4dce275d60c87e0c2b03d18f6d255a6b25cb2fc7b66c268f3478",
+      "sourceSha256": "80be655a093f5b609dbc0c63338e435781fc99bd1ca4cd7df0d3b10027a1b56f",
+      "classification": "documented-integration-change"
+    },
+    {
+      "path": "docs/cloud-result-preflight.md",
+      "bytes": 26577,
+      "sha256": "4ca3b4cfec58a04fdbe321f3cd56c5dfb0078e8616ffb6cf5473b32ceca78d89",
+      "sourceSha256": "aa7cd2df610b1d0cbb5545dbd1a937728cb80ffda1185ae9e56609f6d0af1320",
+      "classification": "documented-integration-change"
+    },
+    {
+      "path": "docs/package-location-check.md",
+      "bytes": 9385,
+      "sha256": "7c6104636ba597d24fcfcc6527e42d6b1ab9b3a5de68ac02694d312dfa7e7261",
+      "sourceSha256": "823fad28c1692b11102e4938d5953f300f08221f1e570a665e0de94ade369cf0",
+      "classification": "documented-integration-change"
+    },
+    {
+      "path": "tools/cloud-checks-audit/audit.cjs",
+      "bytes": 21129,
+      "sha256": "bf6511e1366dc02ebd98b5cbea7be0fd9d628af1d9338f923b086d03ab685cc7",
+      "sourceSha256": "bf6511e1366dc02ebd98b5cbea7be0fd9d628af1d9338f923b086d03ab685cc7",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/cli.cjs",
+      "bytes": 2453,
+      "sha256": "ab4e970eb9eef8515eba531783136939f4adf0766908f04aa1d6ceb57e0a2760",
+      "sourceSha256": "ab4e970eb9eef8515eba531783136939f4adf0766908f04aa1d6ceb57e0a2760",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/dynamic.test.js",
+      "bytes": 62,
+      "sha256": "1d44f6721993940b1ea9c68f2d430710297ab58f8302edde2ca3be73a911d8b5",
+      "sourceSha256": "1d44f6721993940b1ea9c68f2d430710297ab58f8302edde2ca3be73a911d8b5",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/executor.jsx",
+      "bytes": 132,
+      "sha256": "d9ba319316826e100824356b261d1277f4d7281fa79f2d8c7e7a9f70e01ee76b",
+      "sourceSha256": "d9ba319316826e100824356b261d1277f4d7281fa79f2d8c7e7a9f70e01ee76b",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/helper.cjs",
+      "bytes": 50,
+      "sha256": "32cc464e9ac1aad987d93e9eacaeec13341642a5c9faee0e1c683771e8eb4be5",
+      "sourceSha256": "32cc464e9ac1aad987d93e9eacaeec13341642a5c9faee0e1c683771e8eb4be5",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/invalid.json",
+      "bytes": 23,
+      "sha256": "0ff6050f4290c7f7bcf3c9118f590f50d810e69170e0b871e696ad5d08b2a459",
+      "sourceSha256": "0ff6050f4290c7f7bcf3c9118f590f50d810e69170e0b871e696ad5d08b2a459",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/portable.test.js",
+      "bytes": 189,
+      "sha256": "04c43538f3755511e06ad036fee8798308c8107783e4e2ae4e5c60a82e5321f1",
+      "sourceSha256": "04c43538f3755511e06ad036fee8798308c8107783e4e2ae4e5c60a82e5321f1",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/probe.ps1",
+      "bytes": 148,
+      "sha256": "db09358b8694ea61a3873e4f196f1cdd4dfcd1215531b77397f9fa933741fe6b",
+      "sourceSha256": "db09358b8694ea61a3873e4f196f1cdd4dfcd1215531b77397f9fa933741fe6b",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/unknown.test.js",
+      "bytes": 59,
+      "sha256": "c9566cca1f6e96da8e7dc38aea6168fc34aec9c08796e6afb8adb0b5b243598a",
+      "sourceSha256": "c9566cca1f6e96da8e7dc38aea6168fc34aec9c08796e6afb8adb0b5b243598a",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/untrusted.test.js",
+      "bytes": 220,
+      "sha256": "901166ca772ae6a90167969db3dbe5f01e8b09afd5f90f8e4195b3d5f8419f2c",
+      "sourceSha256": "901166ca772ae6a90167969db3dbe5f01e8b09afd5f90f8e4195b3d5f8419f2c",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/validation-map.json",
+      "bytes": 1923,
+      "sha256": "a7a9bcdd46cca7fa91a6999c5781f339543e5192b317c21a548ec34b8e7b7f60",
+      "sourceSha256": "a7a9bcdd46cca7fa91a6999c5781f339543e5192b317c21a548ec34b8e7b7f60",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/vm-mock.test.js",
+      "bytes": 560,
+      "sha256": "4cde131292ab3c81792d1d3ba761caa8e19ce4e4eec1e199ec3b0a4bea57c1ab",
+      "sourceSha256": "4cde131292ab3c81792d1d3ba761caa8e19ce4e4eec1e199ec3b0a4bea57c1ab",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/fixtures/windows-mentioned.test.js",
+      "bytes": 283,
+      "sha256": "d40b7aa5ebc72ced4a6c3fec79b7decff70d839c89fed832a0dc0bc4bfc64bba",
+      "sourceSha256": "d40b7aa5ebc72ced4a6c3fec79b7decff70d839c89fed832a0dc0bc4bfc64bba",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/reports/baseline.json",
+      "bytes": 1163480,
+      "sha256": "0029ee1eada045a51623510e1248248fcb818f317619ced04aaf8542511ed4a2",
+      "sourceSha256": null,
+      "classification": "regenerated-Windows-report"
+    },
+    {
+      "path": "tools/cloud-checks-audit/reports/baseline.txt",
+      "bytes": 83010,
+      "sha256": "e6ffcb4f022a025bc3df1c40b247695deda23196c8ac093ed282534b1a1d284e",
+      "sourceSha256": null,
+      "classification": "regenerated-Windows-report"
+    },
+    {
+      "path": "tools/cloud-checks-audit/reports/fixtures.json",
+      "bytes": 40213,
+      "sha256": "bfbe87d7e7c9dc36db8cf845a0b0944c85a5dc567574aef5b3eb8bf331004915",
+      "sourceSha256": null,
+      "classification": "regenerated-Windows-report"
+    },
+    {
+      "path": "tools/cloud-checks-audit/reports/fixtures.txt",
+      "bytes": 9687,
+      "sha256": "c6e7d13598270de4b09e7515ba978301e02996736e000f3a4a1173ba6c9df298",
+      "sourceSha256": null,
+      "classification": "regenerated-Windows-report"
+    },
+    {
+      "path": "tools/cloud-checks-audit/source.cjs",
+      "bytes": 7102,
+      "sha256": "96e3f4a21125646e8501213e08d0953713126074ac008060afc8e6f5851ead35",
+      "sourceSha256": "96e3f4a21125646e8501213e08d0953713126074ac008060afc8e6f5851ead35",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-checks-audit/test/audit.test.cjs",
+      "bytes": 10155,
+      "sha256": "c31fffd7955da7df323b43db0bba15a4d194cd64b11f66dcb789fc2b5e4a2642",
+      "sourceSha256": "c31fffd7955da7df323b43db0bba15a4d194cd64b11f66dcb789fc2b5e4a2642",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-result-preflight/bundle.mjs",
+      "bytes": 4068,
+      "sha256": "d0910fcc3c6bdfc3480823b07f7e038de3125c7ca506ed28445b29cea1b94d88",
+      "sourceSha256": "d0910fcc3c6bdfc3480823b07f7e038de3125c7ca506ed28445b29cea1b94d88",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-result-preflight/cli.mjs",
+      "bytes": 1437,
+      "sha256": "be490bd54f694ef1a995d6116dd820a59b070185956382993b3f5b702ce545c0",
+      "sourceSha256": "be490bd54f694ef1a995d6116dd820a59b070185956382993b3f5b702ce545c0",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-result-preflight/fixtures/report.v1.example.json",
+      "bytes": 7612,
+      "sha256": "e8ce1f6697e4dfc5d6d53b904962370a06db2ff1857c95ebe87f6a376c4a1af0",
+      "sourceSha256": null,
+      "classification": "regenerated-Windows-report"
+    },
+    {
+      "path": "tools/cloud-result-preflight/git.mjs",
+      "bytes": 1393,
+      "sha256": "d1ef4976709e92f984e88fdf9e0bf1b7a171336d39e74554cf00f5b85de05390",
+      "sourceSha256": "d1ef4976709e92f984e88fdf9e0bf1b7a171336d39e74554cf00f5b85de05390",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-result-preflight/manifest.mjs",
+      "bytes": 4413,
+      "sha256": "517a3fd1da9b5fd72432e842612651b8645346786a40f8bcab12a075921b4c4e",
+      "sourceSha256": "0fff93140c93fbeb4911379adb0fdbedf15fffddc86fd5f561f479c2da7ff10b",
+      "classification": "documented-integration-change"
+    },
+    {
+      "path": "tools/cloud-result-preflight/preflight.mjs",
+      "bytes": 21657,
+      "sha256": "cc2cd816d0371a7f78f08c1b7f6052b83c0f30083c5d5e4757883b3b03e43128",
+      "sourceSha256": "cc2cd816d0371a7f78f08c1b7f6052b83c0f30083c5d5e4757883b3b03e43128",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-result-preflight/test/example.mjs",
+      "bytes": 871,
+      "sha256": "24d066d9fa097f2e62a9722f69d16af202628f423b6ddfb23df18e727dc63feb",
+      "sourceSha256": "24d066d9fa097f2e62a9722f69d16af202628f423b6ddfb23df18e727dc63feb",
+      "classification": "exact-restored-source"
+    },
+    {
+      "path": "tools/cloud-result-preflight/test/helpers.mjs",
+      "bytes": 5029,
+      "sha256": "cb814498ef4063279c0b24904899fd079d2cc89ba7c797e2841b2dfd9260b19a",
+      "sourceSha256": "66d1d6e5f99decf0e51c0cac4ac6c9e9bdf18cc0cd0cd9dfce146971be2e1528",
+      "classification": "documented-integration-change"
+    },
+    {
+      "path": "tools/cloud-result-preflight/test/preflight.test.mjs",
+      "bytes": 18147,
+      "sha256": "2a0d848fba56332a7617e3bb69800232a54a0ea2d2c6012f8b4fde577404e7ea",
+      "sourceSha256": "85faf2d0c52009bd7a013b45007281633efdfddd3d47b25b473267ea95dab68d",
+      "classification": "documented-integration-change"
+    }
+  ],
+  "validation": {
+    "packageLocation": {
+      "pass": 3,
+      "fail": 0,
+      "skip": 0,
+      "cases": 24,
+      "variants": 4,
+      "byteControls": true,
+      "pathLeakFixture": true
+    },
+    "cloudAudit": {
+      "pass": 15,
+      "fail": 0,
+      "skip": 0,
+      "checks": 71,
+      "sourcesVerified": 214,
+      "summary": {
+        "cloud-candidate": 3,
+        "platform-dependency": 0,
+        "native-ae-evidence-required": 0,
+        "insufficient-information": 68
+      }
+    },
+    "preflight": [
+      {
+        "command": "node --test --test-reporter=tap .codex-runtime/local-transfer/20261103-cloud-results/task3/tools/cloud-result-preflight/test/preflight.test.mjs",
+        "exit": 0,
+        "tests": 26,
+        "pass": 25,
+        "fail": 0,
+        "skip": 1,
+        "duration_ms": 49044.9298,
+        "log": "task3-validation.log",
+        "skip_reason": "POSIX read-only chmod test intentionally skipped on win32"
+      },
+      {
+        "command": "node --check <each of all 8 tools/cloud-result-preflight/**/*.mjs>",
+        "exit": 0,
+        "files": 8
+      },
+      {
+        "command": "node .codex-runtime/local-transfer/20261103-cloud-results/task3/tools/cloud-result-preflight/test/example.mjs",
+        "exit": 0,
+        "exampleOnly": true,
+        "platform": "win32",
+        "checks": 20,
+        "unknowns": 5,
+        "integrationAllowed": false,
+        "targetSnapshot": "Exact fixture target snapshot unchanged (asserted by helpers.run)",
+        "log": "task3-example-validation.log"
+      },
+      {
+        "command": "git diff --no-index --check -- original-task3 task3",
+        "exit": 1,
+        "result": "No stdout/stderr whitespace diagnostics. Exit 1 reflects expected content differences in no-index mode."
+      }
+    ],
+    "scopedCore": {
+      "pass": 9,
+      "fail": 0,
+      "skip": 0,
+      "groups": [
+        "artifact-boundaries",
+        "validation-routing"
+      ]
+    },
+    "syntaxFiles": 14,
+    "boundaries": 55,
+    "total": {
+      "pass": 52,
+      "fail": 0,
+      "skip": 1,
+      "skipReason": "POSIX-only chmod, явно пропущен на win32"
+    },
+    "baselinePreservation": {
+      "comparedFiles": 1162,
+      "allEqual": true,
+      "intentionalExistingChange": "plans/core-4.0.0-installable.md"
+    },
+    "cliHelpFromFinalPaths": true,
+    "thirdCopiedHashesVerified": 10
+  },
+  "adaptations": [
+    {
+      "path": "tools/cloud-result-preflight/manifest.mjs",
+      "reason": "Reject Windows drive absolute/relative local paths before SCP normalization",
+      "before": {
+        "C:/checkout/repository": "c/checkout/repository",
+        "C:repository": "c/repository"
+      },
+      "after": "null; manifest invalid or local target origin unverified"
+    },
+    {
+      "path": "tools/cloud-result-preflight/test/preflight.test.mjs",
+      "reason": "Regression: drive paths, backslash paths, UNC, manifest rejection and real target origin unverified"
+    },
+    {
+      "path": "tools/cloud-result-preflight/test/helpers.mjs",
+      "reason": "Validate canonical fixture path is direct child of expected temp root with owned prefix before recursive cleanup"
+    },
+    {
+      "path": "tools/cloud-result-preflight/fixtures/report.v1.example.json",
+      "reason": "Missing generated file; fresh Windows exampleOnly fixture report, not Linux evidence"
+    },
+    {
+      "path": "docs/cloud-result-preflight.md",
+      "reason": "Document Windows validation, confirmed fix, provenance and remaining gaps"
+    }
+  ],
+  "limits": [
+    "Полный release и round-trip P1–P8 остаются открытыми",
+    "Native AE/CEP/MCP и установка этим блоком не проверялись",
+    "Статический cloud-candidate не является выполненным тестом",
+    "Windows ACL и конкурентные locks/записи не доказаны"
+  ],
+  "localEvidenceDirectory": ".codex-runtime/local-transfer/20261103-cloud-results/"
+}
