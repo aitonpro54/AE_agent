@@ -30,20 +30,35 @@ push/PR и запуска dedicated продуктов. Штатные внут�
 own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup проверены.
 
 <!-- EXECUTION_STATUS -->
-Принято блоков: 4; проверок по именам: 4. Применимое evidence: 35 exact-key + 2 byte-command-bound. Открыто: 34 (без hold: 32, Titles под паузой: 2). Следующий блок: source-candidate-05.
+Принято блоков: 5; проверок по именам: 5. Применимое evidence: 36 exact-key + 2 byte-command-bound. Открыто: 33 (без hold: 31, Titles под паузой: 2). Следующий блок: source-candidate-06.
 <!-- /EXECUTION_STATUS -->
 
 <!-- EXECUTION_BLOCKS -->
-| Блок | Named checks | Результат / Node summary | Evidence |
-| --- | --- | --- | --- |
-| source-candidate-01 | `start-over-runtime` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-01-20261103.json) |
-| source-candidate-02 | `start-over-operator` | PASS: 6 pass / 0 skip | [JSON](../docs/evidence/core-release-block-02-20261103.json) |
-| source-candidate-03 | `stopped-host-readoption-operator` | PASS: 17 pass / 0 skip | [JSON](../docs/evidence/core-release-block-03-20261103.json) |
-| source-candidate-04 | `stopped-update-operator` | PASS: 4 pass / 0 skip | [JSON](../docs/evidence/core-release-block-04-20261103.json) |
+| Блок | Named checks | Результат / Node summary | Evidence | Коммит |
+| --- | --- | --- | --- | --- |
+| source-candidate-01 | `start-over-runtime` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-01-20261103.json) | `6625aed` |
+| source-candidate-02 | `start-over-operator` | PASS: 6 pass / 0 skip | [JSON](../docs/evidence/core-release-block-02-20261103.json) | `bb23f1a` |
+| source-candidate-03 | `stopped-host-readoption-operator` | PASS: 17 pass / 0 skip | [JSON](../docs/evidence/core-release-block-03-20261103.json) | `0af346d` |
+| source-candidate-04 | `stopped-update-operator` | PASS: 4 pass / 0 skip | [JSON](../docs/evidence/core-release-block-04-20261103.json) | `e7b3964` |
+| source-candidate-05 | `stopped-update` | PASS: 55 pass / 0 skip | [JSON](../docs/evidence/core-release-block-05-20261103.json) | создаётся после проверки |
 <!-- /EXECUTION_BLOCKS -->
 
 ## Decision Log
 
+- При preflight block12 обнаружена статически достижимая fail-ветка fixture:
+  `rpcProcess` запускает `client-entry.js` без preload; при потере own IPC thin
+  client может создать detached owner без fixture port mapping. Фактического
+  запуска этой ветки не было. Block12 удержан до test-only guard в существующих
+  `owner-runtime.test.js` и `fixtures/owner-runtime-child.js`.
+- Guard применяется после принятого block11, перед полным named block12.
+  Production код/timeout/map не меняются; candidate VM regression не считается
+  PASS самого `owner-runtime`. Ожидаемый key drift — только `owner-runtime` и
+  `lifecycle-simulation`, который сохраняет статус integration remaining до
+  своего позднейшего блока.
+- Preflight 16–29 завершён: production fallback не найден. Намеренно сохранённые
+  собственные TEMP trees в 16/17/18/19/21/22/23/25/26/27/28 отделяются от активных
+  ресурсов. При аварии в 05/22/26/27 exact fixture children удерживают следующий
+  блок до доказанного выхода; blanket kills и широкий filesystem cleanup запрещены.
 - Новое поручение разрешает последовательное выполнение source-кандидатов;
   прежний `plan-only` описывал подготовку manifest, а не запрет этого поручения.
 - PASS требует exit0, непустых matched tests, fail/cancelled0 и сохранённых skips.

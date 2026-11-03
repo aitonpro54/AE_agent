@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято блоков: 4; проверок по именам: 4. Применимое evidence: 35 exact-key + 2 byte-command-bound. Открыто: 34 (без hold: 32, Titles под паузой: 2). Следующий блок: source-candidate-05. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Принято блоков: 5; проверок по именам: 5. Применимое evidence: 36 exact-key + 2 byte-command-bound. Открыто: 33 (без hold: 31, Titles под паузой: 2). Следующий блок: source-candidate-06. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 
@@ -120,7 +120,7 @@ hashes совпали; source/tool bytes после принятого `5f99093`
 - Полнота inventory, применимость evidence, продуктовая пауза и будущий запуск
   отражаются раздельно. `releaseCertified=false`.
 
-## Validation
+## Validation при подготовке manifest
 
 Валидация и независимое review — PASS:
 
@@ -165,7 +165,7 @@ Source suites и live операции не запускались; `releaseCert
 | `readoption-enable` | component | reuse: записанный exact key | не повторять без drift |
 | `readoption-probe` | component | reuse: записанный exact key | не повторять без drift |
 | `stopped-update-operator` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `stopped-update` | integration | нужен current result | адресно до full release |
+| `stopped-update` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `legacy-owner-migration` | integration | нужен current result | адресно до full release |
 | `windows-retained-process` | component | нужен current result | адресно до full release |
 | `stopped-certification` | component | reuse: записанный exact key | не повторять без drift |
