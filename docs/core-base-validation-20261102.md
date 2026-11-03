@@ -1,5 +1,11 @@
 # База Core: результаты B1/B2 на 2 ноября
 
+**Актуальная сводка3ноября:** ограниченные B1–B7 завершены; configuredcdf read/
+release PASS без maintenance, B6 native mutation recovery и UNKNOWN preservation
+подтверждены. [Текущая конечная матрица](core-base-b7-configured-matrix-20261103.md)
+содержит current/historical/source границы. Таблица ниже — исходный B1/B2 snapshot,
+не перечень новых незавершённых действий.
+
 **3 ноября, актуально:** B3 source/установка327faaac…, native idle reset и
 ограниченный native UNKNOWN reset с exact old AE death/archive/fresh session
 baseline PASS. После пользовательского restart Codex fresh configured status/

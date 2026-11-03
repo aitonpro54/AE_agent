@@ -11,6 +11,20 @@
 
 ## Текущий scope и правила
 
+**3 ноября, B7 configuredcdf и сводная база приняты:** обычный текущий MCP
+уже используетcdf7338f…, без restart/config/service refresh. Same owner27100/
+birth639293110869903720/bootb76c6e87…, sameAE30024, один3457, CEP connected.
+Explicit sessionce977de2… acquire generation1 → exact-contract fresh native
+project-inspection own saved AEP/1item → release PASS. Receiver7/prefix5 exact,
+ledger1 unchanged;143protected state/archive files+descriptor/client/config/AEP
+unchanged, UNKNOWN26/20 exact preserved. Все15source keys прежние. Наблюдались
+3cdf thin-client processes при существующем app-server16688; их не завершали и
+не приписывали им дополнительные writer leases. Ограниченная матрица B1–B7
+сведена с отдельными current/historical/source границами; full release/deferred
+closures/portability открыты. MCP/Codex maintenance и Titles/Slideshow остаются
+на паузе; B7 не требует новых live операций или повторов settled IDs.
+[Актуальная матрица/evidence](docs/core-base-b7-configured-matrix-20261103.md).
+
 **3 ноября, B6 native delivery/recovery завершён:** на installedcdf7338f…
 наблюдалась native confirmation command7c78e9fb…/task0558d0cf…/proposalc477c55e…
 own comp1/layer13/BASE_A→BASE_B. Exact owner15616 stopped1 после mutate begin;

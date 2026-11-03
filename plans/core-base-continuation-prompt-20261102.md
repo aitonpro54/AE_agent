@@ -1,5 +1,15 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
+**B7,3ноября — актуальная база:** configuredcdf7338f… принят обычным текущим MCP,
+без service/AE restart/config. Native saved project-inspection/release1 PASS;
+owner27100/birth639293110869903720/bootb76c6e87… и AE30024 прежние, один3457,
+CEP connected, sessionce977de2… baselineRequired=false, current7/1settled,
+pending/UNKNOWN/fault0.143protected files+bindings/AEP unchanged, old UNKNOWN26/20
+exact archived. [Сводная матрица](../docs/core-base-b7-configured-matrix-20261103.md).
+B1–B7 bounded base принята; новых действий этой матрицы не требуется. Runtime pins
+не являются future authority. Full release/portability и предметные продукты —
+отдельные scopes; MCP/Codex maintenance и Titles/Slideshow автоматически не возобновлять.
+
 **B6 native завершён,3ноября:** installedcdf7338f…; exact owner fault1,
 original mutation Yes1, поздний callback отказ, UNKNOWN26/20 archived exact.
 Own saved/reopened AEPb6eaea7e…/comp1/layer13/BASE_B read-back PASS.

@@ -9,6 +9,8 @@ Root — единственный controller/writer. Пользователь р
 
 **Итог3ноября:** ограниченные пункты1–6 завершены, плюс fresh host re-adoption
 после reset. [Native checkpoint](../docs/core-base-b6-native-recovery-20261103.md).
+Configuredcdf proof также закрыт B7 обычным текущим MCP; текущая сводка и границы —
+[конечная матрица](../docs/core-base-b7-configured-matrix-20261103.md).
 Ниже исходная последовательность и provenance; выполненные операции не повторять.
 
 ## Последовательность и критерии
@@ -45,6 +47,9 @@ native mutation proof. При недоступном поддержанном п
 
 ## Progress
 
+- B7 configuredcdf read/release1 PASS без maintenance. Receiver7/prefix5 exact,
+  ledger1 unchanged, native B6 UNKNOWN26/20 exact;143state/archive files и
+  descriptor/client/config/AEP unchanged. Same owner27100/bootb76c6e87…/AE30024.
 - B6 native PASS: exact delivery → retained-handle owner fault1 → original Yes1 →
   late owner_recovery_required/UNKNOWN26+20 exact → new reset2fecd11c… → exact old
   AE exit/newAE30024 → saved/reopened BASE_B read-back → explicit sessionce977de2…
@@ -99,6 +104,8 @@ native mutation proof. При недоступном поддержанном п
 
 ## Decision Log
 
+- B7 закрывает последующий configured пробел, не изменяя факты/пределы B6.
+  Для сводной матрицы не повторялись native fault/reset или source tests.
 - Физический saved/reopened эффект BASE_B не переписывает старый UNKNOWN.
   Native callback refusal установлен по UI/pinned path, без packet capture.
   Новая explicit host привязка не выдаёт continuity/grant прежней incarnation.
@@ -134,6 +141,8 @@ native mutation proof. При недоступном поддержанном п
 
 ## Validation
 
+- B7 configured status/acquire/contract/native read/release/status PASS,
+  mutation/save/restart/install/config writes0;15source keys exact unchanged.
 - Old receiver26/ledger20 archived exact и unresolved1/2; current5/1settled,
   unresolved0. Old session denied, new explicit acquire/project baseline/manual
   read-back/release PASS.140protected files preserved после intentional adoption;

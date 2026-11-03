@@ -1,5 +1,11 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**B7,3ноября:** configuredcdf proof закрыт обычным текущим MCP: same owner/boot,
+fresh native project-inspection/release1, current receiver7/ledger1settled.
+Ограниченная база B1–B7 принята по [сводной матрице](../docs/core-base-b7-configured-matrix-20261103.md).
+Full release/deferred closures/portability открыты; MCP/Codex maintenance и
+Titles/Slideshow остаются отложенными. Исторические configured gaps ниже закрыты B7.
+
 **B6 native завершён,3ноября:** доставка принятой mutation, exact owner fault,
 поздний отказ без изменения UNKNOWN, новый reset и saved/reopened BASE_B read-back
 подтверждены. Fresh sessionce977de2… и host re-adoption AE30024; final standard

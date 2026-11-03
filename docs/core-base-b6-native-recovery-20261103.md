@@ -1,5 +1,10 @@
 # B6 — native доставка, поздний callback и recovery
 
+**Последующее B7:** configuredcdf read/release также подтверждён обычным текущим
+MCP без maintenance. [Актуальная сводная матрица](core-base-b7-configured-matrix-20261103.md).
+Числа5/1 и открытый configured proof ниже описывают исходный B6 checkpoint;
+current B7 —7/1, остальные факты B6 сохраняются.
+
 3 ноября 2026. Ограниченный native-этап базы завершён. Source `d6dcd75`,
 installed checkpoint `6918044`, package `cdf7338f…`, distribution `85c3d95a…`.
 [Полное evidence](evidence/core-base-b6-native-recovery-20261103.json),

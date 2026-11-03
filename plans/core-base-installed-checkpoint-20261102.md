@@ -1,5 +1,15 @@
 # Installed checkpoint B1/B2 — 2 ноября
 
+**Актуально3ноября: B7 configuredcdf PASS без maintenance.** Normal current MCP
+status → explicit acquire sessionce977de2…/generation1 → exact-contract native
+project-inspection own saved AEP/1item → release/clean status. Same owner27100/
+birth639293110869903720/bootb76c6e87…, sameAE30024; один3457, auto peer,
+pending/UNKNOWN/fault0. Receiver7/prefix5 exact, ledger1unchanged;143protected
+state/archive files и descriptor/client/config/AEP unchanged. B6 UNKNOWN26/20
+exact preserved. [Актуальная матрица/evidence](../docs/core-base-b7-configured-matrix-20261103.md).
+Ограниченная база принята; full release/deferred closures/portability открыты.
+MCP/Codex maintenance и Titles/Slideshow paused. Ниже — provenance старых checkpoints.
+
 **Актуально3ноября: B6 native завершён на packagecdf7338f…**
 Source d6dcd75/installed6918044;80runtime/7CEP verified. Native delivery и original
 mutation после exact owner fault подтверждены; logical UNKNOWN не переобъявлен

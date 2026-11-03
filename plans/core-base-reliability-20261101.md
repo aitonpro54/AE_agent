@@ -1,5 +1,14 @@
 # База Core: подключение, восстановление и диагностика
 
+**B7,3ноября: ограниченная база B1–B7 принята.** Configuredcdf proof закрыт
+обычным текущим MCP без maintenance: exact-contract native project read/release1,
+same owner27100/bootb76c6e87… и AE30024. Current receiver7/prefix5 exact,
+ledger1settled;143protected files+bindings/AEP unchanged, old UNKNOWN26/20 exact.
+[Сводная конечная матрица](../docs/core-base-b7-configured-matrix-20261103.md)
+сохраняет различие current installed, source/TEMP и historical coverage.
+Full release/deferred closures/portability открыты; MCP/Codex maintenance и
+Titles/Slideshow на паузе. Следующие записи — provenance предыдущих этапов.
+
 **Ограниченный B6 завершён,3ноября:** native delivery/owner fault/original mutation,
 поздний refusal/UNKNOWN preservation, штатный reset и saved/reopened BASE_B
 read-back PASS. Новая session baseline/release и fresh host re-adoption AE30024
@@ -131,6 +140,14 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- B7 configuredcdf PASS: normal status, explicit sessionce977de2… acquire1,
+  exact-contract native project-inspection, release, clean status. Нет install,
+  config writes, service/AE restart, save, mutation или reset. Current7/1settled,
+  prefix5 exact;143protected state/archive hashes+bindings/AEP совпали.
+  [Evidence](../docs/evidence/core-base-b7-configured-20261103.json).
+- Конечная матрица сведена: B1/B2 source+historical installed, B3 current source
+  fault coverage, B5 HTTP/VM, B6 native mutation recovery и B7 configured read.
+  Native finisher-crash, global-idle SLA и full release не заявлены новыми PASS.
 - B6 fixture/re-adoption готовы: own saved comp1/layer13/BASE_A/full native style
   proof PASS; штатная новая b25b5fef… enabled, currentAE21960/test path. Fresh
   configured owner22188/auto peer/15receiver+1ledger settled, package/bindings/history/
@@ -308,13 +325,17 @@ fault-сценарии проводить на собственных тесто
 - [x] B1 начат: [source brief и стоимость до реализации](../docs/core-base-b1-brief-20261101.md)
   готовы.4production/3test paths;24selected batches, без запуска tests.
   Следующий шаг — bounded проверка причин selection; затем frozen source slice.
-- [ ] B2: завершить configured-часть матрицы после restart Codex.
+- [x] B2: configured-часть ограниченной матрицы завершена;3ноября B7 подтвердил
+  текущийcdf обычным MCP без maintenance. Историческое ожидание restart снято
+  фактическим read/release, [границы матрицы](../docs/core-base-b7-configured-matrix-20261103.md).
 - [x] B2 source: [фоновое ожидание и disconnect contract](../docs/core-base-b2-20261102.md)
   реализованы; один selected batch69/69PASS, установленная проверка впереди.
 - [x] 2 ноября: требование B3 и новые разрешения отладки включены в план,
   AGENTS.md и обновлённый промпт продолжения; прежний промпт найден в чате
   `01a19bda-e7a1-7f91-836b-14e3ac611ba6`, turn `01a19c42-41ff-73f1-a836-2c108b01dfc6`.
-- [ ] B3: реализация Core/панели и адресная приёмка «Начать заново».
+- [x] B3: Core/панель и адресная приёмка «Начать заново» завершены; current source
+  fault coverage и native B6 reset/UNKNOWN archive/fresh baseline/release PASS.
+  [Native checkpoint](../docs/core-base-b6-native-recovery-20261103.md).
 - [x] B3: [минимальный контракт](../docs/core-base-b3-20261102.md) подготовлен до
   production write; первое [ограниченное plan review](../reviews/argon/core-base-start-over/20261102-b3-plan-01/request.md)
   передано единственному ARGON controller по новому human поручению.
@@ -333,6 +354,10 @@ fault-сценарии проводить на собственных тесто
 
 ## Decision Log
 
+- B7 завершает ограниченную приёмку базы по пункту6 плана. Исторические результаты
+  сохраняют исходные pins; source/TEMP не переименовывается в native proof.
+  Read-only configured proof нового package не требует Codex/MCP maintenance,
+  когда текущий клиент уже доступен. Нового предметного scope не выбираем.
 - B6 использует existing text operation только как инструмент native recovery базы.
   Before mutation новый exact host/project adoption получен существующим stopped
   протоколом; нет переноса old host authority, ослабления style proof или нового ingress.
@@ -528,6 +553,10 @@ fault-сценарии проводить на собственных тесто
 
 ## Validation
 
+- B7: одна fresh native project-inspection через configuredcdf, begin6/complete7,
+  lease1 released, same owner/boot/AE, pending/UNKNOWN/fault0.7receiver/1ledger
+  settled, exact prefix5 и архивы26/20 сохранены;143protected files и bindings/AEP
+  совпали.15source keys перепроверены без повторного запуска tests.
 - B6 setup raw/own отдельно от typed: fixture save1, native style/project reads2;
   fixed native probe и verified standalone readopt/enable PASS. Истории15+1 и
   bindings/AEP exact across re-adoption; source suites без production diff не повторялись.
