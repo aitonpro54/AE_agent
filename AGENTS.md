@@ -11,6 +11,24 @@
 
 ## Текущий scope и правила
 
+**3 ноября, B6 native delivery/recovery завершён:** на installedcdf7338f…
+наблюдалась native confirmation command7c78e9fb…/task0558d0cf…/proposalc477c55e…
+own comp1/layer13/BASE_A→BASE_B. Exact owner15616 stopped1 после mutate begin;
+run ipc_outcome_uncertain, replay0. Original confirmation Yes1 после owner death;
+late callback дал UI owner_recovery_required, receiver26/ledger20 exact unchanged.
+Own AEP saved/reopened SHA b6eaea7e…; fresh typed read-back BASE_B PASS.
+Новый reset `2fecd11c-faef-4651-9f27-e88e4498fb20` attempts1, exactAE21960 exited;
+UNKNOWN26/20 archived exact. Sessionce977de2…/old8fe denied/new acquire1/fresh
+project baseline/manual read/release PASS; current5receiver/1ledger settled.
+Fresh readopt `cd5bb102-b620-4e03-bd11-f7a73e37890e` enabled, AE30024 exact;
+не повторять эти IDs, также install stopf41dbe21…/update806719be…. Final standard
+owner27100/birth639293110869903720/bootb76c6e87… ready, auto CEP, один3457,
+pending/UNKNOWN/fault0.140protected files+config/bindings/AEP intact after intentional
+adoption change; old archives14/52 preserved. No native packet capture: refusal
+наблюдался по UI/pinned callback path. Configuredcdf/full release/portability open;
+MCP/Codex maintenance и Titles/Slideshow на паузе. Source15keys exact unchanged.
+[Checkpoint/evidence](docs/core-base-b6-native-recovery-20261103.md).
+
 **3 ноября, B6 установлен:** packagecdf7338f…/distribution85c3d95a… штатно
 installed/enabled, exact80runtime/7CEP verified. Новый stop
 `f41dbe21-504a-447b-92d4-f66694dadc91` и update

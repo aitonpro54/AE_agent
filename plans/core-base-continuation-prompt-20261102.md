@@ -1,5 +1,17 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
+**B6 native завершён,3ноября:** installedcdf7338f…; exact owner fault1,
+original mutation Yes1, поздний callback отказ, UNKNOWN26/20 archived exact.
+Own saved/reopened AEPb6eaea7e…/comp1/layer13/BASE_B read-back PASS.
+Reset2fecd11c… завершён; sessionce977de2… baseline/release и old session denial PASS.
+Fresh host readoptcd5bb102… завершён для AE30024. Последний standard owner27100/
+birth639293110869903720/bootb76c6e87…, один3457, CEP connected, current5/1settled,
+pending/UNKNOWN/fault0. Все settled IDs не повторять; live pins заново проверять.
+[Полный checkpoint](../docs/core-base-b6-native-recovery-20261103.md).
+Новых B6 действий не требуется; configured/full release/portability остаются
+открытыми, MCP/Codex maintenance и Titles/Slideshow не возобновлять автоматически.
+Следующие записи — provenance прежних checkpoints.
+
 **B6 installed,3ноября:** approved packagecdf7338f… installed/enabled.
 Не повторять settled stopf41dbe21…/update806719be…. Standard owner15616/bootbed482de…
 и sameAE21960 наблюдались ready; native inspection BASE_A PASS. Prepared

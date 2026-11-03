@@ -7,6 +7,10 @@ Root — единственный controller/writer. Пользователь р
 и разработка Titles/Slideshow остаются отложенными. Existing manual text executor можно
 использовать только как тестовую операцию базы, без изменения его style proof.
 
+**Итог3ноября:** ограниченные пункты1–6 завершены, плюс fresh host re-adoption
+после reset. [Native checkpoint](../docs/core-base-b6-native-recovery-20261103.md).
+Ниже исходная последовательность и provenance; выполненные операции не повторять.
+
 ## Последовательность и критерии
 
 1. Сохранить configured B4 checkpoint: malformed contract отказ до submit,
@@ -41,6 +45,12 @@ native mutation proof. При недоступном поддержанном п
 
 ## Progress
 
+- B6 native PASS: exact delivery → retained-handle owner fault1 → original Yes1 →
+  late owner_recovery_required/UNKNOWN26+20 exact → new reset2fecd11c… → exact old
+  AE exit/newAE30024 → saved/reopened BASE_B read-back → explicit sessionce977de2…
+  baseline/release. Fresh readoptcd5bb102… завершён; final standard owner27100/
+  bootb76c6e87…, auto peer, current5/1settled, pending/UNKNOWN/fault0.
+  [Evidence](../docs/evidence/core-base-b6-native-recovery-20261103.json).
 - B6 packagecdf7338f… установлен/enabled: новый stopf41dbe21… и update806719be…
   settled с primary attempts1.80runtime/7CEP exact;145protected files preserved.
   MCP-config изменил только согласованный args-path. Own CEP close/open1,
@@ -89,6 +99,10 @@ native mutation proof. При недоступном поддержанном п
 
 ## Decision Log
 
+- Физический saved/reopened эффект BASE_B не переписывает старый UNKNOWN.
+  Native callback refusal установлен по UI/pinned path, без packet capture.
+  Новая explicit host привязка не выдаёт continuity/grant прежней incarnation.
+  B6 bounded scope закрыт; configured/full release/portability не переобъявляются.
 - Установка выполнена по явному узкому ответу пользователя. MCP/Codex services
   остаются без refresh/restart. Новый thin client — standard proof; он не
   переобъявляется configured proof. Prepared proposal поддерживает lease renew;
@@ -120,6 +134,10 @@ native mutation proof. При недоступном поддержанном п
 
 ## Validation
 
+- Old receiver26/ledger20 archived exact и unresolved1/2; current5/1settled,
+  unresolved0. Old session denied, new explicit acquire/project baseline/manual
+  read-back/release PASS.140protected files preserved после intentional adoption;
+  descriptor/client/config/AEP и7CEP hashes совпали.15source keys exact unchanged.
 - Installed80runtime/7CEP verified; protected bindings/session/adoption/AEP и
   все прежние start-over records/архивы145files сохранены через update.
   Последующая inspection добавила только begin22/complete23; prefix21 exact.

@@ -1,5 +1,13 @@
 # База Core: подключение, восстановление и диагностика
 
+**Ограниченный B6 завершён,3ноября:** native delivery/owner fault/original mutation,
+поздний refusal/UNKNOWN preservation, штатный reset и saved/reopened BASE_B
+read-back PASS. Новая session baseline/release и fresh host re-adoption AE30024
+завершены. [Checkpoint/evidence](../docs/core-base-b6-native-recovery-20261103.md).
+Current5/1settled, исторические UNKNOWN26/20 exact archived. Configured proof
+нового package/full release/portability не закрываются этим результатом.
+MCP/Codex maintenance и Titles/Slideshow остаются на паузе; история ниже сохраняется.
+
 **B6 installed,3ноября:** approved packagecdf7338f… штатно installed/enabled,
 80runtime/7CEP exact и145protected files preserved. Новый standard native read PASS;
 prepared proposal не submitted. Следующий шаг — [native delivery/recovery](core-base-delivery-recovery-20261103.md).

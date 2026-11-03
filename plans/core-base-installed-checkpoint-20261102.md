@@ -1,5 +1,21 @@
 # Installed checkpoint B1/B2 — 2 ноября
 
+**Актуально3ноября: B6 native завершён на packagecdf7338f…**
+Source d6dcd75/installed6918044;80runtime/7CEP verified. Native delivery и original
+mutation после exact owner fault подтверждены; logical UNKNOWN не переобъявлен
+success. Reset2fecd11c… archived receiver26/ledger20 exact, oldAE21960 gone,
+newAE30024/birth639293103229905750. Own AEP saved/reopened SHA b6eaea7e…,
+comp1/layer13/BASE_B; sessionce977de2… old-session denial/new baseline/release PASS.
+Fresh readoptcd5bb102… enabled, adoptionaf0d6bc0… для нового host; next mutation
+по-прежнему требует обычные fresh plan/native gates, continuity не выдана.
+Последний standard owner27100/birth639293110869903720/bootb76c6e87…,
+один3457, CEP connected, current receiver5/ledger1 settled, pending/UNKNOWN/fault0.
+140protected files unchanged после intentional adoption; prior14/52archives intact.
+Не повторять settled stopf41dbe21…/update806719be…/reset2fecd11c…/readoptcd5bb102…
+или прежние IDs ниже. Configuredcdf/full release/portability open, MCP/Codex
+maintenance и Titles/Slideshow paused. [Полный checkpoint/evidence](../docs/core-base-b6-native-recovery-20261103.md).
+Исторические записи ниже не являются разрешением повторить операции.
+
 **Актуально3ноября: configured B4 PASS без maintenance.** Текущий MCP загрузил
 package21a884fa…/owner16712/birth639292930363178560/bootb85c94a9…; один3457,
 sameAE21960/auto peer connect. Malformed contract отказ до submit, fresh native

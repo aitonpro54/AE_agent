@@ -1,5 +1,13 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**B6 native завершён,3ноября:** доставка принятой mutation, exact owner fault,
+поздний отказ без изменения UNKNOWN, новый reset и saved/reopened BASE_B read-back
+подтверждены. Fresh sessionce977de2… и host re-adoption AE30024; final standard
+owner27100/bootb76c6e87…, current5/1settled, pending/UNKNOWN/fault0. Исторические
+UNKNOWN26/20 сохранены. [Checkpoint/evidence](../docs/core-base-b6-native-recovery-20261103.md).
+Configured proof/full release/portability открыты; MCP/Codex maintenance и
+Titles/Slideshow остаются отложенными. Записи ниже сохраняют provenance.
+
 **B6 installed,3ноября:** approved packagecdf7338f… installed/enabled,
 80runtime/7CEP exact,145protected files preserved. Standard native inspection PASS;
 prepared proposal ещё не submitted. MCP/Codex services без restart/refresh.

@@ -1,0 +1,2101 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T13:54:42.332Z",
+  "sourceCommit": "d6dcd75",
+  "installedCheckpointCommit": "6918044",
+  "scope": "B6 native delivery, original mutation after exact owner death, refused late callback, UNKNOWN-preserving reset and fresh saved/reopened read-back",
+  "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+  "distributionHash": "85c3d95a0dc33f6fad7901c6f6b8a70f58b20297b3e66d8eb8cdc13e39d39f63",
+  "actualRun": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check",
+    "startedAt": "2026-11-03T13:32:01.666Z",
+    "target": {
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+      "compId": 1,
+      "layerId": 13
+    },
+    "desiredText": "BASE_B",
+    "actions": [],
+    "runAttempts": 1,
+    "clientPid": 33880,
+    "status": {
+      "attachmentOwner": {
+        "accepted": 0,
+        "activity": {
+          "fault": false,
+          "pending": false,
+          "unresolved": false
+        },
+        "attachments": 1,
+        "bootId": "395c7809-6d39-450f-88f9-1f181a630119",
+        "closed": false,
+        "fenced": false,
+        "frozen": false,
+        "generation": 0,
+        "holderClientId": null,
+        "mode": "idle",
+        "pending": false,
+        "workSession": {
+          "baselineRequired": false,
+          "resetPending": false,
+          "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+        }
+      },
+      "automaticLifecycle": "unavailable",
+      "closed": false,
+      "composition": "manual",
+      "connection": "unavailable",
+      "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionPolicy": "read-only-current-observation-v1",
+      "installation": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "nodeVerified": true,
+        "nodeVersion": "24.15.0",
+        "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      },
+      "ledgerFault": false,
+      "lifecycle": {
+        "birthTicks": "639293094416076820",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": "cd53a5128ab28cac4d739d415c49bfa3e9b7045c06ba0bdb65ea40e4f422b699",
+            "eventCount": 11,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": "b1b4eb6f982c074f611c820ab3a1f9a1b51c65877b850d8ab465518b21035d9f",
+            "eventCount": 21,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 15616,
+        "processBootId": "bed482de-6c3e-4954-b9fd-f7df4c7b60d8",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "maintenance": {
+        "fault": null,
+        "id": null,
+        "phase": "running",
+        "requested": false
+      },
+      "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+      "ownershipFault": null,
+      "physical": {
+        "automaticLifecycle": "unavailable",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionAvailable": true,
+        "lastPhysicalFault": null,
+        "lastReadFailure": null,
+        "listening": true,
+        "peer": {
+          "connected": true,
+          "peerId": "panel-9b10eae04b3c738ec5756ef7fa20579b5e7938a1cf0ff3dd"
+        },
+        "pending": null,
+        "port": 3457,
+        "receiverStoreIdentity": "receiver-store-34940d50-b91c-4deb-9e88-a11096cd1eab",
+        "startOverFrozen": false,
+        "storeClosed": false,
+        "storeFault": false,
+        "unknown": false
+      },
+      "pid": 15616,
+      "product": "AE Agent Core 4.0.0",
+      "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+      "ready": true,
+      "resourceProvider": {
+        "adopted": true,
+        "coverage": {
+          "core4Lane": "cooperating-Core4-only",
+          "hostProcess": "adopted-reprobe-required",
+          "legacyEndpoints": "named-probes-only",
+          "legacyPhysicalQueue": "not-proven",
+          "otherAEActors": "outside-coverage",
+          "sharedOutputs": "not-requested"
+        },
+        "origin": {
+          "aePid": 21960,
+          "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "machineId": "MSI"
+        }
+      },
+      "startOver": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "fault": null,
+        "id": "69facd01-2b95-4983-a110-4209acabda31",
+        "phase": "ready",
+        "requiresAEExit": false,
+        "resetComplete": true,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      },
+      "synthetic": false,
+      "unavailableReason": null,
+      "unresolved": [],
+      "workSession": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "mode": "work-session",
+        "resetId": "69facd01-2b95-4983-a110-4209acabda31",
+        "resetPending": false,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      },
+      "worker": {
+        "epoch": 0,
+        "lateReplies": 0,
+        "loaded": [],
+        "pending": 0,
+        "pid": null
+      }
+    },
+    "controller": {
+      "generation": 1
+    },
+    "contract": {
+      "admissionPin": "4b5ee2769871308b9645015d04780a9d3d2f23e35ef136c5104d747db07f36d5",
+      "contract": {
+        "buildSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "layerId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "text": {
+              "maxLength": 2048,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "layerId",
+            "text"
+          ],
+          "type": "object"
+        },
+        "effectPolicy": {
+          "checkpointKind": "manual-text-preimage-v1",
+          "confirmation": "native-current-target",
+          "effect": "layer.text",
+          "expectedBindings": {
+            "expectedRevision": "revision",
+            "expectedText": "text"
+          },
+          "preserve": [
+            "protected"
+          ],
+          "requiresCheckpoint": true,
+          "resultBindings": {
+            "text": "text"
+          },
+          "targetFields": [
+            "projectId",
+            "compId",
+            "layerId"
+          ]
+        },
+        "executionPolicy": "current-matching-target-after-local-confirmation-v1",
+        "inputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "expectedRevision": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "expectedText": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "layerId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "text": {
+              "maxLength": 2048,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "layerId",
+            "text",
+            "expectedRevision",
+            "expectedText"
+          ],
+          "type": "object"
+        },
+        "moduleId": "titles-current-target",
+        "operationId": "set-current-text",
+        "protocolVersion": 1,
+        "snapshotSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "protected": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "revision": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "target": {
+              "additionalProperties": false,
+              "properties": {
+                "compId": {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "layerId": {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "projectId": {
+                  "maxLength": 8192,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "projectId",
+                "compId",
+                "layerId"
+              ],
+              "type": "object"
+            },
+            "text": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "target",
+            "revision",
+            "protected",
+            "text"
+          ],
+          "type": "object"
+        },
+        "targetSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "layerId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "layerId"
+          ],
+          "type": "object"
+        }
+      },
+      "contractId": "7a26b1632a458c6e73e95514c7f41c8706680aaa5316aee998cc5f81ad56dc20",
+      "moduleId": "titles-current-target",
+      "modulePin": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+      "operationId": "set-current-text"
+    },
+    "inspection": {
+      "evidenceRef": "evidence-b5088f43-1202-4b08-825f-61f9ba863409",
+      "modulePin": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+      "snapshot": {
+        "protected": "{\"character\":{\"font\":\"CenturyGothic\",\"fontSize\":56,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0,0,0],\"strokeWidth\":2,\"tracking\":0,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":56,\"autoLeading\":false}}",
+        "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_agent_core\\\\snapshots\\\\core-base-b6-recovery-native-20261103.aep\",\"compId\":1,\"layerId\":13},\"BASE_A\",{\"character\":{\"font\":\"CenturyGothic\",\"fontSize\":56,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0,0,0],\"strokeWidth\":2,\"tracking\":0,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":56,\"autoLeading\":false}}]",
+        "target": {
+          "compId": 1,
+          "layerId": 13,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+        },
+        "text": "BASE_A"
+      },
+      "synthetic": false
+    },
+    "build": {
+      "buildId": "build-bc6629fe-c07c-4d53-b474-65b42ce390b4",
+      "deterministicDigest": "7a1df9339627a39cbf72b638092a2c352d87531f001e27b8746942d6e71bc16e",
+      "pins": {
+        "core": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+        "engine": null,
+        "modules": [
+          {
+            "admission": "4b5ee2769871308b9645015d04780a9d3d2f23e35ef136c5104d747db07f36d5",
+            "dependencies": {},
+            "executionPolicy": {
+              "executionScope": {
+                "origin": {
+                  "aePid": 21960,
+                  "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+                  "machineId": "MSI"
+                },
+                "schemaVersion": 2,
+                "target": {
+                  "compId": 1,
+                  "layerId": 13,
+                  "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+                }
+              },
+              "pin": "2ccfddcf33e9a75894bc49d5f358da72d957310a14ceb5b320b9c81a50edfe46",
+              "policyId": "current-matching-target-after-local-confirmation-v1",
+              "verificationKind": "local-transaction-receipt"
+            },
+            "module": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+            "stepId": "base-recovery-text"
+          }
+        ],
+        "protocol": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "transport": "476059c8f79618d5efa5c26b45d7b67789975ef6206cefd408f604665557453a"
+      },
+      "planRevision": "revision-2de2c852-5175-4aba-a466-4eb8441da848",
+      "recordContext": {
+        "contextId": "core-base-b6-native-delivery-recovery-20261103",
+        "lifetime": "ephemeral_check",
+        "project": {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+        },
+        "purpose": "technical_check",
+        "resources": [
+          {
+            "identity": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+            "kind": "project"
+          }
+        ]
+      },
+      "taskId": "task-0558d0cf-7245-482c-aabb-21371e9efdc1",
+      "workflowId": "workflow-3bb03350-1f78-4698-8179-9f2b6cefaaa0"
+    },
+    "proposal": {
+      "confirmationRequired": true,
+      "effects": [
+        {
+          "effect": "layer.text",
+          "expectedSnapshotDigest": "03a5db14fefcea4fd8ccb60984f8810d7a5103166420182f9dcc67518ed06745",
+          "input": {
+            "compId": 1,
+            "expectedRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_agent_core\\\\snapshots\\\\core-base-b6-recovery-native-20261103.aep\",\"compId\":1,\"layerId\":13},\"BASE_A\",{\"character\":{\"font\":\"CenturyGothic\",\"fontSize\":56,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0,0,0],\"strokeWidth\":2,\"tracking\":0,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":56,\"autoLeading\":false}}]",
+            "expectedText": "BASE_A",
+            "layerId": 13,
+            "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+            "text": "BASE_B"
+          },
+          "modulePin": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+          "stepId": "base-recovery-text",
+          "target": {
+            "compId": 1,
+            "layerId": 13,
+            "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+          }
+        }
+      ],
+      "pins": {
+        "core": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+        "engine": null,
+        "modules": [
+          {
+            "admission": "4b5ee2769871308b9645015d04780a9d3d2f23e35ef136c5104d747db07f36d5",
+            "dependencies": {},
+            "executionPolicy": {
+              "executionScope": {
+                "origin": {
+                  "aePid": 21960,
+                  "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+                  "machineId": "MSI"
+                },
+                "schemaVersion": 2,
+                "target": {
+                  "compId": 1,
+                  "layerId": 13,
+                  "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+                }
+              },
+              "pin": "2ccfddcf33e9a75894bc49d5f358da72d957310a14ceb5b320b9c81a50edfe46",
+              "policyId": "current-matching-target-after-local-confirmation-v1",
+              "verificationKind": "local-transaction-receipt"
+            },
+            "module": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+            "stepId": "base-recovery-text"
+          }
+        ],
+        "protocol": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "transport": "476059c8f79618d5efa5c26b45d7b67789975ef6206cefd408f604665557453a"
+      },
+      "planRevision": "revision-2de2c852-5175-4aba-a466-4eb8441da848",
+      "proposalId": "proposal-c477c55e-4eb9-41bf-990e-4b83b4602a9b",
+      "taskId": "task-0558d0cf-7245-482c-aabb-21371e9efdc1"
+    },
+    "dryrun": {
+      "createdAt": 1793712851938,
+      "dryrunRef": "dryrun-a36182b5-7b5e-468f-8750-5e17e516ecb8",
+      "freshness": "each-step-reinspected-immediately-before-send",
+      "proposalId": "proposal-c477c55e-4eb9-41bf-990e-4b83b4602a9b",
+      "structural": true,
+      "taskEpoch": 0
+    },
+    "runSubmittedAt": "2026-11-03T13:34:11.939Z",
+    "runResult": {
+      "error": {
+        "code": -32000,
+        "message": "ipc_outcome_uncertain",
+        "data": {
+          "outcome": "unknown",
+          "requestId": "d96fa38af8d1d8a1d63a4ce5c7e5393f63dc48dd18d3c62c3fa180dfd9cb7a83"
+        }
+      }
+    },
+    "runReturnedAt": "2026-11-03T13:34:36.145Z",
+    "exit": {
+      "code": 0,
+      "signal": null,
+      "stderr": ""
+    }
+  },
+  "nativeConfirmation": {
+    "observedAt": "2026-11-03T13:34:35.120Z",
+    "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+    "compId": 1,
+    "layerId": 13,
+    "oldText": "BASE_A",
+    "newText": "BASE_B",
+    "proposalId": "proposal-c477c55e-4eb9-41bf-990e-4b83b4602a9b",
+    "observation": "Actual AE native confirmation; busy CEP; no approval clicked yet"
+  },
+  "ownerFault": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check",
+    "preparedAt": "2026-11-03T13:34:36.0743168Z",
+    "pid": 15616,
+    "cimBirthTicks": "639293094416076820",
+    "nativeBirthTicks": "639293094416076822",
+    "bootId": "bed482de-6c3e-4954-b9fd-f7df4c7b60d8",
+    "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+    "commandId": "command-7c78e9fb-c0e9-4c15-9cb7-f5c252a1d81c",
+    "taskId": "task-0558d0cf-7245-482c-aabb-21371e9efdc1",
+    "proposalId": "proposal-c477c55e-4eb9-41bf-990e-4b83b4602a9b",
+    "phase": "mutate",
+    "nativeModalObserved": true,
+    "receiverBeforeHash": "80fb36e45885909d9b560a807744374cc03b61bc8a151572681bac96e98ad1ec",
+    "attempts": 1,
+    "terminated": true,
+    "attemptedAt": "2026-11-03T13:34:36.0938352Z",
+    "finishedAt": "2026-11-03T13:34:36.1507186Z",
+    "receiverAfterHash": "80fb36e45885909d9b560a807744374cc03b61bc8a151572681bac96e98ad1ec"
+  },
+  "diagnosticStatus": {
+    "at": "2026-11-03T13:34:51.624Z",
+    "clientPid": 26468,
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "status": {
+      "attachmentOwner": {
+        "accepted": 0,
+        "activity": {
+          "fault": true,
+          "pending": false,
+          "unresolved": true
+        },
+        "attachments": 1,
+        "bootId": "36fb83fe-1546-4a6f-a0fa-cf602c46b1e6",
+        "closed": false,
+        "fenced": false,
+        "frozen": false,
+        "generation": 0,
+        "holderClientId": null,
+        "mode": "idle",
+        "pending": false,
+        "workSession": {
+          "baselineRequired": false,
+          "resetPending": false,
+          "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+        }
+      },
+      "closed": false,
+      "externalLegacyCoverage": "unobserved",
+      "installation": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "nodeVerified": true,
+        "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      },
+      "lifecycle": {
+        "birthTicks": "639293096927433000",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": "709722e4791e6ec32e9b0479f3a7695988441a62fa4a077058086af12e9b6a7f",
+            "eventCount": 20,
+            "present": true,
+            "settled": false,
+            "unresolvedCount": 2
+          },
+          "receiver": {
+            "byteHash": "80fb36e45885909d9b560a807744374cc03b61bc8a151572681bac96e98ad1ec",
+            "eventCount": 26,
+            "present": true,
+            "settled": false,
+            "unresolvedCount": 1
+          }
+        },
+        "mode": "diagnostic",
+        "pid": 12216,
+        "processBootId": "962a46a4-33be-4ea8-88c7-c41929fcad7f",
+        "reason": "owner_lifecycle_unresolved",
+        "recoveryRequired": true
+      },
+      "maintenance": {
+        "fault": null,
+        "id": null,
+        "phase": "running",
+        "requested": false
+      },
+      "ownershipFault": "owner_recovery_required",
+      "physical": {
+        "coverage": "diagnostic-only; execution queue not reopened",
+        "inspectionAvailable": false,
+        "listening": true,
+        "port": 3457,
+        "storeClosed": true,
+        "unknown": true
+      },
+      "pid": 12216,
+      "product": "AE Agent Core 4.0.0",
+      "ready": false,
+      "startOver": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "fault": null,
+        "id": "69facd01-2b95-4983-a110-4209acabda31",
+        "phase": "ready",
+        "requiresAEExit": false,
+        "resetComplete": true,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      },
+      "workSession": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "mode": "work-session",
+        "resetId": "69facd01-2b95-4983-a110-4209acabda31",
+        "resetPending": false,
+        "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+      }
+    },
+    "exit": {
+      "code": 0,
+      "signal": null,
+      "stderr": ""
+    }
+  },
+  "lateCallback": {
+    "at": "2026-11-03T13:36:06.377Z",
+    "observation": "Original confirmation Yes once after owner death; CEP changed busy to owner_recovery_required; no resend",
+    "nativeConfirmationApprovals": 1,
+    "uiAfterCompletion": "Требуется восстановление: owner_recovery_required",
+    "files": {
+      "receiver/completions.ndjson": {
+        "sha256": "80fb36e45885909d9b560a807744374cc03b61bc8a151572681bac96e98ad1ec",
+        "events": 26
+      },
+      "broker/ledger.ndjson": {
+        "sha256": "709722e4791e6ec32e9b0479f3a7695988441a62fa4a077058086af12e9b6a7f",
+        "events": 20
+      }
+    },
+    "packetCapture": false
+  },
+  "resetRequest": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check",
+    "at": "2026-11-03T13:42:05.967Z",
+    "authorization": "Own B6 recovery scenario; root confirms cessation of prior work, preservation of UNKNOWN, no rollback; own AEP saved; exact old AE exit will follow if required",
+    "uiActionsRejectedBeforeRequest": true,
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "before": {
+      "origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+      "state/production/origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+      "state/production/host-adoption.json": "4840b0e8096dd315df42b31bdcc8dd742f92961e75985aef1970218a8b0554c0",
+      "state/production/work-session.json": "87e775bb4de64911a2d3a896d67ba9d227f6b4976859d0d01257f4c75c9c8539",
+      "state/production/work-session-baseline.json": "a1587e014d3805ec500922f25b1a2f8bccdf9b4b4489304bcbdc0f9ab2a6929d",
+      "state/production/broker/ledger.ndjson": "709722e4791e6ec32e9b0479f3a7695988441a62fa4a077058086af12e9b6a7f",
+      "state/production/receiver/completions.ndjson": "80fb36e45885909d9b560a807744374cc03b61bc8a151572681bac96e98ad1ec",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-00-done.json": "1054205f9af933d0729214f9305b68652de5b99fb388095f9cedf206d4506937",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-00-intent.json": "6a299ef301c652cfe6eb9b4d5a227f51cf265e693311cb853e5cb7d0339a32d5",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-01-done.json": "6dba6a906c73b3c7b6466239b00b0b97f437a01140b92c643ea8150c6925ade9",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-01-intent.json": "760805499620fd973732b82cf7edee70b4f34e7e8df8c1ef4151ef1a2a0fb3be",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-02-done.json": "f8034a9a4fefcb0871e6b02867104eed3c5cfc72c4b09ef2b24ccf6712ed9c59",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-02-intent.json": "24beadf373a08672e5ebee870689584429c59f5f4891dd484a09a159fab7fef7",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-03-done.json": "af65a916dcaf90e14f5b3eb80121161b1db9dda6f88f10784263c49d9c6e0ade",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-04-done.json": "e20d6c18b72acd4a02d22d4b8ca38b14e1c46b3e7bfe75c293aac989c9abd03f",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-05-done.json": "f6c8307e6b1a15f9e3aed9be6b743b512d8a0c9f8c6ac0d567b18bc99912debe",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-05-intent.json": "1f18f29b321904511df0c5ad843c777882423762f767ca3060d4d06b01793021",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-06-done.json": "3a6da7fc31871061a95716d74c10ef10003ecf848c139da194dfb4067f96bace",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-06-intent.json": "151c8267c1ee55e96e01d41d98ebd83d8d0379a777af3f17da92a64f40d04273",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-07-done.json": "55143a55a8c5e4747a1ccb2db179d3445e1e01e4b38ccb99541eb9ce82a0bb28",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-07-intent.json": "898d517ad3d41da00d41b601ccf943cfcb02fe2297953791ce8e49e64b364fda",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-baseline": "b41cb91535bf6d8821927f2d8e3452f6b69b5996ff20477a6a225c2570beb595",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/artifacts.js": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/authority.js": "28ebbc2134b920b0f6726194d73b66ce3f0b8908b3b56d7250158c3fc5c28640",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/broker.js": "432f7438b6ccd53e4f9b71cc4cc4624fa86f2cbae89528e7c29bf8cc00857352",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/resources.js": "be29c6547111a4feeff2dea0951e30205c590210b718b441d96c416f40fefb69",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/state-lock.js": "4e515580ec7ceb03cc7a7a5d789048aee9bf0e9a7866d4cf0ee108958ff58e23",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/stdio.js": "e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/artifact.json": "f29af4f724ba9082abd8981d1156c3578e3696e6983b2f8a100320f11cce3938",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/dispatch.js": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/schema.js": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/worker.js": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/broker-owner.lock": "8a05c282559f83fdb599a8d6b162dbcaabf715beecf278921db07f1c912c9e68",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-completed.json": "bef418f79139e9f8779202ad3e6e0c163ebf6d9878bf14ebed54eeb784b927d3",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-maintenance": "6b2cb860784db74a838164fad703368bc5c6bd833f0eab5f8034addcc1798d0d",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-owner": "6d73b1a57df46ecc4597e49289f21b00958d4587e3868e15c4cd6f16be1d0dfa",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-plan.json": "1e9269e3b4da61afe459911f4f4738e24c496e02460f5e6906f5a71446398565",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-receiver/completions.ndjson": "638fbd1bbb97a142541f1d98915f40a758bd4453f3b22b75d6a9252acdf8fe67",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-receiver/owner": "1caa83c6c1bc91fc397d21f5df9722701037bd100a84cd549a0d2f98c7b03052",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-session": "a119d340364f7ae10f53124cc5c14f8d9723fd7a45214c9655d82d0fc4e0f0e0",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/attempt-ee2abfe1-8108-49ef-bf0a-b2d5c21ee2fc.json": "a464ea2094b4de7ec2710c92bba87228ee31e75a35fd4b2f1eb706f39ba801c1",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/enable-intent.json": "9ebe2c62959190d1415430486487bd05d353e959ff9d5ea9592932afcecca434",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/intent.json": "e0fa7b314ea1a936f0654ad2ad7a9dc77bfbd1b0ff72f4f2471d1eeef169bc55",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/inventory.json": "a80bcd6a000c9c5cbe816b8f7d6d90b71bf30d67ddf20751a0529d7d83456357",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/lease-ee2abfe1-8108-49ef-bf0a-b2d5c21ee2fc": "6ad76865ea72a669fcdd4d08bb18931a5e6b08f691b7eb191637e19c48746341",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/original-receiver": "638fbd1bbb97a142541f1d98915f40a758bd4453f3b22b75d6a9252acdf8fe67",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/reset-completed.json": "cb3e22765bd5734542d05439fada86fbb00cb49344c6557a5ca6e5e4be542d60",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/session-candidate.json": "87e775bb4de64911a2d3a896d67ba9d227f6b4976859d0d01257f4c75c9c8539",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/session-publish-intent.json": "19a140112562efa9239329980acff1fe3c49943ec824ce61e716141c77bad739",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/session-published.json": "29cd7cfb81e0387e105a58638a19c4fc59c080509d9eb4e1caede24bb0530d9d",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/stop-requested.json": "33bfd31cde6764fe843582710e22247507b165b325fa9ec4b59fc8d4c6f96ba9",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-00-done.json": "029527f7b26bf8f28fa89a368d725d6f8f844a85667e1ec4f591b1ec7f2cb333",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-00-intent.json": "3f603d46d57ac0939ed269db97b7439b9960bb7f35795603a2fe3d9781f831fe",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-01-done.json": "8d8bfbedfa43af35f10a1489a66a29f6f0a9badc25685ac5d5fca255966569d8",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-01-intent.json": "dbafcc47c2fa1c728e2fc03c28db816bbe0e93a15a79b8e06a1d4d9589a90e4b",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-02-done.json": "527673f4176a6112cae39113f46d8beb05cd63413dbd8ae6a80010e9ab013dfe",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-03-done.json": "85561f3e544cce74923a902acb55ca378603f1e958f36c21a92ec6f76d7d204d",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-04-done.json": "21e35513c608e5f64c0ed1ac8a3e0c08060488183457329c8b480e1479c8f3f2",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-05-done.json": "4aec59cb5e3cbcd1c2bc9553d6ba84ee0d84563bf4a52fd525416a9ddb6430fa",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-05-intent.json": "9c2816e9a1890713a05d603781b24ee227fa35862688f903c36c01efdaab79ba",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-06-done.json": "f57eeac8c6046685a22f88701c6d95b8c9dc82d8d53561b39564114e9f4639ad",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-07-done.json": "8f6a5534d347d5356abd8dbefcd7cf3040193d6935c64611374a9531f42ce94b",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79/contract.json": "318a5d6021bc94690323ab00ca324c694c6b66dd520a28989eda87643c1d3ce0",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79/executor.jsx": "6d84fdbbf09352db6b77cf4470e84e785d7cafa30979df98de988ba6a70c8132",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79/implementation.js": "1b31cd96b475f6af3e286fdd5c009d46e09b18b271db88ce951e9ec8d7fc580b",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46/contract.json": "318a5d6021bc94690323ab00ca324c694c6b66dd520a28989eda87643c1d3ce0",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46/executor.jsx": "69546bb0dde44ad4441920058ae7c3b385aaf95ef94a742a1782f036d4b91429",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46/implementation.js": "1b31cd96b475f6af3e286fdd5c009d46e09b18b271db88ce951e9ec8d7fc580b",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/artifacts.js": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/authority.js": "28ebbc2134b920b0f6726194d73b66ce3f0b8908b3b56d7250158c3fc5c28640",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/broker.js": "432f7438b6ccd53e4f9b71cc4cc4624fa86f2cbae89528e7c29bf8cc00857352",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/resources.js": "be29c6547111a4feeff2dea0951e30205c590210b718b441d96c416f40fefb69",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/state-lock.js": "4e515580ec7ceb03cc7a7a5d789048aee9bf0e9a7866d4cf0ee108958ff58e23",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/stdio.js": "e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/artifact.json": "f29af4f724ba9082abd8981d1156c3578e3696e6983b2f8a100320f11cce3938",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/dispatch.js": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/schema.js": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/worker.js": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/artifacts.js": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/authority.js": "28ebbc2134b920b0f6726194d73b66ce3f0b8908b3b56d7250158c3fc5c28640",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/broker.js": "74c457d7ef0da217313c2bc81665091bf41dc1eb07508d0ff9835abaca45ba3f",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/resources.js": "be29c6547111a4feeff2dea0951e30205c590210b718b441d96c416f40fefb69",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/state-lock.js": "4105e87c09a4546e1785652dc7d55859148881f1214bf8560871803320ba77ea",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/stdio.js": "e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/artifact.json": "f29af4f724ba9082abd8981d1156c3578e3696e6983b2f8a100320f11cce3938",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/dispatch.js": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/schema.js": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/worker.js": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/artifacts.js": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/authority.js": "6e90b7921fe5104e9a557993b5425ac27c8dd5b47671a375e10416454eabb4d9",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/broker.js": "929428915254e5f4f280e5a046944e081e0d50940dc440df73925ffa508c0846",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/resources.js": "27eca74207df9108dcf3282a3b26db4b110965e1832fc26f2a36aa0a99658a5c",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/state-lock.js": "4105e87c09a4546e1785652dc7d55859148881f1214bf8560871803320ba77ea",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/stdio.js": "3100da7943d9119e96e7fffcc9b80cdd4048256e9e2cbdec649fef1021358502",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/artifact.json": "f29af4f724ba9082abd8981d1156c3578e3696e6983b2f8a100320f11cce3938",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/dispatch.js": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/schema.js": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/worker.js": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-completed.json": "5f822deaa69d67349bb104c90a74ac3cdfa70857c77f30268c724c31e99483aa",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-maintenance": "485332dd144902972f4a3c74ff3d1c30900202a2bd50537ad48fed87b9d2eb53",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-plan.json": "5349074acbebb4fdd74a33ddb2834611d23db7c5cc0242919900d7e750a5e886",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-receiver/completions.ndjson": "e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/attempt-adc1e463-b1b6-4aee-b8d8-5a0e4c79dce2.json": "5345523ebfae92f0cd352d357f6946f66c96def0397b9b4e10acfc07aac34306",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/enable-intent.json": "976a9c0a82b6ac5756681d9db7f05d3e595db8d1d645496d1b44ee02949682d0",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/intent.json": "323ecc422fe1a15b17edd27fb10b248ff0dbb41c2caa500c1242fd22e9bea33b",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/inventory.json": "779d13ee59fb6bd22ee8a579275b4471c62f0d32a347c8d500b7ca47d680e099",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/lease-adc1e463-b1b6-4aee-b8d8-5a0e4c79dce2": "f2c675ca70926aa85b41d4977fb0c9301f049271ea3bd3e01f97a1842ef14853",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/original-receiver": "e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/reset-completed.json": "5002775b51d5ab8fa0a359d798320f4a1230f9bd9e921429df8ccdc5b349c49f",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/session-candidate.json": "a119d340364f7ae10f53124cc5c14f8d9723fd7a45214c9655d82d0fc4e0f0e0",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/session-publish-intent.json": "ccd61be5c32a9f3b7fccd82301760a58b24a1877cb80eee8047d79656654cfa1",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/session-published.json": "33a5d28f5cbc6000e229ba61979f7e58b447ebd659954aa4321ad885f35ff5a6",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/stop-requested.json": "e31cf926911995f6af1530be26ad7e2a5a512e4999a44c101ef878b1b1fdfa79"
+    },
+    "aep": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+      "sha256": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5"
+    },
+    "attempts": 1,
+    "beforeStatus": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "fault": null,
+      "id": "69facd01-2b95-4983-a110-4209acabda31",
+      "phase": "ready",
+      "requiresAEExit": false,
+      "resetComplete": true,
+      "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0"
+    },
+    "submittedAt": "2026-11-03T13:42:05.996Z",
+    "challengeDigest": "54d3ebb0a3f0c5f77882513a10447f27436d74f04d2185ae698dded00543359b",
+    "response": {
+      "aeAuthority": false,
+      "baselineRequired": true,
+      "fault": null,
+      "id": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+      "phase": "stopping",
+      "requiresAEExit": true,
+      "resetComplete": false,
+      "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+    },
+    "receivedAt": "2026-11-03T13:42:13.317Z",
+    "responseAuthenticated": true
+  },
+  "oldAeExit": {
+    "at": "2026-11-03T13:43:45.8344030Z",
+    "oldAE21960Present": false,
+    "birth": null
+  },
+  "resetCompletionStatus": {
+    "at": "2026-11-03T13:44:50.993Z",
+    "clientPid": 22396,
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "response": {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"attachmentOwner\":{\"accepted\":0,\"activity\":{\"fault\":false,\"pending\":false,\"unresolved\":false},\"attachments\":1,\"bootId\":\"c59f66be-90a8-4619-a397-431d8847ef80\",\"closed\":false,\"fenced\":false,\"frozen\":false,\"generation\":0,\"holderClientId\":null,\"mode\":\"idle\",\"pending\":false,\"workSession\":{\"baselineRequired\":true,\"resetPending\":false,\"sessionId\":\"ce977de2-4dab-4a0a-9b94-855a02b00c73\"}},\"automaticLifecycle\":\"unavailable\",\"closed\":false,\"composition\":\"manual\",\"connection\":\"unavailable\",\"coreIdentity\":\"202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86\",\"externalLegacyCoverage\":\"unobserved\",\"inspectionPolicy\":\"read-only-current-observation-v1\",\"installation\":{\"installationId\":\"installation-1304c438-5794-4d5c-bf72-d8101f3d2a24\",\"machineId\":\"MSI\",\"nodeVerified\":true,\"nodeVersion\":\"24.15.0\",\"packageHash\":\"cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944\"},\"ledgerFault\":false,\"lifecycle\":{\"birthTicks\":\"639293101347436410\",\"historyAtStartup\":{\"ledger\":{\"byteHash\":null,\"eventCount\":0,\"present\":false,\"settled\":true,\"unresolvedCount\":0},\"receiver\":{\"byteHash\":null,\"eventCount\":0,\"present\":false,\"settled\":true,\"unresolvedCount\":0}},\"mode\":\"active\",\"pid\":11912,\"processBootId\":\"38cf83dd-c5c1-4262-acec-bae51846ecb1\",\"reason\":null,\"recoveryRequired\":false},\"maintenance\":{\"fault\":null,\"id\":null,\"phase\":\"running\",\"requested\":false},\"manualPolicy\":\"current-matching-target-after-local-confirmation-v1\",\"ownershipFault\":null,\"physical\":{\"automaticLifecycle\":\"unavailable\",\"externalLegacyCoverage\":\"unobserved\",\"inspectionAvailable\":false,\"lastPhysicalFault\":null,\"lastReadFailure\":null,\"listening\":true,\"peer\":{\"connected\":false},\"pending\":null,\"port\":3457,\"receiverStoreIdentity\":\"receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726\",\"startOverFrozen\":false,\"storeClosed\":false,\"storeFault\":false,\"unknown\":false},\"pid\":11912,\"product\":\"AE Agent Core 4.0.0\",\"protocolPin\":\"b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d\",\"ready\":true,\"resourceProvider\":{\"adopted\":true,\"coverage\":{\"core4Lane\":\"cooperating-Core4-only\",\"hostProcess\":\"adopted-reprobe-required\",\"legacyEndpoints\":\"named-probes-only\",\"legacyPhysicalQueue\":\"not-proven\",\"otherAEActors\":\"outside-coverage\",\"sharedOutputs\":\"not-requested\"},\"origin\":{\"aePid\":21960,\"aeProcessBirth\":\"2026-11-03T06:03:11.2075250Z\",\"executableHash\":\"8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71\",\"executablePath\":\"C:\\\\Program Files\\\\Adobe\\\\Adobe After Effects 2026\\\\Support Files\\\\AfterFX.exe\",\"machineId\":\"MSI\"}},\"startOver\":{\"aeAuthority\":false,\"baselineRequired\":true,\"fault\":null,\"id\":\"2fecd11c-faef-4651-9f27-e88e4498fb20\",\"phase\":\"baseline-required\",\"requiresAEExit\":false,\"resetComplete\":true,\"sessionId\":\"ce977de2-4dab-4a0a-9b94-855a02b00c73\"},\"synthetic\":false,\"unavailableReason\":null,\"unresolved\":[],\"workSession\":{\"aeAuthority\":false,\"baselineRequired\":true,\"mode\":\"work-session\",\"resetId\":\"2fecd11c-faef-4651-9f27-e88e4498fb20\",\"resetPending\":false,\"sessionId\":\"ce977de2-4dab-4a0a-9b94-855a02b00c73\"},\"worker\":{\"epoch\":0,\"lateReplies\":0,\"loaded\":[],\"pending\":0,\"pid\":null}}"
+          }
+        ],
+        "isError": false
+      }
+    },
+    "status": {
+      "attachmentOwner": {
+        "accepted": 0,
+        "activity": {
+          "fault": false,
+          "pending": false,
+          "unresolved": false
+        },
+        "attachments": 1,
+        "bootId": "c59f66be-90a8-4619-a397-431d8847ef80",
+        "closed": false,
+        "fenced": false,
+        "frozen": false,
+        "generation": 0,
+        "holderClientId": null,
+        "mode": "idle",
+        "pending": false,
+        "workSession": {
+          "baselineRequired": true,
+          "resetPending": false,
+          "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+        }
+      },
+      "automaticLifecycle": "unavailable",
+      "closed": false,
+      "composition": "manual",
+      "connection": "unavailable",
+      "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionPolicy": "read-only-current-observation-v1",
+      "installation": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "nodeVerified": true,
+        "nodeVersion": "24.15.0",
+        "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      },
+      "ledgerFault": false,
+      "lifecycle": {
+        "birthTicks": "639293101347436410",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": null,
+            "eventCount": 0,
+            "present": false,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": null,
+            "eventCount": 0,
+            "present": false,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 11912,
+        "processBootId": "38cf83dd-c5c1-4262-acec-bae51846ecb1",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "maintenance": {
+        "fault": null,
+        "id": null,
+        "phase": "running",
+        "requested": false
+      },
+      "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+      "ownershipFault": null,
+      "physical": {
+        "automaticLifecycle": "unavailable",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionAvailable": false,
+        "lastPhysicalFault": null,
+        "lastReadFailure": null,
+        "listening": true,
+        "peer": {
+          "connected": false
+        },
+        "pending": null,
+        "port": 3457,
+        "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726",
+        "startOverFrozen": false,
+        "storeClosed": false,
+        "storeFault": false,
+        "unknown": false
+      },
+      "pid": 11912,
+      "product": "AE Agent Core 4.0.0",
+      "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+      "ready": true,
+      "resourceProvider": {
+        "adopted": true,
+        "coverage": {
+          "core4Lane": "cooperating-Core4-only",
+          "hostProcess": "adopted-reprobe-required",
+          "legacyEndpoints": "named-probes-only",
+          "legacyPhysicalQueue": "not-proven",
+          "otherAEActors": "outside-coverage",
+          "sharedOutputs": "not-requested"
+        },
+        "origin": {
+          "aePid": 21960,
+          "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "machineId": "MSI"
+        }
+      },
+      "startOver": {
+        "aeAuthority": false,
+        "baselineRequired": true,
+        "fault": null,
+        "id": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+        "phase": "baseline-required",
+        "requiresAEExit": false,
+        "resetComplete": true,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "synthetic": false,
+      "unavailableReason": null,
+      "unresolved": [],
+      "workSession": {
+        "aeAuthority": false,
+        "baselineRequired": true,
+        "mode": "work-session",
+        "resetId": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+        "resetPending": false,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "worker": {
+        "epoch": 0,
+        "lateReplies": 0,
+        "loaded": [],
+        "pending": 0,
+        "pid": null
+      }
+    },
+    "exit": {
+      "code": 0,
+      "signal": null,
+      "stderr": ""
+    }
+  },
+  "freshBaseline": {
+    "purpose": "technical_check",
+    "lifetime": "ephemeral_check",
+    "at": "2026-11-03T13:51:18.246Z",
+    "resetId": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+    "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73",
+    "target": {
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+      "compId": 1,
+      "layerId": 13
+    },
+    "mutationRuns": 0,
+    "clientPid": 25700,
+    "before": {
+      "attachmentOwner": {
+        "accepted": 0,
+        "activity": {
+          "fault": false,
+          "pending": false,
+          "unresolved": false
+        },
+        "attachments": 1,
+        "bootId": "c59f66be-90a8-4619-a397-431d8847ef80",
+        "closed": false,
+        "fenced": false,
+        "frozen": false,
+        "generation": 0,
+        "holderClientId": null,
+        "mode": "idle",
+        "pending": false,
+        "workSession": {
+          "baselineRequired": true,
+          "resetPending": false,
+          "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+        }
+      },
+      "automaticLifecycle": "unavailable",
+      "closed": false,
+      "composition": "manual",
+      "connection": "unavailable",
+      "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionPolicy": "read-only-current-observation-v1",
+      "installation": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "nodeVerified": true,
+        "nodeVersion": "24.15.0",
+        "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      },
+      "ledgerFault": false,
+      "lifecycle": {
+        "birthTicks": "639293101347436410",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": null,
+            "eventCount": 0,
+            "present": false,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": null,
+            "eventCount": 0,
+            "present": false,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 11912,
+        "processBootId": "38cf83dd-c5c1-4262-acec-bae51846ecb1",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "maintenance": {
+        "fault": null,
+        "id": null,
+        "phase": "running",
+        "requested": false
+      },
+      "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+      "ownershipFault": null,
+      "physical": {
+        "automaticLifecycle": "unavailable",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionAvailable": true,
+        "lastPhysicalFault": null,
+        "lastReadFailure": null,
+        "listening": true,
+        "peer": {
+          "connected": true,
+          "peerId": "panel-07b838de451b18bf7ef19628b933a86861b5d3c9b82d9497"
+        },
+        "pending": null,
+        "port": 3457,
+        "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726",
+        "startOverFrozen": false,
+        "storeClosed": false,
+        "storeFault": false,
+        "unknown": false
+      },
+      "pid": 11912,
+      "product": "AE Agent Core 4.0.0",
+      "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+      "ready": true,
+      "resourceProvider": {
+        "adopted": true,
+        "coverage": {
+          "core4Lane": "cooperating-Core4-only",
+          "hostProcess": "adopted-reprobe-required",
+          "legacyEndpoints": "named-probes-only",
+          "legacyPhysicalQueue": "not-proven",
+          "otherAEActors": "outside-coverage",
+          "sharedOutputs": "not-requested"
+        },
+        "origin": {
+          "aePid": 21960,
+          "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "machineId": "MSI"
+        }
+      },
+      "startOver": {
+        "aeAuthority": false,
+        "baselineRequired": true,
+        "fault": null,
+        "id": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+        "phase": "baseline-required",
+        "requiresAEExit": false,
+        "resetComplete": true,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "synthetic": false,
+      "unavailableReason": null,
+      "unresolved": [],
+      "workSession": {
+        "aeAuthority": false,
+        "baselineRequired": true,
+        "mode": "work-session",
+        "resetId": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+        "resetPending": false,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "worker": {
+        "epoch": 0,
+        "lateReplies": 0,
+        "loaded": [],
+        "pending": 0,
+        "pid": null
+      }
+    },
+    "oldSessionDenied": {
+      "error": {
+        "code": -32000,
+        "message": "owner_work_session_changed"
+      }
+    },
+    "controller": {
+      "generation": 1
+    },
+    "baseline": {
+      "authority": false,
+      "continuity": false,
+      "contractId": "63e3b7c7f3d56e86e53f7655ed4d756c56018a5c08d29d66b8bacfb5194055cd",
+      "evidenceRef": "observation-a4de6dae-4b15-4ec0-9c79-c16d7717a658",
+      "moduleId": "project-inspection",
+      "observation": {
+        "aeVersion": "26.3x87",
+        "compositions": [
+          {
+            "compId": 1,
+            "duration": 5,
+            "name": "CoreBase_B6_Recovery",
+            "numLayers": 1
+          }
+        ],
+        "layers": [],
+        "observationVersion": 1,
+        "project": {
+          "name": "core-base-b6-recovery-native-20261103.aep",
+          "numItems": 1,
+          "saved": true
+        },
+        "target": {
+          "compId": null,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+        },
+        "truncated": false
+      },
+      "originalBinding": {
+        "channelEpoch": "http-72aba303-c32c-42ef-bbb1-8657214267c5",
+        "commandId": "inspect-c5665125-bad0-4761-a41b-477ce4fc6445",
+        "controllerId": "controller-7903b705-6543-4c5f-bbfe-0c0434ce6c7b",
+        "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+        "moduleId": "project-inspection",
+        "operationId": "inspect",
+        "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "phase": "inspect",
+        "receiptRef": "0e14d4dc73a0a298e0121df48bf844eb35b50b3e66371f5273fc54483ee43cc0",
+        "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726"
+      },
+      "pins": {
+        "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      }
+    },
+    "readback": {
+      "evidenceRef": "evidence-b013696b-9c45-4288-a0b4-b7797704b3a4",
+      "modulePin": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+      "snapshot": {
+        "protected": "{\"character\":{\"font\":\"CenturyGothic\",\"fontSize\":56,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0,0,0],\"strokeWidth\":2,\"tracking\":0,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":56,\"autoLeading\":false}}",
+        "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_agent_core\\\\snapshots\\\\core-base-b6-recovery-native-20261103.aep\",\"compId\":1,\"layerId\":13},\"BASE_B\",{\"character\":{\"font\":\"CenturyGothic\",\"fontSize\":56,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0,0,0],\"strokeWidth\":2,\"tracking\":0,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":56,\"autoLeading\":false}}]",
+        "target": {
+          "compId": 1,
+          "layerId": 13,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+        },
+        "text": "BASE_B"
+      },
+      "synthetic": false
+    },
+    "release": {
+      "released": true
+    },
+    "after": {
+      "attachmentOwner": {
+        "accepted": 0,
+        "activity": {
+          "fault": false,
+          "pending": false,
+          "unresolved": false
+        },
+        "attachments": 1,
+        "bootId": "c59f66be-90a8-4619-a397-431d8847ef80",
+        "closed": false,
+        "fenced": false,
+        "frozen": false,
+        "generation": 1,
+        "holderClientId": null,
+        "mode": "idle",
+        "pending": false,
+        "workSession": {
+          "baselineRequired": false,
+          "resetPending": false,
+          "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+        }
+      },
+      "automaticLifecycle": "unavailable",
+      "closed": false,
+      "composition": "manual",
+      "connection": "connected",
+      "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionPolicy": "read-only-current-observation-v1",
+      "installation": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "nodeVerified": true,
+        "nodeVersion": "24.15.0",
+        "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      },
+      "ledgerFault": false,
+      "lifecycle": {
+        "birthTicks": "639293101347436410",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": null,
+            "eventCount": 0,
+            "present": false,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": null,
+            "eventCount": 0,
+            "present": false,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 11912,
+        "processBootId": "38cf83dd-c5c1-4262-acec-bae51846ecb1",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "maintenance": {
+        "fault": null,
+        "id": null,
+        "phase": "running",
+        "requested": false
+      },
+      "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+      "ownershipFault": null,
+      "physical": {
+        "automaticLifecycle": "unavailable",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionAvailable": true,
+        "lastPhysicalFault": null,
+        "lastReadFailure": null,
+        "listening": true,
+        "peer": {
+          "connected": true,
+          "peerId": "panel-07b838de451b18bf7ef19628b933a86861b5d3c9b82d9497"
+        },
+        "pending": null,
+        "port": 3457,
+        "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726",
+        "startOverFrozen": false,
+        "storeClosed": false,
+        "storeFault": false,
+        "unknown": false
+      },
+      "pid": 11912,
+      "product": "AE Agent Core 4.0.0",
+      "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+      "ready": true,
+      "resourceProvider": {
+        "adopted": true,
+        "coverage": {
+          "core4Lane": "cooperating-Core4-only",
+          "hostProcess": "adopted-reprobe-required",
+          "legacyEndpoints": "named-probes-only",
+          "legacyPhysicalQueue": "not-proven",
+          "otherAEActors": "outside-coverage",
+          "sharedOutputs": "not-requested"
+        },
+        "origin": {
+          "aePid": 21960,
+          "aeProcessBirth": "2026-11-03T06:03:11.2075250Z",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "machineId": "MSI"
+        }
+      },
+      "startOver": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "fault": null,
+        "id": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+        "phase": "ready",
+        "requiresAEExit": false,
+        "resetComplete": true,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "synthetic": false,
+      "unavailableReason": null,
+      "unresolved": [],
+      "workSession": {
+        "aeAuthority": false,
+        "baselineRequired": false,
+        "mode": "work-session",
+        "resetId": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+        "resetPending": false,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "worker": {
+        "epoch": 0,
+        "lateReplies": 0,
+        "loaded": [],
+        "pending": 0,
+        "pid": null
+      }
+    },
+    "finishedAt": "2026-11-03T13:51:19.393Z",
+    "exit": {
+      "code": 0,
+      "signal": null,
+      "stderr": ""
+    }
+  },
+  "processes": {
+    "at": "2026-11-03T13:52:23.2901504Z",
+    "actors": [
+      {
+        "pid": 11912,
+        "birthTicks": "639293101347436410",
+        "path": "C:\\Program Files\\nodejs\\node.exe"
+      },
+      {
+        "pid": 30024,
+        "birthTicks": "639293103229905750",
+        "path": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"
+      }
+    ],
+    "listeners": [
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 3457,
+        "OwningProcess": 11912
+      }
+    ]
+  },
+  "histories": {
+    "archivedReceiver": {
+      "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\2fecd11c-faef-4651-9f27-e88e4498fb20-start-over\\archive-receiver\\completions.ndjson",
+      "sha256": "80fb36e45885909d9b560a807744374cc03b61bc8a151572681bac96e98ad1ec",
+      "events": 26,
+      "settled": false,
+      "unresolvedCount": 1,
+      "commands": [
+        {
+          "commandId": "inspect-e3e17158-319f-42df-91d6-37a9bbde1646",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-635877a3-e65f-4860-b7d6-29c5e4d8462e",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-73c57020-e98a-47dd-b838-a37df96d9b7e",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-e3a56277-cea5-4075-9395-5106d3d2dfb5",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-8a823045-0361-4c58-845b-5b39020182f6",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-9dbd8737-a68c-437e-868d-d404a6f3ca7c",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-7c56b8b8-92b6-4b44-a734-9df178b7ca29",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-c87c0694-6cc3-431b-9b45-f900e1897b23",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-7e644bbe-5820-402a-a264-6678b3c47760",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-cc6d29f0-e7d3-4a6e-ae4e-b867d34ce151",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-7f52767d-8e4c-4691-ac21-cc5488ddd9ff",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-9ec87727-5cae-413d-860e-c59db3e784e8",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "command-7c78e9fb-c0e9-4c15-9cb7-f5c252a1d81c",
+          "state": "ongoing",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        }
+      ],
+      "mutateBegins": 1
+    },
+    "archivedLedger": {
+      "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\2fecd11c-faef-4651-9f27-e88e4498fb20-start-over\\archive-broker\\ledger.ndjson",
+      "sha256": "709722e4791e6ec32e9b0479f3a7695988441a62fa4a077058086af12e9b6a7f",
+      "events": 20,
+      "settled": false,
+      "unresolvedCount": 2,
+      "commands": [
+        {
+          "commandId": "command-7c78e9fb-c0e9-4c15-9cb7-f5c252a1d81c",
+          "state": "UNKNOWN"
+        }
+      ]
+    },
+    "currentReceiver": {
+      "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\receiver\\completions.ndjson",
+      "sha256": "fbdc3eadfed3fd314358b2eed23f6d715b95ec023b96be17e84f3cf6e0f043e4",
+      "events": 5,
+      "settled": true,
+      "unresolvedCount": 0,
+      "commands": [
+        {
+          "commandId": "inspect-c5665125-bad0-4761-a41b-477ce4fc6445",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        },
+        {
+          "commandId": "inspect-d00be6e3-c3cd-4fe0-8332-31dece8eab30",
+          "state": "completed",
+          "physicalUnknown": false,
+          "terminalDisposition": false
+        }
+      ],
+      "mutateBegins": 0
+    },
+    "currentLedger": {
+      "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+      "sha256": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+      "events": 1,
+      "settled": true,
+      "unresolvedCount": 0,
+      "commands": []
+    }
+  },
+  "protected": {
+    "count": 141,
+    "hashes": {
+      "origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+      "state/production/origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+      "state/production/host-adoption.json": "4840b0e8096dd315df42b31bdcc8dd742f92961e75985aef1970218a8b0554c0",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-00-done.json": "1054205f9af933d0729214f9305b68652de5b99fb388095f9cedf206d4506937",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-00-intent.json": "6a299ef301c652cfe6eb9b4d5a227f51cf265e693311cb853e5cb7d0339a32d5",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-01-done.json": "6dba6a906c73b3c7b6466239b00b0b97f437a01140b92c643ea8150c6925ade9",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-01-intent.json": "760805499620fd973732b82cf7edee70b4f34e7e8df8c1ef4151ef1a2a0fb3be",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-02-done.json": "f8034a9a4fefcb0871e6b02867104eed3c5cfc72c4b09ef2b24ccf6712ed9c59",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-02-intent.json": "24beadf373a08672e5ebee870689584429c59f5f4891dd484a09a159fab7fef7",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-03-done.json": "af65a916dcaf90e14f5b3eb80121161b1db9dda6f88f10784263c49d9c6e0ade",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-04-done.json": "e20d6c18b72acd4a02d22d4b8ca38b14e1c46b3e7bfe75c293aac989c9abd03f",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-05-done.json": "f6c8307e6b1a15f9e3aed9be6b743b512d8a0c9f8c6ac0d567b18bc99912debe",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-05-intent.json": "1f18f29b321904511df0c5ad843c777882423762f767ca3060d4d06b01793021",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-06-done.json": "3a6da7fc31871061a95716d74c10ef10003ecf848c139da194dfb4067f96bace",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-06-intent.json": "151c8267c1ee55e96e01d41d98ebd83d8d0379a777af3f17da92a64f40d04273",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-07-done.json": "55143a55a8c5e4747a1ccb2db179d3445e1e01e4b38ccb99541eb9ce82a0bb28",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-07-intent.json": "898d517ad3d41da00d41b601ccf943cfcb02fe2297953791ce8e49e64b364fda",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-baseline": "b41cb91535bf6d8821927f2d8e3452f6b69b5996ff20477a6a225c2570beb595",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/artifacts.js": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/authority.js": "28ebbc2134b920b0f6726194d73b66ce3f0b8908b3b56d7250158c3fc5c28640",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/broker.js": "432f7438b6ccd53e4f9b71cc4cc4624fa86f2cbae89528e7c29bf8cc00857352",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/resources.js": "be29c6547111a4feeff2dea0951e30205c590210b718b441d96c416f40fefb69",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/state-lock.js": "4e515580ec7ceb03cc7a7a5d789048aee9bf0e9a7866d4cf0ee108958ff58e23",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/stdio.js": "e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/artifact.json": "f29af4f724ba9082abd8981d1156c3578e3696e6983b2f8a100320f11cce3938",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/dispatch.js": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/schema.js": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/worker.js": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-broker/broker-owner.lock": "8a05c282559f83fdb599a8d6b162dbcaabf715beecf278921db07f1c912c9e68",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-completed.json": "bef418f79139e9f8779202ad3e6e0c163ebf6d9878bf14ebed54eeb784b927d3",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-maintenance": "6b2cb860784db74a838164fad703368bc5c6bd833f0eab5f8034addcc1798d0d",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-owner": "6d73b1a57df46ecc4597e49289f21b00958d4587e3868e15c4cd6f16be1d0dfa",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-plan.json": "1e9269e3b4da61afe459911f4f4738e24c496e02460f5e6906f5a71446398565",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-receiver/completions.ndjson": "638fbd1bbb97a142541f1d98915f40a758bd4453f3b22b75d6a9252acdf8fe67",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-receiver/owner": "1caa83c6c1bc91fc397d21f5df9722701037bd100a84cd549a0d2f98c7b03052",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-session": "a119d340364f7ae10f53124cc5c14f8d9723fd7a45214c9655d82d0fc4e0f0e0",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/attempt-ee2abfe1-8108-49ef-bf0a-b2d5c21ee2fc.json": "a464ea2094b4de7ec2710c92bba87228ee31e75a35fd4b2f1eb706f39ba801c1",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/enable-intent.json": "9ebe2c62959190d1415430486487bd05d353e959ff9d5ea9592932afcecca434",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/intent.json": "e0fa7b314ea1a936f0654ad2ad7a9dc77bfbd1b0ff72f4f2471d1eeef169bc55",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/inventory.json": "a80bcd6a000c9c5cbe816b8f7d6d90b71bf30d67ddf20751a0529d7d83456357",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/lease-ee2abfe1-8108-49ef-bf0a-b2d5c21ee2fc": "6ad76865ea72a669fcdd4d08bb18931a5e6b08f691b7eb191637e19c48746341",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/original-receiver": "638fbd1bbb97a142541f1d98915f40a758bd4453f3b22b75d6a9252acdf8fe67",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/reset-completed.json": "cb3e22765bd5734542d05439fada86fbb00cb49344c6557a5ca6e5e4be542d60",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/session-candidate.json": "87e775bb4de64911a2d3a896d67ba9d227f6b4976859d0d01257f4c75c9c8539",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/session-publish-intent.json": "19a140112562efa9239329980acff1fe3c49943ec824ce61e716141c77bad739",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/session-published.json": "29cd7cfb81e0387e105a58638a19c4fc59c080509d9eb4e1caede24bb0530d9d",
+      "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/stop-requested.json": "33bfd31cde6764fe843582710e22247507b165b325fa9ec4b59fc8d4c6f96ba9",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-00-done.json": "029527f7b26bf8f28fa89a368d725d6f8f844a85667e1ec4f591b1ec7f2cb333",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-00-intent.json": "3f603d46d57ac0939ed269db97b7439b9960bb7f35795603a2fe3d9781f831fe",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-01-done.json": "8d8bfbedfa43af35f10a1489a66a29f6f0a9badc25685ac5d5fca255966569d8",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-01-intent.json": "dbafcc47c2fa1c728e2fc03c28db816bbe0e93a15a79b8e06a1d4d9589a90e4b",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-02-done.json": "527673f4176a6112cae39113f46d8beb05cd63413dbd8ae6a80010e9ab013dfe",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-03-done.json": "85561f3e544cce74923a902acb55ca378603f1e958f36c21a92ec6f76d7d204d",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-04-done.json": "21e35513c608e5f64c0ed1ac8a3e0c08060488183457329c8b480e1479c8f3f2",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-05-done.json": "4aec59cb5e3cbcd1c2bc9553d6ba84ee0d84563bf4a52fd525416a9ddb6430fa",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-05-intent.json": "9c2816e9a1890713a05d603781b24ee227fa35862688f903c36c01efdaab79ba",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-06-done.json": "f57eeac8c6046685a22f88701c6d95b8c9dc82d8d53561b39564114e9f4639ad",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-07-done.json": "8f6a5534d347d5356abd8dbefcd7cf3040193d6935c64611374a9531f42ce94b",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79/contract.json": "318a5d6021bc94690323ab00ca324c694c6b66dd520a28989eda87643c1d3ce0",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79/executor.jsx": "6d84fdbbf09352db6b77cf4470e84e785d7cafa30979df98de988ba6a70c8132",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79/implementation.js": "1b31cd96b475f6af3e286fdd5c009d46e09b18b271db88ce951e9ec8d7fc580b",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46/contract.json": "318a5d6021bc94690323ab00ca324c694c6b66dd520a28989eda87643c1d3ce0",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46/executor.jsx": "69546bb0dde44ad4441920058ae7c3b385aaf95ef94a742a1782f036d4b91429",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46/implementation.js": "1b31cd96b475f6af3e286fdd5c009d46e09b18b271db88ce951e9ec8d7fc580b",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/artifacts.js": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/authority.js": "28ebbc2134b920b0f6726194d73b66ce3f0b8908b3b56d7250158c3fc5c28640",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/broker.js": "432f7438b6ccd53e4f9b71cc4cc4624fa86f2cbae89528e7c29bf8cc00857352",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/resources.js": "be29c6547111a4feeff2dea0951e30205c590210b718b441d96c416f40fefb69",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/state-lock.js": "4e515580ec7ceb03cc7a7a5d789048aee9bf0e9a7866d4cf0ee108958ff58e23",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/stdio.js": "e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/artifact.json": "f29af4f724ba9082abd8981d1156c3578e3696e6983b2f8a100320f11cce3938",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/dispatch.js": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/schema.js": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86/worker.js": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/artifacts.js": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/authority.js": "28ebbc2134b920b0f6726194d73b66ce3f0b8908b3b56d7250158c3fc5c28640",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/broker.js": "74c457d7ef0da217313c2bc81665091bf41dc1eb07508d0ff9835abaca45ba3f",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/resources.js": "be29c6547111a4feeff2dea0951e30205c590210b718b441d96c416f40fefb69",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/state-lock.js": "4105e87c09a4546e1785652dc7d55859148881f1214bf8560871803320ba77ea",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/stdio.js": "e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/artifact.json": "f29af4f724ba9082abd8981d1156c3578e3696e6983b2f8a100320f11cce3938",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/dispatch.js": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/schema.js": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-c70a07d36c5db55cd9e4683729c52bc3f9d381503bcd83e1d3d67b21b93c9fb7/worker.js": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/artifacts.js": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/authority.js": "6e90b7921fe5104e9a557993b5425ac27c8dd5b47671a375e10416454eabb4d9",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/broker.js": "929428915254e5f4f280e5a046944e081e0d50940dc440df73925ffa508c0846",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/resources.js": "27eca74207df9108dcf3282a3b26db4b110965e1832fc26f2a36aa0a99658a5c",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/state-lock.js": "4105e87c09a4546e1785652dc7d55859148881f1214bf8560871803320ba77ea",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/stdio.js": "3100da7943d9119e96e7fffcc9b80cdd4048256e9e2cbdec649fef1021358502",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/artifact.json": "f29af4f724ba9082abd8981d1156c3578e3696e6983b2f8a100320f11cce3938",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/codec.js": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/dispatch.js": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/schema.js": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/protocol/target-contract.json": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-broker/artifacts/core-e3b8ce67212b06c2927b8aca8b4314cdc06f213d2cfb26b4998cb133c7030b6b/worker.js": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-completed.json": "5f822deaa69d67349bb104c90a74ac3cdfa70857c77f30268c724c31e99483aa",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-maintenance": "485332dd144902972f4a3c74ff3d1c30900202a2bd50537ad48fed87b9d2eb53",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-plan.json": "5349074acbebb4fdd74a33ddb2834611d23db7c5cc0242919900d7e750a5e886",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-receiver/completions.ndjson": "e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/attempt-adc1e463-b1b6-4aee-b8d8-5a0e4c79dce2.json": "5345523ebfae92f0cd352d357f6946f66c96def0397b9b4e10acfc07aac34306",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/enable-intent.json": "976a9c0a82b6ac5756681d9db7f05d3e595db8d1d645496d1b44ee02949682d0",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/intent.json": "323ecc422fe1a15b17edd27fb10b248ff0dbb41c2caa500c1242fd22e9bea33b",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/inventory.json": "779d13ee59fb6bd22ee8a579275b4471c62f0d32a347c8d500b7ca47d680e099",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/lease-adc1e463-b1b6-4aee-b8d8-5a0e4c79dce2": "f2c675ca70926aa85b41d4977fb0c9301f049271ea3bd3e01f97a1842ef14853",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/original-receiver": "e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/reset-completed.json": "5002775b51d5ab8fa0a359d798320f4a1230f9bd9e921429df8ccdc5b349c49f",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/session-candidate.json": "a119d340364f7ae10f53124cc5c14f8d9723fd7a45214c9655d82d0fc4e0f0e0",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/session-publish-intent.json": "ccd61be5c32a9f3b7fccd82301760a58b24a1877cb80eee8047d79656654cfa1",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/session-published.json": "33a5d28f5cbc6000e229ba61979f7e58b447ebd659954aa4321ad885f35ff5a6",
+      "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/stop-requested.json": "e31cf926911995f6af1530be26ad7e2a5a512e4999a44c101ef878b1b1fdfa79"
+    },
+    "descriptorHash": "fc625b3fde5579976e8cfd4d860322bdba43b3a49b1baa36f020bb6b5d1ade12",
+    "clientHash": "9b780d33dcf7e4851f07880193e228337ff2c5b3b29dd5443248d321d9d27cac",
+    "configHash": "ab01a50576f0c553ca06895f967ee907841ee683e4b6b04229e75401905f359e",
+    "archiveSessionHash": "87e775bb4de64911a2d3a896d67ba9d227f6b4976859d0d01257f4c75c9c8539",
+    "archiveBaselineHash": "a1587e014d3805ec500922f25b1a2f8bccdf9b4b4489304bcbdc0f9ab2a6929d",
+    "savedReopenedAep": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+      "sha256": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5"
+    }
+  },
+  "actions": {
+    "packageUpdates": 1,
+    "nativeMutationRuns": 1,
+    "nativeConfirmationApprovals": 1,
+    "ownerFaults": 1,
+    "newResetRequests": 1,
+    "aeExit": 1,
+    "aeLaunch": 1,
+    "ownAepSaves": 1,
+    "postResetMutations": 0,
+    "configuredClientRestart": 0,
+    "codexAppServerRestart": 0,
+    "argonSends": 0,
+    "postResetHostReadoptions": 1
+  },
+  "interpretation": {
+    "physicalEffect": "BASE_B persisted and read back from the saved/reopened own AEP",
+    "oldLogicalOutcome": "UNKNOWN remains unresolved in archived bytes; no retrospective success",
+    "lateCompletion": "CEP busy changed to owner_recovery_required immediately after original native confirmation; exact receiver/ledger bytes unchanged",
+    "freshSession": "explicit acquire, project-inspection baseline, exact manual text inspection, release; old session denied"
+  },
+  "limits": [
+    "No packet capture: late completion refusal is observed through CEP UI and the pinned completion path; an HTTP status number is not claimed as directly measured.",
+    "Old UNKNOWN remains in immutable archives; only the new current session is clean.",
+    "Fresh host re-adoption of AE30024 completed after the baseline checkpoint. It creates no automatic lifecycle continuity or mutation grant; the next operation still needs its normal fresh inspection/proposal/dry-run/native confirmation.",
+    "Fixed-package configured-client proof, full release and two-machine portability remain open; Titles/Slideshow and MCP/Codex maintenance remain paused.",
+    "One read-only status failed during reset transition; the helper did not preserve its raw RPC error. Subsequent same-intent status and baseline passed; reset was not resent."
+  ],
+  "postResetReadoption": {
+    "audit": {
+      "purpose": "technical_check",
+      "lifetime": "ephemeral_check",
+      "id": "cd5bb102-b620-4e03-bd11-f7a73e37890e",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "distributionHash": "85c3d95a0dc33f6fad7901c6f6b8a70f58b20297b3e66d8eb8cdc13e39d39f63",
+      "startedAt": "2026-11-03T13:56:13.508Z",
+      "steps": [
+        {
+          "mode": "stop",
+          "attempts": 1,
+          "submittedAt": "2026-11-03T13:56:14.144Z",
+          "result": {
+            "accepted": true,
+            "aeAuthority": false,
+            "automaticReplay": false,
+            "id": "cd5bb102-b620-4e03-bd11-f7a73e37890e",
+            "phase": "draining"
+          },
+          "finishedAt": "2026-11-03T13:56:15.440Z"
+        },
+        {
+          "mode": "stopped-inspect",
+          "attempts": 1,
+          "submittedAt": "2026-11-03T13:56:17.369Z",
+          "result": {
+            "aeAuthority": false,
+            "id": "cd5bb102-b620-4e03-bd11-f7a73e37890e",
+            "inspectionOnly": true,
+            "phase": "stopped-certifiable",
+            "proofHash": "a4ea5d07a79bcb460e2c12a0dccef37d852edd2bf3f94f5b53747ff411dfccc6",
+            "runtimeStarted": false
+          },
+          "finishedAt": "2026-11-03T13:56:22.275Z"
+        },
+        {
+          "mode": "stopped-certify",
+          "attempts": 1,
+          "submittedAt": "2026-11-03T13:56:22.275Z",
+          "result": {
+            "aeAuthority": false,
+            "certificateHash": "45e99cf70fe8bb1693911142170a2c27c70c614456b03bbaa66857b6b34174d0",
+            "certified": true,
+            "id": "cd5bb102-b620-4e03-bd11-f7a73e37890e",
+            "runtimeStarted": false,
+            "stopped": true
+          },
+          "finishedAt": "2026-11-03T13:56:35.241Z"
+        },
+        {
+          "mode": "readopt-inspect",
+          "attempts": 1,
+          "submittedAt": "2026-11-03T13:56:35.242Z",
+          "result": {
+            "aeAuthority": false,
+            "id": "cd5bb102-b620-4e03-bd11-f7a73e37890e",
+            "inspectionOnly": true,
+            "lifecycleEpoch": false,
+            "mutationGrant": false,
+            "phase": "readopt-preflight",
+            "proofHash": "0989876b7f5e07fcb4f39781294b6b9fff8cae55d1efba5a0ee316f83876db72",
+            "runtimeStarted": false
+          },
+          "finishedAt": "2026-11-03T13:56:41.755Z"
+        },
+        {
+          "mode": "readopt-apply",
+          "attempts": 1,
+          "submittedAt": "2026-11-03T13:56:41.755Z",
+          "result": {
+            "aeAuthority": false,
+            "id": "cd5bb102-b620-4e03-bd11-f7a73e37890e",
+            "lifecycleEpoch": false,
+            "mutationGrant": false,
+            "phase": "readopt-completed-stopped",
+            "proofHash": "a87baed9453c53f01471103b12b05a56b193e690f670cfff4628b26f639b93a6",
+            "runtimeStarted": false
+          },
+          "finishedAt": "2026-11-03T13:57:06.909Z"
+        },
+        {
+          "mode": "readopt-inspect",
+          "attempts": 1,
+          "submittedAt": "2026-11-03T13:57:06.909Z",
+          "result": {
+            "aeAuthority": false,
+            "id": "cd5bb102-b620-4e03-bd11-f7a73e37890e",
+            "inspectionOnly": true,
+            "lifecycleEpoch": false,
+            "mutationGrant": false,
+            "phase": "readopt-completed-stopped",
+            "proofHash": "a87baed9453c53f01471103b12b05a56b193e690f670cfff4628b26f639b93a6",
+            "runtimeStarted": false
+          },
+          "finishedAt": "2026-11-03T13:57:15.261Z"
+        },
+        {
+          "mode": "readopt-enable",
+          "attempts": 1,
+          "submittedAt": "2026-11-03T13:57:15.262Z",
+          "result": {
+            "aeAuthority": false,
+            "currentBarrierObserved": false,
+            "currentHistoryObserved": false,
+            "currentRuntimeObserved": false,
+            "id": "cd5bb102-b620-4e03-bd11-f7a73e37890e",
+            "lifecycleEpoch": false,
+            "mutationGrant": false,
+            "phase": "enabled",
+            "proofHash": "b48c6f8a097ef24e6f0ed51e4a0911745fd2b74f14201229d74f8a8f8db90f46",
+            "runtimeStarted": false,
+            "terminalHistorical": true
+          },
+          "finishedAt": "2026-11-03T13:57:41.169Z"
+        }
+      ],
+      "before": {
+        "descriptor": "fc625b3fde5579976e8cfd4d860322bdba43b3a49b1baa36f020bb6b5d1ade12",
+        "client": "9b780d33dcf7e4851f07880193e228337ff2c5b3b29dd5443248d321d9d27cac",
+        "config": "ab01a50576f0c553ca06895f967ee907841ee683e4b6b04229e75401905f359e",
+        "receiver": "fbdc3eadfed3fd314358b2eed23f6d715b95ec023b96be17e84f3cf6e0f043e4",
+        "ledger": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+        "adoption": "4840b0e8096dd315df42b31bdcc8dd742f92961e75985aef1970218a8b0554c0",
+        "aep": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5"
+      },
+      "native": {
+        "version": 1,
+        "hostname": "MSI",
+        "observedAt": "2026-11-03T13:56:14.141Z",
+        "processes": [
+          {
+            "pid": 30024,
+            "birth": "2026-11-03T13:45:22.9905750Z",
+            "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+            "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+            "executableLength": 5931016
+          }
+        ],
+        "endpoints": [
+          {
+            "port": 3456,
+            "state": "observed-absent"
+          },
+          {
+            "port": 8787,
+            "state": "observed-absent"
+          }
+        ],
+        "completedAt": 1793714174143
+      },
+      "witnessHash": "6e1c47f186f978272b0bfce65e9cec14c36c261a52148e151bebade2b1cd93b8",
+      "witness": {
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "machineId": "MSI",
+        "host": {
+          "machineId": "MSI",
+          "aePid": 30024,
+          "aeProcessBirth": "2026-11-03T13:45:22.9905750Z",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71"
+        },
+        "allowedProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+        "rootObservationDigest": "0516d2a5babcf478bb93e2c3f23233b864b308a851f8601cfa5665f11d4790f1"
+      },
+      "stopInspection": {
+        "id": "cd5bb102-b620-4e03-bd11-f7a73e37890e",
+        "phase": "stopped",
+        "proofHash": "3e68830b5642afd827df6a3b588d2a8260e35d49767126d4948bdee4cf1c3503",
+        "inspectionOnly": true,
+        "aeAuthority": false
+      },
+      "after": {
+        "adoption": "af0d6bc0105939088fba498b3cc79898125cf2b6e2a1e58b3fe08b549e471409"
+      },
+      "finishedAt": "2026-11-03T13:57:41.172Z"
+    },
+    "finalStatus": {
+      "at": "2026-11-03T13:58:05.871Z",
+      "clientPid": 32788,
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"attachmentOwner\":{\"accepted\":0,\"activity\":{\"fault\":false,\"pending\":false,\"unresolved\":false},\"attachments\":1,\"bootId\":\"f0df251c-3813-4d1f-a061-4877924828e4\",\"closed\":false,\"fenced\":false,\"frozen\":false,\"generation\":0,\"holderClientId\":null,\"mode\":\"idle\",\"pending\":false,\"workSession\":{\"baselineRequired\":false,\"resetPending\":false,\"sessionId\":\"ce977de2-4dab-4a0a-9b94-855a02b00c73\"}},\"automaticLifecycle\":\"unavailable\",\"closed\":false,\"composition\":\"manual\",\"connection\":\"unavailable\",\"coreIdentity\":\"202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86\",\"externalLegacyCoverage\":\"unobserved\",\"inspectionPolicy\":\"read-only-current-observation-v1\",\"installation\":{\"installationId\":\"installation-1304c438-5794-4d5c-bf72-d8101f3d2a24\",\"machineId\":\"MSI\",\"nodeVerified\":true,\"nodeVersion\":\"24.15.0\",\"packageHash\":\"cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944\"},\"ledgerFault\":false,\"lifecycle\":{\"birthTicks\":\"639293110869903720\",\"historyAtStartup\":{\"ledger\":{\"byteHash\":\"28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b\",\"eventCount\":1,\"present\":true,\"settled\":true,\"unresolvedCount\":0},\"receiver\":{\"byteHash\":\"fbdc3eadfed3fd314358b2eed23f6d715b95ec023b96be17e84f3cf6e0f043e4\",\"eventCount\":5,\"present\":true,\"settled\":true,\"unresolvedCount\":0}},\"mode\":\"active\",\"pid\":27100,\"processBootId\":\"b76c6e87-321f-4e10-a0df-806f969cbe8b\",\"reason\":null,\"recoveryRequired\":false},\"maintenance\":{\"fault\":null,\"id\":null,\"phase\":\"running\",\"requested\":false},\"manualPolicy\":\"current-matching-target-after-local-confirmation-v1\",\"ownershipFault\":null,\"physical\":{\"automaticLifecycle\":\"unavailable\",\"externalLegacyCoverage\":\"unobserved\",\"inspectionAvailable\":true,\"lastPhysicalFault\":null,\"lastReadFailure\":null,\"listening\":true,\"peer\":{\"connected\":true,\"peerId\":\"panel-e4293c8b9e12e641db45521b48be54bf5dd8276ab801a4fe\"},\"pending\":null,\"port\":3457,\"receiverStoreIdentity\":\"receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726\",\"startOverFrozen\":false,\"storeClosed\":false,\"storeFault\":false,\"unknown\":false},\"pid\":27100,\"product\":\"AE Agent Core 4.0.0\",\"protocolPin\":\"b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d\",\"ready\":true,\"resourceProvider\":{\"adopted\":true,\"coverage\":{\"core4Lane\":\"cooperating-Core4-only\",\"hostProcess\":\"adopted-reprobe-required\",\"legacyEndpoints\":\"named-probes-only\",\"legacyPhysicalQueue\":\"not-proven\",\"otherAEActors\":\"outside-coverage\",\"sharedOutputs\":\"not-requested\"},\"origin\":{\"aePid\":30024,\"aeProcessBirth\":\"2026-11-03T13:45:22.9905750Z\",\"executableHash\":\"8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71\",\"executablePath\":\"C:\\\\Program Files\\\\Adobe\\\\Adobe After Effects 2026\\\\Support Files\\\\AfterFX.exe\",\"machineId\":\"MSI\"}},\"startOver\":{\"aeAuthority\":false,\"baselineRequired\":false,\"fault\":null,\"id\":\"2fecd11c-faef-4651-9f27-e88e4498fb20\",\"phase\":\"ready\",\"requiresAEExit\":false,\"resetComplete\":true,\"sessionId\":\"ce977de2-4dab-4a0a-9b94-855a02b00c73\"},\"synthetic\":false,\"unavailableReason\":null,\"unresolved\":[],\"workSession\":{\"aeAuthority\":false,\"baselineRequired\":false,\"mode\":\"work-session\",\"resetId\":\"2fecd11c-faef-4651-9f27-e88e4498fb20\",\"resetPending\":false,\"sessionId\":\"ce977de2-4dab-4a0a-9b94-855a02b00c73\"},\"worker\":{\"epoch\":0,\"lateReplies\":0,\"loaded\":[],\"pending\":0,\"pid\":null}}"
+            }
+          ],
+          "isError": false
+        }
+      },
+      "status": {
+        "attachmentOwner": {
+          "accepted": 0,
+          "activity": {
+            "fault": false,
+            "pending": false,
+            "unresolved": false
+          },
+          "attachments": 1,
+          "bootId": "f0df251c-3813-4d1f-a061-4877924828e4",
+          "closed": false,
+          "fenced": false,
+          "frozen": false,
+          "generation": 0,
+          "holderClientId": null,
+          "mode": "idle",
+          "pending": false,
+          "workSession": {
+            "baselineRequired": false,
+            "resetPending": false,
+            "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+          }
+        },
+        "automaticLifecycle": "unavailable",
+        "closed": false,
+        "composition": "manual",
+        "connection": "unavailable",
+        "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionPolicy": "read-only-current-observation-v1",
+        "installation": {
+          "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+          "machineId": "MSI",
+          "nodeVerified": true,
+          "nodeVersion": "24.15.0",
+          "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+        },
+        "ledgerFault": false,
+        "lifecycle": {
+          "birthTicks": "639293110869903720",
+          "historyAtStartup": {
+            "ledger": {
+              "byteHash": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+              "eventCount": 1,
+              "present": true,
+              "settled": true,
+              "unresolvedCount": 0
+            },
+            "receiver": {
+              "byteHash": "fbdc3eadfed3fd314358b2eed23f6d715b95ec023b96be17e84f3cf6e0f043e4",
+              "eventCount": 5,
+              "present": true,
+              "settled": true,
+              "unresolvedCount": 0
+            }
+          },
+          "mode": "active",
+          "pid": 27100,
+          "processBootId": "b76c6e87-321f-4e10-a0df-806f969cbe8b",
+          "reason": null,
+          "recoveryRequired": false
+        },
+        "maintenance": {
+          "fault": null,
+          "id": null,
+          "phase": "running",
+          "requested": false
+        },
+        "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+        "ownershipFault": null,
+        "physical": {
+          "automaticLifecycle": "unavailable",
+          "externalLegacyCoverage": "unobserved",
+          "inspectionAvailable": true,
+          "lastPhysicalFault": null,
+          "lastReadFailure": null,
+          "listening": true,
+          "peer": {
+            "connected": true,
+            "peerId": "panel-e4293c8b9e12e641db45521b48be54bf5dd8276ab801a4fe"
+          },
+          "pending": null,
+          "port": 3457,
+          "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726",
+          "startOverFrozen": false,
+          "storeClosed": false,
+          "storeFault": false,
+          "unknown": false
+        },
+        "pid": 27100,
+        "product": "AE Agent Core 4.0.0",
+        "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "ready": true,
+        "resourceProvider": {
+          "adopted": true,
+          "coverage": {
+            "core4Lane": "cooperating-Core4-only",
+            "hostProcess": "adopted-reprobe-required",
+            "legacyEndpoints": "named-probes-only",
+            "legacyPhysicalQueue": "not-proven",
+            "otherAEActors": "outside-coverage",
+            "sharedOutputs": "not-requested"
+          },
+          "origin": {
+            "aePid": 30024,
+            "aeProcessBirth": "2026-11-03T13:45:22.9905750Z",
+            "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+            "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+            "machineId": "MSI"
+          }
+        },
+        "startOver": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "fault": null,
+          "id": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+          "phase": "ready",
+          "requiresAEExit": false,
+          "resetComplete": true,
+          "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+        },
+        "synthetic": false,
+        "unavailableReason": null,
+        "unresolved": [],
+        "workSession": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "mode": "work-session",
+          "resetId": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+          "resetPending": false,
+          "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+        },
+        "worker": {
+          "epoch": 0,
+          "lateReplies": 0,
+          "loaded": [],
+          "pending": 0,
+          "pid": null
+        }
+      },
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "stderr": ""
+      }
+    },
+    "processes": {
+      "at": "2026-11-03T13:59:11.2870374Z",
+      "actors": [
+        {
+          "pid": 30024,
+          "birthTicks": "639293103229905750",
+          "path": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"
+        },
+        {
+          "pid": 27100,
+          "birthTicks": "639293110869903720",
+          "path": "C:\\Program Files\\nodejs\\node.exe"
+        }
+      ],
+      "listeners": [
+        {
+          "LocalAddress": "127.0.0.1",
+          "LocalPort": 3457,
+          "OwningProcess": 27100
+        }
+      ]
+    },
+    "protectedUnchangedExceptIntentionalAdoption": 140,
+    "cepFilesVerified": 7,
+    "sourceKeysRechecked": 15,
+    "adoption": {
+      "host": {
+        "aePid": 30024,
+        "aeProcessBirth": "2026-11-03T13:45:22.9905750Z",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "machineId": "MSI"
+      },
+      "allowedProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+      "sha256": "af0d6bc0105939088fba498b3cc79898125cf2b6e2a1e58b3fe08b549e471409"
+    },
+    "nextMutationGrant": false
+  },
+  "finalizedAt": "2026-11-03T13:59:14.721Z"
+}

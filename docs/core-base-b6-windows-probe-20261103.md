@@ -1,5 +1,11 @@
 # B6 — Windows probe в очищенном окружении owner
 
+**Native итог3ноября:** installedcdf7338f… прошёл delivery/owner fault/original
+mutation/late refusal/UNKNOWN-preserving reset/saved-reopened BASE_B read-back.
+Fresh session baseline и re-adoption нового AE завершены.
+[Native checkpoint](core-base-b6-native-recovery-20261103.md).
+Ниже — provenance source/installed checkpoints до native сценария.
+
 **Installed checkpoint,3ноября:** после отдельного разрешения packagecdf7338f…
 штатно установлен/enabled,80runtime/7CEP exact; изменён только согласованный
 MCP args-path. Native inspection PASS, run ещё не отправлен.
