@@ -1,5 +1,16 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
+**Release-manifest, 3 ноября — последнее поручение:** пользователь попросил
+актуальный состав необходимых проверок/reuse/remaining с сохранением паузы
+Titles/Slideshow. [Manifest подготовлен](core-release-manifest-20261103.md):
+71 Core checks, 31 exact-key + 2 byte-command-bound reuse, 38 открытых;
+две dedicated Titles held, 36 открытых без этого hold. Shared Core с Titles
+dependencies не исключается. JSON содержит точные keys/commands/evidence,
+29 будущих batch candidates и отдельные package/native/portability gates.
+Автозапуска нет, source tests и live операции не выполнялись;
+`releaseCertified=false`. Продолжение начинается со сверки fingerprint и
+выбора адресного scope, а не с повторения всей B1–B7 или settled transactions.
+
 **Сверка остаточной приёмки,3ноября — последнее поручение:** пользователь
 поручил сверить оставшиеся пробелы базы и выделить необходимые проверки.
 [Реестр решений](core-base-remaining-acceptance-20261103.md): все 15 ключей B6

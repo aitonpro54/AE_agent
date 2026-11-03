@@ -11,6 +11,19 @@
 
 ## Текущий scope и правила
 
+**3 ноября, актуальный release-manifest подготовлен:** по прямому поручению
+пользователя учтены все 71 Core checks: 31 exact-key reuse, ещё 2 отдельным
+byte-command-bound reuse; 38 требуют current evidence. Из открытых 36 без
+продуктового hold, две dedicated Titles под паузой; shared Core с зависимостями
+Titles не исключён. Прежние 27 deferred — подмножество полного inventory.
+JSON содержит ключи, команды/cwd, evidence и gates; 29 source batch candidates
+не запланированы и не исполняются автоматически. Tests/live/build/install/
+config/network/Argon/push/PR в этом блоке нет; `releaseCertified=false`.
+Titles/Slideshow остаются на паузе, runtime/package/map не менялись.
+[План и реестр](plans/core-release-manifest-20261103.md),
+[машиночитаемый manifest](docs/core-release-manifest-20261103.json).
+Исторические snapshots ниже не дают текущую runtime authority.
+
 **3 ноября, сверка остаточной приёмки базы:** по поручению пользователя
 сверены пробелы перед возвращением к продуктам. B1–B7 приняты в прежних пределах;
 Все 15 ключей принятого B6 совпали с текущими исходниками. В изученном evidence

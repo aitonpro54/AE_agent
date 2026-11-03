@@ -1,5 +1,13 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Release-manifest, 3 ноября — последнее поручение:** подготовлен
+[полный реестр](core-release-manifest-20261103.md) всех 71 Core checks:
+31 exact-key reuse + 2 byte-command-bound reuse + 38 current-unverified.
+Команды, evidence, продуктовые hold и финальные gates разделены; 36 открытых
+checks без hold, две dedicated Titles на паузе. Все source batch candidates
+не запланированы; tests/live/install/config не выполнялись. Полная приёмка
+не заявляется; Titles/Slideshow по поручению пользователя остаются на паузе.
+
 **Сверка остаточной приёмки, 3 ноября:** B1–B7 сохраняют принятие; все 15 ключей
 B6 совпали. [Новый реестр](core-base-remaining-acceptance-20261103.md) отделяет
 27 известных deferred integrations (19 B6 + 8 B3), дополнительное native
