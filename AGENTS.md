@@ -11,6 +11,21 @@
 
 ## Текущий scope и правила
 
+**3 ноября, уточнение пользователя: MCP/Codex maintenance отложен.**
+Поручение самому нажимать нужные кнопки относится прежде всего к панели и
+After Effects; эти действия root выполняет самостоятельно в разрешённом scope.
+Перезапуски/перенастройку MCP и Codex пока не продолжать. Возвращаться к ним
+по новому прямому поручению, а не по общему «продолжай». Configured B4 proof
+остаётся отложенным; просить пользователя нажимать кнопки панели/AE не требуется.
+До уточнения уже запущенный helper один раз завершил exact app-server28148;
+первый guard отказал до воздействия из-за точности CIM/native birth. Helper
+завершён, повторов/ожидающих действий нет. В свежем read-only snapshot старые
+28148/2708/6340 отсутствуют, listener3457 отсутствует; причина выхода Core6340
+не наблюдалась. AE21960 прежний, AEP/bindings/session/history9events/архивы целы.
+После уточнения MCP вызовов/start/restart/config changes0. Наличие нового
+app-server16688 не объявляется configured proof. [Evidence](docs/evidence/core-base-b4-service-refresh-deferred-20261103.json).
+Следующие записи о планируемом service refresh — история до этого уточнения.
+
 **3 ноября, B4 installed:** source1e9a63a/package21a884fa…/
 distribution41d4812c… (80/98) штатно installed/enabled. Stopf36e04ce… и
 update7b18829f… settled с attempts1; их не повторять. Owner6340/birth

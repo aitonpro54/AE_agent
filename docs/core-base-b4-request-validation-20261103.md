@@ -38,6 +38,23 @@ boundaries и diff-check. Full release/Titles/live fault injection не запу
 
 ## Progress
 
+- **Уточнение пользователя 3 ноября:** MCP/Codex maintenance и configured proof
+  отложены. Самостоятельные кнопочные действия root относятся прежде всего к
+  панели и AE. Их не передавать пользователю; текущие runtime/auth/no-replay gates
+  сохраняются. Новый service restart/config repair без прямого поручения не делать.
+- Уже запущенный до уточнения helper завершил exact app-server28148 один раз.
+  Первый guard отказал без воздействия: CIM timestamp имел микросекундную точность,
+  native timestamp —100нс. После сверки exact native birth929 helper выполнил
+  одну termination и закончил наблюдение без replacement в своём окне. Позднее
+  наблюдён app-server16688/другой parent; происхождение не устанавливалось.
+- Read-only snapshot после уточнения: old28148/2708/6340 absent, listener3457
+  absent; причина выхода Core6340 неизвестна, survival не заявлен. Та же AE21960,
+  AEP/bindings/session/baseline/9events/архивы unchanged. Новых MCP вызовов,
+  runtime startup, restart, config changes и AE действий0.
+  [Evidence](evidence/core-base-b4-service-refresh-deferred-20261103.json).
+
+Ниже — установленный результат и планы до уточнения.
+
 - Installed milestone: source1e9a63a штатно установлен. Новый stop
   f36e04ce-0aac-474e-9dee-6a922e16bab8 и update
   7b18829f-440a-47f1-8db2-f1ed180fe09b/explicit enable завершены с первой попытки.
@@ -68,12 +85,21 @@ boundaries и diff-check. Full release/Titles/live fault injection не запу
 
 ## Decision Log
 
+- Уточнение о границах UI заменяет прежнее расширительное толкование на MCP/
+  Codex restart. B4 source/standard native proof остаются принятыми, configured
+  proof честно отложен; отсутствие listener не ремонтируется в этом блоке.
+
 - Проверка размещается в generic owner, без module-specific логики и нового
   private issuance/proof API. Только форма обязательного аргумента; не угадывать
   отсутствие dispatch по чистым facts после произвольной ошибки runtime.
 - Принятая B1/B2/B3 база остаётся исходным installed checkpoint до новой поставки.
 
 ## Validation
+
+- После уточнения выполнены только filesystem/hash/native snapshot и проверка
+  завершения уже запущенного helper. Receiver9events/SHA478d66aa… и защищённые
+  bindings/AEP совпали с installed checkpoint. Source suites не повторялись;
+  новое runtime readiness/configured PASS не заявлено. JSON/diff-check проверены.
 
 - Installed verification/standard negative+native read PASS; evidence выше.
   Защищённые9file bindings и AEP сравнивались с pre-install snapshot; новый

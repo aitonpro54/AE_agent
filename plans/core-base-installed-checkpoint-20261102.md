@@ -5,6 +5,17 @@
 
 ## Дополнение 3 ноября
 
+**Актуальное ограничение:** пользователь отложил дальнейшие MCP/Codex restart и
+configured B4 proof. Root самостоятельно выполняет нужные нажатия панели и AE;
+это не поручение продолжать service maintenance. Уже запущенный helper завершил
+exact28148 один раз до уточнения и закончил работу; повторять его нельзя.
+Свежий read-only snapshot: old28148/2708/6340 absent, listener3457 absent,
+причина выхода Core6340 не наблюдалась. AE21960 прежний, AEP/bindings/session/
+baseline/receiver9events/14+52archives unchanged. После уточнения MCP calls,
+runtime startup/restart/config changes0. Новое maintenance — только по прямому
+поручению. [Evidence](../docs/evidence/core-base-b4-service-refresh-deferred-20261103.json).
+Следующие указания service refresh сохраняют исторический план до уточнения.
+
 **Актуально B4:** source1e9a63a/package21a884fa…/distribution41d4812c…
 installed/enabled. New stopf36e04ce…/update7b18829f… settled, no replay.
 Owner6340/birth639292876604263210/bootd396603c…/один3457; old25380 gone.

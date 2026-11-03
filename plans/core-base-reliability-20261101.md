@@ -109,6 +109,16 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- 3 ноября, уточнение пользователя: самостоятельные действия агента относятся
+  прежде всего к панели/AE; MCP/Codex restart и configured B4 proof отложены.
+  Уже запущенный helper успел завершить exact app-server28148 один раз и закончил
+  работу. После уточнения новых MCP/live/start/restart/config действий0.
+  Старый Core6340/listener3457 не наблюдаются; причина выхода Core неизвестна.
+  AE21960 и AEP/bindings/session/history9events/архивы unchanged.
+  [Evidence](../docs/evidence/core-base-b4-service-refresh-deferred-20261103.json).
+  Новое service maintenance — только по прямому поручению; panel/AE UI root
+  выполняет сам в рамках соответствующего задания. Titles/Slideshow на паузе.
+
 - B4 installed: source1e9a63a/package21a884fa… штатно установлен/enabled,
   stopf36e04ce…/update7b18829f… settled, attempts1. Owner6340/один3457, CEP
   автоматически connected после собственного close/open1, та жеAE21960.
@@ -276,6 +286,11 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- Уточнение пользователя снимает автоматическое продолжение service refresh из
+  предыдущего checkpoint. Не считать отсутствие текущего Core readiness поводом
+  возобновлять отложенную диагностику/перезапуск MCP. Сохранить выполненный B4
+  source/standard proof отдельно от незавершённого configured acceptance.
 
 - B4 installed-поставка не требует нового B3 reset, AE restart или review.
   Настройки безопасности/доступа Codex не менялись. Перед служебным обновлением
@@ -451,6 +466,11 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- Scope clarification: только read-only hashes/native process/listener snapshot.
+  AEP, bindings, protected history9events и archives exact; helper finished,
+  одна termination app-server до уточнения, последующих действий0. Source/tests/
+  install/reset/AE commands не выполнялись. Новый configured proof не заявлен.
 
 - B4 installed: official package/enable и exact runtime/CEP verification,
   native PID/birth/один3457, negative pre-submit7events unchanged и свежий native

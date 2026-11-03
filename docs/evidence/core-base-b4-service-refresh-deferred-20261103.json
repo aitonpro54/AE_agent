@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T08:45:51.9511064Z",
+  "baselineCommit": "f58fd3f",
+  "userDecision": {
+    "mcpAndCodexMaintenance": "deferred; no further restart or reconfiguration without a new explicit request",
+    "panelAndAfterEffects": "agent performs necessary UI actions within the authorized task and runtime gates"
+  },
+  "serviceRestartBeforeClarification": {
+    "initialGuardRefusal": {
+      "schemaVersion": 1,
+      "threadId": "01a1a034-0635-7712-95b2-a41d743f398c",
+      "startedAt": "2026-11-03T07:41:01.4393606Z",
+      "targetPid": 28148,
+      "expectedBirth": "639292858302135920",
+      "attempts": 0,
+      "corePid": 6340,
+      "aePid": 21960,
+      "terminated": false,
+      "replacement": null,
+      "error": "exact app-server scope changed",
+      "finishedAt": "2026-11-03T07:41:04.7386213Z"
+    },
+    "actualAttempt": {
+      "schemaVersion": 1,
+      "threadId": "01a1a034-0635-7712-95b2-a41d743f398c",
+      "startedAt": "2026-11-03T07:42:25.9584647Z",
+      "targetPid": 28148,
+      "expectedBirth": "639292858302135929",
+      "attempts": 1,
+      "corePid": 6340,
+      "aePid": 21960,
+      "terminated": true,
+      "replacement": null,
+      "imageHash": "3097c909fb6d5cd63510d44aceb1d42df9f6e85722a3e447e477def1ecf60e16",
+      "verifiedAt": "2026-11-03T07:42:29.5567348Z",
+      "terminatedAt": "2026-11-03T07:42:29.6185534Z",
+      "finishedAt": "2026-11-03T07:42:58.5057887Z"
+    },
+    "actualAppServerTerminations": 1,
+    "automaticReplacementObservedWithinHelperWindow": false,
+    "helperFinished": true,
+    "repeatAllowed": false
+  },
+  "nativeSnapshot": {
+    "collectedAt": "2026-11-03T08:45:51.9511064Z",
+    "listeners": [],
+    "processes": [
+      {
+        "pid": 21960,
+        "birthTicks": "639292825912075250",
+        "parentPid": 9076,
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"
+      },
+      {
+        "pid": 16688,
+        "birthTicks": "639292921882045310",
+        "parentPid": 3272,
+        "executablePath": "C:\\Users\\Ant\\AppData\\Local\\OpenAI\\Codex\\bin\\22cfb1d302613eae\\codex.exe"
+      }
+    ]
+  },
+  "oldCorePid6340Observed": false,
+  "oldCoreExitCause": "unobserved",
+  "listener3457Observed": false,
+  "protectedBindingsAndHistory": {
+    "bindings": {
+      "descriptor": "c82f44e647f2126e0b2080ed1fc9c811bcb0ccdd9ee18462fbe1446497ef34d9",
+      "client": "f046655f99db975c3c6ed149bfb35e7dd47d7117a0606a1f0f02b1944276c72e",
+      "config": "57f8a8d293cc59e3d7fd1264811e9f46445f1cbde190be2d84a59f69c47c0f96"
+    },
+    "bindingsUnchanged": true,
+    "protectedUnchanged": true,
+    "receiver": {
+      "eventCount": 9,
+      "byteHash": "478d66aaefc81c6ddd47ef29fa8485998c9187294582353fff62cd32103ff249",
+      "unchangedSinceStandardProof": true
+    },
+    "aepUnchanged": true
+  },
+  "afterClarification": {
+    "mcpCalls": 0,
+    "restarts": 0,
+    "runtimeStartup": 0,
+    "configChanges": 0,
+    "aeChanges": 0,
+    "checks": "read-only filesystem/hash/native process/listener snapshot"
+  },
+  "remaining": {
+    "configuredB4Proof": "deferred by user",
+    "runtimeReadiness": "not claimed; listener absent in this snapshot"
+  },
+  "limits": [
+    "Standard B4 native evidence remains historical proof of the installed fix.",
+    "Current absence of old Core is not assigned a cause from this snapshot.",
+    "No new Core/AE command, replay, install or marker cleanup."
+  ]
+}
