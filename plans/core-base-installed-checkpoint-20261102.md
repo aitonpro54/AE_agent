@@ -5,7 +5,38 @@
 
 ## Дополнение 3 ноября
 
-**Актуально: UNKNOWN reset завершён агентом; остаётся configured proof.**
+**Актуально: configured proof завершён после пользовательского restart Codex.**
+Первый configured `core_status` успешно загрузил package327faaac…; owner25380/
+birth639292859519548860/bootceb47b71-ad38-4171-ac41-4cbc24494ef4 ready, один
+127.0.0.1:3457. Old31404 absent, причина выхода не наблюдалась; survival прежнего
+owner не заявлен. Та же AE21960/birth639292825912075250. CEP подключилась сама,
+root не нажимал Connect и не перезапускал AE/CEP/Core в этом блоке.
+
+Stale sessionaeddb9ee… → owner_work_session_changed; current8fe8b332… явно принят.
+Fresh direct project-inspection с текущим contractId прочитала тот же сохранённый
+пустой test AEP26.3x87: command inspect-635877a3-e65f-4860-b7d6-29c5e4d8462e.
+Lease generation3 released, controller idle; pending/UNKNOWN/fault0,
+baselineRequiredfalse, authority/continuityfalse. Ошибки root до submit (expired
+lease, отсутствие leaseToken при release и contractId при inspect) сохранены в
+evidence; после них journal оставался3events. Missing contractId дал misleading
+owner_outcome_uncertain, однако durable command не создавался; это не новый
+native UNKNOWN и не успешное чтение. Выполнена одна новая native read-команда.
+
+Receiver5settled/SHA9dcf0a430e34a3d2f2a9bfdbc8cc80a7b00d1611b673afee952149f21c90ac21,
+точный prefix3/af9672be…; новые только begin/complete. UNKNOWN14events/638fbd1b…,
+earlier52events/e095765c… и8reset records preserved exact. Descriptor/client и
+project `.codex/config.toml`, origins/adoption/absent ledger/AEP unchanged.
+[Evidence](../docs/evidence/core-base-b3-configured-20261103.json).
+
+Ограниченная приёмка базы B1/B2/B3 закрыта совокупностью source/installed evidence;
+bounded L0 research уже завершён. Delivery/late callback wire и recovery принятой
+mutation этим не доказаны; Titles/full release/desktop-MSI round-trip открыты.
+Следующий продуктовый этап требует отдельного scope; Titles/Slideshow остаются
+на паузе. Повторы установки и settled transactions не нужны. Production source
+не менялся, повтор source suites не требуется; документальный milestone проходит
+JSON/link/hash/native checks и git diff --check.
+
+**Исторический snapshot до restart: UNKNOWN reset завершён; configured proof открыт.**
 Пользователь поручил самостоятельно выполнять кнопки/служебные перезапуски без
 ручной передачи действий. Существующий authenticated panel-role protocol
 использован один раз: reset `69facd01-2b95-4983-a110-4209acabda31`, new session

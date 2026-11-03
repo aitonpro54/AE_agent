@@ -1,6 +1,32 @@
 # B3c: установка и первое нативное чтение
 
-**Текущее дополнение:** UNKNOWN reset69facd01… выполнен самим агентом через
+**Актуально после restart Codex:** configured package327faaac… с первого status
+PASS; owner25380/один3457, old31404 absent, та жеAE21960. CEP подключилась сама.
+Stale session отказан; explicit current session8fe8b332… → fresh exact-contract
+project-inspection того же saved empty test AEP → release generation3 PASS.
+Receiver5settled/prefix3 exact, архивы14/52events и8reset records exact;
+bindings/origins/adoption/ledger/AEP unchanged, pending/UNKNOWN/fault0.
+Install/reset/AE restart/save/mutation0. Ошибки вызова root до submit journal не
+меняли; добавлена ровно одна native command с begin/complete.
+[Configured evidence](evidence/core-base-b3-configured-20261103.json).
+
+| Сценарий | Итог текущего среза | Граница доказательства |
+| --- | --- | --- |
+| B1/B2 diagnostics/reconnect | Source и прежние installed read/rejection/96с reconnect PASS | Новый fault injection после restart не повторялся |
+| B3 production composition | 721unique cases/42checks/55boundaries PASS | Source/TEMP proof из принятого0cddee2 |
+| Idle reset | Native request/archive52events/new session/fresh baseline PASS | AE не перезапускался; отдельное idle evidence |
+| UNKNOWN reset | Exact old Node/AE death/archive14events/new session/native baseline PASS | Delivery/late callback wire не наблюдались, исход старой команды неизвестен |
+| Прерванный reset | Selected crash-prefix/finisher cases PASS | TEMP/component, не новый native fault сценарий |
+| Configured client после restart | Новый package/status/session/read/release PASS | Read-only; mutation authority/continuity не выдаются |
+
+Ограниченная приёмка базы B1/B2/B3 завершена; bounded L0 research уже выполнен.
+Recovery принятой mutation, Titles native acceptance, full release и desktop/MSI
+round-trip остаются открытыми. Titles/Slideshow на паузе до отдельного scope.
+Ни installation, ни settled reset/stop/update/enable не повторять.
+
+Ниже — история до configured proof.
+
+**Предыдущий snapshot:** UNKNOWN reset69facd01… выполнен самим агентом через
 existing authenticated panel protocol (одна отправка). Old AE9472/26308 и old
 Node19452/30888 exact gone; root штатно перезапустил own AE/new21960 и открыл
 тот же saved empty AEP. UNKNOWN14events/638fbd1b… и earlier52event archive/e095…

@@ -11,6 +11,24 @@
 
 ## Текущий scope и правила
 
+**3 ноября, configured proof после restart Codex завершён:** первый configured
+status загрузил327faaac…/owner25380/birth639292859519548860/bootceb47b71…;
+один3457, old31404 absent (причина выхода не наблюдалась). CEP подключилась сама.
+Старый sessionaeddb9ee… отклонён; explicit current8fe8b332… acquire, fresh direct
+project-inspection того же saved empty AE21960 и release generation3 PASS.
+Current receiver5settled/SHA9dcf0a43…/prefix3 exact; оба архива14/52events и8reset
+records exact, bindings/origins/adoption/absent ledger/AEP unchanged. Несколько
+ошибок вызова до submit не добавили journal events; actual native read один.
+Install/reset/AE restart/save/mutation0 в этом блоке. Ограниченная приёмка базы
+B1/B2/B3 завершена; L0 research уже завершён. Delivery/late callback wire,
+recovery принятой mutation, Titles/full release/portability остаются открытыми.
+Titles/Slideshow автоматически не возобновлять; следующий продуктовый этап
+определяется отдельным поручением. [Evidence](docs/evidence/core-base-b3-configured-20261103.json),
+[актуальный checkpoint](plans/core-base-installed-checkpoint-20261102.md).
+Ни install, ни settled reset/stop/update/enable не повторять.
+
+Ниже — предшествующие snapshots, сохраняющие provenance.
+
 **3 ноября, UI-действия выполняет агент:** пользователь прямо поручил самому
 нажимать необходимые кнопки и не передавать ему ручные действия панели/перезапусков.
 Root выполняет разрешённые действия через штатный API или доступный UI, включая

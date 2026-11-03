@@ -109,6 +109,16 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- 3 ноября, после restart Codex: первый configured status327faaac… PASS,
+  owner25380/один3457/old31404 absent; CEP подключилась автоматически. Stale session
+  отказан, current8fe8b332…/fresh project-inspection/release generation3 PASS.
+  Receiver5settled/prefix3 exact;14/52event archives,8reset records, защищённые
+  файлы и own AEP unchanged. Pending/UNKNOWN/fault0, install/reset/restart/save/
+  mutation0. [Evidence](../docs/evidence/core-base-b3-configured-20261103.json).
+  Ограниченная приёмка базы B1/B2/B3 завершена; L0 research уже выполнен.
+  Read-only граница сохраняется: mutation recovery/Titles/full release/portability
+  открыты. Следующий продуктовый этап — отдельный scope; Titles/Slideshow на паузе.
+
 - UNKNOWN reset69facd01… завершён агентом через existing authenticated panel API;
   exact old Node19452/30888 и AE9472/26308 gone, ownAE restart1/new21960.14unknown
   events и earlier52event archive preserved exact. New session8fe8b332…/new store/
@@ -248,6 +258,17 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- 3 ноября: configured proof закрывает последний пробел текущей приёмки базы.
+  Установку/reset не повторять; новый owner25380 не выдавать за surviving31404.
+  Ошибки вызова root до submit не считать native UNKNOWN: после них journal3events
+  не менялся. Успех — только отдельный корректный exact-contract read с новой
+  парой begin/complete. Прежняя misleading диагностика missing contractId сохранена
+  в evidence, source в этом документальном milestone не меняется.
+- Готовность базы означает принятые B1/B2/B3 и bounded L0; она не разрешает
+  автоматически вернуться к приостановленным Titles/Slideshow. Ненаблюдавшиеся
+  delivery/late callback wire, mutation recovery и two-machine round-trip остаются
+  отдельными границами, без нового Argon review или broad test-прогона.
 
 - UNKNOWN request через штатный panel-role wire protocol — допустимый API-путь
   по прямому поручению пользователя, с nonce/HMAC/purpose/pins и one-attempt audit.
@@ -399,6 +420,15 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- Configured B3 после restart PASS: first status327faaac…/native PID-birth/
+  один listener, автоматический peer connect, stale-session refusal и свежий
+  exact-contract saved empty project read/release.5settled events, prefix3 exact,
+ 14/52event archives и8reset records exact; descriptor/client/project config/
+  origins/adoption/absent ledger/AEP прежние. Неуспешные pre-submit вызовы не
+  добавили command events. [Evidence](../docs/evidence/core-base-b3-configured-20261103.json).
+  Production source/package unchanged; source suites не повторялись. JSON,
+  ссылки новых записей и git diff --check проверены перед milestone commit.
 
 - Native UNKNOWN reset PASS в ограниченном read-only сценарии:
   [evidence](../docs/evidence/core-base-b3-unknown-reset-20261103.json).

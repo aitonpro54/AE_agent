@@ -1,9 +1,13 @@
 # База Core: результаты B1/B2 на 2 ноября
 
-**3 ноября:** B3 source/установка327faaac…, native idle reset и ограниченный native
-UNKNOWN reset с exact old AE death/archive/fresh session baseline PASS. Остаётся
-fresh configured proof после service restart; delivery/late callback wire и
-mutation recovery этими наблюдениями не заявлены:
+**3 ноября, актуально:** B3 source/установка327faaac…, native idle reset и
+ограниченный native UNKNOWN reset с exact old AE death/archive/fresh session
+baseline PASS. После пользовательского restart Codex fresh configured status/
+session/read/release PASS, один owner25380/3457, та жеAE21960;5settled events/
+prefix3 exact, archives/protected bytes/AEP unchanged. Ограниченная приёмка базы
+B1/B2/B3 завершена; delivery/late callback wire, mutation recovery, Titles,
+full release и portability этим не доказаны.
+[Configured evidence](evidence/core-base-b3-configured-20261103.json),
 [актуальная матрица B3c](core-base-b3c-installed-20261103.md).
 Матрица ниже сохраняет исходный момент B1/B2.
 

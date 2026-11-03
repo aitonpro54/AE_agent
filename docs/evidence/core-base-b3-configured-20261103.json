@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T07:01:46.1165068Z",
+  "sourceCommit": "0cddee2b80b16ad80eafa93fd9b1720337b26607",
+  "packageHash": "327faaac97f8f4c5e17c20dfbf30082b1be242f59be566c72ef7e3d4970f88cd",
+  "configured": {
+    "firstCallSucceeded": true,
+    "firstCallStartedAt": "2026-11-03T06:59:11.438Z",
+    "firstCallCompletedAt": "2026-11-03T06:59:16.499Z",
+    "ready": true,
+    "ownerPid": 25380,
+    "ownerBirthTicks": "639292859519548860",
+    "processBootId": "ceb47b71-ad38-4171-ac41-4cbc24494ef4",
+    "attachmentBootId": "a1940591-628d-4019-b5a7-fccfef9634d1",
+    "previousOwnerPid": 31404,
+    "previousOwnerAbsent": true,
+    "previousOwnerExitCause": "unobserved",
+    "listening": [
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 3457,
+        "OwningProcess": 25380,
+        "State": 2
+      }
+    ],
+    "peerInitiallyConnected": false,
+    "peerConnectedWithoutUIAction": true,
+    "peerId": "panel-0e9247d8fa3c162a2003034416e82cd3789d0fb438254852",
+    "staleSessionAcquireRejected": "owner_work_session_changed",
+    "currentSessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0",
+    "resetId": "69facd01-2b95-4983-a110-4209acabda31",
+    "baselineRequired": false,
+    "freshReadSucceeded": true,
+    "commandId": "inspect-635877a3-e65f-4860-b7d6-29c5e4d8462e",
+    "contractId": "9dca38df82c749be5921426448ffd45aa26a3b274f7c1164c104096a32be273e",
+    "moduleId": "project-inspection",
+    "observation": {
+      "aeVersion": "26.3x87",
+      "compositions": [],
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "core-base-b3-native-20261103.aep",
+        "numItems": 0,
+        "saved": true
+      },
+      "target": {
+        "compId": null,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep"
+      },
+      "truncated": false
+    },
+    "authority": false,
+    "continuity": false,
+    "controllerGeneration": 3,
+    "leaseReleased": true,
+    "pending": false,
+    "unresolved": false,
+    "fault": false
+  },
+  "preSubmitErrors": {
+    "leaseExpiredBeforeInspection": true,
+    "reacquireWhileExpired": "controller_busy",
+    "releaseWithoutToken": "owner_lease_token",
+    "expiredLeaseReleasedWithOriginalToken": true,
+    "missingContractId": "owner_outcome_uncertain",
+    "missingContractIdRequestId": "009d707953f92d65130fbff3e005f62ae62e4645267e2a390e2fc6fb86097336",
+    "receiverEventCountAfterErrors": 3,
+    "receiverEventCountAtOwnerStartup": 3,
+    "nativeCommandsAddedByTheseErrors": 0,
+    "explanation": "Ошибки вызова root до peer submit; source facade требует exact contractId. Ни один из этих вызовов не создал durable begin. Unknown reply не переименован в успешное чтение."
+  },
+  "native": {
+    "collectedAt": "2026-11-03T07:01:46.1165068Z",
+    "processes": [
+      {
+        "pid": 21960,
+        "birthTicks": "639292825912075250",
+        "parentPid": 9076,
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "name": "AfterFX.exe"
+      },
+      {
+        "pid": 2708,
+        "birthTicks": "639292859265795560",
+        "parentPid": 28148,
+        "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+        "name": "node.exe"
+      },
+      {
+        "pid": 25380,
+        "birthTicks": "639292859519548860",
+        "parentPid": 2708,
+        "executablePath": "C:\\Program Files\\nodejs\\node.exe",
+        "name": "node.exe"
+      }
+    ],
+    "listeners": [
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 3457,
+        "OwningProcess": 25380,
+        "State": 2
+      }
+    ]
+  },
+  "protectedHashes": {
+    "origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "state/production/origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "state/production/host-adoption.json": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+    "state/production/broker/ledger.ndjson": null
+  },
+  "protectedUnchanged": true,
+  "bindings": {
+    "descriptor": "851d69d1cf66cc4117e6bed2485feed016b755c9201c5995dd619592b1d3a118",
+    "client": "8c8080f73f4b50fceb6714517db37a825e783038998992e8d33a08bc7e4ccd70",
+    "config": "656c0cefef8fc78f2d9e3a5b1fcbfeb58f3cd7d4722294279f52244e93dc5abe"
+  },
+  "configPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml",
+  "bindingsUnchanged": true,
+  "aep": {
+    "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep",
+    "size": 8367,
+    "sha256": "8299fd9faf046e21911739430e304599c4e8f3690fc6314c21b9fa8f8a15c237",
+    "unchanged": true
+  },
+  "receiver": {
+    "eventCount": 5,
+    "byteHash": "9dcf0a430e34a3d2f2a9bfdbc8cc80a7b00d1611b673afee952149f21c90ac21",
+    "prefix3Hash": "af9672be9eb920b8f7a50a52b20a760de9224f76820aec128f24d171e516fe33",
+    "prefix3Exact": true,
+    "addedTypes": [
+      "begin",
+      "complete"
+    ],
+    "onlyAddedCommandId": "inspect-635877a3-e65f-4860-b7d6-29c5e4d8462e",
+    "replayedCommands": 0
+  },
+  "archives": [
+    {
+      "path": "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-receiver/completions.ndjson",
+      "hash": "638fbd1bbb97a142541f1d98915f40a758bd4453f3b22b75d6a9252acdf8fe67",
+      "eventCount": 14
+    },
+    {
+      "path": "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-receiver/completions.ndjson",
+      "hash": "e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437",
+      "eventCount": 52
+    }
+  ],
+  "unknownArchiveExact": true,
+  "earlier52ArchiveExact": true,
+  "unknownResetRecords": [
+    {
+      "file": "archive-completed.json",
+      "path": "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-completed.json",
+      "sha256": "bef418f79139e9f8779202ad3e6e0c163ebf6d9878bf14ebed54eeb784b927d3"
+    },
+    {
+      "file": "archive-plan.json",
+      "path": "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-plan.json",
+      "sha256": "1e9269e3b4da61afe459911f4f4738e24c496e02460f5e6906f5a71446398565"
+    },
+    {
+      "file": "enable-intent.json",
+      "path": "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/enable-intent.json",
+      "sha256": "9ebe2c62959190d1415430486487bd05d353e959ff9d5ea9592932afcecca434"
+    },
+    {
+      "file": "intent.json",
+      "path": "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/intent.json",
+      "sha256": "e0fa7b314ea1a936f0654ad2ad7a9dc77bfbd1b0ff72f4f2471d1eeef169bc55"
+    },
+    {
+      "file": "inventory.json",
+      "path": "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/inventory.json",
+      "sha256": "a80bcd6a000c9c5cbe816b8f7d6d90b71bf30d67ddf20751a0529d7d83456357"
+    },
+    {
+      "file": "reset-completed.json",
+      "path": "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/reset-completed.json",
+      "sha256": "cb3e22765bd5734542d05439fada86fbb00cb49344c6557a5ca6e5e4be542d60"
+    },
+    {
+      "file": "session-candidate.json",
+      "path": "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/session-candidate.json",
+      "sha256": "87e775bb4de64911a2d3a896d67ba9d227f6b4976859d0d01257f4c75c9c8539"
+    },
+    {
+      "file": "session-published.json",
+      "path": "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/session-published.json",
+      "sha256": "29cd7cfb81e0387e105a58638a19c4fc59c080509d9eb4e1caede24bb0530d9d"
+    }
+  ],
+  "unknownResetRecordsExact": true,
+  "actions": {
+    "install": 0,
+    "reset": 0,
+    "aeRestart": 0,
+    "save": 0,
+    "mutation": 0,
+    "panelButtonClick": 0,
+    "configuredReadCommands": 1
+  },
+  "validation": {
+    "newSourceTestsRun": false,
+    "reason": "Production source/package не менялись; использованы native configured read, journal/hash/native inventory и diff-check."
+  },
+  "limits": [
+    "Ограниченная приёмка базы B1/B2/B3, read-only configured path.",
+    "Исторический UNKNOWN сохранён без terminal; delivery/late callback wire не наблюдались.",
+    "Recovery принятой mutation, native Titles, full release и desktop/MSI round-trip остаются открытыми.",
+    "Новый owner не объявлен surviving прежним owner; причина выхода31404 не наблюдалась."
+  ]
+}
