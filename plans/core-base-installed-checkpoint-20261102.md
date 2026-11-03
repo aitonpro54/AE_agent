@@ -5,6 +5,18 @@
 
 ## Дополнение 3 ноября
 
+B3b3 production composition source принят: 42checks/41batches/721unique cases (212fresh/509exact reuse),
+boundaries55. [Evidence](../docs/evidence/core-base-b3b3-20261103.json).
+Package327faaac…/distribution4975c36a… (80/98files) собран/verified, dry-run PASS.
+Actual installed всё ещё2fb5aebe, новые stop/update/reset не начинались.
+Fresh configured preflight: same owner24160/birth639292395293906370, AE9472/
+birth639292254253597850; два новых reads (empty unsaved, затем saved test AEP).
+Receiver50settled/SHA94f31e18…/prefix46 exact, protected/bindings unchanged.
+Own AEP snapshots/core-base-b3-native-20261103.aep,8367bytes/SHA8299fd9f….
+Далее B3c: fresh preflight → новый штатный stop/update/enable → panel/native
+idle и UNKNOWN reset → explicit session acquire/fresh direct project baseline.
+Исторические settled IDs не повторять.
+
 B3b2 session ack/private successful project baseline source принят360fresh cases/
 18checks, boundaries51; [evidence](../docs/evidence/core-base-b3b2-session-20261103.json).
 Новая библиотека ещё не packaged/wired. Далее B3b3 startup/panel/observer; actual

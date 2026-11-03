@@ -13,6 +13,9 @@ function fixedFormat1Package() {
   const dispatcher = fs.readFileSync(path.join(__dirname, 'legacy-poll-dispatcher-v1.txt'), 'utf8');
   if (hash(dispatcher) !== '741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006') throw new Error('historical_dispatcher_fixture_bytes');
   add('cep/js/poll-dispatcher.js', dispatcher);
+  const panel = fs.readFileSync(path.join(__dirname, 'legacy-panel-v1.txt'), 'utf8');
+  if (hash(panel) !== '8ee7446ec1bf9a667c5e7d578dba0a0545453cb6d1ac1404eb6514f937e40e1d') throw new Error('historical_panel_fixture_bytes');
+  add('cep/js/panel.js', panel);
   add('runtime/profiles.json', { profiles: [{ id: 'project-inspection', path: 'modules/project-inspection', executionPolicy: 'read-only-current-observation-v1' }] });
   add('runtime/source-package.json', { version: 1, files: Object.keys(pkg.files).sort(), artifactClosures: [] });
   const read = file => Buffer.from(pkg.files[file], 'base64').toString();

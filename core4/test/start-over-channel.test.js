@@ -1,17 +1,19 @@
 'use strict';
-const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),vm=require('node:vm'),http=require('node:http');
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),vm=require('node:vm'),http=require('node:http'),Module=require('node:module');
 const {createHttpPeer}=require('../integrations/cep/http-peer'),{createAttachmentOwner}=require('../runtime/attachment-owner');
 const {hash,canonical}=require('../protocol/json'),{mac}=require('../integrations/cep/peer-protocol'),{encode}=require('../protocol/codec');
 const installation={installationId:'channel-fixture',packageHash:'a'.repeat(64),panelToken:'b'.repeat(64),controlToken:'c'.repeat(64)},asset={assetKey:'project-inspection-v1',executorHash:'d'.repeat(64)};
 const sid1='10000000-0000-4000-8000-000000000001',sid2='10000000-0000-4000-8000-000000000002';
 async function fixture(t,options={}) {
+  const {peerFactory=createHttpPeer,...peerOptions}=options;
   const directory=fs.mkdtempSync(path.join(os.tmpdir(),'core4-reset-channel-'));
-  const peer=createHttpPeer({installation,asset,directory,port:0,timeout:200,pollTimeout:80,...options});await peer.listen();
+  const peer=peerFactory({installation,asset,directory,port:0,timeout:200,pollTimeout:80,...peerOptions});await peer.listen();
   t.after(async()=>{await peer.close();assert.ok(path.resolve(directory).startsWith(path.resolve(os.tmpdir())+path.sep));fs.rmSync(directory,{recursive:true});});
   function raw(route,body) {return new Promise((resolve,reject)=>{const req=http.request({host:'127.0.0.1',port:peer.status().port,path:route,method:'POST',agent:false,headers:{Origin:'null','Content-Type':'application/json'}},res=>{let text='';res.on('data',b=>text+=b);res.on('end',()=>resolve({status:res.statusCode,value:JSON.parse(text)}));});req.on('error',reject);req.end(canonical(body));});}
   const challenge=(await raw('/challenge',{role:'panel'})).value,peerId='channel-panel';assert.equal((await raw('/link',{challenge,peerId,proof:mac({challenge,peerId},installation.panelToken)})).status,200);let sequence=0;
-  async function call(route,payload){const body={epoch:challenge.epoch,peerId,sequence:++sequence,method:'POST',path:route,payload},response=await raw(route,{body,mac:mac(body,installation.panelToken)});assert.equal(response.status,200,JSON.stringify(response.value));assert.equal(response.value.mac,mac(response.value.body,installation.panelToken));return response.value.body.payload;}
-  return {peer,call,raw,directory,events:()=>fs.readFileSync(path.join(directory,'completions.ndjson'),'utf8').trim().split('\n').map(JSON.parse)};
+  async function request(route,payload){const body={epoch:challenge.epoch,peerId,sequence:++sequence,method:'POST',path:route,payload};return raw(route,{body,mac:mac(body,installation.panelToken)});}
+  async function call(route,payload){const response=await request(route,payload);assert.equal(response.status,200,JSON.stringify(response.value));assert.equal(response.value.mac,mac(response.value.body,installation.panelToken));return response.value.body.payload;}
+  return {peer,call,request,raw,directory,events:()=>fs.readFileSync(path.join(directory,'completions.ndjson'),'utf8').trim().split('\n').map(JSON.parse)};
 }
 const observation={observationVersion:1,target:{projectId:null,compId:null},project:{name:'',numItems:0,saved:false},compositions:[],layers:[],truncated:false,aeVersion:'fixture'};
 function completion(frame){return{commandId:frame.commandId,originalBinding:frame.originalBinding,pins:frame.pins,result:observation};}
@@ -74,4 +76,18 @@ test('start-over-channel session keys preserve legacy latch and reject caller ma
   const f=dispatcherWindow(),api=f.context.Core4PollDispatcher;assert.equal(api.storageKey(installation.installationId),'aeagentcore4-physical-'+installation.installationId);assert.equal(api.storageKey(installation.installationId,null),api.storageKey(installation.installationId));
   assert.notEqual(api.storageKey(installation.installationId,sid1),api.storageKey(installation.installationId,sid2));for(const bad of ['',{},'foreign-session','../escape'])assert.throws(()=>f.dispatcher(bad),/physical_session_binding/);
   const key=api.storageKey(installation.installationId);f.storage.setItem(key,'{"legacy":true}');f.dispatcher(sid2);assert.equal(f.storage.getItem(key),'{"legacy":true}');
+});
+function faultPeer(){
+  let failSync=false;const io={...fs,fsyncSync(fd){if(failSync)throw Object.assign(Error('fixture_fsync'),{code:'fixture_fsync'});return fs.fsyncSync(fd);}};
+  const filename=path.resolve(__dirname,'../integrations/cep/http-peer.js'),m=new Module(filename,module);m.filename=filename;m.paths=Module._nodeModulePaths(path.dirname(filename));
+  m.require=name=>name==='./completion-store'?{openCompletionStore:options=>require('../integrations/cep/completion-store').openCompletionStore({...options,io})}:require(name.startsWith('.')?path.resolve(path.dirname(filename),name):name);
+  m._compile(fs.readFileSync(filename,'utf8'),filename);return{...m.exports,arm(){failSync=true;}};
+}
+test('start-over-channel UNKNOWN persist failure cannot escape timer or retain an accepted Promise; fault remains fenced',async t=>{
+  const api=faultPeer(),f=await fixture(t,{peerFactory:api.createHttpPeer,timeout:45}),result=f.peer.inspect({}).catch(e=>e);api.arm();
+  assert.equal((await result).code,'host_callback_timeout');assert.equal(f.peer.status().pending,null);assert.equal(f.peer.status().storeFault,true);assert.equal(f.peer.status().storeClosed,true);assert.equal(f.peer.status().lastPhysicalFault.authority,false);assert.throws(()=>f.peer.inspect({}),e=>e.code==='receiver_lane_closed');
+});
+test('start-over-channel failed durable completion cannot mint positive baseline proof and timeout stays finite',async t=>{
+  const api=faultPeer(),f=await fixture(t,{peerFactory:api.createHttpPeer,timeout:80}),result=f.peer.inspect({}).catch(e=>e),frame=(await f.call('/poll',{})).command;api.arm();
+  assert.equal((await f.request('/complete',completion(frame))).status,403);const error=await result;assert.equal(error.code,'host_callback_timeout');assert.equal(api.consumeProjectObservation(f.peer,error),null);assert.equal(f.peer.status().storeFault,true);assert.equal(f.peer.status().pending,null);
 });

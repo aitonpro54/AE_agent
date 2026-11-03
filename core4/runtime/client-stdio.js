@@ -19,6 +19,11 @@ function serveAttachment({ client, input, output } = {}) {
     output.write(data + '\n');
   }
   function exact(value, keys) { if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).some(k => !keys.includes(k))) fail('invalid_request'); }
+  function description(name) {
+    if (name === 'controller_acquire' || name === 'controller_transfer') return 'Явное получение управления. Сначала прочитайте core_status; для нового сеанса передайте его workSession.sessionId в payload.sessionId. Это не допуск к изменению AE.';
+    if (name === 'core_status') return 'Статус Core, текущего сеанса и сброса. baselineRequired снимается свежей project-inspection; старое управление автоматически не восстанавливается.';
+    return 'Подключение к owner Core4; управление требует явного controller_acquire.';
+  }
   function ingest(chunk) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     for (const byte of buffer) { if (byte === 10) bytes = 0; else if (++bytes > MAX) { input.destroy(); finish(); break; } }
@@ -39,7 +44,7 @@ function serveAttachment({ client, input, output } = {}) {
       let result;
       if (request.method === 'initialize') result = { protocolVersion: '2024-11-05', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'ae-agent-core4', version: '4.0.0' } };
       else if (request.method === 'ping') result = {};
-      else if (request.method === 'tools/list') result = { tools: OWNER_METHODS.map(name => ({ name, description: 'Core4 owner attachment; control requires explicit acquisition', inputSchema: { type: 'object', properties: { payload: { type: 'object', additionalProperties: true } }, additionalProperties: false } })) };
+      else if (request.method === 'tools/list') result = { tools: OWNER_METHODS.map(name => ({ name, description: description(name), inputSchema: { type: 'object', properties: { payload: { type: 'object', additionalProperties: true } }, additionalProperties: false } })) };
       else if (request.method === 'tools/call') {
         exact(request.params, ['name', 'arguments', '_meta']);
         if (!OWNER_METHODS.includes(request.params.name)) fail('unknown_tool');

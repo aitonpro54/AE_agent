@@ -12,7 +12,9 @@ const { checkEntrySource } = require('../tools/check-boundaries');
 const { mac } = require('../integrations/cep/peer-protocol');
 const root = path.resolve(__dirname, '..');
 const temp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'core4-composition-'));
-test('installed-composition portable fixed-format1 transition to readonly preserves signed history and no replay', { timeout: 30000 }, async () => {
+// This fixture performs real package rotations/Windows IO; keep the test's
+// observation budget separate from production transport deadlines.
+test('installed-composition portable fixed-format1 transition to readonly preserves signed history and no replay', { timeout: 90000 }, async () => {
   const result = await require('./fixtures/installed-composition-transition').transition(); assert.equal(result.historicalFormat, 1); assert.equal(result.candidateFormat, 2);
 });
 function install(pkg) {

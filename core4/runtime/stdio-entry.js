@@ -60,7 +60,8 @@ function deriveComposition(release, read) {
   });
   // No optional runtime code is shipped in the standalone inspection composition.
   if (composition.id === 'readonly' && Object.keys(release.hashes).some(file => /^(plan-engine\/|modules\/(?!project-inspection\/)|config\/admissions\/|runtime\/(manual-policy|windows-reservation-provider)\.js$)/.test(file))) fail('composition_optional_closure');
-  return { composition, assets };
+  const startOverSupported = Object.hasOwn(release.hashes, 'runtime/owner-contract.json') && json('runtime/owner-contract.json').version === 4;
+  return { composition, assets, ...(startOverSupported ? { startOverSupported: true } : {}) };
 }
 function registrySource(assets, codecSource) {
   const declarations = [], entries = assets.map((asset, index) => {
@@ -69,7 +70,7 @@ function registrySource(assets, codecSource) {
   });
   return '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + codecSource + ';' + declarations.join('') + 'var assets={' + entries.join(',') + '};return {"dispatch":function(serialized){var frame=JSON.parse(serialized),own=Object.prototype.hasOwnProperty,a=frame&&own.call(assets,frame.assetKey)&&assets[frame.assetKey],call=a&&own.call(a.calls,frame.phase)&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({"readFailureVersion":1,"outcome":"rejected","code":"inspection_failed"});}}};}());\n';
 }
-function installationConfig(d, selected) { const assets = selected.assets.map(a => ({ assetKey: a.assetKey, executorHash: a.executorHash, phases: a.phases })); return { installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: assets[0].executorHash, assetKey: assets[0].assetKey, assets }; }
+function installationConfig(d, selected) { const assets = selected.assets.map(a => ({ assetKey: a.assetKey, executorHash: a.executorHash, phases: a.phases })); return { installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: assets[0].executorHash, assetKey: assets[0].assetKey, assets, ...(selected.startOverSupported ? { startOverSupported: true } : {}) }; }
 function verifyRelease(directory, release) {
   exactKeys(release, ['version', 'format', 'hashes']); if (release.version !== '4.0.0' || !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype) fail('release_schema');
   const root = path.resolve(directory), expectedFiles = new Set(['release.json']), expectedDirs = new Set(['']);
@@ -139,17 +140,17 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const installation = verifyInstallation(descriptor), root = installation.releaseDir;
   if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(root)) fail('installation_entry_root_mismatch');
   const installGate = path.join(installation.installRoot, 'install.lock');
-  let startupGate, broker, peer, attachmentOwner, ipc, reservedServer, ownerLifecycle;
+  let startupGate, broker, peer, attachmentOwner, ipc, reservedServer, ownerLifecycle, workSession, startOverOwner, startOverControl, ownerMaintenance, startOverRestartArmed = false;
   try {
   if (!['stdio', 'owner'].includes(mode)) fail('runtime_mode');
   if (mode === 'stdio') startupGate = fs.openSync(installGate, 'wx');
   if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');
   const release = JSON.parse(fs.readFileSync(path.join(root, 'release.json'), 'utf8'));
-  const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js'];
+  const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js', 'runtime/start-over-inspection.js', 'runtime/start-over-process.js', 'runtime/start-over-state.js', 'runtime/start-over-barrier.js', 'runtime/start-over-archive.js', 'runtime/start-over-finisher.js', 'runtime/work-session.js', 'runtime/start-over-panel-control.js', 'runtime/start-over-driver.js', 'runtime/owner-launch.js'];
   const ownerRuntime = Object.hasOwn(release.hashes, 'runtime/owner-contract.json');
   if (ownerRuntime) {
     const bytes = fs.readFileSync(path.join(root, 'runtime/owner-contract.json'));
-    const expected = { version: 3, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+    const expected = { version: 4, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
       ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: ownerFiles };
     if (release.format !== 2 || hash(bytes) !== release.hashes['runtime/owner-contract.json'] || canonical(JSON.parse(bytes)) !== canonical(expected) || ownerFiles.some(file => !Object.hasOwn(release.hashes, file))) fail('owner_contract_schema');
     if (mode !== 'owner') fail('owner_entry_required');
@@ -158,6 +159,9 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (ownerFiles.some(file => Object.hasOwn(release.hashes, file))) fail('owner_contract_required');
   }
   if (mode === 'owner') {
+    const { continueStartOverStartup } = require('./start-over-driver.js');
+    await continueStartOverStartup({ installation, descriptorPath: descriptor, port });
+    workSession = require('./work-session.js').createWorkSession({ installation, descriptorPath: descriptor });
     // Presence is a fail-closed barrier, including malformed/unreadable records.
     const maintenance = path.join(installation.stateDir, 'runtime-maintenance.json');
     try { fs.lstatSync(maintenance); fail('owner_desired_stopped'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
@@ -170,13 +174,47 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     });
     const { createOwnerLifecycle } = require('./owner-lifecycle.js');
     ownerLifecycle = await createOwnerLifecycle({ installation, descriptorPath: descriptor, reservedServer });
+  } else {
+    for (const name of ['runtime-start-over.json', 'work-session.json']) {
+      try { fs.lstatSync(path.join(installation.stateDir, name)); fail('owner_work_session_requires_owner_runtime'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+    }
   }
+  function startOverView() {
+    const requested = startOverOwner?.status();
+    if (requested?.requested) {
+      let observed;
+      try { observed = startOverOwner.inspect(); }
+      catch (e) { return { id: requested.id, sessionId: null, phase: 'blocked', requiresAEExit: true, resetComplete: false, baselineRequired: true, fault: /^[a-z][a-z0-9_]{0,99}$/.test(e.code) ? e.code : 'start_over_state_unavailable', aeAuthority: false }; }
+      const stopped = ownerMaintenance?.status(), fault = requested.fault || stopped?.fault || null;
+      return { id: observed.id || requested.id, sessionId: observed.newSessionId || null, phase: stopped?.fault || requested.fault && !stopped?.requested ? 'blocked' : 'stopping', requiresAEExit: observed.requiresAEExit !== false, resetComplete: false, baselineRequired: true, fault, aeAuthority: false };
+    }
+    const value = workSession.status();
+    return { id: value.resetId, sessionId: value.sessionId, phase: value.resetPending ? 'blocked' : value.baselineRequired ? 'baseline-required' : 'ready', requiresAEExit: false, resetComplete: value.mode === 'work-session' && !value.resetPending, baselineRequired: value.baselineRequired, fault: value.resetPending ? 'start_over_in_progress' : null, aeAuthority: false };
+  }
+  async function requestStartOver() {
+    if (!startOverOwner || !ownerMaintenance) fail('start_over_owner_not_ready');
+    try { await startOverOwner.request(); }
+    catch (error) {
+      // An inventory failure must not strand a published reset in a live
+      // frozen producer. Stop this exact owner; the same finisher can capture
+      // continuation inventory once after its real process death.
+      const current = startOverOwner.inspect(), requested = startOverOwner.status();
+      if (!current.id || current.id !== requested.id) throw error;
+      if (!ownerMaintenance.status().requested) {
+        const { createStopAuthorization } = require('./owner-maintenance.js');
+        startOverRestartArmed = true;
+        ownerMaintenance.request(createStopAuthorization({ installation, descriptorPath: descriptor, scope: ownerMaintenance.scope, id: current.id }));
+      }
+    }
+    return startOverView();
+  }
+  if (mode === 'owner') startOverControl = require('./start-over-panel-control.js').createStartOverPanelControl({ installation, status: startOverView, request: requestStartOver });
   async function exposeOwner(facade, activity, invoke, consumeReadRejection) {
     const { createAttachmentOwner, OWNER_METHODS } = require('./attachment-owner.js');
     const { createIpcServer } = require('./client-ipc.js');
     const { ownerEndpoint } = require('./client-entry.js');
-    const { PRIVATE_METHODS, createOwnerMaintenance } = require('./owner-maintenance.js');
-    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke, consumeReadRejection });
+    const { PRIVATE_METHODS, createOwnerMaintenance, createStopAuthorization } = require('./owner-maintenance.js');
+    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke, consumeReadRejection, workSession: workSession.status });
     const endpoint = ownerEndpoint(installation);
     let closed = false, closing, maintenance;
     async function closeRuntime() {
@@ -187,9 +225,17 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     }
     maintenance = createOwnerMaintenance({ installation, descriptorPath: descriptor, lifecycle: ownerLifecycle, activity,
       freeze: attachmentOwner.freeze, accepted: () => attachmentOwner.status().accepted, close: closeRuntime });
+    ownerMaintenance = maintenance;
+    startOverOwner = require('./start-over-state.js').createOwnerStartOver({ installation, descriptorPath: descriptor, lifecycle: ownerLifecycle, freeze: attachmentOwner.freeze,
+      fencePhysical() { if (peer) peer.fenceForStartOver(); else if (ownerLifecycle.mode !== 'diagnostic') fail('start_over_physical_unavailable'); },
+      stop(id) { startOverRestartArmed = true; return maintenance.request(createStopAuthorization({ installation, descriptorPath: descriptor, scope: maintenance.scope, id })); } });
+    void maintenance.done.then(async value => {
+      if (!startOverRestartArmed || value.phase !== 'stopped' && !closed) return;
+      try { await require('./owner-launch.js').launchInstalledOwner({ installation, descriptorPath: descriptor }); } catch { /* intent remains; a fresh thin client can launch the same normal entry */ }
+    });
     const currentStatus = facade.status, currentDiagnostics = facade.diagnostics;
-    facade.status = () => ({ ...currentStatus(), maintenance: maintenance.status() });
-    facade.diagnostics = () => ({ ...currentDiagnostics(), maintenance: maintenance.status() });
+    facade.status = () => ({ ...currentStatus(), maintenance: maintenance.status(), workSession: workSession.status(), startOver: startOverView() });
+    facade.diagnostics = () => ({ ...currentDiagnostics(), maintenance: maintenance.status(), workSession: workSession.status(), startOver: startOverView() });
     ipc = createIpcServer({ endpoint, identity: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash },
       secret: installation.controlToken, bootId: attachmentOwner.bootId, methods: [...OWNER_METHODS, ...PRIVATE_METHODS],
       onAttach: attachmentOwner.onAttach, onDetach: attachmentOwner.onDetach, onRequest: request => {
@@ -210,13 +256,9 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   }
   if (ownerLifecycle?.mode === 'diagnostic') {
     // A fenced boot exposes authenticated observations without constructing a
-    // Broker or opening an execution store. CEP receives only a static refusal.
-    reservedServer.on('request', (req, res) => {
-      req.on('error', () => {}); const origin = req.headers.origin;
-      if (origin === 'null' || origin === 'file://') res.setHeader('Access-Control-Allow-Origin', origin);
-      res.writeHead(503, { 'Content-Type': 'application/json', 'Connection': 'close' });
-      res.on('finish', () => req.socket.destroy()); res.end(JSON.stringify({ error: 'owner_recovery_required' }));
-    });
+    // Broker or opening an execution store. Only authenticated panel reset
+    // control is available; the physical command channel remains refused.
+    require('./start-over-panel-control.js').attachStartOverHttp({ server: reservedServer, control: startOverControl, reason: 'owner_recovery_required' });
     const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.0.0',
       installation: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash, nodeVerified: true },
       lifecycle: ownerLifecycle.state(), ownershipFault: 'owner_recovery_required', physical: { listening: reservedServer.listening, port: reservedServer.address()?.port || null, inspectionAvailable: false, storeClosed: true, unknown: true, coverage: 'diagnostic-only; execution queue not reopened' }, externalLegacyCoverage: 'unobserved' });
@@ -254,7 +296,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (broker.ledger.corrupt) fail('ledger_corrupt');
     if (broker.ledger.unresolved().some(c => c.commandId !== command?.commandId)) fail('controller_unresolved');
   };
-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets: manualAsset ? [{ assetKey: manualAsset.assetKey, moduleId: manualAsset.moduleId, operationId: manualAsset.contract.operationId, executorHash: manualAsset.executorHash, resultProfile: 'manual-text-v1' }] : [], timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
+  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets: manualAsset ? [{ assetKey: manualAsset.assetKey, moduleId: manualAsset.moduleId, operationId: manualAsset.contract.operationId, executorHash: manualAsset.executorHash, resultProfile: 'manual-text-v1' }] : [], timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');
     // Retain this exact operation's grant beyond ALS lifetime, including /poll.
@@ -262,7 +304,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   } } : {}), installationContext: { descriptorPath: descriptor }, ...(ownerLifecycle ? { ownerToken: ownerLifecycle.receiverToken } : {}) });
   const contractId = hash({ packageHash: installation.packageHash, admission, contract }); let closed = false;
   const facade = Object.create(broker);
-  const physical = () => { const value = peer.status(); return { ...value, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && !value.storeClosed && !value.storeFault && !value.pending }; };
+  const physical = () => { const value = peer.status(); return { ...value, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && !value.startOverFrozen && !value.storeClosed && !value.storeFault && !value.pending }; };
   facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.0.0', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
   facade.diagnostics = () => ({ ...broker.diagnostics(), ...facade.status() });
   facade.connect = async () => {
@@ -287,6 +329,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       throw error;
     }
     if (result.observation?.readFailureVersion === 1) fail(result.observation.code || 'inspection_failed');
+    if (workSession) workSession.recordProjectBaseline(peer, result);
     return { evidenceRef: id('observation'), moduleId: profile.id, contractId, ...result, authority: false };
   };
   facade.build = value => { if (value.contractId === contractId || value.steps?.some(s => s.contractId === contractId)) fail('read_only_module_build_unsupported'); return broker.build(value); };

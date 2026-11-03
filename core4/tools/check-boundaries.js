@@ -7,11 +7,11 @@ function files(directory) { return fs.readdirSync(directory, { withFileTypes: tr
 function checkEntrySource(source) {
   // Conservative reviewed-source guard, not a JavaScript or OS sandbox.
   // Exact anchors fail closed when startup's verification layout changes.
-  const markers = ['async function start(', 'const installation = verifyInstallation(descriptor), root = installation.releaseDir;', "fail('installation_entry_root_mismatch');", "if (mode === 'stdio') startupGate = fs.openSync(installGate, 'wx');", "if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');", 'ownerLifecycle = await createOwnerLifecycle({ installation, descriptorPath: descriptor, reservedServer });', "const { Broker } = require('../core/broker.js');", 'finally { if (startupGate !== undefined) { fs.closeSync(startupGate); fs.unlinkSync(installGate); } }'];
+  const markers = ['async function start(', 'const installation = verifyInstallation(descriptor), root = installation.releaseDir;', "fail('installation_entry_root_mismatch');", "if (mode === 'stdio') startupGate = fs.openSync(installGate, 'wx');", "if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');", 'await continueStartOverStartup({ installation, descriptorPath: descriptor, port });', 'ownerLifecycle = await createOwnerLifecycle({ installation, descriptorPath: descriptor, reservedServer });', "const { Broker } = require('../core/broker.js');", 'finally { if (startupGate !== undefined) { fs.closeSync(startupGate); fs.unlinkSync(installGate); } }'];
   const offsets = markers.map(marker => source.indexOf(marker));
   if (offsets.some((offset, n) => offset < 0 || source.lastIndexOf(markers[n]) !== offset || n > 0 && offset <= offsets[n - 1])) fail('entry_verification_layout');
-  const barrier = offsets[4] + markers[4].length, tail = offsets[7] + markers[7].length;
-  for (const match of source.slice(barrier, offsets[5]).matchAll(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) if (!match[1].startsWith('node:') && match[1] !== './owner-lifecycle.js') fail('owner_store_before_lifecycle');
+  const barrier = offsets[4] + markers[4].length, tail = offsets[8] + markers[8].length;
+  for (const match of source.slice(barrier, offsets[6]).matchAll(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) if (!match[1].startsWith('node:') && !['./owner-lifecycle.js', './start-over-driver.js', './work-session.js'].includes(match[1])) fail('owner_store_before_lifecycle');
   for (const region of [source.slice(0, barrier), source.slice(tail)]) {
     if (/require\s*\(\s*[^'"\s]/.test(region)) fail('unverified_entry_import');
     for (const match of region.matchAll(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) if (!match[1].startsWith('node:')) fail('unverified_entry_import');
@@ -59,8 +59,15 @@ function checkFinishOperatorSource(source) {
 function checkStandaloneSource(source) {
   const barrier = source.indexOf("const checked = verifyStandalone(path.resolve(__dirname, '..'), options['--expected-distribution-hash']);");
   if (barrier < 0 || !source.includes('const maintenanceBootstraps = new WeakMap();') || !source.includes('maintenanceBootstraps.set(capability, Object.freeze(') || !source.includes('const readoptionBootstraps = new WeakMap();') || !source.includes('readoptionBootstraps.set(capability, Object.freeze(')) fail('standalone_verification_layout');
-  for (const match of source.matchAll(/require\s*\(\s*(['"])([^'"]+)\1\s*\)/g)) if (!match[2].startsWith('node:') && (match.index < barrier || !['./finish-owner-maintenance.js', './install-core4.js', './operate-stopped-update.js', './operate-stopped-readoption.js'].includes(match[2]))) fail('unverified_standalone_import');
+  if (!source.includes('const startOverBootstraps = new WeakMap();') || !source.includes('startOverBootstraps.set(capability, Object.freeze(')) fail('standalone_verification_layout');
+  for (const match of source.matchAll(/require\s*\(\s*(['"])([^'"]+)\1\s*\)/g)) if (!match[2].startsWith('node:') && (match.index < barrier || !['./finish-owner-maintenance.js', './install-core4.js', './operate-stopped-update.js', './operate-stopped-readoption.js', './operate-start-over.js'].includes(match[2]))) fail('unverified_standalone_import');
   if (/require\s*\(\s*[^'"\s]/.test(source)) fail('unverified_standalone_import'); return true;
+}
+function checkStartOverOperatorSource(source) {
+  const marker = "const options=require('./standalone-installer').assertStartOverBootstrap(capability);", barrier=source.indexOf(marker);
+  if (barrier<0 || source.lastIndexOf(marker)!==barrier || !source.includes("require('./maintain-owner').verifyOwnerInstallation(options.descriptor,options.expectedCurrentPackageHash)")) fail('start_over_operator_verification_layout');
+  for (const match of source.matchAll(/require\s*\(\s*(['"])([^'"]+)\1\s*\)/g)) if (!match[2].startsWith('node:') && (match.index<barrier || !['./standalone-installer','./maintain-owner','../protocol/json','../runtime/installation','../runtime/start-over-state','../runtime/start-over-finisher','../integrations/cep/peer-protocol'].includes(match[2]))) fail('unverified_start_over_import');
+  if (/require\s*\(\s*[^'"\s]/.test(source)) fail('unverified_start_over_import'); return true;
 }
 function checkUpdateOperatorSource(source) {
   const barrier = source.indexOf("const options = require('./standalone-installer').assertUpdateBootstrap(capability);");
@@ -107,8 +114,8 @@ function checkBoundaries(root = path.resolve(__dirname, '..')) {
   }
   const maintenance = path.join(root, 'tools/maintain-owner.js');
   if (fs.existsSync(maintenance)) { checkMaintenanceOperatorSource(fs.readFileSync(maintenance, 'utf8')); checked++; }
-  for (const [file, check] of [['finish-owner-maintenance.js', checkFinishOperatorSource], ['standalone-installer.js', checkStandaloneSource], ['operate-stopped-update.js', checkUpdateOperatorSource], ['operate-stopped-readoption.js', checkReadoptionOperatorSource]]) { check(fs.readFileSync(path.join(root, 'tools', file), 'utf8')); checked++; }
+  for (const [file, check] of [['finish-owner-maintenance.js', checkFinishOperatorSource], ['standalone-installer.js', checkStandaloneSource], ['operate-stopped-update.js', checkUpdateOperatorSource], ['operate-stopped-readoption.js', checkReadoptionOperatorSource], ['operate-start-over.js', checkStartOverOperatorSource]]) { check(fs.readFileSync(path.join(root, 'tools', file), 'utf8')); checked++; }
   return { checked, model: 'reviewed-local-code; conservative source guard; not OS sandbox', liveCalls: 0 };
 }
 if (require.main === module) { try { console.log(JSON.stringify(checkBoundaries())); } catch (e) { console.error(e.code || e.message); process.exitCode = 1; } }
-module.exports = { checkBoundaries, checkEntrySource, checkClientEntrySource, checkOwnerEntrySource, checkMaintenanceOperatorSource, checkFinishOperatorSource, checkStandaloneSource, checkUpdateOperatorSource, checkReadoptionOperatorSource, files };
+module.exports = { checkBoundaries, checkEntrySource, checkClientEntrySource, checkOwnerEntrySource, checkMaintenanceOperatorSource, checkFinishOperatorSource, checkStandaloneSource, checkUpdateOperatorSource, checkReadoptionOperatorSource, checkStartOverOperatorSource, files };

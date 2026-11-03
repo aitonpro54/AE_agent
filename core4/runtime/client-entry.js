@@ -112,6 +112,11 @@ async function startClient({ descriptor, input = process.stdin, output = process
     for (const dir of [path.join(d.installRoot, 'state'), path.join(d.installRoot, 'state/production')]) {
       try { plain(dir, true); } catch (e) { if (e.code === 'ENOENT') return false; throw e; }
     }
+    // In the admitted v4 cluster this only routes bootstrap to the verified
+    // read-only reset driver. Presence cannot authorize stores or a new session;
+    // the full-role entry validates even malformed/partial reset state first.
+    try { fs.lstatSync(path.join(d.installRoot, 'state/production/runtime-start-over.json')); return false; }
+    catch (e) { if (e.code !== 'ENOENT') throw e; }
     try { fs.lstatSync(path.join(d.installRoot, 'state/production/runtime-maintenance.json')); return true; }
     catch (e) { if (e.code === 'ENOENT') return false; throw e; }
   }
@@ -130,9 +135,9 @@ async function startClient({ descriptor, input = process.stdin, output = process
     if (canonical(fresh) !== canonical(d)) fail('client_descriptor_changed');
     if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(fresh.releaseDir)) fail('client_entry_root_changed');
     const manifestBytes = read(path.join(d.releaseDir, 'release.json'), 1024 * 1024), manifest = JSON.parse(manifestBytes);
-    const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js'];
+    const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js', 'runtime/start-over-inspection.js', 'runtime/start-over-process.js', 'runtime/start-over-state.js', 'runtime/start-over-barrier.js', 'runtime/start-over-archive.js', 'runtime/start-over-finisher.js', 'runtime/work-session.js', 'runtime/start-over-panel-control.js', 'runtime/start-over-driver.js', 'runtime/owner-launch.js'];
     const contractBytes = read(path.join(d.releaseDir, 'runtime/owner-contract.json'), 8192);
-    const expected = { version: 3, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+    const expected = { version: 4, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
       ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: ownerFiles };
     if (hash(manifestBytes) !== d.packageHash || hash(contractBytes) !== manifest.hashes['runtime/owner-contract.json'] ||
         canonical(JSON.parse(contractBytes)) !== canonical(expected) || ownerFiles.some(file => !hex(manifest.hashes[file]))) fail('client_owner_contract');

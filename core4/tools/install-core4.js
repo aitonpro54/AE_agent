@@ -230,6 +230,8 @@ function planInstall({ pkg, nodePath, installRoot, extensionsDir, configPath, ma
   const version = process.version;
   if (!/^v(2\d|[3-9]\d)\./.test(version)) fail('node_20_required');
   const releaseDir = path.join(installRoot, 'releases', pkg.packageHash), descriptor = path.join(installRoot, 'installation.json'), stateDir = path.join(installRoot, 'state', 'production'), cepDir = path.join(extensionsDir, BUNDLE);
+  if (entryExists(path.join(stateDir, 'runtime-start-over.json'))) fail('start_over_install_pending');
+  if (entryExists(path.join(stateDir, 'work-session.json')) && (runtime.runtimeModel !== 'owner' || runtime.version !== 4)) fail('work_session_reader_unsupported');
   assertSwitchVolumes(installRoot, cepDir);
   const clientDescriptorPath = clientPaths(installRoot), previousClient = checkedBytes(clientDescriptorPath);
   const originBytes = checkedBytes(path.join(installRoot, 'origin.json'), 8192), anchorBytes = checkedBytes(path.join(stateDir, 'origin.json'), 8192);
@@ -268,6 +270,7 @@ function assertBaseline(plan, originPublished = false, staged) {
 function assertPreparedInstallBaseline(plan) { const fingerprint = assertPreparedInstallPlan(plan); assertBaseline(plan); return fingerprint; }
 function entryExists(file) { try { fs.lstatSync(file); return true; } catch (e) { if (e.code === 'ENOENT') return false; throw e; } }
 function assertNoLifecycleMarkers(stateDir, certifiedStop = false) {
+  if (entryExists(path.join(stateDir, 'runtime-start-over.json'))) fail('start_over_install_pending');
   for (const name of ['runtime-owner.json', 'runtime-owner.next', 'runtime-diagnostic.json', ...(certifiedStop ? [] : ['runtime-maintenance.json'])]) if (entryExists(path.join(stateDir, name))) fail('runtime_lifecycle_owned_or_maintenance');
 }
 function assertRuntimeStopped(stateDir, { lease, descriptorPath, cepDir, plan, stoppedPermit } = {}) {
@@ -275,6 +278,10 @@ function assertRuntimeStopped(stateDir, { lease, descriptorPath, cepDir, plan, s
   const owned = lease ? (assertInstallLease(lease, scope, { full: true }), ownedLeaseGates(lease)) : new Map();
   const certified = stoppedPermit && require('./stopped-update').assertStoppedUpdatePermit(stoppedPermit, { plan, lease });
   assertNoLifecycleMarkers(stateDir, !!certified);
+  if (plan && entryExists(path.join(stateDir, 'work-session.json'))) {
+    const runtime = runtimeBinding(plan.pkg.release, file => Buffer.from(plan.pkg.files[file], 'base64'));
+    if (runtime.runtimeModel !== 'owner' || runtime.version !== 4) fail('work_session_reader_unsupported');
+  }
   for (const relative of ['broker/broker-owner.lock', 'broker/broker-owner.gate', 'receiver/owner']) {
     const file = path.join(stateDir, relative);
     if (entryExists(file) && !(relative === 'broker/broker-owner.gate' && owned.has(file) && fs.readFileSync(file).equals(owned.get(file)))) fail('runtime_state_owned_or_unknown');
@@ -387,6 +394,7 @@ function rollbackBinding(t, current, target) {
   const originValue = JSON.parse(origin.root);
   if (originValue.installationId !== current.installationId || originValue.machineId !== current.machineId) fail('rollback_client_baseline_changed');
   const currentRuntime = installedBinding(current), targetRuntime = target ? installedBinding(target) : null;
+  if (entryExists(path.join(t.stateDir, 'work-session.json')) && (targetRuntime?.runtimeModel !== 'owner' || targetRuntime.version !== 4)) fail('work_session_reader_unsupported');
   if (!Object.hasOwn(t, 'clientBinding')) {
     if (Object.hasOwn(t, 'originBinding') || currentRuntime.runtimeModel !== 'stdio' || targetRuntime?.runtimeModel === 'owner' || value) fail('rollback_client_extension_required');
     return { file, previous: null, value: null, origin };

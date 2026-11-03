@@ -1,0 +1,3065 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T01:15:57.855Z",
+  "scope": "B3b3: production startup/reset driver, independent panel control, work-session composition, verified owner launch, package/installer compatibility and explicit operator continuation",
+  "selectedArtifactsOnly": true,
+  "releaseCertified": false,
+  "changed": [
+    "core4/cep/index.html",
+    "core4/cep/js/panel.js",
+    "core4/config/validation-map.json",
+    "core4/integrations/cep/http-peer.js",
+    "core4/runtime/client-entry.js",
+    "core4/runtime/client-stdio.js",
+    "core4/runtime/owner-contract.json",
+    "core4/runtime/source-package.json",
+    "core4/runtime/start-over-archive.js",
+    "core4/runtime/start-over-barrier.js",
+    "core4/runtime/start-over-finisher.js",
+    "core4/runtime/start-over-state.js",
+    "core4/runtime/stdio-entry.js",
+    "core4/runtime/work-session.js",
+    "core4/test/client-launcher.test.js",
+    "core4/test/fixtures/fixed-format1-package.js",
+    "core4/test/fixtures/start-over-finisher.js",
+    "core4/test/installed-composition.test.js",
+    "core4/test/owner-installation.test.js",
+    "core4/test/owner-runtime.test.js",
+    "core4/test/start-over-channel.test.js",
+    "core4/test/start-over-state.test.js",
+    "core4/test/stopped-host-readoption-core.test.js",
+    "core4/test/stopped-host-readoption-operator.test.js",
+    "core4/test/work-session.test.js",
+    "core4/tools/check-boundaries.js",
+    "core4/tools/install-core4.js",
+    "core4/tools/package-installable.js",
+    "core4/tools/package-standalone-installer.js",
+    "core4/tools/standalone-installer.js",
+    "core4/runtime/owner-launch.js",
+    "core4/runtime/start-over-driver.js",
+    "core4/runtime/start-over-panel-control.js",
+    "core4/test/fixtures/legacy-panel-v1.txt",
+    "core4/test/fixtures/start-over-runtime-preload.js",
+    "core4/test/panel-start-over.test.js",
+    "core4/test/start-over-driver.test.js",
+    "core4/test/start-over-operator.test.js",
+    "core4/test/start-over-panel-control.test.js",
+    "core4/test/start-over-runtime.test.js",
+    "core4/tools/operate-start-over.js"
+  ],
+  "selectedChecks": [
+    {
+      "check": "installable-runtime",
+      "evidenceKey": "e5be2eb9d2e3e06087f734bb1b740e61c823003ecd32e541d265c478f4b1dc3d",
+      "executionBatch": 0,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "panel-reconnect",
+      "evidenceKey": "733ad158b45df008d295f6a19f7197a02a69e7d614693aec068ab098adaffd6a",
+      "executionBatch": 1,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "validation-routing",
+      "evidenceKey": "ac98445542f2b390fa87bb4909220bd62378849d15fedd8204b0e8e9346875e0",
+      "executionBatch": 2,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "owner-runtime",
+      "evidenceKey": "f4bdc46df5a9980bcd7ea2d6bfffa01c9b813f6ccb6f2cd6c88eb3668434a6c6",
+      "executionBatch": 3,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "native-read-recovery",
+      "evidenceKey": "f83e416428f8e617b94312c4e65a73b6a61149eaccc639b7519cf804d74e48f2",
+      "executionBatch": 4,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "manual-runtime",
+      "evidenceKey": "249eebb3f071934fb455f021e12fba3c5e1095edc43f782d14bd2724b284d2b8",
+      "executionBatch": 5,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "client-entry",
+      "evidenceKey": "5bac130f31fd8b528125cb4246a7f10f874ee3b7d0193be0e7e4ff8a672939e3",
+      "executionBatch": 6,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "owner-installation",
+      "evidenceKey": "d0a9d2fcb2c24a71cc0ad48296bc48e52699caf09f3c0da734e3a20bd7e7d3af",
+      "executionBatch": 7,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "owner-attachments",
+      "evidenceKey": "4c115a5be7b59b6a8bcb5d56c0e70b0d32cc2b69e9cd6e070355f5c35e6e1d98",
+      "executionBatch": 8,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "owner-ipc-process",
+      "evidenceKey": "46c512721202f9f3f5aa341b801fc32ef708669648e9828682155c8e4e3c0aa2",
+      "executionBatch": 9,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "installed-composition",
+      "evidenceKey": "1ed8097319d2b9638666415ae055574e36c4c1f30a59f9dee9c0a03942cf0d43",
+      "executionBatch": 10,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "start-over-finisher",
+      "evidenceKey": "dcbceae5b51189c0703da71905a692f21f2585074d9fdbd48f48867b2f501043",
+      "executionBatch": 11,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "start-over-barrier",
+      "evidenceKey": "e6fd9f4a8e39a70a28e732e6a3352ef540279df0c6d3ad03df848f0d64f5a44e",
+      "executionBatch": 12,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "start-over-state",
+      "evidenceKey": "f8338f8c0fcf831794ad5ac9fcf5ed54268676dc407a18cd095cc442be49201f",
+      "executionBatch": 13,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "human-window",
+      "evidenceKey": "97f39ac20c23238f9061838feae873912f6ebac345f1dafbaec232924808437c",
+      "executionBatch": 14,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "work-session",
+      "evidenceKey": "79826955dbe4fd63c81c44dfd4ad668f3eb54dded2fc7d90d1adf7238871bcc6",
+      "executionBatch": 15,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "work-session-owner",
+      "evidenceKey": "92fcf218e17d233c4d3bd56d97815c2c6be5edf3bbcef744997d74611ba1c5d2",
+      "executionBatch": 16,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "client-launcher",
+      "evidenceKey": "16a7756669a7f54eb7d51b9cf2190ae5fe9936a1a638f6e0d3f93af011c07f3d",
+      "executionBatch": 17,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "start-over-channel",
+      "evidenceKey": "2f9238c76d189c4bfad2845b3921844b1cc3284a59db0c433fa36b1d724026e1",
+      "executionBatch": 18,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "readoption-core",
+      "evidenceKey": "d430fda2e17cd35fb8099e1a25ca28b28f1adde8b743a006031cb8acdb59e3a3",
+      "executionBatch": 19,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "evidenceKey": "1327f4f8205552a7635730494fc09ba4f3b2a345446083492d1c5da989e5dcc8",
+      "executionBatch": 20,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "evidenceKey": "a77057cca17eaee13411a7184cecda3274f0836dd0017760e1b6148093c4a604",
+      "executionBatch": 21,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "artifact-boundaries",
+      "evidenceKey": "5172851272fc07f318f73cdf4495d40b1ed3ccb51486ebb49ebfa198ec723eef",
+      "executionBatch": 2,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "standalone-installer",
+      "evidenceKey": "8fa4dd0a3ee82a09e2b48fbc8dbb83c86981d9c8dc27933d663a79676ada2119",
+      "executionBatch": 22,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "stopped-update-operator",
+      "evidenceKey": "5cb3fc03e009353df66bcf89fd203e15d2aaff0bf6c4bd4fb3ccb3666452d8a7",
+      "executionBatch": 23,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "start-over-runtime",
+      "evidenceKey": "80c66f8112acaad33312d9d00186ed32a98d86cf8836ef999f765a3951695163",
+      "executionBatch": 24,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "start-over-driver",
+      "evidenceKey": "8b548d27c72eadbf6da20b6808901fe06a228e4772736b6852c51a43d2d36254",
+      "executionBatch": 25,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "start-over-panel-control",
+      "evidenceKey": "b3c6ab514b83abea4af229deb6467aa2815f34e64daadab8862333b8434c7ea8",
+      "executionBatch": 26,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "panel-start-over",
+      "evidenceKey": "5ccb4e674480f74f188acbe79e237b744b716c7345ec3f32ceeb2585b317de10",
+      "executionBatch": 27,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "start-over-operator",
+      "evidenceKey": "d2ed6b3d9b76369bbd63cea78cae389ddc040f48e6c0364ade0096b85ca0cded",
+      "executionBatch": 28,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "start-over-inspection",
+      "evidenceKey": "8c753246741c2951877063aa536d2577b0eccea882a7826f9e216a9d1c019c0a",
+      "executionBatch": 29,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "stopped-host-readoption",
+      "evidenceKey": "be5d4d20ff5792dcd1008bba7daedc060b570ef228f001be1267ec781e8732d6",
+      "executionBatch": 30,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse"
+    },
+    {
+      "check": "readoption-recovery",
+      "evidenceKey": "7617c7d659294b5ac525cf575cd0173d4cf6a07abda1ef09e75ff7e1990617bf",
+      "executionBatch": 31,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "readoption-enable",
+      "evidenceKey": "7c3fd91bf18dac9844797b0116b97f0fd13e2d97595fdb156ce2914f4d60b7a9",
+      "executionBatch": 32,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "readoption-probe",
+      "evidenceKey": "9d184c8d067d7d72af8458a4a8f2b8b3f827f8ceb2b49d4d7a62335dcff0a4bb",
+      "executionBatch": 33,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "stopped-certification",
+      "evidenceKey": "408082f2495844db1144a30fadffcea485ee11913fa81be1ccaf31a3e4d86120",
+      "executionBatch": 34,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "maintenance-finish",
+      "evidenceKey": "f056bb559023bf8c52dd59b3905bfec3b848385e3112684c61b0451cb864254c",
+      "executionBatch": 35,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "owner-maintenance",
+      "evidenceKey": "8c05b01c2f443f482f3c95bfdea02f04407dfa75cfb02852c264f90922fbe2df",
+      "executionBatch": 36,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "owner-lifecycle",
+      "evidenceKey": "0d851a17f21f75cca6560de9af99ee48294e42a8e65100f4cd342e6ad7c494c7",
+      "executionBatch": 37,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "owner-lifecycle-faults",
+      "evidenceKey": "14097595f3516ce997d7e659f717945a239588aa21a0f4d33ab645e5aa080b47",
+      "executionBatch": 38,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "owner-marker-publication",
+      "evidenceKey": "eee2d9d280b8504e910e66899ac7e2b4f250cfbf187b44c4cc3252b8e9375fae",
+      "executionBatch": 39,
+      "result": "PASS",
+      "mode": "fresh"
+    },
+    {
+      "check": "recovery-inspection",
+      "evidenceKey": "7978aacd3c001705e59cb6c86d2b40db31fd014730694bdc84c94c701527754a",
+      "executionBatch": 40,
+      "result": "PASS",
+      "mode": "fresh"
+    }
+  ],
+  "executionBatches": [
+    {
+      "index": 24,
+      "checks": [
+        "start-over-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-runtime)",
+        "test/start-over-runtime.test.js"
+      ],
+      "cases": 3,
+      "skipped": 0,
+      "durationMs": 247583.6347,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "bbb5a98e0a7d966e3ff1be9092c30ecbd0a357fba84a11d59acfd49b262a8790"
+    },
+    {
+      "index": 0,
+      "checks": [
+        "installable-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:installable-runtime)",
+        "test/installable-runtime.test.js"
+      ],
+      "cases": 41,
+      "skipped": 0,
+      "durationMs": 45355.8869,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "6cd21184c8e5794157287b7d12abc95af1859dba2eaec077045b833ab8d7359e"
+    },
+    {
+      "index": 1,
+      "checks": [
+        "panel-reconnect"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:panel-reconnect)",
+        "test/panel-reconnect.test.js"
+      ],
+      "cases": 69,
+      "skipped": 0,
+      "durationMs": 2808.4508,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "9a8d6b370ad924c888be045be8ba9c9ff46bb344b6d55c6010a6320c07ce009b",
+      "sourceBatch": 1
+    },
+    {
+      "index": 2,
+      "checks": [
+        "validation-routing",
+        "artifact-boundaries"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:validation-routing)|(?:artifact-boundaries)",
+        "test/core4.test.js"
+      ],
+      "cases": 9,
+      "skipped": 0,
+      "durationMs": 9880.6444,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "9a8d6b370ad924c888be045be8ba9c9ff46bb344b6d55c6010a6320c07ce009b",
+      "sourceBatch": 2
+    },
+    {
+      "index": 3,
+      "checks": [
+        "owner-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-runtime)",
+        "test/owner-runtime.test.js"
+      ],
+      "cases": 22,
+      "skipped": 0,
+      "durationMs": 109064.3702,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "8bf5230ffcf5d5d88fba748381e0cc3ae2267e9dc9e8118d66656367bd6fa64e"
+    },
+    {
+      "index": 4,
+      "checks": [
+        "native-read-recovery"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:native-read-recovery)",
+        "test/native-read-recovery.test.js"
+      ],
+      "cases": 19,
+      "skipped": 0,
+      "durationMs": 655715.3369,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "e51993971bf3bce74c18f271f32e3d5d6b46b671a1334baa04e82a2915cae6a5"
+    },
+    {
+      "index": 5,
+      "checks": [
+        "manual-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:manual-runtime)",
+        "test/manual-runtime.test.js"
+      ],
+      "cases": 59,
+      "skipped": 0,
+      "durationMs": 11421.0294,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "86b1cffca082b20b11bc25e59349e8b153af7daaf047e539f167f848ccdc6c73"
+    },
+    {
+      "index": 6,
+      "checks": [
+        "client-entry"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:client-entry)",
+        "test/client-entry.test.js"
+      ],
+      "cases": 12,
+      "skipped": 0,
+      "durationMs": 1461.4736,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "9a8d6b370ad924c888be045be8ba9c9ff46bb344b6d55c6010a6320c07ce009b",
+      "sourceBatch": 6
+    },
+    {
+      "index": 7,
+      "checks": [
+        "owner-installation"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-installation)",
+        "test/owner-installation.test.js"
+      ],
+      "cases": 18,
+      "skipped": 0,
+      "durationMs": 67381.8222,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "fb5cd11f6ae501972c66b3aa68d3a7689fdf3c6c1eddc3bb93890ab20e58f643"
+    },
+    {
+      "index": 8,
+      "checks": [
+        "owner-attachments"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-attachments)",
+        "test/owner-attachments.test.js"
+      ],
+      "cases": 29,
+      "skipped": 0,
+      "durationMs": 286.7775,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "9a8d6b370ad924c888be045be8ba9c9ff46bb344b6d55c6010a6320c07ce009b",
+      "sourceBatch": 8
+    },
+    {
+      "index": 9,
+      "checks": [
+        "owner-ipc-process"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-ipc-process)",
+        "test/owner-ipc-process.test.js"
+      ],
+      "cases": 2,
+      "skipped": 0,
+      "durationMs": 823.5437,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "9a8d6b370ad924c888be045be8ba9c9ff46bb344b6d55c6010a6320c07ce009b",
+      "sourceBatch": 9
+    },
+    {
+      "index": 10,
+      "checks": [
+        "installed-composition"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:installed-composition)",
+        "test/installed-composition.test.js"
+      ],
+      "cases": 9,
+      "skipped": 0,
+      "durationMs": 34548.4659,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "066cb01ce9786ab061512ca981d5a73c3279b025166f94b3e915595f0b2e4d9c"
+    },
+    {
+      "index": 11,
+      "checks": [
+        "start-over-finisher"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-finisher)",
+        "test/start-over-finisher.test.js"
+      ],
+      "cases": 20,
+      "skipped": 0,
+      "durationMs": 433545.1989,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "16a906876eedf89f8eea493fa2997df7ae0bb4570be51b18a7e2bcb7ec67bc1e"
+    },
+    {
+      "index": 12,
+      "checks": [
+        "start-over-barrier"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-barrier)",
+        "test/start-over-barrier.test.js"
+      ],
+      "cases": 14,
+      "skipped": 0,
+      "durationMs": 30609.6613,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "b17af88781d2094c7b3c6649b8a0702fe5f168c42c986a854abaf41d5fb6e262"
+    },
+    {
+      "index": 13,
+      "checks": [
+        "start-over-state"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-state)",
+        "test/start-over-state.test.js"
+      ],
+      "cases": 20,
+      "skipped": 0,
+      "durationMs": 32784.0093,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "728164f74bf4f118cc45f9754c91076e886c69d5fc15d93bbf9b2e3732a9b8cb"
+    },
+    {
+      "index": 14,
+      "checks": [
+        "human-window"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:human-window)",
+        "test/human-window.test.js"
+      ],
+      "cases": 3,
+      "skipped": 0,
+      "durationMs": 4313.6228,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "101cd882b22796070ddcf573ccc0b469aa2867061588412eeeb276367f3e6eb2"
+    },
+    {
+      "index": 15,
+      "checks": [
+        "work-session"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:work-session)",
+        "test/work-session.test.js"
+      ],
+      "cases": 17,
+      "skipped": 0,
+      "durationMs": 1415.8055,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "34cce977de4e1a23307a5e78343e13d9fdd1ce10b3d0335b037485decacc4289"
+    },
+    {
+      "index": 16,
+      "checks": [
+        "work-session-owner"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:work-session)",
+        "test/work-session-owner.test.js"
+      ],
+      "cases": 8,
+      "skipped": 0,
+      "durationMs": 82.3658,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "9a8d6b370ad924c888be045be8ba9c9ff46bb344b6d55c6010a6320c07ce009b",
+      "sourceBatch": 15
+    },
+    {
+      "index": 17,
+      "checks": [
+        "client-launcher"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:client-launcher)",
+        "test/client-launcher.test.js"
+      ],
+      "cases": 21,
+      "skipped": 0,
+      "durationMs": 55602.6928,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "9a8d6b370ad924c888be045be8ba9c9ff46bb344b6d55c6010a6320c07ce009b",
+      "sourceBatch": 16
+    },
+    {
+      "index": 18,
+      "checks": [
+        "start-over-channel"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-channel)",
+        "test/start-over-channel.test.js"
+      ],
+      "cases": 12,
+      "skipped": 0,
+      "durationMs": 653.764,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "9a8d6b370ad924c888be045be8ba9c9ff46bb344b6d55c6010a6320c07ce009b",
+      "sourceBatch": 17
+    },
+    {
+      "index": 19,
+      "checks": [
+        "readoption-core"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-core)",
+        "test/stopped-host-readoption-core.test.js"
+      ],
+      "cases": 13,
+      "skipped": 0,
+      "durationMs": 593582.8003,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "c5c8c39ff2f53e1a2dca1dea5695b32fac3c2d153eb81cf8c27423e84878df63"
+    },
+    {
+      "index": 20,
+      "checks": [
+        "stopped-host-readoption-operator"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-host-readoption-operator)",
+        "test/stopped-host-readoption-operator.test.js"
+      ],
+      "cases": 17,
+      "skipped": 0,
+      "durationMs": 67547.208,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "8242efe4b225c1d418f3cb0479a4c58f286095c1679752f9573ae8c41d3f137e"
+    },
+    {
+      "index": 21,
+      "checks": [
+        "maintenance-finish-operator"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:maintenance-finish-operator)",
+        "test/maintenance-finish-operator.test.js"
+      ],
+      "cases": 7,
+      "skipped": 0,
+      "durationMs": 23471.1583,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "933e2e0273d4fc9bea0ef2aa8a6194adc7cbe82293e50bb9bc5956bcc95e1b71"
+    },
+    {
+      "index": 22,
+      "checks": [
+        "standalone-installer"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:standalone-installer)",
+        "test/standalone-installer.test.js"
+      ],
+      "cases": 7,
+      "skipped": 0,
+      "durationMs": 16212.7952,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "a1fde8930115b623891c4868f652ce266288308b987e1cea958418a7b09a037d"
+    },
+    {
+      "index": 23,
+      "checks": [
+        "stopped-update-operator"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-update-operator)",
+        "test/stopped-update-operator.test.js"
+      ],
+      "cases": 4,
+      "skipped": 0,
+      "durationMs": 1896.5676,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "a27cd8ee02e269728bb28c58dccbf9fcc36c985a29bce0b78268c16c67626135"
+    },
+    {
+      "index": 25,
+      "checks": [
+        "start-over-driver"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-driver)",
+        "test/start-over-driver.test.js"
+      ],
+      "cases": 3,
+      "skipped": 0,
+      "durationMs": 63182.537,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "7001108eb371078b7a80074292822d467a87722df90dfa65ea8421c975b63614"
+    },
+    {
+      "index": 26,
+      "checks": [
+        "start-over-panel-control"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-panel-control)",
+        "test/start-over-panel-control.test.js"
+      ],
+      "cases": 7,
+      "skipped": 0,
+      "durationMs": 73.2065,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "6f727b413e679b9026ac6623c093acf77775b95d5b88617be7b098fd3cf9d2ee"
+    },
+    {
+      "index": 27,
+      "checks": [
+        "panel-start-over"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:panel-start-over)",
+        "test/panel-start-over.test.js"
+      ],
+      "cases": 7,
+      "skipped": 0,
+      "durationMs": 381.3884,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "260e869866c2142c18949090077c30e8796e457bb1afadd3da9b63fc534c44a6"
+    },
+    {
+      "index": 28,
+      "checks": [
+        "start-over-operator"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-operator)",
+        "test/start-over-operator.test.js"
+      ],
+      "cases": 6,
+      "skipped": 0,
+      "durationMs": 12423.0786,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "1d6460995aee76c3784ed31001e514b560567cd3d59098ddd2c47202a984ce23"
+    },
+    {
+      "index": 29,
+      "checks": [
+        "start-over-inspection"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-inspection)",
+        "test/start-over-inspection.test.js"
+      ],
+      "cases": 19,
+      "skipped": 0,
+      "durationMs": 94.5735,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "fa8ece0c357a39acbe597e5572ab16f5c64d93747042a8dd26512635de7b8c5e"
+    },
+    {
+      "index": 30,
+      "checks": [
+        "stopped-host-readoption"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-host-readoption)",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "cases": 25,
+      "skipped": 0,
+      "durationMs": 417928.5184,
+      "result": "PASS",
+      "mode": "exact-unchanged-reuse",
+      "logSha256": "820a2906bd8a8917571487182f953b0cf805f205c93652ad01987720a144dd12"
+    },
+    {
+      "index": 31,
+      "checks": [
+        "readoption-recovery"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-recovery)",
+        "test/stopped-host-readoption-recovery.test.js"
+      ],
+      "cases": 34,
+      "skipped": 0,
+      "durationMs": 2313389.0343,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "3f1455abc0048c3991562423bd9aa5bba37ed605e8ea984bc13fd0f0097288c0"
+    },
+    {
+      "index": 32,
+      "checks": [
+        "readoption-enable"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-enable)",
+        "test/stopped-host-readoption-enable.test.js"
+      ],
+      "cases": 22,
+      "skipped": 0,
+      "durationMs": 509326.3853,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "941ebbaa6f69c702db8438baaee6d1507ca7d0f28feb31f103d6a7422da2d2c7"
+    },
+    {
+      "index": 33,
+      "checks": [
+        "readoption-probe"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-probe)",
+        "test/stopped-host-readoption-probe.test.js"
+      ],
+      "cases": 1,
+      "skipped": 0,
+      "durationMs": 98.9755,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "cf4fb70e55c00908022739ff5cc5c9d540d202a8638f0c8bfeb10d2d63f8f73d"
+    },
+    {
+      "index": 34,
+      "checks": [
+        "stopped-certification"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-certification)",
+        "test/stopped-certification.test.js"
+      ],
+      "cases": 30,
+      "skipped": 0,
+      "durationMs": 66039.379,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "22b626f09f2f93dbe930378568e499724316a38eacb3d77201ee28ab1964182c"
+    },
+    {
+      "index": 35,
+      "checks": [
+        "maintenance-finish"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:maintenance-finish)",
+        "test/maintenance-finish.test.js"
+      ],
+      "cases": 32,
+      "skipped": 0,
+      "durationMs": 94869.4947,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "9b36153a3de0fdeae0141606cf052b0e182498edc04486e4ecb6bee74c02cccf"
+    },
+    {
+      "index": 36,
+      "checks": [
+        "owner-maintenance"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-maintenance)",
+        "test/owner-maintenance.test.js"
+      ],
+      "cases": 22,
+      "skipped": 0,
+      "durationMs": 14085.1287,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "6979697f63bc37279e82366fab000b447eb80816e26618c7ba3e99349ac811f6"
+    },
+    {
+      "index": 37,
+      "checks": [
+        "owner-lifecycle"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-lifecycle)",
+        "test/owner-lifecycle.test.js"
+      ],
+      "cases": 12,
+      "skipped": 0,
+      "durationMs": 4988.6427,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "0041542c495262e6ca5dc4ae57199aec9c7aba1650926e34a6f2a354fe7609fb"
+    },
+    {
+      "index": 38,
+      "checks": [
+        "owner-lifecycle-faults"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-lifecycle-faults)",
+        "test/owner-lifecycle-faults.test.js"
+      ],
+      "cases": 21,
+      "skipped": 0,
+      "durationMs": 13361.9079,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "eb40ae9bc37ce8f9b2aeecb8d486f39566fd5b6109166fb5b601997296a4d950"
+    },
+    {
+      "index": 39,
+      "checks": [
+        "owner-marker-publication"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-marker-publication)",
+        "test/owner-marker-publication.test.js"
+      ],
+      "cases": 14,
+      "skipped": 0,
+      "durationMs": 1344.5258,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "1e43809a1622ab8384ed83963a10fe9060c73c12f7dc7fbee09787b7823a25f9"
+    },
+    {
+      "index": 40,
+      "checks": [
+        "recovery-inspection"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:recovery-inspection)",
+        "test/recovery-inspection.test.js"
+      ],
+      "cases": 11,
+      "skipped": 0,
+      "durationMs": 88.4531,
+      "result": "PASS",
+      "mode": "fresh",
+      "logSha256": "76f2e28a712f052d9794842468e31393c8ae4cfa5e71a35143ac16da2cd799e4"
+    }
+  ],
+  "uniqueCases": 721,
+  "freshCases": 212,
+  "reusedCases": 509,
+  "counting": "Unique passed cases counted once per execution batch; validation-routing/artifact-boundaries share9cases. Reuse requires exact unchanged evidence keys and successful complete prior batch.",
+  "deferredCoverage": [
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/index.html",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        },
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/owner-contract.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/source-package.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-archive.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-barrier.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-finisher.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-state.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/stdio-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/work-session.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/install-core4.js"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/package-installable.js"
+        },
+        {
+          "file": "core4/runtime/owner-launch.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-driver.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-panel-control.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/index.html",
+          "cep/",
+          "stopped-update"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "stopped-update"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/owner-contract.json",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/source-package.json",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/start-over-archive.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/start-over-barrier.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/start-over-finisher.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/start-over-state.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/stdio-entry.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/work-session.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/install-core4.js",
+          "stopped-update"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/package-installable.js",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/owner-launch.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/start-over-driver.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/start-over-panel-control.js",
+          "runtime/",
+          "stopped-update"
+        ]
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/index.html",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        },
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/owner-contract.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/source-package.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-archive.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-barrier.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-finisher.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-state.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/stdio-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/work-session.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/install-core4.js"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/package-installable.js"
+        },
+        {
+          "file": "core4/runtime/owner-launch.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-driver.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-panel-control.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/index.html",
+          "cep/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/owner-contract.json",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/source-package.json",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/start-over-archive.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/start-over-barrier.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/start-over-finisher.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/start-over-state.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/stdio-entry.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/work-session.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/install-core4.js",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/package-installable.js",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/owner-launch.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/start-over-driver.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/start-over-panel-control.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/index.html",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/"
+        },
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/owner-contract.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/source-package.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-archive.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-barrier.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-finisher.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-state.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/stdio-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/work-session.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/tools/check-boundaries.js",
+          "dependency": "tools/check-boundaries.js"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/install-core4.js"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/package-installable.js"
+        },
+        {
+          "file": "core4/runtime/owner-launch.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-driver.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-panel-control.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/index.html",
+          "cep/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/owner-contract.json",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/source-package.json",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/start-over-archive.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/start-over-barrier.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/start-over-finisher.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/start-over-state.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/stdio-entry.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/work-session.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/tools/check-boundaries.js",
+          "tools/check-boundaries.js",
+          "maintenance-operator"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/install-core4.js",
+          "maintenance-operator"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/package-installable.js",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/owner-launch.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/start-over-driver.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/start-over-panel-control.js",
+          "runtime/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/index.html",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/owner-contract.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/source-package.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-archive.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-barrier.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-finisher.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-state.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/stdio-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/work-session.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/install-core4.js"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/package-installable.js"
+        },
+        {
+          "file": "core4/runtime/owner-launch.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-driver.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-panel-control.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/index.html",
+          "cep/",
+          "native-read-capture"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/owner-contract.json",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/source-package.json",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/start-over-archive.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/start-over-barrier.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/start-over-finisher.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/start-over-state.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/stdio-entry.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/work-session.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/install-core4.js",
+          "native-read-capture"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/package-installable.js",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/owner-launch.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/start-over-driver.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/start-over-panel-control.js",
+          "runtime/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/index.html",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/http-peer.js"
+        },
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/owner-contract.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/source-package.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-archive.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-barrier.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-finisher.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-state.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/stdio-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/work-session.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/package-installable.js"
+        },
+        {
+          "file": "core4/runtime/owner-launch.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-driver.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-panel-control.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/index.html",
+          "cep/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/owner-contract.json",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/source-package.json",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/start-over-archive.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/start-over-barrier.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/start-over-finisher.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/start-over-state.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/stdio-entry.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/work-session.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/package-installable.js",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/owner-launch.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/start-over-driver.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/start-over-panel-control.js",
+          "runtime/",
+          "windows-cim-probe"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/index.html",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/http-peer.js"
+        },
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/owner-contract.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/source-package.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-archive.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-barrier.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-finisher.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-state.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/stdio-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/work-session.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/install-core4.js"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/package-installable.js"
+        },
+        {
+          "file": "core4/runtime/owner-launch.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-driver.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-panel-control.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/index.html",
+          "cep/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/http-peer.js",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/owner-contract.json",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/source-package.json",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/start-over-archive.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/start-over-barrier.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/start-over-finisher.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/start-over-state.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/stdio-entry.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/work-session.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/install-core4.js",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/package-installable.js",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/owner-launch.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/start-over-driver.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/start-over-panel-control.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "manual-current-target",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/stdio-entry.js",
+          "dependency": "runtime/stdio-entry.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/stdio-entry.js",
+          "runtime/stdio-entry.js",
+          "manual-current-target"
+        ]
+      ]
+    },
+    {
+      "check": "audit-repairs",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/",
+          "audit-repairs"
+        ]
+      ]
+    },
+    {
+      "check": "core-control",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/check-boundaries.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-start-over.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/check-boundaries.js",
+          "tools/",
+          "core-control"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/",
+          "core-control"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "core-control"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "core-control"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "core-control"
+        ],
+        [
+          "core4/tools/operate-start-over.js",
+          "tools/",
+          "core-control"
+        ]
+      ]
+    },
+    {
+      "check": "core-admission",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/check-boundaries.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-start-over.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/check-boundaries.js",
+          "tools/",
+          "core-admission"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/",
+          "core-admission"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "core-admission"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "core-admission"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "core-admission"
+        ],
+        [
+          "core4/tools/operate-start-over.js",
+          "tools/",
+          "core-admission"
+        ]
+      ]
+    },
+    {
+      "check": "worker-isolation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/check-boundaries.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-start-over.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/check-boundaries.js",
+          "tools/",
+          "worker-isolation"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/",
+          "worker-isolation"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "worker-isolation"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "worker-isolation"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "worker-isolation"
+        ],
+        [
+          "core4/tools/operate-start-over.js",
+          "tools/",
+          "worker-isolation"
+        ]
+      ]
+    },
+    {
+      "check": "protocol-codec",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/check-boundaries.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-start-over.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/check-boundaries.js",
+          "tools/",
+          "protocol-codec"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/",
+          "protocol-codec"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "protocol-codec"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "protocol-codec"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "protocol-codec"
+        ],
+        [
+          "core4/tools/operate-start-over.js",
+          "tools/",
+          "protocol-codec"
+        ]
+      ]
+    },
+    {
+      "check": "workflow-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/check-boundaries.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-start-over.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/check-boundaries.js",
+          "tools/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "workflow-recovery"
+        ],
+        [
+          "core4/tools/operate-start-over.js",
+          "tools/",
+          "workflow-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/"
+        },
+        {
+          "file": "core4/tools/check-boundaries.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/operate-start-over.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "cep-transport"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/check-boundaries.js",
+          "tools/",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "cep-transport"
+        ],
+        [
+          "core4/tools/operate-start-over.js",
+          "tools/",
+          "cep-transport"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        },
+        {
+          "file": "core4/integrations/cep/http-peer.js",
+          "dependency": "integrations/cep/"
+        },
+        {
+          "file": "core4/test/client-launcher.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/fixtures/fixed-format1-package.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/fixtures/start-over-finisher.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/installed-composition.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/owner-installation.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/owner-runtime.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/start-over-channel.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/start-over-state.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/stopped-host-readoption-core.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/stopped-host-readoption-operator.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/work-session.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/tools/check-boundaries.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/package-standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/tools/standalone-installer.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/test/fixtures/legacy-panel-v1.txt",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/fixtures/start-over-runtime-preload.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/panel-start-over.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/start-over-driver.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/start-over-operator.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/start-over-panel-control.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/start-over-runtime.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/tools/operate-start-over.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/integrations/cep/http-peer.js",
+          "integrations/cep/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/client-launcher.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/fixtures/fixed-format1-package.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/fixtures/start-over-finisher.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/installed-composition.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/owner-installation.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/owner-runtime.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/start-over-channel.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/start-over-state.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/stopped-host-readoption-core.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/stopped-host-readoption-operator.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/work-session.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/check-boundaries.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/package-standalone-installer.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/standalone-installer.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/fixtures/legacy-panel-v1.txt",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/fixtures/start-over-runtime-preload.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/panel-start-over.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/start-over-driver.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/start-over-operator.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/start-over-panel-control.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/start-over-runtime.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/tools/operate-start-over.js",
+          "tools/",
+          "lifecycle-simulation"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/index.html",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        },
+        {
+          "file": "core4/runtime/client-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/owner-contract.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/source-package.json",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-archive.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-barrier.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-finisher.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-state.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/stdio-entry.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/work-session.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/test/fixtures/fixed-format1-package.js",
+          "dependency": "test/fixtures/fixed-format1-package.js"
+        },
+        {
+          "file": "core4/test/installed-composition.test.js",
+          "dependency": "test/installed-composition.test.js"
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "dependency": "tools/install-core4.js"
+        },
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/package-installable.js"
+        },
+        {
+          "file": "core4/runtime/owner-launch.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-driver.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/start-over-panel-control.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/index.html",
+          "cep/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/client-entry.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/owner-contract.json",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/source-package.json",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/start-over-archive.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/start-over-barrier.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/start-over-finisher.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/start-over-state.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/stdio-entry.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/work-session.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/test/fixtures/fixed-format1-package.js",
+          "test/fixtures/fixed-format1-package.js",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/test/installed-composition.test.js",
+          "test/installed-composition.test.js",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/tools/install-core4.js",
+          "tools/install-core4.js",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/tools/package-installable.js",
+          "tools/package-installable.js",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/owner-launch.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/start-over-driver.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/start-over-panel-control.js",
+          "runtime/",
+          "exact-f548-transition"
+        ]
+      ]
+    }
+  ],
+  "sourceDigests": {
+    "core4/cep/index.html": "b77a08589f1fa88b5ffe807c0724f8971dd4b19d770ea2678c1543e9e86002e1",
+    "core4/cep/js/panel.js": "fcf1c89e2db8bcb5a60f1e06744f6d40f938c17c7c7116812503eec42c9f6f81",
+    "core4/config/validation-map.json": "fc5c8e166f03ab5d3797796cfe86fb0a7b7d514dd7e2fda3a29701986d897a18",
+    "core4/integrations/cep/http-peer.js": "1f69d22a3bf58a7cd9fc494fd25487ff35005d3d29d0b2f5d2d3c2b01cfd46e7",
+    "core4/runtime/client-entry.js": "fbe2960c49a5285f7b16dfdd997bdaf4a1e581fcec823967bf015f6b2e5632db",
+    "core4/runtime/client-stdio.js": "03a74bbe0f2f115ca6d311052c373fb3e7f4ca2d8a4be1c4f7c70e52e70ba543",
+    "core4/runtime/owner-contract.json": "1313117aa67e63e908ebc0694d3b067b740c3a72a5b2675722794daab94d103b",
+    "core4/runtime/source-package.json": "26e0cd9443e28162b846b96a09cae0c391ef192a29eb562de8a01e8276516679",
+    "core4/runtime/start-over-archive.js": "47e3cc4b7161df21195859683f399293f9a2f77d640df357bb2bf4ceb08334ad",
+    "core4/runtime/start-over-barrier.js": "279d3f8495959a137af737b2a7cb9e4b69743d3e797fa29d64d81ab81c26beb9",
+    "core4/runtime/start-over-finisher.js": "d5c49bb71907a3e14314a1f222fa2b42a26bd7504088da3a5b0c4a494f2a484d",
+    "core4/runtime/start-over-state.js": "e5b1ab642f31e58361beae8cf524605301e2af9349abc480f47e3d0b9a10fa37",
+    "core4/runtime/stdio-entry.js": "9212dc073b764fd7f1ec86ffd010371099b2f360e3d202344bfcbab684060cf2",
+    "core4/runtime/work-session.js": "6956afea74d8d5b1261f116ad775204a0ec6def6f620847311d21d65d502eff9",
+    "core4/test/client-launcher.test.js": "2ad0fe780b90f1672b40c49a387ebb844039bb65c0b5d51ae015a45e2b81feeb",
+    "core4/test/fixtures/fixed-format1-package.js": "49d3462eab31af5ed784bafdf3ad0c8da28773ba74b901e96174baf4da85cf1f",
+    "core4/test/fixtures/start-over-finisher.js": "65c154346c2f3aa8b392032ce0e16c18f681bbbb59c4ee575ebd0ec3a12cece9",
+    "core4/test/installed-composition.test.js": "5605079a6f2d4f1ad7530b376c9e455212cdfc2eb0e816dcb56bb548a31448f2",
+    "core4/test/owner-installation.test.js": "f90404ad055f011e937ca713294ffb80afba75be140437018efdc9f719b0f8f1",
+    "core4/test/owner-runtime.test.js": "045ae357ec9b9b2ad97793d1e8dc5743ea4396220bda28135e07a39fd0376bed",
+    "core4/test/start-over-channel.test.js": "5b2504538526467ad96139292ad8639e51a65aa5aae105d0072143acb2092db9",
+    "core4/test/start-over-state.test.js": "fcffd1302f6d12afe97dee3e855cdc0f28990f299d4adf5943d9816d63988d47",
+    "core4/test/stopped-host-readoption-core.test.js": "b80b97875de88e231240eaf49f7ef455734f1f13308782b8c56ca9a8259b9bf2",
+    "core4/test/stopped-host-readoption-operator.test.js": "d4857e32336e79f4bd0d8e01e3be72dd2faac000893b3e86164c5555bda73bd6",
+    "core4/test/work-session.test.js": "6efc435fb3ac01fec615f874ee608683db1d728dda8c27195460d3a9bebb66d0",
+    "core4/tools/check-boundaries.js": "3c2a67d2383fdd1f738e81364296d3c86b27207fe13d59998351c66470c43f75",
+    "core4/tools/install-core4.js": "7349e40216d806f7816d7dfe71bae204db18fa712cf9ea2e194acb8969692d35",
+    "core4/tools/package-installable.js": "dbc42f1c158163b1b40ef10ffdf2ee2bc7ee6d7971a10c6b56975af8b6f6f4b5",
+    "core4/tools/package-standalone-installer.js": "0969def1e2f08d6dcef4f41ae85339884bd603f408f31d3e598d67b9bed901ac",
+    "core4/tools/standalone-installer.js": "6a2925c356e80fbe318214356282386c9890e83c9d74eb52f09a0de9a07a9857",
+    "core4/runtime/owner-launch.js": "4d7acdd32fc1cc106142a6b8c7821dbbe3257c5ce74c7041023cdf5cc95763bc",
+    "core4/runtime/start-over-driver.js": "465b86c98977362b27da7931fe70859853711456c3ab35cb67e52bf69ce04ace",
+    "core4/runtime/start-over-panel-control.js": "7ab4f4abe03b9c3c9a675684d55599f3688f292e9141b63736d4108aad785770",
+    "core4/test/fixtures/legacy-panel-v1.txt": "8ee7446ec1bf9a667c5e7d578dba0a0545453cb6d1ac1404eb6514f937e40e1d",
+    "core4/test/fixtures/start-over-runtime-preload.js": "39edccaeb11a49eb56bb62361eee7c3c810ebde4eb8716bf4591e4611bfa8d9e",
+    "core4/test/panel-start-over.test.js": "5502f0c4dbf507f9b7207e3713f39c47beec9f6a3003bdbb0cbf264d8e6b8dd7",
+    "core4/test/start-over-driver.test.js": "6151971a37208476d6a3adde8243509b2b81e5853cd5d6433643fcc58eced211",
+    "core4/test/start-over-operator.test.js": "67dea5c424e75e307e89939b7c7f50670a7723e980eeaaa7fe6c55699b7f048d",
+    "core4/test/start-over-panel-control.test.js": "9a55eddc7a2357d575852565d038a1b0b1834693a8b0238e72ad7e9a24b20f98",
+    "core4/test/start-over-runtime.test.js": "fd72ba25bb8505070aeaeea1890845d8e9ca6af31747c805e01423a7c628dd82",
+    "core4/tools/operate-start-over.js": "dc5b4a4bb1a3fab08ae16d95994907a2137c61b72f567066d50f39b83d9457a7"
+  },
+  "validation": {
+    "selectedRun": {
+      "result": "PASS",
+      "checks": 42,
+      "executionBatches": 41,
+      "reportSha256": "293bd5c228b4299daa8aafe584ae7a5fa823a8048c3f641c44d0ac0ca4f71d05",
+      "sourceKeysBeforeAfter": "exact"
+    },
+    "boundaries": {
+      "result": "PASS",
+      "rules": 55
+    },
+    "diffCheck": "PASS"
+  },
+  "packageCandidate": {
+    "distributionHash": "4975c36a1a53743d378cf2fed85ffd1c89399cf8327dfd5fd43ec1e605a62741",
+    "packageHash": "327faaac97f8f4c5e17c20dfbf30082b1be242f59be566c72ef7e3d4970f88cd",
+    "files": 98,
+    "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\core4\\4.0.0-base-b3-327faaac97f8",
+    "liveProof": false,
+    "runtimeFiles": 80,
+    "bundleFiles": 98,
+    "verified": true
+  },
+  "observed": [
+    "Real isolated TEMP production package/entry/IPC/HTTP and actual Windows Node process birth/death; private archive/session finisher.",
+    "Idle reset creates signed baseline-required new session; explicit sessionId acknowledgement and successful direct project read are required. Ordinary maintenance stop does not relaunch.",
+    "Delivered read plus killed TEMP owner preserves historical unknown/ongoing bytes; late old physical completion is refused and cannot mutate new history.",
+    "Actual child crash after receiver rename resumes same intent from new entry; completed historical helper repeat preserves current work.",
+    "Independent panel HMAC purpose/action/epoch/nonces; diagnostic observer and fenced channel remain available. Lost request reply is status-only, with no resubmit.",
+    "Durable UNKNOWN write faults reject finite pending Promise as uncertain while preserving store fault; no fabricated terminal rejection or baseline proof.",
+    "Historical exact owner-v3 composition remains DATA for update; current entry requires owner-v4, pending reset blocks installer and downgrade."
+  ],
+  "corrections": [
+    "stopped-host-readoption-operator had a stale70runtime-file assertion; current B3 closure is80 and exact runtime/manifest equality remains checked. Failed batch excluded and rerun.",
+    "First full selected runtime batch expired90s during continuing archive; second run with240s observed idle225.6s but UNKNOWN/crash still expired. All failed composite batches excluded. Test observation budget240s and diagnostics do not change production RPC/auth/retry.",
+    "Measured thousands of repeated realpath prefix traversals in reset inspection. B3 plain path check retains lstat/type/link checks for every ancestor, uses one full canonical realpath (or closest existing parent for ENOENT), and preserves all content/inode/CAS checks. Added3 adversarial junction/canonical/missing-parent tests.",
+    "Historical fixed-format1 transition in installed-composition hit its30s test limit during Windows IO (8other cases passed); test-only budget90s, failed/cancelled composite batch excluded and rerun. Production deadlines unchanged.",
+    "readoption-core dual stopped-cycle Windows repeatability hit the90s test limit;12other cases passed. A focused TAP run confirmed testTimeoutFailure, not a byte/inode/FD assertion. Only this dual-cycle case now has240s observation budget; full failed13-case composite excluded and rerun. Product deadlines and all assertions unchanged."
+  ],
+  "limits": [
+    "Native AE inventory/project facts in full composition tests are synthetic; real HTTP uses ephemeral ports with logical3457. This is not installed native reset proof.",
+    "Installed package remains2fb5aebe3780215d8cd8af0fcd0927445f2a5bb475fdbb77cb2b7afb50b9f988. Installed B3/update/reset0.",
+    "Preflight and checkpoint save in actual AE9472 were separate from B3 source tests; they grant no current mutation authority.",
+    "Deferred integration closures, mutation recovery, Titles, full release and desktop/MSI round-trip remain open.",
+    "No repeated Argon review or resend."
+  ]
+}

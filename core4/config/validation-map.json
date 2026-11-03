@@ -1,5 +1,16 @@
 {
   "owners": [
+    { "prefix": "core4/test/fixtures/legacy-panel-v1.txt", "owner": "installed-composition", "checks": ["native-read-recovery", "installed-composition"] },
+    { "prefix": "core4/runtime/start-over-driver.js", "owner": "start-over-driver", "checks": ["start-over-driver"] },
+    { "prefix": "core4/runtime/owner-launch.js", "owner": "start-over-runtime", "checks": ["start-over-runtime"] },
+    { "prefix": "core4/runtime/start-over-panel-control.js", "owner": "start-over-panel-control", "checks": ["start-over-panel-control"] },
+    { "prefix": "core4/tools/operate-start-over.js", "owner": "start-over-operator", "checks": ["start-over-operator", "standalone-installer"] },
+    { "prefix": "core4/test/start-over-driver.test.js", "owner": "start-over-driver", "checks": ["start-over-driver"] },
+    { "prefix": "core4/test/start-over-panel-control.test.js", "owner": "start-over-panel-control", "checks": ["start-over-panel-control"] },
+    { "prefix": "core4/test/panel-start-over.test.js", "owner": "panel-start-over", "checks": ["panel-start-over"] },
+    { "prefix": "core4/test/start-over-runtime.test.js", "owner": "start-over-runtime", "checks": ["start-over-runtime"] },
+    { "prefix": "core4/test/fixtures/start-over-runtime-preload.js", "owner": "start-over-runtime", "checks": ["start-over-runtime"] },
+    { "prefix": "core4/test/start-over-operator.test.js", "owner": "start-over-operator", "checks": ["start-over-operator"] },
     { "prefix": "core4/runtime/work-session.js", "owner": "work-session", "checks": ["work-session", "work-session-owner"] },
     { "prefix": "core4/test/work-session.test.js", "owner": "work-session", "checks": ["work-session"] },
     { "prefix": "core4/test/work-session-owner.test.js", "owner": "work-session", "checks": ["work-session-owner"] },
@@ -1065,6 +1076,11 @@
     }
   ],
   "checkDependencies": {
+    "start-over-driver": ["runtime/start-over-driver.js", "runtime/start-over-panel-control.js", "runtime/start-over-finisher.js", "runtime/start-over-barrier.js", "runtime/start-over-archive.js", "runtime/start-over-state.js", "runtime/start-over-inspection.js", "runtime/start-over-process.js", "runtime/owner-launch.js", "runtime/windows-owner-process.js", "runtime/client-ipc.js", "runtime/client-entry.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js", "core/", "protocol/", "test/fixtures/start-over-finisher.js", "test/fixtures/owner-lifecycle-fixture.js", "test/start-over-driver.test.js"],
+    "start-over-panel-control": ["runtime/start-over-panel-control.js", "protocol/", "integrations/cep/peer-protocol.js", "test/start-over-panel-control.test.js"],
+    "panel-start-over": ["cep/js/panel.js", "cep/js/poll-dispatcher.js", "runtime/start-over-panel-control.js", "runtime/stdio-entry.js", "integrations/cep/peer-protocol.js", "protocol/", "test/panel-start-over.test.js"],
+    "start-over-runtime": ["runtime/", "cep/", "core/", "protocol/", "modules/", "plan-engine/", "config/", "integrations/", "worker.js", "tools/install-core4.js", "tools/package-installable.js", "tools/package-standalone-installer.js", "tools/standalone-installer.js", "tools/operate-start-over.js", "tools/maintain-owner.js", "tools/check-boundaries.js", "test/start-over-runtime.test.js", "test/fixtures/start-over-runtime-preload.js"],
+    "start-over-operator": ["runtime/", "cep/", "core/", "protocol/", "modules/", "plan-engine/", "config/", "integrations/", "worker.js", "tools/install-core4.js", "tools/package-installable.js", "tools/package-standalone-installer.js", "tools/standalone-installer.js", "tools/operate-start-over.js", "tools/maintain-owner.js", "tools/check-boundaries.js", "test/start-over-operator.test.js"],
     "work-session-owner": ["runtime/work-session.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "test/work-session-owner.test.js"],
     "work-session": ["runtime/work-session.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/start-over-state.js", "runtime/start-over-archive.js", "runtime/start-over-finisher.js", "runtime/installation.js", "runtime/installation-lineage.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js", "core/", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/work-session.test.js", "test/work-session-owner.test.js"],
     "start-over-channel": ["integrations/cep/http-peer.js", "integrations/cep/completion-store.js", "integrations/cep/peer-protocol.js", "cep/js/poll-dispatcher.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "protocol/", "core/receiver-api.js", "test/start-over-channel.test.js"],
@@ -1521,8 +1537,8 @@
       "tools/",
       "test/"
     ],
-    "native-read-recovery": ["test/native-read-recovery.test.js","test/fixtures/native-read-recovery.js","test/fixtures/disposition-child.js","test/fixtures/legacy-installation-v1.js","test/fixtures/legacy-completion-store.js","test/fixtures/manual-capture-driver-source.txt","tools/dispose-native-read.js","tools/disposition-install-preflight.js","tools/package-native-read-operator.js","tools/capture-native-read.js","tools/install-core4.js","tools/package-installable.js","runtime/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","core/","protocol/","modules/","plan-engine/","cep/","worker.js","config/catalog.json","config/admissions/","test/fixtures/stdio-main-ephemeral.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-poll-dispatcher-v1.txt"],
-    "installed-composition": ["runtime/","cep/","core/","protocol/","modules/","plan-engine/","config/catalog.json","config/admissions/","worker.js","tools/package-installable.js","tools/install-core4.js","tools/dispose-native-read.js","tools/capture-native-read.js","tools/disposition-install-preflight.js","tools/package-native-read-operator.js","test/installed-composition.test.js","test/fixtures/installed-composition-child.js","test/fixtures/installed-composition-transition.js","test/fixtures/native-read-recovery.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-installation-v1.js","test/fixtures/disposition-child.js","test/fixtures/manual-capture-driver-source.txt","tools/check-boundaries.js","test/fixtures/legacy-poll-dispatcher-v1.txt"],
+    "native-read-recovery": ["test/native-read-recovery.test.js","test/fixtures/native-read-recovery.js","test/fixtures/disposition-child.js","test/fixtures/legacy-installation-v1.js","test/fixtures/legacy-completion-store.js","test/fixtures/manual-capture-driver-source.txt","tools/dispose-native-read.js","tools/disposition-install-preflight.js","tools/package-native-read-operator.js","tools/capture-native-read.js","tools/install-core4.js","tools/package-installable.js","runtime/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","core/","protocol/","modules/","plan-engine/","cep/","worker.js","config/catalog.json","config/admissions/","test/fixtures/stdio-main-ephemeral.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"],
+    "installed-composition": ["runtime/","cep/","core/","protocol/","modules/","plan-engine/","config/catalog.json","config/admissions/","worker.js","tools/package-installable.js","tools/install-core4.js","tools/dispose-native-read.js","tools/capture-native-read.js","tools/disposition-install-preflight.js","tools/package-native-read-operator.js","test/installed-composition.test.js","test/fixtures/installed-composition-child.js","test/fixtures/installed-composition-transition.js","test/fixtures/native-read-recovery.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-installation-v1.js","test/fixtures/disposition-child.js","test/fixtures/manual-capture-driver-source.txt","tools/check-boundaries.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"],
     "exact-f548-transition": [
       "runtime/",
       "cep/",
@@ -1550,9 +1566,14 @@
       "test/fixtures/exact-f548-transition.js",
       "test/exact-f548-transition.test.js"
     ],
-    "standalone-installer": ["tools/package-standalone-installer.js","tools/finish-owner-maintenance.js","tools/maintain-owner.js","tools/standalone-installer.js","tools/package-installable.js","tools/install-core4.js","tools/disposition-install-preflight.js","test/standalone-installer.test.js","test/fixtures/standalone-history.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-installation-v1.js","runtime/","cep/","core/","protocol/","modules/","plan-engine/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","worker.js","config/catalog.json","config/admissions/","tools/legacy-owner-migration.js","tools/operate-stopped-readoption.js","tools/operate-stopped-update.js","tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/windows-retained-process.js","test/fixtures/legacy-poll-dispatcher-v1.txt"]
+    "standalone-installer": ["tools/package-standalone-installer.js","tools/finish-owner-maintenance.js","tools/maintain-owner.js","tools/standalone-installer.js","tools/package-installable.js","tools/install-core4.js","tools/disposition-install-preflight.js","test/standalone-installer.test.js","test/fixtures/standalone-history.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-installation-v1.js","runtime/","cep/","core/","protocol/","modules/","plan-engine/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","worker.js","config/catalog.json","config/admissions/","tools/legacy-owner-migration.js","tools/operate-stopped-readoption.js","tools/operate-stopped-update.js","tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/windows-retained-process.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"]
   },
   "checkCommands": {
+    "start-over-driver": ["node", "--test", "--test-name-pattern=start-over-driver", "test/start-over-driver.test.js"],
+    "start-over-panel-control": ["node", "--test", "--test-name-pattern=start-over-panel-control", "test/start-over-panel-control.test.js"],
+    "panel-start-over": ["node", "--test", "--test-name-pattern=panel-start-over", "test/panel-start-over.test.js"],
+    "start-over-runtime": ["node", "--test", "--test-name-pattern=start-over-runtime", "test/start-over-runtime.test.js"],
+    "start-over-operator": ["node", "--test", "--test-name-pattern=start-over-operator", "test/start-over-operator.test.js"],
     "work-session": ["node", "--test", "--test-name-pattern=work-session", "test/work-session.test.js"],
     "work-session-owner": ["node", "--test", "--test-name-pattern=work-session", "test/work-session-owner.test.js"],
     "start-over-channel": ["node", "--test", "--test-name-pattern=start-over-channel", "test/start-over-channel.test.js"],
@@ -1742,6 +1763,11 @@
     ]
   },
   "checkPolicy": {
+    "start-over-driver": { "kind": "component" },
+    "start-over-panel-control": { "kind": "component" },
+    "panel-start-over": { "kind": "component" },
+    "start-over-runtime": { "kind": "integration" },
+    "start-over-operator": { "kind": "integration" },
     "work-session-owner": { "kind": "component" },
     "work-session": { "kind": "component" },
     "start-over-channel": { "kind": "component" },

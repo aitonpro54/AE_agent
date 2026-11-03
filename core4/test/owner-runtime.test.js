@@ -22,7 +22,7 @@ const { openCompletionStore } = require('../integrations/cep/completion-store');
 const { mac } = require('../integrations/cep/peer-protocol');
 const { checkEntrySource } = require('../tools/check-boundaries');
 const SOURCE = path.resolve(__dirname, '..'), preload = path.join(__dirname, 'fixtures/owner-runtime-child.js');
-const EXTRA = ['owner-entry', 'client-entry', 'client-ipc', 'client-stdio', 'controller-lease', 'attachment-owner', 'owner-lifecycle', 'recovery-inspection', 'windows-owner-process', 'owner-maintenance'].map(name => 'runtime/' + name + '.js');
+const EXTRA = ['owner-entry', 'client-entry', 'client-ipc', 'client-stdio', 'controller-lease', 'attachment-owner', 'owner-lifecycle', 'recovery-inspection', 'windows-owner-process', 'owner-maintenance', 'start-over-inspection', 'start-over-process', 'start-over-state', 'start-over-barrier', 'start-over-archive', 'start-over-finisher', 'work-session', 'start-over-panel-control', 'start-over-driver', 'owner-launch'].map(name => 'runtime/' + name + '.js');
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 function remove(directory) {
   const prefix = path.join(os.tmpdir(), 'core4-owner-');

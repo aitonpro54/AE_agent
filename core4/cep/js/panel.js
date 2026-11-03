@@ -1,12 +1,94 @@
 (function () {
   'use strict';
-  var cfg = window.Core4Installation, api = window.Core4PollDispatcher, status = document.getElementById('status'), detail = document.getElementById('detail'), button = document.getElementById('connect');
+  var cfg = window.Core4Installation, api = window.Core4PollDispatcher, status = document.getElementById('status'), detail = document.getElementById('detail'), button = document.getElementById('connect'), resetButton = document.getElementById('start-over');
   var peerId, epoch, sequence = 0, running = false, disposed = false, generation = 0, activeRequest, retryTimer, cancelWait;
+  var workSessionId = null, resetGeneration = 0, resetControllers = [], resetTimer, cancelResetWait, resetPosting = false, resetRequested = false, resetState = null, resumeRequested = false;
   function show(state, text) { if (status.dataset) status.dataset.state = state; status.textContent = text; }
   function error(code, transport) { var e = new Error(code); e.transportUnavailable = transport === true; return e; }
   function current(g) { if (disposed || g !== generation) throw error('stale_channel'); }
   function object(value, keys) { return value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === keys.length && keys.every(function (k) { return Object.prototype.hasOwnProperty.call(value, k); }); }
-  function latched() { return localStorage.getItem('aeagentcore4-physical-' + cfg.installationId) !== null; }
+  function latched() { return api.nativePending() || localStorage.getItem(api.storageKey(cfg.installationId, workSessionId)) !== null; }
+  function resetCurrent(g) { if (disposed || g !== resetGeneration) throw error('stale_reset'); }
+  function validReset(value) {
+    var uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
+    return object(value, ['id', 'sessionId', 'phase', 'requiresAEExit', 'resetComplete', 'baselineRequired', 'fault', 'aeAuthority']) && (value.id === null || typeof value.id === 'string' && uuid.test(value.id)) && (value.sessionId === null || typeof value.sessionId === 'string' && uuid.test(value.sessionId)) && ['ready', 'stopping', 'awaiting-core', 'awaiting-ae', 'finishing', 'baseline-required', 'blocked'].indexOf(value.phase) >= 0 && ['requiresAEExit', 'resetComplete', 'baselineRequired'].every(function (k) { return typeof value[k] === 'boolean'; }) && (value.fault === null || typeof value.fault === 'string' && /^[a-z][a-z0-9_]{0,99}$/.test(value.fault)) && value.aeAuthority === false;
+  }
+  function resetReady(value) { return value.phase === 'ready' || value.phase === 'baseline-required'; }
+  function showReset(value) {
+    resetState = value;
+    if (resetButton) { resetButton.textContent = value.id && !resetReady(value) ? 'Продолжить сброс' : 'Начать заново'; resetButton.disabled = resetPosting || !resetReady(value) && value.phase !== 'blocked'; }
+    if (value.phase === 'blocked') { show('recovery', 'Сброс требует проверки'); detail.textContent = 'Старая история сохранена. Причина: ' + (value.fault || 'start_over_blocked') + '. Проверьте core_diagnostics; команды не повторяются.'; }
+    else if (value.phase === 'awaiting-ae') { show('recovery', 'Для завершения сброса нужно закрыть прежний After Effects'); detail.textContent = 'Сохраните проекты и закройте прежние экземпляры After Effects. Сброс продолжится автоматически; старые UNKNOWN останутся в истории.'; }
+    else if (!resetReady(value)) { show('waiting', value.phase === 'finishing' ? 'Подготовка нового сеанса' : 'Завершение прежней работы'); detail.textContent = 'Старая история сохраняется. Ожидайте завершения сброса; команды не повторяются.'; }
+  }
+  function showReady() {
+    var baseline = resetState && resetState.baselineRequired;
+    show('ready', baseline ? 'Новый сеанс: требуется чтение проекта' : 'Канал Core 4.0.0 готов к командам');
+    detail.textContent = baseline ? 'Сначала Core должен прочитать текущее состояние проекта. Допуск к изменениям выдаётся отдельно.' : 'Подключение готово. Допуск к изменению проекта выдаётся отдельно.';
+  }
+  async function resetPost(path, value, g) {
+    resetCurrent(g); var controller = new AbortController(), received = false, refused = null, timedOut = false, timer;
+    resetControllers.push(controller);
+    try {
+      var timeout = new Promise(function (resolve, reject) { timer = setTimeout(function resetRequestTimedOut() { timedOut = true; controller.abort(); reject(error('transport_timeout', true)); }, 10000); });
+      var request = fetch('http://127.0.0.1:3457' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: api.canonical(value), credentials: 'omit', cache: 'no-store', signal: controller.signal }).then(async function (r) { received = true; if (!r.ok) refused = r.status; return { response: r, value: await r.json() }; });
+      var result = await Promise.race([request, timeout]); resetCurrent(g);
+      if (!result.response.ok) throw error(result.value && result.value.error || 'http_' + result.response.status);
+      return result.value;
+    } catch (e) { resetCurrent(g); if (timedOut && refused !== null) throw error('http_' + refused + '_body_timeout'); if (timedOut || !received && e && e.name === 'TypeError') throw error(timedOut ? 'transport_timeout' : 'transport_unavailable', true); throw e; }
+    finally { clearTimeout(timer); var at = resetControllers.indexOf(controller); if (at >= 0) resetControllers.splice(at, 1); }
+  }
+  async function resetRpc(action, g) {
+    var reply = await resetPost('/start-over/challenge', { action: action }, g), c = reply.challenge;
+    if (!object(reply, ['challenge']) || !object(c, ['version', 'purpose', 'role', 'action', 'nonce', 'epoch', 'origin', 'installationId', 'packageHash']) || c.version !== 1 || c.purpose !== 'start-over' || c.role !== 'panel' || c.action !== action || c.installationId !== cfg.installationId || c.packageHash !== cfg.packageHash || typeof c.nonce !== 'string' || !/^[a-f0-9]{64}$/.test(c.nonce) || typeof c.epoch !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(c.epoch) || ['null', 'file://'].indexOf(c.origin) < 0) throw error('start_over_challenge_auth');
+    var proof = await sign({ domain: 'ae-core4/panel-start-over/v1', kind: 'request', challenge: c }); resetCurrent(g);
+    var response = await resetPost('/start-over/' + action, { challenge: c, proof: proof }, g), body = response.body;
+    if (!object(response, ['body', 'mac']) || !object(body, ['version', 'purpose', 'action', 'epoch', 'nonce', 'origin', 'installationId', 'packageHash', 'status']) || body.version !== 1 || body.purpose !== 'start-over' || body.action !== action || body.epoch !== c.epoch || body.nonce !== c.nonce || body.origin !== c.origin || body.installationId !== c.installationId || body.packageHash !== c.packageHash || response.mac !== await sign({ domain: 'ae-core4/panel-start-over/v1', kind: 'response', body: body }) || !validReset(body.status)) throw error('start_over_response_auth');
+    resetCurrent(g); return body.status;
+  }
+  async function resetWait(ms, g) {
+    var timer, cancel;
+    try { await new Promise(function (resolve, reject) { cancel = function () { reject(error('stale_reset')); }; cancelResetWait = cancel; timer = setTimeout(resolve, ms); resetTimer = timer; }); }
+    finally { clearTimeout(timer); if (resetTimer === timer) resetTimer = null; if (cancelResetWait === cancel) cancelResetWait = null; }
+    resetCurrent(g);
+  }
+  async function watchReset(initial, g, unconfirmedId) {
+    var value = initial, deadline = Date.now() + 50000;
+    while (!disposed) {
+      resetCurrent(g);
+      if (!value) {
+        try { value = await resetRpc('status', g); }
+        catch (e) { if (!e.transportUnavailable) throw e; show('waiting', 'Ожидание Core для проверки сеанса'); detail.textContent = 'Проверка состояния возобновится автоматически. Запрос сброса не повторяется.'; await resetWait(Date.now() >= deadline ? 15000 : 3000, g); continue; }
+      }
+      showReset(value);
+      if (resetReady(value)) {
+        if (unconfirmedId !== undefined && value.id === unconfirmedId) throw error('start_over_request_unconfirmed');
+        workSessionId = value.sessionId; resetRequested = false; return true;
+      }
+      resetRequested = true;
+      if (value.phase === 'blocked') return false;
+      await resetWait(3000, g); value = null;
+    }
+    throw error('stale_reset');
+  }
+  function interruptMain() { generation++; if (activeRequest) activeRequest.abort(); if (retryTimer) clearTimeout(retryTimer); if (cancelWait) cancelWait(); }
+  function interruptReset() { resetGeneration++; resetControllers.slice().forEach(function (c) { c.abort(); }); if (resetTimer) clearTimeout(resetTimer); if (cancelResetWait) cancelResetWait(); }
+  async function beginReset() {
+    if (disposed || resetPosting || !cfg || cfg.startOverSupported !== true) return;
+    var continuing = resetState && resetState.id && !resetReady(resetState);
+    if (!continuing && !window.confirm('Прекратить прежнюю работу и начать новый сеанс? UNKNOWN сохранятся в истории, внесённые изменения не откатываются. Может потребоваться сохранить проекты и закрыть After Effects.')) return;
+    var priorId = resetState ? resetState.id : null;
+    resetPosting = true; resetRequested = true; if (resetButton) resetButton.disabled = true;
+    interruptReset(); interruptMain(); var g = resetGeneration, value, uncertain = false;
+    show('waiting', 'Запрос нового сеанса');
+    try {
+      try { value = await resetRpc('request', g); }
+      catch (e) { if (!e.transportUnavailable) throw e; uncertain = true; }
+      var ready = await watchReset(value, g, uncertain ? priorId : undefined);
+      if (ready) { if (running) resumeRequested = true; else start(); }
+    } catch (e) { if (!disposed && e.message !== 'stale_reset') { show('recovery', 'Сброс не завершён: ' + e.message); detail.textContent = 'Автоматической повторной отправки нет. Проверьте core_status и core_diagnostics; история и UNKNOWN сохраняются.'; } }
+    finally { resetPosting = false; if (resetButton && !disposed) resetButton.disabled = !!(resetState && !resetReady(resetState) && resetState.phase !== 'blocked'); }
+  }
   function newChannel() {
     generation++; var random = new Uint8Array(24); crypto.getRandomValues(random);
     peerId = 'panel-' + Array.from(random).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
@@ -83,14 +165,23 @@
     var delivered = false;
     try {
       if (!cfg || !api || !window.crypto || !crypto.subtle || typeof TextEncoder !== 'function' || typeof fetch !== 'function' || typeof AbortController !== 'function' || !window.__adobe_cep__ || typeof __adobe_cep__.evalScript !== 'function') throw error('CEP_WebCrypto_or_host_unavailable');
+      if (cfg.startOverSupported === true && !await watchReset(null, resetGeneration)) return;
       newChannel(); var budget = { deadline: Date.now() + 50000, attempts: 0 };
       while (!disposed) {
         var handshake = await link(budget), response = handshake.response, g = handshake.generation;
-        if (!object(response, ['body', 'mac']) || !object(response.body, ['linked', 'epoch', 'peerId', 'controllerId', 'pins', 'receiverStoreIdentity', 'laneClosed']) || response.mac !== await sign(response.body) || response.body.linked !== true || response.body.peerId !== peerId || response.body.epoch !== handshake.challenge.epoch || response.body.controllerId !== handshake.challenge.controllerId || api.canonical(response.body.pins) !== api.canonical({ installationId: cfg.installationId, packageHash: cfg.packageHash, executorHash: cfg.executorHash }) || typeof response.body.receiverStoreIdentity !== 'string' || typeof response.body.laneClosed !== 'boolean') throw error('link_auth');
+        var linkKeys = ['linked', 'epoch', 'peerId', 'controllerId', 'pins', 'receiverStoreIdentity', 'laneClosed'];
+        if (cfg.startOverSupported === true) linkKeys = linkKeys.concat(['workSessionId', 'startOver']);
+        if (!object(response, ['body', 'mac']) || !object(response.body, linkKeys) || response.mac !== await sign(response.body) || response.body.linked !== true || response.body.peerId !== peerId || response.body.epoch !== handshake.challenge.epoch || response.body.controllerId !== handshake.challenge.controllerId || api.canonical(response.body.pins) !== api.canonical({ installationId: cfg.installationId, packageHash: cfg.packageHash, executorHash: cfg.executorHash }) || typeof response.body.receiverStoreIdentity !== 'string' || typeof response.body.laneClosed !== 'boolean') throw error('link_auth');
+        if (cfg.startOverSupported === true) {
+          if (!validReset(response.body.startOver)) throw error('link_auth');
+          if (!resetReady(response.body.startOver)) throw error('start_over_in_progress');
+          if (response.body.workSessionId !== response.body.startOver.sessionId) throw error('link_auth');
+          workSessionId = response.body.workSessionId; showReset(response.body.startOver);
+        }
         current(g); epoch = response.body.epoch; sequence = 0; show('connected', 'Подключено к Core 4.0.0');
-        var dispatcher = api.createDispatcher({ installationId: cfg.installationId, assetKey: cfg.assetKey, assets: cfg.assets, pins: response.body.pins, storage: localStorage, csInterface: { evalScript: function (s, cb) { __adobe_cep__.evalScript(s, cb); } }, complete: (function (channel) { return function (p) { return authenticated('/complete', p, channel); }; }(g)) });
+        var dispatcher = api.createDispatcher({ installationId: cfg.installationId, sessionId: workSessionId, assetKey: cfg.assetKey, assets: cfg.assets, pins: response.body.pins, storage: localStorage, csInterface: { evalScript: function (s, cb) { __adobe_cep__.evalScript(s, cb); } }, complete: (function (channel) { return function (p) { return authenticated('/complete', p, channel); }; }(g)) });
         await dispatcher.recover(); current(g); if (latched()) throw error('physical_latch_present'); if (response.body.laneClosed) throw error('receiver_lane_closed');
-        show('ready', 'Канал Core 4.0.0 готов к командам'); detail.textContent = 'Подключение готово. Допуск к изменению проекта выдаётся отдельно.';
+        showReady();
         while (true) {
           if (latched()) throw error('physical_latch_present');
           var next;
@@ -104,25 +195,37 @@
           current(g); if (!object(next, ['command']) || next.command !== null && (typeof next.command !== 'object' || Array.isArray(next.command))) throw error('poll_frame');
           budget = { deadline: Date.now() + 50000, attempts: 0 };
           if (next.command) {
+            if (resetRequested) throw error('start_over_in_progress');
             if (latched()) throw error('physical_latch_present');
             delivered = true; show('busy', 'After Effects: выполняется команда'); detail.textContent = 'Ожидание ответа After Effects и подтверждения результата.';
             // No reconnect/poll timer spans evalScript or native confirmation.
             await dispatcher.dispatch(next.command); current(g); delivered = false;
             if (latched()) throw error('physical_latch_present');
+            if (cfg.startOverSupported === true && resetState && resetState.baselineRequired) {
+              var updated = await resetRpc('status', resetGeneration); current(g); showReset(updated);
+              if (!resetReady(updated)) throw error('start_over_in_progress');
+            }
             budget = { deadline: Date.now() + 50000, attempts: 0 };
-            show('ready', 'Канал Core 4.0.0 готов к командам'); detail.textContent = 'Подключение готово. Допуск к изменению проекта выдаётся отдельно.';
+            showReady();
           }
         }
       }
     } catch (e) {
+      if (!disposed && cfg && cfg.startOverSupported === true && e.message === 'start_over_in_progress' && !resetPosting) {
+        try { resetRequested = true; if (await watchReset(null, resetGeneration)) resumeRequested = true; }
+        catch (resetError) { if (resetError.message !== 'stale_reset') { show('recovery', 'Проверка сброса остановлена: ' + resetError.message); detail.textContent = 'Новая отправка сброса не выполнялась. Проверьте core_status и core_diagnostics.'; } }
+        return;
+      }
+      if (resetRequested || e.message === 'stale_reset') return;
       if (!disposed) {
         var recovery = delivered || e.message === 'receiver_lane_closed' || e.message === 'owner_recovery_required';
         try { recovery = recovery || latched(); } catch (ignored) { recovery = true; }
         show(recovery ? 'recovery' : 'stopped', (recovery ? 'Требуется восстановление: ' : 'Остановлено: ') + e.message);
         detail.textContent = (/wait_expired$/.test(e.message) ? 'Время ожидания подключения истекло. Для новой попытки нажмите «Подключить». ' : '') + 'UNKNOWN не повторяется. Проверяйте core_status; перезагрузка не снимает fence.';
       }
-    } finally { running = false; if (!disposed) button.disabled = false; }
+    } finally { running = false; if (!disposed) button.disabled = false; if (resumeRequested && !disposed) { resumeRequested = false; setTimeout(start, 0); } }
   }
-  if (typeof window.addEventListener === 'function') window.addEventListener('unload', function () { disposed = true; generation++; if (activeRequest) activeRequest.abort(); if (retryTimer) clearTimeout(retryTimer); if (cancelWait) cancelWait(); });
+  if (typeof window.addEventListener === 'function') window.addEventListener('unload', function () { disposed = true; interruptMain(); interruptReset(); });
+  if (resetButton) { resetButton.disabled = !cfg || cfg.startOverSupported !== true; resetButton.addEventListener('click', beginReset); }
   button.addEventListener('click', start); start();
 }());

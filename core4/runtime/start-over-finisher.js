@@ -98,7 +98,7 @@ function claimLease(o) {
   o.lease = gate; return gate;
 }
 async function finishStartOver(options) {
-  exact(options, ['installation', 'descriptorPath', 'id', 'expectedIntentHash']);
+  exact(options, ['installation', 'descriptorPath', 'id', 'expectedIntentHash', ...(Object.hasOwn(options, 'driver') ? ['driver'] : [])]);
   const initialCapability = Object.freeze({}); contexts.set(initialCapability, options); let initial;
   try { initial = require('./start-over-state').startOverFinisherContext(initialCapability); } finally { contexts.delete(initialCapability); }
   const active = initial.active();
@@ -147,15 +147,20 @@ async function finishStartOver(options) {
       renamed(index) { if (!Number.isSafeInteger(index) || index < 0 || index > 7) fail('start_over_archive_role'); this.assert(); }
     };
     operations.set(capability, o); claimLease(o); o.assert();
-    let final = archiveApi.executeArchive(capability), manifest = final.manifest;
+    async function cooperate() { o.assert(); await new Promise(resolve => setImmediate(resolve)); o.assert(); }
+    o.cooperate = cooperate;
+    let final = await archiveApi.executeArchive(capability), manifest = final.manifest;
     if (!manifest) {
       o.publish('archive-completed.json', c.seal('start-over-archive-completed', { id: a.body.id, intentHash: a.barrier.hash, planHash: final.p.view.hash, history: final.p.body.history, rolesDigest: hash(final.roles.map(r => r.archive)) }));
       final = archiveApi.readArchive(c, a); manifest = final.manifest;
     }
+    await cooperate();
     let candidate = c.read(path.join(a.dir, 'session-candidate.json'));
     if (!candidate.bytes) candidate = o.publish('session-candidate.json', c.seal('work-session', { resetId: a.body.id, sessionId: a.body.newSessionId, intentHash: a.barrier.hash, baselineRequired: true }));
+    await cooperate();
     final = archiveApi.readArchive(c, a);
     if (!final.publication.intent) o.publish('session-publish-intent.json', c.seal('start-over-session-publish-intent', { id: a.body.id, intentHash: a.barrier.hash, archiveManifestHash: manifest.view.hash, candidate: c.info(candidate) }));
+    await cooperate();
     o.assert(); final = archiveApi.readArchive(c, a);
     const sessionPath = path.join(c.d.stateDir, 'work-session.json');
     if (!final.publication.replacement) { if (c.read(sessionPath).bytes !== null) fail('start_over_session_alias'); fs.linkSync(candidate.file, sessionPath); o.assert(); }
@@ -164,6 +169,7 @@ async function finishStartOver(options) {
       const publishIntent = c.read(path.join(a.dir, 'session-publish-intent.json'));
       o.publish('session-published.json', c.seal('start-over-session-published', { id: a.body.id, intentHash: a.barrier.hash, publishIntentHash: publishIntent.hash, session: c.info(c.read(sessionPath)) }));
     }
+    await cooperate();
     final = archiveApi.readArchive(c, a);
     let completed = c.record(a, 'reset-completed.json', 'start-over-completed', ['archiveManifestHash', 'sessionHash', 'baselineRequired']);
     if (!completed) {
@@ -171,6 +177,7 @@ async function finishStartOver(options) {
       completed = c.record(a, 'reset-completed.json', 'start-over-completed', ['archiveManifestHash', 'sessionHash', 'baselineRequired']);
     }
     if (completed.archiveManifestHash !== manifest.view.hash || completed.sessionHash !== final.publication.replacement.hash || completed.baselineRequired !== true) fail('start_over_finish_completion');
+    await cooperate();
     let enable = c.record(a, 'enable-intent.json', 'start-over-enable-intent', ['completedHash']);
     const completedView = c.read(path.join(a.dir, 'reset-completed.json'));
     if (!enable) { o.publish('enable-intent.json', c.seal('start-over-enable-intent', { id: a.body.id, intentHash: a.barrier.hash, completedHash: completedView.hash })); enable = c.record(a, 'enable-intent.json', 'start-over-enable-intent', ['completedHash']); }

@@ -58,8 +58,8 @@ function createWorkSession(options){
     if(!same(read(descriptorPath),descriptor)||!anchors.every(a=>same(read(a.file),a))||!same(read(master.file),master))fail('work_session_changed');
   }
   function status(){
-    if(resetPending())return Object.freeze({sessionId:session?.sessionId??null,mode:session?'work-session':'legacy',baselineRequired:true,resetPending:true,aeAuthority:false});
-    assertFiles();return Object.freeze({sessionId:session?.sessionId??null,mode:session?'work-session':'legacy',baselineRequired:!!session&&!baseline(),resetPending:false,aeAuthority:false});
+    if(resetPending())return Object.freeze({sessionId:session?.sessionId??null,resetId:session?.resetId??null,mode:session?'work-session':'legacy',baselineRequired:true,resetPending:true,aeAuthority:false});
+    assertFiles();return Object.freeze({sessionId:session?.sessionId??null,resetId:session?.resetId??null,mode:session?'work-session':'legacy',baselineRequired:!!session&&!baseline(),resetPending:false,aeAuthority:false});
   }
   function assertCurrent(sessionId){const value=status();if(value.resetPending)fail('work_session_reset_pending');if(sessionId!==value.sessionId)fail('work_session_changed');return value;}
   return Object.freeze({

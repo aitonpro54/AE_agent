@@ -3,7 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { hash, canonical, fail } = require('../protocol/json');
 const { deriveComposition, registrySource } = require('../runtime/stdio-entry.js');
-const OWNER_FILES = Object.freeze(['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js']);
+const OWNER_V3_FILES = Object.freeze(['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js']);
+const OWNER_FILES = Object.freeze([...OWNER_V3_FILES, 'runtime/start-over-inspection.js', 'runtime/start-over-process.js', 'runtime/start-over-state.js', 'runtime/start-over-barrier.js', 'runtime/start-over-archive.js', 'runtime/start-over-finisher.js', 'runtime/work-session.js', 'runtime/start-over-panel-control.js', 'runtime/start-over-driver.js', 'runtime/owner-launch.js']);
 function runtimeBinding(release, read) {
   if (!Object.hasOwn(release.hashes, 'runtime/owner-contract.json')) {
     if (OWNER_FILES.some(file => Object.hasOwn(release.hashes, file))) fail('owner_contract_required');
@@ -12,9 +13,10 @@ function runtimeBinding(release, read) {
   const bytes = read('runtime/owner-contract.json');
   if (release.format !== 2 || hash(bytes) !== release.hashes['runtime/owner-contract.json']) fail('owner_contract_integrity');
   let contract; try { contract = JSON.parse(bytes); } catch { fail('owner_contract_schema'); }
-  const expected = { version: 3, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
-    ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: [...OWNER_FILES] };
-  if (canonical(contract) !== canonical(expected) || OWNER_FILES.some(file => !Object.hasOwn(release.hashes, file))) fail('owner_contract_schema');
+  const files = contract.version === 3 ? OWNER_V3_FILES : OWNER_FILES;
+  const expected = { version: contract.version === 3 ? 3 : 4, runtimeModel: 'owner', clientEntry: 'runtime/client-entry.js', clientArgument: '--client-descriptor',
+    ownerEntry: 'runtime/owner-entry.js', ownerArgument: '--installation', clientDescriptorFile: 'core-client.json', requiredFiles: [...files] };
+  if (canonical(contract) !== canonical(expected) || files.some(file => !Object.hasOwn(release.hashes, file)) || contract.version === 3 && OWNER_FILES.some(file => !OWNER_V3_FILES.includes(file) && Object.hasOwn(release.hashes, file))) fail('owner_contract_schema');
   return Object.freeze(contract);
 }
 function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual', options = {}) {

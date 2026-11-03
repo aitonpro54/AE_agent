@@ -1,7 +1,7 @@
 'use strict';
 const nodeTest = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
 const { harness } = require('./fixtures/stopped-host-readoption');
-const test = (name, fn) => nodeTest('readoption-core ' + name, { timeout: 90000 }, fn);
+const test = (name, fn, timeout = 90000) => nodeTest('readoption-core ' + name, { timeout }, fn);
 const code = c => e => e.code === c;
 async function apply(h) { const observed = await h.inspect(); return h.api.applyStoppedReadoption({ ...h.options, expectedProofHash: observed.proofHash, witness: h.witness }); }
 test('pinned hardlink gate anchors work with the unchanged sealed lease consumer', async t => {
@@ -43,7 +43,9 @@ test('Windows repeatability: two whole stopped cycles preserve prior anchors and
   const witness = JSON.parse(h.witness); witness.host = { ...witness.host, aePid: 424243, aeProcessBirth: '2026-10-31T01:00:00.0000000Z' };
   seen = await h.inspect(); const done = await h.api.applyStoppedReadoption({ ...h.options, expectedProofHash: seen.proofHash, witness: Buffer.from(JSON.stringify(witness)) });
   assert.equal(done.phase, 'readopt-completed-stopped'); assert.equal(replacements, 2); assert.deepEqual(fs.readFileSync(h.path('readopt-old.json')), firstAdoption); assert.deepEqual(fs.readFileSync(firstPhase), h.oldAdoption); assert.equal(fs.statSync(h.path('readopt-old.json')).nlink, 2);
-});
+// Two complete real-filesystem stopped cycles need their own observation budget;
+// production timeouts and all byte/inode/FD/CAS assertions remain unchanged.
+}, 240000);
 test('forged operation/context/lease capabilities cannot write', async t => {
   const h = await harness(t), before = h.f.snapshot(), writes = h.writes();
   for (const cap of [{}, Object.freeze({}), { mode: 'context', verified: true }]) {

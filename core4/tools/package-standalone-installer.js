@@ -52,6 +52,13 @@ Core. Historical enabled receipt не утверждает current runtime/histo
 после switch-ready применяется отдельный update-inspect / update-finish.
 Успешное обновление сохраняет stopped barrier. Explicit enable не запускает Core;
 обычный thin client делает это после enable. Неизвестные исходы не повторяются.
+Продолжение уже начатого B3 reset (новый reset этим helper не создаётся):
+start-over-inspect --expected-distribution-hash DIST --expected-current-package-hash CURRENT --installation ABS_DESCRIPTOR --operation RESET_UUID
+start-over-finish / start-over-continue требуют также --expected-intent-hash INTENT_SHA.
+Finish использует тот же private finisher, когда canonical endpoints свободны.
+Continue запрашивает один явный restart blocked driver для того же intent;
+при ожидании AE/native только возвращает статус. Потерянная отправка не повторяется.
+UNKNOWN сохраняется; текущая AE authority и переносимость не выдаются.
 Review distributionHash out of band from package builder output. The manifest
 does not issue authority. Standard install lease/CAS, signed history, owner,
 UNKNOWN/no-replay and runtime-stopped gates remain in the existing installer.

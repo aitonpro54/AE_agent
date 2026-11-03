@@ -20,19 +20,15 @@ AE9472/пустой проект, peer connected, pending/UNKNOWN/fault0; histor
 package2fb5aebe/owner24160 ready, fresh project-inspection пустого AE9472 PASS;
 lease1 released, pending/UNKNOWN/fault0. History46events/prefix44 exact,
 bindings/origins/adoption/ledger unchanged; install повторять не нужно.
-B3a1 source history/process inspection принят118selectedPASS/46boundaries;
-B3a2 private durable intent/inspection принят106selectedPASS/47boundaries.
-B3a3 process/endpoint barrier принят3ноября118selectedPASS/48boundaries.
-Дополнение F2 exact historical adoption host —115selectedPASS/48boundaries.
-B3a4 private install lease/archive/finisher принят140fresh selectedPASS/
-50boundaries; UNKNOWN сохранён, partial-prefix recovery и session publication
-проверены на TEMP. Production startup/physical callbacks, session ack/baseline/UI
-ещё не подключены, installed B3 нет. B3b1 physical reset fence и CEP callback/
-session-key isolation приняты264fresh selectedPASS/50boundaries. Следующий срез
-B3b2 session ack/private successful-read baseline приняты360fresh selectedPASS/
-18checks, boundaries51. Пока actual composition использует legacy default;
-новая библиотека ещё не включена в package. Далее B3b3 startup/panel composition,
-штатная установка и installed reset; продолжать последующие задачи по плану.
+B3a1–a4/b1/b2 source приняты; B3b3 production startup/readonly driver/panel
+reset/session ack/baseline/package composition принят 721unique cases (212fresh/509exact reuse)/
+42checks/41batches, boundaries55. Candidate327faaac…/distribution4975c36a…
+(80runtime/98bundle) built/verified/dry-run; actual installed2fb5aebe прежний.
+Свежий configured preflight owner24160/AE9472 PASS; два новых reads,50settled
+events/prefix46 exact, protected/bindings unchanged. Пустой проект сохранён
+как собственный snapshots/core-base-b3-native-20261103.aep/SHA8299fd9f….
+Далее B3c: новый штатный stop/update/enable, native panel idle/UNKNOWN reset
+и свежая session/baseline; затем последующие задачи действующего плана.
 3ноября первый configured status после≥3460с idle сохранил owner24160/тот же boot,
 peer connected, pending/UNKNOWN/fault0; один3457,46events/protected files unchanged.
 Исходный Argon

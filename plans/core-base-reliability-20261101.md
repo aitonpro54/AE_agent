@@ -109,6 +109,13 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- 3 ноября, B3b3: production startup до lifecycle/stores, readonly reset driver,
+  отдельный authenticated panel control, «Начать заново»/«Продолжить сброс»,
+  explicit session ack и baseline подключены. Owner-v4 package80runtime/98bundle
+  собран/verified, dry-run PASS; 42checks/41batches/721unique cases (212fresh/509exact reuse) PASS,
+  boundaries55. Installed B3 пока0. Далее штатный update и native idle/UNKNOWN
+  reset на собственном защищённом AEP, затем оставшиеся задачи активного плана.
+
 - 3 ноября, B3b2: private work-session и durable initial baseline, explicit current
   sessionId для acquire/transfer приняты360fresh cases/18checks, boundaries51.
   Базу снимает только one-shot proof точного успешного durable direct project
@@ -212,6 +219,22 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- B3b3: pending reset перехватывается до lifecycle/Broker/receiver; driver держит
+  canonical endpoints и не имеет execution lane. До lease автоматически ждёт
+  только exact old-node/AE death; post-claim fault требует explicit continuation
+  того же intent из нового process. UNKNOWN остаётся прежним исходом. Panel
+  reset использует отдельные HMAC purpose/action/epoch и одноразовый nonce,
+  доступен при физическом fence/latch. Потерянный ответ не повторяет request.
+- Owner-v4 закрывает полный package cluster; exact v3 читается как historical DATA
+  для update, не как новый executable. Pending reset запрещает installer/downgrade.
+  Failed70-file expectation исправлено на80. Тестовое90с ожидание оказалось
+  недостаточным при продолжающемся archive; expanded240с observation с последней
+  диагностикой не меняет production RPC/auth/retry. Неудачные batches исключены. После повторного expiry240с исправлен
+  квадратичный обход realpath: lstat/link/type каждого предка сохранены, полный
+  canonical path проверяется один раз (для ENOENT — existing parent). Три новые
+  junction/canonical/missing-parent проверки PASS; current full entry cases
+  прошли77.2/81.8/88.5с. Content/inode/CAS и production timeouts не ослаблены.
 
 - Work session — отдельный logical namespace, не AE epoch/grant. Legacy mode
   явно ограничен установкой до первого сброса. Новые acquire/transfer требуют
@@ -326,6 +349,15 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+B3b3,3ноября: 42checks/41batches/721unique cases (212fresh/509exact reuse) PASS, boundaries55/diff-check.
+[Evidence](../docs/evidence/core-base-b3b3-20261103.json). Общие routing/artifact
+cases посчитаны один раз; reuse только по exact current keys. Real TEMP package/
+entry/HTTP/IPC/CIM Node death и actual child crash; AE inventory/project synthetic,
+port logical3457/ephemeral. Native installed B3/reset0. Отдельный configured
+preflight прочитал пустой AE9472, затем он сохранён как собственный test AEP и
+прочитан typed read:50settled events/prefix46 exact, bindings/protected unchanged.
+Package327faaac…/distribution4975c36a… verified/dry-run; actual install ещё нет.
 
 B3b2,3ноября:18current checks/360fresh cases PASS, boundaries51/diff-check.
 [Evidence](../docs/evidence/core-base-b3b2-session-20261103.json). Новые25cases

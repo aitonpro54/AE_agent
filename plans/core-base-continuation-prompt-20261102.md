@@ -1,29 +1,25 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
-## Актуализация после B1/B2
+## Актуализация после B3b3 source
 
-Исходный промпт ниже сохраняет постановку, но его начальное состояние устарело:
-B1/B2 source завершены (`264522c`/`2d08c71`), package2fb5aebe штатно установлен.
-После restart Codex configured status/read package2fb5aebe принят: owner24160,
-AE9472/пустой unsaved project, lease released, history46/prefix44 preserved.
-Следующий шаг — B3b3, не повторная реализация/установка B1. Private B3 source
-частично реализован; production integration ещё нет. Один plan review
-Argon получен, verdict revise и шесть замечаний локально разобраны, контракт
-уточнён. Браузерный blocker снят, новых sends/review нет. Полные settled IDs, fresh
-границы evidence и действия — в
-[checkpoint2ноября](core-base-installed-checkpoint-20261102.md).
-Не создавать новый чат автоматически. B3a1 history/process inspection source
-принят118selectedPASS/46boundaries; B3a2 durable intent/inspection —106selectedPASS/
-47boundaries.
-3ноября B3a3 process/endpoint barrier принят118selectedPASS/48boundaries.
-3ноября B3a4 private lease/archive/finisher принят140fresh cases/7checks,
-50boundaries. Production integration ещё нет, installed package прежний.
-B3b1 physical reset switch/CEP callback isolation принят264fresh cases/10checks,
-50boundaries. B3b2 session ack/private baseline принят360fresh cases/18checks,
-51boundaries; composition ещё legacy default, новая библиотека ещё не packaged.
-Продолжить B3b3 (startup/observer/panel/package wiring), затем installed reset по
-уточнённому контракту и
-decisions/triage.json, без дополнительного review или replay прежней отправки.
+B1/B2 installed/configured package2fb5aebe принят. B3a1–a4/b1/b2 и production
+B3b3 source завершены; 42checks/41batches/721unique cases (212fresh/509exact reuse) PASS, boundaries55.
+[Evidence](../docs/evidence/core-base-b3b3-20261103.json). Owner-v4 candidate
+327faaac…/distribution4975c36a… (80runtime/98bundle) verified, dry-run PASS,
+actual install/reset пока0. Следующий этап — B3c штатное обновление и native
+idle/UNKNOWN reset с сохранением истории, затем fresh session/baseline.
+
+Fresh preflight: owner24160/birth639292395293906370, same bootc9a04982…,
+AE9472/birth639292254253597850. Собственный пустой AEP сохранён как
+snapshots/core-base-b3-native-20261103.aep (8367bytes/SHA8299fd9f…). Typed read
+подтвердил saved path;50settled receiver events/SHA94f31e18…/prefix46 exact,
+protected bindings/origins/adoption/ledger unchanged. Это не future authority.
+
+Один Argon plan review получен и локально разобран; новых sends/reviews нет.
+L0 feasibility уже завершён, не повторять. Продолжать следующие этапы без
+вопроса «продолжать?», не создавать новый чат; Titles/Slideshow остаются на паузе
+до приёмки базы. Точные settled IDs и исторические пределы —
+[checkpoint](core-base-installed-checkpoint-20261102.md).
 
 ## Исходная постановка
 

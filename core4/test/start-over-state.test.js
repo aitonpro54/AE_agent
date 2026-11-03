@@ -25,6 +25,37 @@ async function harness(t, diagnostic = false) {
   const owner = api.createOwnerStartOver(options);
   return { ...f, cap, previous, stores, c, api, options, owner, calls, scan(fn) { scanHook = fn; }, closeOnStop(value) { closeOnStop = value; }, inspect() { return api.inspectStartOver({ installation: f.d, descriptorPath: f.descriptorPath }); } };
 }
+test('an ancestor junction cannot redirect retained receiver bytes outside their original directory', async t => {
+  const f = await harness(t), source = f.path('receiver'), retained = f.path('receiver-retained-for-path-check');
+  assert.equal(path.resolve(source), source); assert.equal(path.resolve(retained), retained);
+  assert.ok(source.startsWith(f.d.stateDir + path.sep) && retained.startsWith(f.d.stateDir + path.sep));
+  const before = fs.readFileSync(path.join(source, 'completions.ndjson'));
+  fs.renameSync(source, retained);
+  try {
+    fs.symlinkSync(retained, source, 'junction');
+    try { await assert.rejects(f.owner.request(), error('start_over_path')); }
+    finally { fs.unlinkSync(source); }
+    assert.deepEqual(fs.readFileSync(path.join(retained, 'completions.ndjson')), before);
+    assert.equal(fs.existsSync(f.path('runtime-start-over.json')), false);
+  } finally { fs.renameSync(retained, source); }
+});
+test('a missing file still requires the complete existing parent path to be canonical', async t => {
+  const f = await harness(t), real = f.io.realpathSync, missing = f.path('runtime-start-over.json');
+  assert.equal(fs.existsSync(missing), false);
+  f.io.realpathSync = file => file === f.d.stateDir ? f.d.stateDir + '-foreign' : real(file);
+  try { await assert.rejects(f.owner.request(), error('start_over_path')); }
+  finally { f.io.realpathSync = real; }
+  assert.equal(fs.existsSync(missing), false);
+  assert.deepEqual(f.calls, ['freeze', 'physical-fence']);
+});
+test('noncanonical spelling of an existing full marker path refuses before intent publication', async t => {
+  const f = await harness(t), real = f.io.realpathSync, marker = f.path('receiver/owner');
+  f.io.realpathSync = file => file === marker ? marker + '-foreign' : real(file);
+  try { await assert.rejects(f.owner.request(), error('start_over_path')); }
+  finally { f.io.realpathSync = real; }
+  assert.equal(fs.existsSync(f.path('runtime-start-over.json')), false);
+  assert.deepEqual(f.calls, ['freeze', 'physical-fence']);
+});
 test('freezes admission and physical delivery before durable intent; exactly one new ID and stop request survive repeat', async t => {
   const f = await harness(t), before = fs.readFileSync(f.path('receiver/completions.ndjson'));
   f.scan(async () => {

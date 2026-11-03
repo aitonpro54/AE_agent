@@ -15,9 +15,10 @@ const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsu
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
 }
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null }) {
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
   if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
+  if (startOverControl !== undefined && (typeof startOverControl?.handle !== 'function' || typeof startOverControl?.status !== 'function')) fail('start_over_control');
   if (preboundServer !== undefined) {
     const address = preboundServer instanceof http.Server && preboundServer.listening && preboundServer.address();
     if (!address || typeof address !== 'object' || address.address !== '127.0.0.1' || !Number.isSafeInteger(address.port) ||
@@ -26,14 +27,22 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   const server = preboundServer || http.createServer();
   const store = openCompletionStore({ directory, installationContext, ownerToken });
   const epoch = id('http'), controllerId = id('controller');
-  let peer = null, pending = null, closed = false, activePoll = null, lastReadFailure = null, startOverFrozen = false;
+  let peer = null, pending = null, closed = false, activePoll = null, lastReadFailure = null, lastPhysicalFault = null, startOverFrozen = false;
   const challenges = new Map();
   const completedReadErrors = new WeakMap();
   const completedProjectReads = new WeakMap();
   const assets = new Map([asset, ...additionalAssets].map(a => [a.executorHash, a])); let brokerBinding;
   const pins = Object.freeze({ packageHash: installation.packageHash, executorHash: asset.executorHash, installationId: installation.installationId });
   const commandPins = command => ({ ...pins, executorHash: command.executorHash });
-  function disconnect(reason) { if (pending) { store.unknown(pending.command.commandId); pending.reject(Object.assign(new Error(reason), { code: reason })); clearTimeout(pending.timer); pending = null; } }
+  function disconnect(reason) {
+    if (!pending) return;
+    const old = pending; pending = null; clearTimeout(old.timer);
+    try { store.unknown(old.command.commandId); }
+    catch (e) { lastPhysicalFault = Object.freeze({ commandId: old.command.commandId, reason, code: /^[a-z][a-z0-9_]{0,79}$/.test(e.code) ? e.code : 'physical_persist_failed', authority: false }); }
+    // A persist failure must not escape a timer, retain its Promise forever or
+    // masquerade as a terminal rejection. The store's fault/UNKNOWN fence stays.
+    old.reject(Object.assign(new Error(reason), { code: reason }));
+  }
   function frame() { return !startOverFrozen && pending && !pending.delivered ? { assetKey: assets.get(pending.command.executorHash).assetKey, phase: pending.command.phase, typedPayload: pending.command.payload, commandId: pending.command.commandId, originalBinding: pending.binding, pins: commandPins(pending.command) } : null; }
   function guardDelivery() { if (startOverFrozen) fail('start_over_frozen'); admissionGuard(pending.command); pending.deliveryGuard(); }
   function deliver() {
@@ -42,7 +51,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     try { guardDelivery(); const value = frame(); pending.delivered = true; poll(value); }
     catch (e) { disconnect(e.code || 'physical_admission_closed'); poll(null); }
   }
-  function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId } : { connected: false }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { commandId: pending.command.commandId, delivered: pending.delivered } : null, lastReadFailure, startOverFrozen, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
+  function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId } : { connected: false }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { commandId: pending.command.commandId, delivered: pending.delivered } : null, lastReadFailure, lastPhysicalFault, startOverFrozen, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
   function reply(res, statusCode, value, origin) {
     if (res.destroyed || res.writableEnded) return;
     res.writeHead(statusCode, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) }); res.end(bounded(value));
@@ -61,6 +70,9 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       let bytes = 0, chunks = [];
       for await (const chunk of req) { bytes += chunk.length; if (bytes > 256 * 1024) fail('frame_too_large'); chunks.push(chunk); }
       const input = parse(Buffer.concat(chunks));
+      if (startOverControl && req.url.startsWith('/start-over/')) {
+        const value = await startOverControl.handle(req.url, input, corsOrigin); if (value === null) fail('unknown_peer_route'); reply(res, 200, value, corsOrigin); return;
+      }
       if (req.url === '/challenge') {
         exact(input, ['role']); if (!['panel', 'control'].includes(input.role)) fail('role_required');
         for (const [key, c] of challenges) if (Date.now() - c.time > 10000) challenges.delete(key);
@@ -75,7 +87,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         if (role !== 'panel') fail('panel_role_required');
         if (peer && (Date.now() - peer.lastSeen < 45000 || pending)) fail('duplicate_peer');
         peer = { peerId: input.peerId, origin: challenge.value.origin, sequence: 0, lastSeen: Date.now() };
-        const body = { linked: true, epoch, peerId: peer.peerId, controllerId, pins, receiverStoreIdentity: store.identity, laneClosed: store.closed };
+        const body = { linked: true, epoch, peerId: peer.peerId, controllerId, pins, receiverStoreIdentity: store.identity, laneClosed: store.closed, ...(startOverControl ? { workSessionId, startOver: startOverControl.status() } : {}) };
         reply(res, 200, { body, mac: mac(body, secret) }, corsOrigin); return;
       }
       exact(input, ['body', 'mac']); const b = requestBody(input.body);

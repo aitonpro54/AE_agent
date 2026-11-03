@@ -25,9 +25,20 @@ function plain(file, missing = false, directory = false) {
   let cursor = path.parse(file).root; const parts = file.slice(cursor.length).split(path.sep).filter(Boolean);
   for (const [i, part] of parts.entries()) {
     cursor = path.join(cursor, part); let s;
-    try { s = fs.lstatSync(cursor, { bigint: true }); } catch (e) { if (missing && e.code === 'ENOENT') return false; throw e; }
-    if (s.isSymbolicLink() || s.reparsePoint || fs.realpathSync(cursor) !== cursor || (i < parts.length - 1 || directory ? !s.isDirectory() : !s.isFile())) fail('start_over_path');
+    try { s = fs.lstatSync(cursor, { bigint: true }); } catch (e) {
+      if (missing && e.code === 'ENOENT') {
+        const existing = path.dirname(cursor);
+        if (fs.realpathSync(existing) !== existing) fail('start_over_path');
+        return false;
+      }
+      throw e;
+    }
+    if (s.isSymbolicLink() || s.reparsePoint || (i < parts.length - 1 || directory ? !s.isDirectory() : !s.isFile())) fail('start_over_path');
   }
+  // lstat rejects a link/reparse point at EVERY component. One full realpath
+  // still checks canonical spelling/aliases of the complete existing path;
+  // resolving every prefix separately repeats the same traversal quadratically.
+  if (fs.realpathSync(file) !== file) fail('start_over_path');
   return true;
 }
 function read(file, limit = 128 * 1024) {

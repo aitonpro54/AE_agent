@@ -39,7 +39,17 @@
         "runtime/owner-lifecycle.js",
         "runtime/recovery-inspection.js",
         "runtime/windows-owner-process.js",
-        "runtime/owner-maintenance.js"
+        "runtime/owner-maintenance.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-finisher.js",
+        "runtime/work-session.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-driver.js",
+        "runtime/owner-launch.js"
       ]
     },
     "manual": {

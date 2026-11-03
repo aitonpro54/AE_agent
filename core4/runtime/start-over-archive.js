@@ -131,7 +131,7 @@ function readHistoricalArchive(c, a) {
   if (!completed || !enable || completed.archiveManifestHash !== manifest.view.hash || completed.sessionHash !== candidate.hash || completed.baselineRequired !== true || enable.completedHash !== completedView.hash) fail('start_over_finish_completion');
   return { p, archives, manifest, candidate, completed, enable };
 }
-function executeArchive(capability) {
+async function executeArchive(capability) {
   const o = require('./start-over-finisher').startOverArchiveRequest(capability), { c, a } = o;
   o.assert(); let p = plan(c, a);
   if (!p) {
@@ -140,6 +140,7 @@ function executeArchive(capability) {
     o.publish('archive-plan.json', c.seal('start-over-archive-plan', { id: a.body.id, intentHash: a.barrier.hash, roles, history, protected: c.protectedFacts(), operator: o.operator })); p = plan(c, a);
   }
   for (const [index, r] of p.body.roles.entries()) {
+    await o.cooperate();
     o.assert(); const all = readArchive(c, a), current = all.roles[index];
     const base = { id: a.body.id, intentHash: a.barrier.hash, planHash: p.view.hash, index, role: r.role, originalDigest: hash(r.original) };
     if (current.phase === 'pending') {
