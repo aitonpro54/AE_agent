@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "dateLocal": "2026-11-04",
+  "timezone": "Asia/Yekaterinburg",
+  "collectedAt": "2026-11-03T19:10:17.144Z",
+  "scopeRu": "Диагностика непринятого Native16 candidate, без изменений checkout source/production.",
+  "result": "diagnosis-only-not-source-PASS",
+  "initialCheckoutFailure": "docs/evidence/core-release-block-16-attempt-01-20261103.json",
+  "candidateAttempts": [
+    {
+      "attempt": 1,
+      "status": "cancelled-ETIMEDOUT-120s-not-PASS",
+      "resultFile": ".codex-runtime/native-capture-format1-fixture-20261103/stage-capture-result.json",
+      "sha256": "9ef7a4df97d08713b0801a7e113ac252b700067e4ae95fd2f05ce5649ce0c229"
+    },
+    {
+      "attempt": 2,
+      "status": "FAIL-14pass-2fail-not-PASS",
+      "resultFile": ".codex-runtime/native-capture-format1-fixture-20261103/attempt02-summary.json",
+      "sha256": "a7c96143af8e95e2a5c93e10173e214c0eebf4db6cb53937832c0b072b803593"
+    }
+  ],
+  "actorCompletion": {
+    "scope": "owned staging only",
+    "clearance": ".codex-runtime/native-capture-format1-fixture-20261103/actor01-clearance.json",
+    "attempt02TerminalFile": ".codex-runtime/native-capture-format1-fixture-20261103/attempt02-actor-terminal.json",
+    "attempt02TerminalSha256": "d3ab78456f1c94bc084b3a22a44cbd990e440f8a058fea8498418abeff9cddc6",
+    "terminationCommands": 0
+  },
+  "findingsRu": [
+    "Сначала fixture format2 не соответствовала format1-only collector; этот исход сохранён отдельно.",
+    "Обе поздние панели требуют AbortController/timers; VM harness был устаревшим.",
+    "После globals fix выявлен package/client epoch mix: текущая и поздняя frozen panel требуют exact8 challenge, capture-era server/sourceA использует exact12 purpose-bound challenge.",
+    "Исторический capture-клиент должен исполняться из той же проверенной package closure. Production exact8 и reader sourceA pins не изменяются."
+  ],
+  "historicalSource": {
+    "sourceCommit": "34584de",
+    "installedCaptureCommit": "3031153",
+    "panelGitBlob": "8ea663b9b8aa02668eb60036a4557dad9266534e",
+    "panelSha256": "5c06ab424a0469380009eda2410da50d74dae62c009015ef9a7a3e41ba323662",
+    "dispatcherGitBlob": "8ab31124cf6d6de5c8bb68414f12e6d88257b65c",
+    "dispatcherSha256": "741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006",
+    "existingFrozenDispatcherExact": true,
+    "exactEightIntroduced": "5039c49",
+    "lateLegacyPanelFrozen": "0cddee2"
+  },
+  "nextScopeRu": "Отдельный frozen capture-era panel data fixture; capture-specific format1 overlay/rehash/verify; positive VM читает installed package panel+dispatcher; current/late client имеет отдельный unsupported-negative. Формат2 negative, dependency binding и non-product routing CLI сохраняются.",
+  "forbiddenChangesRu": [
+    "Не strip/re-sign challenge.",
+    "Не ослаблять reader/MAC/schema/authority/deadlines.",
+    "Не менять shared legacy panel/dispatcher/helper.",
+    "Не исполнять Titles/Slideshow или live install/AE."
+  ],
+  "specialistReview": "fixture-only verdict; production expansion unnecessary",
+  "checkoutSourceChanged": false,
+  "productionCalls": 0,
+  "releaseCertified": false
+}

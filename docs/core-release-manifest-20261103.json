@@ -1203,6 +1203,12 @@
       "sha256": "b6c96a9f1ed75d55b4b646619d9492e2632144665206a6b331576c0a2fd5243d",
       "directKeyedRecords": 1,
       "excludedAsAuthority": "FAIL, no current PASS"
+    },
+    {
+      "file": "docs/evidence/core-native-capture-epoch-diagnosis-20261104.json",
+      "sha256": "c6f1578cde372d174db64a2aed3f61c9ee10c47f19837baf13ab70e54c467c6c",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "diagnosis and failed staging only; no current check PASS"
     }
   ],
   "evidenceMethod": {
@@ -7339,9 +7345,10 @@
         "baselineCommit": "782ae1de7ac6c3a396ab94698697a74282ea947b"
       }
     ],
-    "status": "scoped-fixture-repair-in-progress"
+    "status": "capture-era-fixture-repair-in-progress",
+    "candidateDiagnosis": "docs/evidence/core-native-capture-epoch-diagnosis-20261104.json"
   },
-  "updatedAt": "2026-11-03T18:47:26.687Z",
+  "updatedAt": "2026-11-03T19:10:17.149Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,

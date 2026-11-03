@@ -55,6 +55,14 @@ own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup пр�
 
 ## Block16: сохранённый FAIL и repair
 
+**Продолжение 4 ноября:** [epoch diagnosis](../docs/evidence/core-native-capture-epoch-diagnosis-20261104.json).
+High candidate16:14PASS/2FAIL после устранения format/globals drift.
+XHigh specialist подтвердил историческое смешение package/client epochs:
+позитивный capture требует capture-era package-owned panel, не текущий клиент.
+Production exact8/reader sourceA pins остаются прежними; отдельный отрицательный
+тест закрепляет отказ несовместимого current/late клиента. Candidate source
+checkout ещё не применялся; staging FAIL/cancelled не принимаются как PASS.
+
 [Первый run](../docs/evidence/core-release-block-16-attempt-01-20261103.json) завершился15tests=2PASS/13FAIL,exit1.
 Все отказы capture_package до listener; production fault не заявляется.
 Гейт format1 оператора не ослабляется. Предпочтительный repair — явная legacy
