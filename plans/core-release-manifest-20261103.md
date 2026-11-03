@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято блоков: 14; проверок по именам: 14. Применимое evidence: 45 exact-key + 2 byte-command-bound. Открыто: 24 (без hold: 22, Titles под паузой: 2). Следующий блок: source-candidate-15. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Принято блоков: 15; проверок по именам: 15. Применимое evidence: 46 exact-key + 2 byte-command-bound. Открыто: 23 (без hold: 21, Titles под паузой: 2). Следующий блок: source-candidate-16. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 
@@ -188,7 +188,7 @@ Source suites и live операции не запускались; `releaseCert
 | `owner-ipc-process` | integration | reuse: записанный exact key | не повторять без drift |
 | `controller-lease` | component | fresh source PASS → exact reuse | не повторять без drift |
 | `panel-reconnect` | component | reuse: записанный exact key | не повторять без drift |
-| `endpoint-observation` | component | нужен current result | адресно до full release |
+| `endpoint-observation` | component | fresh source PASS → exact reuse | не повторять без drift |
 | `native-read-capture` | integration | нужен current result | адресно до full release |
 | `windows-cim-probe` | integration | reuse: записанный exact key | не повторять без drift |
 | `zero-dispatch-recovery` | integration | нужен current result | адресно до full release |

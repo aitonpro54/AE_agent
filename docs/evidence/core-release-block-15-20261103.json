@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:39:27.304Z",
+  "blockId": "source-candidate-15",
+  "baselineCommit": "2fcca177eae93307ace8b73ea86d4e2e93f1f5ea",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=endpoint-observation",
+      "test/endpoint-observation.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:38:56.381Z",
+    "finishedAt": "2026-11-03T18:38:56.724Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 15,
+      "pass": 15,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 273.676
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-15-endpoint-observation.log",
+      "sha256": "8f0323ef2c843176c5391917ce7066d7acca35853caf851f885db0b82a59bd0c",
+      "bytes": 1310
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-15-endpoint-observation-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "endpoint-observation",
+      "evidenceKey": "b1fdc7a5103a49c462dd01978839fdb12504beb76689e92784ba6ecd4fda5c5d",
+      "result": "PASS",
+      "cases": 6,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[endpoint-observation] terminal events produce one bounded report and clean socket/timer",
+        "[endpoint-observation] constructor/connect/cleanup exceptions fail closed without retries",
+        "[endpoint-observation] first terminal event wins while queued socket errors remain guarded until close",
+        "[endpoint-observation] public API accepts no options and import has no effects",
+        "[endpoint-observation] CLI maps all observation outcomes and rejects every argument before probing",
+        "[endpoint-observation] actual CLI uses only mapped ephemeral loopback, sends zero bytes and writes no files"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=endpoint-observation",
+        "test/endpoint-observation.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "c520ae0e4d739d16e7da289fc7637c7d04d06ca86acd132478a1ae49e34cd4e7",
+      "key": "b1fdc7a5103a49c462dd01978839fdb12504beb76689e92784ba6ecd4fda5c5d"
+    },
+    "dependencyCount": 3,
+    "dependencyDigestBefore": "10c2c8b3dbfea46d209d5d9dc57f9486e50afe30d90c05153b85aab7c972432d",
+    "dependencyDigestAfter": "10c2c8b3dbfea46d209d5d9dc57f9486e50afe30d90c05153b85aab7c972432d",
+    "dependencyHashesStable": true,
+    "testHashBefore": "7d6fd11fa4c7b2ccb55176ef90a123e81b5f72a12d0ff2c546899596990c5c22",
+    "testHashAfter": "7d6fd11fa4c7b2ccb55176ef90a123e81b5f72a12d0ff2c546899596990c5c22"
+  },
+  "isolation": {
+    "composition": "VM observer paths plus3 own CLI subprocesses",
+    "target": "production logical3457 connect remapped to own ephemeral fixture by private preload; zero application payload",
+    "childFixtureTimeoutMs": 5000,
+    "observerDeadlineMs": 1000,
+    "filesystemWritesInChildren": "denied by preload; asserted0",
+    "production3457Connections": 0,
+    "productionState": false,
+    "nativeAe": false,
+    "tempBase": "C:\\Users\\Ant\\AppData\\Local\\Temp",
+    "fixturePrefixes": [
+      "core4-endpoint-observation-"
+    ],
+    "externalTimeout": null
+  },
+  "cleanup": {
+    "resourceProofKind": "exact child close events, own socket/server hooks and fixture before/after assertions",
+    "sourceEvidence": "Child helper resolves on close, exact ChildProcess.kill only on own5s timeout; sockets empty/listener false/files unchanged diagnostic; own TEMP directory t.after removal",
+    "retentionExpectedByPreflight": false,
+    "observedNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-endpoint-observation-tdA9C1"
+    ],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "manualCleanup": false,
+    "observationLimit": "Directory sampling may miss short fixtures; hook assertions plus terminal results and remaining new directory sample are the evidence."
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-15-endpoint-observation-reducer.json",
+    "sha256": "3514eeeaed158949c8d4ade6526df53decbf56619bf7d44b9ff948c7fcb1acbd"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
