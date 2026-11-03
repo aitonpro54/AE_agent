@@ -1,5 +1,14 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Актуально, 3 ноября:** продолжается [доводка базы](core-base-reliability-20261101.md),
+по прямому уточнению пользователя — доставка, поздние ответы и recovery.
+B1–B3 ограниченно приняты; B4 installed/standard принят, configured B4 отложен
+вместе с MCP/Codex maintenance. B5 добавляет составной TEMP HTTP/VM proof,
+14fresh cases/55boundaries PASS, production unchanged; native delivery/late
+callback и mutation recovery остаются открытыми. Titles/Slideshow на паузе.
+Актуальные pins и запреты повторов — [checkpoint](core-base-installed-checkpoint-20261102.md).
+Ниже сохранена история приоритетов; она не возобновляет отложенные действия.
+
 **Актуальное уточнение, 1 ноября:** [база отдельно от Titles](core-base-reliability-20261101.md).
 Пользователь отложил Titles/Slideshow; сначала comparative MCP research, затем
 connection/recovery/diagnostics с ограниченными проверками. Project lifecycle —

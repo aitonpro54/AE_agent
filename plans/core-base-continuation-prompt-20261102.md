@@ -1,6 +1,25 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
-## Актуализация после B3b3 source
+## Актуальное состояние — 3 ноября
+
+Единственный рабочий корень — `C:/Users/Ant/Documents/Codex/AE_agent_core`.
+B1–B3 ограниченно приняты; installed B4 package21a884fa…/distribution41d4812c…
+имеет standard native proof. Configured B4 и MCP/Codex maintenance отложены
+пользователем; общее «продолжай» не разрешает их restart/config. Текущие PID,
+chat UUID, live authority и readiness нельзя переносить из записей ниже.
+
+Пользователь подтвердил активный следующий scope: доводка базы — доставка,
+поздние ответы и recovery. Titles/Slideshow не возобновлять. B5 составной TEMP
+HTTP/VM check завершён14fresh cases/55boundaries PASS, runtime/CEP unchanged;
+это не native proof. [Scope и следующий шаг](../docs/core-base-b5-channel-composition-20261103.md),
+[точный checkpoint](core-base-installed-checkpoint-20261102.md).
+
+Дальше — свежий штатный Core/CEP preflight без обслуживания MCP/Codex, затем
+ограниченный native scenario на собственном test AEP. Root выполняет необходимые
+панель/AE UI-действия сам, сохраняя technical gates и пользовательскую работу.
+Не повторять settled reset/stop/update/enable; историю и markers не очищать.
+
+## История актуализаций B3b3 — не текущая последовательность действий
 
 Актуально: UNKNOWN reset69facd01… завершён root через существующий panel protocol;
 session8fe8b332…/owner31404/newAE21960. Old AE9472 и historical26308 exact gone,

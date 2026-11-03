@@ -11,6 +11,16 @@
 
 ## Текущий scope и правила
 
+**3 ноября, активный следующий scope подтверждён пользователем:** продолжать
+доводку базы — доставка, поздние ответы и recovery. Titles/Slideshow и MCP/Codex
+maintenance остаются отложенными. B5 test-only: составной production HTTP receiver
++ VM dispatcher,14fresh cases/55boundaries PASS; UNKNOWN journal побайтно сохранён,
+старый completion отвергнут новым receiver. Runtime/CEP/package не изменялись,
+установка не нужна. Это TEMP/VM, native delivery/late callback и mutation recovery
+не доказаны. Далее свежий штатный Core/CEP preflight в разрешённом scope без
+restart/config MCP/Codex, затем адресный native scenario на own test AEP.
+[Scope](docs/core-base-b5-channel-composition-20261103.md).
+
 **3 ноября, уточнение пользователя: MCP/Codex maintenance отложен.**
 Поручение самому нажимать нужные кнопки относится прежде всего к панели и
 After Effects; эти действия root выполняет самостоятельно в разрешённом scope.

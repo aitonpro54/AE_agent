@@ -109,6 +109,17 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- 3 ноября, B5: production HTTP receiver и VM dispatcher соединены в двух новых
+  сценариях доставки/late callback. После timeout UNKNOWN journal сохранён
+  побайтно; старый completion не принимается свежим receiver, новая команда
+  завершает только новый журнал. Один selected check/14fresh cases/55boundaries
+  PASS. Изменён только test file; production/package/install unchanged.
+  [Scope](../docs/core-base-b5-channel-composition-20261103.md),
+  [evidence](../docs/evidence/core-base-b5-channel-composition-20261103.json).
+  Пользователь подтвердил следующий scope: дальше доводить базу — доставка,
+  поздние ответы и recovery. Native proof остаётся следующим шагом; отложенные
+  MCP/Codex maintenance и Titles/Slideshow этим не возобновляются.
+
 - 3 ноября, уточнение пользователя: самостоятельные действия агента относятся
   прежде всего к панели/AE; MCP/Codex restart и configured B4 proof отложены.
   Уже запущенный helper успел завершить exact app-server28148 один раз и закончил
@@ -286,6 +297,12 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- B5 использует реальные TEMP HTTP/HMAC/journal и явно synthetic AE callback/
+  session replacement. Составной PASS дополняет B3b1, но не закрывает native
+  delivery/late callback или recovery mutation. Production delta не требуется.
+  Дальнейшая доводка базы прямо подтверждена пользователем; новый предметный
+  продукт не выбирается, maintenance Codex/MCP не включается автоматически.
 
 - Уточнение пользователя снимает автоматическое продолжение service refresh из
   предыдущего checkpoint. Не считать отсутствие текущего Core readiness поводом
@@ -466,6 +483,11 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- B5:14fresh cases PASS в одном selected start-over-channel check; evidence key
+  повторно совпал после выполнения. Node syntax/55boundaries PASS, production
+  delta0. Первый FAIL тестовой JSON/VM boundary исправлен и не включён в PASS.
+  Full release/deferred lifecycle-simulation/installed native не проверялись.
 
 - Scope clarification: только read-only hashes/native process/listener snapshot.
   AEP, bindings, protected history9events и archives exact; helper finished,

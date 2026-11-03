@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),vm=require('node:vm'),http=require('node:http'),Module=require('node:module');
-const {createHttpPeer}=require('../integrations/cep/http-peer'),{createAttachmentOwner}=require('../runtime/attachment-owner');
+const {createHttpPeer,consumeProjectObservation}=require('../integrations/cep/http-peer'),{createAttachmentOwner}=require('../runtime/attachment-owner');
 const {hash,canonical}=require('../protocol/json'),{mac}=require('../integrations/cep/peer-protocol'),{encode}=require('../protocol/codec');
 const installation={installationId:'channel-fixture',packageHash:'a'.repeat(64),panelToken:'b'.repeat(64),controlToken:'c'.repeat(64)},asset={assetKey:'project-inspection-v1',executorHash:'d'.repeat(64)};
 const sid1='10000000-0000-4000-8000-000000000001',sid2='10000000-0000-4000-8000-000000000002';
@@ -54,6 +54,61 @@ function dispatcherWindow() {
   function frame(id='native-command'){return{assetKey:asset.assetKey,phase:'inspect',typedPayload:{},commandId:id,originalBinding:{commandId:id,executorHash:asset.executorHash,phase:'inspect',receiptRef:'receipt'},pins:{packageHash:installation.packageHash,installationId:installation.installationId,executorHash:asset.executorHash}};}
   return{context,data,storage,callbacks,completes,load,dispatcher,frame};
 }
+// Compose the real authenticated HTTP receiver and durable TEMP store with the
+// production dispatcher. evalScript is held by the VM fixture, never live AE.
+function httpCompletion(f) {
+  return async payload=>{
+    // Match the JSON serialization boundary of panel fetch across VM realms.
+    const response=await f.request('/complete',JSON.parse(JSON.stringify(payload)));
+    if(response.status!==200)throw Object.assign(new Error(response.value.error),{code:response.value.error});
+    assert.equal(response.value.mac,mac(response.value.body,installation.panelToken));
+    return response.value.body.payload;
+  };
+}
+
+test('start-over-channel HTTP delivery and held VM callback settle only the fenced old receiver before timeout',async t=>{
+  const f=await fixture(t,{workSessionId:sid1,timeout:2000}),ui=dispatcherWindow(),old=ui.dispatcher(sid1,httpCompletion(f));
+  const result=f.peer.inspect({}).catch(e=>e),frame=(await f.call('/poll',{})).command;
+  assert.equal(f.peer.status().pending.delivered,true);assert.equal(frame.originalBinding.receiverStoreIdentity,f.peer.status().receiverStoreIdentity);
+  const dispatched=old.dispatch(frame);assert.equal(ui.callbacks.length,1);f.peer.fenceForStartOver();
+  assert.deepEqual(await f.call('/poll',{}),{command:null});assert.deepEqual(f.events().map(e=>e.type),['origin','begin']);
+  const fresh=ui.dispatcher(sid2);assert.throws(()=>fresh.dispatch(ui.frame('fresh-command')),/physical_callback_pending/);
+  ui.callbacks[0](JSON.stringify(observation));await dispatched;const accepted=await result;
+  assert.deepEqual(accepted.observation,observation);assert.equal(accepted.continuity,false);
+  const proof=consumeProjectObservation(f.peer,accepted);assert.equal(proof.sessionId,sid1);assert.equal(proof.receiverStoreIdentity,frame.originalBinding.receiverStoreIdentity);
+  assert.equal(consumeProjectObservation(f.peer,accepted),null);assert.equal(old.pending(),null);
+  const settled=f.events();assert.deepEqual(settled.map(e=>e.type),['origin','begin','complete']);
+  await f.call('/complete',completion(frame));assert.deepEqual(f.events(),settled);assert.equal(ui.callbacks.length,1);
+  await fresh.recover();assert.equal(ui.completes.length,1);assert.equal(ui.completes[0].sessionId,sid1);
+});
+
+test('start-over-channel late VM callback after HTTP timeout preserves UNKNOWN and cannot enter a fresh receiver',async t=>{
+  const oldPeer=await fixture(t,{workSessionId:sid1,timeout:500}),ui=dispatcherWindow(),old=ui.dispatcher(sid1,httpCompletion(oldPeer));
+  const result=oldPeer.peer.inspect({}).catch(e=>e),frame=(await oldPeer.call('/poll',{})).command;
+  assert.equal(oldPeer.peer.status().pending.delivered,true);const dispatched=old.dispatch(frame);
+  const rejected=assert.rejects(dispatched,e=>e.code==='unknown_no_promotion');oldPeer.peer.fenceForStartOver();
+  const outcome=await result;assert.equal(outcome.code,'host_callback_timeout');assert.equal(consumeProjectObservation(oldPeer.peer,outcome),null);
+  const unknown=oldPeer.events(),unknownBytes=fs.readFileSync(path.join(oldPeer.directory,'completions.ndjson'));assert.deepEqual(unknown.map(e=>e.type),['origin','begin','unknown']);
+  // A separate TEMP receiver models session replacement, not the reset finisher
+  // or proof that native AE has stopped. The old window guard must still hold.
+  const freshPeer=await fixture(t,{workSessionId:sid2,timeout:2000}),fresh=ui.dispatcher(sid2,httpCompletion(freshPeer)),freshOrigin=freshPeer.events();
+  assert.notEqual(freshPeer.peer.status().receiverStoreIdentity,frame.originalBinding.receiverStoreIdentity);
+  await assert.rejects(fresh.recover(),/physical_callback_pending/);assert.throws(()=>fresh.dispatch(ui.frame('fresh-command')),/physical_callback_pending/);
+  ui.callbacks[0](JSON.stringify(observation));await rejected;
+  assert.deepEqual(oldPeer.events(),unknown);assert.equal(oldPeer.peer.status().storeClosed,true);assert.equal(oldPeer.peer.status().pending,null);
+  const oldKey=ui.context.Core4PollDispatcher.storageKey(installation.installationId,sid1),freshKey=ui.context.Core4PollDispatcher.storageKey(installation.installationId,sid2);
+  assert.equal(JSON.parse(ui.data.get(oldKey)).frame.commandId,frame.commandId);assert.ok(JSON.parse(ui.data.get(oldKey)).result);assert.equal(ui.data.has(freshKey),false);
+  await fresh.recover();assert.equal(ui.completes.length,1);assert.equal(ui.completes[0].sessionId,sid1);
+  // Even a valid current-channel MAC cannot rebind the historical completion.
+  const replay=await freshPeer.request('/complete',completion(frame));assert.equal(replay.status,403);assert.equal(replay.value.error,'completion_correlation');
+  assert.deepEqual(freshPeer.events(),freshOrigin);assert.deepEqual(oldPeer.events(),unknown);
+  const freshResult=freshPeer.peer.inspect({}).catch(e=>e),freshFrame=(await freshPeer.call('/poll',{})).command,freshDispatch=fresh.dispatch(freshFrame);
+  assert.equal(ui.callbacks.length,2);ui.callbacks[1](JSON.stringify(observation));await freshDispatch;const accepted=await freshResult;
+  assert.equal(consumeProjectObservation(freshPeer.peer,accepted).sessionId,sid2);assert.deepEqual(freshPeer.events().map(e=>e.type),['origin','begin','complete']);
+  assert.deepEqual(oldPeer.events(),unknown);assert.deepEqual(fs.readFileSync(path.join(oldPeer.directory,'completions.ndjson')),unknownBytes);
+  assert.equal(ui.data.has(oldKey),true);assert.equal(ui.data.has(freshKey),false);
+});
+
 test('start-over-channel new dispatcher and session cannot bypass same-window unresolved native callback',async()=>{
   const f=dispatcherWindow(),old=f.dispatcher(sid1),pending=old.dispatch(f.frame());assert.equal(f.callbacks.length,1);const api=f.load(),fresh=f.dispatcher(sid2);
   assert.equal(api.nativePending(),true);assert.throws(()=>fresh.dispatch(f.frame('new-command')),/physical_callback_pending/);await assert.rejects(fresh.recover(),/physical_callback_pending/);

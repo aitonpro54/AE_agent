@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T08:55:08.360Z",
+  "baselineCommit": "8d2593affaaf92cc3410d47dd0bfed7c5d202cc0",
+  "scope": "Составная B3 проверка доставки и позднего callback: production dispatcher в VM + authenticated TEMP HTTP receiver",
+  "selectedArtifactsOnly": true,
+  "releaseCertified": false,
+  "changed": [
+    "core4/test/start-over-channel.test.js"
+  ],
+  "sourceFiles": {
+    "core4/test/start-over-channel.test.js": "225ebfb8c7ad1842e09c5f5d3f6bdfca664b3136225e91d96e90fb4a3eef0931",
+    "core4/integrations/cep/http-peer.js": "1f69d22a3bf58a7cd9fc494fd25487ff35005d3d29d0b2f5d2d3c2b01cfd46e7",
+    "core4/integrations/cep/completion-store.js": "40aed48f5208f06176e548efd93b59d811203154bf922b02b295f74787f4ddf2",
+    "core4/cep/js/poll-dispatcher.js": "fb7b4d211b08518b920afec68a97ac11c6b3f48a788724ab0805fae28af5033d"
+  },
+  "selectedChecks": [
+    {
+      "check": "start-over-channel",
+      "evidenceKey": "6529c1b54d68528a72a8580c21aad0f5bd6b181b894451c7fcf8a88b9141ab39",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-channel",
+        "test/start-over-channel.test.js"
+      ],
+      "cases": 14,
+      "result": "PASS",
+      "mode": "fresh"
+    }
+  ],
+  "executionBatches": [
+    {
+      "checks": [
+        "start-over-channel"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-channel)",
+        "test/start-over-channel.test.js"
+      ]
+    }
+  ],
+  "uniqueCases": 14,
+  "addedCases": 2,
+  "allKeysRecheckedAfterExecution": true,
+  "validationLog": {
+    "path": ".codex-runtime/b5-channel-validation.log",
+    "sha256": "aa6b9ad13adbb681cfb2faf64f0f71c57a18df673ed7552c2bcf84809028937a",
+    "tests": 14,
+    "pass": 14,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "boundaries": {
+    "command": "npm.cmd --prefix core4 run check:boundaries",
+    "checked": 55,
+    "result": "PASS",
+    "liveCalls": 0
+  },
+  "syntax": {
+    "command": "node --check core4/test/start-over-channel.test.js",
+    "result": "PASS"
+  },
+  "scenarios": [
+    {
+      "name": "Доставленная команда завершается после fence до таймаута",
+      "result": "PASS",
+      "observed": [
+        "HTTP /poll delivered=true",
+        "held VM evalScript callback",
+        "fence blocks further poll",
+        "old receiver origin/begin/complete",
+        "one-shot observation proof bound to old session and receiver",
+        "duplicate completion adds no journal events"
+      ]
+    },
+    {
+      "name": "Поздний callback после таймаута изолирован от свежего receiver",
+      "result": "PASS",
+      "observed": [
+        "old receiver origin/begin/unknown",
+        "old HTTP /complete refuses unknown_no_promotion",
+        "old latch keeps result and old session key",
+        "new dispatcher blocks while callback pending",
+        "current MAC with old command refuses completion_correlation",
+        "new receiver origin unchanged by replay",
+        "one fresh command completes with proof bound to new session",
+        "old UNKNOWN journal remains byte-for-byte equivalent as parsed events"
+      ]
+    }
+  ],
+  "fixtureCorrection": {
+    "initialRun": "FAIL; excluded from PASS",
+    "reason": "VM object passed directly to Node canonical validator lacked the Node Object prototype",
+    "fix": "Serialize/parse completion payload at the actual panel fetch JSON boundary",
+    "failedLog": ".codex-runtime/b5-channel-validation-failed-vm-wire.log",
+    "failedLogSha256": "97d78ad30a4ee6123a21cef497463c67a127018aab9b95f6eb567469d75b1c4c"
+  },
+  "deferredCoverage": [
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed."
+    }
+  ],
+  "productionDelta": [],
+  "installedActions": {
+    "mcpCalls": 0,
+    "coreOwnerStartup": 0,
+    "codexRestart": 0,
+    "configChanges": 0,
+    "install": 0,
+    "reset": 0,
+    "aeCalls": 0,
+    "aeMutation": 0,
+    "aeSave": 0,
+    "aeRestart": 0,
+    "argonSends": 0
+  },
+  "limits": [
+    "Реальны TEMP filesystem, loopback HTTP и HMAC; evalScript callback, AE observation и session replacement синтетические.",
+    "Составной тест не исполняет production panel.js, reset finisher, process death или archive/publish.",
+    "Отдельные TEMP receivers не доказывают штатный installed reset и не выдают authority новому AE.",
+    "Нативная доставка/late callback, recovery принятой mutation, configured B4, full release и desktop–MSI round-trip остаются открытыми.",
+    "Переустановка не нужна: production runtime и CEP assets не менялись."
+  ]
+}
