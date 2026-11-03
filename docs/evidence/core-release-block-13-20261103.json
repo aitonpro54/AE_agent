@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:36:59.841Z",
+  "blockId": "source-candidate-13",
+  "baselineCommit": "ecc46e5b4c630c4ab0f506c78e3f766f66218603",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=^IPC ",
+      "test/client-ipc.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:36:38.949Z",
+    "finishedAt": "2026-11-03T18:36:39.991Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 27,
+      "pass": 27,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 977.5256
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-13-client-ipc.log",
+      "sha256": "a5276c1284d3d5bc6b495789c665218d66c30a98657dd3649c091f2a4c41354e",
+      "bytes": 3178
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-13-client-ipc-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "client-ipc",
+      "evidenceKey": "60620b30b22668563447b573e7f089f7a34e5e9b1b5df341ce01ccf18d82ba5e",
+      "result": "PASS",
+      "cases": 27,
+      "skipped": 0,
+      "matchedTestNames": [
+        "IPC authenticates two independent observers and passes the identical opaque session to callbacks",
+        "IPC refuses wrong control secret, panel secret and all identity pins without attaching",
+        "IPC rejects wrong role/domain, stale boot/challenge and extra authentication fields",
+        "IPC accepts chunked canonical frames including Unicode and rejects invalid framing before dispatch",
+        "IPC fail-closes request replay, reused id, wrong MAC/sequence/session, unknown method and extra fields",
+        "IPC clients verify challenge/ready role, identity, boot shape and MAC before exposing attachment",
+        "IPC clients reject forged replies, correlation mismatches and response replay without accepting invented result",
+        "IPC disconnect detaches once while the accepted callback drains exactly once",
+        "IPC client timeout never retries and the original accepted operation still completes",
+        "IPC enforces global pending capacity across detached sessions without cancelling their work",
+        "IPC bounds connections, authenticated sessions, inflight and per-session request history",
+        "IPC handshake/absolute session deadlines are bounded and do not infer authority from an idle socket",
+        "IPC private pre-send closure proof excludes forged errors, explicit close, cancellation and protocol failures",
+        "IPC submitted response loss never acquires pre-send proof after pending state is cleared",
+        "IPC preserves uncertainty for handler errors/invalid results and refuses non-JSON payloads before send",
+        "IPC reports unknown outcome after an effect followed by oversized result or throw and never replays on reconnect",
+        "IPC accepted callback failure marks every pending caller uncertain while other accepted work still drains",
+        "IPC onAttach must finish synchronously; detach faults are latched and close the transport",
+        "IPC cleans up a partially registered attachment exactly once when synchronous onAttach throws",
+        "IPC endpoint collision does not displace the original owner; concurrent close/listen leaves no listener",
+        "IPC server enforces its own inflight/history limits even against a client ignoring client-side limits",
+        "IPC correlates concurrent replies arriving in reverse order and rejects a captured request on another session",
+        "IPC client handshake timeout is bounded even when a local listener never sends a challenge",
+        "IPC absolute session expiry disconnects a pending caller without cancelling the accepted callback",
+        "IPC classifies only preconnect ENOENT and ECONNREFUSED as absence and sanitizes permission/unknown failures",
+        "IPC errors after a real socket connect and a handshake timeout never count as endpoint absence",
+        "IPC private AbortSignal cancels handshake and pending delivery without replay or callback cancellation"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^IPC ",
+        "test/client-ipc.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "5a9e8dc022f57f45464545e7da692925c6b00820cdd9d8592e319705a64c82cd",
+      "key": "60620b30b22668563447b573e7f089f7a34e5e9b1b5df341ce01ccf18d82ba5e"
+    },
+    "dependencyCount": 2,
+    "dependencyDigestBefore": "9c706467db08ad1539c8e491c8338574552ddfda370da8fbc163036635dc1b4d",
+    "dependencyDigestAfter": "9c706467db08ad1539c8e491c8338574552ddfda370da8fbc163036635dc1b4d",
+    "dependencyHashesStable": true,
+    "testHashBefore": "8bdc5b0474c7a65ec4509614b63b9e99bce5c20b25f39a0526414b731fd93cfb",
+    "testHashAfter": "8bdc5b0474c7a65ec4509614b63b9e99bce5c20b25f39a0526414b731fd93cfb"
+  },
+  "isolation": {
+    "transport": "unique own Windows named pipe only",
+    "canonicalFilter": "--test-name-pattern=^IPC  (argument contains one trailing space)",
+    "http": false,
+    "osProcessCalls": false,
+    "stateOrConfigWrites": false,
+    "testTimeoutEachMs": 5000,
+    "tempBase": null,
+    "fixturePrefixes": [],
+    "externalTimeout": null
+  },
+  "cleanup": {
+    "resourceProofKind": "own socket/client/server close hooks and terminal drain/assertions",
+    "sourceEvidence": "t.after closes IPC clients/server; raw peers destroyed; fakeOwner sockets destroyed and server close callback awaited; pending accepted callbacks explicitly drained",
+    "retentionExpectedByPreflight": false,
+    "observedNewDirectories": [],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "manualCleanup": false,
+    "observationLimit": "Process-only check; no TEMP directory writes expected."
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-13-client-ipc-reducer.json",
+    "sha256": "87cf527236df727fefd7461fbd57bd685e4e52f4dc6afd163e0802449e600aa4"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
