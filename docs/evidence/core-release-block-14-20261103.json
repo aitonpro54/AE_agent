@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:37:50.817Z",
+  "blockId": "source-candidate-14",
+  "baselineCommit": "c80dad90d5f3eb245416ab24dea6c489e2205e01",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=controller-lease",
+      "test/controller-lease.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:37:15.839Z",
+    "finishedAt": "2026-11-03T18:37:15.955Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 61.1337
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-14-controller-lease.log",
+      "sha256": "6ff20aa88d9d71fd781ef5f2c1b8219968e3ab910de5a9d3e0a5c1430ca7342d",
+      "bytes": 1761
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-14-controller-lease-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "controller-lease",
+      "evidenceKey": "1b822fd41b19872f5825fa5b047e76a37377289791a27b942cb64fcb1d9145af",
+      "result": "PASS",
+      "cases": 16,
+      "skipped": 0,
+      "matchedTestNames": [
+        "controller-lease attachment and repeated observer status never acquire control",
+        "controller-lease explicit acquire is exclusive and repeated acquire is not renewal",
+        "controller-lease exact explicit release permits new generation and rejects captured grant",
+        "controller-lease serialized handles and foreign owner boot cannot authorize work",
+        "controller-lease only explicit timely renewal extends permission; expired grant cannot renew",
+        "controller-lease quiescent disconnect releases control but cannot reuse detached session",
+        "controller-lease renewal samples time once so expiry cannot move between validation and extension",
+        "controller-lease lost client drains accepted work and rejects takeover across expiry",
+        "controller-lease expiry during accepted work preserves original completion and blocks new sends",
+        "controller-lease physical UNKNOWN remains fenced after detach and expiry; no reset API",
+        "controller-lease one accepted operation and exact original completion; no copies or replay",
+        "controller-lease monotonic clock failure revokes new work but original outcome remains recordable",
+        "controller-lease invalid clock and options fail closed",
+        "controller-lease explicit exact expired transfer invalidates old grant without disconnecting its observer",
+        "controller-lease expired transfer refuses pending work, UNKNOWN, stale boot and holder CAS",
+        "controller-lease transfer accepts no caller safe flags and uses one monotonic sample"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=controller-lease",
+        "test/controller-lease.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "8637d7b3824649f8dc0648b84ca730b7376b19462c98de573044efa17fab750d",
+      "key": "1b822fd41b19872f5825fa5b047e76a37377289791a27b942cb64fcb1d9145af"
+    },
+    "dependencyCount": 2,
+    "dependencyDigestBefore": "4427f5fdccb9a6e984c4356620d7979a20161b0469643d660ffd119199f46dbe",
+    "dependencyDigestAfter": "4427f5fdccb9a6e984c4356620d7979a20161b0469643d660ffd119199f46dbe",
+    "dependencyHashesStable": true,
+    "testHashBefore": "d71b7cf5b5340fc75b53c77b4107dfc5dc54cc79c142ae9b897134828586a7b6",
+    "testHashAfter": "d71b7cf5b5340fc75b53c77b4107dfc5dc54cc79c142ae9b897134828586a7b6"
+  },
+  "isolation": {
+    "scope": "pure in-memory lease state and synthetic clocks",
+    "fs": false,
+    "processCalls": false,
+    "network": false,
+    "nativeAe": false,
+    "stateOrConfigWrites": false,
+    "tempBase": null,
+    "fixturePrefixes": [],
+    "externalTimeout": null
+  },
+  "cleanup": {
+    "resourceProofKind": "no external fixture resources",
+    "sourceEvidence": "Pure in-memory lease objects; no filesystem/process/socket fixtures to close",
+    "retentionExpectedByPreflight": false,
+    "observedNewDirectories": [],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "manualCleanup": false,
+    "observationLimit": "Process-only check; no TEMP directory writes expected."
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-14-controller-lease-reducer.json",
+    "sha256": "fe9b8bfe359e54c74c6475310c4abbb6dc089c7a9ea1e8ce61e4cb0a0c9024ad"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
