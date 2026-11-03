@@ -11,6 +11,20 @@
 
 ## Текущий scope и правила
 
+**3 ноября, B4 installed:** source1e9a63a/package21a884fa…/
+distribution41d4812c… (80/98) штатно installed/enabled. Stopf36e04ce… и
+update7b18829f… settled с attempts1; их не повторять. Owner6340/birth
+639292876604263210/bootd396603c… ready, один3457, old25380 gone. CEP close/open1,
+auto connected; та же AE21960. Standard missing-contract refusal7events exact
+и native correct read/release1 PASS, current9settled/prefix7 exact; защищённые
+файлы/session/baseline/14+52archives/AEP unchanged. RestartAE/save/mutation/reset0.
+Configured oldclient2708/package327faaac… пока owner_unavailable. UI project
+MCP row disabled; следующий шаг — scoped service app-server28148 refresh после
+этого checkpoint, затем fresh configured proof. Current runtime chat
+01a1a034-0635-7712-95b2-a41d743f398c подтверждён metadata; других active chats
+не наблюдалось. Не использовать старый chat01a19c6c… как текущий и не создавать
+новый. [B4 evidence](docs/evidence/core-base-b4-installed-20261103.json).
+
 **3 ноября, B4 source принят по «Продолжай дальше»:** missing/malformed
 inspection contractId отказывает до runtime invoke, без ложного UNKNOWN;
 nextAction=get_module_contract и discovery schema уточнены.13checks/214fresh

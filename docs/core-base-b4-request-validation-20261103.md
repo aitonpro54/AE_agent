@@ -38,6 +38,25 @@ boundaries и diff-check. Full release/Titles/live fault injection не запу
 
 ## Progress
 
+- Installed milestone: source1e9a63a штатно установлен. Новый stop
+  f36e04ce-0aac-474e-9dee-6a922e16bab8 и update
+  7b18829f-440a-47f1-8db2-f1ed180fe09b/explicit enable завершены с первой попытки.
+  Эти IDs settled, больше не повторять. Package21a884fa…/distribution41d4812c…,
+  owner6340/birth639292876604263210/bootd396603c…; один3457, old25380 gone.
+  CEP закрыта/открыта1раз через штатный UI, подключилась сама. AE21960 прежний.
+- Standard native proof PASS: client18892 exit0, invalid missing contractId →
+  owner_inspection_contract_required/nextAction=get_module_contract, journal7events
+  побайтно unchanged. Следующий correct-contract read того же saved empty AEP
+  inspect-e3a56277… PASS, lease1 released;9settled events/prefix7 exact.
+ 80runtime/CEP, origins/adoption/session/baseline/absent ledger/14+52archives/AEP
+  verified. AE restart/save/mutation/reset0. [Evidence](evidence/core-base-b4-installed-20261103.json).
+- Configured cached client2708 пока старый327faaac… и даёт owner_unavailable.
+  Project MCP row в settings disabled, отдельного restart нет. Native package
+  работает; следующий шаг — scoped служебное обновление app-server28148 после
+  фиксации checkpoint, затем configured status/current-session/read/release.
+  Текущий runtime chat01a1a034-0635-7712-95b2-a41d743f398c подтверждён metadata;
+  других active chats в свежем inventory нет. Новый чат не создавать.
+
 - Контракт и scope зафиксированы до production edits.
 - Source принят: 13selected checks/214fresh cases,55boundaries PASS. Regression
   воспроизвёл owner_outcome_uncertain через настоящий TEMP stdio/IPC до правки;
@@ -56,6 +75,9 @@ boundaries и diff-check. Full release/Titles/live fault injection не запу
 
 ## Validation
 
+- Installed verification/standard negative+native read PASS; evidence выше.
+  Защищённые9file bindings и AEP сравнивались с pre-install snapshot; новый
+  receiver9events сохраняет exact7event prefix. Configured proof отдельно открыт.
 - [Source evidence](evidence/core-base-b4-source-20261103.json):13checks/214cases
   выполнены в этом milestone. После остановки CLI на cancelled owner-runtime
   успешные5batches/55cases переиспользованы только по exact current keys; исправленный

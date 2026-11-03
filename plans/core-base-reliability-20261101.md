@@ -109,6 +109,15 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- B4 installed: source1e9a63a/package21a884fa… штатно установлен/enabled,
+  stopf36e04ce…/update7b18829f… settled, attempts1. Owner6340/один3457, CEP
+  автоматически connected после собственного close/open1, та жеAE21960.
+  Standard missing-contract refusal без новой записи и correct read/release1
+  PASS;9settled events/prefix7/protected/session/archives/AEP exact.
+  [Evidence](../docs/evidence/core-base-b4-installed-20261103.json).
+  Configured client2708 cached327faaac… ещё owner_unavailable; UI project row
+  disabled. Далее scoped service refresh и fresh configured proof этого же чата.
+
 - B4 source принят: обязательный inspection contractId проверяется до invoke,
   ошибка owner_inspection_contract_required указывает get_module_contract;
   настоящий UNKNOWN и все controller/session/reset gates сохранены.
@@ -267,6 +276,11 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- B4 installed-поставка не требует нового B3 reset, AE restart или review.
+  Настройки безопасности/доступа Codex не менялись. Перед служебным обновлением
+  app-server сохраняется checkpoint; текущий chat UUID установлен по runtime,
+  других active chats не наблюдалось. Старые settled IDs и native команды не replay.
 
 - B4: форма обязательного аргумента проверяется generic owner до принятия
   операции; module-specific логика и новый proof/issuer не нужны. Проверка не
@@ -437,6 +451,12 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- B4 installed: official package/enable и exact runtime/CEP verification,
+  native PID/birth/один3457, negative pre-submit7events unchanged и свежий native
+  saved empty project read9events/release PASS. AEP/origins/adoption/session/
+  baseline/ledger/архивы сохранены. Configured cached client refusal зафиксирован
+  честно; source tests после doc-only изменений не повторяются.
 
 - B4 source:13selected checks/214fresh cases/55boundaries, node --check/diff-check
   PASS. Original failing regression включал настоящий TEMP stdio/IPC. Исправлен

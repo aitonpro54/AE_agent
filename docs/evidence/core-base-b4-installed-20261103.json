@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T07:33:25.128Z",
+  "sourceCommit": "1e9a63a",
+  "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652",
+  "distributionHash": "41d4812c8e89693fa4650cc23fc0074d0520b9efd31170915ee302c019aff11b",
+  "runtimeFiles": 80,
+  "bundleFiles": 98,
+  "changedRuntimeFiles": [
+    "runtime/attachment-owner.js",
+    "runtime/client-stdio.js"
+  ],
+  "stopId": "f36e04ce-0aac-474e-9dee-6a922e16bab8",
+  "update": {
+    "aeAuthority": false,
+    "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "expectedPackageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652",
+    "expectedPreviousDescriptorHash": "851d69d1cf66cc4117e6bed2485feed016b755c9201c5995dd619592b1d3a118",
+    "migrationId": "f36e04ce-0aac-474e-9dee-6a922e16bab8",
+    "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652",
+    "phase": "update-stopped",
+    "runtimeStarted": false,
+    "transactionId": "7b18829f-440a-47f1-8db2-f1ed180fe09b",
+    "updated": true
+  },
+  "enable": {
+    "aeAuthority": false,
+    "enabled": true,
+    "packageHash": "21a884faccb5c95fb10cb4e85e31242f75164b2b116ac427f31410003cad3652",
+    "runtimeStarted": false,
+    "sameDescriptor": true,
+    "transactionId": "7b18829f-440a-47f1-8db2-f1ed180fe09b"
+  },
+  "updateAttempts": 1,
+  "enableAttempts": 1,
+  "coldStandard": {
+    "clientPid": 10340,
+    "exit": {
+      "code": 0,
+      "signal": null,
+      "stderr": ""
+    },
+    "owner": {
+      "birthTicks": "639292876604263210",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "ff060b731ad9d7d4b6a97606a6b2af9531379f089b88ae39599bd0149def4f3c",
+          "eventCount": 7,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 6340,
+      "processBootId": "d396603c-4702-43f0-9db9-e651223102a3",
+      "reason": null,
+      "recoveryRequired": false
+    }
+  },
+  "standard": {
+    "clientPid": 18892,
+    "exit": {
+      "code": 0,
+      "signal": null,
+      "stderr": ""
+    },
+    "sessionId": "8fe8b332-5f6f-47fe-8da3-1dc21a5062d0",
+    "peer": {
+      "connected": true,
+      "peerId": "panel-0c2ead1c7fb66617a715037aac73bff64c40499dcd1739d6"
+    },
+    "generation": 1,
+    "invalidRequest": {
+      "error": {
+        "code": -32000,
+        "message": "owner_inspection_contract_required",
+        "data": {
+          "nextAction": "get_module_contract"
+        }
+      }
+    },
+    "before": {
+      "hash": "ff060b731ad9d7d4b6a97606a6b2af9531379f089b88ae39599bd0149def4f3c",
+      "eventCount": 7
+    },
+    "afterInvalid": {
+      "hash": "ff060b731ad9d7d4b6a97606a6b2af9531379f089b88ae39599bd0149def4f3c",
+      "eventCount": 7
+    },
+    "commandId": "inspect-e3a56277-cea5-4075-9395-5106d3d2dfb5",
+    "observation": {
+      "aeVersion": "26.3x87",
+      "compositions": [],
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "core-base-b3-native-20261103.aep",
+        "numItems": 0,
+        "saved": true
+      },
+      "target": {
+        "compId": null,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep"
+      },
+      "truncated": false
+    },
+    "authority": false,
+    "continuity": false,
+    "release": {
+      "released": true
+    },
+    "finalActivity": {
+      "fault": false,
+      "pending": false,
+      "unresolved": false
+    }
+  },
+  "native": {
+    "collectedAt": "2026-11-03T07:38:35.0373458Z",
+    "processes": [
+      {
+        "pid": 21960,
+        "birthTicks": "639292825912075250",
+        "parentPid": 9076,
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"
+      },
+      {
+        "pid": 16604,
+        "birthTicks": "639292858279888160",
+        "parentPid": 30912,
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1027.3384.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+      },
+      {
+        "pid": 28148,
+        "birthTicks": "639292858302135920",
+        "parentPid": 16604,
+        "executablePath": "C:\\Users\\Ant\\AppData\\Local\\OpenAI\\Codex\\bin\\22cfb1d302613eae\\codex.exe"
+      },
+      {
+        "pid": 2708,
+        "birthTicks": "639292859265795560",
+        "parentPid": 28148,
+        "executablePath": "C:\\Program Files\\nodejs\\node.exe"
+      },
+      {
+        "pid": 6340,
+        "birthTicks": "639292876604263210",
+        "parentPid": 10340,
+        "executablePath": "C:\\Program Files\\nodejs\\node.exe"
+      }
+    ],
+    "listeners": [
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 3457,
+        "OwningProcess": 6340
+      }
+    ]
+  },
+  "bindings": {
+    "descriptor": "c82f44e647f2126e0b2080ed1fc9c811bcb0ccdd9ee18462fbe1446497ef34d9",
+    "client": "f046655f99db975c3c6ed149bfb35e7dd47d7117a0606a1f0f02b1944276c72e",
+    "config": "57f8a8d293cc59e3d7fd1264811e9f46445f1cbde190be2d84a59f69c47c0f96"
+  },
+  "protectedHashes": {
+    "origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "state/production/origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "state/production/host-adoption.json": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+    "state/production/work-session.json": "87e775bb4de64911a2d3a896d67ba9d227f6b4976859d0d01257f4c75c9c8539",
+    "state/production/work-session-baseline.json": "a1587e014d3805ec500922f25b1a2f8bccdf9b4b4489304bcbdc0f9ab2a6929d",
+    "state/production/broker/ledger.ndjson": null,
+    "transactions/69facd01-2b95-4983-a110-4209acabda31-start-over/archive-receiver/completions.ndjson": "638fbd1bbb97a142541f1d98915f40a758bd4453f3b22b75d6a9252acdf8fe67",
+    "transactions/9b128005-8e75-43a0-80ff-f800326c83c6-start-over/archive-receiver/completions.ndjson": "e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437"
+  },
+  "protectedUnchanged": true,
+  "aep": {
+    "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep",
+    "sha256": "8299fd9faf046e21911739430e304599c4e8f3690fc6314c21b9fa8f8a15c237",
+    "size": 8367
+  },
+  "aepUnchanged": true,
+  "receiver": {
+    "eventCount": 9,
+    "byteHash": "478d66aaefc81c6ddd47ef29fa8485998c9187294582353fff62cd32103ff249",
+    "prefix7Hash": "ff060b731ad9d7d4b6a97606a6b2af9531379f089b88ae39599bd0149def4f3c",
+    "prefix7Exact": true
+  },
+  "configured": {
+    "status": "pending",
+    "oldClientPid": 2708,
+    "oldPackageHash": "327faaac97f8f4c5e17c20dfbf30082b1be242f59be566c72ef7e3d4970f88cd",
+    "lastError": "owner_unavailable",
+    "projectSettingsRowDisabled": true,
+    "uiRestartActionFound": false,
+    "currentRuntimeThreadId": "01a1a034-0635-7712-95b2-a41d743f398c",
+    "otherActiveThreadsObserved": 0
+  },
+  "actions": {
+    "panelClosed": 1,
+    "panelOpened": 1,
+    "aeWindowMaximized": true,
+    "aeRestart": 0,
+    "save": 0,
+    "mutation": 0,
+    "reset": 0
+  },
+  "limits": [
+    "Standard MCP native read/negative proof; configured client refresh still pending.",
+    "B3 UNKNOWN archives and session preserved; no replay.",
+    "No mutation recovery/Titles/full release/desktop-MSI portability claim."
+  ]
+}

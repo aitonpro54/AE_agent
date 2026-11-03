@@ -5,6 +5,21 @@
 
 ## Дополнение 3 ноября
 
+**Актуально B4:** source1e9a63a/package21a884fa…/distribution41d4812c…
+installed/enabled. New stopf36e04ce…/update7b18829f… settled, no replay.
+Owner6340/birth639292876604263210/bootd396603c…/один3457; old25380 gone.
+CEP close/open1/auto connected; та же AE21960, AEP unchanged. Standard negative
+missing contractId без записи и correct native read inspect-e3a56277…/release1
+PASS.9settled events/SHA478d66aa…/prefix7ff060b73… exact, protected/session/
+baseline/14+52archives preserved. [Evidence](../docs/evidence/core-base-b4-installed-20261103.json).
+Configured2708 всё ещё old327faaac…/owner_unavailable. UI project MCP settings
+disabled; next scoped app-server28148 refresh, затем current-session configured
+status/connect/contract/read/release. Current runtime chat01a1a034-0635-7712-95b2-
+a41d743f398c, не прежний01a19c6c…; metadata подтверждена. Других active chats
+не наблюдалось. AE restart/save/mutation/reset0; install/settled IDs не повторять.
+
+Ниже — завершённая configured-проверка прежнего пакета327faaac….
+
 **Актуально: configured proof завершён после пользовательского restart Codex.**
 Первый configured `core_status` успешно загрузил package327faaac…; owner25380/
 birth639292859519548860/bootceb47b71-ad38-4171-ac41-4cbc24494ef4 ready, один
