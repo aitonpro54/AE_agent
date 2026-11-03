@@ -1197,6 +1197,12 @@
       "sha256": "cf2b889a9bc40f2f4584c5b2316ebd5ec18535c45416f39c11e40ebd0ab74eee",
       "directKeyedRecords": 1,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-release-block-16-attempt-01-20261103.json",
+      "sha256": "b6c96a9f1ed75d55b4b646619d9492e2632144665206a6b331576c0a2fd5243d",
+      "directKeyedRecords": 1,
+      "excludedAsAuthority": "FAIL, no current PASS"
     }
   ],
   "evidenceMethod": {
@@ -1231,7 +1237,7 @@
     "pendingNotHeldByProductPause": 21,
     "sharedCoreWithTitlesDependency": 33,
     "optionalFutureSourceBatches": 14,
-    "sourceTestCommandsExecuted": 15,
+    "sourceTestCommandsExecuted": 16,
     "reusedGlobalUniqueCases": null,
     "freshSourceChecksAcceptedThisExecution": 15
   },
@@ -4765,7 +4771,14 @@
         "executedDuringManifestPreparation": false,
         "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
       },
-      "legacyReleaseEntryFileListed": false
+      "legacyReleaseEntryFileListed": false,
+      "latestExecution": {
+        "result": "FAIL",
+        "evidence": "docs/evidence/core-release-block-16-attempt-01-20261103.json",
+        "evidenceKey": "cd2ed83a8df28e22cf02ab2fbffde2f3f4ce4b4fd89a31a663b5a025e1a62cd6",
+        "reason": "capture_package format mismatch",
+        "fullCheckAccepted": false
+      }
     },
     {
       "check": "windows-cim-probe",
@@ -6945,7 +6958,9 @@
     "externalNetworkArgonPushPr": 0,
     "fixtureBuildInstallScope": "own TEMP only",
     "fixtureProcessScope": "own fixture actors and self queries only",
-    "fixtureNetworkScope": "own loopback ephemeral ports and installation pipes only"
+    "fixtureNetworkScope": "own loopback ephemeral ports and installation pipes only",
+    "failedSourceBatchCommands": 1,
+    "totalSourceBatchCommands": 16
   },
   "provenance": {
     "scratchSha256": "8c63c696b43410c24bfffa4f8dac1e7ffb5fc82e5a37a2f258b332009498fb80",
@@ -6959,10 +6974,8 @@
     "reviewDoesNotChangeRuntimeAuthority": true
   },
   "validation": {
-    "status": "PASS",
-    "report": "docs/evidence/core-release-block-15-20261103-validation.json",
-    "selectorKeysMatched": 71,
-    "sourceTestCommandsExecuted": 15,
+    "status": "source-block16-FAIL-repair-in-progress",
+    "report": "docs/evidence/core-release-block-16-attempt-01-20261103.json",
     "fullReleaseCertified": false
   },
   "execution": {
@@ -7307,9 +7320,28 @@
         ],
         "fullSourceEvidence": "docs/evidence/core-release-block-12-20261103.json"
       }
-    ]
+    ],
+    "failedAttempts": [
+      {
+        "blockId": "source-candidate-16",
+        "attempt": 1,
+        "evidence": "docs/evidence/core-release-block-16-attempt-01-20261103.json",
+        "result": "FAIL",
+        "summary": {
+          "tests": 15,
+          "pass": 2,
+          "fail": 13,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 8393.62
+        },
+        "baselineCommit": "782ae1de7ac6c3a396ab94698697a74282ea947b"
+      }
+    ],
+    "status": "scoped-fixture-repair-in-progress"
   },
-  "updatedAt": "2026-11-03T18:39:27.692Z",
+  "updatedAt": "2026-11-03T18:47:26.687Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,

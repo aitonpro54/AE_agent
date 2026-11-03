@@ -11,7 +11,7 @@
 
 ## Текущий scope и правила
 
-**Активна адресная source-приёмка:** Принято блоков: 15; проверок по именам: 15. Применимое evidence: 46 exact-key + 2 byte-command-bound. Открыто: 23 (без hold: 21, Titles под паузой: 2). Следующий блок: source-candidate-16. [План](plans/core-release-execution-20261103.md). Titles/Slideshow на паузе; production live действий нет.
+**Активна адресная source-приёмка:** Принято15source blocks; block16 FAIL (2PASS/13FAIL) сохранён без acceptance. Native-capture fixture format2 несовместима с format1-only оператором; выполняется test-only repair,17не запущен. Titles/Slideshow на паузе. [План](plans/core-release-execution-20261103.md).
 
 **3 ноября, актуальный release-manifest подготовлен:** по прямому поручению
 пользователя учтены все 71 Core checks: 31 exact-key reuse, ещё 2 отдельным

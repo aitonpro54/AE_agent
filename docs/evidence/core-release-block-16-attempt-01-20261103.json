@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "collectedAt": "2026-11-03T18:47:26.685Z",
+  "blockId": "source-candidate-16",
+  "attempt": 1,
+  "result": "FAIL",
+  "baselineCommit": "782ae1de7ac6c3a396ab94698697a74282ea947b",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=native-read-capture",
+      "test/native-read-capture.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:40:40.135Z",
+    "finishedAt": "2026-11-03T18:40:48.593Z",
+    "exitCode": 1,
+    "reporter": "spec",
+    "summary": {
+      "tests": 15,
+      "pass": 2,
+      "fail": 13,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 8393.62
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-read-capture.log",
+      "sha256": "9f9bf24587960198b7fe9e380babcd40b4194f6bdad7cd850d4f43601810e481",
+      "bytes": 17785
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-read-capture-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "native-read-capture",
+      "evidenceKey": "cd2ed83a8df28e22cf02ab2fbffde2f3f4ce4b4fd89a31a663b5a025e1a62cd6",
+      "result": "FAIL",
+      "pass": 2,
+      "fail": 13,
+      "skipped": 0,
+      "matchedTestNames": [
+        "native-read-capture inspect is pure/stable; actual panel and dispatcher cached recover posts once with no ACK/eval/poll and unchanged protected bytes",
+        "native-read-capture missing result or latch uses bounded linked timeout, preserves latch and UNKNOWN and does not guess the cause",
+        "native-read-capture ingress/MAC/role/sequence/original binding gates reject before an admitted one-shot receipt",
+        "native-read-capture authenticated wrong binding/pins/result consumes the sole receipt attempt and never ACKs or writes receipt",
+        "native-read-capture rejects active/unknown probes, gates/ledger/owner, damaged CEP/evidence and junctions before listener",
+        "native-read-capture CAS/short write/fsync/readback failure retains ambiguous gates without changing protected bytes",
+        "native-read-capture fixed eligibility rejects validly rehashed wrong command journals and any extra obligations",
+        "native-read-capture receipt durability failures and partial gate writes never certify capture or ACK",
+        "native-read-capture global deadline before link is finite and creates no receipt, retry, ACK or protected-state write",
+        "native-read-capture classifies exact current/stale core cache against verified retained release data, never executes it, and CAS protects bytes",
+        "native-read-capture cache extra/stage/unknown/unclassified paths and reparse junctions fail closed as data",
+        "native-read-capture machine binding is actual hostname and Windows nonstandard Node name is refused before probes/readiness",
+        "native-read-capture Windows probe syntax and UTF8 stdin data exceed environment limits without running CIM or path inspection",
+        "native-read-capture same production probe on Windows PowerShell 5.1 validates flat paths and actual fixture Get-Item/reparse with a test-only CIM stub",
+        "native-read-capture builtin-only CLI preflight rejects unverified release before imports; defaults and production endpoint are fixed"
+      ]
+    }
+  ],
+  "conditionRu": "Fixture строит release format2, legacy evidence-only capture оператор строго принимает format1;13 refusals capture_package до listener/probes. Два Windows PowerShell subcases PASS не закрывают named check.",
+  "sourceToolContract": "core4/tools/capture-native-read.js:78",
+  "sourceFixture": "core4/test/native-read-capture.test.js:21",
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "e9838b0ee34f6512f6b2272977b64e2dfb72064eea96bf9c7f073231480f5a41",
+      "key": "cd2ed83a8df28e22cf02ab2fbffde2f3f4ce4b4fd89a31a663b5a025e1a62cd6"
+    },
+    "dependencyCount": 84,
+    "dependencyDigestBefore": "c171622a78154aacea01a82d6772325fd4d10a67207c94efbfeddac0fae88fcf",
+    "dependencyDigestAfter": "c171622a78154aacea01a82d6772325fd4d10a67207c94efbfeddac0fae88fcf",
+    "dependencyHashesStable": true,
+    "testHashBefore": "2823b3da46ebc36f02f9ec2010243c2cee9bb4d68ea9c762a11f36b8d96d2598",
+    "testHashAfter": "2823b3da46ebc36f02f9ec2010243c2cee9bb4d68ea9c762a11f36b8d96d2598"
+  },
+  "isolation": {
+    "composition": "Synthetic pid/port/process probes plus own HTTP0 capture and VM panel",
+    "powershell": "Real Windows5.1 parsing and Get-Item/reparse only own fixture paths; Get-CimInstance shadows real cmdlet with test stub",
+    "windowsBranchesExpectedSkipped": 0,
+    "psCliBudgetMs": 5000,
+    "nativeAe": false,
+    "productionProcessInventory": false,
+    "productionState": false,
+    "tempBase": "C:\\Users\\Ant\\AppData\\Local\\Temp",
+    "fixturePrefixes": [
+      "core4-native-capture-",
+      "core4-ps51-probe-"
+    ],
+    "externalTimeout": null
+  },
+  "cleanup": {
+    "resourceProofKind": "Failed-suite closure not certified; observed failures at pre-listener format gate, two synchronous PS cases completed",
+    "sourceEvidence": "tools/capture-native-read.js:291-292; every capture pending/outcome awaited; spawnSync statuses asserted",
+    "retainedData": "Intentional own TEMP evidence/journals/gates/caches and PS51 paths, including own junction, remain as data; no broad cleanup performed",
+    "retentionExpectedByPreflight": true,
+    "observedNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-8Ayc8E",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-1Mhbuh",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-s9g1f5",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-bkP58c",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-p2pKvJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-9C2fxc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-5f2IvG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-73fci8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-HkU25O",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-k0aOyG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-LRsi9L",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-ma3B29",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-ps51-probe-SmeCIq",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-YVwKsc"
+    ],
+    "remainingNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-1Mhbuh",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-5f2IvG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-73fci8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-8Ayc8E",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-9C2fxc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-HkU25O",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-LRsi9L",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-YVwKsc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-bkP58c",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-k0aOyG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-ma3B29",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-p2pKvJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-s9g1f5",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-ps51-probe-SmeCIq"
+    ],
+    "allObservedNewDirectoriesAbsent": false,
+    "manualCleanup": false,
+    "activeFixtureResourcesClosedByHooks": false,
+    "observationLimit": "Directory sampling may miss short fixtures; hook assertions plus terminal results and remaining new directory sample are the evidence.",
+    "retainedDataIsFailureCause": false
+  },
+  "runnerReport": {
+    "file": ".codex-runtime/release-validation-20261103/block-16-native-read-capture-reducer.json",
+    "sha256": "ed83068e172e5b45802e80dae760fc62ef4a5224d2be7f2323a14484c7053c5b"
+  },
+  "partialSubcasePassIsNotCheckAcceptance": true,
+  "productionRuntimeFaultClaimed": false,
+  "sourceEditsOrRerunsBeforeDiagnosis": 0,
+  "releaseCertified": false
+}

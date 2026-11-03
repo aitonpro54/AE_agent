@@ -1,6 +1,6 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
-**Активна адресная source-приёмка:** Принято блоков: 15; проверок по именам: 15. Применимое evidence: 46 exact-key + 2 byte-command-bound. Открыто: 23 (без hold: 21, Titles под паузой: 2). Следующий блок: source-candidate-16. [План](core-release-execution-20261103.md). Продолжать следующие разрешённые source blocks после reducer commit; Titles/Slideshow на паузе.
+**Активна адресная source-приёмка:** Принято15source blocks; block16 FAIL (2PASS/13FAIL) сохранён без acceptance. Native-capture fixture format2 несовместима с format1-only оператором; выполняется test-only repair,17не запущен. Titles/Slideshow на паузе. [План](core-release-execution-20261103.md).
 
 **Release-manifest, 3 ноября — последнее поручение:** пользователь попросил
 актуальный состав необходимых проверок/reuse/remaining с сохранением паузы

@@ -30,7 +30,7 @@ push/PR и запуска dedicated продуктов. Штатные внут�
 own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup проверены.
 
 <!-- EXECUTION_STATUS -->
-Принято блоков: 15; проверок по именам: 15. Применимое evidence: 46 exact-key + 2 byte-command-bound. Открыто: 23 (без hold: 21, Titles под паузой: 2). Следующий блок: source-candidate-16.
+Принято15source blocks; block16 FAIL (2PASS/13FAIL) сохранён без acceptance. Native-capture fixture format2 несовместима с format1-only оператором; выполняется test-only repair,17не запущен. Titles/Slideshow на паузе.
 <!-- /EXECUTION_STATUS -->
 
 <!-- EXECUTION_BLOCKS -->
@@ -52,6 +52,14 @@ own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup пр�
 | source-candidate-14 | `controller-lease` | PASS: 16 pass / 0 skip | [JSON](../docs/evidence/core-release-block-14-20261103.json) | `2fcca17` |
 | source-candidate-15 | `endpoint-observation` | PASS: 15 pass / 0 skip | [JSON](../docs/evidence/core-release-block-15-20261103.json) | создаётся после проверки |
 <!-- /EXECUTION_BLOCKS -->
+
+## Block16: сохранённый FAIL и repair
+
+[Первый run](../docs/evidence/core-release-block-16-attempt-01-20261103.json) завершился15tests=2PASS/13FAIL,exit1.
+Все отказы capture_package до listener; production fault не заявляется.
+Гейт format1 оператора не ослабляется. Предпочтительный repair — явная legacy
+fixture, полная dependency binding и routing CLI без nested dedicated Titles.
+Изменившиеся keys переоткрываются; старые PASS сохраняются как historical.
 
 ## Decision Log
 
