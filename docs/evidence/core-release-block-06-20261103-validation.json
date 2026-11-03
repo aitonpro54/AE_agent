@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "collectedAt": "2026-11-03T18:23:19.853Z",
+  "blockId": "source-candidate-06",
+  "status": "PASS",
+  "selectorKeysMatched": 71,
+  "acceptedFreshChecks": 1,
+  "remainingWithoutHold": 30,
+  "remainingTotal": 32,
+  "pausePreserved": true,
+  "sourceSnapshotHashes": 214,
+  "localMarkdownLinks": 125,
+  "sourceBytesMatchCurrentManifest": true,
+  "runtimeBytesUnchanged": true,
+  "fixtureChangesInThisBlock": [],
+  "logSha256Verified": true,
+  "reporterSummaryIndependentlyMatched": true,
+  "releaseCertified": false
+}

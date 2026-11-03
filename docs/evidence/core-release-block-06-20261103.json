@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:23:19.665Z",
+  "blockId": "source-candidate-06",
+  "baselineCommit": "0e9757148bcfbf8ffc9dc2633738074958631f0d",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=legacy-owner-migration",
+      "test/legacy-owner-migration.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:19:04.843Z",
+    "finishedAt": "2026-11-03T18:22:28.172Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 29,
+      "pass": 29,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 203270.7501
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-06-legacy-owner-migration.log",
+      "sha256": "c931150fa28d9850a954c50487f3b78ea1b47e396ff0a29fffd40e299a3ed932",
+      "bytes": 3692
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-06-legacy-owner-migration-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "legacy-owner-migration",
+      "evidenceKey": "2dacca1434e6f98b17da4492fe0a2a4722222120bc044da3b7c6fe1ff8e92a6f",
+      "result": "PASS",
+      "cases": 29,
+      "skipped": 0,
+      "matchedTestNames": [
+        "legacy-owner-migration inspection is read-only and rejects stale/busy/foreign root evidence",
+        "legacy-owner-migration one root stop promotes the SAME lease and archives only known markers",
+        "legacy-owner-migration drift after the only stop leaves gates/barrier and refuses replay",
+        "legacy-owner-migration lost install gate after native retain refuses before stop",
+        "legacy-owner-migration lost install gate after native inspect refuses before stop",
+        "legacy-owner-migration barrier inode drift before-stop refuses exact CAS",
+        "legacy-owner-migration barrier inode drift after-stop refuses exact CAS",
+        "legacy-owner-migration barrier inode drift capability refuses exact CAS",
+        "legacy-owner-migration recovery finishes original intent.json prefix without stop replay or normal plan rebrand",
+        "legacy-owner-migration recovery finishes original runtime-maintenance.json prefix without stop replay or normal plan rebrand",
+        "legacy-owner-migration recovery finishes original stop-intent.json prefix without stop replay or normal plan rebrand",
+        "legacy-owner-migration recovery finishes original stop-receipt.json prefix without stop replay or normal plan rebrand",
+        "legacy-owner-migration recovery finishes original retirement-intent.json prefix without stop replay or normal plan rebrand",
+        "legacy-owner-migration recovery finishes original broker-owner.lock prefix without stop replay or normal plan rebrand",
+        "legacy-owner-migration recovery finishes original completion.json prefix without stop replay or normal plan rebrand",
+        "legacy-owner-migration unknown stop with still-live exact target refuses and never sends another stop",
+        "legacy-owner-migration native actor ticks are exact; live actor and unavailable observations preserve fences",
+        "legacy-owner-migration interrupted recovery recover-record retains continuous install gate and attributes the next actor",
+        "legacy-owner-migration interrupted recovery gate-replace retains continuous install gate and attributes the next actor",
+        "legacy-owner-migration interrupted recovery archive retains continuous install gate and attributes the next actor",
+        "legacy-owner-migration interrupted recovery completion retains continuous install gate and attributes the next actor",
+        "legacy-owner-migration prepared copy, foreign marker and observation drift refuse before recovery writes",
+        "legacy-owner-migration recovered opaque preparation stages the ORIGINAL payload through dedicated update recovery",
+        "legacy-owner-migration normal shared-brand stop prepare apply completes with the ORIGINAL keys and journal",
+        "legacy-owner-migration normal shared-brand refuses unknown client staging before stop or gate publication",
+        "legacy-owner-migration normal shared-brand staged certificate still refuses config drift before visible switch",
+        "legacy-owner-migration normal shared-brand staged certificate still refuses config-inode drift before visible switch",
+        "legacy-owner-migration normal shared-brand staged certificate still refuses history drift before visible switch",
+        "legacy-owner-migration normal shared-brand staged certificate still refuses marker drift before visible switch"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=legacy-owner-migration",
+        "test/legacy-owner-migration.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "systemRootGuard": {
+      "platformWin32": true,
+      "absoluteExistingSystemRoot": true
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "e9a74a71cb6a013d69d6de4bcfac9de7e86334b99b4e208c36ffe073efdff965",
+      "key": "2dacca1434e6f98b17da4492fe0a2a4722222120bc044da3b7c6fe1ff8e92a6f"
+    },
+    "dependencyCount": 94,
+    "dependencyDigestBefore": "a831394b5544f438f130539bc034762c78bdf77838a1d454f95f3d3d6f7ae155",
+    "dependencyDigestAfter": "a831394b5544f438f130539bc034762c78bdf77838a1d454f95f3d3d6f7ae155",
+    "dependencyHashesStable": true,
+    "testHashBefore": "0e3ab1bfe40003b26df16195e4327526b22874b435f0ff897c105b4f2d93d13e",
+    "testHashAfter": "0e3ab1bfe40003b26df16195e4327526b22874b435f0ff897c105b4f2d93d13e"
+  },
+  "isolation": {
+    "ownTempInstallationConfigExtensionsStateCredentials": true,
+    "tempBase": "C:\\Users\\Ant\\AppData\\Local\\Temp",
+    "fixturePrefix": "core4-legacy-owner-",
+    "processRetentionStopSynthetic": true,
+    "powershellExecFileSynthetic": true,
+    "realCimOrGlobalTcpInventory": false,
+    "realTermination": false,
+    "reservation": "own ephemeral0",
+    "nativeAe": false,
+    "productionState": false,
+    "explicitCaseTimeout": null,
+    "externalTimeout": null,
+    "cleanupGuard": "mkdtemp own prefix; t.after own-prefix guarded removal; opened fd and own reservation server closures in hooks",
+    "harnessManualCleanup": false
+  },
+  "cleanup": {
+    "observedNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-Uo961o",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-YoTRXg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-AhvjiU",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-lh1edS",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-vIboIX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-wUYmPN",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-n5c1aM",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-CIbvoQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-ud8SuR",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-Zficon",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-eWTkf0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-baHKmy",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-I3PEx5",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-RwBHFc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-whs40e",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-Ai5ojF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-TPmeZy",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-HidfIP",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-D60jYi",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-rPJKJs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-pug4qk",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-k09Vt5",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-kGVrMd",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-kzktt3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-gpnSQw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-6U97xw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-EG4m9w",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-kx3xRp",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-RqoBSO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-SREe9z",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-legacy-owner-nX1p4b"
+    ],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "resourceProofKind": "closed-by-test-hooks with terminal PASS",
+    "fixtureHooksOutcome": "Opened fixture fds closed and ephemeral reservation server closed in test hooks; hook failures would fail terminal cases",
+    "observationLimit": "Directory sampling can miss short fixtures; hooks plus no remaining new dirs supply cleanup evidence"
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-06-legacy-owner-migration-reducer.json",
+    "sha256": "25acc9126931315636f584b58112ff3506b399839e03b3ff13f92ab165eb6859"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
