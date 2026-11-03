@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:25:14.349Z",
+  "blockId": "source-candidate-07",
+  "baselineCommit": "948b41b40eddf077615089e64627fb6801564d2b",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=windows-retained-process",
+      "test/windows-retained-process.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:24:28.808Z",
+    "finishedAt": "2026-11-03T18:24:32.975Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 3,
+      "pass": 3,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 4118.4504
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-07-windows-retained-process.log",
+      "sha256": "e495142af06f5b09a53aaac1b784b15c2c171a104051341c40a84d8a0f47a4fe",
+      "bytes": 433
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-07-windows-retained-process-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "windows-retained-process",
+      "evidenceKey": "5ca4e221b70e21444cbc6a9d33e745c55620d34c864aa89b42bb03a4c5cd76e7",
+      "result": "PASS",
+      "cases": 3,
+      "skipped": 0,
+      "matchedTestNames": [
+        "windows-retained-process forged capabilities refuse without process calls",
+        "windows-retained-process real handle observes exact child; EOF releases without termination",
+        "windows-retained-process exact retained handle stops only fixture target once after private admission"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=windows-retained-process",
+        "test/windows-retained-process.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "34be9f33bf036e305e4935358c40f3bf862438befad4fc51879f82d0c994d148",
+      "key": "5ca4e221b70e21444cbc6a9d33e745c55620d34c864aa89b42bb03a4c5cd76e7"
+    },
+    "dependencyCount": 3,
+    "dependencyDigestBefore": "759cbdcedb94dad2355adc90697edd6e0bb168efc66f52b54aff180cd0333f8d",
+    "dependencyDigestAfter": "759cbdcedb94dad2355adc90697edd6e0bb168efc66f52b54aff180cd0333f8d",
+    "dependencyHashesStable": true,
+    "testHashBefore": "80aca033a269b4cee005a586d583c531142e04c016f4c9bf0aaa276aa6620d8d",
+    "testHashAfter": "80aca033a269b4cee005a586d583c531142e04c016f4c9bf0aaa276aa6620d8d"
+  },
+  "isolation": {
+    "targets": "Only own Node ChildProcess fixtures spawned by target(t)",
+    "nativeObservation": "CIM/GetProcess exact own fixture PID/birth/executable path; no broad inventory",
+    "nativeStop": "Retained exact fixture handle only; private admission synthetic, native identity/stop/wait real",
+    "nativeTestTimeoutEachMs": 30000,
+    "nativePendingRequestMs": 9000,
+    "nativeStopWaitMs": 5000,
+    "externalTimeout": null,
+    "coreCepAeEndpoints": false,
+    "productionState": false
+  },
+  "cleanup": {
+    "resourceProofKind": "source hook actions plus terminal native target assertions; separate helper exit not observed",
+    "fixtureTargetStopCase": "Case3 verifies retained state exited and fresh exact target CIM absence",
+    "fixtureTargetEofCase": "Case2 verifies EOF close leaves target alive; t.after requests termination only via retained ChildProcess.kill; source has no explicit await child exit",
+    "helperCapability": "EOF close invoked by body/hooks; source has no explicit helper-exit await",
+    "helperExitIndependentlyObserved": false,
+    "cleanupTargetExitIndependentlyObserved": false,
+    "temporaryFixtureDirectories": "none expected by these process-only cases",
+    "harnessProcessInventoryOrTermination": false,
+    "cleanupFailuresInSummary": 0
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-07-windows-retained-process-reducer.json",
+    "sha256": "75bbb9acd569f0fd604a8840d80b299d9255664170997e7fb4784ae301f80a31"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
