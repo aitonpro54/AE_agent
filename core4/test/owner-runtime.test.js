@@ -90,7 +90,7 @@ function childMain(t, f, entry = 'owner-entry') {
     event(name) { if (!events.has(name)) events.set(name, deferred()); return events.get(name).promise; } };
 }
 function rpcProcess(t, f) {
-  const child = spawn(process.execPath, [path.join(f.d.releaseDir, 'runtime/client-entry.js'), '--client-descriptor', f.clientDescriptor],
+  const child = spawn(process.execPath, ['--require', preload, path.join(f.d.releaseDir, 'runtime/client-entry.js'), '--client-descriptor', f.clientDescriptor],
     { windowsHide: true, cwd: f.directory, stdio: ['pipe', 'pipe', 'pipe'] });
   const pending = new Map(); let serial = 0, buffer = '', stderr = '';
   const exit = new Promise(resolve => child.once('exit', (code, signal) => resolve({ code, signal })));
@@ -139,6 +139,50 @@ function vmObservation(pkg, frame) {
   return JSON.parse(vm.runInContext('AECore4Host.dispatch(serialized)', context));
 }
 const completion = (frame, result = observation()) => ({ commandId: frame.commandId, originalBinding: frame.originalBinding, pins: frame.pins, result });
+
+test('thin-client preload refuses all nested child factories before native calls and preserves owner hooks in VM', () => {
+  const source = fs.readFileSync(preload, 'utf8');
+  const names = ['spawn', 'spawnSync', 'exec', 'execSync', 'execFile', 'execFileSync', 'fork'];
+  for (const entry of ['client-entry.js', 'owner-entry.js', 'stdio-entry.js']) {
+    let nativeCalls = 0, connections = 0, unrefs = 0;
+    const originals = Object.fromEntries(names.map(name => [name, () => { nativeCalls++; throw Error('unexpected_native_child_call'); }]));
+    const childProcess = { ...originals }, listens = [], reports = [], handlers = new Map();
+    class Server {
+      constructor(address) { this.location = address; this.events = new Map(); }
+      once(name, fn) { this.events.set(name, fn); return this; }
+      address() { return this.location; }
+      listen(...args) { listens.push(args); this.events.get('listening')?.(); return this; }
+    }
+    const net = { Server, connect() { connections++; return 'synthetic-ipc'; } }, connect = net.connect;
+    const process = { argv: ['node', path.join('fixture', entry)], connected: true,
+      send(value) { reports.push(value); }, disconnect() { this.connected = false; },
+      channel: { unref() { unrefs++; } }, on(name, fn) { handlers.set(name, fn); },
+      emit(name) { reports.push({ event: name }); } };
+    vm.runInNewContext(source, { process, require(name) {
+      if (name === 'node:net') return net;
+      if (name === 'node:path') return path;
+      if (name === 'node:child_process') return childProcess;
+      assert.fail('unexpected preload import: ' + name);
+    } }, { filename: preload, timeout: 1000 });
+    if (entry === 'client-entry.js') for (const name of names) {
+      assert.throws(() => childProcess[name]('synthetic-child'), error => error.code === 'owner_fixture_nested_process_forbidden', name);
+    }
+    else for (const name of names) assert.equal(childProcess[name], originals[name], name);
+    assert.equal(nativeCalls, 0); assert.equal(net.connect, connect);
+    assert.equal(net.connect('synthetic-pipe'), 'synthetic-ipc'); assert.equal(connections, 1);
+    const http = new Server({ port: 49152 }); assert.equal(http.listen(3457, '127.0.0.1'), http);
+    assert.equal(listens[0][0], 0); assert.equal(listens[0][1], '127.0.0.1');
+    const endpoint = "\\\\.\\pipe\\ae-core4-owner-synthetic", ipc = new Server(endpoint); ipc.listen(endpoint);
+    assert.equal(listens[1][0], endpoint);
+    assert.throws(() => new Server().listen(3457, '0.0.0.0'), /owner_fixture_unexpected_listener/);
+    assert.throws(() => new Server().listen(0, '127.0.0.1'), /owner_fixture_unexpected_listener/);
+    assert.equal(listens.length, 2); assert.equal(unrefs, 1);
+    handlers.get('message')('signal'); assert.equal(reports.at(-1).event, 'SIGTERM');
+    http.events.get('close')(); assert.equal(process.connected, true);
+    ipc.events.get('close')(); assert.equal(process.connected, false); assert.equal(reports.at(-1).event, 'closed');
+    assert.equal(nativeCalls, 0);
+  }
+});
 
 test('durable project read rejections cross the production owner IPC and stdio without uncertainty or grants', async t => {
   const f = install(t), runtime = await directOwner(t, f), c = rpcProcess(t, f), p = await panel(runtime.status().physical.port, f.d);

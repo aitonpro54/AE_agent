@@ -1,6 +1,15 @@
 'use strict';
 // TEST PRELOAD ONLY: direct installed main entries, never production port3457.
 // IPC remains the installation-derived random pipe of this TEMP installation.
+// Thin-client fixtures attach only to their already registered TEMP owner.
+// Auto-launch scrubs the environment, so a nested child cannot inherit this
+// preload's ephemeral listener mapping or the parent's exact child cleanup.
+if (require('node:path').basename(process.argv[1] || '') === 'client-entry.js') {
+  const childProcess = require('node:child_process');
+  for (const name of ['spawn', 'spawnSync', 'exec', 'execSync', 'execFile', 'execFileSync', 'fork']) {
+    childProcess[name] = () => { throw Object.assign(new Error('owner_fixture_nested_process_forbidden'), { code: 'owner_fixture_nested_process_forbidden' }); };
+  }
+}
 const net = require('node:net');
 const listen = net.Server.prototype.listen, servers = new Set();
 function report(value) { if (process.connected) process.send(value); }

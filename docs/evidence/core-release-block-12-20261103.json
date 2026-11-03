@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:34:42.778Z",
+  "blockId": "source-candidate-12",
+  "baselineCommit": "63c942d564b01ae135edcd4f8401edef7b74626c",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=owner-runtime",
+      "test/owner-runtime.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:32:40.873Z",
+    "finishedAt": "2026-11-03T18:33:50.209Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 23,
+      "pass": 23,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 69266.057
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-12-owner-runtime.log",
+      "sha256": "417d7a42e98acf460a9082be72b0d7340dbfc9ead7e4e3621ed70a5703384dba",
+      "bytes": 3222
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-12-owner-runtime-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "owner-runtime",
+      "evidenceKey": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9",
+      "result": "PASS",
+      "cases": 23,
+      "skipped": 0,
+      "matchedTestNames": [
+        "owner-runtime thin-client preload refuses all nested child factories before native calls and preserves owner hooks in VM",
+        "owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants",
+        "owner-runtime default verified entry markers remain exact and new owner files stay outside the ordinary source package",
+        "owner-runtime normal package without the complete owner cluster refuses private owner mode before any listener or store opens",
+        "owner-runtime TEMP installed owner and two real thin Node clients retain the same owner after both client EOF and owner stdin EOF",
+        "owner-runtime foreign HTTP endpoint refuses owner startup before stores open and preserves both empty and retained state byte for byte",
+        "owner-runtime competing starts reserve under the install gate and later owner attempts cannot displace the winner or rewrite its markers",
+        "owner-runtime reserved HTTP server closes and attributed startup fence remains if Broker construction fails before peer creation",
+        "owner-runtime private prebound peer requires a listening native loopback HTTP server and reuses its one listener",
+        "owner-runtime initial receiver owner marker leaves status available and refuses controller acquisition without clearing the marker",
+        "owner-runtime initial corrupt Broker ledger blocks acquisition while owner diagnostics remain available",
+        "owner-runtime actual dead settled owner restarts with fresh process proof and unchanged journal and installation",
+        "owner-runtime actual legacy receiver fence exposes only recovery diagnostics without a Broker writer or replay",
+        "owner-runtime actual owner crash after durable delivery restarts diagnostic and never promotes or replays original ongoing work",
+        "owner-runtime inherited generic methods execute on the actual Broker so activity observes its control state",
+        "owner-runtime desired-stop freezes new control while captured original inspection completes after client detach",
+        "owner-runtime owner main signal persists desired-stop and drains original completion without a second shutdown request",
+        "owner-runtime later panel poll after controller detach cannot deliver a queued command and keeps the receiver fenced",
+        "owner-runtime captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry",
+        "owner-runtime active poll delivery checks the captured lease again immediately after store.begin",
+        "owner-runtime lease expiry across a trusted await is checked at physical submit before durable begin",
+        "owner-runtime no captured controller context rejects before durable begin; original completion remains accepted after lease expiry",
+        "owner-runtime owner bootstrap rejects complete-tree tampering before importing a modified Broker"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-runtime",
+        "test/owner-runtime.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "74e91b61889c9cc2e6d93358f0bf4efb150562824dfc36360f4ed8c4c4f8e3be",
+      "key": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9"
+    },
+    "dependencyCount": 94,
+    "dependencyDigestBefore": "13ad66bb9245d5f9598e7ced7a8f6abd8abfa11a958182dea8d56021f5d2c3c2",
+    "dependencyDigestAfter": "13ad66bb9245d5f9598e7ced7a8f6abd8abfa11a958182dea8d56021f5d2c3c2",
+    "dependencyHashesStable": true,
+    "testHashBefore": "5faa3070247e4d8deb1d731d20d2e0065d2ce0da63668a4f4f187bffd6aa5030",
+    "testHashAfter": "5faa3070247e4d8deb1d731d20d2e0065d2ce0da63668a4f4f187bffd6aa5030"
+  },
+  "isolation": {
+    "ownTempInstallations": true,
+    "ownOwner": "random installation IPC; child preload logical3457→ephemeral0; direct owners port0",
+    "guardedClientChildren": "All7nested child factories denied before OS; regression added as one VM case",
+    "realCim": "own registered fixture actors only",
+    "productionState": false,
+    "nativeAe": false,
+    "testTimeoutEachMs": 15000,
+    "expectedCases": "22 prior plus1 new VM guard regression",
+    "preexistingGuardDiff": "Approved test-only two-file diff intentionally not clean baseline; preserve exact bytes",
+    "tempBase": "C:\\Users\\Ant\\AppData\\Local\\Temp",
+    "fixturePrefixes": [
+      "core4-owner-"
+    ],
+    "externalTimeout": null
+  },
+  "cleanup": {
+    "resourceProofKind": "reverse-awaited exact registered children/closers before own TEMP removal",
+    "sourceEvidence": "resources(t) runs reverse closers; childMain/rpcProcess closer kills only retained ChildProcess if alive then awaits exact exit; own-root absolute/resolved/prefix removal assertions",
+    "manualProcessInventoryOrTermination": false,
+    "retentionExpectedByPreflight": false,
+    "observedNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-RupzOe",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-E0MltX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-A6v7cH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-CrL7lo",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-2JCOf4",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-M4kuYR",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-kLMD8n",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-DeYMqS",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-Xj6BKe",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-FcAalw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-pBoyVx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-n2a3Nf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-Wzhs52",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-GqTLkr",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-YFO8Eq",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-jjrTBg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-J60lUK",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-ikNeTc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-VGwlAe",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-XzbGaa",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-MGLGVX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-pgTSk1"
+    ],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "manualCleanup": false,
+    "observationLimit": "Directory sampling may miss short fixtures; hook assertions plus terminal results and remaining new directory sample are the evidence."
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-12-owner-runtime-reducer.json",
+    "sha256": "67341529545de3e2005bc043c13da19704b8cf49120821536a4c44dc0a600a22"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}

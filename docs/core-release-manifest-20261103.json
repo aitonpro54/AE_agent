@@ -539,7 +539,7 @@
       },
       {
         "file": "test/fixtures/owner-runtime-child.js",
-        "sha256": "43a9f33078430e2939ffa5018f32b538e9393e78c9b227273aa63cff93478a43"
+        "sha256": "dbebc28cbbb7198d80605b4590d2c24bad1a61a7d09d654becf48ef077562062"
       },
       {
         "file": "test/fixtures/standalone-history.js",
@@ -663,7 +663,7 @@
       },
       {
         "file": "test/owner-runtime.test.js",
-        "sha256": "540d119d702a6599d62181c7290f8ba3c36e291bf00ddd80cf5a5906b25c0a1a"
+        "sha256": "5faa3070247e4d8deb1d731d20d2e0065d2ce0da63668a4f4f187bffd6aa5030"
       },
       {
         "file": "test/package-location.test.js",
@@ -894,8 +894,20 @@
         "sha256": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02"
       }
     ],
-    "digest": "e15c15cf5f5988bb10c342f7d380d82f824075262bf1204e0fa6cac4f1cba83f",
-    "note": "Shared deduplicated snapshot; each check records dependency specs/count/digest. Projections are separately pinned per check."
+    "digest": "866fa6fe9fe4786440ce7e0687c07edddb63e33011b667f960908f0e0e3fd004",
+    "note": "Shared deduplicated snapshot; each check records dependency specs/count/digest. Projections are separately pinned per check.",
+    "digestAlgorithm": "protocol.hash(canonical [[relative file,sha256],...])",
+    "revisions": [
+      {
+        "at": "2026-11-03T18:30:24.991Z",
+        "previousDigest": "e15c15cf5f5988bb10c342f7d380d82f824075262bf1204e0fa6cac4f1cba83f",
+        "reason": "owner-runtime test-only fixture guard",
+        "files": [
+          "core4/test/owner-runtime.test.js",
+          "core4/test/fixtures/owner-runtime-child.js"
+        ]
+      }
+    ]
   },
   "evidenceDocuments": [
     {
@@ -1155,6 +1167,18 @@
       "sha256": "e2d8bca8573d65747c8cec54055c526b0c551fa9092519e4c1a56f4f879265bd",
       "directKeyedRecords": 1,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-owner-runtime-fixture-guard-20261103.json",
+      "sha256": "213c677c6266b6e00db4314602c409cf27e55f980eec5758b344fd445db86efe",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "VM guard only; no registered named closure PASS yet"
+    },
+    {
+      "file": "docs/evidence/core-release-block-12-20261103.json",
+      "sha256": "712c6594dd88fab0fa975af8c9e4a3187bcdbce2c18fa2a44760e5f709421c2b",
+      "directKeyedRecords": 1,
+      "excludedAsAuthority": null
     }
   ],
   "evidenceMethod": {
@@ -1170,7 +1194,7 @@
     "evidenceSearch": "Direct top-level checks[]/selectedChecks[] with check+evidenceKey in all parsed docs/evidence JSON. Explicit result/outcome PASS required; B1 complete accepted batch or B2 single-check complete document adapters retained only as documented authority.",
     "nonAuthority": "Progress, audit/remaining-acceptance and pending manifests are excluded. Cancelled/partial/rejected records never independently accepted. Accepted consolidated B6 may authorize its documented exact-key reuse of completed prefixes.",
     "counts": "Per-check caseCount is recorded evidence; shared batch counts are marked and never allocated twice. Inventory totals do not certify release.",
-    "parentByteCommandBoundDecisionRu": "Две scopedCore группы приняты отдельным reuse после проверки accepted selector command, old map command, всех73dependencies/каждой,214snapshot hashes и неизменённого source."
+    "parentByteCommandBoundDecisionRu": "При подготовке совпали все214cloud snapshot hashes. После test-only guard два изменённых test files вне73dependencies каждой byte-command группы; обе closure/command привязки остались exact."
   },
   "evidencePolicyRu": [
     "Текущий key = check ID + штатная command + все dependency bytes + projections. Recorded exact reuse требует accepted PASS, не audit/progress/partial result.",
@@ -1182,16 +1206,16 @@
   ],
   "summary": {
     "registeredChecks": 71,
-    "recordedExactKeyReuse": 42,
+    "recordedExactKeyReuse": 43,
     "byteCommandBoundReuse": 2,
-    "needsCurrentEvidence": 27,
+    "needsCurrentEvidence": 26,
     "heldByProductPause": 2,
-    "pendingNotHeldByProductPause": 25,
+    "pendingNotHeldByProductPause": 24,
     "sharedCoreWithTitlesDependency": 33,
-    "optionalFutureSourceBatches": 18,
-    "sourceTestCommandsExecuted": 11,
+    "optionalFutureSourceBatches": 17,
+    "sourceTestCommandsExecuted": 12,
     "reusedGlobalUniqueCases": null,
-    "freshSourceChecksAcceptedThisExecution": 11
+    "freshSourceChecksAcceptedThisExecution": 12
   },
   "checks": [
     {
@@ -4146,8 +4170,8 @@
         "--test-name-pattern=owner-runtime",
         "test/owner-runtime.test.js"
       ],
-      "currentEvidenceKey": "94e396da27db21cf68eed69b0461a8fdb7b4cb9f898496d465fd3e17e6dc05a6",
-      "dependencyDigest": "5c7e2ddb4afec02a172f6e84258abb8d1046248d7681fedab489be06b4a2fb5d",
+      "currentEvidenceKey": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9",
+      "dependencyDigest": "13ad66bb9245d5f9598e7ced7a8f6abd8abfa11a958182dea8d56021f5d2c3c2",
       "dependencyCount": 94,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/owner-runtime",
       "projections": [],
@@ -4160,9 +4184,32 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-12-20261103.json",
+          "pointer": "/checks/0",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 23,
+          "caseCountPointer": "/checks/0/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=owner-runtime",
+            "test/owner-runtime.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": false,
+          "batchCaseCount": 23,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-12-owner-runtime.log",
+          "logHash": "417d7a42e98acf460a9082be72b0d7340dbfc9ead7e4e3621ed70a5703384dba"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 5,
@@ -4200,14 +4247,23 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "only-historical-PASS-keys-differ-from-current-dependency-bytes",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
         "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-12",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
-      "legacyReleaseEntryFileListed": false
+      "legacyReleaseEntryFileListed": false,
+      "previousManifestKeys": [
+        {
+          "key": "94e396da27db21cf68eed69b0461a8fdb7b4cb9f898496d465fd3e17e6dc05a6",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Test-only fixture guard changed two source files."
+        }
+      ]
     },
     {
       "check": "client-ipc",
@@ -5794,8 +5850,8 @@
         "--test-name-pattern=lifecycle-simulation",
         "test/lifecycle-simulation.test.js"
       ],
-      "currentEvidenceKey": "84480ae823c5129c8a3982ebeaa030ea9142d94bb3ac12e957694b051dbebc09",
-      "dependencyDigest": "ad97a0cc31bbba988e7666131ec6bc15b2e1a63fd6d3abf6fa2529685ed3b6c4",
+      "currentEvidenceKey": "6ff26d0d9a15eac157650c04e0493d1a5d97899f5a66b4a6a90042ba059679b1",
+      "dependencyDigest": "1048a26f82b6fa7a9c5af66a8db2d1dec591891460ea9ee4f37953d6f45cca2b",
       "dependencyCount": 172,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/lifecycle-simulation",
       "projections": [],
@@ -5824,7 +5880,14 @@
         "executedDuringManifestPreparation": false,
         "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "84480ae823c5129c8a3982ebeaa030ea9142d94bb3ac12e957694b051dbebc09",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Test-only fixture guard changed two source files."
+        }
+      ]
     },
     {
       "check": "native-read-recovery",
@@ -6055,22 +6118,6 @@
     "automaticallyExecutable": false,
     "excludesHeldDedicatedTitles": true,
     "batches": [
-      {
-        "batchId": "source-candidate-12",
-        "checks": [
-          "owner-runtime"
-        ],
-        "cwd": "core4",
-        "command": [
-          "node",
-          "--test",
-          "--test-name-pattern=(?:owner-runtime)",
-          "test/owner-runtime.test.js"
-        ],
-        "scheduled": false,
-        "executionOrder": "serial-after-per-batch-isolation-review",
-        "gateRu": "Данные будущего выбора. Реальная изоляция/OS ветки проверяются для этого batch; exit0 без matched tests или с только skips не закрывает check."
-      },
       {
         "batchId": "source-candidate-13",
         "checks": [
@@ -6630,7 +6677,12 @@
       "file": "tools/cloud-checks-audit/reports/baseline.json",
       "sha256": "0029ee1eada045a51623510e1248248fcb818f317619ced04aaf8542511ed4a2",
       "records": 214,
-      "mismatches": 0
+      "mismatches": 2,
+      "mismatchedFiles": [
+        "test/fixtures/owner-runtime-child.js",
+        "test/owner-runtime.test.js"
+      ],
+      "noteRu": "Исторический cloud snapshot сохраняется; два test-only guard files изменены. Они не входят в 73 зависимости каждой из двух byte-command reuse групп."
     }
   },
   "releaseGates": [
@@ -6639,7 +6691,6 @@
       "status": "open",
       "requiredForFullRelease": true,
       "remainingCheckIds": [
-        "owner-runtime",
         "client-ipc",
         "controller-lease",
         "endpoint-observation",
@@ -6705,6 +6756,7 @@
         "owner-installation",
         "controller-transfer",
         "client-entry",
+        "owner-runtime",
         "owner-attachments",
         "owner-ipc-process",
         "panel-reconnect",
@@ -6713,7 +6765,7 @@
         "validation-routing",
         "artifact-boundaries"
       ],
-      "noteRu": "27 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 11 новых source checks; это не native proof."
+      "noteRu": "26 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 12 новых source checks; это не native proof."
     },
     {
       "gate": "package-and-installation",
@@ -6841,7 +6893,7 @@
     "interpretationRu": "Только статическое сопоставление entry files:6 и55другихcommands. Не динамический coverage и не результаты FAIL; legacy script не единственный критерий полноты."
   },
   "actions": {
-    "acceptedSourceBatchCommands": 11,
+    "acceptedSourceBatchCommands": 12,
     "liveProductionAeCepMcpUiCalls": 0,
     "manualProductionProcessOperations": 0,
     "productionBuildInstallConfigWrites": 0,
@@ -6863,9 +6915,9 @@
   },
   "validation": {
     "status": "PASS",
-    "report": "docs/evidence/core-release-block-11-20261103-validation.json",
+    "report": "docs/evidence/core-release-block-12-20261103-validation.json",
     "selectorKeysMatched": 71,
-    "sourceTestCommandsExecuted": 11,
+    "sourceTestCommandsExecuted": 12,
     "fullReleaseCertified": false
   },
   "execution": {
@@ -7101,11 +7153,55 @@
           "durationMs": 31381.3528
         },
         "reporter": "spec",
-        "logSha256": "0ea0462558c861a964ddfd2168c5895316aca1744b2b8fa7f304a7fdf256fcfb"
+        "logSha256": "0ea0462558c861a964ddfd2168c5895316aca1744b2b8fa7f304a7fdf256fcfb",
+        "acceptanceCommit": "63c942d564b01ae135edcd4f8401edef7b74626c"
+      },
+      {
+        "blockId": "source-candidate-12",
+        "evidence": "docs/evidence/core-release-block-12-20261103.json",
+        "baselineCommit": "63c942d564b01ae135edcd4f8401edef7b74626c",
+        "checks": [
+          "owner-runtime"
+        ],
+        "result": "PASS",
+        "summary": {
+          "tests": 23,
+          "pass": 23,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 69266.057
+        },
+        "reporter": "spec",
+        "logSha256": "417d7a42e98acf460a9082be72b0d7340dbfc9ead7e4e3621ed70a5703384dba"
+      }
+    ],
+    "guardFixes": [
+      {
+        "evidence": "docs/evidence/core-owner-runtime-fixture-guard-20261103.json",
+        "status": "accepted-with-full-owner-runtime",
+        "changedPaths": [
+          "core4/test/owner-runtime.test.js",
+          "core4/test/fixtures/owner-runtime-child.js"
+        ],
+        "affectedKeys": [
+          {
+            "check": "owner-runtime",
+            "before": "94e396da27db21cf68eed69b0461a8fdb7b4cb9f898496d465fd3e17e6dc05a6",
+            "after": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9"
+          },
+          {
+            "check": "lifecycle-simulation",
+            "before": "84480ae823c5129c8a3982ebeaa030ea9142d94bb3ac12e957694b051dbebc09",
+            "after": "6ff26d0d9a15eac157650c04e0493d1a5d97899f5a66b4a6a90042ba059679b1"
+          }
+        ],
+        "fullSourceEvidence": "docs/evidence/core-release-block-12-20261103.json"
       }
     ]
   },
-  "updatedAt": "2026-11-03T18:30:20.407Z",
+  "updatedAt": "2026-11-03T18:34:43.070Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,

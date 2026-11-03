@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято блоков: 11; проверок по именам: 11. Применимое evidence: 42 exact-key + 2 byte-command-bound. Открыто: 27 (без hold: 25, Titles под паузой: 2). Следующий блок: source-candidate-12. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Принято блоков: 12; проверок по именам: 12. Применимое evidence: 43 exact-key + 2 byte-command-bound. Открыто: 26 (без hold: 24, Titles под паузой: 2). Следующий блок: source-candidate-13. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 
@@ -182,7 +182,7 @@ Source suites и live операции не запускались; `releaseCert
 | `owner-installation` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `controller-transfer` | component | reuse: записанный exact key | не повторять без drift |
 | `client-entry` | component | reuse: записанный exact key | не повторять без drift |
-| `owner-runtime` | integration | нужен current result | адресно до full release |
+| `owner-runtime` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `client-ipc` | component | нужен current result | адресно до full release |
 | `owner-attachments` | component | reuse: записанный exact key | не повторять без drift |
 | `owner-ipc-process` | integration | reuse: записанный exact key | не повторять без drift |

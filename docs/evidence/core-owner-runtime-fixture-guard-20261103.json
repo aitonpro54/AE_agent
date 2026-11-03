@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "collectedAt": "2026-11-03T18:30:25.107Z",
+  "scope": "test-only fixture guard; VM proof, not named source/native acceptance",
+  "result": "SOURCE-GUARD-PASS",
+  "baselineCommit": "63c942d564b01ae135edcd4f8401edef7b74626c",
+  "changedFiles": [
+    {
+      "file": "core4/test/owner-runtime.test.js",
+      "baseline": {
+        "bytes": 40869,
+        "sha256": "540d119d702a6599d62181c7290f8ba3c36e291bf00ddd80cf5a5906b25c0a1a"
+      },
+      "candidate": {
+        "bytes": 43938,
+        "sha256": "5faa3070247e4d8deb1d731d20d2e0065d2ce0da63668a4f4f187bffd6aa5030"
+      }
+    },
+    {
+      "file": "core4/test/fixtures/owner-runtime-child.js",
+      "baseline": {
+        "bytes": 1147,
+        "sha256": "43a9f33078430e2939ffa5018f32b538e9393e78c9b227273aa63cff93478a43"
+      },
+      "candidate": {
+        "bytes": 1784,
+        "sha256": "dbebc28cbbb7198d80605b4590d2c24bad1a61a7d09d654becf48ef077562062"
+      }
+    }
+  ],
+  "patch": {
+    "path": ".codex-runtime/owner-runtime-fixture-guard-20261103/owner-runtime-fixture-guard.patch",
+    "sha256": "b9bcce5c6e0cce937f56d515f2d75f19fa2f2e3817d1dfb3b17f547975ee8699"
+  },
+  "candidateValidation": {
+    "file": ".codex-runtime/owner-runtime-fixture-guard-20261103/validation-result.json",
+    "sha256": "c7efb34433df27e298a818cdb21587497b20811efb8798ac4762a23cb4283ee8",
+    "result": {
+      "status": "PASS",
+      "collectedAt": "2026-11-03T18:01:58.686Z",
+      "evidenceType": "offline-static-and-VM-only",
+      "regressionCases": 1,
+      "factoryRefusals": 7,
+      "directOwnerAndStdioPreserved": true,
+      "expectedFullOwnerRuntimeMatchedCases": 23,
+      "baselineCases": 22,
+      "registrationOnlyCallbacksExecuted": 0,
+      "autoLaunchVm": [
+        {
+          "reason": "ENOENT",
+          "available": false,
+          "attaches": 1,
+          "blockedSpawnAttempts": 1,
+          "nativeProcessCalls": 0,
+          "networkCalls": 0,
+          "result": "owner_unavailable"
+        },
+        {
+          "reason": "ECONNREFUSED",
+          "available": false,
+          "attaches": 1,
+          "blockedSpawnAttempts": 1,
+          "nativeProcessCalls": 0,
+          "networkCalls": 0,
+          "result": "owner_unavailable"
+        },
+        {
+          "reason": null,
+          "available": true,
+          "attaches": 1,
+          "blockedSpawnAttempts": 0,
+          "nativeProcessCalls": 0,
+          "networkCalls": 0,
+          "result": "synthetic-existing-owner"
+        }
+      ],
+      "sourceSyntax": "PASS",
+      "existingTestsBudgetsCleanupUnchanged": true,
+      "selectorRun": false,
+      "allCheckKeysCompared": 71,
+      "changedKeys": [
+        {
+          "check": "lifecycle-simulation",
+          "before": "84480ae823c5129c8a3982ebeaa030ea9142d94bb3ac12e957694b051dbebc09",
+          "candidate": "6ff26d0d9a15eac157650c04e0493d1a5d97899f5a66b4a6a90042ba059679b1"
+        },
+        {
+          "check": "owner-runtime",
+          "before": "94e396da27db21cf68eed69b0461a8fdb7b4cb9f898496d465fd3e17e6dc05a6",
+          "candidate": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9"
+        }
+      ],
+      "unchangedKeys": 69,
+      "selectedChecks": [
+        "owner-runtime"
+      ],
+      "deferredCoverage": [
+        {
+          "check": "lifecycle-simulation",
+          "status": "current-closure-unverified",
+          "changedDependencies": [
+            {
+              "file": "core4/test/owner-runtime.test.js",
+              "dependency": "test/"
+            },
+            {
+              "file": "core4/test/fixtures/owner-runtime-child.js",
+              "dependency": "test/"
+            }
+          ],
+          "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+          "dependencyPath": [
+            [
+              "core4/test/owner-runtime.test.js",
+              "test/",
+              "lifecycle-simulation"
+            ],
+            [
+              "core4/test/fixtures/owner-runtime-child.js",
+              "test/",
+              "lifecycle-simulation"
+            ]
+          ]
+        }
+      ],
+      "trackedFilesWritten": 0,
+      "nativeChildFactoryCalls": 0,
+      "nativeNetworkCalls": 0,
+      "notProven": [
+        "full named owner-runtime PASS",
+        "native child IPC/listener lifecycle",
+        "native OS/CIM behavior",
+        "installed/live runtime"
+      ]
+    }
+  },
+  "independentReview": "ACCEPT",
+  "sourceKeyChanges": [
+    {
+      "check": "owner-runtime",
+      "before": "94e396da27db21cf68eed69b0461a8fdb7b4cb9f898496d465fd3e17e6dc05a6",
+      "after": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9"
+    },
+    {
+      "check": "lifecycle-simulation",
+      "before": "84480ae823c5129c8a3982ebeaa030ea9142d94bb3ac12e957694b051dbebc09",
+      "after": "6ff26d0d9a15eac157650c04e0493d1a5d97899f5a66b4a6a90042ba059679b1"
+    }
+  ],
+  "unchangedOtherKeys": 69,
+  "selectedCheck": "owner-runtime",
+  "deferredCheck": "lifecycle-simulation",
+  "fullSourceVerification": {
+    "check": "owner-runtime",
+    "status": "PASS",
+    "matchedCases": 23,
+    "evidence": "docs/evidence/core-release-block-12-20261103.json",
+    "evidenceKey": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9"
+  },
+  "productionRuntimeChanged": false,
+  "validationMapChanged": false,
+  "budgetsAndCleanupUnchanged": true,
+  "actions": {
+    "nativeVmProcessCalls": 0,
+    "networkVmCalls": 0,
+    "liveProductionCalls": 0
+  }
+}
