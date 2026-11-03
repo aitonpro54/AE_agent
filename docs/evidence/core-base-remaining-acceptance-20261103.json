@@ -1,0 +1,1975 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T17:14:55.168Z",
+  "objectiveRu": "Сверить остаточные пробелы базы и выделить действительно необходимые проверки перед возвращением к продуктам",
+  "baselineCommit": "5f99093534fbe130429a154c97626719b5e2c613",
+  "branch": "AE-Agent-Core-4.0.1",
+  "initialTrackedClean": true,
+  "scopeRu": "Source/evidence сверка. Без исполнения tests и live операций; runtime authority и текущее состояние AE не подтверждаются.",
+  "selectedArtifactsOnly": true,
+  "releaseCertified": false,
+  "sourceDeltaSinceB6": [
+    "core4/test/package-location.test.js",
+    "core4/tools/check-package-location.js"
+  ],
+  "sourceHashes": {
+    "core4/package.json": "ac1871cb04303b698214776d99a670b76916a5526ebfe8641e9917b1c3a6f55a",
+    "core4/config/validation-map.json": "fc5c8e166f03ab5d3797796cfe86fb0a7b7d514dd7e2fda3a29701986d897a18",
+    "core4/tools/validate-diff.js": "9966334a99aa4bdbab7a883b6f9c2e3b2face0edfc590695105036e66986706c",
+    "docs/evidence/core-base-b6-probe-source-20261103.json": "0b44aab669a1a315f7f34126794a1f13a0596d8c8ab5ae06d4f32c4838cd2e0f",
+    "docs/evidence/core-base-b7-configured-20261103.json": "58513f3bdcc3be5517b3fb5fdbd6a02781997ff14ca3f7dbe8fe7568a58cf7e3",
+    "docs/evidence/core-cloud-intake-20261103.json": "67085a005366169e8254f5d0f323bfe21c92ae50328011e79d576085836ad90f"
+  },
+  "method": {
+    "selector": "core4/tools/validate-diff.js:selectChecks(B6.changed), без --run",
+    "keyAlgorithm": {
+      "module": "core4/tools/validate-diff.js",
+      "moduleSha256": "9966334a99aa4bdbab7a883b6f9c2e3b2face0edfc590695105036e66986706c",
+      "selector": "selectChecks(B6.changed), no --run",
+      "keyDefinition": "hash({check, command, dependencies: sorted unique expanded dependency paths and sha256(bytes), projections: per-map projected entry hashes}); canonical/hash from protocol/json.js",
+      "manualReproductionVerifiedAgainstSelectedKeys": 15
+    },
+    "agentScratch": {
+      "path": ".codex-runtime/base-remaining-audit-20261103-agent.json",
+      "sha256": "dc6cfa8685f26ded8e0e85946b25dda2a999f44ead7e68cf433bc586662c0e83",
+      "tracked": false
+    },
+    "runtimeModelMetadata": "not available; configured role is not runtime proof"
+  },
+  "b6": {
+    "evidence": "docs/evidence/core-base-b6-probe-source-20261103.json",
+    "changed": [
+      "core4/runtime/windows-reservation-provider.js",
+      "core4/test/windows-cim-probe.test.js",
+      "core4/test/stopped-host-readoption-enable.test.js",
+      "core4/test/stopped-certification.test.js",
+      "core4/test/maintenance-finish.test.js"
+    ],
+    "sourceFacts": [
+      {
+        "file": "core4/runtime/windows-reservation-provider.js",
+        "acceptedHash": "a0f2565005fdbec4d9e94b7fe5140209d36f5f1f3051d50a230d85295f97362f",
+        "currentHash": "a0f2565005fdbec4d9e94b7fe5140209d36f5f1f3051d50a230d85295f97362f",
+        "match": true
+      },
+      {
+        "file": "core4/test/windows-cim-probe.test.js",
+        "acceptedHash": "e2a3b2cbf5120f6501cf0a3f305a62628fe3a7803e9aa5a37c7cb745bf28b9e4",
+        "currentHash": "e2a3b2cbf5120f6501cf0a3f305a62628fe3a7803e9aa5a37c7cb745bf28b9e4",
+        "match": true
+      },
+      {
+        "file": "core4/test/stopped-host-readoption-enable.test.js",
+        "acceptedHash": "208f55bbbc51670f8af433581df99ceb152f454e345d74aeab414e37f49b51ba",
+        "currentHash": "208f55bbbc51670f8af433581df99ceb152f454e345d74aeab414e37f49b51ba",
+        "match": true
+      },
+      {
+        "file": "core4/test/stopped-certification.test.js",
+        "acceptedHash": "8e44a1be3df6b952252ea6ac43d9d5c3528230fee163b94429e388971ddcd963",
+        "currentHash": "8e44a1be3df6b952252ea6ac43d9d5c3528230fee163b94429e388971ddcd963",
+        "match": true
+      },
+      {
+        "file": "core4/test/maintenance-finish.test.js",
+        "acceptedHash": "6ea0b46c6fc21027b4c87f2039bef57f4422c1cfe407ea96c7bb5285885f29a1",
+        "currentHash": "6ea0b46c6fc21027b4c87f2039bef57f4422c1cfe407ea96c7bb5285885f29a1",
+        "match": true
+      }
+    ],
+    "matchedCount": 15,
+    "acceptedCasesNotRerun": 330,
+    "checks": [
+      {
+        "check": "manual-runtime",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=manual-runtime",
+          "test/manual-runtime.test.js"
+        ],
+        "acceptedEvidenceKey": "cc2d65e234165b9b4ce0df76df5666ca4a977bc70247b50cae39ad79eb6c72ed",
+        "currentEvidenceKey": "cc2d65e234165b9b4ce0df76df5666ca4a977bc70247b50cae39ad79eb6c72ed",
+        "match": true,
+        "acceptedCases": 59,
+        "executionPerformed": false
+      },
+      {
+        "check": "windows-cim-probe",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=windows-cim-probe",
+          "test/windows-cim-probe.test.js"
+        ],
+        "acceptedEvidenceKey": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2",
+        "currentEvidenceKey": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2",
+        "match": true,
+        "acceptedCases": 8,
+        "executionPerformed": false
+      },
+      {
+        "check": "readoption-enable",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=readoption-enable",
+          "test/stopped-host-readoption-enable.test.js"
+        ],
+        "acceptedEvidenceKey": "9b839724035334ac22a5ec3239ee6064b63ac43e8e199ecff2c46832932d066d",
+        "currentEvidenceKey": "9b839724035334ac22a5ec3239ee6064b63ac43e8e199ecff2c46832932d066d",
+        "match": true,
+        "acceptedCases": 22,
+        "executionPerformed": false
+      },
+      {
+        "check": "stopped-certification",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-certification",
+          "test/stopped-certification.test.js"
+        ],
+        "acceptedEvidenceKey": "9836627c44c975bca36af7e8bbd08797a3dc0fb4ce0960e81495c0a9cfb27440",
+        "currentEvidenceKey": "9836627c44c975bca36af7e8bbd08797a3dc0fb4ce0960e81495c0a9cfb27440",
+        "match": true,
+        "acceptedCases": 30,
+        "executionPerformed": false
+      },
+      {
+        "check": "maintenance-finish",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=maintenance-finish",
+          "test/maintenance-finish.test.js"
+        ],
+        "acceptedEvidenceKey": "d44c357cacc1497fb43c79bedaa82e466907d1793b867b8701c35f44b40de8a2",
+        "currentEvidenceKey": "d44c357cacc1497fb43c79bedaa82e466907d1793b867b8701c35f44b40de8a2",
+        "match": true,
+        "acceptedCases": 32,
+        "executionPerformed": false
+      },
+      {
+        "check": "start-over-finisher",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-finisher",
+          "test/start-over-finisher.test.js"
+        ],
+        "acceptedEvidenceKey": "bb1ee3b16550cf7d379ca99ba46fd2706e2a6e3c97d54aab81bef74ecadcb296",
+        "currentEvidenceKey": "bb1ee3b16550cf7d379ca99ba46fd2706e2a6e3c97d54aab81bef74ecadcb296",
+        "match": true,
+        "acceptedCases": 20,
+        "executionPerformed": false
+      },
+      {
+        "check": "start-over-state",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-state",
+          "test/start-over-state.test.js"
+        ],
+        "acceptedEvidenceKey": "7b19a013598755c6b5715bc32a14bc16e51ace2eb7a61105139a5d45cb07295b",
+        "currentEvidenceKey": "7b19a013598755c6b5715bc32a14bc16e51ace2eb7a61105139a5d45cb07295b",
+        "match": true,
+        "acceptedCases": 20,
+        "executionPerformed": false
+      },
+      {
+        "check": "start-over-barrier",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-barrier",
+          "test/start-over-barrier.test.js"
+        ],
+        "acceptedEvidenceKey": "1129ec2d35b48b0c4e93475efdc4d0143c57471b9213464afb23e94330729bfe",
+        "currentEvidenceKey": "1129ec2d35b48b0c4e93475efdc4d0143c57471b9213464afb23e94330729bfe",
+        "match": true,
+        "acceptedCases": 14,
+        "executionPerformed": false
+      },
+      {
+        "check": "start-over-inspection",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-inspection",
+          "test/start-over-inspection.test.js"
+        ],
+        "acceptedEvidenceKey": "f7280cdaaf2f5b2d649306e62b5ec917bb47df2f54072dd40d1a09b6b91c4552",
+        "currentEvidenceKey": "f7280cdaaf2f5b2d649306e62b5ec917bb47df2f54072dd40d1a09b6b91c4552",
+        "match": true,
+        "acceptedCases": 19,
+        "executionPerformed": false
+      },
+      {
+        "check": "stopped-host-readoption",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-host-readoption",
+          "test/stopped-host-readoption.test.js"
+        ],
+        "acceptedEvidenceKey": "16c1307bfa04af8b4b6fc3e2bdd119eae59f746fabd1d07b997cad467e7a733d",
+        "currentEvidenceKey": "16c1307bfa04af8b4b6fc3e2bdd119eae59f746fabd1d07b997cad467e7a733d",
+        "match": true,
+        "acceptedCases": 25,
+        "executionPerformed": false
+      },
+      {
+        "check": "readoption-core",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=readoption-core",
+          "test/stopped-host-readoption-core.test.js"
+        ],
+        "acceptedEvidenceKey": "fe7e12ea2f5a3738bae2a910dd1be3a815949e2c3c1804b050ed55128ebb878f",
+        "currentEvidenceKey": "fe7e12ea2f5a3738bae2a910dd1be3a815949e2c3c1804b050ed55128ebb878f",
+        "match": true,
+        "acceptedCases": 13,
+        "executionPerformed": false
+      },
+      {
+        "check": "readoption-recovery",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=readoption-recovery",
+          "test/stopped-host-readoption-recovery.test.js"
+        ],
+        "acceptedEvidenceKey": "580db69c5298de40a059503e414a4a8500aa076c070c1533760240db361924be",
+        "currentEvidenceKey": "580db69c5298de40a059503e414a4a8500aa076c070c1533760240db361924be",
+        "match": true,
+        "acceptedCases": 34,
+        "executionPerformed": false
+      },
+      {
+        "check": "readoption-probe",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=readoption-probe",
+          "test/stopped-host-readoption-probe.test.js"
+        ],
+        "acceptedEvidenceKey": "ce47992831533ff3cdf936e12e2e4c805effcea66bc35ce1d50805cc174b13c0",
+        "currentEvidenceKey": "ce47992831533ff3cdf936e12e2e4c805effcea66bc35ce1d50805cc174b13c0",
+        "match": true,
+        "acceptedCases": 1,
+        "executionPerformed": false
+      },
+      {
+        "check": "owner-maintenance",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-maintenance",
+          "test/owner-maintenance.test.js"
+        ],
+        "acceptedEvidenceKey": "a23300c32b6e0e5530c9f0fdc1a2b42161fd6d8c2a9d033c2980f7097f16dabb",
+        "currentEvidenceKey": "a23300c32b6e0e5530c9f0fdc1a2b42161fd6d8c2a9d033c2980f7097f16dabb",
+        "match": true,
+        "acceptedCases": 22,
+        "executionPerformed": false
+      },
+      {
+        "check": "recovery-inspection",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=recovery-inspection",
+          "test/recovery-inspection.test.js"
+        ],
+        "acceptedEvidenceKey": "da9b1ccf99f71edd3edbcdabd0777426bd12c077d929846377052000c3ba372d",
+        "currentEvidenceKey": "da9b1ccf99f71edd3edbcdabd0777426bd12c077d929846377052000c3ba372d",
+        "match": true,
+        "acceptedCases": 11,
+        "executionPerformed": false
+      }
+    ],
+    "deferred": [
+      {
+        "check": "start-over-runtime",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "start-over-runtime"
+          ]
+        ]
+      },
+      {
+        "check": "start-over-operator",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "start-over-operator"
+          ]
+        ]
+      },
+      {
+        "check": "stopped-host-readoption-operator",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "stopped-host-readoption-operator"
+          ]
+        ]
+      },
+      {
+        "check": "stopped-update-operator",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "stopped-update-operator"
+          ]
+        ]
+      },
+      {
+        "check": "stopped-update",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "stopped-update"
+          ]
+        ]
+      },
+      {
+        "check": "legacy-owner-migration",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "legacy-owner-migration"
+          ]
+        ]
+      },
+      {
+        "check": "maintenance-finish-operator",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "maintenance-finish-operator"
+          ]
+        ]
+      },
+      {
+        "check": "maintenance-operator",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "maintenance-operator"
+          ]
+        ]
+      },
+      {
+        "check": "owner-installation",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "owner-installation"
+          ]
+        ]
+      },
+      {
+        "check": "owner-runtime",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "owner-runtime"
+          ]
+        ]
+      },
+      {
+        "check": "native-read-capture",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "native-read-capture"
+          ]
+        ]
+      },
+      {
+        "check": "zero-dispatch-recovery",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "zero-dispatch-recovery"
+          ]
+        ]
+      },
+      {
+        "check": "human-window",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "human-window"
+          ]
+        ]
+      },
+      {
+        "check": "installable-runtime",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "installable-runtime"
+          ]
+        ]
+      },
+      {
+        "check": "lifecycle-simulation",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/test/windows-cim-probe.test.js",
+            "dependency": "test/"
+          },
+          {
+            "file": "core4/test/stopped-host-readoption-enable.test.js",
+            "dependency": "test/"
+          },
+          {
+            "file": "core4/test/stopped-certification.test.js",
+            "dependency": "test/"
+          },
+          {
+            "file": "core4/test/maintenance-finish.test.js",
+            "dependency": "test/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/test/windows-cim-probe.test.js",
+            "test/",
+            "lifecycle-simulation"
+          ],
+          [
+            "core4/test/stopped-host-readoption-enable.test.js",
+            "test/",
+            "lifecycle-simulation"
+          ],
+          [
+            "core4/test/stopped-certification.test.js",
+            "test/",
+            "lifecycle-simulation"
+          ],
+          [
+            "core4/test/maintenance-finish.test.js",
+            "test/",
+            "lifecycle-simulation"
+          ]
+        ]
+      },
+      {
+        "check": "native-read-recovery",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "native-read-recovery"
+          ]
+        ]
+      },
+      {
+        "check": "installed-composition",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "installed-composition"
+          ]
+        ]
+      },
+      {
+        "check": "exact-f548-transition",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "exact-f548-transition"
+          ]
+        ]
+      },
+      {
+        "check": "standalone-installer",
+        "status": "current-closure-unverified",
+        "changedDependencies": [
+          {
+            "file": "core4/runtime/windows-reservation-provider.js",
+            "dependency": "runtime/"
+          }
+        ],
+        "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+        "dependencyPath": [
+          [
+            "core4/runtime/windows-reservation-provider.js",
+            "runtime/",
+            "standalone-installer"
+          ]
+        ]
+      }
+    ]
+  },
+  "inheritedB3": {
+    "evidence": "docs/evidence/core-base-b3b3-20261103.json",
+    "originalDeferredCount": 16,
+    "originalDeferred": [
+      "stopped-update",
+      "legacy-owner-migration",
+      "maintenance-operator",
+      "native-read-capture",
+      "windows-cim-probe",
+      "zero-dispatch-recovery",
+      "manual-current-target",
+      "audit-repairs",
+      "core-control",
+      "core-admission",
+      "worker-isolation",
+      "protocol-codec",
+      "workflow-recovery",
+      "cep-transport",
+      "lifecycle-simulation",
+      "exact-f548-transition"
+    ],
+    "subsequentlyCoveredByExactB6": [
+      "windows-cim-probe"
+    ],
+    "additionalResidualBeyondB6": [
+      "manual-current-target",
+      "audit-repairs",
+      "core-control",
+      "core-admission",
+      "worker-isolation",
+      "protocol-codec",
+      "workflow-recovery",
+      "cep-transport"
+    ],
+    "residualUnionCount": 27,
+    "interpretationRu": "Исходный B3 deferred16: windows-cim-probe имеет точный current B6 PASS; остаётся15B3 source closures. Из них7в B6 deferred19, ещё8отдельно. Всего27unverified current integration closures; это не27необходимых native checks."
+  },
+  "recordedEvidenceSearch": {
+    "root": "docs/evidence",
+    "jsonFilesParsed": 31,
+    "searchShape": "Recursive object with check and evidenceKey; matching key only source PASS when result explicitly PASS. Records without explicit result are candidates, not auto-PASS.",
+    "externalOrIgnoredEvidenceNotExhaustivelySearched": true,
+    "rows": [
+      {
+        "check": "start-over-runtime",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-runtime",
+          "test/start-over-runtime.test.js"
+        ],
+        "currentEvidenceKey": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
+        "dependencyCount": 97,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/25",
+            "evidenceKey": "80c66f8112acaad33312d9d00186ed32a98d86cf8836ef999f765a3951695163",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "start-over-operator",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-operator",
+          "test/start-over-operator.test.js"
+        ],
+        "currentEvidenceKey": "5c75e9a1940134a73f863949f1fb93922e9896c9cee85e5780146dbc777b9c8e",
+        "dependencyCount": 96,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/29",
+            "evidenceKey": "d2ed6b3d9b76369bbd63cea78cae389ddc040f48e6c0364ade0096b85ca0cded",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "stopped-host-readoption-operator",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-host-readoption-operator",
+          "test/stopped-host-readoption-operator.test.js"
+        ],
+        "currentEvidenceKey": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0",
+        "dependencyCount": 115,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/20",
+            "evidenceKey": "1327f4f8205552a7635730494fc09ba4f3b2a345446083492d1c5da989e5dcc8",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "stopped-update-operator",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-update-operator",
+          "test/stopped-update-operator.test.js"
+        ],
+        "currentEvidenceKey": "258748b0526785cdff0a7ddf5806455a9c6f9ca7da650972897356405391410f",
+        "dependencyCount": 104,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/24",
+            "evidenceKey": "5cb3fc03e009353df66bcf89fd203e15d2aaff0bf6c4bd4fb3ccb3666452d8a7",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "stopped-update",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-update",
+          "test/stopped-update.test.js"
+        ],
+        "currentEvidenceKey": "f672d9431d15d14432e6afd0d3d1e4da4409fbca4bbd17607729927a1cab5810",
+        "dependencyCount": 95,
+        "inB6Deferred": true,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "legacy-owner-migration",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=legacy-owner-migration",
+          "test/legacy-owner-migration.test.js"
+        ],
+        "currentEvidenceKey": "2dacca1434e6f98b17da4492fe0a2a4722222120bc044da3b7c6fe1ff8e92a6f",
+        "dependencyCount": 94,
+        "inB6Deferred": true,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "maintenance-finish-operator",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=maintenance-finish-operator",
+          "test/maintenance-finish-operator.test.js"
+        ],
+        "currentEvidenceKey": "59f4f1f710c696774df48495d90bd2a66520a880462228a318c828220abd4a84",
+        "dependencyCount": 115,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/21",
+            "evidenceKey": "a77057cca17eaee13411a7184cecda3274f0836dd0017760e1b6148093c4a604",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "maintenance-operator",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=maintenance-operator",
+          "test/maintenance-operator.test.js"
+        ],
+        "currentEvidenceKey": "dcfba59c4c07afee659a34876673e9c28eda4dbfd6deec8ff2d7d4772aae10ce",
+        "dependencyCount": 92,
+        "inB6Deferred": true,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "owner-installation",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-installation",
+          "test/owner-installation.test.js"
+        ],
+        "currentEvidenceKey": "0f22f2dcd9dad940440e6c33adfb46928152a07770e3a32b4f558e2185b1f41f",
+        "dependencyCount": 106,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b1-20261102.json",
+            "pointer": "/checks/5",
+            "evidenceKey": "314d563f3c6be7c370c25a0d0027e60584371e90d69e895b6a50551a91faba83",
+            "result": null,
+            "mode": null
+          },
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/7",
+            "evidenceKey": "d0a9d2fcb2c24a71cc0ad48296bc48e52699caf09f3c0da734e3a20bd7e7d3af",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "owner-runtime",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-runtime",
+          "test/owner-runtime.test.js"
+        ],
+        "currentEvidenceKey": "94e396da27db21cf68eed69b0461a8fdb7b4cb9f898496d465fd3e17e6dc05a6",
+        "dependencyCount": 94,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b1-20261102.json",
+            "pointer": "/checks/0",
+            "evidenceKey": "4c9ce0d9b6fff15f9a26498ee52d487d66b474b2a34d794c52b43646f477c03f",
+            "result": null,
+            "mode": null
+          },
+          {
+            "file": "docs/evidence/core-base-b3b1-channel-20261103.json",
+            "pointer": "/selectedChecks/0",
+            "evidenceKey": "b7ff02c3124c613e62e197abaebe75373de8cb1540790f62f7dd9e5be2dd4640",
+            "result": "PASS",
+            "mode": "fresh"
+          },
+          {
+            "file": "docs/evidence/core-base-b3b2-session-20261103.json",
+            "pointer": "/selectedChecks/5",
+            "evidenceKey": "4fa1631031ab4eabbf2947f70b1f0ae5d3e602ed615aec1293c595c5433ae6c5",
+            "result": "PASS",
+            "mode": "fresh"
+          },
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/3",
+            "evidenceKey": "f4bdc46df5a9980bcd7ea2d6bfffa01c9b813f6ccb6f2cd6c88eb3668434a6c6",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          },
+          {
+            "file": "docs/evidence/core-base-b4-source-20261103.json",
+            "pointer": "/checks/3",
+            "evidenceKey": "f196f4d240436049e623841d35eec0f18a480c0251745acf07697823703e325a",
+            "result": null,
+            "mode": null
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "native-read-capture",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=native-read-capture",
+          "test/native-read-capture.test.js"
+        ],
+        "currentEvidenceKey": "cd2ed83a8df28e22cf02ab2fbffde2f3f4ce4b4fd89a31a663b5a025e1a62cd6",
+        "dependencyCount": 84,
+        "inB6Deferred": true,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "zero-dispatch-recovery",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=zero-dispatch",
+          "test/recover-zero-dispatch-owner.test.js"
+        ],
+        "currentEvidenceKey": "f2eecaaf6adc3272800fdf69d426eb4591ca8f5dbd9f6f948bfb7fe84953b4eb",
+        "dependencyCount": 86,
+        "inB6Deferred": true,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "human-window",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=human-window",
+          "test/human-window.test.js"
+        ],
+        "currentEvidenceKey": "621134c5d5aaeac48c67feba58efc85aa64738d986c4ff9c1ee45e0676381f39",
+        "dependencyCount": 88,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b1-20261102.json",
+            "pointer": "/checks/6",
+            "evidenceKey": "c6dc9be0a9d4856fbf834b3f23a24af7fda159d3cc17840baf431b782b9ae1a2",
+            "result": null,
+            "mode": null
+          },
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/14",
+            "evidenceKey": "97f39ac20c23238f9061838feae873912f6ebac345f1dafbaec232924808437c",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "installable-runtime",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=installable-runtime",
+          "test/installable-runtime.test.js"
+        ],
+        "currentEvidenceKey": "8185967219ea5676ddc73bb5611dc687790a003bcca6114ec8b27a2aade2a1b6",
+        "dependencyCount": 86,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b1-20261102.json",
+            "pointer": "/checks/1",
+            "evidenceKey": "01be888c0cc92eb700ee8c7ca9de9d58845442daa878ce490acc15ddd8a92a4e",
+            "result": null,
+            "mode": null
+          },
+          {
+            "file": "docs/evidence/core-base-b3b1-channel-20261103.json",
+            "pointer": "/selectedChecks/1",
+            "evidenceKey": "efc5753cf3661d50683004109ef7ca7431bede6b429b6147e569f2c8ea617fc3",
+            "result": "PASS",
+            "mode": "fresh"
+          },
+          {
+            "file": "docs/evidence/core-base-b3b2-session-20261103.json",
+            "pointer": "/selectedChecks/6",
+            "evidenceKey": "bac2834c9f81b715a01f10a7f6d38b952ee0c16b4f54023f58b08090dd0c8c4e",
+            "result": "PASS",
+            "mode": "fresh"
+          },
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/0",
+            "evidenceKey": "e5be2eb9d2e3e06087f734bb1b740e61c823003ecd32e541d265c478f4b1dc3d",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "lifecycle-simulation",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=lifecycle-simulation",
+          "test/lifecycle-simulation.test.js"
+        ],
+        "currentEvidenceKey": "84480ae823c5129c8a3982ebeaa030ea9142d94bb3ac12e957694b051dbebc09",
+        "dependencyCount": 172,
+        "inB6Deferred": true,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "native-read-recovery",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=native-read-recovery",
+          "test/native-read-recovery.test.js"
+        ],
+        "currentEvidenceKey": "1d042fc02c3055fdd6ee4f51dd9092f5245d5d8b57e00df574c4f6d669852d42",
+        "dependencyCount": 98,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b1-20261102.json",
+            "pointer": "/checks/2",
+            "evidenceKey": "196e9dcf60388f56c4dd39b5d22f3df2667dfeaf120dd5e989a08ee6cabf7cdb",
+            "result": null,
+            "mode": null
+          },
+          {
+            "file": "docs/evidence/core-base-b3b1-channel-20261103.json",
+            "pointer": "/selectedChecks/2",
+            "evidenceKey": "69b4123b5a133f4bccb300e146c9b9eac182b61c3e09981121ed73a94416975e",
+            "result": "PASS",
+            "mode": "fresh"
+          },
+          {
+            "file": "docs/evidence/core-base-b3b2-session-20261103.json",
+            "pointer": "/selectedChecks/7",
+            "evidenceKey": "82426130b9adc61e6adc1cd180d7e9b1bba36c212e2da53163fa49c6d5fb55ff",
+            "result": "PASS",
+            "mode": "fresh"
+          },
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/4",
+            "evidenceKey": "f83e416428f8e617b94312c4e65a73b6a61149eaccc639b7519cf804d74e48f2",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "installed-composition",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=installed-composition",
+          "test/installed-composition.test.js"
+        ],
+        "currentEvidenceKey": "5ab3cc921ff66c138686d47c0730836002f85602595e5c48b1b623c14ad0d7b7",
+        "dependencyCount": 96,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b1-20261102.json",
+            "pointer": "/checks/4",
+            "evidenceKey": "fed8ed13c2418ac625c30830df987c9df91dbd9412d07bae4469a264185ec30c",
+            "result": null,
+            "mode": null
+          },
+          {
+            "file": "docs/evidence/core-base-b3b1-channel-20261103.json",
+            "pointer": "/selectedChecks/5",
+            "evidenceKey": "79a637d77839db29df0ae46964e0495294189d70318a52d48b5885ae8e2e5a4d",
+            "result": "PASS",
+            "mode": "fresh"
+          },
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/10",
+            "evidenceKey": "1ed8097319d2b9638666415ae055574e36c4c1f30a59f9dee9c0a03942cf0d43",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "exact-f548-transition",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=exact-f548-transition",
+          "test/exact-f548-transition.test.js"
+        ],
+        "currentEvidenceKey": "d6f9f084a489f30223d7a9127f73798b00eba60556cc071fb8f5747a7e0c2e9a",
+        "dependencyCount": 95,
+        "inB6Deferred": true,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "standalone-installer",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=standalone-installer",
+          "test/standalone-installer.test.js"
+        ],
+        "currentEvidenceKey": "4cc7bd9ec1760d1544bbbb16c80fe47e30bca22c5c49968b52929ecf90b667ae",
+        "dependencyCount": 103,
+        "inB6Deferred": true,
+        "inB3Deferred": false,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/23",
+            "evidenceKey": "8fa4dd0a3ee82a09e2b48fbc8dbb83c86981d9c8dc27933d663a79676ada2119",
+            "result": "PASS",
+            "mode": "exact-unchanged-reuse"
+          }
+        ],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "windows-cim-probe",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=windows-cim-probe",
+          "test/windows-cim-probe.test.js"
+        ],
+        "currentEvidenceKey": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2",
+        "dependencyCount": 84,
+        "inB6Deferred": false,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [
+          {
+            "file": "docs/evidence/core-base-b6-probe-source-20261103.json",
+            "pointer": "/checks/1",
+            "evidenceKey": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2",
+            "result": "PASS",
+            "mode": "exact-current-key-reuse"
+          },
+          {
+            "file": "docs/evidence/core-base-b6-probe-validation-progress-20261103.json",
+            "pointer": "/checks/1",
+            "evidenceKey": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2",
+            "result": "PASS",
+            "mode": null
+          }
+        ],
+        "historicalDifferentKeyRecords": [],
+        "decision": "existing-exact-source-evidence"
+      },
+      {
+        "check": "manual-current-target",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=manual-current-target",
+          "test/manual-current-target.test.js"
+        ],
+        "currentEvidenceKey": "934955391f8931fcc9732963ce6543d2caa3d80597a3dd69788ace06183bb311",
+        "dependencyCount": 23,
+        "inB6Deferred": false,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "audit-repairs",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=audit-repairs",
+          "test/audit-repairs.test.js"
+        ],
+        "currentEvidenceKey": "45b36ea54b90492bef1001818e36e64422ca521f992855ea460ad5112d7e00d4",
+        "dependencyCount": 54,
+        "inB6Deferred": false,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "core-control",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=core-control",
+          "test/core4.test.js"
+        ],
+        "currentEvidenceKey": "3287e42e5c0277945e996e29cf30c92b03d760bfeb2f4457cdc576cecd5adbc9",
+        "dependencyCount": 72,
+        "inB6Deferred": false,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "core-admission",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=core-admission",
+          "test/core4.test.js"
+        ],
+        "currentEvidenceKey": "d467933477d6b901cfa23fdff7b3081de4b32d7ce507cb7a3c7b472eb0b042fc",
+        "dependencyCount": 72,
+        "inB6Deferred": false,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "worker-isolation",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=worker-isolation",
+          "test/core4.test.js"
+        ],
+        "currentEvidenceKey": "a9758550780fed3e6c41edd848e1a99a03f05de9ca9ff47a85d343472a86e576",
+        "dependencyCount": 72,
+        "inB6Deferred": false,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "protocol-codec",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=protocol-codec",
+          "test/core4.test.js"
+        ],
+        "currentEvidenceKey": "1b39f2ef64319ed5870a8e19b7ed8d1eead3d8a9f4a5642ddd5999b68b6433cc",
+        "dependencyCount": 72,
+        "inB6Deferred": false,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "workflow-recovery",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=workflow-recovery",
+          "test/core4.test.js"
+        ],
+        "currentEvidenceKey": "b69ca10a94374a028215453d179bac698a47b766495ec70c081f42b7561ea256",
+        "dependencyCount": 72,
+        "inB6Deferred": false,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      },
+      {
+        "check": "cep-transport",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=cep-transport",
+          "test/integration/cep-transport.test.js"
+        ],
+        "currentEvidenceKey": "9a0e6188781f6735dfc8730fe18a99fbacc7a434753e9de84e23863d632f0ec8",
+        "dependencyCount": 81,
+        "inB6Deferred": false,
+        "inB3Deferred": true,
+        "exactRecordedEvidenceMatches": [],
+        "historicalDifferentKeyRecords": [],
+        "decision": "current-closure-unverified"
+      }
+    ]
+  },
+  "releaseManifest": {
+    "command": "node tools/check-boundaries.js && node --test test/core4.test.js test/modules/titles.test.js test/modules/photo-placeholder.test.js test/integration/cep-transport.test.js test/lifecycle-simulation.test.js test/audit-repairs.test.js",
+    "registeredChecks": 71,
+    "entryFiles": [
+      "test/core4.test.js",
+      "test/modules/titles.test.js",
+      "test/modules/photo-placeholder.test.js",
+      "test/integration/cep-transport.test.js",
+      "test/lifecycle-simulation.test.js",
+      "test/audit-repairs.test.js"
+    ],
+    "registeredCommandsWithOtherEntryFiles": [
+      {
+        "check": "start-over-driver",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-driver",
+          "test/start-over-driver.test.js"
+        ]
+      },
+      {
+        "check": "start-over-panel-control",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-panel-control",
+          "test/start-over-panel-control.test.js"
+        ]
+      },
+      {
+        "check": "panel-start-over",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=panel-start-over",
+          "test/panel-start-over.test.js"
+        ]
+      },
+      {
+        "check": "start-over-runtime",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-runtime",
+          "test/start-over-runtime.test.js"
+        ]
+      },
+      {
+        "check": "start-over-operator",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-operator",
+          "test/start-over-operator.test.js"
+        ]
+      },
+      {
+        "check": "work-session-owner",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=work-session",
+          "test/work-session-owner.test.js"
+        ]
+      },
+      {
+        "check": "work-session",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=work-session",
+          "test/work-session.test.js"
+        ]
+      },
+      {
+        "check": "start-over-channel",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-channel",
+          "test/start-over-channel.test.js"
+        ]
+      },
+      {
+        "check": "start-over-finisher",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-finisher",
+          "test/start-over-finisher.test.js"
+        ]
+      },
+      {
+        "check": "start-over-state",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-state",
+          "test/start-over-state.test.js"
+        ]
+      },
+      {
+        "check": "start-over-barrier",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-barrier",
+          "test/start-over-barrier.test.js"
+        ]
+      },
+      {
+        "check": "start-over-inspection",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-inspection",
+          "test/start-over-inspection.test.js"
+        ]
+      },
+      {
+        "check": "start-over-process",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-process",
+          "test/start-over-process.test.js"
+        ]
+      },
+      {
+        "check": "stopped-host-readoption-operator",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-host-readoption-operator",
+          "test/stopped-host-readoption-operator.test.js"
+        ]
+      },
+      {
+        "check": "stopped-host-readoption",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-host-readoption",
+          "test/stopped-host-readoption.test.js"
+        ]
+      },
+      {
+        "check": "readoption-core",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=readoption-core",
+          "test/stopped-host-readoption-core.test.js"
+        ]
+      },
+      {
+        "check": "readoption-recovery",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=readoption-recovery",
+          "test/stopped-host-readoption-recovery.test.js"
+        ]
+      },
+      {
+        "check": "readoption-enable",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=readoption-enable",
+          "test/stopped-host-readoption-enable.test.js"
+        ]
+      },
+      {
+        "check": "readoption-probe",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=readoption-probe",
+          "test/stopped-host-readoption-probe.test.js"
+        ]
+      },
+      {
+        "check": "stopped-update-operator",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-update-operator",
+          "test/stopped-update-operator.test.js"
+        ]
+      },
+      {
+        "check": "stopped-update",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-update",
+          "test/stopped-update.test.js"
+        ]
+      },
+      {
+        "check": "legacy-owner-migration",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=legacy-owner-migration",
+          "test/legacy-owner-migration.test.js"
+        ]
+      },
+      {
+        "check": "windows-retained-process",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=windows-retained-process",
+          "test/windows-retained-process.test.js"
+        ]
+      },
+      {
+        "check": "stopped-certification",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-certification",
+          "test/stopped-certification.test.js"
+        ]
+      },
+      {
+        "check": "maintenance-finish",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=maintenance-finish",
+          "test/maintenance-finish.test.js"
+        ]
+      },
+      {
+        "check": "maintenance-finish-operator",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=maintenance-finish-operator",
+          "test/maintenance-finish-operator.test.js"
+        ]
+      },
+      {
+        "check": "owner-maintenance",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-maintenance",
+          "test/owner-maintenance.test.js"
+        ]
+      },
+      {
+        "check": "maintenance-operator",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=maintenance-operator",
+          "test/maintenance-operator.test.js"
+        ]
+      },
+      {
+        "check": "windows-owner-process",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=windows-owner-process",
+          "test/windows-owner-process.test.js"
+        ]
+      },
+      {
+        "check": "owner-lifecycle",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-lifecycle",
+          "test/owner-lifecycle.test.js"
+        ]
+      },
+      {
+        "check": "owner-lifecycle-faults",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-lifecycle-faults",
+          "test/owner-lifecycle-faults.test.js"
+        ]
+      },
+      {
+        "check": "owner-marker-publication",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-marker-publication",
+          "test/owner-marker-publication.test.js"
+        ]
+      },
+      {
+        "check": "client-launcher",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=client-launcher",
+          "test/client-launcher.test.js"
+        ]
+      },
+      {
+        "check": "recovery-inspection",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=recovery-inspection",
+          "test/recovery-inspection.test.js"
+        ]
+      },
+      {
+        "check": "owner-installation",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-installation",
+          "test/owner-installation.test.js"
+        ]
+      },
+      {
+        "check": "controller-transfer",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=controller-transfer",
+          "test/controller-transfer-ipc.test.js"
+        ]
+      },
+      {
+        "check": "client-entry",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=client-entry",
+          "test/client-entry.test.js"
+        ]
+      },
+      {
+        "check": "owner-runtime",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-runtime",
+          "test/owner-runtime.test.js"
+        ]
+      },
+      {
+        "check": "client-ipc",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=^IPC ",
+          "test/client-ipc.test.js"
+        ]
+      },
+      {
+        "check": "owner-attachments",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-attachments",
+          "test/owner-attachments.test.js"
+        ]
+      },
+      {
+        "check": "owner-ipc-process",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-ipc-process",
+          "test/owner-ipc-process.test.js"
+        ]
+      },
+      {
+        "check": "controller-lease",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=controller-lease",
+          "test/controller-lease.test.js"
+        ]
+      },
+      {
+        "check": "panel-reconnect",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=panel-reconnect",
+          "test/panel-reconnect.test.js"
+        ]
+      },
+      {
+        "check": "endpoint-observation",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=endpoint-observation",
+          "test/endpoint-observation.test.js"
+        ]
+      },
+      {
+        "check": "native-read-capture",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=native-read-capture",
+          "test/native-read-capture.test.js"
+        ]
+      },
+      {
+        "check": "windows-cim-probe",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=windows-cim-probe",
+          "test/windows-cim-probe.test.js"
+        ]
+      },
+      {
+        "check": "zero-dispatch-recovery",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=zero-dispatch",
+          "test/recover-zero-dispatch-owner.test.js"
+        ]
+      },
+      {
+        "check": "human-window",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=human-window",
+          "test/human-window.test.js"
+        ]
+      },
+      {
+        "check": "manual-runtime",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=manual-runtime",
+          "test/manual-runtime.test.js"
+        ]
+      },
+      {
+        "check": "installable-runtime",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=installable-runtime",
+          "test/installable-runtime.test.js"
+        ]
+      },
+      {
+        "check": "manual-current-target",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=manual-current-target",
+          "test/manual-current-target.test.js"
+        ]
+      },
+      {
+        "check": "native-read-recovery",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=native-read-recovery",
+          "test/native-read-recovery.test.js"
+        ]
+      },
+      {
+        "check": "installed-composition",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=installed-composition",
+          "test/installed-composition.test.js"
+        ]
+      },
+      {
+        "check": "exact-f548-transition",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=exact-f548-transition",
+          "test/exact-f548-transition.test.js"
+        ]
+      },
+      {
+        "check": "standalone-installer",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=standalone-installer",
+          "test/standalone-installer.test.js"
+        ]
+      }
+    ],
+    "interpretation": "Статическая сверка entry files; не execution coverage и не результат тестов. Перед full release нужен полный явный manifest областей, переиспользования и пробелов."
+  },
+  "nativeFinisher": {
+    "requiredForAcceptedBoundedB1B7": false,
+    "classification": "additional-native-guarantee",
+    "currentComponentEvidence": "B6 finisher20/state20/barrier14/inspection19 exact current; finisher tests11prefix crashes and final barrier loss.",
+    "historicalProductionTemp": {
+      "file": "core4/test/start-over-runtime.test.js",
+      "line": 58,
+      "currentKey": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
+      "b3AcceptedKey": "80c66f8112acaad33312d9d00186ed32a98d86cf8836ef999f765a3951695163",
+      "currentKeyMatch": false,
+      "currentDependencyDriftSinceB3": [
+        "core4/runtime/attachment-owner.js",
+        "core4/runtime/client-stdio.js",
+        "core4/runtime/windows-reservation-provider.js"
+      ],
+      "proof": "Actual Node process death after receiver rename; TEMP installation, synthetic AE inventory/canonical port."
+    },
+    "proposedSmallestSourceCheck": {
+      "id": "start-over-runtime",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-runtime",
+        "test/start-over-runtime.test.js"
+      ],
+      "cwd": "core4",
+      "namedCases": 3,
+      "testTimeoutMsEach": 600000,
+      "observationTimeoutMs": 240000,
+      "ipcTimeoutMs": 120000,
+      "httpTimeoutMs": 30000,
+      "crashPrefixWaitMs": 90000,
+      "historicalHelperTimeoutMs": 15000,
+      "cleanupWaitMs": 15000,
+      "executionPerformed": false,
+      "isolation": "Own %TEMP%/core4-reset-runtime-* installation/descriptor/config/extensions/state/random installation IPC. Exact own owner spawn re-adds fixture preload. Canonical3457 mapped to ephemeral0, AE inventory synthetic. Real Node birth/death/CIM/filesystem only; no installed AE reset.",
+      "reasonRu": "При отдельной цели усилить source acceptance этот один production entry/IPC/HTTP/finisher TEMP check закрывает собственную current closure; native proof и прочие26closures не закрывает."
+    },
+    "nativeLimit": "Native B6 reset was complete but finisher was not intentionally interrupted. Late refusal observed via CEP UI/pinned callback, no packet capture.",
+    "safeFaultPoint": {
+      "file": "core4/runtime/start-over-archive.js",
+      "line": 149,
+      "phase": "after exact receiver source rename into own new transaction archive-receiver, before session replacement/reset completion; active barrier and owned install lease retained",
+      "deterministicTempHook": "core4/test/fixtures/start-over-runtime-preload.js:35-36 exits73 after receiver rename",
+      "limitationRu": "У unchanged installed runtime не подтверждён deterministic pause hook. UI/status polling не доказывает точный crash prefix; если reset уже завершён, fault не наблюдён и replay ID запрещён. TEMP preload нельзя применять как live workaround."
+    },
+    "minimalPassRu": [
+      "Fresh own reset ID, exact package/descriptor/intent/actor PID+birth+boot; protected AEP/history hashes; old settled IDs не использовать.",
+      "Observed receiver rename before final reset/session publication; terminate only exact own finisher once, prove death before continuation.",
+      "Reject takeover while previous producer alive; after death official continuation resumes same signed intent/reset/new session, no second request or replay.",
+      "Exact receiver/ledger bytes and UNKNOWN classification preserved in owned archives; no foreign collision cleanup.",
+      "One normal owner, resetComplete; new session explicit acquire and fresh baseline required; missing/old session denied, no AE authority from receipts.",
+      "Fresh native own-AEP read-back and clean release; commands replayed0, duplicate mutation0, late-current-store append0."
+    ],
+    "failRu": [
+      "Wrong/unproven actor or phase, byte/identity drift, replay/duplicate reset or command, premature baseline/authority, takeover before death.",
+      "If reset finishes before termination: not-observed fault, never PASS or authorization to repeat that ID."
+    ]
+  },
+  "decisionsRu": [
+    "Ограниченная база B1–B7 сохраняет принятие; подтверждённого нового blocker этой сверкой не установлено.",
+    "15 exact B6 checks переиспользуются; это не новый PASS330cases.",
+    "19 B6 плюс8inherited B3 =27известных current-unverified integrations в просмотренном docs/evidence; не FAIL и не очередь обязательного запуска сейчас.",
+    "Перед full release требуется явный актуальный manifest применимых commands/exact reuse/remaining; entry-file сравнение статическое и не равно runtime coverage.",
+    "При следующем усилении/изменении reset пути первый source-кандидат start-over-runtime; в этой сверке он не запускается.",
+    "Native finisher-crash дополнительный proof; deterministic installed pause hook не подтверждён, TEMP preload не применяется к live.",
+    "Titles/Slideshow на паузе; завершённое maintenance не возобновляется ради historical инструкций."
+  ],
+  "actions": {
+    "sourceTestCommandsExecuted": 0,
+    "liveAeCepMcpUiCalls": 0,
+    "processInventoryOrTermination": 0,
+    "installOrConfigWrites": 0,
+    "mutationSaveResetRestart": 0,
+    "networkOrArgonSends": 0,
+    "pushOrPr": 0
+  },
+  "limitsRu": [
+    "Только filesystem/historical evidence; runtime не опрашивался, свежесть AE/CEP/owner не установлена.",
+    "Release/portability acceptance не выполнялась. Source/TEMP/native границы сохранены.",
+    "Root отдельно анализируетrelease manifest/plans; его55/71вывод этим агентом не перепроверялся."
+  ],
+  "validation": {
+    "status": "PASS",
+    "checkedAt": "2026-11-03T17:15:59.204Z",
+    "utf8Files": 6,
+    "localMarkdownLinks": 163,
+    "jsonAndInvariants": "PASS",
+    "sourceTrackedBytesOutsideDocumentationPointers": "exact unchanged from baseline",
+    "whitespace": "git diff --check PASS",
+    "sourceTestCommandsExecuted": 0,
+    "scopeRu": "Проверены все локальные Markdown ссылки пяти изменённых документов; source/runtime tests не запускались.",
+    "recordedSourceHashes": "PASS",
+    "stagedWhitespace": "git diff --cached --check PASS"
+  }
+}

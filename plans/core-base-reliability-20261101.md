@@ -1,5 +1,14 @@
 # База Core: подключение, восстановление и диагностика
 
+**Сверка остаточной приёмки,3ноября — актуально:** по поручению пользователя
+составлен [реестр необходимых проверок](core-base-remaining-acceptance-20261103.md).
+Все 15 ключей B6 совпали; ограниченная база B1–B7 остаётся принятой. Для 27
+известных deferred integrations новый PASS не заявляется; отдельное native
+прерывание finisher не становится новым препятствием. Перед full release нужен
+актуальный manifest: 6 файлов существующей команды не включают entry files
+команд 55 из 71 проверок карты. Новых live действий нет;
+Titles/Slideshow на паузе, maintenance завершён. Записи ниже — история этапов.
+
 **B7,3ноября: ограниченная база B1–B7 принята.** Configuredcdf proof закрыт
 обычным текущим MCP без maintenance: exact-contract native project read/release1,
 same owner27100/bootb76c6e87… и AE30024. Current receiver7/prefix5 exact,
@@ -139,6 +148,11 @@ fault-сценарии проводить на собственных тесто
   Decision Log и Validation. Не требовать ещё одного Argon review после fixes.
 
 ## Progress
+
+- Сверены остаточные пробелы: [реестр](core-base-remaining-acceptance-20261103.md)
+  и отдельное evidence фиксируют current/reuse/deferred/native/release границы.
+  Принятая база не переоткрывается; общий historical хвост не назначается новой
+  очередью broad suites.
 
 - B7 configuredcdf PASS: normal status, explicit sessionce977de2… acquire1,
   exact-contract native project-inspection, release, clean status. Нет install,
@@ -354,6 +368,10 @@ fault-сценарии проводить на собственных тесто
 
 ## Decision Log
 
+- По текущему поручению выполняется source/evidence сверка. Неизменённые B6
+  checks сохраняют exact reuse; финальная release-применимость требует своего
+  manifest, а не одного выхода0 существующей `check:release`.
+
 - B7 завершает ограниченную приёмку базы по пункту6 плана. Исторические результаты
   сохраняют исходные pins; source/TEMP не переименовывается в native proof.
   Read-only configured proof нового package не требует Codex/MCP maintenance,
@@ -552,6 +570,11 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- Остаточная сверка:15B6 evidence keys exact; source/core/runtime/CEP/module/
+  config bytes после B6 прежние, только два автономных package-location paths
+  добавлены последующим intake. Tests/live fault/reset не повторяются.
+  Подробности и ограничения — [реестр](core-base-remaining-acceptance-20261103.md).
 
 - B7: одна fresh native project-inspection через configuredcdf, begin6/complete7,
   lease1 released, same owner/boot/AE, pending/UNKNOWN/fault0.7receiver/1ledger

@@ -1,5 +1,17 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
+**Сверка остаточной приёмки,3ноября — последнее поручение:** пользователь
+поручил сверить оставшиеся пробелы базы и выделить необходимые проверки.
+[Реестр решений](core-base-remaining-acceptance-20261103.md): все 15 ключей B6
+совпали, 27 известных deferred integration closures (19 B6 + 8 B3) открыты без
+нового PASS; ограниченная база B1–B7 сохраняет принятие. Native прерывание
+finisher не обязательно для уже принятой базы; перед full release нужен
+актуальный manifest, поскольку команды 55 из 71 проверок карты имеют entry files
+вне существующей `check:release`. Новые live действия и full release не входят
+в эту сверку.
+Titles/Slideshow остаются на паузе; maintenance завершён. Новые PID/session/
+authority здесь не подтверждаются, исторические IDs не повторять.
+
 **Maintenance,3ноября — последнее поручение завершено:** пользователь явно выбрал
 возврат к MCP/Codex maintenance. Свежие configured status/diagnostics/effective
 config PASS; same Core27100/bootb76c6e87…, app-server16688 прежний. Current7/1,

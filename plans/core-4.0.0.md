@@ -1,5 +1,14 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Сверка остаточной приёмки, 3 ноября:** B1–B7 сохраняют принятие; все 15 ключей
+B6 совпали. [Новый реестр](core-base-remaining-acceptance-20261103.md) отделяет
+27 известных deferred integrations (19 B6 + 8 B3), дополнительное native
+прерывание finisher и финальные release/portability от уже закрытых пунктов.
+У `check:release` 6 тестовых файлов, команды 55 из 71 проверок карты указывают
+на другие: перед full release нужен актуальный manifest. Это сверка исходников
+и evidence, без новых live proof и без
+возобновления Titles/Slideshow. Maintenance завершён; его новая пауза не вводится.
+
 **Maintenance,3ноября — актуально:** по прямому поручению пользователя проверено
 текущее MCP/Codex подключение. Configured status/diagnostics/effective config PASS,
 защищённые файлы и история сохранены; ремонт/restart/config changes0. Исторический
