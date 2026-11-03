@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:00:10.901Z",
+  "blockId": "source-candidate-03",
+  "baselineCommit": "bb23f1aa895cc880124617892fe7eaee1bb7785e",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=stopped-host-readoption-operator",
+      "test/stopped-host-readoption-operator.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T17:59:30.745Z",
+    "finishedAt": "2026-11-03T17:59:55.436Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 17,
+      "pass": 17,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 24635.706
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-03-stopped-host-readoption-operator.log",
+      "sha256": "10658ff2a8c094f6e69b041a6655e0846bf74fa429621d5899a8387937cd72a1",
+      "bytes": 2515
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-03-stopped-host-readoption-operator-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "stopped-host-readoption-operator",
+      "evidenceKey": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0",
+      "result": "PASS",
+      "cases": 17,
+      "skipped": 0,
+      "matchedTestNames": [
+        "stopped-host-readoption-operator source guards require private bootstrap before all nonbuiltins and constant reviewed imports",
+        "stopped-host-readoption-operator all four helpers have one exact union entry; build/write/verifier retain unchanged runtime package",
+        "stopped-host-readoption-operator bootstrap capability remains private through await, then revokes on resolve/reject/synchronous throw",
+        "stopped-host-readoption-operator readonly/stdio support and wrong distribution/current pin refuse before operator or native module import",
+        "stopped-host-readoption-operator unknown flags duplicates invalid hashes UUID paths and cross-mode witness flags are zero-write early refusals",
+        "stopped-host-readoption-operator tampered distributed stopped-host-readoption.js refuses before operator import",
+        "stopped-host-readoption-operator tampered distributed stopped-host-readoption-store.js refuses before operator import",
+        "stopped-host-readoption-operator tampered distributed stopped-host-readoption-transaction.js refuses before operator import",
+        "stopped-host-readoption-operator tampered distributed operate-stopped-readoption.js refuses before operator import",
+        "stopped-host-readoption-operator a validly hashed extra closure file is refused before operator import",
+        "stopped-host-readoption-operator valid hashed poisoned installed owner source is only data; failures never output descriptor or credentials",
+        "stopped-host-readoption-operator apply witness hash refuses before election/library import and preserves installed data",
+        "stopped-host-readoption-operator apply witness budget refuses before election/library import and preserves installed data",
+        "stopped-host-readoption-operator apply witness UTF8 refuses before election/library import and preserves installed data",
+        "stopped-host-readoption-operator pinned witness read detects in-place byte drift before any election",
+        "stopped-host-readoption-operator all five modes dispatch exact frozen options and an owned witness snapshot while election stays held",
+        "stopped-host-readoption-operator continuous reservation closes pending HTTP and rebinds after awaited success or refusal"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption-operator",
+        "test/stopped-host-readoption-operator.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "ae4606882e09db49a8e019c99d1ba4f5e0c97b7914b67fb60a5b891d33b39d52",
+      "key": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0"
+    },
+    "dependencyCount": 115,
+    "dependencyDigestBefore": "6aa2ac58bc3c84ae679154be6cdea2d6d2daa875e16fc00fafa3671d5ce972ae",
+    "dependencyDigestAfter": "6aa2ac58bc3c84ae679154be6cdea2d6d2daa875e16fc00fafa3671d5ce972ae",
+    "dependencyHashesStable": true,
+    "testHashBefore": "d4857e32336e79f4bd0d8e01e3be72dd2faac000893b3e86164c5555bda73bd6",
+    "testHashAfter": "d4857e32336e79f4bd0d8e01e3be72dd2faac000893b3e86164c5555bda73bd6"
+  },
+  "isolation": {
+    "ownTempInstallationConfigExtensionsStateCredentials": true,
+    "tempBase": "C:\\Users\\Ant\\AppData\\Local\\Temp",
+    "fixturePrefix": "core4-readoption-operator-",
+    "childPreload": "Native cp calls throw fixture_native_forbidden; imports below own installed release throw installed_source_forbidden",
+    "canonicalPort3457": "Mapped to ephemeral0 by own child preload and election server helper",
+    "ownLoopbackFixturesOnly": true,
+    "nativeAe": false,
+    "productionState": false,
+    "testTimeoutEachMs": 45000,
+    "internalSpawnSyncTimeoutMs": 20000,
+    "externalTimeout": null,
+    "cleanupGuard": "mkdtemp own prefix; t.after verifies own TEMP prefix before rmSync; own server/request cleanup in hooks/finally",
+    "harnessManualCleanup": false
+  },
+  "cleanup": {
+    "observedNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-gjAsaP",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-MB5Ywl",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-bbDIlg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-Fs6nNY",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-utDD3U",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-PwmHxt",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-ut5GIv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-EuRr5c",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-s1mqzn",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-dWSV7r",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-wmpMCj",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-8npI98",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-fnOb1I",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-5zx079",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-s2BgKM",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-p6kHlD",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-F6gxWG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-readoption-operator-J1AWng"
+    ],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "fixtureHooksOutcome": "Included in terminal test results; own server/request closure assertions passed when case PASS",
+    "observationLimit": "Directory sampling can miss very short-lived fixtures; hook assertions plus no remaining new directories are cleanup evidence"
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-03-stopped-host-readoption-operator-reducer.json",
+    "sha256": "b1d4a67d8f96dcc51e0933de3b7dda771150de0f7a082352709f32d43089ba00"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "networkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}

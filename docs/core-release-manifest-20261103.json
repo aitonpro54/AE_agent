@@ -1101,6 +1101,12 @@
       "sha256": "ed35f15ae17165b65da1516e42816303ee75d2ebfb03da67a5dc53bbc1670796",
       "directKeyedRecords": 1,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-release-block-03-20261103.json",
+      "sha256": "82c9302c5a065f021ab5e29cf06d2e93b66fc77e3b3bc85b988835883700a96f",
+      "directKeyedRecords": 1,
+      "excludedAsAuthority": null
     }
   ],
   "evidenceMethod": {
@@ -1128,16 +1134,16 @@
   ],
   "summary": {
     "registeredChecks": 71,
-    "recordedExactKeyReuse": 33,
+    "recordedExactKeyReuse": 34,
     "byteCommandBoundReuse": 2,
-    "needsCurrentEvidence": 36,
+    "needsCurrentEvidence": 35,
     "heldByProductPause": 2,
-    "pendingNotHeldByProductPause": 34,
+    "pendingNotHeldByProductPause": 33,
     "sharedCoreWithTitlesDependency": 33,
-    "optionalFutureSourceBatches": 27,
-    "sourceTestCommandsExecuted": 2,
+    "optionalFutureSourceBatches": 26,
+    "sourceTestCommandsExecuted": 3,
     "reusedGlobalUniqueCases": null,
-    "freshSourceChecksAcceptedThisExecution": 2
+    "freshSourceChecksAcceptedThisExecution": 3
   },
   "checks": [
     {
@@ -2170,9 +2176,32 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-03-20261103.json",
+          "pointer": "/checks/0",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 17,
+          "caseCountPointer": "/checks/0/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=stopped-host-readoption-operator",
+            "test/stopped-host-readoption-operator.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": false,
+          "batchCaseCount": 17,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-03-stopped-host-readoption-operator.log",
+          "logHash": "10658ff2a8c094f6e69b041a6655e0846bf74fa429621d5899a8387937cd72a1"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -2186,12 +2215,14 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "only-historical-PASS-keys-differ-from-current-dependency-bytes",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
         "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-03",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
       "legacyReleaseEntryFileListed": false
     },
@@ -5777,22 +5808,6 @@
     "excludesHeldDedicatedTitles": true,
     "batches": [
       {
-        "batchId": "source-candidate-03",
-        "checks": [
-          "stopped-host-readoption-operator"
-        ],
-        "cwd": "core4",
-        "command": [
-          "node",
-          "--test",
-          "--test-name-pattern=(?:stopped-host-readoption-operator)",
-          "test/stopped-host-readoption-operator.test.js"
-        ],
-        "scheduled": false,
-        "executionOrder": "serial-after-per-batch-isolation-review",
-        "gateRu": "Данные будущего выбора. Реальная изоляция/OS ветки проверяются для этого batch; exit0 без matched tests или с только skips не закрывает check."
-      },
-      {
         "batchId": "source-candidate-04",
         "checks": [
           "stopped-update-operator"
@@ -6504,7 +6519,6 @@
       "status": "open",
       "requiredForFullRelease": true,
       "remainingCheckIds": [
-        "stopped-host-readoption-operator",
         "stopped-update-operator",
         "stopped-update",
         "legacy-owner-migration",
@@ -6555,6 +6569,7 @@
         "start-over-barrier",
         "start-over-inspection",
         "start-over-process",
+        "stopped-host-readoption-operator",
         "stopped-host-readoption",
         "readoption-core",
         "readoption-recovery",
@@ -6578,7 +6593,7 @@
         "validation-routing",
         "artifact-boundaries"
       ],
-      "noteRu": "36 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 2 новых source checks; это не native proof."
+      "noteRu": "35 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 3 новых source checks; это не native proof."
     },
     {
       "gate": "package-and-installation",
@@ -6706,7 +6721,7 @@
     "interpretationRu": "Только статическое сопоставление entry files:6 и55другихcommands. Не динамический coverage и не результаты FAIL; legacy script не единственный критерий полноты."
   },
   "actions": {
-    "acceptedSourceBatchCommands": 2,
+    "acceptedSourceBatchCommands": 3,
     "liveProductionAeCepMcpUiCalls": 0,
     "manualProductionProcessOperations": 0,
     "productionBuildInstallConfigWrites": 0,
@@ -6727,9 +6742,9 @@
   },
   "validation": {
     "status": "PASS",
-    "report": "docs/evidence/core-release-block-02-20261103-validation.json",
+    "report": "docs/evidence/core-release-block-03-20261103-validation.json",
     "selectorKeysMatched": 71,
-    "sourceTestCommandsExecuted": 2,
+    "sourceTestCommandsExecuted": 3,
     "fullReleaseCertified": false
   },
   "execution": {
@@ -6776,10 +6791,30 @@
         },
         "reporter": "spec",
         "logSha256": "2ad6d4e29b2dbd4567a469747ff8412f3867676d0af0cc5eb7a6115434719f52"
+      },
+      {
+        "blockId": "source-candidate-03",
+        "evidence": "docs/evidence/core-release-block-03-20261103.json",
+        "baselineCommit": "bb23f1aa895cc880124617892fe7eaee1bb7785e",
+        "checks": [
+          "stopped-host-readoption-operator"
+        ],
+        "result": "PASS",
+        "summary": {
+          "tests": 17,
+          "pass": 17,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 24635.706
+        },
+        "reporter": "spec",
+        "logSha256": "10658ff2a8c094f6e69b041a6655e0846bf74fa429621d5899a8387937cd72a1"
       }
     ]
   },
-  "updatedAt": "2026-11-03T17:58:56.309Z",
+  "updatedAt": "2026-11-03T18:00:10.903Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,

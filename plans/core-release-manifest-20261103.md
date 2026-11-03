@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято блоков: 2; проверок по именам: 2. Применимое evidence: 33 exact-key + 2 byte-command-bound. Открыто: 36 (без hold: 34, Titles под паузой: 2). Следующий блок: source-candidate-03. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Принято блоков: 3; проверок по именам: 3. Применимое evidence: 34 exact-key + 2 byte-command-bound. Открыто: 35 (без hold: 33, Titles под паузой: 2). Следующий блок: source-candidate-04. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 
@@ -158,7 +158,7 @@ Source suites и live операции не запускались; `releaseCert
 | `start-over-barrier` | component | reuse: записанный exact key | не повторять без drift |
 | `start-over-inspection` | component | reuse: записанный exact key | не повторять без drift |
 | `start-over-process` | component | reuse: записанный exact key | не повторять без drift |
-| `stopped-host-readoption-operator` | integration | нужен current result | адресно до full release |
+| `stopped-host-readoption-operator` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `stopped-host-readoption` | component | reuse: записанный exact key | не повторять без drift |
 | `readoption-core` | component | reuse: записанный exact key | не повторять без drift |
 | `readoption-recovery` | component | reuse: записанный exact key | не повторять без drift |
