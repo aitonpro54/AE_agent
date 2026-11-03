@@ -30,7 +30,7 @@ push/PR и запуска dedicated продуктов. Штатные внут�
 own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup проверены.
 
 <!-- EXECUTION_STATUS -->
-Принято блоков: 7; проверок по именам: 7. Применимое evidence: 38 exact-key + 2 byte-command-bound. Открыто: 31 (без hold: 29, Titles под паузой: 2). Следующий блок: source-candidate-08.
+Принято блоков: 8; проверок по именам: 8. Применимое evidence: 39 exact-key + 2 byte-command-bound. Открыто: 30 (без hold: 28, Titles под паузой: 2). Следующий блок: source-candidate-09.
 <!-- /EXECUTION_STATUS -->
 
 <!-- EXECUTION_BLOCKS -->
@@ -42,7 +42,8 @@ own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup пр�
 | source-candidate-04 | `stopped-update-operator` | PASS: 4 pass / 0 skip | [JSON](../docs/evidence/core-release-block-04-20261103.json) | `e7b3964` |
 | source-candidate-05 | `stopped-update` | PASS: 55 pass / 0 skip | [JSON](../docs/evidence/core-release-block-05-20261103.json) | `0e97571` |
 | source-candidate-06 | `legacy-owner-migration` | PASS: 29 pass / 0 skip | [JSON](../docs/evidence/core-release-block-06-20261103.json) | `948b41b` |
-| source-candidate-07 | `windows-retained-process` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-07-20261103.json) | создаётся после проверки |
+| source-candidate-07 | `windows-retained-process` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-07-20261103.json) | `7622aa7` |
+| source-candidate-08 | `maintenance-finish-operator` | PASS: 7 pass / 0 skip | [JSON](../docs/evidence/core-release-block-08-20261103.json) | создаётся после проверки |
 <!-- /EXECUTION_BLOCKS -->
 
 ## Decision Log

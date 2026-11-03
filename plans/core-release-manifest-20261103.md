@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято блоков: 7; проверок по именам: 7. Применимое evidence: 38 exact-key + 2 byte-command-bound. Открыто: 31 (без hold: 29, Titles под паузой: 2). Следующий блок: source-candidate-08. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Принято блоков: 8; проверок по именам: 8. Применимое evidence: 39 exact-key + 2 byte-command-bound. Открыто: 30 (без hold: 28, Titles под паузой: 2). Следующий блок: source-candidate-09. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 
@@ -170,7 +170,7 @@ Source suites и live операции не запускались; `releaseCert
 | `windows-retained-process` | component | fresh source PASS → exact reuse | не повторять без drift |
 | `stopped-certification` | component | reuse: записанный exact key | не повторять без drift |
 | `maintenance-finish` | component | reuse: записанный exact key | не повторять без drift |
-| `maintenance-finish-operator` | integration | нужен current result | адресно до full release |
+| `maintenance-finish-operator` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `owner-maintenance` | component | reuse: записанный exact key | не повторять без drift |
 | `maintenance-operator` | integration | нужен current result | адресно до full release |
 | `windows-owner-process` | component | нужен current result | адресно до full release |

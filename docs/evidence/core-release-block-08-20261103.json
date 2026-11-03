@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:26:59.176Z",
+  "blockId": "source-candidate-08",
+  "baselineCommit": "7622aa7bf1ecdfb3ef17dba0aaccaf23b72a26c7",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=maintenance-finish-operator",
+      "test/maintenance-finish-operator.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:26:35.487Z",
+    "finishedAt": "2026-11-03T18:26:44.759Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 9214.014
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-08-maintenance-finish-operator.log",
+      "sha256": "9aee8555820621a10e44e0d7981634703d7935a643ceb7413c0be2dd3b2e3a3d",
+      "bytes": 991
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-08-maintenance-finish-operator-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "maintenance-finish-operator",
+      "evidenceKey": "59f4f1f710c696774df48495d90bd2a66520a880462228a318c828220abd4a84",
+      "result": "PASS",
+      "cases": 7,
+      "skipped": 0,
+      "matchedTestNames": [
+        "maintenance-finish-operator source guards pin bootstrap and constant NEW support imports",
+        "maintenance-finish-operator JSON clones cannot issue the opaque bootstrap capability or cause installation reads",
+        "maintenance-finish-operator NEW reviewed distribution verifies installed poisoned source as DATA and never imports it",
+        "maintenance-finish-operator wrong distribution/current pins and absent owner support refuse before runtime import",
+        "maintenance-finish-operator tampered NEW support helper is rejected before any installed operator import",
+        "maintenance-finish-operator stopped certification routes only through verified NEW code and closes election on refusal",
+        "maintenance-finish-operator private election finally closes a real pending request on its TEMP port"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish-operator",
+        "test/maintenance-finish-operator.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "021a99e691179c664ac987b6dfbb9aa4ae9db26bf00134959b952b248158e9c3",
+      "key": "59f4f1f710c696774df48495d90bd2a66520a880462228a318c828220abd4a84"
+    },
+    "dependencyCount": 115,
+    "dependencyDigestBefore": "14e3fc13954366af0d199ea6692e7e00cfa59ce635c248545b4bb3ed2cc491f5",
+    "dependencyDigestAfter": "14e3fc13954366af0d199ea6692e7e00cfa59ce635c248545b4bb3ed2cc491f5",
+    "dependencyHashesStable": true,
+    "testHashBefore": "b7ad46f42ec58ac5d3aa73aed84d9d2946018920a5f826abeb7fbdf3a1ff2cc1",
+    "testHashAfter": "b7ad46f42ec58ac5d3aa73aed84d9d2946018920a5f826abeb7fbdf3a1ff2cc1"
+  },
+  "isolation": {
+    "ownTempInstallData": true,
+    "childPreload": "denies listener/probe/old installed imports",
+    "directElection": "logical3457 mapped to ephemeral0",
+    "ownRequestsAndServersOnly": true,
+    "nativeStop": false,
+    "nativeAe": false,
+    "productionState": false,
+    "testTimeoutEachMs": 20000,
+    "internalCliTimeoutMs": 15000,
+    "tempBase": "C:\\Users\\Ant\\AppData\\Local\\Temp",
+    "fixturePrefixes": [
+      "core4-finish-operator-"
+    ],
+    "externalTimeout": null
+  },
+  "cleanup": {
+    "resourceProofKind": "closed-by-hooks/assertions",
+    "sourceEvidence": "private election tests assert listening false, pending request close, and successful own-port rebind; own-prefix TEMP removal in t.after",
+    "retentionExpectedByPreflight": false,
+    "observedNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-EXF15u",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-n8JhDQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-qQG7bb",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-6WYDLu",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-xcvxdg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-sh9F2x"
+    ],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "manualCleanup": false,
+    "observationLimit": "Directory sampling may miss short fixtures; hook assertions plus terminal results and remaining new directory sample are the evidence."
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-08-maintenance-finish-operator-reducer.json",
+    "sha256": "3c09105a11520fd2f7c09d74ab5b053ae3e7c8b822673b1ced65261a2955dfed"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
