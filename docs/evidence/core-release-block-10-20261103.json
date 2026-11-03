@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T18:28:52.916Z",
+  "blockId": "source-candidate-10",
+  "baselineCommit": "6befbb5ee184a78a165bd0c9d8f27bc9a5f99440",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=windows-owner-process",
+      "test/windows-owner-process.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T18:28:37.381Z",
+    "finishedAt": "2026-11-03T18:28:38.104Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 8,
+      "pass": 8,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 665.7118
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-10-windows-owner-process.log",
+      "sha256": "0203a7bc80042de257da052d3fca8a80c3fc381bb328a3fe719c8b5d164f1f38",
+      "bytes": 1138
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-10-windows-owner-process-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "windows-owner-process",
+      "evidenceKey": "cdb8dee5d714a9979c3c0f5ba87b3592087a0e0582bd7a6088a830172876c24d",
+      "result": "PASS",
+      "cases": 8,
+      "skipped": 0,
+      "matchedTestNames": [
+        "windows-owner-process fixed command queries exact env PID, preserves tick precision and projects no commandline or credentials",
+        "windows-owner-process successful explicit empty result alone is absent and unavailable executable path stays nullable",
+        "windows-owner-process missing birth, wrong schema/PID, malformed wire and stale timestamps never become absence",
+        "windows-owner-process permission, stderr, timeout, maxBuffer and synchronous failures are sanitized without retry",
+        "windows-owner-process invalid PID, unsupported platform and caller probe options never execute a command",
+        "windows-owner-process native profile is the sole additional OS directory; inherited PATH/profile/options/secrets are ignored",
+        "windows-owner-process classification is exact, fresh and precision-safe data only, never reclaim authority",
+        "windows-owner-process actual Windows CIM self-PID read returns a frozen exact birth observation"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=windows-owner-process",
+        "test/windows-owner-process.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "a68edb485b74ed22b4359ab06f82eebfe8b51505fbb43158049d63d3554524be",
+      "key": "cdb8dee5d714a9979c3c0f5ba87b3592087a0e0582bd7a6088a830172876c24d"
+    },
+    "dependencyCount": 2,
+    "dependencyDigestBefore": "4e9be7d00e92d02be6c518363456dd7781e7f76c9f2a13f742bb54c0c44a12fd",
+    "dependencyDigestAfter": "4e9be7d00e92d02be6c518363456dd7781e7f76c9f2a13f742bb54c0c44a12fd",
+    "dependencyHashesStable": true,
+    "testHashBefore": "29a1bcd99346b7e0535fa4c0981e0da177661663c48b4f53d959e6a05141155f",
+    "testHashAfter": "29a1bcd99346b7e0535fa4c0981e0da177661663c48b4f53d959e6a05141155f"
+  },
+  "isolation": {
+    "composition": "7 VM cases plus1 native Windows self-PID CIM",
+    "nativeTarget": "test worker process.pid only",
+    "nativeTestTimeoutMs": 7000,
+    "probeBudgetMs": 4000,
+    "listeners": false,
+    "stateOrConfigWrites": false,
+    "tempFixtureWrites": false,
+    "processTermination": false,
+    "productionProcessInventory": false,
+    "tempBase": null,
+    "fixturePrefixes": [],
+    "externalTimeout": null
+  },
+  "cleanup": {
+    "resourceProofKind": "native execFile completion callback and no persistent fixture resources",
+    "sourceEvidence": "CIM self-PID observer completes through execFile callback; no runtime/listener/TEMP target or retained helper created by this suite",
+    "retentionExpectedByPreflight": false,
+    "observedNewDirectories": [],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "manualCleanup": false,
+    "observationLimit": "Process-only check; no TEMP directory writes expected."
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-10-windows-owner-process-reducer.json",
+    "sha256": "72ff5090de4c880689a23aadfbad71ff6e300f228f2b51e7d95a000ca7f362fd"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
