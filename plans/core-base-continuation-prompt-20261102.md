@@ -1,5 +1,7 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
+**Активна адресная source-приёмка:** Принято 1 source blocks / 1 named checks. Current evidence: 32 exact-key + 2 byte-command-bound; открыты 37 (без hold 35, Titles held2). Следующий: source-candidate-02. [План](core-release-execution-20261103.md). Продолжать следующие разрешённые source blocks после reducer commit; Titles/Slideshow на паузе.
+
 **Release-manifest, 3 ноября — последнее поручение:** пользователь попросил
 актуальный состав необходимых проверок/reuse/remaining с сохранением паузы
 Titles/Slideshow. [Manifest подготовлен](core-release-manifest-20261103.md):

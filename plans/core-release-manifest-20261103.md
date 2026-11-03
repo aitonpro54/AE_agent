@@ -1,5 +1,7 @@
 # Release-manifest Core — 3 ноября 2026
 
+**Текущая source-приёмка:** Принято 1 source blocks / 1 named checks. Current evidence: 32 exact-key + 2 byte-command-bound; открыты 37 (без hold 35, Titles held2). Следующий: source-candidate-02. [Ход выполнения](core-release-execution-20261103.md).
+
 ## Цель и состав
 
 По прямому поручению пользователя сформирован актуальный план приёмки: какие
@@ -19,7 +21,7 @@ evidence, решение о reuse и отдельное условие буду�
 приёмку, а прошлые owner/session/PID не дают полномочий сейчас. Живое состояние
 установки при подготовке manifest не опрашивалось.
 
-## Итог inventory
+## Исходный inventory при подготовке manifest
 
 Все 71 checks имеют решение: **31 exact-key reuse + 2 byte-command-bound reuse + 38 current-unverified**. Из 38 открытых — 36 без продуктового hold и две dedicated Titles под паузой. Ни одна команда сейчас не запускалась. В JSON 29 сгруппированных source-кандидатов для будущего выбора; это не утверждение, что их нужно запускать немедленно. Ранее найденные 27 deferred — подмножество этого полного inventory.
 
@@ -146,7 +148,7 @@ Source suites и live операции не запускались; `releaseCert
 | `start-over-driver` | component | reuse: записанный exact key | не повторять без drift |
 | `start-over-panel-control` | component | reuse: записанный exact key | не повторять без drift |
 | `panel-start-over` | component | reuse: записанный exact key | не повторять без drift |
-| `start-over-runtime` | integration | нужен current result | адресно до full release |
+| `start-over-runtime` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `start-over-operator` | integration | нужен current result | адресно до full release |
 | `work-session-owner` | component | reuse: записанный exact key | не повторять без drift |
 | `work-session` | component | reuse: записанный exact key | не повторять без drift |
@@ -217,7 +219,7 @@ Source suites и live операции не запускались; `releaseCert
 
 ## Продолжение
 
-Manifest завершает это поручение. При следующей подготовке выпуска сначала
+Подготовка manifest завершена; последующее прямое поручение разрешило адресную source-приёмку. При следующей подготовке выпуска сначала
 проверить его source/evidence fingerprint; затем выбирать только необходимые
 адресные source checks с учётом reuse и пауз. Один manifest не объявляет выпуск
 принятым и не запускает перечисленные проверки.

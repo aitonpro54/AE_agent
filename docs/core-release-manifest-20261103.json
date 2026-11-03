@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "core-release-validation-manifest",
-  "mode": "plan-only",
+  "mode": "execution-tracked",
   "createdAt": "2026-11-03T17:44:59.023Z",
   "objectiveRu": "Точный состав release-проверок, reuse и открытых критериев при сохранённой паузе Titles/Slideshow.",
   "baseline": {
@@ -1089,6 +1089,12 @@
       "sha256": "5f1b393ba6fa6a97fedd0ba00622e3ba7141d6507945afbcabde379bbd7879a6",
       "directKeyedRecords": 0,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-release-block-01-20261103.json",
+      "sha256": "b92cf9f3d61f2f3a25c4a81b221b2a6032dc15a82f097ccfca7e1ae89c7aa5c3",
+      "directKeyedRecords": 1,
+      "excludedAsAuthority": null
     }
   ],
   "evidenceMethod": {
@@ -1116,15 +1122,16 @@
   ],
   "summary": {
     "registeredChecks": 71,
-    "recordedExactKeyReuse": 31,
+    "recordedExactKeyReuse": 32,
     "byteCommandBoundReuse": 2,
-    "needsCurrentEvidence": 38,
+    "needsCurrentEvidence": 37,
     "heldByProductPause": 2,
-    "pendingNotHeldByProductPause": 36,
+    "pendingNotHeldByProductPause": 35,
     "sharedCoreWithTitlesDependency": 33,
-    "optionalFutureSourceBatches": 29,
-    "sourceTestCommandsExecuted": 0,
-    "reusedGlobalUniqueCases": null
+    "optionalFutureSourceBatches": 28,
+    "sourceTestCommandsExecuted": 1,
+    "reusedGlobalUniqueCases": null,
+    "freshSourceChecksAcceptedThisExecution": 1
   },
   "checks": [
     {
@@ -1351,9 +1358,32 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-01-20261103.json",
+          "pointer": "/checks/0",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 3,
+          "caseCountPointer": "/checks/0/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=start-over-runtime",
+            "test/start-over-runtime.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": false,
+          "batchCaseCount": 3,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-01-start-over-runtime.log",
+          "logHash": "1c278a7bae8ccb3a349bedef7e2abd672bb8c711b8857ea2f7e1451dcb49af86"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -1367,12 +1397,14 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "only-historical-PASS-keys-differ-from-current-dependency-bytes",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
         "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-01",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
       "legacyReleaseEntryFileListed": false
     },
@@ -5709,26 +5741,10 @@
     }
   ],
   "futureSourceBatchCandidates": {
-    "mode": "not-scheduled",
+    "mode": "execution-tracked-addressed",
     "automaticallyExecutable": false,
     "excludesHeldDedicatedTitles": true,
     "batches": [
-      {
-        "batchId": "source-candidate-01",
-        "checks": [
-          "start-over-runtime"
-        ],
-        "cwd": "core4",
-        "command": [
-          "node",
-          "--test",
-          "--test-name-pattern=(?:start-over-runtime)",
-          "test/start-over-runtime.test.js"
-        ],
-        "scheduled": false,
-        "executionOrder": "serial-after-per-batch-isolation-review",
-        "gateRu": "Данные будущего выбора. Реальная изоляция/OS ветки проверяются для этого batch; exit0 без matched tests или с только skips не закрывает check."
-      },
       {
         "batchId": "source-candidate-02",
         "checks": [
@@ -6473,7 +6489,6 @@
       "status": "open",
       "requiredForFullRelease": true,
       "remainingCheckIds": [
-        "start-over-runtime",
         "start-over-operator",
         "stopped-host-readoption-operator",
         "stopped-update-operator",
@@ -6516,6 +6531,7 @@
         "start-over-driver",
         "start-over-panel-control",
         "panel-start-over",
+        "start-over-runtime",
         "work-session-owner",
         "work-session",
         "start-over-channel",
@@ -6547,7 +6563,7 @@
         "validation-routing",
         "artifact-boundaries"
       ],
-      "noteRu": "38 checks требуют current evidence; два dedicated Titles имеют отдельную паузу. Source suite не выполнялась при создании manifest."
+      "noteRu": "37 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 1 новых source checks; это не native proof."
     },
     {
       "gate": "package-and-installation",
@@ -6675,11 +6691,13 @@
     "interpretationRu": "Только статическое сопоставление entry files:6 и55другихcommands. Не динамический coverage и не результаты FAIL; legacy script не единственный критерий полноты."
   },
   "actions": {
-    "sourceTestCommandsExecuted": 0,
-    "liveAeCepMcpUiCalls": 0,
-    "processInventoryOrTermination": 0,
-    "buildInstallConfigWrites": 0,
-    "networkArgonPushPr": 0
+    "acceptedSourceBatchCommands": 1,
+    "liveProductionAeCepMcpUiCalls": 0,
+    "manualProductionProcessOperations": 0,
+    "productionBuildInstallConfigWrites": 0,
+    "networkArgonPushPr": 0,
+    "fixtureBuildInstallScope": "own TEMP only",
+    "fixtureProcessScope": "own fixture actors and self queries only"
   },
   "provenance": {
     "scratchSha256": "8c63c696b43410c24bfffa4f8dac1e7ffb5fc82e5a37a2f258b332009498fb80",
@@ -6694,9 +6712,44 @@
   },
   "validation": {
     "status": "PASS",
-    "report": "docs/evidence/core-release-manifest-20261103-validation.json",
+    "report": "docs/evidence/core-release-block-01-20261103-validation.json",
     "selectorKeysMatched": 71,
-    "sourceTestCommandsExecuted": 0,
+    "sourceTestCommandsExecuted": 1,
     "fullReleaseCertified": false
+  },
+  "execution": {
+    "authorizedScopeRu": "Поручение пользователя: начать start-over-runtime и последовательно продолжать по manifest; Titles/Slideshow на паузе.",
+    "startedFromCommit": "f8741ed",
+    "liveOperationsAuthorizedByThisQueue": false,
+    "blocks": [
+      {
+        "blockId": "source-candidate-01",
+        "evidence": "docs/evidence/core-release-block-01-20261103.json",
+        "baselineCommit": "f8741eddf300d7c789c4c813f7add4a50b6bde39",
+        "checks": [
+          "start-over-runtime"
+        ],
+        "result": "PASS",
+        "summary": {
+          "tests": 3,
+          "pass": 3,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 172944.1052
+        },
+        "reporter": "spec",
+        "logSha256": "1c278a7bae8ccb3a349bedef7e2abd672bb8c711b8857ea2f7e1451dcb49af86"
+      }
+    ]
+  },
+  "updatedAt": "2026-11-03T17:57:18.526Z",
+  "manifestPreparationActions": {
+    "sourceTestCommandsExecuted": 0,
+    "liveAeCepMcpUiCalls": 0,
+    "processInventoryOrTermination": 0,
+    "buildInstallConfigWrites": 0,
+    "networkArgonPushPr": 0
   }
 }

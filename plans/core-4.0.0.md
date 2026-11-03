@@ -1,5 +1,7 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**Активна адресная source-приёмка:** Принято 1 source blocks / 1 named checks. Current evidence: 32 exact-key + 2 byte-command-bound; открыты 37 (без hold 35, Titles held2). Следующий: source-candidate-02. [План](core-release-execution-20261103.md). Titles/Slideshow на паузе.
+
 **Release-manifest, 3 ноября — последнее поручение:** подготовлен
 [полный реестр](core-release-manifest-20261103.md) всех 71 Core checks:
 31 exact-key reuse + 2 byte-command-bound reuse + 38 current-unverified.

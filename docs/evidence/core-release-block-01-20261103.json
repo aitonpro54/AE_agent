@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T17:57:18.524Z",
+  "blockId": "source-candidate-01",
+  "baselineCommit": "f8741eddf300d7c789c4c813f7add4a50b6bde39",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=start-over-runtime",
+      "test/start-over-runtime.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-03T17:53:34.275Z",
+    "finishedAt": "2026-11-03T17:56:27.286Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 3,
+      "pass": 3,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 172944.1052
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-01-start-over-runtime.log",
+      "sha256": "1c278a7bae8ccb3a349bedef7e2abd672bb8c711b8857ea2f7e1451dcb49af86",
+      "bytes": 570
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-01-start-over-runtime-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "start-over-runtime",
+      "evidenceKey": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
+      "result": "PASS",
+      "cases": 3,
+      "skipped": 0,
+      "matchedTestNames": [
+        "start-over-runtime idle reset starts a new normal owner and requires explicit session plus fresh baseline with exact history preserved",
+        "start-over-runtime diagnostic old producer loss and late completion preserve UNKNOWN history; official helper repeat is historical only",
+        "start-over-runtime actual process death after receiver rename continues the same signed reset from a new entry without replay"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-runtime",
+        "test/start-over-runtime.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "os": {
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64"
+    },
+    "nodeEnvironment": {
+      "NODE_OPTIONS": null,
+      "NODE_TEST_CONTEXT": null
+    }
+  },
+  "sourceBinding": {
+    "manifest": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\docs\\core-release-manifest-20261103.json",
+      "sha256": "b7188a982c354ea32dbcc54648e186ee0139a74aeb3895aa9ec2ec1a9d29bbe5",
+      "key": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de"
+    },
+    "dependencyCount": 97,
+    "dependencyHashesStable": true,
+    "testFixtureHashesBefore": {
+      "test/start-over-runtime.test.js": "fd72ba25bb8505070aeaeea1890845d8e9ca6af31747c805e01423a7c628dd82",
+      "test/fixtures/start-over-runtime-preload.js": "39edccaeb11a49eb56bb62361eee7c3c810ebde4eb8716bf4591e4611bfa8d9e"
+    },
+    "testFixtureHashesAfter": {
+      "test/start-over-runtime.test.js": "fd72ba25bb8505070aeaeea1890845d8e9ca6af31747c805e01423a7c628dd82",
+      "test/fixtures/start-over-runtime-preload.js": "39edccaeb11a49eb56bb62361eee7c3c810ebde4eb8716bf4591e4611bfa8d9e"
+    }
+  },
+  "isolation": {
+    "ownTempInstallation": true,
+    "tempBase": "C:\\Users\\Ant\\AppData\\Local\\Temp",
+    "preexistingFixtureDirectoryCount": 1,
+    "preexistingFixtureNamesDigest": "c7e892f3fbe6d4b326fe74a3c224cad5d92f0871fd39621132bb975d25727589",
+    "randomInstallationIpc": true,
+    "logical3457MappedToEphemeral0": true,
+    "aeInventorySynthetic": true,
+    "noInstalledStateOperations": true,
+    "fixtureCleanup": "t.after marker to own fixture processes; await exact known own PIDs/births and child exits; resolve+prefix-guarded own directory removal",
+    "budgets": {
+      "testEachMs": 600000,
+      "cases": 3,
+      "externalTimeout": null
+    }
+  },
+  "cleanup": {
+    "observation": "only matching own test fixture directories; no process inventory performed by harness",
+    "observedNewDirectories": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-runtime-xFF8T9",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-runtime-eg4p3X",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-runtime-fIPItQ"
+    ],
+    "remainingNewDirectories": [],
+    "allObservedNewDirectoriesAbsent": true,
+    "fixtureHooksOutcome": "included in Node test result; no manual cleanup or process kills performed by harness"
+  },
+  "parserCorrection": {
+    "rawReportPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-01-start-over-runtime-report.json",
+    "rawReportSha256": "607ea36ed66d05219dfc6b227c5cf989b820a28523ea7eb2f8858a51b01538f9",
+    "rawReportResult": "FAIL-OR-REQUIRES-REVIEW",
+    "reason": "Original runner parsed TAP only while unchanged exact Node command emitted spec. Raw report result is a parser limitation, not a test FAIL. This reducer parses terminal spec leaves and summary without rerun.",
+    "testRuns": 1
+  },
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-01-start-over-runtime-reducer.json",
+    "sha256": "54b880c3843adc1f634d43a0770bd26d3374ad1383a5b2dd1ad38c7ae1100be4"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "networkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
