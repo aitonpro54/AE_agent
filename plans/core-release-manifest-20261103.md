@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято 1 source blocks / 1 named checks. Current evidence: 32 exact-key + 2 byte-command-bound; открыты 37 (без hold 35, Titles held2). Следующий: source-candidate-02. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Принято блоков: 2; проверок по именам: 2. Применимое evidence: 33 exact-key + 2 byte-command-bound. Открыто: 36 (без hold: 34, Titles под паузой: 2). Следующий блок: source-candidate-03. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 
@@ -149,7 +149,7 @@ Source suites и live операции не запускались; `releaseCert
 | `start-over-panel-control` | component | reuse: записанный exact key | не повторять без drift |
 | `panel-start-over` | component | reuse: записанный exact key | не повторять без drift |
 | `start-over-runtime` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `start-over-operator` | integration | нужен current result | адресно до full release |
+| `start-over-operator` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `work-session-owner` | component | reuse: записанный exact key | не повторять без drift |
 | `work-session` | component | reuse: записанный exact key | не повторять без drift |
 | `start-over-channel` | component | reuse: записанный exact key | не повторять без drift |
