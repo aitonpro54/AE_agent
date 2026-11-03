@@ -1,5 +1,18 @@
 # B3c: установка и первое нативное чтение
 
+**Текущее дополнение:** UNKNOWN reset69facd01… выполнен самим агентом через
+existing authenticated panel protocol (одна отправка). Old AE9472/26308 и old
+Node19452/30888 exact gone; root штатно перезапустил own AE/new21960 и открыл
+тот же saved empty AEP. UNKNOWN14events/638fbd1b… и earlier52event archive/e095…
+сохранены побайтно. New session8fe8b332…/receiver34940d50…/3events, explicit ack,
+native fresh project baseline/release PASS, baselineRequiredfalse.
+[Подробное evidence](evidence/core-base-b3-unknown-reset-20261103.json).
+UI/API действия больше не передаются пользователю по его прямому поручению.
+Configured MCP всё ещё требует обновления: old thin client5264 прекращён адресно,
+auto reconnect не произошёл (Transport closed); требуется scoped app-server restart.
+Ни установка, ни settled resets не повторяются. Source suites прежние; остался
+configured proof, а также отдельные unproven scopes mutation/full release/portability.
+
 **Дополнение:** native idle reset9b128005… завершён:52events archived exact,
 sameAE9472 без restart, новый sessionaeddb9ee…/explicit ack/fresh baseline PASS.
 Затем один exact Node fault создал read UNKNOWN с14events/no terminal;

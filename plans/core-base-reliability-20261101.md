@@ -109,6 +109,15 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- UNKNOWN reset69facd01… завершён агентом через existing authenticated panel API;
+  exact old Node19452/30888 и AE9472/26308 gone, ownAE restart1/new21960.14unknown
+  events и earlier52event archive preserved exact. New session8fe8b332…/new store/
+  explicit ack/fresh native baseline/release PASS, current3events/clean. Пользователь
+  больше не выполняет кнопочные действия: прямое поручение root делать их самому.
+  Configured cached client5264 остановлен адресно, manager сам не переподключил;
+  Transport closed. До base acceptance остаётся fresh configured proof после
+  service app-server restart; повтор installs/settled operations не нужен.
+
 - Native B3 idle: reset9b128005…/sessionaeddb9ee… completed, exact52events
   archived, old15584 gone/new30888, sameAE9472 без restart. Missing/old session
   ack denied; explicit acquire/fresh native project baseline/release PASS,
@@ -239,6 +248,14 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- UNKNOWN request через штатный panel-role wire protocol — допустимый API-путь
+  по прямому поручению пользователя, с nonce/HMAC/purpose/pins и one-attempt audit.
+  Новых endpoints, credential roles или private injection нет. Actual button UI
+  отдельно наблюдался на idle сценарии; API action не переименовывается в UI click.
+  Stale configured transport — отдельная задача клиента Codex: exact client stop
+  не обеспечил auto reconnect. Нужен scoped backend restart с сохранением окна/
+  возвратом в текущий чат; ни install, ни Core reset для этого не повторяются.
 
 - Native сценарии: alert/$.sleep/busyloop в AE допускают параллельное CEP read;
   successful exploratory reads не переименованы в UNKNOWN. Actual Node fault
@@ -382,6 +399,15 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- Native UNKNOWN reset PASS в ограниченном read-only сценарии:
+  [evidence](../docs/evidence/core-base-b3-unknown-reset-20261103.json).
+  Exact native death, two immutable archives,8 signed reset records, installed
+  protected bytes/AEP, current3events и native direct baseline/release проверены.
+  Delivery/late-callback wire unobserved, mutation recovery/full release/portability
+  open. Configured probe oldclient owner_unavailable→Transport closed после одного
+  exact stop; свежим configured proof это не является. Production source unchanged,
+  повтор source suites не нужен; docs проходят diff-check.
 
 - Native idle reset PASS: signed transaction records, archived52events exact,
   old Node death/sameAE9472, missing/old ack refusal и successful fresh durable

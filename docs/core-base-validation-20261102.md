@@ -1,7 +1,9 @@
 # База Core: результаты B1/B2 на 2 ноября
 
-**3 ноября:** B3 source и установка нового327faaac… приняты; первый standard
-native read PASS. Actual idle/UNKNOWN reset и fresh configured proof ещё открыты:
+**3 ноября:** B3 source/установка327faaac…, native idle reset и ограниченный native
+UNKNOWN reset с exact old AE death/archive/fresh session baseline PASS. Остаётся
+fresh configured proof после service restart; delivery/late callback wire и
+mutation recovery этими наблюдениями не заявлены:
 [актуальная матрица B3c](core-base-b3c-installed-20261103.md).
 Матрица ниже сохраняет исходный момент B1/B2.
 

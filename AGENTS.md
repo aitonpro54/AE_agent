@@ -11,6 +11,17 @@
 
 ## Текущий scope и правила
 
+**3 ноября, UI-действия выполняет агент:** пользователь прямо поручил самому
+нажимать необходимые кнопки и не передавать ему ручные действия панели/перезапусков.
+Root выполняет разрешённые действия через штатный API или доступный UI, включая
+служебное обновление MCP-клиента Codex. Это не меняет auth/AE gates, sole controller,
+защиту пользовательской работы и no-replay. Прежние ожидания ручного нажатия ниже
+заменены этим поручением. UNKNOWN reset69facd01… уже отправлен агентом один раз
+через существующий authenticated panel protocol; exact old AE9472 gone, новый
+AE21960 открыл тот же own saved test AEP. Old UNKNOWN14events/SHA638fbd1b… archived
+exact; session8fe8b332…/fresh native baseline/release PASS. Configured proof ещё
+нужен; install/reset69facd01/idle9b128005 повторять нельзя.
+
 **3 ноября, B3c установлен:** source `0cddee2` принят
 (721unique cases/42checks/55boundaries). Package327faaac…/distribution4975c36a…
 (80runtime/98bundle) штатно установлен и enabled. Stop

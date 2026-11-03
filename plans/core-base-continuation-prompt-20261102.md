@@ -2,6 +2,19 @@
 
 ## Актуализация после B3b3 source
 
+Актуально: UNKNOWN reset69facd01… завершён root через существующий panel protocol;
+session8fe8b332…/owner31404/newAE21960. Old AE9472 и historical26308 exact gone,
+14unknown events и52event archive exact preserved, new3event baseline/release PASS.
+Ни install, ни settled9b128005/69facd01 не повторять. Пользователь прямо запретил
+привлекать его к кнопкам: необходимые UI/API/restart действия выполнять самому.
+Остался configured MCP: cached client5264 остановлен один раз, auto reconnect нет,
+Transport closed. Готовится scoped app-server23604 restart с возвратом в этот же
+runtime-confirmed chat01a19c6c…; текущие evidence/план фиксируются до actual stop.
+После restart — fresh configured status327faaac/session8fe8b332, deny old session
+aeddb9ee, explicit current acquire/connect/contract/native read/release; затем
+последующие задачи плана без нового чата или запроса «продолжать?».
+Точные scopes — checkpoint. Delivery/late callback/mutation recovery не заявлены.
+
 3ноября native idle reset9b128005… completed, old15584/new30888, sessionaeddb9ee…,
 52events exact archived, sameAE9472 без restart, explicit ack/native baseline PASS.
 Затем один retained-handle Node fault породил native read UNKNOWN: inspect-facaa741…,

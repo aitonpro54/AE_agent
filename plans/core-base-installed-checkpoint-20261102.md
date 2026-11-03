@@ -5,6 +5,39 @@
 
 ## Дополнение 3 ноября
 
+**Актуально: UNKNOWN reset завершён агентом; остаётся configured proof.**
+Пользователь поручил самостоятельно выполнять кнопки/служебные перезапуски без
+ручной передачи действий. Существующий authenticated panel-role protocol
+использован один раз: reset `69facd01-2b95-4983-a110-4209acabda31`, new session
+`8fe8b332-5f6f-47fe-8da3-1dc21a5062d0`. Это API invocation, не native button click.
+Driver31404/birth639292824531053940 дождался exact old AE9472 и historical26308
+death; before-death controllerAvailablefalse. Root штатно закрыл собственный
+saved AEP/AE, native old Node19452/30888 и AE9472/26308 gone. NewAE21960/
+birth639292825912075250 открыл тот же AEP8299fd9f…; restartAE1/mutation0.
+UNKNOWN14events/SHA638fbd1b… archived exact, terminal inspect-facaa741… остаётся
+неизвестным. Earlier52event archive/e095765c… также exact. New receiver-store-
+34940d50…/3events/SHAaf9672be… содержит только origin и fresh baseline
+inspect-e3e17158…. Missing/null ack denied; explicit current ack/native read/
+release PASS, baselineRequiredfalse, pending/UNKNOWN/fault0. Signed records,
+origins/adoption/ledger, descriptor/client/config и AEP verified unchanged.
+[Evidence](../docs/evidence/core-base-b3-unknown-reset-20261103.json).
+Delivery/late callback transmission не наблюдались; mutation recovery не доказан.
+
+Configured MCP остаётся отдельным пробелом: old thin client5264/package2fb/
+parent app-server23604 не перечитал пакет. Project MCP row в global settings
+disabled; `/mcp` даёт status, без reload. Byte-preserving config mtime notification
+не обновила client. Exact held-handle client5264 завершён один раз; автоматического
+нового client не появилось, configured теперь Transport closed. Это не Core owner
+fault: owner31404/current3events/AEP целы. Не повторять restart5264, install или
+settled reset9b128005/69facd01. Следующий шаг — подготовленный scoped background
+app-server restart с возвратом в runtime-confirmed текущий chat01a19c6c…;
+перед actual stop фиксируется этот milestone. Другим чатам сообщения не отправлять,
+новый чат не создавать, пользователя к кнопкам не привлекать. После restart первым
+configured status подтвердить327faaac/current session8fe8b332, затем stale previous
+sessionaeddb9ee refusal и fresh acquire/connect/contract/read/release.
+
+Ниже — предыдущие snapshots и provenance, не новый preflight.
+
 **Native B3 idle PASS; UNKNOWN reset ожидает действия панели.** Idle reset
 `9b128005-8e75-43a0-80ff-f800326c83c6` отправлен пользователем один раз и
 завершён; session `aeddb9ee-cac3-4df3-8a25-279896812fe0`. Old15584 exact gone,
