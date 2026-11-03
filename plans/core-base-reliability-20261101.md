@@ -109,6 +109,17 @@ fault-сценарии проводить на собственных тесто
 
 ## Progress
 
+- B3c,3ноября: source `0cddee2` принят; stop49b423d9…/updateaf65ee78…/
+  explicit enable завершены. Прерванный90с wrapper восстановлен official original
+  pre-ready inspect/finish без повторного apply. Installed327faaac…/4975c36a…,
+  exact80runtime/CEP verification PASS; protected origins/adoption/ledger/AEP preserved.
+  New standard client/owner15584 и native saved empty project read PASS;
+ 52settled events/prefix50 exact, lease released, pending/UNKNOWN/fault0.
+  AE9472 прежний, CEP закрыта/открыта1раз, mutation/restart0. Native reset пока0:
+  click tool не адресует отдельный CEP process, запрошено ручное нажатие пользователя.
+  Configured MCP old2fb/owner_unavailable требует Restart MCP; install не повторять.
+  Далее idle/UNKNOWN reset и fresh session/baseline/configured proof.
+
 - 3 ноября, B3b3: production startup до lifecycle/stores, readonly reset driver,
   отдельный authenticated panel control, «Начать заново»/«Продолжить сброс»,
   explicit session ack и baseline подключены. Owner-v4 package80runtime/98bundle
@@ -219,6 +230,13 @@ fault-сценарии проводить на собственных тесто
   gap открыт, SDK/UXP/provider development отложены и базу не блокируют.
 
 ## Decision Log
+
+- B3c: original interrupted update завершать только official pre-ready recovery
+  с exact intent/pins; wrapper timeout не разрешает повтор owner-update.
+  Settled49b423d9…/af65ee78… сохранены. UI click отказан до input из-за
+  CEPHtmlEngine child target; raw reset RPC ради обхода этого отказа не вводится.
+  Запрошено ручное действие пользователя, actual reset пока0. Standard client
+  нового package не подменяет fresh configured proof старого cached MCP.
 
 - B3b3: pending reset перехватывается до lifecycle/Broker/receiver; driver держит
   canonical endpoints и не имеет execution lane. До lease автоматически ждёт
@@ -349,6 +367,15 @@ fault-сценарии проводить на собственных тесто
   отвергается лишь из-за уже потраченных усилий, но вместе с B1 не начинается.
 
 ## Validation
+
+- B3c installed: exact80runtime/CEP verify и original pre-ready finish/enable PASS;
+  cold standard status11.960с/first call, owner15584/один3457; automatic CEP
+  connect и fresh saved empty native read/lease release PASS.52settled events,
+  prefix50/protected bindings/origins/adoption/ledger/AEP exact. Actual reset0,
+  AE restart/mutation0, configured old2fb owner_unavailable. Native identities
+  и hashes повторно read-only сверены перед фиксацией
+  [evidence](../docs/evidence/core-base-b3c-installed-20261103.json).
+  Source suites после doc-only изменений не повторялись.
 
 B3b3,3ноября: 42checks/41batches/721unique cases (212fresh/509exact reuse) PASS, boundaries55/diff-check.
 [Evidence](../docs/evidence/core-base-b3b3-20261103.json). Общие routing/artifact

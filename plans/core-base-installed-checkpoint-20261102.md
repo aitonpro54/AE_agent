@@ -5,10 +5,48 @@
 
 ## Дополнение 3 ноября
 
+**B3c — установлен и enabled; native reset остаётся открытым.** Source commit `0cddee2`;
+official candidate327faaac97f8…/distribution4975c36a1a53… verified/dry-run.
+Fresh configured/preflight same24160/9472, receiver50/SHA94f31e18… и protected
+bindings unchanged. Собственная CEP закрыта через UI1раз, AE/AEP не закрывались.
+Новый stop `49b423d9-7763-433b-808d-0048264ba491` штатно принят/drained и
+stopped-certifiable (proof22702f8c…). Owner-update вызван ОДИН раз. Wrapper
+spawnSync timeout90000 прервал helper, exit outcome unknown; повтор apply не было.
+Найден original update `af65ee78-03e7-4c19-8a6b-3783e19879d1` (intent+lease),
+intent SHA2e568c2f8365744def483a78456275dbc2b4fab6a8d7ea54e8359d35b1d4460b.
+Decoded old/new descriptor pins и stopId совпали; signature/native/phase proof
+проверил official owner-pre-ready-inspect. Original pre-ready finish успешно
+завершил update-stopped; update-inspect → explicit update-enable PASS, enabledtrue,
+sameDescriptortrue. Новый80runtime/CEP exact byte verification PASS. Не повторять
+49b/af65 и не чистить markers. Wrapper budget теперь15мин; production deadlines
+не менялись. Package327faaac97f8…/distribution4975c36a1a53… установлен.
+Descriptor SHA851d69d1…, client8c8080f7…, config656c0cef…; origins00d9c5d0…/
+adoption666c79a6…/absent ledger/AEP8299fd9f… сохранены.
+
+Первый real standard client1576 загрузил new package с первого запроса11.960с,
+owner15584/birth639292661152752430/boot16749b0f-6511-4ff1-85ce-11bcf79da644
+ready; один native listener3457. Собственная CEP открыта1раз и автоматически
+connected. Standard client14224: acquire1/connect/contract/direct project read
+saved empty AEP9472 PASS; command inspect-2b2e4818-2dba-4b2b-9f6f-bccfa040204c,
+lease released, authority/continuityfalse. Receiver52settled/SHA
+e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437,
+prefix50 exact. Native idle-before snapshot записан; old receiver identity
+receiver-store-65535962-c7bb-4dcb-b614-1d91d9277ce4, new workSession пока legacy.
+AE9472/birth639292254253597850 прежний, saved own AEP unchanged, mutation/restart0.
+
+Actual B3 reset пока0. Computer-use дважды отклонил клик до input: point over
+CEPHtmlEngine.exe/Chrome Legacy Window вместо AfterFX parent. Свежий inventory
+не предоставляет отдельное CEP окно; keyboard Tab оставил document focus.
+Запрошено ручное нажатие пользователем «Начать заново» с подтверждением.
+После него status only до установления исхода, не повторять reset request.
+Configured MCP после установки даёт owner_unavailable (old2fb client); нужен
+Restart MCP для fresh configured proof, а не повтор установки.
+[B3c evidence/матрица](../docs/core-base-b3c-installed-20261103.md).
+
 B3b3 production composition source принят: 42checks/41batches/721unique cases (212fresh/509exact reuse),
 boundaries55. [Evidence](../docs/evidence/core-base-b3b3-20261103.json).
 Package327faaac…/distribution4975c36a… (80/98files) собран/verified, dry-run PASS.
-Actual installed всё ещё2fb5aebe, новые stop/update/reset не начинались.
+Это исходный pre-install checkpoint; актуальное installed состояние описано выше.
 Fresh configured preflight: same owner24160/birth639292395293906370, AE9472/
 birth639292254253597850; два новых reads (empty unsaved, затем saved test AEP).
 Receiver50settled/SHA94f31e18…/prefix46 exact, protected/bindings unchanged.

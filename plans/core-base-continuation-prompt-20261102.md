@@ -6,8 +6,15 @@ B1/B2 installed/configured package2fb5aebe принят. B3a1–a4/b1/b2 и prod
 B3b3 source завершены; 42checks/41batches/721unique cases (212fresh/509exact reuse) PASS, boundaries55.
 [Evidence](../docs/evidence/core-base-b3b3-20261103.json). Owner-v4 candidate
 327faaac…/distribution4975c36a… (80runtime/98bundle) verified, dry-run PASS,
-actual install/reset пока0. Следующий этап — B3c штатное обновление и native
-idle/UNKNOWN reset с сохранением истории, затем fresh session/baseline.
+actual install завершён: stop49b423d9…/updateaf65ee78…/explicit enable settled,
+original interrupted update восстановлен без повторного apply. New standard
+owner15584/birth639292661152752430/boot16749b0f… ready, один3457; CEP automatic
+connected, direct native read saved empty AEP PASS,52settled/prefix50 exact.
+Native reset пока0: computer-use отклоняет CEP child click; пользователю отправлен
+запрос нажать «Начать заново»/подтвердить. После ответа сначала status/исход,
+не повторять отправку. Далее idle/UNKNOWN reset с сохранением истории и fresh
+session/baseline. Configured MCP old2fb/owner_unavailable требует Restart MCP;
+установку/settled49b/af65 не повторять. Точные актуальные pins — checkpoint.
 
 Fresh preflight: owner24160/birth639292395293906370, same bootc9a04982…,
 AE9472/birth639292254253597850. Собственный пустой AEP сохранён как

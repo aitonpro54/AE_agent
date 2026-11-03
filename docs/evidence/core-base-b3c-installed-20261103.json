@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-03T01:42:42.867Z",
+  "sourceCommit": "0cddee2b80b16ad80eafa93fd9b1720337b26607",
+  "packageHash": "327faaac97f8f4c5e17c20dfbf30082b1be242f59be566c72ef7e3d4970f88cd",
+  "distributionHash": "4975c36a1a53743d378cf2fed85ffd1c89399cf8327dfd5fd43ec1e605a62741",
+  "runtimeFiles": 80,
+  "bundleFiles": 98,
+  "update": {
+    "stopId": "49b423d9-7763-433b-808d-0048264ba491",
+    "updateId": "af65ee78-03e7-4c19-8a6b-3783e19879d1",
+    "applyAttempts": 1,
+    "wrapperInterruptedBeforeSwitchReady": true,
+    "wrapperTimeoutMs": 90000,
+    "originalPreReadyRecovery": {
+      "aeAuthority": false,
+      "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+      "packageHash": "327faaac97f8f4c5e17c20dfbf30082b1be242f59be566c72ef7e3d4970f88cd",
+      "phase": "update-stopped",
+      "recovered": true,
+      "runtimeStarted": false,
+      "transactionId": "af65ee78-03e7-4c19-8a6b-3783e19879d1",
+      "updated": true
+    },
+    "enable": {
+      "aeAuthority": false,
+      "enabled": true,
+      "packageHash": "327faaac97f8f4c5e17c20dfbf30082b1be242f59be566c72ef7e3d4970f88cd",
+      "runtimeStarted": false,
+      "sameDescriptor": true,
+      "transactionId": "af65ee78-03e7-4c19-8a6b-3783e19879d1"
+    },
+    "receipts": {
+      "b3-install-stop.json": {
+        "sha256": "04c17a34f92dd5bb5f6740fb66231b7f5283ec790b989dea3cf36d1143eb400f"
+      },
+      "b3-install-owner-pre-ready-inspect.json": {
+        "sha256": "57a9f5a30f57c36af648df7c93c171a4efc67d188d5e47e4f15d63f35d25c056"
+      },
+      "b3-install-owner-pre-ready-finish.json": {
+        "sha256": "f809c459bc36e2f16b0d7f0d973d911d038b7ee30c313a6b9aa18047381ffe14"
+      },
+      "b3-install-update-inspection.json": {
+        "sha256": "d695213b60f141df001488ff45b2456c405799aa5fcffa7d0b745ef20a4e75ba"
+      },
+      "b3-install-enable.json": {
+        "sha256": "67799c19351ddcd92f9fda6b3c0be983f0a0b1ba180b82559e225f7f61a776b2"
+      }
+    }
+  },
+  "bindings": {
+    "descriptor": "851d69d1cf66cc4117e6bed2485feed016b755c9201c5995dd619592b1d3a118",
+    "client": "8c8080f73f4b50fceb6714517db37a825e783038998992e8d33a08bc7e4ccd70",
+    "config": "656c0cefef8fc78f2d9e3a5b1fcbfeb58f3cd7d4722294279f52244e93dc5abe"
+  },
+  "protectedHashes": {
+    "origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "state/production/origin.json": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+    "state/production/host-adoption.json": "666c79a6df96f42434403d0ea28b6420ec416c35c7d58465bd0bc9b8dfcf7efa",
+    "state/production/broker/ledger.ndjson": null
+  },
+  "aep": {
+    "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep",
+    "size": 8367,
+    "sha256": "8299fd9faf046e21911739430e304599c4e8f3690fc6314c21b9fa8f8a15c237"
+  },
+  "native": {
+    "owner": {
+      "pid": 15584,
+      "birthTicks": "639292661152752430",
+      "processBootId": "16749b0f-6511-4ff1-85ce-11bcf79da644"
+    },
+    "ownerObservedAt": "2026-11-03T01:42:42.867Z",
+    "ae": {
+      "version": 1,
+      "machineId": "MSI",
+      "observedAt": "2026-11-03T01:42:42.815Z",
+      "processes": [
+        {
+          "pid": 9472,
+          "birthTicks": "639292254253597850",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"
+        }
+      ]
+    },
+    "listener": {
+      "port": 3457,
+      "ownerPid": 15584,
+      "observedDuringInstalledPreflight": true
+    },
+    "standardClients": [
+      {
+        "pid": 1576,
+        "startedAt": "2026-11-03T01:28:34.063Z",
+        "completedAt": "2026-11-03T01:28:46.023Z",
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "ownerPid": 15584,
+        "packageHash": "327faaac97f8f4c5e17c20dfbf30082b1be242f59be566c72ef7e3d4970f88cd"
+      },
+      {
+        "pid": 15088,
+        "startedAt": "2026-11-03T01:40:29.178Z",
+        "completedAt": "2026-11-03T01:40:29.921Z",
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "ownerPid": 15584,
+        "packageHash": "327faaac97f8f4c5e17c20dfbf30082b1be242f59be566c72ef7e3d4970f88cd"
+      }
+    ],
+    "directRead": {
+      "clientPid": 14224,
+      "startedAt": "2026-11-03T01:30:42.512Z",
+      "completedAt": "2026-11-03T01:30:43.644Z",
+      "commandId": "inspect-2b2e4818-2dba-4b2b-9f6f-bccfa040204c",
+      "controllerGeneration": 1,
+      "released": true,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "projectFile": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b3-native-20261103.aep",
+      "itemCount": 0,
+      "aeAuthority": false,
+      "continuity": false
+    },
+    "receiver": {
+      "eventCount": 52,
+      "sha256": "e095765c99b7a14db64170609e1ccbd6b5c1ba422da20c18137c21bbe3820437",
+      "prefix50Preserved": true
+    },
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "legacy",
+      "resetId": null,
+      "resetPending": false,
+      "sessionId": null
+    },
+    "aeRestarts": 0,
+    "projectMutations": 0,
+    "pending": false,
+    "unknown": false,
+    "fault": false
+  },
+  "ui": {
+    "ownPanelClosed": 1,
+    "ownPanelOpened": 1,
+    "automaticConnected": true,
+    "startOverButtonObserved": true,
+    "resetRequests": 0,
+    "inputIssue": "CEPHtmlEngine child is not a targetable window in computer-use inventory; two clicks refused before input",
+    "manualPanelActionRequested": true
+  },
+  "configured": {
+    "result": "owner_unavailable",
+    "clientPackage": "2fb5aebe3780215d8cd8af0fcd0927445f2a5bb475fdbb77cb2b7afb50b9f988",
+    "restartRequired": true,
+    "installedPackageProof": false
+  },
+  "remaining": [
+    "installed idle reset without AE restart",
+    "installed held read UNKNOWN reset with exact old AE death and byte-preserved history",
+    "explicit new session acknowledgement and fresh durable native baseline",
+    "fresh configured MCP status/read after MCP restart",
+    "mutation recovery, full release and desktop/MSI round-trip are separate unproven scopes"
+  ],
+  "result": "installation and standard native read accepted; B3 native reset acceptance incomplete",
+  "aeAuthority": false
+}

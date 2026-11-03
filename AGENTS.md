@@ -11,6 +11,23 @@
 
 ## Текущий scope и правила
 
+**3 ноября, B3c установлен:** source `0cddee2` принят
+(721unique cases/42checks/55boundaries). Package327faaac…/distribution4975c36a…
+(80runtime/98bundle) штатно установлен и enabled. Stop
+`49b423d9-7763-433b-808d-0048264ba491` и update
+`af65ee78-03e7-4c19-8a6b-3783e19879d1` завершены; прерванный90с wrapper
+восстановлен original pre-ready inspect/finish без повторного owner-update.
+Эти settled IDs не повторять, markers не чистить. New standard client загрузил
+327faaac, owner15584/birth639292661152752430/boot16749b0f… ready, один3457.
+Собственная новая CEP открыта/автоматически connected; native direct project
+read saved empty test AEP PASS, lease1 released. History52settled/prefix50 exact,
+origins/adoption/ledger/AEP preserved. AE9472 прежний, restart/mutation0.
+Actual B3 reset пока0: computer-use не адресует CEPHtmlEngine child; клик
+отклонён до input, ожидается ручное нажатие пользователем «Начать заново».
+Configured MCP всё ещё old2fb/owner_unavailable; нужен Restart MCP после
+установки, install повторять не нужно. Далее native idle/UNKNOWN reset,
+fresh session/baseline и configured proof. Точные pins — checkpoint.
+
 **2 ноября, installed checkpoint B1/B2:** source commits `264522c`/`2d08c71`
 приняты адресными checks; штатно установлен package `2fb5aebe…`, distribution
 `d8d77c38…`. Standard thin client → CEP → native project-inspection, known rejected

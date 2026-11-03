@@ -1,5 +1,10 @@
 # База Core: результаты B1/B2 на 2 ноября
 
+**3 ноября:** B3 source и установка нового327faaac… приняты; первый standard
+native read PASS. Actual idle/UNKNOWN reset и fresh configured proof ещё открыты:
+[актуальная матрица B3c](core-base-b3c-installed-20261103.md).
+Матрица ниже сохраняет исходный момент B1/B2.
+
 Source commits: `264522c` (B1), `2d08c71` (B2). Установлен package
 `2fb5aebe3780215d8cd8af0fcd0927445f2a5bb475fdbb77cb2b7afb50b9f988`;
 distribution `d8d77c3876ef29121acb3063b713888d8ebf4cb8015fd6c9d6839921282c334d`.
