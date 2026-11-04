@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T09:09:37.482Z",
+  "blockId": "source-candidate-27",
+  "baselineCommit": "f32c03c6396e1898de91fb3d9830981cee998239",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:installed-composition)",
+      "test/installed-composition.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T09:08:41.068Z",
+    "finishedAt": "2026-11-04T09:09:02.577Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 9,
+      "suites": 0,
+      "pass": 9,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 21446.9704
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-27-installed-composition.log",
+      "sha256": "b62d80d1c5f71ca134ee33b797c1668534cfcab0ecdd91e6d40f4a23906c61a9",
+      "bytes": 1263
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-27-installed-composition-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "installed-composition",
+      "evidenceKey": "5ab3cc921ff66c138686d47c0730836002f85602595e5c48b1b623c14ad0d7b7",
+      "result": "PASS",
+      "cases": 9,
+      "skipped": 0,
+      "matchedTestNames": [
+        "installed-composition portable fixed-format1 transition to readonly preserves signed history and no replay",
+        "installed-composition deterministic packages, fixed ES3 registries, admission pins and physical closure",
+        "installed-composition direct legacy derivation requires each fixed admission hash and exact bytes",
+        "installed-composition entry source guard covers top-level/start/lease-prefix/tail and fails closed on layout changes",
+        "installed-composition build CLI selects readonly/manual and rejects ambiguous options without output",
+        "installed-composition unknown/missing/corrupt/duplicate/path/phase/catalog/admission/downgrade failures",
+        "installed-composition installed readonly child initialize/status/discovery/contract and native fake VM inspection",
+        "installed-composition actual manual installed child retains module discovery and manual gated policy",
+        "installed-composition installed format2 corruption/missing composition rejects before imports and legacy format1 generic verification stays generic"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installed-composition",
+        "test/installed-composition.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own TEMP package rotations and installed fixture copies",
+    "http": "direct fixture preload logical3457 to ephemeral0; fake VM host",
+    "childActors": "own composition/disposition IPC children only",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "titlesSuites": 0,
+    "slideshowSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": true,
+    "fixturePrefixes": [
+      "core4-composition-",
+      "core4-native-capture-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-tmD6I3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-composition-ifo1V0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-composition-Ckr9Z0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-composition-KGsEkW",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-composition-xrKYjZ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-composition-zUuha8"
+    ],
+    "remainingOwnDirs": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-tmD6I3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-composition-ifo1V0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-composition-Ckr9Z0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-composition-KGsEkW",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-composition-xrKYjZ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-composition-zUuha8"
+    ],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own TEMP installations/history data intentionally retained; no outside install or broad cleanup.",
+      "Normal PASS exact child exits awaited. Transition early-failure emergency child cleanup gap means FAIL must stop until exact actor exit proof.",
+      "Original90s transition/15s installed-child source budgets retained; no outer deadline."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/installed-composition.test.js",
+        "line": 36,
+        "proof": "Exact own RPC child SIGTERM and await exit"
+      },
+      {
+        "file": "core4/test/installed-composition.test.js",
+        "line": 142,
+        "proof": "Readonly and manual fixture RPC child close awaited in finally"
+      },
+      {
+        "file": "core4/test/fixtures/installed-composition-transition.js",
+        "line": 15,
+        "proof": "Disposition exact child exit awaited0"
+      },
+      {
+        "file": "core4/test/fixtures/installed-composition-transition.js",
+        "line": 30,
+        "proof": "Own historical peer.close awaited in finally"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-27-installed-composition-reducer.json",
+    "sha256": "015c14131aa425bb6431e7bba3947f809d09dd4335094d0eab9aa4084e48deec"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
