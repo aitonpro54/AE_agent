@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T09:08:07.375Z",
+  "blockId": "source-candidate-26",
+  "baselineCommit": "f4c6db9222886b5607fdc5f8c92c3f750a54898f",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:native-read-recovery)",
+      "test/native-read-recovery.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T09:03:17.783Z",
+    "finishedAt": "2026-11-04T09:07:41.342Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 19,
+      "suites": 0,
+      "pass": 19,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 263495.7666
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-26-native-read-recovery.log",
+      "sha256": "7f0321eca1c66e090592cbb9395c4a1240920de4d92ac30b5f67561aa2778fbe",
+      "bytes": 2610
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-26-native-read-recovery-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "native-read-recovery",
+      "evidenceKey": "1d042fc02c3055fdd6ee4f51dd9092f5245d5d8b57e00df574c4f6d669852d42",
+      "result": "PASS",
+      "cases": 19,
+      "skipped": 0,
+      "matchedTestNames": [
+        "native-read-recovery actual Node IPC approval commits one unknown disposition, archives owner and publishes v2 reachable lineage",
+        "native-read-recovery IPC mismatch retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery IPC duplicate retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery IPC disconnect retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery IPC timeout retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery append-short retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery append-fsync retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery archive retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery install-switch retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery approval does not waive fresh original CAS, new owners or additional UNKNOWN",
+        "native-read-recovery private plan and shared lease reject JSON forgery, mutation, foreign scope and startup while held",
+        "native-read-recovery historical Node binding is data, explicit lineage rejects missing/tampered edges and runtime has no data-only selector",
+        "native-read-recovery rollback partial visible switch retains both lease gates and transaction without automatic rollback",
+        "native-read-recovery operator inspect rejects modified managed witness, producer profile and closure before issuance",
+        "native-read-recovery owner identity ABA owner-between-inspect-apply refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-after-ipc refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-after-append refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-wrong-archive refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-after-rename refuses C and preserves original history/foreign marker"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-recovery",
+        "test/native-read-recovery.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own TEMP installations/journals/recovery",
+    "http": "own capture and historical ACK ephemeral0",
+    "probes": "synthetic dead PID/process/port data",
+    "childActors": "own disposition IPC children and read-only stdio CLI",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "titlesSuites": 0,
+    "slideshowSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": true,
+    "fixturePrefixes": [
+      "core4-native-capture-",
+      "core4-recovery-lease-",
+      "core4-recovery-lineage-",
+      "core4-rollback-retain-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-XGYa0A",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-5GzCN0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-y0dKB5",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-UWTnKF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-y68PTL",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-Ubv3jg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-2iwzep",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-KlJCJz",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-4xUxfy",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-5wfuK9",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-recovery-lease-gpuQmI",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-recovery-lineage-yJN9DC",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-rollback-retain-988MIV",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-tddPde",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-GdFk9H",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-M12Tpo",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-wj0GrJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-G4GqLW",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-0a2OhI"
+    ],
+    "remainingOwnDirs": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-XGYa0A",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-5GzCN0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-y0dKB5",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-UWTnKF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-y68PTL",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-Ubv3jg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-2iwzep",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-KlJCJz",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-4xUxfy",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-5wfuK9",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-recovery-lease-gpuQmI",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-recovery-lineage-yJN9DC",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-rollback-retain-988MIV",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-tddPde",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-GdFk9H",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-M12Tpo",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-wj0GrJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-G4GqLW",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-0a2OhI"
+    ],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own TEMP data/gates/transactions intentionally retained; no broad cleanup.",
+      "Normal PASS disposition children complete exact exit event; sync stdio children terminal. Unexpected early errors lack emergency child cleanup; on FAIL no next batch before exact actor exit proof.",
+      "No outer deadline or source budget changes."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/native-read-recovery.test.js",
+        "line": 21,
+        "proof": "Historical ACK peer.close awaited in finally"
+      },
+      {
+        "file": "core4/test/native-read-recovery.test.js",
+        "line": 32,
+        "proof": "forkApply only resolves after exact own child exit"
+      },
+      {
+        "file": "core4/test/fixtures/native-read-recovery.js",
+        "line": 54,
+        "proof": "Capture pending awaited, production capture finally closes server/timers"
+      },
+      {
+        "file": "core4/test/native-read-recovery.test.js",
+        "line": 98,
+        "proof": "Install lease released in finally"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-26-native-read-recovery-reducer.json",
+    "sha256": "819e816902313c5d3356714d9630736355bd8c1b4b505210f56b8786b2c6aa6a"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}

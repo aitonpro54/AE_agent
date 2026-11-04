@@ -30,7 +30,7 @@ push/PR и запуска dedicated продуктов. Штатные внут�
 own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup проверены.
 
 <!-- EXECUTION_STATUS -->
-Принято source runs: 31; current fresh checks: 34. Применимое evidence: 65 exact-key + 0 byte-command-bound. Открыто: 6 (без hold: 4, Titles под паузой: 2). Следующий блок: source-candidate-26.
+Принято source runs: 32; current fresh checks: 35. Применимое evidence: 66 exact-key + 0 byte-command-bound. Открыто: 5 (без hold: 3, Titles под паузой: 2). Следующий блок: source-candidate-27.
 <!-- /EXECUTION_STATUS -->
 
 <!-- EXECUTION_BLOCKS -->
@@ -66,7 +66,8 @@ own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup пр�
 | source-candidate-22 | `core-control`, `core-admission`, `workflow-recovery`, `worker-isolation`, `protocol-codec`, `catalog-discovery` | PASS: 30 pass / 0 skip | [JSON](../docs/evidence/core-release-block-22-20261103.json) | `f0843a7` |
 | source-candidate-23 | `photo-owner`, `photo-executor-contract` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-23-20261103.json) | `6db06cf` |
 | source-candidate-24 | `cep-transport` | PASS: 15 pass / 0 skip | [JSON](../docs/evidence/core-release-block-24-20261103.json) | `86afa17` |
-| source-candidate-25 | `lifecycle-simulation` | PASS: 31 pass / 0 skip | [JSON](../docs/evidence/core-release-block-25-20261103.json) | создаётся после проверки |
+| source-candidate-25 | `lifecycle-simulation` | PASS: 31 pass / 0 skip | [JSON](../docs/evidence/core-release-block-25-20261103.json) | `f4c6db9` |
+| source-candidate-26 | `native-read-recovery` | PASS: 19 pass / 0 skip | [JSON](../docs/evidence/core-release-block-26-20261103.json) | создаётся после проверки |
 <!-- /EXECUTION_BLOCKS -->
 
 ## Block16: сохранённый FAIL и принятый repair
