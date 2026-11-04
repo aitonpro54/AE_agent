@@ -1,0 +1,311 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-two-host-practical-transfer-result",
+  "createdAt": "2026-11-04T13:42:18.910Z",
+  "result": "PASS_BOUNDED_PRACTICAL_CORE_TRANSFER",
+  "scopeRu": "Выбранный manual/owner Core между MSI и DESKTOP-32974QF; первоначальная подготовка desktop и реальная инженерная дельта в обе стороны.",
+  "sourceAtAcceptance": "a6abf11a07bce7c9cc09ee4de07714fc20faf175",
+  "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+  "standaloneHash": "5d5d1aa4e95d31465c733dbc68ccf3dacba23c5b7fabea1de6811e616c792cdf",
+  "runtimeFiles": 80,
+  "standaloneFiles": 98,
+  "hosts": {
+    "MSI": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "owner": {
+        "birthTicks": "639293876094462200",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+            "eventCount": 1,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": "ccec4ab8f1f290ce8bbb93ab2cbf7beea22d9f3b3598ed7c78962b8d554a5f73",
+            "eventCount": 7,
+            "present": true,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 24968,
+        "processBootId": "76635f77-de5a-413c-a019-f3f7b5e50ec8",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "ae": {
+        "pid": 13608,
+        "birth": "2026-11-04T16:14:16.998975+05:00",
+        "version": "26.3x87"
+      },
+      "nativeCommand": "inspect-28757539-30c0-488d-8b11-0fea8b9d192e",
+      "nativeReceipt": "c3ec1d7f68fcf01097af14df4636b174837942e82be71faacecc2ba31974cf1f",
+      "receiver": {
+        "at": "2026-11-04T12:53:12.773Z",
+        "receiverEvents": 11,
+        "beforeEvents": 9,
+        "exactBeforePrefixPreserved": true,
+        "receiverSha256": "da52b467510f75b650d288be7ae58a5822acd6ae7a7b1a5ff023b128c8ade4a6",
+        "originalPrefixSha256": "dbea289fead21fd2f6764050f9b51ae24339b843258b5ec69c6792049605e662",
+        "ledgerSha256": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+        "ledgerUnchanged": true,
+        "aepSha256": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5",
+        "aepUnchanged": true
+      },
+      "configuredRead": "PASS",
+      "reinstall": 0
+    },
+    "desktop": {
+      "hostname": "DESKTOP-32974QF",
+      "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+      "owner": {
+        "birthTicks": "639293958892069440",
+        "historyAtStartup": {
+          "ledger": {
+            "byteHash": null,
+            "eventCount": 0,
+            "present": false,
+            "settled": true,
+            "unresolvedCount": 0
+          },
+          "receiver": {
+            "byteHash": null,
+            "eventCount": 0,
+            "present": false,
+            "settled": true,
+            "unresolvedCount": 0
+          }
+        },
+        "mode": "active",
+        "pid": 25516,
+        "processBootId": "ec19db01-7d8e-42b7-aec5-280f0bf5fc01",
+        "reason": null,
+        "recoveryRequired": false
+      },
+      "controllerBootId": "21451f88-440f-4182-b90b-1f3bafd28ee4",
+      "ae": {
+        "birth": "2026-11-04T13:23:21.5337360Z",
+        "exe": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "version": "26.3.0.87",
+        "pid": 28156
+      },
+      "nativeCommand": "inspect-81ce25ea-c5c1-4f87-9899-10b313d11ca1",
+      "nativeReceipt": "927637ea280b54f7e417e06c2f9ecdbd7bea2cbaec422bdaf0b6fa6fcc6a9d9b",
+      "receiver": {
+        "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\receiver\\completions.ndjson",
+        "sha256": "56516a0e97e55f4b38039b6924ab50890f21a6d1082a38e5f448260116c80b7c",
+        "recordsAtInitialInstallation": 0,
+        "recordsAfter": 3,
+        "recordTypes": [
+          "origin",
+          "begin",
+          "complete"
+        ],
+        "initialOwnerOriginRecord": 1,
+        "commandRecordsAdded": 2,
+        "commandsDispatched": 1,
+        "hashChainVerified": true,
+        "beginCompleteCommandIdMatchesInspection": true,
+        "settled": true,
+        "brokerLedgerPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+        "brokerLedgerPresent": false,
+        "originPrefixSHA256": "a4cc41aa8deb0f1e97f3de4aa1014555b5dedef9e84837fcc2ba184fecefc1ae",
+        "originPrefixObservation": "Derived read-only from final immutable journal prefix; not a separate pre-inspection filesystem capture"
+      },
+      "configuredRead": "PASS",
+      "initialApply": 1,
+      "normalAERestarts": 1
+    }
+  },
+  "directions": [
+    {
+      "from": "desktop",
+      "to": "MSI",
+      "commit": "f857f2d0c5a86540d194a3f05507254b19d9763a",
+      "change": "bounded quoted-TOML installer fix",
+      "result": "PASS"
+    },
+    {
+      "from": "MSI",
+      "to": "desktop",
+      "commit": "0b78aacdba59087536b4fa1ed7fb0625d7e7248e",
+      "change": "quoted legacy/env and decoded local-path CLI regression",
+      "result": "PASS"
+    }
+  ],
+  "toolPublication": {
+    "observedInExistingChat": true,
+    "appServerRestartByThisBlock": false,
+    "existingAppServerPid": 7060,
+    "existingAppServerBirth": "2026-11-04T09:29:14.7510340Z",
+    "cause": "Runtime announced Added deferred tool namespace mcp__after_effects_core4 during same turn; next fresh ALL_TOOLS inventory contained configured tools. No reload/API/UI/membership change by this controller; underlying publication trigger not observed",
+    "priorRefreshBlockerSuperseded": true,
+    "existingProjectMembershipObserved": true,
+    "membershipChanged": false,
+    "operationalLimitRu": "Наблюдалась поздняя публикация deferred namespace в существующем чате; её внутренний trigger не установлен. Это не доказательство заданного времени или универсального автоматического reload."
+  },
+  "criteria": [
+    {
+      "id": "P1",
+      "status": "PASS_BOUNDED",
+      "evidence": [
+        "docs/evidence/core-portability-quoted-config-20261104.json",
+        "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+        "docs/evidence/core-portability-desktop-installed-20261104.json"
+      ],
+      "conclusionRu": "Одинаковые package/standalone identities на двух хостах; локальные descriptors/credentials/state исключены из переносимого состава."
+    },
+    {
+      "id": "P2",
+      "status": "PARTIAL_FORMAL_OPEN",
+      "evidence": [
+        "docs/evidence/core-portability-preflight-20261104.json",
+        "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+        "docs/evidence/core-portability-desktop-configured-native-20261104.json"
+      ],
+      "conclusionRu": "Среды, Node/AE identities и реальные authenticated native каналы подтверждены. Буквальное значение CEP HTTP Origin отдельно не записано; не выводится из пути панели или adoption origin.",
+      "remainingRu": "Для строгого закрытия — записать существующее наблюдение HTTP Origin либо получить его при следующей адресной диагностике. Нового live в практическом блоке не назначено."
+    },
+    {
+      "id": "P3",
+      "status": "PASS_BOUNDED",
+      "evidence": [
+        "docs/evidence/core-portability-quoted-config-20261104.json",
+        "docs/evidence/core-portability-msi-roundtrip-20261104.json"
+      ],
+      "conclusionRu": "Desktop commit f857f2d получен MSI; installer fix принят и package/standalone воспроизведены. Runtime cdf уже установлен: переустановка0, новый configured native own-AEP read PASS."
+    },
+    {
+      "id": "P4",
+      "status": "PASS_BOUNDED",
+      "evidence": [
+        "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+        "docs/evidence/core-portability-desktop-installed-20261104.json",
+        "docs/evidence/core-portability-desktop-configured-native-20261104.json"
+      ],
+      "conclusionRu": "Реальная MSI CLI regression delta0b78aac возвращена на desktop, проверена адресным case и штатной initial установкой; configured native read PASS, ручных правок config0."
+    },
+    {
+      "id": "P5",
+      "status": "PARTIAL_FORMAL_OPEN",
+      "evidence": [
+        "docs/evidence/core-portability-quoted-config-20261104.json",
+        "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+        "docs/evidence/core-portability-desktop-installed-20261104.json"
+      ],
+      "conclusionRu": "Повторные dry-run сохранили124наблюдаемых entries MSI и98 desktop; текущие TEMP apply/rollback/CAS/short-write/foreign-stage checks PASS. Production repeat apply/update той же версии не выполнялся.",
+      "remainingRu": "Для строгого закрытия — один штатный повтор той же версии на одной реальной установке с read-back identity/state/preferences. В текущий ограниченный practical блок не требуется; dry-run не назван production repeat."
+    },
+    {
+      "id": "P6",
+      "status": "PASS_INDEPENDENT_LOCAL_INSTALLATIONS",
+      "evidence": [
+        "docs/evidence/core-portability-quoted-config-20261104.json",
+        "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+        "docs/evidence/core-portability-desktop-configured-native-20261104.json"
+      ],
+      "conclusionRu": "Независимые local identities и credentials, authority/state не импортировались. Current HTTP auth/origin/replay/fence negatives и exact reuse manual-runtime59/manual-current-target13/work-session17 применимы в их source/TEMP пределах.",
+      "limitsRu": "Реальные общие AEP/assets/outputs не переносились и не проверялись; distributed lock не заявляется. Native observation не выдаёт mutation authority или continuity."
+    },
+    {
+      "id": "P7",
+      "status": "PASS_BOUNDED",
+      "evidence": [
+        "docs/evidence/core-portability-preflight-20261104.json",
+        "docs/evidence/core-portability-quoted-config-20261104.json",
+        "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+        "docs/evidence/core-portability-desktop-installed-20261104.json",
+        "docs/evidence/core-portability-desktop-cep-discovery-20261104.json",
+        "docs/evidence/core-portability-desktop-configured-native-20261104.json",
+        "docs/evidence/core-portability-desktop-service-refresh-preflight-20261104.json"
+      ],
+      "conclusionRu": "Сохранены Git history обоих направлений, V1 REVISE/V2 ACCEPT disposition, команды/ключи/исходные безопасные stdout и открытые gaps; historical PASS не выдан за изменившиеся bytes."
+    },
+    {
+      "id": "P8",
+      "status": "REPORT_COMPLETE_FORMAL_CERTIFICATION_OPEN",
+      "evidence": [
+        "docs/evidence/core-portability-two-host-result-20261104.json"
+      ],
+      "conclusionRu": "Единый двухмашинный отчёт завершён; current practical результат принят. Полное P1–P8 certification остаётся false из-за явно записанных формальных остатков P2/P5."
+    }
+  ],
+  "sourceCoverage": {
+    "registered": 71,
+    "currentAccepted": 48,
+    "currentOpen": 23,
+    "openIntegrationsNotRun": 21,
+    "titlesHeld": 2,
+    "portabilitySourceCommands": 14,
+    "countsAreNotGlobalUnique": true,
+    "originalSourceAcceptance69IsHistorical": true
+  },
+  "review": {
+    "role": "ae_reviewer",
+    "scope": "read-only acceptance contract review",
+    "verdict": "BOUNDED_PRACTICAL_PASS_STRICT_GATE_OPEN",
+    "newLiveOrTestsRequiredForBoundedAcceptance": 0,
+    "dispositionRu": "P1/P3/P4/P7 PASS в выбранном scope; P6 independent local installations PASS; P2 literal Origin и P5 actual production repeat оставлены формально open; P8 report complete, certification false."
+  },
+  "actions": {
+    "manualConfigEdits": 0,
+    "runtimeStateOrCredentialsImported": 0,
+    "desktopInitialApply": 1,
+    "msiReinstall": 0,
+    "normalDesktopAERestart": 1,
+    "appServerTermination": 0,
+    "newAEVersion": 0,
+    "mutations": 0,
+    "resetOrAdoption": 0,
+    "unknownReplays": 0
+  },
+  "evidence": [
+    {
+      "role": "preflight",
+      "file": "docs/evidence/core-portability-preflight-20261104.json",
+      "sha256": "3fbbeccbbee1f6ed99d2cfba54a3dcb8901d7af23d3fa057e95957dc0ed14980"
+    },
+    {
+      "role": "desktopFix",
+      "file": "docs/evidence/core-portability-quoted-config-20261104.json",
+      "sha256": "9a271e53ff6f130e73af0301ae0255bedc6a75e30118b7eed1c5f36ca3175b7d"
+    },
+    {
+      "role": "msiReturn",
+      "file": "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+      "sha256": "9f8f2e77584b53883f4861b569739a5cd72cbe95455aac51b6fd8f63f823b61f"
+    },
+    {
+      "role": "desktopInstall",
+      "file": "docs/evidence/core-portability-desktop-installed-20261104.json",
+      "sha256": "c67d75b90cff266414d3ad0d7b4bd049bf498be5c5e3418f7bd726e6611ca709"
+    },
+    {
+      "role": "desktopCEP",
+      "file": "docs/evidence/core-portability-desktop-cep-discovery-20261104.json",
+      "sha256": "ce03897bbdfb5cae6efb7200e6a8da4891ec14f2d3b4d9fe010eefada69ae9ca"
+    },
+    {
+      "role": "desktopNative",
+      "file": "docs/evidence/core-portability-desktop-configured-native-20261104.json",
+      "sha256": "5707907ede639b9d422f5b00bca30ba91bbb00196a5d774b12084f6a3cb88f75"
+    },
+    {
+      "role": "serviceObservation",
+      "file": "docs/evidence/core-portability-desktop-service-refresh-preflight-20261104.json",
+      "sha256": "10be302f655f4ae9f6b93c8d567bad42b1e6440a3b19c1e816b3167178afc120"
+    }
+  ],
+  "pausedProducts": [
+    "Titles",
+    "Slideshow"
+  ],
+  "cloud": "outside-scope",
+  "practicalTransferAccepted": true,
+  "P1toP8Complete": false,
+  "portabilityCertified": false,
+  "releaseCertified": false
+}

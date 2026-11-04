@@ -47,8 +47,8 @@ stop/update/inspect/enable; новые механизмы вводить тол�
   порты3457/3456/8787 свободны. Kumo/legacy сохранены.
 - [x] MSI подтвердил общую Git-историю; опубликованный `2b28513` и desktop
   `1f5b820` являются предками текущего MSI HEAD.
-- [ ] Передача Git и проверка точного CEP target, initial install/read-back;
-  фактический round-trip и P1–P8.
+- [x] Git-передача реальной дельты в обе стороны, exact CEP target, initial install/read-back и configured native proof на обоих хостах.
+- [x] Единый P1–P8 report с явными strict P2/P5 gaps; bounded practical блок принят.
 
 Первое конкретное поручение подготовлено в ignored файле
 `.codex-runtime/portability-practical-20261104/desktop-readonly-task.txt`:
@@ -175,3 +175,17 @@ State production содержит только origin.json; наших submitted
 ### Validation
 
 Final owner25516 ready, peer connected, holder=null, pending=null, UNKNOWN/fault/unresolved0. Receiver3records:origin+begin+complete, одна settled inspection; hash chain и commandId проверены. Runtime80/CEP7, descriptor/client/project/global config, legacy/probe сохранены. Панель готова к командам. Authority/continuity=false, mutation/save0. Desktop scoped этап завершён; source48/23, P1–P8/full release и итоговая двухмашинная матрица остаются у координатора.
+
+## Итог практического блока — 4 ноября
+
+### Progress
+
+Выбранный manual/owner Core перенесён и проверен MSI↔DESKTOP-32974QF. Source delta в обе стороны, одинаковые cdf/80 и5d5/98, actual desktop install1 и fresh configured native proof обеих машин PASS. [Единый отчёт](../docs/core-portability-two-host-result-20261104.md), [JSON](../docs/evidence/core-portability-two-host-result-20261104.json).
+
+### Decision Log
+
+Bounded practical PASS принят по независимому read-only review. Strict P2 literal HTTP Origin и P5 production repeat не подменены auth inference/dry-run; полная gate остаётся open. Новых live/tests для завершения этого practical блока не требуется. Общие AEP/outputs/cloud не добавлены; Titles/Slideshow на паузе.
+
+### Validation
+
+71current keys, source snapshot215/supplemental33, текущие48accepted/23open. Все transferred logs/evidence hashes сверены; runtime80 и shared CEP6 совпали, local generated CEP/identities независимы. Native1dispatch desktop и новый1read MSI, leases released, pending/UNKNOWN/fault0. Manual config edits0, app-server terminations0, mutation/reset/replay0. Итоговый commit добавляет только docs/evidence.

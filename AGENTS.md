@@ -11,6 +11,15 @@
 
 ## Текущий scope и правила
 
+**4 ноября, практический перенос Core принят:** MSI↔DESKTOP-32974QF, реальная
+source-дельта в обе стороны, одинаковые cdf/80 иstandalone5d5/98, desktop initial
+install1 и configured native read обеих машин PASS. Manual config edits0; local
+identities/state/credentials не переносились, обе leases released, UNKNOWN/fault0.
+Bounded practical блок завершён. Strict P2 literal HTTP Origin/P5 production repeat
+остаются open, P1–P8/full release не сертифицированы; current source48/71,21integration
+и2Titles held открыты. Titles/Slideshow на паузе, облако вне scope.
+[Итог и рабочий путь](docs/core-portability-two-host-result-20261104.md). Ниже — checkpoints с собственным provenance.
+
 **4 ноября, desktop configured native PASS:** namespace Core4 появился в текущем чате без нашего restart app-server. Fresh status/contract → acquire/connect/one typed project-inspection/release завершены; AE26.3x87,numItems0. Owner25516 ready, peer connected, holder=null,pending/UNKNOWN/fault0; receiver origin+begin+complete3records/one settled command. Desktop этап install/configured/native завершён; P1–P8/full release открыты. [Evidence](docs/evidence/core-portability-desktop-configured-native-20261104.json).
 
 

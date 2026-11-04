@@ -1440,6 +1440,12 @@
       "sha256": "5707907ede639b9d422f5b00bca30ba91bbb00196a5d774b12084f6a3cb88f75",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "Configured native read-only proof, not full source/release/P1-P8 acceptance"
+    },
+    {
+      "file": "docs/evidence/core-portability-two-host-result-20261104.json",
+      "sha256": "ee1e8c1d26ce4f5d525c1ddeec55d9a42b8305b00adc194bf3faf73df71774ac",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Aggregate bounded acceptance; original keyed/native receipts remain authoritative."
     }
   ],
   "evidenceMethod": {
@@ -9994,7 +10000,7 @@
     },
     {
       "gate": "two-machine-portability",
-      "status": "open",
+      "status": "open-strict-certification-practical-transfer-accepted",
       "requiredForFullPortableRelease": true,
       "criteria": [
         "P1",
@@ -10007,12 +10013,18 @@
         "P8"
       ],
       "contract": "docs/portability.md",
-      "noteRu": "Desktop Git delivery, V2 source checks and actual-config dry-run PASS. Actual desktop install/configured read and round-trip remain open; P1–P8 not closed.",
+      "noteRu": "Практический Core transfer двух реальных машин и обоих направлений принят. Strict P2 literal HTTP Origin и P5 production repeat остаются open; P8 report complete, certification false. Общие AEP/outputs и cloud вне scope.",
       "preparationEvidence": "docs/evidence/core-portability-practical-20261104.json",
       "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
       "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
       "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
-      "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json"
+      "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
+      "practicalTransferAccepted": true,
+      "finalReport": "docs/evidence/core-portability-two-host-result-20261104.json",
+      "strictOpenCriteria": [
+        "P2",
+        "P5"
+      ]
     }
   ],
   "legacyReleaseScript": {
@@ -10970,7 +10982,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.sourceValidation"
   },
-  "updatedAt": "2026-11-04T13:35:10.111Z",
+  "updatedAt": "2026-11-04T13:42:18.910Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -10981,12 +10993,12 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "desktop-install-configured-native-read-PASS",
+    "status": "accepted-bounded-two-host-core-transfer",
     "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
     "remoteExecutionAuthorized": true,
-    "next": "Coordinator final two-machine P1-P8 matrix; bounded desktop stage complete",
+    "next": "Reuse practical workflow for subsequent authorized modules; retain explicit strict P2/P5 and full-release gaps.",
     "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
     "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
     "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
@@ -11142,7 +11154,16 @@
     },
     "desktopCEPDiscoveryEvidence": "docs/evidence/core-portability-desktop-cep-discovery-20261104.json",
     "desktopServiceRefreshPreflightEvidence": "docs/evidence/core-portability-desktop-service-refresh-preflight-20261104.json",
-    "desktopConfiguredNativeEvidence": "docs/evidence/core-portability-desktop-configured-native-20261104.json"
+    "desktopConfiguredNativeEvidence": "docs/evidence/core-portability-desktop-configured-native-20261104.json",
+    "completedAt": "2026-11-04T13:42:18.910Z",
+    "finalReport": "docs/evidence/core-portability-two-host-result-20261104.json",
+    "summary": "docs/core-portability-two-host-result-20261104.md",
+    "practicalTransferAccepted": true,
+    "P1toP8Complete": false,
+    "strictOpenCriteria": [
+      "P2",
+      "P5"
+    ]
   },
   "historicalSourceAcceptance": {
     "baselineCommit": "77a860e",

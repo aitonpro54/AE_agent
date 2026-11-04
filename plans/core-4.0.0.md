@@ -900,3 +900,7 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
 ### 4 ноября: MSI принял desktop fix и подготовил обратную CLI-дельту
 
 Progress: `f857f2d` fast-forward; 11 переносимых логов и hashes проверены. Один full named check46/46PASS, package/standalone одинаковы на двух машинах; foreign-CWD dry-run и configured native own-AEP read PASS. Decision: runtimecdf unchanged, MSI reinstall0; Titles/Slideshow на паузе. Validation: current48/open23, reader journal9→11 exactprefix, ledger/AEP unchanged, controller released. [Evidence](../docs/evidence/core-portability-msi-roundtrip-20261104.json). Следующий шаг — desktop fast-forward/initial install/native.
+
+### 4 ноября: практический Core transfer MSI↔desktop принят
+
+Progress: одинаковые packagecdf/80 иstandalone5d5/98, реальная инженерная дельта в обе стороны, desktop initial install1, configured native read обеих машин PASS. Decision: bounded practical блок завершён; strict P2 literal Origin/P5 production repeat оставлены open, Titles/Slideshow paused, cloud excluded. Validation: source current48/71, обе leases освобождены, pending/UNKNOWN/fault0, config manual edits0; [единый отчёт](../docs/core-portability-two-host-result-20261104.md).

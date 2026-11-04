@@ -308,3 +308,17 @@ State production содержит только origin.json; наших submitted
 ### Validation
 
 Final owner25516 ready, peer connected, holder=null, pending=null, UNKNOWN/fault/unresolved0. Receiver3records:origin+begin+complete, одна settled inspection; hash chain и commandId проверены. Runtime80/CEP7, descriptor/client/project/global config, legacy/probe сохранены. Панель готова к командам. Authority/continuity=false, mutation/save0. Desktop scoped этап завершён; source48/23, P1–P8/full release и итоговая двухмашинная матрица остаются у координатора.
+
+## Практический перенос принят — 4 ноября
+
+### Progress
+
+[Сводный двухмашинный отчёт](../docs/core-portability-two-host-result-20261104.md) подтверждает реальную source-дельту в обе стороны, local installation/read-back и configured native channels обоих хостов.
+
+### Decision Log
+
+Bounded practical PASS; strict portability gate открыта по literal CEP HTTP Origin(P2) и actual production repeat(P5). P8 report complete не означает полную сертификацию. Runtime/package без новой дельты, источник actual receipts сохранён.
+
+### Validation
+
+Current48/71,21deferred integrations+2Titlesheld open, full release=false. Новый aggregate report не заменяет keyed source evidence и не назначает новые тесты.
