@@ -322,3 +322,17 @@ Bounded practical PASS; strict portability gate открыта по literal CEP 
 ### Validation
 
 Current48/71,21deferred integrations+2Titlesheld open, full release=false. Новый aggregate report не заменяет keyed source evidence и не назначает новые тесты.
+
+## Origin: новый source-срез — 4 ноября
+
+### Progress
+
+Статус экспортирует только Origin аутентифицированного peer.8полных canonicalchecks PASS,source snapshot215 и71keys сверены. Current44/71:36exactreuse+8fresh,25remaining integrations выполняются отдельно,2Titlesheld. [Evidence](../docs/evidence/core-portability-peer-origin-source-20261104.json).
+
+### Decision Log
+
+Прежние12accepted refs с изменившимся key сохранены superseded. Nopeer null; stalepeer origin исторический, для actualOrigin proof нужен connected=true. Package1f8c/80 иstandalone18f2/98 verified; installed/native proof ещё не заявлен.
+
+### Validation
+
+Full release=false, source-first8 не выдаются за полную sourceприёмку; exact25queue authorised пользователем, без dedicatedTitles.

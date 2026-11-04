@@ -1,0 +1,22 @@
+✔ start-over-channel fence refuses a new direct or Broker submit before durable begin (37.0594ms)
+✔ start-over-channel previously accepted undelivered command cannot escape through late poll (220.4929ms)
+✔ start-over-channel reset flushes outstanding poll without delivering a command (30.9123ms)
+✔ start-over-channel delivered native completion settles only the old journal after the fence (19.3791ms)
+✔ start-over-channel normal attachment freeze still drains an already accepted physical command (18.2704ms)
+✔ start-over-channel HTTP delivery and held VM callback settle only the fenced old receiver before timeout (21.9208ms)
+✔ start-over-channel late VM callback after HTTP timeout preserves UNKNOWN and cannot enter a fresh receiver (565.0059ms)
+✔ start-over-channel new dispatcher and session cannot bypass same-window unresolved native callback (1.313ms)
+✔ start-over-channel late callback preserves old session key and old completion channel on lost ack (1.0619ms)
+✔ start-over-channel malformed native callback retains old no-replay latch while releasing returned callback guard (0.9552ms)
+✔ start-over-channel synchronous native exception remains uncertain across dispatcher script reload (1.0167ms)
+✔ start-over-channel session keys preserve legacy latch and reject caller malformed session identity (0.9412ms)
+✔ start-over-channel UNKNOWN persist failure cannot escape timer or retain an accepted Promise; fault remains fenced (72.9328ms)
+✔ start-over-channel failed durable completion cannot mint positive baseline proof and timeout stays finite (107.3049ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1179.3141

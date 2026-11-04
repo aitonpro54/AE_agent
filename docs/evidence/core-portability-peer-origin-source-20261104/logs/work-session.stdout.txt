@@ -1,0 +1,25 @@
+✔ work-session initial signed session requires baseline without issuing native authority (82.9054ms)
+✔ work-session only exact durable direct project observation clears baseline once across owner reopen (222.0677ms)
+✔ work-session lookalike peer or copied result cannot mint a baseline proof (126.994ms)
+✔ work-session observation from another real peer cannot be consumed on current peer (113.4505ms)
+✔ work-session changing result after durable completion invalidates its one-shot proof (59.4997ms)
+✔ work-session known native rejection cannot clear baseline (60.4486ms)
+✔ work-session old peer logical session cannot clear the current baseline (69.9914ms)
+✔ work-session durable reset intent prevents old completion from clearing a new baseline (46.405ms)
+✔ work-session descriptor credentials can rotate through verified historical lineage data (157.7022ms)
+✔ work-session missing historical lineage fails closed without baseline writes (24.1895ms)
+✔ work-session master replacement with identical bytes is not the published session alias (29.7798ms)
+✔ work-session incomplete reset cannot be represented by an early session candidate (27.5718ms)
+✔ work-session signed baseline for another session is refused (38.1396ms)
+✔ work-session legacy mode is explicit and a fresh observation does not create a session or grant (59.2944ms)
+✔ work-session stray baseline cannot silently make legacy state ready (18.5806ms)
+✔ work-session Broker observation cannot mint the private direct baseline proof (67.0234ms)
+✔ work-session manual result profile under a project-looking asset key cannot mint baseline (60.5976ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1342.6222

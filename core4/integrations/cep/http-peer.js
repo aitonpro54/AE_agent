@@ -51,7 +51,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     try { guardDelivery(); const value = frame(); pending.delivered = true; poll(value); }
     catch (e) { disconnect(e.code || 'physical_admission_closed'); poll(null); }
   }
-  function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId } : { connected: false }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { commandId: pending.command.commandId, delivered: pending.delivered } : null, lastReadFailure, lastPhysicalFault, startOverFrozen, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
+  function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId, origin: peer.origin } : { connected: false, origin: null }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { commandId: pending.command.commandId, delivered: pending.delivered } : null, lastReadFailure, lastPhysicalFault, startOverFrozen, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
   function reply(res, statusCode, value, origin) {
     if (res.destroyed || res.writableEnded) return;
     res.writeHead(statusCode, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) }); res.end(bounded(value));

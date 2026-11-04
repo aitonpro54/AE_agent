@@ -1,0 +1,779 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-portability-peer-origin-source-admission",
+  "recordedAt": "2026-11-04T15:25:32.508Z",
+  "result": "PASS_SOURCE_CANDIDATE_NOT_INSTALLED",
+  "baselineCommit": "de92b18d66b3c79af513de31dd67a12e404933f2",
+  "patchSha256": "bc34e46715be3564a9690d91dc3f38801ade73f0fda02d8fb12d5de33733a1cb",
+  "sourceFiles": [
+    {
+      "path": "core4/integrations/cep/http-peer.js",
+      "baselineSha256": "1f69d22a3bf58a7cd9fc494fd25487ff35005d3d29d0b2f5d2d3c2b01cfd46e7",
+      "candidateSha256": "1d6f087011b13bf24d9b96132394d300e5fff4d5600411d0eee44cf925a7a3d1"
+    },
+    {
+      "path": "core4/test/installable-runtime.test.js",
+      "baselineSha256": "4bcfbbd1aeb4e5fea2988dbd7f004764fe8930521f581030858624fe965d141f",
+      "candidateSha256": "ca0dfa22c6655979da99885a82a609cc7023422a246f3c9aa93bb0c4a6664c16"
+    }
+  ],
+  "scopeRu": "Только статус уже аутентифицированного CEP peer и assertions реальных HTTP Origin случаев; auth/Host/Origin/AE gates не менялись.",
+  "originSemantics": {
+    "path": "physical.peer.origin",
+    "noPeer": null,
+    "authenticatedValues": [
+      "null",
+      "file://"
+    ],
+    "stalePeer": "retains authenticated Origin; connected=false marks lack of freshness",
+    "freshProofRequiresConnected": true,
+    "noSecretOrMacExport": true
+  },
+  "checks": [
+    {
+      "check": "owner-runtime",
+      "result": "PASS",
+      "evidenceKey": "c31a826e4e92f5a89c07bd36b51210122d6ab8c87a2970453c9c1f3cfea77090",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-runtime",
+        "test/owner-runtime.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\stage\\core4",
+      "cases": 23,
+      "summary": {
+        "tests": 23,
+        "suites": 0,
+        "pass": 23,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 110584.3693
+      },
+      "actor": {
+        "pid": 28128,
+        "birthUtc": "2026-11-04T14:54:27.4385067Z",
+        "birthTicks": "639294008674385067",
+        "startRecordedAt": "2026-11-04T14:54:27.4478622Z",
+        "endRecordedAt": "2026-11-04T14:56:18.1115965Z",
+        "exitUtc": "2026-11-04T14:56:18.0900452Z",
+        "hasExited": true,
+        "exitCode": 0,
+        "observation": "retained System.Diagnostics.Process handle for this own test actor only"
+      },
+      "resultFile": "attempt-02/01-owner-runtime/result.json",
+      "resultSha256": "2a9713ebdaf05a1fa93fabdff2f25b69ad6774ede75b8bc296d0ea3dc07b6160",
+      "logs": {
+        "stdout": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\01-owner-runtime\\stdout.raw.log",
+          "sha256": "ddeef29e28bd35d1c58b0c7e03fa5d8336dcd651f1a008b5dc1089d4c09f4f1b"
+        },
+        "stderr": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\01-owner-runtime\\stderr.raw.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "matchedTestNames": [
+        "owner-runtime thin-client preload refuses all nested child factories before native calls and preserves owner hooks in VM",
+        "owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants",
+        "owner-runtime default verified entry markers remain exact and new owner files stay outside the ordinary source package",
+        "owner-runtime normal package without the complete owner cluster refuses private owner mode before any listener or store opens",
+        "owner-runtime TEMP installed owner and two real thin Node clients retain the same owner after both client EOF and owner stdin EOF",
+        "owner-runtime foreign HTTP endpoint refuses owner startup before stores open and preserves both empty and retained state byte for byte",
+        "owner-runtime competing starts reserve under the install gate and later owner attempts cannot displace the winner or rewrite its markers",
+        "owner-runtime reserved HTTP server closes and attributed startup fence remains if Broker construction fails before peer creation",
+        "owner-runtime private prebound peer requires a listening native loopback HTTP server and reuses its one listener",
+        "owner-runtime initial receiver owner marker leaves status available and refuses controller acquisition without clearing the marker",
+        "owner-runtime initial corrupt Broker ledger blocks acquisition while owner diagnostics remain available",
+        "owner-runtime actual dead settled owner restarts with fresh process proof and unchanged journal and installation",
+        "owner-runtime actual legacy receiver fence exposes only recovery diagnostics without a Broker writer or replay",
+        "owner-runtime actual owner crash after durable delivery restarts diagnostic and never promotes or replays original ongoing work",
+        "owner-runtime inherited generic methods execute on the actual Broker so activity observes its control state",
+        "owner-runtime desired-stop freezes new control while captured original inspection completes after client detach",
+        "owner-runtime owner main signal persists desired-stop and drains original completion without a second shutdown request",
+        "owner-runtime later panel poll after controller detach cannot deliver a queued command and keeps the receiver fenced",
+        "owner-runtime captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry",
+        "owner-runtime active poll delivery checks the captured lease again immediately after store.begin",
+        "owner-runtime lease expiry across a trusted await is checked at physical submit before durable begin",
+        "owner-runtime no captured controller context rejects before durable begin; original completion remains accepted after lease expiry",
+        "owner-runtime owner bootstrap rejects complete-tree tampering before importing a modified Broker"
+      ],
+      "fullCheckAccepted": true,
+      "mode": "fresh-full-canonical-named-check-msi-stage",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "log": "docs/evidence/core-portability-peer-origin-source-20261104/logs/owner-runtime.stdout.txt",
+      "logHash": "ddeef29e28bd35d1c58b0c7e03fa5d8336dcd651f1a008b5dc1089d4c09f4f1b",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\01-owner-runtime\\stdout.raw.log",
+      "originalLogHash": "ddeef29e28bd35d1c58b0c7e03fa5d8336dcd651f1a008b5dc1089d4c09f4f1b",
+      "sourceHost": "MSI"
+    },
+    {
+      "check": "installable-runtime",
+      "result": "PASS",
+      "evidenceKey": "2298f9de620b68e9e71ae5ea4b2d97fb7284df73d08973a01f09ae8fffdee27d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\stage\\core4",
+      "cases": 46,
+      "summary": {
+        "tests": 46,
+        "suites": 0,
+        "pass": 46,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 64384.9432
+      },
+      "actor": {
+        "pid": 30268,
+        "birthUtc": "2026-11-04T14:56:18.3576136Z",
+        "birthTicks": "639294009783576136",
+        "startRecordedAt": "2026-11-04T14:56:18.3639659Z",
+        "endRecordedAt": "2026-11-04T14:57:22.8172163Z",
+        "exitUtc": "2026-11-04T14:57:22.8093000Z",
+        "hasExited": true,
+        "exitCode": 0,
+        "observation": "retained System.Diagnostics.Process handle for this own test actor only"
+      },
+      "resultFile": "attempt-02/02-installable-runtime/result.json",
+      "resultSha256": "b42cd872bb7e2c8e62a90b633d1478e65c5ec8db9e91503f9c857793397b5ad2",
+      "logs": {
+        "stdout": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\02-installable-runtime\\stdout.raw.log",
+          "sha256": "e64e30a8c94ea7fa1b16bb15abdf5ba5cd6fd1ab8f14a68a776eb3d158e9856d"
+        },
+        "stderr": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\02-installable-runtime\\stderr.raw.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "matchedTestNames": [
+        "installable-runtime private completed read proof belongs to one exact direct error and is consumed once",
+        "installable-runtime finite Titles read codes complete only admitted read phases and publish bounded diagnostics after durability",
+        "installable-runtime read diagnostic rejects unknown codes extra fields and bad correlation without journal or status promotion",
+        "installable-runtime Titles diagnostic vocabulary is refused for project",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-key",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-module",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-operation",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-profile",
+        "installable-runtime Titles diagnostic vocabulary is refused for mutate",
+        "installable-runtime package deterministic closure, install CAS, exact rollback and stable origin",
+        "installable-runtime staged update prepares every complete file before its first visible rename and publishes config last",
+        "installable-runtime staged short write preserves the whole live installation before switch: cep",
+        "installable-runtime staged short write preserves the whole live installation before switch: descriptor",
+        "installable-runtime staged short write preserves the whole live installation before switch: client",
+        "installable-runtime staged short write preserves the whole live installation before switch: config",
+        "installable-runtime staged final CAS refuses changed owned client stage without publishing it: false",
+        "installable-runtime staged final CAS refuses changed owned client stage without publishing it: true",
+        "installable-runtime staged foreign CEP stage is preserved and never replaces the live panel",
+        "installable-runtime staged cross-volume planning and apply refuse before any installation writes",
+        "installable-runtime full generated host registry parses as ES3 before any host evaluation",
+        "installable-runtime exact release closure rejects extensionless shadow, empty directory and junction before package imports",
+        "installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies",
+        "installable-runtime descriptor changed at startup gate is rejected before package imports",
+        "installable-runtime bounded TOML edit preserves indented neighboring servers and inline-commented Core4 header bytes",
+        "installable-runtime quoted TOML headers preserve desktop neighbor and env bytes while updating the exact Core4 alias",
+        "installable-runtime quoted TOML Core4 aliases refuse duplicate nested and dotted assignment ambiguity",
+        "installable-runtime quoted TOML unsupported key syntax remains closed without treating aliases as neighbors",
+        "installable-runtime quoted TOML escaped Core4 assignment alias refuses before appending a duplicate table",
+        "installable-runtime quoted TOML escaped preference keys refuse without removing enabled or timeout settings",
+        "installable-runtime CLI apply requires reviewed package hash and mismatches have zero installation writes",
+        "installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node",
+        "installable-runtime CLI explicit workspace requires an absolute marked source layout before writes",
+        "installable-runtime unknown Broker owner, ledger fault or unresolved intent permits diagnostics but no new physical read begin",
+        "installable-runtime actual HTTP auth role, origin, challenge, epoch, replay, bounded input and duplicate peer",
+        "installable-runtime exact CEP Origin ingress and CORS success/error/OPTIONS matrix at Node HTTP boundary",
+        "installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: null",
+        "installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: file://",
+        "installable-runtime panel VM/WebCrypto shim validates challenge Origin before signing or link and signs full original challenge",
+        "installable-runtime real HTTP and compiled registry VM: begin before evaluate, receipt before POST, durable ACK then latch clear",
+        "installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: null",
+        "installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: file://",
+        "installable-runtime missing fixed host registry returns known read rejection after durable begin, no raw fallback",
+        "installable-runtime long Cyrillic display names and total inspection budget stay bounded at actual HTTP boundary; next read survives known budget refusal",
+        "installable-runtime real stdio child consumes generated MCP config, advertises generic API, status without panel, then typed module inspect via HTTP + VM",
+        "installable-runtime private adoption bootstrap imports no mutable operator-relative provider before verified release preflight",
+        "installable-runtime real stdio process crash after delivery preserves original ongoing record and blocks new reads after restart"
+      ],
+      "fullCheckAccepted": true,
+      "mode": "fresh-full-canonical-named-check-msi-stage",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "log": "docs/evidence/core-portability-peer-origin-source-20261104/logs/installable-runtime.stdout.txt",
+      "logHash": "e64e30a8c94ea7fa1b16bb15abdf5ba5cd6fd1ab8f14a68a776eb3d158e9856d",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\02-installable-runtime\\stdout.raw.log",
+      "originalLogHash": "e64e30a8c94ea7fa1b16bb15abdf5ba5cd6fd1ab8f14a68a776eb3d158e9856d",
+      "sourceHost": "MSI"
+    },
+    {
+      "check": "native-read-recovery",
+      "result": "PASS",
+      "evidenceKey": "c28eab21d8b1b969cab234478e3dc7084d614e5b50b8c0348194d09432cffb0d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-recovery",
+        "test/native-read-recovery.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\stage\\core4",
+      "cases": 19,
+      "summary": {
+        "tests": 19,
+        "suites": 0,
+        "pass": 19,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 473664.1618
+      },
+      "actor": {
+        "pid": 18728,
+        "birthUtc": "2026-11-04T14:57:23.1482260Z",
+        "birthTicks": "639294010431482260",
+        "startRecordedAt": "2026-11-04T14:57:23.1543315Z",
+        "endRecordedAt": "2026-11-04T15:05:16.8769371Z",
+        "exitUtc": "2026-11-04T15:05:16.8686336Z",
+        "hasExited": true,
+        "exitCode": 0,
+        "observation": "retained System.Diagnostics.Process handle for this own test actor only"
+      },
+      "resultFile": "attempt-02/03-native-read-recovery/result.json",
+      "resultSha256": "77129b542a85fe2bb92a60c2764f4498eb3546d1f22c7d5b4d758963edfdee81",
+      "logs": {
+        "stdout": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\03-native-read-recovery\\stdout.raw.log",
+          "sha256": "e48646c643e87c916ea839e8e7f75d6976c53a00e05a5144358bd0588221202f"
+        },
+        "stderr": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\03-native-read-recovery\\stderr.raw.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "matchedTestNames": [
+        "native-read-recovery actual Node IPC approval commits one unknown disposition, archives owner and publishes v2 reachable lineage",
+        "native-read-recovery IPC mismatch retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery IPC duplicate retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery IPC disconnect retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery IPC timeout retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery append-short retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery append-fsync retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery archive retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery install-switch retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery approval does not waive fresh original CAS, new owners or additional UNKNOWN",
+        "native-read-recovery private plan and shared lease reject JSON forgery, mutation, foreign scope and startup while held",
+        "native-read-recovery historical Node binding is data, explicit lineage rejects missing/tampered edges and runtime has no data-only selector",
+        "native-read-recovery rollback partial visible switch retains both lease gates and transaction without automatic rollback",
+        "native-read-recovery operator inspect rejects modified managed witness, producer profile and closure before issuance",
+        "native-read-recovery owner identity ABA owner-between-inspect-apply refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-after-ipc refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-after-append refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-wrong-archive refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-after-rename refuses C and preserves original history/foreign marker"
+      ],
+      "fullCheckAccepted": true,
+      "mode": "fresh-full-canonical-named-check-msi-stage",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "log": "docs/evidence/core-portability-peer-origin-source-20261104/logs/native-read-recovery.stdout.txt",
+      "logHash": "e48646c643e87c916ea839e8e7f75d6976c53a00e05a5144358bd0588221202f",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\03-native-read-recovery\\stdout.raw.log",
+      "originalLogHash": "e48646c643e87c916ea839e8e7f75d6976c53a00e05a5144358bd0588221202f",
+      "sourceHost": "MSI"
+    },
+    {
+      "check": "manual-runtime",
+      "result": "PASS",
+      "evidenceKey": "9a75dbfab0397978f81300fdef785bbce6789eb88b96e72ea9528aaa97696bcc",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-runtime",
+        "test/manual-runtime.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\stage\\core4",
+      "cases": 59,
+      "summary": {
+        "tests": 59,
+        "suites": 0,
+        "pass": 59,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 12953.4445
+      },
+      "actor": {
+        "pid": 16776,
+        "birthUtc": "2026-11-04T15:05:17.1529346Z",
+        "birthTicks": "639294015171529346",
+        "startRecordedAt": "2026-11-04T15:05:17.1759173Z",
+        "endRecordedAt": "2026-11-04T15:05:30.2122070Z",
+        "exitUtc": "2026-11-04T15:05:30.2060646Z",
+        "hasExited": true,
+        "exitCode": 0,
+        "observation": "retained System.Diagnostics.Process handle for this own test actor only"
+      },
+      "resultFile": "attempt-02/04-manual-runtime/result.json",
+      "resultSha256": "db651b142883cc30cbfc08be6b0d737a1a97d538e2cded1cfa550343958ffeda",
+      "logs": {
+        "stdout": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\04-manual-runtime\\stdout.raw.log",
+          "sha256": "ba8c27f0bb541cd4eb757144dc0890a8ccf9616e602d0956b090b21028aea8e9"
+        },
+        "stderr": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\04-manual-runtime\\stderr.raw.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "matchedTestNames": [
+        "manual-runtime actual Broker HTTP compiled JSX generic flow uses one native confirm and original local transaction receipt without session",
+        "manual-runtime native cancellation and post-confirm drift do not set text; fresh proposal required",
+        "manual-runtime absent adoption and ambiguous process/managed writer fail before mutation delivery",
+        "manual-runtime setter uncertainty keeps UNKNOWN, durable receiver fence and no replay",
+        "manual-runtime fresh OS process identity, named managed writers and observation TTL are required before delivery",
+        "manual-runtime v1 UNKNOWN fence still overlaps session-free target; known other-machine constraint is separate",
+        "manual-runtime forged policy/reservation JSON never receives a private brand; tampered original receipt cannot succeed and real original proof reconciles without replay",
+        "manual-runtime final synchronous reservation guard rejects expiry before send with no setter",
+        "manual-runtime authenticated but wrong protocol version cannot certify original completion",
+        "manual-runtime explicit oneStep works with physically absent engine and unrelated packages",
+        "manual-runtime lexical ES3 JSON codec is data-only, matches native JSON on Unicode/control values and denies malformed/deep/duplicate/prototype input",
+        "manual-runtime known paragraph Enumerator is normalized to numeric protected value; unknown host objects fail closed",
+        "manual-runtime inactive TextDocument colors throw but are never read; every dormant and active range field remains protected",
+        "manual-runtime single-character strokeColor undefined with applyStroke=false refuses without confirmation or native value normalization",
+        "manual-runtime single-character strokeColor null with applyStroke=false refuses without confirmation or native value normalization",
+        "manual-runtime single-character strokeColor undefined with applyStroke=true refuses without confirmation or native value normalization",
+        "manual-runtime single-character strokeColor null with applyStroke=true refuses without confirmation or native value normalization",
+        "manual-runtime single-character fillColor undefined with applyFill=false refuses without confirmation or native value normalization",
+        "manual-runtime single-character fillColor null with applyFill=false refuses without confirmation or native value normalization",
+        "manual-runtime single-character fillColor undefined with applyFill=true refuses without confirmation or native value normalization",
+        "manual-runtime single-character fillColor null with applyFill=true refuses without confirmation or native value normalization",
+        "manual-runtime finite diagnostic native font refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing font refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native font_size refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing font_size refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native apply_fill refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing apply_fill refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native fill_color refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing fill_color refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native apply_stroke refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing apply_stroke refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native stroke_color refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing stroke_color refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native stroke_width refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing stroke_width refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native tracking refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing tracking refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native baseline_shift refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing baseline_shift refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native horizontal_scale refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing horizontal_scale refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native vertical_scale refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing vertical_scale refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native faux_bold refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing faux_bold refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native faux_italic refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing faux_italic refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native justification refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing justification refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native leading refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing leading refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic native auto_leading refuses inspect and verify without style defaults",
+        "manual-runtime finite diagnostic missing auto_leading refuses inspect and verify without style defaults",
+        "manual-runtime mixed active-color still refuses the complete character proof",
+        "manual-runtime mixed dormant-color still refuses the complete character proof",
+        "manual-runtime mixed paint-flag still refuses the complete character proof",
+        "manual-runtime native stages are finite and unknown exceptions never export a message or stack",
+        "manual-runtime post-setter native getter failure remains UNKNOWN ae_error and never becomes a read rejection",
+        "manual-runtime failed typed inspection completes journal diagnostic and never creates Broker evidence or a setter"
+      ],
+      "fullCheckAccepted": true,
+      "mode": "fresh-full-canonical-named-check-msi-stage",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "log": "docs/evidence/core-portability-peer-origin-source-20261104/logs/manual-runtime.stdout.txt",
+      "logHash": "ba8c27f0bb541cd4eb757144dc0890a8ccf9616e602d0956b090b21028aea8e9",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\04-manual-runtime\\stdout.raw.log",
+      "originalLogHash": "ba8c27f0bb541cd4eb757144dc0890a8ccf9616e602d0956b090b21028aea8e9",
+      "sourceHost": "MSI"
+    },
+    {
+      "check": "work-session",
+      "result": "PASS",
+      "evidenceKey": "61f43dcf460b5cfb323f3dff7c5631af3252525c09493ba83298e6a630a121f6",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=work-session",
+        "test/work-session.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\stage\\core4",
+      "cases": 17,
+      "summary": {
+        "tests": 17,
+        "suites": 0,
+        "pass": 17,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 1342.6222
+      },
+      "actor": {
+        "pid": 11668,
+        "birthUtc": "2026-11-04T15:05:30.5250640Z",
+        "birthTicks": "639294015305250640",
+        "startRecordedAt": "2026-11-04T15:05:30.5291434Z",
+        "endRecordedAt": "2026-11-04T15:05:31.9333358Z",
+        "exitUtc": "2026-11-04T15:05:31.9263546Z",
+        "hasExited": true,
+        "exitCode": 0,
+        "observation": "retained System.Diagnostics.Process handle for this own test actor only"
+      },
+      "resultFile": "attempt-02/05-work-session/result.json",
+      "resultSha256": "c1a133bd780ff1ccd65417930fa2d21d9a189a6639568b0af9597a739e39a37e",
+      "logs": {
+        "stdout": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\05-work-session\\stdout.raw.log",
+          "sha256": "e2740c50b5e0a3fb11b8dfe4b67e3073bb1326499b8c2d67622662ec9c330dc3"
+        },
+        "stderr": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\05-work-session\\stderr.raw.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "matchedTestNames": [
+        "work-session initial signed session requires baseline without issuing native authority",
+        "work-session only exact durable direct project observation clears baseline once across owner reopen",
+        "work-session lookalike peer or copied result cannot mint a baseline proof",
+        "work-session observation from another real peer cannot be consumed on current peer",
+        "work-session changing result after durable completion invalidates its one-shot proof",
+        "work-session known native rejection cannot clear baseline",
+        "work-session old peer logical session cannot clear the current baseline",
+        "work-session durable reset intent prevents old completion from clearing a new baseline",
+        "work-session descriptor credentials can rotate through verified historical lineage data",
+        "work-session missing historical lineage fails closed without baseline writes",
+        "work-session master replacement with identical bytes is not the published session alias",
+        "work-session incomplete reset cannot be represented by an early session candidate",
+        "work-session signed baseline for another session is refused",
+        "work-session legacy mode is explicit and a fresh observation does not create a session or grant",
+        "work-session stray baseline cannot silently make legacy state ready",
+        "work-session Broker observation cannot mint the private direct baseline proof",
+        "work-session manual result profile under a project-looking asset key cannot mint baseline"
+      ],
+      "fullCheckAccepted": true,
+      "mode": "fresh-full-canonical-named-check-msi-stage",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "log": "docs/evidence/core-portability-peer-origin-source-20261104/logs/work-session.stdout.txt",
+      "logHash": "e2740c50b5e0a3fb11b8dfe4b67e3073bb1326499b8c2d67622662ec9c330dc3",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\05-work-session\\stdout.raw.log",
+      "originalLogHash": "e2740c50b5e0a3fb11b8dfe4b67e3073bb1326499b8c2d67622662ec9c330dc3",
+      "sourceHost": "MSI"
+    },
+    {
+      "check": "start-over-channel",
+      "result": "PASS",
+      "evidenceKey": "4188cdbb592d669abfce0f1ec0b4aea6a5a24e4581ce5ee7d0c390c1fc61d5f5",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-channel",
+        "test/start-over-channel.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\stage\\core4",
+      "cases": 14,
+      "summary": {
+        "tests": 14,
+        "suites": 0,
+        "pass": 14,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 1179.3141
+      },
+      "actor": {
+        "pid": 1792,
+        "birthUtc": "2026-11-04T15:05:32.1807403Z",
+        "birthTicks": "639294015321807403",
+        "startRecordedAt": "2026-11-04T15:05:32.1928637Z",
+        "endRecordedAt": "2026-11-04T15:05:33.4410459Z",
+        "exitUtc": "2026-11-04T15:05:33.4298123Z",
+        "hasExited": true,
+        "exitCode": 0,
+        "observation": "retained System.Diagnostics.Process handle for this own test actor only"
+      },
+      "resultFile": "attempt-02/06-start-over-channel/result.json",
+      "resultSha256": "021386ecba1d6b3bbc06dab7ceccafa388c5f0faac6c74cf2fc50226029a871b",
+      "logs": {
+        "stdout": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\06-start-over-channel\\stdout.raw.log",
+          "sha256": "9f2df52ac9eadd770203bcd8cf4b681f99462b1e02a4fac23841c36fcadf9fc7"
+        },
+        "stderr": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\06-start-over-channel\\stderr.raw.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "matchedTestNames": [
+        "start-over-channel fence refuses a new direct or Broker submit before durable begin",
+        "start-over-channel previously accepted undelivered command cannot escape through late poll",
+        "start-over-channel reset flushes outstanding poll without delivering a command",
+        "start-over-channel delivered native completion settles only the old journal after the fence",
+        "start-over-channel normal attachment freeze still drains an already accepted physical command",
+        "start-over-channel HTTP delivery and held VM callback settle only the fenced old receiver before timeout",
+        "start-over-channel late VM callback after HTTP timeout preserves UNKNOWN and cannot enter a fresh receiver",
+        "start-over-channel new dispatcher and session cannot bypass same-window unresolved native callback",
+        "start-over-channel late callback preserves old session key and old completion channel on lost ack",
+        "start-over-channel malformed native callback retains old no-replay latch while releasing returned callback guard",
+        "start-over-channel synchronous native exception remains uncertain across dispatcher script reload",
+        "start-over-channel session keys preserve legacy latch and reject caller malformed session identity",
+        "start-over-channel UNKNOWN persist failure cannot escape timer or retain an accepted Promise; fault remains fenced",
+        "start-over-channel failed durable completion cannot mint positive baseline proof and timeout stays finite"
+      ],
+      "fullCheckAccepted": true,
+      "mode": "fresh-full-canonical-named-check-msi-stage",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "log": "docs/evidence/core-portability-peer-origin-source-20261104/logs/start-over-channel.stdout.txt",
+      "logHash": "9f2df52ac9eadd770203bcd8cf4b681f99462b1e02a4fac23841c36fcadf9fc7",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\06-start-over-channel\\stdout.raw.log",
+      "originalLogHash": "9f2df52ac9eadd770203bcd8cf4b681f99462b1e02a4fac23841c36fcadf9fc7",
+      "sourceHost": "MSI"
+    },
+    {
+      "check": "start-over-inspection",
+      "result": "PASS",
+      "evidenceKey": "461064f72ac4824917f9a5c6df1eff33deb957cab95565c0b41fa0841ccf89b9",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-inspection",
+        "test/start-over-inspection.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\stage\\core4",
+      "cases": 19,
+      "summary": {
+        "tests": 19,
+        "suites": 0,
+        "pass": 19,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 93.4248
+      },
+      "actor": {
+        "pid": 34216,
+        "birthUtc": "2026-11-04T15:05:33.7673664Z",
+        "birthTicks": "639294015337673664",
+        "startRecordedAt": "2026-11-04T15:05:33.7711481Z",
+        "endRecordedAt": "2026-11-04T15:05:33.9221005Z",
+        "exitUtc": "2026-11-04T15:05:33.9142415Z",
+        "hasExited": true,
+        "exitCode": 0,
+        "observation": "retained System.Diagnostics.Process handle for this own test actor only"
+      },
+      "resultFile": "attempt-02/07-start-over-inspection/result.json",
+      "resultSha256": "3a09c7f2e7ac4e844d4751f54b4c1685b3457759c9e175b6620f1f0552eccec3",
+      "logs": {
+        "stdout": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\07-start-over-inspection\\stdout.raw.log",
+          "sha256": "1d703e07adaaff98772e53b6ae201070bb0e96de67288841c9ac40df5d630cf4"
+        },
+        "stderr": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\07-start-over-inspection\\stderr.raw.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "matchedTestNames": [
+        "start-over-inspection idle and queued pre-submit history needs no AE exit and issues no authority",
+        "start-over-inspection receiver ongoing UNKNOWN and unknown physical completion retain exact historical states",
+        "start-over-inspection settled read rejection and mutation completion do not require restart alone",
+        "start-over-inspection intent before submit and acknowledged command remain conservative without fabricated delivery status",
+        "start-over-inspection rejects contradictory Broker success and missing receiver rather than resetting broken history",
+        "start-over-inspection cross-journal matching binds receiver identity epoch and original command",
+        "start-over-inspection foreign owner reservation and shared file output fences cannot be archived into permission",
+        "start-over-inspection unresolved own AE-local fence can retire only behind AE exit and original bytes remain unknown",
+        "start-over-inspection another machine legacy origin and imprecise AE birth cannot retire behind local process death",
+        "start-over-inspection malformed own resource schemas and unresolved unfamiliar fences remain blocking",
+        "start-over-inspection uses latest constraint record without silently discarding a current foreign fence",
+        "start-over-inspection permits original completion during drain while preserving prefix and original uncertainty",
+        "start-over-inspection a new receiver begin after the fence is refused even if both journals are valid append-only chains",
+        "start-over-inspection unchanged UNKNOWN remains unknown and is not relabelled cancelled or successful",
+        "start-over-inspection rejects truncated deleted and validly rehashed replacements of the original history prefix",
+        "start-over-inspection missing histories may materialize during drain but existing empty ledger cannot disappear",
+        "start-over-inspection newly encountered foreign fence during drain blocks archival even with a valid old prefix",
+        "start-over-inspection an initial foreign fence cannot disappear by a later local record with the same ID",
+        "start-over-inspection schema UTF8 chain and history budgets remain strict"
+      ],
+      "fullCheckAccepted": true,
+      "mode": "fresh-full-canonical-named-check-msi-stage",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "log": "docs/evidence/core-portability-peer-origin-source-20261104/logs/start-over-inspection.stdout.txt",
+      "logHash": "1d703e07adaaff98772e53b6ae201070bb0e96de67288841c9ac40df5d630cf4",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\07-start-over-inspection\\stdout.raw.log",
+      "originalLogHash": "1d703e07adaaff98772e53b6ae201070bb0e96de67288841c9ac40df5d630cf4",
+      "sourceHost": "MSI"
+    },
+    {
+      "check": "recovery-inspection",
+      "result": "PASS",
+      "evidenceKey": "3b63e84e5e8f70c22bb3e560111a7773919df87f7029d4e14d0e58d29676037c",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=recovery-inspection",
+        "test/recovery-inspection.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\stage\\core4",
+      "cases": 11,
+      "summary": {
+        "tests": 11,
+        "suites": 0,
+        "pass": 11,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 102.366
+      },
+      "actor": {
+        "pid": 10284,
+        "birthUtc": "2026-11-04T15:05:34.2221414Z",
+        "birthTicks": "639294015342221414",
+        "startRecordedAt": "2026-11-04T15:05:34.2333798Z",
+        "endRecordedAt": "2026-11-04T15:05:34.3961472Z",
+        "exitUtc": "2026-11-04T15:05:34.3874144Z",
+        "hasExited": true,
+        "exitCode": 0,
+        "observation": "retained System.Diagnostics.Process handle for this own test actor only"
+      },
+      "resultFile": "attempt-02/08-recovery-inspection/result.json",
+      "resultSha256": "b8e685df6285180d303567e478c2fc5dd0c0ff1cbdc0cfe0629b08a62cc523c0",
+      "logs": {
+        "stdout": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\08-recovery-inspection\\stdout.raw.log",
+          "sha256": "2a6bac2882b48fd6c58089d8916f996a4daf95a02cfb349389bf0230a3233336"
+        },
+        "stderr": {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\08-recovery-inspection\\stderr.raw.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "matchedTestNames": [
+        "recovery-inspection explicit missing histories and empty ledger report coverage without authority or a ready runtime",
+        "recovery-inspection receiver origin and bound original completion settle supplied bytes and freeze facts",
+        "recovery-inspection ongoing and UNKNOWN remain unsettled without converting or discarding original history",
+        "recovery-inspection receiver checks dispatch, response, payload digest and terminal ordering rather than only checksum",
+        "recovery-inspection a self-hashed forged terminal disposition is never accepted as settlement",
+        "recovery-inspection durable transport completion with unknown physical effect retains reply and remains fenced",
+        "recovery-inspection torn UTF8 checksum sequence and oversized line histories fail closed",
+        "recovery-inspection ledger acknowledged command remains unresolved and original terminal outcome settles it",
+        "recovery-inspection open reservation blocks even a succeeded command and only its original terminal ref settles it",
+        "recovery-inspection latest durable constraints preserve unresolved foreign and unfamiliar fences",
+        "recovery-inspection does not construct execution stores create directories write files or probe processes"
+      ],
+      "fullCheckAccepted": true,
+      "mode": "fresh-full-canonical-named-check-msi-stage",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "log": "docs/evidence/core-portability-peer-origin-source-20261104/logs/recovery-inspection.stdout.txt",
+      "logHash": "2a6bac2882b48fd6c58089d8916f996a4daf95a02cfb349389bf0230a3233336",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full-checks\\attempt-02\\08-recovery-inspection\\stdout.raw.log",
+      "originalLogHash": "2a6bac2882b48fd6c58089d8916f996a4daf95a02cfb349389bf0230a3233336",
+      "sourceHost": "MSI"
+    }
+  ],
+  "selector": {
+    "inventory": 71,
+    "changedKeys": 24,
+    "unchangedKeys": 47,
+    "selectedFullPass": 8,
+    "deferredNotAcceptedByThisBlock": 16
+  },
+  "packaging": {
+    "file": "candidate-packaging/packaging-report.json",
+    "sha256": "84063fb7a638e9cb5b032b6640fb85b46048c3904dba5e0f507a03db5b27a8bb",
+    "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+    "packagePayloadFiles": 80,
+    "distributionHash": "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+    "distributionDeclaredFiles": 98,
+    "observedDistributionFilesIncludingManifest": 99,
+    "sourceSnapshotCanonicalSha256": "bba5268564a23fe04d76f0614113f205dd919b824383394c029b8d448960c843"
+  },
+  "configuredNode": {
+    "path": "C:\\Program Files\\nodejs\\node.exe",
+    "version": "v24.15.0",
+    "sha256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5"
+  },
+  "runnerEvidence": {
+    "ownRunnerActorsExited": true,
+    "limit": "Retained handles establish exit only for the 8 directly launched test-runner processes. Nested actor cleanup is covered by existing fixtures; no broad process census was performed."
+  },
+  "launcherDiagnostic": {
+    "file": "harness-attempt-01-failed-launch.json",
+    "testProcessesStarted": 0,
+    "namedChecksExecuted": 0
+  },
+  "sourceCountsAreNotGlobalUnique": true,
+  "remainingSourceQueue": {
+    "count": 25,
+    "checks": [
+      "start-over-runtime",
+      "start-over-operator",
+      "stopped-host-readoption-operator",
+      "stopped-update-operator",
+      "stopped-update",
+      "legacy-owner-migration",
+      "maintenance-finish-operator",
+      "maintenance-operator",
+      "owner-installation",
+      "native-read-capture",
+      "windows-cim-probe",
+      "zero-dispatch-recovery",
+      "human-window",
+      "audit-repairs",
+      "core-control",
+      "core-admission",
+      "worker-isolation",
+      "protocol-codec",
+      "workflow-recovery",
+      "validation-routing",
+      "artifact-boundaries",
+      "cep-transport",
+      "lifecycle-simulation",
+      "exact-f548-transition",
+      "standalone-installer"
+    ],
+    "state": "running-in-separate-frozen-stage-block",
+    "authorizedByUser": true,
+    "dedicatedTitlesRun": false
+  },
+  "productionOperations": 0,
+  "actualInstall": 0,
+  "liveCalls": 0,
+  "P2NativeEvidenceAccepted": false,
+  "releaseCertified": false,
+  "testedStageBaselineCommit": "97b6fe74d2413ac8635ff54312b2ac0b5802f91a",
+  "sourceAppliedOnCommit": "de92b18d66b3c79af513de31dd67a12e404933f2",
+  "postprocessingDiagnostic": {
+    "error": "remainingNotHeldAfter8Pass property absent in final projection schema",
+    "testsOrNativeRepeated": false,
+    "correction": "Used validated remainingNotHeld25; prewritten identical raw logs SHA-checked before metadata reducer continued."
+  },
+  "checkoutPackaging": {
+    "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+    "packageFileSha256": "e1c4db7b651d82ee89f831d44f425d76e7706a930d5b83d9b9139a8dfbc53bcf",
+    "distributionHash": "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+    "verifyPackage": "PASS",
+    "verifyStandalone": "PASS",
+    "runtimeFiles": 80,
+    "distributionDeclaredFiles": 98,
+    "all215SourceFilesEqualTestedStage": true,
+    "sourceSnapshotDigest": "727777694cb5918a829f1521e5e42280a5a819822e772df310ff95af58210e2a",
+    "actualInstall": 0
+  }
+}

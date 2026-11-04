@@ -11,6 +11,14 @@
 
 ## Текущий scope и правила
 
+**4 ноября, строгие P2/P5 продолжаются:** actual same-CDF repeat9157 выполнен1раз,
+identity/origins/history/preferences сохранены; intermediate activation не выполнялась.
+P2 candidate добавляет authenticated physical.peer.origin без изменения gates.8full
+named PASS; source current44/71,25remaining integrations выполняются,2Titlesheld.
+Candidate package1f8c…/80,distribution18f2…/98 verified; installed proof ещё нужен
+на обеих машинах. Старые outcomes иCDFclientcache refusal не replay.
+[Активный план](plans/core-portability-final-gates-20261104.md).
+
 **4 ноября, P5 actual repeat/read-back PASS, reconnect pending:** один stop13977dd6 → resume/runtimeStartedfalse → ordinary standalone apply9157e280; installationId/stateDir/origins/runtime80/CEP6/history/preferences/config/legacy сохранены. Credentials штатно rotated; receiver prefix3 точен, AE28156 прежний. Старый MCP thin client32372 возвращает owner_unavailable; supported targeted control не найден, native после repeat0. CDF activation не выполнялась; принято ждать actual P2 successor transfer и затем один fresh configured final-package proof. До next packet STOP. Не повторять apply9157. [Checkpoint](plans/core-portability-p5-repeat-20261104.md), [evidence](docs/evidence/core-portability-p5-repeat-20261104.json). P5/P2 ещё open.
 
 

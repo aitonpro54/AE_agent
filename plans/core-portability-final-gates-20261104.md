@@ -69,3 +69,17 @@ Desktop сохранил отдельное [evidence](../docs/evidence/core-por
 ### Validation
 
 Actual stop/resume/apply1/1/1, protected read-back PASS; receiver prefix3, ledger absent, AE unchanged. Source keys71/current48/23 неизменны. P5/P2/full certification остаются open.
+
+## P2 source block — 4 ноября
+
+### Progress
+
+Одна runtime-строка добавляет authenticated `physical.peer.origin`; no peer→null, stale peer сохраняет исторический Origin при connected=false. Расширены существующие real HTTP assertions.8canonicalfull named checks PASS в frozen stage; same bytes приняты в checkout. Candidate package1f8c/80 иdistribution18f2/98 verified. [Evidence](../docs/evidence/core-portability-peer-origin-source-20261104.json).
+
+### Decision Log
+
+Ни telemetry headers dump, ни debugports, ни auth/gate changes. Для strict P2 требуется actualconnected status обоих хостов после установки. P5repeat9157 preserved, activationnotperformed; specialist принял следующий реальный перенос1f8c и один конечный configured native proof, без ложного CDF activation claim.
+
+### Validation
+
+24keys changed/47same;12прежних accepted refs superseded,36reused+8fresh=44current. Exact25remaining sourcechecks запущены отдельным этапом,2Titlesheld. Первый harness launch отказал до teststart из-за нескольких Node paths, originaldiagnostic сохранён; все8реальных runnersexited0, noSKIP/cancel. Runtime пока не установлен.

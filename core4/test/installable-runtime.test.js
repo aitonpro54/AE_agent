@@ -473,6 +473,7 @@ function cors(response, origin) {
 test('installable-runtime exact CEP Origin ingress and CORS success/error/OPTIONS matrix at Node HTTP boundary', async t => {
   const peer = createHttpPeer({ installation, directory: temp(), asset, port: 0, pollTimeout: 5 }); await peer.listen(); t.after(() => peer.close());
   const port = peer.status().port;
+  assert.deepEqual(peer.status().peer, { connected: false, origin: null });
   for (const origin of ['null', 'file://']) {
     const challenge = await rawRequest(port, '/challenge', { role: 'panel' }, { origin });
     assert.equal(challenge.status, 200); assert.equal(challenge.value.origin, origin); cors(challenge, origin);
@@ -503,10 +504,12 @@ test('installable-runtime exact CEP Origin ingress and CORS success/error/OPTION
     const response = await rawRequest(port, '/challenge', { role: 'panel' }, { origin: ' \t' + origin + '\t ' });
     assert.equal(response.status, 200); assert.equal(response.value.origin, origin); cors(response, origin);
   }
+  assert.deepEqual(peer.status().peer, { connected: false, origin: null }, 'challenges, OPTIONS and rejected origins do not publish a peer origin');
 });
 for (const origin of ['null', 'file://']) test('installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: ' + origin, async t => {
   const directory = temp(), peer = createHttpPeer({ installation, directory, asset, port: 0, pollTimeout: 5 }); await peer.listen(); t.after(() => peer.close());
   const port = peer.status().port, foreign = origin === 'null' ? 'file://' : 'null';
+  assert.deepEqual(peer.status().peer, { connected: false, origin: null });
   const raw = (route, body, selected = origin) => rawRequest(port, route, body, { origin: selected });
   const challenge = async (role = 'panel') => (await raw('/challenge', { role })).value;
   const link = (value, selected = origin, secret = installation.panelToken, peerId = 'test-peer') => raw('/link', { challenge: value, peerId, proof: mac({ challenge: value, peerId }, secret) }, selected);
@@ -522,13 +525,20 @@ for (const origin of ['null', 'file://']) test('installable-runtime Origin-bound
   assert.equal((await link(await challenge('control'), origin, installation.controlToken)).value.error, 'panel_role_required');
   const expired = await challenge(), now = Date.now;
   try { Date.now = () => now() + 10001; assert.equal((await link(expired)).value.error, 'peer_auth'); } finally { Date.now = now; }
+  assert.deepEqual(peer.status().peer, { connected: false, origin: null }, 'failed authenticated links do not publish an origin');
   const c = await client(port, installation, origin); assert.equal(c.challenge.origin, origin);
+  const expectedPeer = { connected: true, peerId: c.peerId, origin };
+  assert.deepEqual(peer.status().peer, expectedPeer, 'status exposes only the authenticated peer identity and actual Origin');
   const other = await challenge(); assert.equal((await link(other, foreign, installation.panelToken, 'other-peer')).value.error, 'peer_auth', 'origin is checked before duplicate peer');
   assert.equal(peer.status().peer.peerId, c.peerId);
   assert.equal((await link(await challenge(), origin, installation.panelToken, 'other-peer')).value.error, 'duplicate_peer');
   assert.equal((await link(c.challenge)).value.error, 'peer_auth', 'successful link is also one-time');
+  assert.deepEqual(peer.status().peer, expectedPeer, 'failed and duplicate links cannot replace the authenticated Origin');
   const envelope = c.envelope('/poll', {});
+  assert.equal((await raw('/poll', envelope, 'https://example.test')).value.error, 'cep_origin_required');
+  assert.deepEqual(peer.status().peer, expectedPeer, 'a rejected Origin cannot replace the authenticated Origin');
   const rejected = await raw('/poll', envelope, foreign); assert.equal(rejected.value.error, 'peer_auth_or_replay'); cors(rejected, foreign);
+  assert.deepEqual(peer.status().peer, expectedPeer, 'a foreign request cannot promote its Origin into status');
   const accepted = await raw('/poll', envelope); assert.equal(accepted.status, 200); cors(accepted, origin); assert.equal(accepted.value.body.sequence, 1);
   assert.equal((await raw('/poll', envelope)).value.error, 'peer_auth_or_replay');
   for (const patch of [{ epoch: 'old' }, { peerId: 'other' }, { sequence: 100 }, { method: 'GET' }, { path: '/complete' }]) {
@@ -544,6 +554,7 @@ for (const origin of ['null', 'file://']) test('installable-runtime Origin-bound
     Date.now = () => now() + 45001;
     assert.equal((await raw('/poll', fresh, foreign)).value.error, 'peer_auth_or_replay');
     assert.equal(peer.status().peer.connected, false, 'foreign request did not refresh lastSeen');
+    assert.equal(peer.status().peer.origin, origin, 'an expired peer retains its authenticated Origin; connected reports freshness');
     assert.equal((await raw('/poll', fresh)).status, 200); assert.equal(peer.status().peer.connected, true);
   } finally { Date.now = now; }
   let settled = false; const inspection = peer.inspect({}); inspection.then(() => { settled = true; }, () => { settled = true; });
@@ -564,6 +575,8 @@ for (const origin of ['null', 'file://']) test('installable-runtime Origin-bound
   assert.equal(completed.toString().trim().split('\n').map(JSON.parse).filter(e => e.type === 'complete').length, 1);
   assert.equal((await raw('/complete', completion)).value.error, 'peer_auth_or_replay');
   assert.ok(fs.readFileSync(path.join(directory, 'completions.ndjson')).equals(completed), 'same signed completion cannot ACK twice');
+  assert.deepEqual(peer.status().peer, expectedPeer);
+  assert.ok(!canonical(peer.status()).includes(installation.panelToken)); assert.ok(!canonical(peer.status()).includes(installation.controlToken));
 });
 test('installable-runtime panel VM/WebCrypto shim validates challenge Origin before signing or link and signs full original challenge', async () => {
   const source = fs.readFileSync(path.join(root, 'cep/js/panel.js'), 'utf8');

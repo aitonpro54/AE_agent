@@ -1,0 +1,31 @@
+✔ owner-runtime thin-client preload refuses all nested child factories before native calls and preserves owner hooks in VM (4.8911ms)
+✔ owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants (8079.3941ms)
+✔ owner-runtime default verified entry markers remain exact and new owner files stay outside the ordinary source package (3266.6755ms)
+✔ owner-runtime normal package without the complete owner cluster refuses private owner mode before any listener or store opens (2043.8748ms)
+✔ owner-runtime TEMP installed owner and two real thin Node clients retain the same owner after both client EOF and owner stdin EOF (6415.5037ms)
+✔ owner-runtime foreign HTTP endpoint refuses owner startup before stores open and preserves both empty and retained state byte for byte (6285.0919ms)
+✔ owner-runtime competing starts reserve under the install gate and later owner attempts cannot displace the winner or rewrite its markers (11328.5071ms)
+✔ owner-runtime reserved HTTP server closes and attributed startup fence remains if Broker construction fails before peer creation (6886.4719ms)
+✔ owner-runtime private prebound peer requires a listening native loopback HTTP server and reuses its one listener (14.2136ms)
+✔ owner-runtime initial receiver owner marker leaves status available and refuses controller acquisition without clearing the marker (5941.5094ms)
+✔ owner-runtime initial corrupt Broker ledger blocks acquisition while owner diagnostics remain available (6050.5926ms)
+✔ owner-runtime actual dead settled owner restarts with fresh process proof and unchanged journal and installation (10036.3404ms)
+✔ owner-runtime actual legacy receiver fence exposes only recovery diagnostics without a Broker writer or replay (4763.8671ms)
+✔ owner-runtime actual owner crash after durable delivery restarts diagnostic and never promotes or replays original ongoing work (8327.9137ms)
+✔ owner-runtime inherited generic methods execute on the actual Broker so activity observes its control state (6921.0695ms)
+✔ owner-runtime desired-stop freezes new control while captured original inspection completes after client detach (8538.3421ms)
+✔ owner-runtime owner main signal persists desired-stop and drains original completion without a second shutdown request (5293.7237ms)
+✔ owner-runtime later panel poll after controller detach cannot deliver a queued command and keeps the receiver fenced (7587.7009ms)
+✔ owner-runtime captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry (50.2266ms)
+✔ owner-runtime active poll delivery checks the captured lease again immediately after store.begin (45.6854ms)
+✔ owner-runtime lease expiry across a trusted await is checked at physical submit before durable begin (37.7226ms)
+✔ owner-runtime no captured controller context rejects before durable begin; original completion remains accepted after lease expiry (524.911ms)
+✔ owner-runtime owner bootstrap rejects complete-tree tampering before importing a modified Broker (2015.982ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 110584.3693

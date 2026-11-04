@@ -908,3 +908,7 @@ Progress: одинаковые packagecdf/80 иstandalone5d5/98, реальна�
 ### 4 ноября: завершение строгих P2/P5
 
 Progress: пользователь поручил закрыть необходимый остаток; fresh desktop preflight PASS, actual writes0. Decision: same-package repeat по существующим stop→resume→ordinary apply, без снятия owner-update guard; для literal Origin готовится bounded status field. Validation: исходный current48/71 сохранён, candidate ещё не принят. [План](core-portability-final-gates-20261104.md). Titles/Slideshow paused.
+
+### 4 ноября: P2 Origin source принят, оставшаяся база проверяется
+
+Progress: authenticated physical.peer.origin добавлен одной runtime-строкой;8полных named checks PASS,215source files exact equal tested stage. Package1f8c/80 иstandalone18f2/98 built+verified, installed proof впереди. Decision: nopeer null; retained stale Origin не являетсяfresh, нуженconnected=true. P5repeat9157 preserved, intermediateactivationnotperformed; следующий реальный перенос завершится однимconfiguredproofфинальногоruntime. Validation: current44/71,25remaining integration checks запущены,2Titlesheld. [Source evidence](../docs/evidence/core-portability-peer-origin-source-20261104.json).
