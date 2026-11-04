@@ -133,3 +133,31 @@ MSI commit `0b78aac` принят fast-forward. Адресный CLIcase1 и п�
 ### Validation
 
 71 current keys, только documentation изменён; snapshot215, supplemental33. Current48/open23 сохранены:36 прежних exact reuse +10 desktop +1 MSI +1 documentation. CLIcase1 не заменяет MSI full46. Configured/native proof ещё не получен; следующий шаг — targeted MCP refresh и initial CEP discovery, затем один typed read/release. P1–P8/full release открыты, Titles/Slideshow на паузе, cloud исключён.
+
+## Desktop: CEP discovery и effective configuration — 4 ноября
+
+### Progress
+
+После защиты наблюдавшегося пустого Untitled Project штатно завершён exact AE612/birth13:03:13Z и выполнен один normal launch. Новый PID28156/birth13:23:21.533736Z, та же26.3.0.87. Панель появилась в Extensions и открыта; статус «Ожидание Core для проверки сеанса». [Evidence](../docs/evidence/core-portability-desktop-cep-discovery-20261104.json).
+
+### Decision Log
+
+Отсутствие панели до restart не является доказательством бага AE. Disk-cache informational warning закрыт, настройки не менялись. Начать заново/reset/adoption не нажимались. CLI mcp get/list в точном cwd видит Core4 enabled и правильные paths; global trusted binding совпадает с cwd точно, включая регистр. Это config proof, не configured runtime proof. Global config/trust/security без изменений.
+
+### Validation
+
+Core4 tools в свежем inventory отсутствуют; UI MCPs показывает4 сервера безCore4 и не предлагает адресный reload. Существующий app-server7060 без --listen, поддерживаемый endpoint reload доступными tools не опубликован; cwd app-server не наблюдён. Не выполнялись stdin interception, speculative TCP или подменный stdio client. Конкретный blocker — недоступный supported targeted MCP reload/отсутствие Core4 tools в runtime этого чата. Configured/native inspection0; source keys48/23 без изменений. После появления tools нужен fresh status/contract и acquire/connect/one read/release.
+
+## Desktop: адресный service refresh preflight
+
+### Progress
+
+Runtime UUID совпал с единственным active local Codex chat «Найти следы переноса на десктоп». Полный snapshot341 unarchived Codex entries/7pages:1active,340notLoaded. Exact child7060/birth09:29:14.751034Z — parent текущего shell; его parent — main ChatGPT16720/birth09:29:06.024344Z. ProjectId теперь наблюдён, прежнее предположение projectId=null не используется. [Evidence](../docs/evidence/core-portability-desktop-service-refresh-preflight-20261104.json).
+
+### Decision Log
+
+Штатный existing app-server proxy отказал10050 до initialize, requests0. Read-only анализ текущего app.asar обнаружил, что local stdio transport не обещает supportsReconnect; точный runtime wrapper не опубликован. Гарантированный auto-relaunch после внешнего завершения child не доказан. По ограничению поручения child не завершался, main app/AE/owner не затрагивались, sidecar не запускался.
+
+### Validation
+
+State production содержит только origin.json; наших submitted/native commands0, новых UNKNOWN0; это не подмена недоступного core_status. Configured/native proof остаётся открытым именно из-за отсутствия supported reload/restart с доказанным восстановлением текущего клиента. Новых tests/source changes нет,71keys/48covered/23open прежние.

@@ -1422,6 +1422,18 @@
       "directKeyedRecords": 1,
       "excludedAsAuthority": null,
       "scope": "Desktop CLIcase1, documentation full named1, initial installation and repeat dry-run; configured/native pending."
+    },
+    {
+      "file": "docs/evidence/core-portability-desktop-cep-discovery-20261104.json",
+      "sha256": "ce03897bbdfb5cae6efb7200e6a8da4891ec14f2d3b4d9fe010eefada69ae9ca",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "CEP discovery/config diagnostics, not source named or configured/native acceptance"
+    },
+    {
+      "file": "docs/evidence/core-portability-desktop-service-refresh-preflight-20261104.json",
+      "sha256": "10be302f655f4ae9f6b93c8d567bad42b1e6440a3b19c1e816b3167178afc120",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Read-only service refresh preflight; no restart or configured/native proof"
     }
   ],
   "evidenceMethod": {
@@ -10952,7 +10964,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.sourceValidation"
   },
-  "updatedAt": "2026-11-04T13:20:02.395Z",
+  "updatedAt": "2026-11-04T13:30:49.476Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -10963,12 +10975,12 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "desktop-initial-install-verified-configured-native-pending",
+    "status": "desktop-CEP-loaded-service-refresh-unproven-auto-relaunch",
     "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
     "remoteExecutionAuthorized": true,
-    "next": "Targeted MCP refresh, initial CEP discovery, configured typed native read and immediate release.",
+    "next": "Supported current app-server reload/restart with proven recovery; current child deliberately preserved, then configured native proof",
     "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
     "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
     "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
@@ -11116,8 +11128,11 @@
       "nativeProof": false,
       "documentationFullNamedCheck": 1,
       "CLIAddressedCases": 1,
-      "CLIIsFullNamedAcceptance": false
-    }
+      "CLIIsFullNamedAcceptance": false,
+      "CEPDiscovery": "PASS-after-one-normal-AE-restart"
+    },
+    "desktopCEPDiscoveryEvidence": "docs/evidence/core-portability-desktop-cep-discovery-20261104.json",
+    "desktopServiceRefreshPreflightEvidence": "docs/evidence/core-portability-desktop-service-refresh-preflight-20261104.json"
   },
   "historicalSourceAcceptance": {
     "baselineCommit": "77a860e",

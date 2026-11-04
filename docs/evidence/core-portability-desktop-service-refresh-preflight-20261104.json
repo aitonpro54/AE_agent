@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "kind": "desktop-targeted-appserver-refresh-preflight",
+  "createdAt": "2026-11-04T13:30:49.476Z",
+  "result": "NOT_ATTEMPTED_AUTO_RELAUNCH_NOT_PROVEN",
+  "operationId": "8dd44c26-712b-4adc-b944-b25ff09dd394",
+  "processActionPerformed": false,
+  "preflight": {
+    "operationId": "8dd44c26-712b-4adc-b944-b25ff09dd394",
+    "observedAt": "2026-11-04T13:30:07.4933057Z",
+    "host": "DESKTOP-32974QF",
+    "runtimeThreadId": "01a186f7-9c1b-7513-a89e-cef10752eba1",
+    "shell": {
+      "pid": 31356,
+      "parentPid": 7060
+    },
+    "appServer": {
+      "pid": 7060,
+      "exe": "C:\\Users\\Ant\\AppData\\Local\\OpenAI\\Codex\\bin\\b6c7fc9497179c98\\codex.exe",
+      "birth": "2026-11-04T09:29:14.7510340Z",
+      "parentPid": 16720
+    },
+    "mainApp": {
+      "pid": 16720,
+      "exe": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1027.6604.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+      "birth": "2026-11-04T09:29:06.0243440Z"
+    },
+    "stateFiles": [
+      "origin.json"
+    ],
+    "processActionPerformed": false
+  },
+  "activeChatSnapshot": {
+    "observedAt": "2026-11-04T13:30:06.701Z",
+    "host": "local",
+    "coverage": {
+      "pages": 7,
+      "nextCursor": null,
+      "count": 341,
+      "source": "codex",
+      "archived": false
+    },
+    "statusCounts": {
+      "active": 1,
+      "notLoaded": 340
+    },
+    "loadedThreads": [
+      {
+        "id": "01a186f7-9c1b-7513-a89e-cef10752eba1",
+        "hostId": "local",
+        "status": "active",
+        "projectId": "6dcbd0df-bb19-4f1f-b5c7-9d24f882d952",
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+        "title": "Найти следы переноса на десктоп"
+      }
+    ]
+  },
+  "CLIversion": "codex-cli 0.166.0-alpha.5.1",
+  "CLIsha256": "9cbcc600be53a3aa18c1d55b36b462ebd2844ac16e24b991654774b0819599d5",
+  "binding": {
+    "currentShellParentIsExactAppServer": true,
+    "appServerParentIsMainDesktopApp": true,
+    "runtimeThreadMatchesOnlyLoadedLocalCodexThread": true,
+    "priorProjectIdNullAssumptionCorrected": true,
+    "currentProjectId": "6dcbd0df-bb19-4f1f-b5c7-9d24f882d952",
+    "foreignActiveCodexChatsObserved": 0,
+    "activeChatCoverage": "All341 unarchived local Codex history entries across7pages; archived/ChatGPT conversations not included"
+  },
+  "existingSupportedProxyProbe": {
+    "at": "2026-11-04T13:28:44.357Z",
+    "executable": "C:/Users/Ant/AppData/Local/OpenAI/Codex/bin/b6c7fc9497179c98/codex.exe",
+    "argv": [
+      "app-server",
+      "proxy"
+    ],
+    "exitCode": 1,
+    "signal": null,
+    "stdoutBytes": 0,
+    "stderr": "Error: failed to connect to socket at C:\\Users\\Ant\\.codex\\app-server-control\\app-server-control.sock\n\nCaused by:\n    Операция на сокете обнаружила отключение сети. (os error 10050)\n",
+    "requestsSent": 0,
+    "stdin": "EOF",
+    "alternativeServerStarted": false
+  },
+  "sourceObservation": {
+    "asarPath": "C:/Program Files/WindowsApps/OpenAI.Codex_26.1027.6604.0_x64__2p2nqsd0c76g0/app/resources/app.asar",
+    "readOnly": true,
+    "modules": [
+      {
+        "file": ".vite/build/early-bootstrap-499-8b3807f1185eeae8.js",
+        "sha256": "91ed814e18c0d55a585dfa359829746df6e8eb2f7488bfe9bfd71378ef24cdf1"
+      },
+      {
+        "file": ".vite/build/early-bootstrap-824-e56448c7829c41c2.js",
+        "sha256": "a785e3304e4e229cb5779d952475483e306bcf9ca7b34b8f21df15cea55c648a"
+      }
+    ],
+    "localStdioTransport": "In early-bootstrap-824 module7103 classV supportsReconnect returns websocket===kind; Windows local connect selects stdio (daemon branch excludes win32).",
+    "wrapperAmbiguity": "Other transports including eRJ advertise reconnect. Exact current connection wrapper was not observed via a supported runtime API.",
+    "automaticRecoveryProven": false,
+    "conclusionRu": "Проверка текущих bytes приложения не подтверждает гарантированный auto-relaunch Windows local stdio child после внешнего завершения. Общий reconnect scheduler проверяет supportsReconnect. Поэтому child не завершается."
+  },
+  "AECommandState": {
+    "MCPCommandsSubmitted": 0,
+    "typedInspectionDispatches": 0,
+    "UNKNOWNCreatedByThisBlock": 0,
+    "persistentStateFiles": [
+      "origin.json"
+    ],
+    "pendingLedgerOrReceiverStorePresent": false,
+    "limits": "No configured core_status available; state observation and own no-dispatch history, not live status proof."
+  },
+  "decisionRu": "Точное отношение child7060 к текущему shell/chat/main app установлено, других loaded Codex chats local не обнаружено. Однако штатный auto-relaunch после внешнего завершения не доказан. Согласно ограничению поручения процесс не затронут. Main app/AE/Core owner не перезапускались; дополнительных server sidecars нет.",
+  "nextRequiredCapabilityRu": "Поддерживаемый restart/reload через живую оболочку с явным ensureReady, либо документированное/наблюдаемое восстановление точного current Windows stdio child; затем configured native proof.",
+  "scopeLimits": {
+    "exactChildTerminationAttempts": 0,
+    "mainAppRestart": 0,
+    "additionalAERestart": 0,
+    "installReplay": 0,
+    "globalConfigEdits": 0,
+    "securityOrTrustEdits": 0,
+    "credentialsPublished": false,
+    "alternativeRuntimeStarted": false
+  }
+}

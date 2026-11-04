@@ -11,6 +11,9 @@
 
 ## Текущий scope и правила
 
+**4 ноября, desktop CEP discovery PASS:** после одного normal AE restart панель Core4 появилась и открыта, AE26.3.0.87/PID28156; проект пустой. CLI exact-cwd config видит enabledCore4 и exact trusted binding, но текущий runtime toolsCore4 не публикует. Supported targeted reload существующего app-server доступными API/UI не найден; configured/native pending. [Диагностика](docs/evidence/core-portability-desktop-cep-discovery-20261104.json).
+
+
 **4 ноября, desktop initial install подтверждён:** MSI `0b78aac` принят; CLIcase1 и documentation1 PASS, cdf/80 и5d5/98 verified. Штатный initial apply ровно1, новый desktop installationId; read-back runtime80/CEP7 и repeat foreign-CWD dry-run PASS. Observer diagnostic сохранён, apply не повторён. Current48/open23; configured/native pending. [Checkpoint](docs/evidence/core-portability-desktop-installed-20261104.json). Следующий шаг — targeted MCP refresh/CEP discovery и один configured native read/release.
 
 

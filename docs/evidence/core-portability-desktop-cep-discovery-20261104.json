@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-portability-desktop-cep-discovery-config-diagnostics",
+  "createdAt": "2026-11-04T13:27:24.628Z",
+  "result": "PASS_CEP_DISCOVERY_CONFIGURED_TOOLS_UNAVAILABLE",
+  "sourceCommit": "31cb75ecdd553888e2652e23c4f40dd4c6a67440",
+  "installationEvidence": "docs/evidence/core-portability-desktop-installed-20261104.json",
+  "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+  "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+  "installationDescriptorClientAndConfigUnchanged": true,
+  "effectiveConfiguration": {
+    "commands": [
+      {
+        "argv": [
+          "mcp",
+          "get",
+          "after-effects-core4",
+          "--json"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+        "exitCode": 0,
+        "stderrBytes": 0,
+        "configurationOnly": true,
+        "server": {
+          "name": "after-effects-core4",
+          "enabled": true,
+          "disabled_reason": null,
+          "transport": {
+            "type": "stdio",
+            "command": "C:\\Program Files\\nodejs\\node.exe",
+            "args": [
+              "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944\\runtime\\client-entry.js",
+              "--client-descriptor",
+              "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json"
+            ]
+          },
+          "tool_timeout_sec": 120
+        }
+      },
+      {
+        "argv": [
+          "mcp",
+          "list",
+          "--json"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+        "exitCode": 0,
+        "stderrBytes": 0,
+        "configurationOnly": true,
+        "servers": [
+          {
+            "name": "after-effects",
+            "enabled": false
+          },
+          {
+            "name": "after-effects-core4",
+            "enabled": true
+          },
+          {
+            "name": "aftereffects-kumo",
+            "enabled": true
+          },
+          {
+            "name": "codeburn",
+            "enabled": true
+          },
+          {
+            "name": "codex_app",
+            "enabled": false
+          },
+          {
+            "name": "cua_repl",
+            "enabled": true
+          },
+          {
+            "name": "node_repl",
+            "enabled": true
+          },
+          {
+            "name": "photoshop",
+            "enabled": false
+          }
+        ]
+      }
+    ],
+    "trust": {
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+      "bindings": [
+        {
+          "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+          "trust_level": "trusted",
+          "exactCwdMatch": true,
+          "caseInsensitiveMatch": true
+        }
+      ]
+    },
+    "envValuesPublished": false,
+    "sourceLayer": "project-local .codex/config.toml written by initial installer; CLI exact cwd resolves enabled entry",
+    "configurationProofIsConfiguredRuntimeProof": false,
+    "currentAppServer": {
+      "cwd": "Not exposed by available supported process metadata; not inferred from CLI cwd",
+      "explicitListenArgument": false,
+      "pid": 7060,
+      "isAppServer": true,
+      "birth": "2026-11-04T09:29:14.7510340Z",
+      "exe": "C:\\Users\\Ant\\AppData\\Local\\OpenAI\\Codex\\bin\\b6c7fc9497179c98\\codex.exe",
+      "version": "codex-cli 0.166.0-alpha.5.1"
+    },
+    "appServerCwdObserved": false,
+    "ui": {
+      "path": "Settings > Plugins > MCPs",
+      "visibleServerNames": [
+        "aftereffects-kumo",
+        "codeburn",
+        "node_repl",
+        "photoshop"
+      ],
+      "core4Listed": false,
+      "targetedRefreshControlObserved": false,
+      "viewMenuContainsTargetedMcpRefresh": false,
+      "hostFilterLabels": [
+        "All settings",
+        "MSI"
+      ],
+      "hostLabelIsMachineProof": false
+    },
+    "currentToolInventoryCore4Available": false,
+    "existingAppServerReloadApi": {
+      "methodNameDocumented": "config/mcpServer/reload",
+      "transport": "existing app-server has no --listen; documented default stdio",
+      "supportedCallableEndpointExposedByAvailableTools": false,
+      "stdinInterceptionOrSpeculativeTcpRequests": false
+    },
+    "conclusionRu": "CLI в точном cwd загружает Core4 enabled, exact-cased trusted binding присутствует. Runtime текущего чата Core4 tools не публикует. Причина игнорирования/кэширования слоя существующим app-server не доказана; его cwd не наблюдён. Доступного адресного reload для этого app-server не найдено."
+  },
+  "aeRestart": {
+    "before": {
+      "observedAt": "2026-11-04T13:21:54.6812950Z",
+      "processId": 612,
+      "birth": "2026-11-04T13:03:13.1249940Z",
+      "exe": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+      "project": "Untitled Project.aep",
+      "emptyProjectPane": true,
+      "activeComposition": false,
+      "renderQueueEmpty": true,
+      "titleModifiedMarker": false,
+      "nativeCommandsSubmittedByThisBlock": 0,
+      "stateFiles": [
+        "origin.json"
+      ],
+      "configuredRuntimeProcessObserved": false,
+      "plan": "one normal UI quit/relaunch for initial CEP discovery; no force/kill",
+      "backupRequiredForObservedEmptyUnmodifiedProject": false
+    },
+    "normalRestartsCompleted": 1,
+    "normalExitMethod": "main AE window Close; File Exit was outside screen; Ctrl+Q did not terminate process",
+    "oldProcessExitConfirmed": true,
+    "forceKillUsed": false,
+    "newProcess": {
+      "birth": "2026-11-04T13:23:21.5337360Z",
+      "exe": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+      "version": "26.3.0.87",
+      "pid": 28156
+    },
+    "launchesAttempted": 1,
+    "launchToolReportedNoWindowDuringStartup": true,
+    "subsequentWindowRecovered": true,
+    "diskCacheWarning": "AE reported insufficient disk cache space; informational OK acknowledged, preferences/cache unchanged",
+    "projectAfter": "Untitled Project.aep",
+    "emptyProjectPane": true,
+    "composition": null,
+    "renderQueueEmpty": true,
+    "unsavedWorkDiscarded": false,
+    "backupRequired": false,
+    "AEVersionChanged": false
+  },
+  "cepDiscovery": {
+    "result": "PASS",
+    "extensionId": "com.codex.aeagentcore4.panel",
+    "menu": "Window > Extensions > AE Agent Core 4.0.0",
+    "absentBeforeRestart": true,
+    "listedAfterRestart": true,
+    "panelOpened": true,
+    "panelPath": "C:/Users/Ant/AppData/Roaming/Adobe/CEP/extensions/com.codex.aeagentcore4/index.html",
+    "visibleStatus": "Ожидание Core для проверки сеанса",
+    "connectButtonDisabled": true,
+    "startOverClicked": false,
+    "resetRequested": false,
+    "interpretationRu": "Initial discovery выполнен после normal restart. Панель загрузилась; connected/native proof отсутствует."
+  },
+  "configuredNative": {
+    "result": "NOT_RUN",
+    "configuredToolsAvailable": false,
+    "coreStatusCalls": 0,
+    "controllerAcquireCalls": 0,
+    "typedProjectInspectionCalls": 0,
+    "controllerReleaseCalls": 0,
+    "reasonRu": "Нет Core4 tools в доступном runtime чата; ручной stdio клиент не используется как подмена configured proof."
+  },
+  "scopeLimits": {
+    "actualApplyRepeated": false,
+    "globalConfigTrustOrSecurityChanged": false,
+    "manualConfigEdits": 0,
+    "adoptionOrReset": false,
+    "rawJSXUsed": false,
+    "AEProjectMutations": 0,
+    "releaseCertified": false,
+    "P1toP8Complete": false
+  },
+  "nextRequiredCapabilityRu": "Поддерживаемый адресный reload существующего MCP/app-server, читающего project-local config этого чата, либо появление Core4 tools в runtime. После этого fresh status/contract, short acquire/connect/one typed inspection/release."
+}
