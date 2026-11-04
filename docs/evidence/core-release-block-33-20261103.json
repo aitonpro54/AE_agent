@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:50:20.311Z",
+  "blockId": "source-candidate-33",
+  "baselineCommit": "2a651550031d98b6c720403fa6f4d2108ceb8e72",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=maintenance-finish-operator",
+      "test/maintenance-finish-operator.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:49:57.085Z",
+    "finishedAt": "2026-11-04T08:50:06.429Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 7,
+      "suites": 0,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 9283.6005
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-33-maintenance-finish-operator.log",
+      "sha256": "bf7ea3ee9aae42aa54cec7d47f878cca3d1b300672c3a570f1b7051e27c7681c",
+      "bytes": 990
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-33-maintenance-finish-operator-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "maintenance-finish-operator",
+      "evidenceKey": "81b968aaf3e5d2e84a84ca8c1e4f33a06caf400d83538ced3d9df58b951115f1",
+      "result": "PASS",
+      "cases": 7,
+      "skipped": 0,
+      "matchedTestNames": [
+        "maintenance-finish-operator source guards pin bootstrap and constant NEW support imports",
+        "maintenance-finish-operator JSON clones cannot issue the opaque bootstrap capability or cause installation reads",
+        "maintenance-finish-operator NEW reviewed distribution verifies installed poisoned source as DATA and never imports it",
+        "maintenance-finish-operator wrong distribution/current pins and absent owner support refuse before runtime import",
+        "maintenance-finish-operator tampered NEW support helper is rejected before any installed operator import",
+        "maintenance-finish-operator stopped certification routes only through verified NEW code and closes election on refusal",
+        "maintenance-finish-operator private election finally closes a real pending request on its TEMP port"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish-operator",
+        "test/maintenance-finish-operator.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own TEMP",
+    "childPreload": "denies listener/probe/oldimports",
+    "logical3457": "own ephemeral0 election",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": false,
+    "fixturePrefixes": [
+      "core4-finish-operator-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-TLj45I",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-CgtESP",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-s5fbEu",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-b2JTUJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-i32ow0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-finish-operator-0b9GkQ"
+    ],
+    "remainingOwnDirs": [],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "20s/case and15s CLI source budgets retained; no outer deadline."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/maintenance-finish-operator.test.js",
+        "line": 14,
+        "proof": "Guarded own-prefix cleanup in t.after"
+      },
+      {
+        "file": "core4/test/maintenance-finish-operator.test.js",
+        "line": 101,
+        "proof": "Finally clears timer/destroys request/closes own server"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-33-maintenance-finish-operator-reducer.json",
+    "sha256": "3eda456fbda36b15a206c2a1b8688851a54a2518d60aeeafc6ff5688ddb675a5"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
