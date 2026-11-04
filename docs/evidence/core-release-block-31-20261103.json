@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:48:37.951Z",
+  "blockId": "source-candidate-31",
+  "baselineCommit": "9c696de80838e04a010fede80dc8fc3ef5f877fb",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=start-over-operator",
+      "test/start-over-operator.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:48:15.716Z",
+    "finishedAt": "2026-11-04T08:48:22.609Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 6,
+      "suites": 0,
+      "pass": 6,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 6831.9873
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-31-start-over-operator.log",
+      "sha256": "78c6312ac3b02acfda4fdc4d975832d645ed74cb2d394871aad3eaf1e0ef2da2",
+      "bytes": 815
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-31-start-over-operator-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "start-over-operator",
+      "evidenceKey": "27fa0cfa0468213f984d1da5130f6038f357afa2eea064b16fc64ea8333ee86d",
+      "result": "PASS",
+      "cases": 6,
+      "skipped": 0,
+      "matchedTestNames": [
+        "start-over-operator JSON lookalikes and weakened source bootstrap never reach reset state or a writer",
+        "start-over-operator official inspect is read-only and missing finish pin refuses before effects",
+        "start-over-operator changed distributed helper is rejected before its first import",
+        "start-over-operator pending reset blocks planning and a prepared install before credential rotation",
+        "start-over-operator existing work session refuses stdio/legacy reader and rollback but preserves v4 planning",
+        "start-over-operator closed v3 metadata remains readable as data but cannot carry an undeclared reset cluster"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-operator",
+        "test/start-over-operator.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own TEMP installation/config/extensions/state",
+    "childCLI": "inspect and early refusals only; HTTP continue/finisher never reached",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": false,
+    "fixturePrefixes": [
+      "core4-reset-operator-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-operator-GrK8b4",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-operator-P5aMqf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-operator-H9vTck",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-operator-MgrckA",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-operator-G4iR2y",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-operator-STJ3yw"
+    ],
+    "remainingOwnDirs": [],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "CLI spawnSync15s retained; no outer deadline.",
+      "No own long-lived server/process created by early-refusal cases."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/start-over-operator.test.js",
+        "line": 10,
+        "proof": "Guarded exact own-prefix rm in t.after; sync CLI completion15s"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-31-start-over-operator-reducer.json",
+    "sha256": "4db6f56b5cff307f23d2a3f8bd2faf80b0fbb8508416761e28a3334cdb727dc1"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
