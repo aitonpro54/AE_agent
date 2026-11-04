@@ -2,8 +2,8 @@
 
 **4 ноября, активен практический перенос MSI ↔ десктоп:** выбран прежний
 manual/owner cdf package, source-приёмка переиспользуется. DESKTOP-32974QF
-подключён; следующий шаг — read-only preflight существующего Core checkout
-на нём. [Текущий план](core-portability-practical-20261104.md).
+подключён, read-only preflight принят; следующий шаг — Git-доставка выбранного
+commit и initial-install dry-run. [Текущий план](core-portability-practical-20261104.md).
 
 **Адресная source-приёмка завершена:** Адресная source-очередь без продуктового hold завершена: 35 принятых запусков / 38 named checks с текущим свежим PASS. Применимы 69 exact-key + 0 byte-command-bound результата; открыты только две dedicated Titles. Titles/Slideshow на паузе, full release не заявляется. [План](core-release-execution-20261103.md).
 

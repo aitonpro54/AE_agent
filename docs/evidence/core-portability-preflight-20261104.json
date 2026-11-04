@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "dateLocal": "2026-11-04",
+  "recordedAt": "2026-11-04T11:10:03.568Z",
+  "status": "two-host-preflight-complete-transfer-next",
+  "baselineMsiCommit": "13126eb",
+  "userAuthorization": {
+    "source": "прямой ответ пользователя в основном чате",
+    "answer": "Да, используй его для переноса",
+    "scope": "существующий чат десктопа для адресных этапов переноса Core"
+  },
+  "desktop": {
+    "hostId": "remote-control:env_e_6aaa3f0513c483209c3eb84d29674988",
+    "machine": "DESKTOP-32974QF",
+    "threadId": "01a186f7-9c1b-7513-a89e-cef10752eba1",
+    "turns": [
+      "01a1a639-4ac6-7742-b202-229a88acb65a",
+      "01a1a63d-9c65-7310-9edf-a911f8de5d06"
+    ],
+    "windows": "Windows 11 Pro 25H2 26200.9711 x64",
+    "node": {
+      "version": "24.15.0",
+      "path": "C:\\Program Files\\nodejs\\node.exe",
+      "sha256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5"
+    },
+    "git": "2.54.0.windows.1",
+    "codexCli": "0.156.1",
+    "codexMsix": "26.1027.6604.0",
+    "powershell": "7.6.5",
+    "aeInstalledVersion": "26.3",
+    "cepInstalledVersion": "12.0.1",
+    "afterFxProcessCount": 0,
+    "gitState": {
+      "root": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+      "branch": "codex/core-migration",
+      "head": "1f5b8204ed4c50c3aed175f2709deefdfd7836a7",
+      "clean": true,
+      "rootPackage": "ae-agent-core@3.3.5",
+      "origin": "https://github.com/aitonpro54/AE_agent.git"
+    },
+    "core4StandardInstallRootPresent": false,
+    "actualCore4CepTargetPresence": "NOT-YET-OBSERVED: previous request supplied com.aeagent.core4; correct bundle is com.codex.aeagentcore4, must check before install",
+    "projectLegacyMcpEnabled": false,
+    "kumoGlobalMcpEnabled": true,
+    "listenerCensus": {
+      "ports": [
+        3457,
+        3456,
+        8787
+      ],
+      "listeners": 0,
+      "connectionsOpened": 0
+    },
+    "remoteWrites": 0,
+    "remoteAeMcpCalls": 0
+  },
+  "comparison": {
+    "samePathNodeHash": true,
+    "sameGitVersion": true,
+    "sameCodexMsix": true,
+    "aeVersionsDiffer": "MSI recorded26.2 / desktop installed26.3; native compatibility pending",
+    "msiConfirmsDesktopHeadIsAncestor": true,
+    "publishedBranchHead": "2b285133136f0e728bc0cf0a33c652bfce316667",
+    "publishedHeadIsMsiAncestor": true
+  },
+  "transferDecision": {
+    "flow": "existing Git; new non-force branch codex/core-portability-20261104; preserve desktop codex/core-migration",
+    "copyLocalRuntimeConfigCredentialsState": false,
+    "installDecision": "desktop first Core4 owner install after checkout/package/target dry-run; no redundant MSI install",
+    "pausedProducts": [
+      "Titles",
+      "Slideshow"
+    ],
+    "remoteExecutionAuthorized": true
+  },
+  "exportAudit": {
+    "method": "bounded read-only helper inspection",
+    "auditedHead": "13126eb",
+    "trackedFiles": 1282,
+    "lifecycleTrackedFiles": 374,
+    "newHistoryCommits": 184,
+    "inspectedTextJsonBlobs": 1758,
+    "findings": "no detected actual credential literals in checked range; historical local bindings are evidence only, never import as runtime authority",
+    "limitation": "older history outside inspected range not re-audited; no bundle --all",
+    "sourceCodeChanged": false
+  },
+  "remaining": [
+    "safe Git delivery preserving old branch and ignored files",
+    "correct CEP target preflight + initial install dry-run/read-back",
+    "configured MCP and typed read on both hosts",
+    "return engineering delta, repeat/negative tests and P1–P8 report"
+  ],
+  "portabilityCertified": false,
+  "releaseCertified": false
+}

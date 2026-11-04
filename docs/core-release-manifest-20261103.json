@@ -1356,6 +1356,12 @@
       "sha256": "4b1a23d6b71c7755b834452a280d6713391a2b1f37cf258f77a6ee85ddb1f8bf",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "Local preparation only; not current Core-check PASS or two-machine P1–P8 acceptance"
+    },
+    {
+      "file": "docs/evidence/core-portability-preflight-20261104.json",
+      "sha256": "3fbbeccbbee1f6ed99d2cfba54a3dcb8901d7af23d3fa057e95957dc0ed14980",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Environment and read-only Git/target facts only; not native AE or P1–P8 closure"
     }
   ],
   "evidenceMethod": {
@@ -7919,7 +7925,8 @@
       ],
       "contract": "docs/portability.md",
       "noteRu": "Подключён DESKTOP-32974QF; на MSI воспроизведён прежний owner package/distribution. Desktop preflight и фактические оба направления ещё не выполнены; P1–P8 открыты.",
-      "preparationEvidence": "docs/evidence/core-portability-practical-20261104.json"
+      "preparationEvidence": "docs/evidence/core-portability-practical-20261104.json",
+      "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json"
     }
   ],
   "legacyReleaseScript": {
@@ -8870,7 +8877,7 @@
     "completedAt": "2026-11-04T09:12:29.072Z",
     "finalEvidence": "docs/evidence/core-release-source-acceptance-20261103.json"
   },
-  "updatedAt": "2026-11-04T10:49:58.967Z",
+  "updatedAt": "2026-11-04T11:10:42.675Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -8881,8 +8888,11 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "local-preparation-PASS-desktop-execution-pending",
+    "status": "two-host-preflight-complete-transfer-next",
     "desktopConnected": true,
-    "remoteExecutionPending": true
+    "remoteExecutionPending": false,
+    "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
+    "remoteExecutionAuthorized": true,
+    "next": "Git delivery and initial-install dry-run"
   }
 }
