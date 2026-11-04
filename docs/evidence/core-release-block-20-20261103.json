@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:56:59.760Z",
+  "blockId": "source-candidate-20",
+  "baselineCommit": "55fc5e885e5452f9c7c70277c07f18228319b41f",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:manual-current-target)",
+      "test/manual-current-target.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:56:43.362Z",
+    "finishedAt": "2026-11-04T08:56:45.358Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 13,
+      "suites": 0,
+      "pass": 13,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 1937.4452
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-20-manual-current-target.log",
+      "sha256": "5b0c2cbd6f508f8afb73913cb660f18583672afe39b985d6ebd35c3d381e4ad8",
+      "bytes": 1676
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-20-manual-current-target-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "manual-current-target",
+      "evidenceKey": "934955391f8931fcc9732963ce6543d2caa3d80597a3dd69788ace06183bb311",
+      "result": "PASS",
+      "cases": 13,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[manual-current-target] queued same-path same-IDs replacement requires fresh local confirmation; A untouched",
+        "[manual-current-target] cancel on replacement gives zero setter and original target untouched",
+        "[manual-current-target] full same-path project replacement inside confirm freshly resolves B and locally verifies B",
+        "[manual-current-target] immutable registered proposal rejects every forged binding before confirm/evaluate",
+        "[manual-current-target] all protected fields drift during modal confirmation reject before setter",
+        "[manual-current-target] text path comp/layer/session lock and effect constraints re-resolve after confirm",
+        "[manual-current-target] preconfirm drift is refused without dialog; quoted text remains data",
+        "[manual-current-target] setter throws after effect or damages protected field leaves durable UNKNOWN and no replay",
+        "[manual-current-target] timeout before execution then late confirmation may mutate; UNKNOWN survives reopen",
+        "[manual-current-target] timer during blocked confirm then late agree keeps original UNKNOWN and no replay",
+        "[manual-current-target] actual receiver duplicates never re-evaluate and completed proof survives reopen",
+        "[manual-current-target] lost host callback after effect durably fences without retry",
+        "[manual-current-target] reviewed JSX rejects payload Boolean/callback; separate local verify and sole setter"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-current-target",
+        "test/manual-current-target.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "shared Core source VM/ownWorker only",
+    "network": "none",
+    "AE": "synthetic VM state",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": false,
+    "fixturePrefixes": [
+      "core4-manual-target-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-kqvaoh",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-OMq45r",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-b0IQfk",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-MeLgXG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-OEtp9D",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-93MiP1",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-CjjOCg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-OY1s5X",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-U4TAg1",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-2Baybl",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-QxNYei",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-W3QRXC",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-8rJkyB",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-DDCMX3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-ElGgOa",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-TjkX2i",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-67RuQy",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-Eygvv4",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-63eZkg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-gBSVHW",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-UIXC5n",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-dbo0h8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-s4IjIB",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-VcKZdu",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-zVYMxr",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-E0Hai1",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-hyFX7t",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-O4Ro5U",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-yXCPgk",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-vk9PDy",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-7pCAtl",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-BnQZal",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-target-6Jg2OA"
+    ],
+    "remainingOwnDirs": [],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Only own workers and completion stores; no AE/network.",
+      "No outer deadline; canonical source command unchanged."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/manual-current-target.test.js",
+        "line": 18,
+        "proof": "await fixture.close, canonical own TEMP prefix/parent/no symlink checks before rm"
+      },
+      {
+        "file": "core4/test/fixtures/manual-current-target.js",
+        "line": 121,
+        "proof": "await each Worker.terminate then store.close"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-20-manual-current-target-reducer.json",
+    "sha256": "f4d01b11034d636ac203ada5e81482b14f288695a75f0f4a91e41dcdf972fd95"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
