@@ -11,6 +11,9 @@
 
 ## Текущий scope и правила
 
+**4 ноября, P5 actual repeat/read-back PASS, reconnect pending:** один stop13977dd6 → resume/runtimeStartedfalse → ordinary standalone apply9157e280; installationId/stateDir/origins/runtime80/CEP6/history/preferences/config/legacy сохранены. Credentials штатно rotated; receiver prefix3 точен, AE28156 прежний. Старый MCP thin client32372 возвращает owner_unavailable; supported targeted control не найден, native после repeat0. Не повторять apply9157. [Checkpoint](plans/core-portability-p5-repeat-20261104.md), [evidence](docs/evidence/core-portability-p5-repeat-20261104.json). P5/P2 ещё open.
+
+
 **4 ноября, практический перенос Core принят:** MSI↔DESKTOP-32974QF, реальная
 source-дельта в обе стороны, одинаковые cdf/80 иstandalone5d5/98, desktop initial
 install1 и configured native read обеих машин PASS. Manual config edits0; local

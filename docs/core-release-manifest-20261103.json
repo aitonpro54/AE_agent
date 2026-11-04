@@ -1452,6 +1452,12 @@
       "sha256": "5a601c855ee218f6bb03c42a8eab8cc397c0321559ee6b03cf90167f0168b517",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "Preparation only; no new source/native acceptance."
+    },
+    {
+      "file": "docs/evidence/core-portability-p5-repeat-20261104.json",
+      "sha256": "507e8e14333e4ae51335e0768f3266ca921bd1404206516ffb3db19073e6db8e",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Actual same-package production repeat/read-back, but configured post-repeat proof pending; no source named/release certification"
     }
   ],
   "evidenceMethod": {
@@ -10988,7 +10994,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.sourceValidation"
   },
-  "updatedAt": "2026-11-04T14:46:35.538Z",
+  "updatedAt": "2026-11-04T15:10:08.177Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -10999,7 +11005,7 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "strict-P2-P5-in-progress",
+    "status": "P5-actual-repeat-applied-configured-reconnect-pending",
     "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
@@ -11156,7 +11162,14 @@
       "CEPDiscovery": "PASS-after-one-normal-AE-restart",
       "controllerReleased": true,
       "pendingUnknownFault": 0,
-      "appServerRestart": 0
+      "appServerRestart": 0,
+      "currentConnection": {
+        "state": "post-repeat-configured-client-refresh-pending",
+        "currentConfiguredProof": false,
+        "currentNativeProof": false,
+        "priorNativeEvidence": "docs/evidence/core-portability-desktop-configured-native-20261104.json",
+        "noteRu": "Исторические initial configuredProof/nativeProof выше относятся к pre-repeat incarnation; не текущий live proof после credential rotation."
+      }
     },
     "desktopCEPDiscoveryEvidence": "docs/evidence/core-portability-desktop-cep-discovery-20261104.json",
     "desktopServiceRefreshPreflightEvidence": "docs/evidence/core-portability-desktop-service-refresh-preflight-20261104.json",
@@ -11171,7 +11184,17 @@
       "P5"
     ],
     "finalGatesPlan": "plans/core-portability-final-gates-20261104.md",
-    "finalGatesPreparation": "docs/evidence/core-portability-final-gates-preparation-20261104.json"
+    "finalGatesPreparation": "docs/evidence/core-portability-final-gates-preparation-20261104.json",
+    "P5RepeatEvidence": "docs/evidence/core-portability-p5-repeat-20261104.json",
+    "P5Repeat": {
+      "applied": true,
+      "readback": true,
+      "transactionId": "9157e280-eeac-402f-92a5-6c69c42d5a47",
+      "configuredAfterRepeat": false,
+      "nativeAfterRepeat": false,
+      "formalStatus": "OPEN",
+      "next": "Supported configured Core4 thin-client refresh, then fresh native inspection/release; no reapply"
+    }
   },
   "historicalSourceAcceptance": {
     "baselineCommit": "77a860e",

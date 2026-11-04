@@ -29,7 +29,8 @@
 - [x] P2: status и адресные логи не содержат literal Origin; собственный Core4 CEP
   engine не имеет debug port. Native UI не адресует его child для контекстного меню;
   ввод отклонён до действия. Debug flags, packet capture и инъекции не применялись.
-- [ ] P5 actual repeat/read-back.
+- [x] P5 actual same-package repeat/read-back: stop1/resume1/apply1, transaction9157, защищённые bytes сохранены.
+- [ ] P5 post-repeat configured refresh/native3→5; [checkpoint](core-portability-p5-repeat-20261104.md).
 - [ ] P2 candidate/source/package и installed proof двух машин.
 - [ ] Итоговые evidence/manifest и синхронизация.
 
@@ -54,3 +55,17 @@
 - Новых AE-команд, install/apply/stop/reset/adoption/replay на подготовительном
   этапе0. Исходный desktop apply82b0de47… не повторяется.
 - [Подготовительное evidence](../docs/evidence/core-portability-final-gates-preparation-20261104.json).
+
+## P5 checkpoint: actual apply подтверждён, reconnect pending
+
+### Progress
+
+Desktop сохранил отдельное [evidence](../docs/evidence/core-portability-p5-repeat-20261104.json) после ordinary standalone repeat9157. Configured post-repeat proof ещё не получен.
+
+### Decision Log
+
+Старый thin client32372 держит startup descriptor до role rotation. Bounded UI/API search не обнаружил поддерживаемый адресный Core4 refresh; app-server/client не завершались, подменный runtime не запускался. Новый native read не отправлялся. Parent определяет следующий необходимый технический шаг после этого reviewable checkpoint.
+
+### Validation
+
+Actual stop/resume/apply1/1/1, protected read-back PASS; receiver prefix3, ledger absent, AE unchanged. Source keys71/current48/23 неизменны. P5/P2/full certification остаются open.
