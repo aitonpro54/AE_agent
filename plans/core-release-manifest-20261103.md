@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка после MSI-дельты, 4 ноября:** 48covered =37unchanged exact reuse +10desktop named PASS +1MSI named PASS;23open =21changed deferred integrations +2Titles held. Исторические69/71 на77a860e и35blocks/36commands сохранены как прежняя фаза, без переобъявления current. [Desktop evidence](../docs/evidence/core-portability-quoted-config-20261104.json). Full release не заявляется.
+**Текущая source-приёмка после MSI-дельты, 4 ноября:** 48covered =36unchanged exact reuse +10desktop named PASS +1MSI named PASS +1desktop documentation PASS;23open =21changed deferred integrations +2Titles held. Исторические69/71 на77a860e и35blocks/36commands сохранены как прежняя фаза, без переобъявления current. [Desktop evidence](../docs/evidence/core-portability-quoted-config-20261104.json). Full release не заявляется.
 
 ## Цель и состав
 
@@ -210,7 +210,7 @@ Source suites и live операции не запускались; `releaseCert
 | `catalog-discovery` | integration | unchanged exact-key reuse | повтор только при drift |
 | `validation-routing` | integration | current evidence open | deferred; не запускался в V2 scope |
 | `artifact-boundaries` | integration | current evidence open | deferred; не запускался в V2 scope |
-| `documentation` | component | unchanged exact-key reuse | повтор только при drift |
+| `documentation` | component | desktop README full named PASS → exact reuse | повтор только при drift |
 | `cep-transport` | integration | current evidence open | deferred; не запускался в V2 scope |
 | `lifecycle-simulation` | integration | current evidence open | deferred; не запускался в V2 scope |
 | `native-read-recovery` | integration | desktop V2 full named PASS → exact reuse | повтор только при drift |
@@ -252,3 +252,17 @@ Runtime unchanged: MSI reinstall0. Изменились только `installabl
 ### Validation
 
 71current keys, snapshot215 и supplemental33 сверены; current48/open23. Desktop install/native и итоговый round-trip ещё открыты.
+
+## Desktop: initial installation — 4 ноября
+
+### Progress
+
+MSI commit `0b78aac` принят fast-forward. Адресный CLIcase1 и полный documentation1 PASS; README приведён к bounded quoted TOML контракту. Package cdf/80 и standalone5d5/98 verified. Initial CLI apply выполнен ровно один раз; новый desktop installationId `installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700`. Runtime80/CEP7 и конфигурация прочитаны обратно. Repeat foreign-CWD dry-run сохранил точные bytes всех98 наблюдавшихся файлов. [Evidence](../docs/evidence/core-portability-desktop-installed-20261104.json).
+
+### Decision Log
+
+Первый observer ошибочно ожидал отсутствующее поле descriptor.runtimeModel. Исходный diagnostic сохранён; исправлено только read-only наблюдение через runtimeBinding и transaction clientBinding. Установка не повторялась. Legacy/global config сохранены, ручных config edits0. Отсутствие Core4 в меню уже запущенного AE пока не объявляется дефектом версии.
+
+### Validation
+
+71 current keys, только documentation изменён; snapshot215, supplemental33. Current48/open23 сохранены:36 прежних exact reuse +10 desktop +1 MSI +1 documentation. CLIcase1 не заменяет MSI full46. Configured/native proof ещё не получен; следующий шаг — targeted MCP refresh и initial CEP discovery, затем один typed read/release. P1–P8/full release открыты, Titles/Slideshow на паузе, cloud исключён.

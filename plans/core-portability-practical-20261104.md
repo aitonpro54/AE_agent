@@ -119,3 +119,17 @@ stop/update/inspect/enable; новые механизмы вводить тол�
 ### Validation
 
 [MSI evidence](../docs/evidence/core-portability-msi-roundtrip-20261104.json): receiver9→11 с exact prefix, ledger/AEP unchanged; installed owner ready/peer connected, pending/UNKNOWN/fault0, holder null. Current48/open23; следующая операция — вернуть commit на desktop и установить штатным CLI, затем configured native proof.
+
+## Desktop: initial installation — 4 ноября
+
+### Progress
+
+MSI commit `0b78aac` принят fast-forward. Адресный CLIcase1 и полный documentation1 PASS; README приведён к bounded quoted TOML контракту. Package cdf/80 и standalone5d5/98 verified. Initial CLI apply выполнен ровно один раз; новый desktop installationId `installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700`. Runtime80/CEP7 и конфигурация прочитаны обратно. Repeat foreign-CWD dry-run сохранил точные bytes всех98 наблюдавшихся файлов. [Evidence](../docs/evidence/core-portability-desktop-installed-20261104.json).
+
+### Decision Log
+
+Первый observer ошибочно ожидал отсутствующее поле descriptor.runtimeModel. Исходный diagnostic сохранён; исправлено только read-only наблюдение через runtimeBinding и transaction clientBinding. Установка не повторялась. Legacy/global config сохранены, ручных config edits0. Отсутствие Core4 в меню уже запущенного AE пока не объявляется дефектом версии.
+
+### Validation
+
+71 current keys, только documentation изменён; snapshot215, supplemental33. Current48/open23 сохранены:36 прежних exact reuse +10 desktop +1 MSI +1 documentation. CLIcase1 не заменяет MSI full46. Configured/native proof ещё не получен; следующий шаг — targeted MCP refresh и initial CEP discovery, затем один typed read/release. P1–P8/full release открыты, Titles/Slideshow на паузе, cloud исключён.

@@ -11,6 +11,9 @@
 
 ## Текущий scope и правила
 
+**4 ноября, desktop initial install подтверждён:** MSI `0b78aac` принят; CLIcase1 и documentation1 PASS, cdf/80 и5d5/98 verified. Штатный initial apply ровно1, новый desktop installationId; read-back runtime80/CEP7 и repeat foreign-CWD dry-run PASS. Observer diagnostic сохранён, apply не повторён. Current48/open23; configured/native pending. [Checkpoint](docs/evidence/core-portability-desktop-installed-20261104.json). Следующий шаг — targeted MCP refresh/CEP discovery и один configured native read/release.
+
+
 **4 ноября, MSI принял desktop fix и проверил обратную дельту:** `f857f2d`
 получен fast-forward; SHA двух source-файлов и 11 исходных stdout сверены.
 CLI-регрессия расширена quoted legacy/env и local paths; полный named46/46PASS.

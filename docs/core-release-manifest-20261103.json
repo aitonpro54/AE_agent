@@ -39,7 +39,7 @@
     "files": [
       {
         "file": "README.md",
-        "sha256": "613736d5509b22bb6399893021cf69b56a991035f10fb0d9584d3f0256a98051"
+        "sha256": "69c361241b9386fe242ff2825ad656b2f956b29158f1285e5f56a6aa93486dc7"
       },
       {
         "file": "cep/CSXS/manifest.xml",
@@ -898,7 +898,7 @@
         "sha256": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02"
       }
     ],
-    "digest": "fc4e4123251d9a26b3dc0abad39fd833a70297e57159ba4c49dbf52d234cb9b4",
+    "digest": "9d11a9b8bd1aa95764e8cf6633e86bb84f01920b1321b6a46c9faf15a822828a",
     "note": "Current 215-file byte snapshot. Observation does not imply PASS for all current closures; see per-check acceptance and 23 open checks.",
     "digestAlgorithm": "protocol.hash(canonical [[relative file,sha256],...])",
     "revisions": [
@@ -940,6 +940,15 @@
           "core4/test/installable-runtime.test.js"
         ],
         "evidence": "docs/evidence/core-portability-msi-roundtrip-20261104.json"
+      },
+      {
+        "at": "2026-11-04T13:20:02.395Z",
+        "previousDigest": "fc4e4123251d9a26b3dc0abad39fd833a70297e57159ba4c49dbf52d234cb9b4",
+        "reason": "README quoted TOML documentation correction; one full documentation PASS only, CLIcase1 separate.",
+        "files": [
+          "core4/README.md"
+        ],
+        "evidence": "docs/evidence/core-portability-desktop-installed-20261104.json"
       }
     ]
   },
@@ -1406,6 +1415,13 @@
       "sha256": "9f8f2e77584b53883f4861b569739a5cd72cbe95455aac51b6fd8f63f823b61f",
       "directKeyedRecords": 1,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-portability-desktop-installed-20261104.json",
+      "sha256": "c67d75b90cff266414d3ad0d7b4bd049bf498be5c5e3418f7bd726e6611ca709",
+      "directKeyedRecords": 1,
+      "excludedAsAuthority": null,
+      "scope": "Desktop CLIcase1, documentation full named1, initial installation and repeat dry-run; configured/native pending."
     }
   ],
   "evidenceMethod": {
@@ -1443,11 +1459,11 @@
     "optionalFutureSourceBatches": 0,
     "reusedGlobalUniqueCases": null,
     "currentCovered": 48,
-    "currentUnchangedExactReuse": 37,
-    "currentDesktopFreshNamedChecks": 10,
+    "currentUnchangedExactReuse": 36,
+    "currentDesktopFreshNamedChecks": 11,
     "historicalSourceTestCommandsExecuted": 36,
-    "sourceTestCommandsExecutedScope": "Historical source phase36; current portability receipts11 desktop +1 MSI; no global unique claim.",
-    "practicalPortabilitySourceCommandsExecuted": 12,
+    "sourceTestCommandsExecutedScope": "Historical source phase36; portability11 desktop +1 MSI + desktop CLIcase1 and documentation1. CLIcase1 is not full named acceptance; no global unique claim.",
+    "practicalPortabilitySourceCommandsExecuted": 14,
     "historicalSourcePhase": "historicalSourceAcceptance.summary",
     "currentMsiFreshNamedChecks": 1
   },
@@ -8432,8 +8448,8 @@
         "--test-name-pattern=documentation",
         "test/core4.test.js"
       ],
-      "currentEvidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
-      "dependencyDigest": "8e620b5d6374132ef88cdc1af66da387c36e6b5273ac9b26f696de211410ac8d",
+      "currentEvidenceKey": "cd87632a3d090deaf2c2d602b1b814c9cb7b642ed9b36e91dc28570f20dbbdde",
+      "dependencyDigest": "7bfd3a974ffc93060069e801265fddc2bb170053d4426628a7108cc8fb946509",
       "dependencyCount": 2,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/documentation",
       "projections": [],
@@ -8447,44 +8463,65 @@
       "recordedExactKeyAvailable": true,
       "acceptedEvidence": [
         {
-          "file": "docs/evidence/core-release-block-16-20261103.json",
-          "pointer": "/checks/3",
+          "file": "docs/evidence/core-portability-desktop-installed-20261104.json",
+          "pointer": "/checks/1",
           "result": "PASS",
           "resultField": "result",
-          "evidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
-          "authorityMethod": "explicit-record-result-PASS",
+          "evidenceKey": "cd87632a3d090deaf2c2d602b1b814c9cb7b642ed9b36e91dc28570f20dbbdde",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
           "caseCount": 1,
-          "caseCountPointer": "/checks/3/cases",
-          "recordedMode": "fresh-source-block",
+          "caseCountPointer": "/checks/1/cases",
+          "recordedMode": "fresh-full-canonical-named-check-desktop",
           "recordedCommand": [
             "node",
             "--test",
-            "--test-concurrency=1",
-            "--test-name-pattern=(?:native-read-capture)|(?:validation-routing)|(?:artifact-boundaries)|(?:documentation)",
-            "test/native-read-capture.test.js",
+            "--test-name-pattern=documentation",
             "test/core4.test.js"
           ],
-          "executionBatch": "/executionBatch",
-          "sharedBatch": true,
-          "batchCaseCount": 27,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-capture-composite-attempt-02.log",
-          "logHash": "f89cf117ba1287a6b4e159623b63fb6eee63d0e5ffb5bf906eb772255426d565"
+          "sharedBatch": false,
+          "batchCaseCount": 1,
+          "log": "docs/evidence/core-portability-desktop-installed-20261104/documentation.stdout.txt",
+          "logHash": "33ff0cfe4ccbd4835ba1ea1da214e5aee4670f6c2ea378df8466f087d4d75fa8"
         }
       ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
-        "keyCount": 0,
-        "references": [],
+        "keyCount": 1,
+        "references": [
+          {
+            "file": "docs/evidence/core-release-block-16-20261103.json",
+            "pointer": "/checks/3",
+            "result": "PASS",
+            "resultField": "result",
+            "evidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+            "authorityMethod": "explicit-record-result-PASS",
+            "caseCount": 1,
+            "caseCountPointer": "/checks/3/cases",
+            "recordedMode": "fresh-source-block",
+            "recordedCommand": [
+              "node",
+              "--test",
+              "--test-concurrency=1",
+              "--test-name-pattern=(?:native-read-capture)|(?:validation-routing)|(?:artifact-boundaries)|(?:documentation)",
+              "test/native-read-capture.test.js",
+              "test/core4.test.js"
+            ],
+            "executionBatch": "/executionBatch",
+            "sharedBatch": true,
+            "batchCaseCount": 27,
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-capture-composite-attempt-02.log",
+            "logHash": "f89cf117ba1287a6b4e159623b63fb6eee63d0e5ffb5bf906eb772255426d565",
+            "superseded": true,
+            "supersededAt": "2026-11-04T13:20:02.395Z"
+          }
+        ],
         "acceptedForCurrentKey": false
       },
       "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "passed-in-source-block",
+        "state": "passed-in-desktop-install-checkpoint",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "executedDuringSourceAcceptance": true,
-        "blockId": "source-candidate-16",
-        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
+        "gateRu": "Полный documentation PASS; CLIcase1 отдельно, MSI full46 exact reuse сохранён."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -8496,10 +8533,60 @@
       ],
       "latestExecution": {
         "result": "PASS",
-        "evidence": "docs/evidence/core-release-block-16-20261103.json",
-        "evidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
-        "fullCheckAccepted": true
-      }
+        "evidence": "docs/evidence/core-portability-desktop-installed-20261104.json",
+        "pointer": "/checks/1",
+        "evidenceKey": "cd87632a3d090deaf2c2d602b1b814c9cb7b642ed9b36e91dc28570f20dbbdde",
+        "fullCheckAccepted": true,
+        "sourceHost": "DESKTOP-32974QF"
+      },
+      "supersededAcceptance": [
+        {
+          "supersededAt": "2026-11-04T13:20:02.395Z",
+          "reason": "README corrected to match accepted quoted TOML installer contract",
+          "evidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+          "dependencyDigest": "8e620b5d6374132ef88cdc1af66da387c36e6b5273ac9b26f696de211410ac8d",
+          "acceptedEvidence": [
+            {
+              "file": "docs/evidence/core-release-block-16-20261103.json",
+              "pointer": "/checks/3",
+              "result": "PASS",
+              "resultField": "result",
+              "evidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+              "authorityMethod": "explicit-record-result-PASS",
+              "caseCount": 1,
+              "caseCountPointer": "/checks/3/cases",
+              "recordedMode": "fresh-source-block",
+              "recordedCommand": [
+                "node",
+                "--test",
+                "--test-concurrency=1",
+                "--test-name-pattern=(?:native-read-capture)|(?:validation-routing)|(?:artifact-boundaries)|(?:documentation)",
+                "test/native-read-capture.test.js",
+                "test/core4.test.js"
+              ],
+              "executionBatch": "/executionBatch",
+              "sharedBatch": true,
+              "batchCaseCount": 27,
+              "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-capture-composite-attempt-02.log",
+              "logHash": "f89cf117ba1287a6b4e159623b63fb6eee63d0e5ffb5bf906eb772255426d565"
+            }
+          ],
+          "latestExecution": {
+            "result": "PASS",
+            "evidence": "docs/evidence/core-release-block-16-20261103.json",
+            "evidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+            "fullCheckAccepted": true
+          },
+          "futureExecution": {
+            "state": "passed-in-source-block",
+            "scheduled": false,
+            "executedDuringManifestPreparation": false,
+            "executedDuringSourceAcceptance": true,
+            "blockId": "source-candidate-16",
+            "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
+          }
+        }
+      ]
     },
     {
       "check": "cep-transport",
@@ -9709,9 +9796,10 @@
       "file": "tools/cloud-checks-audit/reports/baseline.json",
       "sha256": "0029ee1eada045a51623510e1248248fcb818f317619ced04aaf8542511ed4a2",
       "records": 214,
-      "mismatches": 7,
+      "mismatches": 8,
       "mismatchedFiles": [
         "config/validation-map.json",
+        "README.md",
         "test/core4.test.js",
         "test/fixtures/owner-runtime-child.js",
         "test/installable-runtime.test.js",
@@ -9730,6 +9818,11 @@
           "currentSha256": "cac3c16220a1c6f27dca7678bff8256e2ea7d49b08eef57fc3773a1527c5e079"
         },
         {
+          "file": "README.md",
+          "acceptedSha256": "613736d5509b22bb6399893021cf69b56a991035f10fb0d9584d3f0256a98051",
+          "currentSha256": "69c361241b9386fe242ff2825ad656b2f956b29158f1285e5f56a6aa93486dc7"
+        },
+        {
           "file": "test/core4.test.js",
           "acceptedSha256": "66ca31821c439abf8e973364af038fc0ea0c0612911a63b5e3a2780690998f83",
           "currentSha256": "752b6160eb71be8ca0d228bc86fc18127995d538b7b1f4ffe61720a0a0ad4407"
@@ -9742,7 +9835,7 @@
         {
           "file": "test/installable-runtime.test.js",
           "acceptedSha256": "7a8f8429973b5957438f059abab628013c77275aadf97f2f362f341000ad8bac",
-          "currentSha256": "5ab9acb6be686e3b34b51b759c41cbd13d825672ba5402de12f51f075ed22998"
+          "currentSha256": "4bcfbbd1aeb4e5fea2988dbd7f004764fe8930521f581030858624fe965d141f"
         },
         {
           "file": "test/native-read-capture.test.js",
@@ -9842,7 +9935,7 @@
         "installed-composition",
         "standalone-installer"
       ],
-      "noteRu": "Current48 covered:37 unchanged exact reuse +11 fresh desktop full named PASS. Open23:21 deferred integrations +2 held Titles. Не native proof."
+      "noteRu": "Current48:36 прежних exact reuse +10 desktop named +1 MSI named +1 desktop documentation. Open23:21 deferred integrations +2 held Titles. CLIcase1 не full named acceptance; не native proof."
     },
     {
       "gate": "package-and-installation",
@@ -9999,13 +10092,13 @@
   },
   "validation": {
     "status": "PASS-scoped-portability-source-with-current-gaps",
-    "report": "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+    "report": "docs/evidence/core-portability-desktop-installed-20261104.json",
     "selectorKeysMatched": 71,
     "currentCovered": 48,
     "currentOpen": 23,
     "currentOpenNotHeld": 21,
     "heldByProductPause": 2,
-    "practicalPortabilityCommandsExecuted": 12,
+    "practicalPortabilityCommandsExecuted": 14,
     "historicalSourceTestCommandsExecuted": 36,
     "fullReleaseCertified": false
   },
@@ -10859,7 +10952,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.sourceValidation"
   },
-  "updatedAt": "2026-11-04T12:55:29.900Z",
+  "updatedAt": "2026-11-04T13:20:02.395Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -10870,12 +10963,12 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "msi-return-delta-verified-awaiting-desktop-install",
+    "status": "desktop-initial-install-verified-configured-native-pending",
     "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
     "remoteExecutionAuthorized": true,
-    "next": "fast-forward desktop to MSI delta; targeted CLI check and initial install/configured native proof",
+    "next": "Targeted MCP refresh, initial CEP discovery, configured typed native read and immediate release.",
     "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
     "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
     "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
@@ -11012,6 +11105,18 @@
       "evidenceKey": "fc06b07a783f4025310196139e13372e99de81e5e92a2b6ec8a9ff8e78758b55",
       "otherCurrentDesktopChecksReused": 10,
       "fullReleaseCertified": false
+    },
+    "desktopInstallationEvidence": "docs/evidence/core-portability-desktop-installed-20261104.json",
+    "desktopInstallation": {
+      "evidence": "docs/evidence/core-portability-desktop-installed-20261104.json",
+      "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+      "initialApplyAttempts": 1,
+      "repeatDryRun": "PASS",
+      "configuredProof": false,
+      "nativeProof": false,
+      "documentationFullNamedCheck": 1,
+      "CLIAddressedCases": 1,
+      "CLIIsFullNamedAcceptance": false
     }
   },
   "historicalSourceAcceptance": {

@@ -1,0 +1,1039 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-portability-desktop-initial-install-checkpoint",
+  "createdAt": "2026-11-04T13:20:02.395Z",
+  "result": "PASS_INSTALL_CHECKPOINT_CONFIGURED_NATIVE_PENDING",
+  "host": "DESKTOP-32974QF",
+  "workspace": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+  "inboundCommit": "0b78aacdba59087536b4fa1ed7fb0625d7e7248e",
+  "node": {
+    "path": "C:\\Program Files\\nodejs\\node.exe",
+    "version": "v24.15.0",
+    "sha256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5"
+  },
+  "sourceHashes": {
+    "installer": "ab4659de58022a51cf405e0ad579b9aebbfb7a5f49d3abb8472b1b021c4c9f77",
+    "installableTest": "4bcfbbd1aeb4e5fea2988dbd7f004764fe8930521f581030858624fe965d141f",
+    "README": "69c361241b9386fe242ff2825ad656b2f956b29158f1285e5f56a6aa93486dc7"
+  },
+  "selector": {
+    "count": 71,
+    "changed": [
+      "documentation"
+    ],
+    "unchanged": 70,
+    "keys": [
+      {
+        "check": "native-read-recovery",
+        "evidenceKey": "06d6f27769ab20f8c992bbe6772e34725ce5f17616e25a89ca960c3d1ce8bcda"
+      },
+      {
+        "check": "installed-composition",
+        "evidenceKey": "34cf91532727066b1a1b6c6d78b804efa327733fa544f5bde7a8aeb25da460c5"
+      },
+      {
+        "check": "start-over-driver",
+        "evidenceKey": "2cbb04652234df8d45cb69b485b465d00e66db47a182a8326a9283fa3a857037"
+      },
+      {
+        "check": "start-over-runtime",
+        "evidenceKey": "246763b104c80646d143ab4924a550f5362790b70cd3d6c6002836c48ee2c189"
+      },
+      {
+        "check": "start-over-panel-control",
+        "evidenceKey": "b3c6ab514b83abea4af229deb6467aa2815f34e64daadab8862333b8434c7ea8"
+      },
+      {
+        "check": "start-over-operator",
+        "evidenceKey": "3bd4f9340929516bc3a684cc2c78cc5d2813f46b19f584be5c1629ed7ddb3739"
+      },
+      {
+        "check": "standalone-installer",
+        "evidenceKey": "f2860306f9a1e9dc83cb092001219f75c881a94dc3bdc4fcdedc64f14fe0acb5"
+      },
+      {
+        "check": "panel-start-over",
+        "evidenceKey": "5ccb4e674480f74f188acbe79e237b744b716c7345ec3f32ceeb2585b317de10"
+      },
+      {
+        "check": "work-session",
+        "evidenceKey": "b62c7a83450425b0be805f6256d5d187a71fb6638f5149930f3fab62b4db583f"
+      },
+      {
+        "check": "work-session-owner",
+        "evidenceKey": "74a0f60e6b65172abf7a7e1c4a93e1d3411fa9cc75b03d3f6110d89bc18d3036"
+      },
+      {
+        "check": "start-over-channel",
+        "evidenceKey": "6529c1b54d68528a72a8580c21aad0f5bd6b181b894451c7fcf8a88b9141ab39"
+      },
+      {
+        "check": "start-over-finisher",
+        "evidenceKey": "bb1ee3b16550cf7d379ca99ba46fd2706e2a6e3c97d54aab81bef74ecadcb296"
+      },
+      {
+        "check": "start-over-barrier",
+        "evidenceKey": "1129ec2d35b48b0c4e93475efdc4d0143c57471b9213464afb23e94330729bfe"
+      },
+      {
+        "check": "start-over-state",
+        "evidenceKey": "7b19a013598755c6b5715bc32a14bc16e51ace2eb7a61105139a5d45cb07295b"
+      },
+      {
+        "check": "start-over-process",
+        "evidenceKey": "be4cdba7650d826cbbee2725d9c40eb49e0272b01d5702e91e682bc1bb64300a"
+      },
+      {
+        "check": "start-over-inspection",
+        "evidenceKey": "f7280cdaaf2f5b2d649306e62b5ec917bb47df2f54072dd40d1a09b6b91c4552"
+      },
+      {
+        "check": "stopped-host-readoption-operator",
+        "evidenceKey": "2bd752b441f97b79b78e1b1aaa16e4aef0fc52dd974c7c8fc1c8f03ca66261e6"
+      },
+      {
+        "check": "stopped-host-readoption",
+        "evidenceKey": "518dcc1fdcb98341526a87deac9b0eeae7a49a41032a9a9fadf2b73439f1a6e9"
+      },
+      {
+        "check": "readoption-core",
+        "evidenceKey": "3779d65cb8ffdcf94efdc4b6ca85b7da7df4703467283e7b4c283da02893c3d9"
+      },
+      {
+        "check": "readoption-recovery",
+        "evidenceKey": "40b8728957582de924e0a4e55708092ea5787adf156fa633363d21ca8379ddae"
+      },
+      {
+        "check": "readoption-enable",
+        "evidenceKey": "73d04a49391892bd262b18f454bcf0956f51562a7c944a2184ef3e68cc385806"
+      },
+      {
+        "check": "readoption-probe",
+        "evidenceKey": "e070d987b3f60739e545d319fc1673780fe57bdcf2fba4b36508f4f576d7ed00"
+      },
+      {
+        "check": "stopped-update-operator",
+        "evidenceKey": "91442d2e5f2fb5a07f200412c977f3bdb9ce578fd89b4b17e53cde4b43045f43"
+      },
+      {
+        "check": "stopped-update",
+        "evidenceKey": "b5178d980e53b3fff27ec605936273ddf77104eff7efb0fbcdbcc7f46da14aba"
+      },
+      {
+        "check": "legacy-owner-migration",
+        "evidenceKey": "2f3c3392fabe244fd8bac3e02cffb0c1e43cadb320e30ca38c0bdce681fc32ac"
+      },
+      {
+        "check": "windows-retained-process",
+        "evidenceKey": "5ca4e221b70e21444cbc6a9d33e745c55620d34c864aa89b42bb03a4c5cd76e7"
+      },
+      {
+        "check": "stopped-certification",
+        "evidenceKey": "9836627c44c975bca36af7e8bbd08797a3dc0fb4ce0960e81495c0a9cfb27440"
+      },
+      {
+        "check": "maintenance-finish-operator",
+        "evidenceKey": "1b9303bc056bc81016c1fc4743399dcb70cf1bc529db0723e73ef281ae17f38d"
+      },
+      {
+        "check": "maintenance-finish",
+        "evidenceKey": "d44c357cacc1497fb43c79bedaa82e466907d1793b867b8701c35f44b40de8a2"
+      },
+      {
+        "check": "owner-maintenance",
+        "evidenceKey": "a23300c32b6e0e5530c9f0fdc1a2b42161fd6d8c2a9d033c2980f7097f16dabb"
+      },
+      {
+        "check": "owner-runtime",
+        "evidenceKey": "7518281fd3f1c14e3989c9f3083f803feaa5ad170a64bb05f386ef6b31f3f339"
+      },
+      {
+        "check": "maintenance-operator",
+        "evidenceKey": "c9a48fcae93ec6118900facbe10c959bdf46e1a23c1d33cc45c7a970ba2ae3a7"
+      },
+      {
+        "check": "windows-owner-process",
+        "evidenceKey": "cdb8dee5d714a9979c3c0f5ba87b3592087a0e0582bd7a6088a830172876c24d"
+      },
+      {
+        "check": "owner-lifecycle",
+        "evidenceKey": "0d851a17f21f75cca6560de9af99ee48294e42a8e65100f4cd342e6ad7c494c7"
+      },
+      {
+        "check": "owner-lifecycle-faults",
+        "evidenceKey": "14097595f3516ce997d7e659f717945a239588aa21a0f4d33ab645e5aa080b47"
+      },
+      {
+        "check": "owner-installation",
+        "evidenceKey": "1ca1ce492ad638ae4fcf5de91362f30fdfa4171d72cce5281d559020a2b896b3"
+      },
+      {
+        "check": "owner-marker-publication",
+        "evidenceKey": "eee2d9d280b8504e910e66899ac7e2b4f250cfbf187b44c4cc3252b8e9375fae"
+      },
+      {
+        "check": "client-launcher",
+        "evidenceKey": "6015d87c4603c10ebae482ab12056967ba8e78d030b532ed92ece6c155db4287"
+      },
+      {
+        "check": "recovery-inspection",
+        "evidenceKey": "da9b1ccf99f71edd3edbcdabd0777426bd12c077d929846377052000c3ba372d"
+      },
+      {
+        "check": "client-entry",
+        "evidenceKey": "adc918920dcdccd286c04758f1817a48a4b32218d31f18a9f1f6495c3b99133e"
+      },
+      {
+        "check": "client-ipc",
+        "evidenceKey": "60620b30b22668563447b573e7f089f7a34e5e9b1b5df341ce01ccf18d82ba5e"
+      },
+      {
+        "check": "owner-ipc-process",
+        "evidenceKey": "fe2f779c917a429e67e56b70d5073da56db9b77a0a0d02c857a5ddd85aa89ddb"
+      },
+      {
+        "check": "owner-attachments",
+        "evidenceKey": "60e4d88c6341dc4283333c616b6f82e1a5012a114619db3d57998ef66975d19d"
+      },
+      {
+        "check": "controller-transfer",
+        "evidenceKey": "7323823cfcdf1875f08012ec86bddef28b3f730f4465dcf6f7ba84de97324e4a"
+      },
+      {
+        "check": "controller-lease",
+        "evidenceKey": "1b822fd41b19872f5825fa5b047e76a37377289791a27b942cb64fcb1d9145af"
+      },
+      {
+        "check": "exact-f548-transition",
+        "evidenceKey": "1b1deec356c642ace630080f235ebf491426d522c8180d05e8cb1bf216060166"
+      },
+      {
+        "check": "artifact-boundaries",
+        "evidenceKey": "53a578ceaa6aa556318d9b4d3d88e4df7cf63706f556db9fa5d67bcb62faf790"
+      },
+      {
+        "check": "panel-reconnect",
+        "evidenceKey": "733ad158b45df008d295f6a19f7197a02a69e7d614693aec068ab098adaffd6a"
+      },
+      {
+        "check": "endpoint-observation",
+        "evidenceKey": "b1fdc7a5103a49c462dd01978839fdb12504beb76689e92784ba6ecd4fda5c5d"
+      },
+      {
+        "check": "installable-runtime",
+        "evidenceKey": "fc06b07a783f4025310196139e13372e99de81e5e92a2b6ec8a9ff8e78758b55"
+      },
+      {
+        "check": "manual-current-target",
+        "evidenceKey": "934955391f8931fcc9732963ce6543d2caa3d80597a3dd69788ace06183bb311"
+      },
+      {
+        "check": "manual-runtime",
+        "evidenceKey": "cc2d65e234165b9b4ce0df76df5666ca4a977bc70247b50cae39ad79eb6c72ed"
+      },
+      {
+        "check": "human-window",
+        "evidenceKey": "65f083438ced443e146e83ebc3b016eea36a8f236664d993e08e1cd7e94789bd"
+      },
+      {
+        "check": "native-read-capture",
+        "evidenceKey": "55878ef2a1823d1c7e23e5b37c8045f653937710e3cb1700514214ace9f616b8"
+      },
+      {
+        "check": "windows-cim-probe",
+        "evidenceKey": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2"
+      },
+      {
+        "check": "zero-dispatch-recovery",
+        "evidenceKey": "656737e32ef74f55f22d73b80e867f1df7238bcc2b8ec86403728cac686d8cf7"
+      },
+      {
+        "check": "audit-repairs",
+        "evidenceKey": "45b36ea54b90492bef1001818e36e64422ca521f992855ea460ad5112d7e00d4"
+      },
+      {
+        "check": "core-control",
+        "evidenceKey": "caea7abe4f896f1c9b765c6535d7553338711688173e585c9e08d7b13edd54a1"
+      },
+      {
+        "check": "core-admission",
+        "evidenceKey": "0a44aa42d3be4d6ea806dfbc91c6fecf2c51e70575c6be8462914ad8b2e4cbeb"
+      },
+      {
+        "check": "workflow-recovery",
+        "evidenceKey": "3b5209526ac0dc6bbf74c1fcb344cf2293d50098a0372b6bcf4a701f254c4dcd"
+      },
+      {
+        "check": "worker-isolation",
+        "evidenceKey": "ce76f337313e650daf69d4e50844fd7d2a2969428f38471c3205d7c45b10a8a0"
+      },
+      {
+        "check": "protocol-codec",
+        "evidenceKey": "16c8c625bcba8fbf4d63bb706c536d0ca006f4b0270bec8e982eb16651f2248a"
+      },
+      {
+        "check": "photo-owner",
+        "evidenceKey": "1c3e009b42b3ae4742224a33c1188a97fcd64352b58319b335c44c2bcff80b8e"
+      },
+      {
+        "check": "titles-owner",
+        "evidenceKey": "4a36b881982aaf34751137f0012509861a10f31b75d10ef291a1b8f1dd4fbf95"
+      },
+      {
+        "check": "photo-executor-contract",
+        "evidenceKey": "a16735128d8c4d201683f9f62e9c0509403e1df11a9a149fc432f918c25cf0a5"
+      },
+      {
+        "check": "titles-executor-contract",
+        "evidenceKey": "5bbe9af1586e46ff74b07d9468b42dead9f4f7365bd6cdca27feadc1adc7c222"
+      },
+      {
+        "check": "catalog-discovery",
+        "evidenceKey": "6c6a14673105c3ccc49d456cf2f74241af9072b2410b958a9fdd8f16f27c8578"
+      },
+      {
+        "check": "validation-routing",
+        "evidenceKey": "17bdef7b403fd1b63f8731a40224d619cf357f0b1dc29d3f30709f5db4f7442a"
+      },
+      {
+        "check": "documentation",
+        "evidenceKey": "cd87632a3d090deaf2c2d602b1b814c9cb7b642ed9b36e91dc28570f20dbbdde"
+      },
+      {
+        "check": "cep-transport",
+        "evidenceKey": "bdfd72dbb4bac9b083284b7e2fc90c0d3eecea2fc8fefde49cfa3b864d76d1a7"
+      },
+      {
+        "check": "lifecycle-simulation",
+        "evidenceKey": "bb4ea599790b63d43aea9a60701f00dff267a59be86b8bc07ed4a3adac651742"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "label": "desktop-cli-case",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "--test",
+        "--test-name-pattern=^installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node$",
+        "test/installable-runtime.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T13:02:59.327Z",
+      "completedAt": "2026-11-04T13:03:00.616Z",
+      "exitCode": 0,
+      "summary": {
+        "tests": 1,
+        "suites": 0,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 1192.1502
+      },
+      "testNames": [
+        "installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node"
+      ],
+      "stdoutPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\desktop-cli-case.stdout.txt",
+      "stdoutHash": "c5e9369a23484239114f42c548539f81b61e1246e9d698c4fe307cc668798f19",
+      "stderrPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\desktop-cli-case.stderr.txt",
+      "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrBytes": 0,
+      "scope": "Single addressed CLI case only; not full named key acceptance.",
+      "currentNamedKey": "fc06b07a783f4025310196139e13372e99de81e5e92a2b6ec8a9ff8e78758b55",
+      "fullNamedEvidenceReusedFromMSI": "docs/evidence/core-portability-msi-roundtrip-20261104.json#/checks/0",
+      "result": "PASS",
+      "cases": 1,
+      "fullCheckAccepted": false,
+      "mode": "single-addressed-case-not-full-key-acceptance",
+      "log": "docs/evidence/core-portability-desktop-installed-20261104/desktop-cli-case.stdout.txt",
+      "logHash": "c5e9369a23484239114f42c548539f81b61e1246e9d698c4fe307cc668798f19",
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      }
+    },
+    {
+      "label": "documentation",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "--test",
+        "--test-name-pattern=documentation",
+        "test/core4.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T13:03:00.618Z",
+      "completedAt": "2026-11-04T13:03:00.815Z",
+      "exitCode": 0,
+      "summary": {
+        "tests": 1,
+        "suites": 0,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 119.2726
+      },
+      "testNames": [
+        "[documentation] local README records offline and UNKNOWN constraints"
+      ],
+      "stdoutPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\documentation.stdout.txt",
+      "stdoutHash": "33ff0cfe4ccbd4835ba1ea1da214e5aee4670f6c2ea378df8466f087d4d75fa8",
+      "stderrPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\documentation.stderr.txt",
+      "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrBytes": 0,
+      "check": "documentation",
+      "evidenceKey": "cd87632a3d090deaf2c2d602b1b814c9cb7b642ed9b36e91dc28570f20dbbdde",
+      "beforeKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=documentation",
+        "test/core4.test.js"
+      ],
+      "fullNamedCheck": true,
+      "result": "PASS",
+      "cases": 1,
+      "fullCheckAccepted": true,
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "log": "docs/evidence/core-portability-desktop-installed-20261104/documentation.stdout.txt",
+      "logHash": "33ff0cfe4ccbd4835ba1ea1da214e5aee4670f6c2ea378df8466f087d4d75fa8",
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      }
+    }
+  ],
+  "packaging": {
+    "packageBuild": {
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "files": 80,
+      "composition": "manual",
+      "runtimeModel": "owner",
+      "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\manual-owner-current.json"
+    },
+    "standaloneBuild": {
+      "distributionHash": "5d5d1aa4e95d31465c733dbc68ccf3dacba23c5b7fabea1de6811e616c792cdf",
+      "files": 98,
+      "liveProof": false,
+      "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\standalone-current",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+    },
+    "verifiers": {
+      "verifyPackage": "PASS",
+      "verifyStandalone": "PASS",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "distributionHash": "5d5d1aa4e95d31465c733dbc68ccf3dacba23c5b7fabea1de6811e616c792cdf",
+      "packageFiles": 80,
+      "standaloneFiles": 98
+    }
+  },
+  "initialDryRun": {
+    "exitCode": 0,
+    "baseline": {
+      "anchorOrigin": null,
+      "cep": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "client": null,
+      "config": "01285f6b372fb913599e5c1796f7ff981228428f37fe92f6eeb56d668367d6d3",
+      "descriptor": null,
+      "rootOrigin": null
+    },
+    "cepDir": "C:\\Users\\Ant\\AppData\\Roaming\\Adobe\\CEP\\extensions\\com.codex.aeagentcore4",
+    "configPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex\\config.toml",
+    "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "dryRun": true,
+    "expectedPackageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "installerPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\install-core4.js",
+    "liveProof": false,
+    "nodeHash": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5",
+    "nodePath": "C:\\Program Files\\nodejs\\node.exe",
+    "nodeVersion": "v24.15.0",
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "releaseDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "stateDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production",
+    "workspaceRoot": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+    "workspaceSource": "installer-location"
+  },
+  "initialInstallation": {
+    "result": "PASS_INITIAL_INSTALL_READBACK",
+    "observedAt": "2026-11-04T13:06:51.788Z",
+    "originalApplyAttempts": 1,
+    "originalCommand": {
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\install-core4.js",
+        "apply",
+        "--package",
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\manual-owner-current.json",
+        "--expected-package-hash",
+        "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+        "--runtime",
+        "owner"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\foreign-cwd-before",
+      "exitCode": 0,
+      "signal": null,
+      "spawnError": null,
+      "stdoutSHA256": "fab5e384c4bcd3885567cc9d4078abaa7d258389943b98873e96e38c4a7b382f",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "postprocessingCorrection": {
+      "originalLocalReport": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\apply-readback.json",
+      "originalLocalReportHash": "f82c4170d6f6118de216bc5b02fba4c48411f5c68c87c24918cddd0e3b8e2762",
+      "error": "new_local_identity_gate",
+      "cause": "Observer expected nonexistent descriptor.runtimeModel; authoritative runtimeBinding and transaction clientBinding verify owner.",
+      "resolvedByReadOnly": true,
+      "applyReplayed": false
+    },
+    "installation": {
+      "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+      "machineId": "DESKTOP-32974QF",
+      "runtimeModel": "owner",
+      "distinctFromMSI": true,
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "installRoot": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4",
+      "releaseDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "stateDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production",
+      "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+      "descriptorHash": "b68555662c57e3b8cd94088adc09c4f82aca9e40aa8ece2636a7b6d83a90b779",
+      "clientPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json",
+      "clientHash": "5b617ddd284306317b0dfc8a911f8c7b15ef40743a9b714f4190c538aaaeed55",
+      "nodePath": "C:\\Program Files\\nodejs\\node.exe",
+      "nodeHash": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5",
+      "nodeVersion": "v24.15.0",
+      "verifyInstallation": "PASS",
+      "runtimeFiles": [
+        {
+          "file": "cep/CSXS/manifest.xml",
+          "sha256": "c80395ab6fdc3d786489066f1d178f652b9da0d1dc5e3c1b6a348418a10f9c50"
+        },
+        {
+          "file": "cep/index.html",
+          "sha256": "b77a08589f1fa88b5ffe807c0724f8971dd4b19d770ea2678c1543e9e86002e1"
+        },
+        {
+          "file": "cep/js/panel.js",
+          "sha256": "fcf1c89e2db8bcb5a60f1e06744f6d40f938c17c7c7116812503eec42c9f6f81"
+        },
+        {
+          "file": "cep/js/poll-dispatcher.js",
+          "sha256": "fb7b4d211b08518b920afec68a97ac11c6b3f48a788724ab0805fae28af5033d"
+        },
+        {
+          "file": "cep/jsx/registry.jsx",
+          "sha256": "d5afb5c98974c7f1bc3ba180c94e9b4d496aee9cb671037368c4b205f3657857"
+        },
+        {
+          "file": "cep/panel.css",
+          "sha256": "a2ce3dd093c72a2641338047151a32a8f3ebb7048aaaa5df0ff2c23a3ca2d9ab"
+        },
+        {
+          "file": "config/admissions/photo-placeholder.json",
+          "sha256": "284a4e342701793b7256f8c438994fb31bbb2dcee0b817bd7d04cda6d82ae6f4"
+        },
+        {
+          "file": "config/admissions/titles-current-target.json",
+          "sha256": "bf15afe29225094a1a9426786b50e2c8d03ab4305483c8453f5c468bc123e0f8"
+        },
+        {
+          "file": "config/admissions/titles.json",
+          "sha256": "e45d96789cb33e42be2f18875fe32020b7507ca1748db8f5692fac8256ebfd37"
+        },
+        {
+          "file": "config/catalog.json",
+          "sha256": "a448160db620508564cf67452d28e4af595a7bcf62870a8200e179ce9f81db15"
+        },
+        {
+          "file": "core/artifact.json",
+          "sha256": "2b95ce44e0df6e1a7458162c74f2594ad4bddf4f775831ce2e18ac21a0511c4f"
+        },
+        {
+          "file": "core/artifacts.js",
+          "sha256": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6"
+        },
+        {
+          "file": "core/authority.js",
+          "sha256": "28ebbc2134b920b0f6726194d73b66ce3f0b8908b3b56d7250158c3fc5c28640"
+        },
+        {
+          "file": "core/broker.js",
+          "sha256": "432f7438b6ccd53e4f9b71cc4cc4624fa86f2cbae89528e7c29bf8cc00857352"
+        },
+        {
+          "file": "core/ledger.js",
+          "sha256": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402"
+        },
+        {
+          "file": "core/receiver-api.js",
+          "sha256": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872"
+        },
+        {
+          "file": "core/receiver.js",
+          "sha256": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2"
+        },
+        {
+          "file": "core/record-context.js",
+          "sha256": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580"
+        },
+        {
+          "file": "core/resources.js",
+          "sha256": "be29c6547111a4feeff2dea0951e30205c590210b718b441d96c416f40fefb69"
+        },
+        {
+          "file": "core/state-lock.js",
+          "sha256": "4e515580ec7ceb03cc7a7a5d789048aee9bf0e9a7866d4cf0ee108958ff58e23"
+        },
+        {
+          "file": "core/stdio.js",
+          "sha256": "e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401"
+        },
+        {
+          "file": "core/worker-client.js",
+          "sha256": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e"
+        },
+        {
+          "file": "integrations/cep/completion-store.js",
+          "sha256": "40aed48f5208f06176e548efd93b59d811203154bf922b02b295f74787f4ddf2"
+        },
+        {
+          "file": "integrations/cep/http-peer.js",
+          "sha256": "1f69d22a3bf58a7cd9fc494fd25487ff35005d3d29d0b2f5d2d3c2b01cfd46e7"
+        },
+        {
+          "file": "integrations/cep/peer-protocol.js",
+          "sha256": "9b4f3f3600b32a7e8efa3541bf795a05d485cd691324c374f1e65bab63a6f584"
+        },
+        {
+          "file": "modules/photo-placeholder/artifact.json",
+          "sha256": "9a155c9448aed6460113061025e74d0422e95a3fa98dc8c0f87ba4280f925245"
+        },
+        {
+          "file": "modules/photo-placeholder/contract.json",
+          "sha256": "092ee4b201f9ff4df0625ec50daeff715c31e4f0c962d21e3abcaabedf2c9b50"
+        },
+        {
+          "file": "modules/photo-placeholder/executor.jsx",
+          "sha256": "971265883277c03316b04cf30ae4be0552bb9ee61f0948b500ee795a4216374a"
+        },
+        {
+          "file": "modules/photo-placeholder/implementation.js",
+          "sha256": "c041620adcfeff37d825f86020a5d3f7f230bbfd1c4fc95b9be170b8ec9fa93e"
+        },
+        {
+          "file": "modules/project-inspection/artifact.json",
+          "sha256": "e8e080b06fd4ddf6a6f79c93a4ed9904710b97054c4838a78a8ded577f3215f5"
+        },
+        {
+          "file": "modules/project-inspection/contract.json",
+          "sha256": "c0290ed5543ba5a54623adee2ca78945ff31baca96a909d1088c194c0667e0c2"
+        },
+        {
+          "file": "modules/project-inspection/executor.jsx",
+          "sha256": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019"
+        },
+        {
+          "file": "modules/titles-current-target/artifact.json",
+          "sha256": "aa80e8f2921859f15ac9ba7d1481ce3f6039f60de6590a5ffee6b2666cfb1e57"
+        },
+        {
+          "file": "modules/titles-current-target/contract.json",
+          "sha256": "318a5d6021bc94690323ab00ca324c694c6b66dd520a28989eda87643c1d3ce0"
+        },
+        {
+          "file": "modules/titles-current-target/executor.jsx",
+          "sha256": "6d84fdbbf09352db6b77cf4470e84e785d7cafa30979df98de988ba6a70c8132"
+        },
+        {
+          "file": "modules/titles-current-target/implementation.js",
+          "sha256": "1b31cd96b475f6af3e286fdd5c009d46e09b18b271db88ce951e9ec8d7fc580b"
+        },
+        {
+          "file": "modules/titles/artifact.json",
+          "sha256": "bcdd8d99c81bf49291b8392ee4195e6e9cd0a2131f2b62ffc5572222e12291da"
+        },
+        {
+          "file": "modules/titles/contract.json",
+          "sha256": "fa2c06c091b31308d08b77a08b50d43413ff94c5a7812583da0b948d6d6953f9"
+        },
+        {
+          "file": "modules/titles/executor.jsx",
+          "sha256": "e1eb94f04ce9f2e7fc0fc97acc8a226aadaacde50cec5aa9af72b011b18092ca"
+        },
+        {
+          "file": "modules/titles/implementation.js",
+          "sha256": "52df6ae84d5d8104753945bccb1cb55c5f0c7495a88605dc308cf3e49e42b4c8"
+        },
+        {
+          "file": "plan-engine/artifact.json",
+          "sha256": "4309ae2c4f041aea45390350221a6949bd175b1f13b1e2cc1d609a543d4bfcbd"
+        },
+        {
+          "file": "plan-engine/index.js",
+          "sha256": "44517f1dbc6612467de58ab0767f266da3fc76fcb7d03f79ca6a9e9f707d2adb"
+        },
+        {
+          "file": "protocol/artifact.json",
+          "sha256": "f29af4f724ba9082abd8981d1156c3578e3696e6983b2f8a100320f11cce3938"
+        },
+        {
+          "file": "protocol/codec.js",
+          "sha256": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1"
+        },
+        {
+          "file": "protocol/dispatch.js",
+          "sha256": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d"
+        },
+        {
+          "file": "protocol/json.js",
+          "sha256": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78"
+        },
+        {
+          "file": "protocol/schema.js",
+          "sha256": "51188d515cdb049855e3e49149de391db83cb98830fb56c5c914bfc5b05c2e9a"
+        },
+        {
+          "file": "protocol/target-contract.json",
+          "sha256": "7cb95c2c6a0ffb00a37d9e1735454774714c384dd26917ab97578f4c56d4ee24"
+        },
+        {
+          "file": "runtime/attachment-owner.js",
+          "sha256": "0e994b984df7c1374e55d2411e95d9da59215b732c84b06ce0ca5e19db965e38"
+        },
+        {
+          "file": "runtime/client-entry.js",
+          "sha256": "fbe2960c49a5285f7b16dfdd997bdaf4a1e581fcec823967bf015f6b2e5632db"
+        },
+        {
+          "file": "runtime/client-ipc.js",
+          "sha256": "ac3586857ab2d96aedd5efdfd0fba330e94fcbaad4f101dc2323cc8c1b453d5b"
+        },
+        {
+          "file": "runtime/client-stdio.js",
+          "sha256": "eb940b217bfbf9f568874f75ad5d80d15c89b5b174d0481d5c624c8e95d98750"
+        },
+        {
+          "file": "runtime/composition.json",
+          "sha256": "3f923c836a8064cbbecd6aba57cea618e76fc1a1b61e3f23a7c470f5bc85fcae"
+        },
+        {
+          "file": "runtime/controller-lease.js",
+          "sha256": "454030025198334d7ce1fdd3c57aefcd109998b15ddd3c266811b886e817c253"
+        },
+        {
+          "file": "runtime/host/json-codec.jsx",
+          "sha256": "4765c0d74cfc5bc4ac3978677e36fee9f470f8d65a80a9ad28b33ea5146bd634"
+        },
+        {
+          "file": "runtime/install-lease.js",
+          "sha256": "fe91dfedfafceaa38f0cac72d007f2600d4b82915d07b960c8d3ed6d735bb368"
+        },
+        {
+          "file": "runtime/installation-lineage.js",
+          "sha256": "5575ccf7651e83a1545916fc88edb268ab3a72b08d57703b6d5df564a45d894a"
+        },
+        {
+          "file": "runtime/installation.js",
+          "sha256": "7b7894f23e0ed6b7e11c644884b782d2532520e1da56981907cf0c7484cc1dc9"
+        },
+        {
+          "file": "runtime/manual-policy.js",
+          "sha256": "ebf94c70ff5d7521af3395157a189406288706b1482f2a1ea14892ed47fb6385"
+        },
+        {
+          "file": "runtime/native-read-disposition.js",
+          "sha256": "20053d0df8780feb975bf3302efd0cd32f07770c752d1acefc100f96fefaeb5b"
+        },
+        {
+          "file": "runtime/owner-contract.json",
+          "sha256": "1313117aa67e63e908ebc0694d3b067b740c3a72a5b2675722794daab94d103b"
+        },
+        {
+          "file": "runtime/owner-entry.js",
+          "sha256": "cc1c6f448e34223086ae0d7b2b923be4d4f8446ef25ebbff711071af6856e154"
+        },
+        {
+          "file": "runtime/owner-launch.js",
+          "sha256": "4d7acdd32fc1cc106142a6b8c7821dbbe3257c5ce74c7041023cdf5cc95763bc"
+        },
+        {
+          "file": "runtime/owner-lifecycle.js",
+          "sha256": "29f525aefc8768ef3cc37a87caa0e802afa5da1d31fe2592cef1f613f5da8746"
+        },
+        {
+          "file": "runtime/owner-maintenance.js",
+          "sha256": "0b370cbec8130236d03dd4c3ae2f6d28f9e5b1f3f487c2e340452d0b01168793"
+        },
+        {
+          "file": "runtime/receiver-contract.json",
+          "sha256": "2db8dd505038846655f0bef6c6d3a575c675539c750eef69eacdd26e253e84bb"
+        },
+        {
+          "file": "runtime/recovery-inspection.js",
+          "sha256": "ab6d082040d092b23d59c28de0258ad732edb628f4aaba169790017aec8bbdaa"
+        },
+        {
+          "file": "runtime/start-over-archive.js",
+          "sha256": "47e3cc4b7161df21195859683f399293f9a2f77d640df357bb2bf4ceb08334ad"
+        },
+        {
+          "file": "runtime/start-over-barrier.js",
+          "sha256": "279d3f8495959a137af737b2a7cb9e4b69743d3e797fa29d64d81ab81c26beb9"
+        },
+        {
+          "file": "runtime/start-over-driver.js",
+          "sha256": "465b86c98977362b27da7931fe70859853711456c3ab35cb67e52bf69ce04ace"
+        },
+        {
+          "file": "runtime/start-over-finisher.js",
+          "sha256": "d5c49bb71907a3e14314a1f222fa2b42a26bd7504088da3a5b0c4a494f2a484d"
+        },
+        {
+          "file": "runtime/start-over-inspection.js",
+          "sha256": "08187ae1eec1f7abd50b6f7fa3ff90e20f19fe3893e5ef52c67a6dce743a08d5"
+        },
+        {
+          "file": "runtime/start-over-panel-control.js",
+          "sha256": "7ab4f4abe03b9c3c9a675684d55599f3688f292e9141b63736d4108aad785770"
+        },
+        {
+          "file": "runtime/start-over-process.js",
+          "sha256": "e6d441f94fe8050ab32b3029bbf919bd2c826f9b4b5a356d5ac22b7fc2c6edff"
+        },
+        {
+          "file": "runtime/start-over-state.js",
+          "sha256": "e5b1ab642f31e58361beae8cf524605301e2af9349abc480f47e3d0b9a10fa37"
+        },
+        {
+          "file": "runtime/stdio-entry.js",
+          "sha256": "9212dc073b764fd7f1ec86ffd010371099b2f360e3d202344bfcbab684060cf2"
+        },
+        {
+          "file": "runtime/windows-owner-process.js",
+          "sha256": "3ba96f2f125e1be69ec6a0098ebce24f2f094b94b98178e4479e8c1c599f25d3"
+        },
+        {
+          "file": "runtime/windows-reservation-provider.js",
+          "sha256": "a0f2565005fdbec4d9e94b7fe5140209d36f5f1f3051d50a230d85295f97362f"
+        },
+        {
+          "file": "runtime/work-session.js",
+          "sha256": "6956afea74d8d5b1261f116ad775204a0ec6def6f620847311d21d65d502eff9"
+        },
+        {
+          "file": "worker.js",
+          "sha256": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02"
+        }
+      ],
+      "cepFiles": [
+        {
+          "file": "CSXS/manifest.xml",
+          "sha256": "c80395ab6fdc3d786489066f1d178f652b9da0d1dc5e3c1b6a348418a10f9c50"
+        },
+        {
+          "file": "index.html",
+          "sha256": "b77a08589f1fa88b5ffe807c0724f8971dd4b19d770ea2678c1543e9e86002e1"
+        },
+        {
+          "file": "installation.js",
+          "sha256": "7a66ce491f59019b4330a46c7842264d283400d6a8e3e5b01433a2ccdf6364b2"
+        },
+        {
+          "file": "js/panel.js",
+          "sha256": "fcf1c89e2db8bcb5a60f1e06744f6d40f938c17c7c7116812503eec42c9f6f81"
+        },
+        {
+          "file": "js/poll-dispatcher.js",
+          "sha256": "fb7b4d211b08518b920afec68a97ac11c6b3f48a788724ab0805fae28af5033d"
+        },
+        {
+          "file": "jsx/registry.jsx",
+          "sha256": "d5afb5c98974c7f1bc3ba180c94e9b4d496aee9cb671037368c4b205f3657857"
+        },
+        {
+          "file": "panel.css",
+          "sha256": "a2ce3dd093c72a2641338047151a32a8f3ebb7048aaaa5df0ff2c23a3ca2d9ab"
+        }
+      ],
+      "rootOriginHash": "012ec2cfb475a8733d7e6d0c98b85468b77cac620dc444bc0b619e1e11c0d5b6",
+      "stateOriginHash": "012ec2cfb475a8733d7e6d0c98b85468b77cac620dc444bc0b619e1e11c0d5b6"
+    },
+    "transaction": {
+      "transactionId": "82b0de47-7dd3-42e2-866e-36914bfd1d28",
+      "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\82b0de47-7dd3-42e2-866e-36914bfd1d28.json",
+      "sha256": "80280dcedfd4a4c7fb62e8cd5ccfb5e0896c37e5d5fbf1f81bdd558684050e20",
+      "schemaVersion": 2,
+      "contentPublished": false
+    },
+    "config": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex\\config.toml",
+      "beforeHash": "01285f6b372fb913599e5c1796f7ff981228428f37fe92f6eeb56d668367d6d3",
+      "afterHash": "50690fb130ecbfd99ec77224de88162e836865dbf1db58141c58d3bfc6c6921f",
+      "originalBytesPrefixPreserved": true,
+      "tomlValid": true,
+      "allExistingMcpEntriesPreserved": true,
+      "legacyDisabledPreserved": true,
+      "legacyEnvPreserved": true,
+      "core4NodeCorrect": true,
+      "core4ArgsCorrect": true,
+      "core4Enabled": true
+    },
+    "protected": {
+      "globalConfigUnchanged": true,
+      "legacyTreeUnchanged": true,
+      "snapshotProbeUnchanged": true
+    },
+    "configuredProof": false,
+    "nativeProof": false
+  },
+  "originalObserverDiagnostic": {
+    "schemaVersion": 1,
+    "kind": "desktop-initial-apply-readback",
+    "host": "DESKTOP-32974QF",
+    "root": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+    "startedAt": "2026-11-04T13:05:38.481Z",
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "runtimeModel": "owner",
+    "node": {
+      "path": "C:\\Program Files\\nodejs\\node.exe",
+      "version": "v24.15.0",
+      "sha256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5"
+    },
+    "actualApplyAttempts": 1,
+    "plannedConfig": {
+      "tomlValid": true,
+      "legacyEntriesUnchanged": true,
+      "legacyDisabledPreserved": true,
+      "legacyEnvPreserved": true,
+      "core4NodeCorrect": true,
+      "core4ArgsCorrect": true,
+      "core4Enabled": true
+    },
+    "replayed": false,
+    "result": "READBACK_REQUIRES_DIAGNOSIS_NO_REPLAY",
+    "command": {
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\install-core4.js",
+        "apply",
+        "--package",
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\manual-owner-current.json",
+        "--expected-package-hash",
+        "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+        "--runtime",
+        "owner"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\foreign-cwd-before",
+      "exitCode": 0,
+      "signal": null,
+      "spawnError": null,
+      "stdoutSHA256": "fab5e384c4bcd3885567cc9d4078abaa7d258389943b98873e96e38c4a7b382f",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "error": "new_local_identity_gate",
+    "completedAt": "2026-11-04T13:05:40.778Z"
+  },
+  "repeatDryRun": {
+    "result": "PASS",
+    "startedAt": "2026-11-04T13:10:52.335Z",
+    "completedAt": "2026-11-04T13:10:53.582Z",
+    "command": {
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\install-core4.js",
+        "dry-run",
+        "--package",
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\manual-owner-current.json",
+        "--runtime",
+        "owner"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\foreign-cwd-after",
+      "exitCode": 0,
+      "signal": null
+    },
+    "stdoutHash": "1ed56a4c971c555bda4b91bb2bf415f752a94084d0fe5692646db2f1b93ba61f",
+    "stderrHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "snapshotCount": 98,
+    "beforeDigest": "a93bc6a68adfddbed0623afddf6a6e0f5325e9c086adccdbe6f4c36b60642962",
+    "afterDigest": "a93bc6a68adfddbed0623afddf6a6e0f5325e9c086adccdbe6f4c36b60642962",
+    "exactBytesAndFileSetUnchanged": true,
+    "installationIdUnchanged": true,
+    "descriptorHashUnchanged": true,
+    "clientHashUnchanged": true,
+    "actualApplyRepeated": false,
+    "safeDryRun": {
+      "baseline": {
+        "anchorOrigin": "012ec2cfb475a8733d7e6d0c98b85468b77cac620dc444bc0b619e1e11c0d5b6",
+        "cep": "9288c2fa1be0cef3397e9b727890c2f09a958c2bea9c343fbdd950b2e7821d3f",
+        "client": "5b617ddd284306317b0dfc8a911f8c7b15ef40743a9b714f4190c538aaaeed55",
+        "config": "50690fb130ecbfd99ec77224de88162e836865dbf1db58141c58d3bfc6c6921f",
+        "descriptor": "b68555662c57e3b8cd94088adc09c4f82aca9e40aa8ece2636a7b6d83a90b779",
+        "rootOrigin": "012ec2cfb475a8733d7e6d0c98b85468b77cac620dc444bc0b619e1e11c0d5b6"
+      },
+      "cepDir": "C:\\Users\\Ant\\AppData\\Roaming\\Adobe\\CEP\\extensions\\com.codex.aeagentcore4",
+      "configPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex\\config.toml",
+      "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+      "dryRun": true,
+      "expectedPackageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "installerPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\install-core4.js",
+      "liveProof": false,
+      "nodeHash": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5",
+      "nodePath": "C:\\Program Files\\nodejs\\node.exe",
+      "nodeVersion": "v24.15.0",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "releaseDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "stateDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production",
+      "workspaceRoot": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+      "workspaceSource": "installer-location"
+    }
+  },
+  "freshReadback": {
+    "observedAt": "2026-11-04T13:20:02.395Z",
+    "verifyInstallation": "PASS",
+    "identityDescriptorClientUnchanged": true,
+    "runtimeFiles": 80,
+    "cepFiles": 7,
+    "projectAndGlobalConfigUnchangedSinceInitialReadback": true
+  },
+  "configuredNative": {
+    "configuredProof": false,
+    "nativeProof": false,
+    "inventoryObservedAt": "2026-11-04T13:20:02.395Z",
+    "core4ToolsAvailable": false,
+    "CEPDiscovery": "Core4 absent in Extensions of AE instance opened before installation; refresh/restart observation outstanding",
+    "noSubmittedNativeCommands": true
+  },
+  "scopeLimits": {
+    "actualApplyAttempts": 1,
+    "applyReplayed": false,
+    "manualConfigEdits": 0,
+    "AEVersionChanged": false,
+    "adoptionReset": false,
+    "releaseCertified": false,
+    "P1toP8Complete": false,
+    "TitlesSlideshow": "paused",
+    "cloud": "excluded"
+  },
+  "localReports": [
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\source-preparation.json",
+      "sha256": "009badfeafdf5c6adccaa101246a5e89b37fc2c1ff5ad041b9e350340df9379d"
+    },
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\installed-readback.json",
+      "sha256": "4ffcbf8efe153326ce7c1350a63bb6e85c3fa3ff44a35d02d8a9e88d2ef6581e"
+    },
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\apply-readback.json",
+      "sha256": "f82c4170d6f6118de216bc5b02fba4c48411f5c68c87c24918cddd0e3b8e2762"
+    },
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-installed-20261104\\post-install-dry-run.json",
+      "sha256": "9a0c9a975f9547de9025242ff816e343f1893a5c5d8acc02d1e8b51aa736fcf7"
+    }
+  ],
+  "nextRu": "Адресное обновление MCP и initial CEP discovery; затем один configured typed project-inspection с коротким lease и release."
+}
