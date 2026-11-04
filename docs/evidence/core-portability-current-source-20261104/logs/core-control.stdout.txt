@@ -1,0 +1,24 @@
+✔ [core-control catalog-discovery] A1 independent startup physically absent optional artifacts and bad catalog (297.742ms)
+✔ [titles-owner titles-executor-contract core-control] A2 real lazy selection and successful typed title readback (353.0877ms)
+✔ [core-control core-admission worker-isolation] A6 reset before dispatch sends no mutation and rejects late worker epoch (1027.1027ms)
+✔ [core-control core-admission] A6 reset after durable intent preserves receipt and after ACK loss preserves fence (702.8634ms)
+✔ [worker-isolation core-control] A7 infinite loop exit malformed IPC keep same Core PID and durable UNKNOWN (906.6905ms)
+✔ [core-control workflow-recovery] A10 actual child crash boundaries durable intent before send ACK readback (4184.8945ms)
+✔ [core-control] durable ledger torn record is diagnostic only and latched append failure prevents sends (86.9123ms)
+✔ [core-control protocol-codec] actual stdio MCP generic surface status unavailable and no public fixture authority (252.3449ms)
+✔ [core-admission core-control] neutral durable ownership checkpoint constraints and unknown schemas fence mutation (2511.0629ms)
+✔ [protocol-codec worker-isolation core-control] RPC and worker pending limits remain 32 after overflow and recover after drain (279.5098ms)
+✔ [core-control core-admission] one broker owns durable state and valid-JSON ledger corruption fails closed (422.1352ms)
+✔ [core-control worker-isolation artifact-boundaries] permanent worker bytes are pinned and spawn excludes ambient credential environment (424.9789ms)
+✔ [core-control core-admission] recordContext descriptive defaults and synthetic checks do not authorize writes (360.3458ms)
+✔ [core-control core-admission] concurrent stale lease reclaim is serialized and orphan acquire gate remains closed (400.923ms)
+✔ [core-control core-admission workflow-recovery] close is terminal drains physical send and forbids late old-owner ledger appends (425.185ms)
+✔ [core-control] close also drains a pending connection and never reopens the closed instance (264.9032ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12981.5023

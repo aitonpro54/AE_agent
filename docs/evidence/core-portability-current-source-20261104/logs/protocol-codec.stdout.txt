@@ -1,0 +1,11 @@
+✔ [core-admission protocol-codec] forged channel response executor and payload bindings bounded schema reject (328.5733ms)
+✔ [core-control protocol-codec] actual stdio MCP generic surface status unavailable and no public fixture authority (243.6145ms)
+✔ [protocol-codec worker-isolation core-control] RPC and worker pending limits remain 32 after overflow and recover after drain (256.4038ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 908.6811

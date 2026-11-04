@@ -1,0 +1,13 @@
+✔ [core-admission titles-executor-contract artifact-boundaries] A8 worker claims code wrong operation altered resource cannot become authority (2411.4585ms)
+✔ [artifact-boundaries core-admission] A9 mutable source replacement cannot alter selected immutable closure and receipt (465.6374ms)
+✔ [artifact-boundaries] reviewed source boundaries (19.9727ms)
+✔ [artifact-boundaries validation-routing titles-owner] scoped package seal reads only selected module closure while others physically absent (200.1328ms)
+✔ [core-control worker-isolation artifact-boundaries] permanent worker bytes are pinned and spawn excludes ambient credential environment (530.227ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3702.9964

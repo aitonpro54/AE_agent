@@ -1,0 +1,11 @@
+✔ start-over-runtime idle reset starts a new normal owner and requires explicit session plus fresh baseline with exact history preserved (79731.3229ms)
+✔ start-over-runtime diagnostic old producer loss and late completion preserve UNKNOWN history; official helper repeat is historical only (91244.8114ms)
+✔ start-over-runtime actual process death after receiver rename continues the same signed reset from a new entry without replay (102986.3133ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 274050.8473

@@ -1,0 +1,23 @@
+✔ [cep-transport] B1 Core physically lacks integration and import performs no channel/state IO (302.7888ms)
+✔ [cep-transport] B2 actual fragmented wire and VM source dispatch keep typed text as data (139.2863ms)
+✔ [cep-transport] B3 admission identity bytes phase auth and runtime code fields reject before eval (22.4239ms)
+✔ [cep-transport] B4 missing callback second controller disconnect timeout retain physical latch (65.9956ms)
+✔ [cep-transport] B4 external throws malformed mutation and late callback never free UNKNOWN lane (289.7115ms)
+✔ [cep-transport] B4 concurrent private connects reserve one controller and cancelled connect stays disconnected (19.1652ms)
+✔ [cep-transport] B5 completed duplicate after graceful reopen keeps original origin and one evaluate (32.7592ms)
+✔ [cep-transport] B6 actual child crash intent and completion fsync boundaries survive reopen without replay (425.7436ms)
+✔ [cep-transport] B6 disk write fsync failures and corruption close lane before false reply (118.3191ms)
+✔ [cep-transport] B7 Broker new authenticated channel reconciles original store proof then independent verify (428.7835ms)
+✔ [cep-transport] B5 same Broker replacement journal rejects captured frame even after old CAS restored (403.8909ms)
+✔ [cep-transport] B7 wrong origin store continuity and legacy receipt retain UNKNOWN (1081.2758ms)
+✔ [cep-transport] B7 reconnect after durable intent is rejected before physical mutate (380.0865ms)
+✔ [cep-transport] B8 production lacks lifecycle issuer shallow ready JSON and public issuer tools (223.7392ms)
+✔ [cep-transport] B9 independent transport pin scoped owner public seam and explicit deferred integration coverage (1011.1186ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5033.8778

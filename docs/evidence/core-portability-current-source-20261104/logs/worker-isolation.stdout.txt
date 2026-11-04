@@ -1,0 +1,12 @@
+✔ [core-control core-admission worker-isolation] A6 reset before dispatch sends no mutation and rejects late worker epoch (1031.3567ms)
+✔ [worker-isolation core-control] A7 infinite loop exit malformed IPC keep same Core PID and durable UNKNOWN (921.0529ms)
+✔ [protocol-codec worker-isolation core-control] RPC and worker pending limits remain 32 after overflow and recover after drain (294.4402ms)
+✔ [core-control worker-isolation artifact-boundaries] permanent worker bytes are pinned and spawn excludes ambient credential environment (453.9745ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2790.4007

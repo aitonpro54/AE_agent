@@ -1,0 +1,40 @@
+✔ [audit-repairs] H1 titles inspect wrapper-throw completes refusal and permits next read (222.8245ms)
+✔ [audit-repairs] H1 titles inspect callback-error completes refusal and permits next read (184.2457ms)
+✔ [audit-repairs] H1 titles verify wrapper-throw completes refusal and permits next read (175.445ms)
+✔ [audit-repairs] H1 titles verify callback-error completes refusal and permits next read (176.2434ms)
+✔ [audit-repairs] H1 photo-placeholder inspect wrapper-throw completes refusal and permits next read (177.4156ms)
+✔ [audit-repairs] H1 photo-placeholder inspect callback-error completes refusal and permits next read (177.2193ms)
+✔ [audit-repairs] H1 photo-placeholder verify wrapper-throw completes refusal and permits next read (184.6591ms)
+✔ [audit-repairs] H1 photo-placeholder verify callback-error completes refusal and permits next read (192.6506ms)
+✔ [audit-repairs] H1 external-throw retains UNKNOWN and physical fence (144.2904ms)
+✔ [audit-repairs] H1 drop retains UNKNOWN and physical fence (181.6888ms)
+✔ [audit-repairs] H1 late retains UNKNOWN and physical fence (170.4455ms)
+✔ [audit-repairs] H1 pending callback keeps physical latch before timeout (199.9555ms)
+✔ [audit-repairs] H1 verify refusal after applied mutation preserves unresolved command (303.4416ms)
+✔ [audit-repairs] H1 read-failure exact version shape cannot masquerade as mutation completion (127.5904ms)
+✔ [audit-repairs] H2 exclusive reconcile records one rejection (241.1839ms)
+✔ [audit-repairs] H2 exclusive reconcile records one success and verify (304.883ms)
+✔ [audit-repairs] H2 run excludes reconcile before terminal command processing (253.548ms)
+✔ [audit-repairs] H2 caller deadline retains actual completion lease and prevents retry until settle (378.3192ms)
+✔ [audit-repairs] H2 close while completion pending drains before lease release and prohibits late metadata (269.4352ms)
+✔ [audit-repairs] H3 all 18 dimension restrictions remain effective alongside broad grant (141.8663ms)
+✔ [audit-repairs] H3 Broker fences itemId before mutation (217.0887ms)
+✔ [audit-repairs] H3 Broker fences file before mutation (246.0543ms)
+✔ [audit-repairs] H3 Broker fences output before mutation (223.3176ms)
+✔ [audit-repairs] H4 busy constructor is metadata-only and cannot select or publish (39.8477ms)
+✔ [audit-repairs] H4 core short write never publishes final bytes (85.7546ms)
+✔ [audit-repairs] H4 core corrupt stage never publishes final bytes (131.2554ms)
+✔ [audit-repairs] H4 module short write never publishes final bytes (114.7124ms)
+✔ [audit-repairs] H4 module corrupt stage never publishes final bytes (126.9474ms)
+✔ [audit-repairs] H4 core process crash leaves private orphan and next owner publishes full closure (198.8266ms)
+✔ [audit-repairs] H4 module process crash leaves private orphan and next owner publishes full closure (231.1178ms)
+✔ [audit-repairs] H4 final CAS appears only after whole closure verification and corrupt finals stay unchanged (115.1353ms)
+✔ [audit-repairs] H4 closed publication guard denies module and engine copies and constructor faults release own lease (221.6163ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6262.729

@@ -1,0 +1,12 @@
+✔ stopped-update-operator source pins private bootstrap before support imports (2.9009ms)
+✔ stopped-update-operator bootstrap remains opaque and scoped until the awaited operation settles (406.5524ms)
+✔ stopped-update-operator recovery awaits verification and closes its TEMP election including pending requests (1087.9397ms)
+✔ stopped-update-operator owner pre-ready modes require explicit inspection proof and verified bootstrap (290.3393ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1860.4167

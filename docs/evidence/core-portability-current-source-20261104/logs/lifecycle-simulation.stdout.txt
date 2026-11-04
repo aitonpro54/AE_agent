@@ -1,0 +1,39 @@
+✔ [lifecycle-simulation] C1 source-less startup and public tools provide no event or issuance authority (191.8797ms)
+✔ [lifecycle-simulation] C2 transitions rotate same-path incarnation and unsaved new closes admission (0.3774ms)
+✔ [lifecycle-simulation] C2 uncertain sequences permanently lose that source epoch (0.361ms)
+✔ [lifecycle-simulation] C3 loss reconnect and restart never recover old project proof (319.1724ms)
+✔ [lifecycle-simulation] C4 confirmation binds complete canonical proposal and exact step (360.7132ms)
+✔ [lifecycle-simulation] C4 project transition needs new proposal ownership and checkpoint bindings (528.3475ms)
+✔ [lifecycle-simulation] C5 loss at afterAuthorize preserves the send boundary (347.8936ms)
+✔ [lifecycle-simulation] C5 loss at beforeIntent preserves the send boundary (343.5816ms)
+✔ [lifecycle-simulation] C5 loss at afterIntent preserves the send boundary (385.3217ms)
+✔ [lifecycle-simulation] C5 loss at afterPhysicalSend preserves the send boundary (358.4ms)
+✔ [lifecycle-simulation] C5 revoke at afterAuthorize preserves the send boundary (322.762ms)
+✔ [lifecycle-simulation] C5 revoke at beforeIntent preserves the send boundary (357.9979ms)
+✔ [lifecycle-simulation] C5 revoke at afterIntent preserves the send boundary (344.8903ms)
+✔ [lifecycle-simulation] C5 revoke at afterPhysicalSend preserves the send boundary (360.4291ms)
+✔ [lifecycle-simulation] C5 reset at afterAuthorize preserves the send boundary (308.2188ms)
+✔ [lifecycle-simulation] C5 reset at beforeIntent preserves the send boundary (310.3753ms)
+✔ [lifecycle-simulation] C5 reset at afterIntent preserves the send boundary (324.7942ms)
+✔ [lifecycle-simulation] C5 reset at afterPhysicalSend preserves the send boundary (347.5275ms)
+✔ [lifecycle-simulation] C5 late loss at afterAck preserves ACK and fence (327.062ms)
+✔ [lifecycle-simulation] C5 late revoke at afterAck preserves ACK and fence (435.1915ms)
+✔ [lifecycle-simulation] C5 late loss at afterReadback preserves ACK and fence (453.7882ms)
+✔ [lifecycle-simulation] C5 late revoke at afterReadback preserves ACK and fence (468.8669ms)
+✔ [lifecycle-simulation] C5 throwing physical-send hook cannot classify a submitted mutation as rejected (384.8409ms)
+✔ [lifecycle-simulation] C5 event during evaluate retains applied receipt and cannot fabricate readback success (359.24ms)
+✔ [lifecycle-simulation] C5 retained observer permits original completion plus independent verification after broker reopen (410.1709ms)
+✔ [lifecycle-simulation] C5 replacement observer cannot infer continuity from same AE values and completion store (396.191ms)
+✔ [lifecycle-simulation] C6 validation selects actual lifecycle consumers and preserves offline certification (1595.1884ms)
+✔ [lifecycle-simulation] C5 reconciliation microtask loss after completion cannot record terminal success (332.502ms)
+✔ [lifecycle-simulation] C5 reconciliation microtask revert after completion cannot record terminal success (327.7827ms)
+✔ [lifecycle-simulation] C5 reconciliation microtask loss after verify cannot record terminal success (331.0513ms)
+✔ [lifecycle-simulation] C5 reconciliation microtask revert after verify cannot record terminal success (346.5101ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11762.7224

@@ -1,0 +1,26 @@
+✔ owner-installation runtime selector is independent of composition and owner contract is a closed admitted cluster (204.5657ms)
+✔ owner-installation fresh-root planning projects exact origin bytes without destination reads or writes (87.1614ms)
+✔ owner-installation TEMP readonly/manual apply stages exact role sidecar before publishing config last (2770.8485ms)
+✔ owner-installation legacy to owner to legacy and both rollbacks preserve exact sidecar bytes and stable origin (2930.7653ms)
+✔ owner-installation first owner rollback removes only its exact sidecar and retains stable state origin (1639.8364ms)
+✔ owner-installation branded plans bind client bytes, origin bytes and binding metadata; durable prepared client tampering refuses (382.5227ms)
+✔ owner-installation client and origin CAS detect drift before writes, including drift while acquiring the install lease (3606.1436ms)
+✔ owner-installation noncanonical existing origin bytes are retained and pinned exactly (2291.3063ms)
+✔ owner-installation foreign or missing sidecar never permits replacement or owner to stdio deletion (1437.0483ms)
+✔ owner-installation staging files and ancestor junctions refuse before reading or changing destinations (16.9763ms)
+✔ owner-installation rollback refuses sidecar/origin/prepared drift and missing owner transaction extension before writes (3922.1173ms)
+✔ owner-installation owner package cannot execute through the legacy stdio entry before listener or store open (1612.2843ms)
+✔ owner-installation standalone stdio and owner closure apply without checkout code, launcher or listeners (2811.5763ms)
+✔ owner-installation fixed CLI runtime selector reaches package and standalone builders and rejects unknown models (481.131ms)
+✔ owner-installation corrupt staged sidecar refuses before client or config becomes visible (1188.8538ms)
+✔ owner-installation bounded readers reject growth after fd sampling before installer writes and close their fd (2925.2477ms)
+✔ owner-installation byte-exact ownership rejects invalid UTF8 that decodes to the same client descriptor (758.6367ms)
+✔ owner-installation all rollback restore inputs and stamped transaction paths are bound before any destination writes (2450.4913ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 31602.7619

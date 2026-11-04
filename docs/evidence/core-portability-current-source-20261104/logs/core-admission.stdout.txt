@@ -1,0 +1,25 @@
+✔ [core-control core-admission worker-isolation] A6 reset before dispatch sends no mutation and rejects late worker epoch (1041.3938ms)
+✔ [core-control core-admission] A6 reset after durable intent preserves receipt and after ACK loss preserves fence (723.4137ms)
+✔ [core-admission titles-executor-contract artifact-boundaries] A8 worker claims code wrong operation altered resource cannot become authority (2434.129ms)
+✔ [core-admission titles-executor-contract] A8 stale CAS confirmed private gate admission revocation between dryrun and send (699.6952ms)
+✔ [artifact-boundaries core-admission] A9 mutable source replacement cannot alter selected immutable closure and receipt (516.1796ms)
+✔ [core-admission protocol-codec] forged channel response executor and payload bindings bounded schema reject (356.7418ms)
+✔ [workflow-recovery core-admission] A10 coinciding text does not reconcile ongoing UNKNOWN command and serialization survives reconnect (486.5833ms)
+✔ [core-admission workflow-recovery] approved expectations cannot silently rebase and identity bindings cannot expand scope (1115.1173ms)
+✔ [core-admission titles-executor-contract photo-executor-contract] explicit project incarnation rejects reopen same path and IDs (498.9141ms)
+✔ [core-admission photo-executor-contract titles-executor-contract] mutations followed by setter errors or protected drift remain UNKNOWN (1052.7222ms)
+✔ [core-admission core-control] neutral durable ownership checkpoint constraints and unknown schemas fence mutation (2310.0014ms)
+✔ [core-admission] admission and private grant revocation are rechecked at final dispatch commit (985.8677ms)
+✔ [core-control core-admission] one broker owns durable state and valid-JSON ledger corruption fails closed (415.8559ms)
+✔ [core-control core-admission] recordContext descriptive defaults and synthetic checks do not authorize writes (341.9795ms)
+✔ [core-admission] unknown constraint schema or malformed neutral identities cannot narrow the fence (2573.0256ms)
+✔ [core-control core-admission] concurrent stale lease reclaim is serialized and orphan acquire gate remains closed (372.5553ms)
+✔ [core-control core-admission workflow-recovery] close is terminal drains physical send and forbids late old-owner ledger appends (388.3565ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16395.2659

@@ -1,0 +1,15 @@
+✔ [workflow-recovery photo-owner photo-executor-contract titles-owner] A5 mixed fault resumes fresh targets across worker and ledger reopen without replay (566.8029ms)
+✔ [workflow-recovery photo-owner] A5 counterexample manual photo drift is rejected on resume without rewriting photo (442.0835ms)
+✔ [workflow-recovery core-admission] A10 coinciding text does not reconcile ongoing UNKNOWN command and serialization survives reconnect (519.9406ms)
+✔ [core-control workflow-recovery] A10 actual child crash boundaries durable intent before send ACK readback (4681.0702ms)
+✔ [core-admission workflow-recovery] approved expectations cannot silently rebase and identity bindings cannot expand scope (1178.9049ms)
+✔ [workflow-recovery titles-owner] new failed-step revision reapproves fresh drift without replaying successful photo (741.5229ms)
+✔ [core-control core-admission workflow-recovery] close is terminal drains physical send and forbids late old-owner ledger appends (647.9785ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8862.6712

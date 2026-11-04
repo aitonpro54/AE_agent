@@ -1,0 +1,16 @@
+✔ zero-dispatch recovery inspect is pure, apply archives only exact two markers and preserves journal/origins/store identity (1859.0321ms)
+✔ zero-dispatch recovery refuses live/reused/unknown owner PID, managed process, active/unknown port and stale process observation (1574.661ms)
+✔ zero-dispatch recovery rejects any ledger, begin/torn/hash-bad receiver journal, nonempty marker and provenance mismatch (1746.5512ms)
+✔ zero-dispatch recovery proof CAS detects changed bytes and gates without moving markers (1997.6642ms)
+✔ zero-dispatch recovery rejects dangling ledger entry as present before any owner marker move (997.0084ms)
+✔ zero-dispatch recovery partial second rename retains both gates and transaction, no automatic retry/rollback (1603.1576ms)
+✔ zero-dispatch recovery rejects junction state and unverified dependency sentinel before any imports (1066.9533ms)
+✔ zero-dispatch Windows inventory probe is fixed data-only script, emits no command lines; package excludes operator recovery (38.7716ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10969.3051

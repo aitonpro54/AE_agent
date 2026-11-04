@@ -1,0 +1,15 @@
+✔ standalone-installer deterministic manual/readonly distributions include exact eager and lazy closure (1483.9143ms)
+✔ standalone-installer rejects output below an existing ancestor junction before any target writes (181.1113ms)
+✔ standalone-installer refuses oversized files before payload reads or installer import (499.0829ms)
+✔ standalone-installer actual apply and settled-journal update run without any checkout imports or ports (3493.9763ms)
+✔ standalone-installer rejects missing/tampered/extra helpers before importing installer with zero destination writes (1378.1443ms)
+✔ standalone-installer reviewed hashes and explicit destinations fail closed before writes (471.1852ms)
+✔ standalone-installer signed historical UNKNOWN survives actual apply; forged MAC and new UNKNOWN still refuse (5382.5578ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12985.8457
