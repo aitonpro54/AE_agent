@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:56:13.774Z",
+  "blockId": "source-candidate-19",
+  "baselineCommit": "ba7282f82824b0abeacff787d52b476ba443f37d",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:installable-runtime)",
+      "test/installable-runtime.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:55:20.304Z",
+    "finishedAt": "2026-11-04T08:55:50.510Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 41,
+      "suites": 0,
+      "pass": 41,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 30143.2502
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-19-installable-runtime.log",
+      "sha256": "3ebc15f64d8ea0bdfc31d2450772ec895a739743c4ba1d1f2d090ff2b9cf2b8a",
+      "bytes": 5216
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-19-installable-runtime-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "installable-runtime",
+      "evidenceKey": "8185967219ea5676ddc73bb5611dc687790a003bcca6114ec8b27a2aade2a1b6",
+      "result": "PASS",
+      "cases": 41,
+      "skipped": 0,
+      "matchedTestNames": [
+        "installable-runtime private completed read proof belongs to one exact direct error and is consumed once",
+        "installable-runtime finite Titles read codes complete only admitted read phases and publish bounded diagnostics after durability",
+        "installable-runtime read diagnostic rejects unknown codes extra fields and bad correlation without journal or status promotion",
+        "installable-runtime Titles diagnostic vocabulary is refused for project",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-key",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-module",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-operation",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-profile",
+        "installable-runtime Titles diagnostic vocabulary is refused for mutate",
+        "installable-runtime package deterministic closure, install CAS, exact rollback and stable origin",
+        "installable-runtime staged update prepares every complete file before its first visible rename and publishes config last",
+        "installable-runtime staged short write preserves the whole live installation before switch: cep",
+        "installable-runtime staged short write preserves the whole live installation before switch: descriptor",
+        "installable-runtime staged short write preserves the whole live installation before switch: client",
+        "installable-runtime staged short write preserves the whole live installation before switch: config",
+        "installable-runtime staged final CAS refuses changed owned client stage without publishing it: false",
+        "installable-runtime staged final CAS refuses changed owned client stage without publishing it: true",
+        "installable-runtime staged foreign CEP stage is preserved and never replaces the live panel",
+        "installable-runtime staged cross-volume planning and apply refuse before any installation writes",
+        "installable-runtime full generated host registry parses as ES3 before any host evaluation",
+        "installable-runtime exact release closure rejects extensionless shadow, empty directory and junction before package imports",
+        "installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies",
+        "installable-runtime descriptor changed at startup gate is rejected before package imports",
+        "installable-runtime bounded TOML edit preserves indented neighboring servers and inline-commented Core4 header bytes",
+        "installable-runtime CLI apply requires reviewed package hash and mismatches have zero installation writes",
+        "installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node",
+        "installable-runtime CLI explicit workspace requires an absolute marked source layout before writes",
+        "installable-runtime unknown Broker owner, ledger fault or unresolved intent permits diagnostics but no new physical read begin",
+        "installable-runtime actual HTTP auth role, origin, challenge, epoch, replay, bounded input and duplicate peer",
+        "installable-runtime exact CEP Origin ingress and CORS success/error/OPTIONS matrix at Node HTTP boundary",
+        "installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: null",
+        "installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: file://",
+        "installable-runtime panel VM/WebCrypto shim validates challenge Origin before signing or link and signs full original challenge",
+        "installable-runtime real HTTP and compiled registry VM: begin before evaluate, receipt before POST, durable ACK then latch clear",
+        "installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: null",
+        "installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: file://",
+        "installable-runtime missing fixed host registry returns known read rejection after durable begin, no raw fallback",
+        "installable-runtime long Cyrillic display names and total inspection budget stay bounded at actual HTTP boundary; next read survives known budget refusal",
+        "installable-runtime real stdio child consumes generated MCP config, advertises generic API, status without panel, then typed module inspect via HTTP + VM",
+        "installable-runtime private adoption bootstrap imports no mutable operator-relative provider before verified release preflight",
+        "installable-runtime real stdio process crash after delivery preserves original ongoing record and blocks new reads after restart"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own TEMP config/extensions/state/install fixtures",
+    "http": "own ephemeral0 and VM host",
+    "config": "APPDATA/LOCALAPPDATA redirected to own TEMP for CLI tests; successful apply from copied TEMP installer",
+    "originalApply": "only early missing/wronghash refusal",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": true,
+    "fixturePrefixes": [
+      "core4-installable-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-e9VvOx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-eOgFaz",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-bQcpHF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-BEWdsy",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-ySpJlL",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-2aawhQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-4Yg94H",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-5LhAx3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-fnHgrT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-9T6ejg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-PvAbyT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-Xh06nd",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-lyCbTb",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-YYccUX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-hqi4oc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-FfO7xH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-ZsjwEf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-KYwMVc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-FAeRmw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-sudO7L",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-2LA3P7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-q0x9U9",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-pfTnZN",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-qqmSWG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-9WbGiC",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-Ji434x",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-ZVLpgX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-QrEvf1",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-tymfkH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-rb2VsV",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-0JxopS",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-HCZtVk",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-6WPUX7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-0lmkkp",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-WWchYO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-FYUbci",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-bV6df0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-TQiUJw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-CFf5uQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-oWZ1GH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-KMqk8g",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-MahpCj"
+    ],
+    "remainingOwnDirs": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-e9VvOx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-eOgFaz",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-bQcpHF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-BEWdsy",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-ySpJlL",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-2aawhQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-4Yg94H",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-5LhAx3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-fnHgrT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-9T6ejg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-PvAbyT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-Xh06nd",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-lyCbTb",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-YYccUX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-hqi4oc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-FfO7xH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-ZsjwEf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-KYwMVc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-FAeRmw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-sudO7L",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-2LA3P7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-q0x9U9",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-pfTnZN",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-qqmSWG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-9WbGiC",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-Ji434x",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-ZVLpgX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-QrEvf1",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-tymfkH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-rb2VsV",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-0JxopS",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-HCZtVk",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-6WPUX7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-0lmkkp",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-WWchYO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-FYUbci",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-bV6df0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-TQiUJw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-CFf5uQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-oWZ1GH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-KMqk8g",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-MahpCj"
+    ],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own TEMP data intentionally retained; no broad cleanup.",
+      "Normal PASS stdio children explicitly awaited; individual early-failure t.after fallback child kills lack independent exit survey.",
+      "CLI5/10s and RPC15s source budgets retained; no outer deadline."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/installable-runtime.test.js",
+        "line": 73,
+        "proof": "Peer close via t.after, repeated for each own server fixture"
+      },
+      {
+        "file": "core4/test/installable-runtime.test.js",
+        "line": 375,
+        "proof": "Runtime.close/input.end in finally"
+      },
+      {
+        "file": "core4/test/installable-runtime.test.js",
+        "line": 619,
+        "proof": "Normal stdio child EOF then awaited exit0"
+      },
+      {
+        "file": "core4/test/installable-runtime.test.js",
+        "line": 649,
+        "proof": "Own crash/restart child exits awaited for both actors"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-19-installable-runtime-reducer.json",
+    "sha256": "04c328da0d8ac92171692e0269c47cbbc702f46b3e991918dfe26fc7fd205776"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}

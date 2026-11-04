@@ -1,6 +1,6 @@
 # Промпт продолжения базы Core — 2 ноября 2026
 
-**Активна адресная source-приёмка:** Принято source runs: 24; current fresh checks: 21. Применимое evidence: 52 exact-key + 0 byte-command-bound. Открыто: 19 (без hold: 17, Titles под паузой: 2). Следующий блок: source-candidate-19. [План](core-release-execution-20261103.md). Продолжать следующие разрешённые source blocks после reducer commit; Titles/Slideshow на паузе.
+**Активна адресная source-приёмка:** Принято source runs: 25; current fresh checks: 22. Применимое evidence: 53 exact-key + 0 byte-command-bound. Открыто: 18 (без hold: 16, Titles под паузой: 2). Следующий блок: source-candidate-20. [План](core-release-execution-20261103.md). Продолжать следующие разрешённые source blocks после reducer commit; Titles/Slideshow на паузе.
 
 **Release-manifest, 3 ноября — последнее поручение:** пользователь попросил
 актуальный состав необходимых проверок/reuse/remaining с сохранением паузы
