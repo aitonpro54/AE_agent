@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T09:11:14.940Z",
+  "blockId": "source-candidate-28",
+  "baselineCommit": "4a704aeac3297286b300ef0aaf76a2d57d29af15",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:exact-f548-transition)",
+      "test/exact-f548-transition.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T09:10:15.488Z",
+    "finishedAt": "2026-11-04T09:10:31.185Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 1,
+      "suites": 0,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 15645.0635
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-28-exact-f548-transition.log",
+      "sha256": "8dcb9f9463ba57a0f555f8baa0480d137d3be73ccdc3f8bf89a1c0e3bea470ce",
+      "bytes": 895
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-28-exact-f548-transition-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "exact-f548-transition",
+      "evidenceKey": "d6f9f084a489f30223d7a9127f73798b00eba60556cc071fb8f5747a7e0c2e9a",
+      "result": "PASS",
+      "cases": 1,
+      "skipped": 0,
+      "matchedTestNames": [
+        "exact-f548-transition code artifact to readonly with fresh synthetic state"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=exact-f548-transition",
+        "test/exact-f548-transition.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "historical CODE artifact; fresh source/TEMP synthetic state and credentials",
+    "historicalArtifact": "dist/core4/4.0.0-panel-reconnect-f54863dbb69b/core4-4.0.0.json,343626bytes,SHAdc02187e1d71513638d94e544f40901ab343ec22d75640704a08a777c1acb9b8",
+    "http": "own ephemeral0",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "titlesSuites": 0,
+    "slideshowSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": true,
+    "fixturePrefixes": [
+      "core4-native-capture-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-Pg9aFC"
+    ],
+    "remainingOwnDirs": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-Pg9aFC"
+    ],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own TEMP synthetic data intentionally retained; no broad cleanup.",
+      "Historical code artifact is input only; not historical credentials/state or installed runtime authority.",
+      "Original30s sourcecasebudget retained, no outer deadline."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/fixtures/exact-f548-transition.js",
+        "line": 8,
+        "proof": "Immutable historical artifact size/SHA/packageHash and verifyPackage assertions"
+      },
+      {
+        "file": "core4/test/fixtures/installed-composition-transition.js",
+        "line": 15,
+        "proof": "Disposition exact child exit awaited0"
+      },
+      {
+        "file": "core4/test/fixtures/installed-composition-transition.js",
+        "line": 30,
+        "proof": "Own peer.close awaited in finally"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-28-exact-f548-transition-reducer.json",
+    "sha256": "34c7110e6def1d6dc65d042bcc3056eb0c1acea9bb9c33561d53adb7d0e5bf0a"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
