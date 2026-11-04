@@ -11,6 +11,8 @@
 
 ## Текущий scope и правила
 
+**4 ноября, desktop: configured Origin/native PASS для 1f8c:** клиент 9260 → owner 1652; authenticated `physical.peer.origin` содержит строку `file://`, connected=true. Одна typed project-inspection пустого AE 26.3x87 завершена, lease generation 1 освобождён. Receiver 3→5, исходные 2325 байт сохранены; holder=null, pending/UNKNOWN/fault отсутствуют. Descriptor/client/origins/history/config, 39 preferences и 9 legacy-файлов сохранены. Новых install/build/tests/restart/mutation нет. Coverage source осталось 69/71, две проверки Titles удержаны. [Evidence](docs/evidence/core-portability-desktop-origin-native-20261104.json), [план](plans/core-portability-desktop-origin-native-20261104.md). Итоговую P1–P8 матрицу после проверки receipt завершает координатор.
+
 **4 ноября, финальная проверка MSI пройдена:** штатный клиент6744 загрузил пакет
 1f8c… и запустил owner29764. Подтверждён Origin `file://`; одна native inspection
 `cda9b638…` выполнена, управление generation2 освобождено. Receiver11→13

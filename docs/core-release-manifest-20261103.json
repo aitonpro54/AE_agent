@@ -1509,6 +1509,12 @@
       "sha256": "ac58852f631f6ffe1f1de809de48d4fc8cad1cd18c10e0f0204074000cee7c4a",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "Native MSI proof; no source tests executed."
+    },
+    {
+      "file": "docs/evidence/core-portability-desktop-origin-native-20261104.json",
+      "sha256": "669ca55300450ffe49ea27e4b608616c4a3c90098d994607d4313bace5ba90ac",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Actual desktop configured authenticated Origin/native proof; source69/71 unchanged, global P1-P8 certification decided by parent."
     }
   ],
   "evidenceMethod": {
@@ -12482,7 +12488,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.currentSourceValidation"
   },
-  "updatedAt": "2026-11-04T18:34:40.634Z",
+  "updatedAt": "2026-11-04T18:47:49.292Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -12493,12 +12499,12 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "MSI-final-Origin-native-PASS-desktop-final-activation-pending",
-    "desktopConnected": false,
+    "status": "desktop-and-msi-origin-native-proofs-present-awaiting-parent-matrix",
+    "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
     "remoteExecutionAuthorized": true,
-    "next": "Restore desktop host connection; fresh configured1f8c client/Origin/one read/release, then finalP1-P8 report. Do not replay installs.",
+    "next": "Parent receipt review and final P1-P8 matrix; no further desktop runtime work required.",
     "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
     "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
     "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
@@ -12652,12 +12658,17 @@
       "pendingUnknownFault": 0,
       "appServerRestart": 0,
       "currentConnection": {
-        "state": "new1f8c-installed-fresh-configured-client-unavailable",
-        "currentConfiguredProof": false,
-        "currentNativeProof": false,
-        "oldClientPid": 32372,
-        "oldClientPackage": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
-        "newInstalledPackage": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8"
+        "state": "connected-1f8c-configured-native-PASS",
+        "currentConfiguredProof": true,
+        "currentNativeProof": true,
+        "clientPid": 9260,
+        "ownerPid": 1652,
+        "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+        "Origin": "file://",
+        "OriginType": "string",
+        "controllerHolder": null,
+        "pendingUnknownFault": 0,
+        "evidence": "docs/evidence/core-portability-desktop-origin-native-20261104.json"
       }
     },
     "desktopCEPDiscoveryEvidence": "docs/evidence/core-portability-desktop-cep-discovery-20261104.json",
@@ -12682,13 +12693,21 @@
       "configuredAfterRepeat": false,
       "nativeAfterRepeat": false,
       "formalStatus": "OPEN",
-      "next": "Wait actual reviewed P2 source/package packet; successor apply while owner remains stopped, then fresh configured thin client/native proof. Parent closes strict P5.",
+      "next": "Parent evaluates strict P5 against actual CDF repeat and successful required successor activation.",
       "activation": "not_performed-deferred-to-required-successor",
       "requiredSuccessorOnDisk": {
         "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
         "transactionId": "a88c79aa-31f4-42a0-8e70-b1fdd697e161",
-        "activation": "pending",
+        "activation": "PASS-configured-native",
         "priorSamePackageApplyRetained": true
+      },
+      "finalSuccessorActivation": {
+        "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+        "evidence": "docs/evidence/core-portability-desktop-origin-native-20261104.json",
+        "configuredNative": "PASS",
+        "clientPid": 9260,
+        "ownerPid": 1652,
+        "CDFIntermediateActivation": "not_performed"
       }
     },
     "previousSummaryBeforeOrigin": {
@@ -12725,10 +12744,12 @@
       "distributionHash": "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
       "transactionId": "a88c79aa-31f4-42a0-8e70-b1fdd697e161",
       "installedReadback": "PASS",
-      "activation": "not_performed-blocked-cached-CDF-client",
-      "P2LiteralOriginObserved": false,
-      "nativeProof": false,
-      "receiverRecords": 3
+      "activation": "PASS-configured-client9260-owner1652",
+      "P2LiteralOriginObserved": true,
+      "nativeProof": true,
+      "receiverRecords": 5,
+      "Origin": "file://",
+      "OriginType": "string"
     },
     "msiOriginInstalledEvidence": "docs/evidence/core-portability-msi-origin-installed-20261104.json",
     "msiOriginSuccessor": {
@@ -12754,7 +12775,8 @@
       "acceptedReportHash": "d1c5c6da7e0dedcd096b341b5b275c0c46cb52c10e6573a4856ecfbff89f95b7"
     },
     "sourceValidationScopeRu": "sourceValidation хранит прежний desktop срез; currentSourceValidation — актуальная source-приёмка.",
-    "msiOriginNativeEvidence": "docs/evidence/core-portability-msi-origin-native-20261104.json"
+    "msiOriginNativeEvidence": "docs/evidence/core-portability-msi-origin-native-20261104.json",
+    "desktopOriginNativeEvidence": "docs/evidence/core-portability-desktop-origin-native-20261104.json"
   },
   "historicalSourceAcceptance": {
     "baselineCommit": "77a860e",

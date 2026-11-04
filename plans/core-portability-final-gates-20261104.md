@@ -141,3 +141,17 @@ Helper один раз завершил exact appserver13592/nativebirth; в45s 
 ### Validation
 
 Receiver11→13 exactprefix, ledger1/AEP/29prefs/1755oldfiles exact, allarchives/transactions intact. SameAE13608; owner ready/controllerfree/pendingUNKNOWNfault0. Current69/71 unchanged. Следующий шаг — desktop connection/finalclient/Origin/one read/release и сводный P1–P8; desktop applya88c/9157/82b иstop139 не повторять.
+
+## Desktop: финальная активация 1f8c и literal Origin
+
+### Progress
+
+Настоящий configured client 9260 → owner 1652. Authenticated `physical.peer.origin` содержит строку `file://`, connected=true. Одна project-inspection пустого AE 26.3x87 завершилась PASS; lease generation 1 освобождён. [Evidence](../docs/evidence/core-portability-desktop-origin-native-20261104.json), [план](core-portability-desktop-origin-native-20261104.md).
+
+### Decision Log
+
+PID/birth/parent/args клиента подтверждают реальную project entry пакета 1f8c. Механизм пересоздания клиента до начала проверки не наблюдался. Контроллер не завершал процессы. CEP подключилась без reload. Активация промежуточной CDF/9157 не выполнялась.
+
+### Validation
+
+Receiver 3→5; исходные 2325 байт, storeIdentity и прежние protected-файлы сохранены, ledger отсутствует. Сохранённый final status: owner ready, holder=null, pending/UNKNOWN/fault отсутствуют. Процесс AE 28156 прежний, native-команда одна. Оформление checkpoint выполняется по сохранённым результатам без новых live-действий. Coverage source осталось 69/71. Координатор проверяет receipt и завершает итоговую P1–P8 матрицу.
