@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:53:15.244Z",
+  "blockId": "source-candidate-35",
+  "baselineCommit": "9d233ad6028cb6e18921565d33bc40bcb522211d",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=owner-runtime",
+      "test/owner-runtime.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:51:51.578Z",
+    "finishedAt": "2026-11-04T08:53:01.370Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 23,
+      "suites": 0,
+      "pass": 23,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 69726.4773
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-35-owner-runtime.log",
+      "sha256": "ed248d302e1420c5f86e429272115a693d6145f7e26fd459162da65e0e7c51e0",
+      "bytes": 3217
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-35-owner-runtime-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "owner-runtime",
+      "evidenceKey": "6c46365a26a891cc7040ec1fa3dffaab44b0862fe3099d3c0f473483df1436fd",
+      "result": "PASS",
+      "cases": 23,
+      "skipped": 0,
+      "matchedTestNames": [
+        "owner-runtime thin-client preload refuses all nested child factories before native calls and preserves owner hooks in VM",
+        "owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants",
+        "owner-runtime default verified entry markers remain exact and new owner files stay outside the ordinary source package",
+        "owner-runtime normal package without the complete owner cluster refuses private owner mode before any listener or store opens",
+        "owner-runtime TEMP installed owner and two real thin Node clients retain the same owner after both client EOF and owner stdin EOF",
+        "owner-runtime foreign HTTP endpoint refuses owner startup before stores open and preserves both empty and retained state byte for byte",
+        "owner-runtime competing starts reserve under the install gate and later owner attempts cannot displace the winner or rewrite its markers",
+        "owner-runtime reserved HTTP server closes and attributed startup fence remains if Broker construction fails before peer creation",
+        "owner-runtime private prebound peer requires a listening native loopback HTTP server and reuses its one listener",
+        "owner-runtime initial receiver owner marker leaves status available and refuses controller acquisition without clearing the marker",
+        "owner-runtime initial corrupt Broker ledger blocks acquisition while owner diagnostics remain available",
+        "owner-runtime actual dead settled owner restarts with fresh process proof and unchanged journal and installation",
+        "owner-runtime actual legacy receiver fence exposes only recovery diagnostics without a Broker writer or replay",
+        "owner-runtime actual owner crash after durable delivery restarts diagnostic and never promotes or replays original ongoing work",
+        "owner-runtime inherited generic methods execute on the actual Broker so activity observes its control state",
+        "owner-runtime desired-stop freezes new control while captured original inspection completes after client detach",
+        "owner-runtime owner main signal persists desired-stop and drains original completion without a second shutdown request",
+        "owner-runtime later panel poll after controller detach cannot deliver a queued command and keeps the receiver fenced",
+        "owner-runtime captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry",
+        "owner-runtime active poll delivery checks the captured lease again immediately after store.begin",
+        "owner-runtime lease expiry across a trusted await is checked at physical submit before durable begin",
+        "owner-runtime no captured controller context rejects before durable begin; original completion remains accepted after lease expiry",
+        "owner-runtime owner bootstrap rejects complete-tree tampering before importing a modified Broker"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-runtime",
+        "test/owner-runtime.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own TEMP",
+    "acceptedGuard": "All7 nested child factories denied for thin client before OS; VM regression included",
+    "randomIPC": true,
+    "logical3457": "preload maps to ephemeral0; no fallback",
+    "nativeCIM": "exact own actors only",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": false,
+    "fixturePrefixes": [
+      "core4-owner-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-myy9Cu",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-eVCryo",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-BTDzlP",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-3ARB58",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-qHlEqD",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-M3sYhx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-iE6LTU",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-f37aL7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-FPGTlV",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-elUMRv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-zXqGcX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-C73UJg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-y7k1si",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-qll0Yo",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-5dKCWK",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-5XjZCe",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-gV40Ac",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-FZh8Yl",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-sjUuE9",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-DwsIp1"
+    ],
+    "remainingOwnDirs": [],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Original15s/case retained; no outer deadline.",
+      "No fallback production ports/pipes or production process scans."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/owner-runtime.test.js",
+        "line": 36,
+        "proof": "Reverse await registered closers before guarded own directories removal"
+      },
+      {
+        "file": "core4/test/owner-runtime.test.js",
+        "line": 88,
+        "proof": "Exact retained fixture child handle kill if running and await exit"
+      },
+      {
+        "file": "core4/test/owner-runtime.test.js",
+        "line": 103,
+        "proof": "Exact thin client retained child cleanup and await exit"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-35-owner-runtime-reducer.json",
+    "sha256": "71d33c9074cb9169917c722408bd37b5e0806168e9386666a7a39fae91b2e587"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
