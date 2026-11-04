@@ -11,6 +11,8 @@
 
 ## Текущий scope и правила
 
+**4 ноября, текущий desktop quoted-config срез:** installer V2 принят 11 полными canonical named checks; current **48 covered / 23 open** (21 deferred integration + 2 dedicated Titles held). Selector71:32changed/39same; manual-runtime exact reuse. Runtime packagecdf/80 unchanged, standalone5d5d1aa4…/98 и actual project-config dry-run PASS без ручной правки config. Desktop actual install/startup0; далее desktop fix→MSI и CLI regression delta обратно. P1–P8/full release открыты. [Receipt](plans/core-portability-quoted-config-20261104.md).
+
 **4 ноября, активен практический перенос MSI ↔ десктоп:** прямое поручение
 пользователя снимает прежнюю отсрочку двухмашинной работы; Titles/Slideshow
 остаются на паузе, облако исключено. Собран прежний manual/owner package
@@ -20,10 +22,10 @@ cdf7338f…/distribution85c3d95a…; повторная установка MSI �
 legacy checkout1f5b820 чистый, Core4 root отсутствует, Node/Git совпали с MSI,
 AE26.3 закрыт, порты3457/3456/8787 свободны; Kumo/legacy сохранены.
 Первая доставка f576bc7 на десктоп воспроизвела cdf/80 и85c/98; dry-run
-отказал до записей на валидных quoted TOML headers старого config. Выполняется
-bounded source fix, без ручного ремонта config. На MSI уже прошла новая
+отказал до записей на валидных quoted TOML headers старого config. V2 source fix проверен
+11fullnamed checks и actual-config dry-run без ручного ремонта config. На MSI уже прошла новая
 configured native inspection собственного B6 AEP в AE26.3x87; lease released,
-pending/UNKNOWN/fault0, AEP unchanged. Source prototype не опубликован.
+pending/UNKNOWN/fault0, AEP unchanged. Desktop V2 source delta подготовлена к возврату на MSI; actual install отдельно.
 P1–P8 ещё открыты. [Практический план](plans/core-portability-practical-20261104.md).
 
 **4 ноября, постоянный контракт новых модулей:** переносимость десктоп ↔ MSI
@@ -36,7 +38,7 @@ P1–P8 ещё открыты. [Практический план](plans/core-po
 приёмка P1–P8 ещё не объявлены завершёнными; облако сейчас вне scope.
 [Постоянное правило модулей](docs/portability.md#новые-модули-и-последующие-версии).
 
-**Адресная source-приёмка завершена:** Адресная source-очередь без продуктового hold завершена: 35 принятых запусков / 38 named checks с текущим свежим PASS. Применимы 69 exact-key + 0 byte-command-bound результата; открыты только две dedicated Titles. Titles/Slideshow на паузе, full release не заявляется. [План](plans/core-release-execution-20261103.md).
+**Историческая source-приёмка на77a860e:** 35 принятых запусков /38named checks и69exact-key результата относились к прежним bytes. После V2 installer это не current утверждение; актуальные48covered/23open приведены выше. Titles/Slideshow на паузе, full release не заявляется. [Исторический план](plans/core-release-execution-20261103.md).
 
 **3 ноября, актуальный release-manifest подготовлен:** по прямому поручению
 пользователя учтены все 71 Core checks: 31 exact-key reuse, ещё 2 отдельным

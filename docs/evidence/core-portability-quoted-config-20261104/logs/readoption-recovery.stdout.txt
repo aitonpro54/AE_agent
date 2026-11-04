@@ -1,0 +1,42 @@
+✔ readoption-recovery H05/F04 forward original apply prefix claim without replay (15919.1874ms)
+✔ readoption-recovery H05/F04 forward original apply prefix install without replay (17113.0937ms)
+✔ readoption-recovery H05/F04 forward original apply prefix broker without replay (17314.8104ms)
+✔ readoption-recovery H05/F04 forward original apply prefix lease without replay (18933.9998ms)
+✔ readoption-recovery H05/F04 forward original apply prefix archive without replay (19319.7121ms)
+✔ readoption-recovery H05/F04 forward original apply prefix stage without replay (19741.4123ms)
+✔ readoption-recovery H05/F04 forward original apply prefix ready without replay (20527.3004ms)
+✔ readoption-recovery H05/F04 forward original apply prefix cas without replay (19459.5807ms)
+✔ readoption-recovery H05/F04 forward original apply prefix completed without replay (20775.0517ms)
+✔ readoption-recovery H05/F04 forward original apply prefix releaseBroker without replay (20259.822ms)
+✔ readoption-recovery H05/F04 forward original apply prefix releaseInstall without replay (16440.8845ms)
+✔ readoption-recovery H04 certified admission closes at canonical claim prefix claim (5429.6172ms)
+✔ readoption-recovery H04 certified admission closes at canonical claim prefix install (6564.1036ms)
+✔ readoption-recovery H04 certified admission closes at canonical claim prefix broker (6589.7088ms)
+✔ readoption-recovery F02 partial external replacement.json is inert, never a canonical intent (12177.8815ms)
+✔ readoption-recovery F02 partial external candidate.json is inert, never a canonical intent (12208.2134ms)
+✔ readoption-recovery F02 partial external publication.json is inert, never a canonical intent (12431.0787ms)
+✔ readoption-recovery H09 pre-CAS host loss preserves stopped fence and finish refuses before any writes (12486.4037ms)
+✔ readoption-recovery H06 two interrupted actors retain distinct lineage; live actor and unavailable death proof refuse (23504.8522ms)
+✔ readoption-recovery H03 zero-write refusal adoption-inode (7439.9975ms)
+✔ readoption-recovery H03 zero-write refusal replacement-inode (7466.241ms)
+✔ readoption-recovery H03 zero-write refusal replacement-extra-alias (7472.7947ms)
+✔ readoption-recovery H03 zero-write refusal gate-inode (7461.3827ms)
+✔ readoption-recovery H03 zero-write refusal unknown-record (7472.2403ms)
+✔ readoption-recovery H03 zero-write refusal corrupt-record (7617.755ms)
+✔ readoption-recovery H03 zero-write refusal missing-recorded-gate (7296.2648ms)
+✔ readoption-recovery H03 zero-write refusal journal (7545.5213ms)
+✔ readoption-recovery H03 zero-write refusal ledger (7685.5097ms)
+✔ readoption-recovery H03 zero-write refusal certificate-inode (7573.2509ms)
+✔ readoption-recovery H03 zero-write refusal origin (7581.7999ms)
+✔ readoption-recovery EXDEV first canonical link has no copy fallback and leaves only inert preparation (5648.6024ms)
+✔ readoption-recovery EEXIST original publication requires inspection and original finish, never another apply (15968.2881ms)
+✔ readoption-recovery last pre-CAS host await revalidates old manual bytes and never overwrites them (8252.9977ms)
+✔ readoption-recovery H06 bounded attempts preserve every original record and refuse the next publication (106738.0924ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 516570.2561

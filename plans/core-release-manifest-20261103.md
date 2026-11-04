@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Адресная source-очередь без продуктового hold завершена: 35 принятых запусков / 38 named checks с текущим свежим PASS. Применимы 69 exact-key + 0 byte-command-bound результата; открыты только две dedicated Titles. Titles/Slideshow на паузе, full release не заявляется. [Итог](../docs/evidence/core-release-source-acceptance-20261103.json).
+**Текущая V2 source-приёмка, 4 ноября:** 48covered =37unchanged exact reuse +11fresh full desktop named PASS;23open =21changed deferred integrations +2Titles held. Исторические69/71 на77a860e и35blocks/36commands сохранены как прежняя фаза, без переобъявления current. [Desktop evidence](../docs/evidence/core-portability-quoted-config-20261104.json). Full release не заявляется.
 
 ## Цель и состав
 
@@ -146,77 +146,77 @@ Source suites и live операции не запускались; `releaseCert
 
 | Проверка | Тип | Evidence | Пауза / будущее действие |
 | --- | --- | --- | --- |
-| `start-over-driver` | component | reuse: записанный exact key | не повторять без drift |
-| `start-over-panel-control` | component | reuse: записанный exact key | не повторять без drift |
-| `panel-start-over` | component | reuse: записанный exact key | не повторять без drift |
-| `start-over-runtime` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `start-over-operator` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `work-session-owner` | component | reuse: записанный exact key | не повторять без drift |
-| `work-session` | component | reuse: записанный exact key | не повторять без drift |
-| `start-over-channel` | component | reuse: записанный exact key | не повторять без drift |
-| `start-over-finisher` | component | reuse: записанный exact key | не повторять без drift |
-| `start-over-state` | component | reuse: записанный exact key | не повторять без drift |
-| `start-over-barrier` | component | reuse: записанный exact key | не повторять без drift |
-| `start-over-inspection` | component | reuse: записанный exact key | не повторять без drift |
-| `start-over-process` | component | reuse: записанный exact key | не повторять без drift |
-| `stopped-host-readoption-operator` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `stopped-host-readoption` | component | reuse: записанный exact key | не повторять без drift |
-| `readoption-core` | component | reuse: записанный exact key | не повторять без drift |
-| `readoption-recovery` | component | reuse: записанный exact key | не повторять без drift |
-| `readoption-enable` | component | reuse: записанный exact key | не повторять без drift |
-| `readoption-probe` | component | reuse: записанный exact key | не повторять без drift |
-| `stopped-update-operator` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `stopped-update` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `legacy-owner-migration` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `windows-retained-process` | component | fresh source PASS → exact reuse | не повторять без drift |
-| `stopped-certification` | component | reuse: записанный exact key | не повторять без drift |
-| `maintenance-finish` | component | reuse: записанный exact key | не повторять без drift |
-| `maintenance-finish-operator` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `owner-maintenance` | component | reuse: записанный exact key | не повторять без drift |
-| `maintenance-operator` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `windows-owner-process` | component | fresh source PASS → exact reuse | не повторять без drift |
-| `owner-lifecycle` | component | reuse: записанный exact key | не повторять без drift |
-| `owner-lifecycle-faults` | component | reuse: записанный exact key | не повторять без drift |
-| `owner-marker-publication` | component | reuse: записанный exact key | не повторять без drift |
-| `client-launcher` | component | reuse: записанный exact key | не повторять без drift |
-| `recovery-inspection` | component | reuse: записанный exact key | не повторять без drift |
-| `owner-installation` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `controller-transfer` | component | reuse: записанный exact key | не повторять без drift |
-| `client-entry` | component | reuse: записанный exact key | не повторять без drift |
-| `owner-runtime` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `client-ipc` | component | fresh source PASS → exact reuse | не повторять без drift |
-| `owner-attachments` | component | reuse: записанный exact key | не повторять без drift |
-| `owner-ipc-process` | integration | reuse: записанный exact key | не повторять без drift |
-| `controller-lease` | component | fresh source PASS → exact reuse | не повторять без drift |
-| `panel-reconnect` | component | reuse: записанный exact key | не повторять без drift |
-| `endpoint-observation` | component | fresh source PASS → exact reuse | не повторять без drift |
-| `native-read-capture` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `windows-cim-probe` | integration | reuse: записанный exact key | не повторять без drift |
-| `zero-dispatch-recovery` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `human-window` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `manual-runtime` | integration | reuse: записанный exact key | не повторять без drift |
-| `installable-runtime` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `manual-current-target` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `audit-repairs` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `core-control` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `core-admission` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `worker-isolation` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `protocol-codec` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `workflow-recovery` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `photo-owner` | component | fresh source PASS → exact reuse | не повторять без drift |
-| `titles-owner` | component | нужен current result | Titles: held |
-| `photo-executor-contract` | component | fresh source PASS → exact reuse | не повторять без drift |
-| `titles-executor-contract` | component | нужен current result | Titles: held |
-| `catalog-discovery` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `validation-routing` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `artifact-boundaries` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `documentation` | component | fresh source PASS → exact reuse | не повторять без drift |
-| `cep-transport` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `lifecycle-simulation` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `native-read-recovery` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `installed-composition` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `exact-f548-transition` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `standalone-installer` | integration | fresh source PASS → exact reuse | не повторять без drift |
+| `start-over-driver` | component | unchanged exact-key reuse | повтор только при drift |
+| `start-over-panel-control` | component | unchanged exact-key reuse | повтор только при drift |
+| `panel-start-over` | component | unchanged exact-key reuse | повтор только при drift |
+| `start-over-runtime` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `start-over-operator` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `work-session-owner` | component | unchanged exact-key reuse | повтор только при drift |
+| `work-session` | component | unchanged exact-key reuse | повтор только при drift |
+| `start-over-channel` | component | unchanged exact-key reuse | повтор только при drift |
+| `start-over-finisher` | component | unchanged exact-key reuse | повтор только при drift |
+| `start-over-state` | component | unchanged exact-key reuse | повтор только при drift |
+| `start-over-barrier` | component | unchanged exact-key reuse | повтор только при drift |
+| `start-over-inspection` | component | unchanged exact-key reuse | повтор только при drift |
+| `start-over-process` | component | unchanged exact-key reuse | повтор только при drift |
+| `stopped-host-readoption-operator` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `stopped-host-readoption` | component | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `readoption-core` | component | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `readoption-recovery` | component | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `readoption-enable` | component | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `readoption-probe` | component | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `stopped-update-operator` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `stopped-update` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `legacy-owner-migration` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `windows-retained-process` | component | unchanged exact-key reuse | повтор только при drift |
+| `stopped-certification` | component | unchanged exact-key reuse | повтор только при drift |
+| `maintenance-finish` | component | unchanged exact-key reuse | повтор только при drift |
+| `maintenance-finish-operator` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `owner-maintenance` | component | unchanged exact-key reuse | повтор только при drift |
+| `maintenance-operator` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `windows-owner-process` | component | unchanged exact-key reuse | повтор только при drift |
+| `owner-lifecycle` | component | unchanged exact-key reuse | повтор только при drift |
+| `owner-lifecycle-faults` | component | unchanged exact-key reuse | повтор только при drift |
+| `owner-marker-publication` | component | unchanged exact-key reuse | повтор только при drift |
+| `client-launcher` | component | unchanged exact-key reuse | повтор только при drift |
+| `recovery-inspection` | component | unchanged exact-key reuse | повтор только при drift |
+| `owner-installation` | integration | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `controller-transfer` | component | unchanged exact-key reuse | повтор только при drift |
+| `client-entry` | component | unchanged exact-key reuse | повтор только при drift |
+| `owner-runtime` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `client-ipc` | component | unchanged exact-key reuse | повтор только при drift |
+| `owner-attachments` | component | unchanged exact-key reuse | повтор только при drift |
+| `owner-ipc-process` | integration | unchanged exact-key reuse | повтор только при drift |
+| `controller-lease` | component | unchanged exact-key reuse | повтор только при drift |
+| `panel-reconnect` | component | unchanged exact-key reuse | повтор только при drift |
+| `endpoint-observation` | component | unchanged exact-key reuse | повтор только при drift |
+| `native-read-capture` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `windows-cim-probe` | integration | unchanged exact-key reuse | повтор только при drift |
+| `zero-dispatch-recovery` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `human-window` | integration | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `manual-runtime` | integration | unchanged exact-key reuse | повтор только при drift |
+| `installable-runtime` | integration | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `manual-current-target` | integration | unchanged exact-key reuse | повтор только при drift |
+| `audit-repairs` | integration | unchanged exact-key reuse | повтор только при drift |
+| `core-control` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `core-admission` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `worker-isolation` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `protocol-codec` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `workflow-recovery` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `photo-owner` | component | unchanged exact-key reuse | повтор только при drift |
+| `titles-owner` | component | current evidence open | Titles: held |
+| `photo-executor-contract` | component | unchanged exact-key reuse | повтор только при drift |
+| `titles-executor-contract` | component | current evidence open | Titles: held |
+| `catalog-discovery` | integration | unchanged exact-key reuse | повтор только при drift |
+| `validation-routing` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `artifact-boundaries` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `documentation` | component | unchanged exact-key reuse | повтор только при drift |
+| `cep-transport` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `lifecycle-simulation` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `native-read-recovery` | integration | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `installed-composition` | integration | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `exact-f548-transition` | integration | current evidence open | deferred; не запускался в V2 scope |
+| `standalone-installer` | integration | desktop V2 full named PASS → exact reuse | повтор только при drift |
 
 ## Продолжение
 
@@ -224,3 +224,17 @@ Source suites и live операции не запускались; `releaseCert
 проверить его source/evidence fingerprint; затем выбирать только необходимые
 адресные source checks с учётом reuse и пауз. Один manifest не объявляет выпуск
 принятым и не запускает перечисленные проверки.
+
+## V2 desktop portability source admission — 4 ноября
+
+### Progress
+
+11canonical commands выполнены серийно на DESKTOP-32974QF. Full source phase35blocks/36commands не повторялась. Current keys71 exact,32changed/39unchanged,48covered/23open. [Receipt](core-portability-quoted-config-20261104.md).
+
+### Decision Log
+
+Прежние accepted refs32changed checks сохранены как superseded. Новые11currentPASS имеют точные JSONpointer/command/key и переносимые original stdout SHA. 21changed integrations remain open; Titles held. Manual-runtime — reuse, не fresh.
+
+### Validation
+
+Snapshot215 current, accepted supplemental hashes отделены от current observation. Runtime packagecdf/80 unchanged; standalone5d5d1aa4…/98 verified. Actual-config dry-run/tomllib PASS, protected bytes unchanged, actual install0. Исторический FAIL сохранён; P1–P8/native/configured/full release открыты.

@@ -1,0 +1,30 @@
+✔ readoption-enable H08/F04 exact enable prefix intent finishes locally with host absent (30501.9307ms)
+✔ readoption-enable H08/F04 exact enable prefix install finishes locally with host absent (34097.5605ms)
+✔ readoption-enable H08/F04 exact enable prefix broker finishes locally with host absent (33691.9616ms)
+✔ readoption-enable H08/F04 exact enable prefix ready finishes locally with host absent (35563.9429ms)
+✔ readoption-enable H08/F04 exact enable prefix archive finishes locally with host absent (34832.0182ms)
+✔ readoption-enable H08/F04 exact enable prefix unlink finishes locally with host absent (34656.7999ms)
+✔ readoption-enable H08/F04 exact enable prefix enabled finishes locally with host absent (36847.8104ms)
+✔ readoption-enable H08/F04 exact enable prefix releaseBroker finishes locally with host absent (36724.4176ms)
+✔ readoption-enable H08/F04 exact enable prefix releaseInstall finishes locally with host absent (22990.9023ms)
+✔ readoption-enable broker-only is foreign release state; the legitimate install-only prefix is covered above (21657.046ms)
+✔ readoption-enable second crashed enable finisher is attributed, must die and never repeats adoption or barrier unlink (51865.9645ms)
+✔ readoption-enable terminal receipt stays readonly with a live finisher, new startup gate, ready owner and later transaction/history (31576.2046ms)
+✔ readoption-enable terminal after last unlink ignores foreign gate/barrier payload before helper return and never follows direct foreign links (22471.8036ms)
+✔ readoption-enable terminal zero-write refusal when original install alias reappears (22481.3617ms)
+✔ readoption-enable terminal zero-write refusal when original role anchor gains an unaccounted alias (21727.2896ms)
+✔ readoption-enable terminal zero-write refusal when original stop alias reappears (22110.8723ms)
+✔ readoption-enable terminal zero-write refusal when original certificate is byte-equal replaced (22116.3031ms)
+✔ readoption-enable terminal zero-write refusal when original phase has an unrecognized entry (21320.038ms)
+✔ readoption-enable terminal zero-write refusal when protected client is byte-equal replaced (21369.1197ms)
+✔ readoption-enable terminal refuses ancestor junctions without following the parent or writing (22228.1597ms)
+✔ readoption-enable terminal does not bypass actor death while original enabled release gates remain (21844.2509ms)
+✔ readoption-enable terminal does not bypass actor death while original releaseBroker release gates remain (21967.7239ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 624778.3628

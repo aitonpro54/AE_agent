@@ -1,0 +1,1766 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-portability-quoted-config-source-admission",
+  "createdAt": "2026-11-04T12:43:42.899Z",
+  "result": "PASS",
+  "host": "DESKTOP-32974QF",
+  "workspace": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+  "runtimeVersion": "4.0.0",
+  "environment": {
+    "hostname": "DESKTOP-32974QF",
+    "windowsKernel": "10.0.26200",
+    "architecture": "x64",
+    "tempIsolation": "Per-check owned TEMP/TMP under ignored work directory; all other environment values inherited, not recorded.",
+    "windowsVersion": "Windows 11 Pro 25H2 26200.9711",
+    "node": {
+      "path": "C:\\Program Files\\nodejs\\node.exe",
+      "version": "v24.15.0",
+      "sha256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5"
+    }
+  },
+  "testedSourceBaseline": "f576bc72f8ffbf57479c6420b439b0eb4435ca1c",
+  "docsOnlyFastForward": {
+    "commit": "79b0567abdc89b79d5f4f5debc7e92a1d728afd7",
+    "core4BytesChanged": false,
+    "keysPreserved": true,
+    "testsRepeated": false
+  },
+  "reviewedPatch": {
+    "sha256": "a602e8931b7b20dbc9a85333c71af66ccfc61b449726e549b517fe996bc04014",
+    "bytes": 11853,
+    "V1": "REVISE, historical review; not accepted as final implementation",
+    "V2": "Independent source review ACCEPT and 6/6 scoped regressions on MSI, reported by coordinator; fresh desktop full named checks recorded below."
+  },
+  "workingSourceHashes": {
+    "core4/tools/install-core4.js": "ab4659de58022a51cf405e0ad579b9aebbfb7a5f49d3abb8472b1b021c4c9f77",
+    "core4/test/installable-runtime.test.js": "5ab9acb6be686e3b34b51b759c41cbd13d825672ba5402de12f51f075ed22998"
+  },
+  "originalFailure": {
+    "evidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
+    "originalLocalReportPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-practical-desktop-20261104\\report.json",
+    "originalLocalReportHash": "475109a9e4299887acf2b573cb29f0f2d687b7bf87c36d545085202c3745f7f7",
+    "preservedUnchanged": true,
+    "originalError": "config_syntax_requires_review",
+    "originalTomlValid": true,
+    "quotedHeaders": [
+      "mcp_servers.\"after-effects\"",
+      "mcp_servers.\"after-effects\".env"
+    ]
+  },
+  "selector": {
+    "api": "selectChecks(map.owners.map(o => o.prefix))",
+    "beforeSnapshotSHA256": "7ed0dbbff76154236244c634350237765e14913b3e1607a6fe30fd089c99a6ee",
+    "afterSnapshotSHA256": "bff11b12fbe6c514c7b7d4b49d9e10a4693b4f2230253231b3c2efa007d983bf",
+    "count": 71,
+    "changed": 32,
+    "unchanged": 39,
+    "keys": [
+      {
+        "check": "native-read-recovery",
+        "before": "1d042fc02c3055fdd6ee4f51dd9092f5245d5d8b57e00df574c4f6d669852d42",
+        "after": "06d6f27769ab20f8c992bbe6772e34725ce5f17616e25a89ca960c3d1ce8bcda",
+        "changed": true
+      },
+      {
+        "check": "installed-composition",
+        "before": "5ab3cc921ff66c138686d47c0730836002f85602595e5c48b1b623c14ad0d7b7",
+        "after": "34cf91532727066b1a1b6c6d78b804efa327733fa544f5bde7a8aeb25da460c5",
+        "changed": true
+      },
+      {
+        "check": "start-over-driver",
+        "before": "2cbb04652234df8d45cb69b485b465d00e66db47a182a8326a9283fa3a857037",
+        "after": "2cbb04652234df8d45cb69b485b465d00e66db47a182a8326a9283fa3a857037",
+        "changed": false
+      },
+      {
+        "check": "start-over-runtime",
+        "before": "5f767f692335666a69f939c5d3bb4e17f42c2bde37d023193cd19125e9bc1995",
+        "after": "246763b104c80646d143ab4924a550f5362790b70cd3d6c6002836c48ee2c189",
+        "changed": true
+      },
+      {
+        "check": "start-over-panel-control",
+        "before": "b3c6ab514b83abea4af229deb6467aa2815f34e64daadab8862333b8434c7ea8",
+        "after": "b3c6ab514b83abea4af229deb6467aa2815f34e64daadab8862333b8434c7ea8",
+        "changed": false
+      },
+      {
+        "check": "start-over-operator",
+        "before": "27fa0cfa0468213f984d1da5130f6038f357afa2eea064b16fc64ea8333ee86d",
+        "after": "3bd4f9340929516bc3a684cc2c78cc5d2813f46b19f584be5c1629ed7ddb3739",
+        "changed": true
+      },
+      {
+        "check": "standalone-installer",
+        "before": "4cc7bd9ec1760d1544bbbb16c80fe47e30bca22c5c49968b52929ecf90b667ae",
+        "after": "f2860306f9a1e9dc83cb092001219f75c881a94dc3bdc4fcdedc64f14fe0acb5",
+        "changed": true
+      },
+      {
+        "check": "panel-start-over",
+        "before": "5ccb4e674480f74f188acbe79e237b744b716c7345ec3f32ceeb2585b317de10",
+        "after": "5ccb4e674480f74f188acbe79e237b744b716c7345ec3f32ceeb2585b317de10",
+        "changed": false
+      },
+      {
+        "check": "work-session",
+        "before": "b62c7a83450425b0be805f6256d5d187a71fb6638f5149930f3fab62b4db583f",
+        "after": "b62c7a83450425b0be805f6256d5d187a71fb6638f5149930f3fab62b4db583f",
+        "changed": false
+      },
+      {
+        "check": "work-session-owner",
+        "before": "74a0f60e6b65172abf7a7e1c4a93e1d3411fa9cc75b03d3f6110d89bc18d3036",
+        "after": "74a0f60e6b65172abf7a7e1c4a93e1d3411fa9cc75b03d3f6110d89bc18d3036",
+        "changed": false
+      },
+      {
+        "check": "start-over-channel",
+        "before": "6529c1b54d68528a72a8580c21aad0f5bd6b181b894451c7fcf8a88b9141ab39",
+        "after": "6529c1b54d68528a72a8580c21aad0f5bd6b181b894451c7fcf8a88b9141ab39",
+        "changed": false
+      },
+      {
+        "check": "start-over-finisher",
+        "before": "bb1ee3b16550cf7d379ca99ba46fd2706e2a6e3c97d54aab81bef74ecadcb296",
+        "after": "bb1ee3b16550cf7d379ca99ba46fd2706e2a6e3c97d54aab81bef74ecadcb296",
+        "changed": false
+      },
+      {
+        "check": "start-over-barrier",
+        "before": "1129ec2d35b48b0c4e93475efdc4d0143c57471b9213464afb23e94330729bfe",
+        "after": "1129ec2d35b48b0c4e93475efdc4d0143c57471b9213464afb23e94330729bfe",
+        "changed": false
+      },
+      {
+        "check": "start-over-state",
+        "before": "7b19a013598755c6b5715bc32a14bc16e51ace2eb7a61105139a5d45cb07295b",
+        "after": "7b19a013598755c6b5715bc32a14bc16e51ace2eb7a61105139a5d45cb07295b",
+        "changed": false
+      },
+      {
+        "check": "start-over-process",
+        "before": "be4cdba7650d826cbbee2725d9c40eb49e0272b01d5702e91e682bc1bb64300a",
+        "after": "be4cdba7650d826cbbee2725d9c40eb49e0272b01d5702e91e682bc1bb64300a",
+        "changed": false
+      },
+      {
+        "check": "start-over-inspection",
+        "before": "f7280cdaaf2f5b2d649306e62b5ec917bb47df2f54072dd40d1a09b6b91c4552",
+        "after": "f7280cdaaf2f5b2d649306e62b5ec917bb47df2f54072dd40d1a09b6b91c4552",
+        "changed": false
+      },
+      {
+        "check": "stopped-host-readoption-operator",
+        "before": "4f6a83b2fcfa566dc8ba2d48ed8531abdf56095f46ac661329e7209f0b086619",
+        "after": "2bd752b441f97b79b78e1b1aaa16e4aef0fc52dd974c7c8fc1c8f03ca66261e6",
+        "changed": true
+      },
+      {
+        "check": "stopped-host-readoption",
+        "before": "16c1307bfa04af8b4b6fc3e2bdd119eae59f746fabd1d07b997cad467e7a733d",
+        "after": "518dcc1fdcb98341526a87deac9b0eeae7a49a41032a9a9fadf2b73439f1a6e9",
+        "changed": true
+      },
+      {
+        "check": "readoption-core",
+        "before": "fe7e12ea2f5a3738bae2a910dd1be3a815949e2c3c1804b050ed55128ebb878f",
+        "after": "3779d65cb8ffdcf94efdc4b6ca85b7da7df4703467283e7b4c283da02893c3d9",
+        "changed": true
+      },
+      {
+        "check": "readoption-recovery",
+        "before": "580db69c5298de40a059503e414a4a8500aa076c070c1533760240db361924be",
+        "after": "40b8728957582de924e0a4e55708092ea5787adf156fa633363d21ca8379ddae",
+        "changed": true
+      },
+      {
+        "check": "readoption-enable",
+        "before": "9b839724035334ac22a5ec3239ee6064b63ac43e8e199ecff2c46832932d066d",
+        "after": "73d04a49391892bd262b18f454bcf0956f51562a7c944a2184ef3e68cc385806",
+        "changed": true
+      },
+      {
+        "check": "readoption-probe",
+        "before": "ce47992831533ff3cdf936e12e2e4c805effcea66bc35ce1d50805cc174b13c0",
+        "after": "e070d987b3f60739e545d319fc1673780fe57bdcf2fba4b36508f4f576d7ed00",
+        "changed": true
+      },
+      {
+        "check": "stopped-update-operator",
+        "before": "258748b0526785cdff0a7ddf5806455a9c6f9ca7da650972897356405391410f",
+        "after": "91442d2e5f2fb5a07f200412c977f3bdb9ce578fd89b4b17e53cde4b43045f43",
+        "changed": true
+      },
+      {
+        "check": "stopped-update",
+        "before": "f672d9431d15d14432e6afd0d3d1e4da4409fbca4bbd17607729927a1cab5810",
+        "after": "b5178d980e53b3fff27ec605936273ddf77104eff7efb0fbcdbcc7f46da14aba",
+        "changed": true
+      },
+      {
+        "check": "legacy-owner-migration",
+        "before": "2dacca1434e6f98b17da4492fe0a2a4722222120bc044da3b7c6fe1ff8e92a6f",
+        "after": "2f3c3392fabe244fd8bac3e02cffb0c1e43cadb320e30ca38c0bdce681fc32ac",
+        "changed": true
+      },
+      {
+        "check": "windows-retained-process",
+        "before": "5ca4e221b70e21444cbc6a9d33e745c55620d34c864aa89b42bb03a4c5cd76e7",
+        "after": "5ca4e221b70e21444cbc6a9d33e745c55620d34c864aa89b42bb03a4c5cd76e7",
+        "changed": false
+      },
+      {
+        "check": "stopped-certification",
+        "before": "9836627c44c975bca36af7e8bbd08797a3dc0fb4ce0960e81495c0a9cfb27440",
+        "after": "9836627c44c975bca36af7e8bbd08797a3dc0fb4ce0960e81495c0a9cfb27440",
+        "changed": false
+      },
+      {
+        "check": "maintenance-finish-operator",
+        "before": "81b968aaf3e5d2e84a84ca8c1e4f33a06caf400d83538ced3d9df58b951115f1",
+        "after": "1b9303bc056bc81016c1fc4743399dcb70cf1bc529db0723e73ef281ae17f38d",
+        "changed": true
+      },
+      {
+        "check": "maintenance-finish",
+        "before": "d44c357cacc1497fb43c79bedaa82e466907d1793b867b8701c35f44b40de8a2",
+        "after": "d44c357cacc1497fb43c79bedaa82e466907d1793b867b8701c35f44b40de8a2",
+        "changed": false
+      },
+      {
+        "check": "owner-maintenance",
+        "before": "a23300c32b6e0e5530c9f0fdc1a2b42161fd6d8c2a9d033c2980f7097f16dabb",
+        "after": "a23300c32b6e0e5530c9f0fdc1a2b42161fd6d8c2a9d033c2980f7097f16dabb",
+        "changed": false
+      },
+      {
+        "check": "owner-runtime",
+        "before": "6c46365a26a891cc7040ec1fa3dffaab44b0862fe3099d3c0f473483df1436fd",
+        "after": "7518281fd3f1c14e3989c9f3083f803feaa5ad170a64bb05f386ef6b31f3f339",
+        "changed": true
+      },
+      {
+        "check": "maintenance-operator",
+        "before": "dcfba59c4c07afee659a34876673e9c28eda4dbfd6deec8ff2d7d4772aae10ce",
+        "after": "c9a48fcae93ec6118900facbe10c959bdf46e1a23c1d33cc45c7a970ba2ae3a7",
+        "changed": true
+      },
+      {
+        "check": "windows-owner-process",
+        "before": "cdb8dee5d714a9979c3c0f5ba87b3592087a0e0582bd7a6088a830172876c24d",
+        "after": "cdb8dee5d714a9979c3c0f5ba87b3592087a0e0582bd7a6088a830172876c24d",
+        "changed": false
+      },
+      {
+        "check": "owner-lifecycle",
+        "before": "0d851a17f21f75cca6560de9af99ee48294e42a8e65100f4cd342e6ad7c494c7",
+        "after": "0d851a17f21f75cca6560de9af99ee48294e42a8e65100f4cd342e6ad7c494c7",
+        "changed": false
+      },
+      {
+        "check": "owner-lifecycle-faults",
+        "before": "14097595f3516ce997d7e659f717945a239588aa21a0f4d33ab645e5aa080b47",
+        "after": "14097595f3516ce997d7e659f717945a239588aa21a0f4d33ab645e5aa080b47",
+        "changed": false
+      },
+      {
+        "check": "owner-installation",
+        "before": "cfa500879ee2fc3dc67721cb4ac55e99ffcf0cbde2e7a9b767a864a3826c26ee",
+        "after": "1ca1ce492ad638ae4fcf5de91362f30fdfa4171d72cce5281d559020a2b896b3",
+        "changed": true
+      },
+      {
+        "check": "owner-marker-publication",
+        "before": "eee2d9d280b8504e910e66899ac7e2b4f250cfbf187b44c4cc3252b8e9375fae",
+        "after": "eee2d9d280b8504e910e66899ac7e2b4f250cfbf187b44c4cc3252b8e9375fae",
+        "changed": false
+      },
+      {
+        "check": "client-launcher",
+        "before": "6015d87c4603c10ebae482ab12056967ba8e78d030b532ed92ece6c155db4287",
+        "after": "6015d87c4603c10ebae482ab12056967ba8e78d030b532ed92ece6c155db4287",
+        "changed": false
+      },
+      {
+        "check": "recovery-inspection",
+        "before": "da9b1ccf99f71edd3edbcdabd0777426bd12c077d929846377052000c3ba372d",
+        "after": "da9b1ccf99f71edd3edbcdabd0777426bd12c077d929846377052000c3ba372d",
+        "changed": false
+      },
+      {
+        "check": "client-entry",
+        "before": "adc918920dcdccd286c04758f1817a48a4b32218d31f18a9f1f6495c3b99133e",
+        "after": "adc918920dcdccd286c04758f1817a48a4b32218d31f18a9f1f6495c3b99133e",
+        "changed": false
+      },
+      {
+        "check": "client-ipc",
+        "before": "60620b30b22668563447b573e7f089f7a34e5e9b1b5df341ce01ccf18d82ba5e",
+        "after": "60620b30b22668563447b573e7f089f7a34e5e9b1b5df341ce01ccf18d82ba5e",
+        "changed": false
+      },
+      {
+        "check": "owner-ipc-process",
+        "before": "fe2f779c917a429e67e56b70d5073da56db9b77a0a0d02c857a5ddd85aa89ddb",
+        "after": "fe2f779c917a429e67e56b70d5073da56db9b77a0a0d02c857a5ddd85aa89ddb",
+        "changed": false
+      },
+      {
+        "check": "owner-attachments",
+        "before": "60e4d88c6341dc4283333c616b6f82e1a5012a114619db3d57998ef66975d19d",
+        "after": "60e4d88c6341dc4283333c616b6f82e1a5012a114619db3d57998ef66975d19d",
+        "changed": false
+      },
+      {
+        "check": "controller-transfer",
+        "before": "7323823cfcdf1875f08012ec86bddef28b3f730f4465dcf6f7ba84de97324e4a",
+        "after": "7323823cfcdf1875f08012ec86bddef28b3f730f4465dcf6f7ba84de97324e4a",
+        "changed": false
+      },
+      {
+        "check": "controller-lease",
+        "before": "1b822fd41b19872f5825fa5b047e76a37377289791a27b942cb64fcb1d9145af",
+        "after": "1b822fd41b19872f5825fa5b047e76a37377289791a27b942cb64fcb1d9145af",
+        "changed": false
+      },
+      {
+        "check": "exact-f548-transition",
+        "before": "d6f9f084a489f30223d7a9127f73798b00eba60556cc071fb8f5747a7e0c2e9a",
+        "after": "1b1deec356c642ace630080f235ebf491426d522c8180d05e8cb1bf216060166",
+        "changed": true
+      },
+      {
+        "check": "artifact-boundaries",
+        "before": "581c92eb1794cb6b2b592a7b0b38b081bfdc529f832f59f94b8b77a98de818c2",
+        "after": "53a578ceaa6aa556318d9b4d3d88e4df7cf63706f556db9fa5d67bcb62faf790",
+        "changed": true
+      },
+      {
+        "check": "panel-reconnect",
+        "before": "733ad158b45df008d295f6a19f7197a02a69e7d614693aec068ab098adaffd6a",
+        "after": "733ad158b45df008d295f6a19f7197a02a69e7d614693aec068ab098adaffd6a",
+        "changed": false
+      },
+      {
+        "check": "endpoint-observation",
+        "before": "b1fdc7a5103a49c462dd01978839fdb12504beb76689e92784ba6ecd4fda5c5d",
+        "after": "b1fdc7a5103a49c462dd01978839fdb12504beb76689e92784ba6ecd4fda5c5d",
+        "changed": false
+      },
+      {
+        "check": "installable-runtime",
+        "before": "8185967219ea5676ddc73bb5611dc687790a003bcca6114ec8b27a2aade2a1b6",
+        "after": "fb9df7309997c15acbbd1396757b1825b23b3cabd6ecc26d4728b167b1bf194a",
+        "changed": true
+      },
+      {
+        "check": "manual-current-target",
+        "before": "934955391f8931fcc9732963ce6543d2caa3d80597a3dd69788ace06183bb311",
+        "after": "934955391f8931fcc9732963ce6543d2caa3d80597a3dd69788ace06183bb311",
+        "changed": false
+      },
+      {
+        "check": "manual-runtime",
+        "before": "cc2d65e234165b9b4ce0df76df5666ca4a977bc70247b50cae39ad79eb6c72ed",
+        "after": "cc2d65e234165b9b4ce0df76df5666ca4a977bc70247b50cae39ad79eb6c72ed",
+        "changed": false
+      },
+      {
+        "check": "human-window",
+        "before": "621134c5d5aaeac48c67feba58efc85aa64738d986c4ff9c1ee45e0676381f39",
+        "after": "65f083438ced443e146e83ebc3b016eea36a8f236664d993e08e1cd7e94789bd",
+        "changed": true
+      },
+      {
+        "check": "native-read-capture",
+        "before": "356316b6222898c7ac82c87264e3dedcb4cd1a86991c3fe218858eba513b5bd2",
+        "after": "55878ef2a1823d1c7e23e5b37c8045f653937710e3cb1700514214ace9f616b8",
+        "changed": true
+      },
+      {
+        "check": "windows-cim-probe",
+        "before": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2",
+        "after": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2",
+        "changed": false
+      },
+      {
+        "check": "zero-dispatch-recovery",
+        "before": "f2eecaaf6adc3272800fdf69d426eb4591ca8f5dbd9f6f948bfb7fe84953b4eb",
+        "after": "656737e32ef74f55f22d73b80e867f1df7238bcc2b8ec86403728cac686d8cf7",
+        "changed": true
+      },
+      {
+        "check": "audit-repairs",
+        "before": "45b36ea54b90492bef1001818e36e64422ca521f992855ea460ad5112d7e00d4",
+        "after": "45b36ea54b90492bef1001818e36e64422ca521f992855ea460ad5112d7e00d4",
+        "changed": false
+      },
+      {
+        "check": "core-control",
+        "before": "f51a4d61bef34f0a1e42cfc45e83f377c48a47bb8167e9a44137ca3cb0b67736",
+        "after": "caea7abe4f896f1c9b765c6535d7553338711688173e585c9e08d7b13edd54a1",
+        "changed": true
+      },
+      {
+        "check": "core-admission",
+        "before": "a6c493391f20797bb1641424c47d12077d0c15a60d6f6609022e581f70f2173b",
+        "after": "0a44aa42d3be4d6ea806dfbc91c6fecf2c51e70575c6be8462914ad8b2e4cbeb",
+        "changed": true
+      },
+      {
+        "check": "workflow-recovery",
+        "before": "fabe8d0e2caecf8c6533794fd848f17f48604e113a365ae2aef4e812201720f6",
+        "after": "3b5209526ac0dc6bbf74c1fcb344cf2293d50098a0372b6bcf4a701f254c4dcd",
+        "changed": true
+      },
+      {
+        "check": "worker-isolation",
+        "before": "7c396f7cd98b3fea463b3ed18fd3225716238cb303f424d093497086f0540cd5",
+        "after": "ce76f337313e650daf69d4e50844fd7d2a2969428f38471c3205d7c45b10a8a0",
+        "changed": true
+      },
+      {
+        "check": "protocol-codec",
+        "before": "aa618703f940a9223bdd6055997758fba9ad25df1a712502ec86fbceb8aac3bd",
+        "after": "16c8c625bcba8fbf4d63bb706c536d0ca006f4b0270bec8e982eb16651f2248a",
+        "changed": true
+      },
+      {
+        "check": "photo-owner",
+        "before": "1c3e009b42b3ae4742224a33c1188a97fcd64352b58319b335c44c2bcff80b8e",
+        "after": "1c3e009b42b3ae4742224a33c1188a97fcd64352b58319b335c44c2bcff80b8e",
+        "changed": false
+      },
+      {
+        "check": "titles-owner",
+        "before": "4a36b881982aaf34751137f0012509861a10f31b75d10ef291a1b8f1dd4fbf95",
+        "after": "4a36b881982aaf34751137f0012509861a10f31b75d10ef291a1b8f1dd4fbf95",
+        "changed": false
+      },
+      {
+        "check": "photo-executor-contract",
+        "before": "a16735128d8c4d201683f9f62e9c0509403e1df11a9a149fc432f918c25cf0a5",
+        "after": "a16735128d8c4d201683f9f62e9c0509403e1df11a9a149fc432f918c25cf0a5",
+        "changed": false
+      },
+      {
+        "check": "titles-executor-contract",
+        "before": "5bbe9af1586e46ff74b07d9468b42dead9f4f7365bd6cdca27feadc1adc7c222",
+        "after": "5bbe9af1586e46ff74b07d9468b42dead9f4f7365bd6cdca27feadc1adc7c222",
+        "changed": false
+      },
+      {
+        "check": "catalog-discovery",
+        "before": "6c6a14673105c3ccc49d456cf2f74241af9072b2410b958a9fdd8f16f27c8578",
+        "after": "6c6a14673105c3ccc49d456cf2f74241af9072b2410b958a9fdd8f16f27c8578",
+        "changed": false
+      },
+      {
+        "check": "validation-routing",
+        "before": "67d1c0d841da4c505584599e0fa5623b4a4af799b20e61270056643cb219e30e",
+        "after": "17bdef7b403fd1b63f8731a40224d619cf357f0b1dc29d3f30709f5db4f7442a",
+        "changed": true
+      },
+      {
+        "check": "documentation",
+        "before": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+        "after": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+        "changed": false
+      },
+      {
+        "check": "cep-transport",
+        "before": "47d0619ceb2cf55e0f9e6d380fb0708446fdf3068ffe2c9b45e91d22af1b0bc5",
+        "after": "bdfd72dbb4bac9b083284b7e2fc90c0d3eecea2fc8fefde49cfa3b864d76d1a7",
+        "changed": true
+      },
+      {
+        "check": "lifecycle-simulation",
+        "before": "1b93f80a41d4ac2d4c67e7bb79728d284d6eabe2d6d17f38f9e4dd838fd00a4e",
+        "after": "c5f0954aa3c66bba5a3fd622b6992fe3f7f7455ff247553b7884a40910319915",
+        "changed": true
+      }
+    ],
+    "selected": [
+      "installable-runtime",
+      "native-read-recovery",
+      "installed-composition",
+      "standalone-installer",
+      "owner-installation",
+      "human-window",
+      "stopped-host-readoption",
+      "readoption-core",
+      "readoption-recovery",
+      "readoption-enable",
+      "readoption-probe",
+      "manual-runtime"
+    ],
+    "deferredNotRun": [
+      "start-over-runtime",
+      "start-over-operator",
+      "stopped-host-readoption-operator",
+      "stopped-update-operator",
+      "stopped-update",
+      "legacy-owner-migration",
+      "maintenance-finish-operator",
+      "maintenance-operator",
+      "owner-runtime",
+      "native-read-capture",
+      "zero-dispatch-recovery",
+      "core-control",
+      "core-admission",
+      "worker-isolation",
+      "protocol-codec",
+      "workflow-recovery",
+      "validation-routing",
+      "artifact-boundaries",
+      "cep-transport",
+      "lifecycle-simulation",
+      "exact-f548-transition"
+    ]
+  },
+  "checks": [
+    {
+      "check": "installable-runtime",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 46,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:05:31.702Z",
+      "completedAt": "2026-11-04T12:06:21.330Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 46,
+        "suites": 0,
+        "pass": 46,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 49542.5245
+      },
+      "testNames": [
+        "installable-runtime private completed read proof belongs to one exact direct error and is consumed once",
+        "installable-runtime finite Titles read codes complete only admitted read phases and publish bounded diagnostics after durability",
+        "installable-runtime read diagnostic rejects unknown codes extra fields and bad correlation without journal or status promotion",
+        "installable-runtime Titles diagnostic vocabulary is refused for project",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-key",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-module",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-operation",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-profile",
+        "installable-runtime Titles diagnostic vocabulary is refused for mutate",
+        "installable-runtime package deterministic closure, install CAS, exact rollback and stable origin",
+        "installable-runtime staged update prepares every complete file before its first visible rename and publishes config last",
+        "installable-runtime staged short write preserves the whole live installation before switch: cep",
+        "installable-runtime staged short write preserves the whole live installation before switch: descriptor",
+        "installable-runtime staged short write preserves the whole live installation before switch: client",
+        "installable-runtime staged short write preserves the whole live installation before switch: config",
+        "installable-runtime staged final CAS refuses changed owned client stage without publishing it: false",
+        "installable-runtime staged final CAS refuses changed owned client stage without publishing it: true",
+        "installable-runtime staged foreign CEP stage is preserved and never replaces the live panel",
+        "installable-runtime staged cross-volume planning and apply refuse before any installation writes",
+        "installable-runtime full generated host registry parses as ES3 before any host evaluation",
+        "installable-runtime exact release closure rejects extensionless shadow, empty directory and junction before package imports",
+        "installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies",
+        "installable-runtime descriptor changed at startup gate is rejected before package imports",
+        "installable-runtime bounded TOML edit preserves indented neighboring servers and inline-commented Core4 header bytes",
+        "installable-runtime quoted TOML headers preserve desktop neighbor and env bytes while updating the exact Core4 alias",
+        "installable-runtime quoted TOML Core4 aliases refuse duplicate nested and dotted assignment ambiguity",
+        "installable-runtime quoted TOML unsupported key syntax remains closed without treating aliases as neighbors",
+        "installable-runtime quoted TOML escaped Core4 assignment alias refuses before appending a duplicate table",
+        "installable-runtime quoted TOML escaped preference keys refuse without removing enabled or timeout settings",
+        "installable-runtime CLI apply requires reviewed package hash and mismatches have zero installation writes",
+        "installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node",
+        "installable-runtime CLI explicit workspace requires an absolute marked source layout before writes",
+        "installable-runtime unknown Broker owner, ledger fault or unresolved intent permits diagnostics but no new physical read begin",
+        "installable-runtime actual HTTP auth role, origin, challenge, epoch, replay, bounded input and duplicate peer",
+        "installable-runtime exact CEP Origin ingress and CORS success/error/OPTIONS matrix at Node HTTP boundary",
+        "installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: null",
+        "installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: file://",
+        "installable-runtime panel VM/WebCrypto shim validates challenge Origin before signing or link and signs full original challenge",
+        "installable-runtime real HTTP and compiled registry VM: begin before evaluate, receipt before POST, durable ACK then latch clear",
+        "installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: null",
+        "installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: file://",
+        "installable-runtime missing fixed host registry returns known read rejection after durable begin, no raw fallback",
+        "installable-runtime long Cyrillic display names and total inspection budget stay bounded at actual HTTP boundary; next read survives known budget refusal",
+        "installable-runtime real stdio child consumes generated MCP config, advertises generic API, status without panel, then typed module inspect via HTTP + VM",
+        "installable-runtime private adoption bootstrap imports no mutable operator-relative provider before verified release preflight",
+        "installable-runtime real stdio process crash after delivery preserves original ongoing record and blocks new reads after restart"
+      ],
+      "evidenceKeyBefore": "8185967219ea5676ddc73bb5611dc687790a003bcca6114ec8b27a2aade2a1b6",
+      "evidenceKey": "fb9df7309997c15acbbd1396757b1825b23b3cabd6ecc26d4728b167b1bf194a",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/installable-runtime.stdout.txt",
+      "logHash": "dc58bd53d570e35e8b1c119ea986416f1486dbd993e99f56ea4d0cfc9d6aabfb",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/installable-runtime.stdout.txt",
+      "portableLogHash": "dc58bd53d570e35e8b1c119ea986416f1486dbd993e99f56ea4d0cfc9d6aabfb",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\installable-runtime.stdout.log",
+      "originalLogHash": "dc58bd53d570e35e8b1c119ea986416f1486dbd993e99f56ea4d0cfc9d6aabfb",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\installable-runtime.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 4,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": [
+          "core4-installable-1agTzn",
+          "core4-installable-1jLDY5",
+          "core4-installable-4BCGEP",
+          "core4-installable-70nI3t",
+          "core4-installable-7Vrkcy",
+          "core4-installable-8v8f5l",
+          "core4-installable-9Wyvcu",
+          "core4-installable-aOvXt4",
+          "core4-installable-B5JTVY",
+          "core4-installable-dolWV4",
+          "core4-installable-eFuSbQ",
+          "core4-installable-fG58i1",
+          "core4-installable-Hr3ua9",
+          "core4-installable-iCuvBw",
+          "core4-installable-IgfHtd",
+          "core4-installable-Iurply",
+          "core4-installable-jH9qWK",
+          "core4-installable-kGU81l",
+          "core4-installable-Kjdffq",
+          "core4-installable-Lg3zco",
+          "core4-installable-lI6wqE",
+          "core4-installable-lpVWnR",
+          "core4-installable-lzQ31Y",
+          "core4-installable-nLGQeF",
+          "core4-installable-NXWdjt",
+          "core4-installable-Opobvu",
+          "core4-installable-p7eLSQ",
+          "core4-installable-PMVEQa",
+          "core4-installable-pOgCAf",
+          "core4-installable-pyT71N",
+          "core4-installable-qfhjZM",
+          "core4-installable-RrfDEs",
+          "core4-installable-s1OBzq",
+          "core4-installable-uaLAsW",
+          "core4-installable-uq7JUo",
+          "core4-installable-vNAy6D",
+          "core4-installable-vRnBTo",
+          "core4-installable-VT7C3f",
+          "core4-installable-vvqvwO",
+          "core4-installable-VyuEq6",
+          "core4-installable-W2Yujv",
+          "core4-installable-wlwk0E",
+          "core4-installable-X6zm5c",
+          "core4-installable-xEY7gV",
+          "core4-installable-yEc37e",
+          "core4-installable-yLTouE",
+          "core4-installable-yVWkHa"
+        ]
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/0"
+    },
+    {
+      "check": "native-read-recovery",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 19,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-recovery",
+        "test/native-read-recovery.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=native-read-recovery",
+        "test/native-read-recovery.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:06:22.300Z",
+      "completedAt": "2026-11-04T12:13:44.698Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 19,
+        "suites": 0,
+        "pass": 19,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 442296.0154
+      },
+      "testNames": [
+        "native-read-recovery actual Node IPC approval commits one unknown disposition, archives owner and publishes v2 reachable lineage",
+        "native-read-recovery IPC mismatch retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery IPC duplicate retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery IPC disconnect retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery IPC timeout retains exact prepared plan and gates without journal/owner mutation",
+        "native-read-recovery append-short retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery append-fsync retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery archive retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery install-switch retains gates/evidence and original UNKNOWN without automatic recovery",
+        "native-read-recovery approval does not waive fresh original CAS, new owners or additional UNKNOWN",
+        "native-read-recovery private plan and shared lease reject JSON forgery, mutation, foreign scope and startup while held",
+        "native-read-recovery historical Node binding is data, explicit lineage rejects missing/tampered edges and runtime has no data-only selector",
+        "native-read-recovery rollback partial visible switch retains both lease gates and transaction without automatic rollback",
+        "native-read-recovery operator inspect rejects modified managed witness, producer profile and closure before issuance",
+        "native-read-recovery owner identity ABA owner-between-inspect-apply refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-after-ipc refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-after-append refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-wrong-archive refuses C and preserves original history/foreign marker",
+        "native-read-recovery owner identity ABA owner-after-rename refuses C and preserves original history/foreign marker"
+      ],
+      "evidenceKeyBefore": "1d042fc02c3055fdd6ee4f51dd9092f5245d5d8b57e00df574c4f6d669852d42",
+      "evidenceKey": "06d6f27769ab20f8c992bbe6772e34725ce5f17616e25a89ca960c3d1ce8bcda",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/native-read-recovery.stdout.txt",
+      "logHash": "8167d26b112da1a08a27b0fabba52a9a5ac910f0a042773f75e1e001bdb5fad6",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/native-read-recovery.stdout.txt",
+      "portableLogHash": "8167d26b112da1a08a27b0fabba52a9a5ac910f0a042773f75e1e001bdb5fad6",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\native-read-recovery.stdout.log",
+      "originalLogHash": "8167d26b112da1a08a27b0fabba52a9a5ac910f0a042773f75e1e001bdb5fad6",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\native-read-recovery.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 17,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": [
+          "core4-native-capture-3aWFki",
+          "core4-native-capture-5Y96qa",
+          "core4-native-capture-9kHUpD",
+          "core4-native-capture-aaMAtq",
+          "core4-native-capture-bPniDD",
+          "core4-native-capture-eBHGbq",
+          "core4-native-capture-f7Ntvf",
+          "core4-native-capture-FEyoOh",
+          "core4-native-capture-lWXXoQ",
+          "core4-native-capture-miq1OP",
+          "core4-native-capture-ObIRCt",
+          "core4-native-capture-osANYT",
+          "core4-native-capture-Qmi0ZH",
+          "core4-native-capture-Vhlf4G",
+          "core4-native-capture-xYXQxR",
+          "core4-native-capture-zOxNuw",
+          "core4-recovery-lease-VWZQYj",
+          "core4-recovery-lineage-xHGcy6",
+          "core4-rollback-retain-bWehrE"
+        ]
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/1"
+    },
+    {
+      "check": "installed-composition",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 9,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installed-composition",
+        "test/installed-composition.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=installed-composition",
+        "test/installed-composition.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:13:46.920Z",
+      "completedAt": "2026-11-04T12:14:24.065Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 9,
+        "suites": 0,
+        "pass": 9,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 37046.6645
+      },
+      "testNames": [
+        "installed-composition portable fixed-format1 transition to readonly preserves signed history and no replay",
+        "installed-composition deterministic packages, fixed ES3 registries, admission pins and physical closure",
+        "installed-composition direct legacy derivation requires each fixed admission hash and exact bytes",
+        "installed-composition entry source guard covers top-level/start/lease-prefix/tail and fails closed on layout changes",
+        "installed-composition build CLI selects readonly/manual and rejects ambiguous options without output",
+        "installed-composition unknown/missing/corrupt/duplicate/path/phase/catalog/admission/downgrade failures",
+        "installed-composition installed readonly child initialize/status/discovery/contract and native fake VM inspection",
+        "installed-composition actual manual installed child retains module discovery and manual gated policy",
+        "installed-composition installed format2 corruption/missing composition rejects before imports and legacy format1 generic verification stays generic"
+      ],
+      "evidenceKeyBefore": "5ab3cc921ff66c138686d47c0730836002f85602595e5c48b1b623c14ad0d7b7",
+      "evidenceKey": "34cf91532727066b1a1b6c6d78b804efa327733fa544f5bde7a8aeb25da460c5",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/installed-composition.stdout.txt",
+      "logHash": "a2cf9cc407af0ad3b9cef4be6329bd794025c0cff09961823374446a94bbc58b",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/installed-composition.stdout.txt",
+      "portableLogHash": "a2cf9cc407af0ad3b9cef4be6329bd794025c0cff09961823374446a94bbc58b",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\installed-composition.stdout.log",
+      "originalLogHash": "a2cf9cc407af0ad3b9cef4be6329bd794025c0cff09961823374446a94bbc58b",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\installed-composition.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 3,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": [
+          "core4-composition-AnYyGK",
+          "core4-composition-Q0NQck",
+          "core4-composition-R0CD2o",
+          "core4-composition-uyEjfq",
+          "core4-composition-ZxZNrh",
+          "core4-native-capture-290NG0"
+        ]
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/2"
+    },
+    {
+      "check": "standalone-installer",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 7,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=standalone-installer",
+        "test/standalone-installer.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=standalone-installer",
+        "test/standalone-installer.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:14:24.879Z",
+      "completedAt": "2026-11-04T12:14:44.170Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 7,
+        "suites": 0,
+        "pass": 7,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 19204.2374
+      },
+      "testNames": [
+        "standalone-installer deterministic manual/readonly distributions include exact eager and lazy closure",
+        "standalone-installer rejects output below an existing ancestor junction before any target writes",
+        "standalone-installer refuses oversized files before payload reads or installer import",
+        "standalone-installer actual apply and settled-journal update run without any checkout imports or ports",
+        "standalone-installer rejects missing/tampered/extra helpers before importing installer with zero destination writes",
+        "standalone-installer reviewed hashes and explicit destinations fail closed before writes",
+        "standalone-installer signed historical UNKNOWN survives actual apply; forged MAC and new UNKNOWN still refuse"
+      ],
+      "evidenceKeyBefore": "4cc7bd9ec1760d1544bbbb16c80fe47e30bca22c5c49968b52929ecf90b667ae",
+      "evidenceKey": "f2860306f9a1e9dc83cb092001219f75c881a94dc3bdc4fcdedc64f14fe0acb5",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/standalone-installer.stdout.txt",
+      "logHash": "7d4cbaaaa4dd6a5eb1df08eabd4afd277bfe1addb71b719174aa9df362250c83",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/standalone-installer.stdout.txt",
+      "portableLogHash": "7d4cbaaaa4dd6a5eb1df08eabd4afd277bfe1addb71b719174aa9df362250c83",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\standalone-installer.stdout.log",
+      "originalLogHash": "7d4cbaaaa4dd6a5eb1df08eabd4afd277bfe1addb71b719174aa9df362250c83",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\standalone-installer.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 3,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": []
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/3"
+    },
+    {
+      "check": "owner-installation",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 18,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-installation",
+        "test/owner-installation.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=owner-installation",
+        "test/owner-installation.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:14:45.040Z",
+      "completedAt": "2026-11-04T12:15:33.597Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 18,
+        "suites": 0,
+        "pass": 18,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 48475.5263
+      },
+      "testNames": [
+        "owner-installation runtime selector is independent of composition and owner contract is a closed admitted cluster",
+        "owner-installation fresh-root planning projects exact origin bytes without destination reads or writes",
+        "owner-installation TEMP readonly/manual apply stages exact role sidecar before publishing config last",
+        "owner-installation legacy to owner to legacy and both rollbacks preserve exact sidecar bytes and stable origin",
+        "owner-installation first owner rollback removes only its exact sidecar and retains stable state origin",
+        "owner-installation branded plans bind client bytes, origin bytes and binding metadata; durable prepared client tampering refuses",
+        "owner-installation client and origin CAS detect drift before writes, including drift while acquiring the install lease",
+        "owner-installation noncanonical existing origin bytes are retained and pinned exactly",
+        "owner-installation foreign or missing sidecar never permits replacement or owner to stdio deletion",
+        "owner-installation staging files and ancestor junctions refuse before reading or changing destinations",
+        "owner-installation rollback refuses sidecar/origin/prepared drift and missing owner transaction extension before writes",
+        "owner-installation owner package cannot execute through the legacy stdio entry before listener or store open",
+        "owner-installation standalone stdio and owner closure apply without checkout code, launcher or listeners",
+        "owner-installation fixed CLI runtime selector reaches package and standalone builders and rejects unknown models",
+        "owner-installation corrupt staged sidecar refuses before client or config becomes visible",
+        "owner-installation bounded readers reject growth after fd sampling before installer writes and close their fd",
+        "owner-installation byte-exact ownership rejects invalid UTF8 that decodes to the same client descriptor",
+        "owner-installation all rollback restore inputs and stamped transaction paths are bound before any destination writes"
+      ],
+      "evidenceKeyBefore": "cfa500879ee2fc3dc67721cb4ac55e99ffcf0cbde2e7a9b767a864a3826c26ee",
+      "evidenceKey": "1ca1ce492ad638ae4fcf5de91362f30fdfa4171d72cce5281d559020a2b896b3",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/owner-installation.stdout.txt",
+      "logHash": "0f111dc7b2ad3192ac39c0d7f9088b3c735b737896452cf488d89fae4a316a4c",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/owner-installation.stdout.txt",
+      "portableLogHash": "0f111dc7b2ad3192ac39c0d7f9088b3c735b737896452cf488d89fae4a316a4c",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\owner-installation.stdout.log",
+      "originalLogHash": "0f111dc7b2ad3192ac39c0d7f9088b3c735b737896452cf488d89fae4a316a4c",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\owner-installation.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 5,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": []
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/4"
+    },
+    {
+      "check": "human-window",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 3,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=human-window",
+        "test/human-window.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=human-window",
+        "test/human-window.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:15:34.629Z",
+      "completedAt": "2026-11-04T12:15:38.991Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 3,
+        "suites": 0,
+        "pass": 3,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 4272.2127
+      },
+      "testNames": [
+        "human-window actual stdio child completes confirmed mutation after former two-second caller deadline",
+        "human-window physical callback deadline remains UNKNOWN after late confirmation and prevents replay",
+        "human-window private production ordering and MCP default preserve explicit user timeout and enabled preferences"
+      ],
+      "evidenceKeyBefore": "621134c5d5aaeac48c67feba58efc85aa64738d986c4ff9c1ee45e0676381f39",
+      "evidenceKey": "65f083438ced443e146e83ebc3b016eea36a8f236664d993e08e1cd7e94789bd",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/human-window.stdout.txt",
+      "logHash": "702d61f5fb6b5f5f54741540deaeee3ba903f44489edc3a27eb3d8941b42ff94",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/human-window.stdout.txt",
+      "portableLogHash": "702d61f5fb6b5f5f54741540deaeee3ba903f44489edc3a27eb3d8941b42ff94",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\human-window.stdout.log",
+      "originalLogHash": "702d61f5fb6b5f5f54741540deaeee3ba903f44489edc3a27eb3d8941b42ff94",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\human-window.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 7,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": [
+          "core4-manual-runtime-bC9Q5H",
+          "core4-manual-runtime-vpsYCx"
+        ]
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/5"
+    },
+    {
+      "check": "stopped-host-readoption",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 25,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=stopped-host-readoption",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:15:40.304Z",
+      "completedAt": "2026-11-04T12:17:11.840Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 25,
+        "suites": 0,
+        "pass": 25,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 91450.4413
+      },
+      "testNames": [
+        "stopped-host-readoption disk baseline survives a new module generation without rehydrating a normal certificate",
+        "stopped-host-readoption copied capabilities and read-only evidence never issue certificate context or leases",
+        "stopped-host-readoption certificate pull capability is scoped to one awaited inspection and then revoked",
+        "stopped-host-readoption baseline refuses descriptor with zero writes",
+        "stopped-host-readoption baseline refuses origin with zero writes",
+        "stopped-host-readoption baseline refuses anchor with zero writes",
+        "stopped-host-readoption baseline refuses client with zero writes",
+        "stopped-host-readoption baseline refuses journal with zero writes",
+        "stopped-host-readoption baseline refuses ledger with zero writes",
+        "stopped-host-readoption baseline refuses stop-bytes with zero writes",
+        "stopped-host-readoption baseline refuses stop-inode with zero writes",
+        "stopped-host-readoption baseline refuses certificate-bytes with zero writes",
+        "stopped-host-readoption baseline refuses certificate-inode with zero writes",
+        "stopped-host-readoption baseline refuses phase with zero writes",
+        "stopped-host-readoption baseline refuses install-gate with zero writes",
+        "stopped-host-readoption baseline refuses broker-gate with zero writes",
+        "stopped-host-readoption new baseline never permits unknown extension or generic certificate/update bypass",
+        "stopped-host-readoption unavailable and live certifier remain fenced without writes",
+        "stopped-host-readoption disk facts are checked immediately after process await 1",
+        "stopped-host-readoption disk facts are checked immediately after process await 2",
+        "stopped-host-readoption disk facts are checked immediately after process await 3",
+        "stopped-host-readoption isolated adapter plumbing acquires and releases only fixture-issued permits; production issuer remains closed",
+        "stopped-host-readoption isolated adapter recovery preserves exact gate bytes/inodes and release-only skips only proven missing gates",
+        "stopped-host-readoption isolated adapter recovery refuses gate bytes and revokes temporary capability on failure",
+        "stopped-host-readoption isolated adapter recovery refuses gate inode and revokes temporary capability on failure"
+      ],
+      "evidenceKeyBefore": "16c1307bfa04af8b4b6fc3e2bdd119eae59f746fabd1d07b997cad467e7a733d",
+      "evidenceKey": "518dcc1fdcb98341526a87deac9b0eeae7a49a41032a9a9fadf2b73439f1a6e9",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/stopped-host-readoption.stdout.txt",
+      "logHash": "50ea01d5c38d77522cc46a0a46c165e18918ceb2b1cfb4c28b4fbb1d748422ec",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/stopped-host-readoption.stdout.txt",
+      "portableLogHash": "50ea01d5c38d77522cc46a0a46c165e18918ceb2b1cfb4c28b4fbb1d748422ec",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\stopped-host-readoption.stdout.log",
+      "originalLogHash": "50ea01d5c38d77522cc46a0a46c165e18918ceb2b1cfb4c28b4fbb1d748422ec",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\stopped-host-readoption.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 3,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": []
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/6"
+    },
+    {
+      "check": "readoption-core",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 13,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-core",
+        "test/stopped-host-readoption-core.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=readoption-core",
+        "test/stopped-host-readoption-core.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:17:12.660Z",
+      "completedAt": "2026-11-04T12:19:14.166Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 13,
+        "suites": 0,
+        "pass": 13,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 121404.9743
+      },
+      "testNames": [
+        "readoption-core pinned hardlink gate anchors work with the unchanged sealed lease consumer",
+        "readoption-core H01 one CAS preserves old bytes and supports original baseline nlink 1",
+        "readoption-core H01 one CAS preserves old bytes and supports original baseline nlink 2",
+        "readoption-core H07 explicit enable changes only barrier/gates and never needs the host after committed CAS",
+        "readoption-core Windows repeatability: two whole stopped cycles preserve prior anchors and close old inode FDs before CAS",
+        "readoption-core forged operation/context/lease capabilities cannot write",
+        "readoption-core H03/P2 inspect-to-apply old adoption valid-bytes is a zero-write refusal",
+        "readoption-core H03/P2 inspect-to-apply old adoption byte-equal-inode is a zero-write refusal",
+        "readoption-core P2 replay whitespace-50k refuses before any preparation or claim",
+        "readoption-core P2 replay canonical-over-budget refuses before any preparation or claim",
+        "readoption-core P2 exact serialized old-byte budget remains replayable through claim and CAS",
+        "readoption-core P2 foreign install gate during inert publication cannot become owned or publish a claim",
+        "readoption-core P2 foreign broker gate during inert publication cannot become owned or publish a claim"
+      ],
+      "evidenceKeyBefore": "fe7e12ea2f5a3738bae2a910dd1be3a815949e2c3c1804b050ed55128ebb878f",
+      "evidenceKey": "3779d65cb8ffdcf94efdc4b6ca85b7da7df4703467283e7b4c283da02893c3d9",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/readoption-core.stdout.txt",
+      "logHash": "d365863a40b5b9c5824d0339b891e18f4538b66a7f4a2deb62648c574e5bb57f",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/readoption-core.stdout.txt",
+      "portableLogHash": "d365863a40b5b9c5824d0339b891e18f4538b66a7f4a2deb62648c574e5bb57f",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\readoption-core.stdout.log",
+      "originalLogHash": "d365863a40b5b9c5824d0339b891e18f4538b66a7f4a2deb62648c574e5bb57f",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\readoption-core.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 3,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": []
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/7"
+    },
+    {
+      "check": "readoption-recovery",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 34,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-recovery",
+        "test/stopped-host-readoption-recovery.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=readoption-recovery",
+        "test/stopped-host-readoption-recovery.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:19:14.992Z",
+      "completedAt": "2026-11-04T12:27:51.641Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 34,
+        "suites": 0,
+        "pass": 34,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 516570.2561
+      },
+      "testNames": [
+        "readoption-recovery H05/F04 forward original apply prefix claim without replay",
+        "readoption-recovery H05/F04 forward original apply prefix install without replay",
+        "readoption-recovery H05/F04 forward original apply prefix broker without replay",
+        "readoption-recovery H05/F04 forward original apply prefix lease without replay",
+        "readoption-recovery H05/F04 forward original apply prefix archive without replay",
+        "readoption-recovery H05/F04 forward original apply prefix stage without replay",
+        "readoption-recovery H05/F04 forward original apply prefix ready without replay",
+        "readoption-recovery H05/F04 forward original apply prefix cas without replay",
+        "readoption-recovery H05/F04 forward original apply prefix completed without replay",
+        "readoption-recovery H05/F04 forward original apply prefix releaseBroker without replay",
+        "readoption-recovery H05/F04 forward original apply prefix releaseInstall without replay",
+        "readoption-recovery H04 certified admission closes at canonical claim prefix claim",
+        "readoption-recovery H04 certified admission closes at canonical claim prefix install",
+        "readoption-recovery H04 certified admission closes at canonical claim prefix broker",
+        "readoption-recovery F02 partial external replacement.json is inert, never a canonical intent",
+        "readoption-recovery F02 partial external candidate.json is inert, never a canonical intent",
+        "readoption-recovery F02 partial external publication.json is inert, never a canonical intent",
+        "readoption-recovery H09 pre-CAS host loss preserves stopped fence and finish refuses before any writes",
+        "readoption-recovery H06 two interrupted actors retain distinct lineage; live actor and unavailable death proof refuse",
+        "readoption-recovery H03 zero-write refusal adoption-inode",
+        "readoption-recovery H03 zero-write refusal replacement-inode",
+        "readoption-recovery H03 zero-write refusal replacement-extra-alias",
+        "readoption-recovery H03 zero-write refusal gate-inode",
+        "readoption-recovery H03 zero-write refusal unknown-record",
+        "readoption-recovery H03 zero-write refusal corrupt-record",
+        "readoption-recovery H03 zero-write refusal missing-recorded-gate",
+        "readoption-recovery H03 zero-write refusal journal",
+        "readoption-recovery H03 zero-write refusal ledger",
+        "readoption-recovery H03 zero-write refusal certificate-inode",
+        "readoption-recovery H03 zero-write refusal origin",
+        "readoption-recovery EXDEV first canonical link has no copy fallback and leaves only inert preparation",
+        "readoption-recovery EEXIST original publication requires inspection and original finish, never another apply",
+        "readoption-recovery last pre-CAS host await revalidates old manual bytes and never overwrites them",
+        "readoption-recovery H06 bounded attempts preserve every original record and refuse the next publication"
+      ],
+      "evidenceKeyBefore": "580db69c5298de40a059503e414a4a8500aa076c070c1533760240db361924be",
+      "evidenceKey": "40b8728957582de924e0a4e55708092ea5787adf156fa633363d21ca8379ddae",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/readoption-recovery.stdout.txt",
+      "logHash": "64f2e4b2214b70eea9c251b762bae7a2efcad0f0fc9e83cb335ccc491d915a4c",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/readoption-recovery.stdout.txt",
+      "portableLogHash": "64f2e4b2214b70eea9c251b762bae7a2efcad0f0fc9e83cb335ccc491d915a4c",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\readoption-recovery.stdout.log",
+      "originalLogHash": "64f2e4b2214b70eea9c251b762bae7a2efcad0f0fc9e83cb335ccc491d915a4c",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\readoption-recovery.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 3,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": []
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/8"
+    },
+    {
+      "check": "readoption-enable",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 22,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-enable",
+        "test/stopped-host-readoption-enable.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=readoption-enable",
+        "test/stopped-host-readoption-enable.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:27:52.447Z",
+      "completedAt": "2026-11-04T12:38:17.302Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 22,
+        "suites": 0,
+        "pass": 22,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 624778.3628
+      },
+      "testNames": [
+        "readoption-enable H08/F04 exact enable prefix intent finishes locally with host absent",
+        "readoption-enable H08/F04 exact enable prefix install finishes locally with host absent",
+        "readoption-enable H08/F04 exact enable prefix broker finishes locally with host absent",
+        "readoption-enable H08/F04 exact enable prefix ready finishes locally with host absent",
+        "readoption-enable H08/F04 exact enable prefix archive finishes locally with host absent",
+        "readoption-enable H08/F04 exact enable prefix unlink finishes locally with host absent",
+        "readoption-enable H08/F04 exact enable prefix enabled finishes locally with host absent",
+        "readoption-enable H08/F04 exact enable prefix releaseBroker finishes locally with host absent",
+        "readoption-enable H08/F04 exact enable prefix releaseInstall finishes locally with host absent",
+        "readoption-enable broker-only is foreign release state; the legitimate install-only prefix is covered above",
+        "readoption-enable second crashed enable finisher is attributed, must die and never repeats adoption or barrier unlink",
+        "readoption-enable terminal receipt stays readonly with a live finisher, new startup gate, ready owner and later transaction/history",
+        "readoption-enable terminal after last unlink ignores foreign gate/barrier payload before helper return and never follows direct foreign links",
+        "readoption-enable terminal zero-write refusal when original install alias reappears",
+        "readoption-enable terminal zero-write refusal when original role anchor gains an unaccounted alias",
+        "readoption-enable terminal zero-write refusal when original stop alias reappears",
+        "readoption-enable terminal zero-write refusal when original certificate is byte-equal replaced",
+        "readoption-enable terminal zero-write refusal when original phase has an unrecognized entry",
+        "readoption-enable terminal zero-write refusal when protected client is byte-equal replaced",
+        "readoption-enable terminal refuses ancestor junctions without following the parent or writing",
+        "readoption-enable terminal does not bypass actor death while original enabled release gates remain",
+        "readoption-enable terminal does not bypass actor death while original releaseBroker release gates remain"
+      ],
+      "evidenceKeyBefore": "9b839724035334ac22a5ec3239ee6064b63ac43e8e199ecff2c46832932d066d",
+      "evidenceKey": "73d04a49391892bd262b18f454bcf0956f51562a7c944a2184ef3e68cc385806",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/readoption-enable.stdout.txt",
+      "logHash": "55bcdfb72b8a752db03e1945dc7edb22ed5abc6f49502ef2e740fcb5c3355b16",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/readoption-enable.stdout.txt",
+      "portableLogHash": "55bcdfb72b8a752db03e1945dc7edb22ed5abc6f49502ef2e740fcb5c3355b16",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\readoption-enable.stdout.log",
+      "originalLogHash": "55bcdfb72b8a752db03e1945dc7edb22ed5abc6f49502ef2e740fcb5c3355b16",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\readoption-enable.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 3,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": []
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/9"
+    },
+    {
+      "check": "readoption-probe",
+      "result": "PASS",
+      "mode": "fresh-full-canonical-named-check-desktop",
+      "fullCheckAccepted": true,
+      "cases": 1,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-probe",
+        "test/stopped-host-readoption-probe.test.js"
+      ],
+      "argv": [
+        "--test",
+        "--test-name-pattern=readoption-probe",
+        "test/stopped-host-readoption-probe.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+      "startedAt": "2026-11-04T12:38:18.154Z",
+      "completedAt": "2026-11-04T12:38:18.363Z",
+      "exitCode": 0,
+      "signal": null,
+      "reporter": "spec",
+      "summary": {
+        "tests": 1,
+        "suites": 0,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 127.4565
+      },
+      "testNames": [
+        "readoption-probe H02 local freshness/endpoints validator matches runtime adoption boundaries"
+      ],
+      "evidenceKeyBefore": "ce47992831533ff3cdf936e12e2e4c805effcea66bc35ce1d50805cc174b13c0",
+      "evidenceKey": "e070d987b3f60739e545d319fc1673780fe57bdcf2fba4b36508f4f576d7ed00",
+      "log": "docs/evidence/core-portability-quoted-config-20261104/logs/readoption-probe.stdout.txt",
+      "logHash": "4c29a2c919b5607139f0594cafbe97a2a7f7c983193c2009410b96da1e6bf51a",
+      "portableLog": "docs/evidence/core-portability-quoted-config-20261104/logs/readoption-probe.stdout.txt",
+      "portableLogHash": "4c29a2c919b5607139f0594cafbe97a2a7f7c983193c2009410b96da1e6bf51a",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\readoption-probe.stdout.log",
+      "originalLogHash": "4c29a2c919b5607139f0594cafbe97a2a7f7c983193c2009410b96da1e6bf51a",
+      "stderr": {
+        "originalPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\readoption-probe.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copied": false
+      },
+      "cleanup": {
+        "observedActorsTerminal": true,
+        "observedActorCount": 0,
+        "finalOwnActorObservation": {
+          "ok": true,
+          "actors": []
+        },
+        "observationScope": "Only test PID and observed descendants by PID/parent; no command lines or broad census.",
+        "limits": "Short-lived actors between samples are covered by existing test assertions/cleanup hooks, not exhaustively observed.",
+        "noExternalKills": true
+      },
+      "dataRetention": {
+        "policy": "Retain all remaining owned TEMP data and logs; existing test cleanup hooks may remove their own fixture directories. No external cleanup or process kills performed.",
+        "retainedTopLevelDirectories": []
+      },
+      "budgetsChanged": false,
+      "externalDeadlineApplied": false,
+      "acceptedPointer": "/checks/10"
+    }
+  ],
+  "exactReuse": {
+    "result": "PASS",
+    "evidenceKey": "cc2d65e234165b9b4ce0df76df5666ca4a977bc70247b50cae39ad79eb6c72ed",
+    "rerun": false,
+    "acceptedEvidence": [
+      {
+        "file": "docs/evidence/core-base-b6-probe-source-20261103.json",
+        "pointer": "/checks/0",
+        "result": "PASS",
+        "evidenceKey": "cc2d65e234165b9b4ce0df76df5666ca4a977bc70247b50cae39ad79eb6c72ed"
+      }
+    ]
+  },
+  "sourceExecution": {
+    "commands": 11,
+    "serial": true,
+    "fullFiles": true,
+    "totalsAreNotGlobalUnique": true,
+    "dedicatedTitlesOrSlideshowRun": false,
+    "productionAEOrConfiguredMcpProof": false
+  },
+  "packaging": {
+    "package": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\manual-owner-package-v2.json",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "fileSHA256": "99a1c95ed0d2b659a66e25db4683e46494c7002c4708e60680c5340e73e26852",
+      "files": 80,
+      "verifyPackage": "PASS",
+      "runtimeModel": "owner"
+    },
+    "standalone": {
+      "root": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\standalone-manual-owner-v2",
+      "distributionHash": "5d5d1aa4e95d31465c733dbc68ccf3dacba23c5b7fabea1de6811e616c792cdf",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "files": 98,
+      "verifyStandalone": "PASS",
+      "changedFromOriginal": true
+    },
+    "buildCommands": [
+      {
+        "label": "package-v2-build",
+        "executable": "C:\\Program Files\\nodejs\\node.exe",
+        "argv": [
+          "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\package-installable.js",
+          "--composition",
+          "manual",
+          "--runtime",
+          "owner",
+          "--output",
+          "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\manual-owner-package-v2.json"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+        "startedAt": "2026-11-04T12:39:14.560Z",
+        "finishedAt": "2026-11-04T12:39:14.735Z",
+        "exitCode": 0,
+        "spawnError": null,
+        "stdoutPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\package-v2-build.stdout.log",
+        "stdoutSHA256": "1f4092a374d5c8eaf8b8ecd14aed21c6ef3370d1996d13824e550db324481861",
+        "stderrPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\package-v2-build.stderr.log",
+        "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "label": "distribution-v2-build",
+        "executable": "C:\\Program Files\\nodejs\\node.exe",
+        "argv": [
+          "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\package-standalone-installer.js",
+          "--composition",
+          "manual",
+          "--runtime",
+          "owner",
+          "--output",
+          "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\standalone-manual-owner-v2"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+        "startedAt": "2026-11-04T12:39:14.737Z",
+        "finishedAt": "2026-11-04T12:39:15.075Z",
+        "exitCode": 0,
+        "spawnError": null,
+        "stdoutPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\distribution-v2-build.stdout.log",
+        "stdoutSHA256": "bf4681b460a079f61170ec3425ae44216d73572d9afced9d8897ee8bfc4727a1",
+        "stderrPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\distribution-v2-build.stderr.log",
+        "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "label": "project-config-dry-run-v2",
+        "executable": "C:\\Program Files\\nodejs\\node.exe",
+        "argv": [
+          "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\install-core4.js",
+          "dry-run",
+          "--package",
+          "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\manual-owner-package-v2.json",
+          "--runtime",
+          "owner"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\foreign-cwd",
+        "startedAt": "2026-11-04T12:39:15.195Z",
+        "finishedAt": "2026-11-04T12:39:15.512Z",
+        "exitCode": 0,
+        "spawnError": null,
+        "stdoutPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\project-config-dry-run-v2.stdout.log",
+        "stdoutSHA256": "39232f2615dc5fc7ed3e40b5cd07de932c8eb120d501ac510cb37183a1a26bad",
+        "stderrPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\project-config-dry-run-v2.stderr.log",
+        "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "packageRuntimeBytesUnchanged": true
+  },
+  "dryRun": {
+    "result": "PASS",
+    "dryRun": true,
+    "workspaceRoot": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+    "workspaceSource": "installer-location",
+    "installerPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\install-core4.js",
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "expectedPackageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "releaseDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+    "stateDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production",
+    "cepDir": "C:\\Users\\Ant\\AppData\\Roaming\\Adobe\\CEP\\extensions\\com.codex.aeagentcore4",
+    "configPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex\\config.toml",
+    "nodePath": "C:\\Program Files\\nodejs\\node.exe",
+    "nodeVersion": "v24.15.0",
+    "nodeHash": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5",
+    "liveProof": false,
+    "plannedConfig": {
+      "parser": "Python tomllib via stdin; config values neither logged nor saved",
+      "validBefore": true,
+      "validPlanned": true,
+      "legacyEntryPreserved": true,
+      "legacyDisabledPreserved": true,
+      "legacyEnvPreserved": true,
+      "allExistingMcpEntriesPreserved": true,
+      "newCore4CommandCorrect": true,
+      "newCore4ArgsCorrect": true,
+      "originalBytesPrefixPreserved": true,
+      "actualConfigUnchanged": true
+    },
+    "command": {
+      "label": "project-config-dry-run-v2",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\install-core4.js",
+        "dry-run",
+        "--package",
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\manual-owner-package-v2.json",
+        "--runtime",
+        "owner"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\foreign-cwd",
+      "startedAt": "2026-11-04T12:39:15.195Z",
+      "finishedAt": "2026-11-04T12:39:15.512Z",
+      "exitCode": 0,
+      "spawnError": null,
+      "stdoutPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\project-config-dry-run-v2.stdout.log",
+      "stdoutSHA256": "39232f2615dc5fc7ed3e40b5cd07de932c8eb120d501ac510cb37183a1a26bad",
+      "stderrPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\project-config-dry-run-v2.stderr.log",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "actualApply": false
+  },
+  "protected": {
+    "configs": [
+      {
+        "path": "C:\\Users\\Ant\\.codex\\config.toml",
+        "beforeSHA256": "f0c30b3c6e4e415301ddc7e774e68da4270e8665e462054428636613f44c0d18",
+        "afterSHA256": "f0c30b3c6e4e415301ddc7e774e68da4270e8665e462054428636613f44c0d18",
+        "unchanged": true
+      },
+      {
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex\\config.toml",
+        "beforeSHA256": "01285f6b372fb913599e5c1796f7ff981228428f37fe92f6eeb56d668367d6d3",
+        "afterSHA256": "01285f6b372fb913599e5c1796f7ff981228428f37fe92f6eeb56d668367d6d3",
+        "unchanged": true
+      }
+    ],
+    "legacyExactTreeUnchanged": true,
+    "originalFailureReport": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-practical-desktop-20261104\\report.json",
+      "sha256": "475109a9e4299887acf2b573cb29f0f2d687b7bf87c36d545085202c3745f7f7",
+      "unchanged": true
+    },
+    "installTargetsAbsent": {
+      "core4": true,
+      "cep": true
+    }
+  },
+  "scopeLimits": {
+    "actualInstall": 0,
+    "runtimeStartup": 0,
+    "AEProjectReadOrWrite": 0,
+    "configManualEdits": 0,
+    "adoptionResetStopOrUpdate": 0,
+    "nativeOrConfiguredProof": false,
+    "releaseCertified": false,
+    "P1toP8Complete": false
+  },
+  "localMachineReports": [
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\checks-report.json",
+      "sha256": "34261e49efacf505a3cc90bc2269b0dbec0a416843bd0b41739e6650c954419d"
+    },
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\final-report.json",
+      "sha256": "6f5f343c22e1182439fa9050ceb603bb68faa7bc139f447aa1fc403071bd42ca"
+    }
+  ],
+  "nextRu": "Вернуть desktop source fix на MSI, затем вернуть реальную test/CLI regression delta на desktop. Actual install остаётся отдельным адресным этапом."
+}

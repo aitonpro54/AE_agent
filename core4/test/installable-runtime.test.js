@@ -285,8 +285,75 @@ test('installable-runtime bounded TOML edit preserves indented neighboring serve
   assert.throws(() => configText(Buffer.from(ownHeader + 'enabled = false\n"enabled" = true\n'), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js'), /config_duplicate_enabled_preference/);
   assert.throws(() => configText(Buffer.from(ownHeader + 'enabled = "false"\n'), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js'), /config_enabled_preference_requires_review/);
   const directory = temp(), { args } = install(directory);
-  const invalid = Buffer.from('[mcp_servers."after-effects-core4"] # unsupported quoted table\ncommand = "old"\n'); fs.writeFileSync(args.configPath, invalid);
+  const invalid = Buffer.from('[mcp_servers."after\\u002deffects-core4"] # unsupported escaped key\ncommand = "old"\n'); fs.writeFileSync(args.configPath, invalid);
   assert.throws(() => planInstall(args), /config_syntax_requires_review/); assert.ok(fs.readFileSync(args.configPath).equals(invalid)); assert.equal(fs.existsSync(args.installRoot), false);
+});
+test('installable-runtime quoted TOML headers preserve desktop neighbor and env bytes while updating the exact Core4 alias', () => {
+  const before = '# desktop prefix\r\n[mcp_servers."after-effects"]\r\ncommand = "legacy-node"\r\nargs = ["legacy-entry"]\r\n\r\n[mcp_servers."after-effects".env]\r\nLEGACY_SETTING = "preserve"\r\n';
+  const after = '  ["mcp_servers".\'neighbor-server\'.env] # next table\r\nNEIGHBOR_SETTING = "preserve too"\r\n';
+  const ownHeader = ' [ "mcp_servers" . \'after-effects-core4\' ] # preserve header\r\n';
+  const preferences = ' "enabled" = false # disabled preference\r\n \'tool_timeout_sec\' = 240 # timeout preference\r\n';
+  const previous = before + ownHeader + preferences + 'command = "old"\r\nargs = ["old"]\r\n' + after;
+  const result = configText(Buffer.from(previous), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js');
+  assert.ok(result.startsWith(before + ownHeader + preferences)); assert.ok(result.endsWith(after));
+  assert.ok(result.includes('command = "C:/node.exe"\r\n')); assert.ok(result.includes('args = ["C:/entry.js","--installation","C:/descriptor.json"]\r\n'));
+  assert.equal((result.match(/after-effects-core4/g) || []).length, 1);
+  const appended = configText(Buffer.from(before), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js');
+  assert.equal(appended.slice(0, before.length), before); assert.ok(appended.slice(before.length).includes('[mcp_servers.after-effects-core4]\r\n'));
+  const directory = temp(), { args } = install(directory); fs.writeFileSync(args.configPath, previous);
+  const planned = planInstall(args);
+  assert.ok(planned.nextConfig.startsWith(before + ownHeader + preferences)); assert.ok(planned.nextConfig.endsWith(after));
+  assert.equal(fs.readFileSync(args.configPath, 'utf8'), previous); assert.equal(fs.existsSync(args.installRoot), false);
+  const values = '[mcp_servers."after-effects"]\ncommand = "literal key = value"\nargs = [\n  "after\\u002deffects-core4 = {command=old}",\n  \'enab\\u006ced = false\',\n  { NAME = "tool_timeout_\\u0073ec = 240" },\n]\n';
+  assert.ok(configText(Buffer.from(values), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js').startsWith(values));
+});
+test('installable-runtime quoted TOML Core4 aliases refuse duplicate nested and dotted assignment ambiguity', () => {
+  const edit = text => configText(Buffer.from(text), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js');
+  for (const alias of ['mcp_servers."after-effects-core4"', '"mcp_servers".after-effects-core4', "'mcp_servers'.'after-effects-core4'"]) {
+    assert.throws(() => edit('[mcp_servers.after-effects-core4]\ncommand = "old"\n[' + alias + ']\ncommand = "other"\n'), /config_ambiguous_core4/);
+    assert.throws(() => edit('[' + alias + '.env]\nVALUE = "old"\n'), /config_core4_nested_requires_review/);
+    assert.throws(() => edit(alias + ' = { command = "old" }\n'), /config_ambiguous_core4/);
+    assert.throws(() => edit(alias + '.command = "old"\n'), /config_ambiguous_core4/);
+  }
+  for (const key of ['after-effects-core4', '"after-effects-core4"', "'after-effects-core4'"]) {
+    assert.throws(() => edit('["mcp_servers"]\n' + key + ' = { command = "old" }\n'), /config_ambiguous_core4/);
+    assert.throws(() => edit('["mcp_servers"]\n' + key + '.command = "old"\n'), /config_ambiguous_core4/);
+  }
+  const directory = temp(), { args } = install(directory), ambiguous = '["mcp_servers"."after-effects-core4"]\ncommand = "old"\n[mcp_servers.after-effects-core4]\ncommand = "other"\n';
+  fs.writeFileSync(args.configPath, ambiguous); assert.throws(() => planInstall(args), /config_ambiguous_core4/);
+  assert.equal(fs.readFileSync(args.configPath, 'utf8'), ambiguous); assert.equal(fs.existsSync(args.installRoot), false);
+});
+test('installable-runtime quoted TOML unsupported key syntax remains closed without treating aliases as neighbors', () => {
+  for (const header of ['[mcp_servers."after\\u002deffects-core4"]', '["mcp_servers.after-effects-core4"]', '[mcp_servers.""]', '[mcp_servers."neighbor server"]', "[mcp_servers.'neighbor.server']", '[[mcp_servers."after-effects-core4"]]']) {
+    assert.throws(() => configText(Buffer.from(header + '\ncommand = "old"\n'), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js'), /config_syntax_requires_review/);
+  }
+  for (const marker of ['"""', "'''"]) assert.throws(() => configText(Buffer.from('[mcp_servers."neighbor"]\nvalue = ' + marker + 'unsupported' + marker + '\n'), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js'), /config_syntax_requires_review/);
+});
+function assertUnsupportedConfigKeyRefusesWithoutWrites(config) {
+  const directory = temp(), { args } = install(directory); fs.writeFileSync(args.configPath, config);
+  const originals = new Map(), open = fs.openSync; let writes = 0;
+  for (const name of ['writeFileSync', 'appendFileSync', 'mkdirSync', 'renameSync', 'unlinkSync', 'rmSync']) {
+    originals.set(name, fs[name]); fs[name] = () => { writes++; throw Error('unexpected config planning write'); };
+  }
+  fs.openSync = (file, flags, ...rest) => {
+    if (typeof flags !== 'string' || flags !== 'r') { writes++; throw Error('unexpected writable config planning open'); }
+    return open(file, flags, ...rest);
+  };
+  try { assert.throws(() => planInstall(args), /config_syntax_requires_review/); }
+  finally { fs.openSync = open; for (const [name, original] of originals) fs[name] = original; }
+  assert.equal(writes, 0); assert.equal(fs.readFileSync(args.configPath, 'utf8'), config); assert.equal(fs.existsSync(args.installRoot), false);
+}
+test('installable-runtime quoted TOML escaped Core4 assignment alias refuses before appending a duplicate table', () => {
+  const key = '"after\\u002deffects-core4"';
+  assert.equal([...key].filter(char => char === '\\').length, 1);
+  assert.equal(JSON.parse(key), 'after-effects-core4');
+  assertUnsupportedConfigKeyRefusesWithoutWrites('["mcp_servers"]\n' + key + ' = {command="old"}\n');
+});
+test('installable-runtime quoted TOML escaped preference keys refuse without removing enabled or timeout settings', () => {
+  for (const [key, decoded, value] of [['"enab\\u006ced"', 'enabled', 'false'], ['"tool_timeout_\\u0073ec"', 'tool_timeout_sec', '240']]) {
+    assert.equal([...key].filter(char => char === '\\').length, 1); assert.equal(JSON.parse(key), decoded);
+    assertUnsupportedConfigKeyRefusesWithoutWrites('[mcp_servers."after-effects-core4"]\n' + key + ' = ' + value + '\ncommand = "old"\n');
+  }
 });
 test('installable-runtime CLI apply requires reviewed package hash and mismatches have zero installation writes', () => {
   const directory = temp(), pkg = buildPackage(), file = path.join(directory, 'package.json'), project = path.join(directory, 'project'); fs.mkdirSync(project); fs.writeFileSync(file, JSON.stringify(pkg));

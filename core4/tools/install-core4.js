@@ -182,16 +182,42 @@ function configText(previous, descriptor, nodePath, entry, argument = '--install
   const text = previous ? previous.toString('utf8') : '';
   if (Buffer.byteLength(text) > 1024 * 1024 || previous && !Buffer.from(text, 'utf8').equals(previous) || text.includes('"""') || text.includes("'''")) fail('config_syntax_requires_review');
   const headers = []; let offset = 0, currentTable = '';
-  // Deliberately bounded TOML subset: bare dotted tables and single-line values.
+  // Deliberately bounded TOML subset: ASCII bare-key segments, optionally quoted
+  // without escapes. Quoted aliases have the same identity as bare segments.
   // Unsupported table syntax is rejected BEFORE any installation writes.
+  const keySegment = /(?:[A-Za-z0-9_-]+|"[A-Za-z0-9_-]+"|'[A-Za-z0-9_-]+')/.source;
+  const keyPath = keySegment + '(?:[ \\t]*\\.[ \\t]*' + keySegment + ')*';
+  const headerPattern = new RegExp('^[ \\t]*\\[[ \\t]*(' + keyPath + ')[ \\t]*\\][ \\t]*(?:#[^\\r\\n]*)?(?:\\r?\\n)?$');
+  const assignmentKeyPattern = new RegExp('^[ \\t]*(' + keyPath + ')[ \\t]*$');
+  const keyName = value => value.split('.').map(part => part.trim().replace(/^(['"])(.*)\1$/, '$2')).join('.');
+  function assignmentKey(line) {
+    let quote = null;
+    for (let index = 0; index < line.length; index++) {
+      const char = line[index];
+      if (quote) {
+        if (quote === '"' && char === '\\') index++;
+        else if (char === quote) quote = null;
+      } else if (char === '"' || char === "'") quote = char;
+      else if (char === '#' || /[\r\n\[\]{},]/.test(char)) return null;
+      else if (char === '=') {
+        const parsed = assignmentKeyPattern.exec(line.slice(0, index));
+        if (!parsed) fail('config_syntax_requires_review');
+        return keyName(parsed[1]);
+      }
+    }
+    return null;
+  }
   for (const line of text.match(/[^\n]*(?:\n|$)/g).filter(Boolean)) {
     if (/^[ \t]*\[/.test(line)) {
-      const parsed = /^[ \t]*\[[ \t]*([A-Za-z0-9_-]+(?:[ \t]*\.[ \t]*[A-Za-z0-9_-]+)*)[ \t]*\][ \t]*(?:#[^\r\n]*)?(?:\r?\n)?$/.exec(line);
+      const parsed = headerPattern.exec(line);
       if (!parsed) fail('config_syntax_requires_review');
-      currentTable = parsed[1].split('.').map(part => part.trim()).join('.');
+      currentTable = keyName(parsed[1]);
       if (currentTable.startsWith('mcp_servers.after-effects-core4.')) fail('config_core4_nested_requires_review');
       headers.push({ name: currentTable, start: offset, end: offset + line.length, line });
-    } else if (/^[ \t]*mcp_servers[ \t]*\.[ \t]*after-effects-core4[ \t]*[.=]/.test(line) || currentTable === 'mcp_servers' && /^[ \t]*["']?after-effects-core4["']?[ \t]*=/.test(line)) fail('config_ambiguous_core4');
+    } else {
+      const key = assignmentKey(line);
+      if (/^[ \t]*mcp_servers[ \t]*\.[ \t]*after-effects-core4[ \t]*[.=]/.test(line) || currentTable === 'mcp_servers' && /^[ \t]*["']?after-effects-core4["']?[ \t]*=/.test(line) || key && (key === 'mcp_servers.after-effects-core4' || key.startsWith('mcp_servers.after-effects-core4.') || currentTable === 'mcp_servers' && (key === 'after-effects-core4' || key.startsWith('after-effects-core4.')))) fail('config_ambiguous_core4');
+    }
     offset += line.length;
   }
   const matches = headers.filter(h => h.name === 'mcp_servers.after-effects-core4'); if (matches.length > 1) fail('config_ambiguous_core4');

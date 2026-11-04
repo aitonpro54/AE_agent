@@ -1,5 +1,7 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**4 ноября, новая ограниченная запись desktop V2:** 11fullnamed checks, verifiers и actual project-config dry-run PASS; current48covered/23open. Прежние69/71 ниже — историческая приёмка77a860e. Runtimecdf/80 unchanged; standalone5d5d1aa4…/98. Config/legacy unchanged; actual install/startup0. Далее source fix→MSI, CLI regression delta→desktop. [Focused receipt](core-portability-quoted-config-20261104.md). P1–P8/full release открыты.
+
 **4 ноября, активен практический перенос MSI ↔ десктоп:** выбран прежний
 manual/owner cdf package, source-приёмка переиспользуется. DESKTOP-32974QF
 подключён, read-only preflight принят; следующий шаг — Git-доставка выбранного

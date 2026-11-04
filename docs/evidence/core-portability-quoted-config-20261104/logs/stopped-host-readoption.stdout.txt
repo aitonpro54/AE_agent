@@ -1,0 +1,33 @@
+✔ stopped-host-readoption disk baseline survives a new module generation without rehydrating a normal certificate (5733.1328ms)
+✔ stopped-host-readoption copied capabilities and read-only evidence never issue certificate context or leases (4456.9809ms)
+✔ stopped-host-readoption certificate pull capability is scoped to one awaited inspection and then revoked (3325.7887ms)
+✔ stopped-host-readoption baseline refuses descriptor with zero writes (3735.5485ms)
+✔ stopped-host-readoption baseline refuses origin with zero writes (3710.5701ms)
+✔ stopped-host-readoption baseline refuses anchor with zero writes (3832.9978ms)
+✔ stopped-host-readoption baseline refuses client with zero writes (3719.2978ms)
+✔ stopped-host-readoption baseline refuses journal with zero writes (3839.7553ms)
+✔ stopped-host-readoption baseline refuses ledger with zero writes (3898.9608ms)
+✔ stopped-host-readoption baseline refuses stop-bytes with zero writes (3789.7546ms)
+✔ stopped-host-readoption baseline refuses stop-inode with zero writes (4950.24ms)
+✔ stopped-host-readoption baseline refuses certificate-bytes with zero writes (3847.1991ms)
+✔ stopped-host-readoption baseline refuses certificate-inode with zero writes (5264.7908ms)
+✔ stopped-host-readoption baseline refuses phase with zero writes (3784.4868ms)
+✔ stopped-host-readoption baseline refuses install-gate with zero writes (4142.2206ms)
+✔ stopped-host-readoption baseline refuses broker-gate with zero writes (3752.5841ms)
+✔ stopped-host-readoption new baseline never permits unknown extension or generic certificate/update bypass (2665.6843ms)
+✔ stopped-host-readoption unavailable and live certifier remain fenced without writes (2990.9002ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 1 (3038.4882ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 2 (2993.9963ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 3 (3043.7292ms)
+✔ stopped-host-readoption isolated adapter plumbing acquires and releases only fixture-issued permits; production issuer remains closed (2686.6225ms)
+✔ stopped-host-readoption isolated adapter recovery preserves exact gate bytes/inodes and release-only skips only proven missing gates (2883.5547ms)
+✔ stopped-host-readoption isolated adapter recovery refuses gate bytes and revokes temporary capability on failure (2592.252ms)
+✔ stopped-host-readoption isolated adapter recovery refuses gate inode and revokes temporary capability on failure (2653.4097ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 91450.4413

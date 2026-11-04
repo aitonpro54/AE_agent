@@ -1,0 +1,17 @@
+✔ installed-composition portable fixed-format1 transition to readonly preserves signed history and no replay (27229.7307ms)
+✔ installed-composition deterministic packages, fixed ES3 registries, admission pins and physical closure (516.1931ms)
+✔ installed-composition direct legacy derivation requires each fixed admission hash and exact bytes (55.2868ms)
+✔ installed-composition entry source guard covers top-level/start/lease-prefix/tail and fails closed on layout changes (2.8057ms)
+✔ installed-composition build CLI selects readonly/manual and rejects ambiguous options without output (1109.0585ms)
+✔ installed-composition unknown/missing/corrupt/duplicate/path/phase/catalog/admission/downgrade failures (856.0383ms)
+✔ installed-composition installed readonly child initialize/status/discovery/contract and native fake VM inspection (2234.13ms)
+✔ installed-composition actual manual installed child retains module discovery and manual gated policy (2603.2597ms)
+✔ installed-composition installed format2 corruption/missing composition rejects before imports and legacy format1 generic verification stays generic (2311.9397ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 37046.6645

@@ -58,8 +58,8 @@ stop/update/inspect/enable; новые механизмы вводить тол�
 ## Decision Log
 
 - Явно выбирать `--composition manual --runtime owner`: default builder — stdio.
-- Source-приёмка 69/71 уже применима; две Titles held. Повтор всей очереди не
-  нужен для неизменённых runtime/tool bytes.
+- Приёмка69/71 историческая для77a860e. После V2 installer текущие48covered/23open;
+  11 полных desktop named PASS,21changed integrations deferred,2Titles held.
 - Стандартные APPDATA/LOCALAPPDATA на MSI присутствуют. Их гипотетическое
   отсутствие и явные paths standalone не объявляются причиной большой переделки.
 - Десктоп подключён как хост, но прямого remote shell tool здесь нет. Доступный
@@ -72,7 +72,7 @@ stop/update/inspect/enable; новые механизмы вводить тол�
   literals; snapshots содержат только историческое evidence, не импорт state.
 - Уточнение target: в дополнительном запросе было ошибочно указано
   `com.aeagent.core4`. Реальное имя из pinned manifest — `com.codex.aeagentcore4`.
-  Его отсутствие на десктопе не доказано; проверить до установки.
+  Отсутствие точного target подтверждено по pinned manifest в трёх CEP-каталогах.
 - Старые ошибки плана 28 октября и прежние PID/транзакции не задают текущую
   authority. Новые startup/update операции и продуктовая разработка не запускались.
 
@@ -84,3 +84,24 @@ stop/update/inspect/enable; новые механизмы вводить тол�
 - P1 подтверждён только в локальной части; P1–P8 в двухмашинном объёме остаются
   открыты. [Двухмашинный preflight](../docs/evidence/core-portability-preflight-20261104.json)
   принят. Следующий шаг — безопасная доставка выбранного commit и dry-run.
+
+## Desktop quoted-config V2 — 4 ноября
+
+### Progress
+
+- Git-доставка f576 принята; docs-only79b fast-forward сохранил две dirty source SHA.
+- V2 bounded installer fix и11fullnamed checks PASS; config manual edits0.
+- Packagecdf/80 unchanged, standalone5d5d1aa4e95d31465c733dbc68ccf3dacba23c5b7fabea1de6811e616c792cdf/98 verified; actual-config dry-run PASS.
+- [Focused receipt](core-portability-quoted-config-20261104.md), [evidence](../docs/evidence/core-portability-quoted-config-20261104.json).
+
+### Decision Log
+
+- Исходный FAIL остаётся в delivery-attempt-01, новый PASS его не стирает.
+- V1REVISE → V2independent ACCEPT/6scopedcases, затем11full desktop checks.
+- Следующее направление: desktop fix → MSI, затем настоящая CLI regression delta → desktop. Установка отдельно.
+
+### Validation
+
+- Current48covered/23open; прежние69current — только исторический срез77a860e.
+- 71keys/snapshot215/supplemental текущие;32changed/39same,21deferred не запускались.
+- Protected config/legacy hashes unchanged; actors observed terminal. Native/configured/full release/P1–P8 открыты.

@@ -1,0 +1,27 @@
+✔ native-read-recovery actual Node IPC approval commits one unknown disposition, archives owner and publishes v2 reachable lineage (107591.4509ms)
+✔ native-read-recovery IPC mismatch retains exact prepared plan and gates without journal/owner mutation (19351.5787ms)
+✔ native-read-recovery IPC duplicate retains exact prepared plan and gates without journal/owner mutation (21945.1773ms)
+✔ native-read-recovery IPC disconnect retains exact prepared plan and gates without journal/owner mutation (19602.4826ms)
+✔ native-read-recovery IPC timeout retains exact prepared plan and gates without journal/owner mutation (21168.4722ms)
+✔ native-read-recovery append-short retains gates/evidence and original UNKNOWN without automatic recovery (22404.8457ms)
+✔ native-read-recovery append-fsync retains gates/evidence and original UNKNOWN without automatic recovery (22864.9335ms)
+✔ native-read-recovery archive retains gates/evidence and original UNKNOWN without automatic recovery (23030.9529ms)
+✔ native-read-recovery install-switch retains gates/evidence and original UNKNOWN without automatic recovery (24278.6781ms)
+✔ native-read-recovery approval does not waive fresh original CAS, new owners or additional UNKNOWN (20533.2669ms)
+✔ native-read-recovery private plan and shared lease reject JSON forgery, mutation, foreign scope and startup while held (1975.3733ms)
+✔ native-read-recovery historical Node binding is data, explicit lineage rejects missing/tampered edges and runtime has no data-only selector (5070.977ms)
+✔ native-read-recovery rollback partial visible switch retains both lease gates and transaction without automatic rollback (2518.5471ms)
+✔ native-read-recovery operator inspect rejects modified managed witness, producer profile and closure before issuance (22586.965ms)
+✔ native-read-recovery owner identity ABA owner-between-inspect-apply refuses C and preserves original history/foreign marker (16233.1185ms)
+✔ native-read-recovery owner identity ABA owner-after-ipc refuses C and preserves original history/foreign marker (22160.7352ms)
+✔ native-read-recovery owner identity ABA owner-after-append refuses C and preserves original history/foreign marker (23146.1985ms)
+✔ native-read-recovery owner identity ABA owner-wrong-archive refuses C and preserves original history/foreign marker (22723.6489ms)
+✔ native-read-recovery owner identity ABA owner-after-rename refuses C and preserves original history/foreign marker (22978.6419ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 442296.0154
