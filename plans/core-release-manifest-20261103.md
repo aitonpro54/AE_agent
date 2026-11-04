@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято source runs: 26; current fresh checks: 23. Применимое evidence: 54 exact-key + 0 byte-command-bound. Открыто: 17 (без hold: 15, Titles под паузой: 2). Следующий блок: source-candidate-21. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Принято source runs: 27; current fresh checks: 24. Применимое evidence: 55 exact-key + 0 byte-command-bound. Открыто: 16 (без hold: 14, Titles под паузой: 2). Следующий блок: source-candidate-22. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 
@@ -196,7 +196,7 @@ Source suites и live операции не запускались; `releaseCert
 | `manual-runtime` | integration | reuse: записанный exact key | не повторять без drift |
 | `installable-runtime` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `manual-current-target` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `audit-repairs` | integration | нужен current result | адресно до full release |
+| `audit-repairs` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `core-control` | integration | нужен current result | адресно до full release |
 | `core-admission` | integration | нужен current result | адресно до full release |
 | `worker-isolation` | integration | нужен current result | адресно до full release |
