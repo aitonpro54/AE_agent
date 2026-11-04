@@ -30,7 +30,7 @@ push/PR и запуска dedicated продуктов. Штатные внут�
 own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup проверены.
 
 <!-- EXECUTION_STATUS -->
-Принято source runs: 34; current fresh checks: 37. Применимое evidence: 68 exact-key + 0 byte-command-bound. Открыто: 3 (без hold: 1, Titles под паузой: 2). Следующий блок: source-candidate-29.
+Принято source runs: 35; current fresh checks: 38. Применимое evidence: 69 exact-key + 0 byte-command-bound. Открыто: 2 (без hold: 0, Titles под паузой: 2). Следующий блок: очередь без hold завершена.
 <!-- /EXECUTION_STATUS -->
 
 <!-- EXECUTION_BLOCKS -->
@@ -69,7 +69,8 @@ own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup пр�
 | source-candidate-25 | `lifecycle-simulation` | PASS: 31 pass / 0 skip | [JSON](../docs/evidence/core-release-block-25-20261103.json) | `f4c6db9` |
 | source-candidate-26 | `native-read-recovery` | PASS: 19 pass / 0 skip | [JSON](../docs/evidence/core-release-block-26-20261103.json) | `f32c03c` |
 | source-candidate-27 | `installed-composition` | PASS: 9 pass / 0 skip | [JSON](../docs/evidence/core-release-block-27-20261103.json) | `4a704ae` |
-| source-candidate-28 | `exact-f548-transition` | PASS: 1 pass / 0 skip | [JSON](../docs/evidence/core-release-block-28-20261103.json) | создаётся после проверки |
+| source-candidate-28 | `exact-f548-transition` | PASS: 1 pass / 0 skip | [JSON](../docs/evidence/core-release-block-28-20261103.json) | `ef9d613` |
+| source-candidate-29 | `standalone-installer` | PASS: 7 pass / 0 skip | [JSON](../docs/evidence/core-release-block-29-20261103.json) | создаётся после проверки |
 <!-- /EXECUTION_BLOCKS -->
 
 ## Block16: сохранённый FAIL и принятый repair

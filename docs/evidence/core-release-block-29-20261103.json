@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T09:12:14.352Z",
+  "blockId": "source-candidate-29",
+  "baselineCommit": "ef9d6132ef3cd0b0fc58b24d74f80b336c57809f",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:standalone-installer)",
+      "test/standalone-installer.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T09:11:49.524Z",
+    "finishedAt": "2026-11-04T09:12:01.661Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 7,
+      "suites": 0,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 12080.8478
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-29-standalone-installer.log",
+      "sha256": "28cb3c1b2e4a114d6cf7c7c5a4157873ea5b7d011d5f54436050cfb75b8d5e69",
+      "bytes": 941
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-29-standalone-installer-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "standalone-installer",
+      "evidenceKey": "4cc7bd9ec1760d1544bbbb16c80fe47e30bca22c5c49968b52929ecf90b667ae",
+      "result": "PASS",
+      "cases": 7,
+      "skipped": 0,
+      "matchedTestNames": [
+        "standalone-installer deterministic manual/readonly distributions include exact eager and lazy closure",
+        "standalone-installer rejects output below an existing ancestor junction before any target writes",
+        "standalone-installer refuses oversized files before payload reads or installer import",
+        "standalone-installer actual apply and settled-journal update run without any checkout imports or ports",
+        "standalone-installer rejects missing/tampered/extra helpers before importing installer with zero destination writes",
+        "standalone-installer reviewed hashes and explicit destinations fail closed before writes",
+        "standalone-installer signed historical UNKNOWN survives actual apply; forged MAC and new UNKNOWN still refuse"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=standalone-installer",
+        "test/standalone-installer.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own TEMP standalone bundle and installation copies",
+    "guards": "Child preload denies source checkout imports, network listener and nested child factories",
+    "environment": "APPDATA/LOCALAPPDATA own TEMP; NODE_OPTIONS/NODE_PATH cleared",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "titlesSuites": 0,
+    "slideshowSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": false,
+    "fixturePrefixes": [
+      "core4-standalone-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-JUYtxF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-Mqzhwl",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-cJr2z5",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-LPes6D",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-dB734t",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-VZz5IH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-FVXJrG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-cNY9Wa",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-iyMUpG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-I1DebJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-JvVQqj",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-YOMPoR",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-standalone-qmv9f0"
+    ],
+    "remainingOwnDirs": [],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Only own TEMP apply/update; no actual outside installation/configuration.",
+      "All CLI children synchronous terminal with original15s budget; no outer deadline."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/standalone-installer.test.js",
+        "line": 14,
+        "proof": "Own fixture directory removed in t.after"
+      },
+      {
+        "file": "core4/test/standalone-installer.test.js",
+        "line": 28,
+        "proof": "Exact sync child15s terminal completion, import trace retained until cleanup"
+      },
+      {
+        "file": "core4/test/standalone-installer.test.js",
+        "line": 100,
+        "proof": "Signed history completion store explicitly closes"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-29-standalone-installer-reducer.json",
+    "sha256": "34f4bb006991da62223284bc561447ba862d060db0819a7de0dbf35602927fd9"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
