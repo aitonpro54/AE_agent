@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято source runs: 28; current fresh checks: 30. Применимое evidence: 61 exact-key + 0 byte-command-bound. Открыто: 10 (без hold: 8, Titles под паузой: 2). Следующий блок: source-candidate-23. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Принято source runs: 29; current fresh checks: 32. Применимое evidence: 63 exact-key + 0 byte-command-bound. Открыто: 8 (без hold: 6, Titles под паузой: 2). Следующий блок: source-candidate-24. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 
@@ -202,9 +202,9 @@ Source suites и live операции не запускались; `releaseCert
 | `worker-isolation` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `protocol-codec` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `workflow-recovery` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `photo-owner` | component | нужен current result | адресно до full release |
+| `photo-owner` | component | fresh source PASS → exact reuse | не повторять без drift |
 | `titles-owner` | component | нужен current result | Titles: held |
-| `photo-executor-contract` | component | нужен current result | адресно до full release |
+| `photo-executor-contract` | component | fresh source PASS → exact reuse | не повторять без drift |
 | `titles-executor-contract` | component | нужен current result | Titles: held |
 | `catalog-discovery` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `validation-routing` | integration | fresh source PASS → exact reuse | не повторять без drift |

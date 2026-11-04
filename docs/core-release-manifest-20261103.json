@@ -1308,6 +1308,12 @@
       "sha256": "ad8b20ba655120258ceff2b2a771f2706ee3c206a69cb31625429bde23b51f07",
       "directKeyedRecords": 6,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-release-block-23-20261103.json",
+      "sha256": "7b73a7d8b840711e2025962e0605eaf2943144cf6a4f6a97a5e21164873dedb7",
+      "directKeyedRecords": 2,
+      "excludedAsAuthority": null
     }
   ],
   "evidenceMethod": {
@@ -1336,18 +1342,18 @@
   ],
   "summary": {
     "registeredChecks": 71,
-    "recordedExactKeyReuse": 61,
+    "recordedExactKeyReuse": 63,
     "byteCommandBoundReuse": 0,
-    "needsCurrentEvidence": 10,
+    "needsCurrentEvidence": 8,
     "heldByProductPause": 2,
-    "pendingNotHeldByProductPause": 8,
+    "pendingNotHeldByProductPause": 6,
     "sharedCoreWithTitlesDependency": 33,
-    "optionalFutureSourceBatches": 7,
-    "sourceTestCommandsExecuted": 29,
+    "optionalFutureSourceBatches": 6,
+    "sourceTestCommandsExecuted": 30,
     "reusedGlobalUniqueCases": null,
-    "freshSourceChecksAcceptedThisExecution": 30,
-    "acceptedNamedCheckRuns": 36,
-    "freshNamedCheckIdsEverAccepted": 30
+    "freshSourceChecksAcceptedThisExecution": 32,
+    "acceptedNamedCheckRuns": 38,
+    "freshNamedCheckIdsEverAccepted": 32
   },
   "checks": [
     {
@@ -6223,23 +6229,54 @@
       "titlesDependencyKinds": [],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-23-20261103.json",
+          "pointer": "/checks/0",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "1c3e009b42b3ae4742224a33c1188a97fcd64352b58319b335c44c2bcff80b8e",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 1,
+          "caseCountPointer": "/checks/0/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=(?:photo-owner)|(?:photo-executor-contract)",
+            "test/modules/photo-placeholder.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 3,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-23-photo-pair.log",
+          "logHash": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
         "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-23",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-23-20261103.json",
+        "evidenceKey": "1c3e009b42b3ae4742224a33c1188a97fcd64352b58319b335c44c2bcff80b8e",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "titles-owner",
@@ -6319,23 +6356,54 @@
       "titlesDependencyKinds": [],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-23-20261103.json",
+          "pointer": "/checks/1",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "a16735128d8c4d201683f9f62e9c0509403e1df11a9a149fc432f918c25cf0a5",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 2,
+          "caseCountPointer": "/checks/1/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=(?:photo-owner)|(?:photo-executor-contract)",
+            "test/modules/photo-placeholder.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 3,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-23-photo-pair.log",
+          "logHash": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
         "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-23",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-23-20261103.json",
+        "evidenceKey": "a16735128d8c4d201683f9f62e9c0509403e1df11a9a149fc432f918c25cf0a5",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "titles-executor-contract",
@@ -7196,23 +7264,6 @@
     "excludesHeldDedicatedTitles": true,
     "batches": [
       {
-        "batchId": "source-candidate-23",
-        "checks": [
-          "photo-owner",
-          "photo-executor-contract"
-        ],
-        "cwd": "core4",
-        "command": [
-          "node",
-          "--test",
-          "--test-name-pattern=(?:photo-owner)|(?:photo-executor-contract)",
-          "test/modules/photo-placeholder.test.js"
-        ],
-        "scheduled": false,
-        "executionOrder": "serial-after-per-batch-isolation-review",
-        "gateRu": "Данные будущего выбора. Реальная изоляция/OS ветки проверяются для этого batch; exit0 без matched tests или с только skips не закрывает check."
-      },
-      {
         "batchId": "source-candidate-24",
         "checks": [
           "cep-transport"
@@ -7608,9 +7659,7 @@
       "status": "open",
       "requiredForFullRelease": true,
       "remainingCheckIds": [
-        "photo-owner",
         "titles-owner",
-        "photo-executor-contract",
         "titles-executor-contract",
         "cep-transport",
         "lifecycle-simulation",
@@ -7677,12 +7726,14 @@
         "worker-isolation",
         "protocol-codec",
         "workflow-recovery",
+        "photo-owner",
+        "photo-executor-contract",
         "catalog-discovery",
         "validation-routing",
         "artifact-boundaries",
         "documentation"
       ],
-      "noteRu": "10 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 30 новых source checks; это не native proof."
+      "noteRu": "8 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 32 новых source checks; это не native proof."
     },
     {
       "gate": "package-and-installation",
@@ -7810,9 +7861,9 @@
     "interpretationRu": "Только статическое сопоставление entry files:6 и55другихcommands. Не динамический coverage и не результаты FAIL; legacy script не единственный критерий полноты."
   },
   "actions": {
-    "acceptedSourceBatchCommands": 28,
+    "acceptedSourceBatchCommands": 29,
     "failedSourceBatchCommands": 1,
-    "totalCheckoutSourceBatchCommands": 29,
+    "totalCheckoutSourceBatchCommands": 30,
     "liveProductionAeCepMcpUiCalls": 0,
     "manualProductionProcessOperations": 0,
     "productionBuildInstallConfigWrites": 0,
@@ -7834,9 +7885,9 @@
   },
   "validation": {
     "status": "PASS",
-    "report": "docs/evidence/core-release-block-22-20261103-validation.json",
+    "report": "docs/evidence/core-release-block-23-20261103-validation.json",
     "selectorKeysMatched": 71,
-    "sourceTestCommandsExecuted": 29,
+    "sourceTestCommandsExecuted": 30,
     "fullReleaseCertified": false
   },
   "execution": {
@@ -8450,7 +8501,30 @@
           "durationMs": 24040.1714
         },
         "reporter": "spec",
-        "logSha256": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3"
+        "logSha256": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3",
+        "acceptanceCommit": "f0843a71bb167472c8e43dfdc0ecd38373462c7e"
+      },
+      {
+        "blockId": "source-candidate-23",
+        "evidence": "docs/evidence/core-release-block-23-20261103.json",
+        "baselineCommit": "f0843a71bb167472c8e43dfdc0ecd38373462c7e",
+        "checks": [
+          "photo-owner",
+          "photo-executor-contract"
+        ],
+        "result": "PASS",
+        "summary": {
+          "tests": 3,
+          "suites": 0,
+          "pass": 3,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 1126.6225
+        },
+        "reporter": "spec",
+        "logSha256": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8"
       }
     ],
     "guardFixes": [
@@ -8529,7 +8603,7 @@
       }
     ]
   },
-  "updatedAt": "2026-11-04T08:59:39.028Z",
+  "updatedAt": "2026-11-04T09:00:29.381Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,

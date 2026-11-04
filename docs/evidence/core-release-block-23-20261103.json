@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T09:00:28.543Z",
+  "blockId": "source-candidate-23",
+  "baselineCommit": "f0843a71bb167472c8e43dfdc0ecd38373462c7e",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:photo-owner)|(?:photo-executor-contract)",
+      "test/modules/photo-placeholder.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T09:00:13.094Z",
+    "finishedAt": "2026-11-04T09:00:14.279Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 3,
+      "suites": 0,
+      "pass": 3,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 1126.6225
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-23-photo-pair.log",
+      "sha256": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8",
+      "bytes": 432
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-23-photo-pair-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "photo-owner",
+      "evidenceKey": "1c3e009b42b3ae4742224a33c1188a97fcd64352b58319b335c44c2bcff80b8e",
+      "result": "PASS",
+      "cases": 1,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[photo-owner] deterministic photo intent without titles or engine package"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=photo-owner",
+        "test/modules/photo-placeholder.test.js"
+      ]
+    },
+    {
+      "check": "photo-executor-contract",
+      "evidenceKey": "a16735128d8c4d201683f9f62e9c0509403e1df11a9a149fc432f918c25cf0a5",
+      "result": "PASS",
+      "cases": 2,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[photo-executor-contract] imported still only exact source/revision CAS and preserved transform timing",
+        "[photo-executor-contract] mutation setter error protected drift and time remap fail closed"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=photo-executor-contract",
+        "test/modules/photo-placeholder.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own module fixture VM/Broker worker; explicitly authorized Photo pair",
+    "titlesSources": "Physically absent from module fixture, trace asserts no Titles imports",
+    "engine": "physically absent",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "titlesSuites": 0,
+    "slideshowSuites": 0,
+    "dedicatedPhotoSuite": true
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": true,
+    "fixturePrefixes": [
+      "ae-core4-module-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-module-aoUzsS",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-module-Fm06fS",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-module-Mp34JA",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-module-BVKlBH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-module-GIby0d"
+    ],
+    "remainingOwnDirs": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-module-aoUzsS",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-module-Fm06fS",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-module-Mp34JA",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-module-BVKlBH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-module-GIby0d"
+    ],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own TEMP module fixture data intentionally retained; no broad cleanup.",
+      "Broker close hooks are resource closure proof; no independent worker process exit inventory."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/module-harness.js",
+        "line": 24,
+        "proof": "t.after broker.close; synthetic module-only transport/worker"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-23-photo-pair-reducer.json",
+    "sha256": "51a7cef61b2d430ec68ce2ebb73f5774bca09716c8f3fc62ff21e5a95e9004d3"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}

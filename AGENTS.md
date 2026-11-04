@@ -11,7 +11,7 @@
 
 ## Текущий scope и правила
 
-**Активна адресная source-приёмка:** Принято source runs: 28; current fresh checks: 30. Применимое evidence: 61 exact-key + 0 byte-command-bound. Открыто: 10 (без hold: 8, Titles под паузой: 2). Следующий блок: source-candidate-23. [План](plans/core-release-execution-20261103.md). Titles/Slideshow на паузе; production live действий нет.
+**Активна адресная source-приёмка:** Принято source runs: 29; current fresh checks: 32. Применимое evidence: 63 exact-key + 0 byte-command-bound. Открыто: 8 (без hold: 6, Titles под паузой: 2). Следующий блок: source-candidate-24. [План](plans/core-release-execution-20261103.md). Titles/Slideshow на паузе; production live действий нет.
 
 **3 ноября, актуальный release-manifest подготовлен:** по прямому поручению
 пользователя учтены все 71 Core checks: 31 exact-key reuse, ещё 2 отдельным
