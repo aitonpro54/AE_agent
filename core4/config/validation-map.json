@@ -1199,7 +1199,11 @@
       "plan-engine/",
       "config/catalog.json",
       "config/admissions/",
-      "test/fixtures/legacy-installation-v1.js"
+      "test/fixtures/legacy-installation-v1.js",
+      "test/fixtures/fixed-format1-package.js",
+      "test/fixtures/legacy-poll-dispatcher-v1.txt",
+      "test/fixtures/legacy-panel-v1.txt",
+      "test/fixtures/native-capture-panel-v1.txt"
     ],
     "windows-cim-probe": [
       "runtime/",

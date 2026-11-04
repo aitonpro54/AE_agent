@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "dateLocal": "2026-11-04",
+  "timezone": "Asia/Yekaterinburg",
+  "collectedAt": "2026-11-04T08:39:06.948Z",
+  "result": "SOURCE-REPAIR-PASS",
+  "baselineCommit": "233c33bff35594c40293510fccb218c3ed4e04e1",
+  "scopeRu": "Capture-era fixture package/client epoch, no production change",
+  "files": [
+    {
+      "file": "core4/test/native-read-capture.test.js",
+      "baseline": {
+        "bytes": 38197,
+        "sha256": "2823b3da46ebc36f02f9ec2010243c2cee9bb4d68ea9c762a11f36b8d96d2598"
+      },
+      "candidate": {
+        "bytes": 43655,
+        "sha256": "9926f581d38b171e00f22231d2b5fd5642ecfbd5141cf7e23ed13503e3810acd"
+      }
+    },
+    {
+      "file": "core4/config/validation-map.json",
+      "baseline": {
+        "bytes": 79780,
+        "sha256": "fc5c8e166f03ab5d3797796cfe86fb0a7b7d514dd7e2fda3a29701986d897a18"
+      },
+      "candidate": {
+        "bytes": 79975,
+        "sha256": "cac3c16220a1c6f27dca7678bff8256e2ea7d49b08eef57fc3773a1527c5e079"
+      }
+    },
+    {
+      "file": "core4/test/core4.test.js",
+      "baseline": {
+        "bytes": 52090,
+        "sha256": "66ca31821c439abf8e973364af038fc0ea0c0612911a63b5e3a2780690998f83"
+      },
+      "candidate": {
+        "bytes": 52137,
+        "sha256": "752b6160eb71be8ca0d228bc86fc18127995d538b7b1f4ffe61720a0a0ad4407"
+      }
+    },
+    {
+      "file": "core4/test/fixtures/native-capture-panel-v1.txt",
+      "baseline": null,
+      "candidate": {
+        "bytes": 3864,
+        "sha256": "5c06ab424a0469380009eda2410da50d74dae62c009015ef9a7a3e41ba323662"
+      }
+    }
+  ],
+  "patch": {
+    "path": ".codex-runtime/native-capture-format1-fixture-20261103/native-capture-format1-fixture.patch",
+    "sha256": "03070eef798d848a2fc566e713ff000148a658e3bdd873f5929f12c13af33c2b"
+  },
+  "specialistVerdict": "fixture-only; purpose/schema/reader unchanged",
+  "independentReview": {
+    "verdict": "ACCEPT",
+    "reviewer": "release_manifest_review",
+    "patchSha256": "03070eef798d848a2fc566e713ff000148a658e3bdd873f5929f12c13af33c2b",
+    "scope": "exact four-file candidate; not checkout/release acceptance",
+    "productionChanges": false,
+    "reviewerTestsRun": 0,
+    "limitsRu": "static-scope-result.json относится к старому3file этапу; финальный scope — attempt03-summary.json и snapshot215."
+  },
+  "rekey": [
+    {
+      "check": "start-over-runtime",
+      "before": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
+      "after": "5f767f692335666a69f939c5d3bb4e17f42c2bde37d023193cd19125e9bc1995",
+      "wasAccepted": true
+    },
+    {
+      "check": "start-over-operator",
+      "before": "5c75e9a1940134a73f863949f1fb93922e9896c9cee85e5780146dbc777b9c8e",
+      "after": "27fa0cfa0468213f984d1da5130f6038f357afa2eea064b16fc64ea8333ee86d",
+      "wasAccepted": true
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "before": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0",
+      "after": "4f6a83b2fcfa566dc8ba2d48ed8531abdf56095f46ac661329e7209f0b086619",
+      "wasAccepted": true
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "before": "59f4f1f710c696774df48495d90bd2a66520a880462228a318c828220abd4a84",
+      "after": "81b968aaf3e5d2e84a84ca8c1e4f33a06caf400d83538ced3d9df58b951115f1",
+      "wasAccepted": true
+    },
+    {
+      "check": "owner-installation",
+      "before": "0f22f2dcd9dad940440e6c33adfb46928152a07770e3a32b4f558e2185b1f41f",
+      "after": "cfa500879ee2fc3dc67721cb4ac55e99ffcf0cbde2e7a9b767a864a3826c26ee",
+      "wasAccepted": true
+    },
+    {
+      "check": "owner-runtime",
+      "before": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9",
+      "after": "6c46365a26a891cc7040ec1fa3dffaab44b0862fe3099d3c0f473483df1436fd",
+      "wasAccepted": true
+    },
+    {
+      "check": "native-read-capture",
+      "before": "cd2ed83a8df28e22cf02ab2fbffde2f3f4ce4b4fd89a31a663b5a025e1a62cd6",
+      "after": "356316b6222898c7ac82c87264e3dedcb4cd1a86991c3fe218858eba513b5bd2",
+      "wasAccepted": false
+    },
+    {
+      "check": "core-control",
+      "before": "3287e42e5c0277945e996e29cf30c92b03d760bfeb2f4457cdc576cecd5adbc9",
+      "after": "f51a4d61bef34f0a1e42cfc45e83f377c48a47bb8167e9a44137ca3cb0b67736",
+      "wasAccepted": false
+    },
+    {
+      "check": "core-admission",
+      "before": "d467933477d6b901cfa23fdff7b3081de4b32d7ce507cb7a3c7b472eb0b042fc",
+      "after": "a6c493391f20797bb1641424c47d12077d0c15a60d6f6609022e581f70f2173b",
+      "wasAccepted": false
+    },
+    {
+      "check": "worker-isolation",
+      "before": "a9758550780fed3e6c41edd848e1a99a03f05de9ca9ff47a85d343472a86e576",
+      "after": "7c396f7cd98b3fea463b3ed18fd3225716238cb303f424d093497086f0540cd5",
+      "wasAccepted": false
+    },
+    {
+      "check": "protocol-codec",
+      "before": "1b39f2ef64319ed5870a8e19b7ed8d1eead3d8a9f4a5642ddd5999b68b6433cc",
+      "after": "aa618703f940a9223bdd6055997758fba9ad25df1a712502ec86fbceb8aac3bd",
+      "wasAccepted": false
+    },
+    {
+      "check": "workflow-recovery",
+      "before": "b69ca10a94374a028215453d179bac698a47b766495ec70c081f42b7561ea256",
+      "after": "fabe8d0e2caecf8c6533794fd848f17f48604e113a365ae2aef4e812201720f6",
+      "wasAccepted": false
+    },
+    {
+      "check": "catalog-discovery",
+      "before": "00d5a3ddaa689a3d19ecd10a3a818a2a9ca79d5f4de1a5d75b4ea09394907d4e",
+      "after": "6c6a14673105c3ccc49d456cf2f74241af9072b2410b958a9fdd8f16f27c8578",
+      "wasAccepted": false
+    },
+    {
+      "check": "validation-routing",
+      "before": "eeb9e662bb5b7f719e518bfe165e7484764ddd19e09dbdd81554e8bdea5723b4",
+      "after": "67d1c0d841da4c505584599e0fa5623b4a4af799b20e61270056643cb219e30e",
+      "wasAccepted": true
+    },
+    {
+      "check": "artifact-boundaries",
+      "before": "ac865e24c610cae62c37b22bf006b4a18b37aac57244d5dee8a45377f1f8cba6",
+      "after": "581c92eb1794cb6b2b592a7b0b38b081bfdc529f832f59f94b8b77a98de818c2",
+      "wasAccepted": true
+    },
+    {
+      "check": "documentation",
+      "before": "8be448f52a649473510930611e45aa80bc8ba466fb429f76645a4283db65e983",
+      "after": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+      "wasAccepted": false
+    },
+    {
+      "check": "cep-transport",
+      "before": "9a0e6188781f6735dfc8730fe18a99fbacc7a434753e9de84e23863d632f0ec8",
+      "after": "47d0619ceb2cf55e0f9e6d380fb0708446fdf3068ffe2c9b45e91d22af1b0bc5",
+      "wasAccepted": false
+    },
+    {
+      "check": "lifecycle-simulation",
+      "before": "6ff26d0d9a15eac157650c04e0493d1a5d97899f5a66b4a6a90042ba059679b1",
+      "after": "1b93f80a41d4ac2d4c67e7bb79728d284d6eabe2d6d17f38f9e4dd838fd00a4e",
+      "wasAccepted": false
+    }
+  ],
+  "acceptedStale": [
+    "start-over-runtime",
+    "start-over-operator",
+    "stopped-host-readoption-operator",
+    "maintenance-finish-operator",
+    "owner-installation",
+    "owner-runtime",
+    "validation-routing",
+    "artifact-boundaries"
+  ],
+  "unchangedKeys": 53,
+  "currentCheckoutVerification": {
+    "status": "PASS",
+    "cases": 27,
+    "checks": [
+      {
+        "check": "artifact-boundaries",
+        "evidenceKey": "581c92eb1794cb6b2b592a7b0b38b081bfdc529f832f59f94b8b77a98de818c2"
+      },
+      {
+        "check": "native-read-capture",
+        "evidenceKey": "356316b6222898c7ac82c87264e3dedcb4cd1a86991c3fe218858eba513b5bd2"
+      },
+      {
+        "check": "validation-routing",
+        "evidenceKey": "67d1c0d841da4c505584599e0fa5623b4a4af799b20e61270056643cb219e30e"
+      },
+      {
+        "check": "documentation",
+        "evidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be"
+      }
+    ],
+    "evidence": "docs/evidence/core-release-block-16-20261103.json"
+  },
+  "failedCheckoutAttempt": "docs/evidence/core-release-block-16-attempt-01-20261103.json",
+  "diagnosis": "docs/evidence/core-native-capture-epoch-diagnosis-20261104.json",
+  "productionRuntimeChanged": false,
+  "sharedLegacyHelperChanged": false,
+  "releaseCertified": false,
+  "stagedChecks": [
+    {
+      "file": ".codex-runtime/native-capture-format1-fixture-20261103/attempt03-capture-result.json",
+      "sha256": "c1cdb355dedfbefe4b4c73b5c4d6860f760b931efb1444c0ea0469af887b9376",
+      "log": {
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\native-capture-format1-fixture-20261103\\attempt03-capture.log",
+        "sha256": "12b184fbd2c60fd6d37fa4d38c501b55184336f0808d766c9b5b403829b76c74"
+      },
+      "stderr": {
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\native-capture-format1-fixture-20261103\\attempt03-capture-stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "actorLedger": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\native-capture-format1-fixture-20261103\\attempt03-capture-actors.ndjson",
+      "actorLedgerSha256": "9bca8beb4d519134cb9a0ba3cd752d68259088b2a665a4dbacec62e45f632fc5",
+      "status": "staged-PASS-not-checkout-acceptance"
+    },
+    {
+      "file": ".codex-runtime/native-capture-format1-fixture-20261103/attempt03-core-result.json",
+      "sha256": "8b1e7583b443b095b94419e2239aa818a20775c251aa5f2d1a8e2eeb8fe4bc27",
+      "log": {
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\native-capture-format1-fixture-20261103\\attempt03-core.log",
+        "sha256": "eaf3e9a6aee3b295d51cd2fb79020b7836527bd09de6a1aa0e8e64ee0818027b"
+      },
+      "stderr": {
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\native-capture-format1-fixture-20261103\\attempt03-core-stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "actorLedger": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\native-capture-format1-fixture-20261103\\attempt03-core-actors.ndjson",
+      "actorLedgerSha256": "5d8ca1d6aa73ef0221f2b244a929864d3e842ead3e4a5449b7ed5aab00027ef7",
+      "status": "staged-PASS-not-checkout-acceptance"
+    }
+  ],
+  "captureEraProvenance": {
+    "panel": {
+      "gitBlob": "8ea663b9b8aa02668eb60036a4557dad9266534e",
+      "sourceCommits": [
+        "34584de",
+        "3031153"
+      ],
+      "bytes": 3864,
+      "sha256": "5c06ab424a0469380009eda2410da50d74dae62c009015ef9a7a3e41ba323662"
+    },
+    "dispatcher": {
+      "gitBlob": "8ab31124cf6d6de5c8bb68414f12e6d88257b65c",
+      "bytes": 3909,
+      "sha256": "741824cffa897c8c3f04a9f8f54b81fc3b0fd45c68c5dd4a6afd59e9a3075006",
+      "exactExistingLegacy": true
+    }
+  },
+  "candidateReport": {
+    "file": ".codex-runtime/native-capture-format1-fixture-20261103/REPORT.md",
+    "sha256": "405c1242cfc3886573b1a13a29b488c7376770c82e0efb8f7094931df18406c4"
+  },
+  "stagedSummary": {
+    "file": ".codex-runtime/native-capture-format1-fixture-20261103/attempt03-summary.json",
+    "sha256": "dcf48e78667a72b5733ce22f519ae2197390619258242bd01f145e57da1b6dbd"
+  }
+}

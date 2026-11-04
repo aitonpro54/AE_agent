@@ -1,0 +1,296 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:44:04.466Z",
+  "blockId": "source-candidate-16",
+  "baselineCommit": "233c33bff35594c40293510fccb218c3ed4e04e1",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-concurrency=1",
+      "--test-name-pattern=(?:native-read-capture)|(?:validation-routing)|(?:artifact-boundaries)|(?:documentation)",
+      "test/native-read-capture.test.js",
+      "test/core4.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:41:22.691Z",
+    "finishedAt": "2026-11-04T08:43:16.765Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 27,
+      "suites": 0,
+      "pass": 27,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 114005.7399
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-capture-composite-attempt-02.log",
+      "sha256": "f89cf117ba1287a6b4e159623b63fb6eee63d0e5ffb5bf906eb772255426d565",
+      "bytes": 3787
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-capture-composite-attempt-02-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "artifact-boundaries",
+      "evidenceKey": "581c92eb1794cb6b2b592a7b0b38b081bfdc529f832f59f94b8b77a98de818c2",
+      "result": "PASS",
+      "cases": 5,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[core-admission titles-executor-contract artifact-boundaries] A8 worker claims code wrong operation altered resource cannot become authority",
+        "[artifact-boundaries core-admission] A9 mutable source replacement cannot alter selected immutable closure and receipt",
+        "[artifact-boundaries] reviewed source boundaries",
+        "[artifact-boundaries validation-routing titles-owner] scoped package seal reads only selected module closure while others physically absent",
+        "[core-control worker-isolation artifact-boundaries] permanent worker bytes are pinned and spawn excludes ambient credential environment"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=artifact-boundaries",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "evidenceKey": "356316b6222898c7ac82c87264e3dedcb4cd1a86991c3fe218858eba513b5bd2",
+      "result": "PASS",
+      "cases": 17,
+      "skipped": 0,
+      "matchedTestNames": [
+        "native-read-capture current and later pinned panels refuse the capture challenge before link with unchanged latch and no eval",
+        "native-read-capture format2 is refused before probes listener gates or evidence writes",
+        "native-read-capture inspect is pure/stable; actual panel and dispatcher cached recover posts once with no ACK/eval/poll and unchanged protected bytes",
+        "native-read-capture missing result or latch uses bounded linked timeout, preserves latch and UNKNOWN and does not guess the cause",
+        "native-read-capture ingress/MAC/role/sequence/original binding gates reject before an admitted one-shot receipt",
+        "native-read-capture authenticated wrong binding/pins/result consumes the sole receipt attempt and never ACKs or writes receipt",
+        "native-read-capture rejects active/unknown probes, gates/ledger/owner, damaged CEP/evidence and junctions before listener",
+        "native-read-capture CAS/short write/fsync/readback failure retains ambiguous gates without changing protected bytes",
+        "native-read-capture fixed eligibility rejects validly rehashed wrong command journals and any extra obligations",
+        "native-read-capture receipt durability failures and partial gate writes never certify capture or ACK",
+        "native-read-capture global deadline before link is finite and creates no receipt, retry, ACK or protected-state write",
+        "native-read-capture classifies exact current/stale core cache against verified retained release data, never executes it, and CAS protects bytes",
+        "native-read-capture cache extra/stage/unknown/unclassified paths and reparse junctions fail closed as data",
+        "native-read-capture machine binding is actual hostname and Windows nonstandard Node name is refused before probes/readiness",
+        "native-read-capture Windows probe syntax and UTF8 stdin data exceed environment limits without running CIM or path inspection",
+        "native-read-capture same production probe on Windows PowerShell 5.1 validates flat paths and actual fixture Get-Item/reparse with a test-only CIM stub",
+        "native-read-capture builtin-only CLI preflight rejects unverified release before imports; defaults and production endpoint are fixed"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-capture",
+        "test/native-read-capture.test.js"
+      ]
+    },
+    {
+      "check": "validation-routing",
+      "evidenceKey": "67d1c0d841da4c505584599e0fa5623b4a4af799b20e61270056643cb219e30e",
+      "result": "PASS",
+      "cases": 5,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[validation-routing] A4 diff maps single owner reverse contracts and dependency-keyed cache",
+        "[artifact-boundaries validation-routing titles-owner] scoped package seal reads only selected module closure while others physically absent",
+        "[validation-routing] actual Core-only diff checks pass with photo and engine absent from their source tree",
+        "[validation-routing] shared Core dependencies select component consumers while byte-only integrations remain explicit deferred coverage",
+        "[validation-routing] declared semantic contract impacts select consumers without claiming private-file semantic equivalence"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=validation-routing",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "documentation",
+      "evidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+      "result": "PASS",
+      "cases": 1,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[documentation] local README records offline and UNKNOWN constraints"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=documentation",
+        "test/core4.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/TEMP only",
+    "nativeWindows": "PowerShell parser/Get-Item own TEMP only; CIM synthetic stub",
+    "http": "own ephemeral0 capture endpoints and requests only",
+    "liveAE_CEP_MCP": 0,
+    "productionProcessInventoryOrTermination": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": true,
+    "fixturePrefixes": [
+      "core4-native-capture-",
+      "core4-ps51-probe-",
+      "ae-core4-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-mMoC6o",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-BC8j7V",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-CI8gOM",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Sc52dm",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ytLL0G",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-KmUjN7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Em6zt8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-wkotll",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-mcI7Fe",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-PkaIS4",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Ppj1o6",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-E5w2gs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-51GQrH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-sX6jrs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-qDD5ow",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-zkj1lL",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-SnyGFt",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-isoC1h",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-C2pLpx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-qpveqr",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-WyY0Lf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-yxvSmO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-alNx4q",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-Vvzolf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-EL31tj",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-jHXuZx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-hmVfMb",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-WjwUhN",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-6slHNf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-B2xVe2",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-zTmxDA",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-3r6AZL",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-qj5aOd",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-YfPuaD",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-NTVFNJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-IzgHbd",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-j7Fl1X",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-HZc9iL",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-P8z3Of",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-y2cYKY",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-ps51-probe-94pGfs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-Wvhyeq"
+    ],
+    "remainingOwnDirs": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-mMoC6o",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-BC8j7V",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-CI8gOM",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Sc52dm",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ytLL0G",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-KmUjN7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Em6zt8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-wkotll",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-mcI7Fe",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-PkaIS4",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Ppj1o6",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-E5w2gs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-51GQrH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-sX6jrs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-qDD5ow",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-zkj1lL",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-SnyGFt",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-isoC1h",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-C2pLpx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-qpveqr",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-WyY0Lf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-yxvSmO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-alNx4q",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-Vvzolf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-EL31tj",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-jHXuZx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-hmVfMb",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-WjwUhN",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-6slHNf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-B2xVe2",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-zTmxDA",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-3r6AZL",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-qj5aOd",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-YfPuaD",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-NTVFNJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-IzgHbd",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-j7Fl1X",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-HZc9iL",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-P8z3Of",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-y2cYKY",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-ps51-probe-94pGfs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-Wvhyeq"
+    ],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own TEMP files are deliberately retained. No broad cleanup or production process scan was performed.",
+      "Native child CLI/PowerShell uses synchronous terminal completion with original source budgets. Core Broker worker cleanup uses registered close hooks; exact independent helper exit inventory was not collected."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/tools/capture-native-read.js",
+        "line": 291,
+        "proof": "finally closes timers, closes all connections and awaits server.close; exact gate fds closed"
+      },
+      {
+        "file": "core4/test/native-read-capture.test.js",
+        "line": 114,
+        "proof": "new VM panel regression clears its registered timers in finally"
+      },
+      {
+        "file": "core4/test/core4.test.js",
+        "line": 19,
+        "proof": "Broker fixture cleanup registered via t.after(() => f.close())"
+      },
+      {
+        "file": "core4/test/core4.test.js",
+        "line": 368,
+        "proof": "Core-only validation-routing uses sync exact own TEMP CLI; asserts nested controller16 summary"
+      }
+    ],
+    "scopeLimit": "Own retained data42dirs is not active leakage proof. PASS27/exit0 plus source closure provides suite resource closure; no independent per-helper process exit inventory was captured."
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-16-native-capture-composite-attempt-02-reducer.json",
+    "sha256": "1d70b27c5f4ea904773036b88bbc4a09d68a42312bf21ce20aaf86041a2c809b"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}

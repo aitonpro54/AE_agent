@@ -30,7 +30,7 @@ push/PR и запуска dedicated продуктов. Штатные внут�
 own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup проверены.
 
 <!-- EXECUTION_STATUS -->
-Принято15source blocks; block16 FAIL (2PASS/13FAIL) сохранён без acceptance. Native-capture fixture format2 несовместима с format1-only оператором; выполняется test-only repair,17не запущен. Titles/Slideshow на паузе.
+Принято source runs: 16; current fresh checks: 13. Применимое evidence: 44 exact-key + 0 byte-command-bound. Открыто: 27 (без hold: 25, Titles под паузой: 2). Следующий блок: source-candidate-30.
 <!-- /EXECUTION_STATUS -->
 
 <!-- EXECUTION_BLOCKS -->
@@ -50,18 +50,23 @@ own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup пр�
 | source-candidate-12 | `owner-runtime` | PASS: 23 pass / 0 skip | [JSON](../docs/evidence/core-release-block-12-20261103.json) | `ecc46e5` |
 | source-candidate-13 | `client-ipc` | PASS: 27 pass / 0 skip | [JSON](../docs/evidence/core-release-block-13-20261103.json) | `c80dad9` |
 | source-candidate-14 | `controller-lease` | PASS: 16 pass / 0 skip | [JSON](../docs/evidence/core-release-block-14-20261103.json) | `2fcca17` |
-| source-candidate-15 | `endpoint-observation` | PASS: 15 pass / 0 skip | [JSON](../docs/evidence/core-release-block-15-20261103.json) | создаётся после проверки |
+| source-candidate-15 | `endpoint-observation` | PASS: 15 pass / 0 skip | [JSON](../docs/evidence/core-release-block-15-20261103.json) | `782ae1d` |
+| source-candidate-16 | `artifact-boundaries`, `native-read-capture`, `validation-routing`, `documentation` | PASS: 27 pass / 0 skip | [JSON](../docs/evidence/core-release-block-16-20261103.json) | создаётся после проверки |
 <!-- /EXECUTION_BLOCKS -->
 
-## Block16: сохранённый FAIL и repair
+## Block16: сохранённый FAIL и принятый repair
+
+**Current checkout:** capture-era repair принят полным composite run: 17 capture +
+10 Core cases PASS, fail/cancelled/skipped 0. [Evidence](../docs/evidence/core-release-block-16-20261103.json).
+Все описанные ниже failed/cancelled candidate runs — история диагностики.
 
 **Продолжение 4 ноября:** [epoch diagnosis](../docs/evidence/core-native-capture-epoch-diagnosis-20261104.json).
 High candidate16:14PASS/2FAIL после устранения format/globals drift.
 XHigh specialist подтвердил историческое смешение package/client epochs:
 позитивный capture требует capture-era package-owned panel, не текущий клиент.
 Production exact8/reader sourceA pins остаются прежними; отдельный отрицательный
-тест закрепляет отказ несовместимого current/late клиента. Candidate source
-checkout ещё не применялся; staging FAIL/cancelled не принимаются как PASS.
+тест закрепляет отказ несовместимого current/late клиента. До исправления candidate source checkout не применялся;
+staging FAIL/cancelled сохранены и не принимаются как PASS.
 
 [Первый run](../docs/evidence/core-release-block-16-attempt-01-20261103.json) завершился15tests=2PASS/13FAIL,exit1.
 Все отказы capture_package до listener; production fault не заявляется.
@@ -97,6 +102,11 @@ fixture, полная dependency binding и routing CLI без nested dedicated 
   `releaseCertified=false`, Titles/Slideshow на паузе.
 
 ## Validation
+
+Capture-era repair применён 4 ноября: 4 test/map/data files, 18 rekey / 53 same;
+8 старых accepted результатов historical. [Repair](../docs/evidence/core-native-capture-fixture-repair-20261103.json).
+Composite16 проверяет 17 capture + 10 Core = 27 outer cases до code commit;
+затем шесть устаревших source integrations идут как 30–35, без nested Titles.
 
 Guard перед block12 применён: только два test files, 69 ключей прежние.
 [Fixture evidence](../docs/evidence/core-owner-runtime-fixture-guard-20261103.json) дополнено полным named

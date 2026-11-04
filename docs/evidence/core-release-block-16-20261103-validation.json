@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "collectedAt": "2026-11-04T08:44:04.943Z",
+  "blockId": "source-candidate-16",
+  "status": "PASS",
+  "selectorKeysMatched": 71,
+  "acceptedFreshChecks": 4,
+  "remainingWithoutHold": 25,
+  "remainingTotal": 27,
+  "pausePreserved": true,
+  "sourceSnapshotHashes": 215,
+  "localMarkdownLinks": 140,
+  "sourceBytesMatchCurrentManifest": true,
+  "runtimeBytesUnchanged": true,
+  "fixtureChangesInThisBlock": [
+    "core4/config/validation-map.json",
+    "core4/test/core4.test.js",
+    "core4/test/fixtures/native-capture-panel-v1.txt",
+    "core4/test/native-read-capture.test.js"
+  ],
+  "logSha256Verified": true,
+  "reporterSummaryIndependentlyMatched": true,
+  "releaseCertified": false
+}

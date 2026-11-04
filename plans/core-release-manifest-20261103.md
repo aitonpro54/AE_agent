@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято15source blocks; block16 FAIL (2PASS/13FAIL) сохранён без acceptance. Native-capture fixture format2 несовместима с format1-only оператором; выполняется test-only repair,17не запущен. Titles/Slideshow на паузе. [FAIL evidence](../docs/evidence/core-release-block-16-attempt-01-20261103.json).
+**Текущая source-приёмка:** Принято source runs: 16; current fresh checks: 13. Применимое evidence: 44 exact-key + 0 byte-command-bound. Открыто: 27 (без hold: 25, Titles под паузой: 2). Следующий блок: source-candidate-30. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 
@@ -189,7 +189,7 @@ Source suites и live операции не запускались; `releaseCert
 | `controller-lease` | component | fresh source PASS → exact reuse | не повторять без drift |
 | `panel-reconnect` | component | reuse: записанный exact key | не повторять без drift |
 | `endpoint-observation` | component | fresh source PASS → exact reuse | не повторять без drift |
-| `native-read-capture` | integration | FAIL: capture_package; current PASS отсутствует | test-only repair до повторной приёмки |
+| `native-read-capture` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `windows-cim-probe` | integration | reuse: записанный exact key | не повторять без drift |
 | `zero-dispatch-recovery` | integration | нужен current result | адресно до full release |
 | `human-window` | integration | нужен current result | адресно до full release |
@@ -207,9 +207,9 @@ Source suites и live операции не запускались; `releaseCert
 | `photo-executor-contract` | component | нужен current result | адресно до full release |
 | `titles-executor-contract` | component | нужен current result | Titles: held |
 | `catalog-discovery` | integration | нужен current result | адресно до full release |
-| `validation-routing` | integration | reuse: bytes + команда | не повторять без drift |
-| `artifact-boundaries` | integration | reuse: bytes + команда | не повторять без drift |
-| `documentation` | component | нужен current result | адресно до full release |
+| `validation-routing` | integration | fresh source PASS → exact reuse | не повторять без drift |
+| `artifact-boundaries` | integration | fresh source PASS → exact reuse | не повторять без drift |
+| `documentation` | component | fresh source PASS → exact reuse | не повторять без drift |
 | `cep-transport` | integration | нужен current result | адресно до full release |
 | `lifecycle-simulation` | integration | нужен current result | адресно до full release |
 | `native-read-recovery` | integration | нужен current result | адресно до full release |

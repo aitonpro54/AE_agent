@@ -10,15 +10,25 @@ const { webcrypto } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const { hash, canonical } = require('../protocol/json');
 const { dispatchBinding } = require('../protocol/dispatch');
-const { buildPackage } = require('../tools/package-installable');
+const { buildPackage, verifyPackage } = require('../tools/package-installable');
 const { planInstall, applyInstall } = require('../tools/install-core4');
 const { legacyV1Data } = require('./fixtures/legacy-installation-v1');
+const { fixedFormat1Package } = require('./fixtures/fixed-format1-package');
 const { createCapture, PROCESS_PROBE } = require('../tools/capture-native-read');
 const root = path.resolve(__dirname, '..');
 const failure = { readFailureVersion: 1, outcome: 'rejected', code: 'host_registry_unavailable' };
-function fixture() {
+// Capture-era panel: source34584de / installed3031153, Git blob
+// 8ea663b9b8aa02668eb60036a4557dad9266534e. Exact data, never Git at test runtime.
+// The shared helper/dispatcher and later pinned legacy panel remain unchanged.
+function captureFormat1Package() {
+  const pkg = fixedFormat1Package(), panel = fs.readFileSync(path.join(__dirname, 'fixtures/native-capture-panel-v1.txt'));
+  assert.equal(hash(panel), '5c06ab424a0469380009eda2410da50d74dae62c009015ef9a7a3e41ba323662');
+  pkg.files['cep/js/panel.js'] = panel.toString('base64'); pkg.release.hashes['cep/js/panel.js'] = hash(panel);
+  pkg.packageHash = hash(pkg.release); return verifyPackage(pkg);
+}
+function fixture(pkg = captureFormat1Package()) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-native-capture-')), evidenceRoot = path.join(directory, 'evidence'); fs.mkdirSync(evidenceRoot);
-  const pkg = buildPackage(), config = path.join(directory, 'project/.codex/config.toml');
+  const config = path.join(directory, 'project/.codex/config.toml');
   const plan = planInstall({ pkg, nodePath: fs.realpathSync(process.execPath), installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'), configPath: config, machineId: os.hostname() });
   const installed = legacyV1Data(plan), descriptor = installed.descriptorPath, d = JSON.parse(fs.readFileSync(descriptor)), receiver = path.join(d.stateDir, 'receiver'), broker = path.join(d.stateDir, 'broker'); fs.mkdirSync(receiver); fs.mkdirSync(broker);
   // Real Broker constructor layout, including one stale identity. Contents are
@@ -75,12 +85,63 @@ async function panel(f, port, { origin = 'null', latch = 'result' } = {}) {
   if (latch !== 'none') map.set(key, canonical({ frame: f.frame, ...(latch === 'result' ? { result: failure } : {}) }));
   const before = map.get(key), storage = { getItem: k => map.get(k) || null, setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) }, elements = { status: {}, detail: {}, connect: { addEventListener() {}, set disabled(v) { if (!v) finish(); } } };
   const done = new Promise(r => { finish = r; });
-  const context = vm.createContext({ crypto: webcrypto, TextEncoder, Uint8Array, localStorage: storage, document: { getElementById: k => elements[k] }, __adobe_cep__: { evalScript() { evals++; throw new Error('unexpected native call'); } },
+  const context = vm.createContext({ crypto: webcrypto, TextEncoder, Uint8Array, AbortController, setTimeout, clearTimeout, localStorage: storage, document: { getElementById: k => elements[k] }, __adobe_cep__: { evalScript() { evals++; throw new Error('unexpected native call'); } },
     fetch: async (url, options) => { const route = new URL(url).pathname; calls.push(route); const response = await raw(port, route, JSON.parse(options.body), { origin }); return { ok: response.status < 400, status: response.status, json: async () => response.value }; }
   });
-  vm.runInContext('window=this;', context); vm.runInContext(fs.readFileSync(path.join(f.args.cepDir, 'installation.js'), 'utf8'), context); vm.runInContext(fs.readFileSync(path.join(root, 'cep/js/poll-dispatcher.js'), 'utf8'), context); vm.runInContext(fs.readFileSync(path.join(root, 'cep/js/panel.js'), 'utf8'), context); await done;
+  vm.runInContext('window=this;', context); vm.runInContext(fs.readFileSync(path.join(f.args.cepDir, 'installation.js'), 'utf8'), context); vm.runInContext(fs.readFileSync(path.join(f.args.cepDir, 'js/poll-dispatcher.js'), 'utf8'), context); vm.runInContext(fs.readFileSync(path.join(f.args.cepDir, 'js/panel.js'), 'utf8'), context); await done;
   return { before, after: map.get(key), calls, evals, status: elements.status.textContent };
 }
+test('native-read-capture current and later pinned panels refuse the capture challenge before link with unchanged latch and no eval', async () => {
+  const f = fixture(), before = f.bytes(), key = 'aeagentcore4-physical-' + f.d.installationId;
+  const challenge = { nonce: 'a'.repeat(64), epoch: 'capture-vm-fixture', role: 'panel', origin: 'null', ...f.pins,
+    controllerId: 'capture-controller-fixture', purpose: 'native-read-evidence-capture-v1', receiverStoreIdentity: f.binding.receiverStoreIdentity,
+    commandDigest: hash(f.command), journalTailHash: JSON.parse(fs.readFileSync(f.journal, 'utf8').trim().split('\n').at(-1)).recordHash };
+  for (const files of [['cep/js/panel.js', 'cep/js/poll-dispatcher.js'], ['test/fixtures/legacy-panel-v1.txt', 'test/fixtures/legacy-poll-dispatcher-v1.txt']]) {
+    const latch = canonical({ frame: f.frame, result: failure }), map = new Map([[key, latch]]), calls = [], timers = new Set(); let evals = 0, finish;
+    const done = new Promise(resolve => { finish = resolve; }), elements = { status: {}, detail: {}, connect: { addEventListener() {}, set disabled(value) { if (!value) finish(); } } };
+    const storage = { getItem: k => map.get(k) || null, setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) };
+    const context = vm.createContext({ crypto: webcrypto, TextEncoder, Uint8Array, AbortController, localStorage: storage,
+      setTimeout(fn, ms) { const timer = setTimeout(() => { timers.delete(timer); fn(); }, ms); timers.add(timer); return timer; },
+      clearTimeout(timer) { timers.delete(timer); clearTimeout(timer); }, document: { getElementById: name => elements[name] },
+      __adobe_cep__: { evalScript() { evals++; throw new Error('unexpected native call'); } },
+      fetch: async (url, options) => { calls.push(new URL(url).pathname); assert.equal(new URL(url).pathname, '/challenge'); equal(JSON.parse(options.body), { role: 'panel' }); return { ok: true, status: 200, json: async () => challenge }; }
+    });
+    try {
+      vm.runInContext('window=this;', context); vm.runInContext(fs.readFileSync(path.join(f.args.cepDir, 'installation.js'), 'utf8'), context);
+      vm.runInContext(fs.readFileSync(path.join(root, files[1]), 'utf8'), context); vm.runInContext(fs.readFileSync(path.join(root, files[0]), 'utf8'), context); await done;
+      assert.match(elements.status.textContent, /installation_binding/); assert.deepEqual(calls, ['/challenge']); assert.equal(evals, 0);
+      assert.equal(map.get(key), latch); assert.equal(map.size, 1); assert.equal(timers.size, 0); assert.deepEqual(f.bytes(), before);
+    } finally { for (const timer of timers) clearTimeout(timer); timers.clear(); }
+  }
+});
+
+test('native-read-capture format2 is refused before probes listener gates or evidence writes', async () => {
+  const f = fixture(buildPackage()); assert.equal(f.pkg.release.format, 2);
+  const snapshot = () => {
+    const entries = {};
+    function visit(directory) { for (const name of fs.readdirSync(directory).sort()) {
+      const file = path.join(directory, name), relative = path.relative(f.directory, file);
+      if (fs.statSync(file).isDirectory()) { entries[relative] = 'directory'; visit(file); }
+      else entries[relative] = hash(fs.readFileSync(file));
+    } }
+    visit(f.directory); return entries;
+  };
+  const before = snapshot(), io = Object.create(fs); let writes = 0, probes = 0, servers = 0, listening = 0;
+  for (const name of ['openSync', 'writeSync', 'writeFileSync', 'appendFileSync', 'mkdirSync', 'renameSync', 'unlinkSync', 'rmSync', 'rmdirSync', 'truncateSync', 'fsyncSync']) {
+    io[name] = () => { writes++; throw new Error('fixture_unexpected_capture_write'); };
+  }
+  const op = operator(f, { io, probePid() { probes++; throw new Error('fixture_unexpected_probe'); },
+    probePort() { probes++; throw new Error('fixture_unexpected_probe'); },
+    probeProcesses() { probes++; throw new Error('fixture_unexpected_probe'); }, onListening() { listening++; } });
+  const createServer = http.createServer; http.createServer = () => { servers++; throw new Error('fixture_unexpected_server'); };
+  try {
+    await assert.rejects(op.inspect(f.args), error => error.code === 'capture_package');
+    await assert.rejects(op.capture({ ...f.args, expectedProofHash: '0'.repeat(64) }), error => error.code === 'capture_package');
+  } finally { http.createServer = createServer; }
+  assert.equal(probes, 0); assert.equal(writes, 0); assert.equal(servers, 0); assert.equal(listening, 0);
+  assert.equal(op.status().listening, false); assert.equal(f.gates.some(fs.existsSync), false); assert.deepEqual(snapshot(), before);
+});
+
 test('native-read-capture inspect is pure/stable; actual panel and dispatcher cached recover posts once with no ACK/eval/poll and unchanged protected bytes', async () => {
   for (const origin of ['null', 'file://']) {
     const f = fixture(), events = [], op = operator(f, { onListening: event => { assert.ok(Object.isFrozen(event)); events.push(event); } }), before = f.bytes(), first = await op.inspect(f.args), second = await op.inspect(f.args); assert.equal(first.proofHash, second.proofHash); assert.deepEqual(f.bytes(), before); assert.equal(f.gates.some(fs.existsSync), false); assert.equal(events.length, 0);

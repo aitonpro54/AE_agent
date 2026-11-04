@@ -363,11 +363,11 @@ test('[core-control core-admission] one broker owns durable state and valid-JSON
   assert.throws(() => corrupted.reset({ taskId: 'tampered' }), code('ledger_corrupt'));
 });
 
-test('[validation-routing] actual titles-only diff checks pass with photo and engine absent from their source tree', () => {
+test('[validation-routing] actual Core-only diff checks pass with photo and engine absent from their source tree', () => {
   const ws = workspace(); fs.rmSync(path.join(ws.root, 'modules/photo-placeholder'), { recursive: true }); fs.rmSync(path.join(ws.root, 'plan-engine'), { recursive: true });
-  const output = execFileSync(process.execPath, [path.join(ws.root, 'tools/validate-diff.js'), 'core4/modules/titles/implementation.js', '--run'], { encoding: 'utf8', windowsHide: true });
-  assert.ok(output.includes('titles-owner')); assert.ok(output.includes('titles-executor-contract')); assert.ok(!output.includes('photo-owner'));
-  assert.match(output, /(?:tests 4|# tests 4)/);
+  const output = execFileSync(process.execPath, [path.join(ws.root, 'tools/validate-diff.js'), 'core4/test/controller-lease.test.js', '--run'], { encoding: 'utf8', windowsHide: true });
+  assert.ok(output.includes('controller-lease')); assert.ok(!output.includes('titles-owner')); assert.ok(!output.includes('titles-executor-contract')); assert.ok(!output.includes('photo-owner'));
+  assert.match(output, /(?:tests 16|# tests 16)/);
   const selected = selectChecks(['core4/modules/titles/implementation.js'], ws.root); assert.ok(selected.checks.every(c => c.dependencies.every(dep => !dep.includes('photo-placeholder') && !dep.includes('plan-engine'))));
   assert.deepEqual(selected.checks.map(c => c.check).sort(), ['titles-executor-contract', 'titles-owner']); assert.equal(selected.executionBatches.length, 1);
   assert.equal(selected.releaseCertified, false);

@@ -28,7 +28,7 @@
   "boundedB1B7AcceptanceReopened": false,
   "registry": {
     "file": "core4/config/validation-map.json",
-    "sha256": "fc5c8e166f03ab5d3797796cfe86fb0a7b7d514dd7e2fda3a29701986d897a18",
+    "sha256": "cac3c16220a1c6f27dca7678bff8256e2ea7d49b08eef57fc3773a1527c5e079",
     "selector": "core4/tools/validate-diff.js",
     "selectorSha256": "9966334a99aa4bdbab7a883b6f9c2e3b2face0edfc590695105036e66986706c",
     "registeredChecks": 71,
@@ -79,7 +79,7 @@
       },
       {
         "file": "config/validation-map.json",
-        "sha256": "fc5c8e166f03ab5d3797796cfe86fb0a7b7d514dd7e2fda3a29701986d897a18"
+        "sha256": "cac3c16220a1c6f27dca7678bff8256e2ea7d49b08eef57fc3773a1527c5e079"
       },
       {
         "file": "core/artifact.json",
@@ -423,7 +423,7 @@
       },
       {
         "file": "test/core4.test.js",
-        "sha256": "66ca31821c439abf8e973364af038fc0ea0c0612911a63b5e3a2780690998f83"
+        "sha256": "752b6160eb71be8ca0d228bc86fc18127995d538b7b1f4ffe61720a0a0ad4407"
       },
       {
         "file": "test/endpoint-observation.test.js",
@@ -524,6 +524,10 @@
       {
         "file": "test/fixtures/manual-http-runtime.js",
         "sha256": "136ffee3e0a8e16c4469bb580e29fab2a0c5f7214c8d457b80a64ede8cc9ea27"
+      },
+      {
+        "file": "test/fixtures/native-capture-panel-v1.txt",
+        "sha256": "5c06ab424a0469380009eda2410da50d74dae62c009015ef9a7a3e41ba323662"
       },
       {
         "file": "test/fixtures/native-read-recovery.js",
@@ -627,7 +631,7 @@
       },
       {
         "file": "test/native-read-capture.test.js",
-        "sha256": "2823b3da46ebc36f02f9ec2010243c2cee9bb4d68ea9c762a11f36b8d96d2598"
+        "sha256": "9926f581d38b171e00f22231d2b5fd5642ecfbd5141cf7e23ed13503e3810acd"
       },
       {
         "file": "test/native-read-recovery.test.js",
@@ -894,7 +898,7 @@
         "sha256": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02"
       }
     ],
-    "digest": "866fa6fe9fe4786440ce7e0687c07edddb63e33011b667f960908f0e0e3fd004",
+    "digest": "3d80e8c09da98359ebcf9f4a0e9eb15e824cb79122eded88b2e3311bc058e2d3",
     "note": "Shared deduplicated snapshot; each check records dependency specs/count/digest. Projections are separately pinned per check.",
     "digestAlgorithm": "protocol.hash(canonical [[relative file,sha256],...])",
     "revisions": [
@@ -905,6 +909,17 @@
         "files": [
           "core4/test/owner-runtime.test.js",
           "core4/test/fixtures/owner-runtime-child.js"
+        ]
+      },
+      {
+        "at": "2026-11-04T08:39:06.773Z",
+        "previousDigest": "866fa6fe9fe4786440ce7e0687c07edddb63e33011b667f960908f0e0e3fd004",
+        "reason": "capture-era fixture repair",
+        "files": [
+          "core4/config/validation-map.json",
+          "core4/test/core4.test.js",
+          "core4/test/fixtures/native-capture-panel-v1.txt",
+          "core4/test/native-read-capture.test.js"
         ]
       }
     ]
@@ -1209,13 +1224,25 @@
       "sha256": "c6f1578cde372d174db64a2aed3f61c9ee10c47f19837baf13ab70e54c467c6c",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "diagnosis and failed staging only; no current check PASS"
+    },
+    {
+      "file": "docs/evidence/core-native-capture-fixture-repair-20261103.json",
+      "sha256": "7ebadfc7c3b677a8a4dddf625d4ec63978d09204ebb45c53dd59125e015e2151",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "candidate only until current checkout source result"
+    },
+    {
+      "file": "docs/evidence/core-release-block-16-20261103.json",
+      "sha256": "a2e464081e41dfda0c9c7904ae8ea7d69775d95f719f15fb86d80149d75dc996",
+      "directKeyedRecords": 4,
+      "excludedAsAuthority": null
     }
   ],
   "evidenceMethod": {
     "currentKeySource": "Exported production selectChecks from core4/tools/validate-diff.js.168 existing owner-trigger file paths used only as read-only inventory selection inputs, not asserted changes;71registered checks selected, none missing.",
     "selectorModuleSha256": "9966334a99aa4bdbab7a883b6f9c2e3b2face0edfc590695105036e66986706c",
     "validationMapFile": "core4/config/validation-map.json",
-    "validationMapSha256": "fc5c8e166f03ab5d3797796cfe86fb0a7b7d514dd7e2fda3a29701986d897a18",
+    "validationMapSha256": "cac3c16220a1c6f27dca7678bff8256e2ea7d49b08eef57fc3773a1527c5e079",
     "inventoryTriggerCount": 168,
     "inventoryTriggersDigest": "0da00956d5bddc28a4512b80875cb8a56ac1f208828d390e30112db4484f6e2b",
     "keyFormula": "hash({check, command, dependencies: sorted expanded unique [relativePath,sha256(bytes)], projections:[{dependency,digest}]}); hash/canonical from protocol/json.js",
@@ -1224,7 +1251,8 @@
     "evidenceSearch": "Direct top-level checks[]/selectedChecks[] with check+evidenceKey in all parsed docs/evidence JSON. Explicit result/outcome PASS required; B1 complete accepted batch or B2 single-check complete document adapters retained only as documented authority.",
     "nonAuthority": "Progress, audit/remaining-acceptance and pending manifests are excluded. Cancelled/partial/rejected records never independently accepted. Accepted consolidated B6 may authorize its documented exact-key reuse of completed prefixes.",
     "counts": "Per-check caseCount is recorded evidence; shared batch counts are marked and never allocated twice. Inventory totals do not certify release.",
-    "parentByteCommandBoundDecisionRu": "При подготовке совпали все214cloud snapshot hashes. После test-only guard два изменённых test files вне73dependencies каждой byte-command группы; обе closure/command привязки остались exact."
+    "parentByteCommandBoundDecisionRu": "Исторические две byte-command группы после map/test changes неприменимы; переведены в current-unverified и включены в composite16.",
+    "previousValidationMapSha256": "fc5c8e166f03ab5d3797796cfe86fb0a7b7d514dd7e2fda3a29701986d897a18"
   },
   "evidencePolicyRu": [
     "Текущий key = check ID + штатная command + все dependency bytes + projections. Recorded exact reuse требует accepted PASS, не audit/progress/partial result.",
@@ -1236,16 +1264,18 @@
   ],
   "summary": {
     "registeredChecks": 71,
-    "recordedExactKeyReuse": 46,
-    "byteCommandBoundReuse": 2,
-    "needsCurrentEvidence": 23,
+    "recordedExactKeyReuse": 44,
+    "byteCommandBoundReuse": 0,
+    "needsCurrentEvidence": 27,
     "heldByProductPause": 2,
-    "pendingNotHeldByProductPause": 21,
+    "pendingNotHeldByProductPause": 25,
     "sharedCoreWithTitlesDependency": 33,
-    "optionalFutureSourceBatches": 14,
-    "sourceTestCommandsExecuted": 16,
+    "optionalFutureSourceBatches": 19,
+    "sourceTestCommandsExecuted": 17,
     "reusedGlobalUniqueCases": null,
-    "freshSourceChecksAcceptedThisExecution": 15
+    "freshSourceChecksAcceptedThisExecution": 13,
+    "acceptedNamedCheckRuns": 19,
+    "freshNamedCheckIdsEverAccepted": 19
   },
   "checks": [
     {
@@ -1458,8 +1488,8 @@
         "--test-name-pattern=start-over-runtime",
         "test/start-over-runtime.test.js"
       ],
-      "currentEvidenceKey": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
-      "dependencyDigest": "dbadd46db8d448ce503fee13cdafe65ff12eb6c539b613ed7cab4e0b91b0c253",
+      "currentEvidenceKey": "5f767f692335666a69f939c5d3bb4e17f42c2bde37d023193cd19125e9bc1995",
+      "dependencyDigest": "c8c39495f634d26be8b82e26fcf26feb0a89aaa722de20f919e0113a01aa3c35",
       "dependencyCount": 97,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/start-over-runtime",
       "projections": [],
@@ -1472,32 +1502,9 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "reuse-exact-key",
-      "recordedExactKeyAvailable": true,
-      "acceptedEvidence": [
-        {
-          "file": "docs/evidence/core-release-block-01-20261103.json",
-          "pointer": "/checks/0",
-          "result": "PASS",
-          "resultField": "result",
-          "evidenceKey": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
-          "authorityMethod": "explicit-record-result-PASS",
-          "caseCount": 3,
-          "caseCountPointer": "/checks/0/cases",
-          "recordedMode": "fresh-source-block",
-          "recordedCommand": [
-            "node",
-            "--test",
-            "--test-name-pattern=start-over-runtime",
-            "test/start-over-runtime.test.js"
-          ],
-          "executionBatch": "/executionBatch",
-          "sharedBatch": false,
-          "batchCaseCount": 3,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-01-start-over-runtime.log",
-          "logHash": "1c278a7bae8ccb3a349bedef7e2abd672bb8c711b8857ea2f7e1451dcb49af86"
-        }
-      ],
+      "evidenceDisposition": "needs-current-evidence",
+      "recordedExactKeyAvailable": false,
+      "acceptedEvidence": [],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -1507,20 +1514,62 @@
             "pointer": "/selectedChecks/25",
             "evidenceKey": "80c66f8112acaad33312d9d00186ed32a98d86cf8836ef999f765a3951695163",
             "result": "PASS"
+          },
+          {
+            "file": "docs/evidence/core-release-block-01-20261103.json",
+            "pointer": "/checks/0",
+            "evidenceKey": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
+            "result": "PASS"
           }
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": null,
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
-        "state": "passed-in-source-block",
+        "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "executedDuringSourceAcceptance": true,
-        "blockId": "source-candidate-01",
-        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": false
+      "legacyReleaseEntryFileListed": false,
+      "previousManifestKeys": [
+        {
+          "key": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
+          "status": "historical-PASS-now-stale",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ],
+      "retiredEvidenceBySourceChanges": [
+        {
+          "key": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
+          "acceptedEvidence": [
+            {
+              "file": "docs/evidence/core-release-block-01-20261103.json",
+              "pointer": "/checks/0",
+              "result": "PASS",
+              "resultField": "result",
+              "evidenceKey": "05154b439058348354c6bf4ac401a9e7c110fb218f15be1a608e8dbdfa3ec8de",
+              "authorityMethod": "explicit-record-result-PASS",
+              "caseCount": 3,
+              "caseCountPointer": "/checks/0/cases",
+              "recordedMode": "fresh-source-block",
+              "recordedCommand": [
+                "node",
+                "--test",
+                "--test-name-pattern=start-over-runtime",
+                "test/start-over-runtime.test.js"
+              ],
+              "executionBatch": "/executionBatch",
+              "sharedBatch": false,
+              "batchCaseCount": 3,
+              "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-01-start-over-runtime.log",
+              "logHash": "1c278a7bae8ccb3a349bedef7e2abd672bb8c711b8857ea2f7e1451dcb49af86"
+            }
+          ],
+          "byteCommandBoundEvidence": null,
+          "reason": "current closure changed"
+        }
+      ]
     },
     {
       "check": "start-over-operator",
@@ -1533,8 +1582,8 @@
         "--test-name-pattern=start-over-operator",
         "test/start-over-operator.test.js"
       ],
-      "currentEvidenceKey": "5c75e9a1940134a73f863949f1fb93922e9896c9cee85e5780146dbc777b9c8e",
-      "dependencyDigest": "d69b5cc69d0b57654624126cbc0651f6be2c6cc1d42e6aaecaffe2ebcfcf33f8",
+      "currentEvidenceKey": "27fa0cfa0468213f984d1da5130f6038f357afa2eea064b16fc64ea8333ee86d",
+      "dependencyDigest": "7ae208b3c4e91966e3c9c5dab48906c47d6d3ddf2f9cbb7df411aa2369c90d67",
       "dependencyCount": 96,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/start-over-operator",
       "projections": [],
@@ -1547,32 +1596,9 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "reuse-exact-key",
-      "recordedExactKeyAvailable": true,
-      "acceptedEvidence": [
-        {
-          "file": "docs/evidence/core-release-block-02-20261103.json",
-          "pointer": "/checks/0",
-          "result": "PASS",
-          "resultField": "result",
-          "evidenceKey": "5c75e9a1940134a73f863949f1fb93922e9896c9cee85e5780146dbc777b9c8e",
-          "authorityMethod": "explicit-record-result-PASS",
-          "caseCount": 6,
-          "caseCountPointer": "/checks/0/cases",
-          "recordedMode": "fresh-source-block",
-          "recordedCommand": [
-            "node",
-            "--test",
-            "--test-name-pattern=start-over-operator",
-            "test/start-over-operator.test.js"
-          ],
-          "executionBatch": "/executionBatch",
-          "sharedBatch": false,
-          "batchCaseCount": 6,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-02-start-over-operator.log",
-          "logHash": "2ad6d4e29b2dbd4567a469747ff8412f3867676d0af0cc5eb7a6115434719f52"
-        }
-      ],
+      "evidenceDisposition": "needs-current-evidence",
+      "recordedExactKeyAvailable": false,
+      "acceptedEvidence": [],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -1582,20 +1608,62 @@
             "pointer": "/selectedChecks/29",
             "evidenceKey": "d2ed6b3d9b76369bbd63cea78cae389ddc040f48e6c0364ade0096b85ca0cded",
             "result": "PASS"
+          },
+          {
+            "file": "docs/evidence/core-release-block-02-20261103.json",
+            "pointer": "/checks/0",
+            "evidenceKey": "5c75e9a1940134a73f863949f1fb93922e9896c9cee85e5780146dbc777b9c8e",
+            "result": "PASS"
           }
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": null,
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
-        "state": "passed-in-source-block",
+        "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "executedDuringSourceAcceptance": true,
-        "blockId": "source-candidate-02",
-        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": false
+      "legacyReleaseEntryFileListed": false,
+      "previousManifestKeys": [
+        {
+          "key": "5c75e9a1940134a73f863949f1fb93922e9896c9cee85e5780146dbc777b9c8e",
+          "status": "historical-PASS-now-stale",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ],
+      "retiredEvidenceBySourceChanges": [
+        {
+          "key": "5c75e9a1940134a73f863949f1fb93922e9896c9cee85e5780146dbc777b9c8e",
+          "acceptedEvidence": [
+            {
+              "file": "docs/evidence/core-release-block-02-20261103.json",
+              "pointer": "/checks/0",
+              "result": "PASS",
+              "resultField": "result",
+              "evidenceKey": "5c75e9a1940134a73f863949f1fb93922e9896c9cee85e5780146dbc777b9c8e",
+              "authorityMethod": "explicit-record-result-PASS",
+              "caseCount": 6,
+              "caseCountPointer": "/checks/0/cases",
+              "recordedMode": "fresh-source-block",
+              "recordedCommand": [
+                "node",
+                "--test",
+                "--test-name-pattern=start-over-operator",
+                "test/start-over-operator.test.js"
+              ],
+              "executionBatch": "/executionBatch",
+              "sharedBatch": false,
+              "batchCaseCount": 6,
+              "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-02-start-over-operator.log",
+              "logHash": "2ad6d4e29b2dbd4567a469747ff8412f3867676d0af0cc5eb7a6115434719f52"
+            }
+          ],
+          "byteCommandBoundEvidence": null,
+          "reason": "current closure changed"
+        }
+      ]
     },
     {
       "check": "work-session-owner",
@@ -2264,8 +2332,8 @@
         "--test-name-pattern=stopped-host-readoption-operator",
         "test/stopped-host-readoption-operator.test.js"
       ],
-      "currentEvidenceKey": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0",
-      "dependencyDigest": "6aa2ac58bc3c84ae679154be6cdea2d6d2daa875e16fc00fafa3671d5ce972ae",
+      "currentEvidenceKey": "4f6a83b2fcfa566dc8ba2d48ed8531abdf56095f46ac661329e7209f0b086619",
+      "dependencyDigest": "537ebcd48f7827087c7d2e0b6ce84f1a8ac8ca42f09c8eae377cd44983579042",
       "dependencyCount": 115,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/stopped-host-readoption-operator",
       "projections": [],
@@ -2278,32 +2346,9 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "reuse-exact-key",
-      "recordedExactKeyAvailable": true,
-      "acceptedEvidence": [
-        {
-          "file": "docs/evidence/core-release-block-03-20261103.json",
-          "pointer": "/checks/0",
-          "result": "PASS",
-          "resultField": "result",
-          "evidenceKey": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0",
-          "authorityMethod": "explicit-record-result-PASS",
-          "caseCount": 17,
-          "caseCountPointer": "/checks/0/cases",
-          "recordedMode": "fresh-source-block",
-          "recordedCommand": [
-            "node",
-            "--test",
-            "--test-name-pattern=stopped-host-readoption-operator",
-            "test/stopped-host-readoption-operator.test.js"
-          ],
-          "executionBatch": "/executionBatch",
-          "sharedBatch": false,
-          "batchCaseCount": 17,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-03-stopped-host-readoption-operator.log",
-          "logHash": "10658ff2a8c094f6e69b041a6655e0846bf74fa429621d5899a8387937cd72a1"
-        }
-      ],
+      "evidenceDisposition": "needs-current-evidence",
+      "recordedExactKeyAvailable": false,
+      "acceptedEvidence": [],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -2313,20 +2358,62 @@
             "pointer": "/selectedChecks/20",
             "evidenceKey": "1327f4f8205552a7635730494fc09ba4f3b2a345446083492d1c5da989e5dcc8",
             "result": "PASS"
+          },
+          {
+            "file": "docs/evidence/core-release-block-03-20261103.json",
+            "pointer": "/checks/0",
+            "evidenceKey": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0",
+            "result": "PASS"
           }
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": null,
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
-        "state": "passed-in-source-block",
+        "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "executedDuringSourceAcceptance": true,
-        "blockId": "source-candidate-03",
-        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": false
+      "legacyReleaseEntryFileListed": false,
+      "previousManifestKeys": [
+        {
+          "key": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0",
+          "status": "historical-PASS-now-stale",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ],
+      "retiredEvidenceBySourceChanges": [
+        {
+          "key": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0",
+          "acceptedEvidence": [
+            {
+              "file": "docs/evidence/core-release-block-03-20261103.json",
+              "pointer": "/checks/0",
+              "result": "PASS",
+              "resultField": "result",
+              "evidenceKey": "676e3a7be4df9c48794869c98c42e993ca2914f2f35cf7144bfd10d8286a13e0",
+              "authorityMethod": "explicit-record-result-PASS",
+              "caseCount": 17,
+              "caseCountPointer": "/checks/0/cases",
+              "recordedMode": "fresh-source-block",
+              "recordedCommand": [
+                "node",
+                "--test",
+                "--test-name-pattern=stopped-host-readoption-operator",
+                "test/stopped-host-readoption-operator.test.js"
+              ],
+              "executionBatch": "/executionBatch",
+              "sharedBatch": false,
+              "batchCaseCount": 17,
+              "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-03-stopped-host-readoption-operator.log",
+              "logHash": "10658ff2a8c094f6e69b041a6655e0846bf74fa429621d5899a8387937cd72a1"
+            }
+          ],
+          "byteCommandBoundEvidence": null,
+          "reason": "current closure changed"
+        }
+      ]
     },
     {
       "check": "stopped-host-readoption",
@@ -3245,8 +3332,8 @@
         "--test-name-pattern=maintenance-finish-operator",
         "test/maintenance-finish-operator.test.js"
       ],
-      "currentEvidenceKey": "59f4f1f710c696774df48495d90bd2a66520a880462228a318c828220abd4a84",
-      "dependencyDigest": "14e3fc13954366af0d199ea6692e7e00cfa59ce635c248545b4bb3ed2cc491f5",
+      "currentEvidenceKey": "81b968aaf3e5d2e84a84ca8c1e4f33a06caf400d83538ced3d9df58b951115f1",
+      "dependencyDigest": "63684fb6c80959cb38f4f9fb2fd8ff7ef3de767b22b5d29a2c464c24995e2934",
       "dependencyCount": 115,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/maintenance-finish-operator",
       "projections": [],
@@ -3259,32 +3346,9 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "reuse-exact-key",
-      "recordedExactKeyAvailable": true,
-      "acceptedEvidence": [
-        {
-          "file": "docs/evidence/core-release-block-08-20261103.json",
-          "pointer": "/checks/0",
-          "result": "PASS",
-          "resultField": "result",
-          "evidenceKey": "59f4f1f710c696774df48495d90bd2a66520a880462228a318c828220abd4a84",
-          "authorityMethod": "explicit-record-result-PASS",
-          "caseCount": 7,
-          "caseCountPointer": "/checks/0/cases",
-          "recordedMode": "fresh-source-block",
-          "recordedCommand": [
-            "node",
-            "--test",
-            "--test-name-pattern=maintenance-finish-operator",
-            "test/maintenance-finish-operator.test.js"
-          ],
-          "executionBatch": "/executionBatch",
-          "sharedBatch": false,
-          "batchCaseCount": 7,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-08-maintenance-finish-operator.log",
-          "logHash": "9aee8555820621a10e44e0d7981634703d7935a643ceb7413c0be2dd3b2e3a3d"
-        }
-      ],
+      "evidenceDisposition": "needs-current-evidence",
+      "recordedExactKeyAvailable": false,
+      "acceptedEvidence": [],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -3294,20 +3358,62 @@
             "pointer": "/selectedChecks/21",
             "evidenceKey": "a77057cca17eaee13411a7184cecda3274f0836dd0017760e1b6148093c4a604",
             "result": "PASS"
+          },
+          {
+            "file": "docs/evidence/core-release-block-08-20261103.json",
+            "pointer": "/checks/0",
+            "evidenceKey": "59f4f1f710c696774df48495d90bd2a66520a880462228a318c828220abd4a84",
+            "result": "PASS"
           }
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": null,
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
-        "state": "passed-in-source-block",
+        "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "executedDuringSourceAcceptance": true,
-        "blockId": "source-candidate-08",
-        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": false
+      "legacyReleaseEntryFileListed": false,
+      "previousManifestKeys": [
+        {
+          "key": "59f4f1f710c696774df48495d90bd2a66520a880462228a318c828220abd4a84",
+          "status": "historical-PASS-now-stale",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ],
+      "retiredEvidenceBySourceChanges": [
+        {
+          "key": "59f4f1f710c696774df48495d90bd2a66520a880462228a318c828220abd4a84",
+          "acceptedEvidence": [
+            {
+              "file": "docs/evidence/core-release-block-08-20261103.json",
+              "pointer": "/checks/0",
+              "result": "PASS",
+              "resultField": "result",
+              "evidenceKey": "59f4f1f710c696774df48495d90bd2a66520a880462228a318c828220abd4a84",
+              "authorityMethod": "explicit-record-result-PASS",
+              "caseCount": 7,
+              "caseCountPointer": "/checks/0/cases",
+              "recordedMode": "fresh-source-block",
+              "recordedCommand": [
+                "node",
+                "--test",
+                "--test-name-pattern=maintenance-finish-operator",
+                "test/maintenance-finish-operator.test.js"
+              ],
+              "executionBatch": "/executionBatch",
+              "sharedBatch": false,
+              "batchCaseCount": 7,
+              "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-08-maintenance-finish-operator.log",
+              "logHash": "9aee8555820621a10e44e0d7981634703d7935a643ceb7413c0be2dd3b2e3a3d"
+            }
+          ],
+          "byteCommandBoundEvidence": null,
+          "reason": "current closure changed"
+        }
+      ]
     },
     {
       "check": "owner-maintenance",
@@ -3959,8 +4065,8 @@
         "--test-name-pattern=owner-installation",
         "test/owner-installation.test.js"
       ],
-      "currentEvidenceKey": "0f22f2dcd9dad940440e6c33adfb46928152a07770e3a32b4f558e2185b1f41f",
-      "dependencyDigest": "abd06ee97b0c67b813e67ce1ae638fc958d542ada6d835cb63bf2d7923eff1dc",
+      "currentEvidenceKey": "cfa500879ee2fc3dc67721cb4ac55e99ffcf0cbde2e7a9b767a864a3826c26ee",
+      "dependencyDigest": "44c03dc97c82d4e7b0ded74c391e07a7af9a900a982123d3394c792b2fc2d5c0",
       "dependencyCount": 106,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/owner-installation",
       "projections": [],
@@ -3973,32 +4079,9 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "reuse-exact-key",
-      "recordedExactKeyAvailable": true,
-      "acceptedEvidence": [
-        {
-          "file": "docs/evidence/core-release-block-11-20261103.json",
-          "pointer": "/checks/0",
-          "result": "PASS",
-          "resultField": "result",
-          "evidenceKey": "0f22f2dcd9dad940440e6c33adfb46928152a07770e3a32b4f558e2185b1f41f",
-          "authorityMethod": "explicit-record-result-PASS",
-          "caseCount": 18,
-          "caseCountPointer": "/checks/0/cases",
-          "recordedMode": "fresh-source-block",
-          "recordedCommand": [
-            "node",
-            "--test",
-            "--test-name-pattern=owner-installation",
-            "test/owner-installation.test.js"
-          ],
-          "executionBatch": "/executionBatch",
-          "sharedBatch": false,
-          "batchCaseCount": 18,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-11-owner-installation.log",
-          "logHash": "0ea0462558c861a964ddfd2168c5895316aca1744b2b8fa7f304a7fdf256fcfb"
-        }
-      ],
+      "evidenceDisposition": "needs-current-evidence",
+      "recordedExactKeyAvailable": false,
+      "acceptedEvidence": [],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 2,
@@ -4014,20 +4097,62 @@
             "pointer": "/selectedChecks/7",
             "evidenceKey": "d0a9d2fcb2c24a71cc0ad48296bc48e52699caf09f3c0da734e3a20bd7e7d3af",
             "result": "PASS"
+          },
+          {
+            "file": "docs/evidence/core-release-block-11-20261103.json",
+            "pointer": "/checks/0",
+            "evidenceKey": "0f22f2dcd9dad940440e6c33adfb46928152a07770e3a32b4f558e2185b1f41f",
+            "result": "PASS"
           }
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": null,
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
-        "state": "passed-in-source-block",
+        "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "executedDuringSourceAcceptance": true,
-        "blockId": "source-candidate-11",
-        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": false
+      "legacyReleaseEntryFileListed": false,
+      "previousManifestKeys": [
+        {
+          "key": "0f22f2dcd9dad940440e6c33adfb46928152a07770e3a32b4f558e2185b1f41f",
+          "status": "historical-PASS-now-stale",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ],
+      "retiredEvidenceBySourceChanges": [
+        {
+          "key": "0f22f2dcd9dad940440e6c33adfb46928152a07770e3a32b4f558e2185b1f41f",
+          "acceptedEvidence": [
+            {
+              "file": "docs/evidence/core-release-block-11-20261103.json",
+              "pointer": "/checks/0",
+              "result": "PASS",
+              "resultField": "result",
+              "evidenceKey": "0f22f2dcd9dad940440e6c33adfb46928152a07770e3a32b4f558e2185b1f41f",
+              "authorityMethod": "explicit-record-result-PASS",
+              "caseCount": 18,
+              "caseCountPointer": "/checks/0/cases",
+              "recordedMode": "fresh-source-block",
+              "recordedCommand": [
+                "node",
+                "--test",
+                "--test-name-pattern=owner-installation",
+                "test/owner-installation.test.js"
+              ],
+              "executionBatch": "/executionBatch",
+              "sharedBatch": false,
+              "batchCaseCount": 18,
+              "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-11-owner-installation.log",
+              "logHash": "0ea0462558c861a964ddfd2168c5895316aca1744b2b8fa7f304a7fdf256fcfb"
+            }
+          ],
+          "byteCommandBoundEvidence": null,
+          "reason": "current closure changed"
+        }
+      ]
     },
     {
       "check": "controller-transfer",
@@ -4200,8 +4325,8 @@
         "--test-name-pattern=owner-runtime",
         "test/owner-runtime.test.js"
       ],
-      "currentEvidenceKey": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9",
-      "dependencyDigest": "13ad66bb9245d5f9598e7ced7a8f6abd8abfa11a958182dea8d56021f5d2c3c2",
+      "currentEvidenceKey": "6c46365a26a891cc7040ec1fa3dffaab44b0862fe3099d3c0f473483df1436fd",
+      "dependencyDigest": "b773ab9b59d68891b5e430bed17e43356779e19c6b11ffa28167ff90d8dd1498",
       "dependencyCount": 94,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/owner-runtime",
       "projections": [],
@@ -4214,32 +4339,9 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "reuse-exact-key",
-      "recordedExactKeyAvailable": true,
-      "acceptedEvidence": [
-        {
-          "file": "docs/evidence/core-release-block-12-20261103.json",
-          "pointer": "/checks/0",
-          "result": "PASS",
-          "resultField": "result",
-          "evidenceKey": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9",
-          "authorityMethod": "explicit-record-result-PASS",
-          "caseCount": 23,
-          "caseCountPointer": "/checks/0/cases",
-          "recordedMode": "fresh-source-block",
-          "recordedCommand": [
-            "node",
-            "--test",
-            "--test-name-pattern=owner-runtime",
-            "test/owner-runtime.test.js"
-          ],
-          "executionBatch": "/executionBatch",
-          "sharedBatch": false,
-          "batchCaseCount": 23,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-12-owner-runtime.log",
-          "logHash": "417d7a42e98acf460a9082be72b0d7340dbfc9ead7e4e3621ed70a5703384dba"
-        }
-      ],
+      "evidenceDisposition": "needs-current-evidence",
+      "recordedExactKeyAvailable": false,
+      "acceptedEvidence": [],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 5,
@@ -4273,18 +4375,22 @@
             "pointer": "/checks/3",
             "evidenceKey": "f196f4d240436049e623841d35eec0f18a480c0251745acf07697823703e325a",
             "result": "PASS"
+          },
+          {
+            "file": "docs/evidence/core-release-block-12-20261103.json",
+            "pointer": "/checks/0",
+            "evidenceKey": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9",
+            "result": "PASS"
           }
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": null,
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
-        "state": "passed-in-source-block",
+        "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "executedDuringSourceAcceptance": true,
-        "blockId": "source-candidate-12",
-        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
       "legacyReleaseEntryFileListed": false,
       "previousManifestKeys": [
@@ -4292,6 +4398,42 @@
           "key": "94e396da27db21cf68eed69b0461a8fdb7b4cb9f898496d465fd3e17e6dc05a6",
           "status": "unverified-not-PASS",
           "reasonRu": "Test-only fixture guard changed two source files."
+        },
+        {
+          "key": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9",
+          "status": "historical-PASS-now-stale",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ],
+      "retiredEvidenceBySourceChanges": [
+        {
+          "key": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9",
+          "acceptedEvidence": [
+            {
+              "file": "docs/evidence/core-release-block-12-20261103.json",
+              "pointer": "/checks/0",
+              "result": "PASS",
+              "resultField": "result",
+              "evidenceKey": "c39c655b5647f9752f82ae15f03785f4ea0f4f2c9f671a3c4f1d3a082d5755f9",
+              "authorityMethod": "explicit-record-result-PASS",
+              "caseCount": 23,
+              "caseCountPointer": "/checks/0/cases",
+              "recordedMode": "fresh-source-block",
+              "recordedCommand": [
+                "node",
+                "--test",
+                "--test-name-pattern=owner-runtime",
+                "test/owner-runtime.test.js"
+              ],
+              "executionBatch": "/executionBatch",
+              "sharedBatch": false,
+              "batchCaseCount": 23,
+              "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-12-owner-runtime.log",
+              "logHash": "417d7a42e98acf460a9082be72b0d7340dbfc9ead7e4e3621ed70a5703384dba"
+            }
+          ],
+          "byteCommandBoundEvidence": null,
+          "reason": "current closure changed"
         }
       ]
     },
@@ -4747,13 +4889,13 @@
         "--test-name-pattern=native-read-capture",
         "test/native-read-capture.test.js"
       ],
-      "currentEvidenceKey": "cd2ed83a8df28e22cf02ab2fbffde2f3f4ce4b4fd89a31a663b5a025e1a62cd6",
-      "dependencyDigest": "c171622a78154aacea01a82d6772325fd4d10a67207c94efbfeddac0fae88fcf",
-      "dependencyCount": 84,
+      "currentEvidenceKey": "356316b6222898c7ac82c87264e3dedcb4cd1a86991c3fe218858eba513b5bd2",
+      "dependencyDigest": "982608387be898fe030f5253387312658de4848062213d5b081807e57a75f41a",
+      "dependencyCount": 88,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/native-read-capture",
       "projections": [],
       "applicability": "required-if-current-manual-composition-is-released",
-      "scopeClass": "shared-core",
+      "scopeClass": "legacy-evidence-capture-operator",
       "sharedCoreWithTitlesDependency": true,
       "titlesDependencyKinds": [
         "expanded-product-source-or-admission",
@@ -4761,30 +4903,64 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-16-20261103.json",
+          "pointer": "/checks/1",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "356316b6222898c7ac82c87264e3dedcb4cd1a86991c3fe218858eba513b5bd2",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 17,
+          "caseCountPointer": "/checks/1/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-concurrency=1",
+            "--test-name-pattern=(?:native-read-capture)|(?:validation-routing)|(?:artifact-boundaries)|(?:documentation)",
+            "test/native-read-capture.test.js",
+            "test/core4.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 27,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-capture-composite-attempt-02.log",
+          "logHash": "f89cf117ba1287a6b4e159623b63fb6eee63d0e5ffb5bf906eb772255426d565"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
         "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-16",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
       "legacyReleaseEntryFileListed": false,
       "latestExecution": {
-        "result": "FAIL",
-        "evidence": "docs/evidence/core-release-block-16-attempt-01-20261103.json",
-        "evidenceKey": "cd2ed83a8df28e22cf02ab2fbffde2f3f4ce4b4fd89a31a663b5a025e1a62cd6",
-        "reason": "capture_package format mismatch",
-        "fullCheckAccepted": false
-      }
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-16-20261103.json",
+        "evidenceKey": "356316b6222898c7ac82c87264e3dedcb4cd1a86991c3fe218858eba513b5bd2",
+        "fullCheckAccepted": true
+      },
+      "previousManifestKeys": [
+        {
+          "key": "cd2ed83a8df28e22cf02ab2fbffde2f3f4ce4b4fd89a31a663b5a025e1a62cd6",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ],
+      "supportBoundaryRu": "Format1 capture-era package/client only. Current format2 and incompatible current/late client are deliberately refused; no new capability."
     },
     {
       "check": "windows-cim-probe",
@@ -5210,8 +5386,8 @@
         "--test-name-pattern=core-control",
         "test/core4.test.js"
       ],
-      "currentEvidenceKey": "3287e42e5c0277945e996e29cf30c92b03d760bfeb2f4457cdc576cecd5adbc9",
-      "dependencyDigest": "a3d786d4454be88efecae7ec20013754c004fa590c57ca2a5786b35518b70736",
+      "currentEvidenceKey": "f51a4d61bef34f0a1e42cfc45e83f377c48a47bb8167e9a44137ca3cb0b67736",
+      "dependencyDigest": "442704ea6181116aea3406445e426ca73c10e599ac82c81a00220f1fd6608fad",
       "dependencyCount": 72,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/core-control",
       "projections": [],
@@ -5233,14 +5409,21 @@
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
         "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "3287e42e5c0277945e996e29cf30c92b03d760bfeb2f4457cdc576cecd5adbc9",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ]
     },
     {
       "check": "core-admission",
@@ -5253,8 +5436,8 @@
         "--test-name-pattern=core-admission",
         "test/core4.test.js"
       ],
-      "currentEvidenceKey": "d467933477d6b901cfa23fdff7b3081de4b32d7ce507cb7a3c7b472eb0b042fc",
-      "dependencyDigest": "a3d786d4454be88efecae7ec20013754c004fa590c57ca2a5786b35518b70736",
+      "currentEvidenceKey": "a6c493391f20797bb1641424c47d12077d0c15a60d6f6609022e581f70f2173b",
+      "dependencyDigest": "442704ea6181116aea3406445e426ca73c10e599ac82c81a00220f1fd6608fad",
       "dependencyCount": 72,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/core-admission",
       "projections": [],
@@ -5276,14 +5459,21 @@
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
         "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "d467933477d6b901cfa23fdff7b3081de4b32d7ce507cb7a3c7b472eb0b042fc",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ]
     },
     {
       "check": "worker-isolation",
@@ -5296,8 +5486,8 @@
         "--test-name-pattern=worker-isolation",
         "test/core4.test.js"
       ],
-      "currentEvidenceKey": "a9758550780fed3e6c41edd848e1a99a03f05de9ca9ff47a85d343472a86e576",
-      "dependencyDigest": "a3d786d4454be88efecae7ec20013754c004fa590c57ca2a5786b35518b70736",
+      "currentEvidenceKey": "7c396f7cd98b3fea463b3ed18fd3225716238cb303f424d093497086f0540cd5",
+      "dependencyDigest": "442704ea6181116aea3406445e426ca73c10e599ac82c81a00220f1fd6608fad",
       "dependencyCount": 72,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/worker-isolation",
       "projections": [],
@@ -5319,14 +5509,21 @@
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
         "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "a9758550780fed3e6c41edd848e1a99a03f05de9ca9ff47a85d343472a86e576",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ]
     },
     {
       "check": "protocol-codec",
@@ -5339,8 +5536,8 @@
         "--test-name-pattern=protocol-codec",
         "test/core4.test.js"
       ],
-      "currentEvidenceKey": "1b39f2ef64319ed5870a8e19b7ed8d1eead3d8a9f4a5642ddd5999b68b6433cc",
-      "dependencyDigest": "a3d786d4454be88efecae7ec20013754c004fa590c57ca2a5786b35518b70736",
+      "currentEvidenceKey": "aa618703f940a9223bdd6055997758fba9ad25df1a712502ec86fbceb8aac3bd",
+      "dependencyDigest": "442704ea6181116aea3406445e426ca73c10e599ac82c81a00220f1fd6608fad",
       "dependencyCount": 72,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/protocol-codec",
       "projections": [],
@@ -5362,14 +5559,21 @@
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
         "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "1b39f2ef64319ed5870a8e19b7ed8d1eead3d8a9f4a5642ddd5999b68b6433cc",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ]
     },
     {
       "check": "workflow-recovery",
@@ -5382,8 +5586,8 @@
         "--test-name-pattern=workflow-recovery",
         "test/core4.test.js"
       ],
-      "currentEvidenceKey": "b69ca10a94374a028215453d179bac698a47b766495ec70c081f42b7561ea256",
-      "dependencyDigest": "a3d786d4454be88efecae7ec20013754c004fa590c57ca2a5786b35518b70736",
+      "currentEvidenceKey": "fabe8d0e2caecf8c6533794fd848f17f48604e113a365ae2aef4e812201720f6",
+      "dependencyDigest": "442704ea6181116aea3406445e426ca73c10e599ac82c81a00220f1fd6608fad",
       "dependencyCount": 72,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/workflow-recovery",
       "projections": [],
@@ -5405,14 +5609,21 @@
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
         "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "b69ca10a94374a028215453d179bac698a47b766495ec70c081f42b7561ea256",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ]
     },
     {
       "check": "photo-owner",
@@ -5617,8 +5828,8 @@
         "--test-name-pattern=catalog-discovery",
         "test/core4.test.js"
       ],
-      "currentEvidenceKey": "00d5a3ddaa689a3d19ecd10a3a818a2a9ca79d5f4de1a5d75b4ea09394907d4e",
-      "dependencyDigest": "d4f517405bdc5332476eb2ed9012877d2447712f7c0b5a37f0c58e138aa41a91",
+      "currentEvidenceKey": "6c6a14673105c3ccc49d456cf2f74241af9072b2410b958a9fdd8f16f27c8578",
+      "dependencyDigest": "33fb934e158b69a3a2aff661c52710d22e9de5fdbb67a2acaf40c717a48e6647",
       "dependencyCount": 8,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/catalog-discovery",
       "projections": [],
@@ -5639,14 +5850,21 @@
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
         "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "00d5a3ddaa689a3d19ecd10a3a818a2a9ca79d5f4de1a5d75b4ea09394907d4e",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ]
     },
     {
       "check": "validation-routing",
@@ -5659,8 +5877,8 @@
         "--test-name-pattern=validation-routing",
         "test/core4.test.js"
       ],
-      "currentEvidenceKey": "eeb9e662bb5b7f719e518bfe165e7484764ddd19e09dbdd81554e8bdea5723b4",
-      "dependencyDigest": "93464eabb62d877d7efd0b2d19a1f38d8cf6d0362d315f0366f4aa580b7a1d06",
+      "currentEvidenceKey": "67d1c0d841da4c505584599e0fa5623b4a4af799b20e61270056643cb219e30e",
+      "dependencyDigest": "072d4ce5f3d2733d2666b49cd24b0b3fc25e203ac656d4cdedd78c8ead3729aa",
       "dependencyCount": 73,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/validation-routing",
       "projections": [],
@@ -5673,52 +5891,35 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "reuse-byte-command-bound",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
-      "byteCommandBoundEvidence": {
-        "file": "docs/evidence/core-cloud-intake-20261103.json",
-        "pointer": "/validation/scopedCore",
-        "result": "PASS",
-        "acceptedCommit": "5f99093534fbe130429a154c97626719b5e2c613",
-        "acceptedSelectorCommand": [
-          "node",
-          "core4/tools/validate-diff.js",
-          "core4/tools/check-package-location.js",
-          "core4/test/package-location.test.js",
-          "--run"
-        ],
-        "acceptedSelectorCommandCwd": "repository-root",
-        "commandProvenance": {
-          "file": "plans/core-cloud-intake-20261103.md",
-          "commit": "5f99093534fbe130429a154c97626719b5e2c613",
-          "containsExactSelectorCommand": true
-        },
-        "acceptedMapCommandMatchesCurrent": true,
-        "acceptedSelectorBytesMatchCurrent": true,
-        "sourceSnapshotFile": "tools/cloud-checks-audit/reports/baseline.json",
-        "sourceSnapshotPointer": "/sources",
-        "sourceSnapshotFileSha256": "0029ee1eada045a51623510e1248248fcb818f317619ced04aaf8542511ed4a2",
-        "dependencyFilesCovered": 73,
-        "missingDependencies": [],
-        "mismatchedDependencies": [],
-        "projections": [],
-        "recordedEvidenceKey": null,
-        "reconstructedCurrentEvidenceKey": "eeb9e662bb5b7f719e518bfe165e7484764ddd19e09dbdd81554e8bdea5723b4",
-        "groupEvidenceId": "cloud-intake-scoped-core-9",
-        "sharedGroupCases": 9,
-        "perCheckUniqueCases": null,
-        "acceptedResult": {
-          "pass": 9,
-          "fail": 0,
-          "skip": 0,
-          "groups": [
-            "artifact-boundaries",
-            "validation-routing"
-          ]
-        },
-        "decisionRu": "Reuse принят: successful named groups + неизменённые selector/command/map и все bytes текущей closure. Это реконструированная привязка, не сохранённый при исполнении evidenceKey."
-      },
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-16-20261103.json",
+          "pointer": "/checks/2",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "67d1c0d841da4c505584599e0fa5623b4a4af799b20e61270056643cb219e30e",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 5,
+          "caseCountPointer": "/checks/2/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-concurrency=1",
+            "--test-name-pattern=(?:native-read-capture)|(?:validation-routing)|(?:artifact-boundaries)|(?:documentation)",
+            "test/native-read-capture.test.js",
+            "test/core4.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 27,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-capture-composite-attempt-02.log",
+          "logHash": "f89cf117ba1287a6b4e159623b63fb6eee63d0e5ffb5bf906eb772255426d565"
+        }
+      ],
+      "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 7,
         "references": [
@@ -5769,12 +5970,77 @@
       },
       "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "reuse-no-rerun-needed",
+        "state": "passed-in-source-block",
         "scheduled": false,
         "executedDuringManifestPreparation": false,
-        "gateRu": "Переиспользовать только пока key/closure/среда применимы."
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-16",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "eeb9e662bb5b7f719e518bfe165e7484764ddd19e09dbdd81554e8bdea5723b4",
+          "status": "historical-PASS-now-stale",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ],
+      "retiredEvidenceBySourceChanges": [
+        {
+          "key": "eeb9e662bb5b7f719e518bfe165e7484764ddd19e09dbdd81554e8bdea5723b4",
+          "acceptedEvidence": [],
+          "byteCommandBoundEvidence": {
+            "file": "docs/evidence/core-cloud-intake-20261103.json",
+            "pointer": "/validation/scopedCore",
+            "result": "PASS",
+            "acceptedCommit": "5f99093534fbe130429a154c97626719b5e2c613",
+            "acceptedSelectorCommand": [
+              "node",
+              "core4/tools/validate-diff.js",
+              "core4/tools/check-package-location.js",
+              "core4/test/package-location.test.js",
+              "--run"
+            ],
+            "acceptedSelectorCommandCwd": "repository-root",
+            "commandProvenance": {
+              "file": "plans/core-cloud-intake-20261103.md",
+              "commit": "5f99093534fbe130429a154c97626719b5e2c613",
+              "containsExactSelectorCommand": true
+            },
+            "acceptedMapCommandMatchesCurrent": true,
+            "acceptedSelectorBytesMatchCurrent": true,
+            "sourceSnapshotFile": "tools/cloud-checks-audit/reports/baseline.json",
+            "sourceSnapshotPointer": "/sources",
+            "sourceSnapshotFileSha256": "0029ee1eada045a51623510e1248248fcb818f317619ced04aaf8542511ed4a2",
+            "dependencyFilesCovered": 73,
+            "missingDependencies": [],
+            "mismatchedDependencies": [],
+            "projections": [],
+            "recordedEvidenceKey": null,
+            "reconstructedCurrentEvidenceKey": "eeb9e662bb5b7f719e518bfe165e7484764ddd19e09dbdd81554e8bdea5723b4",
+            "groupEvidenceId": "cloud-intake-scoped-core-9",
+            "sharedGroupCases": 9,
+            "perCheckUniqueCases": null,
+            "acceptedResult": {
+              "pass": 9,
+              "fail": 0,
+              "skip": 0,
+              "groups": [
+                "artifact-boundaries",
+                "validation-routing"
+              ]
+            },
+            "decisionRu": "Reuse принят: successful named groups + неизменённые selector/command/map и все bytes текущей closure. Это реконструированная привязка, не сохранённый при исполнении evidenceKey."
+          },
+          "reason": "current closure changed"
+        }
+      ],
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-16-20261103.json",
+        "evidenceKey": "67d1c0d841da4c505584599e0fa5623b4a4af799b20e61270056643cb219e30e",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "artifact-boundaries",
@@ -5787,8 +6053,8 @@
         "--test-name-pattern=artifact-boundaries",
         "test/core4.test.js"
       ],
-      "currentEvidenceKey": "ac865e24c610cae62c37b22bf006b4a18b37aac57244d5dee8a45377f1f8cba6",
-      "dependencyDigest": "dd9b943d072e6ce56c12b1b6bcf630d6c44c220bd8840611f7a03e68ab0d5c63",
+      "currentEvidenceKey": "581c92eb1794cb6b2b592a7b0b38b081bfdc529f832f59f94b8b77a98de818c2",
+      "dependencyDigest": "0bf86ebfdeaab5141fefaae7410fe3a08669d9eb62b8a9e9b777c7720fb564fb",
       "dependencyCount": 73,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/artifact-boundaries",
       "projections": [],
@@ -5801,52 +6067,35 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "reuse-byte-command-bound",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
-      "byteCommandBoundEvidence": {
-        "file": "docs/evidence/core-cloud-intake-20261103.json",
-        "pointer": "/validation/scopedCore",
-        "result": "PASS",
-        "acceptedCommit": "5f99093534fbe130429a154c97626719b5e2c613",
-        "acceptedSelectorCommand": [
-          "node",
-          "core4/tools/validate-diff.js",
-          "core4/tools/check-package-location.js",
-          "core4/test/package-location.test.js",
-          "--run"
-        ],
-        "acceptedSelectorCommandCwd": "repository-root",
-        "commandProvenance": {
-          "file": "plans/core-cloud-intake-20261103.md",
-          "commit": "5f99093534fbe130429a154c97626719b5e2c613",
-          "containsExactSelectorCommand": true
-        },
-        "acceptedMapCommandMatchesCurrent": true,
-        "acceptedSelectorBytesMatchCurrent": true,
-        "sourceSnapshotFile": "tools/cloud-checks-audit/reports/baseline.json",
-        "sourceSnapshotPointer": "/sources",
-        "sourceSnapshotFileSha256": "0029ee1eada045a51623510e1248248fcb818f317619ced04aaf8542511ed4a2",
-        "dependencyFilesCovered": 73,
-        "missingDependencies": [],
-        "mismatchedDependencies": [],
-        "projections": [],
-        "recordedEvidenceKey": null,
-        "reconstructedCurrentEvidenceKey": "ac865e24c610cae62c37b22bf006b4a18b37aac57244d5dee8a45377f1f8cba6",
-        "groupEvidenceId": "cloud-intake-scoped-core-9",
-        "sharedGroupCases": 9,
-        "perCheckUniqueCases": null,
-        "acceptedResult": {
-          "pass": 9,
-          "fail": 0,
-          "skip": 0,
-          "groups": [
-            "artifact-boundaries",
-            "validation-routing"
-          ]
-        },
-        "decisionRu": "Reuse принят: successful named groups + неизменённые selector/command/map и все bytes текущей closure. Это реконструированная привязка, не сохранённый при исполнении evidenceKey."
-      },
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-16-20261103.json",
+          "pointer": "/checks/0",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "581c92eb1794cb6b2b592a7b0b38b081bfdc529f832f59f94b8b77a98de818c2",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 5,
+          "caseCountPointer": "/checks/0/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-concurrency=1",
+            "--test-name-pattern=(?:native-read-capture)|(?:validation-routing)|(?:artifact-boundaries)|(?:documentation)",
+            "test/native-read-capture.test.js",
+            "test/core4.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 27,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-capture-composite-attempt-02.log",
+          "logHash": "f89cf117ba1287a6b4e159623b63fb6eee63d0e5ffb5bf906eb772255426d565"
+        }
+      ],
+      "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
         "references": [
@@ -5861,12 +6110,77 @@
       },
       "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "reuse-no-rerun-needed",
+        "state": "passed-in-source-block",
         "scheduled": false,
         "executedDuringManifestPreparation": false,
-        "gateRu": "Переиспользовать только пока key/closure/среда применимы."
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-16",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "ac865e24c610cae62c37b22bf006b4a18b37aac57244d5dee8a45377f1f8cba6",
+          "status": "historical-PASS-now-stale",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ],
+      "retiredEvidenceBySourceChanges": [
+        {
+          "key": "ac865e24c610cae62c37b22bf006b4a18b37aac57244d5dee8a45377f1f8cba6",
+          "acceptedEvidence": [],
+          "byteCommandBoundEvidence": {
+            "file": "docs/evidence/core-cloud-intake-20261103.json",
+            "pointer": "/validation/scopedCore",
+            "result": "PASS",
+            "acceptedCommit": "5f99093534fbe130429a154c97626719b5e2c613",
+            "acceptedSelectorCommand": [
+              "node",
+              "core4/tools/validate-diff.js",
+              "core4/tools/check-package-location.js",
+              "core4/test/package-location.test.js",
+              "--run"
+            ],
+            "acceptedSelectorCommandCwd": "repository-root",
+            "commandProvenance": {
+              "file": "plans/core-cloud-intake-20261103.md",
+              "commit": "5f99093534fbe130429a154c97626719b5e2c613",
+              "containsExactSelectorCommand": true
+            },
+            "acceptedMapCommandMatchesCurrent": true,
+            "acceptedSelectorBytesMatchCurrent": true,
+            "sourceSnapshotFile": "tools/cloud-checks-audit/reports/baseline.json",
+            "sourceSnapshotPointer": "/sources",
+            "sourceSnapshotFileSha256": "0029ee1eada045a51623510e1248248fcb818f317619ced04aaf8542511ed4a2",
+            "dependencyFilesCovered": 73,
+            "missingDependencies": [],
+            "mismatchedDependencies": [],
+            "projections": [],
+            "recordedEvidenceKey": null,
+            "reconstructedCurrentEvidenceKey": "ac865e24c610cae62c37b22bf006b4a18b37aac57244d5dee8a45377f1f8cba6",
+            "groupEvidenceId": "cloud-intake-scoped-core-9",
+            "sharedGroupCases": 9,
+            "perCheckUniqueCases": null,
+            "acceptedResult": {
+              "pass": 9,
+              "fail": 0,
+              "skip": 0,
+              "groups": [
+                "artifact-boundaries",
+                "validation-routing"
+              ]
+            },
+            "decisionRu": "Reuse принят: successful named groups + неизменённые selector/command/map и все bytes текущей closure. Это реконструированная привязка, не сохранённый при исполнении evidenceKey."
+          },
+          "reason": "current closure changed"
+        }
+      ],
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-16-20261103.json",
+        "evidenceKey": "581c92eb1794cb6b2b592a7b0b38b081bfdc529f832f59f94b8b77a98de818c2",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "documentation",
@@ -5879,8 +6193,8 @@
         "--test-name-pattern=documentation",
         "test/core4.test.js"
       ],
-      "currentEvidenceKey": "8be448f52a649473510930611e45aa80bc8ba466fb429f76645a4283db65e983",
-      "dependencyDigest": "499648a7ea6776c3488617bb87d3b6895efe47e9cf287e85947e9b63a375121d",
+      "currentEvidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+      "dependencyDigest": "8e620b5d6374132ef88cdc1af66da387c36e6b5273ac9b26f696de211410ac8d",
       "dependencyCount": 2,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/documentation",
       "projections": [],
@@ -5890,23 +6204,63 @@
       "titlesDependencyKinds": [],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-16-20261103.json",
+          "pointer": "/checks/3",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 1,
+          "caseCountPointer": "/checks/3/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-concurrency=1",
+            "--test-name-pattern=(?:native-read-capture)|(?:validation-routing)|(?:artifact-boundaries)|(?:documentation)",
+            "test/native-read-capture.test.js",
+            "test/core4.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 27,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-16-native-capture-composite-attempt-02.log",
+          "logHash": "f89cf117ba1287a6b4e159623b63fb6eee63d0e5ffb5bf906eb772255426d565"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
         "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-16",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "8be448f52a649473510930611e45aa80bc8ba466fb429f76645a4283db65e983",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ],
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-16-20261103.json",
+        "evidenceKey": "a12ba912d46186f27e932f7fb370f62e898215e95c29cb6d3b74a49d204618be",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "cep-transport",
@@ -5919,8 +6273,8 @@
         "--test-name-pattern=cep-transport",
         "test/integration/cep-transport.test.js"
       ],
-      "currentEvidenceKey": "9a0e6188781f6735dfc8730fe18a99fbacc7a434753e9de84e23863d632f0ec8",
-      "dependencyDigest": "d65bfc0a3822a080225ced7927059a64227d1a8d62f4fb9b8517a064beca8605",
+      "currentEvidenceKey": "47d0619ceb2cf55e0f9e6d380fb0708446fdf3068ffe2c9b45e91d22af1b0bc5",
+      "dependencyDigest": "281bd7939cd254e8c2c9c2edf6b53fa58c83f1b6ddc785e5c454cb9c94f0d1ac",
       "dependencyCount": 81,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/cep-transport",
       "projections": [],
@@ -5942,14 +6296,21 @@
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
         "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
-      "legacyReleaseEntryFileListed": true
+      "legacyReleaseEntryFileListed": true,
+      "previousManifestKeys": [
+        {
+          "key": "9a0e6188781f6735dfc8730fe18a99fbacc7a434753e9de84e23863d632f0ec8",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
+        }
+      ]
     },
     {
       "check": "lifecycle-simulation",
@@ -5962,9 +6323,9 @@
         "--test-name-pattern=lifecycle-simulation",
         "test/lifecycle-simulation.test.js"
       ],
-      "currentEvidenceKey": "6ff26d0d9a15eac157650c04e0493d1a5d97899f5a66b4a6a90042ba059679b1",
-      "dependencyDigest": "1048a26f82b6fa7a9c5af66a8db2d1dec591891460ea9ee4f37953d6f45cca2b",
-      "dependencyCount": 172,
+      "currentEvidenceKey": "1b93f80a41d4ac2d4c67e7bb79728d284d6eabe2d6d17f38f9e4dd838fd00a4e",
+      "dependencyDigest": "acfd1dce7502bc9fc829b1e1a19a670d98d97f94baa0d856f025ba363ac7a064",
+      "dependencyCount": 173,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/lifecycle-simulation",
       "projections": [],
       "applicability": "required-if-current-manual-composition-is-released",
@@ -5985,12 +6346,12 @@
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "no-authoritative-keyed-PASS-record-in-reviewed-docs/evidence",
+      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
       "futureExecution": {
         "state": "addressed-source-result-needed-for-full-release",
         "scheduled": false,
-        "executedDuringManifestPreparation": false,
-        "gateRu": "При подготовке full release: точная command, scoped fixture/host preflight, result+key+matched cases/skips; отсутствие PASS не считается FAIL."
+        "executedDuringSourceAcceptance": false,
+        "gateRu": "Требуется current-key source result после test-only repair."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -5998,6 +6359,11 @@
           "key": "84480ae823c5129c8a3982ebeaa030ea9142d94bb3ac12e957694b051dbebc09",
           "status": "unverified-not-PASS",
           "reasonRu": "Test-only fixture guard changed two source files."
+        },
+        {
+          "key": "6ff26d0d9a15eac157650c04e0493d1a5d97899f5a66b4a6a90042ba059679b1",
+          "status": "unverified-not-PASS",
+          "reasonRu": "Capture-era fixture/dependency/routing repair."
         }
       ]
     },
@@ -6231,20 +6597,100 @@
     "excludesHeldDedicatedTitles": true,
     "batches": [
       {
-        "batchId": "source-candidate-16",
+        "batchId": "source-candidate-30",
         "checks": [
-          "native-read-capture"
+          "start-over-runtime"
         ],
         "cwd": "core4",
         "command": [
           "node",
           "--test",
-          "--test-name-pattern=(?:native-read-capture)",
-          "test/native-read-capture.test.js"
+          "--test-name-pattern=start-over-runtime",
+          "test/start-over-runtime.test.js"
         ],
         "scheduled": false,
-        "executionOrder": "serial-after-per-batch-isolation-review",
-        "gateRu": "Данные будущего выбора. Реальная изоляция/OS ветки проверяются для этого batch; exit0 без matched tests или с только skips не закрывает check."
+        "executionOrder": "serial-after-parent-reducer",
+        "reasonRu": "Прежний PASS сохранён historical; key изменён dependency binding repair."
+      },
+      {
+        "batchId": "source-candidate-31",
+        "checks": [
+          "start-over-operator"
+        ],
+        "cwd": "core4",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=start-over-operator",
+          "test/start-over-operator.test.js"
+        ],
+        "scheduled": false,
+        "executionOrder": "serial-after-parent-reducer",
+        "reasonRu": "Прежний PASS сохранён historical; key изменён dependency binding repair."
+      },
+      {
+        "batchId": "source-candidate-32",
+        "checks": [
+          "stopped-host-readoption-operator"
+        ],
+        "cwd": "core4",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=stopped-host-readoption-operator",
+          "test/stopped-host-readoption-operator.test.js"
+        ],
+        "scheduled": false,
+        "executionOrder": "serial-after-parent-reducer",
+        "reasonRu": "Прежний PASS сохранён historical; key изменён dependency binding repair."
+      },
+      {
+        "batchId": "source-candidate-33",
+        "checks": [
+          "maintenance-finish-operator"
+        ],
+        "cwd": "core4",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=maintenance-finish-operator",
+          "test/maintenance-finish-operator.test.js"
+        ],
+        "scheduled": false,
+        "executionOrder": "serial-after-parent-reducer",
+        "reasonRu": "Прежний PASS сохранён historical; key изменён dependency binding repair."
+      },
+      {
+        "batchId": "source-candidate-34",
+        "checks": [
+          "owner-installation"
+        ],
+        "cwd": "core4",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-installation",
+          "test/owner-installation.test.js"
+        ],
+        "scheduled": false,
+        "executionOrder": "serial-after-parent-reducer",
+        "reasonRu": "Прежний PASS сохранён historical; key изменён dependency binding repair."
+      },
+      {
+        "batchId": "source-candidate-35",
+        "checks": [
+          "owner-runtime"
+        ],
+        "cwd": "core4",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=owner-runtime",
+          "test/owner-runtime.test.js"
+        ],
+        "scheduled": false,
+        "executionOrder": "serial-after-parent-reducer",
+        "reasonRu": "Прежний PASS сохранён historical; key изменён dependency binding repair."
       },
       {
         "batchId": "source-candidate-17",
@@ -6334,14 +6780,13 @@
           "worker-isolation",
           "protocol-codec",
           "workflow-recovery",
-          "catalog-discovery",
-          "documentation"
+          "catalog-discovery"
         ],
         "cwd": "core4",
         "command": [
           "node",
           "--test",
-          "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:worker-isolation)|(?:protocol-codec)|(?:workflow-recovery)|(?:catalog-discovery)|(?:documentation)",
+          "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:worker-isolation)|(?:protocol-codec)|(?:workflow-recovery)|(?:catalog-discovery)",
           "test/core4.test.js"
         ],
         "scheduled": false,
@@ -6741,12 +7186,18 @@
       "file": "tools/cloud-checks-audit/reports/baseline.json",
       "sha256": "0029ee1eada045a51623510e1248248fcb818f317619ced04aaf8542511ed4a2",
       "records": 214,
-      "mismatches": 2,
+      "mismatches": 5,
       "mismatchedFiles": [
+        "config/validation-map.json",
+        "test/core4.test.js",
         "test/fixtures/owner-runtime-child.js",
+        "test/native-read-capture.test.js",
         "test/owner-runtime.test.js"
       ],
-      "noteRu": "Исторический cloud snapshot сохраняется; два test-only guard files изменены. Они не входят в 73 зависимости каждой из двух byte-command reuse групп."
+      "noteRu": "Исторический cloud snapshot не является текущим после test/map repair; исходные tool source hashes сохранены.",
+      "newSourceFilesOutsideHistoricalSnapshot": [
+        "test/fixtures/native-capture-panel-v1.txt"
+      ]
     }
   },
   "releaseGates": [
@@ -6755,7 +7206,12 @@
       "status": "open",
       "requiredForFullRelease": true,
       "remainingCheckIds": [
-        "native-read-capture",
+        "start-over-runtime",
+        "start-over-operator",
+        "stopped-host-readoption-operator",
+        "maintenance-finish-operator",
+        "owner-installation",
+        "owner-runtime",
         "zero-dispatch-recovery",
         "human-window",
         "installable-runtime",
@@ -6771,7 +7227,6 @@
         "photo-executor-contract",
         "titles-executor-contract",
         "catalog-discovery",
-        "documentation",
         "cep-transport",
         "lifecycle-simulation",
         "native-read-recovery",
@@ -6783,8 +7238,6 @@
         "start-over-driver",
         "start-over-panel-control",
         "panel-start-over",
-        "start-over-runtime",
-        "start-over-operator",
         "work-session-owner",
         "work-session",
         "start-over-channel",
@@ -6793,7 +7246,6 @@
         "start-over-barrier",
         "start-over-inspection",
         "start-over-process",
-        "stopped-host-readoption-operator",
         "stopped-host-readoption",
         "readoption-core",
         "readoption-recovery",
@@ -6805,7 +7257,6 @@
         "windows-retained-process",
         "stopped-certification",
         "maintenance-finish",
-        "maintenance-finish-operator",
         "owner-maintenance",
         "maintenance-operator",
         "windows-owner-process",
@@ -6814,22 +7265,22 @@
         "owner-marker-publication",
         "client-launcher",
         "recovery-inspection",
-        "owner-installation",
         "controller-transfer",
         "client-entry",
-        "owner-runtime",
         "client-ipc",
         "owner-attachments",
         "owner-ipc-process",
         "controller-lease",
         "panel-reconnect",
         "endpoint-observation",
+        "native-read-capture",
         "windows-cim-probe",
         "manual-runtime",
         "validation-routing",
-        "artifact-boundaries"
+        "artifact-boundaries",
+        "documentation"
       ],
-      "noteRu": "23 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 15 новых source checks; это не native proof."
+      "noteRu": "27 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 13 новых source checks; это не native proof."
     },
     {
       "gate": "package-and-installation",
@@ -6957,16 +7408,16 @@
     "interpretationRu": "Только статическое сопоставление entry files:6 и55другихcommands. Не динамический coverage и не результаты FAIL; legacy script не единственный критерий полноты."
   },
   "actions": {
-    "acceptedSourceBatchCommands": 15,
+    "acceptedSourceBatchCommands": 16,
+    "failedSourceBatchCommands": 1,
+    "totalCheckoutSourceBatchCommands": 17,
     "liveProductionAeCepMcpUiCalls": 0,
     "manualProductionProcessOperations": 0,
     "productionBuildInstallConfigWrites": 0,
     "externalNetworkArgonPushPr": 0,
     "fixtureBuildInstallScope": "own TEMP only",
     "fixtureProcessScope": "own fixture actors and self queries only",
-    "fixtureNetworkScope": "own loopback ephemeral ports and installation pipes only",
-    "failedSourceBatchCommands": 1,
-    "totalSourceBatchCommands": 16
+    "fixtureNetworkScope": "own loopback ephemeral ports and installation pipes only"
   },
   "provenance": {
     "scratchSha256": "8c63c696b43410c24bfffa4f8dac1e7ffb5fc82e5a37a2f258b332009498fb80",
@@ -6980,8 +7431,10 @@
     "reviewDoesNotChangeRuntimeAuthority": true
   },
   "validation": {
-    "status": "source-block16-FAIL-repair-in-progress",
-    "report": "docs/evidence/core-release-block-16-attempt-01-20261103.json",
+    "status": "PASS",
+    "report": "docs/evidence/core-release-block-16-20261103-validation.json",
+    "selectorKeysMatched": 71,
+    "sourceTestCommandsExecuted": 17,
     "fullReleaseCertified": false
   },
   "execution": {
@@ -7301,7 +7754,32 @@
           "durationMs": 273.676
         },
         "reporter": "spec",
-        "logSha256": "8f0323ef2c843176c5391917ce7066d7acca35853caf851f885db0b82a59bd0c"
+        "logSha256": "8f0323ef2c843176c5391917ce7066d7acca35853caf851f885db0b82a59bd0c",
+        "acceptanceCommit": "782ae1de7ac6c3a396ab94698697a74282ea947b"
+      },
+      {
+        "blockId": "source-candidate-16",
+        "evidence": "docs/evidence/core-release-block-16-20261103.json",
+        "baselineCommit": "233c33bff35594c40293510fccb218c3ed4e04e1",
+        "checks": [
+          "artifact-boundaries",
+          "native-read-capture",
+          "validation-routing",
+          "documentation"
+        ],
+        "result": "PASS",
+        "summary": {
+          "tests": 27,
+          "suites": 0,
+          "pass": 27,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 114005.7399
+        },
+        "reporter": "spec",
+        "logSha256": "f89cf117ba1287a6b4e159623b63fb6eee63d0e5ffb5bf906eb772255426d565"
       }
     ],
     "guardFixes": [
@@ -7345,10 +7823,41 @@
         "baselineCommit": "782ae1de7ac6c3a396ab94698697a74282ea947b"
       }
     ],
-    "status": "capture-era-fixture-repair-in-progress",
-    "candidateDiagnosis": "docs/evidence/core-native-capture-epoch-diagnosis-20261104.json"
+    "status": "addressed-source-execution",
+    "candidateDiagnosis": "docs/evidence/core-native-capture-epoch-diagnosis-20261104.json",
+    "repairFixes": [
+      {
+        "evidence": "docs/evidence/core-native-capture-fixture-repair-20261103.json",
+        "status": "accepted-with-current-composite-source-proof",
+        "changedPaths": [
+          "core4/config/validation-map.json",
+          "core4/test/core4.test.js",
+          "core4/test/fixtures/native-capture-panel-v1.txt",
+          "core4/test/native-read-capture.test.js"
+        ],
+        "retiredAccepted": [
+          "start-over-runtime",
+          "start-over-operator",
+          "stopped-host-readoption-operator",
+          "maintenance-finish-operator",
+          "owner-installation",
+          "owner-runtime",
+          "validation-routing",
+          "artifact-boundaries"
+        ],
+        "rerunBatchIds": [
+          "source-candidate-30",
+          "source-candidate-31",
+          "source-candidate-32",
+          "source-candidate-33",
+          "source-candidate-34",
+          "source-candidate-35"
+        ],
+        "sourceEvidence": "docs/evidence/core-release-block-16-20261103.json"
+      }
+    ]
   },
-  "updatedAt": "2026-11-03T19:10:17.149Z",
+  "updatedAt": "2026-11-04T08:44:04.882Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
