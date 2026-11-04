@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T09:02:25.396Z",
+  "blockId": "source-candidate-25",
+  "baselineCommit": "86afa1779c93841b400228e5bd80b7a0ca682f8a",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:lifecycle-simulation)",
+      "test/lifecycle-simulation.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T09:01:58.962Z",
+    "finishedAt": "2026-11-04T09:02:09.738Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 31,
+      "suites": 0,
+      "pass": 31,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 10713.2036
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-25-lifecycle-simulation.log",
+      "sha256": "1befcb54b36a3c4351b5c393b6e7aba181665cc4ce452eb0a4056e845fcc63d4",
+      "bytes": 3390
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-25-lifecycle-simulation-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "lifecycle-simulation",
+      "evidenceKey": "1b93f80a41d4ac2d4c67e7bb79728d284d6eabe2d6d17f38f9e4dd838fd00a4e",
+      "result": "PASS",
+      "cases": 31,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[lifecycle-simulation] C1 source-less startup and public tools provide no event or issuance authority",
+        "[lifecycle-simulation] C2 transitions rotate same-path incarnation and unsaved new closes admission",
+        "[lifecycle-simulation] C2 uncertain sequences permanently lose that source epoch",
+        "[lifecycle-simulation] C3 loss reconnect and restart never recover old project proof",
+        "[lifecycle-simulation] C4 confirmation binds complete canonical proposal and exact step",
+        "[lifecycle-simulation] C4 project transition needs new proposal ownership and checkpoint bindings",
+        "[lifecycle-simulation] C5 loss at afterAuthorize preserves the send boundary",
+        "[lifecycle-simulation] C5 loss at beforeIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 loss at afterIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 loss at afterPhysicalSend preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at afterAuthorize preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at beforeIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at afterIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at afterPhysicalSend preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at afterAuthorize preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at beforeIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at afterIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at afterPhysicalSend preserves the send boundary",
+        "[lifecycle-simulation] C5 late loss at afterAck preserves ACK and fence",
+        "[lifecycle-simulation] C5 late revoke at afterAck preserves ACK and fence",
+        "[lifecycle-simulation] C5 late loss at afterReadback preserves ACK and fence",
+        "[lifecycle-simulation] C5 late revoke at afterReadback preserves ACK and fence",
+        "[lifecycle-simulation] C5 throwing physical-send hook cannot classify a submitted mutation as rejected",
+        "[lifecycle-simulation] C5 event during evaluate retains applied receipt and cannot fabricate readback success",
+        "[lifecycle-simulation] C5 retained observer permits original completion plus independent verification after broker reopen",
+        "[lifecycle-simulation] C5 replacement observer cannot infer continuity from same AE values and completion store",
+        "[lifecycle-simulation] C6 validation selects actual lifecycle consumers and preserves offline certification",
+        "[lifecycle-simulation] C5 reconciliation microtask loss after completion cannot record terminal success",
+        "[lifecycle-simulation] C5 reconciliation microtask revert after completion cannot record terminal success",
+        "[lifecycle-simulation] C5 reconciliation microtask loss after verify cannot record terminal success",
+        "[lifecycle-simulation] C5 reconciliation microtask revert after verify cannot record terminal success"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=lifecycle-simulation",
+        "test/lifecycle-simulation.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source synthetic lifecycle/Core/worker/receiver/JSX VM",
+    "AE": "synthetic events only",
+    "network": "none",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "titlesSuites": 0,
+    "slideshowSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": true,
+    "fixturePrefixes": [
+      "ae-core4-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-3jPHzF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-8hN93m",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Ggr7rF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-V76hhU",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-SuyuyI",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-1EX8L3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-1nMuI3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-9JJZeT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-6wnypB",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Z6DGC0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-5TIzkj",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-9wOZ0G",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ycz0wO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-BqxwJs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-JWmXiE",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-QyrQ5v",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-pf3Tnm",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ioPyos",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-kpD4k8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-FxpLIJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-9wRcZF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-LVZhkJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-msnVam",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-7napUx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-CxOzcT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Tx4F34",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-RnMMIc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-1E09Xp"
+    ],
+    "remainingOwnDirs": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-3jPHzF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-8hN93m",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Ggr7rF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-V76hhU",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-SuyuyI",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-1EX8L3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-1nMuI3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-9JJZeT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-6wnypB",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Z6DGC0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-5TIzkj",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-9wOZ0G",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ycz0wO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-BqxwJs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-JWmXiE",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-QyrQ5v",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-pf3Tnm",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ioPyos",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-kpD4k8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-FxpLIJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-9wRcZF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-LVZhkJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-msnVam",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-7napUx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-CxOzcT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Tx4F34",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-RnMMIc",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-1E09Xp"
+    ],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own TEMP snapshots/data intentionally retained; no broad cleanup.",
+      "Broker worker closure via registered closehooks; no independent worker exit inventory.",
+      "31 cases derived from11 fixed +12boundary +4late +4microtask; no outer deadline."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/lifecycle-simulation.test.js",
+        "line": 13,
+        "proof": "Broker fixture t.after close, including replacement instances"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-25-lifecycle-simulation-reducer.json",
+    "sha256": "a2bc9e98e9ec1e3e3b4a89f82cde263337ae6583bbfb11c514825635ef9409f8"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
