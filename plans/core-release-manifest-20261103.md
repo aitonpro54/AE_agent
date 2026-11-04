@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято source runs: 18; current fresh checks: 15. Применимое evidence: 46 exact-key + 0 byte-command-bound. Открыто: 25 (без hold: 23, Titles под паузой: 2). Следующий блок: source-candidate-32. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Принято source runs: 19; current fresh checks: 16. Применимое evidence: 47 exact-key + 0 byte-command-bound. Открыто: 24 (без hold: 22, Titles под паузой: 2). Следующий блок: source-candidate-33. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 

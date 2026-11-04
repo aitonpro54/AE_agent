@@ -30,7 +30,7 @@ push/PR и запуска dedicated продуктов. Штатные внут�
 own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup проверены.
 
 <!-- EXECUTION_STATUS -->
-Принято source runs: 18; current fresh checks: 15. Применимое evidence: 46 exact-key + 0 byte-command-bound. Открыто: 25 (без hold: 23, Titles под паузой: 2). Следующий блок: source-candidate-32.
+Принято source runs: 19; current fresh checks: 16. Применимое evidence: 47 exact-key + 0 byte-command-bound. Открыто: 24 (без hold: 22, Titles под паузой: 2). Следующий блок: source-candidate-33.
 <!-- /EXECUTION_STATUS -->
 
 <!-- EXECUTION_BLOCKS -->
@@ -53,7 +53,8 @@ own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup пр�
 | source-candidate-15 | `endpoint-observation` | PASS: 15 pass / 0 skip | [JSON](../docs/evidence/core-release-block-15-20261103.json) | `782ae1d` |
 | source-candidate-16 | `artifact-boundaries`, `native-read-capture`, `validation-routing`, `documentation` | PASS: 27 pass / 0 skip | [JSON](../docs/evidence/core-release-block-16-20261103.json) | `17f941c` |
 | source-candidate-30 | `start-over-runtime` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-30-20261103.json) | `9c696de` |
-| source-candidate-31 | `start-over-operator` | PASS: 6 pass / 0 skip | [JSON](../docs/evidence/core-release-block-31-20261103.json) | создаётся после проверки |
+| source-candidate-31 | `start-over-operator` | PASS: 6 pass / 0 skip | [JSON](../docs/evidence/core-release-block-31-20261103.json) | `25afc8a` |
+| source-candidate-32 | `stopped-host-readoption-operator` | PASS: 17 pass / 0 skip | [JSON](../docs/evidence/core-release-block-32-20261103.json) | создаётся после проверки |
 <!-- /EXECUTION_BLOCKS -->
 
 ## Block16: сохранённый FAIL и принятый repair

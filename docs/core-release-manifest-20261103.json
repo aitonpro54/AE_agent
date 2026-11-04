@@ -1248,6 +1248,12 @@
       "sha256": "445e536c64531a41566e136a02ca4c806065c13a98bebc89237b559fbd8e7cf4",
       "directKeyedRecords": 1,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-release-block-32-20261103.json",
+      "sha256": "d3a9ab58fc828d2d29b3742724bb07c21c78060a32c43eaaa69a378face613bd",
+      "directKeyedRecords": 1,
+      "excludedAsAuthority": null
     }
   ],
   "evidenceMethod": {
@@ -1276,17 +1282,17 @@
   ],
   "summary": {
     "registeredChecks": 71,
-    "recordedExactKeyReuse": 46,
+    "recordedExactKeyReuse": 47,
     "byteCommandBoundReuse": 0,
-    "needsCurrentEvidence": 25,
+    "needsCurrentEvidence": 24,
     "heldByProductPause": 2,
-    "pendingNotHeldByProductPause": 23,
+    "pendingNotHeldByProductPause": 22,
     "sharedCoreWithTitlesDependency": 33,
-    "optionalFutureSourceBatches": 17,
-    "sourceTestCommandsExecuted": 19,
+    "optionalFutureSourceBatches": 16,
+    "sourceTestCommandsExecuted": 20,
     "reusedGlobalUniqueCases": null,
-    "freshSourceChecksAcceptedThisExecution": 15,
-    "acceptedNamedCheckRuns": 21,
+    "freshSourceChecksAcceptedThisExecution": 16,
+    "acceptedNamedCheckRuns": 22,
     "freshNamedCheckIdsEverAccepted": 19
   },
   "checks": [
@@ -2420,9 +2426,32 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-32-20261103.json",
+          "pointer": "/checks/0",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "4f6a83b2fcfa566dc8ba2d48ed8531abdf56095f46ac661329e7209f0b086619",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 17,
+          "caseCountPointer": "/checks/0/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=stopped-host-readoption-operator",
+            "test/stopped-host-readoption-operator.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": false,
+          "batchCaseCount": 17,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-32-stopped-host-readoption-operator.log",
+          "logHash": "8db5bbee27836fc2482cfb0c38690bbf5a2b95c8c22a65b236df37fe923e554d"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -2442,12 +2471,14 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
-        "executedDuringSourceAcceptance": false,
-        "gateRu": "Требуется current-key source result после test-only repair."
+        "executedDuringManifestPreparation": false,
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-32",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
       "legacyReleaseEntryFileListed": false,
       "previousManifestKeys": [
@@ -2487,7 +2518,13 @@
           "byteCommandBoundEvidence": null,
           "reason": "current closure changed"
         }
-      ]
+      ],
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-32-20261103.json",
+        "evidenceKey": "4f6a83b2fcfa566dc8ba2d48ed8531abdf56095f46ac661329e7209f0b086619",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "stopped-host-readoption",
@@ -6671,22 +6708,6 @@
     "excludesHeldDedicatedTitles": true,
     "batches": [
       {
-        "batchId": "source-candidate-32",
-        "checks": [
-          "stopped-host-readoption-operator"
-        ],
-        "cwd": "core4",
-        "command": [
-          "node",
-          "--test",
-          "--test-name-pattern=stopped-host-readoption-operator",
-          "test/stopped-host-readoption-operator.test.js"
-        ],
-        "scheduled": false,
-        "executionOrder": "serial-after-parent-reducer",
-        "reasonRu": "Прежний PASS сохранён historical; key изменён dependency binding repair."
-      },
-      {
         "batchId": "source-candidate-33",
         "checks": [
           "maintenance-finish-operator"
@@ -7248,7 +7269,6 @@
       "status": "open",
       "requiredForFullRelease": true,
       "remainingCheckIds": [
-        "stopped-host-readoption-operator",
         "maintenance-finish-operator",
         "owner-installation",
         "owner-runtime",
@@ -7288,6 +7308,7 @@
         "start-over-barrier",
         "start-over-inspection",
         "start-over-process",
+        "stopped-host-readoption-operator",
         "stopped-host-readoption",
         "readoption-core",
         "readoption-recovery",
@@ -7322,7 +7343,7 @@
         "artifact-boundaries",
         "documentation"
       ],
-      "noteRu": "25 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 15 новых source checks; это не native proof."
+      "noteRu": "24 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 16 новых source checks; это не native proof."
     },
     {
       "gate": "package-and-installation",
@@ -7450,9 +7471,9 @@
     "interpretationRu": "Только статическое сопоставление entry files:6 и55другихcommands. Не динамический coverage и не результаты FAIL; legacy script не единственный критерий полноты."
   },
   "actions": {
-    "acceptedSourceBatchCommands": 18,
+    "acceptedSourceBatchCommands": 19,
     "failedSourceBatchCommands": 1,
-    "totalCheckoutSourceBatchCommands": 19,
+    "totalCheckoutSourceBatchCommands": 20,
     "liveProductionAeCepMcpUiCalls": 0,
     "manualProductionProcessOperations": 0,
     "productionBuildInstallConfigWrites": 0,
@@ -7474,9 +7495,9 @@
   },
   "validation": {
     "status": "PASS",
-    "report": "docs/evidence/core-release-block-31-20261103-validation.json",
+    "report": "docs/evidence/core-release-block-32-20261103-validation.json",
     "selectorKeysMatched": 71,
-    "sourceTestCommandsExecuted": 19,
+    "sourceTestCommandsExecuted": 20,
     "fullReleaseCertified": false
   },
   "execution": {
@@ -7865,7 +7886,29 @@
           "durationMs": 6831.9873
         },
         "reporter": "spec",
-        "logSha256": "78c6312ac3b02acfda4fdc4d975832d645ed74cb2d394871aad3eaf1e0ef2da2"
+        "logSha256": "78c6312ac3b02acfda4fdc4d975832d645ed74cb2d394871aad3eaf1e0ef2da2",
+        "acceptanceCommit": "25afc8a5ea147598b0db4727ecffbcc29fe6def2"
+      },
+      {
+        "blockId": "source-candidate-32",
+        "evidence": "docs/evidence/core-release-block-32-20261103.json",
+        "baselineCommit": "25afc8a5ea147598b0db4727ecffbcc29fe6def2",
+        "checks": [
+          "stopped-host-readoption-operator"
+        ],
+        "result": "PASS",
+        "summary": {
+          "tests": 17,
+          "suites": 0,
+          "pass": 17,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 24603.7195
+        },
+        "reporter": "spec",
+        "logSha256": "8db5bbee27836fc2482cfb0c38690bbf5a2b95c8c22a65b236df37fe923e554d"
       }
     ],
     "guardFixes": [
@@ -7943,7 +7986,7 @@
       }
     ]
   },
-  "updatedAt": "2026-11-04T08:48:38.410Z",
+  "updatedAt": "2026-11-04T08:49:39.010Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
