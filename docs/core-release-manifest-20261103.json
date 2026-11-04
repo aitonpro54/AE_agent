@@ -1455,7 +1455,7 @@
     },
     {
       "file": "docs/evidence/core-portability-p5-repeat-20261104.json",
-      "sha256": "507e8e14333e4ae51335e0768f3266ca921bd1404206516ffb3db19073e6db8e",
+      "sha256": "2cab9c325521113c0dbeab7088086332923c74f0a399538ab16d2e135680ec0b",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "Actual same-package production repeat/read-back, but configured post-repeat proof pending; no source named/release certification"
     }
@@ -10994,7 +10994,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.sourceValidation"
   },
-  "updatedAt": "2026-11-04T15:10:08.177Z",
+  "updatedAt": "2026-11-04T15:15:30.098Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -11005,7 +11005,7 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "P5-actual-repeat-applied-configured-reconnect-pending",
+    "status": "P5-same-version-apply-preserved-awaiting-required-successor-activation",
     "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
@@ -11168,7 +11168,7 @@
         "currentConfiguredProof": false,
         "currentNativeProof": false,
         "priorNativeEvidence": "docs/evidence/core-portability-desktop-configured-native-20261104.json",
-        "noteRu": "Исторические initial configuredProof/nativeProof выше относятся к pre-repeat incarnation; не текущий live proof после credential rotation."
+        "noteRu": "CDF same-version apply/readback подтверждён, activation не выполнялась. Прежний cached client имеет известный pre-dispatch refusal. Следующая required successor activation после реального P2 transfer."
       }
     },
     "desktopCEPDiscoveryEvidence": "docs/evidence/core-portability-desktop-cep-discovery-20261104.json",
@@ -11193,7 +11193,8 @@
       "configuredAfterRepeat": false,
       "nativeAfterRepeat": false,
       "formalStatus": "OPEN",
-      "next": "Supported configured Core4 thin-client refresh, then fresh native inspection/release; no reapply"
+      "next": "Wait actual reviewed P2 source/package packet; successor apply while owner remains stopped, then fresh configured thin client/native proof. Parent closes strict P5.",
+      "activation": "not_performed-deferred-to-required-successor"
     }
   },
   "historicalSourceAcceptance": {

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "core-portability-P5-production-repeat-checkpoint",
   "createdAt": "2026-11-04T15:10:08.177Z",
-  "result": "ACTUAL_REPEAT_APPLIED_READBACK_PASS_CONFIGURED_PROOF_PENDING",
+  "result": "SAME_VERSION_APPLY_PRESERVED_AWAITING_FINAL_ACTIVATION",
   "baselineCommit": "a02df38252a31f30b306f25321e9b8c11260ac73",
   "scopeRu": "Один настоящий same-package repeat на desktop по принятому stop/inspect/resume/ordinary standalone apply route. Post-repeat configured reconnect/native proof ещё не получен.",
   "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
@@ -692,5 +692,33 @@
       "sha256": "a257e9bfb4ab9182031187ccf43855aa9743d0a8817804da70c2d44c767a2589"
     }
   ],
-  "nextRu": "Нужен поддерживаемый адресный refresh configured Core4 thin client после credential rotation. Затем fresh status/contract, acquire current session, connect/одна typed project-inspection/finally release; ожидается exact receiver prefix3 плюс новый begin/complete2. Repeat apply9157 не повторять."
+  "nextRu": "STOP до фактического нового source/package пакета parent. Затем обязательный successor transfer/apply и одна final configured activation с новым thin-client PID/birth/args и native proof. Промежуточный CDF native не выполнялся и не обязателен. Strict P5 закрывает parent после финального proof; apply9157 не повторять.",
+  "updatedAt": "2026-11-04T15:15:30.098Z",
+  "activationDecision": {
+    "at": "2026-11-04T15:15:30.098Z",
+    "review": "Parent reports ae_specialist ACCEPT existing route and successor activation sequence",
+    "sameVersionCDFActivation": "not_performed",
+    "sameVersionCDFDiskReadback": "PASS",
+    "cachedClient": "known pre-dispatch refusal; not healthy or activated",
+    "currentClient": {
+      "at": "2026-11-04T15:15:29.5471802Z",
+      "pid": 32372,
+      "birth": "2026-11-04T13:31:07.6191520Z",
+      "parentPid": 7060,
+      "exe": "C:\\Program Files\\nodejs\\node.exe",
+      "commandLine": "\"C:\\Program Files\\nodejs\\node.exe\" C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944\\runtime\\client-entry.js --client-descriptor C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json",
+      "priorOwner25516Absent": true,
+      "activationPerformed": false
+    },
+    "requiredNext": "Receive actual reviewed P2 source/package transfer packet, apply successor while owner remains stopped, then one freshly recreated configured thin client and final typed native inspection/release",
+    "intermediateCDFNativeRequired": false,
+    "strictP5CertificationDecision": "Parent after final successor configured proof",
+    "successorPacketReceived": false,
+    "successorApplyAuthorizedHere": false,
+    "previousCheckpoint": {
+      "commit": "a9e93f33b54b3536ca177c27a126fbedc9136dd6",
+      "evidenceHash": "507e8e14333e4ae51335e0768f3266ca921bd1404206516ffb3db19073e6db8e"
+    },
+    "originalTransactionAndPredecessorRetained": true
+  }
 }

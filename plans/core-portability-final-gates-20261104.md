@@ -30,7 +30,7 @@
   engine не имеет debug port. Native UI не адресует его child для контекстного меню;
   ввод отклонён до действия. Debug flags, packet capture и инъекции не применялись.
 - [x] P5 actual same-package repeat/read-back: stop1/resume1/apply1, transaction9157, защищённые bytes сохранены.
-- [ ] P5 post-repeat configured refresh/native3→5; [checkpoint](core-portability-p5-repeat-20261104.md).
+- [ ] P5 final configured activation после required P2 successor transfer; intermediate CDF activation=not_performed и отдельно не требуется. [Checkpoint](core-portability-p5-repeat-20261104.md).
 - [ ] P2 candidate/source/package и installed proof двух машин.
 - [ ] Итоговые evidence/manifest и синхронизация.
 
