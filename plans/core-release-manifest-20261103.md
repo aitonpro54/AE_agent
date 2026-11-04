@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято source runs: 27; current fresh checks: 24. Применимое evidence: 55 exact-key + 0 byte-command-bound. Открыто: 16 (без hold: 14, Titles под паузой: 2). Следующий блок: source-candidate-22. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Принято source runs: 28; current fresh checks: 30. Применимое evidence: 61 exact-key + 0 byte-command-bound. Открыто: 10 (без hold: 8, Titles под паузой: 2). Следующий блок: source-candidate-23. [Ход выполнения](core-release-execution-20261103.md).
 
 ## Цель и состав
 
@@ -197,16 +197,16 @@ Source suites и live операции не запускались; `releaseCert
 | `installable-runtime` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `manual-current-target` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `audit-repairs` | integration | fresh source PASS → exact reuse | не повторять без drift |
-| `core-control` | integration | нужен current result | адресно до full release |
-| `core-admission` | integration | нужен current result | адресно до full release |
-| `worker-isolation` | integration | нужен current result | адресно до full release |
-| `protocol-codec` | integration | нужен current result | адресно до full release |
-| `workflow-recovery` | integration | нужен current result | адресно до full release |
+| `core-control` | integration | fresh source PASS → exact reuse | не повторять без drift |
+| `core-admission` | integration | fresh source PASS → exact reuse | не повторять без drift |
+| `worker-isolation` | integration | fresh source PASS → exact reuse | не повторять без drift |
+| `protocol-codec` | integration | fresh source PASS → exact reuse | не повторять без drift |
+| `workflow-recovery` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `photo-owner` | component | нужен current result | адресно до full release |
 | `titles-owner` | component | нужен current result | Titles: held |
 | `photo-executor-contract` | component | нужен current result | адресно до full release |
 | `titles-executor-contract` | component | нужен current result | Titles: held |
-| `catalog-discovery` | integration | нужен current result | адресно до full release |
+| `catalog-discovery` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `validation-routing` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `artifact-boundaries` | integration | fresh source PASS → exact reuse | не повторять без drift |
 | `documentation` | component | fresh source PASS → exact reuse | не повторять без drift |

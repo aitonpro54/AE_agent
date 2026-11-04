@@ -1,0 +1,390 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:59:38.260Z",
+  "blockId": "source-candidate-22",
+  "baselineCommit": "c3bae9e67084657d5ec07084e8534957137e5198",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:worker-isolation)|(?:protocol-codec)|(?:workflow-recovery)|(?:catalog-discovery)",
+      "test/core4.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:58:48.667Z",
+    "finishedAt": "2026-11-04T08:59:12.770Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 30,
+      "suites": 0,
+      "pass": 30,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 24040.1714
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-22-core-combined.log",
+      "sha256": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3",
+      "bytes": 4141
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-22-core-combined-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "core-control",
+      "evidenceKey": "f51a4d61bef34f0a1e42cfc45e83f377c48a47bb8167e9a44137ca3cb0b67736",
+      "result": "PASS",
+      "cases": 16,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[core-control catalog-discovery] A1 independent startup physically absent optional artifacts and bad catalog",
+        "[titles-owner titles-executor-contract core-control] A2 real lazy selection and successful typed title readback",
+        "[core-control core-admission worker-isolation] A6 reset before dispatch sends no mutation and rejects late worker epoch",
+        "[core-control core-admission] A6 reset after durable intent preserves receipt and after ACK loss preserves fence",
+        "[worker-isolation core-control] A7 infinite loop exit malformed IPC keep same Core PID and durable UNKNOWN",
+        "[core-control workflow-recovery] A10 actual child crash boundaries durable intent before send ACK readback",
+        "[core-control] durable ledger torn record is diagnostic only and latched append failure prevents sends",
+        "[core-control protocol-codec] actual stdio MCP generic surface status unavailable and no public fixture authority",
+        "[core-admission core-control] neutral durable ownership checkpoint constraints and unknown schemas fence mutation",
+        "[protocol-codec worker-isolation core-control] RPC and worker pending limits remain 32 after overflow and recover after drain",
+        "[core-control core-admission] one broker owns durable state and valid-JSON ledger corruption fails closed",
+        "[core-control worker-isolation artifact-boundaries] permanent worker bytes are pinned and spawn excludes ambient credential environment",
+        "[core-control core-admission] recordContext descriptive defaults and synthetic checks do not authorize writes",
+        "[core-control core-admission] concurrent stale lease reclaim is serialized and orphan acquire gate remains closed",
+        "[core-control core-admission workflow-recovery] close is terminal drains physical send and forbids late old-owner ledger appends",
+        "[core-control] close also drains a pending connection and never reopens the closed instance"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=core-control",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "core-admission",
+      "evidenceKey": "a6c493391f20797bb1641424c47d12077d0c15a60d6f6609022e581f70f2173b",
+      "result": "PASS",
+      "cases": 17,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[core-control core-admission worker-isolation] A6 reset before dispatch sends no mutation and rejects late worker epoch",
+        "[core-control core-admission] A6 reset after durable intent preserves receipt and after ACK loss preserves fence",
+        "[core-admission titles-executor-contract artifact-boundaries] A8 worker claims code wrong operation altered resource cannot become authority",
+        "[core-admission titles-executor-contract] A8 stale CAS confirmed private gate admission revocation between dryrun and send",
+        "[artifact-boundaries core-admission] A9 mutable source replacement cannot alter selected immutable closure and receipt",
+        "[core-admission protocol-codec] forged channel response executor and payload bindings bounded schema reject",
+        "[workflow-recovery core-admission] A10 coinciding text does not reconcile ongoing UNKNOWN command and serialization survives reconnect",
+        "[core-admission workflow-recovery] approved expectations cannot silently rebase and identity bindings cannot expand scope",
+        "[core-admission titles-executor-contract photo-executor-contract] explicit project incarnation rejects reopen same path and IDs",
+        "[core-admission photo-executor-contract titles-executor-contract] mutations followed by setter errors or protected drift remain UNKNOWN",
+        "[core-admission core-control] neutral durable ownership checkpoint constraints and unknown schemas fence mutation",
+        "[core-admission] admission and private grant revocation are rechecked at final dispatch commit",
+        "[core-control core-admission] one broker owns durable state and valid-JSON ledger corruption fails closed",
+        "[core-control core-admission] recordContext descriptive defaults and synthetic checks do not authorize writes",
+        "[core-admission] unknown constraint schema or malformed neutral identities cannot narrow the fence",
+        "[core-control core-admission] concurrent stale lease reclaim is serialized and orphan acquire gate remains closed",
+        "[core-control core-admission workflow-recovery] close is terminal drains physical send and forbids late old-owner ledger appends"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=core-admission",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "workflow-recovery",
+      "evidenceKey": "fabe8d0e2caecf8c6533794fd848f17f48604e113a365ae2aef4e812201720f6",
+      "result": "PASS",
+      "cases": 7,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[workflow-recovery photo-owner photo-executor-contract titles-owner] A5 mixed fault resumes fresh targets across worker and ledger reopen without replay",
+        "[workflow-recovery photo-owner] A5 counterexample manual photo drift is rejected on resume without rewriting photo",
+        "[workflow-recovery core-admission] A10 coinciding text does not reconcile ongoing UNKNOWN command and serialization survives reconnect",
+        "[core-control workflow-recovery] A10 actual child crash boundaries durable intent before send ACK readback",
+        "[core-admission workflow-recovery] approved expectations cannot silently rebase and identity bindings cannot expand scope",
+        "[workflow-recovery titles-owner] new failed-step revision reapproves fresh drift without replaying successful photo",
+        "[core-control core-admission workflow-recovery] close is terminal drains physical send and forbids late old-owner ledger appends"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=workflow-recovery",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "worker-isolation",
+      "evidenceKey": "7c396f7cd98b3fea463b3ed18fd3225716238cb303f424d093497086f0540cd5",
+      "result": "PASS",
+      "cases": 4,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[core-control core-admission worker-isolation] A6 reset before dispatch sends no mutation and rejects late worker epoch",
+        "[worker-isolation core-control] A7 infinite loop exit malformed IPC keep same Core PID and durable UNKNOWN",
+        "[protocol-codec worker-isolation core-control] RPC and worker pending limits remain 32 after overflow and recover after drain",
+        "[core-control worker-isolation artifact-boundaries] permanent worker bytes are pinned and spawn excludes ambient credential environment"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=worker-isolation",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "protocol-codec",
+      "evidenceKey": "aa618703f940a9223bdd6055997758fba9ad25df1a712502ec86fbceb8aac3bd",
+      "result": "PASS",
+      "cases": 3,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[core-admission protocol-codec] forged channel response executor and payload bindings bounded schema reject",
+        "[core-control protocol-codec] actual stdio MCP generic surface status unavailable and no public fixture authority",
+        "[protocol-codec worker-isolation core-control] RPC and worker pending limits remain 32 after overflow and recover after drain"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=protocol-codec",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "catalog-discovery",
+      "evidenceKey": "6c6a14673105c3ccc49d456cf2f74241af9072b2410b958a9fdd8f16f27c8578",
+      "result": "PASS",
+      "cases": 2,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[core-control catalog-discovery] A1 independent startup physically absent optional artifacts and bad catalog",
+        "[catalog-discovery titles-owner] A3 unrelated artifact refresh preserves core and titles pins without reconnect"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=catalog-discovery",
+        "test/core4.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "shared Core source/TEMP/Broker workers/synthetic host",
+    "childActors": "8 own crash boundary children; own stdio child; exact own lock contenders",
+    "network": "no live endpoints",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": true,
+    "fixturePrefixes": [
+      "ae-core4-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-1W43wf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-BfcIrA",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-3TC07p",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-4NnpWQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-GjGG1O",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-CKKPpU",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-PtQCIE",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-UFkf8o",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-q1SBZK",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Ompzzr",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-bEusfv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ZTbCrw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-JLQA5I",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-mwUY5Q",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-2p0h45",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-32jAi8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-LQQFBO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-kjtr1f",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-dHDQxE",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Rp0aJW",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-EQ5sKh",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-1A41WP",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-xpLrf7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-tS3qZB",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-QUy7Bt",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-LMy6DN",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-OnYYRT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-J82z1P",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-6F0jqT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ThCX8p",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-s0LDy0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-nJCvTi",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-E6WTNK",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-jnA2IO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-nWeI72",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-SkV4xO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-iAM1gY",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-cuiPTs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-vuIYS6",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-TGnwlV",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-PkAH7T",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-J1oLi7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-OQA3PX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-L9it2E",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-rALthE",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-jK4jWN",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-0AgEVH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-PrtRtP",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Tt75rv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-B6gFqw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-QDWPLo",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-VP4Qwv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-PAbxdt",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-9pamoR",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-UW4FmG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-mvwHWU",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-5iSEIT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-MZqOno",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-5ptybZ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-LHRvFX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-St7ga3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-4vTTGF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-g5ADDy",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-XHoBwF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-kFg2yX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-uPvRht"
+    ],
+    "remainingOwnDirs": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-1W43wf",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-BfcIrA",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-3TC07p",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-4NnpWQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-GjGG1O",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-CKKPpU",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-PtQCIE",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-UFkf8o",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-q1SBZK",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Ompzzr",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-bEusfv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ZTbCrw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-JLQA5I",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-mwUY5Q",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-2p0h45",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-32jAi8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-LQQFBO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-kjtr1f",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-dHDQxE",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Rp0aJW",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-EQ5sKh",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-1A41WP",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-xpLrf7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-tS3qZB",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-QUy7Bt",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-LMy6DN",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-OnYYRT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-J82z1P",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-6F0jqT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ThCX8p",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-s0LDy0",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-nJCvTi",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-E6WTNK",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-jnA2IO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-nWeI72",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-SkV4xO",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-iAM1gY",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-cuiPTs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-vuIYS6",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-TGnwlV",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-PkAH7T",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-J1oLi7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-OQA3PX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-L9it2E",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-rALthE",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-jK4jWN",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-0AgEVH",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-PrtRtP",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-Tt75rv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-B6gFqw",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-QDWPLo",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-VP4Qwv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-PAbxdt",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-9pamoR",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-UW4FmG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-mvwHWU",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-5iSEIT",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-MZqOno",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-5ptybZ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-LHRvFX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-St7ga3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-4vTTGF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-g5ADDy",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-XHoBwF",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-kFg2yX",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-uPvRht"
+    ],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own TEMP files intentionally retained; no broad cleanup.",
+      "Normal PASS crash and lock children terminal exits explicitly awaited. Stdio child hook retains exact handle but source lacks explicit exit await; no independent helper exit claim.",
+      "On FAIL source emergency child gaps require exact actor reconciliation before any next run; FAIL stops queue."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/core4.test.js",
+        "line": 19,
+        "proof": "Broker fixture close via t.after"
+      },
+      {
+        "file": "core4/test/core4.test.js",
+        "line": 225,
+        "proof": "Each8 crash children await own exit77 before later assertions"
+      },
+      {
+        "file": "core4/test/core4.test.js",
+        "line": 454,
+        "proof": "Exact first contender exit awaited0; dead probe child and sync probe children complete"
+      },
+      {
+        "file": "core4/test/core4.test.js",
+        "line": 258,
+        "proof": "Own stdio child EOF and retained handle kill in t.after; no separate explicit await"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-22-core-combined-reducer.json",
+    "sha256": "d4a0c00723316f868b2a9153cd97bc95087a0cfb775be660f1635c411b4c3f19"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}

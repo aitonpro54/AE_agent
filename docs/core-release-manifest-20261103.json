@@ -1302,6 +1302,12 @@
       "sha256": "742545d6be787f5412ccc31f0d4ac8f0b200acf0c17491ebd4009d8ce581c228",
       "directKeyedRecords": 1,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-release-block-22-20261103.json",
+      "sha256": "ad8b20ba655120258ceff2b2a771f2706ee3c206a69cb31625429bde23b51f07",
+      "directKeyedRecords": 6,
+      "excludedAsAuthority": null
     }
   ],
   "evidenceMethod": {
@@ -1330,18 +1336,18 @@
   ],
   "summary": {
     "registeredChecks": 71,
-    "recordedExactKeyReuse": 55,
+    "recordedExactKeyReuse": 61,
     "byteCommandBoundReuse": 0,
-    "needsCurrentEvidence": 16,
+    "needsCurrentEvidence": 10,
     "heldByProductPause": 2,
-    "pendingNotHeldByProductPause": 14,
+    "pendingNotHeldByProductPause": 8,
     "sharedCoreWithTitlesDependency": 33,
-    "optionalFutureSourceBatches": 8,
-    "sourceTestCommandsExecuted": 28,
+    "optionalFutureSourceBatches": 7,
+    "sourceTestCommandsExecuted": 29,
     "reusedGlobalUniqueCases": null,
-    "freshSourceChecksAcceptedThisExecution": 24,
-    "acceptedNamedCheckRuns": 30,
-    "freshNamedCheckIdsEverAccepted": 24
+    "freshSourceChecksAcceptedThisExecution": 30,
+    "acceptedNamedCheckRuns": 36,
+    "freshNamedCheckIdsEverAccepted": 30
   },
   "checks": [
     {
@@ -5807,21 +5813,46 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-22-20261103.json",
+          "pointer": "/checks/0",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "f51a4d61bef34f0a1e42cfc45e83f377c48a47bb8167e9a44137ca3cb0b67736",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 16,
+          "caseCountPointer": "/checks/0/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:worker-isolation)|(?:protocol-codec)|(?:workflow-recovery)|(?:catalog-discovery)",
+            "test/core4.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 30,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-22-core-combined.log",
+          "logHash": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
-        "executedDuringSourceAcceptance": false,
-        "gateRu": "Требуется current-key source result после test-only repair."
+        "executedDuringManifestPreparation": false,
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-22",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -5830,7 +5861,13 @@
           "status": "unverified-not-PASS",
           "reasonRu": "Capture-era fixture/dependency/routing repair."
         }
-      ]
+      ],
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-22-20261103.json",
+        "evidenceKey": "f51a4d61bef34f0a1e42cfc45e83f377c48a47bb8167e9a44137ca3cb0b67736",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "core-admission",
@@ -5857,21 +5894,46 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-22-20261103.json",
+          "pointer": "/checks/1",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "a6c493391f20797bb1641424c47d12077d0c15a60d6f6609022e581f70f2173b",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 17,
+          "caseCountPointer": "/checks/1/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:worker-isolation)|(?:protocol-codec)|(?:workflow-recovery)|(?:catalog-discovery)",
+            "test/core4.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 30,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-22-core-combined.log",
+          "logHash": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
-        "executedDuringSourceAcceptance": false,
-        "gateRu": "Требуется current-key source result после test-only repair."
+        "executedDuringManifestPreparation": false,
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-22",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -5880,7 +5942,13 @@
           "status": "unverified-not-PASS",
           "reasonRu": "Capture-era fixture/dependency/routing repair."
         }
-      ]
+      ],
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-22-20261103.json",
+        "evidenceKey": "a6c493391f20797bb1641424c47d12077d0c15a60d6f6609022e581f70f2173b",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "worker-isolation",
@@ -5907,21 +5975,46 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-22-20261103.json",
+          "pointer": "/checks/3",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "7c396f7cd98b3fea463b3ed18fd3225716238cb303f424d093497086f0540cd5",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 4,
+          "caseCountPointer": "/checks/3/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:worker-isolation)|(?:protocol-codec)|(?:workflow-recovery)|(?:catalog-discovery)",
+            "test/core4.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 30,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-22-core-combined.log",
+          "logHash": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
-        "executedDuringSourceAcceptance": false,
-        "gateRu": "Требуется current-key source result после test-only repair."
+        "executedDuringManifestPreparation": false,
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-22",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -5930,7 +6023,13 @@
           "status": "unverified-not-PASS",
           "reasonRu": "Capture-era fixture/dependency/routing repair."
         }
-      ]
+      ],
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-22-20261103.json",
+        "evidenceKey": "7c396f7cd98b3fea463b3ed18fd3225716238cb303f424d093497086f0540cd5",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "protocol-codec",
@@ -5957,21 +6056,46 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-22-20261103.json",
+          "pointer": "/checks/4",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "aa618703f940a9223bdd6055997758fba9ad25df1a712502ec86fbceb8aac3bd",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 3,
+          "caseCountPointer": "/checks/4/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:worker-isolation)|(?:protocol-codec)|(?:workflow-recovery)|(?:catalog-discovery)",
+            "test/core4.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 30,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-22-core-combined.log",
+          "logHash": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
-        "executedDuringSourceAcceptance": false,
-        "gateRu": "Требуется current-key source result после test-only repair."
+        "executedDuringManifestPreparation": false,
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-22",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -5980,7 +6104,13 @@
           "status": "unverified-not-PASS",
           "reasonRu": "Capture-era fixture/dependency/routing repair."
         }
-      ]
+      ],
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-22-20261103.json",
+        "evidenceKey": "aa618703f940a9223bdd6055997758fba9ad25df1a712502ec86fbceb8aac3bd",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "workflow-recovery",
@@ -6007,21 +6137,46 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-22-20261103.json",
+          "pointer": "/checks/2",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "fabe8d0e2caecf8c6533794fd848f17f48604e113a365ae2aef4e812201720f6",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 7,
+          "caseCountPointer": "/checks/2/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:worker-isolation)|(?:protocol-codec)|(?:workflow-recovery)|(?:catalog-discovery)",
+            "test/core4.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 30,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-22-core-combined.log",
+          "logHash": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
-        "executedDuringSourceAcceptance": false,
-        "gateRu": "Требуется current-key source result после test-only repair."
+        "executedDuringManifestPreparation": false,
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-22",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -6030,7 +6185,13 @@
           "status": "unverified-not-PASS",
           "reasonRu": "Capture-era fixture/dependency/routing repair."
         }
-      ]
+      ],
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-22-20261103.json",
+        "evidenceKey": "fabe8d0e2caecf8c6533794fd848f17f48604e113a365ae2aef4e812201720f6",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "photo-owner",
@@ -6248,21 +6409,46 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-release-block-22-20261103.json",
+          "pointer": "/checks/5",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "6c6a14673105c3ccc49d456cf2f74241af9072b2410b958a9fdd8f16f27c8578",
+          "authorityMethod": "explicit-record-result-PASS",
+          "caseCount": 2,
+          "caseCountPointer": "/checks/5/cases",
+          "recordedMode": "fresh-source-block",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:worker-isolation)|(?:protocol-codec)|(?:workflow-recovery)|(?:catalog-discovery)",
+            "test/core4.test.js"
+          ],
+          "executionBatch": "/executionBatch",
+          "sharedBatch": true,
+          "batchCaseCount": 30,
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-22-core-combined.log",
+          "logHash": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Source closure changed; old result is historical, not current.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "addressed-source-result-needed-for-full-release",
+        "state": "passed-in-source-block",
         "scheduled": false,
-        "executedDuringSourceAcceptance": false,
-        "gateRu": "Требуется current-key source result после test-only repair."
+        "executedDuringManifestPreparation": false,
+        "executedDuringSourceAcceptance": true,
+        "blockId": "source-candidate-22",
+        "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -6271,7 +6457,13 @@
           "status": "unverified-not-PASS",
           "reasonRu": "Capture-era fixture/dependency/routing repair."
         }
-      ]
+      ],
+      "latestExecution": {
+        "result": "PASS",
+        "evidence": "docs/evidence/core-release-block-22-20261103.json",
+        "evidenceKey": "6c6a14673105c3ccc49d456cf2f74241af9072b2410b958a9fdd8f16f27c8578",
+        "fullCheckAccepted": true
+      }
     },
     {
       "check": "validation-routing",
@@ -7004,27 +7196,6 @@
     "excludesHeldDedicatedTitles": true,
     "batches": [
       {
-        "batchId": "source-candidate-22",
-        "checks": [
-          "core-control",
-          "core-admission",
-          "worker-isolation",
-          "protocol-codec",
-          "workflow-recovery",
-          "catalog-discovery"
-        ],
-        "cwd": "core4",
-        "command": [
-          "node",
-          "--test",
-          "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:worker-isolation)|(?:protocol-codec)|(?:workflow-recovery)|(?:catalog-discovery)",
-          "test/core4.test.js"
-        ],
-        "scheduled": false,
-        "executionOrder": "serial-after-per-batch-isolation-review",
-        "gateRu": "Данные будущего выбора. Реальная изоляция/OS ветки проверяются для этого batch; exit0 без matched tests или с только skips не закрывает check."
-      },
-      {
         "batchId": "source-candidate-23",
         "checks": [
           "photo-owner",
@@ -7437,16 +7608,10 @@
       "status": "open",
       "requiredForFullRelease": true,
       "remainingCheckIds": [
-        "core-control",
-        "core-admission",
-        "worker-isolation",
-        "protocol-codec",
-        "workflow-recovery",
         "photo-owner",
         "titles-owner",
         "photo-executor-contract",
         "titles-executor-contract",
-        "catalog-discovery",
         "cep-transport",
         "lifecycle-simulation",
         "native-read-recovery",
@@ -7507,11 +7672,17 @@
         "installable-runtime",
         "manual-current-target",
         "audit-repairs",
+        "core-control",
+        "core-admission",
+        "worker-isolation",
+        "protocol-codec",
+        "workflow-recovery",
+        "catalog-discovery",
         "validation-routing",
         "artifact-boundaries",
         "documentation"
       ],
-      "noteRu": "16 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 24 новых source checks; это не native proof."
+      "noteRu": "10 checks требуют current evidence; dedicated Titles остаются на паузе. Принято 30 новых source checks; это не native proof."
     },
     {
       "gate": "package-and-installation",
@@ -7639,9 +7810,9 @@
     "interpretationRu": "Только статическое сопоставление entry files:6 и55другихcommands. Не динамический coverage и не результаты FAIL; legacy script не единственный критерий полноты."
   },
   "actions": {
-    "acceptedSourceBatchCommands": 27,
+    "acceptedSourceBatchCommands": 28,
     "failedSourceBatchCommands": 1,
-    "totalCheckoutSourceBatchCommands": 28,
+    "totalCheckoutSourceBatchCommands": 29,
     "liveProductionAeCepMcpUiCalls": 0,
     "manualProductionProcessOperations": 0,
     "productionBuildInstallConfigWrites": 0,
@@ -7663,9 +7834,9 @@
   },
   "validation": {
     "status": "PASS",
-    "report": "docs/evidence/core-release-block-21-20261103-validation.json",
+    "report": "docs/evidence/core-release-block-22-20261103-validation.json",
     "selectorKeysMatched": 71,
-    "sourceTestCommandsExecuted": 28,
+    "sourceTestCommandsExecuted": 29,
     "fullReleaseCertified": false
   },
   "execution": {
@@ -8252,7 +8423,34 @@
           "durationMs": 6156.769
         },
         "reporter": "spec",
-        "logSha256": "48e09520fe4c971e535a118fc534d2c9c342c099adb2b739220674e0c17e783a"
+        "logSha256": "48e09520fe4c971e535a118fc534d2c9c342c099adb2b739220674e0c17e783a",
+        "acceptanceCommit": "c3bae9e67084657d5ec07084e8534957137e5198"
+      },
+      {
+        "blockId": "source-candidate-22",
+        "evidence": "docs/evidence/core-release-block-22-20261103.json",
+        "baselineCommit": "c3bae9e67084657d5ec07084e8534957137e5198",
+        "checks": [
+          "core-control",
+          "core-admission",
+          "workflow-recovery",
+          "worker-isolation",
+          "protocol-codec",
+          "catalog-discovery"
+        ],
+        "result": "PASS",
+        "summary": {
+          "tests": 30,
+          "suites": 0,
+          "pass": 30,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "durationMs": 24040.1714
+        },
+        "reporter": "spec",
+        "logSha256": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3"
       }
     ],
     "guardFixes": [
@@ -8331,7 +8529,7 @@
       }
     ]
   },
-  "updatedAt": "2026-11-04T08:57:47.423Z",
+  "updatedAt": "2026-11-04T08:59:39.028Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,

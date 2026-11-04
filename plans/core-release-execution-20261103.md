@@ -30,7 +30,7 @@ push/PR и запуска dedicated продуктов. Штатные внут�
 own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup проверены.
 
 <!-- EXECUTION_STATUS -->
-Принято source runs: 27; current fresh checks: 24. Применимое evidence: 55 exact-key + 0 byte-command-bound. Открыто: 16 (без hold: 14, Titles под паузой: 2). Следующий блок: source-candidate-22.
+Принято source runs: 28; current fresh checks: 30. Применимое evidence: 61 exact-key + 0 byte-command-bound. Открыто: 10 (без hold: 8, Titles под паузой: 2). Следующий блок: source-candidate-23.
 <!-- /EXECUTION_STATUS -->
 
 <!-- EXECUTION_BLOCKS -->
@@ -62,7 +62,8 @@ own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup пр�
 | source-candidate-18 | `human-window` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-18-20261103.json) | `ba7282f` |
 | source-candidate-19 | `installable-runtime` | PASS: 41 pass / 0 skip | [JSON](../docs/evidence/core-release-block-19-20261103.json) | `55fc5e8` |
 | source-candidate-20 | `manual-current-target` | PASS: 13 pass / 0 skip | [JSON](../docs/evidence/core-release-block-20-20261103.json) | `64b33b5` |
-| source-candidate-21 | `audit-repairs` | PASS: 32 pass / 0 skip | [JSON](../docs/evidence/core-release-block-21-20261103.json) | создаётся после проверки |
+| source-candidate-21 | `audit-repairs` | PASS: 32 pass / 0 skip | [JSON](../docs/evidence/core-release-block-21-20261103.json) | `c3bae9e` |
+| source-candidate-22 | `core-control`, `core-admission`, `workflow-recovery`, `worker-isolation`, `protocol-codec`, `catalog-discovery` | PASS: 30 pass / 0 skip | [JSON](../docs/evidence/core-release-block-22-20261103.json) | создаётся после проверки |
 <!-- /EXECUTION_BLOCKS -->
 
 ## Block16: сохранённый FAIL и принятый repair
