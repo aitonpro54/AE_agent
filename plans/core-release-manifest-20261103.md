@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка:** Принято source runs: 35; current fresh checks: 38. Применимое evidence: 69 exact-key + 0 byte-command-bound. Открыто: 2 (без hold: 0, Titles под паузой: 2). Следующий блок: очередь без hold завершена. [Ход выполнения](core-release-execution-20261103.md).
+**Текущая source-приёмка:** Адресная source-очередь без продуктового hold завершена: 35 принятых запусков / 38 named checks с текущим свежим PASS. Применимы 69 exact-key + 0 byte-command-bound результата; открыты только две dedicated Titles. Titles/Slideshow на паузе, full release не заявляется. [Итог](../docs/evidence/core-release-source-acceptance-20261103.json).
 
 ## Цель и состав
 
@@ -12,8 +12,9 @@
 Машиночитаемый состав — [JSON manifest](../docs/core-release-manifest-20261103.json).
 Он содержит каждую из 71 проверок `validation-map.json` ровно один раз, её
 штатную command array, cwd, текущий evidence key, тип проверки, принятое
-evidence, решение о reuse и отдельное условие будущего запуска. Это план,
-а не новый результат выполнения и не автоматически исполняемая очередь.
+evidence, решение о reuse и отдельное условие будущего запуска. После следующего
+поручения пользователя manifest дополнен результатами source-приёмки и историей
+устаревших ключей. Сам manifest не разрешает автоматические live операции.
 
 Цель сопоставления — текущая manual/owner-композиция Core. Её исходный состав
 включает `photo-placeholder`, `titles` и `titles-current-target`; исторический

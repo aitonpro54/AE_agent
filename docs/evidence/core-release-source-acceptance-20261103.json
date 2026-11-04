@@ -1,0 +1,422 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "dateLocal": "2026-11-04",
+  "timezone": "Asia/Yekaterinburg",
+  "collectedAt": "2026-11-04T09:12:29.071Z",
+  "scopeRu": "Завершение разрешённой очереди source/TEMP checks; Titles/Slideshow на паузе.",
+  "status": "PASS-with-product-holds",
+  "registeredChecks": 71,
+  "currentExactKeyAccepted": 69,
+  "byteCommandBoundReuse": 0,
+  "currentCovered": 69,
+  "heldChecks": [
+    "titles-owner",
+    "titles-executor-contract"
+  ],
+  "acceptedSourceBatches": 35,
+  "totalCheckoutSourceCommands": 36,
+  "failedSourceAttempts": [
+    {
+      "blockId": "source-candidate-16",
+      "attempt": 1,
+      "evidence": "docs/evidence/core-release-block-16-attempt-01-20261103.json",
+      "result": "FAIL",
+      "summary": {
+        "tests": 15,
+        "pass": 2,
+        "fail": 13,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "durationMs": 8393.62
+      },
+      "baselineCommit": "782ae1de7ac6c3a396ab94698697a74282ea947b"
+    }
+  ],
+  "freshNamedChecks": 38,
+  "nodeReportedAcrossFreshBatches": {
+    "pass": 552,
+    "skip": 0,
+    "noteRu": "Сумма reporter totals отдельных batches, включая stale-before-repair runs; не глобальное unique coverage всех71checks."
+  },
+  "sourceKeysMatched": 71,
+  "currentSourceSnapshotHashes": 215,
+  "supplementalHashes": 33,
+  "acceptedPointersVerified": 69,
+  "sourceChanges": [
+    "core4/config/validation-map.json",
+    "core4/test/core4.test.js",
+    "core4/test/fixtures/native-capture-panel-v1.txt",
+    "core4/test/fixtures/owner-runtime-child.js",
+    "core4/test/native-read-capture.test.js",
+    "core4/test/owner-runtime.test.js"
+  ],
+  "runtimePackageCodeChanged": false,
+  "productionOperations": 0,
+  "externalNetworkArgonPushPr": 0,
+  "fixtureGuardEvidence": "docs/evidence/core-owner-runtime-fixture-guard-20261103.json",
+  "fixtureRepairEvidence": "docs/evidence/core-native-capture-fixture-repair-20261103.json",
+  "blocks": [
+    {
+      "blockId": "source-candidate-01",
+      "checks": [
+        "start-over-runtime"
+      ],
+      "evidence": "docs/evidence/core-release-block-01-20261103.json",
+      "commit": "6625aedd85bfd7dd1ccadcce91bb482da940bbe9"
+    },
+    {
+      "blockId": "source-candidate-02",
+      "checks": [
+        "start-over-operator"
+      ],
+      "evidence": "docs/evidence/core-release-block-02-20261103.json",
+      "commit": "bb23f1aa895cc880124617892fe7eaee1bb7785e"
+    },
+    {
+      "blockId": "source-candidate-03",
+      "checks": [
+        "stopped-host-readoption-operator"
+      ],
+      "evidence": "docs/evidence/core-release-block-03-20261103.json",
+      "commit": "0af346d521aaec83f0a27b66248de53b27bc2f2b"
+    },
+    {
+      "blockId": "source-candidate-04",
+      "checks": [
+        "stopped-update-operator"
+      ],
+      "evidence": "docs/evidence/core-release-block-04-20261103.json",
+      "commit": "e7b3964d78cb606684fe852fe47bae8e0bd7cb30"
+    },
+    {
+      "blockId": "source-candidate-05",
+      "checks": [
+        "stopped-update"
+      ],
+      "evidence": "docs/evidence/core-release-block-05-20261103.json",
+      "commit": "0e9757148bcfbf8ffc9dc2633738074958631f0d"
+    },
+    {
+      "blockId": "source-candidate-06",
+      "checks": [
+        "legacy-owner-migration"
+      ],
+      "evidence": "docs/evidence/core-release-block-06-20261103.json",
+      "commit": "948b41b40eddf077615089e64627fb6801564d2b"
+    },
+    {
+      "blockId": "source-candidate-07",
+      "checks": [
+        "windows-retained-process"
+      ],
+      "evidence": "docs/evidence/core-release-block-07-20261103.json",
+      "commit": "7622aa7bf1ecdfb3ef17dba0aaccaf23b72a26c7"
+    },
+    {
+      "blockId": "source-candidate-08",
+      "checks": [
+        "maintenance-finish-operator"
+      ],
+      "evidence": "docs/evidence/core-release-block-08-20261103.json",
+      "commit": "44d97d3cf77f20114f4a91b01ecad0e7c4078f3a"
+    },
+    {
+      "blockId": "source-candidate-09",
+      "checks": [
+        "maintenance-operator"
+      ],
+      "evidence": "docs/evidence/core-release-block-09-20261103.json",
+      "commit": "6befbb5ee184a78a165bd0c9d8f27bc9a5f99440"
+    },
+    {
+      "blockId": "source-candidate-10",
+      "checks": [
+        "windows-owner-process"
+      ],
+      "evidence": "docs/evidence/core-release-block-10-20261103.json",
+      "commit": "427c060310b2f2e60b2c307965c6c813581899d0"
+    },
+    {
+      "blockId": "source-candidate-11",
+      "checks": [
+        "owner-installation"
+      ],
+      "evidence": "docs/evidence/core-release-block-11-20261103.json",
+      "commit": "63c942d564b01ae135edcd4f8401edef7b74626c"
+    },
+    {
+      "blockId": "source-candidate-12",
+      "checks": [
+        "owner-runtime"
+      ],
+      "evidence": "docs/evidence/core-release-block-12-20261103.json",
+      "commit": "ecc46e5b4c630c4ab0f506c78e3f766f66218603"
+    },
+    {
+      "blockId": "source-candidate-13",
+      "checks": [
+        "client-ipc"
+      ],
+      "evidence": "docs/evidence/core-release-block-13-20261103.json",
+      "commit": "c80dad90d5f3eb245416ab24dea6c489e2205e01"
+    },
+    {
+      "blockId": "source-candidate-14",
+      "checks": [
+        "controller-lease"
+      ],
+      "evidence": "docs/evidence/core-release-block-14-20261103.json",
+      "commit": "2fcca177eae93307ace8b73ea86d4e2e93f1f5ea"
+    },
+    {
+      "blockId": "source-candidate-15",
+      "checks": [
+        "endpoint-observation"
+      ],
+      "evidence": "docs/evidence/core-release-block-15-20261103.json",
+      "commit": "782ae1de7ac6c3a396ab94698697a74282ea947b"
+    },
+    {
+      "blockId": "source-candidate-16",
+      "checks": [
+        "artifact-boundaries",
+        "native-read-capture",
+        "validation-routing",
+        "documentation"
+      ],
+      "evidence": "docs/evidence/core-release-block-16-20261103.json",
+      "commit": "17f941cdabc17081d8e9db30268eca626e2e7539"
+    },
+    {
+      "blockId": "source-candidate-30",
+      "checks": [
+        "start-over-runtime"
+      ],
+      "evidence": "docs/evidence/core-release-block-30-20261103.json",
+      "commit": "9c696de80838e04a010fede80dc8fc3ef5f877fb"
+    },
+    {
+      "blockId": "source-candidate-31",
+      "checks": [
+        "start-over-operator"
+      ],
+      "evidence": "docs/evidence/core-release-block-31-20261103.json",
+      "commit": "25afc8a5ea147598b0db4727ecffbcc29fe6def2"
+    },
+    {
+      "blockId": "source-candidate-32",
+      "checks": [
+        "stopped-host-readoption-operator"
+      ],
+      "evidence": "docs/evidence/core-release-block-32-20261103.json",
+      "commit": "2a651550031d98b6c720403fa6f4d2108ceb8e72"
+    },
+    {
+      "blockId": "source-candidate-33",
+      "checks": [
+        "maintenance-finish-operator"
+      ],
+      "evidence": "docs/evidence/core-release-block-33-20261103.json",
+      "commit": "3eb759f6a9dabfca28a26f648a4cb5532aaddb60"
+    },
+    {
+      "blockId": "source-candidate-34",
+      "checks": [
+        "owner-installation"
+      ],
+      "evidence": "docs/evidence/core-release-block-34-20261103.json",
+      "commit": "9d233ad6028cb6e18921565d33bc40bcb522211d"
+    },
+    {
+      "blockId": "source-candidate-35",
+      "checks": [
+        "owner-runtime"
+      ],
+      "evidence": "docs/evidence/core-release-block-35-20261103.json",
+      "commit": "7334362299ca7271fac4eb413af90bf38c469405"
+    },
+    {
+      "blockId": "source-candidate-17",
+      "checks": [
+        "zero-dispatch-recovery"
+      ],
+      "evidence": "docs/evidence/core-release-block-17-20261103.json",
+      "commit": "7a6389130d2bc6ff688cec8eb4b0f216a9214943"
+    },
+    {
+      "blockId": "source-candidate-18",
+      "checks": [
+        "human-window"
+      ],
+      "evidence": "docs/evidence/core-release-block-18-20261103.json",
+      "commit": "ba7282f82824b0abeacff787d52b476ba443f37d"
+    },
+    {
+      "blockId": "source-candidate-19",
+      "checks": [
+        "installable-runtime"
+      ],
+      "evidence": "docs/evidence/core-release-block-19-20261103.json",
+      "commit": "55fc5e885e5452f9c7c70277c07f18228319b41f"
+    },
+    {
+      "blockId": "source-candidate-20",
+      "checks": [
+        "manual-current-target"
+      ],
+      "evidence": "docs/evidence/core-release-block-20-20261103.json",
+      "commit": "64b33b5f89a2afb1a23782351d9248f7d636d5fd"
+    },
+    {
+      "blockId": "source-candidate-21",
+      "checks": [
+        "audit-repairs"
+      ],
+      "evidence": "docs/evidence/core-release-block-21-20261103.json",
+      "commit": "c3bae9e67084657d5ec07084e8534957137e5198"
+    },
+    {
+      "blockId": "source-candidate-22",
+      "checks": [
+        "core-control",
+        "core-admission",
+        "workflow-recovery",
+        "worker-isolation",
+        "protocol-codec",
+        "catalog-discovery"
+      ],
+      "evidence": "docs/evidence/core-release-block-22-20261103.json",
+      "commit": "f0843a71bb167472c8e43dfdc0ecd38373462c7e"
+    },
+    {
+      "blockId": "source-candidate-23",
+      "checks": [
+        "photo-owner",
+        "photo-executor-contract"
+      ],
+      "evidence": "docs/evidence/core-release-block-23-20261103.json",
+      "commit": "6db06cf07b179718d213f378571eaa976ed5b994"
+    },
+    {
+      "blockId": "source-candidate-24",
+      "checks": [
+        "cep-transport"
+      ],
+      "evidence": "docs/evidence/core-release-block-24-20261103.json",
+      "commit": "86afa1779c93841b400228e5bd80b7a0ca682f8a"
+    },
+    {
+      "blockId": "source-candidate-25",
+      "checks": [
+        "lifecycle-simulation"
+      ],
+      "evidence": "docs/evidence/core-release-block-25-20261103.json",
+      "commit": "f4c6db9222886b5607fdc5f8c92c3f750a54898f"
+    },
+    {
+      "blockId": "source-candidate-26",
+      "checks": [
+        "native-read-recovery"
+      ],
+      "evidence": "docs/evidence/core-release-block-26-20261103.json",
+      "commit": "f32c03c6396e1898de91fb3d9830981cee998239"
+    },
+    {
+      "blockId": "source-candidate-27",
+      "checks": [
+        "installed-composition"
+      ],
+      "evidence": "docs/evidence/core-release-block-27-20261103.json",
+      "commit": "4a704aeac3297286b300ef0aaf76a2d57d29af15"
+    },
+    {
+      "blockId": "source-candidate-28",
+      "checks": [
+        "exact-f548-transition"
+      ],
+      "evidence": "docs/evidence/core-release-block-28-20261103.json",
+      "commit": "ef9d6132ef3cd0b0fc58b24d74f80b336c57809f"
+    },
+    {
+      "blockId": "source-candidate-29",
+      "checks": [
+        "standalone-installer"
+      ],
+      "evidence": "docs/evidence/core-release-block-29-20261103.json",
+      "commit": "e9369d1a8b9b82b6b5153bbb4fb4d602611e2c3a"
+    }
+  ],
+  "remainingGates": [
+    {
+      "gate": "package-and-installation",
+      "status": "historical-exact-evidence-available",
+      "requiredForFullRelease": true,
+      "evidence": [
+        "docs/evidence/core-base-b6-probe-source-20261103.json",
+        "docs/evidence/core-base-b6-installed-20261103.json"
+      ],
+      "noteRu": "Approved cdf package/distribution/runtime80/CEP7 receipts относятся к B6. Перед новым release bind выбранный состав и package hashes; actual install/replay не нужен для manifest."
+    },
+    {
+      "gate": "bounded-native-base",
+      "status": "accepted-at-recorded-B6-B7-checkpoints",
+      "requiredForFullRelease": true,
+      "evidence": [
+        "docs/evidence/core-base-b6-native-recovery-20261103.json",
+        "docs/evidence/core-base-b7-configured-20261103.json"
+      ],
+      "noteRu": "Доставка/mutation owner fault/late refusal/UNKNOWN reset и configured read приняты в своём scope. Не нынешняя свежесть процессов; следующая live операция требует fresh preflight."
+    },
+    {
+      "gate": "native-finisher-interruption",
+      "status": "not-observed-native",
+      "requiredForAcceptedBoundedBase": false,
+      "requiredForFullRelease": false,
+      "noteRu": "Дополнительная гарантия, не новый blocker базы. Start-over-runtime source candidate и native proof различаются; deterministic installed pause hook не подтверждён."
+    },
+    {
+      "gate": "native-product-acceptance",
+      "status": "held-by-product-pause",
+      "requiredForFullProductRelease": true,
+      "products": [
+        "Titles",
+        "Slideshow"
+      ],
+      "noteRu": "Новая разработка/standalone product tests/native acceptance не выполняются."
+    },
+    {
+      "gate": "two-machine-portability",
+      "status": "open",
+      "requiredForFullPortableRelease": true,
+      "criteria": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6",
+        "P7",
+        "P8"
+      ],
+      "contract": "docs/portability.md",
+      "noteRu": "Две реальные машины и оба направления; source/package-location checks этого не закрывают."
+    }
+  ],
+  "releaseCertified": false,
+  "localMarkdownLinks": 160,
+  "validation": "UTF-8, JSON, keys, refs, logs, pause, source changes and whitespace PASS",
+  "finalVerification": {
+    "exactRowsWithCurrentPass": 69,
+    "freshRowsDerivedFromRefs": 38,
+    "reusedRows": 31,
+    "byteReuseRows": 0,
+    "heldRowsWithoutAcceptance": 2,
+    "acceptedBatchStdoutStderrAndRunnerReportHashes": 35,
+    "failedAttemptRawHashesAndOriginalGitBytesVerified": 1,
+    "allCurrentKeysVerified": 71,
+    "sourceFilesVerified": 215,
+    "supplementalFilesVerified": 33
+  }
+}

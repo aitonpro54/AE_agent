@@ -6,9 +6,11 @@
 release-manifest, после каждого блока обновлять evidence/manifest. Titles и
 Slideshow оставить на паузе. Исходная точка — `f8741ed`.
 
-Очередь состоит из 36 открытых named checks без продуктового hold, сгруппированных
-в 29 source batches. Изначальные 31 exact-key и 2 byte-command-bound reuse не
-повторяются без drift. Две dedicated Titles проверки сохраняют hold.
+Исходная очередь включала 36 открытых named checks без продуктового hold в
+29 source batches. Исправление capture fixture изменило восемь принятых ключей:
+два закрыты совместным блоком 16, ещё шесть повторены в блоках 30–35. В итоге
+приняты 35 запусков, текущим evidence покрыты 69 проверок: 38 свежих и31 reuse.
+Две dedicated Titles проверки сохраняют hold; исходный FAIL16 сохранён отдельно.
 
 Root — единственный tracked writer/reducer/committer. `ae_implementer` выполняет
 один переданный source batch в собственных fixtures и пишет ignored log/report;
@@ -30,47 +32,47 @@ push/PR и запуска dedicated продуктов. Штатные внут�
 own TEMP/random IPC/logical3457→ephemeral0/synthetic AE и exact cleanup проверены.
 
 <!-- EXECUTION_STATUS -->
-Принято source runs: 35; current fresh checks: 38. Применимое evidence: 69 exact-key + 0 byte-command-bound. Открыто: 2 (без hold: 0, Titles под паузой: 2). Следующий блок: очередь без hold завершена.
+Адресная source-очередь без продуктового hold завершена: 35 принятых запусков / 38 named checks с текущим свежим PASS. Применимы 69 exact-key + 0 byte-command-bound результата; открыты только две dedicated Titles. Titles/Slideshow на паузе, full release не заявляется.
 <!-- /EXECUTION_STATUS -->
 
 <!-- EXECUTION_BLOCKS -->
-| Блок | Named checks | Результат / Node summary | Evidence | Коммит |
+| Блок | Named checks | Node summary | Evidence | Коммит |
 | --- | --- | --- | --- | --- |
-| source-candidate-01 | `start-over-runtime` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-01-20261103.json) | `6625aed` |
-| source-candidate-02 | `start-over-operator` | PASS: 6 pass / 0 skip | [JSON](../docs/evidence/core-release-block-02-20261103.json) | `bb23f1a` |
-| source-candidate-03 | `stopped-host-readoption-operator` | PASS: 17 pass / 0 skip | [JSON](../docs/evidence/core-release-block-03-20261103.json) | `0af346d` |
-| source-candidate-04 | `stopped-update-operator` | PASS: 4 pass / 0 skip | [JSON](../docs/evidence/core-release-block-04-20261103.json) | `e7b3964` |
-| source-candidate-05 | `stopped-update` | PASS: 55 pass / 0 skip | [JSON](../docs/evidence/core-release-block-05-20261103.json) | `0e97571` |
-| source-candidate-06 | `legacy-owner-migration` | PASS: 29 pass / 0 skip | [JSON](../docs/evidence/core-release-block-06-20261103.json) | `948b41b` |
-| source-candidate-07 | `windows-retained-process` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-07-20261103.json) | `7622aa7` |
-| source-candidate-08 | `maintenance-finish-operator` | PASS: 7 pass / 0 skip | [JSON](../docs/evidence/core-release-block-08-20261103.json) | `44d97d3` |
-| source-candidate-09 | `maintenance-operator` | PASS: 8 pass / 0 skip | [JSON](../docs/evidence/core-release-block-09-20261103.json) | `6befbb5` |
-| source-candidate-10 | `windows-owner-process` | PASS: 8 pass / 0 skip | [JSON](../docs/evidence/core-release-block-10-20261103.json) | `427c060` |
-| source-candidate-11 | `owner-installation` | PASS: 18 pass / 0 skip | [JSON](../docs/evidence/core-release-block-11-20261103.json) | `63c942d` |
-| source-candidate-12 | `owner-runtime` | PASS: 23 pass / 0 skip | [JSON](../docs/evidence/core-release-block-12-20261103.json) | `ecc46e5` |
-| source-candidate-13 | `client-ipc` | PASS: 27 pass / 0 skip | [JSON](../docs/evidence/core-release-block-13-20261103.json) | `c80dad9` |
-| source-candidate-14 | `controller-lease` | PASS: 16 pass / 0 skip | [JSON](../docs/evidence/core-release-block-14-20261103.json) | `2fcca17` |
-| source-candidate-15 | `endpoint-observation` | PASS: 15 pass / 0 skip | [JSON](../docs/evidence/core-release-block-15-20261103.json) | `782ae1d` |
-| source-candidate-16 | `artifact-boundaries`, `native-read-capture`, `validation-routing`, `documentation` | PASS: 27 pass / 0 skip | [JSON](../docs/evidence/core-release-block-16-20261103.json) | `17f941c` |
-| source-candidate-30 | `start-over-runtime` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-30-20261103.json) | `9c696de` |
-| source-candidate-31 | `start-over-operator` | PASS: 6 pass / 0 skip | [JSON](../docs/evidence/core-release-block-31-20261103.json) | `25afc8a` |
-| source-candidate-32 | `stopped-host-readoption-operator` | PASS: 17 pass / 0 skip | [JSON](../docs/evidence/core-release-block-32-20261103.json) | `2a65155` |
-| source-candidate-33 | `maintenance-finish-operator` | PASS: 7 pass / 0 skip | [JSON](../docs/evidence/core-release-block-33-20261103.json) | `3eb759f` |
-| source-candidate-34 | `owner-installation` | PASS: 18 pass / 0 skip | [JSON](../docs/evidence/core-release-block-34-20261103.json) | `9d233ad` |
-| source-candidate-35 | `owner-runtime` | PASS: 23 pass / 0 skip | [JSON](../docs/evidence/core-release-block-35-20261103.json) | `7334362` |
-| source-candidate-17 | `zero-dispatch-recovery` | PASS: 8 pass / 0 skip | [JSON](../docs/evidence/core-release-block-17-20261103.json) | `7a63891` |
-| source-candidate-18 | `human-window` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-18-20261103.json) | `ba7282f` |
-| source-candidate-19 | `installable-runtime` | PASS: 41 pass / 0 skip | [JSON](../docs/evidence/core-release-block-19-20261103.json) | `55fc5e8` |
-| source-candidate-20 | `manual-current-target` | PASS: 13 pass / 0 skip | [JSON](../docs/evidence/core-release-block-20-20261103.json) | `64b33b5` |
-| source-candidate-21 | `audit-repairs` | PASS: 32 pass / 0 skip | [JSON](../docs/evidence/core-release-block-21-20261103.json) | `c3bae9e` |
-| source-candidate-22 | `core-control`, `core-admission`, `workflow-recovery`, `worker-isolation`, `protocol-codec`, `catalog-discovery` | PASS: 30 pass / 0 skip | [JSON](../docs/evidence/core-release-block-22-20261103.json) | `f0843a7` |
-| source-candidate-23 | `photo-owner`, `photo-executor-contract` | PASS: 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-23-20261103.json) | `6db06cf` |
-| source-candidate-24 | `cep-transport` | PASS: 15 pass / 0 skip | [JSON](../docs/evidence/core-release-block-24-20261103.json) | `86afa17` |
-| source-candidate-25 | `lifecycle-simulation` | PASS: 31 pass / 0 skip | [JSON](../docs/evidence/core-release-block-25-20261103.json) | `f4c6db9` |
-| source-candidate-26 | `native-read-recovery` | PASS: 19 pass / 0 skip | [JSON](../docs/evidence/core-release-block-26-20261103.json) | `f32c03c` |
-| source-candidate-27 | `installed-composition` | PASS: 9 pass / 0 skip | [JSON](../docs/evidence/core-release-block-27-20261103.json) | `4a704ae` |
-| source-candidate-28 | `exact-f548-transition` | PASS: 1 pass / 0 skip | [JSON](../docs/evidence/core-release-block-28-20261103.json) | `ef9d613` |
-| source-candidate-29 | `standalone-installer` | PASS: 7 pass / 0 skip | [JSON](../docs/evidence/core-release-block-29-20261103.json) | создаётся после проверки |
+| source-candidate-01 | `start-over-runtime` | 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-01-20261103.json) | `6625aed` |
+| source-candidate-02 | `start-over-operator` | 6 pass / 0 skip | [JSON](../docs/evidence/core-release-block-02-20261103.json) | `bb23f1a` |
+| source-candidate-03 | `stopped-host-readoption-operator` | 17 pass / 0 skip | [JSON](../docs/evidence/core-release-block-03-20261103.json) | `0af346d` |
+| source-candidate-04 | `stopped-update-operator` | 4 pass / 0 skip | [JSON](../docs/evidence/core-release-block-04-20261103.json) | `e7b3964` |
+| source-candidate-05 | `stopped-update` | 55 pass / 0 skip | [JSON](../docs/evidence/core-release-block-05-20261103.json) | `0e97571` |
+| source-candidate-06 | `legacy-owner-migration` | 29 pass / 0 skip | [JSON](../docs/evidence/core-release-block-06-20261103.json) | `948b41b` |
+| source-candidate-07 | `windows-retained-process` | 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-07-20261103.json) | `7622aa7` |
+| source-candidate-08 | `maintenance-finish-operator` | 7 pass / 0 skip | [JSON](../docs/evidence/core-release-block-08-20261103.json) | `44d97d3` |
+| source-candidate-09 | `maintenance-operator` | 8 pass / 0 skip | [JSON](../docs/evidence/core-release-block-09-20261103.json) | `6befbb5` |
+| source-candidate-10 | `windows-owner-process` | 8 pass / 0 skip | [JSON](../docs/evidence/core-release-block-10-20261103.json) | `427c060` |
+| source-candidate-11 | `owner-installation` | 18 pass / 0 skip | [JSON](../docs/evidence/core-release-block-11-20261103.json) | `63c942d` |
+| source-candidate-12 | `owner-runtime` | 23 pass / 0 skip | [JSON](../docs/evidence/core-release-block-12-20261103.json) | `ecc46e5` |
+| source-candidate-13 | `client-ipc` | 27 pass / 0 skip | [JSON](../docs/evidence/core-release-block-13-20261103.json) | `c80dad9` |
+| source-candidate-14 | `controller-lease` | 16 pass / 0 skip | [JSON](../docs/evidence/core-release-block-14-20261103.json) | `2fcca17` |
+| source-candidate-15 | `endpoint-observation` | 15 pass / 0 skip | [JSON](../docs/evidence/core-release-block-15-20261103.json) | `782ae1d` |
+| source-candidate-16 | `artifact-boundaries`, `native-read-capture`, `validation-routing`, `documentation` | 27 pass / 0 skip | [JSON](../docs/evidence/core-release-block-16-20261103.json) | `17f941c` |
+| source-candidate-30 | `start-over-runtime` | 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-30-20261103.json) | `9c696de` |
+| source-candidate-31 | `start-over-operator` | 6 pass / 0 skip | [JSON](../docs/evidence/core-release-block-31-20261103.json) | `25afc8a` |
+| source-candidate-32 | `stopped-host-readoption-operator` | 17 pass / 0 skip | [JSON](../docs/evidence/core-release-block-32-20261103.json) | `2a65155` |
+| source-candidate-33 | `maintenance-finish-operator` | 7 pass / 0 skip | [JSON](../docs/evidence/core-release-block-33-20261103.json) | `3eb759f` |
+| source-candidate-34 | `owner-installation` | 18 pass / 0 skip | [JSON](../docs/evidence/core-release-block-34-20261103.json) | `9d233ad` |
+| source-candidate-35 | `owner-runtime` | 23 pass / 0 skip | [JSON](../docs/evidence/core-release-block-35-20261103.json) | `7334362` |
+| source-candidate-17 | `zero-dispatch-recovery` | 8 pass / 0 skip | [JSON](../docs/evidence/core-release-block-17-20261103.json) | `7a63891` |
+| source-candidate-18 | `human-window` | 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-18-20261103.json) | `ba7282f` |
+| source-candidate-19 | `installable-runtime` | 41 pass / 0 skip | [JSON](../docs/evidence/core-release-block-19-20261103.json) | `55fc5e8` |
+| source-candidate-20 | `manual-current-target` | 13 pass / 0 skip | [JSON](../docs/evidence/core-release-block-20-20261103.json) | `64b33b5` |
+| source-candidate-21 | `audit-repairs` | 32 pass / 0 skip | [JSON](../docs/evidence/core-release-block-21-20261103.json) | `c3bae9e` |
+| source-candidate-22 | `core-control`, `core-admission`, `workflow-recovery`, `worker-isolation`, `protocol-codec`, `catalog-discovery` | 30 pass / 0 skip | [JSON](../docs/evidence/core-release-block-22-20261103.json) | `f0843a7` |
+| source-candidate-23 | `photo-owner`, `photo-executor-contract` | 3 pass / 0 skip | [JSON](../docs/evidence/core-release-block-23-20261103.json) | `6db06cf` |
+| source-candidate-24 | `cep-transport` | 15 pass / 0 skip | [JSON](../docs/evidence/core-release-block-24-20261103.json) | `86afa17` |
+| source-candidate-25 | `lifecycle-simulation` | 31 pass / 0 skip | [JSON](../docs/evidence/core-release-block-25-20261103.json) | `f4c6db9` |
+| source-candidate-26 | `native-read-recovery` | 19 pass / 0 skip | [JSON](../docs/evidence/core-release-block-26-20261103.json) | `f32c03c` |
+| source-candidate-27 | `installed-composition` | 9 pass / 0 skip | [JSON](../docs/evidence/core-release-block-27-20261103.json) | `4a704ae` |
+| source-candidate-28 | `exact-f548-transition` | 1 pass / 0 skip | [JSON](../docs/evidence/core-release-block-28-20261103.json) | `ef9d613` |
+| source-candidate-29 | `standalone-installer` | 7 pass / 0 skip | [JSON](../docs/evidence/core-release-block-29-20261103.json) | `e9369d1` |
 <!-- /EXECUTION_BLOCKS -->
 
 ## Block16: сохранённый FAIL и принятый repair
@@ -138,6 +140,12 @@ remaining/batch/pause invariants и отсутствие source diff. UTF-8/ло
 и staged whitespace проверяются перед каждым commit.
 
 ## Продолжение
+
+Адресная source-очередь без продуктового hold завершена: 35 принятых запусков / 38 named checks с текущим свежим PASS. Применимы 69 exact-key + 0 byte-command-bound результата; открыты только две dedicated Titles. Titles/Slideshow на паузе, full release не заявляется.
+[Итоговое evidence](../docs/evidence/core-release-source-acceptance-20261103.json).
+
+Принятые source blocks не повторять без drift. Следующие native/product/P1–P8
+критерии остаются отдельными scopes, продуктовая пауза сохраняется.
 
 Активная очередь и текущий remaining находятся в
 [manifest](../docs/core-release-manifest-20261103.json).

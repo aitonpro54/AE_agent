@@ -8009,8 +8009,8 @@
     "reviewDoesNotChangeRuntimeAuthority": true
   },
   "validation": {
-    "status": "PASS",
-    "report": "docs/evidence/core-release-block-29-20261103-validation.json",
+    "status": "PASS-with-product-holds",
+    "report": "docs/evidence/core-release-source-acceptance-20261103.json",
     "selectorKeysMatched": 71,
     "sourceTestCommandsExecuted": 36,
     "fullReleaseCertified": false
@@ -8781,7 +8781,8 @@
           "durationMs": 12080.8478
         },
         "reporter": "spec",
-        "logSha256": "28cb3c1b2e4a114d6cf7c7c5a4157873ea5b7d011d5f54436050cfb75b8d5e69"
+        "logSha256": "28cb3c1b2e4a114d6cf7c7c5a4157873ea5b7d011d5f54436050cfb75b8d5e69",
+        "acceptanceCommit": "e9369d1a8b9b82b6b5153bbb4fb4d602611e2c3a"
       }
     ],
     "guardFixes": [
@@ -8826,7 +8827,7 @@
         "baselineCommit": "782ae1de7ac6c3a396ab94698697a74282ea947b"
       }
     ],
-    "status": "addressed-source-execution",
+    "status": "complete-with-product-holds",
     "candidateDiagnosis": "docs/evidence/core-native-capture-epoch-diagnosis-20261104.json",
     "repairFixes": [
       {
@@ -8858,9 +8859,11 @@
         ],
         "sourceEvidence": "docs/evidence/core-release-block-16-20261103.json"
       }
-    ]
+    ],
+    "completedAt": "2026-11-04T09:12:29.072Z",
+    "finalEvidence": "docs/evidence/core-release-source-acceptance-20261103.json"
   },
-  "updatedAt": "2026-11-04T09:12:15.323Z",
+  "updatedAt": "2026-11-04T09:12:29.072Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
