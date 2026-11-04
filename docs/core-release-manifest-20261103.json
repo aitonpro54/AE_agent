@@ -1446,6 +1446,12 @@
       "sha256": "ee1e8c1d26ce4f5d525c1ddeec55d9a42b8305b00adc194bf3faf73df71774ac",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "Aggregate bounded acceptance; original keyed/native receipts remain authoritative."
+    },
+    {
+      "file": "docs/evidence/core-portability-final-gates-preparation-20261104.json",
+      "sha256": "5a601c855ee218f6bb03c42a8eab8cc397c0321559ee6b03cf90167f0168b517",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Preparation only; no new source/native acceptance."
     }
   ],
   "evidenceMethod": {
@@ -10982,7 +10988,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.sourceValidation"
   },
-  "updatedAt": "2026-11-04T13:42:18.910Z",
+  "updatedAt": "2026-11-04T14:46:35.538Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -10993,7 +10999,7 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "accepted-bounded-two-host-core-transfer",
+    "status": "strict-P2-P5-in-progress",
     "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
@@ -11163,7 +11169,9 @@
     "strictOpenCriteria": [
       "P2",
       "P5"
-    ]
+    ],
+    "finalGatesPlan": "plans/core-portability-final-gates-20261104.md",
+    "finalGatesPreparation": "docs/evidence/core-portability-final-gates-preparation-20261104.json"
   },
   "historicalSourceAcceptance": {
     "baselineCommit": "77a860e",

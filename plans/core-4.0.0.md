@@ -904,3 +904,7 @@ Progress: `f857f2d` fast-forward; 11 переносимых логов и hashes
 ### 4 ноября: практический Core transfer MSI↔desktop принят
 
 Progress: одинаковые packagecdf/80 иstandalone5d5/98, реальная инженерная дельта в обе стороны, desktop initial install1, configured native read обеих машин PASS. Decision: bounded practical блок завершён; strict P2 literal Origin/P5 production repeat оставлены open, Titles/Slideshow paused, cloud excluded. Validation: source current48/71, обе leases освобождены, pending/UNKNOWN/fault0, config manual edits0; [единый отчёт](../docs/core-portability-two-host-result-20261104.md).
+
+### 4 ноября: завершение строгих P2/P5
+
+Progress: пользователь поручил закрыть необходимый остаток; fresh desktop preflight PASS, actual writes0. Decision: same-package repeat по существующим stop→resume→ordinary apply, без снятия owner-update guard; для literal Origin готовится bounded status field. Validation: исходный current48/71 сохранён, candidate ещё не принят. [План](core-portability-final-gates-20261104.md). Titles/Slideshow paused.

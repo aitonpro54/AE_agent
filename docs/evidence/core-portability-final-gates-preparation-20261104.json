@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "portability-final-gates-preparation",
+  "dateLocal": "2026-11-04",
+  "baselineCommit": "97b6fe74d2413ac8635ff54312b2ac0b5802f91a",
+  "authorizationRu": "Добивай всё, что необходимо. Titles/Slideshow остаются на паузе.",
+  "result": "PREPARED_NOT_EXECUTED",
+  "scope": ["P2 literal CEP HTTP Origin", "P5 one real same-package repeat"],
+  "desktopPreflight": {
+    "remoteTurn": "01a1a6f9-c1d8-70a1-a686-1861a1134e7f",
+    "reportSha256": "5a085965468d75c7ba832ba5b00b96d3491ffa65663d94927939a233b2d52105",
+    "sourceHead": "97b6fe74d2413ac8635ff54312b2ac0b5802f91a",
+    "ownerPid": 25516,
+    "ownerBirthTicks": "639293958892069440",
+    "aePid": 28156,
+    "aeBirth": "2026-11-04T13:23:21.5337360Z",
+    "connected": true,
+    "holder": null,
+    "pendingUnknownFault": 0,
+    "packageVerified": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "standaloneVerified": "5d5d1aa4e95d31465c733dbc68ccf3dacba23c5b7fabea1de6811e616c792cdf",
+    "protectedSnapshotCounts": {"installation": 114, "cep": 7, "preferences": 39, "legacy": 9, "source": 215, "supplemental": 33},
+    "plannedStopIdUnusedAtPreparation": "13977dd6-95b5-44df-bddf-d9ee578ec15b",
+    "actualStopUpdateApply": 0
+  },
+  "p5Review": {
+    "role": "ae_specialist",
+    "mode": "read-only contracts and lineage review",
+    "verdict": "ACCEPT_EXISTING_STOP_RESUME_ORDINARY_APPLY_ROUTE",
+    "samePackageOwnerUpdateRefusalPreserved": true,
+    "newApiOrNoopNeeded": false,
+    "sourceReferences": ["core4/runtime/owner-maintenance.js:203", "core4/tools/install-core4.js:344", "core4/runtime/installation-lineage.js:29", "core4/integrations/cep/completion-store.js:55"],
+    "conditionsRu": ["Свежий stop UUID и точный inspect proof для resume.", "Никаких MCP/owner-start между resume и apply.", "Одна реальная apply попытка; при unknown сохранять original transaction/stages/gates без replay.", "Обычный apply не имеет универсального update-finish; rollback только на поддержанном fully-applied baseline."]
+  },
+  "p2Inspection": {
+    "filesystemStatusSeamFound": false,
+    "privatePeerOriginSource": "core4/integrations/cep/http-peer.js:89",
+    "literalOriginObserved": false,
+    "ownCore4CefDebugPortPresent": false,
+    "legacyDebugPort2029Used": false,
+    "nativeUiRightClick": "target-window guard refused before input; CEP child not separately targetable",
+    "sourceOrDebugConfigChanged": false,
+    "packetCaptureOrInspectorAttach": false,
+    "candidateProposal": "Expose authenticated peer.origin in existing physical.peer status; disconnected null; no auth/gate changes."
+  },
+  "productionSourceChanged": false,
+  "newNativeDispatches": 0,
+  "releaseCertified": false,
+  "P1toP8Complete": false,
+  "pausedProducts": ["Titles", "Slideshow"],
+  "cloud": "outside-scope"
+}
