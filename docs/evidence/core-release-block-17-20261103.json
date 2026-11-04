@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:54:05.110Z",
+  "blockId": "source-candidate-17",
+  "baselineCommit": "7334362299ca7271fac4eb413af90bf38c469405",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:zero-dispatch)",
+      "test/recover-zero-dispatch-owner.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:53:36.404Z",
+    "finishedAt": "2026-11-04T08:53:47.314Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 8,
+      "suites": 0,
+      "pass": 8,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 10848.3093
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-17-zero-dispatch-recovery.log",
+      "sha256": "fb5430f1903d956ac3db44ff38bee890478ea626c16f3af33ae53ec91354d1a9",
+      "bytes": 1143
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-17-zero-dispatch-recovery-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "zero-dispatch-recovery",
+      "evidenceKey": "f2eecaaf6adc3272800fdf69d426eb4591ca8f5dbd9f6f948bfb7fe84953b4eb",
+      "result": "PASS",
+      "cases": 8,
+      "skipped": 0,
+      "matchedTestNames": [
+        "zero-dispatch recovery inspect is pure, apply archives only exact two markers and preserves journal/origins/store identity",
+        "zero-dispatch recovery refuses live/reused/unknown owner PID, managed process, active/unknown port and stale process observation",
+        "zero-dispatch recovery rejects any ledger, begin/torn/hash-bad receiver journal, nonempty marker and provenance mismatch",
+        "zero-dispatch recovery proof CAS detects changed bytes and gates without moving markers",
+        "zero-dispatch recovery rejects dangling ledger entry as present before any owner marker move",
+        "zero-dispatch recovery partial second rename retains both gates and transaction, no automatic retry/rollback",
+        "zero-dispatch recovery rejects junction state and unverified dependency sentinel before any imports",
+        "zero-dispatch Windows inventory probe is fixed data-only script, emits no command lines; package excludes operator recovery"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=zero-dispatch",
+        "test/recover-zero-dispatch-owner.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own TEMP installation and recovery data",
+    "probes": "synthetic injected PID/process/port probes; CLI release-tree refusal precedes native calls",
+    "servers": "none",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": true,
+    "fixturePrefixes": [
+      "core4-zero-dispatch-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-EnQh25",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-kBqtm5",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-8QV4iZ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-Ygw0rv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-UCACoe",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-JVuwNJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-QQcL2e"
+    ],
+    "remainingOwnDirs": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-EnQh25",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-kBqtm5",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-8QV4iZ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-Ygw0rv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-UCACoe",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-JVuwNJ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-zero-dispatch-QQcL2e"
+    ],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own fixture files, retained gates/transactions/junctions intentionally remain as test data; no broad cleanup.",
+      "No long-lived server/worker; synchronous early-refusal CLI terminal completion is resource proof."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/recover-zero-dispatch-owner.test.js",
+        "line": 21,
+        "proof": "Injected probe functions; no real process inventory or port listener"
+      },
+      {
+        "file": "core4/test/recover-zero-dispatch-owner.test.js",
+        "line": 87,
+        "proof": "Sync child CLI5s returns at release_tree_mismatch before native calls"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-17-zero-dispatch-recovery-reducer.json",
+    "sha256": "6a115f9dbf0e8451525aaf080104b12b90d4dd060d006970d1587d8a7f14674e"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
