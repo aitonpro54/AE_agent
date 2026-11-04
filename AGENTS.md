@@ -19,6 +19,11 @@ cdf7338f…/distribution85c3d95a…; повторная установка MSI �
 использовать существующий Core-чат для этапов переноса. Read-only preflight:
 legacy checkout1f5b820 чистый, Core4 root отсутствует, Node/Git совпали с MSI,
 AE26.3 закрыт, порты3457/3456/8787 свободны; Kumo/legacy сохранены.
+Первая доставка f576bc7 на десктоп воспроизвела cdf/80 и85c/98; dry-run
+отказал до записей на валидных quoted TOML headers старого config. Выполняется
+bounded source fix, без ручного ремонта config. На MSI уже прошла новая
+configured native inspection собственного B6 AEP в AE26.3x87; lease released,
+pending/UNKNOWN/fault0, AEP unchanged. Source prototype не опубликован.
 P1–P8 ещё открыты. [Практический план](plans/core-portability-practical-20261104.md).
 
 **4 ноября, постоянный контракт новых модулей:** переносимость десктоп ↔ MSI

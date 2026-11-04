@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "recordedAt": "2026-11-04T11:33:00.131Z",
+  "dateLocal": "2026-11-04",
+  "result": "PASS",
+  "scope": "MSI configured Core4 -> CEP -> native project-inspection; read-only current observation",
+  "sourceCommit": "f576bc72f8ffbf57479c6420b439b0eb4435ca1c",
+  "runtimePackageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+  "installation": {
+    "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+    "machineId": "MSI",
+    "nodeVerified": true,
+    "nodeVersion": "24.15.0",
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+  },
+  "afterFx": {
+    "pid": 13608,
+    "birth": "2026-11-04T16:14:16.9989753+05:00",
+    "path": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "actualNativeVersion": "26.3x87"
+  },
+  "ui": {
+    "workflow": "ae-computer-use-workflow + bundled computer-use26.1029.61003 sky",
+    "launchAttempts": 1,
+    "initialLaunchResult": "process started before targetable window; observed and waited, no duplicate launch",
+    "ownAepOpened": "snapshots/core-base-b6-recovery-native-20261103.aep",
+    "ownAepSha256BeforeAfter": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5",
+    "saved": 0,
+    "projectMutations": 0,
+    "installedCorePanelOpen": 1,
+    "peerAutoConnected": true
+  },
+  "contract": {
+    "contract": {
+      "buildSupported": false,
+      "effectPolicy": {
+        "boundedComps": 50,
+        "boundedItemsScanned": 500,
+        "boundedLayers": 100,
+        "continuity": false,
+        "displayNameMaxCodeUnits": 256,
+        "effect": "none",
+        "resultMaxCodeUnits": 40000
+      },
+      "executionPolicy": "read-only-current-observation-v1",
+      "moduleId": "project-inspection",
+      "operationId": "inspect-project",
+      "snapshotProfile": "project-observation-v1",
+      "targetSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "compId": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "version": "4.0.0"
+    },
+    "contractId": "63e3b7c7f3d56e86e53f7655ed4d756c56018a5c08d29d66b8bacfb5194055cd",
+    "moduleId": "project-inspection",
+    "modulePin": "62dc7eb8287135e7702e4836e087ac30944266b3b1db4504afa6f54355c86ce3",
+    "operationId": "inspect-project"
+  },
+  "request": {
+    "moduleId": "project-inspection",
+    "contractId": "63e3b7c7f3d56e86e53f7655ed4d756c56018a5c08d29d66b8bacfb5194055cd",
+    "target": {}
+  },
+  "inspection": {
+    "authority": false,
+    "continuity": false,
+    "contractId": "63e3b7c7f3d56e86e53f7655ed4d756c56018a5c08d29d66b8bacfb5194055cd",
+    "evidenceRef": "observation-514a7658-5ff1-47a6-a808-9e29c308e09e",
+    "moduleId": "project-inspection",
+    "observation": {
+      "aeVersion": "26.3x87",
+      "compositions": [
+        {
+          "compId": 1,
+          "duration": 5,
+          "name": "CoreBase_B6_Recovery",
+          "numLayers": 1
+        }
+      ],
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "core-base-b6-recovery-native-20261103.aep",
+        "numItems": 1,
+        "saved": true
+      },
+      "target": {
+        "compId": null,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+      },
+      "truncated": false
+    },
+    "originalBinding": {
+      "channelEpoch": "http-8610a579-cfac-4bb8-a69f-cf0019ff129e",
+      "commandId": "inspect-37e03556-2fd5-4f29-9395-946c948d5f84",
+      "controllerId": "controller-ca843dae-430d-4ec7-800e-0e6a431a445b",
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "moduleId": "project-inspection",
+      "operationId": "inspect",
+      "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "phase": "inspect",
+      "receiptRef": "9d6b28ae4a33b74ceafaff0af167d9e3fc17f3589884081affbe0ac05897e733",
+      "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726"
+    },
+    "pins": {
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+    }
+  },
+  "controller": {
+    "explicitCurrentSessionAcknowledged": true,
+    "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73",
+    "generation": 1,
+    "bootId": "88cee986-0ea8-407c-a2cf-091e6908e9bd",
+    "releaseSuccess": true,
+    "holderAfter": null,
+    "leaseTokenExported": false
+  },
+  "after": {
+    "ready": true,
+    "peerConnected": true,
+    "pending": null,
+    "unknown": false,
+    "storeFault": false,
+    "ledgerFault": false,
+    "ownershipFault": null,
+    "unresolved": []
+  },
+  "actions": {
+    "nativeReadCommands": 1,
+    "mutation": 0,
+    "save": 0,
+    "install": 0,
+    "configChanges": 0,
+    "reset": 0,
+    "replayedOldTransactions": 0
+  },
+  "limitsRu": [
+    "Это проверка текущего чтения, не mutation/product acceptance и не continuity.",
+    "Историческая adoption другого AE PID не использована как полномочие на изменение.",
+    "MSI фактически сообщает AE26.3x87; прежняя запись26.2 является исторической.",
+    "Desktop native proof ещё требуется; P1–P8 этим одним чтением не закрыты."
+  ],
+  "releaseCertified": false,
+  "historyReadBack": {
+    "receiverEventCount": 9,
+    "originalPrefixEventCount": 7,
+    "originalPrefixSha256": "ccec4ab8f1f290ce8bbb93ab2cbf7beea22d9f3b3598ed7c78962b8d554a5f73",
+    "exactPrefixPreserved": true,
+    "ledgerSha256": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+    "ledgerUnchanged": true
+  },
+  "sourceWorktreeNoteRu": "Во время installed cdf native proof исходный installer имел незакоммиченный candidate; этот read не является проверкой installer change."
+}

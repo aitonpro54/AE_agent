@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "dateLocal": "2026-11-04",
+  "recordedAt": "2026-11-04T11:43:23.107Z",
+  "result": "delivery-PASS-install-dry-run-FAIL",
+  "sourceCommit": "f576bc72f8ffbf57479c6420b439b0eb4435ca1c",
+  "sourceBranch": "codex/core-portability-20261104",
+  "host": "DESKTOP-32974QF",
+  "threadId": "01a186f7-9c1b-7513-a89e-cef10752eba1",
+  "turns": [
+    "01a1a642-ab91-7281-8161-34e9bfebf884",
+    "01a1a648-2ced-7ef0-b166-2fc53559f7b7"
+  ],
+  "delivery": {
+    "fetchAndCheckout": true,
+    "exactHeadVerified": true,
+    "oldBranchPreserved": "codex/core-migration",
+    "oldHeadPreserved": "1f5b8204ed4c50c3aed175f2709deefdfd7836a7",
+    "noOverwriteIgnore": true,
+    "noActivePostCheckoutHook": true,
+    "sourceCleanAfter": true
+  },
+  "package": {
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "packageFiles": 80,
+    "distributionHash": "85c3d95a0dc33f6fad7901c6f6b8a70f58b20297b3e66d8eb8cdc13e39d39f63",
+    "distributionHashedFiles": 98,
+    "composition": "manual",
+    "runtime": "owner",
+    "verifyPackage": "PASS",
+    "verifyStandalone": "PASS",
+    "matchesMsi": true,
+    "dependencyInstalls": 0
+  },
+  "dryRun": {
+    "cwd": "own ignored foreign-cwd",
+    "exitCode": 1,
+    "error": "config_syntax_requires_review",
+    "targetsWritten": false,
+    "configChanged": false,
+    "headersObserved": [
+      "[mcp_servers.\"after-effects\"]",
+      "[mcp_servers.\"after-effects\".env]"
+    ],
+    "existingTomlValid": {
+      "parser": "installed Python tomllib",
+      "exitCode": 0
+    }
+  },
+  "safeTargets": {
+    "workspace": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+    "config": ".codex\\config.toml",
+    "installRoot": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4",
+    "cep": "C:\\Users\\Ant\\AppData\\Roaming\\Adobe\\CEP\\extensions\\com.codex.aeagentcore4",
+    "core4RootAbsent": true,
+    "core4CepAbsent": true
+  },
+  "preservation": {
+    "projectConfigHashUnchanged": true,
+    "globalConfigHashUnchanged": true,
+    "legacyCepFileSetAndHashesUnchanged": true,
+    "kumoAndLegacyUnchanged": true
+  },
+  "remoteReport": {
+    "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-practical-desktop-20261104\\report.json",
+    "sha256": "475109a9e4299887acf2b573cb29f0f2d687b7bf87c36d545085202c3745f7f7"
+  },
+  "actions": {
+    "actualInstall": 0,
+    "afterFxProcesses": 0,
+    "aeMcpRuntimeLaunch": 0,
+    "testSuiteRuns": 0
+  },
+  "next": "bounded installer quoted-table source fix, no manual config rewrite",
+  "releaseCertified": false
+}

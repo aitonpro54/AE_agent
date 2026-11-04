@@ -1362,6 +1362,18 @@
       "sha256": "3fbbeccbbee1f6ed99d2cfba54a3dcb8901d7af23d3fa057e95957dc0ed14980",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "Environment and read-only Git/target facts only; not native AE or P1–P8 closure"
+    },
+    {
+      "file": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
+      "sha256": "135f9e573c4c10483cdb5d3a92cd2d76a47114a8a434be0b057dd7ca95ed911a",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Scoped practical-transfer observation only; not full release or all P1–P8 acceptance"
+    },
+    {
+      "file": "docs/evidence/core-portability-msi-native-20261104.json",
+      "sha256": "a258c419e3950557d0e0e33ffbc6c0710bbe5da29d8dc40b2b0267dc8654c15f",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Scoped practical-transfer observation only; not full release or all P1–P8 acceptance"
     }
   ],
   "evidenceMethod": {
@@ -7926,7 +7938,9 @@
       "contract": "docs/portability.md",
       "noteRu": "Подключён DESKTOP-32974QF; на MSI воспроизведён прежний owner package/distribution. Desktop preflight и фактические оба направления ещё не выполнены; P1–P8 открыты.",
       "preparationEvidence": "docs/evidence/core-portability-practical-20261104.json",
-      "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json"
+      "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
+      "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
+      "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json"
     }
   ],
   "legacyReleaseScript": {
@@ -8877,7 +8891,7 @@
     "completedAt": "2026-11-04T09:12:29.072Z",
     "finalEvidence": "docs/evidence/core-release-source-acceptance-20261103.json"
   },
-  "updatedAt": "2026-11-04T11:10:42.675Z",
+  "updatedAt": "2026-11-04T11:47:14.925Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -8888,11 +8902,13 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "two-host-preflight-complete-transfer-next",
+    "status": "desktop-quoted-config-fix-in-progress",
     "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
     "remoteExecutionAuthorized": true,
-    "next": "Git delivery and initial-install dry-run"
+    "next": "reviewed installer fix on desktop, return delta to MSI",
+    "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
+    "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json"
   }
 }

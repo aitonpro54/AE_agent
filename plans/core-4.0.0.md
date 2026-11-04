@@ -861,3 +861,36 @@ node --test --test-reporter=tap 'C:/Users/Ant/AppData/Local/Temp/core4-native-li
   исходники и current source evidence не изменены, тестовые suites не повторялись.
 - Следующий инженерный шаг переносимости — реализация и проверка общего
   механизма по существующей последовательности P1–P8 в разрешённом scope.
+
+## Практический перенос: первая доставка и MSI native read — 4 ноября 2026
+
+### Progress
+
+- В отдельной Git-ветке доставлен точный `f576bc7` на десктоп; старая ветка
+  `codex/core-migration` сохранена. Пакет cdf/80 и standalone85c/98 совпали
+  на обеих машинах. [Первая доставка](../docs/evidence/core-portability-delivery-attempt-01-20261104.json).
+- MSI: один запуск существующего AE, открытие собственного сохранённого B6 AEP
+  и панели, explicit controller acquire → configured typed inspection → release
+  PASS. Фактический AE26.3x87; AEP SHA прежний, current journal9/prefix7 exact,
+  ledger1 unchanged, pending/UNKNOWN/fault0. [Native evidence](../docs/evidence/core-portability-msi-native-20261104.json).
+
+### Decision Log
+
+- На десктопе dry-run отказал до записей: валидные TOML headers
+  `[mcp_servers."after-effects"]` и его `.env` не поддержаны bounded installer.
+  Конфиг вручную не переписывать; нужен небольшой исправленный producer.
+- Прототип до публикации прошёл независимое review/REVISE: unsupported escaped
+  assignment keys должны отказывать, не теряя disabled/timeout preferences.
+  Незакоммиченный прототип на MSI сохранён в ignored artifacts и убран из
+  working source; реальные configs им не менялись.
+- Исправление финализируется и проверяется на десктопе, затем возвращается
+  на MSI. После этого нужен CLI regression реального quoted-config/foreign-cwd
+  пути на MSI с передачей обратно — содержательная дельта для round-trip.
+
+### Validation
+
+- Нет actual install/config writes на десктопе, старые настройки/legacy CEP
+  сохранены. Нет mutation/save/reset/replay на MSI; native read не выдаёт authority.
+- Новый source code пока не принят; исходный current source/evidence сохранён.
+  Для installer fix запускать адресные изменившиеся checks, не всю очередь69.
+- Следующий шаг — исправленный source candidate и его scoped validation.
