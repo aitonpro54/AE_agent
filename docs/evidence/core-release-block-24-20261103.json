@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T09:01:25.524Z",
+  "blockId": "source-candidate-24",
+  "baselineCommit": "6db06cf07b179718d213f378571eaa976ed5b994",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:cep-transport)",
+      "test/integration/cep-transport.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T09:01:06.757Z",
+    "finishedAt": "2026-11-04T09:01:11.797Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 15,
+      "suites": 0,
+      "pass": 15,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 4977.6032
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-24-cep-transport.log",
+      "sha256": "cfb440bc1cc19c0497500def954043cb3aeaf9dc3bbe3cc46d5785b094c5cc1b",
+      "bytes": 1833
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-24-cep-transport-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "cep-transport",
+      "evidenceKey": "47d0619ceb2cf55e0f9e6d380fb0708446fdf3068ffe2c9b45e91d22af1b0bc5",
+      "result": "PASS",
+      "cases": 15,
+      "skipped": 0,
+      "matchedTestNames": [
+        "[cep-transport] B1 Core physically lacks integration and import performs no channel/state IO",
+        "[cep-transport] B2 actual fragmented wire and VM source dispatch keep typed text as data",
+        "[cep-transport] B3 admission identity bytes phase auth and runtime code fields reject before eval",
+        "[cep-transport] B4 missing callback second controller disconnect timeout retain physical latch",
+        "[cep-transport] B4 external throws malformed mutation and late callback never free UNKNOWN lane",
+        "[cep-transport] B4 concurrent private connects reserve one controller and cancelled connect stays disconnected",
+        "[cep-transport] B5 completed duplicate after graceful reopen keeps original origin and one evaluate",
+        "[cep-transport] B6 actual child crash intent and completion fsync boundaries survive reopen without replay",
+        "[cep-transport] B6 disk write fsync failures and corruption close lane before false reply",
+        "[cep-transport] B7 Broker new authenticated channel reconciles original store proof then independent verify",
+        "[cep-transport] B5 same Broker replacement journal rejects captured frame even after old CAS restored",
+        "[cep-transport] B7 wrong origin store continuity and legacy receipt retain UNKNOWN",
+        "[cep-transport] B7 reconnect after durable intent is rejected before physical mutate",
+        "[cep-transport] B8 production lacks lifecycle issuer shallow ready JSON and public issuer tools",
+        "[cep-transport] B9 independent transport pin scoped owner public seam and explicit deferred integration coverage"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=cep-transport",
+        "test/integration/cep-transport.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source own loopback sockets/VM/synthetic host",
+    "transport": "TCP ephemeral0 fixture wire (not live CEP)",
+    "childActors": "own crash receivers only",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "titlesSuites": 0,
+    "slideshowSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": false,
+    "fixturePrefixes": [
+      "core4-cep-",
+      "ae-core4-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-O3zh5S",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-FZhz7Q",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-BJ8sI7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-xbGRfr",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-Zq5wnB",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-07jRB7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-cvZoun",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-D7m8qo",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-3iequn",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-aYkcxC",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-snKjEu",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-USOgqb",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-nWyq7E",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-SB6HbC",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-U9xUt3",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-LMGs89",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-VFL9r6",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-YUGrHR",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-LlOUqp",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-Fc4OH8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-kbDmno",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-6uswIQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-cep-uzJ5qx",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-ocKbIP",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-OTTFui",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-cil5r8",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-C227KV",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-lStjM2",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core4-AEvnwF"
+    ],
+    "remainingOwnDirs": [],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Source/VM proof only; no native CEP or AE.",
+      "Original10s crash child deadline retained, no outer deadline."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/integration/cep-transport.test.js",
+        "line": 27,
+        "proof": "Reverse await resource closers then remove own directories"
+      },
+      {
+        "file": "core4/test/integration/cep-transport.test.js",
+        "line": 43,
+        "proof": "Crash child exact retained handle kill if needed and await close event"
+      },
+      {
+        "file": "core4/test/fixtures/cep-host.js",
+        "line": 83,
+        "proof": "Destroy own sockets; await server.close and completion store.close"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-24-cep-transport-reducer.json",
+    "sha256": "1beffa7135471c3dda232987eee26cd2ec71fcb219f1c1e0b11ac12bc1b32494"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
