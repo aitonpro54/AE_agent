@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:47:56.215Z",
+  "blockId": "source-candidate-30",
+  "baselineCommit": "17f941cdabc17081d8e9db30268eca626e2e7539",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=start-over-runtime",
+      "test/start-over-runtime.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:44:42.726Z",
+    "finishedAt": "2026-11-04T08:47:33.068Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 3,
+      "suites": 0,
+      "pass": 3,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 170281.5289
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-30-start-over-runtime.log",
+      "sha256": "0fe0e2ca4213ba9f0011ad9eeb79c2b8253c8da069ff48aab0ffd76d0bf97744",
+      "bytes": 570
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-30-start-over-runtime-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "start-over-runtime",
+      "evidenceKey": "5f767f692335666a69f939c5d3bb4e17f42c2bde37d023193cd19125e9bc1995",
+      "result": "PASS",
+      "cases": 3,
+      "skipped": 0,
+      "matchedTestNames": [
+        "start-over-runtime idle reset starts a new normal owner and requires explicit session plus fresh baseline with exact history preserved",
+        "start-over-runtime diagnostic old producer loss and late completion preserve UNKNOWN history; official helper repeat is historical only",
+        "start-over-runtime actual process death after receiver rename continues the same signed reset from a new entry without replay"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-runtime",
+        "test/start-over-runtime.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own TEMP",
+    "syntheticAE": true,
+    "logical3457": "mapped to ephemeral0 by fixture preload",
+    "randomIPC": true,
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": false,
+    "fixturePrefixes": [
+      "core4-reset-runtime-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-runtime-KOLauE",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-runtime-duQUPs",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-reset-runtime-NaXIED"
+    ],
+    "remainingOwnDirs": [],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own actor identity observations confined to exact fixture PIDs and births; no global production inventory.",
+      "Original 600000ms per-case budgets retained; no outer deadline."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/start-over-runtime.test.js",
+        "line": 28,
+        "proof": "t.after closes clients, exact own recorded actors and registered child exits, then guarded own-prefix rm"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-30-start-over-runtime-reducer.json",
+    "sha256": "87f03d4c6fe36c38eb2640da83d7deba8b83fa4f90779c2d7a6193e75ce40b79"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
