@@ -294,3 +294,17 @@ Runtime UUID совпал с единственным active local Codex chat «
 ### Validation
 
 State production содержит только origin.json; наших submitted/native commands0, новых UNKNOWN0; это не подмена недоступного core_status. Configured/native proof остаётся открытым именно из-за отсутствия supported reload/restart с доказанным восстановлением текущего клиента. Новых tests/source changes нет,71keys/48covered/23open прежние.
+
+## Desktop: configured native proof PASS — 4 ноября
+
+### Progress
+
+В том же чате появился namespace Core4. Без restart app-server и без смены membership выполнены fresh configured status/contract → acquiregen1 → connect → ровно одна typed project-inspection → немедленный release. Текущий workSession.sessionId=null/legacy принят без reset/adoption. AE26.3x87, реальный пустой несохранённый проект,numItems0. [Evidence](../docs/evidence/core-portability-desktop-configured-native-20261104.json).
+
+### Decision Log
+
+Прежние reload diagnostics сохранены как история; blocker снят фактической публикацией tools, её причина не приписывается нашим действиям. Exact app-server7060/birth прежний. Новый service restart, повтор AE restart и project membership edits не нужны. Lease держался менее0.4сек; token не опубликован. Publisher сначала ожидал2 records без origin; corrected read-only journal proof3records, native command не повторялась.
+
+### Validation
+
+Final owner25516 ready, peer connected, holder=null, pending=null, UNKNOWN/fault/unresolved0. Receiver3records:origin+begin+complete, одна settled inspection; hash chain и commandId проверены. Runtime80/CEP7, descriptor/client/project/global config, legacy/probe сохранены. Панель готова к командам. Authority/continuity=false, mutation/save0. Desktop scoped этап завершён; source48/23, P1–P8/full release и итоговая двухмашинная матрица остаются у координатора.

@@ -11,6 +11,9 @@
 
 ## Текущий scope и правила
 
+**4 ноября, desktop configured native PASS:** namespace Core4 появился в текущем чате без нашего restart app-server. Fresh status/contract → acquire/connect/one typed project-inspection/release завершены; AE26.3x87,numItems0. Owner25516 ready, peer connected, holder=null,pending/UNKNOWN/fault0; receiver origin+begin+complete3records/one settled command. Desktop этап install/configured/native завершён; P1–P8/full release открыты. [Evidence](docs/evidence/core-portability-desktop-configured-native-20261104.json).
+
+
 **4 ноября, desktop CEP discovery PASS:** после одного normal AE restart панель Core4 появилась и открыта, AE26.3.0.87/PID28156; проект пустой. CLI exact-cwd config видит enabledCore4 и exact trusted binding, но текущий runtime toolsCore4 не публикует. Supported targeted reload существующего app-server доступными API/UI не найден; configured/native pending. [Диагностика](docs/evidence/core-portability-desktop-cep-discovery-20261104.json).
 
 

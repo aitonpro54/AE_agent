@@ -1,0 +1,618 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-portability-desktop-configured-native-read",
+  "createdAt": "2026-11-04T13:35:10.111Z",
+  "result": "PASS",
+  "precedingCheckpointCommit": "61e1f1d106999de82ec61be33de05fba5dc6a4df",
+  "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+  "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+  "configuredToolNamespace": "mcp__after_effects_core4",
+  "ownerIdentity": {
+    "lifecycleProcessBootId": "ec19db01-7d8e-42b7-aec5-280f0bf5fc01",
+    "attachmentBootId": "21451f88-440f-4182-b90b-1f3bafd28ee4",
+    "distinctBootIds": true
+  },
+  "toolPublication": {
+    "observedInExistingChat": true,
+    "appServerRestartByThisBlock": false,
+    "existingAppServerPid": 7060,
+    "existingAppServerBirth": "2026-11-04T09:29:14.7510340Z",
+    "cause": "Runtime announced Added deferred tool namespace mcp__after_effects_core4 during same turn; next fresh ALL_TOOLS inventory contained configured tools. No reload/API/UI/membership change by this controller; underlying publication trigger not observed",
+    "priorRefreshBlockerSuperseded": true,
+    "existingProjectMembershipObserved": true,
+    "membershipChanged": false
+  },
+  "before": {
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "21451f88-440f-4182-b90b-1f3bafd28ee4",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 0,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false,
+      "workSession": {
+        "baselineRequired": false,
+        "resetPending": false,
+        "sessionId": null
+      }
+    },
+    "automaticLifecycle": "unavailable",
+    "closed": false,
+    "composition": "manual",
+    "connection": "unavailable",
+    "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionPolicy": "read-only-current-observation-v1",
+    "installation": {
+      "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+      "machineId": "DESKTOP-32974QF",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+    },
+    "ledgerFault": false,
+    "lifecycle": {
+      "birthTicks": "639293958892069440",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 25516,
+      "processBootId": "ec19db01-7d8e-42b7-aec5-280f0bf5fc01",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "maintenance": {
+      "fault": null,
+      "id": null,
+      "phase": "running",
+      "requested": false
+    },
+    "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+    "ownershipFault": null,
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": false,
+      "lastPhysicalFault": null,
+      "lastReadFailure": null,
+      "listening": true,
+      "peer": {
+        "connected": false
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-d90ce4fa-c1a1-403a-af44-9b4077694e43",
+      "startOverFrozen": false,
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "pid": 25516,
+    "product": "AE Agent Core 4.0.0",
+    "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+    "ready": true,
+    "resourceProvider": {
+      "adopted": false,
+      "coverage": {
+        "core4Lane": "cooperating-Core4-only",
+        "hostProcess": "unavailable",
+        "legacyEndpoints": "named-probes-only",
+        "legacyPhysicalQueue": "not-proven",
+        "otherAEActors": "outside-coverage",
+        "sharedOutputs": "not-requested"
+      },
+      "origin": null
+    },
+    "startOver": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "fault": null,
+      "id": null,
+      "phase": "ready",
+      "requiresAEExit": false,
+      "resetComplete": false,
+      "sessionId": null
+    },
+    "synthetic": false,
+    "unavailableReason": null,
+    "unresolved": [],
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "legacy",
+      "resetId": null,
+      "resetPending": false,
+      "sessionId": null
+    },
+    "worker": {
+      "epoch": 0,
+      "lateReplies": 0,
+      "loaded": [],
+      "pending": 0,
+      "pid": null
+    }
+  },
+  "contract": {
+    "contract": {
+      "buildSupported": false,
+      "effectPolicy": {
+        "boundedComps": 50,
+        "boundedItemsScanned": 500,
+        "boundedLayers": 100,
+        "continuity": false,
+        "displayNameMaxCodeUnits": 256,
+        "effect": "none",
+        "resultMaxCodeUnits": 40000
+      },
+      "executionPolicy": "read-only-current-observation-v1",
+      "moduleId": "project-inspection",
+      "operationId": "inspect-project",
+      "snapshotProfile": "project-observation-v1",
+      "targetSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "compId": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "version": "4.0.0"
+    },
+    "contractId": "63e3b7c7f3d56e86e53f7655ed4d756c56018a5c08d29d66b8bacfb5194055cd",
+    "moduleId": "project-inspection",
+    "modulePin": "62dc7eb8287135e7702e4836e087ac30944266b3b1db4504afa6f54355c86ce3",
+    "operationId": "inspect-project"
+  },
+  "receipt": {
+    "startedAt": "2026-11-04T13:32:08.005Z",
+    "sessionId": null,
+    "contractId": "63e3b7c7f3d56e86e53f7655ed4d756c56018a5c08d29d66b8bacfb5194055cd",
+    "steps": [
+      {
+        "step": "acquire",
+        "at": "2026-11-04T13:32:08.112Z",
+        "bootId": "21451f88-440f-4182-b90b-1f3bafd28ee4",
+        "generation": 1,
+        "sessionId": null,
+        "leaseTokenPublished": false
+      },
+      {
+        "step": "connect",
+        "at": "2026-11-04T13:32:08.231Z",
+        "result": {
+          "automaticLifecycle": "unavailable",
+          "available": true,
+          "physical": {
+            "automaticLifecycle": "unavailable",
+            "externalLegacyCoverage": "unobserved",
+            "inspectionAvailable": true,
+            "lastPhysicalFault": null,
+            "lastReadFailure": null,
+            "listening": true,
+            "peer": {
+              "connected": true,
+              "peerId": "panel-4e49e5614639d2241eeb50ef91a53f61181d820240af17a7"
+            },
+            "pending": null,
+            "port": 3457,
+            "receiverStoreIdentity": "receiver-store-d90ce4fa-c1a1-403a-af44-9b4077694e43",
+            "startOverFrozen": false,
+            "storeClosed": false,
+            "storeFault": false,
+            "unknown": false
+          },
+          "synthetic": false
+        }
+      },
+      {
+        "step": "inspect",
+        "at": "2026-11-04T13:32:08.410Z",
+        "result": {
+          "authority": false,
+          "continuity": false,
+          "contractId": "63e3b7c7f3d56e86e53f7655ed4d756c56018a5c08d29d66b8bacfb5194055cd",
+          "evidenceRef": "observation-c7522837-a857-473c-a4bd-93d6fb39cca3",
+          "moduleId": "project-inspection",
+          "observation": {
+            "aeVersion": "26.3x87",
+            "compositions": [],
+            "layers": [],
+            "observationVersion": 1,
+            "project": {
+              "name": "Несохранённый проект",
+              "numItems": 0,
+              "saved": false
+            },
+            "target": {
+              "compId": null,
+              "projectId": null
+            },
+            "truncated": false
+          },
+          "originalBinding": {
+            "channelEpoch": "http-6341d5a5-e509-4335-b748-0d748f3045fc",
+            "commandId": "inspect-81ce25ea-c5c1-4f87-9899-10b313d11ca1",
+            "controllerId": "controller-ef5ceaf8-6449-4e39-a27e-f291a78de38a",
+            "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+            "moduleId": "project-inspection",
+            "operationId": "inspect",
+            "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+            "phase": "inspect",
+            "receiptRef": "927637ea280b54f7e417e06c2f9ecdbd7bea2cbaec422bdaf0b6fa6fcc6a9d9b",
+            "receiverStoreIdentity": "receiver-store-d90ce4fa-c1a1-403a-af44-9b4077694e43"
+          },
+          "pins": {
+            "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+            "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+            "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+          }
+        }
+      },
+      {
+        "step": "release",
+        "at": "2026-11-04T13:32:08.410Z",
+        "result": {
+          "released": true
+        }
+      }
+    ],
+    "finishedAt": "2026-11-04T13:32:08.470Z"
+  },
+  "after": {
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "21451f88-440f-4182-b90b-1f3bafd28ee4",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 1,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false,
+      "workSession": {
+        "baselineRequired": false,
+        "resetPending": false,
+        "sessionId": null
+      }
+    },
+    "automaticLifecycle": "unavailable",
+    "closed": false,
+    "composition": "manual",
+    "connection": "connected",
+    "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionPolicy": "read-only-current-observation-v1",
+    "installation": {
+      "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+      "machineId": "DESKTOP-32974QF",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+    },
+    "ledgerFault": false,
+    "lifecycle": {
+      "birthTicks": "639293958892069440",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 25516,
+      "processBootId": "ec19db01-7d8e-42b7-aec5-280f0bf5fc01",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "maintenance": {
+      "fault": null,
+      "id": null,
+      "phase": "running",
+      "requested": false
+    },
+    "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+    "ownershipFault": null,
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": true,
+      "lastPhysicalFault": null,
+      "lastReadFailure": null,
+      "listening": true,
+      "peer": {
+        "connected": true,
+        "peerId": "panel-4e49e5614639d2241eeb50ef91a53f61181d820240af17a7"
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-d90ce4fa-c1a1-403a-af44-9b4077694e43",
+      "startOverFrozen": false,
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "pid": 25516,
+    "product": "AE Agent Core 4.0.0",
+    "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+    "ready": true,
+    "resourceProvider": {
+      "adopted": false,
+      "coverage": {
+        "core4Lane": "cooperating-Core4-only",
+        "hostProcess": "unavailable",
+        "legacyEndpoints": "named-probes-only",
+        "legacyPhysicalQueue": "not-proven",
+        "otherAEActors": "outside-coverage",
+        "sharedOutputs": "not-requested"
+      },
+      "origin": null
+    },
+    "startOver": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "fault": null,
+      "id": null,
+      "phase": "ready",
+      "requiresAEExit": false,
+      "resetComplete": false,
+      "sessionId": null
+    },
+    "synthetic": false,
+    "unavailableReason": null,
+    "unresolved": [],
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "legacy",
+      "resetId": null,
+      "resetPending": false,
+      "sessionId": null
+    },
+    "worker": {
+      "epoch": 0,
+      "lateReplies": 0,
+      "loaded": [],
+      "pending": 0,
+      "pid": null
+    }
+  },
+  "diagnostics": {
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "21451f88-440f-4182-b90b-1f3bafd28ee4",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 1,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false,
+      "workSession": {
+        "baselineRequired": false,
+        "resetPending": false,
+        "sessionId": null
+      }
+    },
+    "automaticLifecycle": "unavailable",
+    "catalogError": null,
+    "catalogRevision": "update-titles-current-target-6b89ae03e01e195da5a33a75391ee60cfb7f63a9dd77f0c8116f06b468098d46",
+    "closed": false,
+    "composition": "manual",
+    "connection": "connected",
+    "controllerBusy": false,
+    "coreIdentity": "202a2d13ea95a400317bb59a8a8caf842148a3207e8a8c3a1c7d828e41b32b86",
+    "externalLegacyCoverage": "unobserved",
+    "inspectionPolicy": "read-only-current-observation-v1",
+    "installation": {
+      "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+      "machineId": "DESKTOP-32974QF",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+    },
+    "ledgerFault": false,
+    "lifecycle": {
+      "birthTicks": "639293958892069440",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 25516,
+      "processBootId": "ec19db01-7d8e-42b7-aec5-280f0bf5fc01",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "maintenance": {
+      "fault": null,
+      "id": null,
+      "phase": "running",
+      "requested": false
+    },
+    "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+    "ownershipFault": null,
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": true,
+      "lastPhysicalFault": null,
+      "lastReadFailure": null,
+      "listening": true,
+      "peer": {
+        "connected": true,
+        "peerId": "panel-4e49e5614639d2241eeb50ef91a53f61181d820240af17a7"
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-d90ce4fa-c1a1-403a-af44-9b4077694e43",
+      "startOverFrozen": false,
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "pid": 25516,
+    "product": "AE Agent Core 4.0.0",
+    "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+    "ready": true,
+    "resourceDiagnostics": [],
+    "resourceProvider": {
+      "adopted": false,
+      "coverage": {
+        "core4Lane": "cooperating-Core4-only",
+        "hostProcess": "unavailable",
+        "legacyEndpoints": "named-probes-only",
+        "legacyPhysicalQueue": "not-proven",
+        "otherAEActors": "outside-coverage",
+        "sharedOutputs": "not-requested"
+      },
+      "origin": null
+    },
+    "startOver": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "fault": null,
+      "id": null,
+      "phase": "ready",
+      "requiresAEExit": false,
+      "resetComplete": false,
+      "sessionId": null
+    },
+    "synthetic": false,
+    "unavailableReason": null,
+    "unresolved": [],
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "legacy",
+      "resetId": null,
+      "resetPending": false,
+      "sessionId": null
+    },
+    "worker": {
+      "epoch": 0,
+      "lateReplies": 0,
+      "loaded": [],
+      "pending": 0,
+      "pid": null
+    }
+  },
+  "receiver": {
+    "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\receiver\\completions.ndjson",
+    "sha256": "56516a0e97e55f4b38039b6924ab50890f21a6d1082a38e5f448260116c80b7c",
+    "recordsAtInitialInstallation": 0,
+    "recordsAfter": 3,
+    "recordTypes": [
+      "origin",
+      "begin",
+      "complete"
+    ],
+    "initialOwnerOriginRecord": 1,
+    "commandRecordsAdded": 2,
+    "commandsDispatched": 1,
+    "hashChainVerified": true,
+    "beginCompleteCommandIdMatchesInspection": true,
+    "settled": true,
+    "brokerLedgerPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+    "brokerLedgerPresent": false,
+    "originPrefixSHA256": "a4cc41aa8deb0f1e97f3de4aa1014555b5dedef9e84837fcc2ba184fecefc1ae",
+    "originPrefixObservation": "Derived read-only from final immutable journal prefix; not a separate pre-inspection filesystem capture"
+  },
+  "observerDiagnostic": {
+    "firstPublisherError": "event_count",
+    "secondPublisherError": "MODULE_NOT_FOUND ../../../core4/protocol/json",
+    "secondCorrection": "Ignored helper require corrected to ../../core4/protocol/json; no product/runtime changes",
+    "cause": "Expected2 raw records omitted owner-created origin; actual journal origin/begin/complete3 verified with chain and exact commandId.",
+    "resolvedByReadOnly": true,
+    "nativeReadReplayed": false
+  },
+  "protected": {
+    "runtime80AndCEP7HashesUnchanged": true,
+    "descriptorClientProjectConfigUnchanged": true,
+    "globalConfigUnchanged": true,
+    "legacyFilesUnchanged": true,
+    "snapshotProbeUnchanged": true
+  },
+  "visualReadback": {
+    "panel": "AE Agent Core 4.0.0",
+    "status": "Канал Core 4.0.0 готов к командам",
+    "projectEmpty": true,
+    "AEVersion": "26.3.0.87",
+    "AEPWritten": false
+  },
+  "scopeLimits": {
+    "actualApplyTotal": 1,
+    "applyReplayed": false,
+    "normalAERestarts": 1,
+    "additionalAERestarts": 0,
+    "appServerTerminationAttempts": 0,
+    "rawJSXDirectCalls": 0,
+    "projectMutations": 0,
+    "saveCalls": 0,
+    "adoptionReset": false,
+    "leaseTokenPublished": false,
+    "authority": false,
+    "continuity": false,
+    "releaseCertified": false,
+    "P1toP8Complete": false
+  },
+  "nextRu": "Desktop install/configured/native этап завершён. Итоговая двухмашинная матрица P1–P8/full release остаются у координатора."
+}
