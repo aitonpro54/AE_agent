@@ -105,3 +105,17 @@ stop/update/inspect/enable; новые механизмы вводить тол�
 - Current48covered/23open; прежние69current — только исторический срез77a860e.
 - 71keys/snapshot215/supplemental текущие;32changed/39same,21deferred не запускались.
 - Protected config/legacy hashes unchanged; actors observed terminal. Native/configured/full release/P1–P8 открыты.
+
+## MSI: приём desktop fix и обратная дельта
+
+### Progress
+
+`f857f2d` получен с сохранением истории. SHA двух source-файлов, 11portable raw logs, их summaries/names и71keys сверены. Добавлена полезная CLI regression delta: quoted legacy/env и decoded local paths. Полный named46/46PASS, оба builds/verifiers и foreign-CWD dry-run PASS; identities совпали с desktop.
+
+### Decision Log
+
+Не переустанавливать уже совпадающий runtimecdf наMSI. После истечения gen2 два вызова отказали до dispatch; свежий exact transfergen3 → одно native read → release. Старые UNKNOWN/settled IDs не повторялись.
+
+### Validation
+
+[MSI evidence](../docs/evidence/core-portability-msi-roundtrip-20261104.json): receiver9→11 с exact prefix, ledger/AEP unchanged; installed owner ready/peer connected, pending/UNKNOWN/fault0, holder null. Current48/open23; следующая операция — вернуть commit на desktop и установить штатным CLI, затем configured native proof.

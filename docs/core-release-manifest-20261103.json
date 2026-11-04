@@ -579,7 +579,7 @@
       },
       {
         "file": "test/installable-runtime.test.js",
-        "sha256": "5ab9acb6be686e3b34b51b759c41cbd13d825672ba5402de12f51f075ed22998"
+        "sha256": "4bcfbbd1aeb4e5fea2988dbd7f004764fe8930521f581030858624fe965d141f"
       },
       {
         "file": "test/installed-composition.test.js",
@@ -898,7 +898,7 @@
         "sha256": "7910ad3c5ca8747ee6eb7b56009b5e1ca2c26cb178c1725ae9544ca34c5bec02"
       }
     ],
-    "digest": "db2b7ac73e00686ae1b8a85c6fc2182e32e7d23e51a9ff3b96c5991ce1ff2559",
+    "digest": "fc4e4123251d9a26b3dc0abad39fd833a70297e57159ba4c49dbf52d234cb9b4",
     "note": "Current 215-file byte snapshot. Observation does not imply PASS for all current closures; see per-check acceptance and 23 open checks.",
     "digestAlgorithm": "protocol.hash(canonical [[relative file,sha256],...])",
     "revisions": [
@@ -931,6 +931,15 @@
           "core4/test/installable-runtime.test.js"
         ],
         "evidence": "docs/evidence/core-portability-quoted-config-20261104.json"
+      },
+      {
+        "at": "2026-11-04T12:55:29.900Z",
+        "previousDigest": "db2b7ac73e00686ae1b8a85c6fc2182e32e7d23e51a9ff3b96c5991ce1ff2559",
+        "reason": "MSI CLI round-trip regression; one current full named PASS, other69 keys unchanged.",
+        "files": [
+          "core4/test/installable-runtime.test.js"
+        ],
+        "evidence": "docs/evidence/core-portability-msi-roundtrip-20261104.json"
       }
     ]
   },
@@ -1391,6 +1400,12 @@
       "directKeyedRecords": 11,
       "excludedAsAuthority": null,
       "scope": "Full canonical desktop named checks; TEMP/synthetic source proof, not native/configured acceptance."
+    },
+    {
+      "file": "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+      "sha256": "9f8f2e77584b53883f4861b569739a5cd72cbe95455aac51b6fd8f63f823b61f",
+      "directKeyedRecords": 1,
+      "excludedAsAuthority": null
     }
   ],
   "evidenceMethod": {
@@ -1429,11 +1444,12 @@
     "reusedGlobalUniqueCases": null,
     "currentCovered": 48,
     "currentUnchangedExactReuse": 37,
-    "currentDesktopFreshNamedChecks": 11,
+    "currentDesktopFreshNamedChecks": 10,
     "historicalSourceTestCommandsExecuted": 36,
-    "sourceTestCommandsExecutedScope": "Historical source phase only; new 11-command phase is practicalPortability.sourceValidation.",
-    "practicalPortabilitySourceCommandsExecuted": 11,
-    "historicalSourcePhase": "historicalSourceAcceptance.summary"
+    "sourceTestCommandsExecutedScope": "Historical source phase36; current portability receipts11 desktop +1 MSI; no global unique claim.",
+    "practicalPortabilitySourceCommandsExecuted": 12,
+    "historicalSourcePhase": "historicalSourceAcceptance.summary",
+    "currentMsiFreshNamedChecks": 1
   },
   "checks": [
     {
@@ -6671,8 +6687,8 @@
         "--test-name-pattern=installable-runtime",
         "test/installable-runtime.test.js"
       ],
-      "currentEvidenceKey": "fb9df7309997c15acbbd1396757b1825b23b3cabd6ecc26d4728b167b1bf194a",
-      "dependencyDigest": "ab49f7c86c2b6df32ae7f5e0db8b01a2e2251fdf6f872ff26de0aee84f96dc24",
+      "currentEvidenceKey": "fc06b07a783f4025310196139e13372e99de81e5e92a2b6ec8a9ff8e78758b55",
+      "dependencyDigest": "65d8d740358fb4ebe3967dafa554681761e5762456365b33157322aadcb7f974",
       "dependencyCount": 86,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/installable-runtime",
       "projections": [],
@@ -6689,15 +6705,15 @@
       "recordedExactKeyAvailable": true,
       "acceptedEvidence": [
         {
-          "file": "docs/evidence/core-portability-quoted-config-20261104.json",
+          "file": "docs/evidence/core-portability-msi-roundtrip-20261104.json",
           "pointer": "/checks/0",
           "result": "PASS",
           "resultField": "result",
-          "evidenceKey": "fb9df7309997c15acbbd1396757b1825b23b3cabd6ecc26d4728b167b1bf194a",
+          "evidenceKey": "fc06b07a783f4025310196139e13372e99de81e5e92a2b6ec8a9ff8e78758b55",
           "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
           "caseCount": 46,
           "caseCountPointer": "/checks/0/cases",
-          "recordedMode": "fresh-full-canonical-named-check-desktop",
+          "recordedMode": "fresh-full-canonical-named-check-msi",
           "recordedCommand": [
             "node",
             "--test",
@@ -6707,10 +6723,10 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": 46,
-          "log": "docs/evidence/core-portability-quoted-config-20261104/logs/installable-runtime.stdout.txt",
-          "logHash": "dc58bd53d570e35e8b1c119ea986416f1486dbd993e99f56ea4d0cfc9d6aabfb",
-          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\installable-runtime.stdout.log",
-          "originalLogHash": "dc58bd53d570e35e8b1c119ea986416f1486dbd993e99f56ea4d0cfc9d6aabfb"
+          "log": "docs/evidence/core-portability-msi-roundtrip-20261104/installable-runtime.stdout.txt",
+          "logHash": "943149481342d81366381204ff04ce36c33ff86783a841e39ba0ade1877880c3",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-msi-roundtrip-20261104\\installable-runtime.stdout.txt",
+          "originalLogHash": "943149481342d81366381204ff04ce36c33ff86783a841e39ba0ade1877880c3"
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -6770,19 +6786,19 @@
       },
       "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "passed-in-practical-portability-source-block",
+        "state": "passed-in-portability-source-block",
         "scheduled": false,
-        "executedDuringPracticalPortability": true,
-        "gateRu": "Свежий полный named PASS; повтор только при drift/дефекте в соответствующем scope."
+        "automaticallyExecutable": false,
+        "gateRu": "Полный MSI named PASS; повтор только при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "latestExecution": {
         "result": "PASS",
-        "evidence": "docs/evidence/core-portability-quoted-config-20261104.json",
+        "evidence": "docs/evidence/core-portability-msi-roundtrip-20261104.json",
         "pointer": "/checks/0",
-        "evidenceKey": "fb9df7309997c15acbbd1396757b1825b23b3cabd6ecc26d4728b167b1bf194a",
+        "evidenceKey": "fc06b07a783f4025310196139e13372e99de81e5e92a2b6ec8a9ff8e78758b55",
         "fullCheckAccepted": true,
-        "sourceHost": "DESKTOP-32974QF"
+        "sourceHost": "MSI"
       },
       "supersededAcceptance": [
         {
@@ -6828,6 +6844,53 @@
             "executedDuringSourceAcceptance": true,
             "blockId": "source-candidate-19",
             "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
+          }
+        },
+        {
+          "supersededAt": "2026-11-04T12:55:29.900Z",
+          "reason": "MSI CLI regression extension",
+          "evidenceKey": "fb9df7309997c15acbbd1396757b1825b23b3cabd6ecc26d4728b167b1bf194a",
+          "dependencyDigest": "ab49f7c86c2b6df32ae7f5e0db8b01a2e2251fdf6f872ff26de0aee84f96dc24",
+          "acceptedEvidence": [
+            {
+              "file": "docs/evidence/core-portability-quoted-config-20261104.json",
+              "pointer": "/checks/0",
+              "result": "PASS",
+              "resultField": "result",
+              "evidenceKey": "fb9df7309997c15acbbd1396757b1825b23b3cabd6ecc26d4728b167b1bf194a",
+              "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+              "caseCount": 46,
+              "caseCountPointer": "/checks/0/cases",
+              "recordedMode": "fresh-full-canonical-named-check-desktop",
+              "recordedCommand": [
+                "node",
+                "--test",
+                "--test-name-pattern=installable-runtime",
+                "test/installable-runtime.test.js"
+              ],
+              "executionBatch": null,
+              "sharedBatch": false,
+              "batchCaseCount": 46,
+              "log": "docs/evidence/core-portability-quoted-config-20261104/logs/installable-runtime.stdout.txt",
+              "logHash": "dc58bd53d570e35e8b1c119ea986416f1486dbd993e99f56ea4d0cfc9d6aabfb",
+              "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\portability-desktop-toml-v2-20261104\\installable-runtime.stdout.log",
+              "originalLogHash": "dc58bd53d570e35e8b1c119ea986416f1486dbd993e99f56ea4d0cfc9d6aabfb"
+            }
+          ],
+          "byteCommandBoundEvidence": null,
+          "latestExecution": {
+            "result": "PASS",
+            "evidence": "docs/evidence/core-portability-quoted-config-20261104.json",
+            "pointer": "/checks/0",
+            "evidenceKey": "fb9df7309997c15acbbd1396757b1825b23b3cabd6ecc26d4728b167b1bf194a",
+            "fullCheckAccepted": true,
+            "sourceHost": "DESKTOP-32974QF"
+          },
+          "futureExecution": {
+            "state": "passed-in-practical-portability-source-block",
+            "scheduled": false,
+            "executedDuringPracticalPortability": true,
+            "gateRu": "Свежий полный named PASS; повтор только при drift/дефекте в соответствующем scope."
           }
         }
       ]
@@ -8576,8 +8639,8 @@
         "--test-name-pattern=lifecycle-simulation",
         "test/lifecycle-simulation.test.js"
       ],
-      "currentEvidenceKey": "c5f0954aa3c66bba5a3fd622b6992fe3f7f7455ff247553b7884a40910319915",
-      "dependencyDigest": "f54719be0ca927ed69eb2d3d4221b5992621a856bdde188701b7c38825f1d68c",
+      "currentEvidenceKey": "bb4ea599790b63d43aea9a60701f00dff267a59be86b8bc07ed4a3adac651742",
+      "dependencyDigest": "988586d49ae755c0d5f88765842a9f2ce83e04bb2da805aa1ec10969a60f5bd6",
       "dependencyCount": 173,
       "dependencySpecsReference": "core4/config/validation-map.json#/checkDependencies/lifecycle-simulation",
       "projections": [],
@@ -8624,12 +8687,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "V2 installer изменил dependency closure; прежний PASS сохранён как superseded, current check не запускался.",
+      "missingEvidenceReason": "Test-only CLI delta changed integration key; no current full lifecycle-simulation evidence.",
       "futureExecution": {
         "state": "needs-current-evidence",
         "scheduled": false,
         "automaticallyExecutable": false,
-        "gateRu": "Отложенная integration, не выполнялась в узком desktop scope."
+        "gateRu": "Отложенная integration; тестовая дельта не даёт новый PASS."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -8645,8 +8708,8 @@
         }
       ],
       "latestExecution": {
-        "result": "NOT_RUN",
-        "evidenceKey": "c5f0954aa3c66bba5a3fd622b6992fe3f7f7455ff247553b7884a40910319915",
+        "result": "not-run",
+        "evidenceKey": "bb4ea599790b63d43aea9a60701f00dff267a59be86b8bc07ed4a3adac651742",
         "fullCheckAccepted": false
       },
       "supersededAcceptance": [
@@ -8693,6 +8756,25 @@
             "executedDuringSourceAcceptance": true,
             "blockId": "source-candidate-25",
             "gateRu": "Свежий source PASS; повтор только при drift/дефекте. Это не native proof."
+          }
+        },
+        {
+          "supersededAt": "2026-11-04T12:55:29.900Z",
+          "reason": "MSI CLI regression extension",
+          "evidenceKey": "c5f0954aa3c66bba5a3fd622b6992fe3f7f7455ff247553b7884a40910319915",
+          "dependencyDigest": "f54719be0ca927ed69eb2d3d4221b5992621a856bdde188701b7c38825f1d68c",
+          "acceptedEvidence": [],
+          "byteCommandBoundEvidence": null,
+          "latestExecution": {
+            "result": "NOT_RUN",
+            "evidenceKey": "c5f0954aa3c66bba5a3fd622b6992fe3f7f7455ff247553b7884a40910319915",
+            "fullCheckAccepted": false
+          },
+          "futureExecution": {
+            "state": "needs-current-evidence",
+            "scheduled": false,
+            "automaticallyExecutable": false,
+            "gateRu": "Отложенная integration, не выполнялась в узком desktop scope."
           }
         }
       ]
@@ -9917,13 +9999,13 @@
   },
   "validation": {
     "status": "PASS-scoped-portability-source-with-current-gaps",
-    "report": "docs/evidence/core-portability-quoted-config-20261104.json",
+    "report": "docs/evidence/core-portability-msi-roundtrip-20261104.json",
     "selectorKeysMatched": 71,
     "currentCovered": 48,
     "currentOpen": 23,
     "currentOpenNotHeld": 21,
     "heldByProductPause": 2,
-    "practicalPortabilityCommandsExecuted": 11,
+    "practicalPortabilityCommandsExecuted": 12,
     "historicalSourceTestCommandsExecuted": 36,
     "fullReleaseCertified": false
   },
@@ -10777,7 +10859,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.sourceValidation"
   },
-  "updatedAt": "2026-11-04T12:43:42.899Z",
+  "updatedAt": "2026-11-04T12:55:29.900Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -10788,12 +10870,12 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "desktop-source-fix-and-dry-run-accepted-awaiting-roundtrip",
+    "status": "msi-return-delta-verified-awaiting-desktop-install",
     "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
     "remoteExecutionAuthorized": true,
-    "next": "Return committed desktop installer fix to MSI; return actual CLI regression delta to desktop. Actual installation requires separate addressed stage.",
+    "next": "fast-forward desktop to MSI delta; targeted CLI check and initial install/configured native proof",
     "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
     "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
     "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
@@ -10920,6 +11002,15 @@
         "lifecycle-simulation",
         "exact-f548-transition"
       ],
+      "fullReleaseCertified": false
+    },
+    "msiReturnEvidence": "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+    "sourceValidationMSI": {
+      "evidence": "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+      "commands": 1,
+      "currentFullNamedCheck": "installable-runtime",
+      "evidenceKey": "fc06b07a783f4025310196139e13372e99de81e5e92a2b6ec8a9ff8e78758b55",
+      "otherCurrentDesktopChecksReused": 10,
       "fullReleaseCertified": false
     }
   },

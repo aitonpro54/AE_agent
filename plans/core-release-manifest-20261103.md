@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая V2 source-приёмка, 4 ноября:** 48covered =37unchanged exact reuse +11fresh full desktop named PASS;23open =21changed deferred integrations +2Titles held. Исторические69/71 на77a860e и35blocks/36commands сохранены как прежняя фаза, без переобъявления current. [Desktop evidence](../docs/evidence/core-portability-quoted-config-20261104.json). Full release не заявляется.
+**Текущая source-приёмка после MSI-дельты, 4 ноября:** 48covered =37unchanged exact reuse +10desktop named PASS +1MSI named PASS;23open =21changed deferred integrations +2Titles held. Исторические69/71 на77a860e и35blocks/36commands сохранены как прежняя фаза, без переобъявления current. [Desktop evidence](../docs/evidence/core-portability-quoted-config-20261104.json). Full release не заявляется.
 
 ## Цель и состав
 
@@ -195,7 +195,7 @@ Source suites и live операции не запускались; `releaseCert
 | `zero-dispatch-recovery` | integration | current evidence open | deferred; не запускался в V2 scope |
 | `human-window` | integration | desktop V2 full named PASS → exact reuse | повтор только при drift |
 | `manual-runtime` | integration | unchanged exact-key reuse | повтор только при drift |
-| `installable-runtime` | integration | desktop V2 full named PASS → exact reuse | повтор только при drift |
+| `installable-runtime` | integration | MSI CLI delta full named PASS → exact reuse | повтор только при drift |
 | `manual-current-target` | integration | unchanged exact-key reuse | повтор только при drift |
 | `audit-repairs` | integration | unchanged exact-key reuse | повтор только при drift |
 | `core-control` | integration | current evidence open | deferred; не запускался в V2 scope |
@@ -238,3 +238,17 @@ Source suites и live операции не запускались; `releaseCert
 ### Validation
 
 Snapshot215 current, accepted supplemental hashes отделены от current observation. Runtime packagecdf/80 unchanged; standalone5d5d1aa4…/98 verified. Actual-config dry-run/tomllib PASS, protected bytes unchanged, actual install0. Исторический FAIL сохранён; P1–P8/native/configured/full release открыты.
+
+## MSI: обратная инженерная дельта — 4 ноября
+
+### Progress
+
+Desktop commit `f857f2d` принят exact-hash-reviewed fast-forward. Один CLI case расширен quoted legacy/env и local paths; полный `installable-runtime`46/46PASS. Сборки cdf/80 и standalone5d5d1aa4/98 совпали с desktop; foreign-CWD dry-run PASS. Свежая configured native inspection собственного AEP PASS, lease освобождён. [Evidence](../docs/evidence/core-portability-msi-roundtrip-20261104.json).
+
+### Decision Log
+
+Runtime unchanged: MSI reinstall0. Изменились только `installable-runtime` и уже открытый `lifecycle-simulation`; 10desktop и37прежних exact checks переиспользованы. Native observation не даёт mutation authority.
+
+### Validation
+
+71current keys, snapshot215 и supplemental33 сверены; current48/open23. Desktop install/native и итоговый round-trip ещё открыты.

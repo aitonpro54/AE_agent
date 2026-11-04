@@ -11,7 +11,17 @@
 
 ## Текущий scope и правила
 
-**4 ноября, текущий desktop quoted-config срез:** installer V2 принят 11 полными canonical named checks; current **48 covered / 23 open** (21 deferred integration + 2 dedicated Titles held). Selector71:32changed/39same; manual-runtime exact reuse. Runtime packagecdf/80 unchanged, standalone5d5d1aa4…/98 и actual project-config dry-run PASS без ручной правки config. Desktop actual install/startup0; далее desktop fix→MSI и CLI regression delta обратно. P1–P8/full release открыты. [Receipt](plans/core-portability-quoted-config-20261104.md).
+**4 ноября, MSI принял desktop fix и проверил обратную дельту:** `f857f2d`
+получен fast-forward; SHA двух source-файлов и 11 исходных stdout сверены.
+CLI-регрессия расширена quoted legacy/env и local paths; полный named46/46PASS.
+Current **48 covered / 23 open**:37прежних exact reuse +10desktop +1MSI;
+21deferred integration и2dedicated Titles held. Новая дельта меняет только
+installable-runtime/lifecycle-simulation keys. Сборки cdf/80 и standalone5d5d1aa4…/98
+на двух машинах совпали; MSI foreign-CWD dry-run PASS, manual config edits0.
+Fresh configured native own-AEP read PASS: receiver9→11/exact prefix,
+ledger/AEP unchanged, controller released. MSI reinstall0: runtime прежний.
+Далее вернуть дельту на desktop и выполнить initial install/configured native.
+P1–P8/full release открыты. [Evidence](docs/evidence/core-portability-msi-roundtrip-20261104.json).
 
 **4 ноября, активен практический перенос MSI ↔ десктоп:** прямое поручение
 пользователя снимает прежнюю отсрочку двухмашинной работы; Titles/Slideshow
@@ -25,7 +35,8 @@ AE26.3 закрыт, порты3457/3456/8787 свободны; Kumo/legacy со
 отказал до записей на валидных quoted TOML headers старого config. V2 source fix проверен
 11fullnamed checks и actual-config dry-run без ручного ремонта config. На MSI уже прошла новая
 configured native inspection собственного B6 AEP в AE26.3x87; lease released,
-pending/UNKNOWN/fault0, AEP unchanged. Desktop V2 source delta подготовлена к возврату на MSI; actual install отдельно.
+pending/UNKNOWN/fault0, AEP unchanged. Desktop V2 source delta уже принята на MSI;
+обратная CLI-дельта проверена, desktop actual install ещё впереди.
 P1–P8 ещё открыты. [Практический план](plans/core-portability-practical-20261104.md).
 
 **4 ноября, постоянный контракт новых модулей:** переносимость десктоп ↔ MSI

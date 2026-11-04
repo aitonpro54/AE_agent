@@ -1,0 +1,411 @@
+{
+  "schemaVersion": 1,
+  "kind": "core-portability-msi-return-delta",
+  "createdAt": "2026-11-04T12:55:29.900Z",
+  "result": "PASS",
+  "host": "MSI",
+  "inbound": {
+    "commit": "f857f2d0c5a86540d194a3f05507254b19d9763a",
+    "method": "git fetch then exact-hash-reviewed fast-forward",
+    "sourceHashesMatched": true,
+    "portableDesktopReportSha256": "9a271e53ff6f130e73af0301ae0255bedc6a75e30118b7eed1c5f36ca3175b7d",
+    "rawLogsIndependentlyVerified": 11,
+    "logSummariesAndNamesMatched": true
+  },
+  "delta": {
+    "patchSha256": "c6e8c89626a7230b4ae17a394f766238dbe80305f648bb2a44835246004891e2",
+    "files": [
+      "core4/test/installable-runtime.test.js"
+    ],
+    "fileSha256": "4bcfbbd1aeb4e5fea2988dbd7f004764fe8930521f581030858624fe965d141f",
+    "purposeRu": "Существующая CLI-регрессия дополнена quoted legacy/env и local decoded paths; число cases не изменилось.",
+    "changedKeys": [
+      {
+        "check": "installable-runtime",
+        "before": "fb9df7309997c15acbbd1396757b1825b23b3cabd6ecc26d4728b167b1bf194a",
+        "after": "fc06b07a783f4025310196139e13372e99de81e5e92a2b6ec8a9ff8e78758b55"
+      },
+      {
+        "check": "lifecycle-simulation",
+        "before": "c5f0954aa3c66bba5a3fd622b6992fe3f7f7455ff247553b7884a40910319915",
+        "after": "bb4ea599790b63d43aea9a60701f00dff267a59be86b8bc07ed4a3adac651742"
+      }
+    ],
+    "unchangedKeys": 69
+  },
+  "checks": [
+    {
+      "check": "installable-runtime",
+      "result": "PASS",
+      "fullCheckAccepted": true,
+      "evidenceKey": "fc06b07a783f4025310196139e13372e99de81e5e92a2b6ec8a9ff8e78758b55",
+      "evidenceKeyBefore": "fb9df7309997c15acbbd1396757b1825b23b3cabd6ecc26d4728b167b1bf194a",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ],
+      "argv": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ],
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "executableSha256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+      "startedAt": "2026-11-04T12:48:39.251Z",
+      "completedAt": "2026-11-04T12:49:11.506Z",
+      "exitCode": 0,
+      "signal": null,
+      "summary": {
+        "tests": 46,
+        "suites": 0,
+        "pass": 46,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "durationMs": 32207.2609
+      },
+      "cases": 46,
+      "testNames": [
+        "installable-runtime private completed read proof belongs to one exact direct error and is consumed once",
+        "installable-runtime finite Titles read codes complete only admitted read phases and publish bounded diagnostics after durability",
+        "installable-runtime read diagnostic rejects unknown codes extra fields and bad correlation without journal or status promotion",
+        "installable-runtime Titles diagnostic vocabulary is refused for project",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-key",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-module",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-operation",
+        "installable-runtime Titles diagnostic vocabulary is refused for foreign-profile",
+        "installable-runtime Titles diagnostic vocabulary is refused for mutate",
+        "installable-runtime package deterministic closure, install CAS, exact rollback and stable origin",
+        "installable-runtime staged update prepares every complete file before its first visible rename and publishes config last",
+        "installable-runtime staged short write preserves the whole live installation before switch: cep",
+        "installable-runtime staged short write preserves the whole live installation before switch: descriptor",
+        "installable-runtime staged short write preserves the whole live installation before switch: client",
+        "installable-runtime staged short write preserves the whole live installation before switch: config",
+        "installable-runtime staged final CAS refuses changed owned client stage without publishing it: false",
+        "installable-runtime staged final CAS refuses changed owned client stage without publishing it: true",
+        "installable-runtime staged foreign CEP stage is preserved and never replaces the live panel",
+        "installable-runtime staged cross-volume planning and apply refuse before any installation writes",
+        "installable-runtime full generated host registry parses as ES3 before any host evaluation",
+        "installable-runtime exact release closure rejects extensionless shadow, empty directory and junction before package imports",
+        "installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies",
+        "installable-runtime descriptor changed at startup gate is rejected before package imports",
+        "installable-runtime bounded TOML edit preserves indented neighboring servers and inline-commented Core4 header bytes",
+        "installable-runtime quoted TOML headers preserve desktop neighbor and env bytes while updating the exact Core4 alias",
+        "installable-runtime quoted TOML Core4 aliases refuse duplicate nested and dotted assignment ambiguity",
+        "installable-runtime quoted TOML unsupported key syntax remains closed without treating aliases as neighbors",
+        "installable-runtime quoted TOML escaped Core4 assignment alias refuses before appending a duplicate table",
+        "installable-runtime quoted TOML escaped preference keys refuse without removing enabled or timeout settings",
+        "installable-runtime CLI apply requires reviewed package hash and mismatches have zero installation writes",
+        "installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node",
+        "installable-runtime CLI explicit workspace requires an absolute marked source layout before writes",
+        "installable-runtime unknown Broker owner, ledger fault or unresolved intent permits diagnostics but no new physical read begin",
+        "installable-runtime actual HTTP auth role, origin, challenge, epoch, replay, bounded input and duplicate peer",
+        "installable-runtime exact CEP Origin ingress and CORS success/error/OPTIONS matrix at Node HTTP boundary",
+        "installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: null",
+        "installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: file://",
+        "installable-runtime panel VM/WebCrypto shim validates challenge Origin before signing or link and signs full original challenge",
+        "installable-runtime real HTTP and compiled registry VM: begin before evaluate, receipt before POST, durable ACK then latch clear",
+        "installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: null",
+        "installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: file://",
+        "installable-runtime missing fixed host registry returns known read rejection after durable begin, no raw fallback",
+        "installable-runtime long Cyrillic display names and total inspection budget stay bounded at actual HTTP boundary; next read survives known budget refusal",
+        "installable-runtime real stdio child consumes generated MCP config, advertises generic API, status without panel, then typed module inspect via HTTP + VM",
+        "installable-runtime private adoption bootstrap imports no mutable operator-relative provider before verified release preflight",
+        "installable-runtime real stdio process crash after delivery preserves original ongoing record and blocks new reads after restart"
+      ],
+      "mode": "fresh-full-canonical-named-check-msi",
+      "log": "docs/evidence/core-portability-msi-roundtrip-20261104/installable-runtime.stdout.txt",
+      "logHash": "943149481342d81366381204ff04ce36c33ff86783a841e39ba0ade1877880c3",
+      "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-msi-roundtrip-20261104\\installable-runtime.stdout.txt",
+      "originalLogHash": "943149481342d81366381204ff04ce36c33ff86783a841e39ba0ade1877880c3",
+      "stderr": {
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-msi-roundtrip-20261104\\installable-runtime.stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "cleanup": {
+        "runnerPid": 3392,
+        "runnerExited": true,
+        "existingFixtureCleanup": true,
+        "externalKills": 0,
+        "limitsRu": "Краткоживущие дочерние процессы не переписывались в отдельный OS census; coverage — штатные fixture assertions/cleanup и полный exit0."
+      }
+    }
+  ],
+  "packagingAndDryRun": {
+    "result": "PASS",
+    "host": "MSI",
+    "startedAt": "2026-11-04T12:50:26.829Z",
+    "completedAt": "2026-11-04T12:50:27.215Z",
+    "package": {
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+      "files": 80,
+      "verifyPackage": "PASS",
+      "fileSha256": "99a1c95ed0d2b659a66e25db4683e46494c7002c4708e60680c5340e73e26852"
+    },
+    "standalone": {
+      "distributionHash": "5d5d1aa4e95d31465c733dbc68ccf3dacba23c5b7fabea1de6811e616c792cdf",
+      "files": 98,
+      "verifyStandalone": "PASS"
+    },
+    "dryRun": {
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4\\tools\\install-core4.js",
+        "dry-run",
+        "--package",
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-msi-roundtrip-20261104\\manual-owner.json",
+        "--runtime",
+        "owner"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-msi-roundtrip-20261104\\foreign-cwd",
+      "exitCode": 0,
+      "summary": {
+        "baseline": {
+          "anchorOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+          "cep": "554dfd98b294c10d8d96ca821350c8255c36c7b4d84ea7a755023a6f7c3526a9",
+          "client": "9b780d33dcf7e4851f07880193e228337ff2c5b3b29dd5443248d321d9d27cac",
+          "config": "ab01a50576f0c553ca06895f967ee907841ee683e4b6b04229e75401905f359e",
+          "descriptor": "fc625b3fde5579976e8cfd4d860322bdba43b3a49b1baa36f020bb6b5d1ade12",
+          "rootOrigin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0"
+        },
+        "cepDir": "C:\\Users\\Ant\\AppData\\Roaming\\Adobe\\CEP\\extensions\\com.codex.aeagentcore4",
+        "configPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml",
+        "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+        "dryRun": true,
+        "expectedPackageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+        "installerPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4\\tools\\install-core4.js",
+        "liveProof": false,
+        "nodeHash": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5",
+        "nodePath": "C:\\Program Files\\nodejs\\node.exe",
+        "nodeVersion": "v24.15.0",
+        "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+        "releaseDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+        "stateDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production",
+        "workspaceRoot": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core",
+        "workspaceSource": "installer-location"
+      },
+      "stdoutSha256": "48037ddbfcc83643771985a550515fbff30044432eece5888d8d9eaf42ccd45f",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "preservation": {
+      "protectedFiles": 124,
+      "beforeSha256": "2dd3c749e8f19c20e4cadb7b6685739f460660ffd00d95ff5eb6ac4cccbb8f01",
+      "afterSha256": "2dd3c749e8f19c20e4cadb7b6685739f460660ffd00d95ff5eb6ac4cccbb8f01",
+      "unchanged": true,
+      "configManualEdits": 0,
+      "descriptorUnchanged": true,
+      "stateUnchanged": true,
+      "cepUnchanged": true,
+      "aepUnchanged": true,
+      "noteRu": "124 snapshot entries включают проверку отсутствующего client.json; фактический core-client.json дополнительно сверён с dry-run baseline client hash. Только hashes, без содержимого descriptors."
+    },
+    "actualInstall": 0,
+    "sourceRuntimePackageEqualsInstalled": true,
+    "coreClientReadBack": {
+      "sha256": "9b780d33dcf7e4851f07880193e228337ff2c5b3b29dd5443248d321d9d27cac",
+      "equalsDryRunBaseline": true,
+      "recordedAt": "2026-11-04T12:51:01.194Z"
+    }
+  },
+  "native": {
+    "result": "PASS",
+    "mode": "configured-MCP-native-project-inspection",
+    "recordedAt": "2026-11-04T12:53:57.709Z",
+    "installation": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "machineId": "MSI",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+    },
+    "owner": {
+      "birthTicks": "639293876094462200",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+          "eventCount": 1,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "ccec4ab8f1f290ce8bbb93ab2cbf7beea22d9f3b3598ed7c78962b8d554a5f73",
+          "eventCount": 7,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 24968,
+      "processBootId": "76635f77-de5a-413c-a019-f3f7b5e50ec8",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "controllerBootId": "88cee986-0ea8-407c-a2cf-091e6908e9bd",
+    "contract": {
+      "contract": {
+        "buildSupported": false,
+        "effectPolicy": {
+          "boundedComps": 50,
+          "boundedItemsScanned": 500,
+          "boundedLayers": 100,
+          "continuity": false,
+          "displayNameMaxCodeUnits": 256,
+          "effect": "none",
+          "resultMaxCodeUnits": 40000
+        },
+        "executionPolicy": "read-only-current-observation-v1",
+        "moduleId": "project-inspection",
+        "operationId": "inspect-project",
+        "snapshotProfile": "project-observation-v1",
+        "targetSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "version": "4.0.0"
+      },
+      "contractId": "63e3b7c7f3d56e86e53f7655ed4d756c56018a5c08d29d66b8bacfb5194055cd",
+      "moduleId": "project-inspection",
+      "modulePin": "62dc7eb8287135e7702e4836e087ac30944266b3b1db4504afa6f54355c86ce3",
+      "operationId": "inspect-project"
+    },
+    "inspection": {
+      "authority": false,
+      "continuity": false,
+      "contractId": "63e3b7c7f3d56e86e53f7655ed4d756c56018a5c08d29d66b8bacfb5194055cd",
+      "evidenceRef": "observation-6c48665a-a37f-4ae6-bb6a-896aa1aca3a7",
+      "moduleId": "project-inspection",
+      "observation": {
+        "aeVersion": "26.3x87",
+        "compositions": [
+          {
+            "compId": 1,
+            "duration": 5,
+            "name": "CoreBase_B6_Recovery",
+            "numLayers": 1
+          }
+        ],
+        "layers": [],
+        "observationVersion": 1,
+        "project": {
+          "name": "core-base-b6-recovery-native-20261103.aep",
+          "numItems": 1,
+          "saved": true
+        },
+        "target": {
+          "compId": null,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+        },
+        "truncated": false
+      },
+      "originalBinding": {
+        "channelEpoch": "http-8610a579-cfac-4bb8-a69f-cf0019ff129e",
+        "commandId": "inspect-28757539-30c0-488d-8b11-0fea8b9d192e",
+        "controllerId": "controller-ca843dae-430d-4ec7-800e-0e6a431a445b",
+        "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+        "moduleId": "project-inspection",
+        "operationId": "inspect",
+        "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "phase": "inspect",
+        "receiptRef": "c3ec1d7f68fcf01097af14df4636b174837942e82be71faacecc2ba31974cf1f",
+        "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726"
+      },
+      "pins": {
+        "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+        "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+        "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      }
+    },
+    "controller": {
+      "expiredGeneration": 2,
+      "knownPreDispatchRefusals": [
+        {
+          "method": "core_connect",
+          "code": "controller_lease_expired"
+        },
+        {
+          "method": "inspect_module_target",
+          "code": "controller_lease_expired"
+        }
+      ],
+      "newTransfer": {
+        "bootId": "88cee986-0ea8-407c-a2cf-091e6908e9bd",
+        "generation": 3,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      },
+      "released": true,
+      "tokenExported": false
+    },
+    "after": {
+      "ready": true,
+      "pending": null,
+      "unknown": false,
+      "ledgerFault": false,
+      "ownershipFault": null,
+      "unresolved": [],
+      "holderClientId": null,
+      "peerConnected": true
+    },
+    "afterFx": {
+      "pid": 13608,
+      "birth": "2026-11-04T16:14:16.998975+05:00",
+      "version": "26.3x87"
+    },
+    "limitsRu": [
+      "Новая observation не выдаёт authority или continuity.",
+      "Существующая adoption относится к историческому AE; её не использовали как mutation authority.",
+      "Owner lifecycle processBootId и attachment controller bootId — отдельные bindings.",
+      "Ровно одно успешное native чтение после двух отказов до dispatch; mutation/save/reset/install/replay0."
+    ],
+    "readBack": {
+      "at": "2026-11-04T12:53:12.773Z",
+      "receiverEvents": 11,
+      "beforeEvents": 9,
+      "exactBeforePrefixPreserved": true,
+      "receiverSha256": "da52b467510f75b650d288be7ae58a5822acd6ae7a7b1a5ff023b128c8ade4a6",
+      "originalPrefixSha256": "dbea289fead21fd2f6764050f9b51ae24339b843258b5ec69c6792049605e662",
+      "ledgerSha256": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+      "ledgerUnchanged": true,
+      "aepSha256": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5",
+      "aepUnchanged": true
+    }
+  },
+  "reuse": {
+    "desktopOtherNamedChecks": 10,
+    "unchangedOlderExactChecks": 37,
+    "deferredCurrentIntegrations": 21,
+    "heldTitles": 2
+  },
+  "actions": {
+    "fullNamedCommands": 1,
+    "packageBuild": 1,
+    "standaloneBuild": 1,
+    "actualInstall": 0,
+    "configManualEdits": 0,
+    "nativeReads": 1,
+    "mutation": 0,
+    "save": 0,
+    "reset": 0,
+    "replay": 0
+  },
+  "limitsRu": [
+    "Тестовая дельта не меняет runtime или standalone identity.",
+    "Исходная source-фаза69/71 остаётся историей; current48/open23.",
+    "P1–P8/full release пока не закрываются; desktop installation/native ещё впереди.",
+    "Облако и Titles/Slideshow на паузе."
+  ],
+  "releaseCertified": false
+}
