@@ -1,0 +1,438 @@
+{
+  "schemaVersion": 1,
+  "kind": "msi-peer-origin-runtime-installed-checkpoint",
+  "recordedAt": "2026-11-04T16:14:42.056Z",
+  "result": "PASS_INSTALLED_CONFIGURED_REFRESH_REQUIRED",
+  "host": "MSI",
+  "sourceCommit": "1ce491e4e470346ec884cec6a3f75bc78408c131",
+  "runtimeSourceCommit": "e75a25fd85a1770e390b91ccf1f5f196fddc5617",
+  "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+  "distributionHash": "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+  "runtimeFiles": 80,
+  "CEPFiles": 7,
+  "composition": "manual",
+  "runtimeModel": "owner",
+  "preflight": {
+    "installation": {
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "machineId": "MSI",
+      "nodeVerified": true,
+      "nodeVersion": "24.15.0",
+      "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+    },
+    "lifecycle": {
+      "birthTicks": "639293876094462200",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+          "eventCount": 1,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "ccec4ab8f1f290ce8bbb93ab2cbf7beea22d9f3b3598ed7c78962b8d554a5f73",
+          "eventCount": 7,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 24968,
+      "processBootId": "76635f77-de5a-413c-a019-f3f7b5e50ec8",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "controller": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "88cee986-0ea8-407c-a2cf-091e6908e9bd",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 3,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false,
+      "workSession": {
+        "baselineRequired": false,
+        "resetPending": false,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      }
+    },
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": true,
+      "lastPhysicalFault": null,
+      "lastReadFailure": null,
+      "listening": true,
+      "peer": {
+        "connected": true,
+        "peerId": "panel-90d7caa2a5a46afe71a2dfeda0a01d7b68199594baba3af4"
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726",
+      "startOverFrozen": false,
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "work-session",
+      "resetId": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+      "resetPending": false,
+      "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+    },
+    "oldAe": {
+      "pid": 13608,
+      "birth": "2026-11-04T16:14:16.998975+05:00",
+      "unchanged": true
+    },
+    "oldOwnerExactDeathObserved": true
+  },
+  "operations": [
+    {
+      "mode": "stop",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4\\tools\\maintain-owner.js",
+        "stop",
+        "--installation",
+        "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+        "--operation",
+        "a9823995-96ea-45dd-8902-47fba73e2bca",
+        "--expected-package-hash",
+        "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      ],
+      "startedAt": "2026-11-04T16:00:01.516Z",
+      "endedAt": "2026-11-04T16:00:03.116Z",
+      "pid": 16940,
+      "exitCode": 0,
+      "result": {
+        "accepted": true,
+        "aeAuthority": false,
+        "automaticReplay": false,
+        "id": "a9823995-96ea-45dd-8902-47fba73e2bca",
+        "phase": "draining"
+      },
+      "stdoutSha256": "07bad7548cff2da6498f0235dc411f836e7b0ac5b1a1c920051673df01b6b5eb",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "mode": "stop-inspect",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4\\tools\\maintain-owner.js",
+        "inspect",
+        "--installation",
+        "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+        "--operation",
+        "a9823995-96ea-45dd-8902-47fba73e2bca",
+        "--expected-package-hash",
+        "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944"
+      ],
+      "startedAt": "2026-11-04T16:00:12.948Z",
+      "endedAt": "2026-11-04T16:00:15.196Z",
+      "pid": 32132,
+      "exitCode": 0,
+      "result": {
+        "aeAuthority": false,
+        "id": "a9823995-96ea-45dd-8902-47fba73e2bca",
+        "inspectionOnly": true,
+        "phase": "stopped",
+        "proofHash": "c8b475ca12daff361801a1f154837b443a4a6fde51c6dc1be68c38460363abc6"
+      },
+      "stdoutSha256": "d0f84da144baac81aa795b3c2b00a7a11d1223b4a9cab6cd88381483e1b9ea3f",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "mode": "update",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-origin-release-20261104\\distribution\\tools\\standalone-installer.js",
+        "owner-update",
+        "--expected-distribution-hash",
+        "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+        "--expected-package-hash",
+        "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+        "--expected-current-package-hash",
+        "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+        "--expected-previous-descriptor-hash",
+        "fc625b3fde5579976e8cfd4d860322bdba43b3a49b1baa36f020bb6b5d1ade12",
+        "--installation",
+        "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+        "--operation",
+        "a9823995-96ea-45dd-8902-47fba73e2bca",
+        "--config",
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml"
+      ],
+      "startedAt": "2026-11-04T16:00:22.274Z",
+      "endedAt": "2026-11-04T16:01:31.794Z",
+      "pid": 3600,
+      "exitCode": 0,
+      "result": {
+        "aeAuthority": false,
+        "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+        "expectedPackageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+        "expectedPreviousDescriptorHash": "fc625b3fde5579976e8cfd4d860322bdba43b3a49b1baa36f020bb6b5d1ade12",
+        "migrationId": "a9823995-96ea-45dd-8902-47fba73e2bca",
+        "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+        "phase": "update-stopped",
+        "runtimeStarted": false,
+        "transactionId": "3a052303-8126-47ad-b2fb-61f4a931e20d",
+        "updated": true
+      },
+      "stdoutSha256": "9434113a6c74c1dcf794c2c8faf488b4fd80198c74fd78325122810dcfa3b477",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "mode": "update-inspect",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-origin-release-20261104\\distribution\\tools\\standalone-installer.js",
+        "update-inspect",
+        "--expected-distribution-hash",
+        "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+        "--expected-package-hash",
+        "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+        "--expected-current-package-hash",
+        "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+        "--expected-previous-descriptor-hash",
+        "fc625b3fde5579976e8cfd4d860322bdba43b3a49b1baa36f020bb6b5d1ade12",
+        "--installation",
+        "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+        "--operation",
+        "3a052303-8126-47ad-b2fb-61f4a931e20d"
+      ],
+      "startedAt": "2026-11-04T16:01:53.217Z",
+      "endedAt": "2026-11-04T16:01:55.429Z",
+      "pid": 3512,
+      "exitCode": 0,
+      "result": {
+        "aeAuthority": false,
+        "inspectionOnly": true,
+        "phase": "update-stopped",
+        "proofHash": "743c45f9aadcffbf85a44e671eb88444747faaefb425f59e1dd54b55178db886",
+        "runtimeStarted": false,
+        "stopped": true,
+        "switchIndex": 5,
+        "transactionId": "3a052303-8126-47ad-b2fb-61f4a931e20d"
+      },
+      "stdoutSha256": "b9c8968695bc094acd35d49497a7beaada75a960988f140e01268468b2e559bc",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "mode": "enable",
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "argv": [
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-origin-release-20261104\\distribution\\tools\\standalone-installer.js",
+        "update-enable",
+        "--expected-distribution-hash",
+        "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+        "--expected-package-hash",
+        "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+        "--expected-current-package-hash",
+        "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+        "--expected-previous-descriptor-hash",
+        "fc625b3fde5579976e8cfd4d860322bdba43b3a49b1baa36f020bb6b5d1ade12",
+        "--installation",
+        "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+        "--operation",
+        "3a052303-8126-47ad-b2fb-61f4a931e20d",
+        "--expected-proof-hash",
+        "743c45f9aadcffbf85a44e671eb88444747faaefb425f59e1dd54b55178db886"
+      ],
+      "startedAt": "2026-11-04T16:02:00.176Z",
+      "endedAt": "2026-11-04T16:02:09.839Z",
+      "pid": 21940,
+      "exitCode": 0,
+      "result": {
+        "aeAuthority": false,
+        "enabled": true,
+        "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+        "runtimeStarted": false,
+        "sameDescriptor": true,
+        "transactionId": "3a052303-8126-47ad-b2fb-61f4a931e20d"
+      },
+      "stdoutSha256": "f5cd5c79c7606d9dd1ed52b3e269e420b04fada52263faa34d87bc087f628705",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "installedVerification": {
+    "at": "2026-11-04T16:09:37.955Z",
+    "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+    "runtimeFiles": 80,
+    "protectedOldFiles": 1756,
+    "oldFilesExpectedChanges": [
+      "core-client.json",
+      "installation.json",
+      "state/production/broker/broker-owner.lock",
+      "state/production/receiver/owner",
+      "state/production/runtime-owner.json"
+    ],
+    "oldHistoryPreserved": true,
+    "preferencesPreserved": 29,
+    "ownAepUnchanged": true,
+    "receiver11Unchanged": true,
+    "ledger1Unchanged": true,
+    "configOnlyExpectedPackagePathChange": true,
+    "manualConfigEdits": 0,
+    "stopAttempts": 1,
+    "updateAttempts": 1,
+    "enableAttempts": 1,
+    "transactionId": "3a052303-8126-47ad-b2fb-61f4a931e20d",
+    "descriptorHash": "4ea6c4051629949be0d6ac1518b861e823f764921f09f6009b22356bd571899a",
+    "clientHash": "c67071c4d1025198144cada9bfdac09fe6570d4fce4d9b1c66f3b7537d1cd08e"
+  },
+  "identity": {
+    "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+    "stateDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production",
+    "predecessor": {
+      "previousDescriptorHash": "fc625b3fde5579976e8cfd4d860322bdba43b3a49b1baa36f020bb6b5d1ade12",
+      "transactionId": "3a052303-8126-47ad-b2fb-61f4a931e20d"
+    },
+    "descriptorHash": "4ea6c4051629949be0d6ac1518b861e823f764921f09f6009b22356bd571899a",
+    "clientHash": "c67071c4d1025198144cada9bfdac09fe6570d4fce4d9b1c66f3b7537d1cd08e"
+  },
+  "protection": {
+    "oldInstallationFiles": 1761,
+    "protectedExactFiles": 1756,
+    "ownershipFilesRemovedAsExpected": 3,
+    "roleDescriptorsRotated": 2,
+    "ownCEPGeneratedConfigRotated": true,
+    "CEPSource6Exact": true,
+    "preferencesExact": 29,
+    "globalConfigExact": true,
+    "projectConfigOnlyInstallerArgsPathChanged": true,
+    "projectConfigBefore": "ab01a50576f0c553ca06895f967ee907841ee683e4b6b04229e75401905f359e",
+    "projectConfigAfter": "d12bf7ea4c0020053a902b7b123f162d4fc8a0b533ec5b153202f629efe39181",
+    "receiver": {
+      "events": 11,
+      "sha256": "da52b467510f75b650d288be7ae58a5822acd6ae7a7b1a5ff023b128c8ade4a6",
+      "bytes": 12554,
+      "unchanged": true
+    },
+    "ledger": {
+      "events": 1,
+      "sha256": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+      "unchanged": true
+    },
+    "ownAep": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+      "sha256": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5",
+      "bytes": 84145
+    },
+    "historicalUnknownArchivesAndTransactionsIncluded": true
+  },
+  "CEPReload": {
+    "at": "2026-11-04T16:11:33.569Z",
+    "ownBundle": "com.codex.aeagentcore4.panel",
+    "closedOldDocument": true,
+    "oldDocumentId": "1472857136",
+    "freshDocumentId": "-537237184",
+    "nativeCloseHeader": 1,
+    "nativeWindowExtensionsOpen": 1,
+    "panelStatus": "Ожидание Core для проверки сеанса",
+    "AErestart": 0,
+    "projectMutationSaveReset": 0,
+    "blockedNativeMenuIndex": {
+      "beforeInput": true,
+      "reason": "point outside main window bounds",
+      "followup": "same observed Extensions item selected via bounded menu screenshot"
+    }
+  },
+  "configuredActivation": {
+    "result": "PENDING_FRESH_CONFIGURED_CLIENT",
+    "firstConfiguredStatus": {
+      "content": [
+        {
+          "type": "text",
+          "text": "tool call error: tool call failed for `after-effects-core4/core_status`\n\nCaused by:\n    Mcp error: -32000: owner_unavailable"
+        }
+      ],
+      "isError": true
+    },
+    "statusFailureBeforeAeDispatch": true,
+    "observedCachedClients": [
+      31928,
+      33500,
+      24716,
+      9276
+    ],
+    "clientPinScopeRu": "Диагностический snapshot, не разрешение завершать PID без нового birth/path proof.",
+    "appServer": {
+      "pid": 13592,
+      "birth": "2026-11-04T15:07:46.966924+05:00",
+      "parentPid": 11900
+    },
+    "GUI": {
+      "CoreMcpCardPresent": true,
+      "ownSettingsDisabled": true,
+      "ownEnableDisabled": true,
+      "targetedRestartNotAvailableInObservedSettings": true
+    },
+    "CLI": {
+      "mcpCommands": [
+        "list",
+        "get",
+        "add",
+        "remove",
+        "login",
+        "logout"
+      ],
+      "daemonVersionError": "codex app-server daemon lifecycle is only supported on Unix platforms"
+    },
+    "coreOwnerStarted": false,
+    "clientOrAppServerKilled": false,
+    "newConfiguredNativeReads": 0,
+    "literalOriginObserved": false,
+    "adoptionOriginUsedAsProof": false
+  },
+  "nextRequiredRu": "После завершения независимой source-очереди штатно обновить службы/подключение Codex и получить fresh configured1f8c status с connected literal peer.origin, затем contract/acquire/connect/one read/finally release. Повтор stop/update/enable запрещён: все original IDs settled.",
+  "actions": {
+    "stop": 1,
+    "ownerUpdate": 1,
+    "enable": 1,
+    "manualConfigEdits": 0,
+    "AErestart": 0,
+    "mutationSaveResetAdoption": 0,
+    "unknownReplay": 0,
+    "credentialsPublished": false
+  },
+  "localSafeReports": [
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-msi-origin-installed-20261104\\before.json",
+      "sha256": "71a43a03acb8540efcad4684cdabffaeaed41d009f990a165da5da3054e8c217"
+    },
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-msi-origin-installed-20261104\\after-enable.json",
+      "sha256": "604f6b90860596eceb841904b05d11620614ffffe56358e6efb9224defaace9b"
+    },
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-msi-origin-installed-20261104\\installed-verification.json",
+      "sha256": "aa302cab7c32f17aaf02fd2ea6b52094ed9ca6a11daf251699a64b347be17a58"
+    },
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-msi-origin-installed-20261104\\operation.json",
+      "sha256": "7ad2531f7445a9acb0a674f0581b96d49c00fc6b17c51df4efe30d6c33fb98a1"
+    },
+    {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-msi-origin-installed-20261104\\cep-reload.json",
+      "sha256": "01e37b273df67bfcc7c1714d116a91a2c3e418e06e4adef5788e97f40fc0ef81"
+    }
+  ],
+  "P2NativeAccepted": false,
+  "P5FinalActivationAccepted": false,
+  "P1toP8Complete": false,
+  "releaseCertified": false
+}

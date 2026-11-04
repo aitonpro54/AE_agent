@@ -912,3 +912,7 @@ Progress: пользователь поручил закрыть необход�
 ### 4 ноября: P2 Origin source принят, оставшаяся база проверяется
 
 Progress: authenticated physical.peer.origin добавлен одной runtime-строкой;8полных named checks PASS,215source files exact equal tested stage. Package1f8c/80 иstandalone18f2/98 built+verified, installed proof впереди. Decision: nopeer null; retained stale Origin не являетсяfresh, нуженconnected=true. P5repeat9157 preserved, intermediateactivationnotperformed; следующий реальный перенос завершится однимconfiguredproofфинальногоruntime. Validation: current44/71,25remaining integration checks запущены,2Titlesheld. [Source evidence](../docs/evidence/core-portability-peer-origin-source-20261104.json).
+
+### 4 ноября: Origin runtime установлен на обеих машинах
+
+Progress: MSIstopa982/update3a052/enable1, runtime1f8c/80 verified, same desktop package. Decision: installs settled/no replay; требуется configured client refresh и final native Origin proof. Validation:1756oldprotected files/29prefs/receiver11/ledger1/AEP exact, CEPclose/open1, AErestart/mutation0; source25queue продолжается, Titles/Slideshow на паузе. [Evidence](../docs/evidence/core-portability-msi-origin-installed-20261104.json).

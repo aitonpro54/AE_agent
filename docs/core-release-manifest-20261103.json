@@ -24,7 +24,16 @@
     ],
     "currentLiveStateQueried": false,
     "currentCandidatePackageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
-    "currentCandidateDistributionHash": "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b"
+    "currentCandidateDistributionHash": "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+    "currentDiskInstalledPackageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+    "currentDiskInstalledHosts": [
+      "MSI",
+      "DESKTOP-32974QF"
+    ],
+    "currentDiskInstallationEvidence": [
+      "docs/evidence/core-portability-msi-origin-installed-20261104.json",
+      "docs/evidence/core-portability-desktop-origin-installed-20261104.json"
+    ]
   },
   "releaseCertified": false,
   "boundedB1B7AcceptanceReopened": false,
@@ -1482,6 +1491,12 @@
       "sha256": "dccf6a08b45db64199a5c1080c22aaa5c42fd22e3d82e38ce12ee6eb10f02107",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "Actual desktop new-source package install/read-back; configured client recreation, literal Origin and native proof pending. Not full source or release certification."
+    },
+    {
+      "file": "docs/evidence/core-portability-msi-origin-installed-20261104.json",
+      "sha256": "514f5501470ae98b72c653760829af6967bd9851d8c5d79009c087ab6ce10dd4",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Installed/native scope only; no new source check PASS."
     }
   ],
   "evidenceMethod": {
@@ -10730,13 +10745,17 @@
     },
     {
       "gate": "package-and-installation",
-      "status": "historical-exact-evidence-available",
+      "status": "current-runtime-installed-both-hosts-configured-activation-pending",
       "requiredForFullRelease": true,
       "evidence": [
+        "docs/evidence/core-portability-msi-origin-installed-20261104.json",
+        "docs/evidence/core-portability-desktop-origin-installed-20261104.json"
+      ],
+      "noteRu": "Один и тот же manual-owner1f8c/80 иstandalone18f247/98 установлен на обеих машинах. Disk read-back PASS; configured/native activation нового пакета ещё не принята.",
+      "previousEvidence": [
         "docs/evidence/core-base-b6-probe-source-20261103.json",
         "docs/evidence/core-base-b6-installed-20261103.json"
-      ],
-      "noteRu": "Approved cdf package/distribution/runtime80/CEP7 receipts относятся к B6. Перед новым release bind выбранный состав и package hashes; actual install/replay не нужен для manifest."
+      ]
     },
     {
       "gate": "bounded-native-base",
@@ -11749,7 +11768,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.sourceValidation"
   },
-  "updatedAt": "2026-11-04T15:48:43.817Z",
+  "updatedAt": "2026-11-04T16:14:42.056Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -11760,12 +11779,12 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "desktop-1f8c-installed-configured-client-recreation-blocked",
-    "desktopConnected": true,
+    "status": "origin-runtime-installed-both-hosts-configured-activation-pending",
+    "desktopConnected": false,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
     "remoteExecutionAuthorized": true,
-    "next": "Supported configured thin-client recreation from new1f8c project entry, then final literal Origin/native proof; do not replay any apply.",
+    "next": "Finish source25; refresh configured clients and collect one final Origin/native proof per host. Do not replay settled installs.",
     "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
     "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
     "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
@@ -11996,6 +12015,18 @@
       "P2LiteralOriginObserved": false,
       "nativeProof": false,
       "receiverRecords": 3
+    },
+    "msiOriginInstalledEvidence": "docs/evidence/core-portability-msi-origin-installed-20261104.json",
+    "msiOriginSuccessor": {
+      "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+      "distributionHash": "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+      "stopOperation": "a9823995-96ea-45dd-8902-47fba73e2bca",
+      "transactionId": "3a052303-8126-47ad-b2fb-61f4a931e20d",
+      "applyAttempts": 1,
+      "enabled": true,
+      "configuredProof": false,
+      "nativeProof": false,
+      "literalOriginObserved": false
     }
   },
   "historicalSourceAcceptance": {

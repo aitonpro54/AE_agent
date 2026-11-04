@@ -97,3 +97,17 @@ Actual stop/resume/apply1/1/1, protected read-back PASS; receiver prefix3, ledge
 ### Validation
 
 Runtime80/CEP7/lineage/origins/historyprefix3/configforeign/global/prefs/legacy PASS. Source71keys/current44 остаютсяe75,25offlinequeue не запускаласьнаdesktop. Native commands0, AErestart/save/mutation/reset0. P2/P5strict остаютсяopen дофактической finalactivation.
+
+## MSI: installed Origin runtime
+
+### Progress
+
+Штатный stopa982→owner-update3a052→inspect→enable выполнен по1разу, package1f8c/80 installed/enabled. Desktop1f8c receipt1ce получен через Git при недоступном remote host. [MSI evidence](../docs/evidence/core-portability-msi-origin-installed-20261104.json).
+
+### Decision Log
+
+Обе дисковые установки уже актуальны; повторные install не нужны. Старые configured clients держатCDF credentials. MSI Core row в GUI readonly, targetedRestart не обнаружен; daemon CLI наWindows явно unsupported. Обновление службCodex отложено до завершения уже работающей source25queue, чтобы не прервать процессы проверок. Remote native continuation требует восстановления host connection.
+
+### Validation
+
+1756protected oldfiles exact,29preferences,receiver11/ledger1/AEP exact;80runtime+7CEP verified. СобственнаяCEPclose/open1, новый document; sameAE13608, restart/save/mutation/reset0. Fresh configured status отказалowner_unavailable доdispatch; newnative/Origin0. Source44current/25queue/2Titlesheld без изменений.

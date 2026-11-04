@@ -11,6 +11,14 @@
 
 ## Текущий scope и правила
 
+**4 ноября, Origin runtime установлен на обеих машинах:** MSI stop`a9823995…`,
+update`3a052303…`,enable settled по1; desktop apply`a88c79aa…` settled. Не повторять.
+Package1f8c…/80,distribution18f247…/98 verified; localidentity/history/prefs/AEP
+сохранены. Configured clients покаCDFcached, finalnative/Origin proof open.
+Source25queue продолжается, после неё нужен штатный client/service refresh;
+не прерывать текущие тесты ради restart. Remotehost сейчас недоступен.
+[MSI checkpoint](docs/evidence/core-portability-msi-origin-installed-20261104.json).
+
 **4 ноября, desktop1f8c installed/read-back PASS, activation blocked:** e75реальнаяdelta получена;1f8c/80 иstandalone18f247/98 verified, однаapplya88c79aa, lineage→9157/initial сохранена. NewprojectMCPargs1f8c правильные, но текущийthinclient32372 остаётсяCDF/owner_unavailable; freshclient/Origin/native ещёнет. Receiverprefix3,origins/configforeign/global/prefs/legacy preserved. Не повторятьapplya88c/9157/82b илиstop139. [Checkpoint](plans/core-portability-desktop-origin-installed-20261104.md), [evidence](docs/evidence/core-portability-desktop-origin-installed-20261104.json). Source44/71;e75 queue25+Titles2 уparent.
 
 
