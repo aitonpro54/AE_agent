@@ -111,3 +111,17 @@ Runtime80/CEP7/lineage/origins/historyprefix3/configforeign/global/prefs/legacy 
 ### Validation
 
 1756protected oldfiles exact,29preferences,receiver11/ledger1/AEP exact;80runtime+7CEP verified. СобственнаяCEPclose/open1, новый document; sameAE13608, restart/save/mutation/reset0. Fresh configured status отказалowner_unavailable доdispatch; newnative/Origin0. Source44current/25queue/2Titlesheld без изменений.
+
+## Завершена текущая source-очередь — 4 ноября
+
+### Progress
+
+25полных named PASS, current69/71=36reuse+8Origin+25remaining. Только2Titlesheld остаются open. [Evidence](../docs/evidence/core-portability-current-source-20261104.json).
+
+### Decision Log
+
+Stageprerequisite exact-f548 восстановлен из exacthistoricalCODE artifact; прежнийENOENTfailure сохранён, sourcebytes/keyunchanged, только его freshattempt02 повторён. Никаких других retries/cancellations.
+
+### Validation
+
+25PASS/26attempts, all71keys/215sourcefiles/33supplemental exact, rawlogs+processrecords проверены parent. Все собственные runners exited. Package1f8c/80 иstandalone18f247/98 unchanged. Далее — configured MCP service refresh и one final native/Origin на каждой машине; installIDssettled не повторять.

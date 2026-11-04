@@ -11,6 +11,15 @@
 
 ## Текущий scope и правила
 
+**4 ноября, актуальная source-приёмка завершена:** 69/71 current exact-key PASS,
+36reuse+33fresh fullcanonical named. Открыты только2dedicatedTitles подпаузой;
+remainingбезhold0. В source25блоке26attempts:25PASS и1stageENOENTbeforefixture,
+исправленный exacthistoricalCODEcopy и freshattempt02; oldFAIL сохранён.
+Все собственные runners exited,71keys/215sourcefiles/33supplemental exact.
+Пакет1f8c установлен наMSI/desktop; configuredclient/service refresh и final
+nativeOriginproof ещё open. Install/stop/updateIDs settled, не повторять.
+[Актуальное evidence](docs/evidence/core-portability-current-source-20261104.json).
+
 **4 ноября, Origin runtime установлен на обеих машинах:** MSI stop`a9823995…`,
 update`3a052303…`,enable settled по1; desktop apply`a88c79aa…` settled. Не повторять.
 Package1f8c…/80,distribution18f247…/98 verified; localidentity/history/prefs/AEP

@@ -916,3 +916,7 @@ Progress: authenticated physical.peer.origin добавлен одной runtime
 ### 4 ноября: Origin runtime установлен на обеих машинах
 
 Progress: MSIstopa982/update3a052/enable1, runtime1f8c/80 verified, same desktop package. Decision: installs settled/no replay; требуется configured client refresh и final native Origin proof. Validation:1756oldprotected files/29prefs/receiver11/ledger1/AEP exact, CEPclose/open1, AErestart/mutation0; source25queue продолжается, Titles/Slideshow на паузе. [Evidence](../docs/evidence/core-portability-msi-origin-installed-20261104.json).
+
+### 4 ноября: current source69/71 подтверждён
+
+Progress:25remaining full named PASS,36reuse+33fresh=69current,2Titlesheld. Decision: одинstageENOENTbeforefixture исправлен exacthistoricalCODEcopy и адреснымfreshattempt02; originalFAIL сохранён. Validation:26attempts/25PASS, noSKIP/cancel,71keys/215files/33supplemental exact, runtime1f8c unchanged. Далее configuredclient refresh/nativeOrigin двух хостов, без replayinstall. [Evidence](../docs/evidence/core-portability-current-source-20261104.json).

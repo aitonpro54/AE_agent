@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка после MSI-дельты, 4 ноября:** 48covered =36unchanged exact reuse +10desktop named PASS +1MSI named PASS +1desktop documentation PASS;23open =21changed deferred integrations +2Titles held. Исторические69/71 на77a860e и35blocks/36commands сохранены как прежняя фаза, без переобъявления current. [Desktop evidence](../docs/evidence/core-portability-quoted-config-20261104.json). Full release не заявляется.
+**Текущая source-приёмка, 4 ноября:** 69/71 current PASS: 36 exact reuse + 33 свежих полных canonical named checks. Открыты только две dedicated Titles под hold, remaining без hold — 0. Source snapshot215/71keys/33supplemental exact. [Актуальное evidence](../docs/evidence/core-portability-current-source-20261104.json). Пакет1f8c установлен на двух машинах; configured activation/Origin proof ещё open. Full release=false.
 
 ## Цель и состав
 
@@ -336,3 +336,17 @@ Current48/71,21deferred integrations+2Titlesheld open, full release=false. Но�
 ### Validation
 
 Full release=false, source-first8 не выдаются за полную sourceприёмку; exact25queue authorised пользователем, без dedicatedTitles.
+
+## Актуальная source-приёмка после Origin — 4 ноября
+
+### Progress
+
+25remaining checks приняты полностью:23первых PASS, exact-f548 freshattempt02 PASS и standalone-installer firstattempt PASS. Current69/71, двеTitlesheld. Исходные25rawPASSlogs и один failedsetup log сохранены с hashes.
+
+### Decision Log
+
+Первый exact-f548 отказалENOENT доfixture setup: stage не содержал historicalCODE artifact. После size/SHA/verifyPackage проверки скопирован только этотCODE файл, sourcekeys не менялись. Адресный повтор отдельно разрешён; исходныйFAIL/partialreport сохранены. Остальные PASS не повторялись.
+
+### Validation
+
+26actualcommands=25PASS+1fixtureprerequisiteFAIL. Nodev24.15.0/SHA3331e…,71keys/215files exact, own runnerexit0; нет SKIP/cancelled. Per-checkcases не складываются в globalunique. [Evidence](../docs/evidence/core-portability-current-source-20261104.json). Native1f8c/Origin обоих хостов ещё не принят; Titles/Slideshow не возобновляются.

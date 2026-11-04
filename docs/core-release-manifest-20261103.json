@@ -1497,6 +1497,12 @@
       "sha256": "514f5501470ae98b72c653760829af6967bd9851d8c5d79009c087ab6ce10dd4",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "Installed/native scope only; no new source check PASS."
+    },
+    {
+      "file": "docs/evidence/core-portability-current-source-20261104.json",
+      "sha256": "d1c5c6da7e0dedcd096b341b5b275c0c46cb52c10e6573a4856ecfbff89f95b7",
+      "directKeyedRecords": 25,
+      "excludedAsAuthority": null
     }
   ],
   "evidenceMethod": {
@@ -1525,20 +1531,21 @@
   ],
   "summary": {
     "registeredChecks": 71,
-    "recordedExactKeyReuse": 44,
+    "recordedExactKeyReuse": 69,
     "byteCommandBoundReuse": 0,
-    "needsCurrentEvidence": 27,
+    "needsCurrentEvidence": 2,
     "heldByProductPause": 2,
-    "pendingNotHeldByProductPause": 25,
+    "pendingNotHeldByProductPause": 0,
     "sharedCoreWithTitlesDependency": 33,
     "optionalFutureSourceBatches": 0,
     "reusedGlobalUniqueCases": null,
-    "currentCovered": 44,
+    "currentCovered": 69,
     "currentPreservedExactReuse": 36,
-    "currentOriginFreshNamedChecks": 8,
-    "practicalPortabilitySourceCommandsExecuted": 22,
+    "currentOriginFreshNamedChecks": 33,
+    "practicalPortabilitySourceCommandsExecuted": 48,
     "historicalSourceTestCommandsExecuted": 36,
-    "sourceTestCommandsExecutedScope": "Portability14 prior +8 Origin full named; separate25 queue pending; no global unique claim."
+    "sourceTestCommandsExecutedScope": "Portability14 prior +8 Origin full named +26 remaining attempts (25PASS,1 stage artifact ENOENT); no global unique claim.",
+    "practicalPortabilitySuccessfulSourceCommands": 47
   },
   "checks": [
     {
@@ -1765,9 +1772,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/0",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "5d82a5017106fb75e67e5e78c57582a3505ddd032fe75c6107b66ed5e628332a",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 3,
+          "caseCountPointer": "/checks/0/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=start-over-runtime",
+            "test/start-over-runtime.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 3,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/start-over-runtime.stdout.txt",
+          "logHash": "7da4da06f93935e3b8905875c48d55221bcbbdf632ed894dd8a754399d79d50b",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\01-start-over-runtime\\stdout.raw.log",
+          "originalLogHash": "7da4da06f93935e3b8905875c48d55221bcbbdf632ed894dd8a754399d79d50b"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 3,
@@ -1811,13 +1843,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "previousManifestKeys": [
@@ -1859,9 +1890,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/0",
         "evidenceKey": "5d82a5017106fb75e67e5e78c57582a3505ddd032fe75c6107b66ed5e628332a",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -1955,9 +1990,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/1",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "8a634103bca40f4b34d87b42fc9f92843bff736063ce10d222a8130703b207ac",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 6,
+          "caseCountPointer": "/checks/1/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=start-over-operator",
+            "test/start-over-operator.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 6,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/start-over-operator.stdout.txt",
+          "logHash": "78bd25d2f82653c2931832f9fa0b91a70891be9285d90a78a2f5d891c5021310",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\02-start-over-operator\\stdout.raw.log",
+          "originalLogHash": "78bd25d2f82653c2931832f9fa0b91a70891be9285d90a78a2f5d891c5021310"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 3,
@@ -2001,13 +2061,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "previousManifestKeys": [
@@ -2049,9 +2108,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/1",
         "evidenceKey": "8a634103bca40f4b34d87b42fc9f92843bff736063ce10d222a8130703b207ac",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -2951,9 +3014,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/2",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "d1bf35307d26660142d150106e02c9cd5e154fd9583ff8cb269c2c77d07308b0",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 17,
+          "caseCountPointer": "/checks/2/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=stopped-host-readoption-operator",
+            "test/stopped-host-readoption-operator.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 17,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/stopped-host-readoption-operator.stdout.txt",
+          "logHash": "6532bbf251348a5380b1a221b6950447b648e1700f6d2c03b634e8933cb68cd3",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\03-stopped-host-readoption-operator\\stdout.raw.log",
+          "originalLogHash": "6532bbf251348a5380b1a221b6950447b648e1700f6d2c03b634e8933cb68cd3"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 3,
@@ -2997,13 +3085,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "previousManifestKeys": [
@@ -3045,9 +3132,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/2",
         "evidenceKey": "d1bf35307d26660142d150106e02c9cd5e154fd9583ff8cb269c2c77d07308b0",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -3911,9 +4002,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/3",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "466849a8b8fee1f1977fac28c5a51acf756ddeac30f12dd4a69712dbf0ab239d",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 4,
+          "caseCountPointer": "/checks/3/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=stopped-update-operator",
+            "test/stopped-update-operator.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 4,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/stopped-update-operator.stdout.txt",
+          "logHash": "7c18abd8182094e1ef61625dd0e8276ff43054d08a7e677ab1d23fed7ef4f150",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\04-stopped-update-operator\\stdout.raw.log",
+          "originalLogHash": "7c18abd8182094e1ef61625dd0e8276ff43054d08a7e677ab1d23fed7ef4f150"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 2,
@@ -3951,13 +4067,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "supersededAcceptance": [
@@ -4022,9 +4137,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/3",
         "evidenceKey": "466849a8b8fee1f1977fac28c5a51acf756ddeac30f12dd4a69712dbf0ab239d",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       }
     },
     {
@@ -4052,9 +4171,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/4",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "750f05d5c38786132b0e4f8d91f56f1cdc91bddb2820efa70af2f993f7e9414f",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 55,
+          "caseCountPointer": "/checks/4/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=stopped-update",
+            "test/stopped-update.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 55,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/stopped-update.stdout.txt",
+          "logHash": "94504b00a7ea50d7ff5d56fc19c4dc860409d3fd2fac77dde477bcbe72344163",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\05-stopped-update\\stdout.raw.log",
+          "originalLogHash": "94504b00a7ea50d7ff5d56fc19c4dc860409d3fd2fac77dde477bcbe72344163"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -4086,13 +4230,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "supersededAcceptance": [
@@ -4157,9 +4300,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/4",
         "evidenceKey": "750f05d5c38786132b0e4f8d91f56f1cdc91bddb2820efa70af2f993f7e9414f",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       }
     },
     {
@@ -4187,9 +4334,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/5",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "3bf1633e76205d1ee0ca3c4ecf53ea7f077743b77ccecbf6e04464e2692c973a",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 29,
+          "caseCountPointer": "/checks/5/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=legacy-owner-migration",
+            "test/legacy-owner-migration.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 29,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/legacy-owner-migration.stdout.txt",
+          "logHash": "4ebdd4bb3147f99011114f79d3189261b671ab56a7ebbf09af12cc01a9635d2a",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\06-legacy-owner-migration\\stdout.raw.log",
+          "originalLogHash": "4ebdd4bb3147f99011114f79d3189261b671ab56a7ebbf09af12cc01a9635d2a"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -4221,13 +4393,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "supersededAcceptance": [
@@ -4292,9 +4463,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/5",
         "evidenceKey": "3bf1633e76205d1ee0ca3c4ecf53ea7f077743b77ccecbf6e04464e2692c973a",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       }
     },
     {
@@ -4627,9 +4802,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/6",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "f28c8d19c8846a0fe597c825f82493bba3bdbd32be03884169bcc6a5fa993cf1",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 7,
+          "caseCountPointer": "/checks/6/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=maintenance-finish-operator",
+            "test/maintenance-finish-operator.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 7,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/maintenance-finish-operator.stdout.txt",
+          "logHash": "e4c78e01304a8979a92d38ad1bc2f1f56018a6e265999831786d6bd3b38c30c3",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\07-maintenance-finish-operator\\stdout.raw.log",
+          "originalLogHash": "e4c78e01304a8979a92d38ad1bc2f1f56018a6e265999831786d6bd3b38c30c3"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 3,
@@ -4673,13 +4873,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "previousManifestKeys": [
@@ -4721,9 +4920,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/6",
         "evidenceKey": "f28c8d19c8846a0fe597c825f82493bba3bdbd32be03884169bcc6a5fa993cf1",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -4937,9 +5140,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/7",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "2999d65e10d063db5dc9a1c690688022d102ade76393736514bcfa37daa45891",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 8,
+          "caseCountPointer": "/checks/7/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=maintenance-operator",
+            "test/maintenance-operator.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 8,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/maintenance-operator.stdout.txt",
+          "logHash": "e9ea4bbaefaa60c6bf497210202916e6efd1e08e4921ac3b1abfbda5304af518",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\08-maintenance-operator\\stdout.raw.log",
+          "originalLogHash": "e9ea4bbaefaa60c6bf497210202916e6efd1e08e4921ac3b1abfbda5304af518"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -4971,13 +5199,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "supersededAcceptance": [
@@ -5042,9 +5269,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/7",
         "evidenceKey": "2999d65e10d063db5dc9a1c690688022d102ade76393736514bcfa37daa45891",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       }
     },
     {
@@ -5573,9 +5804,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/8",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "6c2877d84f4ab7bd8dbc39f0094b0f7d251181c7efcb60c14b2cf023b9f4965b",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 18,
+          "caseCountPointer": "/checks/8/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=owner-installation",
+            "test/owner-installation.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 18,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/owner-installation.stdout.txt",
+          "logHash": "bd3fa45412f53ed8a800a25ef7f88c9162ddd6a7c0b70c1969bcda52bd87612d",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\09-owner-installation\\stdout.raw.log",
+          "originalLogHash": "bd3fa45412f53ed8a800a25ef7f88c9162ddd6a7c0b70c1969bcda52bd87612d"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 4,
@@ -5625,13 +5881,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "previousManifestKeys": [
@@ -5673,9 +5928,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/8",
         "evidenceKey": "6c2877d84f4ab7bd8dbc39f0094b0f7d251181c7efcb60c14b2cf023b9f4965b",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -6645,9 +6904,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/9",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "55878ef2a1823d1c7e23e5b37c8045f653937710e3cb1700514214ace9f616b8",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 17,
+          "caseCountPointer": "/checks/9/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=native-read-capture",
+            "test/native-read-capture.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 17,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/native-read-capture.stdout.txt",
+          "logHash": "14d1c57645355f337c78fae8a8930721c5d6d498dc175af7225dc23ae9cd0c8e",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\10-native-read-capture\\stdout.raw.log",
+          "originalLogHash": "14d1c57645355f337c78fae8a8930721c5d6d498dc175af7225dc23ae9cd0c8e"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -6681,19 +6965,22 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "V2 installer изменил dependency closure; прежний PASS сохранён как superseded, current check не запускался.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "latestExecution": {
-        "result": "NOT_RUN",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/9",
         "evidenceKey": "55878ef2a1823d1c7e23e5b37c8045f653937710e3cb1700514214ace9f616b8",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "previousManifestKeys": [
         {
@@ -6778,22 +7065,46 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/10",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "18c24c3185453766f56ce4d14ebfe5779de91ee70a00551fe95be08addb3a8ea",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 8,
+          "caseCountPointer": "/checks/10/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=windows-cim-probe",
+            "test/windows-cim-probe.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 8,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/windows-cim-probe.stdout.txt",
+          "logHash": "a8661d45ec25ee1e0bb87592c9884e9281c7a4508f0f7ab31bb97c215f5319a2",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\11-windows-cim-probe\\stdout.raw.log",
+          "originalLogHash": "a8661d45ec25ee1e0bb87592c9884e9281c7a4508f0f7ab31bb97c215f5319a2"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "supersededAcceptance": [
@@ -6838,9 +7149,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/10",
         "evidenceKey": "18c24c3185453766f56ce4d14ebfe5779de91ee70a00551fe95be08addb3a8ea",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       }
     },
     {
@@ -6868,9 +7183,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/11",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "f6b4eba7d75c6e07372a76bffb85480618ff10486a15b7167f42c6fd774dc942",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 8,
+          "caseCountPointer": "/checks/11/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=zero-dispatch",
+            "test/recover-zero-dispatch-owner.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 8,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/zero-dispatch-recovery.stdout.txt",
+          "logHash": "749932029eeb2e7b43edb1df3522c0b63ac0c71c83417cfebd9e5f3a195fa9cc",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\12-zero-dispatch-recovery\\stdout.raw.log",
+          "originalLogHash": "749932029eeb2e7b43edb1df3522c0b63ac0c71c83417cfebd9e5f3a195fa9cc"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -6902,19 +7242,22 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/11",
         "evidenceKey": "f6b4eba7d75c6e07372a76bffb85480618ff10486a15b7167f42c6fd774dc942",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -7008,9 +7351,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/12",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "c1f4f1cb63671023e8de05d3444eb3a015a6b4fcbce17619b16b52b11cadfade",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 3,
+          "caseCountPointer": "/checks/12/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=human-window",
+            "test/human-window.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 3,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/human-window.stdout.txt",
+          "logHash": "523d3509e93e55be6089fa3576f82da871e869633b67ee0678f3f27783472fa4",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\13-human-window\\stdout.raw.log",
+          "originalLogHash": "523d3509e93e55be6089fa3576f82da871e869633b67ee0678f3f27783472fa4"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 3,
@@ -7054,19 +7422,22 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/12",
         "evidenceKey": "c1f4f1cb63671023e8de05d3444eb3a015a6b4fcbce17619b16b52b11cadfade",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -7671,28 +8042,56 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/13",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "af26aa742df18fd3b28024d1ad4da393be2d637527419519cff6cfe2b3ea310c",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 32,
+          "caseCountPointer": "/checks/13/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=audit-repairs",
+            "test/audit-repairs.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 32,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/audit-repairs.stdout.txt",
+          "logHash": "56578684f00f234044c0c4e19af192f03c86b2dd2bc4be32669865ec89625ab8",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\14-audit-repairs\\stdout.raw.log",
+          "originalLogHash": "56578684f00f234044c0c4e19af192f03c86b2dd2bc4be32669865ec89625ab8"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 0,
         "references": [],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": true,
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/13",
         "evidenceKey": "af26aa742df18fd3b28024d1ad4da393be2d637527419519cff6cfe2b3ea310c",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -7767,9 +8166,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/14",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "caea7abe4f896f1c9b765c6535d7553338711688173e585c9e08d7b13edd54a1",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 16,
+          "caseCountPointer": "/checks/14/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=core-control",
+            "test/core4.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 16,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/core-control.stdout.txt",
+          "logHash": "8afa3f9ab753added5bfd370f5e705e403a77327cb2875122a6b8f86bb022595",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\15-core-control\\stdout.raw.log",
+          "originalLogHash": "8afa3f9ab753added5bfd370f5e705e403a77327cb2875122a6b8f86bb022595"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -7801,13 +8225,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "V2 installer изменил dependency closure; прежний PASS сохранён как superseded, current check не запускался.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -7818,9 +8241,13 @@
         }
       ],
       "latestExecution": {
-        "result": "NOT_RUN",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/14",
         "evidenceKey": "caea7abe4f896f1c9b765c6535d7553338711688173e585c9e08d7b13edd54a1",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -7895,9 +8322,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/15",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "0a44aa42d3be4d6ea806dfbc91c6fecf2c51e70575c6be8462914ad8b2e4cbeb",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 17,
+          "caseCountPointer": "/checks/15/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=core-admission",
+            "test/core4.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 17,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/core-admission.stdout.txt",
+          "logHash": "9849fe826f1e43f0ae70e69242bbee74925ab033ecd59cde0fa4ac79f53ae39d",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\16-core-admission\\stdout.raw.log",
+          "originalLogHash": "9849fe826f1e43f0ae70e69242bbee74925ab033ecd59cde0fa4ac79f53ae39d"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -7929,13 +8381,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "V2 installer изменил dependency closure; прежний PASS сохранён как superseded, current check не запускался.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -7946,9 +8397,13 @@
         }
       ],
       "latestExecution": {
-        "result": "NOT_RUN",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/15",
         "evidenceKey": "0a44aa42d3be4d6ea806dfbc91c6fecf2c51e70575c6be8462914ad8b2e4cbeb",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -8023,9 +8478,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/16",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "ce76f337313e650daf69d4e50844fd7d2a2969428f38471c3205d7c45b10a8a0",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 4,
+          "caseCountPointer": "/checks/16/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=worker-isolation",
+            "test/core4.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 4,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/worker-isolation.stdout.txt",
+          "logHash": "1b6ca68e53b972f2be68abc6600207ad8fd00bb6cdc1eaff79175b731bb5efba",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\17-worker-isolation\\stdout.raw.log",
+          "originalLogHash": "1b6ca68e53b972f2be68abc6600207ad8fd00bb6cdc1eaff79175b731bb5efba"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -8057,13 +8537,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "V2 installer изменил dependency closure; прежний PASS сохранён как superseded, current check не запускался.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -8074,9 +8553,13 @@
         }
       ],
       "latestExecution": {
-        "result": "NOT_RUN",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/16",
         "evidenceKey": "ce76f337313e650daf69d4e50844fd7d2a2969428f38471c3205d7c45b10a8a0",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -8151,9 +8634,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/17",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "16c8c625bcba8fbf4d63bb706c536d0ca006f4b0270bec8e982eb16651f2248a",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 3,
+          "caseCountPointer": "/checks/17/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=protocol-codec",
+            "test/core4.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 3,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/protocol-codec.stdout.txt",
+          "logHash": "ef38f0f5dbe2e437ab975b9d0aa92288df08279979264f3dd7c0153421ad81a7",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\18-protocol-codec\\stdout.raw.log",
+          "originalLogHash": "ef38f0f5dbe2e437ab975b9d0aa92288df08279979264f3dd7c0153421ad81a7"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -8185,13 +8693,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "V2 installer изменил dependency closure; прежний PASS сохранён как superseded, current check не запускался.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -8202,9 +8709,13 @@
         }
       ],
       "latestExecution": {
-        "result": "NOT_RUN",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/17",
         "evidenceKey": "16c8c625bcba8fbf4d63bb706c536d0ca006f4b0270bec8e982eb16651f2248a",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -8279,9 +8790,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/18",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "3b5209526ac0dc6bbf74c1fcb344cf2293d50098a0372b6bcf4a701f254c4dcd",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 7,
+          "caseCountPointer": "/checks/18/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=workflow-recovery",
+            "test/core4.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 7,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/workflow-recovery.stdout.txt",
+          "logHash": "b42a80bdc05e9d64c384e38f9295d16659336bdb8979631603a6e84f48c2b528",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\19-workflow-recovery\\stdout.raw.log",
+          "originalLogHash": "b42a80bdc05e9d64c384e38f9295d16659336bdb8979631603a6e84f48c2b528"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -8313,13 +8849,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "V2 installer изменил dependency closure; прежний PASS сохранён как superseded, current check не запускался.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -8330,9 +8865,13 @@
         }
       ],
       "latestExecution": {
-        "result": "NOT_RUN",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/18",
         "evidenceKey": "3b5209526ac0dc6bbf74c1fcb344cf2293d50098a0372b6bcf4a701f254c4dcd",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -8741,9 +9280,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/19",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "17bdef7b403fd1b63f8731a40224d619cf357f0b1dc29d3f30709f5db4f7442a",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 5,
+          "caseCountPointer": "/checks/19/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=validation-routing",
+            "test/core4.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 5,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/validation-routing.stdout.txt",
+          "logHash": "c319da562460439385d547691bb4b82e1bc300a4c57f4a342abfb2a6bcd0865c",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\20-validation-routing\\stdout.raw.log",
+          "originalLogHash": "c319da562460439385d547691bb4b82e1bc300a4c57f4a342abfb2a6bcd0865c"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 8,
@@ -8819,13 +9383,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "V2 installer изменил dependency closure; прежний PASS сохранён как superseded, current check не запускался.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -8886,9 +9449,13 @@
         }
       ],
       "latestExecution": {
-        "result": "NOT_RUN",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/19",
         "evidenceKey": "17bdef7b403fd1b63f8731a40224d619cf357f0b1dc29d3f30709f5db4f7442a",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -8965,9 +9532,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/20",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "53a578ceaa6aa556318d9b4d3d88e4df7cf63706f556db9fa5d67bcb62faf790",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 5,
+          "caseCountPointer": "/checks/20/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=artifact-boundaries",
+            "test/core4.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 5,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/artifact-boundaries.stdout.txt",
+          "logHash": "7abc783a41a4de95ccb9401f2c15b13c73d8d9cb64fae5d2a94848fe7b660dc0",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\21-artifact-boundaries\\stdout.raw.log",
+          "originalLogHash": "7abc783a41a4de95ccb9401f2c15b13c73d8d9cb64fae5d2a94848fe7b660dc0"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 2,
@@ -9007,13 +9599,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "V2 installer изменил dependency closure; прежний PASS сохранён как superseded, current check не запускался.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -9074,9 +9665,13 @@
         }
       ],
       "latestExecution": {
-        "result": "NOT_RUN",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/20",
         "evidenceKey": "53a578ceaa6aa556318d9b4d3d88e4df7cf63706f556db9fa5d67bcb62faf790",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -9304,9 +9899,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/21",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "7277c5b4b7ad0e1de03113f2aaa9790b3b1cf5ed7102d05b8098e5f9834174d8",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 15,
+          "caseCountPointer": "/checks/21/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=cep-transport",
+            "test/integration/cep-transport.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 15,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/cep-transport.stdout.txt",
+          "logHash": "d51b6ec0f290b93ba0131208a04e9e9a7fb41830d833779091ff103982ac6bc1",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\22-cep-transport\\stdout.raw.log",
+          "originalLogHash": "d51b6ec0f290b93ba0131208a04e9e9a7fb41830d833779091ff103982ac6bc1"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -9338,13 +9958,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -9355,9 +9974,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/21",
         "evidenceKey": "7277c5b4b7ad0e1de03113f2aaa9790b3b1cf5ed7102d05b8098e5f9834174d8",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -9451,9 +10074,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/22",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "05becc8b0fcf0327f12254edb1882ead2f49747ff27bb556600579571eddac13",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 31,
+          "caseCountPointer": "/checks/22/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=lifecycle-simulation",
+            "test/lifecycle-simulation.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 31,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/lifecycle-simulation.stdout.txt",
+          "logHash": "91e2c7533c3cc013ddf02a11c5093950858a96d5d77b3eb5428bca6066e45153",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\23-lifecycle-simulation\\stdout.raw.log",
+          "originalLogHash": "91e2c7533c3cc013ddf02a11c5093950858a96d5d77b3eb5428bca6066e45153"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -9485,13 +10133,12 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": true,
       "previousManifestKeys": [
@@ -9507,9 +10154,13 @@
         }
       ],
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/22",
         "evidenceKey": "05becc8b0fcf0327f12254edb1882ead2f49747ff27bb556600579571eddac13",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -10008,9 +10659,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/23",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "1b1deec356c642ace630080f235ebf491426d522c8180d05e8cb1bf216060166",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 1,
+          "caseCountPointer": "/checks/23/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=exact-f548-transition",
+            "test/exact-f548-transition.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 1,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/exact-f548-transition.stdout.txt",
+          "logHash": "2d8544987aa0b46a84a444e614afbc569fae805bd725471f05ca47a22a82e6ea",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-02\\24-exact-f548-transition\\stdout.raw.log",
+          "originalLogHash": "2d8544987aa0b46a84a444e614afbc569fae805bd725471f05ca47a22a82e6ea"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 1,
@@ -10042,19 +10718,22 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "V2 installer изменил dependency closure; прежний PASS сохранён как superseded, current check не запускался.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "latestExecution": {
-        "result": "NOT_RUN",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/23",
         "evidenceKey": "1b1deec356c642ace630080f235ebf491426d522c8180d05e8cb1bf216060166",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -10129,9 +10808,34 @@
       ],
       "automaticExclusionDueToPausedProduct": false,
       "productPause": "not-held",
-      "evidenceDisposition": "needs-current-evidence",
-      "recordedExactKeyAvailable": false,
-      "acceptedEvidence": [],
+      "evidenceDisposition": "reuse-exact-key",
+      "recordedExactKeyAvailable": true,
+      "acceptedEvidence": [
+        {
+          "file": "docs/evidence/core-portability-current-source-20261104.json",
+          "pointer": "/checks/24",
+          "result": "PASS",
+          "resultField": "result",
+          "evidenceKey": "b751acd74e6dca8031d2416420d4c6d8ccafdbf10a88df955a417d9432c0c725",
+          "authorityMethod": "full-canonical-named-check-exit0-spec-summary",
+          "caseCount": 7,
+          "caseCountPointer": "/checks/24/cases",
+          "recordedMode": "fresh-full-canonical-named-check-msi-frozen-stage",
+          "recordedCommand": [
+            "node",
+            "--test",
+            "--test-name-pattern=standalone-installer",
+            "test/standalone-installer.test.js"
+          ],
+          "executionBatch": null,
+          "sharedBatch": false,
+          "batchCaseCount": 7,
+          "log": "docs/evidence/core-portability-current-source-20261104/logs/standalone-installer.stdout.txt",
+          "logHash": "b707f18b1698f80dc0462b4491722ab55a42a067d9ba3b9fd2310e52581c0157",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\portability-peer-origin-20261104\\full25-checks\\attempt-01\\25-standalone-installer\\stdout.raw.log",
+          "originalLogHash": "b707f18b1698f80dc0462b4491722ab55a42a067d9ba3b9fd2310e52581c0157"
+        }
+      ],
       "byteCommandBoundEvidence": null,
       "historicalEvidence": {
         "keyCount": 2,
@@ -10169,19 +10873,22 @@
         ],
         "acceptedForCurrentKey": false
       },
-      "missingEvidenceReason": "Origin status dependency drift; separate current-key integration validation required.",
+      "missingEvidenceReason": null,
       "futureExecution": {
-        "state": "running-current-source-key-validation",
-        "scheduled": true,
+        "state": "passed-current-source-key-validation",
+        "scheduled": false,
         "automaticallyExecutable": false,
-        "evidencePlan": "plans/core-portability-final-gates-20261104.md",
-        "gateRu": "Пользователь поручил завершить необходимое; точная очередь25 без dedicated Titles выполняется в own TEMP."
+        "gateRu": "Текущий exact-key PASS; повтор при drift/дефекте."
       },
       "legacyReleaseEntryFileListed": false,
       "latestExecution": {
-        "result": "not-run",
+        "result": "PASS",
+        "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+        "pointer": "/checks/24",
         "evidenceKey": "b751acd74e6dca8031d2416420d4c6d8ccafdbf10a88df955a417d9432c0c725",
-        "fullCheckAccepted": false
+        "fullCheckAccepted": true,
+        "sourceHost": "MSI",
+        "executionRoot": "frozen candidate stage"
       },
       "supersededAcceptance": [
         {
@@ -10664,37 +11371,18 @@
   "releaseGates": [
     {
       "gate": "core-source",
-      "status": "open-current-integration-gaps-and-product-holds",
+      "status": "accepted-current-source-except-product-holds",
       "requiredForFullRelease": true,
       "remainingCheckIds": [
-        "start-over-runtime",
-        "start-over-operator",
-        "stopped-host-readoption-operator",
-        "stopped-update-operator",
-        "stopped-update",
-        "legacy-owner-migration",
-        "maintenance-finish-operator",
-        "maintenance-operator",
-        "owner-runtime",
-        "native-read-capture",
-        "zero-dispatch-recovery",
-        "core-control",
-        "core-admission",
-        "worker-isolation",
-        "protocol-codec",
-        "workflow-recovery",
         "titles-owner",
-        "titles-executor-contract",
-        "validation-routing",
-        "artifact-boundaries",
-        "cep-transport",
-        "lifecycle-simulation",
-        "exact-f548-transition"
+        "titles-executor-contract"
       ],
       "reuseEligibleCheckIds": [
         "start-over-driver",
         "start-over-panel-control",
         "panel-start-over",
+        "start-over-runtime",
+        "start-over-operator",
         "work-session-owner",
         "work-session",
         "start-over-channel",
@@ -10703,15 +11391,21 @@
         "start-over-barrier",
         "start-over-inspection",
         "start-over-process",
+        "stopped-host-readoption-operator",
         "stopped-host-readoption",
         "readoption-core",
         "readoption-recovery",
         "readoption-enable",
         "readoption-probe",
+        "stopped-update-operator",
+        "stopped-update",
+        "legacy-owner-migration",
         "windows-retained-process",
         "stopped-certification",
         "maintenance-finish",
+        "maintenance-finish-operator",
         "owner-maintenance",
+        "maintenance-operator",
         "windows-owner-process",
         "owner-lifecycle",
         "owner-lifecycle-faults",
@@ -10721,27 +11415,40 @@
         "owner-installation",
         "controller-transfer",
         "client-entry",
+        "owner-runtime",
         "client-ipc",
         "owner-attachments",
         "owner-ipc-process",
         "controller-lease",
         "panel-reconnect",
         "endpoint-observation",
+        "native-read-capture",
         "windows-cim-probe",
+        "zero-dispatch-recovery",
         "human-window",
         "manual-runtime",
         "installable-runtime",
         "manual-current-target",
         "audit-repairs",
+        "core-control",
+        "core-admission",
+        "worker-isolation",
+        "protocol-codec",
+        "workflow-recovery",
         "photo-owner",
         "photo-executor-contract",
         "catalog-discovery",
+        "validation-routing",
+        "artifact-boundaries",
         "documentation",
+        "cep-transport",
+        "lifecycle-simulation",
         "native-read-recovery",
         "installed-composition",
+        "exact-f548-transition",
         "standalone-installer"
       ],
-      "noteRu": "Current48:36 прежних exact reuse +10 desktop named +1 MSI named +1 desktop documentation. Open23:21 deferred integrations +2 held Titles. CLIcase1 не full named acceptance; не native proof."
+      "noteRu": "69 current exact-key PASS:36 unchanged exact reuse +33 fresh full canonical checks. Open only2 dedicated Titles under product pause; no source integration gaps outside hold."
     },
     {
       "gate": "package-and-installation",
@@ -10907,14 +11614,14 @@
     "reviewDoesNotChangeRuntimeAuthority": true
   },
   "validation": {
-    "status": "PASS-origin-source-block-current-integration-queue-running",
-    "report": "docs/evidence/core-portability-peer-origin-source-20261104.json",
+    "status": "PASS-current-source-except-two-held-Titles",
+    "report": "docs/evidence/core-portability-current-source-20261104.json",
     "selectorKeysMatched": 71,
-    "currentCovered": 44,
-    "currentOpen": 27,
-    "currentOpenNotHeld": 25,
+    "currentCovered": 69,
+    "currentOpen": 2,
+    "currentOpenNotHeld": 0,
     "heldByProductPause": 2,
-    "practicalPortabilityCommandsExecuted": 22,
+    "practicalPortabilityCommandsExecuted": 48,
     "historicalSourceTestCommandsExecuted": 36,
     "fullReleaseCertified": false
   },
@@ -11766,9 +12473,9 @@
     "completedAt": "2026-11-04T09:12:29.072Z",
     "finalEvidence": "docs/evidence/core-release-source-acceptance-20261103.json",
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
-    "currentSourceAcceptance": "practicalPortability.sourceValidation"
+    "currentSourceAcceptance": "practicalPortability.currentSourceValidation"
   },
-  "updatedAt": "2026-11-04T16:14:42.056Z",
+  "updatedAt": "2026-11-04T16:20:26.515Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -12027,7 +12734,17 @@
       "configuredProof": false,
       "nativeProof": false,
       "literalOriginObserved": false
-    }
+    },
+    "currentSourceValidation": {
+      "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+      "originSourceEvidence": "docs/evidence/core-portability-peer-origin-source-20261104.json",
+      "commands": 25,
+      "currentCovered": 69,
+      "remainingNotHeld": 0,
+      "held": 2,
+      "acceptedReportHash": "d1c5c6da7e0dedcd096b341b5b275c0c46cb52c10e6573a4856ecfbff89f95b7"
+    },
+    "sourceValidationScopeRu": "sourceValidation хранит прежний desktop срез; currentSourceValidation — актуальная source-приёмка."
   },
   "historicalSourceAcceptance": {
     "baselineCommit": "77a860e",
@@ -12054,5 +12771,29 @@
       "fullReleaseCertified": false
     },
     "noteRu": "69/71, 35 принятых blocks и 36 выполненных команд относятся к прежней source-фазе; после V2 installer 32 current keys изменились."
-  }
+  },
+  "summaryHistory": [
+    {
+      "at": "2026-11-04T16:20:26.515Z",
+      "reason": "25 full canonical current-key PASS",
+      "summary": {
+        "registeredChecks": 71,
+        "recordedExactKeyReuse": 44,
+        "byteCommandBoundReuse": 0,
+        "needsCurrentEvidence": 27,
+        "heldByProductPause": 2,
+        "pendingNotHeldByProductPause": 25,
+        "sharedCoreWithTitlesDependency": 33,
+        "optionalFutureSourceBatches": 0,
+        "reusedGlobalUniqueCases": null,
+        "currentCovered": 44,
+        "currentPreservedExactReuse": 36,
+        "currentOriginFreshNamedChecks": 8,
+        "practicalPortabilitySourceCommandsExecuted": 22,
+        "historicalSourceTestCommandsExecuted": 36,
+        "sourceTestCommandsExecutedScope": "Portability14 prior +8 Origin full named; separate25 queue pending; no global unique claim."
+      },
+      "evidence": "docs/evidence/core-portability-current-source-20261104.json"
+    }
+  ]
 }
