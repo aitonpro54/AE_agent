@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:54:48.243Z",
+  "blockId": "source-candidate-18",
+  "baselineCommit": "7a6389130d2bc6ff688cec8eb4b0f216a9214943",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:human-window)",
+      "test/human-window.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:54:31.058Z",
+    "finishedAt": "2026-11-04T08:54:34.928Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 3,
+      "suites": 0,
+      "pass": 3,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 3800.459
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-18-human-window.log",
+      "sha256": "c68074d43bf5e4b94fa7dd87db0aafa5f9b5c3d00a1322049f3f772a179d1b98",
+      "bytes": 476
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-18-human-window-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "human-window",
+      "evidenceKey": "621134c5d5aaeac48c67feba58efc85aa64738d986c4ff9c1ee45e0676381f39",
+      "result": "PASS",
+      "cases": 3,
+      "skipped": 0,
+      "matchedTestNames": [
+        "human-window actual stdio child completes confirmed mutation after former two-second caller deadline",
+        "human-window physical callback deadline remains UNKNOWN after late confirmation and prevents replay",
+        "human-window private production ordering and MCP default preserve explicit user timeout and enabled preferences"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=human-window",
+        "test/human-window.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own stdio/Broker/worker/TEMP",
+    "http": "own ephemeral0",
+    "AE": "synthetic delayed confirmation only",
+    "productionTiming": "90/100s constants exercised only through own fixture",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": true,
+    "fixturePrefixes": [
+      "core4-manual-runtime-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-runtime-SZW5Hn",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-runtime-OjL8f9"
+    ],
+    "remainingOwnDirs": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-runtime-SZW5Hn",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-manual-runtime-OjL8f9"
+    ],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Own TEMP data intentionally retained; no broad cleanup.",
+      "Normal PASS exact stdio child exit observed by assertion; Broker worker closure uses close hooks, no independent worker PID inventory.",
+      "Delay2600ms/RPC15s and production90/100s constants retained; no outer deadline."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/human-window.test.js",
+        "line": 26,
+        "proof": "Own stdio stdin EOF then await child exit0"
+      },
+      {
+        "file": "core4/test/human-window.test.js",
+        "line": 29,
+        "proof": "t.after(() => h.close())"
+      },
+      {
+        "file": "core4/test/fixtures/manual-http-runtime.js",
+        "line": 60,
+        "proof": "Close stops synthetic pump, awaits peer.close, closes Broker and awaits pump"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-18-human-window-reducer.json",
+    "sha256": "8bbf64c91724c1f0df457bfd4d3fc5be366aaef2dfb8fd1fa9612dc78ad55ffc"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
