@@ -30,11 +30,11 @@
   engine не имеет debug port. Native UI не адресует его child для контекстного меню;
   ввод отклонён до действия. Debug flags, packet capture и инъекции не применялись.
 - [x] P5 actual same-package repeat/read-back: stop1/resume1/apply1, transaction9157, защищённые bytes сохранены.
-- [ ] P5 final configured activation после required P2 successor transfer; intermediate CDF activation=not_performed и отдельно не требуется. [Checkpoint](core-portability-p5-repeat-20261104.md).
+- [x] P5 final configured activation после required P2 successor transfer; intermediate CDF activation=not_performed и отдельно не требуется. [Checkpoint](core-portability-p5-repeat-20261104.md).
 - [x] P2 source и сборки приняты; одинаковый пакет установлен на двух машинах.
 - [x] MSI: свежий штатный клиент, authenticated Origin и одно native-чтение с release.
-- [ ] Desktop: свежий штатный клиент, authenticated Origin и одно native-чтение с release.
-- [ ] Итоговые evidence/manifest и синхронизация.
+- [x] Desktop: свежий штатный клиент, authenticated Origin и одно native-чтение с release.
+- [x] Итоговые evidence/manifest подготовлены; заключительный Git fast-forward проверяется после публикации.
 
 ## Decision Log
 
@@ -155,3 +155,31 @@ PID/birth/parent/args клиента подтверждают реальную p
 ### Validation
 
 Receiver 3→5; исходные 2325 байт, storeIdentity и прежние protected-файлы сохранены, ledger отсутствует. Сохранённый final status: owner ready, holder=null, pending/UNKNOWN/fault отсутствуют. Процесс AE 28156 прежний, native-команда одна. Оформление checkpoint выполняется по сохранённым результатам без новых live-действий. Coverage source осталось 69/71. Координатор проверяет receipt и завершает итоговую P1–P8 матрицу.
+
+## Переносимые исходные логи reuse
+
+### Progress
+
+16исторических source-логов/22accepted refs доступны вdocs; bytes и recordedwhole/prefixSHA совпали. [Индекс](../docs/evidence/core-portability-reuse-logs-20261104.json).
+
+### Decision Log
+
+Изменены только пути к portablecopies вmanifest; originalpaths/hashes сохранены. СмешанныйB4batch содержит прежний timeout другой проверки, не принимается целиком. Authority остаётся у первоначальных keyed records; новых PASS/перезапусков нет.
+
+### Validation
+
+16safe exactcopies, current69/71 иsource215/71keys/33supplemental unchanged. Никаких credentials/state/AEP не экспортировано.
+
+## Итог P1–P8 — 5 ноября 2026
+
+### Progress
+
+Оба финальных configured1f8c native/Origin proof приняты. Actual repeat9157→реальная дельта/applya88c→final activation сохранены; P1–P8 выбранной пары закрыты. [Единый отчёт](../docs/core-portability-final-two-host-result-20261104.md), [review](../docs/evidence/core-portability-final-review-20261105.json).
+
+### Decision Log
+
+Независимый review ACCEPT: дополнительных технических проверок для этого scope не требуется. Исторические checkpoints и отказы сохранены. Новые модули следуют постоянному portability-контракту с адресными проверками; cloud/shared user assets и полностью фоновый Codex relaunch не заявляются. Titles/Slideshow остаются на паузе.
+
+### Validation
+
+69/71 current exact-key PASS,2Titlesheld;71keys/215sourcefiles/33supplemental и все referenced rawlogs сверены. Package1f8c/80,distribution18f247/98,CEP7 на обеих машинах; Originfile://, one final native perhost, bothleasesreleased, pendingUNKNOWNfault0 наcheckpoint. Manualconfigedits0. Fullrelease=false. Финальная публикация передаётся desktop read-only fast-forward без повторных native/tests/install.

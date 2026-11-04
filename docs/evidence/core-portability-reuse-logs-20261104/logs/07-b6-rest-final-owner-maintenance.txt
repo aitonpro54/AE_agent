@@ -1,0 +1,30 @@
+✔ owner-maintenance full-role proof is bound to exact process incarnation; control role and stale boot cannot freeze or stop (271.1998ms)
+✔ owner-maintenance freeze precedes durable publication, rejects all new control, and accepted work drains without repeat (451.1832ms)
+✔ owner-maintenance desired-stop persist failure keeps volatile freeze and partial evidence without forcing close (253.3097ms)
+✔ owner-maintenance normal stop and explicit same-descriptor resume work for consecutive cycles without starting runtime (2201.8347ms)
+✔ owner-maintenance a stop receipt does not substitute process death and desired-stop blocks lifecycle startup (1796.3084ms)
+✔ owner-maintenance diagnostic stop preserves legacy execution marker; resume refuses rather than migrating it (1524.8931ms)
+✔ owner-maintenance UNKNOWN and original history survive stop; no replay or fresh receiver is created (3003.7617ms)
+✔ owner-maintenance descriptor CAS drift refuses resume before lease or destination writes (3572.4396ms)
+✔ owner-maintenance history CAS drift refuses resume before lease or destination writes (3239.5491ms)
+✔ owner-maintenance client CAS drift refuses resume before lease or destination writes (3588.4316ms)
+✔ owner-maintenance interrupted pending resume remains stopped and fenced; a new process never retries the mutation (4572.3168ms)
+✔ owner-maintenance completed resume can explicitly release only its exact dead process-bound lease without repeating resume (6490.9923ms)
+✔ owner-maintenance maintenance methods and opaque lease capabilities are absent from the public MCP tool contract (1551.9516ms)
+✔ owner-maintenance inspect proof binds the exact stopped receipt incarnation even when replacement preserves valid bytes (3431.527ms)
+✔ owner-maintenance receipt corrupt during old death refuses before publishing a resume intent or removing stop (2060.0754ms)
+✔ owner-maintenance receipt inode during self observation refuses before publishing a resume intent or removing stop (3818.6097ms)
+✔ owner-maintenance receipt bytes during self observation refuses before publishing a resume intent or removing stop (5635.4991ms)
+✔ owner-maintenance unknown tree during self observation refuses before publishing a resume intent or removing stop (2248.8737ms)
+✔ owner-maintenance receipt drift during lease acquisition cannot publish completion or remove stop (5328.1254ms)
+✔ owner-maintenance tree drift during lease acquisition cannot publish completion or remove stop (3363.7755ms)
+✔ owner-maintenance completed dead-lease cleanup rechecks receipt after its last operator-death await before deleting any gate (5230.9966ms)
+✔ owner-maintenance foreign-machine copied descriptor, origins and valid seals never enter the local process namespace (2987.3381ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 66713.3159

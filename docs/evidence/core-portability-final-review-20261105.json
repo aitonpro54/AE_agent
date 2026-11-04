@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-read-only-portability-acceptance-review",
+  "recordedAt": "2026-11-04T19:01:10.379Z",
+  "acceptedLocalDate": "2026-11-05",
+  "reviewer": "/root/portability_config_review",
+  "reviewedInputCommit": "8d08391af6e482edfa986cebffedecbfa4ac3f4e",
+  "verdict": "ACCEPT_P1_P7_AND_P8_AFTER_MATRIX_SAVED",
+  "scopeRu": "Независимый read-only review underlying evidence выбранного manual/owner Core, MSI↔DESKTOP-32974QF. Parent сохранил и проверил P8 matrix; отдельный review полного релиза или будущих модулей не заявляется.",
+  "closedGaps": {
+    "P2": "Оба connected peers фиксируют literal Origin file://; два actual configured native reads и releases.",
+    "P5": "Actual same-CDF9157 + реальный successor transfer/applya88c + final1f8c native activation, lineage и protected state сохранены; intermediateCDF activation не выполнялась."
+  },
+  "requiredLimitsRu": [
+    "Только указанная пара сред, manual/owner, package1f8c/distribution18f247.",
+    "Cloud/shared user AEP-assets/distributed lock вне scope.",
+    "Titles/Slideshow paused; readonly proof не даёт mutation authority/continuity.",
+    "Unattended Codex/app-server restart не доказан; причины позднего пересоздания clients не приписываются.",
+    "Source69/71 с2held Titles не является full release certification.",
+    "Исторический mixed B4 timeout не принимается как PASS; authority остаётся вoriginal accepted keyed records."
+  ],
+  "operations": {
+    "fileWritesByReviewer": 0,
+    "tests": 0,
+    "live": 0,
+    "processOperations": 0,
+    "network": 0
+  },
+  "additionalTechnicalChecksRequiredForScope": false,
+  "finalMatrix": "docs/evidence/core-portability-final-two-host-result-20261104.json"
+}

@@ -1,0 +1,29 @@
+✔ client-launcher initialize/discovery and EOF cause no connect or spawn; EOF before queued bootstrap cancels it (494.2554ms)
+✔ client-launcher EOF or descriptor rotation queued during the full synchronous hash pass refuses spawn at the final checkpoint (712.508ms)
+✔ client-launcher concurrent requests share one actual spawn; authenticated child receives only pinned args and minimal environment (621.619ms)
+✔ client-launcher first ordinary request waits for fixture readiness beyond five seconds with one guarded launch (6068.0358ms)
+✔ client-launcher first request after idle session expiry gets one fresh attachment without reacquiring controller state (547.2609ms)
+✔ client-launcher unbranded ipc_closed strings and properties never authorize a retry (173.4185ms)
+✔ client-launcher a request gets at most one fresh attachment even when both close before send (173.0024ms)
+✔ client-launcher failed authentication on fresh attachment is terminal for that request and does not launch (430.1779ms)
+✔ client-launcher EOF during fresh attachment handshake cancels it without send or launch (252.8964ms)
+✔ client-launcher EOF after spawn exits the thin process while the IPC-only fixture owner survives (963.0817ms)
+✔ client-launcher failed actual start stays latched and later explicit requests never spawn a second process (15699.5525ms)
+✔ client-launcher descriptor rotation or wrong owner contract refuses before spawn and preserves the failed launch latch (649.263ms)
+✔ client-launcher observed maintenance presence blocks autolaunch without asserting a valid seal or process death (558.407ms)
+✔ client-launcher maintenance published during the verification checkpoint still prevents spawn (330.279ms)
+✔ client-launcher same thin client can explicitly launch once after a proven pre-spawn stop barrier is explicitly removed (1170.9585ms)
+✔ client-launcher permission, timeout, wrong MAC/pins and postconnect close never bootstrap or reveal internal errors (1383.9914ms)
+✔ client-launcher immediate spawn error is handled once, stays latched, and unref is never called before spawn (325.8457ms)
+✔ client-launcher postspawn authentication failure stops absence-only waiting and never retries launch (505.5386ms)
+✔ client-launcher two actual clients attach the bounded fixture winner; fixture election is not Core election evidence (875.3901ms)
+✔ client-launcher accepted-call connection loss returns uncertainty with its original request id and never resends (1188.2178ms)
+✔ client-launcher authenticated attachment permits a later distinct startup after the owner closes (810.8227ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 34061.6887

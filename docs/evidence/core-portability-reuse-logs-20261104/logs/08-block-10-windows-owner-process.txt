@@ -1,0 +1,16 @@
+✔ windows-owner-process fixed command queries exact env PID, preserves tick precision and projects no commandline or credentials (2.891ms)
+✔ windows-owner-process successful explicit empty result alone is absent and unavailable executable path stays nullable (1.2201ms)
+✔ windows-owner-process missing birth, wrong schema/PID, malformed wire and stale timestamps never become absence (3.0566ms)
+✔ windows-owner-process permission, stderr, timeout, maxBuffer and synchronous failures are sanitized without retry (0.8372ms)
+✔ windows-owner-process invalid PID, unsupported platform and caller probe options never execute a command (2.4325ms)
+✔ windows-owner-process native profile is the sole additional OS directory; inherited PATH/profile/options/secrets are ignored (0.7109ms)
+✔ windows-owner-process classification is exact, fresh and precision-safe data only, never reclaim authority (0.3699ms)
+✔ windows-owner-process actual Windows CIM self-PID read returns a frozen exact birth observation (599.5837ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 665.7118

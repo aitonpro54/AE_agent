@@ -924,3 +924,7 @@ Progress:25remaining full named PASS,36reuse+33fresh=69current,2Titlesheld. Deci
 ### 4 ноября: MSI Origin/native финального runtime принят
 
 Progress: standardconfigured1f8c client6744/owner29764, autoCEP connectedOriginfile://; one readonly inspect-cda9… PASS, leasegen2 released. Decision: initialextrapayload validationrefusalbeforedispatch сохранён, installexistingIDs не replay. Validation:receiver11→13 exactprefix, ledger/AEP/prefs/1755oldfiles preserved, source69/71 unchanged. Desktop finalnative pending подключенияхоста. [Evidence](../docs/evidence/core-portability-msi-origin-native-20261104.json).
+
+### 5 ноября: выбранная двухмашинная переносимость принята
+
+Progress: P1–P8 дляmanual/owner1f8c наMSI↔DESKTOP закрыты, оба Origin/native proof иactualrepeat+successor preservation PASS. Decision: независимый read-only review ACCEPT; Titles/Slideshow paused, fullreleasefalse. Validation:69/71 sourcecurrent,2held, всеsource/evidence/loghashes exact, source215/71keys/33supplemental; ручныхconfigedits0, leasesreleased. [Итог](../docs/core-portability-final-two-host-result-20261104.md). Следующие изменения модулей получают адресные portability checks; новых live/перезапусков итог не назначает.

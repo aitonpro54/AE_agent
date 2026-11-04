@@ -1,0 +1,11 @@
+✔ [photo-owner] deterministic photo intent without titles or engine package (247.3254ms)
+✔ [photo-executor-contract] imported still only exact source/revision CAS and preserved transform timing (239.4811ms)
+✔ [photo-executor-contract] mutation setter error protected drift and time remap fail closed (566.799ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1126.6225

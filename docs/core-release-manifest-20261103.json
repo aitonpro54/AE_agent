@@ -1515,6 +1515,24 @@
       "sha256": "669ca55300450ffe49ea27e4b608616c4a3c90098d994607d4313bace5ba90ac",
       "directKeyedRecords": 0,
       "excludedAsAuthority": "Actual desktop configured authenticated Origin/native proof; source69/71 unchanged, global P1-P8 certification decided by parent."
+    },
+    {
+      "file": "docs/evidence/core-portability-reuse-logs-20261104.json",
+      "sha256": "84c2ec5baa41c99dfc3f609931e5bb7569fcc5f40e01eb2bdef93126b8321800",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Exact raw-log relocation only; original accepted records remain sole authority."
+    },
+    {
+      "file": "docs/evidence/core-portability-final-two-host-result-20261104.json",
+      "sha256": "4dfc36ab39e1f4c2f5beea5fe46442459f3b0b1e6d49e4b9c4b9822409aca626",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Final scoped portability synthesis; underlying keyed/native evidence remains authority."
+    },
+    {
+      "file": "docs/evidence/core-portability-final-review-20261105.json",
+      "sha256": "22ea61cf1a1ae6a95ded0dd77c1039bae679f818a9996c91f5a19d548b994e6e",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Independent scoped acceptance review; no tests or new keyed acceptance."
     }
   ],
   "evidenceMethod": {
@@ -1604,9 +1622,15 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b4-start-over-driver.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/01-b4-start-over-driver.txt",
           "logHash": "bb2b29e40060bf7ffb0e575d19c96cffba1fe3a696d583c05ab372365c440327",
-          "logPrefixHash": null
+          "logPrefixHash": null,
+          "originalLogPath": ".codex-runtime/b4-start-over-driver.log",
+          "originalLogHash": "bb2b29e40060bf7ffb0e575d19c96cffba1fe3a696d583c05ab372365c440327",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/01-b4-start-over-driver.txt",
+          "portableLogHash": "bb2b29e40060bf7ffb0e575d19c96cffba1fe3a696d583c05ab372365c440327",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -2239,9 +2263,15 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b4-validation.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/02-b4-validation.txt",
           "logHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
-          "logPrefixHash": null
+          "logPrefixHash": null,
+          "originalLogPath": ".codex-runtime/b4-validation.log",
+          "originalLogHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/02-b4-validation.txt",
+          "portableLogHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -2582,10 +2612,16 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/03-b6-probe-validation-accepted-prefix.txt",
           "logHash": null,
           "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb",
-          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted."
+          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted.",
+          "originalLogPath": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+          "originalLogHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/03-b6-probe-validation-accepted-prefix.txt",
+          "portableLogHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -2660,10 +2696,16 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/03-b6-probe-validation-accepted-prefix.txt",
           "logHash": null,
           "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb",
-          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted."
+          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted.",
+          "originalLogPath": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+          "originalLogHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/03-b6-probe-validation-accepted-prefix.txt",
+          "portableLogHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -2756,10 +2798,16 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/03-b6-probe-validation-accepted-prefix.txt",
           "logHash": null,
           "logPrefixHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb",
-          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted."
+          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted.",
+          "originalLogPath": ".codex-runtime/b6-probe-validation-accepted-prefix.log",
+          "originalLogHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/03-b6-probe-validation-accepted-prefix.txt",
+          "portableLogHash": "1b2cbea204a32b285dfd125edd206588aa9462c73030f5c64af84b06b2b86bbb",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -4528,8 +4576,14 @@
           "executionBatch": "/executionBatch",
           "sharedBatch": false,
           "batchCaseCount": 3,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-07-windows-retained-process.log",
-          "logHash": "e495142af06f5b09a53aaac1b784b15c2c171a104051341c40a84d8a0f47a4fe"
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/04-block-07-windows-retained-process.txt",
+          "logHash": "e495142af06f5b09a53aaac1b784b15c2c171a104051341c40a84d8a0f47a4fe",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-07-windows-retained-process.log",
+          "originalLogHash": "e495142af06f5b09a53aaac1b784b15c2c171a104051341c40a84d8a0f47a4fe",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/04-block-07-windows-retained-process.txt",
+          "portableLogHash": "e495142af06f5b09a53aaac1b784b15c2c171a104051341c40a84d8a0f47a4fe",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -4593,10 +4647,16 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b6-rest-resumed-stopped-certification.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/05-b6-rest-resumed-stopped-certification.txt",
           "logHash": "86082428ba8d93883e1f4c0dce373da633758b2ee7a835f8c37b259c8340fb29",
           "logPrefixHash": null,
-          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted."
+          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted.",
+          "originalLogPath": ".codex-runtime/b6-rest-resumed-stopped-certification.log",
+          "originalLogHash": "86082428ba8d93883e1f4c0dce373da633758b2ee7a835f8c37b259c8340fb29",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/05-b6-rest-resumed-stopped-certification.txt",
+          "portableLogHash": "86082428ba8d93883e1f4c0dce373da633758b2ee7a835f8c37b259c8340fb29",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -4713,10 +4773,16 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b6-rest-final-maintenance-finish.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/06-b6-rest-final-maintenance-finish.txt",
           "logHash": "38076d4b68d58f94212bcd02be6e1161d124cb76804524cb7ce66a540ffc81da",
           "logPrefixHash": null,
-          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted."
+          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted.",
+          "originalLogPath": ".codex-runtime/b6-rest-final-maintenance-finish.log",
+          "originalLogHash": "38076d4b68d58f94212bcd02be6e1161d124cb76804524cb7ce66a540ffc81da",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/06-b6-rest-final-maintenance-finish.txt",
+          "portableLogHash": "38076d4b68d58f94212bcd02be6e1161d124cb76804524cb7ce66a540ffc81da",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -5051,10 +5117,16 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b6-rest-final-owner-maintenance.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/07-b6-rest-final-owner-maintenance.txt",
           "logHash": "66a10f685e0292fe3c29c793d7efd851be615ac4b4e92dbb33da59ac70e96659",
           "logPrefixHash": null,
-          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted."
+          "authorityNote": "Accepted consolidated B6 source checkpoint authorizes exact-current-key reuse including accepted complete prefixes; progress/cancelled/partial reports are not separately accepted.",
+          "originalLogPath": ".codex-runtime/b6-rest-final-owner-maintenance.log",
+          "originalLogHash": "66a10f685e0292fe3c29c793d7efd851be615ac4b4e92dbb33da59ac70e96659",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/07-b6-rest-final-owner-maintenance.txt",
+          "portableLogHash": "66a10f685e0292fe3c29c793d7efd851be615ac4b4e92dbb33da59ac70e96659",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -5334,8 +5406,14 @@
           "executionBatch": "/executionBatch",
           "sharedBatch": false,
           "batchCaseCount": 8,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-10-windows-owner-process.log",
-          "logHash": "0203a7bc80042de257da052d3fca8a80c3fc381bb328a3fe719c8b5d164f1f38"
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/08-block-10-windows-owner-process.txt",
+          "logHash": "0203a7bc80042de257da052d3fca8a80c3fc381bb328a3fe719c8b5d164f1f38",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-10-windows-owner-process.log",
+          "originalLogHash": "0203a7bc80042de257da052d3fca8a80c3fc381bb328a3fe719c8b5d164f1f38",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/08-block-10-windows-owner-process.txt",
+          "portableLogHash": "0203a7bc80042de257da052d3fca8a80c3fc381bb328a3fe719c8b5d164f1f38",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -5612,9 +5690,15 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b4-client-launcher.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/09-b4-client-launcher.txt",
           "logHash": "76800cd17a364c8c41934119f073da1bdad51e3522abaa2d5e3113772123d1b9",
-          "logPrefixHash": null
+          "logPrefixHash": null,
+          "originalLogPath": ".codex-runtime/b4-client-launcher.log",
+          "originalLogHash": "76800cd17a364c8c41934119f073da1bdad51e3522abaa2d5e3113772123d1b9",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/09-b4-client-launcher.txt",
+          "portableLogHash": "76800cd17a364c8c41934119f073da1bdad51e3522abaa2d5e3113772123d1b9",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -6087,9 +6171,15 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b4-validation.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/02-b4-validation.txt",
           "logHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
-          "logPrefixHash": null
+          "logPrefixHash": null,
+          "originalLogPath": ".codex-runtime/b4-validation.log",
+          "originalLogHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/02-b4-validation.txt",
+          "portableLogHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -6164,9 +6254,15 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b4-client-entry.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/10-b4-client-entry.txt",
           "logHash": "2db127132e50e6f78f24bb480ea16afd27f6d8cd062498b1e449e49473cb5a60",
-          "logPrefixHash": null
+          "logPrefixHash": null,
+          "originalLogPath": ".codex-runtime/b4-client-entry.log",
+          "originalLogHash": "2db127132e50e6f78f24bb480ea16afd27f6d8cd062498b1e449e49473cb5a60",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/10-b4-client-entry.txt",
+          "portableLogHash": "2db127132e50e6f78f24bb480ea16afd27f6d8cd062498b1e449e49473cb5a60",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -6494,8 +6590,14 @@
           "executionBatch": "/executionBatch",
           "sharedBatch": false,
           "batchCaseCount": 27,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-13-client-ipc.log",
-          "logHash": "a5276c1284d3d5bc6b495789c665218d66c30a98657dd3649c091f2a4c41354e"
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/11-block-13-client-ipc.txt",
+          "logHash": "a5276c1284d3d5bc6b495789c665218d66c30a98657dd3649c091f2a4c41354e",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-13-client-ipc.log",
+          "originalLogHash": "a5276c1284d3d5bc6b495789c665218d66c30a98657dd3649c091f2a4c41354e",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/11-block-13-client-ipc.txt",
+          "portableLogHash": "a5276c1284d3d5bc6b495789c665218d66c30a98657dd3649c091f2a4c41354e",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -6559,9 +6661,15 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b4-validation.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/02-b4-validation.txt",
           "logHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
-          "logPrefixHash": null
+          "logPrefixHash": null,
+          "originalLogPath": ".codex-runtime/b4-validation.log",
+          "originalLogHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/02-b4-validation.txt",
+          "portableLogHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -6645,9 +6753,15 @@
           "executionBatch": null,
           "sharedBatch": false,
           "batchCaseCount": null,
-          "log": ".codex-runtime/b4-validation.log",
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/02-b4-validation.txt",
           "logHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
-          "logPrefixHash": null
+          "logPrefixHash": null,
+          "originalLogPath": ".codex-runtime/b4-validation.log",
+          "originalLogHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/02-b4-validation.txt",
+          "portableLogHash": "1927063babb0976e67655935e5fa5d998f415057b82a915990116e489d0caf96",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -6728,8 +6842,14 @@
           "executionBatch": "/executionBatch",
           "sharedBatch": false,
           "batchCaseCount": 16,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-14-controller-lease.log",
-          "logHash": "6ff20aa88d9d71fd781ef5f2c1b8219968e3ab910de5a9d3e0a5c1430ca7342d"
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/12-block-14-controller-lease.txt",
+          "logHash": "6ff20aa88d9d71fd781ef5f2c1b8219968e3ab910de5a9d3e0a5c1430ca7342d",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-14-controller-lease.log",
+          "originalLogHash": "6ff20aa88d9d71fd781ef5f2c1b8219968e3ab910de5a9d3e0a5c1430ca7342d",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/12-block-14-controller-lease.txt",
+          "portableLogHash": "6ff20aa88d9d71fd781ef5f2c1b8219968e3ab910de5a9d3e0a5c1430ca7342d",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -6870,8 +6990,14 @@
           "executionBatch": "/executionBatch",
           "sharedBatch": false,
           "batchCaseCount": 15,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-15-endpoint-observation.log",
-          "logHash": "8f0323ef2c843176c5391917ce7066d7acca35853caf851f885db0b82a59bd0c"
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/13-block-15-endpoint-observation.txt",
+          "logHash": "8f0323ef2c843176c5391917ce7066d7acca35853caf851f885db0b82a59bd0c",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-15-endpoint-observation.log",
+          "originalLogHash": "8f0323ef2c843176c5391917ce7066d7acca35853caf851f885db0b82a59bd0c",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/13-block-15-endpoint-observation.txt",
+          "portableLogHash": "8f0323ef2c843176c5391917ce7066d7acca35853caf851f885db0b82a59bd0c",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -8002,8 +8128,14 @@
           "executionBatch": "/executionBatch",
           "sharedBatch": false,
           "batchCaseCount": 13,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-20-manual-current-target.log",
-          "logHash": "5b0c2cbd6f508f8afb73913cb660f18583672afe39b985d6ebd35c3d381e4ad8"
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/14-block-20-manual-current-target.txt",
+          "logHash": "5b0c2cbd6f508f8afb73913cb660f18583672afe39b985d6ebd35c3d381e4ad8",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-20-manual-current-target.log",
+          "originalLogHash": "5b0c2cbd6f508f8afb73913cb660f18583672afe39b985d6ebd35c3d381e4ad8",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/14-block-20-manual-current-target.txt",
+          "portableLogHash": "5b0c2cbd6f508f8afb73913cb660f18583672afe39b985d6ebd35c3d381e4ad8",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -8985,8 +9117,14 @@
           "executionBatch": "/executionBatch",
           "sharedBatch": true,
           "batchCaseCount": 3,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-23-photo-pair.log",
-          "logHash": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8"
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/15-block-23-photo-pair.txt",
+          "logHash": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-23-photo-pair.log",
+          "originalLogHash": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/15-block-23-photo-pair.txt",
+          "portableLogHash": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -9112,8 +9250,14 @@
           "executionBatch": "/executionBatch",
           "sharedBatch": true,
           "batchCaseCount": 3,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-23-photo-pair.log",
-          "logHash": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8"
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/15-block-23-photo-pair.txt",
+          "logHash": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-23-photo-pair.log",
+          "originalLogHash": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/15-block-23-photo-pair.txt",
+          "portableLogHash": "97b3e7d7150c52dc75d38de60464abbf323bb4b81bad3cd1b2028ec13e825ab8",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -9233,8 +9377,14 @@
           "executionBatch": "/executionBatch",
           "sharedBatch": true,
           "batchCaseCount": 30,
-          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-22-core-combined.log",
-          "logHash": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3"
+          "log": "docs/evidence/core-portability-reuse-logs-20261104/logs/16-block-22-core-combined.txt",
+          "logHash": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3",
+          "originalLogPath": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-22-core-combined.log",
+          "originalLogHash": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3",
+          "portableLog": "docs/evidence/core-portability-reuse-logs-20261104/logs/16-block-22-core-combined.txt",
+          "portableLogHash": "ce1a2062ea851b2a83250bbaa78723b9e0357834ca74ca1331df2a7cb2083fb3",
+          "logRelocationEvidence": "docs/evidence/core-portability-reuse-logs-20261104.json",
+          "portableLogScope": "Exact original bytes; authority remains the original accepted keyed record, not a blanket batch result."
         }
       ],
       "byteCommandBoundEvidence": null,
@@ -11464,13 +11614,15 @@
     },
     {
       "gate": "package-and-installation",
-      "status": "current-runtime-installed-both-hosts-configured-activation-pending",
+      "status": "accepted-current-package-two-host-install-and-configured-native",
       "requiredForFullRelease": true,
       "evidence": [
         "docs/evidence/core-portability-msi-origin-installed-20261104.json",
-        "docs/evidence/core-portability-desktop-origin-installed-20261104.json"
+        "docs/evidence/core-portability-desktop-origin-installed-20261104.json",
+        "docs/evidence/core-portability-msi-origin-native-20261104.json",
+        "docs/evidence/core-portability-desktop-origin-native-20261104.json"
       ],
-      "noteRu": "Один и тот же manual-owner1f8c/80 иstandalone18f247/98 установлен на обеих машинах. Disk read-back PASS; configured/native activation нового пакета ещё не принята.",
+      "noteRu": "1f8c/80,standalone18f247/98 иCEP7 проверены на обеих машинах; configured1f8c/Origin/one native read/release обоих хостов PASS. Историческая native mutation B6/B7 сохраняет собственный scope.",
       "previousEvidence": [
         "docs/evidence/core-base-b6-probe-source-20261103.json",
         "docs/evidence/core-base-b6-installed-20261103.json"
@@ -11505,7 +11657,7 @@
     },
     {
       "gate": "two-machine-portability",
-      "status": "open-strict-certification-practical-transfer-accepted",
+      "status": "accepted-P1-P8-selected-two-host-runtime",
       "requiredForFullPortableRelease": true,
       "criteria": [
         "P1",
@@ -11518,19 +11670,21 @@
         "P8"
       ],
       "contract": "docs/portability.md",
-      "noteRu": "Actual same-CDF repeat9157 и successor1f8c обеих машин сохранены. MSI configured1f8c/Originfile://+one native read/release PASS. Для strictP2/P5 остаётся desktop final activation; host connection отсутствует. Исторический practical report сохранён.",
+      "noteRu": "P1–P8 приняты для manual/owner1f8c и записанных сред MSI/DESKTOP. Оба configured native/Origin proof и actual same-version repeat+successor chain подтверждены. Cloud/shared user assets/unattended Codex relaunch не заявлены; full release=false из-за product hold.",
       "preparationEvidence": "docs/evidence/core-portability-practical-20261104.json",
       "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
       "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
       "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
       "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
       "practicalTransferAccepted": true,
-      "finalReport": "docs/evidence/core-portability-two-host-result-20261104.json",
-      "strictOpenCriteria": [
-        "P2",
-        "P5"
-      ],
-      "msiFinalOriginNativeEvidence": "docs/evidence/core-portability-msi-origin-native-20261104.json"
+      "finalReport": "docs/evidence/core-portability-final-two-host-result-20261104.json",
+      "strictOpenCriteria": [],
+      "msiFinalOriginNativeEvidence": "docs/evidence/core-portability-msi-origin-native-20261104.json",
+      "historicalPracticalReport": "docs/evidence/core-portability-two-host-result-20261104.json",
+      "P1toP8Complete": true,
+      "portabilityCertified": true,
+      "desktopFinalOriginNativeEvidence": "docs/evidence/core-portability-desktop-origin-native-20261104.json",
+      "reviewEvidence": "docs/evidence/core-portability-final-review-20261105.json"
     }
   ],
   "legacyReleaseScript": {
@@ -12488,7 +12642,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.currentSourceValidation"
   },
-  "updatedAt": "2026-11-04T18:47:49.292Z",
+  "updatedAt": "2026-11-04T19:01:10.379Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -12499,12 +12653,12 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "desktop-and-msi-origin-native-proofs-present-awaiting-parent-matrix",
+    "status": "accepted-P1-P8-selected-two-host-runtime",
     "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
     "remoteExecutionAuthorized": true,
-    "next": "Parent receipt review and final P1-P8 matrix; no further desktop runtime work required.",
+    "next": "Поддерживать постоянный portability-контракт новых/изменяемых модулей; Titles/Slideshow остаются на паузе.",
     "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
     "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
     "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
@@ -12674,15 +12828,12 @@
     "desktopCEPDiscoveryEvidence": "docs/evidence/core-portability-desktop-cep-discovery-20261104.json",
     "desktopServiceRefreshPreflightEvidence": "docs/evidence/core-portability-desktop-service-refresh-preflight-20261104.json",
     "desktopConfiguredNativeEvidence": "docs/evidence/core-portability-desktop-configured-native-20261104.json",
-    "completedAt": "2026-11-04T13:42:18.910Z",
-    "finalReport": "docs/evidence/core-portability-two-host-result-20261104.json",
-    "summary": "docs/core-portability-two-host-result-20261104.md",
+    "completedAt": "2026-11-04T19:01:10.379Z",
+    "finalReport": "docs/evidence/core-portability-final-two-host-result-20261104.json",
+    "summary": "docs/core-portability-final-two-host-result-20261104.md",
     "practicalTransferAccepted": true,
-    "P1toP8Complete": false,
-    "strictOpenCriteria": [
-      "P2",
-      "P5"
-    ],
+    "P1toP8Complete": true,
+    "strictOpenCriteria": [],
     "finalGatesPlan": "plans/core-portability-final-gates-20261104.md",
     "finalGatesPreparation": "docs/evidence/core-portability-final-gates-preparation-20261104.json",
     "P5RepeatEvidence": "docs/evidence/core-portability-p5-repeat-20261104.json",
@@ -12692,8 +12843,8 @@
       "transactionId": "9157e280-eeac-402f-92a5-6c69c42d5a47",
       "configuredAfterRepeat": false,
       "nativeAfterRepeat": false,
-      "formalStatus": "OPEN",
-      "next": "Parent evaluates strict P5 against actual CDF repeat and successful required successor activation.",
+      "formalStatus": "PASS_TARGET_PAIR_SCOPE",
+      "next": "Same-package disk preservation and final successor activation accepted; old IDs not replayed.",
       "activation": "not_performed-deferred-to-required-successor",
       "requiredSuccessorOnDisk": {
         "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
@@ -12776,7 +12927,13 @@
     },
     "sourceValidationScopeRu": "sourceValidation хранит прежний desktop срез; currentSourceValidation — актуальная source-приёмка.",
     "msiOriginNativeEvidence": "docs/evidence/core-portability-msi-origin-native-20261104.json",
-    "desktopOriginNativeEvidence": "docs/evidence/core-portability-desktop-origin-native-20261104.json"
+    "desktopOriginNativeEvidence": "docs/evidence/core-portability-desktop-origin-native-20261104.json",
+    "portableReuseLogIndex": "docs/evidence/core-portability-reuse-logs-20261104.json",
+    "historicalPracticalFinalReport": "docs/evidence/core-portability-two-host-result-20261104.json",
+    "historicalPracticalSummary": "docs/core-portability-two-host-result-20261104.md",
+    "portabilityCertified": true,
+    "finalReviewEvidence": "docs/evidence/core-portability-final-review-20261105.json",
+    "acceptedLocalDate": "2026-11-05"
   },
   "historicalSourceAcceptance": {
     "baselineCommit": "77a860e",

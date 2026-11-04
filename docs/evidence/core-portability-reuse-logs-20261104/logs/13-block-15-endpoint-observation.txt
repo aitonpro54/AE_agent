@@ -1,0 +1,25 @@
+▶ [endpoint-observation] terminal events produce one bounded report and clean socket/timer
+  ✔ connected (2.3227ms)
+  ✔ refused (1.1607ms)
+  ✔ other error (0.5303ms)
+  ✔ OS timeout (0.5587ms)
+  ✔ premature close (0.5034ms)
+  ✔ deadline (0.6135ms)
+  ✔ oversize code (0.5238ms)
+  ✔ unsafe code (0.5064ms)
+  ✔ hostile code accessor (1.0934ms)
+✔ [endpoint-observation] terminal events produce one bounded report and clean socket/timer (8.8239ms)
+✔ [endpoint-observation] constructor/connect/cleanup exceptions fail closed without retries (1.3653ms)
+✔ [endpoint-observation] first terminal event wins while queued socket errors remain guarded until close (0.5089ms)
+✔ [endpoint-observation] public API accepts no options and import has no effects (0.7724ms)
+✔ [endpoint-observation] CLI maps all observation outcomes and rejects every argument before probing (7.4393ms)
+✔ [endpoint-observation] actual CLI uses only mapped ephemeral loopback, sends zero bytes and writes no files (187.7852ms)
+ℹ {"fixtureBefore":{"files":[],"connections":0,"sockets":0},"fixtureAfter":{"files":[],"connections":1,"sockets":0,"bytes":0,"listener":false},"production3457Connections":0}
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 273.676

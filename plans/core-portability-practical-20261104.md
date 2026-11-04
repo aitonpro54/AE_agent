@@ -189,3 +189,17 @@ Bounded practical PASS принят по независимому read-only revi
 ### Validation
 
 71current keys, source snapshot215/supplemental33, текущие48accepted/23open. Все transferred logs/evidence hashes сверены; runtime80 и shared CEP6 совпали, local generated CEP/identities независимы. Native1dispatch desktop и новый1read MSI, leases released, pending/UNKNOWN/fault0. Manual config edits0, app-server terminations0, mutation/reset/replay0. Итоговый commit добавляет только docs/evidence.
+
+## Итог P1–P8 — 5 ноября 2026
+
+### Progress
+
+Оба финальных configured1f8c native/Origin proof приняты. Actual repeat9157→реальная дельта/applya88c→final activation сохранены; P1–P8 выбранной пары закрыты. [Единый отчёт](../docs/core-portability-final-two-host-result-20261104.md), [review](../docs/evidence/core-portability-final-review-20261105.json).
+
+### Decision Log
+
+Независимый review ACCEPT: дополнительных технических проверок для этого scope не требуется. Исторические checkpoints и отказы сохранены. Новые модули следуют постоянному portability-контракту с адресными проверками; cloud/shared user assets и полностью фоновый Codex relaunch не заявляются. Titles/Slideshow остаются на паузе.
+
+### Validation
+
+69/71 current exact-key PASS,2Titlesheld;71keys/215sourcefiles/33supplemental и все referenced rawlogs сверены. Package1f8c/80,distribution18f247/98,CEP7 на обеих машинах; Originfile://, one final native perhost, bothleasesreleased, pendingUNKNOWNfault0 наcheckpoint. Manualconfigedits0. Fullrelease=false. Финальная публикация передаётся desktop read-only fast-forward без повторных native/tests/install.

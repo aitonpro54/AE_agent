@@ -1,0 +1,35 @@
+✔ IPC authenticates two independent observers and passes the identical opaque session to callbacks (44.6441ms)
+✔ IPC refuses wrong control secret, panel secret and all identity pins without attaching (4.3352ms)
+✔ IPC rejects wrong role/domain, stale boot/challenge and extra authentication fields (4.0704ms)
+✔ IPC accepts chunked canonical frames including Unicode and rejects invalid framing before dispatch (37.2266ms)
+✔ IPC fail-closes request replay, reused id, wrong MAC/sequence/session, unknown method and extra fields (11.4587ms)
+✔ IPC clients verify challenge/ready role, identity, boot shape and MAC before exposing attachment (3.84ms)
+✔ IPC clients reject forged replies, correlation mismatches and response replay without accepting invented result (31.8291ms)
+✔ IPC disconnect detaches once while the accepted callback drains exactly once (14.3598ms)
+✔ IPC client timeout never retries and the original accepted operation still completes (46.1525ms)
+✔ IPC enforces global pending capacity across detached sessions without cancelling their work (31.7702ms)
+✔ IPC bounds connections, authenticated sessions, inflight and per-session request history (17.3667ms)
+✔ IPC handshake/absolute session deadlines are bounded and do not infer authority from an idle socket (137.1693ms)
+✔ IPC private pre-send closure proof excludes forged errors, explicit close, cancellation and protocol failures (187.8276ms)
+✔ IPC submitted response loss never acquires pre-send proof after pending state is cleared (63.6541ms)
+✔ IPC preserves uncertainty for handler errors/invalid results and refuses non-JSON payloads before send (8.9721ms)
+✔ IPC reports unknown outcome after an effect followed by oversized result or throw and never replays on reconnect (35.5075ms)
+✔ IPC accepted callback failure marks every pending caller uncertain while other accepted work still drains (15.2327ms)
+✔ IPC onAttach must finish synchronously; detach faults are latched and close the transport (15.5077ms)
+✔ IPC cleans up a partially registered attachment exactly once when synchronous onAttach throws (3.3328ms)
+✔ IPC endpoint collision does not displace the original owner; concurrent close/listen leaves no listener (4.2788ms)
+✔ IPC server enforces its own inflight/history limits even against a client ignoring client-side limits (26.9452ms)
+✔ IPC correlates concurrent replies arriving in reverse order and rejects a captured request on another session (13.1459ms)
+✔ IPC client handshake timeout is bounded even when a local listener never sends a challenge (29.8684ms)
+✔ IPC absolute session expiry disconnects a pending caller without cancelling the accepted callback (61.4422ms)
+✔ IPC classifies only preconnect ENOENT and ECONNREFUSED as absence and sanitizes permission/unknown failures (3.3692ms)
+✔ IPC errors after a real socket connect and a handshake timeout never count as endpoint absence (28.3309ms)
+✔ IPC private AbortSignal cancels handshake and pending delivery without replay or callback cancellation (32.6783ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 977.5256

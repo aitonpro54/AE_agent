@@ -1,0 +1,24 @@
+✔ controller-lease attachment and repeated observer status never acquire control (0.8277ms)
+✔ controller-lease explicit acquire is exclusive and repeated acquire is not renewal (0.3753ms)
+✔ controller-lease exact explicit release permits new generation and rejects captured grant (0.1384ms)
+✔ controller-lease serialized handles and foreign owner boot cannot authorize work (0.1414ms)
+✔ controller-lease only explicit timely renewal extends permission; expired grant cannot renew (0.1201ms)
+✔ controller-lease quiescent disconnect releases control but cannot reuse detached session (0.1285ms)
+✔ controller-lease renewal samples time once so expiry cannot move between validation and extension (0.1174ms)
+✔ controller-lease lost client drains accepted work and rejects takeover across expiry (0.1786ms)
+✔ controller-lease expiry during accepted work preserves original completion and blocks new sends (0.1469ms)
+✔ controller-lease physical UNKNOWN remains fenced after detach and expiry; no reset API (0.1589ms)
+✔ controller-lease one accepted operation and exact original completion; no copies or replay (0.6253ms)
+✔ controller-lease monotonic clock failure revokes new work but original outcome remains recordable (0.1027ms)
+✔ controller-lease invalid clock and options fail closed (0.1518ms)
+✔ controller-lease explicit exact expired transfer invalidates old grant without disconnecting its observer (0.1408ms)
+✔ controller-lease expired transfer refuses pending work, UNKNOWN, stale boot and holder CAS (0.1924ms)
+✔ controller-lease transfer accepts no caller safe flags and uses one monotonic sample (0.1019ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 61.1337

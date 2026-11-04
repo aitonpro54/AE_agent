@@ -11,6 +11,19 @@
 
 ## Текущий scope и правила
 
+**5 ноября, переносимость выбранной пары принята по P1–P8:** одинаковые
+manual/owner package1f8c…/80 иstandalone18f247…/98 установлены на MSI и
+DESKTOP-32974QF; оба штатных клиента подтвердили Origin `file://` и одно
+native-чтение с освобождением управления. Actual repeat9157 и следующий
+перенос/applya88c сохранили identities, историю, preferences и соседний config.
+Ручных правок config0. Независимый read-only review ACCEPT.
+Source69/71 актуальны; две dedicated Titles и native product acceptance
+Titles/Slideshow остаются на паузе, full release=false. Cloud/shared user assets
+и полностью фоновый relaunch Codex не заявляются. Новых live действий этот итог
+не назначает; settled IDs не повторять. Предыдущие checkpoints ниже — история.
+[Итог](docs/core-portability-final-two-host-result-20261104.md),
+[manifest](docs/core-release-manifest-20261103.json).
+
 **4 ноября, desktop: configured Origin/native PASS для 1f8c:** клиент 9260 → owner 1652; authenticated `physical.peer.origin` содержит строку `file://`, connected=true. Одна typed project-inspection пустого AE 26.3x87 завершена, lease generation 1 освобождён. Receiver 3→5, исходные 2325 байт сохранены; holder=null, pending/UNKNOWN/fault отсутствуют. Descriptor/client/origins/history/config, 39 preferences и 9 legacy-файлов сохранены. Новых install/build/tests/restart/mutation нет. Coverage source осталось 69/71, две проверки Titles удержаны. [Evidence](docs/evidence/core-portability-desktop-origin-native-20261104.json), [план](plans/core-portability-desktop-origin-native-20261104.md). Итоговую P1–P8 матрицу после проверки receipt завершает координатор.
 
 **4 ноября, финальная проверка MSI пройдена:** штатный клиент6744 загрузил пакет
@@ -107,8 +120,10 @@ P1–P8 ещё открыты. [Практический план](plans/core-po
 обнаружение локальной среды и адресные проверки переносимости в готовность
 модуля; штатный перенос должен выполнять необходимые шаги без ручного ремонта
 конфигурации пользователем. Неизменённое evidence переиспользовать, затронутые
-границы проверять самостоятельно в разрешённом scope. Автоматизация и первая
-приёмка P1–P8 ещё не объявлены завершёнными; облако сейчас вне scope.
+границы проверять самостоятельно в разрешённом scope. Первая приёмка P1–P8
+выбранного пакета и пары сред завершена; новые/изменённые модули получают
+необходимые адресные проверки. Полностью фоновый relaunch Codex не доказан;
+облако сейчас вне scope.
 [Постоянное правило модулей](docs/portability.md#новые-модули-и-последующие-версии).
 
 **Историческая source-приёмка на77a860e:** 35 принятых запусков /38named checks и69exact-key результата относились к прежним bytes. После V2 installer это не current утверждение; актуальные48covered/23open приведены выше. Titles/Slideshow на паузе, full release не заявляется. [Исторический план](plans/core-release-execution-20261103.md).

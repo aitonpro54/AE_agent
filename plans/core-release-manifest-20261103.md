@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка, 4 ноября:** 69/71 current PASS: 36 exact reuse + 33 свежих полных canonical named checks. Открыты только две dedicated Titles под hold; других source-пробелов нет. Все215 исходников,71 ключ и33 supplemental hash сверены. [Source evidence](../docs/evidence/core-portability-current-source-20261104.json). Пакет1f8c установлен на двух машинах. [Финальные Origin и native-чтение MSI приняты](../docs/evidence/core-portability-msi-origin-native-20261104.json); такая же проверка desktop ещё нужна. Full release=false.
+**Текущая source-приёмка, 4 ноября:** 69/71 current PASS: 36 exact reuse + 33 свежих полных canonical named checks. Открыты только две dedicated Titles под hold; других source-пробелов нет. Все215 исходников,71 ключ и33 supplemental hash сверены. [Source evidence](../docs/evidence/core-portability-current-source-20261104.json). Пакет1f8c установлен и проверен штатными native-чтениями на двух машинах; [P1–P8 выбранной пары приняты](../docs/core-portability-final-two-host-result-20261104.md). Full release=false, Titles/Slideshow на паузе.
 
 ## Цель и состав
 
@@ -350,3 +350,17 @@ Full release=false, source-first8 не выдаются за полную source
 ### Validation
 
 26actualcommands=25PASS+1fixtureprerequisiteFAIL. Nodev24.15.0/SHA3331e…,71keys/215files exact, own runnerexit0; нет SKIP/cancelled. Per-checkcases не складываются в globalunique. [Evidence](../docs/evidence/core-portability-current-source-20261104.json). Native1f8c/Origin обоих хостов ещё не принят; Titles/Slideshow не возобновляются.
+
+## Итог P1–P8 — 5 ноября 2026
+
+### Progress
+
+Оба финальных configured1f8c native/Origin proof приняты. Actual repeat9157→реальная дельта/applya88c→final activation сохранены; P1–P8 выбранной пары закрыты. [Единый отчёт](../docs/core-portability-final-two-host-result-20261104.md), [review](../docs/evidence/core-portability-final-review-20261105.json).
+
+### Decision Log
+
+Независимый review ACCEPT: дополнительных технических проверок для этого scope не требуется. Исторические checkpoints и отказы сохранены. Новые модули следуют постоянному portability-контракту с адресными проверками; cloud/shared user assets и полностью фоновый Codex relaunch не заявляются. Titles/Slideshow остаются на паузе.
+
+### Validation
+
+69/71 current exact-key PASS,2Titlesheld;71keys/215sourcefiles/33supplemental и все referenced rawlogs сверены. Package1f8c/80,distribution18f247/98,CEP7 на обеих машинах; Originfile://, one final native perhost, bothleasesreleased, pendingUNKNOWNfault0 наcheckpoint. Manualconfigedits0. Fullrelease=false. Финальная публикация передаётся desktop read-only fast-forward без повторных native/tests/install.

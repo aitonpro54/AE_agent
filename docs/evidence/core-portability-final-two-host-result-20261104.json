@@ -1,0 +1,381 @@
+{
+  "schemaVersion": 1,
+  "kind": "final-two-host-Core-portability-acceptance",
+  "recordedAt": "2026-11-04T18:58:01.465Z",
+  "result": "PASS_TARGET_PAIR_SCOPE",
+  "scopeRu": "Практический перенос выбранного manual/owner Core между MSI и DESKTOP-32974QF. Titles/Slideshow development/native product acceptance, cloud и пользовательские общие AEP/assets вне scope.",
+  "runtimeSourceCommit": "e75a25fd85a1770e390b91ccf1f5f196fddc5617",
+  "reviewedInputCommit": "8d08391af6e482edfa986cebffedecbfa4ac3f4e",
+  "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+  "distributionHash": "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+  "runtimeFiles": 80,
+  "distributionDeclaredFiles": 98,
+  "CEPFiles": 7,
+  "source": {
+    "registered": 71,
+    "currentAccepted": 69,
+    "exactReuse": 36,
+    "freshFullNamed": 33,
+    "held": 2,
+    "heldChecks": [
+      "titles-owner",
+      "titles-executor-contract"
+    ],
+    "remainingNotHeld": 0,
+    "snapshotDigest": "727777694cb5918a829f1521e5e42280a5a819822e772df310ff95af58210e2a",
+    "sourceFiles": 215,
+    "supplementalFiles": 33,
+    "evidence": "docs/evidence/core-portability-current-source-20261104.json",
+    "countsAreNotGlobalUnique": true,
+    "failedFixtureSetupAttemptPreserved": true,
+    "portableRawLogReferences": 62,
+    "originalStructuredRecordsWithoutExplicitLogField": [
+      {
+        "check": "start-over-panel-control",
+        "authority": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/27",
+            "method": "explicit-record-result-PASS"
+          }
+        ]
+      },
+      {
+        "check": "panel-start-over",
+        "authority": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/28",
+            "method": "explicit-record-result-PASS"
+          }
+        ]
+      },
+      {
+        "check": "start-over-process",
+        "authority": [
+          {
+            "file": "docs/evidence/core-base-b3a1-20261102.json",
+            "pointer": "/selectedChecks/1",
+            "method": "explicit-record-result-PASS"
+          }
+        ]
+      },
+      {
+        "check": "owner-lifecycle",
+        "authority": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/38",
+            "method": "explicit-record-result-PASS"
+          }
+        ]
+      },
+      {
+        "check": "owner-lifecycle-faults",
+        "authority": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/39",
+            "method": "explicit-record-result-PASS"
+          }
+        ]
+      },
+      {
+        "check": "owner-marker-publication",
+        "authority": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/40",
+            "method": "explicit-record-result-PASS"
+          }
+        ]
+      },
+      {
+        "check": "panel-reconnect",
+        "authority": [
+          {
+            "file": "docs/evidence/core-base-b3b3-20261103.json",
+            "pointer": "/selectedChecks/1",
+            "method": "explicit-record-result-PASS"
+          }
+        ]
+      }
+    ],
+    "rawLogScopeRu": "Все62 явные ссылки наrawlogs перенесены;7исходных accepted records опираются наструктурированное exact-key PASS evidence без отдельногоlog поля. Новая authority не создаётся."
+  },
+  "hosts": [
+    {
+      "host": "MSI",
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "nodeVersion": "24.15.0",
+      "AEversion": "26.3x87",
+      "configuredClient": {
+        "pid": 6744,
+        "parentPid": 2244,
+        "birthTicks": "639294137049819940",
+        "exe": "C:\\Program Files\\nodejs\\node.exe",
+        "args": "\"C:\\Program Files\\nodejs\\node.exe\" C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8\\runtime\\client-entry.js --client-descriptor C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json"
+      },
+      "owner": {
+        "pid": 29764,
+        "parentPid": 6744,
+        "birthTicks": "639294137523760658",
+        "exe": "C:\\Program Files\\nodejs\\node.exe",
+        "args": "\"C:\\Program Files\\nodejs\\node.exe\" C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8\\runtime\\owner-entry.js --installation C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json"
+      },
+      "AE": {
+        "pid": 13608,
+        "parentPid": 34784,
+        "birthTicks": "639293876569989753",
+        "exe": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "args": "\"C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe\" "
+      },
+      "peer": {
+        "connected": true,
+        "origin": "file://",
+        "peerId": "panel-c337d044837dae0c63cca4351e64f25b083ce554eceab76e"
+      },
+      "commandId": "inspect-cda9b638-f1a7-49b5-9dde-d77d9762e04c",
+      "receiptRef": "1ae5da714a1ba729aaf33366518c093eb4f7b4c1a12d60e436cb637b3bd9785f",
+      "receiverBefore": 11,
+      "receiverAfter": 13,
+      "exactPrefixPreserved": true,
+      "ledgerUnchanged": true,
+      "preferencesPreserved": 29,
+      "protectedOldExactFiles": 1755,
+      "controllerReleased": true,
+      "evidence": "docs/evidence/core-portability-msi-origin-native-20261104.json"
+    },
+    {
+      "host": "DESKTOP-32974QF",
+      "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+      "nodeVersion": "24.15.0",
+      "AEversion": "26.3x87",
+      "configuredClient": {
+        "pid": 9260,
+        "parentPid": 7060,
+        "birth": "2026-11-04T16:27:25.1066450Z",
+        "birthTicks": "639294064451066450",
+        "exe": "C:\\Program Files\\nodejs\\node.exe",
+        "args": "\"C:\\Program Files\\nodejs\\node.exe\" C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8\\runtime\\client-entry.js --client-descriptor C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json",
+        "isClient": true,
+        "isOwner": false,
+        "freshForPackage1f8c": true,
+        "oldCDFClientPid": 32372,
+        "recreatedBeforeThisTurn": true,
+        "observationRu": "После пользовательского подтверждения «Десктоп подключён» в начале этого turn уже наблюдался новый configured client9260, parent7060, argv из project MCP entry1f8c. Controller не вызывал restart, не создавал ручной клиент или sidecar. Конкретная внутренняя причина его пересоздания не наблюдалась."
+      },
+      "owner": {
+        "pid": 1652,
+        "parentPid": 9260,
+        "birth": "2026-11-04T18:42:22.7570770Z",
+        "birthTicks": "639294145427570770",
+        "exe": "C:\\Program Files\\nodejs\\node.exe",
+        "args": "\"C:\\Program Files\\nodejs\\node.exe\" C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8\\runtime\\owner-entry.js --installation C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+        "isClient": false,
+        "isOwner": true
+      },
+      "AE": {
+        "pid": 28156,
+        "birth": "2026-11-04T13:23:21.5337360Z",
+        "birthTicks": "639293954015337360",
+        "exe": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe"
+      },
+      "peer": {
+        "connected": true,
+        "origin": "file://"
+      },
+      "commandId": "inspect-84cb3ab8-f18f-48ab-92a9-308573323861",
+      "receiptRef": "6207dd9d275cc8573747660119dffc6c0be618d416822a71011ae8b97c04be77",
+      "receiverBefore": 3,
+      "receiverAfter": 5,
+      "exactPrefixPreserved": true,
+      "ledgerAbsent": true,
+      "preferencesPreserved": 39,
+      "protectedOldExactFiles": 221,
+      "controllerReleased": true,
+      "evidence": "docs/evidence/core-portability-desktop-origin-native-20261104.json"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "P1",
+      "status": "PASS_TARGET_PAIR_SCOPE",
+      "conclusionRu": "Одинаковый переносимый manual/owner пакет на двух машинах; identities, credentials и state остаются локальными.",
+      "evidence": [
+        "docs/evidence/core-portability-peer-origin-source-20261104.json",
+        "docs/evidence/core-portability-msi-origin-native-20261104.json",
+        "docs/evidence/core-portability-desktop-origin-native-20261104.json"
+      ]
+    },
+    {
+      "id": "P2",
+      "status": "PASS_TARGET_PAIR_SCOPE",
+      "conclusionRu": "На обеих машинах подтверждены реальные среды, configured client, собственный AE, authenticated connected peer и literal Origin file://.",
+      "evidence": [
+        "docs/evidence/core-portability-msi-origin-native-20261104.json",
+        "docs/evidence/core-portability-desktop-origin-native-20261104.json",
+        "docs/evidence/core-portability-preflight-20261104.json"
+      ]
+    },
+    {
+      "id": "P3",
+      "status": "PASS_TARGET_PAIR_SCOPE",
+      "conclusionRu": "Desktop→MSI: реальная дельта f857f2d принята; последующий общий runtime1f8c штатно обновлён на MSI и прочитал собственный AEP.",
+      "evidence": [
+        "docs/evidence/core-portability-two-host-result-20261104.json",
+        "docs/evidence/core-portability-msi-roundtrip-20261104.json",
+        "docs/evidence/core-portability-msi-origin-native-20261104.json"
+      ]
+    },
+    {
+      "id": "P4",
+      "status": "PASS_TARGET_PAIR_SCOPE",
+      "conclusionRu": "MSI→desktop: обратная инженерная дельта0b78aac и runtime-дельтаe75 получены; successor1f8c установлен и проверен штатным native-чтением.",
+      "evidence": [
+        "docs/evidence/core-portability-two-host-result-20261104.json",
+        "docs/evidence/core-portability-desktop-origin-installed-20261104.json",
+        "docs/evidence/core-portability-desktop-origin-native-20261104.json"
+      ]
+    },
+    {
+      "id": "P5",
+      "status": "PASS_TARGET_PAIR_SCOPE",
+      "conclusionRu": "Same-CDF repeat9157 применён один раз; следующий реальный source transfer/applya88c и финальная1f8c activation сохранили identity, историю, preferences и соседний config. Отказы и частичное восстановление имеют current source/TEMP evidence.",
+      "evidence": [
+        "docs/evidence/core-portability-p5-repeat-20261104.json",
+        "docs/evidence/core-portability-desktop-origin-installed-20261104.json",
+        "docs/evidence/core-portability-desktop-origin-native-20261104.json",
+        "docs/evidence/core-portability-current-source-20261104.json",
+        "docs/evidence/core-portability-peer-origin-source-20261104.json"
+      ]
+    },
+    {
+      "id": "P6",
+      "status": "PASS_TARGET_PAIR_SCOPE",
+      "conclusionRu": "Независимые local identities; authority/state не импортировались. Current/exact-key negative checks проверяют auth/origin/no-replay/session/fences в их source/TEMP пределах.",
+      "evidence": [
+        "docs/evidence/core-portability-two-host-result-20261104.json",
+        "docs/evidence/core-portability-peer-origin-source-20261104.json",
+        "docs/evidence/core-portability-current-source-20261104.json",
+        "docs/evidence/core-portability-msi-origin-native-20261104.json",
+        "docs/evidence/core-portability-desktop-origin-native-20261104.json"
+      ]
+    },
+    {
+      "id": "P7",
+      "status": "PASS_TARGET_PAIR_SCOPE",
+      "conclusionRu": "Commits, решения, review disposition, keyed evidence и все ссылочные raw source-логи переносимы; оригинальные исторические outcomes сохранены.",
+      "evidence": [
+        "docs/evidence/core-portability-two-host-result-20261104.json",
+        "docs/evidence/core-portability-current-source-20261104.json",
+        "docs/evidence/core-portability-reuse-logs-20261104.json"
+      ]
+    },
+    {
+      "id": "P8",
+      "status": "PASS_TARGET_PAIR_SCOPE",
+      "conclusionRu": "Единый отчёт связывает P1–P7, реальные хосты, версии/closure, команды, исходы, нулевые ручные правки config и явные ограничения.",
+      "evidence": []
+    }
+  ],
+  "P1toP8Complete": true,
+  "portabilityCertified": true,
+  "certificationScope": "exact-selected-runtime-and-recorded-two-Windows-host-environments",
+  "fullReleaseCertified": false,
+  "releaseCertified": false,
+  "repeatChain": {
+    "samePackage": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "samePackageTransaction": "9157e280-eeac-402f-92a5-6c69c42d5a47",
+    "samePackageDescriptorHash": "ef516452612cee1f974fe0db51832cad5b814c6e48489f12e8eb06ce911795be",
+    "intermediateCDFActivation": "not_performed",
+    "successorSourceCommit": "e75a25fd85a1770e390b91ccf1f5f196fddc5617",
+    "successorPackage": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+    "successorTransaction": "a88c79aa-31f4-42a0-8e70-b1fdd697e161",
+    "finalDescriptorHash": "dbd2602d0845c2f1108073707301c4653bc21cbc8ea43572e9d650255f151a95",
+    "finalPredecessor": {
+      "previousDescriptorHash": "ef516452612cee1f974fe0db51832cad5b814c6e48489f12e8eb06ce911795be",
+      "transactionId": "a88c79aa-31f4-42a0-8e70-b1fdd697e161"
+    },
+    "priorPredecessor": {
+      "previousDescriptorHash": "b68555662c57e3b8cd94088adc09c4f82aca9e40aa8ece2636a7b6d83a90b779",
+      "transactionId": "9157e280-eeac-402f-92a5-6c69c42d5a47"
+    },
+    "oldTransactionsPreserved": true,
+    "finalActivationBelongsOnlyTo1f8c": true
+  },
+  "actions": {
+    "manualConfigEdits": 0,
+    "foreignAuthorityOrStateImported": 0,
+    "replayedSettledOperations": 0,
+    "finalNativeReads": 2,
+    "finalNativeReadsPerHost": 1,
+    "newSourceTestsForThisFinalReport": 0,
+    "pausedProductsResumed": false
+  },
+  "limitationsRu": [
+    "Подтверждён выбранный пакет и две записанные среды; новые или изменённые модули получают адресные проверки затронутых границ по постоянному контракту.",
+    "После смены пакета нужен свежий configured MCP client и штатный reconnect Codex. Полностью фоновый relaunch Codex без возобновления чата не доказан: MSI helper не увидел successor за45s; новый process наблюдён позднее. Причина пересоздания desktop client также не наблюдалась.",
+    "Одна readonly inspection на каждом хосте не выдаёт mutation authority или continuity.",
+    "Общие пользовательские AEP/assets/outputs и distributed lock между машинами не проверялись; cloud вне scope.",
+    "Native interruption finisher остаётся дополнительным ненаблюдённым случаем, не обязательным gate принятой базы.",
+    "Полный release не заявлен: две dedicated Titles и native product acceptance Titles/Slideshow остаются под паузой.",
+    "Исторический B4 raw batch содержит прежний timeout другой проверки; только исходные accepted keyed records переиспользуются, не весь batch."
+  ],
+  "review": {
+    "status": "ACCEPT",
+    "evidence": "docs/evidence/core-portability-final-review-20261105.json",
+    "evidenceSha256": "22ea61cf1a1ae6a95ded0dd77c1039bae679f818a9996c91f5a19d548b994e6e",
+    "scope": "Независимый read-only review underlying evidence выбранного manual/owner Core, MSI↔DESKTOP-32974QF. Parent сохранил и проверил P8 matrix; отдельный review полного релиза или будущих модулей не заявляется.",
+    "P8MatrixSavedAndCheckedByParent": true
+  },
+  "evidence": [
+    {
+      "role": "msi",
+      "file": "docs/evidence/core-portability-msi-origin-native-20261104.json",
+      "sha256": "ac58852f631f6ffe1f1de809de48d4fc8cad1cd18c10e0f0204074000cee7c4a"
+    },
+    {
+      "role": "desktop",
+      "file": "docs/evidence/core-portability-desktop-origin-native-20261104.json",
+      "sha256": "669ca55300450ffe49ea27e4b608616c4a3c90098d994607d4313bace5ba90ac"
+    },
+    {
+      "role": "repeat",
+      "file": "docs/evidence/core-portability-p5-repeat-20261104.json",
+      "sha256": "2cab9c325521113c0dbeab7088086332923c74f0a399538ab16d2e135680ec0b"
+    },
+    {
+      "role": "successor",
+      "file": "docs/evidence/core-portability-desktop-origin-installed-20261104.json",
+      "sha256": "dccf6a08b45db64199a5c1080c22aaa5c42fd22e3d82e38ce12ee6eb10f02107"
+    },
+    {
+      "role": "source",
+      "file": "docs/evidence/core-portability-current-source-20261104.json",
+      "sha256": "d1c5c6da7e0dedcd096b341b5b275c0c46cb52c10e6573a4856ecfbff89f95b7"
+    },
+    {
+      "role": "originSource",
+      "file": "docs/evidence/core-portability-peer-origin-source-20261104.json",
+      "sha256": "e4a3df8588d1ff11bc3317812663695eb5fb8d31a648cf76ff99c0e14e0511e4"
+    },
+    {
+      "role": "logs",
+      "file": "docs/evidence/core-portability-reuse-logs-20261104.json",
+      "sha256": "84c2ec5baa41c99dfc3f609931e5bb7569fcc5f40e01eb2bdef93126b8321800"
+    },
+    {
+      "role": "historical",
+      "file": "docs/evidence/core-portability-two-host-result-20261104.json",
+      "sha256": "ee1e8c1d26ce4f5d525c1ddeec55d9a42b8305b00adc194bf3faf73df71774ac"
+    },
+    {
+      "role": "independentReview",
+      "file": "docs/evidence/core-portability-final-review-20261105.json",
+      "sha256": "22ea61cf1a1ae6a95ded0dd77c1039bae679f818a9996c91f5a19d548b994e6e"
+    }
+  ],
+  "finalizedAt": "2026-11-04T19:01:10.379Z",
+  "acceptedLocalDate": "2026-11-05"
+}

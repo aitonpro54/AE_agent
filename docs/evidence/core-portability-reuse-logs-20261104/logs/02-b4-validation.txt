@@ -1,0 +1,1917 @@
+{
+  "mode": "scoped",
+  "certification": "selected-artifacts-only",
+  "releaseCertified": false,
+  "contractImpacts": [],
+  "checks": [
+    {
+      "check": "owner-attachments",
+      "reasons": [
+        "changed owner owner-attachments: core4/runtime/attachment-owner.js",
+        "changed owner owner-attachments: core4/runtime/client-stdio.js",
+        "changed owner owner-attachments: core4/test/owner-attachments.test.js",
+        "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js",
+        "changed component dependency runtime/client-stdio.js: core4/runtime/client-stdio.js",
+        "changed component dependency test/owner-attachments.test.js: core4/test/owner-attachments.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "owner-attachments",
+          "owner-attachments"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "owner-attachments",
+          "owner-attachments"
+        ],
+        [
+          "core4/test/owner-attachments.test.js",
+          "owner-attachments",
+          "owner-attachments"
+        ],
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "owner-attachments"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/client-stdio.js",
+          "owner-attachments"
+        ],
+        [
+          "core4/test/owner-attachments.test.js",
+          "test/owner-attachments.test.js",
+          "owner-attachments"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-attachments",
+        "test/owner-attachments.test.js"
+      ],
+      "evidenceKey": "60e4d88c6341dc4283333c616b6f82e1a5012a114619db3d57998ef66975d19d",
+      "reason": "changed owner owner-attachments: core4/runtime/attachment-owner.js; changed owner owner-attachments: core4/runtime/client-stdio.js; changed owner owner-attachments: core4/test/owner-attachments.test.js; changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js; changed component dependency runtime/client-stdio.js: core4/runtime/client-stdio.js; changed component dependency test/owner-attachments.test.js: core4/test/owner-attachments.test.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "owner-attachments",
+          "owner-attachments"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "owner-attachments",
+          "owner-attachments"
+        ],
+        [
+          "core4/test/owner-attachments.test.js",
+          "owner-attachments",
+          "owner-attachments"
+        ],
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "owner-attachments"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/client-stdio.js",
+          "owner-attachments"
+        ],
+        [
+          "core4/test/owner-attachments.test.js",
+          "test/owner-attachments.test.js",
+          "owner-attachments"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "test/owner-attachments.test.js"
+      ]
+    },
+    {
+      "check": "owner-ipc-process",
+      "reasons": [
+        "changed owner owner-attachments: core4/runtime/attachment-owner.js",
+        "changed owner owner-attachments: core4/runtime/client-stdio.js",
+        "changed owner owner-ipc-process: core4/test/owner-ipc-process.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "owner-attachments",
+          "owner-ipc-process"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "owner-attachments",
+          "owner-ipc-process"
+        ],
+        [
+          "core4/test/owner-ipc-process.test.js",
+          "owner-ipc-process",
+          "owner-ipc-process"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-ipc-process",
+        "test/owner-ipc-process.test.js"
+      ],
+      "evidenceKey": "fe2f779c917a429e67e56b70d5073da56db9b77a0a0d02c857a5ddd85aa89ddb",
+      "reason": "changed owner owner-attachments: core4/runtime/attachment-owner.js; changed owner owner-attachments: core4/runtime/client-stdio.js; changed owner owner-ipc-process: core4/test/owner-ipc-process.test.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "owner-attachments",
+          "owner-ipc-process"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "owner-attachments",
+          "owner-ipc-process"
+        ],
+        [
+          "core4/test/owner-ipc-process.test.js",
+          "owner-ipc-process",
+          "owner-ipc-process"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/attachment-process.js",
+        "test/fixtures/authority.js",
+        "test/helpers.js",
+        "test/owner-ipc-process.test.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "controller-transfer",
+      "reasons": [
+        "changed owner owner-attachments: core4/runtime/attachment-owner.js",
+        "changed owner controller-transfer: core4/test/controller-transfer-ipc.test.js",
+        "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js",
+        "changed component dependency test/controller-transfer-ipc.test.js: core4/test/controller-transfer-ipc.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "owner-attachments",
+          "controller-transfer"
+        ],
+        [
+          "core4/test/controller-transfer-ipc.test.js",
+          "controller-transfer",
+          "controller-transfer"
+        ],
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "controller-transfer"
+        ],
+        [
+          "core4/test/controller-transfer-ipc.test.js",
+          "test/controller-transfer-ipc.test.js",
+          "controller-transfer"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=controller-transfer",
+        "test/controller-transfer-ipc.test.js"
+      ],
+      "evidenceKey": "7323823cfcdf1875f08012ec86bddef28b3f730f4465dcf6f7ba84de97324e4a",
+      "reason": "changed owner owner-attachments: core4/runtime/attachment-owner.js; changed owner controller-transfer: core4/test/controller-transfer-ipc.test.js; changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js; changed component dependency test/controller-transfer-ipc.test.js: core4/test/controller-transfer-ipc.test.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "owner-attachments",
+          "controller-transfer"
+        ],
+        [
+          "core4/test/controller-transfer-ipc.test.js",
+          "controller-transfer",
+          "controller-transfer"
+        ],
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "controller-transfer"
+        ],
+        [
+          "core4/test/controller-transfer-ipc.test.js",
+          "test/controller-transfer-ipc.test.js",
+          "controller-transfer"
+        ]
+      ],
+      "dependencies": [
+        "runtime/attachment-owner.js",
+        "runtime/client-ipc.js",
+        "runtime/controller-lease.js",
+        "test/controller-transfer-ipc.test.js"
+      ]
+    },
+    {
+      "check": "start-over-channel",
+      "reasons": [
+        "changed owner start-over-channel: core4/test/start-over-channel.test.js",
+        "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js",
+        "changed component dependency test/start-over-channel.test.js: core4/test/start-over-channel.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/start-over-channel.test.js",
+          "start-over-channel",
+          "start-over-channel"
+        ],
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "start-over-channel"
+        ],
+        [
+          "core4/test/start-over-channel.test.js",
+          "test/start-over-channel.test.js",
+          "start-over-channel"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-channel",
+        "test/start-over-channel.test.js"
+      ],
+      "evidenceKey": "d0d6e571d8c95bbd32f891f30c661cf142bb4b3769130dd9a58b1dd6304ad635",
+      "reason": "changed owner start-over-channel: core4/test/start-over-channel.test.js; changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js; changed component dependency test/start-over-channel.test.js: core4/test/start-over-channel.test.js",
+      "dependencyPath": [
+        [
+          "core4/test/start-over-channel.test.js",
+          "start-over-channel",
+          "start-over-channel"
+        ],
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "start-over-channel"
+        ],
+        [
+          "core4/test/start-over-channel.test.js",
+          "test/start-over-channel.test.js",
+          "start-over-channel"
+        ]
+      ],
+      "dependencies": [
+        "cep/js/poll-dispatcher.js",
+        "core/receiver-api.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/controller-lease.js",
+        "test/start-over-channel.test.js"
+      ]
+    },
+    {
+      "check": "work-session-owner",
+      "reasons": [
+        "changed owner work-session: core4/test/work-session-owner.test.js",
+        "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js",
+        "changed component dependency test/work-session-owner.test.js: core4/test/work-session-owner.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/work-session-owner.test.js",
+          "work-session",
+          "work-session-owner"
+        ],
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "work-session-owner"
+        ],
+        [
+          "core4/test/work-session-owner.test.js",
+          "test/work-session-owner.test.js",
+          "work-session-owner"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=work-session",
+        "test/work-session-owner.test.js"
+      ],
+      "evidenceKey": "74a0f60e6b65172abf7a7e1c4a93e1d3411fa9cc75b03d3f6110d89bc18d3036",
+      "reason": "changed owner work-session: core4/test/work-session-owner.test.js; changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js; changed component dependency test/work-session-owner.test.js: core4/test/work-session-owner.test.js",
+      "dependencyPath": [
+        [
+          "core4/test/work-session-owner.test.js",
+          "work-session",
+          "work-session-owner"
+        ],
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "work-session-owner"
+        ],
+        [
+          "core4/test/work-session-owner.test.js",
+          "test/work-session-owner.test.js",
+          "work-session-owner"
+        ]
+      ],
+      "dependencies": [
+        "runtime/attachment-owner.js",
+        "runtime/controller-lease.js",
+        "runtime/work-session.js",
+        "test/work-session-owner.test.js"
+      ]
+    },
+    {
+      "check": "owner-runtime",
+      "reasons": [
+        "changed owner owner-runtime: core4/test/owner-runtime.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/owner-runtime.test.js",
+          "owner-runtime",
+          "owner-runtime"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-runtime",
+        "test/owner-runtime.test.js"
+      ],
+      "evidenceKey": "83e634c7e60ce03af79859b6d310f10173342cf2fe8d76e28b19633ab620ef6e",
+      "reason": "changed owner owner-runtime: core4/test/owner-runtime.test.js",
+      "dependencyPath": [
+        [
+          "core4/test/owner-runtime.test.js",
+          "owner-runtime",
+          "owner-runtime"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/validation-map.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/artifact.json",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/host-dispatcher.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/manifest.json",
+        "integrations/cep/peer-protocol.js",
+        "integrations/cep/transport.js",
+        "integrations/cep/wire.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/owner-runtime-child.js",
+        "test/owner-runtime.test.js",
+        "tools/check-boundaries.js",
+        "tools/disposition-install-preflight.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "start-over-driver",
+      "reasons": [
+        "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "start-over-driver"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-driver",
+        "test/start-over-driver.test.js"
+      ],
+      "evidenceKey": "2cbb04652234df8d45cb69b485b465d00e66db47a182a8326a9283fa3a857037",
+      "reason": "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "start-over-driver"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/peer-protocol.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/controller-lease.js",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-launch.js",
+        "runtime/recovery-inspection.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-owner-process.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/start-over-finisher.js",
+        "test/start-over-driver.test.js"
+      ]
+    },
+    {
+      "check": "work-session",
+      "reasons": [
+        "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js",
+        "changed component dependency test/work-session-owner.test.js: core4/test/work-session-owner.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "work-session"
+        ],
+        [
+          "core4/test/work-session-owner.test.js",
+          "test/work-session-owner.test.js",
+          "work-session"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=work-session",
+        "test/work-session.test.js"
+      ],
+      "evidenceKey": "b62c7a83450425b0be805f6256d5d187a71fb6638f5149930f3fab62b4db583f",
+      "reason": "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js; changed component dependency test/work-session-owner.test.js: core4/test/work-session-owner.test.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "work-session"
+        ],
+        [
+          "core4/test/work-session-owner.test.js",
+          "test/work-session-owner.test.js",
+          "work-session"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/controller-lease.js",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/work-session.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/work-session-owner.test.js",
+        "test/work-session.test.js"
+      ]
+    },
+    {
+      "check": "stopped-certification",
+      "reasons": [
+        "changed component dependency runtime/: core4/runtime/attachment-owner.js",
+        "changed component dependency runtime/: core4/runtime/client-stdio.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "stopped-certification"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "stopped-certification"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-certification",
+        "test/stopped-certification.test.js"
+      ],
+      "evidenceKey": "be3f136f6d574ebcc4185f7e17d7f82dccf199a763bd1dabea201b73962d7685",
+      "reason": "changed component dependency runtime/: core4/runtime/attachment-owner.js; changed component dependency runtime/: core4/runtime/client-stdio.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "stopped-certification"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "stopped-certification"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/stopped-certification.test.js"
+      ]
+    },
+    {
+      "check": "maintenance-finish",
+      "reasons": [
+        "changed component dependency runtime/: core4/runtime/attachment-owner.js",
+        "changed component dependency runtime/: core4/runtime/client-stdio.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "maintenance-finish"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "maintenance-finish"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish",
+        "test/maintenance-finish.test.js"
+      ],
+      "evidenceKey": "a960a475b7f7de4b66a66a96c1ad82a830604cff01ef971f00bda1ba64372574",
+      "reason": "changed component dependency runtime/: core4/runtime/attachment-owner.js; changed component dependency runtime/: core4/runtime/client-stdio.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "maintenance-finish"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "maintenance-finish"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/maintenance-finish.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/maintenance-finish.test.js"
+      ]
+    },
+    {
+      "check": "owner-maintenance",
+      "reasons": [
+        "changed component dependency runtime/: core4/runtime/attachment-owner.js",
+        "changed component dependency runtime/: core4/runtime/client-stdio.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "owner-maintenance"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "owner-maintenance"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-maintenance",
+        "test/owner-maintenance.test.js"
+      ],
+      "evidenceKey": "0d284bd3c439324984ed79487acb8c26294667d36214db63129bd61fced55fc0",
+      "reason": "changed component dependency runtime/: core4/runtime/attachment-owner.js; changed component dependency runtime/: core4/runtime/client-stdio.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "owner-maintenance"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "owner-maintenance"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/owner-maintenance.test.js"
+      ]
+    },
+    {
+      "check": "client-launcher",
+      "reasons": [
+        "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js",
+        "changed component dependency runtime/client-stdio.js: core4/runtime/client-stdio.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "client-launcher"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/client-stdio.js",
+          "client-launcher"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=client-launcher",
+        "test/client-launcher.test.js"
+      ],
+      "evidenceKey": "6015d87c4603c10ebae482ab12056967ba8e78d030b532ed92ece6c155db4287",
+      "reason": "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js; changed component dependency runtime/client-stdio.js: core4/runtime/client-stdio.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "client-launcher"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/client-stdio.js",
+          "client-launcher"
+        ]
+      ],
+      "dependencies": [
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/owner-contract.json",
+        "test/client-launcher.test.js"
+      ]
+    },
+    {
+      "check": "client-entry",
+      "reasons": [
+        "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js",
+        "changed component dependency runtime/client-stdio.js: core4/runtime/client-stdio.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "client-entry"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/client-stdio.js",
+          "client-entry"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=client-entry",
+        "test/client-entry.test.js"
+      ],
+      "evidenceKey": "adc918920dcdccd286c04758f1817a48a4b32218d31f18a9f1f6495c3b99133e",
+      "reason": "changed component dependency runtime/attachment-owner.js: core4/runtime/attachment-owner.js; changed component dependency runtime/client-stdio.js: core4/runtime/client-stdio.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/attachment-owner.js",
+          "client-entry"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/client-stdio.js",
+          "client-entry"
+        ]
+      ],
+      "dependencies": [
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/owner-entry.js",
+        "test/client-entry.test.js",
+        "tools/check-boundaries.js"
+      ]
+    }
+  ],
+  "executionBatches": [
+    {
+      "checks": [
+        "owner-attachments"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-attachments)",
+        "test/owner-attachments.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "owner-ipc-process"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-ipc-process)",
+        "test/owner-ipc-process.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "controller-transfer"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:controller-transfer)",
+        "test/controller-transfer-ipc.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-channel"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-channel)",
+        "test/start-over-channel.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "work-session-owner"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:work-session)",
+        "test/work-session-owner.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "owner-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-runtime)",
+        "test/owner-runtime.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-driver"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-driver)",
+        "test/start-over-driver.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "work-session"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:work-session)",
+        "test/work-session.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "stopped-certification"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-certification)",
+        "test/stopped-certification.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "maintenance-finish"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:maintenance-finish)",
+        "test/maintenance-finish.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "owner-maintenance"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-maintenance)",
+        "test/owner-maintenance.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "client-launcher"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:client-launcher)",
+        "test/client-launcher.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "client-entry"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:client-entry)",
+        "test/client-entry.test.js"
+      ]
+    }
+  ],
+  "deferredCoverage": [
+    {
+      "check": "start-over-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "start-over-runtime"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "start-over-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "start-over-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "start-over-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "start-over-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "stopped-host-readoption-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "stopped-host-readoption-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "stopped-update-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "stopped-update"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "stopped-update"
+        ]
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "owner-installation"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "owner-installation"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "native-read-capture"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "windows-cim-probe"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "human-window"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "human-window"
+        ]
+      ]
+    },
+    {
+      "check": "manual-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "manual-runtime"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "manual-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "installable-runtime"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "installable-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/test/controller-transfer-ipc.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/owner-attachments.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/owner-ipc-process.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/start-over-channel.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/work-session-owner.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/owner-runtime.test.js",
+          "dependency": "test/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/test/controller-transfer-ipc.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/owner-attachments.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/owner-ipc-process.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/start-over-channel.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/work-session-owner.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/owner-runtime.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "native-read-recovery"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "native-read-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "installed-composition"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "installed-composition"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "exact-f548-transition"
+        ]
+      ]
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/attachment-owner.js",
+          "dependency": "runtime/"
+        },
+        {
+          "file": "core4/runtime/client-stdio.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/attachment-owner.js",
+          "runtime/",
+          "standalone-installer"
+        ],
+        [
+          "core4/runtime/client-stdio.js",
+          "runtime/",
+          "standalone-installer"
+        ]
+      ]
+    }
+  ]
+}
+✔ owner-attachments inspection contract shape is rejected before runtime acceptance and leaves the lease usable (2.5015ms)
+✔ owner-attachments inspection contract validation preserves control gates and never trusts a runtime error with the same code (0.504ms)
+✔ owner-attachments generic tool map remains compatible and observer attachment never acquires (0.2659ms)
+✔ owner-attachments first workflow build omits taskId and binds only the server task; unbound product task is refused before invoke (0.3287ms)
+✔ owner-attachments copied sessions and unlisted RPC cannot reach runtime (0.205ms)
+✔ owner-attachments refresh requires control while default discovery stays observer (0.1728ms)
+✔ owner-attachments explicit acquisition excludes other clients and exact token governs release (0.2492ms)
+✔ owner-attachments boot durable fault or unresolved forbids acquisition while status remains readable (0.2189ms)
+✔ owner-attachments expired controller cannot execute or renew and does not transfer itself (0.2433ms)
+✔ owner-attachments detached client cannot continue physical send after awaited preparation (0.3241ms)
+✔ owner-attachments caller completion does not release accepted physical/control pending (3.7688ms)
+✔ owner-attachments UNKNOWN after original callback holds sticky fence across detach (0.6694ms)
+✔ owner-attachments prior generation evidence/build/proposal/dryrun cannot become executable (0.315ms)
+✔ owner-attachments runtime secret messages and arbitrary error codes do not cross attachment (0.1161ms)
+✔ owner-attachments observer context cannot be used for physical access (0.0901ms)
+✔ owner-attachments accepted stateful throw reports uncertainty but preserves actual clean outcome facts (0.2669ms)
+✔ owner-attachments completed read classification is private one-shot and survives lease expiry (0.6115ms)
+✔ owner-attachments terminal flag clean facts wrong operation and verifier failure never prove completion (0.3429ms)
+✔ owner-attachments consumes completed read proof even when pending unresolved or fault prevents classification (1.8427ms)
+✔ owner-attachments stdio initialize and discovery do not invoke owner or acquire (13.2577ms)
+✔ owner-attachments stdio inspection discovery and missing contract error explain the next action without UNKNOWN (29.9178ms)
+✔ owner-attachments stdio EOF only closes attachment; accepted call is neither cancelled nor retried (31.3928ms)
+✔ owner-attachments stdio metadata never enters domain payload or controller selection (15.4972ms)
+✔ owner-attachments stdio connection loss reports uncertain outcome without resend (1.108ms)
+✔ owner-attachments stdio preserves accepted-owner uncertainty and original request correlation (14.0637ms)
+✔ owner-attachments stdio projects only exact finite rejected inspection as an MCP tool error (77.6431ms)
+✔ owner-attachments stdio oversized unterminated frame closes only attachment (6.5208ms)
+✔ owner-attachments stdio secret-shaped handler message or envelope code is never exposed (8.8657ms)
+✔ owner-attachments blocked stdout has bounded buffering and detaches without retry (13.8217ms)
+✔ owner-attachments oversized response and long request identity always produce bounded error (6.8839ms)
+✔ owner-attachments explicit expired transfer requires fresh holder CAS and invalidates prior references (0.4292ms)
+✔ owner-attachments expired transfer cannot waive actual physical/control pending, unresolved or fault (0.1836ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 300.5781
+✔ owner-ipc-process two real stdio clients share one Broker and EOF leaves owner available (377.8554ms)
+✔ owner-ipc-process actual TEMP Broker inspection/build flow is scoped to controller generation (497.8486ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 929.6362
+✔ controller-transfer actual authenticated clients require exact expired holder and observed quiescence (15.481ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 75.5786
+✔ start-over-channel fence refuses a new direct or Broker submit before durable begin (34.5793ms)
+✔ start-over-channel previously accepted undelivered command cannot escape through late poll (226.9535ms)
+✔ start-over-channel reset flushes outstanding poll without delivering a command (40.4736ms)
+✔ start-over-channel delivered native completion settles only the old journal after the fence (20.0081ms)
+✔ start-over-channel normal attachment freeze still drains an already accepted physical command (18.169ms)
+✔ start-over-channel new dispatcher and session cannot bypass same-window unresolved native callback (1.8716ms)
+✔ start-over-channel late callback preserves old session key and old completion channel on lost ack (2.6003ms)
+✔ start-over-channel malformed native callback retains old no-replay latch while releasing returned callback guard (1.0489ms)
+✔ start-over-channel synchronous native exception remains uncertain across dispatcher script reload (1.2212ms)
+✔ start-over-channel session keys preserve legacy latch and reject caller malformed session identity (2.2765ms)
+✔ start-over-channel UNKNOWN persist failure cannot escape timer or retain an accepted Promise; fault remains fenced (72.7197ms)
+✔ start-over-channel failed durable completion cannot mint positive baseline proof and timeout stays finite (109.9628ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 614.2662
+✔ work-session explicit current acknowledgement is required after reset (1.7636ms)
+✔ work-session baseline admits only fresh project inspection and connection before changes (1.0427ms)
+✔ work-session old controller context cannot submit after session changes (0.5557ms)
+✔ work-session reset intent blocks captures while observer status remains explicit (0.3447ms)
+✔ work-session normal maintenance freeze still lets accepted context drain (0.9396ms)
+✔ work-session unavailable metadata fails closed and does not adopt legacy implicitly (0.3472ms)
+✔ work-session legacy installation keeps explicit empty acquire compatibility (0.2387ms)
+✔ work-session expired controller transfer needs explicit current session acknowledgement as well as exact holder (0.443ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 65.3504
+✖ owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants (15433.7187ms)
+✔ owner-runtime default verified entry markers remain exact and new owner files stay outside the ordinary source package (1891.6534ms)
+✔ owner-runtime normal package without the complete owner cluster refuses private owner mode before any listener or store opens (1302.4457ms)
+✔ owner-runtime TEMP installed owner and two real thin Node clients retain the same owner after both client EOF and owner stdin EOF (4610.9201ms)
+✔ owner-runtime foreign HTTP endpoint refuses owner startup before stores open and preserves both empty and retained state byte for byte (3104.9202ms)
+✔ owner-runtime competing starts reserve under the install gate and later owner attempts cannot displace the winner or rewrite its markers (5789.8623ms)
+✔ owner-runtime reserved HTTP server closes and attributed startup fence remains if Broker construction fails before peer creation (4536.6956ms)
+✔ owner-runtime private prebound peer requires a listening native loopback HTTP server and reuses its one listener (14.7148ms)
+✔ owner-runtime initial receiver owner marker leaves status available and refuses controller acquisition without clearing the marker (3273.7027ms)
+✔ owner-runtime initial corrupt Broker ledger blocks acquisition while owner diagnostics remain available (3247.5613ms)
+✔ owner-runtime actual dead settled owner restarts with fresh process proof and unchanged journal and installation (7963.5979ms)
+✔ owner-runtime actual legacy receiver fence exposes only recovery diagnostics without a Broker writer or replay (3411.3675ms)
+✔ owner-runtime actual owner crash after durable delivery restarts diagnostic and never promotes or replays original ongoing work (7091.0493ms)
+✔ owner-runtime inherited generic methods execute on the actual Broker so activity observes its control state (3523.9606ms)
+✔ owner-runtime desired-stop freezes new control while captured original inspection completes after client detach (3979.4585ms)
+✔ owner-runtime owner main signal persists desired-stop and drains original completion without a second shutdown request (4572.9276ms)
+✔ owner-runtime later panel poll after controller detach cannot deliver a queued command and keeps the receiver fenced (4228.4376ms)
+✔ owner-runtime captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry (16.8018ms)
+✔ owner-runtime active poll delivery checks the captured lease again immediately after store.begin (26.2773ms)
+✔ owner-runtime lease expiry across a trusted await is checked at physical submit before durable begin (9.416ms)
+✔ owner-runtime no captured controller context rejects before durable begin; original completion remains accepted after lease expiry (15.3479ms)
+✔ owner-runtime owner bootstrap rejects complete-tree tampering before importing a modified Broker (1032.5158ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 1
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 79157.9699
+
+✖ failing tests:
+
+test at test\owner-runtime.test.js:3:28
+✖ owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants (15433.7187ms)
+  'test timed out after 15000ms'

@@ -1,0 +1,38 @@
+✔ stopped-certification absent markers certify a new actor without forging an old-owner stopped receipt (2357.2469ms)
+✔ stopped-certification late foreign runtime-owner.json after retirement snapshot refuses certificate issuance (10287.4516ms)
+✔ stopped-certification late foreign install.lock after retirement snapshot refuses certificate issuance (10057.7326ms)
+✔ stopped-certification post-retirement replacement of an existing lifecycle intent refuses certificate issuance (12585.9649ms)
+✔ stopped-certification recognized owner retires exact markers and leaves stop/history unchanged (20321.5786ms)
+✔ stopped-certification recognized shutdown retires exact markers and leaves stop/history unchanged (18542.2446ms)
+✔ stopped-certification recognized receipt retires exact markers and leaves stop/history unchanged (21037.3504ms)
+✔ stopped-certification existing interrupted ready-archive uses original lifecycle guards without execution-owner startup (15526.9804ms)
+✔ stopped-certification existing interrupted shutdown-archive uses original lifecycle guards without execution-owner startup (20605.6162ms)
+✔ stopped-certification branded installer lease excludes only its exact held gates (17772.0834ms)
+✔ stopped-certification foreign runtime-owner.json fences before mutations (3496.4203ms)
+✔ stopped-certification foreign broker/broker-owner.lock fences before mutations (3209.1801ms)
+✔ stopped-certification foreign broker/broker-owner.gate fences before mutations (2295.4527ms)
+✔ stopped-certification foreign receiver/owner fences before mutations (2559.5ms)
+✔ stopped-certification full-role provenance, exact original scope and desired-stop are mandatory (7234.3819ms)
+✔ stopped-certification UNKNOWN original receiver outcome preserves every marker and signed history (1185.5378ms)
+✔ stopped-certification settled individual histories with contradictory combined outcomes remain fenced (3469.5916ms)
+✔ stopped-certification unavailable death proof and filesystem drift across observation preserve the fence (6153.9643ms)
+✔ stopped-certification stale proof and unexpected phase files refuse before certification intent (4773.9011ms)
+✔ stopped-certification crash after intent retains provenance and resumes only after certifier death (27192.783ms)
+✔ stopped-certification crash after owner retains provenance and resumes only after certifier death (30935.7527ms)
+✔ stopped-certification crash after brokerOwner retains provenance and resumes only after certifier death (34645.891ms)
+✔ stopped-certification crash after receiverOwner retains provenance and resumes only after certifier death (37290.3299ms)
+✔ stopped-certification crash after retired-install-gate retains provenance and resumes only after certifier death (37298.6863ms)
+✔ stopped-certification crash after certificate retains provenance and resumes only after certifier death (25624.806ms)
+✔ stopped-certification certificate assertion detects archived lifecycle drift and replaced stop inode (29054.9859ms)
+✔ stopped-certification a second interrupted certifier is individually sealed and must die before the next continuation (52032.874ms)
+✔ stopped-certification missing original runtime-owner.json after certification intent cannot become a fresh baseline (8786.0926ms)
+✔ stopped-certification missing original install.lock after certification intent cannot become a fresh baseline (10106.1628ms)
+✔ stopped-certification private context and retirement seams cannot be reached using JSON lookalikes (3073.5573ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 479622.8038

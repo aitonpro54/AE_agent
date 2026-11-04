@@ -1,0 +1,11 @@
+✔ windows-retained-process forged capabilities refuse without process calls (0.8449ms)
+✔ windows-retained-process real handle observes exact child; EOF releases without termination (2121.3571ms)
+✔ windows-retained-process exact retained handle stops only fixture target once after private admission (1923.2249ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4118.4504

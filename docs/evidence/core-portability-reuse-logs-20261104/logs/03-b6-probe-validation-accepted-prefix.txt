@@ -1,0 +1,1913 @@
+{
+  "mode": "scoped",
+  "certification": "selected-artifacts-only",
+  "releaseCertified": false,
+  "contractImpacts": [],
+  "checks": [
+    {
+      "check": "manual-runtime",
+      "reasons": [
+        "changed owner manual-runtime: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "manual-runtime",
+          "manual-runtime"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-runtime",
+        "test/manual-runtime.test.js"
+      ],
+      "evidenceKey": "cc2d65e234165b9b4ce0df76df5666ca4a977bc70247b50cae39ad79eb6c72ed",
+      "reason": "changed owner manual-runtime: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "manual-runtime",
+          "manual-runtime"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/manual-http-runtime.js",
+        "test/manual-runtime.test.js",
+        "tools/package-installable.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "reasons": [
+        "changed owner manual-runtime: core4/runtime/windows-reservation-provider.js",
+        "changed owner windows-cim-probe: core4/test/windows-cim-probe.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "manual-runtime",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/test/windows-cim-probe.test.js",
+          "windows-cim-probe",
+          "windows-cim-probe"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=windows-cim-probe",
+        "test/windows-cim-probe.test.js"
+      ],
+      "evidenceKey": "02991bbd69871b0aa0a79277d6723770a973e76bc6d721b9f80755a1019f2bc2",
+      "reason": "changed owner manual-runtime: core4/runtime/windows-reservation-provider.js; changed owner windows-cim-probe: core4/test/windows-cim-probe.test.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "manual-runtime",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/test/windows-cim-probe.test.js",
+          "windows-cim-probe",
+          "windows-cim-probe"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/windows-cim-probe.test.js",
+        "tools/package-installable.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "start-over-finisher",
+      "reasons": [
+        "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "start-over-finisher"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-finisher",
+        "test/start-over-finisher.test.js"
+      ],
+      "evidenceKey": "bb1ee3b16550cf7d379ca99ba46fd2706e2a6e3c97d54aab81bef74ecadcb296",
+      "reason": "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "start-over-finisher"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/client-entry.js",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/recovery-inspection.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/start-over-finisher.js",
+        "test/start-over-finisher.test.js"
+      ]
+    },
+    {
+      "check": "start-over-state",
+      "reasons": [
+        "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "start-over-state"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-state",
+        "test/start-over-state.test.js"
+      ],
+      "evidenceKey": "7b19a013598755c6b5715bc32a14bc16e51ace2eb7a61105139a5d45cb07295b",
+      "reason": "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "start-over-state"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/recovery-inspection.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/start-over-state.test.js"
+      ]
+    },
+    {
+      "check": "start-over-barrier",
+      "reasons": [
+        "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "start-over-barrier"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-barrier",
+        "test/start-over-barrier.test.js"
+      ],
+      "evidenceKey": "1129ec2d35b48b0c4e93475efdc4d0143c57471b9213464afb23e94330729bfe",
+      "reason": "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "start-over-barrier"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/client-entry.js",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/recovery-inspection.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/start-over-barrier.js",
+        "test/start-over-barrier.test.js"
+      ]
+    },
+    {
+      "check": "start-over-inspection",
+      "reasons": [
+        "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "start-over-inspection"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-inspection",
+        "test/start-over-inspection.test.js"
+      ],
+      "evidenceKey": "f7280cdaaf2f5b2d649306e62b5ec917bb47df2f54072dd40d1a09b6b91c4552",
+      "reason": "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "start-over-inspection"
+        ]
+      ],
+      "dependencies": [
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/recovery-inspection.js",
+        "runtime/start-over-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-reservation-provider.js",
+        "test/start-over-inspection.test.js"
+      ]
+    },
+    {
+      "check": "stopped-host-readoption",
+      "reasons": [
+        "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "stopped-host-readoption"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "evidenceKey": "16c1307bfa04af8b4b6fc3e2bdd119eae59f746fabd1d07b997cad467e7a733d",
+      "reason": "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "stopped-host-readoption"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    },
+    {
+      "check": "readoption-core",
+      "reasons": [
+        "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "readoption-core"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-core",
+        "test/stopped-host-readoption-core.test.js"
+      ],
+      "evidenceKey": "fe7e12ea2f5a3738bae2a910dd1be3a815949e2c3c1804b050ed55128ebb878f",
+      "reason": "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "readoption-core"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption-core.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    },
+    {
+      "check": "readoption-recovery",
+      "reasons": [
+        "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "readoption-recovery"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-recovery",
+        "test/stopped-host-readoption-recovery.test.js"
+      ],
+      "evidenceKey": "580db69c5298de40a059503e414a4a8500aa076c070c1533760240db361924be",
+      "reason": "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "readoption-recovery"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption-recovery.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    },
+    {
+      "check": "readoption-enable",
+      "reasons": [
+        "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "readoption-enable"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-enable",
+        "test/stopped-host-readoption-enable.test.js"
+      ],
+      "evidenceKey": "5dfcd3efcb9a96a4e22e829cec7725f5761d5ede9a8d2977384a164c8106a225",
+      "reason": "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "readoption-enable"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption-enable.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    },
+    {
+      "check": "readoption-probe",
+      "reasons": [
+        "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "readoption-probe"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-probe",
+        "test/stopped-host-readoption-probe.test.js"
+      ],
+      "evidenceKey": "ce47992831533ff3cdf936e12e2e4c805effcea66bc35ce1d50805cc174b13c0",
+      "reason": "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "readoption-probe"
+        ]
+      ],
+      "dependencies": [
+        "core/authority.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/stopped-host-readoption-probe.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js"
+      ]
+    },
+    {
+      "check": "stopped-certification",
+      "reasons": [
+        "changed component dependency runtime/: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "stopped-certification"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-certification",
+        "test/stopped-certification.test.js"
+      ],
+      "evidenceKey": "4f4966cd949b7c24016b57cded1647bca2dd4c23b9c61eb2906fca8da3dee8eb",
+      "reason": "changed component dependency runtime/: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "stopped-certification"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/stopped-certification.test.js"
+      ]
+    },
+    {
+      "check": "maintenance-finish",
+      "reasons": [
+        "changed component dependency runtime/: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "maintenance-finish"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish",
+        "test/maintenance-finish.test.js"
+      ],
+      "evidenceKey": "a91489d0164579299623e422e0bca5af3aaa8d5179d546644c7298472eca18b8",
+      "reason": "changed component dependency runtime/: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "maintenance-finish"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/maintenance-finish.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/maintenance-finish.test.js"
+      ]
+    },
+    {
+      "check": "owner-maintenance",
+      "reasons": [
+        "changed component dependency runtime/: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "owner-maintenance"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-maintenance",
+        "test/owner-maintenance.test.js"
+      ],
+      "evidenceKey": "a23300c32b6e0e5530c9f0fdc1a2b42161fd6d8c2a9d033c2980f7097f16dabb",
+      "reason": "changed component dependency runtime/: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "owner-maintenance"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/manual-policy.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/profiles.json",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/owner-maintenance.test.js"
+      ]
+    },
+    {
+      "check": "recovery-inspection",
+      "reasons": [
+        "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "recovery-inspection"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=recovery-inspection",
+        "test/recovery-inspection.test.js"
+      ],
+      "evidenceKey": "da9b1ccf99f71edd3edbcdabd0777426bd12c077d929846377052000c3ba372d",
+      "reason": "changed component dependency runtime/windows-reservation-provider.js: core4/runtime/windows-reservation-provider.js",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/windows-reservation-provider.js",
+          "recovery-inspection"
+        ]
+      ],
+      "dependencies": [
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-reservation-provider.js",
+        "test/recovery-inspection.test.js"
+      ]
+    }
+  ],
+  "executionBatches": [
+    {
+      "checks": [
+        "manual-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:manual-runtime)",
+        "test/manual-runtime.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "windows-cim-probe"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:windows-cim-probe)",
+        "test/windows-cim-probe.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-finisher"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-finisher)",
+        "test/start-over-finisher.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-state"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-state)",
+        "test/start-over-state.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-barrier"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-barrier)",
+        "test/start-over-barrier.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-inspection"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-inspection)",
+        "test/start-over-inspection.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "stopped-host-readoption"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-host-readoption)",
+        "test/stopped-host-readoption.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "readoption-core"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-core)",
+        "test/stopped-host-readoption-core.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "readoption-recovery"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-recovery)",
+        "test/stopped-host-readoption-recovery.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "readoption-enable"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-enable)",
+        "test/stopped-host-readoption-enable.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "readoption-probe"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:readoption-probe)",
+        "test/stopped-host-readoption-probe.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "stopped-certification"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-certification)",
+        "test/stopped-certification.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "maintenance-finish"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:maintenance-finish)",
+        "test/maintenance-finish.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "owner-maintenance"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-maintenance)",
+        "test/owner-maintenance.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "recovery-inspection"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:recovery-inspection)",
+        "test/recovery-inspection.test.js"
+      ]
+    }
+  ],
+  "deferredCoverage": [
+    {
+      "check": "start-over-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "start-over-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "start-over-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "start-over-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "stopped-host-readoption-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "stopped-update-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "stopped-update"
+        ]
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "legacy-owner-migration"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "owner-installation"
+        ]
+      ]
+    },
+    {
+      "check": "owner-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "owner-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "human-window"
+        ]
+      ]
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "installable-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/test/windows-cim-probe.test.js",
+          "dependency": "test/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/test/windows-cim-probe.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "native-read-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "installed-composition"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "exact-f548-transition"
+        ]
+      ]
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/runtime/windows-reservation-provider.js",
+          "dependency": "runtime/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/runtime/windows-reservation-provider.js",
+          "runtime/",
+          "standalone-installer"
+        ]
+      ]
+    }
+  ]
+}
+✔ manual-runtime actual Broker HTTP compiled JSX generic flow uses one native confirm and original local transaction receipt without session (536.4213ms)
+✔ manual-runtime native cancellation and post-confirm drift do not set text; fresh proposal required (662.0948ms)
+✔ manual-runtime absent adoption and ambiguous process/managed writer fail before mutation delivery (545.7442ms)
+✔ manual-runtime setter uncertainty keeps UNKNOWN, durable receiver fence and no replay (312.5105ms)
+✔ manual-runtime fresh OS process identity, named managed writers and observation TTL are required before delivery (1799.8864ms)
+✔ manual-runtime v1 UNKNOWN fence still overlaps session-free target; known other-machine constraint is separate (1144.6822ms)
+✔ manual-runtime forged policy/reservation JSON never receives a private brand; tampered original receipt cannot succeed and real original proof reconciles without replay (679.3534ms)
+✔ manual-runtime final synchronous reservation guard rejects expiry before send with no setter (2790.6079ms)
+✔ manual-runtime authenticated but wrong protocol version cannot certify original completion (908.4691ms)
+✔ manual-runtime explicit oneStep works with physically absent engine and unrelated packages (848.4053ms)
+✔ manual-runtime lexical ES3 JSON codec is data-only, matches native JSON on Unicode/control values and denies malformed/deep/duplicate/prototype input (42.2688ms)
+✔ manual-runtime known paragraph Enumerator is normalized to numeric protected value; unknown host objects fail closed (55.4368ms)
+✔ manual-runtime inactive TextDocument colors throw but are never read; every dormant and active range field remains protected (39.9585ms)
+✔ manual-runtime single-character strokeColor undefined with applyStroke=false refuses without confirmation or native value normalization (2.7946ms)
+✔ manual-runtime single-character strokeColor null with applyStroke=false refuses without confirmation or native value normalization (2.28ms)
+✔ manual-runtime single-character strokeColor undefined with applyStroke=true refuses without confirmation or native value normalization (2.4052ms)
+✔ manual-runtime single-character strokeColor null with applyStroke=true refuses without confirmation or native value normalization (1.8828ms)
+✔ manual-runtime single-character fillColor undefined with applyFill=false refuses without confirmation or native value normalization (1.8675ms)
+✔ manual-runtime single-character fillColor null with applyFill=false refuses without confirmation or native value normalization (2.0731ms)
+✔ manual-runtime single-character fillColor undefined with applyFill=true refuses without confirmation or native value normalization (2.5797ms)
+✔ manual-runtime single-character fillColor null with applyFill=true refuses without confirmation or native value normalization (1.6456ms)
+✔ manual-runtime finite diagnostic native font refuses inspect and verify without style defaults (1.4386ms)
+✔ manual-runtime finite diagnostic missing font refuses inspect and verify without style defaults (1.0643ms)
+✔ manual-runtime finite diagnostic native font_size refuses inspect and verify without style defaults (1.2904ms)
+✔ manual-runtime finite diagnostic missing font_size refuses inspect and verify without style defaults (1.1097ms)
+✔ manual-runtime finite diagnostic native apply_fill refuses inspect and verify without style defaults (1.1229ms)
+✔ manual-runtime finite diagnostic missing apply_fill refuses inspect and verify without style defaults (1.1356ms)
+✔ manual-runtime finite diagnostic native fill_color refuses inspect and verify without style defaults (1.1315ms)
+✔ manual-runtime finite diagnostic missing fill_color refuses inspect and verify without style defaults (1.2142ms)
+✔ manual-runtime finite diagnostic native apply_stroke refuses inspect and verify without style defaults (1.233ms)
+✔ manual-runtime finite diagnostic missing apply_stroke refuses inspect and verify without style defaults (1.0522ms)
+✔ manual-runtime finite diagnostic native stroke_color refuses inspect and verify without style defaults (1.3989ms)
+✔ manual-runtime finite diagnostic missing stroke_color refuses inspect and verify without style defaults (1.1731ms)
+✔ manual-runtime finite diagnostic native stroke_width refuses inspect and verify without style defaults (1.0977ms)
+✔ manual-runtime finite diagnostic missing stroke_width refuses inspect and verify without style defaults (1.077ms)
+✔ manual-runtime finite diagnostic native tracking refuses inspect and verify without style defaults (1.2183ms)
+✔ manual-runtime finite diagnostic missing tracking refuses inspect and verify without style defaults (2.6372ms)
+✔ manual-runtime finite diagnostic native baseline_shift refuses inspect and verify without style defaults (2.1258ms)
+✔ manual-runtime finite diagnostic missing baseline_shift refuses inspect and verify without style defaults (1.3817ms)
+✔ manual-runtime finite diagnostic native horizontal_scale refuses inspect and verify without style defaults (1.2083ms)
+✔ manual-runtime finite diagnostic missing horizontal_scale refuses inspect and verify without style defaults (1.1278ms)
+✔ manual-runtime finite diagnostic native vertical_scale refuses inspect and verify without style defaults (1.1993ms)
+✔ manual-runtime finite diagnostic missing vertical_scale refuses inspect and verify without style defaults (1.1029ms)
+✔ manual-runtime finite diagnostic native faux_bold refuses inspect and verify without style defaults (1.0559ms)
+✔ manual-runtime finite diagnostic missing faux_bold refuses inspect and verify without style defaults (1.0893ms)
+✔ manual-runtime finite diagnostic native faux_italic refuses inspect and verify without style defaults (1.1319ms)
+✔ manual-runtime finite diagnostic missing faux_italic refuses inspect and verify without style defaults (1.0516ms)
+✔ manual-runtime finite diagnostic native justification refuses inspect and verify without style defaults (4.1685ms)
+✔ manual-runtime finite diagnostic missing justification refuses inspect and verify without style defaults (7.2315ms)
+✔ manual-runtime finite diagnostic native leading refuses inspect and verify without style defaults (3.0555ms)
+✔ manual-runtime finite diagnostic missing leading refuses inspect and verify without style defaults (2.9905ms)
+✔ manual-runtime finite diagnostic native auto_leading refuses inspect and verify without style defaults (1.7503ms)
+✔ manual-runtime finite diagnostic missing auto_leading refuses inspect and verify without style defaults (1.7901ms)
+✔ manual-runtime mixed active-color still refuses the complete character proof (1.4334ms)
+✔ manual-runtime mixed dormant-color still refuses the complete character proof (1.2931ms)
+✔ manual-runtime mixed paint-flag still refuses the complete character proof (1.1747ms)
+✔ manual-runtime native stages are finite and unknown exceptions never export a message or stack (7.6533ms)
+✔ manual-runtime post-setter native getter failure remains UNKNOWN ae_error and never becomes a read rejection (2.4951ms)
+✔ manual-runtime failed typed inspection completes journal diagnostic and never creates Broker evidence or a setter (527.2891ms)
+ℹ tests 59
+ℹ suites 0
+ℹ pass 59
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11104.9192
+✔ windows-cim-probe fixed plaintext query projects only PID/birth/path and base64-encodes JSON data (42.836ms)
+✔ windows-cim-probe actual wrapper uses one literal query, Node hostname/hash/stat and preserves Unicode path and seven-digit birth (4.7799ms)
+✔ windows-cim-probe scrubbed owner profile uses native homedir for PowerShell without inheriting caller variables (5.5778ms)
+✔ windows-cim-probe unavailable or malformed native profile fails before child launch with no environment fallback (0.6886ms)
+✔ windows-cim-probe bounded canonical data decode handles arrays/Unicode/date and rejects malformed wire or projection fields (1.642ms)
+✔ windows-cim-probe cmdlet, CLM, AppControl and invalid data failures are host_probe_failed with no fallback query (28.1171ms)
+✔ windows-cim-probe Node executable identity rejects unreadable/non-file/changed executable data (1.9739ms)
+✔ windows-cim-probe synchronous process refusal is host_probe_failed and never retries (0.4554ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 170.5726
+✔ start-over-finisher preserves UNKNOWN bytes and old identity while enabling only a new signed baseline-required session (12171.7643ms)
+✔ start-over-finisher repeat same reset is historical data only and preserves current new-work files (15590.8287ms)
+✔ start-over-finisher stopped receipt and initial owner inventory are optional after exact producer death (17896.0416ms)
+✔ start-over-finisher resumes same intent after crash at attempt publication before canonical claim and former finisher death (19625.4691ms)
+✔ start-over-finisher resumes same intent after crash at canonical gate claim and former finisher death (17262.7316ms)
+✔ start-over-finisher resumes same intent after crash at broker archive and former finisher death (18133.7288ms)
+✔ start-over-finisher resumes same intent after crash at receiver archive and former finisher death (19543.958ms)
+✔ start-over-finisher resumes same intent after crash at owner archive and former finisher death (20204.4851ms)
+✔ start-over-finisher resumes same intent after crash at session candidate publication and former finisher death (25786.9947ms)
+✔ start-over-finisher resumes same intent after crash at session publish intent and former finisher death (29521.9524ms)
+✔ start-over-finisher resumes same intent after crash at new session alias and former finisher death (27789.4537ms)
+✔ start-over-finisher resumes same intent after crash at session receipt and former finisher death (33636.2702ms)
+✔ start-over-finisher resumes same intent after crash at reset completion receipt and former finisher death (30709.5ms)
+✔ start-over-finisher resumes same intent after crash at owned gate release and former finisher death (32433.8523ms)
+✔ start-over-finisher loss after final barrier removal returns historical completion without a second lease or reset (15821.4779ms)
+✔ start-over-finisher old opaque session and baseline bytes remain archived and cannot clear the new baseline (18789.64ms)
+✔ start-over-finisher foreign source introduced after partial archive is retained and blocks continuation (3523.7346ms)
+✔ start-over-finisher same bytes in a foreign archive incarnation cannot replace the exact planned object (6108.8877ms)
+✔ start-over-finisher lookalike capabilities and stale intent pin cannot enter archive or claim authority (1424.1623ms)
+✔ start-over-finisher foreign candidate alias outside the transaction cannot be mistaken for a retained atomic stage (23485.4429ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 389602.1959
+✔ start-over-state an ancestor junction cannot redirect retained receiver bytes outside their original directory (282.7849ms)
+✔ start-over-state a missing file still requires the complete existing parent path to be canonical (217.2451ms)
+✔ start-over-state noncanonical spelling of an existing full marker path refuses before intent publication (242.9633ms)
+✔ start-over-state freezes admission and physical delivery before durable intent; exactly one new ID and stop request survive repeat (473.8333ms)
+✔ start-over-state diagnostic request retains previous active producer and UNKNOWN rather than trusting diagnostic mode as a barrier (489.4461ms)
+✔ start-over-state native query failure retains original intent and markers; status does not invent process death or completion (405.0148ms)
+✔ start-over-state late original completion during native observation is append-only history without weakening the initial risk requirement (387.0236ms)
+✔ start-over-state new physical begin across the observation await preserves the intent and refuses stop continuation (312.4022ms)
+✔ start-over-state clean close after request keeps inspection valid even when ordinary close removed current owner markers (1343.6262ms)
+✔ start-over-state descriptor bytes changed across native await refuse publication and keep the reset fence (1106.741ms)
+✔ start-over-state same bytes in a replaced barrier inode cannot substitute the original published intent (1110.5393ms)
+✔ start-over-state same bytes replacing both intent aliases across await cannot become a fresh identity baseline (976.2699ms)
+✔ start-over-state foreign marker and already-running maintenance refuse before an intent is published (2506.6574ms)
+✔ start-over-state publication failure retains freeze and unpublished preparation without removing any marker or retrying (1355.4583ms)
+✔ start-over-state source API has no native injection finisher restart or fence removal and foreign-machine descriptor cannot enter local scope (1343.5268ms)
+✔ start-over-state journal inode anchors preserve original bytes and refuse a recreated current journal even when its chain is identical (1011.0763ms)
+✔ start-over-state stages are retained inert bytes but directory or symlink replacements cannot enter an accepted phase (1222.9264ms)
+✔ start-over-state native inventory schema and freshness are checked before persistence or stop request (2596.3561ms)
+✔ start-over-state stop refusal leaves a durable intent with inventory and never claims a stopped receipt (1213.8686ms)
+✔ start-over-state physical fence callback failure is a persistent volatile fault in the requester and no intent or retry is fabricated (451.2958ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19201.9618
+✔ start-over-barrier idle barrier holds both endpoints without requiring AE exit and exposes no reset or mutation authority (929.3743ms)
+✔ start-over-barrier UNKNOWN requires exact old AE exit while a new AE birth does not cause an endless restart requirement (824.736ms)
+✔ start-over-barrier diagnostic owner absence cannot substitute death of the previous active producer (715.4727ms)
+✔ start-over-barrier crash before inventory captures the complete AE set once after producer death and retains it across retry (778.4099ms)
+✔ start-over-barrier missing old stopped receipt does not prevent process-gone proof and does not relabel UNKNOWN (1359.4352ms)
+✔ start-over-barrier foreign marker written across native await refuses before any store archive or lease claim (1766.1867ms)
+✔ start-over-barrier strengthened history risk across native await forces a new AE observation instead of accepting cheap idle proof (2115.5227ms)
+✔ start-over-barrier held barrier detects phase drift and releases endpoints even when its proof has become invalid (2080.5262ms)
+✔ start-over-barrier busy canonical IPC does not steal the endpoint or keep the new HTTP reservation (1618.0196ms)
+✔ start-over-barrier JSON lookalikes stale intent pins and caller-native overrides do not acquire a barrier (2219.9666ms)
+✔ start-over-barrier corrupt stop-requested metadata cannot be ignored merely because old process death would otherwise be available (2197.1791ms)
+✔ start-over-barrier a shutdown gate binds the exact full original scope and never just matching PID birth and boot (4070.7611ms)
+✔ start-over-barrier historical adoption AE is observed explicitly even when absent from the current AfterFX inventory (1915.4667ms)
+✔ start-over-barrier imprecise or foreign historical host identity does not become local death proof (3310.5346ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 26054.7787
+✔ start-over-inspection idle and queued pre-submit history needs no AE exit and issues no authority (3.0463ms)
+✔ start-over-inspection receiver ongoing UNKNOWN and unknown physical completion retain exact historical states (1.1983ms)
+✔ start-over-inspection settled read rejection and mutation completion do not require restart alone (1.0343ms)
+✔ start-over-inspection intent before submit and acknowledged command remain conservative without fabricated delivery status (0.7255ms)
+✔ start-over-inspection rejects contradictory Broker success and missing receiver rather than resetting broken history (1.4893ms)
+✔ start-over-inspection cross-journal matching binds receiver identity epoch and original command (1.3571ms)
+✔ start-over-inspection foreign owner reservation and shared file output fences cannot be archived into permission (1.7786ms)
+✔ start-over-inspection unresolved own AE-local fence can retire only behind AE exit and original bytes remain unknown (0.3164ms)
+✔ start-over-inspection another machine legacy origin and imprecise AE birth cannot retire behind local process death (0.5226ms)
+✔ start-over-inspection malformed own resource schemas and unresolved unfamiliar fences remain blocking (1.5128ms)
+✔ start-over-inspection uses latest constraint record without silently discarding a current foreign fence (0.3064ms)
+✔ start-over-inspection permits original completion during drain while preserving prefix and original uncertainty (0.8384ms)
+✔ start-over-inspection a new receiver begin after the fence is refused even if both journals are valid append-only chains (1.195ms)
+✔ start-over-inspection unchanged UNKNOWN remains unknown and is not relabelled cancelled or successful (0.4797ms)
+✔ start-over-inspection rejects truncated deleted and validly rehashed replacements of the original history prefix (1.1814ms)
+✔ start-over-inspection missing histories may materialize during drain but existing empty ledger cannot disappear (0.2964ms)
+✔ start-over-inspection newly encountered foreign fence during drain blocks archival even with a valid old prefix (0.2427ms)
+✔ start-over-inspection an initial foreign fence cannot disappear by a later local record with the same ID (0.4301ms)
+✔ start-over-inspection schema UTF8 chain and history budgets remain strict (0.3451ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 105.6146
+✔ stopped-host-readoption disk baseline survives a new module generation without rehydrating a normal certificate (10456.4945ms)
+✔ stopped-host-readoption copied capabilities and read-only evidence never issue certificate context or leases (10646.9765ms)
+✔ stopped-host-readoption certificate pull capability is scoped to one awaited inspection and then revoked (9856.6805ms)
+✔ stopped-host-readoption baseline refuses descriptor with zero writes (13496.2875ms)
+✔ stopped-host-readoption baseline refuses origin with zero writes (11287.7897ms)
+✔ stopped-host-readoption baseline refuses anchor with zero writes (11306.349ms)
+✔ stopped-host-readoption baseline refuses client with zero writes (10376.68ms)
+✔ stopped-host-readoption baseline refuses journal with zero writes (12973.4197ms)
+✔ stopped-host-readoption baseline refuses ledger with zero writes (14536.247ms)
+✔ stopped-host-readoption baseline refuses stop-bytes with zero writes (12600.0909ms)
+✔ stopped-host-readoption baseline refuses stop-inode with zero writes (16452.02ms)
+✔ stopped-host-readoption baseline refuses certificate-bytes with zero writes (11235.1177ms)
+✔ stopped-host-readoption baseline refuses certificate-inode with zero writes (14990.0536ms)
+✔ stopped-host-readoption baseline refuses phase with zero writes (12865.383ms)
+✔ stopped-host-readoption baseline refuses install-gate with zero writes (12133.2052ms)
+✔ stopped-host-readoption baseline refuses broker-gate with zero writes (11919.4491ms)
+✔ stopped-host-readoption new baseline never permits unknown extension or generic certificate/update bypass (8843.8903ms)
+✔ stopped-host-readoption unavailable and live certifier remain fenced without writes (9557.8516ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 1 (8996.8033ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 2 (7515.2575ms)
+✔ stopped-host-readoption disk facts are checked immediately after process await 3 (8557.0356ms)
+✔ stopped-host-readoption isolated adapter plumbing acquires and releases only fixture-issued permits; production issuer remains closed (7665.9942ms)
+✔ stopped-host-readoption isolated adapter recovery preserves exact gate bytes/inodes and release-only skips only proven missing gates (8655.2323ms)
+✔ stopped-host-readoption isolated adapter recovery refuses gate bytes and revokes temporary capability on failure (9194.046ms)
+✔ stopped-host-readoption isolated adapter recovery refuses gate inode and revokes temporary capability on failure (7191.9147ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 273423.2404
+✔ readoption-core pinned hardlink gate anchors work with the unchanged sealed lease consumer (2387.1154ms)
+✔ readoption-core H01 one CAS preserves old bytes and supports original baseline nlink 1 (33327.4857ms)
+✔ readoption-core H01 one CAS preserves old bytes and supports original baseline nlink 2 (38141.9506ms)
+✔ readoption-core H07 explicit enable changes only barrier/gates and never needs the host after committed CAS (76551.0739ms)
+✔ readoption-core Windows repeatability: two whole stopped cycles preserve prior anchors and close old inode FDs before CAS (129185.0438ms)
+✔ readoption-core forged operation/context/lease capabilities cannot write (9228.353ms)
+✔ readoption-core H03/P2 inspect-to-apply old adoption valid-bytes is a zero-write refusal (16459.1164ms)
+✔ readoption-core H03/P2 inspect-to-apply old adoption byte-equal-inode is a zero-write refusal (13058.1923ms)
+✔ readoption-core P2 replay whitespace-50k refuses before any preparation or claim (7340.4159ms)
+✔ readoption-core P2 replay canonical-over-budget refuses before any preparation or claim (6701.6664ms)
+✔ readoption-core P2 exact serialized old-byte budget remains replayable through claim and CAS (33064.018ms)
+✔ readoption-core P2 foreign install gate during inert publication cannot become owned or publish a claim (13711.0776ms)
+✔ readoption-core P2 foreign broker gate during inert publication cannot become owned or publish a claim (14143.9572ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 393402.0072
+✔ readoption-recovery H05/F04 forward original apply prefix claim without replay (42790.284ms)
+✔ readoption-recovery H05/F04 forward original apply prefix install without replay (60547.9934ms)
+✔ readoption-recovery H05/F04 forward original apply prefix broker without replay (53894.6523ms)
+✔ readoption-recovery H05/F04 forward original apply prefix lease without replay (57926.4386ms)
+✔ readoption-recovery H05/F04 forward original apply prefix archive without replay (64163.7808ms)
+✔ readoption-recovery H05/F04 forward original apply prefix stage without replay (64396.3582ms)
+✔ readoption-recovery H05/F04 forward original apply prefix ready without replay (58771.61ms)
+✔ readoption-recovery H05/F04 forward original apply prefix cas without replay (59601.6343ms)
+✔ readoption-recovery H05/F04 forward original apply prefix completed without replay (116139.5392ms)
+✔ readoption-recovery H05/F04 forward original apply prefix releaseBroker without replay (110346.1132ms)
+✔ readoption-recovery H05/F04 forward original apply prefix releaseInstall without replay (81556.5845ms)
+✔ readoption-recovery H04 certified admission closes at canonical claim prefix claim (24167.5115ms)
+✔ readoption-recovery H04 certified admission closes at canonical claim prefix install (31457.4265ms)
+✔ readoption-recovery H04 certified admission closes at canonical claim prefix broker (35075.3002ms)
+✔ readoption-recovery F02 partial external replacement.json is inert, never a canonical intent (64127.756ms)
+✔ readoption-recovery F02 partial external candidate.json is inert, never a canonical intent (68456.9019ms)
+✔ readoption-recovery F02 partial external publication.json is inert, never a canonical intent (71009.5344ms)
+✔ readoption-recovery H09 pre-CAS host loss preserves stopped fence and finish refuses before any writes (67624.3064ms)
+✔ readoption-recovery H06 two interrupted actors retain distinct lineage; live actor and unavailable death proof refuse (134270.352ms)
+✔ readoption-recovery H03 zero-write refusal adoption-inode (40145.6238ms)
+✔ readoption-recovery H03 zero-write refusal replacement-inode (35936.3176ms)
+✔ readoption-recovery H03 zero-write refusal replacement-extra-alias (30567.0786ms)
+✔ readoption-recovery H03 zero-write refusal gate-inode (33433.4178ms)
+✔ readoption-recovery H03 zero-write refusal unknown-record (35639.4542ms)
+✔ readoption-recovery H03 zero-write refusal corrupt-record (37014.0115ms)
+✔ readoption-recovery H03 zero-write refusal missing-recorded-gate (37493.1806ms)
+✔ readoption-recovery H03 zero-write refusal journal (45510.2118ms)
+✔ readoption-recovery H03 zero-write refusal ledger (44036.9909ms)
+✔ readoption-recovery H03 zero-write refusal certificate-inode (37396.6457ms)
+✔ readoption-recovery H03 zero-write refusal origin (45144.4448ms)
+✔ readoption-recovery EXDEV first canonical link has no copy fallback and leaves only inert preparation (30055.0425ms)
+✔ readoption-recovery EEXIST original publication requires inspection and original finish, never another apply (90211.2116ms)
+✔ readoption-recovery last pre-CAS host await revalidates old manual bytes and never overwrites them (44721.7853ms)
+✔ readoption-recovery H06 bounded attempts preserve every original record and refuse the next publication (585628.2008ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2439427.2945
