@@ -1,6 +1,6 @@
 # Release-manifest Core — 3 ноября 2026
 
-**Текущая source-приёмка, 4 ноября:** 69/71 current PASS: 36 exact reuse + 33 свежих полных canonical named checks. Открыты только две dedicated Titles под hold, remaining без hold — 0. Source snapshot215/71keys/33supplemental exact. [Актуальное evidence](../docs/evidence/core-portability-current-source-20261104.json). Пакет1f8c установлен на двух машинах; configured activation/Origin proof ещё open. Full release=false.
+**Текущая source-приёмка, 4 ноября:** 69/71 current PASS: 36 exact reuse + 33 свежих полных canonical named checks. Открыты только две dedicated Titles под hold; других source-пробелов нет. Все215 исходников,71 ключ и33 supplemental hash сверены. [Source evidence](../docs/evidence/core-portability-current-source-20261104.json). Пакет1f8c установлен на двух машинах. [Финальные Origin и native-чтение MSI приняты](../docs/evidence/core-portability-msi-origin-native-20261104.json); такая же проверка desktop ещё нужна. Full release=false.
 
 ## Цель и состав
 

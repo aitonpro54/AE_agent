@@ -1503,6 +1503,12 @@
       "sha256": "d1c5c6da7e0dedcd096b341b5b275c0c46cb52c10e6573a4856ecfbff89f95b7",
       "directKeyedRecords": 25,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-portability-msi-origin-native-20261104.json",
+      "sha256": "ac58852f631f6ffe1f1de809de48d4fc8cad1cd18c10e0f0204074000cee7c4a",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Native MSI proof; no source tests executed."
     }
   ],
   "evidenceMethod": {
@@ -11506,7 +11512,7 @@
         "P8"
       ],
       "contract": "docs/portability.md",
-      "noteRu": "Практический Core transfer двух реальных машин и обоих направлений принят. Strict P2 literal HTTP Origin и P5 production repeat остаются open; P8 report complete, certification false. Общие AEP/outputs и cloud вне scope.",
+      "noteRu": "Actual same-CDF repeat9157 и successor1f8c обеих машин сохранены. MSI configured1f8c/Originfile://+one native read/release PASS. Для strictP2/P5 остаётся desktop final activation; host connection отсутствует. Исторический practical report сохранён.",
       "preparationEvidence": "docs/evidence/core-portability-practical-20261104.json",
       "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
       "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
@@ -11517,7 +11523,8 @@
       "strictOpenCriteria": [
         "P2",
         "P5"
-      ]
+      ],
+      "msiFinalOriginNativeEvidence": "docs/evidence/core-portability-msi-origin-native-20261104.json"
     }
   ],
   "legacyReleaseScript": {
@@ -12475,7 +12482,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.currentSourceValidation"
   },
-  "updatedAt": "2026-11-04T16:20:26.515Z",
+  "updatedAt": "2026-11-04T18:34:40.634Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -12486,12 +12493,12 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "origin-runtime-installed-both-hosts-configured-activation-pending",
+    "status": "MSI-final-Origin-native-PASS-desktop-final-activation-pending",
     "desktopConnected": false,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
     "remoteExecutionAuthorized": true,
-    "next": "Finish source25; refresh configured clients and collect one final Origin/native proof per host. Do not replay settled installs.",
+    "next": "Restore desktop host connection; fresh configured1f8c client/Origin/one read/release, then finalP1-P8 report. Do not replay installs.",
     "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
     "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
     "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
@@ -12731,9 +12738,11 @@
       "transactionId": "3a052303-8126-47ad-b2fb-61f4a931e20d",
       "applyAttempts": 1,
       "enabled": true,
-      "configuredProof": false,
-      "nativeProof": false,
-      "literalOriginObserved": false
+      "configuredProof": true,
+      "nativeProof": true,
+      "literalOriginObserved": true,
+      "literalOrigin": "file://",
+      "finalReceiverEvents": 13
     },
     "currentSourceValidation": {
       "evidence": "docs/evidence/core-portability-current-source-20261104.json",
@@ -12744,7 +12753,8 @@
       "held": 2,
       "acceptedReportHash": "d1c5c6da7e0dedcd096b341b5b275c0c46cb52c10e6573a4856ecfbff89f95b7"
     },
-    "sourceValidationScopeRu": "sourceValidation хранит прежний desktop срез; currentSourceValidation — актуальная source-приёмка."
+    "sourceValidationScopeRu": "sourceValidation хранит прежний desktop срез; currentSourceValidation — актуальная source-приёмка.",
+    "msiOriginNativeEvidence": "docs/evidence/core-portability-msi-origin-native-20261104.json"
   },
   "historicalSourceAcceptance": {
     "baselineCommit": "77a860e",

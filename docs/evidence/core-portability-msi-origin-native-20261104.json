@@ -1,0 +1,289 @@
+{
+  "schemaVersion": 1,
+  "kind": "msi-origin-final-configured-native-proof",
+  "recordedAt": "2026-11-04T18:34:40.634Z",
+  "result": "PASS",
+  "host": "MSI",
+  "sourceCommit": "a2ed5f595c12a46d4b2674a50292cde85db2f2e7",
+  "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+  "distributionHash": "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+  "installedEvidence": "docs/evidence/core-portability-msi-origin-installed-20261104.json",
+  "serviceRefresh": {
+    "exactOldServerStop": {
+      "at": "2026-11-04T16:26:18.621Z",
+      "stopped": {
+        "stopped": true,
+        "pid": 13592,
+        "birthTicks": "639293836669669246"
+      },
+      "attempts": 1
+    },
+    "boundedHelperResult": {
+      "at": "2026-11-04T16:27:04.400Z",
+      "result": "OLD_APP_SERVER_STOPPED_SUCCESSOR_NOT_OBSERVED",
+      "successor": null,
+      "oldPid": 13592,
+      "stopAttempts": 1,
+      "manuallyStartedServer": false,
+      "CoreCommands": 0,
+      "configEdits": 0,
+      "protectedFilesExact": 11
+    },
+    "newStandardServer": {
+      "pid": 2244,
+      "parentPid": 11900,
+      "birthTicks": "639294136897854352",
+      "exe": "C:\\Users\\Ant\\AppData\\Local\\OpenAI\\Codex\\bin\\a159911ff70742e9\\codex.exe",
+      "args": "C:\\Users\\Ant\\AppData\\Local\\OpenAI\\Codex\\bin\\a159911ff70742e9\\codex.exe -c features.code_mode_host=true app-server --analytics-default-enabled -c features.prefer_mxc=true -c plugins.codex-app-tools@openai-bundled.mcp_servers.codex_app.enabled=true"
+    },
+    "old13592AndHelper28116Absent": true,
+    "successorCauseObserved": false,
+    "scopeRu": "В45s helper новый server не наблюдался. Позднее, после пользовательского продолжай, наблюдён normal child2244 того же ChatGPT parent11900. Автоматический restart/relaunch не приписывается."
+  },
+  "configuredClient": {
+    "pid": 6744,
+    "parentPid": 2244,
+    "birthTicks": "639294137049819940",
+    "exe": "C:\\Program Files\\nodejs\\node.exe",
+    "args": "\"C:\\Program Files\\nodejs\\node.exe\" C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8\\runtime\\client-entry.js --client-descriptor C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json"
+  },
+  "owner": {
+    "pid": 29764,
+    "parentPid": 6744,
+    "birthTicks": "639294137523760658",
+    "exe": "C:\\Program Files\\nodejs\\node.exe",
+    "args": "\"C:\\Program Files\\nodejs\\node.exe\" C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8\\runtime\\owner-entry.js --installation C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json"
+  },
+  "AE": {
+    "pid": 13608,
+    "parentPid": 34784,
+    "birthTicks": "639293876569989753",
+    "exe": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "args": "\"C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe\" "
+  },
+  "peer": {
+    "connected": true,
+    "origin": "file://",
+    "peerId": "panel-c337d044837dae0c63cca4351e64f25b083ce554eceab76e"
+  },
+  "contract": {
+    "contract": {
+      "buildSupported": false,
+      "effectPolicy": {
+        "boundedComps": 50,
+        "boundedItemsScanned": 500,
+        "boundedLayers": 100,
+        "continuity": false,
+        "displayNameMaxCodeUnits": 256,
+        "effect": "none",
+        "resultMaxCodeUnits": 40000
+      },
+      "executionPolicy": "read-only-current-observation-v1",
+      "moduleId": "project-inspection",
+      "operationId": "inspect-project",
+      "snapshotProfile": "project-observation-v1",
+      "targetSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "compId": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "version": "4.0.0"
+    },
+    "contractId": "31f6fa1383903816f605cf565e555686776d3d2f0c535792de84f141db50d659",
+    "moduleId": "project-inspection",
+    "modulePin": "62dc7eb8287135e7702e4836e087ac30944266b3b1db4504afa6f54355c86ce3",
+    "operationId": "inspect-project"
+  },
+  "controller": {
+    "acquire": {
+      "bootId": "d1ebe87f-51ff-4784-8c2f-f3caf41db638",
+      "generation": 2,
+      "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+    },
+    "released": true,
+    "tokenExported": false
+  },
+  "inspection": {
+    "authority": false,
+    "continuity": false,
+    "contractId": "31f6fa1383903816f605cf565e555686776d3d2f0c535792de84f141db50d659",
+    "evidenceRef": "observation-7454b869-c2ee-445b-94c9-eeb6bfe6fae2",
+    "moduleId": "project-inspection",
+    "observation": {
+      "aeVersion": "26.3x87",
+      "compositions": [
+        {
+          "compId": 1,
+          "duration": 5,
+          "name": "CoreBase_B6_Recovery",
+          "numLayers": 1
+        }
+      ],
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "core-base-b6-recovery-native-20261103.aep",
+        "numItems": 1,
+        "saved": true
+      },
+      "target": {
+        "compId": null,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+      },
+      "truncated": false
+    },
+    "originalBinding": {
+      "channelEpoch": "http-7d9a63b5-aff8-4bd9-b65b-9432959e6414",
+      "commandId": "inspect-cda9b638-f1a7-49b5-9dde-d77d9762e04c",
+      "controllerId": "controller-dcc96707-2dbc-4e9b-8174-82394fbf7048",
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "moduleId": "project-inspection",
+      "operationId": "inspect",
+      "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "phase": "inspect",
+      "receiptRef": "1ae5da714a1ba729aaf33366518c093eb4f7b4c1a12d60e436cb637b3bd9785f",
+      "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726"
+    },
+    "pins": {
+      "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+      "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8"
+    }
+  },
+  "initialValidationRefusal": {
+    "payloadExtraKeys": [
+      "leaseToken",
+      "sessionId"
+    ],
+    "nativeDispatch": 0,
+    "receiverUnchanged11": true,
+    "release": true,
+    "reason": "facade.inspect exact keys validation before peer.inspect"
+  },
+  "history": {
+    "receiverBefore": 11,
+    "receiverAfter": 13,
+    "receiverBeforeBytes": 12554,
+    "receiverBeforeSha256": "da52b467510f75b650d288be7ae58a5822acd6ae7a7b1a5ff023b128c8ade4a6",
+    "receiverAfterSha256": "f00c7c1be66128b0cb048fc0849429f5e3f2048107fff6b37f1df87f7a5dccd9",
+    "exactPrefix11Preserved": true,
+    "onlyNewCommand": "inspect-cda9b638-f1a7-49b5-9dde-d77d9762e04c",
+    "ledgerEvents": 1,
+    "ledgerSha256": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+    "ledgerUnchanged": true,
+    "protectedOldExactFiles": 1755,
+    "oldArchivesAndTransactionsIncluded": true,
+    "preferencesExact": 29,
+    "ownAep": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+      "sha256": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5",
+      "bytes": 84145
+    },
+    "installationIdStateDirOriginsPreserved": true
+  },
+  "final": {
+    "ready": true,
+    "controller": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "d1ebe87f-51ff-4784-8c2f-f3caf41db638",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 2,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false,
+      "workSession": {
+        "baselineRequired": false,
+        "resetPending": false,
+        "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+      }
+    },
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": true,
+      "lastPhysicalFault": null,
+      "lastReadFailure": null,
+      "listening": true,
+      "peer": {
+        "connected": true,
+        "origin": "file://",
+        "peerId": "panel-c337d044837dae0c63cca4351e64f25b083ce554eceab76e"
+      },
+      "pending": null,
+      "port": 3457,
+      "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726",
+      "startOverFrozen": false,
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "lifecycle": {
+      "birthTicks": "639294137523760650",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": "28eb987670aff737415d8958f781e275284ab14bd60646507833051a16662a2b",
+          "eventCount": 1,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "da52b467510f75b650d288be7ae58a5822acd6ae7a7b1a5ff023b128c8ade4a6",
+          "eventCount": 11,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 29764,
+      "processBootId": "3a5e11f9-4e1e-4db4-a054-8d65df784fba",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "work-session",
+      "resetId": "2fecd11c-faef-4651-9f27-e88e4498fb20",
+      "resetPending": false,
+      "sessionId": "ce977de2-4dab-4a0a-9b94-855a02b00c73"
+    }
+  },
+  "actions": {
+    "actualNativeReads": 1,
+    "acquires": 2,
+    "releases": 2,
+    "preDispatchValidationRefusals": 1,
+    "additionalCEPReloadsAfterResume": 0,
+    "autoPeerReconnectObserved": true,
+    "AErestart": 0,
+    "mutationSaveResetAdoption": 0,
+    "manualConfigEdits": 0,
+    "installReplay": 0,
+    "unknownReplay": 0
+  },
+  "limitsRu": [
+    "Native proof относится только кMSI/1f8c и readonly current observation; mutation/continuity не выдаются.",
+    "StrictP2/P5 двухмашинный итог ещё требует desktop final configured Origin/native proof.",
+    "Titles/Slideshow на паузе; облако/sharedAEP-assets вне scope."
+  ],
+  "sourceCovered": 69,
+  "heldTitles": 2,
+  "MSIP2NativeAccepted": true,
+  "P1toP8Complete": false,
+  "releaseCertified": false
+}

@@ -11,6 +11,17 @@
 
 ## Текущий scope и правила
 
+**4 ноября, финальная проверка MSI пройдена:** штатный клиент6744 загрузил пакет
+1f8c… и запустил owner29764. Подтверждён Origin `file://`; одна native inspection
+`cda9b638…` выполнена, управление generation2 освобождено. Receiver11→13
+с точным прежним prefix; ledger, AEP,29 файлов настроек и1755 защищённых файлов
+сохранены. Старый app-server13592 завершён один раз; новый2244 наблюдён позднее,
+автоматический перезапуск не доказан. Первый запрос с лишними полями отклонён
+до dispatch, журнал тогда не изменился. Source69/71 актуальны, Titles/Slideshow
+на паузе. Остались подключение desktop, его финальные Origin/native проверки
+и сводный итог P1–P8. Повторять установки не требуется.
+[Evidence](docs/evidence/core-portability-msi-origin-native-20261104.json).
+
 **4 ноября, актуальная source-приёмка завершена:** 69/71 current exact-key PASS,
 36reuse+33fresh fullcanonical named. Открыты только2dedicatedTitles подпаузой;
 remainingбезhold0. В source25блоке26attempts:25PASS и1stageENOENTbeforefixture,

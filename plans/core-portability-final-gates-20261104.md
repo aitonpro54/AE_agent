@@ -31,7 +31,9 @@
   ввод отклонён до действия. Debug flags, packet capture и инъекции не применялись.
 - [x] P5 actual same-package repeat/read-back: stop1/resume1/apply1, transaction9157, защищённые bytes сохранены.
 - [ ] P5 final configured activation после required P2 successor transfer; intermediate CDF activation=not_performed и отдельно не требуется. [Checkpoint](core-portability-p5-repeat-20261104.md).
-- [ ] P2 candidate/source/package и installed proof двух машин.
+- [x] P2 source и сборки приняты; одинаковый пакет установлен на двух машинах.
+- [x] MSI: свежий штатный клиент, authenticated Origin и одно native-чтение с release.
+- [ ] Desktop: свежий штатный клиент, authenticated Origin и одно native-чтение с release.
 - [ ] Итоговые evidence/manifest и синхронизация.
 
 ## Decision Log
@@ -125,3 +127,17 @@ Stageprerequisite exact-f548 восстановлен из exacthistoricalCODE a
 ### Validation
 
 25PASS/26attempts, all71keys/215sourcefiles/33supplemental exact, rawlogs+processrecords проверены parent. Все собственные runners exited. Package1f8c/80 иstandalone18f247/98 unchanged. Далее — configured MCP service refresh и one final native/Origin на каждой машине; installIDssettled не повторять.
+
+## MSI: финальная configured/native приёмка Origin
+
+### Progress
+
+Fresh configuredclient6744/package1f8c→owner29764, literalpeerOrigin`file://`connected=true. Один native project-inspection ownAEP PASS, leasegen2 released. [Evidence](../docs/evidence/core-portability-msi-origin-native-20261104.json).
+
+### Decision Log
+
+Helper один раз завершил exact appserver13592/nativebirth; в45s successorнеobserved. После пользовательского продолжай появился standardchild2244 утого жеparent11900; причину запуска не приписывать autorestart. CEP auto connected, reloadпослерезюме0. Первый inspect содержал лишние служебныеfields и отказал exactvalidation доpeer.inspect; receiver11 exact, newcommands0. Исправлена только форма запроса, новый один native command, без replayUNKNOWN.
+
+### Validation
+
+Receiver11→13 exactprefix, ledger1/AEP/29prefs/1755oldfiles exact, allarchives/transactions intact. SameAE13608; owner ready/controllerfree/pendingUNKNOWNfault0. Current69/71 unchanged. Следующий шаг — desktop connection/finalclient/Origin/one read/release и сводный P1–P8; desktop applya88c/9157/82b иstop139 не повторять.

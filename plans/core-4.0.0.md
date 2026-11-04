@@ -920,3 +920,7 @@ Progress: MSIstopa982/update3a052/enable1, runtime1f8c/80 verified, same desktop
 ### 4 ноября: current source69/71 подтверждён
 
 Progress:25remaining full named PASS,36reuse+33fresh=69current,2Titlesheld. Decision: одинstageENOENTbeforefixture исправлен exacthistoricalCODEcopy и адреснымfreshattempt02; originalFAIL сохранён. Validation:26attempts/25PASS, noSKIP/cancel,71keys/215files/33supplemental exact, runtime1f8c unchanged. Далее configuredclient refresh/nativeOrigin двух хостов, без replayinstall. [Evidence](../docs/evidence/core-portability-current-source-20261104.json).
+
+### 4 ноября: MSI Origin/native финального runtime принят
+
+Progress: standardconfigured1f8c client6744/owner29764, autoCEP connectedOriginfile://; one readonly inspect-cda9… PASS, leasegen2 released. Decision: initialextrapayload validationrefusalbeforedispatch сохранён, installexistingIDs не replay. Validation:receiver11→13 exactprefix, ledger/AEP/prefs/1755oldfiles preserved, source69/71 unchanged. Desktop finalnative pending подключенияхоста. [Evidence](../docs/evidence/core-portability-msi-origin-native-20261104.json).
