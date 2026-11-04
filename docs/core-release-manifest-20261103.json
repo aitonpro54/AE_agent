@@ -1350,6 +1350,12 @@
       "sha256": "158d72e08b9c02f2205c203eb0341b170c661781bf97ef3d6507fd9f536997c4",
       "directKeyedRecords": 1,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-portability-practical-20261104.json",
+      "sha256": "4b1a23d6b71c7755b834452a280d6713391a2b1f37cf258f77a6ee85ddb1f8bf",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Local preparation only; not current Core-check PASS or two-machine P1–P8 acceptance"
     }
   ],
   "evidenceMethod": {
@@ -7912,7 +7918,8 @@
         "P8"
       ],
       "contract": "docs/portability.md",
-      "noteRu": "Две реальные машины и оба направления; source/package-location checks этого не закрывают."
+      "noteRu": "Подключён DESKTOP-32974QF; на MSI воспроизведён прежний owner package/distribution. Desktop preflight и фактические оба направления ещё не выполнены; P1–P8 открыты.",
+      "preparationEvidence": "docs/evidence/core-portability-practical-20261104.json"
     }
   ],
   "legacyReleaseScript": {
@@ -8863,12 +8870,19 @@
     "completedAt": "2026-11-04T09:12:29.072Z",
     "finalEvidence": "docs/evidence/core-release-source-acceptance-20261103.json"
   },
-  "updatedAt": "2026-11-04T09:12:29.072Z",
+  "updatedAt": "2026-11-04T10:49:58.967Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
     "processInventoryOrTermination": 0,
     "buildInstallConfigWrites": 0,
     "networkArgonPushPr": 0
+  },
+  "practicalPortability": {
+    "plan": "plans/core-portability-practical-20261104.md",
+    "evidence": "docs/evidence/core-portability-practical-20261104.json",
+    "status": "local-preparation-PASS-desktop-execution-pending",
+    "desktopConnected": true,
+    "remoteExecutionPending": true
   }
 }

@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "dateLocal": "2026-11-04",
+  "timezone": "Asia/Yekaterinburg",
+  "recordedAt": "2026-11-04T10:48:13.234Z",
+  "baselineCommit": "b88c651b48b89869afd52bd85c709421e34c9ea7",
+  "status": "local-preparation-PASS-desktop-execution-pending",
+  "scopeRu": "Практический перенос MSI ↔ DESKTOP-32974QF; облако исключено, Titles/Slideshow на паузе.",
+  "selectedComposition": {
+    "composition": "manual",
+    "runtimeModel": "owner",
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "packageFiles": 80,
+    "distributionHash": "85c3d95a0dc33f6fad7901c6f6b8a70f58b20297b3e66d8eb8cdc13e39d39f63",
+    "distributionHashedFiles": 98,
+    "localPackage": ".codex-runtime/portability-practical-20261104/manual-owner.json",
+    "localDistribution": ".codex-runtime/portability-practical-20261104/distribution",
+    "matchRecordedB6": true
+  },
+  "buildCommands": [
+    [
+      "node",
+      "core4/tools/package-installable.js",
+      "--composition",
+      "manual",
+      "--runtime",
+      "owner",
+      "--output",
+      "ABS_NEW_PACKAGE_JSON"
+    ],
+    [
+      "node",
+      "core4/tools/package-standalone-installer.js",
+      "--composition",
+      "manual",
+      "--runtime",
+      "owner",
+      "--output",
+      "ABS_NEW_DISTRIBUTION_DIR"
+    ]
+  ],
+  "verificationReport": ".codex-runtime/portability-practical-20261104/package-verification.json",
+  "msi": {
+    "machine": "MSI",
+    "windows": "10.0.26200.0",
+    "node": "v24.15.0",
+    "git": "2.54.0.windows.1",
+    "codexMsix": "26.1027.6604.0",
+    "standardEnvRootsPresent": true,
+    "configuredStatus": {
+      "observedEarlierInThisPreparation": true,
+      "currentBeforeLiveMustRefresh": true,
+      "physical": {},
+      "controllerFree": false
+    },
+    "afterFxObservedCount": 0,
+    "afterFxObservationRu": "Один адресный CIM Name=AfterFX.exe query в блоке подготовки вернул 0; это не проверка desktop и не предположение о будущей готовности AE.",
+    "nativeInspectionExecuted": false
+  },
+  "desktop": {
+    "hostId": "remote-control:env_e_6aaa3f0513c483209c3eb84d29674988",
+    "displayName": "DESKTOP-32974QF",
+    "hostConfirmedVia": "list_threads history + handoff tool available-host metadata",
+    "thread": {
+      "id": "01a186f7-9c1b-7513-a89e-cef10752eba1",
+      "title": "Найти следы переноса на десктоп",
+      "status": "notLoaded",
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core"
+    },
+    "remoteReadOnlyThreadRead": true,
+    "remoteCommandsExecuted": 0,
+    "remoteMessagesSent": 0,
+    "permissionStatus": "requires-explicit-user-authorization-to-use-existing-thread",
+    "preparedFirstTask": ".codex-runtime/portability-practical-20261104/desktop-readonly-task.txt",
+    "preparedFirstTaskSha256": "97249a56efc1de56333e88c40e4a851fb99c8febea0bf4010191d83b3fd1871b"
+  },
+  "sourceReuse": {
+    "acceptedCurrent": 69,
+    "held": 2,
+    "evidence": "docs/evidence/core-release-source-acceptance-20261103.json",
+    "suitesRepeated": 0
+  },
+  "decisionRu": [
+    "Переиспользовать существующие builders/installer/stop/update/inspect/enable; не разрабатывать универсальный framework до фактической необходимости.",
+    "Не повторять установку на MSI ради совпадающего package hash.",
+    "До desktop facts не выбирать initial-install/update и не менять локальные привязки."
+  ],
+  "actions": {
+    "packageBuildCommands": 2,
+    "packageVerificationCalls": 1,
+    "configuredCoreStatusCalls": 1,
+    "nativeAeCommands": 0,
+    "manualRuntimeProcessOperations": 0,
+    "productionInstallConfigChanges": 0,
+    "sourceCodeChanges": 0,
+    "testSuiteRuns": 0,
+    "remoteWrites": 0,
+    "externalArgonPaidApiPushPr": 0
+  },
+  "portabilityCriteria": {
+    "P1": "local package identity verified; two-machine criterion OPEN",
+    "P2": "OPEN",
+    "P3": "OPEN",
+    "P4": "OPEN",
+    "P5": "OPEN",
+    "P6": "OPEN",
+    "P7": "OPEN",
+    "P8": "OPEN"
+  },
+  "releaseCertified": false,
+  "verificationReportSha256": "c93bc5dedc6be2e21af475d254e667db1438973709a5178ecc2a4c52d219de17",
+  "packageVerification": {
+    "collectedAt": "2026-11-04T10:46:27.715Z",
+    "status": "PASS",
+    "packageHash": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+    "packageFileCount": 80,
+    "distributionHash": "85c3d95a0dc33f6fad7901c6f6b8a70f58b20297b3e66d8eb8cdc13e39d39f63",
+    "distributionHashedFiles": 98,
+    "standaloneMatchesPackage": true,
+    "node": {
+      "path": "C:\\Program Files\\nodejs\\node.exe",
+      "version": "v24.15.0",
+      "sha256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5"
+    },
+    "actualInstall": 0,
+    "scope": "local package/standalone verification only; not two-machine proof"
+  },
+  "validation": {
+    "status": "PASS",
+    "currentSourceKeys": 71,
+    "currentSourceFileHashes": 215,
+    "sourceReusePreserved": 69,
+    "heldChecksPreserved": 2,
+    "localMarkdownLinks": 112,
+    "utf8": true,
+    "packageAndPreparedTaskHashesVerified": true,
+    "testSuitesRun": 0
+  }
+}
