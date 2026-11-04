@@ -11,6 +11,9 @@
 
 ## Текущий scope и правила
 
+**4 ноября, desktop1f8c installed/read-back PASS, activation blocked:** e75реальнаяdelta получена;1f8c/80 иstandalone18f247/98 verified, однаapplya88c79aa, lineage→9157/initial сохранена. NewprojectMCPargs1f8c правильные, но текущийthinclient32372 остаётсяCDF/owner_unavailable; freshclient/Origin/native ещёнет. Receiverprefix3,origins/configforeign/global/prefs/legacy preserved. Не повторятьapplya88c/9157/82b илиstop139. [Checkpoint](plans/core-portability-desktop-origin-installed-20261104.md), [evidence](docs/evidence/core-portability-desktop-origin-installed-20261104.json). Source44/71;e75 queue25+Titles2 уparent.
+
+
 **4 ноября, строгие P2/P5 продолжаются:** actual same-CDF repeat9157 выполнен1раз,
 identity/origins/history/preferences сохранены; intermediate activation не выполнялась.
 P2 candidate добавляет authenticated physical.peer.origin без изменения gates.8full

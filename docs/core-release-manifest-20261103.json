@@ -1476,6 +1476,12 @@
       "sha256": "e4a3df8588d1ff11bc3317812663695eb5fb8d31a648cf76ff99c0e14e0511e4",
       "directKeyedRecords": 8,
       "excludedAsAuthority": null
+    },
+    {
+      "file": "docs/evidence/core-portability-desktop-origin-installed-20261104.json",
+      "sha256": "dccf6a08b45db64199a5c1080c22aaa5c42fd22e3d82e38ce12ee6eb10f02107",
+      "directKeyedRecords": 0,
+      "excludedAsAuthority": "Actual desktop new-source package install/read-back; configured client recreation, literal Origin and native proof pending. Not full source or release certification."
     }
   ],
   "evidenceMethod": {
@@ -11743,7 +11749,7 @@
     "scope": "Historical source phase accepted at 77a860e; its blocks/commands remain unchanged history.",
     "currentSourceAcceptance": "practicalPortability.sourceValidation"
   },
-  "updatedAt": "2026-11-04T15:25:32.508Z",
+  "updatedAt": "2026-11-04T15:48:43.817Z",
   "manifestPreparationActions": {
     "sourceTestCommandsExecuted": 0,
     "liveAeCepMcpUiCalls": 0,
@@ -11754,12 +11760,12 @@
   "practicalPortability": {
     "plan": "plans/core-portability-practical-20261104.md",
     "evidence": "docs/evidence/core-portability-practical-20261104.json",
-    "status": "P5-repeat-preserved-origin-package-ready-final-activation-pending",
+    "status": "desktop-1f8c-installed-configured-client-recreation-blocked",
     "desktopConnected": true,
     "remoteExecutionPending": false,
     "desktopPreflightEvidence": "docs/evidence/core-portability-preflight-20261104.json",
     "remoteExecutionAuthorized": true,
-    "next": "Reuse practical workflow for subsequent authorized modules; retain explicit strict P2/P5 and full-release gaps.",
+    "next": "Supported configured thin-client recreation from new1f8c project entry, then final literal Origin/native proof; do not replay any apply.",
     "desktopDeliveryEvidence": "docs/evidence/core-portability-delivery-attempt-01-20261104.json",
     "msiNativeEvidence": "docs/evidence/core-portability-msi-native-20261104.json",
     "desktopFixEvidence": "docs/evidence/core-portability-quoted-config-20261104.json",
@@ -11913,11 +11919,12 @@
       "pendingUnknownFault": 0,
       "appServerRestart": 0,
       "currentConnection": {
-        "state": "post-repeat-configured-client-refresh-pending",
+        "state": "new1f8c-installed-fresh-configured-client-unavailable",
         "currentConfiguredProof": false,
         "currentNativeProof": false,
-        "priorNativeEvidence": "docs/evidence/core-portability-desktop-configured-native-20261104.json",
-        "noteRu": "CDF same-version apply/readback подтверждён, activation не выполнялась. Прежний cached client имеет известный pre-dispatch refusal. Следующая required successor activation после реального P2 transfer."
+        "oldClientPid": 32372,
+        "oldClientPackage": "cdf7338f5761fbfcb8f8a01fcb00a90ff2aea09a4537a675ee354547f8c3f944",
+        "newInstalledPackage": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8"
       }
     },
     "desktopCEPDiscoveryEvidence": "docs/evidence/core-portability-desktop-cep-discovery-20261104.json",
@@ -11943,7 +11950,13 @@
       "nativeAfterRepeat": false,
       "formalStatus": "OPEN",
       "next": "Wait actual reviewed P2 source/package packet; successor apply while owner remains stopped, then fresh configured thin client/native proof. Parent closes strict P5.",
-      "activation": "not_performed-deferred-to-required-successor"
+      "activation": "not_performed-deferred-to-required-successor",
+      "requiredSuccessorOnDisk": {
+        "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+        "transactionId": "a88c79aa-31f4-42a0-8e70-b1fdd697e161",
+        "activation": "pending",
+        "priorSamePackageApplyRetained": true
+      }
     },
     "previousSummaryBeforeOrigin": {
       "registeredChecks": 71,
@@ -11971,6 +11984,18 @@
       "currentCovered": 44,
       "remainingNotHeld": 25,
       "held": 2
+    },
+    "desktopOriginInstalledEvidence": "docs/evidence/core-portability-desktop-origin-installed-20261104.json",
+    "desktopOriginSuccessor": {
+      "sourceCommit": "e75a25fd85a1770e390b91ccf1f5f196fddc5617",
+      "packageHash": "1f8c6c14bdd10e5db8b48a0819ef6ab52b8cf3e97164146b21bcf02aaa8f88e8",
+      "distributionHash": "18f2475e75e2ff85f5d969a72be3bba2eee3fcc2912fa9f6c407127e992a0f4b",
+      "transactionId": "a88c79aa-31f4-42a0-8e70-b1fdd697e161",
+      "installedReadback": "PASS",
+      "activation": "not_performed-blocked-cached-CDF-client",
+      "P2LiteralOriginObserved": false,
+      "nativeProof": false,
+      "receiverRecords": 3
     }
   },
   "historicalSourceAcceptance": {

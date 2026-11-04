@@ -83,3 +83,17 @@ Actual stop/resume/apply1/1/1, protected read-back PASS; receiver prefix3, ledge
 ### Validation
 
 24keys changed/47same;12прежних accepted refs superseded,36reused+8fresh=44current. Exact25remaining sourcechecks запущены отдельным этапом,2Titlesheld. Первый harness launch отказал до teststart из-за нескольких Node paths, originaldiagnostic сохранён; все8реальных runnersexited0, noSKIP/cancel. Runtime пока не установлен.
+
+## Desktop successor1f8c — installed/read-back PASS, activation blocked
+
+### Progress
+
+Реальная e75 source delta получена.1f8c/80 и18f247/98 воспроизведены, foreign-CWD dry-run PASS, applya88c одинраз иprotected read-back PASS. [Checkpoint](core-portability-desktop-origin-installed-20261104.md), [evidence](../docs/evidence/core-portability-desktop-origin-installed-20261104.json).
+
+### Decision Log
+
+Новая project MCP entry правильная; существующийCDFthinclient32372 не был пересоздан за наблюдавшийся configwatch/status. Owner_unavailable — конкретный pre-dispatch blocker; freshconfiguredOrigin/native не заявляются. Старыеapply/stop/resume не повторять. Root связывает следующийнеобходимый supportedclientrefresh послеэтого checkpoint.
+
+### Validation
+
+Runtime80/CEP7/lineage/origins/historyprefix3/configforeign/global/prefs/legacy PASS. Source71keys/current44 остаютсяe75,25offlinequeue не запускаласьнаdesktop. Native commands0, AErestart/save/mutation/reset0. P2/P5strict остаютсяopen дофактической finalactivation.
