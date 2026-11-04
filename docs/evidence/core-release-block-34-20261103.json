@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "collectedAt": "2026-11-04T08:51:28.258Z",
+  "blockId": "source-candidate-34",
+  "baselineCommit": "3eb759f6a9dabfca28a26f648a4cb5532aaddb60",
+  "scope": "source/TEMP fixtures; no native AE acceptance",
+  "result": "PASS",
+  "executionBatch": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=owner-installation",
+      "test/owner-installation.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAt": "2026-11-04T08:50:41.858Z",
+    "finishedAt": "2026-11-04T08:51:12.414Z",
+    "exitCode": 0,
+    "reporter": "spec",
+    "summary": {
+      "tests": 18,
+      "suites": 0,
+      "pass": 18,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 30500.9927
+    },
+    "log": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-34-owner-installation.log",
+      "sha256": "d3f3ecc4b1519debdad7f307159524a0a2e6d1415e1abf6f7bed97b1105d97de",
+      "bytes": 2367
+    },
+    "stderr": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\release-validation-20261103\\block-34-owner-installation-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  },
+  "checks": [
+    {
+      "check": "owner-installation",
+      "evidenceKey": "cfa500879ee2fc3dc67721cb4ac55e99ffcf0cbde2e7a9b767a864a3826c26ee",
+      "result": "PASS",
+      "cases": 18,
+      "skipped": 0,
+      "matchedTestNames": [
+        "owner-installation runtime selector is independent of composition and owner contract is a closed admitted cluster",
+        "owner-installation fresh-root planning projects exact origin bytes without destination reads or writes",
+        "owner-installation TEMP readonly/manual apply stages exact role sidecar before publishing config last",
+        "owner-installation legacy to owner to legacy and both rollbacks preserve exact sidecar bytes and stable origin",
+        "owner-installation first owner rollback removes only its exact sidecar and retains stable state origin",
+        "owner-installation branded plans bind client bytes, origin bytes and binding metadata; durable prepared client tampering refuses",
+        "owner-installation client and origin CAS detect drift before writes, including drift while acquiring the install lease",
+        "owner-installation noncanonical existing origin bytes are retained and pinned exactly",
+        "owner-installation foreign or missing sidecar never permits replacement or owner to stdio deletion",
+        "owner-installation staging files and ancestor junctions refuse before reading or changing destinations",
+        "owner-installation rollback refuses sidecar/origin/prepared drift and missing owner transaction extension before writes",
+        "owner-installation owner package cannot execute through the legacy stdio entry before listener or store open",
+        "owner-installation standalone stdio and owner closure apply without checkout code, launcher or listeners",
+        "owner-installation fixed CLI runtime selector reaches package and standalone builders and rejects unknown models",
+        "owner-installation corrupt staged sidecar refuses before client or config becomes visible",
+        "owner-installation bounded readers reject growth after fd sampling before installer writes and close their fd",
+        "owner-installation byte-exact ownership rejects invalid UTF8 that decodes to the same client descriptor",
+        "owner-installation all rollback restore inputs and stamped transaction paths are bound before any destination writes"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-installation",
+        "test/owner-installation.test.js"
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "NODE_OPTIONS": null,
+    "NODE_TEST_CONTEXT": null
+  },
+  "isolation": {
+    "scope": "source/own TEMP installation/config/extensions",
+    "childGuards": "deny listener and nested child factories",
+    "junction": "own alias to own target, exact alias unlink",
+    "liveAE_CEP_MCP": 0,
+    "externalNetwork": 0,
+    "productionConfigInstallWrites": 0,
+    "productSuites": 0
+  },
+  "cleanup": {
+    "retentionExpectedByPreflight": false,
+    "fixturePrefixes": [
+      "core4-owner-install-"
+    ],
+    "ownFixtureDirsObserved": [
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-YxNYtS",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-6fKGHY",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-7CVOoE",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-1zQeXk",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-QM0wNv",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-r5rmgG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-FG94uV",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-7F39Tg",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-6YEVIG",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-FOuBXI",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-jj6wfW",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-Dt7zq5",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-psD57h",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-YK8I3o",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-frudAK",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-cblMrQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-GgYe8r",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-WjILFi",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-XXn7jR",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-nenupm",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-xfhyJt",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-OaMcNQ",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-IPLcR1",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-Ch25qB",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-rSpHqa",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-cWXNfY",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-bxEeid",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-lk9hC9",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-B5oazb",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-hERAn7",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-QP7zWu",
+      "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-install-Q5iXGv"
+    ],
+    "remainingOwnDirs": [],
+    "resourceProofKind": "Source hooks/assertions and terminal completion; no independent process inventory.",
+    "activeFixtureResourcesClosedByHooks": true,
+    "manuallyDeletedFixturePaths": [],
+    "limits": [
+      "Original10/15s sync child CLI budgets retained; no outer deadline.",
+      "Install/package functions act only on own TEMP fixtures."
+    ],
+    "sourceClosureReferences": [
+      {
+        "file": "core4/test/owner-installation.test.js",
+        "line": 22,
+        "proof": "Guarded exact own-prefix directory cleanup"
+      },
+      {
+        "file": "core4/test/owner-installation.test.js",
+        "line": 149,
+        "proof": "Own junction alias unlinked in finally"
+      }
+    ]
+  },
+  "parserCorrection": null,
+  "runnerReport": {
+    "path": ".codex-runtime/release-validation-20261103/block-34-owner-installation-reducer.json",
+    "sha256": "d90b9137bd7d2baf7f3866447236414bd3b158241d9bb26b850fc68ed5c43de3"
+  },
+  "actions": {
+    "sourceBatchesExecuted": 1,
+    "liveAeCepMcpUi": 0,
+    "productionInstallConfigWrites": 0,
+    "externalNetworkArgonPushPr": 0
+  },
+  "limitsRu": [
+    "Это source/TEMP proof, не native AE.",
+    "Named-check counts могут пересекаться; уникальные cases данного batch отражает его reporter summary.",
+    "Titles/Slideshow остаются на паузе; package/native/portability gates не закрываются этим source run."
+  ]
+}
