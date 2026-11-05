@@ -261,11 +261,13 @@ async function applyTail(s, cap, actor) {
       if (!state.oldArchive.bytes) { fs.linkSync(s.paths.adoption, path.join(s.paths.phase, 'readopt-old.json')); state = readState(s, cap); }
       if (!state.stage.bytes) { fs.linkSync(state.anchor.file, s.paths.stage); state = readState(s, cap); }
       if (!state.ready) state = publish(s, cap, 'readopt-cas-ready.json', 'cas-ready', { actor, gates: state.gates.map(s.info), oldArchive: s.info(state.oldArchive), replacement: s.info(state.anchor), stage: s.info(state.stage) });
-      const observation = await fresh(s, cap, state, adoption(bytes(state.intent.replacement.bytes), s.o.installation).host);
+      const expectedHost = adoption(bytes(state.intent.replacement.bytes), s.o.installation).host;
+      unchanged(s, cap, state);
+      const observation = await probeWindows();
       state = unchanged(s, cap, state); const fd = fs.openSync(state.anchor.file, 'r');
       try {
         if (!equal(stamp(fs.fstatSync(fd, { bigint: true })), state.anchor.stat)) fail('readopt_anchor_changed');
-        validateReadoptionObservation(observation, adoption(bytes(state.intent.replacement.bytes), s.o.installation).host, s.o.installation.machineId);
+        validateReadoptionObservation(observation, expectedHost, s.o.installation.machineId);
         // All old-target read FDs were scoped/closed by read(); never unlink it.
         fs.renameSync(s.paths.stage, s.paths.adoption);
         const after = readState(s, cap); if (!after.applied || String(fs.fstatSync(fd, { bigint: true }).ino) !== after.anchor.stat.ino) fail('readopt_cas_unknown');

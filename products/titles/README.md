@@ -146,9 +146,50 @@ Core связывает применение с исходной завершё�
 авторитетной записи выполняется на сервере. Отказ из-за устаревшего замера
 требует свежей пары замер и применение.
 
+## Серия и выпуск через очередь AE
+
+Установите состав Core `manual-titles-variants`. Подготовьте сохранённую рабочую
+копию композиции с меткой `AE_CORE4_TEXT_WORKSPACE_V1`. Заполните точные цели
+по свежему чтению Core. В [примере серии](examples/numbered-series.json) находятся
+исходный текст, имена, номера, ручной перенос и профили трёх рубрик. Рамка задана
+в пикселях. Значение `"guides"` требует две направляющие по каждой оси внутри
+композиции.
+
+```powershell
+node products/titles/cli.js prepare-series --job series.json --inspection text-inspection.json
+node products/titles/cli.js prepare-series-write --job series.json --selection title.json --contract text-contract.json --inspection text-inspection.json
+node products/titles/cli.js prepare-release --job release.json --selection phase.json --contract phase-contract.json --inspection phase-inspection.json
+```
+
+`prepare-series` собирает выбранные переносы и диапазоны стиля. Для записи
+нужны контракт и снимок `text-layer`. Выбор `{"number":1}` создаёт свободный
+слот, `{"number":1,"layerId":123}` перевёрстывает наблюдавшийся слой.
+После каждой записи получите свежий снимок перед следующим титром. `text-layer`
+принимает статичный горизонтальный 2D point text без родителя, поворота и
+выражений в геометрии. Он измеряет `sourceRectAtTime` в AE и центрирует видимый
+блок в рамке отдельно от выравнивания абзаца.
+
+[Пример выпуска](examples/titr-all-release.json) задаёт исходный слой оформления,
+слой вёрстки, управляемые варианты, время удержания, диапазон кадров, шаблоны AE
+и имя MP4. Подготовьте папку `titles-output` рядом с рабочим AEP. `phase.json`
+определяет шаг и точные цели.
+
+| Фаза | Контракт | Пример выбора |
+| --- | --- | --- |
+| Создать оформленный вариант | `text-variant` | `{"phase":"derive"}` |
+| Подготовить единственное задание | `comp-render` | `{"phase":"stage","variantLayerId":123}` |
+| Принять `DONE` и очистить очередь | `comp-render` | `{"phase":"finalize","variantLayerId":123,"jobCompId":456}` |
+| Снять незавершённое задание | `comp-render` | `{"phase":"discard","variantLayerId":123,"jobCompId":456}` |
+
+Каждый payload проходит build, proposal, dry-run и подтверждение Core. После
+постановки сверьте задание и выход по свежему чтению, затем запустите рендер
+в штатной очереди AE. Для финализации получите свежий снимок `DONE` и передайте
+ID временной композиции из него. Core снимает свою строку и копию, сохраняет
+медиа и проверяет исходную видимость. [Матрица нативной приёмки MSI](../../plans/titles-end-to-end-msi-20261105.md#матрица-приёмки-msi).
+
 ## Совместимость и доверие
 
-Пакет принимает только закреплённый публичный contract profile из
+Операция `prepare-build` принимает закреплённый публичный contract profile из
 [compat/titles-current-target.contract.json](compat/titles-current-target.contract.json).
 Его canonical SHA-256 —
 `6226f911063f94f471bff23e9ebb60f1ee49323c2f25d54e6a4bdabf95bbe55b`.
