@@ -133,7 +133,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
           } else if (['owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1'].includes(selectedAsset.resultProfile)) {
             const fields = ['target', 'revision', 'protected', 'layers'];
             if (selectedAsset.resultProfile === 'owned-text-layer-v1') fields.push('size', 'guides');
-            if (selectedAsset.resultProfile === 'owned-comp-render-v1') fields.push('duration', 'frameDuration', 'queueIdle', 'render');
+            if (selectedAsset.resultProfile === 'owned-comp-render-v1') fields.push('duration', 'frameDuration', 'queueIdle', 'job', 'render');
             exact(result, fields);
             if (!result.target || typeof result.revision !== 'string' || typeof result.protected !== 'string' || !Array.isArray(result.layers)) fail('manual_snapshot');
           } else {

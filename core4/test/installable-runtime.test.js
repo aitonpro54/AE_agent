@@ -126,6 +126,25 @@ test('installable-runtime read diagnostic rejects unknown codes extra fields and
   }
   await f.c.call('/complete', q.receipt(result)); await observed; assert.equal(f.peer.status().lastReadFailure.code, result.code);
 });
+test('installable-runtime render queue read durably accepts its owned job field only in the render profile', async t => {
+  const config = { assetKey: 'comp-render-v1', moduleId: 'comp-render', operationId: 'render-text-variant', resultProfile: 'owned-comp-render-v1' };
+  const f = await readDiagnosticPeer(t, config), q = await f.begin();
+  const target = { projectId: 'C:/test/owned.aep', compId: 7 };
+  const job = { jobCompId: 8, status: 'QUEUED', rendering: false, activeLayerId: 11 };
+  const result = { target, revision: 'fresh', protected: 'preimage', layers: [], duration: 12, frameDuration: 1 / 30, queueIdle: false, job };
+  await f.c.call('/complete', q.receipt(result));
+  assert.deepEqual(decode(await q.promise, f.binding.secret).result, result);
+  const last = fs.readFileSync(path.join(f.directory, 'completions.ndjson'), 'utf8').trim().split('\n').map(JSON.parse).at(-1);
+  assert.equal(last.type, 'complete');
+  assert.deepEqual(last.response.result.job, job);
+  assert.equal(f.peer.status().unknown, false);
+
+  const text = await readDiagnosticPeer(t), read = await text.begin();
+  const response = await text.c.raw('/complete', text.c.envelope('/complete', read.receipt({ target, revision: 'fresh', protected: 'preimage', text: 'Title', job })));
+  assert.equal(response.value.error, 'unexpected_field');
+  await text.c.call('/complete', read.receipt({ target, revision: 'fresh', protected: 'preimage', text: 'Title' }));
+  await read.promise;
+});
 for (const scope of ['project', 'foreign-key', 'foreign-module', 'foreign-operation', 'foreign-profile', 'mutate']) test('installable-runtime Titles diagnostic vocabulary is refused for ' + scope, async t => {
   const changes = scope === 'foreign-key' ? { assetKey: 'other-text-v1' } : scope === 'foreign-module' ? { moduleId: 'other-text' } : scope === 'foreign-operation' ? { operationId: 'other-operation' } : scope === 'foreign-profile' ? { resultProfile: 'other-profile' } : {};
   const f = await readDiagnosticPeer(t, changes), q = await f.begin(scope === 'mutate' ? 'mutate' : 'inspect', scope === 'project' ? asset : f.manual), observed = scope === 'mutate' ? q.promise : assert.rejects(q.promise, /inspection_failed/);
