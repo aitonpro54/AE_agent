@@ -14,24 +14,43 @@ function plainOutputDirectory(file) {
 }
 
 const compRenderProof = {
-  beforeReservation({ input }) {
+  beforeReservation({ input, before }) {
     const file = output(input);
     plainOutputDirectory(file);
-    if (fs.lstatSync(file, { throwIfNoEntry: false })) fail('comp_render_output_exists');
+    if (input.mode === 'stage' && fs.lstatSync(file, { throwIfNoEntry: false })) fail('comp_render_output_exists');
+    if (input.mode === 'finalize') plainMedia(file, before.job.bytes);
   },
 };
 
+function plainMedia(file, bytes) {
+  const stat = fs.lstatSync(file, { throwIfNoEntry: false });
+  if (!stat?.isFile() || stat.isSymbolicLink() || fs.realpathSync(file) !== file ||
+      stat.size < 1 || stat.size !== bytes) fail('comp_render_output_readback');
+}
+
 function validateCompRenderCompletion({ input, before }, after) {
-  const { render, ...snapshot } = after;
-  if (canonical(snapshot) !== canonical(before) || !render || render.file !== output(input) ||
-      render.status !== 'DONE' || render.format !== 'H.264' ||
-      ['renderTemplate', 'outputTemplate', 'startFrame', 'frameCount'].some(field => render[field] !== input[field])) {
-    fail('comp_render_result');
+  const { render, job, revision, queueIdle, ...snapshot } = after;
+  const { job: previous, revision: beforeRevision, queueIdle: beforeIdle, ...preimage } = before;
+  if (canonical(snapshot) !== canonical(preimage)) fail('comp_render_result');
+  const file = output(input);
+  plainOutputDirectory(file);
+  const parameters = ['renderTemplate', 'outputTemplate', 'startFrame', 'frameCount'];
+  if (input.mode === 'stage') {
+    if (!beforeIdle || queueIdle || previous || render || !job || job.jobCompId === input.compId || job.file !== file ||
+        job.status !== 'QUEUED' || job.rendering || job.bytes !== 0 ||
+        [...parameters, 'activeLayerId', 'controlledLayerIds', 'fileName'].some(field => canonical(job[field]) !== canonical(input[field])) ||
+        fs.lstatSync(file, { throwIfNoEntry: false })) fail('comp_render_stage_result');
+    return;
   }
-  plainOutputDirectory(render.file);
-  const stat = fs.lstatSync(render.file, { throwIfNoEntry: false });
-  if (!stat?.isFile() || stat.isSymbolicLink() || fs.realpathSync(render.file) !== render.file ||
-      stat.size < 1 || stat.size !== render.bytes) fail('comp_render_output_readback');
+  if (job || !previous || previous.jobCompId !== input.jobCompId || previous.file !== file || previous.rendering) fail('comp_render_result');
+  if (input.mode === 'discard') {
+    if (render || previous.status === 'DONE') fail('comp_render_result');
+    return;
+  }
+  if (!render || previous.status !== 'DONE' || render.jobCompId !== input.jobCompId || render.file !== file ||
+      render.bytes !== previous.bytes || render.status !== 'DONE' || render.format !== 'H.264' ||
+      parameters.some(field => render[field] !== input[field] || render[field] !== previous[field])) fail('comp_render_result');
+  plainMedia(file, render.bytes);
 }
 
 module.exports = { compRenderProof, validateCompRenderCompletion };

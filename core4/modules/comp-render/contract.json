@@ -30,7 +30,16 @@
       "frameCount": { "type": "integer", "minimum": 1, "maximum": 600 },
       "fileName": { "type": "string", "minLength": 1, "maxLength": 100 },
       "renderTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
-      "outputTemplate": { "type": "string", "minLength": 1, "maxLength": 128 }
+      "outputTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "stage",
+          "finalize",
+          "discard"
+        ]
+      },
+      "jobCompId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
     },
     "required": [
       "projectId",
@@ -41,7 +50,8 @@
       "frameCount",
       "fileName",
       "renderTemplate",
-      "outputTemplate"
+      "outputTemplate",
+      "mode"
     ],
     "additionalProperties": false
   },
@@ -62,7 +72,16 @@
       "fileName": { "type": "string", "minLength": 1, "maxLength": 100 },
       "renderTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
       "outputTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
-      "expectedRevision": { "type": "string", "minLength": 1, "maxLength": 24000 }
+      "expectedRevision": { "type": "string", "minLength": 1, "maxLength": 24000 },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "stage",
+          "finalize",
+          "discard"
+        ]
+      },
+      "jobCompId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
     },
     "required": [
       "projectId",
@@ -74,7 +93,8 @@
       "fileName",
       "renderTemplate",
       "outputTemplate",
-      "expectedRevision"
+      "expectedRevision",
+      "mode"
     ],
     "additionalProperties": false
   },
@@ -95,8 +115,16 @@
       },
       "revision": { "type": "string", "minLength": 1, "maxLength": 24000 },
       "protected": { "type": "string", "minLength": 1, "maxLength": 20000 },
-      "duration": { "type": "number", "minimum": 0.001, "maximum": 86400 },
-      "frameDuration": { "type": "number", "minimum": 0.0001, "maximum": 1 },
+      "duration": {
+        "type": "number",
+        "minimum": 0.001,
+        "maximum": 86400
+      },
+      "frameDuration": {
+        "type": "number",
+        "minimum": 0.0001,
+        "maximum": 1
+      },
       "queueIdle": { "type": "boolean" },
       "layers": {
         "type": "array",
@@ -120,6 +148,7 @@
       "render": {
         "type": "object",
         "properties": {
+          "jobCompId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
           "file": { "type": "string", "minLength": 1, "maxLength": 8192 },
           "bytes": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
           "status": {
@@ -140,12 +169,57 @@
           "frameCount": { "type": "integer", "minimum": 1, "maximum": 600 }
         },
         "required": [
+          "jobCompId",
           "file",
           "bytes",
           "status",
           "renderTemplate",
           "outputTemplate",
           "format",
+          "startFrame",
+          "frameCount"
+        ],
+        "additionalProperties": false
+      },
+      "job": {
+        "type": "object",
+        "properties": {
+          "jobCompId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "file": { "type": "string", "minLength": 1, "maxLength": 8192 },
+          "bytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+          "fileName": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "activeLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "controlledLayerIds": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+            "minItems": 1,
+            "maxItems": 24
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "DONE",
+              "INCOMPLETE"
+            ]
+          },
+          "rendering": { "type": "boolean" },
+          "renderTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "outputTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "startFrame": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+          "frameCount": { "type": "integer", "minimum": 1, "maximum": 600 }
+        },
+        "required": [
+          "jobCompId",
+          "file",
+          "bytes",
+          "fileName",
+          "activeLayerId",
+          "controlledLayerIds",
+          "status",
+          "rendering",
+          "renderTemplate",
+          "outputTemplate",
           "startFrame",
           "frameCount"
         ],
@@ -178,7 +252,7 @@
     ],
     "requiresCheckpoint": true,
     "confirmation": "native-current-target",
-    "checkpointKind": "native-render-visibility-preimage-v1"
+    "checkpointKind": "native-render-queue-preimage-v2"
   },
   "executionPolicy": "current-matching-target-after-local-confirmation-v1"
 }

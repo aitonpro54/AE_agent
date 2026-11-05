@@ -1,5 +1,6 @@
 (function () {
     var POLICY = 'current-matching-target-after-local-confirmation-v1';
+    var TAG = 'AE_CORE4_RENDER_V2:';
     function fault(code) { var error = new Error(code); error.coreCode = code; throw error; }
     function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
     function contains(list, value) {
@@ -14,14 +15,57 @@
             comp.displayStartTime !== 0 || comp.numLayers > 60 || comp.numLayers < 1) fault('comp_render_workspace');
         return comp;
     }
-    function inspect(p) {
-        var comp = compFor(p), q = app.project.renderQueue, queue = [], list = [], i, item, layer;
+    function output(name) {
+        var dir = new Folder(app.project.file.parent.fsName + '/titles-output');
+        if (!dir.exists || dir.alias || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,90}\.mp4$/.test(name) ||
+            /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])\./i.test(name)) fault('comp_render_output_directory');
+        var file = new File(dir.fsName + '/' + name);
+        if (file.alias) fault('comp_render_output_alias');
+        return file;
+    }
+    function identity(p) {
+        return [p.compId, p.fileName, p.activeLayerId, p.controlledLayerIds, p.startFrame, p.frameCount, p.renderTemplate, p.outputTemplate];
+    }
+    function settings(item, om) {
+        return JSON.stringify([item.getSettings(GetSettingsFormat.STRING_SETTABLE), om.getSettings(GetSettingsFormat.STRING_SETTABLE)]);
+    }
+    function jobOf(item, tag, comp, busy) {
+        var copy = item.comp, file = output(tag[1]), om = item.outputModule(1);
+        var start = tag[4], count = tag[5], frame = comp.frameDuration;
+        if (!om || item.numOutputModules !== 1 || !om.file || om.file.fsName !== file.fsName ||
+            om.postRenderAction !== PostRenderAction.NONE || om.getSettings(GetSettingsFormat.STRING).Format !== 'H.264' ||
+            Math.abs(item.timeSpanStart - start * frame) > 0.00001 || Math.abs(item.timeSpanDuration - count * frame) > 0.00001 ||
+            copy.numLayers !== comp.numLayers || copy.frameDuration !== frame || copy.width !== comp.width || copy.height !== comp.height ||
+            copy.usedIn.length !== 0 || settings(item, om) !== tag[8]) fault('comp_render_job_binding');
+        for (var i = 1; i <= comp.numLayers; i++) {
+            var original = comp.layer(i), staged = copy.layer(i);
+            var enabled = contains(tag[3], original.id) ? original.id === tag[2] : original.enabled;
+            if (staged.name !== original.name || staged.enabled !== enabled ||
+                (staged.source && staged.source.id) !== (original.source && original.source.id)) fault('comp_render_job_visibility');
+        }
+        var status = item.status === RQItemStatus.DONE ? 'DONE' : item.status === RQItemStatus.QUEUED ? 'QUEUED' : 'INCOMPLETE';
+        return { jobCompId: copy.id, file: String(file.fsName), bytes: file.exists ? file.length : 0,
+            fileName: tag[1], activeLayerId: tag[2], controlledLayerIds: tag[3], startFrame: start, frameCount: count,
+            renderTemplate: tag[6], outputTemplate: tag[7], status: status, rendering: busy };
+    }
+    function observe(p) {
+        var comp = compFor(p), q = app.project.renderQueue, queue = [], list = [], i, item, layer, owned, job;
         if (q.numItems > 64) fault('comp_render_queue_budget');
         var idle = !q.rendering;
         for (i = 1; i <= q.numItems; i++) {
             item = q.item(i);
-            queue.push([item.comp.id, item.render, Number(item.status)]);
             if (item.render) idle = false;
+            var comment = String(item.comp.comment);
+            if (comment.indexOf(TAG) === 0) {
+                var tag = JSON.parse(comment.slice(TAG.length));
+                if (tag instanceof Array && tag.length === 9 && tag[0] === comp.id) {
+                    if (owned) fault('comp_render_job_ambiguous');
+                    owned = item;
+                    job = jobOf(item, tag, comp, q.rendering);
+                    continue;
+                }
+            }
+            queue.push([item.comp.id, item.render, Number(item.status)]);
         }
         for (i = 1; i <= comp.numLayers; i++) {
             layer = comp.layer(i);
@@ -30,9 +74,12 @@
         }
         var target = { projectId: p.projectId, compId: p.compId };
         var preserved = JSON.stringify([comp.name, comp.comment, comp.width, comp.height, comp.duration, comp.frameDuration, comp.time, queue]);
-        return { target: target, revision: JSON.stringify([target, preserved, list]), 'protected': preserved, duration: comp.duration,
-            frameDuration: comp.frameDuration, queueIdle: idle, layers: list };
+        var snapshot = { target: target, revision: JSON.stringify([target, preserved, list, idle, job || null]), 'protected': preserved,
+            duration: comp.duration, frameDuration: comp.frameDuration, queueIdle: idle, layers: list };
+        if (job) snapshot.job = job;
+        return { snapshot: snapshot, owned: owned };
     }
+    function inspect(p) { return observe(p).snapshot; }
     function dependencyGraph(root, p) {
         var visited = [], count = 0;
         function visit(comp) {
@@ -61,80 +108,96 @@
         }
         visit(root);
     }
-    function output(p) {
-        var dir = new Folder(app.project.file.parent.fsName + '/titles-output');
-        if (!dir.exists || dir.alias || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,90}\.mp4$/.test(p.fileName)) fault('comp_render_output_directory');
-        var file = new File(dir.fsName + '/' + p.fileName);
-        if (file.exists || file.alias) fault('comp_render_output_exists');
-        return file;
-    }
-    function preflight(p, before) {
-        var proof = p._execution;
+    function preflight(p, observation) {
+        var before = observation.snapshot, proof = p._execution;
         if (!proof || proof.policyId !== POLICY || before.revision !== p.expectedRevision ||
             proof.baselineRevision !== before.revision || proof.baselineProtected !== before['protected'] ||
             !proof.target || proof.target.projectId !== p.projectId || proof.target.compId !== p.compId) fault('comp_render_binding');
-        if (!before.queueIdle) fault('comp_render_queue_busy');
+        var comp = compFor(p), file = output(p.fileName);
+        if (p.mode !== 'stage') {
+            var job = before.job;
+            if (!job || job.jobCompId !== p.jobCompId || !same(JSON.parse(observation.owned.comp.comment.slice(TAG.length)).slice(0, 8), identity(p)) ||
+                job.rendering || (p.mode === 'finalize' ? job.status !== 'DONE' || job.bytes < 1 : p.mode !== 'discard' || job.status === 'DONE')) fault('comp_render_job');
+            return { comp: comp, file: file };
+        }
+        if (!before.queueIdle || before.job || p.jobCompId !== undefined) fault('comp_render_queue_busy');
+        if (file.exists) fault('comp_render_output_exists');
         if ((p.startFrame + p.frameCount) * before.frameDuration > before.duration + 0.00001 ||
-            p.frameCount * before.frameDuration > 8) fault('comp_render_frame_range');
-        var comp = compFor(p), controlled = [], i;
-        for (i = 0; i < before.layers.length; i++) if (contains(p.controlledLayerIds, before.layers[i].layerId)) {
+            p.frameCount * before.frameDuration > 12) fault('comp_render_frame_range');
+        var controlled = [];
+        for (var i = 0; i < before.layers.length; i++) if (contains(p.controlledLayerIds, before.layers[i].layerId)) {
             if (!before.layers[i].controllable) fault('comp_render_targets');
-            controlled.push(comp.layer(i + 1));
+            controlled.push(i + 1);
         }
         if (controlled.length !== p.controlledLayerIds.length || !contains(p.controlledLayerIds, p.activeLayerId)) fault('comp_render_targets');
         dependencyGraph(comp, p);
-        return { comp: comp, controlled: controlled, file: output(p) };
+        return { comp: comp, controlled: controlled, file: file };
     }
-    function render(p, context, progress) {
-        var comp = context.comp, queue = app.project.renderQueue, controlled = context.controlled;
-        var item, flags = [], time = comp.time, i;
-        try {
-            item = queue.items.add(comp);
-            var om = item.outputModule(1);
-            if (!contains(item.templates, p.renderTemplate) || !contains(om.templates, p.outputTemplate)) fault('comp_render_template_unavailable');
-            item.applyTemplate(p.renderTemplate);
-            om.applyTemplate(p.outputTemplate);
-            om = item.outputModule(1);
-            if (om.getSettings(GetSettingsFormat.STRING).Format !== 'H.264') fault('comp_render_format');
-            om.postRenderAction = PostRenderAction.NONE;
-            om.file = context.file;
-            if (om.file.fsName !== context.file.fsName || om.postRenderAction !== PostRenderAction.NONE) fault('comp_render_output_binding');
-            item.timeSpanStart = p.startFrame * comp.frameDuration;
-            item.timeSpanDuration = p.frameCount * comp.frameDuration;
-            if (Math.abs(item.timeSpanStart - p.startFrame * comp.frameDuration) > 0.00001 ||
-                Math.abs(item.timeSpanDuration - p.frameCount * comp.frameDuration) > 0.00001) fault('comp_render_frame_range');
-            for (i = 0; i < controlled.length; i++) {
-                flags.push(controlled[i].enabled);
-                controlled[i].enabled = controlled[i].id === p.activeLayerId;
-            }
-            item.render = true;
-            progress.dispatched = true;
-            queue.render();
-            var rendered = new File(context.file.fsName);
-            if (item.status !== RQItemStatus.DONE || !rendered.exists || rendered.length < 1) fault('comp_render_terminal');
-            return { file: String(rendered.fsName), bytes: rendered.length, status: 'DONE', renderTemplate: p.renderTemplate,
-                outputTemplate: p.outputTemplate, format: 'H.264', startFrame: p.startFrame, frameCount: p.frameCount };
-        } finally {
-            for (i = 0; i < flags.length; i++) controlled[i].enabled = flags[i];
-            if (comp.time !== time) comp.time = time;
-            if (item) item.remove();
+    function stage(p, context, owned) {
+        var comp = context.comp, copy = comp.duplicate();
+        owned.copy = copy;
+        copy.name = 'Core4 Render ' + p.compId + ' - ' + p.fileName;
+        for (var i = 0; i < context.controlled.length; i++) {
+            var index = context.controlled[i];
+            copy.layer(index).enabled = comp.layer(index).id === p.activeLayerId;
         }
+        var item = app.project.renderQueue.items.add(copy);
+        owned.item = item;
+        var om = item.outputModule(1);
+        if (!contains(item.templates, p.renderTemplate) || !contains(om.templates, p.outputTemplate)) fault('comp_render_template_unavailable');
+        item.applyTemplate(p.renderTemplate);
+        om.applyTemplate(p.outputTemplate);
+        om = item.outputModule(1);
+        om.postRenderAction = PostRenderAction.NONE;
+        om.file = context.file;
+        item.timeSpanStart = p.startFrame * comp.frameDuration;
+        item.timeSpanDuration = p.frameCount * comp.frameDuration;
+        item.render = true;
+        var nativeSettings = settings(item, item.outputModule(1));
+        if (nativeSettings.length > 8192) fault('comp_render_settings_budget');
+        copy.comment = TAG + JSON.stringify(identity(p).concat([nativeSettings]));
     }
     function mutate(p) {
-        var before, progress = { dispatched: false }, context;
+        var before, context, observation, owned = {}, started = false;
         try {
-            before = inspect(p);
-            context = preflight(p, before);
-            if (confirm('Рендер AE: слой ' + p.activeLayerId + ', compId ' + p.compId + '\n' + p.projectId +
+            observation = observe(p);
+            before = observation.snapshot;
+            context = preflight(p, observation);
+            var action = p.mode === 'stage' ? 'Подготовить единственное задание в очереди AE' :
+                p.mode === 'finalize' ? 'Подтвердить DONE и удалить временное задание и копию' : 'Снять незавершённое задание и удалить его копию';
+            if (confirm(action + '\nСлой ' + p.activeLayerId + ', compId ' + p.compId + '\n' + p.projectId +
                 '\nКадры: ' + p.startFrame + ' + ' + p.frameCount + '\n' + p.renderTemplate + ' / ' + p.outputTemplate +
-                '\n' + context.file.fsName + '\nВосстановить исходную видимость после рендера.', true, 'AE Agent Core4 — рендер AE') !== true) {
-                return { outcome: 'rejected', code: 'local_cancelled' };
+                '\n' + context.file.fsName, true, 'AE Agent Core4 — очередь AE') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
+            observation = observe(p);
+            before = observation.snapshot;
+            context = preflight(p, observation);
+            var after;
+            try {
+                if (p.mode === 'stage') {
+                    started = true;
+                    stage(p, context, owned);
+                } else {
+                    var copy = observation.owned.comp;
+                    started = true;
+                    observation.owned.remove();
+                    copy.remove();
+                    if (app.project.itemByID(p.jobCompId)) fault('comp_render_restore');
+                }
+                after = inspect(p);
+                if (after['protected'] !== before['protected'] || !same(after.layers, before.layers) ||
+                    (p.mode === 'stage' ? !after.job || after.job.status !== 'QUEUED' || after.job.bytes !== 0 : !!after.job)) fault('comp_render_restore');
+            } catch (e) {
+                if (owned.item) owned.item.remove();
+                if (owned.copy) {
+                    var copyId = owned.copy.id;
+                    owned.copy.remove();
+                    if (!app.project.itemByID(copyId)) started = false;
+                }
+                throw e;
             }
-            before = inspect(p);
-            context = preflight(p, before);
-            var completed = render(p, context, progress), after = inspect(p), proof = p._execution;
-            if (!same(after, before)) fault('comp_render_restore');
-            after.render = completed;
+            if (p.mode === 'finalize') after.render = { jobCompId: before.job.jobCompId, file: before.job.file, bytes: before.job.bytes,
+                status: 'DONE', format: 'H.264', renderTemplate: p.renderTemplate, outputTemplate: p.outputTemplate, startFrame: p.startFrame, frameCount: p.frameCount };
+            var proof = p._execution;
             return { outcome: 'applied', snapshot: after, transactionReceipt: { version: 2, policyId: POLICY,
                 proposalId: proof.proposalId, planDigest: proof.planDigest, taskId: proof.taskId, taskEpoch: proof.taskEpoch,
                 stepId: proof.stepId, checkpointRef: proof.checkpointRef, checkpointDigest: proof.checkpointDigest,
@@ -142,10 +205,10 @@
                 resultRevision: after.revision, protectedFields: after['protected'] } };
         } catch (e) {
             var restored = false;
-            if (before && !progress.dispatched) {
+            if (before && !started) {
                 try { restored = same(inspect(p), before); } catch (ignored) {}
             }
-            return { outcome: progress.dispatched || before && !restored ? 'unknown' : 'rejected', code: e.coreCode || 'comp_render_ae_error' };
+            return { outcome: started || before && !restored ? 'unknown' : 'rejected', code: e.coreCode || 'comp_render_ae_error' };
         }
     }
     return { inspect: inspect, mutate: mutate, verify: inspect };

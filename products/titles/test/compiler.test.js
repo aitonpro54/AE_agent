@@ -148,7 +148,7 @@ test('production import closure is own files + allowed Node builtins; contract p
     }
   }
   assert.deepEqual([...visited].map(file => path.relative(productRoot, file).split(path.sep).join('/')).sort(),
-    ['cli.js', 'src/compiler.js', 'src/layout-native.js', 'src/layout.js', 'src/series.js']);
+    ['cli.js', 'src/compiler.js', 'src/layout-native.js', 'src/layout.js', 'src/release.js', 'src/series.js']);
   assert.deepEqual(publicContract, JSON.parse(fs.readFileSync(path.join(coreRoot, 'modules/titles-current-target/contract.json'))));
 });
 test('actual owner boundary accepts first compiler payload with server taskId and Broker rejects forged evidence; VM only', async t => {
