@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "series-1",
+  "target": { "projectId": "C:\\Work\\title-template-copy.aep", "compId": 4560 },
+  "source": "1. А. Б. Ветров\n\"Север\"\n\n№2\nМ. В. Полякова\nХореографическая постановка\n«Дорога к северному морю\nи огни далёкого города»",
+  "profile": {
+    "id": "titr-all-fhd",
+    "frame": { "left": 320, "top": 620, "width": 1135, "height": 220 },
+    "titleCase": "uppercase",
+    "leading": 73,
+    "justification": "center",
+    "minimumScale": 0.6,
+    "roles": {
+      "author": { "font": "ArialMT", "fontSize": 58, "tracking": 12, "fill": [0.95, 0.87, 0.69] },
+      "caption": { "font": "ArialMT", "fontSize": 40, "tracking": 10, "fill": [0.84, 0.9, 0.96] },
+      "title": { "font": "Arial-BoldMT", "fontSize": 76, "tracking": 15, "fill": [0.98, 0.98, 1] }
+    }
+  },
+  "titles": [
+    { "number": 1, "name": "Core4 Title 01", "slot": "core-title-01", "format": "author-title", "candidateId": "base" },
+    { "number": 2, "name": "Core4 Title 02", "slot": "core-title-02", "format": "author-caption-title", "candidateId": "override", "lineBreaks": { "title": [4] } }
+  ]
+}

@@ -46,3 +46,24 @@
 `synthetic:false` в файле не доказывают свежесть/подлинность server evidence или
 авторизацию исполнения. Удаление папки Titles не удаляет state Core и не отменяет
 уже отправленную команду. Собственные runtime receipts/state продукт не хранит.
+
+## Серия в копии шаблона
+
+В составе Core `manual-titles/owner` используйте общий модуль `text-layer`.
+В [примере задания](examples/numbered-series.json) замените `target` на точный
+путь и ID своей рабочей композиции. Для `frame: "guides"` инспекция должна вернуть
+ровно две направляющие по каждой оси. Можно задать прямоугольник `left, top,
+width, height` явно. Профиль задаёт оформление автора, пояснения и названия.
+Количество блоков входа совпадает с количеством записей в `titles`. Для
+ручных переносов задайте `lineBreaks` по словам рубрики и `candidateId: "override"`.
+
+```powershell
+node products/titles/cli.js prepare-series --job JOB.json --inspection CURRENT.json
+node products/titles/cli.js prepare-series-write --job JOB.json --selection SELECT.json --contract CONTRACT.json --inspection CURRENT.json
+```
+
+Для создания `SELECT.json` содержит `{"number":1}`. Для редактирования он также
+содержит `layerId` из свежей инспекции этого слота. Компилятор возвращает один
+шаг. Каждый шаг проходит стандартное подтверждение и свежий read-back перед
+подготовкой следующего. Сборка серии создаёт текстовые слои. Выбор видимости и
+применение анимации идут отдельными операциями.
