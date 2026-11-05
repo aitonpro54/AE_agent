@@ -1,0 +1,12 @@
+{
+  "moduleId": "comp-render",
+  "operationId": "render-text-variant",
+  "artifactHash": "5c39d15a4cb7fb9ffd0eb932c7a456de3677b3cf8f46a4955461f693a67e38b7",
+  "schemaHash": "6b282cec18e4c84823d22d5d2abce6625c672ba06fb24100c664522c6d57f095",
+  "resultSchemaHash": "2ff3e56ba45cee23b877d8a4fdbb76f3a65a0eb15da64f997ae1ad245e348c6c",
+  "effectPolicyHash": "24399325d09141b435eecb993495b67ed47e593bc734e6abbb8cc1f46624f040",
+  "executorHash": "b0f7ec7faa491ab10c534dcc37b5062958386531877cb7170e322840f5e0e576",
+  "protocolVersion": 1,
+  "trustApprovalId": "source-review-comp-render-20261105",
+  "revoked": false
+}

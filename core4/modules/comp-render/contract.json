@@ -1,0 +1,184 @@
+{
+  "moduleId": "comp-render",
+  "operationId": "render-text-variant",
+  "protocolVersion": 1,
+  "targetSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+    },
+    "required": [
+      "projectId",
+      "compId"
+    ],
+    "additionalProperties": false
+  },
+  "buildSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "controlledLayerIds": {
+        "type": "array",
+        "items": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "minItems": 1,
+        "maxItems": 24
+      },
+      "activeLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "startFrame": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+      "frameCount": { "type": "integer", "minimum": 1, "maximum": 600 },
+      "fileName": { "type": "string", "minLength": 1, "maxLength": 100 },
+      "renderTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "outputTemplate": { "type": "string", "minLength": 1, "maxLength": 128 }
+    },
+    "required": [
+      "projectId",
+      "compId",
+      "controlledLayerIds",
+      "activeLayerId",
+      "startFrame",
+      "frameCount",
+      "fileName",
+      "renderTemplate",
+      "outputTemplate"
+    ],
+    "additionalProperties": false
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "controlledLayerIds": {
+        "type": "array",
+        "items": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "minItems": 1,
+        "maxItems": 24
+      },
+      "activeLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "startFrame": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+      "frameCount": { "type": "integer", "minimum": 1, "maximum": 600 },
+      "fileName": { "type": "string", "minLength": 1, "maxLength": 100 },
+      "renderTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "outputTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "expectedRevision": { "type": "string", "minLength": 1, "maxLength": 24000 }
+    },
+    "required": [
+      "projectId",
+      "compId",
+      "controlledLayerIds",
+      "activeLayerId",
+      "startFrame",
+      "frameCount",
+      "fileName",
+      "renderTemplate",
+      "outputTemplate",
+      "expectedRevision"
+    ],
+    "additionalProperties": false
+  },
+  "snapshotSchema": {
+    "type": "object",
+    "properties": {
+      "target": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+          "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+        },
+        "required": [
+          "projectId",
+          "compId"
+        ],
+        "additionalProperties": false
+      },
+      "revision": { "type": "string", "minLength": 1, "maxLength": 24000 },
+      "protected": { "type": "string", "minLength": 1, "maxLength": 20000 },
+      "duration": { "type": "number", "minimum": 0.001, "maximum": 86400 },
+      "frameDuration": { "type": "number", "minimum": 0.0001, "maximum": 1 },
+      "queueIdle": { "type": "boolean" },
+      "layers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "layerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+            "enabled": { "type": "boolean" },
+            "controllable": { "type": "boolean" }
+          },
+          "required": [
+            "layerId",
+            "enabled",
+            "controllable"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 1,
+        "maxItems": 60
+      },
+      "render": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string", "minLength": 1, "maxLength": 8192 },
+          "bytes": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DONE"
+            ]
+          },
+          "renderTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "outputTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "format": {
+            "type": "string",
+            "enum": [
+              "H.264"
+            ]
+          },
+          "startFrame": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+          "frameCount": { "type": "integer", "minimum": 1, "maximum": 600 }
+        },
+        "required": [
+          "file",
+          "bytes",
+          "status",
+          "renderTemplate",
+          "outputTemplate",
+          "format",
+          "startFrame",
+          "frameCount"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "target",
+      "revision",
+      "protected",
+      "duration",
+      "frameDuration",
+      "queueIdle",
+      "layers"
+    ],
+    "additionalProperties": false
+  },
+  "effectPolicy": {
+    "effect": "owned-native-render",
+    "targetFields": [
+      "projectId",
+      "compId"
+    ],
+    "expectedBindings": {
+      "expectedRevision": "revision"
+    },
+    "resultBindings": {},
+    "preserve": [
+      "protected"
+    ],
+    "requiresCheckpoint": true,
+    "confirmation": "native-current-target",
+    "checkpointKind": "native-render-visibility-preimage-v1"
+  },
+  "executionPolicy": "current-matching-target-after-local-confirmation-v1"
+}

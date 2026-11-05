@@ -24,8 +24,8 @@ function main() {
     write(dir + '/artifact.json', artifact);
     console.log(JSON.stringify({ packaged: ['cep-bridge'], pin: hash(artifact), admissionsWritten: false, ...(args.includes('--trace') ? { reads } : {}), liveCalls: 0 })); return;
   }
-  const moduleIds = ['photo-placeholder', 'titles', 'titles-current-target', 'titles-point-layout', 'text-layer', 'text-variant'];
-  const optional = ['titles-point-layout', 'text-layer', 'text-variant'];
+  const moduleIds = ['photo-placeholder', 'titles', 'titles-current-target', 'titles-point-layout', 'text-layer', 'text-variant', 'comp-render'];
+  const optional = ['titles-point-layout', 'text-layer', 'text-variant', 'comp-render'];
   if (moduleId && !moduleIds.includes(moduleId)) fail('unknown_module');
   if (component && !['core', 'protocol', 'worker', 'engine'].includes(component)) fail('unknown_component');
   let catalog;
@@ -38,7 +38,7 @@ function main() {
     const version = optional.includes(id) ? '4.1.0' : manual ? '4.0.0' : '4.0.0-m1';
     const { pin } = seal(dir, id, 'implementation.js', ['implementation.js', 'contract.json', 'executor.jsx'], manual ? {} : { 'protocol/target-contract.json': true }, version);
     const contract = JSON.parse(read(dir + '/contract.json'));
-    const admission = { moduleId: id, operationId: contract.operationId, artifactHash: pin, schemaHash: hash(contract.inputSchema), resultSchemaHash: hash(contract.snapshotSchema), effectPolicyHash: hash(contract.effectPolicy), executorHash: hash(read(dir + '/executor.jsx')), protocolVersion: 1, trustApprovalId: ['text-layer', 'text-variant'].includes(id) ? 'source-review-' + id + '-20261105' : 'M1-source-review-' + id + '-20261026', revoked: false };
+    const admission = { moduleId: id, operationId: contract.operationId, artifactHash: pin, schemaHash: hash(contract.inputSchema), resultSchemaHash: hash(contract.snapshotSchema), effectPolicyHash: hash(contract.effectPolicy), executorHash: hash(read(dir + '/executor.jsx')), protocolVersion: 1, trustApprovalId: ['text-layer', 'text-variant', 'comp-render'].includes(id) ? 'source-review-' + id + '-20261105' : 'M1-source-review-' + id + '-20261026', revoked: false };
     // Only --reviewed-source writes admission records: generated hashes are not runtime grants.
     if (args.includes('--reviewed-source')) write('config/admissions/' + id + '.json', admission);
     entries.push(id);

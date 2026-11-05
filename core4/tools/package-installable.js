@@ -53,7 +53,7 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
   if (withText) parts.push(spec.compositions['manual-titles']);
   if (withVariants) parts.push(spec.compositions[selector]);
   const modules = parts.flatMap(part => part.modules), assets = parts.flatMap(part => part.assets);
-  for (const moduleId of modules.filter(id => ['titles-point-layout', 'text-layer', 'text-variant'].includes(id))) {
+  for (const moduleId of modules.filter(id => ['titles-point-layout', 'text-layer', 'text-variant', 'comp-render'].includes(id))) {
     const modulePath = 'modules/' + moduleId;
     const manifest = JSON.parse(Buffer.from(files[modulePath + '/artifact.json'], 'base64'));
     original.modules.push({ id: moduleId, version: manifest.version, path: modulePath, admission: 'config/admissions/' + moduleId + '.json' });

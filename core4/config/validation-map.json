@@ -9,6 +9,10 @@
     { "prefix": "core4/config/admissions/text-variant.json", "owner": "text-variant", "checks": ["text-variant"] },
     { "prefix": "core4/runtime/text-variant-proof.js", "owner": "text-variant", "checks": ["text-variant"] },
     { "prefix": "core4/test/text-variant.test.js", "owner": "text-variant", "checks": ["text-variant"] },
+    { "prefix": "core4/modules/comp-render/", "owner": "comp-render", "checks": ["comp-render"] },
+    { "prefix": "core4/config/admissions/comp-render.json", "owner": "comp-render", "checks": ["comp-render"] },
+    { "prefix": "core4/runtime/comp-render-proof.js", "owner": "comp-render", "checks": ["comp-render"] },
+    { "prefix": "core4/test/comp-render.test.js", "owner": "comp-render", "checks": ["comp-render"] },
     { "prefix": "core4/modules/titles-point-layout/", "owner": "point-layout", "checks": ["point-layout"] },
     { "prefix": "core4/config/admissions/titles-point-layout.json", "owner": "point-layout", "checks": ["point-layout"] },
     { "prefix": "core4/runtime/point-layout-proof.js", "owner": "point-layout", "checks": ["point-layout"] },
@@ -1310,6 +1314,10 @@
       "modules/text-variant/", "runtime/text-variant-proof.js", "protocol/", "tools/package-installable.js",
       "runtime/stdio-entry.js", "runtime/source-package.json", "config/admissions/text-variant.json", "test/text-variant.test.js"
     ],
+    "comp-render": [
+      "modules/comp-render/", "runtime/comp-render-proof.js", "protocol/", "runtime/stdio-entry.js",
+      "runtime/manual-policy.js", "integrations/cep/http-peer.js", "test/comp-render.test.js"
+    ],
     "installable-runtime": [
       "runtime/",
       "cep/",
@@ -1693,6 +1701,7 @@
     "point-layout": ["node", "--test", "--test-name-pattern=point-layout", "test/point-layout.test.js"],
     "text-layer": ["node", "--test", "--test-name-pattern=text-layer", "test/text-layer.test.js"],
     "text-variant": ["node", "--test", "--test-name-pattern=text-variant", "test/text-variant.test.js"],
+    "comp-render": ["node", "--test", "--test-name-pattern=comp-render", "test/comp-render.test.js"],
     "installable-runtime": [
       "node",
       "--test",
@@ -1873,6 +1882,9 @@
       "kind": "integration"
     },
     "text-variant": {
+      "kind": "integration"
+    },
+    "comp-render": {
       "kind": "integration"
     },
     "installable-runtime": {

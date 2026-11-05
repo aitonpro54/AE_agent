@@ -76,8 +76,9 @@
       "artifactClosures": ["modules/text-layer/artifact.json"]
     },
     "variants": {
-      "files": ["runtime/text-variant-proof.js", "config/admissions/text-variant.json"],
-      "artifactClosures": ["modules/text-variant/artifact.json"]
+      "files": ["runtime/text-variant-proof.js", "config/admissions/text-variant.json",
+        "runtime/comp-render-proof.js", "config/admissions/comp-render.json"],
+      "artifactClosures": ["modules/text-variant/artifact.json", "modules/comp-render/artifact.json"]
     }
   },
   "compositions": {
@@ -154,13 +155,21 @@
       ]
     },
     "manual-titles-variants": {
-      "modules": ["text-variant"],
+      "modules": ["text-variant", "comp-render"],
       "assets": [
         {
           "assetKey": "text-variant-v1",
           "moduleId": "text-variant",
           "path": "modules/text-variant",
           "admission": "config/admissions/text-variant.json",
+          "policy": "current-matching-target-after-local-confirmation-v1",
+          "phases": ["inspect", "mutate", "verify"]
+        },
+        {
+          "assetKey": "comp-render-v1",
+          "moduleId": "comp-render",
+          "path": "modules/comp-render",
+          "admission": "config/admissions/comp-render.json",
           "policy": "current-matching-target-after-local-confirmation-v1",
           "phases": ["inspect", "mutate", "verify"]
         }
