@@ -1,12 +1,15 @@
 'use strict';
 // Real TEMP packages/installations and fs CAS; synthetic process observations.
 const nodeTest = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), os = require('node:os'), crypto = require('node:crypto'), http = require('node:http'), Module = require('node:module');
-const { buildPackage } = require('../tools/package-installable'), { canonical, hash } = require('../protocol/json');
+const { spawnSync } = require('node:child_process');
+const { buildPackage, verifyPackage } = require('../tools/package-installable'), { canonical, hash } = require('../protocol/json');
+const { packageCapability, composeCapability } = require('../tools/package-capability');
+const { verifyStandalone } = require('../tools/standalone-installer');
 const { classifyOwnerProcess } = require('../runtime/windows-owner-process');
 const SOURCE = path.resolve(__dirname, '..'), packages = new Map();
 const test = (name, fn) => nodeTest('stopped-update ' + name, { timeout: 90000 }, fn);
 function pkg(composition) { if (!packages.has(composition)) packages.set(composition, buildPackage(SOURCE, composition, { runtimeModel: 'owner' })); return packages.get(composition); }
-async function harness(t) {
+async function harness(t, { current = pkg('readonly'), next = pkg('manual'), withHistory = false } = {}) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-stopped-update-')), tracked = new Set(), names = new Map();
   const io = { ...fs, openSync(file, ...args) { const fd = fs.openSync(file, ...args); tracked.add(fd); names.set(fd, file); return fd; }, closeSync(fd) { tracked.delete(fd); names.delete(fd); return fs.closeSync(fd); } };
   let birth = 638000000000000000n, probeHook, unavailable = false, legacyPort;
@@ -26,15 +29,20 @@ async function harness(t) {
   }
   const installer = load(path.join(SOURCE, 'tools/install-core4')), api = load(path.join(SOURCE, 'tools/stopped-update'));
   const args = { installRoot: path.join(base, 'AEAgentCore4'), extensionsDir: path.join(base, 'extensions'), configPath: path.join(base, 'config.toml'), machineId: os.hostname(), nodePath: fs.realpathSync(process.execPath) };
-  installer.applyInstall(installer.planInstall({ ...args, pkg: pkg('readonly') }));
+  installer.applyInstall(installer.planInstall({ ...args, pkg: current }));
   const descriptorPath = path.join(args.installRoot, 'installation.json'), d = JSON.parse(fs.readFileSync(descriptorPath)), maintenance = load(path.join(SOURCE, 'runtime/owner-maintenance'));
+  if (withHistory) {
+    load(path.join(SOURCE, 'integrations/cep/completion-store')).openCompletionStore({ directory: path.join(d.stateDir, 'receiver'), installationContext: { descriptorPath } }).close();
+    const { Ledger } = load(path.join(SOURCE, 'core/ledger'));
+    new Ledger(path.join(d.stateDir, 'broker/ledger.ndjson')).append({ type: 'task', taskId: 'fixture-settled-task', epoch: 1, reset: true });
+  }
   const originalScope = { bootId: crypto.randomUUID(), pid: 2147483000, birthTicks: String(birth) }, id = crypto.randomUUID();
   const m = maintenance.createOwnerMaintenance({ installation: d, descriptorPath, lifecycle: { state: () => ({ processBootId: originalScope.bootId, ...originalScope }) }, freeze() {}, activity: () => ({ pending: false }), accepted: () => 0, close: async () => {}, intervalMs: 1 });
   m.request(maintenance.createStopAuthorization({ installation: d, descriptorPath, scope: originalScope, id })); assert.equal((await m.done).phase, 'stopped');
   const server = http.createServer(); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const certifier = load(path.join(SOURCE, 'runtime/stopped-certification')), certOptions = { installation: d, descriptorPath, id, reservedServer: server };
   const cert = await certifier.certifyStoppedInstallation({ ...certOptions, expectedProofHash: (await certifier.inspectStoppedCertification(certOptions)).proofHash });
-  const plan = installer.planInstall({ ...args, pkg: pkg('manual') }), options = { plan, certificate: cert, ...certOptions };
+  const plan = installer.planInstall({ ...args, pkg: next }), options = { plan, certificate: cert, ...certOptions };
   const oldHash = hash(fs.readFileSync(descriptorPath)), barrier = path.join(d.stateDir, 'runtime-maintenance.json');
   const recovery = () => ({ installation: d, descriptorPath, transactionId: plan.transactionId, expectedPreviousDescriptorHash: oldHash, expectedPackageHash: plan.pkg.packageHash, reservedServer: server });
   t.after(async () => { for (const fd of tracked) { try { fs.closeSync(fd); } catch {} } tracked.clear(); await new Promise(resolve => server.close(resolve)); assert.ok(base.startsWith(path.join(os.tmpdir(), 'core4-stopped-update-')) && path.resolve(base) === base); fs.rmSync(base, { recursive: true, force: true }); });
@@ -45,6 +53,127 @@ async function harness(t) {
 }
 const code = v => e => e.code === v;
 function intercept(h, method, callback) { const original = h.io[method]; h.io[method] = (...args) => callback(original, ...args); return () => { h.io[method] = original; }; }
+test('C1b packages, admits and updates one independent Titles capability through the stopped owner path', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-capability-'));
+  t.after(() => { assert.ok(root.startsWith(path.join(os.tmpdir(), 'core4-capability-')) && path.resolve(root) === root); fs.rmSync(root, { recursive: true, force: true }); });
+  const slot = 'titles-current-target', source = path.join(root, slot), modulePath = 'modules/' + slot, admissionPath = 'config/admissions/' + slot + '.json';
+  fs.mkdirSync(source);
+  for (const file of ['artifact.json', 'contract.json', 'executor.jsx', 'implementation.js']) fs.copyFileSync(path.join(SOURCE, modulePath, file), path.join(source, file));
+  const base = pkg('manual'), basePath = path.join(root, 'base.json'), originalAdmission = Buffer.from(base.files[admissionPath], 'base64');
+  const initial = packageCapability(source);
+  const pins = (bundle, admission, current = base) => ({ basePin: current.packageHash, capabilityPin: bundle.capabilityHash, admissionPin: hash(admission) });
+  assert.deepEqual(packageCapability(source), initial);
+  assert.equal(composeCapability(base, initial, originalAdmission, pins(initial, originalAdmission)), base);
+  fs.writeFileSync(basePath, canonical(base));
+
+  const artifactPath = path.join(source, 'artifact.json'), artifact = JSON.parse(fs.readFileSync(artifactPath));
+  const executorPath = path.join(source, 'executor.jsx');
+  fs.appendFileSync(executorPath, '\n/* C1b exact-byte update fixture */\n');
+  artifact.version = '4.0.1';
+  artifact.hashes['executor.jsx'] = hash(fs.readFileSync(executorPath));
+  fs.writeFileSync(artifactPath, canonical(artifact));
+  const reviewed = { ...JSON.parse(originalAdmission), artifactHash: hash(artifact), executorHash: artifact.hashes['executor.jsx'], trustApprovalId: 'test-c1b-independent-review' };
+  const admission = Buffer.from(canonical(reviewed)), approvalPath = path.join(root, 'approval.json');
+  fs.writeFileSync(approvalPath, admission);
+
+  const capabilityPath = path.join(root, 'capability.json'), distribution = path.join(root, 'distribution');
+  const cli = (...args) => spawnSync(process.execPath, [path.join(SOURCE, 'tools/package-capability.js'), ...args], { cwd: root, encoding: 'utf8', timeout: 20000, windowsHide: true });
+  const packed = cli('pack', '--source', source, '--output', capabilityPath);
+  assert.equal(packed.status, 0, packed.stderr);
+  const bundle = JSON.parse(fs.readFileSync(capabilityPath));
+  assert.equal(JSON.parse(packed.stdout).capabilityHash, bundle.capabilityHash);
+  assert.deepEqual(bundle, packageCapability(source));
+  assert.notEqual(bundle.capabilityHash, initial.capabilityHash);
+  const composeArgs = ['compose', '--base', basePath, '--expected-base-hash', base.packageHash,
+    '--capability', capabilityPath, '--expected-capability-hash', bundle.capabilityHash,
+    '--admission', approvalPath, '--expected-admission-sha256', hash(admission), '--output', distribution];
+  const bad = [...composeArgs]; bad[bad.indexOf('--expected-capability-hash') + 1] = initial.capabilityHash;
+  const denied = cli(...bad);
+  assert.equal(denied.status, 1, denied.stdout); assert.match(denied.stderr, /capability_pin/);
+  assert.equal(fs.existsSync(distribution), false);
+  const composed = cli(...composeArgs);
+  assert.equal(composed.status, 0, composed.stderr);
+  const checked = verifyStandalone(distribution, JSON.parse(composed.stdout).distributionHash);
+  assert.equal(checked.capabilityBaseHash, base.packageHash);
+  assert.deepEqual(checked.pkg, composeCapability(base, bundle, admission, pins(bundle, admission)));
+  const changed = Object.keys(base.files).filter(file => base.files[file] !== checked.pkg.files[file]);
+  assert.deepEqual(changed.sort(), [modulePath + '/artifact.json', modulePath + '/executor.jsx', admissionPath, 'config/catalog.json', 'cep/jsx/registry.jsx'].sort());
+  assert.equal(checked.pkg.release.version, base.release.version);
+
+  const tampered = structuredClone(bundle); tampered.files['executor.jsx'] = initial.files['executor.jsx'];
+  assert.throws(() => composeCapability(base, tampered, admission, pins(bundle, admission)), code('capability_bytes'));
+  assert.throws(() => composeCapability(base, bundle, admission, { ...pins(bundle, admission), admissionPin: hash(originalAdmission) }), code('capability_admission_pin'));
+  assert.throws(() => composeCapability(base, bundle, originalAdmission, pins(bundle, originalAdmission)), code('composition_not_admitted'));
+  const revoked = Buffer.from(canonical({ ...reviewed, revoked: true }));
+  assert.throws(() => composeCapability(base, bundle, revoked, pins(bundle, revoked)), code('composition_not_admitted'));
+  const codecMismatch = '(function(){ JSON.stringify({optional:void 0}); return ' + fs.readFileSync(executorPath, 'utf8') + '\n; }())';
+  for (const [file, value, error] of [
+    ['executor.jsx', 'null', 'capability_executor_interface'],
+    ['implementation.js', 'module.exports = {};', 'capability_builder_interface'],
+    ['executor.jsx', codecMismatch, 'capability_registry_initialization']
+  ]) {
+    const invalid = structuredClone(bundle), changed = structuredClone(artifact);
+    const set = (name, text) => {
+      invalid.files[name] = Buffer.from(text).toString('base64');
+      invalid.manifest.hashes[name] = hash(text);
+    };
+    set(file, value);
+    changed.hashes[file] = hash(value);
+    set('artifact.json', canonical(changed));
+    invalid.capabilityHash = hash(invalid.manifest);
+    const exactApproval = Buffer.from(canonical({ ...reviewed, artifactHash: hash(changed), executorHash: changed.hashes['executor.jsx'] }));
+    assert.throws(() => composeCapability(base, invalid, exactApproval, pins(invalid, exactApproval)), code(error));
+  }
+  const readonly = pkg('readonly');
+  assert.throws(() => composeCapability(readonly, bundle, admission, pins(bundle, admission, readonly)), code('capability_base_composition'));
+  const contractPath = path.join(source, 'contract.json'), incompatible = JSON.parse(fs.readFileSync(contractPath));
+  incompatible.effectPolicy = { ...incompatible.effectPolicy, effect: 'layer.transform' };
+  fs.writeFileSync(contractPath, canonical(incompatible));
+  artifact.hashes['contract.json'] = hash(fs.readFileSync(contractPath));
+  fs.writeFileSync(artifactPath, canonical(artifact));
+  const changedContract = packageCapability(source);
+  assert.throws(() => composeCapability(base, changedContract, admission, pins(changedContract, admission)), code('capability_contract_incompatible'));
+
+  const otherBase = structuredClone(base), unrelatedPath = 'cep/index.html';
+  const newerHtml = Buffer.concat([Buffer.from(base.files[unrelatedPath], 'base64'), Buffer.from('\n<!-- unrelated owner release -->')]);
+  otherBase.files[unrelatedPath] = newerHtml.toString('base64');
+  otherBase.release.hashes[unrelatedPath] = hash(newerHtml);
+  otherBase.packageHash = hash(otherBase.release);
+  verifyPackage(otherBase);
+  const bootstrap = require(path.join(distribution, 'tools/standalone-installer.js'));
+  const installRoot = path.join(root, 'must-not-write');
+  const bindings = ['--expected-distribution-hash', checked.distributionHash, '--expected-package-hash', checked.packageHash];
+  assert.throws(() => bootstrap.main(['apply', ...bindings, '--install-root', installRoot, '--extensions-dir', path.join(root, 'extensions'), '--config', path.join(root, 'config.toml')]), code('capability_stopped_update_required'));
+  const updateArgs = ['owner-update', ...bindings, '--expected-previous-descriptor-hash', 'a'.repeat(64),
+    '--installation', path.join(installRoot, 'installation.json'), '--operation', crypto.randomUUID(), '--config', path.join(root, 'config.toml')];
+  assert.throws(() => bootstrap.main([...updateArgs, '--expected-current-package-hash', otherBase.packageHash]), code('capability_update_base'));
+  assert.equal(fs.existsSync(installRoot), false);
+  const operator = require(path.join(distribution, 'tools/operate-stopped-update.js')), operate = operator.operate;
+  operator.operate = async cap => bootstrap.assertUpdateBootstrap(cap).expectedCurrentPackageHash;
+  try { assert.equal(await bootstrap.main([...updateArgs, '--expected-current-package-hash', base.packageHash]), base.packageHash); }
+  finally { operator.operate = operate; }
+
+  const h = await harness(t, { current: base, next: checked.pkg, withHistory: true });
+  const protectedFiles = ['origin.json', 'receiver/completions.ndjson', 'broker/ledger.ndjson'].map(file => path.join(h.d.stateDir, file));
+  const before = protectedFiles.map(file => fs.readFileSync(file));
+  assert.throws(() => h.installer.applyInstall(h.plan), code('runtime_lifecycle_owned_or_maintenance'));
+  const prepared = await h.prepared();
+  const applied = h.api.applyStoppedUpdate({ plan: h.plan, ...prepared });
+  assert.equal(applied.phase, 'update-stopped');
+  assert.equal(applied.runtimeStarted, false);
+  assert.equal(fs.existsSync(h.barrier), true);
+  const installed = h.load(path.join(SOURCE, 'runtime/stdio-entry')).verifyInstallation(h.descriptorPath);
+  assert.equal(installed.packageHash, checked.packageHash);
+  assert.equal(installed.installationId, h.d.installationId);
+  assert.equal(installed.stateDir, h.d.stateDir);
+  assert.equal(hash(fs.readFileSync(path.join(installed.releaseDir, modulePath, 'executor.jsx'))), reviewed.executorHash);
+  const { Artifacts } = h.load(path.join(SOURCE, 'core/artifacts'));
+  const store = new Artifacts({ root: installed.releaseDir, store: path.join(root, 'artifact-store') });
+  assert.equal(store.select(slot).pin, reviewed.artifactHash);
+  assert.equal((await h.api.enableStoppedUpdate({ permit: prepared.permit })).enabled, true);
+  assert.equal(fs.existsSync(h.barrier), false);
+  protectedFiles.forEach((file, index) => assert.deepEqual(fs.readFileSync(file), before[index]));
+});
 test('one branded plan/lease/certificate updates owner while preserving the stop barrier and history', async t => {
   const h = await harness(t), protectedFiles = ['origin.json', 'state/production/origin.json'].map(n => path.join(h.args.installRoot, n)), before = protectedFiles.map(f => fs.readFileSync(f));
   const prepared = await h.prepared();

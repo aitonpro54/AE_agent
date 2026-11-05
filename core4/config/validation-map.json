@@ -1,5 +1,6 @@
 {
   "owners": [
+    { "prefix": "core4/tools/package-capability.js", "owner": "stopped-update", "checks": ["stopped-update"] },
     { "prefix": "core4/test/fixtures/legacy-panel-v1.txt", "owner": "installed-composition", "checks": ["native-read-recovery", "installed-composition"] },
     { "prefix": "core4/runtime/start-over-driver.js", "owner": "start-over-driver", "checks": ["start-over-driver"] },
     { "prefix": "core4/runtime/owner-launch.js", "owner": "start-over-runtime", "checks": ["start-over-runtime"] },
@@ -98,6 +99,7 @@
       "prefix": "core4/tools/package-standalone-installer.js",
       "owner": "standalone-installer",
       "checks": [
+        "stopped-update",
         "stopped-host-readoption-operator",
         "stopped-update-operator",
         "maintenance-finish-operator",
@@ -109,6 +111,7 @@
       "prefix": "core4/tools/standalone-installer.js",
       "owner": "standalone-installer",
       "checks": [
+        "stopped-update",
         "stopped-host-readoption-operator",
         "stopped-update-operator",
         "maintenance-finish-operator",
@@ -1124,7 +1127,7 @@
       "tools/stopped-host-readoption-store.js",
       "tools/stopped-host-readoption-transaction.js"
     ],
-    "stopped-update": ["tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/stopped-update.test.js","test/fixtures/owner-pre-ready-claim-child.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
+    "stopped-update": ["tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","tools/package-capability.js","tools/package-standalone-installer.js","tools/standalone-installer.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/stopped-update.test.js","test/fixtures/owner-pre-ready-claim-child.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
     "legacy-owner-migration": ["tools/legacy-owner-migration.js","tools/windows-retained-process.js","tools/install-core4.js","tools/package-installable.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/legacy-owner-migration.test.js","tools/stopped-update.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
     "windows-retained-process": ["tools/windows-retained-process.js", "runtime/windows-owner-process.js", "test/windows-retained-process.test.js"],
     "stopped-certification": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/stopped-certification.test.js"],

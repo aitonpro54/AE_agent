@@ -11,6 +11,15 @@ function fail(code) { throw Object.assign(new Error(code), { code }); }
 function canonical(v) { if (v === null || typeof v === 'boolean' || typeof v === 'string' || typeof v === 'number' && Number.isFinite(v)) return JSON.stringify(v); if (Array.isArray(v)) return '[' + v.map(canonical).join(',') + ']'; if (!v || Object.getPrototypeOf(v) !== Object.prototype) fail('standalone_json'); return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canonical(v[k])).join(',') + '}'; }
 function hash(v) { return crypto.createHash('sha256').update(Buffer.isBuffer(v) || typeof v === 'string' ? v : canonical(v)).digest('hex'); }
 function exact(v, keys) { if (!v || Object.getPrototypeOf(v) !== Object.prototype || canonical(Object.keys(v).sort()) !== canonical([...keys].sort())) fail('standalone_schema'); }
+function verifyManifest(manifest) {
+  const keys = ['version', 'purpose', 'packageHash', 'hashes'];
+  if (manifest?.version === 2) keys.push('capabilityBaseHash');
+  exact(manifest, keys);
+  if (![1, 2].includes(manifest.version) || manifest.purpose !== 'core4-standalone-installer-v1' ||
+      typeof manifest.packageHash !== 'string' || !HASH.test(manifest.packageHash)) fail('standalone_schema');
+  if (manifest.version === 2 && (typeof manifest.capabilityBaseHash !== 'string' || !HASH.test(manifest.capabilityBaseHash) ||
+      manifest.capabilityBaseHash === manifest.packageHash)) fail('capability_update_base');
+}
 function absolute(file) { if (typeof file !== 'string' || !path.isAbsolute(file) || path.resolve(file) !== file) fail('standalone_absolute_exact_path'); return file; }
 function safe(file, directory = false) { absolute(file); const s = fs.lstatSync(file); if (s.isSymbolicLink() || s.reparsePoint || fs.realpathSync(file) !== file || (directory ? !s.isDirectory() : !s.isFile())) fail('standalone_path'); return s; }
 function read(file) {
@@ -28,8 +37,8 @@ function read(file) {
 }
 function verifyStandalone(root, expectedHash) {
   safe(root, true); const manifestBytes = read(path.join(root, 'standalone.json')), manifest = JSON.parse(manifestBytes);
-  exact(manifest, ['version', 'purpose', 'packageHash', 'hashes']);
-  if (!HASH.test(expectedHash) || hash(manifestBytes) !== expectedHash || manifest.version !== 1 || manifest.purpose !== 'core4-standalone-installer-v1' || !HASH.test(manifest.packageHash)) fail('standalone_reviewed_hash');
+  if (!HASH.test(expectedHash) || hash(manifestBytes) !== expectedHash) fail('standalone_reviewed_hash');
+  verifyManifest(manifest);
   const files = new Set(['standalone.json']), dirs = new Set(['']);
   exact(manifest.hashes, Object.keys(manifest.hashes));
   for (const [file, digest] of Object.entries(manifest.hashes)) {
@@ -53,7 +62,7 @@ function verifyStandalone(root, expectedHash) {
   for (const [file, encoded] of Object.entries(pkg.files)) {
     if (/^(test|experiments|node_modules|\.git|logs|state|tools)\//.test(file) || manifest.hashes[file] !== pkg.release.hashes[file] || hash(Buffer.from(encoded, 'base64')) !== pkg.release.hashes[file]) fail('standalone_candidate_bytes');
   }
-  return { distributionHash: expectedHash, packageHash: pkg.packageHash, pkg };
+  return { distributionHash: expectedHash, packageHash: pkg.packageHash, pkg, ...(manifest.version === 2 ? { capabilityBaseHash: manifest.capabilityBaseHash } : {}) };
 }
 function main(args = process.argv.slice(2)) {
   const options = {}, mode = args[0];
@@ -94,6 +103,7 @@ function main(args = process.argv.slice(2)) {
     for (const k of ['--installation', ...(primary ? ['--config'] : []), ...(mode === 'migrate-legacy' ? ['--root-status'] : [])]) absolute(options[k]);
     const checked = verifyStandalone(path.resolve(__dirname, '..'), options['--expected-distribution-hash']);
     if (checked.packageHash !== options['--expected-package-hash'] || !Object.hasOwn(checked.pkg.release.hashes, 'runtime/owner-contract.json')) fail('update_distribution_unavailable');
+    if (checked.capabilityBaseHash && (mode.includes('legacy') || checked.capabilityBaseHash !== options['--expected-current-package-hash'])) fail('capability_update_base');
     const capability = Object.freeze({});
     updateBootstraps.set(capability, Object.freeze({ mode, descriptorPath: options['--installation'], expectedPreviousDescriptorHash: options['--expected-previous-descriptor-hash'], expectedCurrentPackageHash: options['--expected-current-package-hash'], expectedPackageHash: options['--expected-package-hash'], id: options['--operation'], pkg: checked.pkg, configPath: options['--config'], rootStatusPath: options['--root-status'], rootStatusHash: options['--expected-root-status-hash'], expectedProofHash: options['--expected-proof-hash'] }));
     return Promise.resolve(require('./operate-stopped-update.js').operate(capability)).finally(() => updateBootstraps.delete(capability));
@@ -113,6 +123,7 @@ function main(args = process.argv.slice(2)) {
   if (!options['--expected-distribution-hash'] || !options['--install-root'] || !options['--extensions-dir'] || !options['--config'] || mode === 'apply' && !options['--expected-package-hash']) fail('standalone_usage');
   const destination = { installRoot: absolute(options['--install-root']), extensionsDir: absolute(options['--extensions-dir']), configPath: absolute(options['--config']) };
   const checked = verifyStandalone(path.resolve(__dirname, '..'), options['--expected-distribution-hash']);
+  if (checked.capabilityBaseHash) fail('capability_stopped_update_required');
   if (options['--expected-package-hash'] !== undefined && (!HASH.test(options['--expected-package-hash']) || options['--expected-package-hash'] !== checked.packageHash)) fail('reviewed_package_hash_mismatch');
   // All eager and lazy imports, including signed-history preflight, were checked.
   const { planInstall, applyInstall } = require('./install-core4.js');
@@ -124,4 +135,4 @@ function assertUpdateBootstrap(capability) { const value = capability && updateB
 function assertReadoptionBootstrap(capability) { const value = capability && readoptionBootstraps.get(capability); if (!value) fail('readoption_bootstrap_brand'); return value; }
 function assertStartOverBootstrap(capability) { const value = capability && startOverBootstraps.get(capability); if (!value) fail('start_over_bootstrap_brand'); return value; }
 if (require.main === module) { Promise.resolve().then(() => main()).then(value => console.log(canonical(value))).catch(e => { console.error(canonical({ error: /^[a-z][a-z0-9_]{0,80}$/.test(e.code || '') ? e.code : 'standalone_failed', ...(e.transactionFile ? { transactionFile: e.transactionFile } : {}) })); process.exitCode = 1; }); }
-module.exports = { HELPERS, verifyStandalone, main, assertMaintenanceBootstrap, assertUpdateBootstrap, assertReadoptionBootstrap, assertStartOverBootstrap };
+module.exports = { HELPERS, verifyManifest, verifyStandalone, main, assertMaintenanceBootstrap, assertUpdateBootstrap, assertReadoptionBootstrap, assertStartOverBootstrap };
