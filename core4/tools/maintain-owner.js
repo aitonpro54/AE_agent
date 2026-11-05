@@ -46,7 +46,7 @@ function verifyOwnerInstallation(descriptor, expectedPackageHash) {
 
   const manifestFile = path.join(d.releaseDir, 'release.json'); plain(manifestFile);
   const manifestBytes = read(manifestFile, 1024 * 1024), release = JSON.parse(manifestBytes);
-  if (canonical(release) !== manifestBytes.toString('utf8') || hash(manifestBytes) !== d.packageHash || release.version !== '4.0.0' ||
+  if (canonical(release) !== manifestBytes.toString('utf8') || hash(manifestBytes) !== d.packageHash || (release.version !== '4.0.0' && !(release.version === '4.1.0' && release.format === 2)) ||
       ![1, 2].includes(release.format) || Object.keys(release).sort().join(',') !== 'format,hashes,version' ||
       !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype ||
       !Object.hasOwn(release.hashes, 'runtime/owner-entry.js') || !Object.hasOwn(release.hashes, 'runtime/stdio-entry.js')) fail('owner_release_schema');

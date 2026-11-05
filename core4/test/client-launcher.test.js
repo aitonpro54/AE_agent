@@ -80,7 +80,7 @@ function fixture(t, options = {}) {
   files['runtime/owner-entry.js'] = Buffer.from(ownerSource); files['runtime/owner-contract.json'] = fs.readFileSync(path.join(SOURCE, 'runtime/owner-contract.json'));
   Object.assign(files, options.files);
   if (options.contract) files['runtime/owner-contract.json'] = Buffer.from(canonical(options.contract));
-  const manifest = { version: '4.0.0', format: 2, hashes: Object.fromEntries(Object.entries(files).map(([name, bytes]) => [name, hash(bytes)])) };
+  const manifest = { version: '4.1.0', format: 2, hashes: Object.fromEntries(Object.entries(files).map(([name, bytes]) => [name, hash(bytes)])) };
   const packageHash = hash(canonical(manifest)), releaseDir = path.join(root, 'releases', packageHash);
   for (const [name, bytes] of Object.entries(files)) { fs.mkdirSync(path.dirname(path.join(releaseDir, name)), { recursive: true }); fs.writeFileSync(path.join(releaseDir, name), bytes); }
   fs.writeFileSync(path.join(releaseDir, 'release.json'), canonical(manifest));

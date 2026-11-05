@@ -1,6 +1,10 @@
-# Core4 4.0.0 — отдельный устанавливаемый runtime
+# AE Agent Core 4.1.0 — устанавливаемое ядро
 
-Этап I добавляет рабочий внешний Node20+ stdio runtime и отдельную pure-browser CEP-панель `com.codex.aeagentcore4` с меню **AE Agent Core4.0.0**. Runtime запускает HTTP3457 в том же процессе; embedded CEP Node, detached daemon, legacy3456 и зависимости npm не используются. Обычный автоматический lifecycle остаётся unavailable. Ни MCP connect, ни HTTP link не создают project-incarnation.
+Core использует внешний Node 20+ и отдельную CEP-панель `com.codex.aeagentcore4`
+с пунктом меню **AE Agent Core 4.1.0**. В основной сборке `manual/owner`
+тонкий клиент Codex подключается к отдельному процессу Core, который обслуживает
+HTTP на порту 3457. Для обновления используется тот же идентификатор расширения.
+MCP connect и HTTP link не создают project-incarnation.
 
 `runtime/profiles.json` допускает optional `project-inspection` по pinned contract/executor. Existing generic flow `list_modules → get_module_contract → inspect_module_target` возвращает bounded текущую observation: до50 comp summaries и до100 layers выбранной comp. `target:{compId}` необязателен; это discovery saved/unsaved проекта без synthetic session. Observation не выдаёт authority или continuity; build для этого read-only модуля явно unsupported. Остальные generic tools обслуживает существующий Broker с прежними strict gates.
 
@@ -15,11 +19,16 @@ Node append+fsync begin выполняется до публикации ком�
 Команды подготовки из корня репозитория (первые две не меняют установку):
 
 ```powershell
-node core4/tools/package-installable.js --output C:/Temp/core4-package.json
-node core4/tools/install-core4.js dry-run --package C:/Temp/core4-package.json
-node core4/tools/install-core4.js apply --package C:/Temp/core4-package.json --expected-package-hash EXACT_HASH_FROM_DRY_RUN
+node core4/tools/package-installable.js --output C:/Temp/core4-4.1.0-package.json --composition manual --runtime owner
+node core4/tools/install-core4.js dry-run --package C:/Temp/core4-4.1.0-package.json
+node core4/tools/install-core4.js apply --package C:/Temp/core4-4.1.0-package.json --expected-package-hash EXACT_HASH_FROM_DRY_RUN
 node core4/tools/install-core4.js rollback C:/Users/USER/AppData/Local/AEAgentCore4/transactions/TRANSACTION.json
 ```
+
+Переносимый комплект `manual/owner` собирается командой
+`node core4/tools/package-standalone-installer.js --output C:/Temp/core4-4.1.0-standalone --composition manual --runtime owner`.
+Для штатного обновления работающего owner Core используйте описанный в `README.txt`
+комплекта цикл остановки, `owner-update` и `update-enable`.
 
 Installer выбирает workspace по собственному расположению в source checkout
 и проверяет marker `core4/package.json` и точный layout `core4/tools/install-core4.js`.

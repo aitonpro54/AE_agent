@@ -1,11 +1,13 @@
 # AE Agent Core
 
-Постоянное архитектурное требование проекта — [переносимость десктоп ↔ MSI](docs/portability.md)
-без повторной ручной настройки после первичной подготовки сред. Оно обязательно
-для текущего среза Core4 и последующих версий; реализация и приёмка в обе стороны
-пока не завершены.
+Текущая основная версия Core — **4.1.0**. Ветка `codex/ae-agent-core-4.1.0`,
+тег `v4.1.0`, имя панели в After Effects — **AE Agent Core 4.1.0**.
+Упаковка и команды проверки описаны в [README Core4](core4/README.md).
 
-Ветка `codex/release-4.0.0` содержит изолированный контур [Core4](core4/README.md) с собственным package, модульными manifests и проверками. Offline [M2a: optional CEP bridge](plans/core-4.0.0-m2a-bridge.md) завершён: actual TCP/VM, durable completion и original dispatch provenance; [основной план](plans/core-4.0.0.md) сохраняет M1 и последующие этапы. Команды нового контура выполняются через `npm.cmd --prefix core4`; обычная правка выбирает проверки через `node core4/tools/validate-diff.js <changed-path> --run`. Установленный MCP/CEP на эту ветку не переключён; production connect без настоящего lifecycle/grant producer остаётся unavailable.
+Постоянное архитектурное требование проекта — [переносимость десктоп ↔ MSI](docs/portability.md)
+без ручной перенастройки после первичной подготовки сред. Приёмка P1–P8 для
+предыдущего пакета 4.0.0 зафиксирована в [отчёте двух машин](docs/core-portability-final-two-host-result-20261104.md).
+Проверки новой версии и границы приёмки указаны в [плане](plans/core-4.0.0-installable.md#5-ноября-публикация-core-410).
 
 Ниже сохранено описание проверенной исходной базы 3.3.5. Её runtime manifest не включает рабочие пакеты Core4.
 
