@@ -17,13 +17,21 @@ const { decode, encode } = require('../../protocol/codec');
 const { validateExecutionPolicyPort, validateReservationHandle } = require('../../core/authority');
 const { initialState, environment } = require('./ae');
 const root = path.resolve(__dirname, '../..');
-async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500 } = {}) {
+async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, layoutEnvironment } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-manual-runtime-')), state = initialState(); delete state.sessionId; Object.assign(state.flags, flags);
   const installation = { installationId: 'fixture-installation', machineId: 'fixture-machine', stateDir: path.join(dir, 'state'), packageHash: '1'.repeat(64), panelToken: '2'.repeat(64), controlToken: '3'.repeat(64) };
   const contract = JSON.parse(fs.readFileSync(path.join(root, 'modules/titles-current-target/contract.json'))), admission = JSON.parse(fs.readFileSync(path.join(root, 'config/admissions/titles-current-target.json'))), manifest = JSON.parse(fs.readFileSync(path.join(root, 'modules/titles-current-target/artifact.json')));
   const selected = { pin: hash(manifest), contract, admission }; let broker, peer, confirmations = 0, stopped = false, pump, hostPhase;
   let brokerRoot = root;
-  if (minimalBroker) {
+  const pkg = buildPackage(undefined, layoutEnvironment ? 'manual-layout' : 'manual');
+  if (layoutEnvironment) {
+    brokerRoot = path.join(dir, 'layout-package');
+    for (const [relative, bytes] of Object.entries(pkg.files)) {
+      const file = path.join(brokerRoot, relative);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, Buffer.from(bytes, 'base64'));
+    }
+  } else if (minimalBroker) {
     brokerRoot = path.join(dir, 'isolated-root');
     const coreManifest = JSON.parse(fs.readFileSync(path.join(root, 'core/artifact.json')));
     const copy = relative => { const dest = path.join(brokerRoot, relative); fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.copyFileSync(path.join(root, relative), dest); };
@@ -35,20 +43,29 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
   const probe = async () => probeOverride && ++probeCalls > 1 ? probeOverride(observation()) : observation();
   const provider = createWindowsReservationProvider({ installation, getBroker: () => broker, getPeer: () => peer, probe });
   if (adopt) await provider.adopt({ expected: { machineId: installation.machineId, aePid: 123456, aeProcessBirth: '2026-01-01T00:00:00.0000000Z', executablePath: 'C:/fixture/AfterFX.exe', executableHash: '5'.repeat(64) }, allowedProject: state.projectId, rootObservationDigest: '6'.repeat(64) });
-  const manual = createManualPolicy({ selected, provider, installation, getPeer: () => peer });
+  let layout;
+  if (layoutEnvironment) {
+    const { createPointLayoutProof } = require('../../runtime/point-layout-proof');
+    const manifest = require('../../modules/titles-point-layout/artifact.json');
+    layout = { pin: hash(manifest), contract: require('../../modules/titles-point-layout/contract.json'),
+      admission: require('../../config/admissions/titles-point-layout.json'), proof: createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
+  }
+  const manual = createManualPolicy({ selected, layout, provider, installation, getPeer: () => peer });
   const transport = { identity: 'fixture-http-manual-v1', connect: v => peer.transport.connect(v), send: v => peer.transport.send(v), completion: v => peer.transport.completion(v), disconnect: () => peer.transport.disconnect() };
   broker = new Broker({ root: brokerRoot, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: callerTimeout, privateEmbedding: { authority: manual.authority, executionPolicy: manual.port, transport, recordContext: { purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: path.basename(dir), project: { file: state.projectId }, resources: [{ kind: 'project', identity: state.projectId }] } } });
   const inspection = JSON.parse(fs.readFileSync(path.join(root, 'modules/project-inspection/artifact.json')));
-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), port: 0, pollTimeout: 5, timeout: callbackTimeout, asset: { assetKey: 'project-inspection-v1', executorHash: inspection.executorHash }, additionalAssets: [{ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', operationId: contract.operationId, executorHash: admission.executorHash, resultProfile: 'manual-text-v1' }], admissionGuard: command => { if (broker.ledger.unresolved().some(c => c.commandId !== command.commandId)) throw Object.assign(new Error('controller_unresolved'), { code: 'controller_unresolved' }); } }); await peer.listen();
+  const additionalAssets = [{ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', operationId: contract.operationId, executorHash: admission.executorHash, resultProfile: 'manual-text-v1' }];
+  if (layout) additionalAssets.push({ assetKey: 'titles-point-layout-v1', moduleId: 'titles-point-layout', operationId: layout.contract.operationId, executorHash: layout.admission.executorHash, resultProfile: 'manual-point-layout-v1' });
+  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), port: 0, pollTimeout: 5, timeout: callbackTimeout, asset: { assetKey: 'project-inspection-v1', executorHash: inspection.executorHash }, additionalAssets, admissionGuard: command => { if (broker.ledger.unresolved().some(c => c.commandId !== command.commandId)) throw Object.assign(new Error('controller_unresolved'), { code: 'controller_unresolved' }); } }); await peer.listen();
   let sequence = 0;
   async function raw(route, body) { return new Promise((resolve, reject) => { const req = http.request('http://127.0.0.1:' + peer.status().port + route, { method: 'POST', headers: { Origin: 'null', 'Content-Type': 'application/json' } }, res => { let data = ''; res.on('data', b => data += b); res.on('end', () => res.statusCode === 200 ? resolve(JSON.parse(data)) : reject(new Error(data))); }); req.on('error', reject); req.end(canonical(JSON.parse(JSON.stringify(body)))); }); }
   const challenge = await raw('/challenge', { role: 'panel' }), peerId = 'fixture-peer'; await raw('/link', { challenge, peerId, proof: mac({ challenge, peerId }, installation.panelToken) });
   async function call(route, payload) { const body = { epoch: challenge.epoch, peerId, sequence: ++sequence, method: 'POST', path: route, payload: JSON.parse(JSON.stringify(payload)) }; const response = await raw(route, { body, mac: mac(body, installation.panelToken) }); assert.equal(response.mac, mac(response.body, installation.panelToken)); return response.body.payload; }
-  const pkg = buildPackage(), context = vm.createContext({ ...environment(state, () => {}), JSON: undefined, confirm: message => { confirmations++; return confirm({ state, message }); } });
+  const context = vm.createContext({ ...(layout ? layoutEnvironment(state) : environment(state, () => {})), JSON: undefined, confirm: message => { confirmations++; return confirm({ state, message }); } });
   vm.runInContext('Object.keys=undefined;', context);
   vm.runInContext(Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString(), context);
   const browser = vm.createContext({ JSON, Object, Array, Promise, Error, isFinite }); vm.runInContext(Buffer.from(pkg.files['cep/js/poll-dispatcher.js'], 'base64').toString(), browser);
-  const map = new Map(), dispatcher = browser.Core4PollDispatcher.createDispatcher({ installationId: installation.installationId, pins: { packageHash: installation.packageHash, installationId: installation.installationId, executorHash: inspection.executorHash }, assets: [{ assetKey: 'titles-current-target-v1', executorHash: admission.executorHash, phases: ['inspect', 'mutate', 'verify'] }], storage: { getItem: k => map.get(k) || null, setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) }, csInterface: { evalScript(script, cb) { const run = () => cb(vm.runInContext(script, context)); if (hostPhase === 'mutate' && humanDelayMs) setTimeout(run, humanDelayMs); else run(); } }, complete: p => call('/complete', p) });
+  const map = new Map(), dispatcher = browser.Core4PollDispatcher.createDispatcher({ installationId: installation.installationId, pins: { packageHash: installation.packageHash, installationId: installation.installationId, executorHash: inspection.executorHash }, assets: additionalAssets.map(({ assetKey, executorHash }) => ({ assetKey, executorHash, phases: ['inspect', 'mutate', 'verify'] })), storage: { getItem: k => map.get(k) || null, setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) }, csInterface: { evalScript(script, cb) { const run = () => cb(vm.runInContext(script, context)); if (hostPhase === 'mutate' && humanDelayMs) setTimeout(run, humanDelayMs); else run(); } }, complete: p => call('/complete', p) });
   pump = (async () => { while (!stopped) { const p = await call('/poll', {}); if (p.command) { hostPhase = p.command.phase; await dispatcher.dispatch(p.command); } } })(); pump.catch(() => {});
   await broker.connect();
   async function proposal(text = 'After') {

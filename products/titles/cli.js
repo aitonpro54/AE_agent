@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const { compile, prepareBuild, MAX_BYTES } = require('./src/compiler');
 const { prepareLayout, fitLayout } = require('./src/layout');
+const { prepareLayoutBuild } = require('./src/layout-native');
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function read(file) {
   const fd = fs.openSync(file, 'r');
@@ -24,6 +25,8 @@ function main(args) {
     'prepare-build': ['--job', '--contract', '--inspection'],
     'prepare-layout': ['--job'],
     'fit-layout': ['--job', '--measurements'],
+    'prepare-layout-measure': ['--job', '--target', '--contract', '--inspection'],
+    'prepare-layout-apply': ['--job', '--target', '--contract', '--inspection', '--measurement-task'],
   };
   if (!Object.hasOwn(names, command)) fail('usage');
   const flags = names[command];
@@ -37,6 +40,11 @@ function main(args) {
   if (command === 'compile') return compile(job);
   if (command === 'prepare-layout') return prepareLayout(job);
   if (command === 'fit-layout') return fitLayout(job, read(options.get('--measurements')));
+  if (command === 'prepare-layout-measure' || command === 'prepare-layout-apply') {
+    const apply = command === 'prepare-layout-apply';
+    return prepareLayoutBuild(apply ? 'apply' : 'measure', job, read(options.get('--target')),
+      read(options.get('--contract')), read(options.get('--inspection')), apply ? read(options.get('--measurement-task')) : undefined);
+  }
   return prepareBuild(job, read(options.get('--contract')), read(options.get('--inspection')));
 }
 if (require.main === module) {

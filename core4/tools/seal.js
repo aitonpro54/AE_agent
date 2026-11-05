@@ -24,24 +24,27 @@ function main() {
     write(dir + '/artifact.json', artifact);
     console.log(JSON.stringify({ packaged: ['cep-bridge'], pin: hash(artifact), admissionsWritten: false, ...(args.includes('--trace') ? { reads } : {}), liveCalls: 0 })); return;
   }
-  if (moduleId && !['photo-placeholder', 'titles', 'titles-current-target'].includes(moduleId)) fail('unknown_module');
+  const moduleIds = ['photo-placeholder', 'titles', 'titles-current-target', 'titles-point-layout'];
+  if (moduleId && !moduleIds.includes(moduleId)) fail('unknown_module');
   if (component && !['core', 'protocol', 'worker', 'engine'].includes(component)) fail('unknown_component');
   let catalog;
   if (all) catalog = { catalogRevision: 'M1-reviewed-local-1', modules: [] };
   else catalog = JSON.parse(read('config/catalog.json'));
   const entries = [];
-  for (const id of all ? ['photo-placeholder', 'titles', 'titles-current-target'] : moduleId ? [moduleId] : []) {
+  for (const id of all ? moduleIds : moduleId ? [moduleId] : []) {
     const dir = 'modules/' + id;
-    const version = id === 'titles-current-target' ? '4.0.0' : '4.0.0-m1';
-    const { pin } = seal(dir, id, 'implementation.js', ['implementation.js', 'contract.json', 'executor.jsx'], id === 'titles-current-target' ? {} : { 'protocol/target-contract.json': true }, version);
+    const manual = id === 'titles-current-target' || id === 'titles-point-layout';
+    const version = id === 'titles-point-layout' ? '4.1.0' : manual ? '4.0.0' : '4.0.0-m1';
+    const { pin } = seal(dir, id, 'implementation.js', ['implementation.js', 'contract.json', 'executor.jsx'], manual ? {} : { 'protocol/target-contract.json': true }, version);
     const contract = JSON.parse(read(dir + '/contract.json'));
     const admission = { moduleId: id, operationId: contract.operationId, artifactHash: pin, schemaHash: hash(contract.inputSchema), resultSchemaHash: hash(contract.snapshotSchema), effectPolicyHash: hash(contract.effectPolicy), executorHash: hash(read(dir + '/executor.jsx')), protocolVersion: 1, trustApprovalId: 'M1-source-review-' + id + '-20261026', revoked: false };
     // Only --reviewed-source writes admission records: generated hashes are not runtime grants.
     if (args.includes('--reviewed-source')) write('config/admissions/' + id + '.json', admission);
+    entries.push(id);
+    if (id === 'titles-point-layout') continue; // Opt-in installable composition supplies the catalog entry.
     const entry = { id, version, path: dir, admission: 'config/admissions/' + id + '.json' };
     const index = catalog.modules.findIndex(m => m.id === id); if (index >= 0) catalog.modules[index] = entry; else catalog.modules.push(entry);
     if (!all) catalog.catalogRevision = 'update-' + id + '-' + pin;
-    entries.push(id);
   }
   if (all || component === 'engine') {
     const engine = seal('plan-engine', 'plan-engine', 'index.js', ['index.js']); catalog.engine = { path: 'plan-engine', artifactHash: engine.pin };
@@ -53,7 +56,7 @@ function main() {
     const coreFiles = fs.readdirSync(path.join(root, 'core')).filter(f => f !== 'artifact.json').sort().map(f => 'core/' + f).concat(['worker.js', ...protocolFiles, 'protocol/artifact.json']);
     write('core/artifact.json', { id: 'core', version: '4.0.0-m1', hashes: Object.fromEntries(coreFiles.map(f => [f, hash(read(f))])) }); entries.push('protocol', 'core');
   }
-  if (all || moduleId || component === 'engine') write('config/catalog.json', catalog);
+  if (all || moduleId && moduleId !== 'titles-point-layout' || component === 'engine') write('config/catalog.json', catalog);
   console.log(JSON.stringify({ packaged: entries, admissionsWritten: args.includes('--reviewed-source'), ...(args.includes('--trace') ? { reads } : {}), liveCalls: 0 }));
 }
 if (require.main === module) { try { main(); } catch (e) { console.error(e.code || e.message); process.exitCode = 1; } }

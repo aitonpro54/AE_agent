@@ -115,8 +115,36 @@ node products/titles/cli.js fit-layout --job layout-job.json --measurements meas
 
 При `status: "fit"` расчёт возвращает вариант, `scale`, `position` с сохранённым
 anchor и `projectedBounds`. `below_minimum_scale` означает, что ни один кандидат
-не достиг порога. Тестовые замеры синтетические. Измерение в After Effects,
-применение и сверка фактического кадра описаны в [плане T3](../../plans/external-products-titles-20261029.md#t3-многострочный-титр-в-рамке).
+не достиг порога. Измерение в After Effects, применение и сверка фактического
+кадра описаны в [плане T3](../../plans/external-products-titles-20261029.md#t3-многострочный-титр-в-рамке).
+
+### Подготовка типизированных операций для AE
+
+Дополнительный пакет Core `manual-layout` содержит `titles-point-layout`.
+Подготовьте два point-text слоя в одной композиции с одинаковым шрифтом и
+стилем. Измерительный слой скрыт и помечен комментарием
+`AE_CORE4_TITLES_MEASURE_V1`. Видимый слой помечен `AE_CORE4_TITLES_LAYOUT_V1`.
+Профиль ограничен статичным горизонтальным однородным 2D point text без обводки,
+масок, эффектов, поворота и родителя. Обе цели задаются точными IDs, а время
+и стиль проверяет Core. Для этой операции требуется отступ не менее 1 px.
+
+```powershell
+node products/titles/cli.js prepare-layout-measure --job layout-job.json --target hidden-target.json --contract layout-contract.json --inspection hidden-inspection.json
+node products/titles/cli.js prepare-layout-apply --job layout-job.json --target visible-target.json --contract layout-contract.json --inspection visible-inspection.json --measurement-task task-after-measure.json
+```
+
+Каждый target содержит `projectId`, `compId` и `layerId`. Получите текущий
+контракт и свежую инспекцию соответствующей цели. Вывод каждой команды — payload
+для `build_solution_plan`. Проведите замер через proposal, dry-run и одно
+нативное подтверждение. Получите `task-after-measure.json` из `get_task` и новую
+инспекцию видимой цели. Затем проведите применение с отдельным подтверждением
+в той же задаче и с тем же управлением Core. После применения прочитайте
+видимый слой заново и просмотрите композицию в проверенном кадре.
+
+Core связывает применение с исходной завершённой командой замера, текущим AE,
+тем же кадром, шрифтом и стилем. Клиентские JSON готовят payload. Проверка
+авторитетной записи выполняется на сервере. Отказ из-за устаревшего замера
+требует свежей пары замер и применение.
 
 ## Совместимость и доверие
 

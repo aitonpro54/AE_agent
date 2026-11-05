@@ -4,7 +4,7 @@
 `runtime/composition.json`, включённый в manifest hashes. Версия installation
 descriptor остаётся 2; это другой контракт, чем format пакета.
 
-Доступны два состава, выбираемые при сборке:
+Состав выбирается при сборке:
 
 - `readonly`: Core, CEP и bounded `project-inspection`. Рабочие модули,
   их admissions, plan-engine, manual-policy и Windows reservation provider
@@ -14,12 +14,18 @@ descriptor остаётся 2; это другой контракт, чем form
   current-target adapter. Наличие adapter/контракта не выдаёт mutation grant:
   сохраняются proposal/dry-run, fresh native confirmation, ownership,
   checkpoint, read-back и UNKNOWN/no-replay.
+- `manual-layout`: `manual` с отдельной операцией `titles-point-layout`.
+  Одно подтверждение разрешает временный замер на точном скрытом слое. Отдельное
+  подтверждение разрешает вёрстку на точном видимом слое. Core связывает второй
+  шаг с завершённой командой замера в той же задаче. Первый профиль и результат
+  проверки на MSI описаны в [плане T3](../plans/external-products-titles-20261029.md#t3b-нативная-приёмка-на-msi).
 
 Из корня репозитория в PowerShell:
 
 ```powershell
 node core4/tools/package-installable.js --composition readonly --output (Join-Path $env:TEMP 'core4-readonly.json')
 node core4/tools/package-installable.js --composition manual --output (Join-Path $env:TEMP 'core4-manual.json')
+node core4/tools/package-standalone-installer.js --composition manual-layout --runtime owner --output (Join-Path $env:TEMP 'core4-manual-layout-owner')
 ```
 
 `--output` требует абсолютный новый путь; существующий файл не перезаписывается.

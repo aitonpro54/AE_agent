@@ -29,9 +29,10 @@ function deriveComposition(release, read) {
   }
   if (!Object.hasOwn(release.hashes, 'runtime/composition.json')) fail('composition_required');
   const composition = json('runtime/composition.json'); exactKeys(composition, ['version', 'id', 'modules', 'engine', 'assets']);
-  if (composition.version !== 1 || !['readonly', 'manual'].includes(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
+  if (composition.version !== 1 || !['readonly', 'manual', 'manual-layout'].includes(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
   const catalog = json('config/catalog.json'); exactKeys(catalog, ['catalogRevision', 'modules', 'engine']);
   const expectedIds = composition.id === 'readonly' ? [] : ['photo-placeholder', 'titles', 'titles-current-target'];
+  if (composition.id === 'manual-layout') expectedIds.push('titles-point-layout');
   if (canonical(composition.modules) !== canonical(expectedIds) || !Array.isArray(catalog.modules) || canonical(catalog.modules.map(m => m.id)) !== canonical(expectedIds) || canonical(catalog.engine) !== canonical(composition.engine) || (composition.id === 'readonly' ? composition.engine !== null : !composition.engine || composition.engine.path !== 'plan-engine')) fail('composition_catalog');
   function admitted(entry) {
     exactKeys(entry, ['id', 'version', 'path', 'admission']);
@@ -45,7 +46,11 @@ function deriveComposition(release, read) {
   const selected = new Map(catalog.modules.map(entry => [entry.id, admitted(entry)]));
   if (composition.engine) { exactKeys(composition.engine, ['path', 'artifactHash']); const manifest = json('plan-engine/artifact.json'); if (hash(manifest) !== composition.engine.artifactHash) fail('composition_engine'); for (const [file, pin] of Object.entries(manifest.hashes)) if (!/^[A-Za-z0-9_-]+\.(js|json)$/.test(file) || hash(checked('plan-engine/' + file)) !== pin) fail('composition_engine'); }
   const expectedAssets = [{ assetKey: 'project-inspection-v1', moduleId: 'project-inspection', path: 'modules/project-inspection', admission: 'modules/project-inspection/artifact.json', policy: 'read-only-current-observation-v1', phases: ['inspect'] }];
-  if (composition.id === 'manual') expectedAssets.push({ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', path: 'modules/titles-current-target', admission: 'config/admissions/titles-current-target.json', policy: 'current-matching-target-after-local-confirmation-v1', phases: ['inspect', 'mutate', 'verify'] });
+  if (composition.id !== 'readonly') expectedAssets.push({ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', path: 'modules/titles-current-target', admission: 'config/admissions/titles-current-target.json', policy: 'current-matching-target-after-local-confirmation-v1', phases: ['inspect', 'mutate', 'verify'] });
+  if (composition.id === 'manual-layout') {
+    expectedAssets.push({ assetKey: 'titles-point-layout-v1', moduleId: 'titles-point-layout', path: 'modules/titles-point-layout', admission: 'config/admissions/titles-point-layout.json', policy: 'current-matching-target-after-local-confirmation-v1', phases: ['inspect', 'mutate', 'verify'] });
+    checked('runtime/point-layout-proof.js');
+  } else if (Object.keys(release.hashes).some(file => /^(?:runtime\/point-layout-proof\.js$|modules\/titles-point-layout\/|config\/admissions\/titles-point-layout\.json$)/.test(file))) fail('composition_optional_closure');
   if (canonical(composition.assets) !== canonical(expectedAssets)) fail('composition_assets');
   const assets = composition.assets.map(asset => {
     let value = selected.get(asset.moduleId);
@@ -55,7 +60,7 @@ function deriveComposition(release, read) {
       if (admission.moduleId !== asset.moduleId || admission.executionPolicy !== asset.policy || admission.executorHash !== hash(executor) || admission.contractHash !== hash(contract)) fail('composition_not_admitted');
       value = { contract, admission, executor };
     }
-    if (!value) fail('composition_not_admitted');
+    if (!value || asset.moduleId === 'titles-point-layout' && (value.contract.operationId !== 'measure-or-apply-point-layout' || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
     return { ...asset, ...value, executorHash: value.admission.executorHash };
   });
   // No optional runtime code is shipped in the standalone inspection composition.
@@ -279,14 +284,21 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const { contract, admission } = inspection;
   const profile = { id: inspection.moduleId, executionPolicy: inspection.policy };
   const asset = { assetKey: inspection.assetKey, executorHash: inspection.executorHash };
-  const manualAsset = selected.assets.find(a => a.policy === 'current-matching-target-after-local-confirmation-v1');
+  const manualAsset = selected.assets.find(a => a.assetKey === 'titles-current-target-v1');
+  const layoutAsset = selected.assets.find(a => a.assetKey === 'titles-point-layout-v1');
   let provider, manual, privateEmbedding;
   if (manualAsset) {
     const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
     const { createManualPolicy } = require('./manual-policy.js');
     provider = createWindowsReservationProvider({ installation, getBroker: () => broker, getPeer: () => peer });
-    manual = createManualPolicy({ selected: { pin: hash(manualAsset.manifest), contract: manualAsset.contract, admission: manualAsset.admission }, provider, installation, getPeer: () => peer });
-    const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission: manualAsset.admission }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
+    let layout;
+    if (layoutAsset) {
+      const { createPointLayoutProof } = require('./point-layout-proof.js');
+      layout = { pin: hash(layoutAsset.manifest), contract: layoutAsset.contract, admission: layoutAsset.admission,
+        proof: createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
+    }
+    manual = createManualPolicy({ selected: { pin: hash(manualAsset.manifest), contract: manualAsset.contract, admission: manualAsset.admission }, layout, provider, installation, getPeer: () => peer });
+    const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission: manualAsset.admission, ...(layoutAsset ? { layoutAdmission: layoutAsset.admission } : {}) }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
     privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };
   }
   broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, ...(ownerLifecycle ? { stateLockToken: ownerLifecycle.brokerToken } : {}), ...(privateEmbedding ? { privateEmbedding } : {}) });
@@ -296,7 +308,10 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (broker.ledger.corrupt) fail('ledger_corrupt');
     if (broker.ledger.unresolved().some(c => c.commandId !== command?.commandId)) fail('controller_unresolved');
   };
-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets: manualAsset ? [{ assetKey: manualAsset.assetKey, moduleId: manualAsset.moduleId, operationId: manualAsset.contract.operationId, executorHash: manualAsset.executorHash, resultProfile: 'manual-text-v1' }] : [], timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
+  const additionalAssets = [manualAsset, layoutAsset].filter(Boolean).map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
+    operationId: item.contract.operationId, executorHash: item.executorHash,
+    resultProfile: item === layoutAsset ? 'manual-point-layout-v1' : 'manual-text-v1' }));
+  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets, timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');
     // Retain this exact operation's grant beyond ALS lifetime, including /poll.

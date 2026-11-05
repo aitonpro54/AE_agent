@@ -15,6 +15,7 @@ const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsu
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
 }
+function manualResultProfile(asset) { return ['manual-text-v1', 'manual-point-layout-v1'].includes(asset.resultProfile); }
 function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
   if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
@@ -124,12 +125,17 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         if (result.readFailureVersion === 1) {
           exact(result, ['readFailureVersion', 'outcome', 'code']);
           if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code) && !(titlesReadCommand(c.command, selectedAsset) && TITLES_READ_CODES.has(result.code))) fail('inspection_result');
-        } else if (selectedAsset.resultProfile === 'manual-text-v1') {
+        } else if (manualResultProfile(selectedAsset)) {
           if (c.command.phase === 'mutate') {
             exact(result, ['outcome', 'snapshot', 'code', 'transactionReceipt']);
             if (result.outcome === 'unknown') { disconnect('manual_effect_unknown'); fail('manual_effect_unknown'); }
             if (!['applied', 'rejected'].includes(result.outcome)) fail('manual_result');
-          } else { exact(result, ['target', 'revision', 'text', 'protected']); if (!result.target || typeof result.revision !== 'string' || typeof result.text !== 'string' || typeof result.protected !== 'string') fail('manual_snapshot'); }
+          } else {
+            const fields = ['target', 'revision', 'text', 'protected'];
+            if (selectedAsset.resultProfile === 'manual-point-layout-v1') fields.push('role', 'time', 'style', 'anchor', 'scale', 'position', 'bounds', 'baselines', 'comp');
+            exact(result, fields);
+            if (!result.target || typeof result.revision !== 'string' || typeof result.text !== 'string' || typeof result.protected !== 'string') fail('manual_snapshot');
+          }
         } else {
           // Private asset-selected versioned observation profile. No caller chooses
           // the validator and no lifecycle/session is manufactured for discovery.
@@ -169,7 +175,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   function submit(command, broker = false) {
     if (startOverFrozen) fail('start_over_frozen');
     const selected = assets.get(command.executorHash);
-    if (!selected || selected.moduleId && (selected.moduleId !== command.moduleId || selected.operationId !== command.operationId) || !['inspect', 'mutate', 'verify'].includes(command.phase) || command.phase !== 'inspect' && selected.resultProfile !== 'manual-text-v1') fail('http_asset_not_admitted');
+    if (!selected || selected.moduleId && (selected.moduleId !== command.moduleId || selected.operationId !== command.operationId) || !['inspect', 'mutate', 'verify'].includes(command.phase) || command.phase !== 'inspect' && !manualResultProfile(selected)) fail('http_asset_not_admitted');
     const deliveryGuard = captureDeliveryGuard(command);
     if (typeof deliveryGuard !== 'function') fail('physical_delivery_guard');
     admissionGuard(command); deliveryGuard();

@@ -66,6 +66,10 @@
         "modules/titles-current-target/artifact.json",
         "plan-engine/artifact.json"
       ]
+    },
+    "layout": {
+      "files": ["runtime/point-layout-proof.js", "config/admissions/titles-point-layout.json"],
+      "artifactClosures": ["modules/titles-point-layout/artifact.json"]
     }
   },
   "compositions": {
@@ -112,6 +116,19 @@
             "mutate",
             "verify"
           ]
+        }
+      ]
+    },
+    "manual-layout": {
+      "modules": ["titles-point-layout"],
+      "assets": [
+        {
+          "assetKey": "titles-point-layout-v1",
+          "moduleId": "titles-point-layout",
+          "path": "modules/titles-point-layout",
+          "admission": "config/admissions/titles-point-layout.json",
+          "policy": "current-matching-target-after-local-confirmation-v1",
+          "phases": ["inspect", "mutate", "verify"]
         }
       ]
     }

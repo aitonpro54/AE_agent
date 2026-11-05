@@ -1,0 +1,339 @@
+{
+  "moduleId": "titles-point-layout",
+  "operationId": "measure-or-apply-point-layout",
+  "protocolVersion": 1,
+  "targetSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "layerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+    },
+    "required": [
+      "projectId",
+      "compId",
+      "layerId"
+    ],
+    "additionalProperties": false
+  },
+  "buildSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "layerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "measure",
+          "apply"
+        ]
+      },
+      "layoutId": { "type": "string", "minLength": 64, "maxLength": 64 },
+      "frame": {
+        "type": "object",
+        "properties": {
+          "left": { "type": "number", "minimum": 0, "maximum": 1000000 },
+          "top": { "type": "number", "minimum": 0, "maximum": 1000000 },
+          "width": { "type": "number", "minimum": 1, "maximum": 1000000 },
+          "height": { "type": "number", "minimum": 1, "maximum": 1000000 }
+        },
+        "required": [
+          "left",
+          "top",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false
+      },
+      "fit": {
+        "type": "object",
+        "properties": {
+          "padding": { "type": "number", "minimum": 1, "maximum": 1000000 },
+          "preferredScale": { "type": "number", "minimum": 0.01, "maximum": 10 },
+          "minimumScale": { "type": "number", "minimum": 0.01, "maximum": 10 }
+        },
+        "required": [
+          "padding",
+          "preferredScale",
+          "minimumScale"
+        ],
+        "additionalProperties": false
+      },
+      "candidates": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 32 },
+            "text": { "type": "string", "minLength": 1, "maxLength": 1024 }
+          },
+          "required": [
+            "id",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 1,
+        "maxItems": 19
+      },
+      "text": { "type": "string", "minLength": 1, "maxLength": 1024 },
+      "candidateId": { "type": "string", "minLength": 1, "maxLength": 32 },
+      "measurementCommandId": { "type": "string", "minLength": 1, "maxLength": 64 },
+      "scale": { "type": "number", "minimum": 0.01, "maximum": 10 },
+      "position": {
+        "type": "array",
+        "items": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "required": [
+      "projectId",
+      "compId",
+      "layerId",
+      "mode",
+      "layoutId",
+      "frame",
+      "fit"
+    ],
+    "additionalProperties": false
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "layerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "measure",
+          "apply"
+        ]
+      },
+      "layoutId": { "type": "string", "minLength": 64, "maxLength": 64 },
+      "frame": {
+        "type": "object",
+        "properties": {
+          "left": { "type": "number", "minimum": 0, "maximum": 1000000 },
+          "top": { "type": "number", "minimum": 0, "maximum": 1000000 },
+          "width": { "type": "number", "minimum": 1, "maximum": 1000000 },
+          "height": { "type": "number", "minimum": 1, "maximum": 1000000 }
+        },
+        "required": [
+          "left",
+          "top",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false
+      },
+      "fit": {
+        "type": "object",
+        "properties": {
+          "padding": { "type": "number", "minimum": 1, "maximum": 1000000 },
+          "preferredScale": { "type": "number", "minimum": 0.01, "maximum": 10 },
+          "minimumScale": { "type": "number", "minimum": 0.01, "maximum": 10 }
+        },
+        "required": [
+          "padding",
+          "preferredScale",
+          "minimumScale"
+        ],
+        "additionalProperties": false
+      },
+      "candidates": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 32 },
+            "text": { "type": "string", "minLength": 1, "maxLength": 1024 }
+          },
+          "required": [
+            "id",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 1,
+        "maxItems": 19
+      },
+      "text": { "type": "string", "minLength": 1, "maxLength": 1024 },
+      "candidateId": { "type": "string", "minLength": 1, "maxLength": 32 },
+      "measurementCommandId": { "type": "string", "minLength": 1, "maxLength": 64 },
+      "scale": { "type": "number", "minimum": 0.01, "maximum": 10 },
+      "position": {
+        "type": "array",
+        "items": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "expectedRevision": { "type": "string", "minLength": 1, "maxLength": 32768 }
+    },
+    "required": [
+      "projectId",
+      "compId",
+      "layerId",
+      "mode",
+      "layoutId",
+      "frame",
+      "fit",
+      "expectedRevision"
+    ],
+    "additionalProperties": false
+  },
+  "snapshotSchema": {
+    "type": "object",
+    "properties": {
+      "target": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+          "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "layerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+        },
+        "required": [
+          "projectId",
+          "compId",
+          "layerId"
+        ],
+        "additionalProperties": false
+      },
+      "revision": { "type": "string", "minLength": 1, "maxLength": 32768 },
+      "protected": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "text": { "type": "string", "minLength": 1, "maxLength": 1024 },
+      "role": {
+        "type": "string",
+        "enum": [
+          "measure",
+          "apply"
+        ]
+      },
+      "time": { "type": "number", "minimum": 0, "maximum": 1000000 },
+      "style": { "type": "string", "minLength": 1, "maxLength": 4096 },
+      "anchor": {
+        "type": "array",
+        "items": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "scale": {
+        "type": "array",
+        "items": { "type": "number", "minimum": 0.01, "maximum": 1000 },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "position": {
+        "type": "array",
+        "items": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "bounds": {
+        "type": "object",
+        "properties": {
+          "left": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+          "top": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+          "width": { "type": "number", "minimum": 1, "maximum": 1000000 },
+          "height": { "type": "number", "minimum": 1, "maximum": 1000000 }
+        },
+        "required": [
+          "left",
+          "top",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false
+      },
+      "baselines": {
+        "type": "array",
+        "items": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+        "minItems": 4,
+        "maxItems": 20
+      },
+      "comp": {
+        "type": "array",
+        "items": { "type": "number", "minimum": 1, "maximum": 1000000 },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "layoutId": { "type": "string", "minLength": 64, "maxLength": 64 },
+      "samples": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 32 },
+            "bounds": {
+              "type": "object",
+              "properties": {
+                "left": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+                "top": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+                "width": { "type": "number", "minimum": 1, "maximum": 1000000 },
+                "height": { "type": "number", "minimum": 1, "maximum": 1000000 }
+              },
+              "required": [
+                "left",
+                "top",
+                "width",
+                "height"
+              ],
+              "additionalProperties": false
+            },
+            "baselines": {
+              "type": "array",
+              "items": { "type": "number", "minimum": -1000000, "maximum": 1000000 },
+              "minItems": 4,
+              "maxItems": 20
+            }
+          },
+          "required": [
+            "id",
+            "bounds",
+            "baselines"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 1,
+        "maxItems": 19
+      }
+    },
+    "required": [
+      "target",
+      "revision",
+      "protected",
+      "text",
+      "role",
+      "time",
+      "style",
+      "anchor",
+      "scale",
+      "position",
+      "bounds",
+      "baselines",
+      "comp"
+    ],
+    "additionalProperties": false
+  },
+  "effectPolicy": {
+    "effect": "layer.text-layout",
+    "targetFields": [
+      "projectId",
+      "compId",
+      "layerId"
+    ],
+    "expectedBindings": {
+      "expectedRevision": "revision"
+    },
+    "resultBindings": {},
+    "preserve": [
+      "protected"
+    ],
+    "requiresCheckpoint": true,
+    "confirmation": "native-current-target",
+    "checkpointKind": "point-text-layout-preimage-v1"
+  },
+  "executionPolicy": "current-matching-target-after-local-confirmation-v1"
+}

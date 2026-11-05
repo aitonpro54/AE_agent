@@ -1,5 +1,10 @@
 {
   "owners": [
+    { "prefix": "core4/modules/titles-point-layout/", "owner": "point-layout", "checks": ["point-layout"] },
+    { "prefix": "core4/config/admissions/titles-point-layout.json", "owner": "point-layout", "checks": ["point-layout"] },
+    { "prefix": "core4/runtime/point-layout-proof.js", "owner": "point-layout", "checks": ["point-layout"] },
+    { "prefix": "core4/test/point-layout.test.js", "owner": "point-layout", "checks": ["point-layout"] },
+    { "prefix": "core4/test/fixtures/point-layout-ae.js", "owner": "point-layout", "checks": ["point-layout"] },
     { "prefix": "core4/tools/package-capability.js", "owner": "stopped-update", "checks": ["stopped-update"] },
     { "prefix": "core4/test/fixtures/legacy-panel-v1.txt", "owner": "installed-composition", "checks": ["native-read-recovery", "installed-composition"] },
     { "prefix": "core4/runtime/start-over-driver.js", "owner": "start-over-driver", "checks": ["start-over-driver"] },
@@ -1280,6 +1285,12 @@
       "test/fixtures/manual-http-runtime.js",
       "test/fixtures/ae.js"
     ],
+    "point-layout": [
+      "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/",
+      "config/catalog.json", "config/admissions/", "integrations/cep/", "tools/package-installable.js",
+      "test/point-layout.test.js", "test/fixtures/point-layout-ae.js", "test/fixtures/manual-http-runtime.js",
+      "test/fixtures/ae.js"
+    ],
     "installable-runtime": [
       "runtime/",
       "cep/",
@@ -1660,6 +1671,7 @@
       "--test-name-pattern=manual-runtime",
       "test/manual-runtime.test.js"
     ],
+    "point-layout": ["node", "--test", "--test-name-pattern=point-layout", "test/point-layout.test.js"],
     "installable-runtime": [
       "node",
       "--test",
@@ -1831,6 +1843,9 @@
       "kind": "integration"
     },
     "manual-runtime": {
+      "kind": "integration"
+    },
+    "point-layout": {
       "kind": "integration"
     },
     "installable-runtime": {

@@ -88,4 +88,4 @@ function prepareBuild(value, contractResponse, inspectionResponse) {
     steps: [{ stepId: 'set-title', moduleId: MODULE, contractId: response.contractId,
       evidenceRef: inspection.evidenceRef, input: { ...job.target, text: job.text } }] };
 }
-module.exports = { compile, prepareBuild, MAX_BYTES };
+module.exports = { compile, prepareBuild, MAX_BYTES, boundedCopy, hash, exact, fail };
