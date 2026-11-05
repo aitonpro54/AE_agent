@@ -1,15 +1,16 @@
-# Titles 0.1
+# Titles
 
-Внешний workflow-пакет для одной операции: заменить текст одного **существующего,
+Внешний workflow-пакет с автономной подготовкой вёрстки и действующей операцией
+0.1 для замены текста одного **существующего,
 статичного, uniform single-line слоя** через публичную capability Core4
 `titles-current-target` / `set-current-text` и policy
 `current-matching-target-after-local-confirmation-v1`.
 
 Пакет работает автономно на Node.js 20+ без зависимостей. Runtime, Core/CEP,
 installer и их state не импортируются. Он выдаёт данные для существующего
-MCP-контроллера. Создание слоёв, типографика, смешанные стили, анимация, templates,
-batch, render и сохранение AEP в 0.1 не поддерживаются. Поддержанность реального
-слоя устанавливает inspection Core, а не входной JSON.
+MCP-контроллера. Текущая операция 0.1 работает с заменой одной строки при
+сохранении стиля. Применимость к реальному слою устанавливает inspection Core.
+Подготовка вёрстки ниже работает автономно.
 
 ## Быстрый запуск
 
@@ -18,7 +19,7 @@ batch, render и сохранение AEP в 0.1 не поддерживаютс
 ```powershell
 node products/titles/cli.js compile --job products/titles/examples/single-title.json
 node products/titles/cli.js prepare-build --job job.json --contract contract.json --inspection inspection.json
-node --test products/titles/test/compiler.test.js
+node --test products/titles/test/compiler.test.js products/titles/test/layout.test.js
 ```
 
 В example стоят демонстрационные `projectId`, `compId`, `layerId`; отправлять его
@@ -73,6 +74,49 @@ NBSP внутри строки и Unicode сохраняются без trim/н�
 равен jobId, purpose/lifetime —
 `user_work/work_context`, resources описывают project/job. Эти metadata не дают
 authority и не снимают fences/UNKNOWN.
+
+## Подготовка одного многострочного титра
+
+```powershell
+node products/titles/cli.js prepare-layout --job products/titles/examples/multiline-title.json
+node products/titles/cli.js fit-layout --job layout-job.json --measurements measurements.json
+```
+
+[Схема задания](layout-job.schema.json) · [Пример с тремя рубриками](examples/multiline-title.json).
+
+- `format` задаёт порядок рубрик. `author-title` принимает автора и название,
+  `author-caption-title` — автора, пояснение и название. Каждая рубрика начинается
+  с новой строки. Один начальный номер вида `№ 7`, `7.` или `7)` сохраняется
+  отдельно. Пустая строка между рубриками или ещё один номер означает границу
+  другого блока. Поддерживается продолжение начальной парной кавычки на новой
+  строке. Варианты порядка рубрик и пакетный разбор остаются вне этого формата.
+- Результат сохраняет `source` буквально. Для отображения он нормализует пробелы,
+  начальные парные кавычки, охватывающие целую рубрику, и пробелы между инициалами.
+  `titleCase` явно выбирает `preserve` или `uppercase` для названия. Содержательный
+  вход ограничен 768 кодовыми единицами UTF-16.
+- `frame` — осевой прямоугольник в пикселях композиции с неотрицательными `left`,
+  `top`, шириной и высотой от 1 px. Preview выдаёт базовый вариант и до 18
+  альтернатив с теми же словами и максимум пятью строками. `lineBreaks` позволяет
+  задать один вариант для этого титра. Например, `{"title":[3]}` означает перенос
+  после третьего слова нормализованной рубрики `title`.
+- Для `fit-layout` добавьте в job `fit` с полями `padding` в пикселях,
+  `preferredScale` и `minimumScale`. Масштаб задаётся множителем `1` для 100%.
+  Расчёт сохраняет базовый вариант, если он помещается при предпочтительном
+  масштабе. Иначе выбирается наибольший допустимый масштаб. При равенстве
+  сохраняется порядок вариантов из preview.
+
+Файл `measurements.json` принимает `layoutId` из preview, `geometry` со значением
+`unparented-unrotated-2d-point-text`, исходный `anchor` как `[x,y]` и `samples`.
+Каждый элемент `samples` содержит `id` кандидата и `bounds` с `left`, `top`,
+`width`, `height` в локальных координатах слоя до масштабирования. Нужны все
+кандидаты из одного контекста шрифта, стиля и кадра. `layoutId` связывает рамку и
+точные строки кандидатов. Проверку AE-цели, шрифта и происхождения замеров должен
+выполнять будущий адаптер.
+
+При `status: "fit"` расчёт возвращает вариант, `scale`, `position` с сохранённым
+anchor и `projectedBounds`. `below_minimum_scale` означает, что ни один кандидат
+не достиг порога. Тестовые замеры синтетические. Измерение в After Effects,
+применение и сверка фактического кадра описаны в [плане T3](../../plans/external-products-titles-20261029.md#t3-многострочный-титр-в-рамке).
 
 ## Совместимость и доверие
 

@@ -147,7 +147,7 @@ test('production import closure is own files + allowed Node builtins; contract p
       assert.ok(resolved.startsWith(productRoot + path.sep)); if (resolved.endsWith('.js')) pending.push(resolved);
     }
   }
-  assert.equal(visited.size, 2);
+  assert.equal(visited.size, 3);
   assert.deepEqual(publicContract, JSON.parse(fs.readFileSync(path.join(coreRoot, 'modules/titles-current-target/contract.json'))));
 });
 test('actual owner boundary accepts first compiler payload with server taskId and Broker rejects forged evidence; VM only', async t => {

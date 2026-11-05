@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "layout-1",
+  "format": "author-caption-title",
+  "source": "№ 7\nА. Б. Ветров, М. В. Полякова\nХореографическая постановка театральной студии\n«Дорога к северному морю\nи огни далёкого города»",
+  "titleCase": "uppercase",
+  "frame": { "left": 160, "top": 200, "width": 1600, "height": 680 },
+  "fit": { "padding": 12, "preferredScale": 1, "minimumScale": 0.65 }
+}

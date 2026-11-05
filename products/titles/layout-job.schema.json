@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Titles layout job",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "format", "source", "titleCase", "frame"],
+  "properties": {
+    "schemaVersion": { "const": "layout-1" },
+    "format": { "enum": ["author-title", "author-caption-title"] },
+    "source": { "type": "string", "minLength": 1, "maxLength": 768 },
+    "titleCase": { "enum": ["preserve", "uppercase"] },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["left", "top", "width", "height"],
+      "properties": {
+        "left": { "type": "number", "minimum": 0, "exclusiveMaximum": 1000000 },
+        "top": { "type": "number", "minimum": 0, "exclusiveMaximum": 1000000 },
+        "width": { "type": "number", "minimum": 1, "maximum": 1000000 },
+        "height": { "type": "number", "minimum": 1, "maximum": 1000000 }
+      }
+    },
+    "fit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["padding", "preferredScale", "minimumScale"],
+      "properties": {
+        "padding": { "type": "number", "minimum": 0 },
+        "preferredScale": { "type": "number", "minimum": 0.01, "maximum": 10 },
+        "minimumScale": { "type": "number", "minimum": 0.01, "maximum": 10 }
+      }
+    },
+    "lineBreaks": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "author": { "$ref": "#/$defs/positions" },
+        "caption": { "$ref": "#/$defs/positions" },
+        "title": { "$ref": "#/$defs/positions" }
+      }
+    }
+  },
+  "$defs": {
+    "positions": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 1 },
+      "minItems": 1,
+      "maxItems": 4,
+      "uniqueItems": true
+    }
+  }
+}
