@@ -9,7 +9,10 @@ function validateTextVariantCompletion({ input, before }, after) {
   const controlled = new Set(controlledLayerIds);
   const expected = before.layers.map(layer => controlled.has(layer.layerId) ? { ...layer, enabled: layer.layerId === activeLayerId } : layer);
   if (canonical(retained) !== canonical(expected)) fail('text_variant_neighbors');
-  if (!derive) return;
+  if (!derive) {
+    if (after.alignment) fail('text_variant_alignment');
+    return;
+  }
   const template = before.layers.find(layer => layer.layerId === derive.templateLayerId);
   const layout = before.layers.find(layer => layer.layerId === derive.layoutLayerId);
   const markers = template.markers.slice();
@@ -18,11 +21,21 @@ function validateTextVariantCompletion({ input, before }, after) {
     if (!markers.some(item => canonical(item) === canonical(marker))) markers.push(marker);
     markers.sort((a, b) => a.time - b.time);
   }
-  if (!created || after.layers.length !== before.layers.length + 1 || before.layers.some(layer => layer.layerId === created.layerId) ||
+  const transform = layout.transform;
+  let position = transform.position;
+  if (derive.holdTime !== undefined) {
+    const alignment = after.alignment;
+    if (!alignment || alignment.time !== derive.holdTime) fail('text_variant_alignment');
+    position = position.map((value, i) => value + (alignment.layoutCenter[i] - alignment.variantCenter[i]) * transform.scale[i] / 100);
+  } else if (after.alignment) fail('text_variant_alignment');
+  if (!created?.transform || after.layers.length !== before.layers.length + 1 || before.layers.some(layer => layer.layerId === created.layerId) ||
       created.name !== derive.name || !created.eligible || created.enabled !== true || created.text !== layout.text ||
       created.matteLayerId !== template.matteLayerId ||
       ['effects', 'animators', 'styles'].some(key => canonical(created[key]) !== canonical(template[key])) ||
-      canonical(created.transform) !== canonical(layout.transform) || canonical(created.markers) !== canonical(markers)) {
+      ['anchor', 'scale'].some(key => canonical(created.transform[key]) !== canonical(transform[key])) ||
+      (derive.holdTime === undefined ? canonical(created.transform.position) !== canonical(position) :
+        position.some((value, i) => Math.abs(value - created.transform.position[i]) > 0.05)) ||
+      canonical(created.markers) !== canonical(markers)) {
     fail('text_variant_derive_readback');
   }
 }

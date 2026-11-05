@@ -83,6 +83,18 @@
         for (var i = 1; i <= comp.numLayers; i++) if (comp.layer(i).id === id) return comp.layer(i);
         fault('text_variant_targets');
     }
+    function upright(layer, time, scale) {
+        var rotation = layer.property('ADBE Transform Group').property('ADBE Rotate Z');
+        return rotation && rotation.value === 0 && rotation.numKeys === 0 && !rotation.isTimeVarying &&
+            !rotation.expression && !rotation.expressionEnabled && layer.inPoint <= time && time < layer.outPoint &&
+            scale[0] > 0 && scale[1] > 0;
+    }
+    function centerAt(layer, time) {
+        var r = layer.sourceRectAtTime(time, false);
+        var center = [r.left + r.width / 2, r.top + r.height / 2];
+        if (!(r.width > 0 && r.height > 0) || !isFinite(center[0]) || !isFinite(center[1])) fault('text_variant_hold_bounds');
+        return center;
+    }
     function preflight(p, before) {
         var proof = p._execution, i, target = before.target, desired = p.derive, state = {};
         if (!proof || proof.policyId !== POLICY || before.revision !== p.expectedRevision ||
@@ -94,9 +106,14 @@
         }
         if (!desired) return state;
         var original = byId(before.layers, desired.templateLayerId), layout = byId(before.layers, desired.layoutLayerId);
-        state.layout = layout;
         if (!original.text || !layout.text || !original.transform || !layout.transform ||
             layout.tag.indexOf('AE_CORE4_TEXT_V1:') !== 0 || original.layerId === layout.layerId) fault('text_variant_derive');
+        if (desired.holdTime !== undefined) {
+            var comp = compFor(p), time = desired.holdTime, layoutLayer = nativeLayer(comp, layout.layerId);
+            if (time < 0 || time >= comp.duration || !upright(layoutLayer, time, layout.transform.scale) ||
+                !upright(nativeLayer(comp, original.layerId), time, original.transform.scale)) fault('text_variant_hold_geometry');
+            state.layoutCenter = centerAt(layoutLayer, time);
+        }
         if (desired.markerSourceLayerId === undefined) return state;
         var markers = byId(before.layers, desired.markerSourceLayerId).markers;
         for (i = 0; i < markers.length; i++) {
@@ -125,11 +142,19 @@
         output.property('ADBE Text Properties').property('ADBE Text Document').setValue(nativeDocument);
         var from = xyNames(layout), to = xyNames(output);
         to.anchor.setValue(from.anchor.value);
-        to.position.setValue(from.position.value);
         to.scale.setValue(from.scale.value);
         if (state.markerIndex) {
             var fromMarkers = nativeLayer(comp, desired.markerSourceLayerId).property('ADBE Marker');
             output.property('ADBE Marker').setValueAtTime(state.marker.time, fromMarkers.keyValue(state.markerIndex));
+        }
+        to.position.setValue(from.position.value);
+        if (state.layoutCenter) {
+            var center = centerAt(output, desired.holdTime), scale = from.scale.value, position = from.position.value.slice();
+            for (var i = 0; i < 2; i++) position[i] += (state.layoutCenter[i] - center[i]) * scale[i] / 100;
+            to.position.setValue(position);
+            var checked = centerAt(output, desired.holdTime);
+            for (i = 0; i < 2; i++) if (Math.abs(checked[i] - center[i]) * scale[i] / 100 > 0.05) fault('text_variant_hold_readback');
+            state.alignment = { time: desired.holdTime, layoutCenter: state.layoutCenter, variantCenter: checked };
         }
         return output;
     }
@@ -145,6 +170,7 @@
             selected.enabled = true;
             after = inspect(p);
             if (!byId(after.layers, selected.id).enabled || after['protected'] !== before['protected']) fault('text_variant_readback');
+            if (state.alignment) after.alignment = state.alignment;
             return after;
         } catch (e) {
             for (i = 0; i < previous.length; i++) previous[i].layer.enabled = previous[i].enabled;
@@ -157,7 +183,8 @@
         try {
             var before = inspect(p), state = preflight(p, before), after, proof = p._execution;
             var detail = p.derive ? 'Создать «' + p.derive.name + '» из слоя ' + p.derive.templateLayerId + ', текст из слоя ' + p.derive.layoutLayerId +
-                (p.derive.markerSourceLayerId ? ', маркер IN из слоя ' + p.derive.markerSourceLayerId : '') : 'Показать слой ' + p.activeLayerId;
+                (p.derive.markerSourceLayerId ? ', маркер IN из слоя ' + p.derive.markerSourceLayerId : '') +
+                (p.derive.holdTime !== undefined ? ', выровнять удержание на ' + p.derive.holdTime + ' с' : '') : 'Показать слой ' + p.activeLayerId;
             if (confirm(detail + '?\nПроект: ' + p.projectId + '\ncompId: ' + p.compId +
                 '\nУправляемая видимость слоёв: ' + p.controlledLayerIds.join(', '), true, 'AE Agent Core4 — вариант текста') !== true) {
                 return { outcome: 'rejected', code: 'local_cancelled' };

@@ -33,7 +33,8 @@
           "layoutLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
           "slot": { "type": "string", "minLength": 1, "maxLength": 40 },
           "name": { "type": "string", "minLength": 1, "maxLength": 256 },
-          "markerSourceLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+          "markerSourceLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "holdTime": { "type": "number", "minimum": 0, "maximum": 86400 }
         },
         "required": [
           "templateLayerId",
@@ -70,7 +71,8 @@
           "layoutLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
           "slot": { "type": "string", "minLength": 1, "maxLength": 40 },
           "name": { "type": "string", "minLength": 1, "maxLength": 256 },
-          "markerSourceLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+          "markerSourceLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "holdTime": { "type": "number", "minimum": 0, "maximum": 86400 }
         },
         "required": [
           "templateLayerId",
@@ -107,6 +109,16 @@
       },
       "revision": { "type": "string", "minLength": 1, "maxLength": 35000 },
       "protected": { "type": "string", "minLength": 1, "maxLength": 10000 },
+      "alignment": {
+        "type": "object",
+        "properties": {
+          "time": { "type": "number", "minimum": 0, "maximum": 86400 },
+          "layoutCenter": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+          "variantCenter": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 }
+        },
+        "required": ["time", "layoutCenter", "variantCenter"],
+        "additionalProperties": false
+      },
       "layers": {
         "type": "array",
         "items": {

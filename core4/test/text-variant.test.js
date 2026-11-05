@@ -12,7 +12,7 @@ const projectId = 'C:/test/owned.aep';
 const input = { projectId, compId: 7, controlledLayerIds: [20, 21] };
 const source = fs.readFileSync(path.join(__dirname, '../modules/text-variant/executor.jsx'), 'utf8');
 
-function fixture({ collision = false, confirm = () => true } = {}) {
+function fixture({ collision = false, rotation = 0, confirm = () => true } = {}) {
   class CompItem {}
   const property = value => ({ numKeys: 0, value, dimensionsSeparated: false, setValue(next) { this.value = next; } });
   const group = (...names) => ({ numProperties: names.length, property: i => ({ matchName: names[i - 1], isModified: true }) });
@@ -20,7 +20,8 @@ function fixture({ collision = false, confirm = () => true } = {}) {
     eventCuePoint: false, protectedRegion: false, getParameters: () => ['marker', comment] });
   const layers = [];
   function layer(id, name, comment, text, enabled, animated, markers, position) {
-    const t = { 'ADBE Anchor Point': property([0, 0]), 'ADBE Position': property(position), 'ADBE Scale': property([100, 100, 100]) };
+    const t = { 'ADBE Anchor Point': property([0, 0]), 'ADBE Position': property(position), 'ADBE Scale': property([100, 100, 100]),
+      'ADBE Rotate Z': property(animated ? rotation : 0) };
     const source = property({ pointText: true, text });
     const markerKeys = {
       get numKeys() { return markers.length; }, keyValue: index => markers[index - 1][1], keyTime: index => markers[index - 1][0],
@@ -28,7 +29,8 @@ function fixture({ collision = false, confirm = () => true } = {}) {
     };
     const textProperties = { property: key => key === 'ADBE Text Document' ? source : animated ? group('ADBE Text Animator') : group() };
     const item = {
-      id, name, comment, enabled, trackMatteLayer: animated ? { id: 99 } : null, hasTrackMatte: animated,
+      id, name, comment, enabled, inPoint: 0, outPoint: 3, trackMatteLayer: animated ? { id: 99 } : null, hasTrackMatte: animated,
+      sourceRectAtTime: time => ({ left: 0, top: animated ? time * 40 : 0, width: 100, height: 50 }),
       property(key) {
         return { 'ADBE Transform Group': { property: key => t[key] }, 'ADBE Text Properties': textProperties,
           'ADBE Marker': markerKeys, 'ADBE Effect Parade': animated ? group('ADBE Gaussian Blur 2') : group(),
@@ -85,6 +87,25 @@ test('text-variant: collision with a user marker refuses before confirmation or 
   const { result } = env.run({ derive });
   assert.deepEqual(result, { outcome: 'rejected', code: 'text_variant_marker_collision' });
   assert.deepEqual(env.read(), env.before);
+});
+
+test('text-variant: hold alignment offsets the animated bounds and binds the receipt to the measured centers', () => {
+  const env = fixture();
+  const { result, p } = env.run({ derive: { ...derive, holdTime: 1.5 } });
+  assert.equal(result.outcome, 'applied');
+  assert.deepEqual(result.snapshot.alignment, { time: 1.5, layoutCenter: [50, 25], variantCenter: [50, 85] });
+  assert.deepEqual(result.snapshot.layers[0].transform.position, [400, 140]);
+  validateTextVariantCompletion({ input: p, before: env.before }, result.snapshot);
+  result.snapshot.layers[0].transform.position[1] = 200;
+  assert.throws(() => validateTextVariantCompletion({ input: p, before: env.before }, result.snapshot), /text_variant_derive_readback/);
+});
+
+test('text-variant: hold alignment refuses rotated or out-of-span text before confirmation', () => {
+  for (const [rotation, holdTime] of [[2, 1], [0, 3]]) {
+    const env = fixture({ rotation, confirm: () => assert.fail('unexpected confirmation') });
+    assert.deepEqual(env.run({ derive: { ...derive, holdTime } }).result, { outcome: 'rejected', code: 'text_variant_hold_geometry' });
+    assert.deepEqual(env.read(), env.before);
+  }
 });
 
 test('text-variant: package only opts in on the selected composition', () => {
