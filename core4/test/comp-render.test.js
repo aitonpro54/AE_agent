@@ -28,14 +28,14 @@ function fixture(t, { missing = false, template = true } = {}) {
     property: () => ({ numProperties: 1 }) }));
   const comp = Object.assign(new CompItem(), { id: 7, name: 'Copy', comment: 'AE_CORE4_TEXT_WORKSPACE_V1', numLayers: 2,
     width: 800, height: 400, duration: 3, time: 1, frameDuration: 1 / 30, displayStartTime: 0, layer: i => layers[i - 1] });
-  let copy, active, confirmation = 0, quality = 'Best';
+  let copy, active, confirmation = 0, quality = 'Best', fileTemplate = 'variant.[fileExtension]';
   const confirmations = [];
   comp.duplicate = () => {
     const clone = layers.map(layer => ({ ...layer, id: layer.id + 10 }));
     copy = Object.assign(new CompItem(), comp, { id: 8, usedIn: [], layer: i => clone[i - 1], remove() { copy = null; } });
     return copy;
   };
-  const om = { templates: template ? ['H264'] : [], applyTemplate() {}, getSettings: () => ({ Format: 'H.264' }) };
+  const om = { templates: template ? ['H264'] : [], applyTemplate() {}, getSettings: () => ({ Format: 'H.264', 'Output File Info': { 'File Template': fileTemplate } }) };
   const queue = { rendering: false, get numItems() { return active ? 1 : 0; }, item: () => active,
     items: { add: staged => (active = { comp: staged, templates: ['Best Settings'], outputModule: () => om,
       numOutputModules: 1, applyTemplate() {}, getSettings: () => ({ Quality: quality }),
@@ -43,7 +43,13 @@ function fixture(t, { missing = false, template = true } = {}) {
       remove() { active = null; } }) },
     render() { assert.fail('render must not run in a CEP command'); },
   };
-  const project = { file: { fsName: input.projectId, parent: { fsName: dir } }, itemByID: id => id === 7 ? comp : copy, renderQueue: queue };
+  const project = { file: { fsName: input.projectId, parent: { fsName: dir } }, renderQueue: queue,
+    get numItems() { return copy ? 2 : 1; },
+    itemByID(id) {
+      if (id === comp.id) return comp;
+      if (copy && id === copy.id) return copy;
+      throw new Error('Item Not Found');
+    } };
   const host = vm.runInNewContext(jsx, { app: { project }, CompItem, FootageItem, File, Folder,
     GetSettingsFormat: { STRING: 1, STRING_SETTABLE: 2 }, RQItemStatus: { QUEUED: 1, DONE: 3 }, PostRenderAction: { NONE: 0 },
     confirm: message => { confirmation++; confirmations.push(message.split('\n')[0]); return true; } });
@@ -59,10 +65,11 @@ function fixture(t, { missing = false, template = true } = {}) {
     if (result.outcome === 'applied') validateCompRenderCompletion({ input: p, before }, result.snapshot);
     return result;
   }
-  function finish(status) {
+  function finish(status, resolvedTemplate = 'variant.mp4') {
     assert.equal(active.status, 1);
     fs.writeFileSync(om.file.fsName, 'fixture-media');
     active.status = status;
+    if (status === 3) fileTemplate = resolvedTemplate;
   }
   return { run, read, original, finish, confirmations, changeQuality: () => { quality = 'Draft'; },
     get copy() { return copy; }, get confirmation() { return confirmation; } };
@@ -116,5 +123,12 @@ test('comp-render: changed native settings invalidate the staged job', t => {
   const env = fixture(t);
   env.run();
   env.changeQuality();
+  assert.throws(env.read, /comp_render_job_binding/);
+});
+
+test('comp-render: DONE allows AE to resolve only the staged filename placeholder', t => {
+  const env = fixture(t);
+  env.run();
+  env.finish(3, 'wrong.mp4');
   assert.throws(env.read, /comp_render_job_binding/);
 });

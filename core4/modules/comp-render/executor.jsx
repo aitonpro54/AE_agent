@@ -29,6 +29,17 @@
     function settings(item, om) {
         return JSON.stringify([item.getSettings(GetSettingsFormat.STRING_SETTABLE), om.getSettings(GetSettingsFormat.STRING_SETTABLE)]);
     }
+    function matchesSettings(item, om, tag) {
+        var actual = settings(item, om);
+        if (actual === tag[8]) return true;
+        if (item.status !== RQItemStatus.DONE) return false;
+        var current = JSON.parse(actual), expected = JSON.parse(tag[8]);
+        var from = expected[1]['Output File Info'], to = current[1]['Output File Info'];
+        var placeholder = tag[1].slice(0, -4) + '.[fileExtension]';
+        if (!from || !to || from['File Template'] !== placeholder || to['File Template'] !== tag[1]) return false;
+        to['File Template'] = placeholder;
+        return same(current, expected);
+    }
     function jobOf(item, tag, comp, busy) {
         var copy = item.comp, file = output(tag[1]), om = item.outputModule(1);
         var start = tag[4], count = tag[5], frame = comp.frameDuration;
@@ -36,7 +47,7 @@
             om.postRenderAction !== PostRenderAction.NONE || om.getSettings(GetSettingsFormat.STRING).Format !== 'H.264' ||
             Math.abs(item.timeSpanStart - start * frame) > 0.00001 || Math.abs(item.timeSpanDuration - count * frame) > 0.00001 ||
             copy.numLayers !== comp.numLayers || copy.frameDuration !== frame || copy.width !== comp.width || copy.height !== comp.height ||
-            copy.usedIn.length !== 0 || settings(item, om) !== tag[8]) fault('comp_render_job_binding');
+            copy.usedIn.length !== 0 || !matchesSettings(item, om, tag)) fault('comp_render_job_binding');
         for (var i = 1; i <= comp.numLayers; i++) {
             var original = comp.layer(i), staged = copy.layer(i);
             var enabled = contains(tag[3], original.id) ? original.id === tag[2] : original.enabled;
@@ -159,6 +170,12 @@
         if (nativeSettings.length > 8192) fault('comp_render_settings_budget');
         copy.comment = TAG + JSON.stringify(identity(p).concat([nativeSettings]));
     }
+    function removeCopy(copy) {
+        var project = app.project, previousCount = project.numItems;
+        copy.remove();
+        // AE throws Item Not Found from itemByID after successful removal.
+        if (project.numItems !== previousCount - 1) fault('comp_render_restore');
+    }
     function mutate(p) {
         var before, context, observation, owned = {}, started = false;
         try {
@@ -183,8 +200,7 @@
                     var copy = observation.owned.comp;
                     started = true;
                     observation.owned.remove();
-                    copy.remove();
-                    if (app.project.itemByID(p.jobCompId)) fault('comp_render_restore');
+                    removeCopy(copy);
                 }
                 after = inspect(p);
                 if (after['protected'] !== before['protected'] || !same(after.layers, before.layers) ||
@@ -192,9 +208,8 @@
             } catch (e) {
                 if (owned.item) owned.item.remove();
                 if (owned.copy) {
-                    var copyId = owned.copy.id;
-                    owned.copy.remove();
-                    if (!app.project.itemByID(copyId)) started = false;
+                    removeCopy(owned.copy);
+                    started = false;
                 }
                 throw e;
             }
