@@ -1,11 +1,11 @@
 {
   "moduleId": "comp-render",
   "operationId": "render-text-variant",
-  "artifactHash": "cb0912f2d312cc76c751e4cc4507acb1d8ec01810a9e87b6b45efb2532aabd12",
+  "artifactHash": "8925d6f1f45f9d3dfa1541948600a7a1081ecab2bdf909823dd8a29d7400f1cb",
   "schemaHash": "087c19677eecdd466eeee5bc4a3904138997e7a9c6f9fc667f4a5054ba0dca92",
   "resultSchemaHash": "61d5323b96e9b697be92d36d4ec2f0d13796c792eb7d1726f7fdc2c6b56a7b46",
   "effectPolicyHash": "1789fc1f5c54b8c142605d8d48b9b79206bd99f946627427b02af48eb9a8cf00",
-  "executorHash": "8fe1b512c1fb72474437a2608a16166eb775f1a58c5ff849d4474b30e3657cca",
+  "executorHash": "bda1f2d2e26a36387bf523b50b01710432807c2aa90edc60f90f215e9a90a560",
   "protocolVersion": 1,
   "trustApprovalId": "source-review-comp-render-20261105",
   "revoked": false

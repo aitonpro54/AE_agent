@@ -43,7 +43,9 @@
             if (staged.name !== original.name || staged.enabled !== enabled ||
                 (staged.source && staged.source.id) !== (original.source && original.source.id)) fault('comp_render_job_visibility');
         }
-        var status = item.status === RQItemStatus.DONE ? 'DONE' : item.status === RQItemStatus.QUEUED ? 'QUEUED' : 'INCOMPLETE';
+        var status = 'INCOMPLETE';
+        if (item.status === RQItemStatus.DONE) status = 'DONE';
+        if (item.status === RQItemStatus.QUEUED) status = 'QUEUED';
         return { jobCompId: copy.id, file: String(file.fsName), bytes: file.exists ? file.length : 0,
             fileName: tag[1], activeLayerId: tag[2], controlledLayerIds: tag[3], startFrame: start, frameCount: count,
             renderTemplate: tag[6], outputTemplate: tag[7], status: status, rendering: busy };
@@ -163,8 +165,9 @@
             observation = observe(p);
             before = observation.snapshot;
             context = preflight(p, observation);
-            var action = p.mode === 'stage' ? 'Подготовить единственное задание в очереди AE' :
-                p.mode === 'finalize' ? 'Подтвердить DONE и удалить временное задание и копию' : 'Снять незавершённое задание и удалить его копию';
+            var action = 'Снять незавершённое задание и удалить его копию';
+            if (p.mode === 'stage') action = 'Подготовить единственное задание в очереди AE';
+            if (p.mode === 'finalize') action = 'Подтвердить DONE и удалить временное задание и копию';
             if (confirm(action + '\nСлой ' + p.activeLayerId + ', compId ' + p.compId + '\n' + p.projectId +
                 '\nКадры: ' + p.startFrame + ' + ' + p.frameCount + '\n' + p.renderTemplate + ' / ' + p.outputTemplate +
                 '\n' + context.file.fsName, true, 'AE Agent Core4 — очередь AE') !== true) return { outcome: 'rejected', code: 'local_cancelled' };

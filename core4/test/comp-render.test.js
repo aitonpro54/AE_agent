@@ -29,6 +29,7 @@ function fixture(t, { missing = false, template = true } = {}) {
   const comp = Object.assign(new CompItem(), { id: 7, name: 'Copy', comment: 'AE_CORE4_TEXT_WORKSPACE_V1', numLayers: 2,
     width: 800, height: 400, duration: 3, time: 1, frameDuration: 1 / 30, displayStartTime: 0, layer: i => layers[i - 1] });
   let copy, active, confirmation = 0, quality = 'Best';
+  const confirmations = [];
   comp.duplicate = () => {
     const clone = layers.map(layer => ({ ...layer, id: layer.id + 10 }));
     copy = Object.assign(new CompItem(), comp, { id: 8, usedIn: [], layer: i => clone[i - 1], remove() { copy = null; } });
@@ -45,7 +46,7 @@ function fixture(t, { missing = false, template = true } = {}) {
   const project = { file: { fsName: input.projectId, parent: { fsName: dir } }, itemByID: id => id === 7 ? comp : copy, renderQueue: queue };
   const host = vm.runInNewContext(jsx, { app: { project }, CompItem, FootageItem, File, Folder,
     GetSettingsFormat: { STRING: 1, STRING_SETTABLE: 2 }, RQItemStatus: { QUEUED: 1, DONE: 3 }, PostRenderAction: { NONE: 0 },
-    confirm: () => { confirmation++; return true; } });
+    confirm: message => { confirmation++; confirmations.push(message.split('\n')[0]); return true; } });
   const plain = value => JSON.parse(JSON.stringify(value));
   const read = () => plain(host.inspect(input));
   const original = read();
@@ -63,7 +64,7 @@ function fixture(t, { missing = false, template = true } = {}) {
     fs.writeFileSync(om.file.fsName, 'fixture-media');
     active.status = status;
   }
-  return { run, read, original, finish, changeQuality: () => { quality = 'Draft'; },
+  return { run, read, original, finish, confirmations, changeQuality: () => { quality = 'Draft'; },
     get copy() { return copy; }, get confirmation() { return confirmation; } };
 }
 
@@ -81,6 +82,7 @@ test('comp-render: stage, native completion and scoped cleanup leave source visi
   assert.equal(finalize.snapshot.render.status, 'DONE');
   assert.equal(env.copy, null);
   assert.deepEqual(env.read(), env.original);
+  assert.deepEqual(env.confirmations, ['Подготовить единственное задание в очереди AE', 'Подтвердить DONE и удалить временное задание и копию']);
   assert.throws(() => env.run(), /comp_render_output_exists/);
 });
 
