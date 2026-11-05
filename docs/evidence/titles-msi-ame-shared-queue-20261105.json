@@ -1,0 +1,37 @@
+{
+  "host": "MSI",
+  "application": { "version": "26.2.0", "bridgeTarget": "ame-26.0", "build": "52" },
+  "before": { "items": 11, "processed": 0, "running": false, "firstStatus": "Ready" },
+  "attempt": {
+    "method": "exportItem",
+    "binding": "82dc3210f3b2b642a06de9942818389a153b93bab73757b929ffe19b0a12e30d",
+    "encodeId": "9f337f48-b900-4352-83fa-94c3c56f7921",
+    "source": "core4-titr-all-animated.mp4",
+    "preset": "1080p_20kbps_no_sound.epr",
+    "presetSha256": "2d3cc2f14d788349e052fb4de9028c31c181d7eab00c04fcc0f4706a144ed802",
+    "output": "core4-titr-all-ame-release.mp4",
+    "nativeSubmissionObserved": true,
+    "nativeTerminalObserved": false,
+    "outputPresent": false
+  },
+  "incident": {
+    "queueStartedLocal": "2026-11-05T23:20:21+05:00",
+    "queueStoppedLocal": "2026-11-05T23:22:03+05:00",
+    "unexpectedItem": "TITR_RENDER_01",
+    "unexpectedFile": "Титры 01/Тест очереди 2026-10-21/01.mov",
+    "unexpectedFileBytes": 46935419,
+    "unexpectedFileSha256": "181449a5d731a842c8101fa6f7272617fe5dbabd224c1634763a0a78941aa840",
+    "unexpectedFileProbe": { "codec": "dxv", "frames": 167, "durationSeconds": 5.572233 },
+    "preexistingOutputBytesKnown": false,
+    "outputLeftInPlace": true
+  },
+  "recovery": {
+    "testItemRemoved": true,
+    "firstStatusRestored": "Ready",
+    "items": 11,
+    "processed": 0,
+    "running": false,
+    "ameClosedNormally": true,
+    "exportDispatchRetired": true
+  }
+}
