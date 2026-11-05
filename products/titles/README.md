@@ -80,7 +80,7 @@ authority и не снимают fences/UNKNOWN.
 [compat/titles-current-target.contract.json](compat/titles-current-target.contract.json).
 Его canonical SHA-256 —
 `6226f911063f94f471bff23e9ebb60f1ee49323c2f25d54e6a4bdabf95bbe55b`.
-Module artifact pin версии 4.0.0 —
+Module artifact pin, подтверждённый на Core 4.0.0 и 4.1.0 —
 `189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79`.
 Это public capability identities; packageHash, installation/machine identity и
 credentials здесь не участвуют. Новый несовместимый contract или module pin
@@ -119,5 +119,10 @@ test policy и текущий executor в Node VM с существующим `f
 ошибки и удаления test-owned копии workflow. Это узкая offline-проверка владения
 данными, а не проверка восстановления реальной незавершённой команды.
 
-Live PASS, новый admission/install/hot-swap capability и десктоп↔MSI round-trip
-не заявлены. Порядок работы с существующим controller — в [WORKFLOW.md](WORKFLOW.md).
+На Core 4.1.0 на MSI прошла нативная проверка одного тестового слоя с однородным
+стилем. Внешний CLI подготовил план, After Effects выполнил замену после локального
+подтверждения, а свежая инспекция совпала с исходным receipt. Сохранённый AEP
+остался прежним. Покрытие десктопа и иных шаблонов открыто.
+[Результат проверки](../../plans/titles-live-20261029.md#5-ноября-titles-на-core-410).
+
+Порядок работы с существующим controller — в [WORKFLOW.md](WORKFLOW.md).

@@ -11,8 +11,9 @@
    `compile --job FILE`, проверить preview и literal text. Один job — один слой.
 2. Единственный действующий Core MCP controller проверяет своё подключение,
    unresolved/pending и доступный module catalog по актуальным проектным gates.
-   В owner composition сначала получить `controller_acquire` с пустым payload,
-   затем выполнить `core_connect` и проверить `available:true`. Подключённая CEP
+   В owner composition сначала получить `controller_acquire`. Если `core_status`
+   вернул `workSession.sessionId`, передать его как `payload.sessionId`.
+   Затем выполнить `core_connect` и проверить `available:true`. Подключённая CEP
    сама по себе не устанавливает транспорт Broker для Titles. Удерживать lease
    через штатный `controller_renew` в пределах его срока; после release/acquire
    заново получить inspection/build/proposal refs текущего поколения.

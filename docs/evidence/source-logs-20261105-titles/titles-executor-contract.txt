@@ -1,0 +1,11 @@
+✔ [titles-executor-contract] actual fixed JSX set-text CAS and independent uniform-style readback (306.0641ms)
+✔ [titles-executor-contract] unsupported style API mixed text keys expressions and identity fail closed (1111.6958ms)
+✔ [titles-executor-contract] setter mutation then error and protected style change remain unknown (437.0288ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1932.7012

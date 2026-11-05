@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "kind": "titles-t2-source-and-native-evidence",
+  "localDate": "2026-11-05",
+  "machine": "MSI",
+  "sourceBaseline": "74b350e",
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "releaseCertified": false,
+  "source": {
+    "coreChecks": [
+      {
+        "check": "titles-owner",
+        "cwd": "core4",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=titles-owner",
+          "test/modules/titles.test.js"
+        ],
+        "evidenceKey": "4a36b881982aaf34751137f0012509861a10f31b75d10ef291a1b8f1dd4fbf95",
+        "pass": 1,
+        "log": "source-logs-20261105-titles/titles-owner.txt",
+        "logSha256": "324032bd98b52d0d0c577df8b45f07e39b282c8d5184778dc9d444d8500308e3"
+      },
+      {
+        "check": "titles-executor-contract",
+        "cwd": "core4",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=titles-executor-contract",
+          "test/modules/titles.test.js"
+        ],
+        "evidenceKey": "5bbe9af1586e46ff74b07d9468b42dead9f4f7365bd6cdca27feadc1adc7c222",
+        "pass": 3,
+        "log": "source-logs-20261105-titles/titles-executor-contract.txt",
+        "logSha256": "40813665f70c756efb602c372d550cadcac8b767b91d41c5de9fb6ed02660978"
+      }
+    ],
+    "keysMatchHeldManifestEntries": true,
+    "product": {
+      "cwd": "products/titles",
+      "command": [
+        "node",
+        "--test"
+      ],
+      "pass": 8,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "npmLauncherExit": 1,
+      "coverage": "offline/compiler, CLI, synthetic Node VM owner"
+    }
+  },
+  "installation": {
+    "packageHash": "3de578fb5e53cb7cb9e8dd99e29a48808745a5011834b6510a83d28e9760b295",
+    "product": "AE Agent Core 4.1.0",
+    "configuredClient": true,
+    "ownerPid": 15892,
+    "ownerBootId": "5afb0e3c-ff5f-4877-bd4c-75136f23416a",
+    "peerOrigin": "file://",
+    "aeVersion": "26.3x87",
+    "aePid": 26368
+  },
+  "target": {
+    "fixture": "snapshots/core-base-b6-recovery-native-20261103.aep",
+    "compId": 1,
+    "compName": "CoreBase_B6_Recovery",
+    "layerId": 13,
+    "layerName": "CoreBase_B6_Text",
+    "savedFileSha256Before": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5",
+    "savedFileSha256After": "b6eaea7e0b3621af4580357816ea785e4ba776ae9d83bc3439a833563fb347e5",
+    "savePerformed": false
+  },
+  "priorRun": {
+    "code": "host_or_managed_writer_changed",
+    "message": "host_or_managed_writer_changed",
+    "runId": "run-4e3391a2-89e9-4e8b-9edd-88c2c360cf20",
+    "state": "stopped",
+    "task": {
+      "commands": [],
+      "epoch": 0,
+      "reset": false,
+      "taskId": "task-9a19bba2-d5c3-4948-b442-0566138c2fbe"
+    },
+    "workflowId": "titles-75814e8a7f2f1c957596d92955c6ce7b2a89aa327c5cfb92946156b49d78f24c",
+    "proposalId": "proposal-e25de3e4-a06b-4127-8278-9693a83273cc",
+    "adoptedAePid": 30024,
+    "actualAePid": 26368,
+    "mutationIntents": 0,
+    "release": true
+  },
+  "readoption": {
+    "operationId": "c5bf67e2-9bbe-4ae5-b0f5-ddfa15837032",
+    "phase": "enabled",
+    "distributionHash": "f0d6ae84ecc1e531774b0575aa2ef13408db17ea240eb8a0d7e37a96e120e915",
+    "initialApply": {
+      "attempts": 1,
+      "result": "host_observation_stale",
+      "adoptionCasApplied": false
+    },
+    "finish": {
+      "attempts": 1,
+      "result": "readopt-completed-stopped"
+    },
+    "enable": {
+      "attempts": 1,
+      "result": "enabled"
+    },
+    "beforeAePid": 30024,
+    "afterAePid": 26368,
+    "adoptionSha256": "0722fee3a12c440a2069b64563e10c7ba04fee8e14816967d4de859334c0bde4",
+    "protectedFilesUnchanged": 10,
+    "packageOrMcpConfigChanged": false
+  },
+  "native": {
+    "buildId": "build-d25edf49-be2a-4b63-be31-6579fb593916",
+    "recordContext": {
+      "contextId": "titles-t2-core41-20261105-bound",
+      "lifetime": "ephemeral_check",
+      "project": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep"
+      },
+      "purpose": "technical_check",
+      "resources": [
+        {
+          "identity": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\snapshots\\core-base-b6-recovery-native-20261103.aep",
+          "kind": "project"
+        },
+        {
+          "identity": "titles-t2-core41-20261105-bound",
+          "kind": "job"
+        }
+      ]
+    },
+    "proposalId": "proposal-b4f137c1-3028-4a24-8698-a68c9fee5f36",
+    "dryrunRef": "dryrun-da86e8c5-7c56-4d46-b376-59b50664f53d",
+    "taskId": "task-00f3e696-1c45-4b42-bfcb-42fa44cec4ed",
+    "runId": "run-4eebf70a-9955-48c2-a5b4-1293b04eb17d",
+    "state": "succeeded",
+    "synthetic": false,
+    "modulePin": "189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79",
+    "inspectionBefore": "evidence-d010b010-ed4c-43be-8fa7-9fb3141cc0c1",
+    "independentInspectionAfter": "evidence-66d9de60-e54a-4953-860e-9db38e0729d8",
+    "textBefore": "BASE_B",
+    "textAfter": "TITLES 4.1",
+    "protectedStyle": {
+      "character": {
+        "font": "CenturyGothic",
+        "fontSize": 56,
+        "applyFill": true,
+        "fillColor": [
+          1,
+          1,
+          1
+        ],
+        "applyStroke": true,
+        "strokeColor": [
+          0,
+          0,
+          0
+        ],
+        "strokeWidth": 2,
+        "tracking": 0,
+        "baselineShift": 0,
+        "horizontalScale": 1,
+        "verticalScale": 1,
+        "fauxBold": true,
+        "fauxItalic": false
+      },
+      "paragraph": {
+        "justification": 7415,
+        "leading": 56,
+        "autoLeading": false
+      }
+    },
+    "protectedStyleUnchanged": true,
+    "confirmation": {
+      "kind": "After Effects native modal",
+      "count": 1,
+      "projectAndLayerMatched": true
+    },
+    "visual": {
+      "compId": 1,
+      "timecode": "0:00:00:00",
+      "fps": 25,
+      "zoomPercent": 100,
+      "resolution": "Full",
+      "before": "BASE_B",
+      "after": "TITLES 4.1"
+    },
+    "durable": {
+      "verificationKind": "local-transaction-receipt",
+      "originalBinding": {
+        "channelEpoch": "channel-4d7d2592-670e-4017-97d2-72b5392977cb",
+        "commandId": "command-8254234c-b6be-4a5a-8af8-37e8c034ae6e",
+        "controllerId": "controller-093fb3ba-dd9b-4487-9227-9a83481baac7",
+        "executorHash": "6d84fdbbf09352db6b77cf4470e84e785d7cafa30979df98de988ba6a70c8132",
+        "moduleId": "titles-current-target",
+        "operationId": "set-current-text",
+        "payloadHash": "f56305057ed6e95693f728e3eb9b931a46eab90869bd651978c40e3e90941f01",
+        "phase": "mutate",
+        "receiptRef": "fda2766c573f0315b4ecbf486f012b5f94258a88fc2716e9c627e28666ed0a4d",
+        "receiverStoreIdentity": "receiver-store-40c3ae98-6888-4451-91f4-53d96ee9d726"
+      },
+      "checkpointRef": "checkpoint-0bf908b4-a914-49d6-9283-6d73f75ee984",
+      "checkpointDigest": "d2a6c41f1774c70b7c99fc0b6ae65fef942aaafdb4f941be042167a411b00409",
+      "receiverMutationRecordSeq": [
+        30,
+        31
+      ],
+      "mutationIntents": 1,
+      "journalPrefixes": {
+        "completions.ndjson": {
+          "from": 23,
+          "to": 33,
+          "prefixSha256": "c2a4a4c8fa6d0a391c439aa08bc917fbe46ab1405da87f17b8d2ff36783dd9c0",
+          "sha256": "bcf72005a380289eea1f719cd572a62fe6fbda8b965623f0f9b897ff88be84a2"
+        },
+        "ledger.ndjson": {
+          "from": 8,
+          "to": 22,
+          "prefixSha256": "10d2446b644350e589c779aed991d2dd21d0a25609a93ed78894a144311d2443",
+          "sha256": "d3ebc6d21dd549341b7ff48ae6bd93ab0b2085de5b75f01b49716672d1705212"
+        }
+      }
+    },
+    "final": {
+      "released": true,
+      "holder": null,
+      "peerConnected": true,
+      "pending": null,
+      "unknown": false,
+      "unresolved": [],
+      "storeFault": false,
+      "ledgerFault": false,
+      "ownershipFault": null
+    }
+  },
+  "openCoverage": [
+    "Titles on former template layers with unobservable stroke color",
+    "Desktop native Titles workflow on Core 4.1.0",
+    "Full release acceptance"
+  ]
+}

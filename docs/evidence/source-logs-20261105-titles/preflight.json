@@ -1,0 +1,24 @@
+[
+  {
+    "check": "titles-owner",
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=titles-owner",
+      "test/modules/titles.test.js"
+    ],
+    "evidenceKey": "4a36b881982aaf34751137f0012509861a10f31b75d10ef291a1b8f1dd4fbf95",
+    "dependencyCount": 29
+  },
+  {
+    "check": "titles-executor-contract",
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=titles-executor-contract",
+      "test/modules/titles.test.js"
+    ],
+    "evidenceKey": "5bbe9af1586e46ff74b07d9468b42dead9f4f7365bd6cdca27feadc1adc7c222",
+    "dependencyCount": 29
+  }
+]
