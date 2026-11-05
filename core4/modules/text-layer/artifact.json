@@ -1,0 +1,11 @@
+{
+  "id": "text-layer",
+  "version": "4.1.0",
+  "entry": "implementation.js",
+  "hashes": {
+    "implementation.js": "0625f225818497cef54341b8dd1fb966fb2a483f46f8adb22c1792b62d5b6f97",
+    "contract.json": "53bd8dd8c460a0a15dad94849855d8c564d2212db16f40e64ac050b21efc471e",
+    "executor.jsx": "c7b6ef09f7f22077b51639d1b9ea10efb2287697bfc9ba2f64ebc0e4353b6aee"
+  },
+  "publicDependencies": {}
+}

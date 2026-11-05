@@ -15,7 +15,7 @@ const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsu
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
 }
-function manualResultProfile(asset) { return ['manual-text-v1', 'manual-point-layout-v1'].includes(asset.resultProfile); }
+function manualResultProfile(asset) { return ['manual-text-v1', 'manual-point-layout-v1', 'owned-text-layer-v1'].includes(asset.resultProfile); }
 function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
   if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
@@ -130,6 +130,9 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
             exact(result, ['outcome', 'snapshot', 'code', 'transactionReceipt']);
             if (result.outcome === 'unknown') { disconnect('manual_effect_unknown'); fail('manual_effect_unknown'); }
             if (!['applied', 'rejected'].includes(result.outcome)) fail('manual_result');
+          } else if (selectedAsset.resultProfile === 'owned-text-layer-v1') {
+            exact(result, ['target', 'revision', 'protected', 'size', 'guides', 'layers']);
+            if (!result.target || typeof result.revision !== 'string' || typeof result.protected !== 'string' || !Array.isArray(result.layers)) fail('manual_snapshot');
           } else {
             const fields = ['target', 'revision', 'text', 'protected'];
             if (selectedAsset.resultProfile === 'manual-point-layout-v1') fields.push('role', 'time', 'style', 'anchor', 'scale', 'position', 'bounds', 'baselines', 'comp');

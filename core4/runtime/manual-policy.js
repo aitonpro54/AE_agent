@@ -2,9 +2,9 @@
 const { brandAuthorityPort, brandExecutionPolicyPort } = require('../core/authority');
 const { hash, canonical, fail, exact } = require('../protocol/json');
 const POLICY = 'current-matching-target-after-local-confirmation-v1';
-function createManualPolicy({ selected, layout, provider, installation, getPeer }) {
-  const profiles = [selected, ...(layout ? [layout] : [])].map(value => ({ contractPin: hash(value.contract), modulePin: value.pin,
-    admissionPin: hash(value.admission), executorHash: value.admission.executorHash, proof: value.proof }));
+function createManualPolicy({ selected, layout, additional = [], provider, installation, getPeer }) {
+  const profiles = [selected, ...(layout ? [layout] : []), ...additional].map(value => ({ contractPin: hash(value.contract), modulePin: value.pin,
+    admissionPin: hash(value.admission), executorHash: value.admission.executorHash, proof: value.proof, validateResult: value.validateResult }));
   const approvals = new Map();
   function admitted(candidate) {
     return profiles.find(profile => candidate.pin === profile.modulePin && hash(candidate.contract) === profile.contractPin && hash(candidate.admission) === profile.admissionPin);
@@ -48,9 +48,16 @@ function createManualPolicy({ selected, layout, provider, installation, getPeer 
       if (result.outcome === 'rejected') { if (ctx.reservation) provider.finish(ctx.reservation, 'rejected'); else if (ctx.grant) provider.finishOriginal(ctx.grant.reservationRef, 'rejected'); return { rejected: true, code: result.code }; }
       if (result.outcome !== 'applied') fail('mutation_unknown');
       const receipt = result.transactionReceipt;
-      const desiredText = profile.proof ? profile.proof.validateCompletion(ctx, result.snapshot, execution) : ctx.input.text;
-      const expected = { version: 1, policyId: POLICY, proposalId: execution.proposalId, planDigest: execution.planDigest, taskId: execution.taskId, taskEpoch: execution.taskEpoch, stepId: execution.stepId, checkpointRef: execution.checkpointRef, checkpointDigest: execution.checkpointDigest, baselineDigest: execution.baselineDigest, baselineRevision: execution.baselineRevision, target: ctx.target, desiredText, protectedFields: ctx.before.protected };
-      if (canonical(receipt) !== canonical(expected) || result.snapshot.text !== desiredText || result.snapshot.protected !== ctx.before.protected || canonical(result.snapshot.target) !== canonical(ctx.target)) fail('local_transaction_receipt_mismatch');
+      const expected = { policyId: POLICY, proposalId: execution.proposalId, planDigest: execution.planDigest, taskId: execution.taskId, taskEpoch: execution.taskEpoch, stepId: execution.stepId, checkpointRef: execution.checkpointRef, checkpointDigest: execution.checkpointDigest, baselineDigest: execution.baselineDigest, baselineRevision: execution.baselineRevision, target: ctx.target, protectedFields: ctx.before.protected };
+      if (profile.validateResult) {
+        profile.validateResult(ctx, result.snapshot);
+        Object.assign(expected, { version: 2, resultRevision: result.snapshot.revision });
+      } else {
+        const desiredText = profile.proof ? profile.proof.validateCompletion(ctx, result.snapshot, execution) : ctx.input.text;
+        if (result.snapshot.text !== desiredText) fail('local_transaction_receipt_mismatch');
+        Object.assign(expected, { version: 1, desiredText });
+      }
+      if (canonical(receipt) !== canonical(expected) || result.snapshot.protected !== ctx.before.protected || canonical(result.snapshot.target) !== canonical(ctx.target)) fail('local_transaction_receipt_mismatch');
       if (ctx.reservation) provider.finish(ctx.reservation, 'succeeded');
       else if (ctx.grant) provider.finishOriginal(ctx.grant.reservationRef, 'succeeded');
       return { after: result.snapshot, verificationKind: 'local-transaction-receipt' };

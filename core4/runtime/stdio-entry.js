@@ -29,10 +29,12 @@ function deriveComposition(release, read) {
   }
   if (!Object.hasOwn(release.hashes, 'runtime/composition.json')) fail('composition_required');
   const composition = json('runtime/composition.json'); exactKeys(composition, ['version', 'id', 'modules', 'engine', 'assets']);
-  if (composition.version !== 1 || !['readonly', 'manual', 'manual-layout'].includes(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
+  if (composition.version !== 1 || !['readonly', 'manual', 'manual-layout', 'manual-titles'].includes(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
   const catalog = json('config/catalog.json'); exactKeys(catalog, ['catalogRevision', 'modules', 'engine']);
   const expectedIds = composition.id === 'readonly' ? [] : ['photo-placeholder', 'titles', 'titles-current-target'];
-  if (composition.id === 'manual-layout') expectedIds.push('titles-point-layout');
+  const withText = composition.id === 'manual-titles', withLayout = withText || composition.id === 'manual-layout';
+  if (withLayout) expectedIds.push('titles-point-layout');
+  if (withText) expectedIds.push('text-layer');
   if (canonical(composition.modules) !== canonical(expectedIds) || !Array.isArray(catalog.modules) || canonical(catalog.modules.map(m => m.id)) !== canonical(expectedIds) || canonical(catalog.engine) !== canonical(composition.engine) || (composition.id === 'readonly' ? composition.engine !== null : !composition.engine || composition.engine.path !== 'plan-engine')) fail('composition_catalog');
   function admitted(entry) {
     exactKeys(entry, ['id', 'version', 'path', 'admission']);
@@ -47,10 +49,14 @@ function deriveComposition(release, read) {
   if (composition.engine) { exactKeys(composition.engine, ['path', 'artifactHash']); const manifest = json('plan-engine/artifact.json'); if (hash(manifest) !== composition.engine.artifactHash) fail('composition_engine'); for (const [file, pin] of Object.entries(manifest.hashes)) if (!/^[A-Za-z0-9_-]+\.(js|json)$/.test(file) || hash(checked('plan-engine/' + file)) !== pin) fail('composition_engine'); }
   const expectedAssets = [{ assetKey: 'project-inspection-v1', moduleId: 'project-inspection', path: 'modules/project-inspection', admission: 'modules/project-inspection/artifact.json', policy: 'read-only-current-observation-v1', phases: ['inspect'] }];
   if (composition.id !== 'readonly') expectedAssets.push({ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', path: 'modules/titles-current-target', admission: 'config/admissions/titles-current-target.json', policy: 'current-matching-target-after-local-confirmation-v1', phases: ['inspect', 'mutate', 'verify'] });
-  if (composition.id === 'manual-layout') {
+  if (withLayout) {
     expectedAssets.push({ assetKey: 'titles-point-layout-v1', moduleId: 'titles-point-layout', path: 'modules/titles-point-layout', admission: 'config/admissions/titles-point-layout.json', policy: 'current-matching-target-after-local-confirmation-v1', phases: ['inspect', 'mutate', 'verify'] });
     checked('runtime/point-layout-proof.js');
   } else if (Object.keys(release.hashes).some(file => /^(?:runtime\/point-layout-proof\.js$|modules\/titles-point-layout\/|config\/admissions\/titles-point-layout\.json$)/.test(file))) fail('composition_optional_closure');
+  if (withText) {
+    expectedAssets.push({ assetKey: 'text-layer-v1', moduleId: 'text-layer', path: 'modules/text-layer', admission: 'config/admissions/text-layer.json', policy: 'current-matching-target-after-local-confirmation-v1', phases: ['inspect', 'mutate', 'verify'] });
+    checked('runtime/text-layer-proof.js');
+  } else if (Object.keys(release.hashes).some(file => /^(?:runtime\/text-layer-proof\.js$|modules\/text-layer\/|config\/admissions\/text-layer\.json$)/.test(file))) fail('composition_optional_closure');
   if (canonical(composition.assets) !== canonical(expectedAssets)) fail('composition_assets');
   const assets = composition.assets.map(asset => {
     let value = selected.get(asset.moduleId);
@@ -61,6 +67,7 @@ function deriveComposition(release, read) {
       value = { contract, admission, executor };
     }
     if (!value || asset.moduleId === 'titles-point-layout' && (value.contract.operationId !== 'measure-or-apply-point-layout' || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
+    if (asset.moduleId === 'text-layer' && (value.contract.operationId !== 'write-point-text' || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
     return { ...asset, ...value, executorHash: value.admission.executorHash };
   });
   // No optional runtime code is shipped in the standalone inspection composition.
@@ -286,6 +293,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const asset = { assetKey: inspection.assetKey, executorHash: inspection.executorHash };
   const manualAsset = selected.assets.find(a => a.assetKey === 'titles-current-target-v1');
   const layoutAsset = selected.assets.find(a => a.assetKey === 'titles-point-layout-v1');
+  const textAsset = selected.assets.find(a => a.assetKey === 'text-layer-v1');
   let provider, manual, privateEmbedding;
   if (manualAsset) {
     const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
@@ -297,8 +305,13 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       layout = { pin: hash(layoutAsset.manifest), contract: layoutAsset.contract, admission: layoutAsset.admission,
         proof: createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
     }
-    manual = createManualPolicy({ selected: { pin: hash(manualAsset.manifest), contract: manualAsset.contract, admission: manualAsset.admission }, layout, provider, installation, getPeer: () => peer });
-    const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission: manualAsset.admission, ...(layoutAsset ? { layoutAdmission: layoutAsset.admission } : {}) }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
+    const additional = [];
+    if (textAsset) {
+      const { validateTextLayerCompletion } = require('./text-layer-proof.js');
+      additional.push({ pin: hash(textAsset.manifest), contract: textAsset.contract, admission: textAsset.admission, validateResult: validateTextLayerCompletion });
+    }
+    manual = createManualPolicy({ selected: { pin: hash(manualAsset.manifest), contract: manualAsset.contract, admission: manualAsset.admission }, layout, additional, provider, installation, getPeer: () => peer });
+    const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission: manualAsset.admission, ...(layoutAsset ? { layoutAdmission: layoutAsset.admission } : {}), ...(textAsset ? { textAdmission: textAsset.admission } : {}) }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
     privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };
   }
   broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, ...(ownerLifecycle ? { stateLockToken: ownerLifecycle.brokerToken } : {}), ...(privateEmbedding ? { privateEmbedding } : {}) });
@@ -308,9 +321,9 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (broker.ledger.corrupt) fail('ledger_corrupt');
     if (broker.ledger.unresolved().some(c => c.commandId !== command?.commandId)) fail('controller_unresolved');
   };
-  const additionalAssets = [manualAsset, layoutAsset].filter(Boolean).map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
+  const additionalAssets = [manualAsset, layoutAsset, textAsset].filter(Boolean).map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
     operationId: item.contract.operationId, executorHash: item.executorHash,
-    resultProfile: item === layoutAsset ? 'manual-point-layout-v1' : 'manual-text-v1' }));
+    resultProfile: item === textAsset ? 'owned-text-layer-v1' : item === layoutAsset ? 'manual-point-layout-v1' : 'manual-text-v1' }));
   peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets, timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');

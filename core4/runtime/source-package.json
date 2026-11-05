@@ -70,6 +70,10 @@
     "layout": {
       "files": ["runtime/point-layout-proof.js", "config/admissions/titles-point-layout.json"],
       "artifactClosures": ["modules/titles-point-layout/artifact.json"]
+    },
+    "text": {
+      "files": ["runtime/text-layer-proof.js", "config/admissions/text-layer.json"],
+      "artifactClosures": ["modules/text-layer/artifact.json"]
     }
   },
   "compositions": {
@@ -127,6 +131,19 @@
           "moduleId": "titles-point-layout",
           "path": "modules/titles-point-layout",
           "admission": "config/admissions/titles-point-layout.json",
+          "policy": "current-matching-target-after-local-confirmation-v1",
+          "phases": ["inspect", "mutate", "verify"]
+        }
+      ]
+    },
+    "manual-titles": {
+      "modules": ["text-layer"],
+      "assets": [
+        {
+          "assetKey": "text-layer-v1",
+          "moduleId": "text-layer",
+          "path": "modules/text-layer",
+          "admission": "config/admissions/text-layer.json",
           "policy": "current-matching-target-after-local-confirmation-v1",
           "phases": ["inspect", "mutate", "verify"]
         }

@@ -1,0 +1,12 @@
+{
+  "moduleId": "text-layer",
+  "operationId": "write-point-text",
+  "artifactHash": "00115f2b03b62ba9dc682087a5c8f86e53c18deffc6927848bcfefbfdda60eb0",
+  "schemaHash": "2527ed0abcedee9c85f7fde3cead0a6783cc70cb826e9bf85892715fe52b6161",
+  "resultSchemaHash": "98761c30d63fba2505870556ebd603eb15658665d9a9cb9e409f412ecd33c30f",
+  "effectPolicyHash": "d05ebae1840adb5fa0768904598f7578266376eb8db850dc3c8b82b8b4d32156",
+  "executorHash": "c7b6ef09f7f22077b51639d1b9ea10efb2287697bfc9ba2f64ebc0e4353b6aee",
+  "protocolVersion": 1,
+  "trustApprovalId": "source-review-text-layer-20261105",
+  "revoked": false
+}
