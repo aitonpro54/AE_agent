@@ -58,7 +58,8 @@ function textEnvironment(state) {
         sourceRectAtTime() { return { left: -50, top: -60, width: 100, height: 120 }; },
         property(key) {
           return { 'ADBE Text Properties': { property: key => key === 'ADBE Text Document' ? source : { numProperties: 0 } },
-            'ADBE Transform Group': { property: key => transform[key] }, 'ADBE Layer Styles': { isModified: false },
+            'ADBE Transform Group': { property: key => transform[key] },
+            'ADBE Layer Styles': { isModified: false, enabled: this.layerStyleEnabled === true },
             'ADBE Effect Parade': { numProperties: 0 }, 'ADBE Mask Parade': { numProperties: 0 } }[key];
         },
         remove() { layerList.splice(layerList.indexOf(layer), 1); },

@@ -81,3 +81,15 @@ test('text-layer: package keeps both prior Titles contracts and contains the new
   assert.ok(enabled.files['modules/text-layer/executor.jsx']);
   assert.equal(old.files['modules/text-layer/executor.jsx'], undefined);
 });
+
+test('text-layer: active Layer Style geometry is refused when AE reports it unmodified', async t => {
+  const h = await harness({ textEnvironment }); t.after(() => h.close());
+  const api = inputFor(h);
+  const created = await h.broker.run(await api.propose(desired));
+  assert.equal(created.state, 'succeeded');
+  const { layerId } = created.outputs.text.layers[0];
+  h.state.textFixture.layerList.find(layer => layer.id === layerId).layerStyleEnabled = true;
+  assert.equal((await api.inspect()).snapshot.layers[0].issue, 'text_layer_geometry');
+  await assert.rejects(api.propose({ ...desired, layerId }), /text_layer_target/);
+  assert.equal(h.confirmations, 1);
+});

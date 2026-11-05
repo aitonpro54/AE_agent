@@ -19,12 +19,12 @@
         var value = prop.keyValue(index);
         return { time: prop.keyTime(index), comment: String(value.comment), data: markerData(value) };
     }
-    function names(group, modifiedOnly) {
+    function names(group, activeStylesOnly) {
         var list = [], i, prop;
         if (!group) return list;
         for (i = 1; i <= group.numProperties; i++) {
             prop = group.property(i);
-            if (!modifiedOnly || prop.isModified === true) list.push(String(prop.matchName));
+            if (!activeStylesOnly || (prop.enabled === true && prop.canSetEnabled === true)) list.push(String(prop.matchName));
         }
         if (list.length > 24) fault('text_variant_property_budget');
         return list;

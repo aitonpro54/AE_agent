@@ -43,7 +43,8 @@
             layer.solo !== false || layer.motionBlur !== false || layer.startTime !== 0 || layer.stretch !== 100 ||
             comp.time < layer.inPoint || comp.time >= layer.outPoint ||
             !empty(layer.property('ADBE Effect Parade')) || !empty(layer.property('ADBE Mask Parade')) ||
-            !empty(text.property('ADBE Text Animators')) || (styles && styles.isModified !== false)) fault('text_layer_geometry');
+            !empty(text.property('ADBE Text Animators')) ||
+            (styles && (styles.isModified !== false || styles.enabled !== false))) fault('text_layer_geometry');
         var position = fixed(transform.property('ADBE Position'));
         if (position.dimensionsSeparated !== false || fixed(transform.property('ADBE Rotate Z')).value !== 0 ||
             fixed(transform.property('ADBE Opacity')).value !== 100) fault('text_layer_geometry');

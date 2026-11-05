@@ -15,7 +15,15 @@ const source = fs.readFileSync(path.join(__dirname, '../modules/text-variant/exe
 function fixture({ collision = false, rotation = 0, confirm = () => true } = {}) {
   class CompItem {}
   const property = value => ({ numKeys: 0, value, dimensionsSeparated: false, setValue(next) { this.value = next; } });
-  const group = (...names) => ({ numProperties: names.length, property: i => ({ matchName: names[i - 1], isModified: true }) });
+  const group = (...names) => ({ numProperties: names.length, property: i => ({ matchName: names[i - 1] }) });
+  const styles = active => {
+    const entries = [
+      { matchName: 'ADBE Blend Options Group', enabled: active, canSetEnabled: false, isModified: false },
+      { matchName: 'dropShadow/enabled', enabled: false, canSetEnabled: active, isModified: true },
+      { matchName: 'frameFX/enabled', enabled: active, canSetEnabled: active, isModified: false },
+    ];
+    return { numProperties: entries.length, property: i => entries[i - 1] };
+  };
   const marker = comment => ({ comment, chapter: '', url: '', frameTarget: '', cuePointName: '', duration: 0, label: 2,
     eventCuePoint: false, protectedRegion: false, getParameters: () => ['marker', comment] });
   const layers = [];
@@ -34,7 +42,7 @@ function fixture({ collision = false, rotation = 0, confirm = () => true } = {})
       property(key) {
         return { 'ADBE Transform Group': { property: key => t[key] }, 'ADBE Text Properties': textProperties,
           'ADBE Marker': markerKeys, 'ADBE Effect Parade': animated ? group('ADBE Gaussian Blur 2') : group(),
-          'ADBE Layer Styles': animated ? group('dropShadow/enabled') : group() }[key];
+          'ADBE Layer Styles': styles(animated) }[key];
       },
       duplicate() {
         const dup = layer(22, name, comment, text, this.enabled, animated, markers.slice(), position);
@@ -79,6 +87,7 @@ test('text-variant: duplicate carries effect, layer style, animator and matte wh
   assert.equal(result.outcome, 'applied');
   validateTextVariantCompletion({ input: p, before: env.before }, result.snapshot);
   assert.deepEqual(env.read().layers[0].markers.map(marker => marker.comment), ['IN', 'User']);
+  assert.deepEqual(env.read().layers[0].styles, ['frameFX/enabled']);
   assert.deepEqual(env.read().layers[1].markers.map(marker => marker.comment), ['User']);
 });
 

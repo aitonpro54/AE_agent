@@ -1,11 +1,11 @@
 {
   "moduleId": "text-variant",
   "operationId": "stage-text-variant",
-  "artifactHash": "d645e7d430e116e6b61d771c4e0edb95d5687477817c8192031caab6a76df794",
+  "artifactHash": "a0ef48a73564b3c722e9c3e47e1cc9ba8479b5fa69f9a605e22e7795031ade16",
   "schemaHash": "c26016b9c95b989ef695bdf6600592cc97f382ca6da441d00a3aa57d49ed78f0",
   "resultSchemaHash": "4bd9b82d75affd88e0cde4643dfac50db3412a7a79ec5e67b6680699cd391571",
   "effectPolicyHash": "ce03d6a4d1f35a27bb1a2464f66a23cfbd330550901a550ebc6207189320e66e",
-  "executorHash": "4bcc2fb16fc37a2796108e916e0cffa350b76a430eb41cc0494b374708a970ff",
+  "executorHash": "84d13d26bcd599e15c7e4dc2f3bc21d71005a49c1e1152bdad712dc57bcb98af",
   "protocolVersion": 1,
   "trustApprovalId": "source-review-text-variant-20261105",
   "revoked": false
