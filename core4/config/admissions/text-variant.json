@@ -1,0 +1,12 @@
+{
+  "moduleId": "text-variant",
+  "operationId": "stage-text-variant",
+  "artifactHash": "bf4aedecb61edd282ac7e4671472c38c970e8a6e7ea07a4014ed4594f371c103",
+  "schemaHash": "02ef278c34939c0bfc0058a2d8adf650dbf953233bed619fc3f48171bf51ce8f",
+  "resultSchemaHash": "5ba13423633c165cdd3ec1c159c56e8f4d6b7c0d31bc91f5d8e4e9f58ba60617",
+  "effectPolicyHash": "ce03d6a4d1f35a27bb1a2464f66a23cfbd330550901a550ebc6207189320e66e",
+  "executorHash": "12b7162d43b18e7a7819ec42a55f54b3d603fe503e169bee9bf0b223613cab8f",
+  "protocolVersion": 1,
+  "trustApprovalId": "source-review-text-variant-20261105",
+  "revoked": false
+}

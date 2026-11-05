@@ -29,12 +29,14 @@ function deriveComposition(release, read) {
   }
   if (!Object.hasOwn(release.hashes, 'runtime/composition.json')) fail('composition_required');
   const composition = json('runtime/composition.json'); exactKeys(composition, ['version', 'id', 'modules', 'engine', 'assets']);
-  if (composition.version !== 1 || !['readonly', 'manual', 'manual-layout', 'manual-titles'].includes(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
+  if (composition.version !== 1 || !['readonly', 'manual', 'manual-layout', 'manual-titles', 'manual-titles-variants'].includes(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
   const catalog = json('config/catalog.json'); exactKeys(catalog, ['catalogRevision', 'modules', 'engine']);
   const expectedIds = composition.id === 'readonly' ? [] : ['photo-placeholder', 'titles', 'titles-current-target'];
-  const withText = composition.id === 'manual-titles', withLayout = withText || composition.id === 'manual-layout';
+  const withVariants = composition.id === 'manual-titles-variants';
+  const withText = withVariants || composition.id === 'manual-titles', withLayout = withText || composition.id === 'manual-layout';
   if (withLayout) expectedIds.push('titles-point-layout');
   if (withText) expectedIds.push('text-layer');
+  if (withVariants) expectedIds.push('text-variant');
   if (canonical(composition.modules) !== canonical(expectedIds) || !Array.isArray(catalog.modules) || canonical(catalog.modules.map(m => m.id)) !== canonical(expectedIds) || canonical(catalog.engine) !== canonical(composition.engine) || (composition.id === 'readonly' ? composition.engine !== null : !composition.engine || composition.engine.path !== 'plan-engine')) fail('composition_catalog');
   function admitted(entry) {
     exactKeys(entry, ['id', 'version', 'path', 'admission']);
@@ -57,6 +59,10 @@ function deriveComposition(release, read) {
     expectedAssets.push({ assetKey: 'text-layer-v1', moduleId: 'text-layer', path: 'modules/text-layer', admission: 'config/admissions/text-layer.json', policy: 'current-matching-target-after-local-confirmation-v1', phases: ['inspect', 'mutate', 'verify'] });
     checked('runtime/text-layer-proof.js');
   } else if (Object.keys(release.hashes).some(file => /^(?:runtime\/text-layer-proof\.js$|modules\/text-layer\/|config\/admissions\/text-layer\.json$)/.test(file))) fail('composition_optional_closure');
+  if (withVariants) {
+    expectedAssets.push({ assetKey: 'text-variant-v1', moduleId: 'text-variant', path: 'modules/text-variant', admission: 'config/admissions/text-variant.json', policy: 'current-matching-target-after-local-confirmation-v1', phases: ['inspect', 'mutate', 'verify'] });
+    checked('runtime/text-variant-proof.js');
+  } else if (Object.keys(release.hashes).some(file => /^(?:runtime\/text-variant-proof\.js$|modules\/text-variant\/|config\/admissions\/text-variant\.json$)/.test(file))) fail('composition_optional_closure');
   if (canonical(composition.assets) !== canonical(expectedAssets)) fail('composition_assets');
   const assets = composition.assets.map(asset => {
     let value = selected.get(asset.moduleId);
@@ -68,6 +74,7 @@ function deriveComposition(release, read) {
     }
     if (!value || asset.moduleId === 'titles-point-layout' && (value.contract.operationId !== 'measure-or-apply-point-layout' || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
     if (asset.moduleId === 'text-layer' && (value.contract.operationId !== 'write-point-text' || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
+    if (asset.moduleId === 'text-variant' && (value.contract.operationId !== 'stage-text-variant' || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
     return { ...asset, ...value, executorHash: value.admission.executorHash };
   });
   // No optional runtime code is shipped in the standalone inspection composition.
@@ -294,6 +301,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const manualAsset = selected.assets.find(a => a.assetKey === 'titles-current-target-v1');
   const layoutAsset = selected.assets.find(a => a.assetKey === 'titles-point-layout-v1');
   const textAsset = selected.assets.find(a => a.assetKey === 'text-layer-v1');
+  const variantAsset = selected.assets.find(a => a.assetKey === 'text-variant-v1');
   let provider, manual, privateEmbedding;
   if (manualAsset) {
     const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
@@ -310,8 +318,12 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       const { validateTextLayerCompletion } = require('./text-layer-proof.js');
       additional.push({ pin: hash(textAsset.manifest), contract: textAsset.contract, admission: textAsset.admission, validateResult: validateTextLayerCompletion });
     }
+    if (variantAsset) {
+      const { validateTextVariantCompletion } = require('./text-variant-proof.js');
+      additional.push({ pin: hash(variantAsset.manifest), contract: variantAsset.contract, admission: variantAsset.admission, validateResult: validateTextVariantCompletion });
+    }
     manual = createManualPolicy({ selected: { pin: hash(manualAsset.manifest), contract: manualAsset.contract, admission: manualAsset.admission }, layout, additional, provider, installation, getPeer: () => peer });
-    const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission: manualAsset.admission, ...(layoutAsset ? { layoutAdmission: layoutAsset.admission } : {}), ...(textAsset ? { textAdmission: textAsset.admission } : {}) }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
+    const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission: manualAsset.admission, ...(layoutAsset ? { layoutAdmission: layoutAsset.admission } : {}), ...(textAsset ? { textAdmission: textAsset.admission } : {}), ...(variantAsset ? { variantAdmission: variantAsset.admission } : {}) }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
     privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };
   }
   broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, ...(ownerLifecycle ? { stateLockToken: ownerLifecycle.brokerToken } : {}), ...(privateEmbedding ? { privateEmbedding } : {}) });
@@ -321,9 +333,11 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (broker.ledger.corrupt) fail('ledger_corrupt');
     if (broker.ledger.unresolved().some(c => c.commandId !== command?.commandId)) fail('controller_unresolved');
   };
-  const additionalAssets = [manualAsset, layoutAsset, textAsset].filter(Boolean).map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
+  const resultProfiles = { 'text-variant-v1': 'owned-text-variant-v1', 'text-layer-v1': 'owned-text-layer-v1',
+    'titles-point-layout-v1': 'manual-point-layout-v1', 'titles-current-target-v1': 'manual-text-v1' };
+  const additionalAssets = [manualAsset, layoutAsset, textAsset, variantAsset].filter(Boolean).map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
     operationId: item.contract.operationId, executorHash: item.executorHash,
-    resultProfile: item === textAsset ? 'owned-text-layer-v1' : item === layoutAsset ? 'manual-point-layout-v1' : 'manual-text-v1' }));
+    resultProfile: resultProfiles[item.assetKey] }));
   peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets, timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');

@@ -5,6 +5,10 @@
     { "prefix": "core4/runtime/text-layer-proof.js", "owner": "text-layer", "checks": ["text-layer"] },
     { "prefix": "core4/test/text-layer.test.js", "owner": "text-layer", "checks": ["text-layer"] },
     { "prefix": "core4/test/fixtures/text-layer-ae.js", "owner": "text-layer", "checks": ["text-layer"] },
+    { "prefix": "core4/modules/text-variant/", "owner": "text-variant", "checks": ["text-variant"] },
+    { "prefix": "core4/config/admissions/text-variant.json", "owner": "text-variant", "checks": ["text-variant"] },
+    { "prefix": "core4/runtime/text-variant-proof.js", "owner": "text-variant", "checks": ["text-variant"] },
+    { "prefix": "core4/test/text-variant.test.js", "owner": "text-variant", "checks": ["text-variant"] },
     { "prefix": "core4/modules/titles-point-layout/", "owner": "point-layout", "checks": ["point-layout"] },
     { "prefix": "core4/config/admissions/titles-point-layout.json", "owner": "point-layout", "checks": ["point-layout"] },
     { "prefix": "core4/runtime/point-layout-proof.js", "owner": "point-layout", "checks": ["point-layout"] },
@@ -1302,6 +1306,10 @@
       "test/text-layer.test.js", "test/fixtures/text-layer-ae.js", "test/fixtures/manual-http-runtime.js",
       "test/fixtures/ae.js"
     ],
+    "text-variant": [
+      "modules/text-variant/", "runtime/text-variant-proof.js", "protocol/", "tools/package-installable.js",
+      "runtime/stdio-entry.js", "runtime/source-package.json", "config/admissions/text-variant.json", "test/text-variant.test.js"
+    ],
     "installable-runtime": [
       "runtime/",
       "cep/",
@@ -1684,6 +1692,7 @@
     ],
     "point-layout": ["node", "--test", "--test-name-pattern=point-layout", "test/point-layout.test.js"],
     "text-layer": ["node", "--test", "--test-name-pattern=text-layer", "test/text-layer.test.js"],
+    "text-variant": ["node", "--test", "--test-name-pattern=text-variant", "test/text-variant.test.js"],
     "installable-runtime": [
       "node",
       "--test",
@@ -1861,6 +1870,9 @@
       "kind": "integration"
     },
     "text-layer": {
+      "kind": "integration"
+    },
+    "text-variant": {
       "kind": "integration"
     },
     "installable-runtime": {

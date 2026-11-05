@@ -1,0 +1,232 @@
+{
+  "moduleId": "text-variant",
+  "operationId": "stage-text-variant",
+  "protocolVersion": 1,
+  "targetSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+    },
+    "required": [
+      "projectId",
+      "compId"
+    ],
+    "additionalProperties": false
+  },
+  "buildSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "controlledLayerIds": {
+        "type": "array",
+        "items": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "minItems": 1,
+        "maxItems": 24
+      },
+      "activeLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "derive": {
+        "type": "object",
+        "properties": {
+          "templateLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "layoutLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "slot": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "markerSourceLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+        },
+        "required": [
+          "templateLayerId",
+          "layoutLayerId",
+          "slot",
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "projectId",
+      "compId",
+      "controlledLayerIds"
+    ],
+    "additionalProperties": false
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "controlledLayerIds": {
+        "type": "array",
+        "items": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "minItems": 1,
+        "maxItems": 24
+      },
+      "activeLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "derive": {
+        "type": "object",
+        "properties": {
+          "templateLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "layoutLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "slot": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "markerSourceLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+        },
+        "required": [
+          "templateLayerId",
+          "layoutLayerId",
+          "slot",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "expectedRevision": { "type": "string", "minLength": 1, "maxLength": 35000 }
+    },
+    "required": [
+      "projectId",
+      "compId",
+      "controlledLayerIds",
+      "expectedRevision"
+    ],
+    "additionalProperties": false
+  },
+  "snapshotSchema": {
+    "type": "object",
+    "properties": {
+      "target": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+          "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+        },
+        "required": [
+          "projectId",
+          "compId"
+        ],
+        "additionalProperties": false
+      },
+      "revision": { "type": "string", "minLength": 1, "maxLength": 35000 },
+      "protected": { "type": "string", "minLength": 1, "maxLength": 10000 },
+      "layers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "layerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+            "name": { "type": "string", "maxLength": 256 },
+            "tag": { "type": "string", "maxLength": 160 },
+            "enabled": { "type": "boolean" },
+            "eligible": { "type": "boolean" },
+            "text": { "type": "string", "minLength": 1, "maxLength": 600 },
+            "effects": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1, "maxLength": 256 },
+              "minItems": 0,
+              "maxItems": 24
+            },
+            "animators": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1, "maxLength": 256 },
+              "minItems": 0,
+              "maxItems": 24
+            },
+            "styles": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1, "maxLength": 256 },
+              "minItems": 0,
+              "maxItems": 24
+            },
+            "markers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "time": { "type": "number", "minimum": -100000, "maximum": 100000 },
+                  "comment": { "type": "string", "maxLength": 256 },
+                  "data": { "type": "string", "minLength": 1, "maxLength": 2000 }
+                },
+                "required": [
+                  "time",
+                  "comment",
+                  "data"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 32
+            },
+            "matteLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+            "transform": {
+              "type": "object",
+              "properties": {
+                "anchor": {
+                  "type": "array",
+                  "items": { "type": "number", "minimum": -100000, "maximum": 100000 },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "position": {
+                  "type": "array",
+                  "items": { "type": "number", "minimum": -100000, "maximum": 100000 },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "scale": {
+                  "type": "array",
+                  "items": { "type": "number", "minimum": -100000, "maximum": 100000 },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "required": [
+                "anchor",
+                "position",
+                "scale"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "layerId",
+            "name",
+            "tag",
+            "enabled",
+            "eligible",
+            "effects",
+            "animators",
+            "styles",
+            "markers"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 0,
+        "maxItems": 30
+      }
+    },
+    "required": [
+      "target",
+      "revision",
+      "protected",
+      "layers"
+    ],
+    "additionalProperties": false
+  },
+  "effectPolicy": {
+    "effect": "text-variant-stage",
+    "targetFields": [
+      "projectId",
+      "compId"
+    ],
+    "expectedBindings": {
+      "expectedRevision": "revision"
+    },
+    "resultBindings": {},
+    "preserve": [
+      "protected"
+    ],
+    "requiresCheckpoint": true,
+    "confirmation": "native-current-target",
+    "checkpointKind": "text-variant-preimage-v1"
+  },
+  "executionPolicy": "current-matching-target-after-local-confirmation-v1"
+}

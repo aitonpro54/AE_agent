@@ -74,6 +74,10 @@
     "text": {
       "files": ["runtime/text-layer-proof.js", "config/admissions/text-layer.json"],
       "artifactClosures": ["modules/text-layer/artifact.json"]
+    },
+    "variants": {
+      "files": ["runtime/text-variant-proof.js", "config/admissions/text-variant.json"],
+      "artifactClosures": ["modules/text-variant/artifact.json"]
     }
   },
   "compositions": {
@@ -144,6 +148,19 @@
           "moduleId": "text-layer",
           "path": "modules/text-layer",
           "admission": "config/admissions/text-layer.json",
+          "policy": "current-matching-target-after-local-confirmation-v1",
+          "phases": ["inspect", "mutate", "verify"]
+        }
+      ]
+    },
+    "manual-titles-variants": {
+      "modules": ["text-variant"],
+      "assets": [
+        {
+          "assetKey": "text-variant-v1",
+          "moduleId": "text-variant",
+          "path": "modules/text-variant",
+          "admission": "config/admissions/text-variant.json",
           "policy": "current-matching-target-after-local-confirmation-v1",
           "phases": ["inspect", "mutate", "verify"]
         }
