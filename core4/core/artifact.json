@@ -3,8 +3,8 @@
   "version": "4.0.0-m1",
   "hashes": {
     "core/artifacts.js": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6",
-    "core/authority.js": "28ebbc2134b920b0f6726194d73b66ce3f0b8908b3b56d7250158c3fc5c28640",
-    "core/broker.js": "432f7438b6ccd53e4f9b71cc4cc4624fa86f2cbae89528e7c29bf8cc00857352",
+    "core/authority.js": "2ac5bd1fd69a0c9a98e271ddbf2ab7759293d1a72cda5e73232e5d1d27cbb04e",
+    "core/broker.js": "01c14716f28972e769f0b97534fe1bc5086091df9cdb9ac4e13acbb2bf243aa2",
     "core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
     "core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
     "core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",

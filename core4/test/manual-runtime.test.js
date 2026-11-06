@@ -10,6 +10,7 @@ const { Broker } = require('../core/broker');
 const { hash, canonical } = require('../protocol/json');
 const { createManualPolicy } = require('../runtime/manual-policy');
 const { createWindowsReservationProvider } = require('../runtime/windows-reservation-provider');
+const { inspectLedgerHistory, inspectReceiverHistory } = require('../runtime/recovery-inspection');
 const { createHttpPeer } = require('../integrations/cep/http-peer');
 const { mac } = require('../integrations/cep/peer-protocol');
 const { buildPackage } = require('../tools/package-installable');
@@ -18,6 +19,11 @@ const { validateExecutionPolicyPort, validateReservationHandle } = require('../c
 const { initialState, environment } = require('./fixtures/ae');
 const root = path.resolve(__dirname, '..');
 const { harness } = require('./fixtures/manual-http-runtime');
+function reservationHistory(h) {
+  const receiver = inspectReceiverHistory(fs.readFileSync(path.join(h.installation.stateDir, 'receiver/completions.ndjson')));
+  const ledger = inspectLedgerHistory(fs.readFileSync(h.broker.ledger.file), { installationId: h.installation.installationId, receiver });
+  return { receiver, ledger, reservation: ledger.reservations.at(-1) };
+}
 test('manual-runtime actual Broker HTTP compiled JSX generic flow uses one native confirm and original local transaction receipt without session', async t => {
   const h = await harness(); t.after(() => h.close()); const request = await h.proposal(); const result = await h.broker.run(request);
   assert.equal(result.state, 'succeeded', JSON.stringify(result)); assert.equal(h.state.text, 'After'); assert.equal(h.state.counts.titles, 1); assert.equal(h.confirmations, 1);
@@ -105,13 +111,36 @@ test('manual-runtime forged policy/reservation JSON never receives a private bra
   const h = await harness(); t.after(() => h.close()); const request = await h.proposal(), completion = h.broker.transport.completion;
   h.broker.transport.completion = async commandId => { const frame = await completion(commandId), body = decode(frame, h.broker.secret); body.response.result.transactionReceipt.checkpointDigest = 'tampered'; return encode(body, h.broker.secret); };
   const result = await h.broker.run(request); assert.equal(result.code, 'local_transaction_receipt_mismatch'); assert.equal(h.broker.ledger.commands()[0].state, 'UNKNOWN'); assert.equal(h.state.counts.titles, 1);
+  const { ledger, reservation, receiver } = reservationHistory(h);
+  assert.equal(reservation.state, 'reserved'); assert.equal(ledger.settled, false);
+  assert.ok(receiver.commands.some(c => c.commandId === reservation.commandId));
+  assert.ok(ledger.unresolved.some(c => c.kind === 'command' && c.id === reservation.commandId));
+  assert.ok(ledger.unresolved.some(c => c.kind === 'reservation' && c.id === reservation.ref));
+  await assert.rejects(h.proposal('Blocked'), /controller_unresolved/);
   h.broker.transport.completion = completion;
   const task = await h.broker.reconcile({ taskId: request.taskId }); assert.equal(task.commands[0].state, 'succeeded'); assert.equal(h.state.counts.titles, 1); assert.equal(h.confirmations, 1);
+});
+test('manual-runtime refusal before intent records a terminal reservation without reaching the receiver', async t => {
+  const h = await harness(); t.after(() => h.close()); const request = await h.proposal();
+  h.broker.hooks.beforeIntent = () => { throw Object.assign(new Error('Fixture refusal'), { code: 'fixture_refusal' }); };
+  assert.equal((await h.broker.run(request)).code, 'fixture_refusal');
+  assert.equal(h.broker.ledger.commands().length, 0); assert.equal(h.confirmations, 0);
+  const { receiver, ledger, reservation } = reservationHistory(h);
+  assert.equal(ledger.settled, true); assert.equal(reservation.state, 'not-dispatched');
+  assert.ok(!receiver.commands.some(c => c.commandId === reservation.commandId));
+  assert.ok(h.broker.ledger.events.some(e => e.type === 'reservation' && e.state === 'not-dispatched' && e.reservationRef === reservation.ref));
+  delete h.broker.hooks.beforeIntent;
+  assert.equal((await h.broker.run(await h.proposal('Fresh proposal'))).state, 'succeeded');
+  assert.equal(h.confirmations, 1);
 });
 test('manual-runtime final synchronous reservation guard rejects expiry before send with no setter', async t => {
   const h = await harness(); t.after(() => h.close()); const request = await h.proposal();
   h.broker.hooks.afterIntent = async () => { await new Promise(resolve => setTimeout(resolve, 2100)); };
   const result = await h.broker.run(request); assert.equal(result.code, 'reservation_observation_expired'); assert.equal(h.state.counts.titles, 0); assert.equal(h.broker.ledger.commands()[0].state, 'rejected');
+  const { receiver, ledger, reservation } = reservationHistory(h);
+  assert.equal(ledger.settled, true); assert.equal(reservation.state, 'not-dispatched');
+  assert.equal(h.broker.ledger.commands()[0].preDispatchReservationRef, reservation.ref);
+  assert.ok(!receiver.commands.some(c => c.commandId === reservation.commandId));
 });
 test('manual-runtime authenticated but wrong protocol version cannot certify original completion', async t => {
   const h = await harness(); t.after(() => h.close()); const request = await h.proposal(), completion = h.broker.transport.completion;

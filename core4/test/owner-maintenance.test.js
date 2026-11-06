@@ -5,6 +5,7 @@ const { canonical, hash } = require('../protocol/json'), { dispatchBinding } = r
 const { fixture } = require('./fixtures/owner-lifecycle-fixture');
 const { classifyOwnerProcess } = require('../runtime/windows-owner-process');
 const { createAttachmentOwner, OWNER_METHODS } = require('../runtime/attachment-owner');
+const { Ledger } = require('../core/ledger');
 const test = (name, fn) => nodeTest('owner-maintenance ' + name, { timeout: 10000 }, fn);
 const bytes = file => fs.existsSync(file) ? fs.readFileSync(file) : null;
 async function harness(t, diagnostic = false) {
@@ -106,6 +107,32 @@ test('UNKNOWN and original history survive stop; no replay or fresh receiver is 
   h.stores.store.begin(command, dispatchBinding(command, h.stores.store.identity)); h.stores.store.unknown(command.commandId);
   const journal = h.f.path('receiver/completions.ndjson'), marker = h.f.path('receiver/owner'), before = bytes(journal), owner = bytes(marker), id = await h.stop();
   assert.deepEqual(bytes(journal), before); assert.deepEqual(bytes(marker), owner); await h.dead(); assert.equal((await h.inspect(id)).phase, 'stopped-fenced'); assert.deepEqual(bytes(journal), before);
+});
+
+for (const hasIntent of [false, true]) test(`stop with original reservation ${hasIntent ? 'and an unclassified intent stays fenced' : 'before intent can resume normally'}`, async t => {
+  const h = await harness(t), journal = h.f.path('receiver/completions.ndjson'), ledgerPath = h.f.path('broker/ledger.ndjson');
+  const ledger = new Ledger(ledgerPath), target = { projectId: 'fixture.aep', compId: 1 };
+  const checkpoint = { ref: 'checkpoint-one', digest: hash(target) }, proposalId = 'proposal-one', taskId = 'task-one', taskEpoch = 0, effect = 'owned-native-render';
+  const commandId = 'reserved-write', receiverStoreIdentity = h.stores.store.identity, ref = 'reservation-one';
+  ledger.append({ type: 'checkpoint', checkpoint, proposalId, taskId, taskEpoch, target, effectPolicy: { effect } });
+  ledger.append({ type: 'reservation', state: 'reserved', reservation: { ref, commandId, checkpointRef: checkpoint.ref, checkpointDigest: checkpoint.digest,
+    proposalId, receiverStoreIdentity, executionScope: { schemaVersion: 2, target } }, taskId, taskEpoch, effect });
+  if (hasIntent) {
+    const command = { controllerId: 'controller-one', channelEpoch: 'epoch-one', commandId, moduleId: 'comp-render', operationId: 'render', executorHash: 'a'.repeat(64), phase: 'mutate', payloadHash: hash(target) };
+    ledger.append({ type: 'intent', commandId, dispatchBinding: dispatchBinding(command, receiverStoreIdentity), grant: { reservationRef: ref } });
+  }
+  const originalReceiver = bytes(journal), originalLedger = bytes(ledgerPath), id = await h.stop();
+  await h.dead(); const inspection = await h.inspect(id);
+  if (hasIntent) {
+    assert.equal(inspection.phase, 'stopped-fenced');
+    await assert.rejects(h.resume(id, 'a'.repeat(64)), code('maintenance_unsettled'));
+  } else {
+    assert.equal(inspection.phase, 'stopped');
+    assert.equal((await h.resume(id, inspection.proofHash)).resumed, true);
+    await h.next();
+    assert.equal(h.stores.store.identity, receiverStoreIdentity);
+  }
+  assert.deepEqual(bytes(journal), originalReceiver); assert.deepEqual(bytes(ledgerPath), originalLedger);
 });
 
 for (const drift of ['descriptor', 'history', 'client']) test(drift + ' CAS drift refuses resume before lease or destination writes', async t => {

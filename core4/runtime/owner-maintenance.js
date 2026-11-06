@@ -84,7 +84,7 @@ function context(d, descriptorPath) {
     const expected = authorization(s, value.body.id); if (!HEX.test(value.mac) || canonical(expected.body) !== canonical(value.body) || !crypto.timingSafeEqual(Buffer.from(expected.mac, 'hex'), Buffer.from(value.mac, 'hex'))) fail('maintenance_authorization'); return value.body.id;
   }
   function settled(snap) {
-    const r = inspectReceiverHistory(snap.values.journal.bytes, { descriptorPath }), l = inspectLedgerHistory(snap.values.ledger.bytes, { installationId: d.installationId });
+    const r = inspectReceiverHistory(snap.values.journal.bytes, { descriptorPath }), l = inspectLedgerHistory(snap.values.ledger.bytes, { installationId: d.installationId, receiver: r });
     if (!r.settled || !l.settled || l.commands.length && !r.present) fail('maintenance_unsettled');
     const parse = require('./native-read-disposition').parseJournalBytes;
     const receiver = snap.values.journal.bytes ? parse(snap.values.journal.bytes).events : [], ledger = snap.values.ledger.bytes?.length ? parse(snap.values.ledger.bytes).events : [];

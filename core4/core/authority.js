@@ -50,7 +50,7 @@ function brandAuthorityPort(port) {
 }
 function validatePort(port) { if (!ports.has(port)) fail('untrusted_authority_port'); return port; }
 function brandExecutionPolicyPort(port) {
-  if (!port || ['describe', 'assertCurrent', 'prepareReservation', 'assertReservation', 'verifyCompletion'].some(k => typeof port[k] !== 'function')) fail('execution_policy_port');
+  if (!port || ['describe', 'assertCurrent', 'prepareReservation', 'assertReservation', 'cancelBeforeSend', 'verifyCompletion'].some(k => typeof port[k] !== 'function')) fail('execution_policy_port');
   executionPolicies.add(port); return port;
 }
 function validateExecutionPolicyPort(port) { if (!executionPolicies.has(port)) fail('untrusted_execution_policy_port'); return port; }

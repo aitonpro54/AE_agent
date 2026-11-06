@@ -186,7 +186,7 @@ async function lifecycleOperation({ installation, descriptorPath, reservedServer
   function historySnapshot() {
     const values = rawHistories();
     if (!values.origin.bytes || !values.anchor.bytes || !values.origin.bytes.equals(values.anchor.bytes)) fail('owner_lifecycle_origin');
-    const receiver = inspectReceiverHistory(values.journal.bytes, { descriptorPath }), ledger = inspectLedgerHistory(values.ledger.bytes, { installationId: d.installationId });
+    const receiver = inspectReceiverHistory(values.journal.bytes, { descriptorPath }), ledger = inspectLedgerHistory(values.ledger.bytes, { installationId: d.installationId, receiver });
     return { values, receiver, ledger };
   }
   function settled(value) {

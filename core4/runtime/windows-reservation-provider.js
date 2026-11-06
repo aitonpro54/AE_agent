@@ -109,6 +109,22 @@ function createWindowsReservationProvider({ installation, getBroker, getPeer, pr
       return handle;
     },
     assert,
+    cancelBeforeSend(handle, code) {
+      validateReservationHandle(handle);
+      const item = reservations.get(handle.ref);
+      if (!item || item.handle !== handle || item.terminal) fail('reservation_unavailable');
+      const ledger = getBroker().ledger;
+      const command = ledger.commands().find(c => c.commandId === handle.commandId);
+      // Only the broker's pre-send catch can use this path. Peer and host checks
+      // may be the reason it stopped, so closing uses the original ledger binding.
+      if (command) {
+        if (command.state !== 'UNKNOWN' || command.grant?.reservationRef !== handle.ref) fail('reservation_dispatch_state');
+        ledger.append({ type: 'command', commandId: handle.commandId, state: 'rejected', code, preDispatchReservationRef: handle.ref });
+      } else {
+        ledger.append({ type: 'reservation', state: 'not-dispatched', reservationRef: handle.ref });
+      }
+      item.terminal = true;
+    },
     finish(handle, outcome) { assert(handle, { afterSend: true }); const item = reservations.get(handle.ref); getBroker().ledger.append({ type: 'reservation', state: outcome, reservationRef: handle.ref }); item.terminal = true; },
     finishOriginal(ref, outcome) { const item = reservations.get(ref); if (item && !item.terminal) { getBroker().ledger.append({ type: 'reservation', state: outcome, reservationRef: ref, resolution: 'authenticated-original-completion' }); item.terminal = true; } },
     async adopt({ expected, allowedProject, rootObservationDigest }) {

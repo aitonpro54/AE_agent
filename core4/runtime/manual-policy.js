@@ -33,6 +33,7 @@ function createManualPolicy({ selected, layout, additional = [], provider, insta
     assertCurrent(ctx) { if (!admitted(ctx.selected)) fail('execution_policy_pin_changed'); if (!getPeer().status().peer.connected) fail('panel_unavailable'); if (ctx.reservation) provider.assert(ctx.reservation, { afterSend: ctx.stage === 'after-send' }); },
     prepareReservation(ctx) { admitted(ctx.selected)?.proof?.beforeReservation(ctx); return provider.prepare(ctx); },
     assertReservation(ctx, handle) { return provider.assert(handle, { afterSend: ctx.stage === 'after-send' }); },
+    cancelBeforeSend(handle, code) { provider.cancelBeforeSend(handle, code); },
     verifyCompletion(ctx, proof) {
       const profile = admitted(ctx.selected);
       if (!profile) fail('execution_policy_pin_changed');

@@ -16,7 +16,7 @@ const origin = { type: 'origin', identity: 'receiver-fixture' };
 const begin = c => ({ type: 'begin', commandId: c.commandId, commandDigest: hash(c), command: c, originalBinding: dispatchBinding(c, origin.identity) });
 const complete = c => ({ type: 'complete', commandId: c.commandId, response: { protocolVersion: 1, commandId: c.commandId, executorHash: c.executorHash, payloadHash: c.payloadHash, result: { readFailureVersion: 1, outcome: 'rejected', code: 'fixture-known-rejection' } } });
 const intent = c => ({ type: 'intent', commandId: c.commandId, dispatchBinding: dispatchBinding(c, origin.identity) });
-const ledger = bodies => inspectLedgerHistory(journal(bodies), { installationId: 'installation-fixture' });
+const ledger = (bodies, receiver) => inspectLedgerHistory(journal(bodies), { installationId: 'installation-fixture', receiver });
 const error = code => e => e.code === code;
 
 test('recovery-inspection explicit missing histories and empty ledger report coverage without authority or a ready runtime', () => {
@@ -99,6 +99,32 @@ test('recovery-inspection open reservation blocks even a succeeded command and o
   for (const extra of [{ type: 'reservation', reservationRef: 'another', state: 'succeeded' }, { type: 'reservation', reservationRef: 'reservation-one', state: 'unknown' }, reserved]) assert.throws(() => ledger([...bodies, extra]), error('recovery_ledger_reservation'));
   assert.throws(() => ledger([reserved, { type: 'reservation', reservationRef: 'reservation-one', state: 'succeeded' }]), error('recovery_ledger_reservation'));
   assert.throws(() => ledger([...bodies, { type: 'reservation', reservationRef: 'reservation-one', state: 'rejected' }]), error('recovery_ledger_reservation'));
+});
+
+test('recovery-inspection only the original journal and checkpoint settle a pre-dispatch reservation', () => {
+  const c = { ...command('write-one'), phase: 'mutate' }, target = { projectId: 'fixture.aep', compId: 1, layerId: 2 };
+  const checkpoint = { type: 'checkpoint', checkpoint: { ref: 'checkpoint-one', digest: hash(target) }, proposalId: 'proposal-one', taskId: 'task-one', taskEpoch: 0, target, effectPolicy: { effect: 'layer.text' } };
+  const reservation = { ref: 'reservation-one', commandId: c.commandId, checkpointRef: checkpoint.checkpoint.ref, checkpointDigest: checkpoint.checkpoint.digest,
+    proposalId: checkpoint.proposalId, receiverStoreIdentity: origin.identity, executionScope: { schemaVersion: 2, target } };
+  const reserved = { type: 'reservation', state: 'reserved', reservation, taskId: checkpoint.taskId, taskEpoch: 0, effect: 'layer.text' };
+  const prefix = [checkpoint, reserved], matching = inspectReceiverHistory(journal([origin]));
+  const explicit = { type: 'reservation', reservationRef: reservation.ref, state: 'not-dispatched' };
+  const sent = { ...intent(c), grant: { reservationRef: reservation.ref } };
+  const refused = { type: 'command', commandId: c.commandId, state: 'rejected', preDispatchReservationRef: reservation.ref };
+  for (const history of [prefix, [...prefix, explicit], [...prefix, sent, refused]]) {
+    assert.deepEqual(ledger(history, matching).reservations, [{ ref: reservation.ref, commandId: c.commandId, state: 'not-dispatched' }]);
+    assert.equal(ledger(history, matching).settled, true);
+    for (const receiver of [undefined, inspectReceiverHistory(null), inspectReceiverHistory(journal([{ ...origin, identity: 'replacement' }]))]) assert.equal(ledger(history, receiver).settled, false);
+  }
+  assert.equal(ledger([reserved], matching).settled, false);
+  assert.throws(() => ledger(prefix, structuredClone(matching)), error('recovery_inspection_options'));
+  assert.deepEqual(ledger([...prefix, sent], matching).unresolved, [{ kind: 'command', id: c.commandId }, { kind: 'reservation', id: reservation.ref }]);
+  assert.throws(() => ledger([...prefix, explicit, sent], matching), error('recovery_ledger_reservation'));
+  assert.throws(() => ledger([...prefix, sent, { ...refused, preDispatchReservationRef: 'other' }], matching), error('recovery_ledger_reservation'));
+  assert.throws(() => ledger([...prefix, sent, { type: 'command', commandId: c.commandId, state: 'acknowledged' }, refused], matching), error('recovery_ledger_reservation'));
+  const receiverBegin = inspectReceiverHistory(journal([origin, begin(c)]));
+  assert.equal(ledger(prefix, receiverBegin).settled, false);
+  for (const history of [[...prefix, explicit], [...prefix, sent, refused]]) assert.throws(() => ledger(history, receiverBegin), error('recovery_ledger_reservation'));
 });
 
 test('recovery-inspection latest durable constraints preserve unresolved foreign and unfamiliar fences', () => {

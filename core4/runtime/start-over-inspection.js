@@ -19,7 +19,7 @@ function input(value) {
   if (!text(value.installationId) || !text(value.machineId) || !text(value.descriptorPath)) fail('start_over_history_options');
   // The established parser performs byte/event/frame/UTF8/chain/schema checks.
   const receiver = inspectReceiverHistory(value.receiverBytes, { descriptorPath: value.descriptorPath });
-  const ledger = inspectLedgerHistory(value.ledgerBytes, { installationId: value.installationId });
+  const ledger = inspectLedgerHistory(value.ledgerBytes, { installationId: value.installationId, receiver });
   const events = bytes => bytes?.length ? parseJournalBytes(bytes).events : [];
   return { receiver, ledger, receives: events(value.receiverBytes), entries: events(value.ledgerBytes) };
 }

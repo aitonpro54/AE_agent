@@ -263,27 +263,32 @@ class Broker {
     const ctx = { plan, step, proposal, selected: step.selected, target, input, before, descriptor, checkpoint, commandId };
     this.executionPolicy.assertCurrent({ ...ctx, phase: 'mutate', stage: 'prepare' });
     const reservation = await this.executionPolicy.prepareReservation(ctx); ctx.reservation = reservation;
-    const authorization = { proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, ...approved, checkpointRecord: checkpoint, reservation };
-    const grant = this.authority.authorize(authorization), policy = step.selected.contract.effectPolicy;
-    this.resources.authorize(target, policy, grant, before);
-    const physicalInput = { ...input, _execution: { policyId: descriptor.policyId, proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, stepId: step.stepId, checkpointRef: checkpoint.ref, checkpointDigest: checkpoint.digest, baselineDigest: hash(before), baselineRevision: before.revision, baselineProtected: before.protected, target, pins: plan.pins } };
-    ctx.physicalInput = physicalInput;
-    const originalBinding = this.originalDispatch(step.selected, 'mutate', physicalInput, commandId); ctx.originalBinding = originalBinding;
-    const guard = () => {
-      this.current(plan.taskId, plan.taskEpoch); this.artifacts.recheck(step.selected);
-      if (canonical(this.executionDescription(step.selected, target)) !== canonical(descriptor)) fail('execution_policy_changed');
-      if (this.ledger.unresolved().some(c => c.commandId !== commandId && scopesOverlap(c.target, target))) fail('resource_fenced');
-      this.executionPolicy.assertCurrent({ ...ctx, phase: 'mutate', stage: 'before-send' }); this.executionPolicy.assertReservation(ctx, reservation);
-      const freshGrant = this.authority.authorize(authorization); this.resources.authorize(target, policy, freshGrant, before);
-      if (!sameDispatch(this.originalDispatch(step.selected, 'mutate', physicalInput, commandId), originalBinding) || canonical(plan.pins.transport || null) !== canonical(this.transportIdentity || null)) fail('dispatch_binding_changed');
-    };
-    await this.hook('beforeIntent', { commandId, step }); guard();
-    const { reservation: privateHandle, ...persistedGrant } = grant;
-    const receipt = { type: 'intent', commandId, proposalId: proposal.proposalId, planDigest: proposal.planDigest, dispatchBinding: originalBinding, transportIdentity: this.transportIdentity || null, taskId: plan.taskId, taskEpoch: plan.taskEpoch, workflowId: plan.workflowId, planRevision: plan.planRevision, recordContext: plan.recordContext, runId, stepId: step.stepId, attemptId, inputDigest: step.inputDigest, input, physicalInput, before, target, selected: step.selected, grant: persistedGrant, executionPolicy: descriptor, checkpoint, dispatchedAt: Date.now() };
-    this.ledger.append(receipt); await this.hook('afterIntent', receipt);
-    try { guard(); } catch (e) { this.ledger.append({ type: 'command', commandId, state: 'rejected', code: e.code || 'gate_revoked_before_send' }); throw e; }
+    let receipt;
     try {
-      await this.send(step.selected, 'mutate', physicalInput, commandId, () => { if (this.hooks.afterPhysicalSend) this.hooks.afterPhysicalSend(receipt, this); }, originalBinding, ctx);
+      const authorization = { proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, ...approved, checkpointRecord: checkpoint, reservation };
+      const grant = this.authority.authorize(authorization), policy = step.selected.contract.effectPolicy;
+      this.resources.authorize(target, policy, grant, before);
+      const physicalInput = { ...input, _execution: { policyId: descriptor.policyId, proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, stepId: step.stepId, checkpointRef: checkpoint.ref, checkpointDigest: checkpoint.digest, baselineDigest: hash(before), baselineRevision: before.revision, baselineProtected: before.protected, target, pins: plan.pins } };
+      ctx.physicalInput = physicalInput;
+      const originalBinding = this.originalDispatch(step.selected, 'mutate', physicalInput, commandId); ctx.originalBinding = originalBinding;
+      const guard = () => {
+        this.current(plan.taskId, plan.taskEpoch); this.artifacts.recheck(step.selected);
+        if (canonical(this.executionDescription(step.selected, target)) !== canonical(descriptor)) fail('execution_policy_changed');
+        if (this.ledger.unresolved().some(c => c.commandId !== commandId && scopesOverlap(c.target, target))) fail('resource_fenced');
+        this.executionPolicy.assertCurrent({ ...ctx, phase: 'mutate', stage: 'before-send' }); this.executionPolicy.assertReservation(ctx, reservation);
+        const freshGrant = this.authority.authorize(authorization); this.resources.authorize(target, policy, freshGrant, before);
+        if (!sameDispatch(this.originalDispatch(step.selected, 'mutate', physicalInput, commandId), originalBinding) || canonical(plan.pins.transport || null) !== canonical(this.transportIdentity || null)) fail('dispatch_binding_changed');
+      };
+      await this.hook('beforeIntent', { commandId, step }); guard();
+      const { reservation: privateHandle, ...persistedGrant } = grant;
+      receipt = { type: 'intent', commandId, proposalId: proposal.proposalId, planDigest: proposal.planDigest, dispatchBinding: originalBinding, transportIdentity: this.transportIdentity || null, taskId: plan.taskId, taskEpoch: plan.taskEpoch, workflowId: plan.workflowId, planRevision: plan.planRevision, recordContext: plan.recordContext, runId, stepId: step.stepId, attemptId, inputDigest: step.inputDigest, input, physicalInput, before, target, selected: step.selected, grant: persistedGrant, executionPolicy: descriptor, checkpoint, dispatchedAt: Date.now() };
+      this.ledger.append(receipt); await this.hook('afterIntent', receipt); guard();
+    } catch (e) {
+      this.executionPolicy.cancelBeforeSend(reservation, e.code || 'gate_revoked_before_send');
+      throw e;
+    }
+    try {
+      await this.send(step.selected, 'mutate', ctx.physicalInput, commandId, () => { if (this.hooks.afterPhysicalSend) this.hooks.afterPhysicalSend(receipt, this); }, ctx.originalBinding, ctx);
       this.current(plan.taskId, plan.taskEpoch);
       const proof = decode(await this.completion(commandId), this.secret);
       const verified = this.executionPolicy.verifyCompletion(ctx, proof);

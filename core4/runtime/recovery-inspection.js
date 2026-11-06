@@ -7,6 +7,7 @@ const { dispatchBinding, sameDispatch } = require('../protocol/dispatch');
 const { parseJournalBytes, validateDisposition } = require('./native-read-disposition');
 const HISTORY_LIMITS = Object.freeze({ bytes: 64 * 1024 * 1024, events: 65536 });
 const LEDGER_TYPES = new Set(['task', 'evidence', 'build', 'proposal', 'checkpoint', 'intent', 'command', 'engine', 'reservation', 'constraint']);
+const receiverFacts = new WeakSet();
 const text = value => typeof value === 'string' && value.length > 0 && Buffer.byteLength(value) <= 8192;
 function exact(value, keys) {
   if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).length !== keys.length || keys.some(k => !Object.hasOwn(value, k))) fail('recovery_history_schema');
@@ -37,9 +38,14 @@ function facts(bytes, events, extra) {
   return freeze({ present: bytes !== null, byteHash: bytes === null ? null : hash(bytes), eventCount: events.length,
     tailHash: events.at(-1)?.recordHash || null, coverage: 'supplied-history-bytes', historyFilesObserved: false, authority: false, ...extra });
 }
+function receiverResult(bytes, events, extra) {
+  const result = facts(bytes, events, extra);
+  receiverFacts.add(result);
+  return result;
+}
 function inspectReceiverHistory(bytes, context = {}) {
   options(context, ['descriptorPath', 'cepDir']);
-  if (bytes === null) return facts(null, [], { identity: null, commands: [], unresolved: [], settled: true });
+  if (bytes === null) return receiverResult(null, [], { identity: null, commands: [], unresolved: [], settled: true });
   const { events, lines } = parsed(bytes), records = new Map(); let identity;
   for (const event of events) {
     if (event.type === 'origin') {
@@ -83,39 +89,76 @@ function inspectReceiverHistory(bytes, context = {}) {
   if (!identity) fail('recovery_receiver_origin');
   const commands = [...records.entries()].map(([commandId, record]) => ({ commandId, state: record.state, physicalUnknown: record.physicalUnknown, terminalDisposition: record.terminalDisposition }));
   const unresolved = commands.filter(c => (c.state !== 'completed' || c.physicalUnknown) && !c.terminalDisposition).map(c => c.commandId);
-  return facts(bytes, events, { identity, commands, unresolved, settled: unresolved.length === 0 });
+  return receiverResult(bytes, events, { identity, commands, unresolved, settled: unresolved.length === 0 });
+}
+function checkpointMatchesReservation(entry, checkpoint) {
+  const handle = entry.reservation, scope = handle.executionScope;
+  return !!checkpoint && checkpoint.seq < entry.seq && text(handle.proposalId) && checkpoint.proposalId === handle.proposalId &&
+    text(handle.checkpointDigest) && checkpoint.checkpoint.digest === handle.checkpointDigest &&
+    text(entry.taskId) && checkpoint.taskId === entry.taskId && Number.isSafeInteger(entry.taskEpoch) && checkpoint.taskEpoch === entry.taskEpoch &&
+    text(entry.effect) && checkpoint.effectPolicy?.effect === entry.effect && scope?.schemaVersion === 2 &&
+    !!scope.target && !!checkpoint.target && canonical(scope.target) === canonical(checkpoint.target);
 }
 function inspectLedgerHistory(bytes, context = {}) {
-  options(context, ['installationId']);
-  if (!text(context.installationId)) fail('recovery_inspection_options');
+  options(context, ['installationId', 'receiver']);
+  if (!text(context.installationId) || context.receiver !== undefined && !receiverFacts.has(context.receiver)) fail('recovery_inspection_options');
   if (bytes === null) return facts(null, [], { commands: [], reservations: [], constraintFences: [], unresolved: [], settled: true });
-  const { events } = parsed(bytes, true), commands = new Map(), reservations = new Map(), constraints = new Map();
+  const { events } = parsed(bytes, true), commands = new Map(), reservations = new Map(), reservedCommands = new Set(), checkpoints = new Map(), constraints = new Map();
   for (const event of events) {
     if (!LEDGER_TYPES.has(event.type)) fail('recovery_ledger_event');
     if (event.type === 'intent') {
       if (!text(event.commandId) || commands.has(event.commandId)) fail('recovery_ledger_command');
       try { if (!sameDispatch(event.dispatchBinding, event.dispatchBinding) || event.dispatchBinding.commandId !== event.commandId) fail('recovery_ledger_command'); } catch { fail('recovery_ledger_command'); }
-      commands.set(event.commandId, 'UNKNOWN');
+      commands.set(event.commandId, { intent: event, state: 'UNKNOWN' });
     } else if (event.type === 'command') {
-      if (!commands.has(event.commandId) || !['acknowledged', 'succeeded', 'rejected'].includes(event.state) || ['succeeded', 'rejected'].includes(commands.get(event.commandId))) fail('recovery_ledger_command');
-      commands.set(event.commandId, event.state);
+      const command = commands.get(event.commandId);
+      if (!command || !['acknowledged', 'succeeded', 'rejected'].includes(event.state) || ['succeeded', 'rejected'].includes(command.state)) fail('recovery_ledger_command');
+      if (Object.hasOwn(event, 'preDispatchReservationRef')) {
+        const prior = reservations.get(event.preDispatchReservationRef);
+        if (!prior || prior.entry.reservation.commandId !== event.commandId || prior.state !== 'reserved' || prior.preDispatch ||
+            command.state !== 'UNKNOWN' || event.state !== 'rejected' || command.intent.grant?.reservationRef !== event.preDispatchReservationRef ||
+            prior.entry.seq >= command.intent.seq || command.intent.dispatchBinding.phase !== 'mutate' ||
+            command.intent.dispatchBinding.receiverStoreIdentity !== prior.entry.reservation.receiverStoreIdentity) fail('recovery_ledger_reservation');
+        prior.preDispatch = 'rejected-intent';
+      }
+      command.state = event.state;
     } else if (event.type === 'reservation') {
       if (event.state === 'reserved') {
-        if (!text(event.reservation?.ref) || reservations.has(event.reservation.ref) || !text(event.reservation.commandId)) fail('recovery_ledger_reservation');
-        reservations.set(event.reservation.ref, { ref: event.reservation.ref, commandId: event.reservation.commandId, state: 'reserved' });
+        const handle = event.reservation;
+        if (!text(handle?.ref) || reservations.has(handle.ref) || !text(handle.commandId) || reservedCommands.has(handle.commandId)) fail('recovery_ledger_reservation');
+        reservedCommands.add(handle.commandId);
+        reservations.set(handle.ref, { entry: event, state: 'reserved', preDispatch: null });
       } else {
         const prior = reservations.get(event.reservationRef);
-        if (!prior || prior.state !== 'reserved' || !commands.has(prior.commandId) || !['succeeded', 'rejected'].includes(event.state)) fail('recovery_ledger_reservation');
-        prior.state = event.state;
+        if (!prior || prior.state !== 'reserved' || prior.preDispatch) fail('recovery_ledger_reservation');
+        const command = commands.get(prior.entry.reservation.commandId);
+        if (event.state === 'not-dispatched' && !command) prior.preDispatch = 'no-intent';
+        else if (command && ['succeeded', 'rejected'].includes(event.state)) prior.state = event.state;
+        else fail('recovery_ledger_reservation');
       }
+    } else if (event.type === 'checkpoint' && text(event.checkpoint?.ref)) {
+      if (checkpoints.has(event.checkpoint.ref)) fail('recovery_ledger_reservation');
+      checkpoints.set(event.checkpoint.ref, event);
     } else if (event.type === 'constraint') {
       const record = event.record;
       if (!record || !text(record.constraintId)) fail('recovery_ledger_constraint');
       constraints.set(record.constraintId, record);
     }
   }
-  const commandFacts = [...commands].map(([commandId, state]) => ({ commandId, state })), reservationFacts = [...reservations.values()];
-  if (reservationFacts.some(r => r.state !== 'reserved' && ['succeeded', 'rejected'].includes(commands.get(r.commandId)) && r.state !== commands.get(r.commandId))) fail('recovery_ledger_reservation');
+  const commandFacts = [...commands].map(([commandId, command]) => ({ commandId, state: command.state }));
+  const receiver = context.receiver, receiverCommands = new Set(receiver?.commands.map(c => c.commandId));
+  const reservationFacts = [...reservations.values()].map(({ entry, state, preDispatch }) => {
+    const { ref, commandId, checkpointRef, receiverStoreIdentity } = entry.reservation, command = commands.get(commandId);
+    if (state !== 'reserved' && ['succeeded', 'rejected'].includes(command?.state) && state !== command.state) fail('recovery_ledger_reservation');
+    if ((preDispatch === 'no-intent' && command) || (preDispatch && receiverCommands.has(commandId))) fail('recovery_ledger_reservation');
+    // An older writer may have stopped between reservation and intent. A full
+    // matching receiver journal and the original checkpoint make that prefix
+    // sufficient evidence. Any unclassified durable intent remains fenced.
+    if (state === 'reserved' && (preDispatch || !command) && text(receiverStoreIdentity) &&
+        receiver?.identity === receiverStoreIdentity && !receiverCommands.has(commandId) &&
+        checkpointMatchesReservation(entry, checkpoints.get(checkpointRef))) state = 'not-dispatched';
+    return { ref, commandId, state };
+  });
   const constraintFences = [...constraints.values()].filter(c => {
     const keys = ['constraintId', 'schemaVersion', 'resource', 'owner', 'checkpointRef', 'allowedEffects', 'reservationOwner', 'unresolvedOutcome', 'revision', 'provenance', ...(c.schemaVersion === 2 ? ['origin'] : [])];
     if (Object.keys(c).length !== keys.length || keys.some(k => !Object.hasOwn(c, k)) || ![1, 2].includes(c.schemaVersion) || !text(c.owner) || !text(c.checkpointRef) || !text(c.provenance) ||
