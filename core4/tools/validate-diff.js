@@ -4,6 +4,7 @@ const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
 const { hash, fail } = require('../protocol/json');
 const { files } = require('./check-boundaries');
+const { createValidationReuse } = require('./validation-reuse');
 function executionBatches(checks) {
   const groups = new Map();
   for (const check of checks) {
@@ -73,10 +74,11 @@ function selectChecks(changed, root = path.resolve(__dirname, '..'), { contractI
   return { mode: 'scoped', certification: 'selected-artifacts-only', releaseCertified: false, contractImpacts: [...new Set(contractImpacts)], checks: [...selected.values()], executionBatches: executionBatches([...selected.values()]), deferredCoverage };
 }
 function main() {
-  const root = path.resolve(__dirname, '..'); const run = process.argv.includes('--run');
+  const root = path.resolve(__dirname, '..'); const run = process.argv.includes('--run'); const reuse = process.argv.includes('--reuse');
+  if (reuse && !run) fail('validation_reuse_requires_run');
   const args = process.argv.slice(2); let changed = [], contractImpacts = [];
   for (let index = 0; index < args.length; index++) {
-    if (args[index] === '--run') continue;
+    if (args[index] === '--run' || args[index] === '--reuse') continue;
     if (args[index] === '--contract-impacts') { try { contractImpacts = JSON.parse(args[++index]); } catch { fail('invalid_contract_impacts'); } }
     else if (args[index].startsWith('--')) fail('unknown_option', args[index]);
     else changed.push(args[index]);
@@ -87,9 +89,12 @@ function main() {
   }
   const result = selectChecks(changed, root, { contractImpacts }); console.log(JSON.stringify(result, null, 2));
   const childEnv = { ...process.env }; delete childEnv.NODE_TEST_CONTEXT;
+  const runWithReuse = reuse ? createValidationReuse(root, childEnv) : null;
+  const checks = new Map(result.checks.map(check => [check.check, check]));
   if (run) for (const batch of result.executionBatches) {
-    const output = spawnSync(process.execPath, batch.command.slice(1), { cwd: root, stdio: 'inherit', env: childEnv, windowsHide: true });
-    if (output.status !== 0) process.exit(output.status || 1);
+    const output = runWithReuse?.(batch, checks.get(batch.checks[0])) ??
+      spawnSync(process.execPath, batch.command.slice(1), { cwd: root, stdio: 'inherit', env: childEnv, windowsHide: true });
+    if (output.status !== 0) { process.exitCode = output.status || 1; return; }
   }
 }
 if (require.main === module) { try { main(); } catch (e) { console.error((e.code || 'failed') + ': ' + e.message); process.exitCode = 1; } }

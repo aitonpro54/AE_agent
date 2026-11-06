@@ -1,5 +1,8 @@
 {
   "owners": [
+    { "prefix": "core4/tools/validate-diff.js", "owner": "validation", "checks": ["validation-routing", "validation-reuse"] },
+    { "prefix": "core4/tools/validation-reuse.js", "owner": "validation", "checks": ["validation-routing", "validation-reuse"] },
+    { "prefix": "core4/test/validation-reuse.test.js", "owner": "validation", "checks": ["validation-reuse"] },
     { "prefix": "core4/config/compositions/", "owner": "installed-composition", "checks": ["installed-composition", "package-location"] },
     { "prefix": "core4/tools/check-package-location.js", "owner": "package-location", "checks": ["package-location"] },
     { "prefix": "core4/test/package-location.test.js", "owner": "package-location", "checks": ["package-location"] },
@@ -1543,6 +1546,14 @@
       "config/catalog.json",
       "config/admissions/"
     ],
+    "validation-reuse": [
+      "tools/validate-diff.js", "tools/validation-reuse.js", "tools/check-boundaries.js", "core/artifacts.js", "protocol/",
+      "config/validation-map.json", "config/admissions/titles-point-layout.json", "config/admissions/text-layer.json",
+      "modules/titles-point-layout/", "modules/text-layer/", "modules/text-variant/", "modules/comp-render/completion.json",
+      "runtime/point-layout-proof.js", "runtime/text-layer-proof.js", "runtime/text-variant-proof.js",
+      "test/fixtures/local-operation.js", "test/fixtures/point-layout-ae.js", "test/fixtures/text-layer-ae.js",
+      "test/point-layout-local.test.js", "test/text-layer-local.test.js", "test/text-variant.test.js", "test/validation-reuse.test.js"
+    ],
     "artifact-boundaries": [
       "tools/check-boundaries.js",
       "tools/seal.js",
@@ -1629,6 +1640,7 @@
     "standalone-installer": ["tools/package-standalone-installer.js","tools/finish-owner-maintenance.js","tools/maintain-owner.js","tools/standalone-installer.js","tools/package-installable.js", "config/compositions/","tools/install-core4.js","tools/disposition-install-preflight.js","test/standalone-installer.test.js","test/fixtures/standalone-history.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-installation-v1.js","runtime/","cep/","core/","protocol/","modules/","plan-engine/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","worker.js","config/catalog.json","config/admissions/","tools/legacy-owner-migration.js","tools/operate-stopped-readoption.js","tools/operate-stopped-update.js","tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/windows-retained-process.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"]
   },
   "checkCommands": {
+    "validation-reuse": ["node", "--test", "--test-name-pattern=validation-reuse", "test/validation-reuse.test.js"],
     "package-location": ["node", "--test", "--test-name-pattern=package-location", "test/package-location.test.js"],
     "start-over-driver": ["node", "--test", "--test-name-pattern=start-over-driver", "test/start-over-driver.test.js"],
     "start-over-panel-control": ["node", "--test", "--test-name-pattern=start-over-panel-control", "test/start-over-panel-control.test.js"],
@@ -1830,6 +1842,7 @@
     ]
   },
   "checkPolicy": {
+    "validation-reuse": { "kind": "integration" },
     "package-location": { "kind": "integration" },
     "start-over-driver": { "kind": "component" },
     "start-over-panel-control": { "kind": "component" },

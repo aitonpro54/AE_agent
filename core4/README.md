@@ -144,10 +144,13 @@ npm.cmd --prefix core4 test
 npm.cmd --prefix core4 run test:repairs
 npm.cmd --prefix core4 run check:boundaries
 node core4/tools/validate-diff.js core4/modules/titles/implementation.js --run
+node core4/tools/validate-diff.js core4/modules/titles-point-layout/executor.jsx --run --reuse
 node core4/core/stdio.js --state-dir C:/Temp/core4-explicit-state
 ```
 
 `check:release` — отдельная явная проверка нового состава Core4. Она не является default check для локальной правки. `validate-diff` берёт реальный Git diff/untracked paths либо указанные пути и возвращает owner, reason, dependencyPath, concrete command и evidenceKey фактических dependencies. Неизвестный/неоднозначный owner запрещает scoped certification. Keys неизменённой области не зависят от catalog или чужого package. EvidenceKey не выдаёт runtime authority и не заменяет свежесть AE.
+
+Опция `--reuse` действует вместе с `--run` для локальных наборов `point-layout` и `text-layer`. При первом запуске команда копирует объявленные входы во временную папку и выполняет весь набор. Успешный результат сохраняется в локальном `.codex-runtime/validation-reuse-v1`. Запись привязана к байтам входов, команде, рабочей копии, Node и окружению. Изменение любого из этих условий запускает набор заново. `--run` выполняет свежий прогон, а сквозные, упаковочные и релизные проверки сохраняют свой порядок при любом режиме.
 
 Owner/executor tests разделены по `test/modules/*.test.js`; минимальный harness копирует только permanent closure и выбранный package, transport получает explicit selectedModules. Titles-only `--run` проходит при physically absent photo/engine даже в source tree. Titles evidence зависит от выбранной catalog entry, а не от всего catalog или photo tests. Смена public module contract отдельно выбирает `workflow-recovery` с причиной обратной зависимости. Большие integration checks честно закрепляют используемый engine/оба packages.
 
