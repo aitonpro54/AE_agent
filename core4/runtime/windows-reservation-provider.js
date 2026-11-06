@@ -6,7 +6,7 @@ const os = require('node:os');
 const childProcess = require('node:child_process');
 const { hash, canonical, fail, id } = require('../protocol/json');
 const { brandReservationHandle, validateReservationHandle } = require('../core/authority');
-const { scopesOverlap } = require('../core/resources');
+const { scopesOverlap, currentTargetConstraintId, CURRENT_TARGET_PROVENANCE } = require('../core/resources');
 function durable(file, value) { fs.mkdirSync(path.dirname(file), { recursive: true }); const fd = fs.openSync(file, 'wx'); try { const text = canonical(value); if (fs.writeSync(fd, text) !== Buffer.byteLength(text)) fail('adoption_short_write'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } }
 function endpoint(port) { return new Promise(resolve => { const socket = net.connect({ host: '127.0.0.1', port }); let done = false; const finish = state => { if (done) return; done = true; socket.destroy(); resolve({ port, state }); }; socket.once('connect', () => finish('active')); socket.once('error', e => finish(e.code === 'ECONNREFUSED' ? 'observed-absent' : 'unknown')); socket.setTimeout(500, () => finish('unknown')); }); }
 // One reviewed, package-pinned read-only cmdlet pipeline. The final base64 is
@@ -105,7 +105,7 @@ function createWindowsReservationProvider({ installation, getBroker, getPeer, pr
       const handle = brandReservationHandle({ ref: id('reservation'), executionScope, peerId: after.peerId, receiverStoreIdentity: after.receiverStoreIdentity, adoptionDigest: hash(a), checkpointRef: ctx.checkpoint.ref, checkpointDigest: ctx.checkpoint.digest, proposalId: ctx.proposal.proposalId, commandId: ctx.commandId, expiresAt: Date.now() + 2000 });
       reservations.set(handle.ref, { handle, terminal: false });
       after.broker.ledger.append({ type: 'reservation', state: 'reserved', reservation: handle, taskId: ctx.plan.taskId, taskEpoch: ctx.plan.taskEpoch, effect: ctx.step.selected.contract.effectPolicy.effect, observationDigest: hash(cache), coverage: this.status().coverage });
-      after.broker.ledger.append({ type: 'constraint', record: { constraintId: 'manual-scope-' + hash({ origin: executionScope.origin, target: ctx.target }), schemaVersion: 2, resource: ctx.target, origin: executionScope.origin, owner: installation.installationId, checkpointRef: ctx.checkpoint.ref, allowedEffects: [ctx.step.selected.contract.effectPolicy.effect], reservationOwner: installation.installationId, unresolvedOutcome: false, revision: ctx.before.revision, provenance: 'registered-Core4-lane-and-current-target-native-confirmation' } });
+      after.broker.ledger.append({ type: 'constraint', record: { constraintId: currentTargetConstraintId(executionScope.origin, ctx.target), schemaVersion: 2, resource: ctx.target, origin: executionScope.origin, owner: installation.installationId, checkpointRef: ctx.checkpoint.ref, allowedEffects: [ctx.step.selected.contract.effectPolicy.effect], reservationOwner: installation.installationId, unresolvedOutcome: false, revision: ctx.before.revision, provenance: CURRENT_TARGET_PROVENANCE } });
       return handle;
     },
     assert,

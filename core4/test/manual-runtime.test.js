@@ -25,6 +25,44 @@ test('manual-runtime actual Broker HTTP compiled JSX generic flow uses one nativ
   const checkpoint = h.broker.ledger.events.find(e => e.type === 'checkpoint'); assert.equal(checkpoint.preimage.text, 'Before'); assert.equal(checkpoint.checkpoint.digest, command.checkpoint.digest);
   const second = await h.proposal('Again'); assert.equal((await h.broker.run(second)).state, 'succeeded'); assert.equal(h.state.counts.titles, 2);
 });
+test('manual-runtime reserves render after settled text on an overlapping layer with its own checkpoint', async t => {
+  const h = await harness(); t.after(() => h.close());
+  assert.equal((await h.broker.run(await h.proposal())).state, 'succeeded');
+  const target = { projectId: h.state.projectId, compId: 1 };
+  async function reserve(target, effect, label) {
+    const before = { target, revision: `${label}-snapshot` }, effectPolicy = { effect };
+    const checkpoint = { ref: `${label}-checkpoint`, digest: hash(before) }, proposal = { proposalId: `${label}-proposal` };
+    const plan = { taskId: `${label}-task`, taskEpoch: 0 }, commandId = `${label}-command`;
+    h.broker.ledger.append({ type: 'checkpoint', checkpoint, target, preimage: before, effectPolicy, ...proposal, ...plan });
+    const executionScope = h.provider.scope(target);
+    const reservation = await h.provider.prepare({ target, before, checkpoint, proposal, plan, descriptor: { executionScope },
+      commandId, step: { selected: { contract: { effectPolicy } } } });
+    const persistedGrant = { owner: h.installation.installationId, checkpointRef: checkpoint.ref, allowedEffect: effect,
+      reservationRef: reservation.ref, executionScope };
+    return { before, effectPolicy, grant: { ...persistedGrant, reservation },
+      intent: { type: 'intent', commandId, checkpoint, target, grant: persistedGrant, ...proposal, ...plan } };
+  }
+  const { before, effectPolicy, grant, intent } = await reserve(target, 'owned-native-render', 'render');
+
+  assert.doesNotThrow(() => h.broker.resources.authorize(target, effectPolicy, grant, before));
+  assert.throws(() => h.broker.resources.authorize(target, effectPolicy, { ...grant, checkpointRef: 'different' }, before), /resource_ownership_checkpoint_effect/);
+  assert.throws(() => h.broker.resources.authorize(target, { effect: 'layer.text' }, grant, before), /resource_ownership_checkpoint_effect/);
+  assert.throws(() => h.broker.resources.authorize(target, effectPolicy, grant, { ...before, revision: 'different' }), /resource_revision/);
+
+  const edit = await h.proposal('Next edit');
+  assert.equal((await h.broker.run(edit)).state, 'succeeded'); // The render reservation never acquired a dispatch intent.
+  const layer = { ...target, layerId: 102 };
+  const layerWrite = await reserve(layer, 'layer.text', 'next-layer');
+  const authorizeLayer = () => h.broker.resources.authorize(layer, layerWrite.effectPolicy, layerWrite.grant, layerWrite.before);
+  h.broker.ledger.append(intent);
+  assert.throws(authorizeLayer, /resource_ownership_checkpoint_effect/);
+  h.broker.ledger.append({ type: 'command', commandId: intent.commandId, state: 'rejected' });
+  assert.doesNotThrow(authorizeLayer);
+  const compositionConstraint = h.broker.resources.records().find(r => !r.resource.layerId);
+  h.broker.ledger.append({ type: 'constraint', record: { ...compositionConstraint, checkpointRef: 'unproven' } });
+  assert.throws(authorizeLayer, /resource_ownership_checkpoint_effect/);
+  assert.equal(h.state.text, 'Next edit');
+});
 test('manual-runtime native cancellation and post-confirm drift do not set text; fresh proposal required', async t => {
   for (const mode of ['cancel', 'drift']) {
     const h = await harness({ confirm: ({ state }) => { if (mode === 'drift') state.text = 'Manual edit'; return mode !== 'cancel'; } }); t.after(() => h.close()); const result = await h.broker.run(await h.proposal());

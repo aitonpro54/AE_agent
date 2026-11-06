@@ -1,6 +1,8 @@
 'use strict';
-const { canonical, exact, fail } = require('../protocol/json');
+const { canonical, exact, fail, hash } = require('../protocol/json');
 const { validateReservationHandle } = require('./authority');
+const CURRENT_TARGET_PROVENANCE = 'registered-Core4-lane-and-current-target-native-confirmation';
+function currentTargetConstraintId(origin, target) { return 'manual-scope-' + hash({ origin, target }); }
 function scopesOverlap(a, b) {
   if (!a || !b || !a.projectId || !b.projectId) return true;
   const knownOrigin = value => value && typeof value.machineId === 'string' && value.machineId.length > 0 && Number.isSafeInteger(value.aePid) && value.aePid > 0 && typeof value.aeProcessBirth === 'string' && value.aeProcessBirth.length > 0;
@@ -77,11 +79,44 @@ class Resources {
       if (record.schemaVersion === 2) exact(record.origin, ['machineId', 'aePid', 'aeProcessBirth']);
       if (!scopesOverlap({ ...record.resource, ...(record.origin ? { origin: record.origin } : {}) }, scope)) continue;
       if (record.unresolvedOutcome || record.reservationOwner && record.reservationOwner !== grant.owner) fail('shared_resource_fenced');
+      const exactTarget = record.schemaVersion === 2 && canonical(record.resource) === canonical(target) && canonical(record.origin) === canonical(scope.origin);
+      if (!exactTarget && this.isPriorCurrentTargetCheckpoint(record, grant)) continue;
       if (record.owner !== grant.owner || record.checkpointRef !== grant.checkpointRef || !record.allowedEffects.includes(policy.effect)) fail('resource_ownership_checkpoint_effect');
       if (record.revision !== null && record.revision !== snapshot.revision) fail('resource_revision');
-      if (record.schemaVersion === 2 && canonical(record.resource) === canonical(target) && canonical(record.origin) === canonical(scope.origin)) authorized = true;
+      if (exactTarget) authorized = true;
     }
     if (!authorized) fail('resource_constraints_required');
   }
+  isPriorCurrentTargetCheckpoint(record, grant) {
+    if (record.schemaVersion !== 2 || record.provenance !== CURRENT_TARGET_PROVENANCE ||
+        record.owner !== grant.owner || record.reservationOwner !== grant.owner ||
+        canonical(record.origin) !== canonical(grant.executionScope.origin) ||
+        record.constraintId !== currentTargetConstraintId(record.origin, record.resource) || record.allowedEffects.length !== 1) return false;
+
+    const [effect] = record.allowedEffects;
+    const executionScope = canonical({ schemaVersion: 2, origin: record.origin, target: record.resource });
+    const events = this.ledger.events;
+    const checkpoint = events.find(e => e.type === 'checkpoint' && e.checkpoint?.ref === record.checkpointRef);
+    const reserved = events.find(e => e.type === 'reservation' && e.state === 'reserved' && e.reservation?.checkpointRef === record.checkpointRef);
+    if (!checkpoint || !reserved || checkpoint.seq >= reserved.seq || checkpoint.effectPolicy?.effect !== effect ||
+        checkpoint.preimage?.revision !== record.revision || canonical(checkpoint.target) !== canonical(record.resource) ||
+        reserved.effect !== effect || reserved.taskId !== checkpoint.taskId || reserved.taskEpoch !== checkpoint.taskEpoch) return false;
+    const handle = reserved.reservation;
+    if (handle.ref === grant.reservationRef || handle.proposalId !== checkpoint.proposalId ||
+        handle.checkpointDigest !== checkpoint.checkpoint.digest || canonical(handle.executionScope) !== executionScope) return false;
+
+    // The broker serializes runs and persists the intent before any physical dispatch.
+    // An older reservation without an intent never reached AE. A dispatched one
+    // remains a constraint until its own correlated command has a terminal result.
+    const command = this.ledger.commands().find(c => c.commandId === handle.commandId);
+    if (!command) return !events.some(e => e.commandId === handle.commandId);
+    const priorGrant = command.grant;
+    return (command.state === 'rejected' || command.state === 'succeeded' && command.verificationKind === 'local-transaction-receipt') &&
+      command.proposalId === handle.proposalId && command.checkpoint?.ref === record.checkpointRef &&
+      command.checkpoint.digest === handle.checkpointDigest && canonical(command.target) === canonical(record.resource) &&
+      priorGrant?.reservationRef === handle.ref && priorGrant.owner === record.owner &&
+      priorGrant.checkpointRef === record.checkpointRef && priorGrant.allowedEffect === effect &&
+      canonical(priorGrant.executionScope) === executionScope;
+  }
 }
-module.exports = { Resources, scopesOverlap };
+module.exports = { Resources, scopesOverlap, currentTargetConstraintId, CURRENT_TARGET_PROVENANCE };
