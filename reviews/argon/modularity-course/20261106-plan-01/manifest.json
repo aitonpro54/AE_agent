@@ -1,0 +1,38 @@
+{
+  "files": [
+    {
+      "sha256": "a401d8489e4da313ac732fef6b2778a7a59c95b47fcc7970f4c5a4be70370d08",
+      "bytes": 9639,
+      "path": "request.md"
+    },
+    {
+      "sha256": "ee586a6cc744f27812ee87d50c5235fc68a7ff9154a80dd78486fd8dd995344e",
+      "bytes": 38601,
+      "path": "source-excerpts.md"
+    },
+    {
+      "sha256": "d21d8311dd214b111ec7e2fba2332b7f9525080fce9a87bb59b786bbbe869022",
+      "bytes": 4586,
+      "path": "selector-evidence.json"
+    },
+    {
+      "sha256": "e26bc7c3c15f9697a80e254fd788babee002ded79791248a443bae3342783d22",
+      "bytes": 52830,
+      "path": "bundle.md"
+    }
+  ],
+  "packaging": "PowerShell fallback because python launcher unavailable",
+  "limits": [
+    "static analysis",
+    "selector only, tests not executed",
+    "source excerpts only"
+  ],
+  "snapshot": "1c32744eaa944451d9b4ae8e5856bbcadee7763e",
+  "classification": "INTERNAL",
+  "externalAllowlist": [
+    "bundle.md",
+    "manifest.json"
+  ],
+  "reviewId": "20261106-plan-01",
+  "status": "COMPLETE"
+}

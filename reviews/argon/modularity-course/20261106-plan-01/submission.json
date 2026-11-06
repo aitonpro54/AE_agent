@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "reviewId": "20261106-plan-01",
+  "stageId": "modularity-course",
+  "type": "plan",
+  "status": "received",
+  "preparedAt": "2026-11-06T10:35:11.974Z",
+  "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "authorization": {
+    "reviewId": "20261106-plan-01",
+    "stageId": "modularity-course",
+    "type": "plan",
+    "createdAt": "2026-11-06T10:35:11.973Z",
+    "sourceThreadId": "01a1b02a-4885-7b70-a6b3-c0bcb70379e0",
+    "sourceUserMessageId": "01a1b069-5979-7cd2-8a9f-26fba5124331",
+    "quote": "Также посоветуйся с Аргоном через наш контур Argon Browser Use.",
+    "scope": "Одна консультация о курсе модульности по ограниченному пакету",
+    "snapshot": "1c32744eaa944451d9b4ae8e5856bbcadee7763e",
+    "recipient": "Gemini Argon, Aiton Pro (aitonpro54@gmail.com)",
+    "externalAllowlist": [
+      "bundle.md",
+      "manifest.json"
+    ],
+    "bundleSha256": "e26bc7c3c15f9697a80e254fd788babee002ded79791248a443bae3342783d22",
+    "requestSha256": "a401d8489e4da313ac732fef6b2778a7a59c95b47fcc7970f4c5a4be70370d08",
+    "manifestSha256": "fdcd4b8fb4f65f74c9bffe0552e98c8735323023da3a9b20ac61a2153bb250f3",
+    "externalPrompt": "Выполни одно ограниченное ревью курса модульности AE Agent Core по приложенным bundle.md и manifest.json. Review ID: 20261106-plan-01. Snapshot: 1c32744eaa944451d9b4ae8e5856bbcadee7763e. Request SHA-256: a401d8489e4da313ac732fef6b2778a7a59c95b47fcc7970f4c5a4be70370d08. Прочитай полный пакет и ответь по-русски на пять вопросов из запроса. Верни указанные привязки, вердикт, findings, ограничения и максимум пять приоритетов с критериями завершения. Явно отдели факты пакета от гипотез и необходимых локальных проверок.",
+    "maximumSends": 1,
+    "automaticRetry": false
+  },
+  "readiness": {
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "Argon",
+    "effort": "Высокий",
+    "conversation": "пустой обычный чат",
+    "observedAt": "2026-11-06T10:35:11.974Z"
+  },
+  "baseline": {
+    "request.md": {
+      "bytes": 9639,
+      "sha256": "a401d8489e4da313ac732fef6b2778a7a59c95b47fcc7970f4c5a4be70370d08"
+    },
+    "source-excerpts.md": {
+      "bytes": 38601,
+      "sha256": "ee586a6cc744f27812ee87d50c5235fc68a7ff9154a80dd78486fd8dd995344e"
+    },
+    "selector-evidence.json": {
+      "bytes": 4586,
+      "sha256": "d21d8311dd214b111ec7e2fba2332b7f9525080fce9a87bb59b786bbbe869022"
+    },
+    "bundle.md": {
+      "bytes": 52830,
+      "sha256": "e26bc7c3c15f9697a80e254fd788babee002ded79791248a443bae3342783d22"
+    },
+    "manifest.json": {
+      "bytes": 1058,
+      "sha256": "fdcd4b8fb4f65f74c9bffe0552e98c8735323023da3a9b20ac61a2153bb250f3"
+    }
+  },
+  "payload": [
+    {
+      "name": "bundle.md",
+      "bytes": 52830,
+      "sha256": "e26bc7c3c15f9697a80e254fd788babee002ded79791248a443bae3342783d22"
+    },
+    {
+      "name": "manifest.json",
+      "bytes": 1058,
+      "sha256": "fdcd4b8fb4f65f74c9bffe0552e98c8735323023da3a9b20ac61a2153bb250f3"
+    }
+  ],
+  "prompt": "Выполни одно ограниченное ревью курса модульности AE Agent Core по приложенным bundle.md и manifest.json. Review ID: 20261106-plan-01. Snapshot: 1c32744eaa944451d9b4ae8e5856bbcadee7763e. Request SHA-256: a401d8489e4da313ac732fef6b2778a7a59c95b47fcc7970f4c5a4be70370d08. Прочитай полный пакет и ответь по-русски на пять вопросов из запроса. Верни указанные привязки, вердикт, findings, ограничения и максимум пять приоритетов с критериями завершения. Явно отдели факты пакета от гипотез и необходимых локальных проверок.",
+  "promptSha256": "69f067d02f3e1956f0a9a913f8389c630738468a2f3beb2baae684b78be05f61",
+  "counts": {
+    "uploadInvocations": 1,
+    "filesSelected": 2,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "uploadInvokedAt": "2026-11-06T10:35:34.495Z",
+  "uploadCompletedAt": "2026-11-06T10:35:57.449Z",
+  "promptVerifiedAt": "2026-11-06T10:35:57.449Z",
+  "sendInvokedAt": "2026-11-06T10:35:57.449Z",
+  "confirmedAt": "2026-11-06T10:36:08.192Z",
+  "receipt": {
+    "url": "https://gemini.google.com/app/27f4d26dfe2d7ca6",
+    "reviewIdVisible": true,
+    "attachments": [
+      "bundle.md",
+      "manifest.json"
+    ],
+    "generationActiveAtSubmission": true
+  },
+  "receivedAt": "2026-11-06T10:39:39.278Z",
+  "response": {
+    "path": "response.txt",
+    "encoding": "UTF-8",
+    "bytes": 31768,
+    "sha256": "0af265c8a2006c97eeec9458951f270d6e058641f3188670b742136c0c39df21",
+    "capturedAt": "2026-11-06T10:39:39.278Z",
+    "captureMethod": "Точный видимый innerText model-response-content, без правок, нормализации и добавленного перевода строки"
+  },
+  "verdict": "revise"
+}

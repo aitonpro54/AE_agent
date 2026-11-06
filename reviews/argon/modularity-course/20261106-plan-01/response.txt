@@ -1,0 +1,271 @@
+Привязки ревью, прочитанные материалы и вердикт
+
+Review ID: 20261106-plan-01.   
+bundle.md
+Ещё 1
+
+Stage / Тип / Версия: modularity-course, тип plan, Core 4.1.1, окружение MSI, дата 2026-11-06.   
+bundle.md
+
+Snapshot: 1c32744eaa944451d9b4ae8e5856bbcadee7763e.   
+bundle.md
+Ещё 1
+
+Request SHA-256 (request.md): a401d8489e4da313ac732fef6b2778a7a59c95b47fcc7970f4c5a4be70370d08 (9639 байт).   
+bundle.md
+Ещё 1
+
+Классификация и статус пакета: INTERNAL, статус COMPLETE, упаковка выполнена через PowerShell fallback.   
+bundle.md
+Ещё 1
+
+Прочитанные материалы:
+
+manifest.json — метаданные ревью, дайджесты вложенных артефактов, список ограничений и externalAllowlist.   
+manifest.json
+
+bundle.md (SHA-256: e26bc7c3c15f9697a80e254fd788babee002ded79791248a443bae3342783d22, 52830 байт), консолидирующий содержимое:   
+manifest.json
+
+request.md (SHA-256: a401d8489e4da313ac732fef6b2778a7a59c95b47fcc7970f4c5a4be70370d08, 9639 байт) — описание исходного критерия, установленных фактов, предварительной оценки Codex, 5 шагов следующего этапа и 5 вопросов Argon.   
+bundle.md
+Ещё 1
+
+source-excerpts.md (SHA-256: ee586a6cc744f27812ee87d50c5235fc68a7ff9154a80dd78486fd8dd995344e, 38601 байт) — выдержки из 8 файлов (core4/runtime/stdio-entry.js, core4/tools/package-installable.js, core4/tools/package-capability.js, core4/runtime/text-layer-proof.js, core4/runtime/comp-render-proof.js, core4/tools/validate-diff.js, core4/config/validation-map.json, products/titles/src/compiler.js).   
+bundle.md
+Ещё 1
+
+selector-evidence.json (SHA-256: d21d8311dd214b111ec7e2fba2332b7f9525080fce9a87bb59b786bbbe869022, 4586 байт) — результаты выборки проверок для 3 сценариев изменений.   
+bundle.md
+Ещё 1
+
+Вердикт: revise. Архитектурный вектор (отделение продукта products/titles, изоляция owner-процесса с журналами/receipts и маршрутизация локальных проверок через validate-diff) выбран верно, однако предложенный план следующего этапа требует перестановки приоритетов и уточнения границ безопасности: начинать нужно не с урезания фикстур интеграционных тестов, а с устранения жёстко закодированной иерархии модулей в stdio-entry.js / package-installable.js и выноса чистых предметных proof-функций из runtime/ в состав артефакта модуля. Настоящее заключение является аналитической рекомендацией и не служит разрешением на непосредственную реализацию без открытия отдельного рабочего этапа.   
+bundle.md
+Ещё 3
+
+Факты пакета, гипотезы и необходимые локальные проверки
+1. Установленные факты пакета
+
+Изоляция продукта: products/titles/src/compiler.js:1-12 компилирует задания в JSON под существующий MCP, не импортирует внутренние модули core4 и связывается с Core исключительно через публичную схему compat/titles-current-target.contract.json, MODULE_PIN и CONTRACT_HASH.   
+bundle.md
+
+Дешёвая локальная правка существующего модуля: По данным selector-evidence.json, изменение файлов executor.jsx, artifact.json и config/admissions/<id>.json для comp-render (или text-variant) выбирает ровно 1 набор проверок (1 batch) и откладывает 33 интеграционных набора в deferred с releaseCertified: false.   
+bundle.md
+
+Высокая связность при регистрации и сборке модулей: Изменение связки core4/tools/package-installable.js, core4/runtime/stdio-entry.js и core4/runtime/source-package.json активирует 27 наборов проверок (27 batches) и откладывает 26 наборов. Изменение core4/core/broker.js выбирает 26 наборов (19 batches) и откладывает 22.   
+bundle.md
+Ещё 1
+
+Хардкод модулей и предметных проверок в Runtime: core4/runtime/stdio-entry.js:32-85, 304-347 содержит явные списки допустимых composition.id, условные флаги withLayout, withText, withVariants, прямые вызовы require('./point-layout-proof.js'), require('./text-layer-proof.js'), require('./text-variant-proof.js'), require('./comp-render-proof.js') и именованные поля в transport.identity.   
+bundle.md
+
+Узкая специализация C1b (package-capability.js): core4/tools/package-capability.js:119-126, 136-145 допускает обновление только одного фиксированного слота MODULE (в композиции manual при runtimeModel === 'owner') и требует побайтового канонического совпадения контракта (canonical(existing.contract) === canonical(contract)).   
+bundle.md
+
+2. Гипотезы (требуют подтверждения вне представленных фрагментов)
+
+Гипотеза H1 (Причина широких зависимостей point-layout и text-layer): В core4/config/validation-map.json:1301-1312 проверки point-layout и text-layer зависят от core/, runtime/, cep/, modules/, plan-engine/ и tools/package-installable.js предположительно потому, что они используют общую тяжеловесную фикстуру test/fixtures/manual-http-runtime.js, поднимающую полный собранный пакет, тогда как более новые text-variant (1313-1316) и comp-render (1317-1320) тестируются через облегчённый контур.   
+bundle.md
+
+Гипотеза H2 (Контракт manual-policy.js): Поскольку исходный код core4/runtime/manual-policy.js в пакет не включён, предполагается, что createManualPolicy (stdio-entry.js:334) уже обрабатывает массив additional единообразно через поля { pin, contract, admission, proof, validateResult }, а выделение layout в отдельный параметр (stdio-entry.js:314-318, 334) является историческим артефактом.   
+bundle.md
+
+Гипотеза H3 (Внешний кэш доказательств): В bundle.md указано, что повторное использование результатов проверок (reuse) происходит при разборе сохранённого evidence, однако в validate-diff.js:75-94 чтение сохранённого evidence перед spawnSync отсутствует — вероятно, сверка evidenceKey реализована во внешнем оркестраторе/скрипте выпуска, не вошедшем в выдержки.   
+bundle.md
+
+3. Известные ограничения и необходимые локальные проверки
+
+Ограничения ревью: Анализ выполнен статически по выдержкам из исходного кода (source-excerpts.md, 38601 байт) и данным селектора (selector-evidence.json), без доступа к полному репозиторию и без запуска нативных тестов (limits: ["static analysis", "selector only, tests not executed", "source excerpts only"]). Числа в selector-evidence.json отражают количество наборов (named checks/batches), а не количество отдельных test cases, длительность выполнения или расход контекста. Реальный 3D derive и изолированный AME остаются за рамками текущего состояния.   
+bundle.md
+Ещё 3
+
+Необходимые локальные проверки на рабочей станции (MSI):
+
+Проинспектировать core4/runtime/manual-policy.js и core4/runtime/source-package.json, чтобы подтвердить возможность унификации параметра layout и списка additional без изменения семантики резервации и подтверждения (provider).   
+bundle.md
+
+Сравнить устройство test/point-layout.test.js и test/text-layer.test.js (использующих test/fixtures/manual-http-runtime.js) с test/text-variant.test.js и test/comp-render.test.js, чтобы определить, какие именно вызовы требуют полной сборки пакета через tools/package-installable.js.   
+bundle.md
+
+Замерить фактическое время выполнения (wall-clock time) для 19 батчей broker.js и 27 батчей package-installable.js + stdio-entry.js + source-package.json на MSI.   
+bundle.md
+
+Findings (P0–P3)
+Приоритет	ID и описание проблемы	Привязка (path:line)	Уверенность
+P1	Жёсткая кумулятивная лестница композиций и хардкод модулей в Runtime и сборщике. Добавление любой новой capability требует синхронного редактирования списков допустимых композиций, флагов withLayout/withText/withVariants, проверок operationId, ключей transport.identity и карты resultProfiles. Это превращает добавление независимого модуля в модификацию ядра с запуском 27 тестовых батчей.	
+
+core4/runtime/stdio-entry.js:32-40, 52-80, 304-347 
+bundle.md
+
+	
+
+
+
+core4/tools/package-installable.js:23, 28-33, 52-61 | Высокая |
+| P1 | Размывание границ Core: предметные проверки (Domain Proofs) и пути продукта зашиты в runtime/. Файлы text-layer-proof.js и comp-render-proof.js лежат в runtime/, хотя проверяют сугубо предметные инварианты (шрифты, кегли, трекинг, выравнивание в рамке, шаблон 'H.264' и жёстко заданную подпапку 'titles-output'). При этом в comp-render-proof.js предметная сверка (validateCompRenderCompletion) смешана с привилегированной проверкой хостовой ФС (fs.lstatSync, fs.realpathSync). | core4/runtime/text-layer-proof.js:8-50   
+bundle.md
+Ещё 2
+
+
+
+
+core4/runtime/comp-render-proof.js:6-29, 31-54   
+bundle.md
+
+
+
+
+core4/runtime/stdio-entry.js:56-66, 316-333 | Высокая |
+| P2 | Асимметрия дерева зависимостей для модульных проверок в validation-map.json. Проверки text-variant и comp-render имеют узкое замыкание зависимостей (7–8 входов, без core/ и cep/), тогда как аналогичные по уровню capability-тесты point-layout и text-layer привязаны к широким каталогам core/, runtime/, cep/, modules/, plan-engine/, config/admissions/. Любая правка в любом модуле инвалидирует evidenceKey для point-layout и text-layer. | core4/config/validation-map.json:1301-1320 | Высокая |
+| P2 | Жёсткое ограничение отдельной поставки capability (C1b). Инструмент package-capability.js принимает базовый пакет только с composition.id === 'manual', обновляет только константный слот MODULE и отвергает любые изменения схемы или политики эффектов (canonical(existing.contract) !== canonical(contract)). Использовать его для поставки остальных 5 нативных capabilities в manual-titles-variants/owner невозможно. | core4/tools/package-capability.js:119-126, 136-145 | Высокая |
+| P3 | Безусловный перезапуск батчей в validate-diff.js --run. Функция selectChecks вычисляет криптографический evidenceKey по байтам всех зависимостей и проекций (line 69), но main() при флаге --run (lines 90-93) последовательно запускает все executionBatches через spawnSync, не сверяясь с локальным кэшем уже пройденных evidenceKey. | core4/tools/validate-diff.js:69, 90-93 | Высокая |   
+bundle.md
+Ещё 4
+
+Ответы на пять вопросов Argon
+1. Насколько реализация отклонилась от критерия дешёвых независимых изменений? (Разделение по слоям)
+
+Продукт (products/titles) — соответствует критерию: Продукт полностью отделён от приватного Core, работает поверх JSON-схемы задания и фиксированного контракта titles-current-target.contract.json (products/titles/src/compiler.js:3-11). Изменение шаблонов или правил переноса строк остаётся внутри продукта и не затрагивает core4.   
+bundle.md
+Ещё 1
+
+Capability (внутренняя правка существующего модуля) — соответствует критерию: Правка executor.jsx, artifact.json и admission.json внутри уже подключённого модуля (comp-render, text-variant) изолирована: validate-diff.js выбирает ровно 1 модульный тест (1 батч), откладывая 33 интеграционных набора до этапа релиза. Исключение составляют старые тесты point-layout и text-layer, перегруженные зависимостями в validation-map.json:1301-1312.   
+bundle.md
+Ещё 1
+
+Runtime (core4/runtime/) — существенное отклонение: Вместо «небольшого постоянного Core» файл stdio-entry.js превратился в реестр предметных модулей и их правил верификации. Добавление каждой новой AE-возможности требует дописывания веток в deriveComposition (lines 32-85), ручного подключения *-proof.js в точку сборки (lines 304-347) и размещения предметной валидации (шрифты, рамки, рендер-шаблоны) прямо в каталоге runtime/.   
+bundle.md
+Ещё 1
+
+Поставка (tools/package-*) — частичная реализация: Полный сборщик package-installable.js:23-64 дублирует жёсткую лестницу композиций из stdio-entry.js, поэтому любое изменение состава модулей бьёт по stdio-entry.js + package-installable.js + source-package.json и вызывает лавину из 27 батчей проверок. Узкая поставка package-capability.js (C1b) работает только для замены реализации одного слота titles-current-target в базовой композиции manual при неизменном контракте (lines 119-126).   
+bundle.md
+Ещё 1
+
+2. Какие из отмеченных зависимостей оправданы, а какие стоит упрощать первыми?
+
+Оправданные зависимости (трогать не нужно):
+
+Полное хеширование всех файлов релиза в release.hashes и пересчёт packageHash при сборке установочного пакета (stdio-entry.js:21, package-installable.js:44-50) необходимы для целостности поставки и верификации stop/update/enable.   
+bundle.md
+
+Широкие зависимости у настоящих установочных и lifecycle-интеграций (например, installable-runtime в validation-map.json:1321-1335, проверяющий реальную установку, адаптацию хоста и транспорт), а также 26 выбранных наборов при изменении core4/core/broker.js (так как брокер управляет блокировками состояния, журналом ledger и окном подтверждения).   
+bundle.md
+
+Зависимости, которые нужно упрощать первыми:
+
+Зависимости модульных тестов point-layout и text-layer (validation-map.json:1301-1312) от всего каталога modules/, config/admissions/, cep/ и plan-engine/ — их нужно привести к компактному стандарту text-variant и comp-render (1313-1320), заменив широкие каталоги на конкретный модуль и проекции checkProjections (validate-diff.js:48, 64-68).   
+bundle.md
+
+Прямую зависимость stdio-entry.js и package-installable.js от конкретных идентификаторов модулей (titles-point-layout, text-layer, text-variant, comp-render) и их файлов runtime/*-proof.js.   
+bundle.md
+
+3. Где предложенная оптимизация ослабляет доверие, проверку результата или recovery?
+
+Риск в Шаге 2 (сокращение зависимостей интеграционных тестов): Если убрать runtime/, modules/ или tools/package-installable.js из validation-map.json без фактического перевода теста на минимальную фикстуру, validate-diff.js:69 вычислит ложный (неполный) evidenceKey. Это приведёт к пропуску реально затронутого теста при разборе evidence.   
+bundle.md
+Ещё 1
+
+Риск в Шаге 3 (декларативный состав вместо хардкода в stdio-entry.js):
+
+В текущем коде (stdio-entry.js:335) transport.identity жестко связывает packageHash и конкретные объекты допуска (manualAdmission, layoutAdmission, textAdmission, variantAdmission, renderAdmission). При переходе на декларативный список модулей transport.identity обязан строиться по канонически отсортированному массиву всех допусков (admissions) активной композиции, иначе возникнет риск коллизии или пропуска смены допуска при recovery/reconnect.   
+bundle.md
+Ещё 1
+
+Проверки отсутствия лишних файлов в пакете (composition_optional_closure в stdio-entry.js:57, 61, 67, 84) нельзя просто удалить: при переходе на декларативный composition.json необходимо проверять, что в release.hashes нет ни одного модуля или admission-файла, не входящего в composition.modules / composition.assets.   
+bundle.md
+
+Загрузка модулей не должна использовать динамический require() по произвольным путям из манифеста без предварительной сверки с release.hashes и manifest.hashes (stdio-entry.js:21, 47).   
+bundle.md
+
+Риск в Шаге 4 (разделение предметного proof и host/file proof):
+
+В comp-render-proof.js:10-29, 35-36, 42, 53 проверки plainOutputDirectory и plainMedia выполняют критические для безопасности хоста операции (fs.lstatSync, защита от симлинков !stat.isSymbolicLink(), сверка fs.realpathSync(dir) === dir, проверка отсутствия файла перед stage и точного размера в байтах после рендера). Переносить эти файловые проверки внутрь недоверенного worker'а или JSX-исполнителя категорически нельзя.   
+bundle.md
+Ещё 1
+
+Кроме того, в comp-render-proof.js:7 путь вывода строится через path.join(path.dirname(input.projectId), 'titles-output', input.fileName) — при обобщении этого механизма в привилегированный host-примитив необходимо явно проверять отсутствие обхода каталогов (.., абсолютных путей и разделителей в input.fileName) до обращения к ФС.   
+bundle.md
+
+4. Достаточно ли начать с fixture/test dependency work, или до него нужен другой шаг?
+
+Начинать с переделки фикстур и validation-map.json (Шаги 1–2 плана) преждевременно. Пока stdio-entry.js (lines 32-85, 304-347) и package-installable.js (lines 23-64) содержат жёстко закодированные ветки под каждый модуль и импортируют runtime/*-proof.js, любое добавление новой capability или изменение способа подключения proof-функции потребует правок в stdio-entry.js и package-installable.js. Поскольку stdio-entry.js входит в базовую поставку рантайма, его модификация неизбежно и обоснованно триггерит 27 интеграционных батчей.   
+bundle.md
+Ещё 2
+
+Правильная последовательность:
+
+Сначала выполнить архитектурное разцепление регистрации модулей и proof-контракта (перенос чистых предметных валидаторов validateResult внутрь modules/<id>/, выделение декларативного контракта в stdio-entry.js и package-installable.js с сохранением проверки хешей и привилегированных host-проверок).   
+bundle.md
+
+Только после стабилизации stdio-entry.js перевести тесты point-layout и text-layer на узкие фикстуры и сократить их зависимости в validation-map.json. Иначе фикстуры и карту зависимостей придётся переписывать дважды.   
+bundle.md
+Ещё 1
+
+5. Пять приоритетных изменений с критериями завершения и неоправданные переделки
+Приоритетные изменения (максимум 5)
+№	Приоритетное изменение	Проверяемый критерий завершения (Definition of Done)
+1	Разделение Host FS Guard и чистых предметных Proof-функций (Пилот на text-layer и comp-render). Оставить в runtime/ только привилегированный параметризованный примитив проверки файлов/симлинков (plainOutputDirectory/plainMedia из comp-render-proof.js:10-29), а чистую детерминированную сверку снимков (input, before, after) (text-layer-proof.js:8-50, comp-render-proof.js:31-54) перенести в хэшируемый состав модуля (modules/<id>/) с фиксацией в artifact.json и admission.json.	
+
+1) В runtime/ отсутствуют предметные константы ('titles-output', 'H.264', проверки шрифтов/кеглей). 
+bundle.md
+
+
+
+
+Хэш файла предметного proof проверяется в admitted() через manifest.hashes (stdio-entry.js:47).   
+bundle.md
+
+
+
+
+Все привилегированные вызовы fs.lstatSync/fs.realpathSync выполняются исключительно в доверенном процессе Core. |
+| 2 | Декларативная таблица ассетов и композиций в stdio-entry.js и package-installable.js. Заменить булеву лестницу withLayout/withText/withVariants и поимённые ветки модулей (stdio-entry.js:34-81, 304-347, package-installable.js:28-33, 52-61) на чтение декларативных дескрипторов из runtime/composition.json и contract.json с единым циклом сборки additionalAssets, детерминированным расчётом transport.identity по всем admissions и общей проверкой composition_optional_closure по списку активных модулей. | 1) В stdio-entry.js и package-installable.js нет строковых литералов titles-point-layout, text-layer, text-variant, comp-render.   
+bundle.md
+Ещё 1
+
+
+
+
+transport.identity включает канонический хэш всех допусков активной композиции.   
+bundle.md
+
+
+
+
+Попытка включить в release.hashes файл неактивного модуля завершается ошибкой composition_optional_closure. |
+| 3 | Сужение зависимостей point-layout и text-layer в validation-map.json по образцу text-variant/comp-render. Перевести модульные проверки point-layout и text-layer (validation-map.json:1301-1312) с широких каталогов (modules/, config/admissions/, cep/, plan-engine/) на изолированную фикстуру и точечные проекции checkProjections (config/catalog.json#modules[id=...]). | 1) Вызов validate-diff.js при изменении modules/titles-point-layout/executor.jsx или modules/text-layer/executor.jsx выбирает ровно 1 батч со статусом releaseCertified: false.   
+bundle.md
+Ещё 1
+
+
+
+
+Изменение modules/comp-render/* не затрагивает evidenceKey проверок point-layout и text-layer. |
+| 4 | Замер и профилирование одного сквозного сценария добавления capability. На базе обновлённого декларативного Core провести эксперимент с добавлением одного тестового/существующего capability без модификации кода stdio-entry.js и package-installable.js (изменяя только каталог модуля, config/admissions/, source-package.json и config/catalog.json). | 1) Зафиксированы точные метрики: число выбранных и отложенных батчей в validate-diff, время выполнения в секундах на MSI и объём файлов в замыкании dependencies.   
+bundle.md
+Ещё 1
+
+
+
+
+Добавление capability не требует правок в core4/runtime/stdio-entry.js. |
+| 5 | Поддержка локального пропуска уже подтверждённых батчей по evidenceKey в validate-diff.js. Добавить опциональный учёт сохранённого локального evidence при запуске validate-diff.js --run (lines 90-93), чтобы батчи с неизменившимся evidenceKey (line 69) не перезапускались повторно при итеративной локальной разработке. | 1) Повторный запуск validate-diff.js --run на том же дереве файлов с валидным сохранённым evidence завершается за < 1 с без вызова spawnSync для уже подтверждённых evidenceKey.   
+bundle.md
+Ещё 1
+
+
+
+
+Изменение любого байта в dependencies или projections гарантированно инвалидирует evidenceKey и запускает батч. |   
+bundle.md
+
+Крупные переделки, которые сейчас экономически неоправданны
+
+Превращение C1b (package-capability.js) в универсальный пакетный менеджер произвольных плагинов: Попытка научить package-capability.js:113-150 динамически менять composition.json, добавлять ранее неизвестные слоты и мигрировать схемы контрактов на лету многократно усложнит верификацию целостности релиза и recovery, тогда как штатный цикл stop/update/enable полного пакета уже решает задачу обновления при условии дешёвой модульной валидации.   
+bundle.md
+
+Дробление core4/core/broker.js и core4/protocol/json.js ради снижения числа батчей при их правке: Эти файлы формируют фундамент безопасности (блокировки состояния, журнал транзакций ledger, каноническая сериализация) и меняются редко; 19–27 батчей при модификации ядра брокера или протокола полностью оправданы рисками регрессии recovery.   
+bundle.md
+
+Миграция нативных модулей для 2 старых записей из source catalog (не имеющих текущего native route) или преждевременная реализация реального 3D derive и изолированного AME в рамках этапа модульности: Эти задачи относятся к расширению продуктовой функциональности и не должны смешиваться с рефакторингом границ Core и тестовых зависимостей.   
+bundle.md

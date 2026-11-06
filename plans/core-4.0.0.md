@@ -1,5 +1,16 @@
 # AE Agent Core 4.0.0 — проектирование и постепенное извлечение
 
+**6 ноября, анализ курса модульности завершён.** Progress: сопоставлены исходная
+цель, Core 4.1.1 и текущие зависимости, получено одно ревью Argon (`revise`).
+Decision Log: направление сохранить; следующий рекомендуемый этап — ограниченный
+пилот регистрации и разделения предметных/привилегированных проверок, затем
+сужение реальных fixtures и измерение стоимости. Дешёвые локальные изменения
+частично достигнуты, независимая стоимость добавления новых модулей не доказана.
+Validation: статическое чтение, selector без `--run`, проверка review bindings;
+новых tests/native/build/install нет. [Полный вывод](../docs/core-modularity-review-20261106.md)
+и [разбор Argon](../reviews/argon/modularity-course/20261106-plan-01/decisions.md).
+Это завершённый аналитический блок; реализация рекомендаций здесь не назначена.
+
 **4 ноября, новая ограниченная запись desktop V2:** 11fullnamed checks, verifiers и actual project-config dry-run PASS; current48covered/23open. Прежние69/71 ниже — историческая приёмка77a860e. Runtimecdf/80 unchanged; standalone5d5d1aa4…/98. Config/legacy unchanged; actual install/startup0. Далее source fix→MSI, CLI regression delta→desktop. [Focused receipt](core-portability-quoted-config-20261104.md). P1–P8/full release открыты.
 
 **4 ноября, активен практический перенос MSI ↔ десктоп:** выбран прежний

@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "reviewId": "20261106-plan-01",
+  "stageId": "modularity-course",
+  "type": "plan",
+  "status": "received",
+  "complete": true,
+  "verdict": "revise",
+  "response": {
+    "path": "response.txt",
+    "encoding": "UTF-8",
+    "bytes": 31768,
+    "sha256": "0af265c8a2006c97eeec9458951f270d6e058641f3188670b742136c0c39df21",
+    "capturedAt": "2026-11-06T10:39:39.278Z",
+    "captureMethod": "Точный видимый innerText model-response-content, без правок, нормализации и добавленного перевода строки"
+  },
+  "receipt": {
+    "url": "https://gemini.google.com/app/27f4d26dfe2d7ca6",
+    "reviewIdVisible": true,
+    "attachments": [
+      "bundle.md",
+      "manifest.json"
+    ],
+    "generationActiveAtSubmission": true
+  },
+  "counts": {
+    "uploadInvocations": 1,
+    "filesSelected": 2,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "limitations": [
+    "static analysis",
+    "selector only, tests not executed",
+    "source excerpts only"
+  ],
+  "receivedAt": "2026-11-06T10:39:39.278Z",
+  "truncated": false,
+  "binding": {
+    "reviewId": true,
+    "snapshot": true,
+    "requestSha256": true,
+    "stageAndType": true,
+    "bundleSha256": true
+  },
+  "completionEvidence": {
+    "generationActive": false,
+    "finalControlsVisible": true,
+    "responseCount": 1,
+    "finalSection": "Крупные переделки, которые сейчас экономически неоправданны",
+    "evidence": "response-evidence.jpg"
+  },
+  "reviewedMaterials": [
+    "manifest.json",
+    "bundle.md",
+    "request.md внутри bundle",
+    "выдержки из восьми исходных файлов",
+    "selector-evidence.json внутри bundle"
+  ],
+  "findings": [
+    {
+      "priority": "P1",
+      "summary": "Регистрация операций и композиций зашита в runtime и сборщик",
+      "paths": [
+        "core4/runtime/stdio-entry.js:32-80",
+        "core4/runtime/stdio-entry.js:304-347",
+        "core4/tools/package-installable.js:23-61"
+      ]
+    },
+    {
+      "priority": "P1",
+      "summary": "Предметные проверки смешаны с runtime и привилегированной проверкой файлов",
+      "paths": [
+        "core4/runtime/text-layer-proof.js:8-50",
+        "core4/runtime/comp-render-proof.js:6-54"
+      ]
+    },
+    {
+      "priority": "P2",
+      "summary": "Широкие зависимости проверок point-layout и text-layer",
+      "paths": [
+        "core4/config/validation-map.json:1301-1320"
+      ]
+    },
+    {
+      "priority": "P2",
+      "summary": "Отдельная поставка C1b ограничена известным слотом",
+      "paths": [
+        "core4/tools/package-capability.js:119-145"
+      ]
+    },
+    {
+      "priority": "P3",
+      "summary": "Локальный --run не использует сохранённые evidenceKey",
+      "paths": [
+        "core4/tools/validate-diff.js:69",
+        "core4/tools/validate-diff.js:90-93"
+      ]
+    }
+  ],
+  "proposedSequence": [
+    "Разделить предметные проверки и доверенную проверку файлов на пилоте",
+    "Проверить декларативное описание состава и ассетов",
+    "Сузить фикстуры point-layout и text-layer",
+    "Замерить сквозное добавление одной операции",
+    "Оценить локальное переиспользование evidence"
+  ],
+  "integrityNotes": [
+    "Привязки сверены по строкам ответа, исходные хеши пересчитаны локально",
+    "27 батчей относятся к выборке для одного набора изменений из трёх файлов. Обобщение на любое добавление операции и фактическая стоимость требуют локальной проверки."
+  ],
+  "ownerTriagePerformed": false
+}
