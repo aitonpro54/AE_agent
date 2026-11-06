@@ -84,6 +84,17 @@ test('installed-composition point-layout is opt-in and refuses a package without
   pkg.packageHash = hash(pkg.release);
   assert.throws(() => verifyPackage(pkg), /composition_optional_closure/);
 });
+test('installed-composition text-layer is opt-in and preserves earlier Titles artifacts', () => {
+  const enabled = buildPackage(root, 'manual-titles', { runtimeModel: 'owner' });
+  const old = buildPackage(root, 'manual-layout', { runtimeModel: 'owner' });
+  for (const id of ['titles-current-target', 'titles-point-layout']) {
+    for (const file of ['artifact.json', 'contract.json', 'executor.jsx']) {
+      assert.equal(enabled.files[`modules/${id}/${file}`], old.files[`modules/${id}/${file}`]);
+    }
+  }
+  assert.ok(enabled.files['modules/text-layer/executor.jsx']);
+  assert.equal(old.files['modules/text-layer/executor.jsx'], undefined);
+});
 test('installed-composition admits a new render operation through declarations on a relocated source and installed tree', { timeout: 15000 }, async t => {
   const source = temp(), moduleId = 'fixture-render', operationId = 'fixture-render-variant', relative = 'modules/' + moduleId;
   t.after(() => fs.rmSync(source, { recursive: true, force: true }));

@@ -3,7 +3,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { harness } = require('./fixtures/manual-http-runtime');
 const { textEnvironment } = require('./fixtures/text-layer-ae');
-const { buildPackage } = require('../tools/package-installable');
 
 const moduleId = 'text-layer';
 const desired = {
@@ -68,18 +67,6 @@ test('text-layer: missing font rejects before confirmation and a cancelled write
   assert.equal((await h.broker.run(await api.propose(desired))).message, 'local_cancelled');
   assert.deepEqual((await api.inspect()).snapshot, before);
   assert.deepEqual(h.broker.ledger.unresolved(), []);
-});
-
-test('text-layer: package keeps both prior Titles contracts and contains the new executor only when opted in', () => {
-  const enabled = buildPackage(undefined, 'manual-titles', { runtimeModel: 'owner' });
-  const old = buildPackage(undefined, 'manual-layout', { runtimeModel: 'owner' });
-  for (const id of ['titles-current-target', 'titles-point-layout']) {
-    for (const file of ['artifact.json', 'contract.json', 'executor.jsx']) {
-      assert.equal(enabled.files[`modules/${id}/${file}`], old.files[`modules/${id}/${file}`]);
-    }
-  }
-  assert.ok(enabled.files['modules/text-layer/executor.jsx']);
-  assert.equal(old.files['modules/text-layer/executor.jsx'], undefined);
 });
 
 test('text-layer: active Layer Style geometry is refused when AE reports it unmodified', async t => {
