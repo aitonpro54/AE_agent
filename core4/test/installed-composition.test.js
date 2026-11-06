@@ -70,6 +70,20 @@ test('installed-composition includes render and text variants only in their sele
   const altered = edit(structuredClone(enabled), extra, p => { p.directory = 'other-output'; });
   assert.throws(() => verifyPackage(altered), /composition_artifact/);
 });
+test('installed-composition point-layout is opt-in and refuses a package without its proof', () => {
+  for (const mode of ['readonly', 'manual']) {
+    const pkg = buildPackage(root, mode);
+    assert.ok(!Object.keys(pkg.files).some(name => /point-layout/.test(name)));
+  }
+  const pkg = buildPackage(root, 'manual-layout', { runtimeModel: 'owner' });
+  assert.ok(Object.hasOwn(pkg.files, 'modules/titles-current-target/executor.jsx'));
+  assert.equal(hash(canonical(pkg.release)), pkg.packageHash);
+  const file = 'runtime/point-layout-proof.js';
+  assert.ok(Object.hasOwn(pkg.files, file));
+  delete pkg.files[file]; delete pkg.release.hashes[file];
+  pkg.packageHash = hash(pkg.release);
+  assert.throws(() => verifyPackage(pkg), /composition_optional_closure/);
+});
 test('installed-composition admits a new render operation through declarations on a relocated source and installed tree', { timeout: 15000 }, async t => {
   const source = temp(), moduleId = 'fixture-render', operationId = 'fixture-render-variant', relative = 'modules/' + moduleId;
   t.after(() => fs.rmSync(source, { recursive: true, force: true }));

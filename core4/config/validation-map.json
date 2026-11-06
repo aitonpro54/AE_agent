@@ -17,10 +17,13 @@
     { "prefix": "core4/runtime/comp-render-proof.js", "owner": "comp-render", "checks": ["comp-render"] },
     { "prefix": "core4/test/comp-render.test.js", "owner": "comp-render", "checks": ["comp-render"] },
     { "prefix": "core4/modules/titles-point-layout/", "owner": "point-layout", "checks": ["point-layout"] },
+    { "prefix": "core4/modules/titles-point-layout/contract.json", "owner": "point-layout", "checks": ["point-layout", "point-layout-integration"] },
     { "prefix": "core4/config/admissions/titles-point-layout.json", "owner": "point-layout", "checks": ["point-layout"] },
-    { "prefix": "core4/runtime/point-layout-proof.js", "owner": "point-layout", "checks": ["point-layout"] },
-    { "prefix": "core4/test/point-layout.test.js", "owner": "point-layout", "checks": ["point-layout"] },
-    { "prefix": "core4/test/fixtures/point-layout-ae.js", "owner": "point-layout", "checks": ["point-layout"] },
+    { "prefix": "core4/runtime/point-layout-proof.js", "owner": "point-layout", "checks": ["point-layout", "point-layout-integration"] },
+    { "prefix": "core4/test/point-layout.test.js", "owner": "point-layout", "checks": ["point-layout-integration"] },
+    { "prefix": "core4/test/point-layout-local.test.js", "owner": "point-layout", "checks": ["point-layout"] },
+    { "prefix": "core4/test/fixtures/point-layout-ae.js", "owner": "point-layout", "checks": ["point-layout", "point-layout-integration"] },
+    { "prefix": "core4/test/fixtures/local-operation.js", "owner": "local-operation", "checks": ["point-layout"] },
     { "prefix": "core4/tools/package-capability.js", "owner": "stopped-update", "checks": ["stopped-update"] },
     { "prefix": "core4/test/fixtures/legacy-panel-v1.txt", "owner": "installed-composition", "checks": ["native-read-recovery", "installed-composition"] },
     { "prefix": "core4/runtime/start-over-driver.js", "owner": "start-over-driver", "checks": ["start-over-driver"] },
@@ -1303,6 +1306,10 @@
       "test/fixtures/ae.js"
     ],
     "point-layout": [
+      "modules/titles-point-layout/", "config/admissions/titles-point-layout.json", "runtime/point-layout-proof.js",
+      "protocol/json.js", "protocol/schema.js", "test/point-layout-local.test.js", "test/fixtures/local-operation.js", "test/fixtures/point-layout-ae.js"
+    ],
+    "point-layout-integration": [
       "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/",
       "config/catalog.json", "config/admissions/", "integrations/cep/", "tools/package-installable.js", "config/compositions/",
       "test/point-layout.test.js", "test/fixtures/point-layout-ae.js", "test/fixtures/manual-http-runtime.js",
@@ -1701,7 +1708,8 @@
       "--test-name-pattern=manual-runtime",
       "test/manual-runtime.test.js"
     ],
-    "point-layout": ["node", "--test", "--test-name-pattern=point-layout", "test/point-layout.test.js"],
+    "point-layout": ["node", "--test", "--test-name-pattern=point-layout", "test/point-layout-local.test.js"],
+    "point-layout-integration": ["node", "--test", "--test-name-pattern=point-layout", "test/point-layout.test.js"],
     "text-layer": ["node", "--test", "--test-name-pattern=text-layer", "test/text-layer.test.js"],
     "text-variant": ["node", "--test", "--test-name-pattern=text-variant", "test/text-variant.test.js"],
     "comp-render": ["node", "--test", "--test-name-pattern=comp-render", "test/comp-render.test.js"],
@@ -1880,6 +1888,9 @@
       "kind": "integration"
     },
     "point-layout": {
+      "kind": "component"
+    },
+    "point-layout-integration": {
       "kind": "integration"
     },
     "text-layer": {

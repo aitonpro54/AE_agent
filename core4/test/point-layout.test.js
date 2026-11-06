@@ -4,8 +4,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { harness } = require('./fixtures/manual-http-runtime');
 const { layoutEnvironment } = require('./fixtures/point-layout-ae');
-const { buildPackage, verifyPackage } = require('../tools/package-installable');
-const { hash, canonical } = require('../protocol/json');
 
 const moduleId = 'titles-point-layout';
 const frame = { left: 70, top: 40, width: 230, height: 160 };
@@ -115,19 +113,4 @@ test('point-layout: measurement failure restores the original and fences the unc
   assert.equal(h.state.layout.counts.applyText, 0);
   assert.equal(h.broker.ledger.unresolved()[0].state, 'UNKNOWN');
   assert.equal(h.peer.status().storeClosed, true);
-});
-
-test('point-layout: no package closure in regular compositions, exact opt-in composition rejects a missing proof file', () => {
-  for (const mode of ['readonly', 'manual']) {
-    const pkg = buildPackage(undefined, mode);
-    assert.ok(!Object.keys(pkg.files).some(name => /point-layout/.test(name)));
-  }
-  const pkg = buildPackage(undefined, 'manual-layout', { runtimeModel: 'owner' });
-  assert.ok(Object.hasOwn(pkg.files, 'modules/titles-current-target/executor.jsx'));
-  const damaged = structuredClone(pkg);
-  const file = 'runtime/point-layout-proof.js';
-  delete damaged.files[file]; delete damaged.release.hashes[file];
-  damaged.packageHash = hash(damaged.release);
-  assert.throws(() => verifyPackage(damaged), /composition_optional_closure/);
-  assert.equal(hash(canonical(pkg.release)), pkg.packageHash);
 });
