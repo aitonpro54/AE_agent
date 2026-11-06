@@ -32,7 +32,7 @@ function verifyOwnerInstallation(descriptor) {
   if (fs.realpathSync(path.resolve(__dirname, '..')) !== d.releaseDir) fail('installation_entry_root_mismatch');
   const manifestFile = path.join(d.releaseDir, 'release.json'); plain(manifestFile);
   const manifestBytes = fs.readFileSync(manifestFile), release = JSON.parse(manifestBytes);
-  if (canonical(release) !== manifestBytes.toString('utf8') || hash(manifestBytes) !== d.packageHash || release.version !== '4.1.0' ||
+  if (canonical(release) !== manifestBytes.toString('utf8') || hash(manifestBytes) !== d.packageHash || release.version !== '4.1.1' ||
       ![1, 2].includes(release.format) || Object.keys(release).sort().join(',') !== 'format,hashes,version' ||
       !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype ||
       !Object.hasOwn(release.hashes, 'runtime/owner-entry.js') || !Object.hasOwn(release.hashes, 'runtime/stdio-entry.js')) fail('owner_release_schema');

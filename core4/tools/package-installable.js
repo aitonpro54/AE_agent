@@ -47,7 +47,7 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
     const full = path.resolve(root, relative); if (fs.realpathSync(full) !== full) fail('package_symlink');
     const bytes = fs.readFileSync(full); hashes[relative] = hash(bytes); files[relative] = bytes.toString('base64');
   }
-  const release = { version: '4.1.0', format: 2, hashes };
+  const release = { version: '4.1.1', format: 2, hashes };
   const original = JSON.parse(fs.readFileSync(path.join(root, 'config/catalog.json'), 'utf8'));
   const parts = withLayout ? [spec.compositions.manual, spec.compositions['manual-layout']] : [spec.compositions[selector]];
   if (withText) parts.push(spec.compositions['manual-titles']);
@@ -69,7 +69,7 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
   return verifyPackage({ packageHash: hash(release), release, files });
 }
 function verifyPackage(pkg) {
-  if (pkg.packageHash !== hash(pkg.release) || (pkg.release.version !== '4.0.0' && !(pkg.release.version === '4.1.0' && pkg.release.format === 2)) || canonical(Object.keys(pkg.files).sort()) !== canonical(Object.keys(pkg.release.hashes).sort())) fail('package_integrity');
+  if (pkg.packageHash !== hash(pkg.release) || (pkg.release.version !== '4.0.0' && !(['4.1.0', '4.1.1'].includes(pkg.release.version) && pkg.release.format === 2)) || canonical(Object.keys(pkg.files).sort()) !== canonical(Object.keys(pkg.release.hashes).sort())) fail('package_integrity');
   for (const [relative, data] of Object.entries(pkg.files)) {
     if (!/^[a-zA-Z0-9_./-]+$/.test(relative) || relative.split('/').includes('..') || path.isAbsolute(relative) || /^(test|experiments|node_modules|\.git|logs|state|tools)\//.test(relative) || hash(Buffer.from(data, 'base64')) !== pkg.release.hashes[relative]) fail('package_integrity');
   }

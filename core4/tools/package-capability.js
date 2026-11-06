@@ -116,7 +116,7 @@ function composeCapability(base, bundle, admissionBytes, { basePin, capabilityPi
   verifyPackage(base);
   const readBase = file => Buffer.from(base.files[file], 'base64');
   const selected = deriveComposition(base.release, readBase);
-  if (base.release.version !== '4.1.0' || selected.composition?.id !== 'manual' ||
+  if (!['4.1.0', '4.1.1'].includes(base.release.version) || selected.composition?.id !== 'manual' ||
       runtimeBinding(base.release, readBase).runtimeModel !== 'owner') fail('capability_base_composition');
   const { artifact, contract } = verifyCapability(bundle, capabilityPin);
   if (!Buffer.isBuffer(admissionBytes) || admissionBytes.length === 0 || admissionBytes.length > 16384 ||

@@ -1,7 +1,7 @@
 # AE Agent Core
 
-Текущая основная версия Core — **4.1.0**. Ветка `codex/ae-agent-core-4.1.0`,
-тег `v4.1.0`, имя панели в After Effects — **AE Agent Core 4.1.0**.
+Текущая основная версия Core — **4.1.1**. Ветка `codex/ae-agent-core-4.1.1`,
+тег `v4.1.1`, имя панели в After Effects — **AE Agent Core 4.1.1**.
 Упаковка и команды проверки описаны в [README Core4](core4/README.md).
 
 Постоянное архитектурное требование проекта — [переносимость десктоп ↔ MSI](docs/portability.md)
