@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { hash, canonical, fail } = require('../protocol/json');
-const { deriveComposition, registrySource } = require('../runtime/stdio-entry.js');
+const { deriveComposition, compositionPaths, registrySource } = require('../runtime/stdio-entry.js');
 const OWNER_V3_FILES = Object.freeze(['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js']);
 const OWNER_FILES = Object.freeze([...OWNER_V3_FILES, 'runtime/start-over-inspection.js', 'runtime/start-over-process.js', 'runtime/start-over-state.js', 'runtime/start-over-barrier.js', 'runtime/start-over-archive.js', 'runtime/start-over-finisher.js', 'runtime/work-session.js', 'runtime/start-over-panel-control.js', 'runtime/start-over-driver.js', 'runtime/owner-launch.js']);
 function runtimeBinding(release, read) {
@@ -20,25 +20,41 @@ function runtimeBinding(release, read) {
   return Object.freeze(contract);
 }
 function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual', options = {}) {
-  if (!['readonly', 'manual', 'manual-layout', 'manual-titles', 'manual-titles-variants'].includes(selector)) fail('composition_selector');
   if (!options || Object.getPrototypeOf(options) !== Object.prototype || Object.keys(options).some(key => key !== 'runtimeModel')) fail('runtime_selector');
   const runtimeModel = options.runtimeModel ?? 'stdio'; if (!['stdio', 'owner'].includes(runtimeModel)) fail('runtime_selector');
-  const spec = JSON.parse(fs.readFileSync(path.join(root, 'runtime/source-package.json'), 'utf8'));
-  const optional = selector === 'readonly' ? [] : [spec.optional.manual];
-  const withVariants = selector === 'manual-titles-variants';
-  const withText = withVariants || selector === 'manual-titles';
-  const withLayout = withText || selector === 'manual-layout';
-  if (withLayout) optional.push(spec.optional.layout);
-  if (withText) optional.push(spec.optional.text);
-  if (withVariants) optional.push(spec.optional.variants);
-  const paths = new Set([...spec.files, ...optional.flatMap(part => part.files), ...(runtimeModel === 'owner' ? spec.optional.owner.files : [])]);
-  for (const relative of [...spec.artifactClosures, ...optional.flatMap(part => part.artifactClosures)]) {
-    paths.add(relative);
-    const artifact = JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8'));
-    for (const file of Object.keys(artifact.hashes)) {
-      const location = relative.startsWith('modules/') || relative.startsWith('plan-engine/') ? path.posix.join(path.posix.dirname(relative), file) : file;
-      if (hash(fs.readFileSync(path.join(root, location))) !== artifact.hashes[file]) fail('package_artifact_mismatch');
-      paths.add(location);
+  const read = file => fs.readFileSync(path.join(root, file));
+  const spec = JSON.parse(read('runtime/source-package.json'));
+  if (spec.version !== 3) fail('composition_selector');
+  function compositionPart(key) {
+    if (typeof key !== 'string' || !/^[a-z][a-z0-9-]*$/.test(key)) fail('composition_selector');
+    if (Object.hasOwn(spec.compositions, key)) return spec.compositions[key];
+    const file = path.resolve(root, 'config/compositions', key + '.json');
+    if (!fs.existsSync(file)) fail('composition_selector');
+    if (fs.realpathSync(file) !== file) fail('package_symlink');
+    const part = JSON.parse(fs.readFileSync(file));
+    if (!part.bundle || Object.hasOwn(part, 'packagePart')) fail('composition_selector');
+    return part;
+  }
+  const lineage = new Set();
+  const parts = [];
+  for (let key = selector; key !== null;) {
+    if (lineage.has(key)) fail('composition_selector');
+    const part = compositionPart(key);
+    lineage.add(key); parts.unshift(part); key = part.parent;
+  }
+  const optional = parts.flatMap(part => part.packagePart === null ? [] : [part.bundle ?? spec.optional[part.packagePart]]);
+  const filesInPolicy = [...spec.files, ...optional.flatMap(part => part.files), ...(runtimeModel === 'owner' ? spec.optional.owner.files : [])];
+  const closures = [...spec.artifactClosures, ...optional.flatMap(part => part.artifactClosures)];
+  const artifacts = new Map();
+  const paths = compositionPaths(filesInPolicy, closures, relative => {
+    const artifact = JSON.parse(read(relative));
+    artifacts.set(relative, artifact);
+    return artifact;
+  });
+  for (const [relative, artifact] of artifacts) {
+    for (const [file, pin] of Object.entries(artifact.hashes)) {
+      const location = /^(modules|plan-engine)\//.test(relative) ? path.posix.join(path.posix.dirname(relative), file) : file;
+      if (hash(read(location)) !== pin) fail('package_artifact_mismatch');
     }
   }
   const hashes = {}, files = {};
@@ -49,11 +65,9 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
   }
   const release = { version: '4.1.1', format: 2, hashes };
   const original = JSON.parse(fs.readFileSync(path.join(root, 'config/catalog.json'), 'utf8'));
-  const parts = withLayout ? [spec.compositions.manual, spec.compositions['manual-layout']] : [spec.compositions[selector]];
-  if (withText) parts.push(spec.compositions['manual-titles']);
-  if (withVariants) parts.push(spec.compositions[selector]);
   const modules = parts.flatMap(part => part.modules), assets = parts.flatMap(part => part.assets);
-  for (const moduleId of modules.filter(id => ['titles-point-layout', 'text-layer', 'text-variant', 'comp-render'].includes(id))) {
+  const profiles = Object.assign({}, ...parts.map(part => part.profiles));
+  for (const moduleId of modules.filter(id => !original.modules.some(entry => entry.id === id))) {
     const modulePath = 'modules/' + moduleId;
     const manifest = JSON.parse(Buffer.from(files[modulePath + '/artifact.json'], 'base64'));
     original.modules.push({ id: moduleId, version: manifest.version, path: modulePath, admission: 'config/admissions/' + moduleId + '.json' });
@@ -61,9 +75,12 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
   }
   if (modules.some(id => original.modules.filter(m => m.id === id).length !== 1)) fail('composition_catalog');
   const catalog = { catalogRevision: original.catalogRevision, modules: modules.map(id => original.modules.find(m => m.id === id)), engine: selector === 'readonly' ? null : original.engine };
-  const composition = { version: 1, id: selector, modules, engine: catalog.engine, assets };
+  const composition = { version: 2, id: selector, modules, engine: catalog.engine, assets };
   const add = (file, source) => { const bytes = typeof source === 'string' ? source : canonical(source); files[file] = Buffer.from(bytes).toString('base64'); hashes[file] = hash(bytes); };
   add('config/catalog.json', catalog); add('runtime/composition.json', composition);
+  add('runtime/composition-policy.json', { id: selector, modules, assets, profiles, files: filesInPolicy, closures });
+  // Reserve the generated registry slot before checking the declared closure.
+  add('cep/jsx/registry.jsx', '');
   const selected = deriveComposition(release, file => Buffer.from(files[file], 'base64'));
   add('cep/jsx/registry.jsx', registrySource(selected.assets, Buffer.from(files['runtime/host/json-codec.jsx'], 'base64').toString('utf8')));
   return verifyPackage({ packageHash: hash(release), release, files });

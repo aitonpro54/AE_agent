@@ -6,7 +6,8 @@ const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const { build } = require('../modules/comp-render/implementation');
-const { compRenderProof, validateCompRenderCompletion } = require('../runtime/comp-render-proof');
+const { createRenderProof, validateRenderResult } = require('../runtime/comp-render-proof');
+const { proof: compRenderProof, validateResult: validateCompRenderCompletion } = createRenderProof(require('../modules/comp-render/completion.json'));
 
 const jsx = fs.readFileSync(path.join(__dirname, '../modules/comp-render/executor.jsx'), 'utf8');
 function fixture(t, { missing = false, template = true } = {}) {
@@ -131,4 +132,13 @@ test('comp-render: DONE allows AE to resolve only the staged filename placeholde
   env.run();
   env.finish(3, 'wrong.mp4');
   assert.throws(env.read, /comp_render_job_binding/);
+});
+
+test('comp-render: a forged result and an unsafe host filename fail independently', t => {
+  const env = fixture(t);
+  const { snapshot } = env.run();
+  const { file, fileName, activeLayerId, controlledLayerIds, startFrame, frameCount, renderTemplate, outputTemplate } = snapshot.job;
+  const input = { mode: 'stage', compId: 7, fileName, activeLayerId, controlledLayerIds, startFrame, frameCount, renderTemplate, outputTemplate };
+  assert.throws(() => validateRenderResult({ input, before: env.original }, { ...snapshot, job: { ...snapshot.job, file: file + '.forged' } }, { file, format: 'H.264' }), /comp_render_stage_result/);
+  assert.throws(() => compRenderProof.beforeReservation({ input: { ...input, projectId: path.join(path.dirname(path.dirname(file)), 'own.aep'), fileName: '../unsafe.mp4' }, before: env.original }), /comp_render_output$/);
 });

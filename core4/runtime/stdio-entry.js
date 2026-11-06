@@ -13,7 +13,73 @@ function canonical(value) {
   return '{' + Object.keys(value).sort().map(k => JSON.stringify(k) + ':' + canonical(value[k])).join(',') + '}';
 }
 function hash(value) { return crypto.createHash('sha256').update(typeof value === 'string' || Buffer.isBuffer(value) ? value : canonical(value)).digest('hex'); }
-function exactKeys(value, keys) { if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).sort().join(',') !== [...keys].sort().join(',')) fail('composition_schema'); }
+function exactKeys(value, keys) { if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).length !== keys.length || keys.some(key => !Object.hasOwn(value, key))) fail('composition_schema'); }
+const POLICY_FILE = 'runtime/composition-policy.json';
+const RESULT_PROFILES = Object.freeze({
+  'manual-text-v1': null,
+  'manual-point-layout-v1': 'runtime/point-layout-proof.js',
+  'owned-text-layer-v1': 'runtime/text-layer-proof.js',
+  'owned-text-variant-v1': 'runtime/text-variant-proof.js',
+  'owned-comp-render-v1': 'runtime/comp-render-proof.js',
+});
+const INSPECTION_ASSET = { assetKey: 'project-inspection-v1', moduleId: 'project-inspection', path: 'modules/project-inspection', admission: 'modules/project-inspection/artifact.json', policy: 'read-only-current-observation-v1', phases: ['inspect'] };
+function compositionPaths(files, closures, readArtifact) {
+  const safe = file => typeof file === 'string' && file !== 'release.json' && /^[A-Za-z0-9_-]+(?:[./][A-Za-z0-9_-]+)*$/.test(file) && !/^(test|experiments|node_modules|logs|state|tools)\//.test(file);
+  if (!Array.isArray(files) || !files.every(safe) || !Array.isArray(closures) || !closures.every(safe)) fail('composition_paths');
+  const paths = new Set(files);
+  for (const relative of closures) {
+    paths.add(relative);
+    const artifact = readArtifact(relative);
+    const local = /^(modules|plan-engine)\//.test(relative);
+    for (const file of Object.keys(artifact.hashes)) {
+      if (!safe(file) || local && !/^[A-Za-z0-9_-]+\.(js|json|jsx)$/.test(file)) fail('composition_paths');
+      paths.add(local ? path.posix.join(path.posix.dirname(relative), file) : file);
+    }
+  }
+  return paths;
+}
+function declarativeProfiles(composition, release, json, checked) {
+  const policy = json(POLICY_FILE);
+  exactKeys(policy, ['id', 'modules', 'assets', 'profiles', 'files', 'closures']);
+  if (policy.id !== composition.id || canonical(policy.modules) !== canonical(composition.modules) || canonical(policy.assets) !== canonical(composition.assets)) fail('composition_assets');
+  const paths = compositionPaths(policy.files, policy.closures, json);
+  for (const file of ['config/catalog.json', 'runtime/composition.json', POLICY_FILE, 'cep/jsx/registry.jsx']) paths.add(file);
+  if (canonical([...paths].sort()) !== canonical(Object.keys(release.hashes).sort())) fail('composition_optional_closure');
+  if (canonical(composition.assets[0]) !== canonical(INSPECTION_ASSET) || new Set(composition.modules).size !== composition.modules.length ||
+      !composition.modules.every(id => typeof id === 'string' && /^[a-z][a-z0-9-]*$/.test(id))) fail('composition_assets');
+  const mutations = composition.assets.slice(1);
+  if (composition.id === 'readonly' ? mutations.length || composition.modules.length : !mutations.some(a => a.moduleId === 'titles-current-target')) fail('composition_assets');
+  if (new Set(mutations.map(a => a.moduleId)).size !== mutations.length || new Set(composition.assets.map(a => a.assetKey)).size !== composition.assets.length) fail('composition_assets');
+  exactKeys(policy.profiles, mutations.map(a => a.moduleId));
+  const proofPaths = new Set();
+  for (const asset of mutations) {
+    exactKeys(asset, ['assetKey', 'moduleId', 'path', 'admission', 'policy', 'phases']);
+    const id = asset.moduleId, profile = policy.profiles[id];
+    exactKeys(profile, ['operationId', 'resultProfile']);
+    if (!composition.modules.includes(id) || asset.assetKey !== id + '-v1' || asset.path !== 'modules/' + id || asset.admission !== 'config/admissions/' + id + '.json' ||
+        asset.policy !== 'current-matching-target-after-local-confirmation-v1' || canonical(asset.phases) !== '["inspect","mutate","verify"]' ||
+        typeof profile.resultProfile !== 'string' || !Object.hasOwn(RESULT_PROFILES, profile.resultProfile) ||
+        (profile.resultProfile === 'manual-text-v1') !== (id === 'titles-current-target')) fail('composition_not_admitted');
+    const proof = RESULT_PROFILES[profile.resultProfile];
+    if (proof) { checked(proof); proofPaths.add(proof); }
+  }
+  const modules = new Set(['project-inspection', ...composition.modules]);
+  for (const file of paths) {
+    if (file.startsWith('modules/') && !modules.has(file.split('/')[1]) ||
+        file.startsWith('config/admissions/') && !composition.modules.some(id => file === 'config/admissions/' + id + '.json') ||
+        Object.values(RESULT_PROFILES).includes(file) && !proofPaths.has(file)) fail('composition_optional_closure');
+  }
+  if (composition.id === 'readonly' && [...paths].some(file => /^(plan-engine\/|runtime\/(manual-policy|windows-reservation-provider)\.js$)/.test(file))) fail('composition_optional_closure');
+  return policy.profiles;
+}
+// Compatibility table for previously issued composition-v1 packages.
+const LEGACY_PROFILES = Object.freeze({
+  'titles-current-target': { operationId: 'set-current-text', resultProfile: 'manual-text-v1' },
+  'titles-point-layout': { operationId: 'measure-or-apply-point-layout', resultProfile: 'manual-point-layout-v1' },
+  'text-layer': { operationId: 'write-point-text', resultProfile: 'owned-text-layer-v1' },
+  'text-variant': { operationId: 'stage-text-variant', resultProfile: 'owned-text-variant-v1' },
+  'comp-render': { operationId: 'render-text-variant', resultProfile: 'owned-comp-render-v1' },
+});
 // Builtin-only release interpretation. Callers verify the COMPLETE tree first.
 // These two reviewed adapters are closed policies, never names of executable imports.
 function deriveComposition(release, read) {
@@ -21,7 +87,7 @@ function deriveComposition(release, read) {
   const checked = file => { if (!Object.hasOwn(release.hashes, file)) fail('composition_unhashed_path'); const bytes = read(file); if (hash(bytes) !== release.hashes[file]) fail('composition_bytes'); return bytes; };
   const json = file => JSON.parse(checked(file));
   if (release.format === 1) {
-    if (Object.hasOwn(release.hashes, 'runtime/composition.json')) fail('composition_downgrade');
+    if (Object.hasOwn(release.hashes, 'runtime/composition.json') || Object.hasOwn(release.hashes, POLICY_FILE)) fail('composition_downgrade');
     if (!Object.hasOwn(release.hashes, 'runtime/profiles.json') || !Object.hasOwn(release.hashes, 'runtime/source-package.json')) fail('composition_downgrade');
     const inspection = json('modules/project-inspection/artifact.json');
     const manual = json('config/admissions/titles-current-target.json');
@@ -29,15 +95,12 @@ function deriveComposition(release, read) {
   }
   if (!Object.hasOwn(release.hashes, 'runtime/composition.json')) fail('composition_required');
   const composition = json('runtime/composition.json'); exactKeys(composition, ['version', 'id', 'modules', 'engine', 'assets']);
-  if (composition.version !== 1 || !['readonly', 'manual', 'manual-layout', 'manual-titles', 'manual-titles-variants'].includes(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
+  if (![1, 2].includes(composition.version) || (composition.version === 2) !== Object.hasOwn(release.hashes, POLICY_FILE) ||
+      typeof composition.id !== 'string' || !/^[a-z][a-z0-9-]*$/.test(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
   const catalog = json('config/catalog.json'); exactKeys(catalog, ['catalogRevision', 'modules', 'engine']);
-  const expectedIds = composition.id === 'readonly' ? [] : ['photo-placeholder', 'titles', 'titles-current-target'];
-  const withVariants = composition.id === 'manual-titles-variants';
-  const withText = withVariants || composition.id === 'manual-titles', withLayout = withText || composition.id === 'manual-layout';
-  if (withLayout) expectedIds.push('titles-point-layout');
-  if (withText) expectedIds.push('text-layer');
-  if (withVariants) expectedIds.push('text-variant', 'comp-render');
-  if (canonical(composition.modules) !== canonical(expectedIds) || !Array.isArray(catalog.modules) || canonical(catalog.modules.map(m => m.id)) !== canonical(expectedIds) || canonical(catalog.engine) !== canonical(composition.engine) || (composition.id === 'readonly' ? composition.engine !== null : !composition.engine || composition.engine.path !== 'plan-engine')) fail('composition_catalog');
+  const profiles = composition.version === 2 ? declarativeProfiles(composition, release, json, checked) : LEGACY_PROFILES;
+  if (composition.version === 1) validateLegacyComposition(composition, release, checked);
+  if (!Array.isArray(catalog.modules) || canonical(catalog.modules.map(m => m.id)) !== canonical(composition.modules) || canonical(catalog.engine) !== canonical(composition.engine) || (composition.id === 'readonly' ? composition.engine !== null : !composition.engine || composition.engine.path !== 'plan-engine')) fail('composition_catalog');
   function admitted(entry) {
     exactKeys(entry, ['id', 'version', 'path', 'admission']);
     if (entry.path !== 'modules/' + entry.id || entry.admission !== 'config/admissions/' + entry.id + '.json') fail('composition_catalog');
@@ -49,6 +112,38 @@ function deriveComposition(release, read) {
   }
   const selected = new Map(catalog.modules.map(entry => [entry.id, admitted(entry)]));
   if (composition.engine) { exactKeys(composition.engine, ['path', 'artifactHash']); const manifest = json('plan-engine/artifact.json'); if (hash(manifest) !== composition.engine.artifactHash) fail('composition_engine'); for (const [file, pin] of Object.entries(manifest.hashes)) if (!/^[A-Za-z0-9_-]+\.(js|json)$/.test(file) || hash(checked('plan-engine/' + file)) !== pin) fail('composition_engine'); }
+  const assets = composition.assets.map(asset => {
+    let value = selected.get(asset.moduleId);
+    if (asset.policy === 'read-only-current-observation-v1') {
+      const contract = json(asset.path + '/contract.json'), admission = json(asset.admission), executor = checked(asset.path + '/executor.jsx');
+      exactKeys(admission, ['moduleId', 'executionPolicy', 'executorHash', 'contractHash']);
+      if (admission.moduleId !== asset.moduleId || admission.executionPolicy !== asset.policy || admission.executorHash !== hash(executor) || admission.contractHash !== hash(contract)) fail('composition_not_admitted');
+      value = { contract, admission, executor };
+    }
+    if (!value) fail('composition_not_admitted');
+    const binding = Object.hasOwn(profiles, asset.moduleId) ? profiles[asset.moduleId] : null;
+    if (binding && (value.contract.operationId !== binding.operationId || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
+    let proofConfig;
+    if (composition.version === 2 && binding?.resultProfile === 'owned-comp-render-v1') {
+      if (!Object.hasOwn(value.manifest.hashes, 'completion.json')) fail('composition_artifact');
+      proofConfig = json(asset.path + '/completion.json');
+      exactKeys(proofConfig, ['directory', 'format']);
+      if (typeof proofConfig.directory !== 'string' || !/^[a-z][a-z0-9-]{0,63}$/.test(proofConfig.directory) || proofConfig.format !== 'H.264') fail('composition_not_admitted');
+    }
+    return { ...asset, ...value, executorHash: value.admission.executorHash, ...(binding ? { resultProfile: binding.resultProfile } : {}), ...(proofConfig ? { proofConfig } : {}) };
+  });
+  const startOverSupported = Object.hasOwn(release.hashes, 'runtime/owner-contract.json') && json('runtime/owner-contract.json').version === 4;
+  return { composition, assets, ...(startOverSupported ? { startOverSupported: true } : {}) };
+}
+function validateLegacyComposition(composition, release, checked) {
+  if (!['readonly', 'manual', 'manual-layout', 'manual-titles', 'manual-titles-variants'].includes(composition.id)) fail('composition_schema');
+  const expectedIds = composition.id === 'readonly' ? [] : ['photo-placeholder', 'titles', 'titles-current-target'];
+  const withVariants = composition.id === 'manual-titles-variants';
+  const withText = withVariants || composition.id === 'manual-titles', withLayout = withText || composition.id === 'manual-layout';
+  if (withLayout) expectedIds.push('titles-point-layout');
+  if (withText) expectedIds.push('text-layer');
+  if (withVariants) expectedIds.push('text-variant', 'comp-render');
+  if (canonical(composition.modules) !== canonical(expectedIds)) fail('composition_catalog');
   const expectedAssets = [{ assetKey: 'project-inspection-v1', moduleId: 'project-inspection', path: 'modules/project-inspection', admission: 'modules/project-inspection/artifact.json', policy: 'read-only-current-observation-v1', phases: ['inspect'] }];
   if (composition.id !== 'readonly') expectedAssets.push({ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', path: 'modules/titles-current-target', admission: 'config/admissions/titles-current-target.json', policy: 'current-matching-target-after-local-confirmation-v1', phases: ['inspect', 'mutate', 'verify'] });
   if (withLayout) {
@@ -66,24 +161,8 @@ function deriveComposition(release, read) {
     checked('runtime/comp-render-proof.js');
   } else if (Object.keys(release.hashes).some(file => /^(?:runtime\/(?:text-variant|comp-render)-proof\.js$|modules\/(?:text-variant|comp-render)\/|config\/admissions\/(?:text-variant|comp-render)\.json$)/.test(file))) fail('composition_optional_closure');
   if (canonical(composition.assets) !== canonical(expectedAssets)) fail('composition_assets');
-  const assets = composition.assets.map(asset => {
-    let value = selected.get(asset.moduleId);
-    if (asset.policy === 'read-only-current-observation-v1') {
-      const contract = json(asset.path + '/contract.json'), admission = json(asset.admission), executor = checked(asset.path + '/executor.jsx');
-      exactKeys(admission, ['moduleId', 'executionPolicy', 'executorHash', 'contractHash']);
-      if (admission.moduleId !== asset.moduleId || admission.executionPolicy !== asset.policy || admission.executorHash !== hash(executor) || admission.contractHash !== hash(contract)) fail('composition_not_admitted');
-      value = { contract, admission, executor };
-    }
-    if (!value || asset.moduleId === 'titles-point-layout' && (value.contract.operationId !== 'measure-or-apply-point-layout' || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
-    if (asset.moduleId === 'text-layer' && (value.contract.operationId !== 'write-point-text' || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
-    if (asset.moduleId === 'text-variant' && (value.contract.operationId !== 'stage-text-variant' || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
-    if (asset.moduleId === 'comp-render' && (value.contract.operationId !== 'render-text-variant' || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
-    return { ...asset, ...value, executorHash: value.admission.executorHash };
-  });
   // No optional runtime code is shipped in the standalone inspection composition.
   if (composition.id === 'readonly' && Object.keys(release.hashes).some(file => /^(plan-engine\/|modules\/(?!project-inspection\/)|config\/admissions\/|runtime\/(manual-policy|windows-reservation-provider)\.js$)/.test(file))) fail('composition_optional_closure');
-  const startOverSupported = Object.hasOwn(release.hashes, 'runtime/owner-contract.json') && json('runtime/owner-contract.json').version === 4;
-  return { composition, assets, ...(startOverSupported ? { startOverSupported: true } : {}) };
 }
 function registrySource(assets, codecSource) {
   const declarations = [], entries = assets.map((asset, index) => {
@@ -114,7 +193,7 @@ function verifyRelease(directory, release) {
   }
   visit(root, ''); if (expectedFiles.size || expectedDirs.size) fail('release_tree_mismatch');
   if (release.format !== 1 && release.format !== 2) fail('release_format');
-  if (release.format === 1) { if (Object.hasOwn(release.hashes, 'runtime/composition.json')) fail('composition_downgrade'); return; }
+  if (release.format === 1) { if (Object.hasOwn(release.hashes, 'runtime/composition.json') || Object.hasOwn(release.hashes, POLICY_FILE)) fail('composition_downgrade'); return; }
   const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
   if (fs.readFileSync(path.join(root, 'cep/jsx/registry.jsx'), 'utf8') !== registrySource(selected.assets, fs.readFileSync(path.join(root, 'runtime/host/json-codec.jsx'), 'utf8'))) fail('composition_registry');
 }
@@ -168,6 +247,8 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   if (mode === 'stdio') startupGate = fs.openSync(installGate, 'wx');
   if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');
   const release = JSON.parse(fs.readFileSync(path.join(root, 'release.json'), 'utf8'));
+  const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
+  if (selected.composition?.version !== 2) fail('runtime_composition_required');
   const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js', 'runtime/start-over-inspection.js', 'runtime/start-over-process.js', 'runtime/start-over-state.js', 'runtime/start-over-barrier.js', 'runtime/start-over-archive.js', 'runtime/start-over-finisher.js', 'runtime/work-session.js', 'runtime/start-over-panel-control.js', 'runtime/start-over-driver.js', 'runtime/owner-launch.js'];
   const ownerRuntime = Object.hasOwn(release.hashes, 'runtime/owner-contract.json');
   if (ownerRuntime) {
@@ -295,44 +376,31 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const { createHttpPeer } = require('../integrations/cep/http-peer.js');
   const invocationContext = mode === 'owner' ? new (require('node:async_hooks').AsyncLocalStorage)() : null;
   const completedReadErrors = new WeakMap();
-  const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
-  if (selected.legacy) fail('runtime_composition_required');
   const inspection = selected.assets.find(a => a.policy === 'read-only-current-observation-v1');
   const { contract, admission } = inspection;
   const profile = { id: inspection.moduleId, executionPolicy: inspection.policy };
   const asset = { assetKey: inspection.assetKey, executorHash: inspection.executorHash };
-  const manualAsset = selected.assets.find(a => a.assetKey === 'titles-current-target-v1');
-  const layoutAsset = selected.assets.find(a => a.assetKey === 'titles-point-layout-v1');
-  const textAsset = selected.assets.find(a => a.assetKey === 'text-layer-v1');
-  const variantAsset = selected.assets.find(a => a.assetKey === 'text-variant-v1');
-  const renderAsset = selected.assets.find(a => a.assetKey === 'comp-render-v1');
+  const mutationAssets = selected.assets.filter(a => a.resultProfile);
+  const manualAsset = mutationAssets.find(a => a.resultProfile === 'manual-text-v1');
   let provider, manual, privateEmbedding;
   if (manualAsset) {
     const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
     const { createManualPolicy } = require('./manual-policy.js');
     provider = createWindowsReservationProvider({ installation, getBroker: () => broker, getPeer: () => peer });
-    let layout;
-    if (layoutAsset) {
-      const { createPointLayoutProof } = require('./point-layout-proof.js');
-      layout = { pin: hash(layoutAsset.manifest), contract: layoutAsset.contract, admission: layoutAsset.admission,
-        proof: createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
-    }
-    const additional = [];
-    if (textAsset) {
-      const { validateTextLayerCompletion } = require('./text-layer-proof.js');
-      additional.push({ pin: hash(textAsset.manifest), contract: textAsset.contract, admission: textAsset.admission, validateResult: validateTextLayerCompletion });
-    }
-    if (variantAsset) {
-      const { validateTextVariantCompletion } = require('./text-variant-proof.js');
-      additional.push({ pin: hash(variantAsset.manifest), contract: variantAsset.contract, admission: variantAsset.admission, validateResult: validateTextVariantCompletion });
-    }
-    if (renderAsset) {
-      const { compRenderProof, validateCompRenderCompletion } = require('./comp-render-proof.js');
-      additional.push({ pin: hash(renderAsset.manifest), contract: renderAsset.contract, admission: renderAsset.admission,
-        proof: compRenderProof, validateResult: validateCompRenderCompletion });
-    }
-    manual = createManualPolicy({ selected: { pin: hash(manualAsset.manifest), contract: manualAsset.contract, admission: manualAsset.admission }, layout, additional, provider, installation, getPeer: () => peer });
-    const transport = { identity: hash({ packageHash: installation.packageHash, manualAdmission: manualAsset.admission, ...(layoutAsset ? { layoutAdmission: layoutAsset.admission } : {}), ...(textAsset ? { textAdmission: textAsset.admission } : {}), ...(variantAsset ? { variantAdmission: variantAsset.admission } : {}), ...(renderAsset ? { renderAdmission: renderAsset.admission } : {}) }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
+    const profileFor = item => {
+      const binding = { pin: hash(item.manifest), contract: item.contract, admission: item.admission };
+      switch (item.resultProfile) {
+        case 'manual-text-v1': return binding;
+        case 'manual-point-layout-v1': return { ...binding, proof: require('./point-layout-proof.js').createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
+        case 'owned-text-layer-v1': return { ...binding, validateResult: require('./text-layer-proof.js').validateTextLayerCompletion };
+        case 'owned-text-variant-v1': return { ...binding, validateResult: require('./text-variant-proof.js').validateTextVariantCompletion };
+        case 'owned-comp-render-v1': return { ...binding, ...require('./comp-render-proof.js').createRenderProof(item.proofConfig) };
+        default: fail('composition_not_admitted');
+      }
+    };
+    manual = createManualPolicy({ selected: profileFor(manualAsset), additional: mutationAssets.filter(a => a !== manualAsset).map(profileFor), provider, installation, getPeer: () => peer });
+    const admissions = Object.fromEntries(mutationAssets.map(a => [a.moduleId, a.admission]));
+    const transport = { identity: hash({ packageHash: installation.packageHash, admissions }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
     privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };
   }
   broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, ...(ownerLifecycle ? { stateLockToken: ownerLifecycle.brokerToken } : {}), ...(privateEmbedding ? { privateEmbedding } : {}) });
@@ -342,11 +410,8 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (broker.ledger.corrupt) fail('ledger_corrupt');
     if (broker.ledger.unresolved().some(c => c.commandId !== command?.commandId)) fail('controller_unresolved');
   };
-  const resultProfiles = { 'text-variant-v1': 'owned-text-variant-v1', 'text-layer-v1': 'owned-text-layer-v1',
-    'titles-point-layout-v1': 'manual-point-layout-v1', 'titles-current-target-v1': 'manual-text-v1', 'comp-render-v1': 'owned-comp-render-v1' };
-  const additionalAssets = [manualAsset, layoutAsset, textAsset, variantAsset, renderAsset].filter(Boolean).map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
-    operationId: item.contract.operationId, executorHash: item.executorHash,
-    resultProfile: resultProfiles[item.assetKey] }));
+  const additionalAssets = mutationAssets.map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
+    operationId: item.contract.operationId, executorHash: item.executorHash, resultProfile: item.resultProfile }));
   peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets, timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');
@@ -414,7 +479,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
 }
 // Direct-main start imports the historical reader synchronously. Publish these
 // builtin verifiers first so its installation.js import sees initialized exports.
-module.exports = { start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, registrySource, installationConfig, PRODUCTION_TIMING };
+module.exports = { start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, compositionPaths, registrySource, installationConfig, PRODUCTION_TIMING };
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.length !== 2 || args[0] !== '--installation') { process.stderr.write('Explicit --installation ABSOLUTE_DESCRIPTOR required.\n'); process.exitCode = 2; }

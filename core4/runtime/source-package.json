@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "files": [
     "core/artifact.json",
     "worker.js",
@@ -68,21 +68,28 @@
       ]
     },
     "layout": {
-      "files": ["runtime/point-layout-proof.js", "config/admissions/titles-point-layout.json"],
-      "artifactClosures": ["modules/titles-point-layout/artifact.json"]
+      "files": [
+        "runtime/point-layout-proof.js",
+        "config/admissions/titles-point-layout.json"
+      ],
+      "artifactClosures": [
+        "modules/titles-point-layout/artifact.json"
+      ]
     },
     "text": {
-      "files": ["runtime/text-layer-proof.js", "config/admissions/text-layer.json"],
-      "artifactClosures": ["modules/text-layer/artifact.json"]
-    },
-    "variants": {
-      "files": ["runtime/text-variant-proof.js", "config/admissions/text-variant.json",
-        "runtime/comp-render-proof.js", "config/admissions/comp-render.json"],
-      "artifactClosures": ["modules/text-variant/artifact.json", "modules/comp-render/artifact.json"]
+      "files": [
+        "runtime/text-layer-proof.js",
+        "config/admissions/text-layer.json"
+      ],
+      "artifactClosures": [
+        "modules/text-layer/artifact.json"
+      ]
     }
   },
   "compositions": {
     "readonly": {
+      "parent": null,
+      "packagePart": null,
       "modules": [],
       "assets": [
         {
@@ -95,9 +102,12 @@
             "inspect"
           ]
         }
-      ]
+      ],
+      "profiles": {}
     },
     "manual": {
+      "parent": null,
+      "packagePart": "manual",
       "modules": [
         "photo-placeholder",
         "titles",
@@ -126,10 +136,20 @@
             "verify"
           ]
         }
-      ]
+      ],
+      "profiles": {
+        "titles-current-target": {
+          "operationId": "set-current-text",
+          "resultProfile": "manual-text-v1"
+        }
+      }
     },
     "manual-layout": {
-      "modules": ["titles-point-layout"],
+      "parent": "manual",
+      "packagePart": "layout",
+      "modules": [
+        "titles-point-layout"
+      ],
       "assets": [
         {
           "assetKey": "titles-point-layout-v1",
@@ -137,12 +157,26 @@
           "path": "modules/titles-point-layout",
           "admission": "config/admissions/titles-point-layout.json",
           "policy": "current-matching-target-after-local-confirmation-v1",
-          "phases": ["inspect", "mutate", "verify"]
+          "phases": [
+            "inspect",
+            "mutate",
+            "verify"
+          ]
         }
-      ]
+      ],
+      "profiles": {
+        "titles-point-layout": {
+          "operationId": "measure-or-apply-point-layout",
+          "resultProfile": "manual-point-layout-v1"
+        }
+      }
     },
     "manual-titles": {
-      "modules": ["text-layer"],
+      "parent": "manual-layout",
+      "packagePart": "text",
+      "modules": [
+        "text-layer"
+      ],
       "assets": [
         {
           "assetKey": "text-layer-v1",
@@ -150,30 +184,19 @@
           "path": "modules/text-layer",
           "admission": "config/admissions/text-layer.json",
           "policy": "current-matching-target-after-local-confirmation-v1",
-          "phases": ["inspect", "mutate", "verify"]
+          "phases": [
+            "inspect",
+            "mutate",
+            "verify"
+          ]
         }
-      ]
-    },
-    "manual-titles-variants": {
-      "modules": ["text-variant", "comp-render"],
-      "assets": [
-        {
-          "assetKey": "text-variant-v1",
-          "moduleId": "text-variant",
-          "path": "modules/text-variant",
-          "admission": "config/admissions/text-variant.json",
-          "policy": "current-matching-target-after-local-confirmation-v1",
-          "phases": ["inspect", "mutate", "verify"]
-        },
-        {
-          "assetKey": "comp-render-v1",
-          "moduleId": "comp-render",
-          "path": "modules/comp-render",
-          "admission": "config/admissions/comp-render.json",
-          "policy": "current-matching-target-after-local-confirmation-v1",
-          "phases": ["inspect", "mutate", "verify"]
+      ],
+      "profiles": {
+        "text-layer": {
+          "operationId": "write-point-text",
+          "resultProfile": "owned-text-layer-v1"
         }
-      ]
+      }
     }
   }
 }

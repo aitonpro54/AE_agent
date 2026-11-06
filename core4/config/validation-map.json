@@ -1,5 +1,8 @@
 {
   "owners": [
+    { "prefix": "core4/config/compositions/", "owner": "installed-composition", "checks": ["installed-composition", "package-location"] },
+    { "prefix": "core4/tools/check-package-location.js", "owner": "package-location", "checks": ["package-location"] },
+    { "prefix": "core4/test/package-location.test.js", "owner": "package-location", "checks": ["package-location"] },
     { "prefix": "core4/modules/text-layer/", "owner": "text-layer", "checks": ["text-layer"] },
     { "prefix": "core4/config/admissions/text-layer.json", "owner": "text-layer", "checks": ["text-layer"] },
     { "prefix": "core4/runtime/text-layer-proof.js", "owner": "text-layer", "checks": ["text-layer"] },
@@ -1097,11 +1100,12 @@
     }
   ],
   "checkDependencies": {
+    "package-location": ["tools/check-package-location.js", "tools/package-installable.js", "test/package-location.test.js", "package.json", "worker.js", "runtime/", "config/", "core/", "protocol/", "modules/", "plan-engine/", "integrations/", "cep/"],
     "start-over-driver": ["runtime/start-over-driver.js", "runtime/start-over-panel-control.js", "runtime/start-over-finisher.js", "runtime/start-over-barrier.js", "runtime/start-over-archive.js", "runtime/start-over-state.js", "runtime/start-over-inspection.js", "runtime/start-over-process.js", "runtime/owner-launch.js", "runtime/windows-owner-process.js", "runtime/client-ipc.js", "runtime/client-entry.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js", "core/", "protocol/", "test/fixtures/start-over-finisher.js", "test/fixtures/owner-lifecycle-fixture.js", "test/start-over-driver.test.js"],
     "start-over-panel-control": ["runtime/start-over-panel-control.js", "protocol/", "integrations/cep/peer-protocol.js", "test/start-over-panel-control.test.js"],
     "panel-start-over": ["cep/js/panel.js", "cep/js/poll-dispatcher.js", "runtime/start-over-panel-control.js", "runtime/stdio-entry.js", "integrations/cep/peer-protocol.js", "protocol/", "test/panel-start-over.test.js"],
-    "start-over-runtime": ["runtime/", "cep/", "core/", "protocol/", "modules/", "plan-engine/", "config/", "integrations/", "worker.js", "tools/install-core4.js", "tools/package-installable.js", "tools/package-standalone-installer.js", "tools/standalone-installer.js", "tools/operate-start-over.js", "tools/maintain-owner.js", "tools/check-boundaries.js", "test/start-over-runtime.test.js", "test/fixtures/start-over-runtime-preload.js"],
-    "start-over-operator": ["runtime/", "cep/", "core/", "protocol/", "modules/", "plan-engine/", "config/", "integrations/", "worker.js", "tools/install-core4.js", "tools/package-installable.js", "tools/package-standalone-installer.js", "tools/standalone-installer.js", "tools/operate-start-over.js", "tools/maintain-owner.js", "tools/check-boundaries.js", "test/start-over-operator.test.js"],
+    "start-over-runtime": ["runtime/", "cep/", "core/", "protocol/", "modules/", "plan-engine/", "config/", "integrations/", "worker.js", "tools/install-core4.js", "tools/package-installable.js", "config/compositions/", "tools/package-standalone-installer.js", "tools/standalone-installer.js", "tools/operate-start-over.js", "tools/maintain-owner.js", "tools/check-boundaries.js", "test/start-over-runtime.test.js", "test/fixtures/start-over-runtime-preload.js"],
+    "start-over-operator": ["runtime/", "cep/", "core/", "protocol/", "modules/", "plan-engine/", "config/", "integrations/", "worker.js", "tools/install-core4.js", "tools/package-installable.js", "config/compositions/", "tools/package-standalone-installer.js", "tools/standalone-installer.js", "tools/operate-start-over.js", "tools/maintain-owner.js", "tools/check-boundaries.js", "test/start-over-operator.test.js"],
     "work-session-owner": ["runtime/work-session.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "test/work-session-owner.test.js"],
     "work-session": ["runtime/work-session.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/start-over-state.js", "runtime/start-over-archive.js", "runtime/start-over-finisher.js", "runtime/installation.js", "runtime/installation-lineage.js", "runtime/stdio-entry.js", "runtime/install-lease.js", "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js", "core/", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/work-session.test.js", "test/work-session-owner.test.js"],
     "start-over-channel": ["integrations/cep/http-peer.js", "integrations/cep/completion-store.js", "integrations/cep/peer-protocol.js", "cep/js/poll-dispatcher.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "protocol/", "core/receiver-api.js", "test/start-over-channel.test.js"],
@@ -1120,7 +1124,7 @@
       "tools/operate-stopped-update.js",
       "tools/standalone-installer.js",
       "tools/package-standalone-installer.js",
-      "tools/package-installable.js",
+      "tools/package-installable.js", "config/compositions/",
       "tools/install-core4.js",
       "tools/stopped-update.js",
       "tools/legacy-owner-migration.js",
@@ -1145,14 +1149,14 @@
       "tools/stopped-host-readoption-store.js",
       "tools/stopped-host-readoption-transaction.js"
     ],
-    "stopped-update": ["tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js","tools/package-capability.js","tools/package-standalone-installer.js","tools/standalone-installer.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/stopped-update.test.js","test/fixtures/owner-pre-ready-claim-child.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
-    "legacy-owner-migration": ["tools/legacy-owner-migration.js","tools/windows-retained-process.js","tools/install-core4.js","tools/package-installable.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/legacy-owner-migration.test.js","tools/stopped-update.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
+    "stopped-update": ["tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js", "config/compositions/","tools/package-capability.js","tools/package-standalone-installer.js","tools/standalone-installer.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/stopped-update.test.js","test/fixtures/owner-pre-ready-claim-child.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
+    "legacy-owner-migration": ["tools/legacy-owner-migration.js","tools/windows-retained-process.js","tools/install-core4.js","tools/package-installable.js", "config/compositions/","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/legacy-owner-migration.test.js","tools/stopped-update.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
     "windows-retained-process": ["tools/windows-retained-process.js", "runtime/windows-owner-process.js", "test/windows-retained-process.test.js"],
     "stopped-certification": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/stopped-certification.test.js"],
     "maintenance-finish": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/fixtures/maintenance-finish.js", "test/maintenance-finish.test.js"],
     "maintenance-finish-operator": ["runtime/", "core/", "protocol/", "tools/", "config/", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "test/maintenance-finish-operator.test.js"],
     "owner-maintenance": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-maintenance.test.js"],
-    "maintenance-operator": ["runtime/", "core/", "protocol/", "tools/maintain-owner.js", "tools/install-core4.js", "tools/package-installable.js", "tools/check-boundaries.js", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "config/catalog.json", "config/admissions/", "test/maintenance-operator.test.js"],
+    "maintenance-operator": ["runtime/", "core/", "protocol/", "tools/maintain-owner.js", "tools/install-core4.js", "tools/package-installable.js", "config/compositions/", "tools/check-boundaries.js", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "config/catalog.json", "config/admissions/", "test/maintenance-operator.test.js"],
     "windows-owner-process": ["runtime/windows-owner-process.js", "test/windows-owner-process.test.js"],
     "owner-lifecycle": ["runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "core/state-lock.js", "integrations/cep/completion-store.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-lifecycle.test.js"],
     "owner-lifecycle-faults": ["runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "core/state-lock.js", "integrations/cep/completion-store.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-lifecycle-faults.test.js"],
@@ -1162,7 +1166,7 @@
     "owner-installation": [
       "runtime/",
       "tools/install-core4.js",
-      "tools/package-installable.js",
+      "tools/package-installable.js", "config/compositions/",
       "tools/package-standalone-installer.js",
       "tools/standalone-installer.js",
       "tools/disposition-install-preflight.js",
@@ -1190,7 +1194,7 @@
     ],
     "controller-transfer": ["runtime/controller-lease.js", "runtime/attachment-owner.js", "runtime/client-ipc.js", "test/controller-transfer-ipc.test.js"],
     "client-entry": ["runtime/client-entry.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/client-ipc.js", "runtime/owner-entry.js", "test/client-entry.test.js", "tools/check-boundaries.js"],
-    "owner-runtime": ["runtime/", "test/owner-runtime.test.js", "test/fixtures/owner-runtime-child.js", "tools/check-boundaries.js", "tools/install-core4.js", "tools/package-installable.js", "tools/disposition-install-preflight.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
+    "owner-runtime": ["runtime/", "test/owner-runtime.test.js", "test/fixtures/owner-runtime-child.js", "tools/check-boundaries.js", "tools/install-core4.js", "tools/package-installable.js", "config/compositions/", "tools/disposition-install-preflight.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
     "client-ipc": ["runtime/client-ipc.js", "test/client-ipc.test.js"],
     "owner-attachments": ["runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/controller-lease.js", "test/owner-attachments.test.js", "core/", "protocol/"],
     "owner-ipc-process": ["runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/client-ipc.js", "runtime/controller-lease.js", "test/owner-ipc-process.test.js", "test/fixtures/attachment-process.js", "test/helpers.js", "test/fixtures/ae.js", "test/fixtures/authority.js", "core/", "protocol/", "modules/", "plan-engine/", "config/admissions/", "config/catalog.json", "worker.js"],
@@ -1210,7 +1214,7 @@
       "tools/capture-native-read.js",
       "test/native-read-capture.test.js",
       "tools/install-core4.js",
-      "tools/package-installable.js",
+      "tools/package-installable.js", "config/compositions/",
       "runtime/",
       "cep/",
       "core/",
@@ -1229,7 +1233,7 @@
     "windows-cim-probe": [
       "runtime/",
       "test/windows-cim-probe.test.js",
-      "tools/package-installable.js",
+      "tools/package-installable.js", "config/compositions/",
       "core/",
       "protocol/",
       "worker.js",
@@ -1246,7 +1250,7 @@
       "tools/recover-zero-dispatch-owner.js",
       "test/recover-zero-dispatch-owner.test.js",
       "tools/install-core4.js",
-      "tools/package-installable.js",
+      "tools/package-installable.js", "config/compositions/",
       "core/",
       "protocol/",
       "worker.js",
@@ -1274,7 +1278,7 @@
       "plan-engine/",
       "config/catalog.json",
       "config/admissions/",
-      "tools/package-installable.js",
+      "tools/package-installable.js", "config/compositions/",
       "tools/install-core4.js",
       "integrations/cep/http-peer.js",
       "integrations/cep/peer-protocol.js",
@@ -1293,37 +1297,35 @@
       "integrations/cep/peer-protocol.js",
       "integrations/cep/completion-store.js",
       "plan-engine/",
-      "tools/package-installable.js",
+      "tools/package-installable.js", "config/compositions/",
       "test/manual-runtime.test.js",
       "test/fixtures/manual-http-runtime.js",
       "test/fixtures/ae.js"
     ],
     "point-layout": [
       "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/",
-      "config/catalog.json", "config/admissions/", "integrations/cep/", "tools/package-installable.js",
+      "config/catalog.json", "config/admissions/", "integrations/cep/", "tools/package-installable.js", "config/compositions/",
       "test/point-layout.test.js", "test/fixtures/point-layout-ae.js", "test/fixtures/manual-http-runtime.js",
       "test/fixtures/ae.js"
     ],
     "text-layer": [
       "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/",
-      "config/catalog.json", "config/admissions/", "integrations/cep/", "tools/package-installable.js",
+      "config/catalog.json", "config/admissions/", "integrations/cep/", "tools/package-installable.js", "config/compositions/",
       "test/text-layer.test.js", "test/fixtures/text-layer-ae.js", "test/fixtures/manual-http-runtime.js",
       "test/fixtures/ae.js"
     ],
     "text-variant": [
-      "modules/text-variant/", "runtime/text-variant-proof.js", "protocol/", "tools/package-installable.js",
-      "runtime/stdio-entry.js", "runtime/source-package.json", "config/admissions/text-variant.json", "test/text-variant.test.js"
+      "modules/text-variant/", "runtime/text-variant-proof.js", "protocol/", "test/text-variant.test.js"
     ],
     "comp-render": [
-      "modules/comp-render/", "runtime/comp-render-proof.js", "protocol/", "runtime/stdio-entry.js",
-      "runtime/manual-policy.js", "integrations/cep/http-peer.js", "test/comp-render.test.js"
+      "modules/comp-render/", "runtime/comp-render-proof.js", "protocol/", "test/comp-render.test.js"
     ],
     "installable-runtime": [
       "runtime/",
       "cep/",
       "modules/project-inspection/",
       "test/installable-runtime.test.js",
-      "tools/package-installable.js",
+      "tools/package-installable.js", "config/compositions/",
       "tools/install-core4.js",
       "tools/adopt-host.js",
       "integrations/cep/http-peer.js",
@@ -1582,8 +1584,8 @@
       "tools/",
       "test/"
     ],
-    "native-read-recovery": ["test/native-read-recovery.test.js","test/fixtures/native-read-recovery.js","test/fixtures/disposition-child.js","test/fixtures/legacy-installation-v1.js","test/fixtures/legacy-completion-store.js","test/fixtures/manual-capture-driver-source.txt","tools/dispose-native-read.js","tools/disposition-install-preflight.js","tools/package-native-read-operator.js","tools/capture-native-read.js","tools/install-core4.js","tools/package-installable.js","runtime/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","core/","protocol/","modules/","plan-engine/","cep/","worker.js","config/catalog.json","config/admissions/","test/fixtures/stdio-main-ephemeral.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"],
-    "installed-composition": ["runtime/","cep/","core/","protocol/","modules/","plan-engine/","config/catalog.json","config/admissions/","worker.js","tools/package-installable.js","tools/install-core4.js","tools/dispose-native-read.js","tools/capture-native-read.js","tools/disposition-install-preflight.js","tools/package-native-read-operator.js","test/installed-composition.test.js","test/fixtures/installed-composition-child.js","test/fixtures/installed-composition-transition.js","test/fixtures/native-read-recovery.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-installation-v1.js","test/fixtures/disposition-child.js","test/fixtures/manual-capture-driver-source.txt","tools/check-boundaries.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"],
+    "native-read-recovery": ["test/native-read-recovery.test.js","test/fixtures/native-read-recovery.js","test/fixtures/disposition-child.js","test/fixtures/legacy-installation-v1.js","test/fixtures/legacy-completion-store.js","test/fixtures/manual-capture-driver-source.txt","tools/dispose-native-read.js","tools/disposition-install-preflight.js","tools/package-native-read-operator.js","tools/capture-native-read.js","tools/install-core4.js","tools/package-installable.js", "config/compositions/","runtime/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","core/","protocol/","modules/","plan-engine/","cep/","worker.js","config/catalog.json","config/admissions/","test/fixtures/stdio-main-ephemeral.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"],
+    "installed-composition": ["runtime/","cep/","core/","protocol/","modules/","plan-engine/","config/catalog.json","config/admissions/","worker.js","tools/package-installable.js", "config/compositions/","tools/install-core4.js","tools/dispose-native-read.js","tools/capture-native-read.js","tools/disposition-install-preflight.js","tools/package-native-read-operator.js","test/installed-composition.test.js","test/fixtures/installed-composition-child.js","test/fixtures/installed-composition-transition.js","test/fixtures/native-read-recovery.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-installation-v1.js","test/fixtures/disposition-child.js","test/fixtures/manual-capture-driver-source.txt","tools/check-boundaries.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"],
     "exact-f548-transition": [
       "runtime/",
       "cep/",
@@ -1594,7 +1596,7 @@
       "config/catalog.json",
       "config/admissions/",
       "worker.js",
-      "tools/package-installable.js",
+      "tools/package-installable.js", "config/compositions/",
       "tools/install-core4.js",
       "tools/dispose-native-read.js",
       "tools/capture-native-read.js",
@@ -1611,9 +1613,10 @@
       "test/fixtures/exact-f548-transition.js",
       "test/exact-f548-transition.test.js"
     ],
-    "standalone-installer": ["tools/package-standalone-installer.js","tools/finish-owner-maintenance.js","tools/maintain-owner.js","tools/standalone-installer.js","tools/package-installable.js","tools/install-core4.js","tools/disposition-install-preflight.js","test/standalone-installer.test.js","test/fixtures/standalone-history.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-installation-v1.js","runtime/","cep/","core/","protocol/","modules/","plan-engine/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","worker.js","config/catalog.json","config/admissions/","tools/legacy-owner-migration.js","tools/operate-stopped-readoption.js","tools/operate-stopped-update.js","tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/windows-retained-process.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"]
+    "standalone-installer": ["tools/package-standalone-installer.js","tools/finish-owner-maintenance.js","tools/maintain-owner.js","tools/standalone-installer.js","tools/package-installable.js", "config/compositions/","tools/install-core4.js","tools/disposition-install-preflight.js","test/standalone-installer.test.js","test/fixtures/standalone-history.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-installation-v1.js","runtime/","cep/","core/","protocol/","modules/","plan-engine/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","worker.js","config/catalog.json","config/admissions/","tools/legacy-owner-migration.js","tools/operate-stopped-readoption.js","tools/operate-stopped-update.js","tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/windows-retained-process.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"]
   },
   "checkCommands": {
+    "package-location": ["node", "--test", "--test-name-pattern=package-location", "test/package-location.test.js"],
     "start-over-driver": ["node", "--test", "--test-name-pattern=start-over-driver", "test/start-over-driver.test.js"],
     "start-over-panel-control": ["node", "--test", "--test-name-pattern=start-over-panel-control", "test/start-over-panel-control.test.js"],
     "panel-start-over": ["node", "--test", "--test-name-pattern=panel-start-over", "test/panel-start-over.test.js"],
@@ -1812,6 +1815,7 @@
     ]
   },
   "checkPolicy": {
+    "package-location": { "kind": "integration" },
     "start-over-driver": { "kind": "component" },
     "start-over-panel-control": { "kind": "component" },
     "panel-start-over": { "kind": "component" },

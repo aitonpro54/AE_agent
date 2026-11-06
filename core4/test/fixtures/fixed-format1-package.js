@@ -7,7 +7,10 @@ const fs = require('node:fs'), path = require('node:path');
 function fixedFormat1Package() {
   const pkg = structuredClone(buildPackage());
   pkg.release.version = '4.0.0';
-  delete pkg.files['runtime/composition.json']; delete pkg.release.hashes['runtime/composition.json']; pkg.release.format = 1;
+  for (const file of ['runtime/composition.json', 'runtime/composition-policy.json']) {
+    delete pkg.files[file]; delete pkg.release.hashes[file];
+  }
+  pkg.release.format = 1;
   const add = (file, value) => { const bytes = typeof value === 'string' ? value : canonical(value); pkg.files[file] = Buffer.from(bytes).toString('base64'); pkg.release.hashes[file] = hash(bytes); };
   // Historical read-disposition proof pins this dispatcher. Future production
   // session support must not silently rewrite the synthetic OLD package bytes.

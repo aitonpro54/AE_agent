@@ -18,11 +18,11 @@ test('package-location checks real packages and preserves a reproducible path-de
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const source = path.resolve(__dirname, '..'), output = path.join(directory, 'success');
   const result = run(undefined, output, directory), report = result.report;
-  await t.test('four variants, source/foreign cwd, spaces/Unicode and both byte controls', () => {
+  await t.test('six variants, source/foreign cwd, spaces/Unicode and both byte controls', () => {
     assert.equal(result.status, 0); assert.equal(report.ok, true); assert.deepEqual(report.findings, []);
-    assert.match(report.source.commit, /^[a-f0-9]{40}$/); assert.equal(report.cases.length, 24);
-    assert.equal(report.variants.length, 4);
-    for (const composition of ['readonly', 'manual']) for (const runtimeModel of ['stdio', 'owner']) {
+    assert.match(report.source.commit, /^[a-f0-9]{40}$/); assert.equal(report.cases.length, 36);
+    assert.equal(report.variants.length, 6);
+    for (const composition of ['readonly', 'manual', 'manual-titles-variants']) for (const runtimeModel of ['stdio', 'owner']) {
       const cases = report.cases.filter(row => row.composition === composition && row.runtimeModel === runtimeModel);
       assert.equal(cases.length, 6); assert.equal(new Set(cases.map(row => row.location)).size, 3);
       assert.deepEqual([...new Set(cases.map(row => row.cwd))].sort(), ['foreign', 'source']);

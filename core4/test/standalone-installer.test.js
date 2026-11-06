@@ -35,7 +35,8 @@ test('standalone-installer deterministic manual/readonly distributions include e
   for (const selector of ['manual', 'readonly']) {
     const f = fixture(t, selector), runtime = buildPackage(undefined, selector), checked = verifyStandalone(f.distribution, f.bundle.distributionHash);
     assert.equal(checked.packageHash, runtime.packageHash); assert.deepEqual(buildStandalone(undefined, selector), f.bundle);
-    assert.equal(Object.keys(runtime.files).length, selector === 'manual' ? 59 : 40);
+    assert.ok(runtime.files['runtime/composition-policy.json']);
+    assert.equal(Object.keys(runtime.files).length, selector === 'manual' ? 60 : 41);
     assert.deepEqual(Object.keys(f.bundle.files).filter(file => HELPERS.includes(file)).sort(), [...HELPERS]);
     assert.equal(Object.keys(runtime.files).some(file => file.startsWith('tools/')), false);
     assert.throws(() => writeStandalone(f.distribution, f.bundle), /new_absolute_standalone_output_required/);

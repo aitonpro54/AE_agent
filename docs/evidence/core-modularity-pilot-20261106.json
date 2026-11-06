@@ -1,0 +1,454 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-06T11:29:40.048Z",
+  "sourceBase": "1c32744eaa944451d9b4ae8e5856bbcadee7763e",
+  "sourceDiffSha256": "a75c095ddde4c2f6db871b002bbe2cd02b96361d154a354543e617ee82d6efd5",
+  "msi": {
+    "host": "MSI",
+    "node": "v24.15.0"
+  },
+  "scope": "Source pilot, isolated TEMP installation/fixture processes and two-host offline packaging; no production install or native AE",
+  "releaseCertified": false,
+  "checkResult": {
+    "selected": 33,
+    "batches": 33,
+    "passCases": 566,
+    "deferred": 23,
+    "records": [
+      {
+        "checks": [
+          "comp-render"
+        ],
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 98,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "installed-composition"
+        ],
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 25115,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "validation-routing"
+        ],
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 4646,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "native-read-recovery"
+        ],
+        "tests": 19,
+        "pass": 19,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 275635,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "installable-runtime"
+        ],
+        "tests": 47,
+        "pass": 47,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 32482,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "manual-runtime"
+        ],
+        "tests": 59,
+        "pass": 59,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 7976,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "owner-installation"
+        ],
+        "tests": 18,
+        "pass": 18,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 31130,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "owner-runtime"
+        ],
+        "tests": 23,
+        "pass": 23,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 67282,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "human-window"
+        ],
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 3787,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "package-location"
+        ],
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 9991,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "standalone-installer"
+        ],
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 12973,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "stopped-host-readoption-operator"
+        ],
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 23977,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "text-variant"
+        ],
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 72,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "start-over-driver"
+        ],
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 31242,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "panel-start-over"
+        ],
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 412,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "work-session"
+        ],
+        "tests": 17,
+        "pass": 17,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 1259,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "start-over-finisher"
+        ],
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 214172,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "start-over-state"
+        ],
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 7634,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "start-over-barrier"
+        ],
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 10771,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "start-over-inspection"
+        ],
+        "tests": 19,
+        "pass": 19,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 89,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "stopped-host-readoption"
+        ],
+        "tests": 25,
+        "pass": 25,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 70422,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "readoption-core"
+        ],
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 92837,
+        "run": "serial"
+      },
+      {
+        "checks": [
+          "readoption-probe"
+        ],
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 147,
+        "stdoutSha256": "3afc70c518328ddc7df0ea6bcdee48e88fcff76f1293d207815758724cddd4da",
+        "run": "isolated-tail"
+      },
+      {
+        "checks": [
+          "stopped-certification"
+        ],
+        "tests": 30,
+        "pass": 30,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 120956,
+        "stdoutSha256": "4a248dd50564cc991c5c42ab68cba1036212fcb5f7f04141c115a25271fdfe68",
+        "run": "isolated-tail"
+      },
+      {
+        "checks": [
+          "maintenance-finish"
+        ],
+        "tests": 32,
+        "pass": 32,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 165789,
+        "stdoutSha256": "c75e9b5049034ce9ce95110086d4d6d7c2eb8f8b5d2002f59462e884ff44a2df",
+        "run": "isolated-tail"
+      },
+      {
+        "checks": [
+          "owner-maintenance"
+        ],
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 23214,
+        "stdoutSha256": "5df0e66ad09c383f5a96c9db65f331cc7958cf3763a98b6266288c47ef214e87",
+        "run": "isolated-tail"
+      },
+      {
+        "checks": [
+          "owner-lifecycle"
+        ],
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 7893,
+        "stdoutSha256": "ff3ffd560ebb65535a80e5fca675241f05fa160c5c941b4180043bc3370e375e",
+        "run": "isolated-tail"
+      },
+      {
+        "checks": [
+          "owner-lifecycle-faults"
+        ],
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 22433,
+        "stdoutSha256": "391b9ca3a4b56b6fb025c35048615605de670716296fb2a9290e7de9cfa2b4c9",
+        "run": "isolated-tail"
+      },
+      {
+        "checks": [
+          "owner-marker-publication"
+        ],
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 1741,
+        "stdoutSha256": "37bb7af5128ffa6c9449994cacc949d0d8c1af5ff6d453de7627ef07b381ee6b",
+        "run": "isolated-tail"
+      },
+      {
+        "checks": [
+          "recovery-inspection"
+        ],
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 139,
+        "stdoutSha256": "c2198e483c936b780cad15adf00579318f8f4199626bd2b404fa31e6aefe2a92",
+        "run": "isolated-tail"
+      },
+      {
+        "checks": [
+          "readoption-recovery"
+        ],
+        "tests": 34,
+        "pass": 34,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 704469,
+        "stdoutSha256": "0c07b1560b2a3c2525defc7f6707dcfe2023098a6f21f77fe7d81b03ae018d94",
+        "run": "isolated-tail"
+      },
+      {
+        "checks": [
+          "readoption-enable"
+        ],
+        "tests": 22,
+        "pass": 22,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "ms": 819690,
+        "stdoutSha256": "55ca3538888359981f2550107c30abb705ffb01b5d55ff5f7498035531da0702",
+        "run": "isolated-tail"
+      },
+      {
+        "checks": [
+          "point-layout"
+        ],
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "run": "point-layout + text-layer (9 cases)"
+      }
+    ],
+    "serialLogSha256": "fcde9fc7edbfd84dfd3dd8c6318801d7b0832c2453a873c4350ba02069de3af0",
+    "note": "22 completed serial batches accepted, interrupted first readoption-recovery not counted; final 10 exact commands rerun with separate TEMP, point-layout separately. Final validation-routing also rerun after map refinement. This is a run summary, not a reusable release key certificate."
+  },
+  "additional": {
+    "titles": 23,
+    "textLayer": 4,
+    "c1b": 1,
+    "boundariesFiles": 63,
+    "previousPackagesVerified": 10,
+    "identicalCepRegistries": 10
+  },
+  "desktop": {
+    "host": "DESKTOP-32974QF",
+    "node": "v24.15.0",
+    "threadId": "01a186f7-9c1b-7513-a89e-cef10752eba1",
+    "turnId": "01a1b085-8630-7fe0-a8d0-6b438e59928f",
+    "transferDiffSha256": "7fa092af9d2f23cae341912ea0fe71e4dd6feb3926b8fc106e32eb4b104b95b8",
+    "testsPassed": 13,
+    "firstFailure": "Git archive omitted root attributes; completion.json LF became CRLF. Exact bytes reapplied in TEMP; no checkout or config changes."
+  },
+  "identicalPackages": {
+    "manual-titles-variants/owner": {
+      "files": 106,
+      "sha256": "23d2a039eef72ae4390f8fe6fd78ce230973b68594c6c184193037ddae2c5c3f"
+    },
+    "manual/owner": {
+      "files": 81,
+      "sha256": "7a50394888f6ebde489a87984a500fb6cb630e325840cf679d046de0f1c29b25"
+    }
+  }
+}

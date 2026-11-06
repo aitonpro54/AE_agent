@@ -128,6 +128,6 @@ test('point-layout: no package closure in regular compositions, exact opt-in com
   const file = 'runtime/point-layout-proof.js';
   delete damaged.files[file]; delete damaged.release.hashes[file];
   damaged.packageHash = hash(damaged.release);
-  assert.throws(() => verifyPackage(damaged), /composition_unhashed_path/);
+  assert.throws(() => verifyPackage(damaged), /composition_optional_closure/);
   assert.equal(hash(canonical(pkg.release)), pkg.packageHash);
 });

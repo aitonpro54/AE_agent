@@ -55,6 +55,53 @@ test('installed-composition deterministic packages, fixed ES3 registries, admiss
   }
   assert.equal(buildPackage().packageHash, buildPackage(root, 'manual').packageHash); assert.throws(() => buildPackage(root, 'other'), /composition_selector/);
 });
+test('installed-composition includes render and text variants only in their selected composition', () => {
+  const old = buildPackage(root, 'manual-titles');
+  const enabled = buildPackage(root, 'manual-titles-variants');
+  for (const file of ['modules/text-variant/executor.jsx', 'modules/comp-render/executor.jsx', 'modules/comp-render/completion.json']) {
+    assert.equal(old.files[file], undefined); assert.ok(enabled.files[file]);
+  }
+  assert.equal(enabled.files['modules/text-layer/executor.jsx'], old.files['modules/text-layer/executor.jsx']);
+  const extra = 'modules/comp-render/completion.json';
+  old.files[extra] = enabled.files[extra]; old.release.hashes[extra] = enabled.release.hashes[extra]; old.packageHash = hash(old.release);
+  assert.throws(() => verifyPackage(old), /composition_optional_closure/);
+  const arbitraryLoader = edit(structuredClone(enabled), 'runtime/composition-policy.json', p => { p.profiles['comp-render'].resultProfile = './other.js'; });
+  assert.throws(() => verifyPackage(arbitraryLoader), /composition_not_admitted/);
+  const altered = edit(structuredClone(enabled), extra, p => { p.directory = 'other-output'; });
+  assert.throws(() => verifyPackage(altered), /composition_artifact/);
+});
+test('installed-composition admits a new render operation through declarations on a relocated source and installed tree', { timeout: 15000 }, async t => {
+  const source = temp(), moduleId = 'fixture-render', operationId = 'fixture-render-variant', relative = 'modules/' + moduleId;
+  t.after(() => fs.rmSync(source, { recursive: true, force: true }));
+  for (const file of ['core', 'protocol', 'runtime', 'config', 'modules', 'plan-engine', 'cep', 'integrations', 'worker.js']) fs.cpSync(path.join(root, file), path.join(source, file), { recursive: true });
+  fs.cpSync(path.join(source, 'modules/comp-render'), path.join(source, relative), { recursive: true });
+  const read = file => fs.readFileSync(path.join(source, file)), json = file => JSON.parse(read(file));
+  const put = (file, data) => fs.writeFileSync(path.join(source, file), typeof data === 'string' ? data : canonical(data));
+  const contract = { ...json(relative + '/contract.json'), moduleId, operationId };
+  put(relative + '/contract.json', contract);
+  put(relative + '/implementation.js', read(relative + '/implementation.js').toString().replace('render-text-variant', operationId));
+  const artifact = { ...json(relative + '/artifact.json'), id: moduleId };
+  for (const file of Object.keys(artifact.hashes)) artifact.hashes[file] = hash(read(relative + '/' + file));
+  put(relative + '/artifact.json', artifact);
+  const admission = 'config/admissions/' + moduleId + '.json';
+  put(admission, { ...json('config/admissions/comp-render.json'), moduleId, operationId, artifactHash: hash(artifact), trustApprovalId: 'isolated-test-fixture' });
+  const parent = json('config/compositions/manual-titles-variants.json');
+  put('config/compositions/fixture-composition.json', { parent: 'manual-titles-variants',
+    bundle: { files: [admission], artifactClosures: [relative + '/artifact.json'] }, modules: [moduleId],
+    assets: [{ ...parent.assets.find(a => a.moduleId === 'comp-render'), assetKey: moduleId + '-v1', moduleId, path: relative, admission }],
+    profiles: { [moduleId]: { operationId, resultProfile: 'owned-comp-render-v1' } } });
+  const pkg = buildPackage(source, 'fixture-composition');
+  assert.equal(pkg.release.hashes['runtime/stdio-entry.js'], hash(fs.readFileSync(path.join(root, 'runtime/stdio-entry.js'))));
+  assert.equal(pkg.packageHash, buildPackage(source, 'fixture-composition').packageHash);
+  assert.ok(!buildPackage(source, 'manual-titles-variants').files[relative + '/executor.jsx']);
+  const f = install(pkg), h = rpcChild(f);
+  try {
+    await h.message('listening');
+    assert.equal((await h.call('core_status')).composition, 'fixture-composition');
+    assert.equal((await h.call('get_module_contract', { moduleId })).operationId, operationId);
+    assert.equal((await h.call('get_module_contract', { moduleId: 'comp-render' })).operationId, 'render-text-variant');
+  } finally { await h.close(); fs.rmSync(f.directory, { recursive: true, force: true }); }
+});
 test('installed-composition direct legacy derivation requires each fixed admission hash and exact bytes', () => {
   const pkg = require('./fixtures/fixed-format1-package').fixedFormat1Package();
   const read = file => Buffer.from(pkg.files[file], 'base64');
@@ -95,7 +142,7 @@ test('installed-composition unknown/missing/corrupt/duplicate/path/phase/catalog
     p => { p.release.format = 99; p.packageHash = hash(p.release); },
     p => { delete p.files['runtime/composition.json']; delete p.release.hashes['runtime/composition.json']; p.packageHash = hash(p.release); },
     p => { p.files['runtime/composition.json'] = Buffer.from('{}').toString('base64'); },
-    p => edit(p, 'runtime/composition.json', c => { c.version = 2; }),
+    p => edit(p, 'runtime/composition.json', c => { c.version = 1; }),
     p => edit(p, 'runtime/composition.json', c => { c.extra = true; }),
     p => edit(p, 'runtime/composition.json', c => { c.assets.push(c.assets[0]); }),
     p => edit(p, 'runtime/composition.json', c => { c.modules.push(c.modules[0]); }),

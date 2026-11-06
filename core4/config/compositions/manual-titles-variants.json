@@ -1,0 +1,55 @@
+{
+  "parent": "manual-titles",
+  "modules": [
+    "text-variant",
+    "comp-render"
+  ],
+  "assets": [
+    {
+      "assetKey": "text-variant-v1",
+      "moduleId": "text-variant",
+      "path": "modules/text-variant",
+      "admission": "config/admissions/text-variant.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": [
+        "inspect",
+        "mutate",
+        "verify"
+      ]
+    },
+    {
+      "assetKey": "comp-render-v1",
+      "moduleId": "comp-render",
+      "path": "modules/comp-render",
+      "admission": "config/admissions/comp-render.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": [
+        "inspect",
+        "mutate",
+        "verify"
+      ]
+    }
+  ],
+  "profiles": {
+    "text-variant": {
+      "operationId": "stage-text-variant",
+      "resultProfile": "owned-text-variant-v1"
+    },
+    "comp-render": {
+      "operationId": "render-text-variant",
+      "resultProfile": "owned-comp-render-v1"
+    }
+  },
+  "bundle": {
+    "files": [
+      "runtime/text-variant-proof.js",
+      "config/admissions/text-variant.json",
+      "runtime/comp-render-proof.js",
+      "config/admissions/comp-render.json"
+    ],
+    "artifactClosures": [
+      "modules/text-variant/artifact.json",
+      "modules/comp-render/artifact.json"
+    ]
+  }
+}

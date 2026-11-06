@@ -62,7 +62,7 @@ test('all four helpers have one exact union entry; build/write/verifier retain u
   assert.equal(main.HELPERS.includes('runtime/windows-reservation-provider.js'), false); assert.ok(f.pkg.files['runtime/windows-reservation-provider.js']);
   const expected = [...Object.keys(f.pkg.files), ...main.HELPERS, 'candidate.json', 'README.txt']; assert.equal(new Set(expected).size, expected.length); assert.deepEqual(Object.keys(f.shipped.files).sort(), expected.sort());
   const current = require('../tools/package-installable').buildPackage(SOURCE, 'manual', { runtimeModel: 'owner' });
-  assert.equal(f.pkg.packageHash, current.packageHash); assert.deepEqual(f.pkg.release, current.release); assert.deepEqual(f.pkg.files, current.files); assert.equal(Object.keys(f.pkg.files).length, 80);
+  assert.equal(f.pkg.packageHash, current.packageHash); assert.deepEqual(f.pkg.release, current.release); assert.deepEqual(f.pkg.files, current.files);
   const verified = main.verifyStandalone(f.distribution, f.shipped.distributionHash); assert.equal(verified.packageHash, current.packageHash); assert.equal(verified.distributionHash, f.shipped.distributionHash);
 });
 test('bootstrap capability remains private through await, then revokes on resolve/reject/synchronous throw', async t => {

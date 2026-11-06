@@ -6,7 +6,6 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { build } = require('../modules/text-variant/implementation');
 const { validateTextVariantCompletion } = require('../runtime/text-variant-proof');
-const { buildPackage } = require('../tools/package-installable');
 
 const projectId = 'C:/test/owned.aep';
 const input = { projectId, compId: 7, controlledLayerIds: [20, 21] };
@@ -115,12 +114,4 @@ test('text-variant: hold alignment refuses rotated or out-of-span text before co
     assert.deepEqual(env.run({ derive: { ...derive, holdTime } }).result, { outcome: 'rejected', code: 'text_variant_hold_geometry' });
     assert.deepEqual(env.read(), env.before);
   }
-});
-
-test('text-variant: package only opts in on the selected composition', () => {
-  const old = buildPackage(undefined, 'manual-titles');
-  const enabled = buildPackage(undefined, 'manual-titles-variants');
-  assert.equal(old.files['modules/text-variant/executor.jsx'], undefined);
-  assert.ok(enabled.files['modules/text-variant/executor.jsx']);
-  assert.equal(enabled.files['modules/text-layer/executor.jsx'], old.files['modules/text-layer/executor.jsx']);
 });
