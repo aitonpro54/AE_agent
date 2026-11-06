@@ -30,6 +30,11 @@ node core4/tools/install-core4.js rollback C:/Users/USER/AppData/Local/AEAgentCo
 Для штатного обновления работающего owner Core используйте описанный в `README.txt`
 комплекта цикл остановки, `owner-update` и `update-enable`.
 
+Отдельная поставка через `package-capability.js` поддерживает замену реализации
+слота `titles-current-target` в `manual/owner` при совпадении публичного контракта.
+Изменение состава или контракта поставляется полным пакетом через тот же цикл
+остановки и обновления.
+
 Состав `manual-titles/owner` включает оба ранее принятых контракта Titles и
 общий модуль `text-layer`. Модуль применяет новый явный профиль статичного
 горизонтального 2D point text. Цель инспекции — `projectId` и `compId` собственной
@@ -151,6 +156,11 @@ node core4/core/stdio.js --state-dir C:/Temp/core4-explicit-state
 `check:release` — отдельная явная проверка нового состава Core4. Она не является default check для локальной правки. `validate-diff` берёт реальный Git diff/untracked paths либо указанные пути и возвращает owner, reason, dependencyPath, concrete command и evidenceKey фактических dependencies. Неизвестный/неоднозначный owner запрещает scoped certification. Keys неизменённой области не зависят от catalog или чужого package. EvidenceKey не выдаёт runtime authority и не заменяет свежесть AE.
 
 Опция `--reuse` действует вместе с `--run` для локальных наборов `point-layout` и `text-layer`. При первом запуске команда копирует объявленные входы во временную папку и выполняет весь набор. Успешный результат сохраняется в локальном `.codex-runtime/validation-reuse-v1`. Запись привязана к байтам входов, команде, рабочей копии, Node и окружению. Изменение любого из этих условий запускает набор заново. `--run` выполняет свежий прогон, а сквозные, упаковочные и релизные проверки сохраняют свой порядок при любом режиме.
+
+При изменении артефакта или контракта операции, которую вызывает Titles,
+запустите из корня `npm.cmd --prefix products/titles test`. Тесты вёрстки
+и серии проверяют payload продукта по текущим контрактам `titles-point-layout`
+и `text-layer`. Селектор `core4` и продуктовая проверка запускаются отдельно.
 
 Owner/executor tests разделены по `test/modules/*.test.js`; минимальный harness копирует только permanent closure и выбранный package, transport получает explicit selectedModules. Titles-only `--run` проходит при physically absent photo/engine даже в source tree. Titles evidence зависит от выбранной catalog entry, а не от всего catalog или photo tests. Смена public module contract отдельно выбирает `workflow-recovery` с причиной обратной зависимости. Большие integration checks честно закрепляют используемый engine/оба packages.
 

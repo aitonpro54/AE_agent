@@ -7,6 +7,8 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { test } = require('node:test');
 const { prepareLayout, fitLayout } = require('../src/layout');
+const { prepareLayoutBuild } = require('../src/layout-native');
+const { hash } = require('../src/compiler');
 const example = require('../examples/multiline-title.json');
 
 test('prepares one numbered block with distinct roles, preserving source and explicit frame', () => {
@@ -122,6 +124,31 @@ function fitFixture() {
     ],
   } };
 }
+
+test('Titles layout builds measure and apply inputs for the current public Core contract', () => {
+  const publicContract = require('../../../core4/modules/titles-point-layout/contract.json');
+  const artifact = require('../../../core4/modules/titles-point-layout/artifact.json');
+  const admission = require('../../../core4/config/admissions/titles-point-layout.json');
+  const { build } = require('../../../core4/modules/titles-point-layout/implementation');
+  const { check } = require('../../../core4/protocol/schema');
+  const { job, measurements } = fitFixture();
+  const contract = { contractId: '1'.repeat(64), moduleId: publicContract.moduleId, operationId: publicContract.operationId,
+    contract: publicContract, modulePin: hash(artifact), admissionPin: hash(admission) };
+  const target = { projectId: 'C:/fixture/titles.aep', compId: 7, layerId: 10 };
+  const inspection = { evidenceRef: 'evidence-11111111-1111-4111-8111-111111111111', modulePin: contract.modulePin, synthetic: false,
+    snapshot: { target, role: 'measure', comp: [800, 450], style: 'fixture-style', time: 1, revision: 'fixture-measure' } };
+  const measure = prepareLayoutBuild('measure', job, target, contract, inspection).steps[0];
+  check(publicContract.inputSchema, build({ input: measure.input, evidence: inspection.snapshot }).input);
+  const after = { ...inspection.snapshot, layoutId: measurements.layoutId, samples: measurements.samples };
+  const output = { ...target, layerId: 11 };
+  const outputInspection = { ...inspection, snapshot: { ...inspection.snapshot, target: output, role: 'apply', anchor: measurements.anchor } };
+  const task = { taskId: 'task-11111111-1111-4111-8111-111111111111', reset: false, commands: [{ state: 'succeeded',
+    modulePin: contract.modulePin, target, after, commandId: 'command-11111111-1111-4111-8111-111111111111' }] };
+  const apply = prepareLayoutBuild('apply', job, output, contract, outputInspection, task).steps[0];
+  check(publicContract.inputSchema, build({ input: apply.input, evidence: outputInspection.snapshot }).input);
+  assert.equal(apply.input.candidateId, 'alternative-1');
+  assert.throws(() => prepareLayoutBuild('measure', job, target, { ...contract, modulePin: '0'.repeat(64) }, inspection), /incompatible_contract/);
+});
 
 test('fits measured bounds along both axes and centers them with the original anchor', () => {
   const { job, measurements } = fitFixture();

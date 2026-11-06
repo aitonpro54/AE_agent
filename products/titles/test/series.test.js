@@ -2,6 +2,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { prepareSeries, prepareSeriesWrite } = require('../src/series');
+const { hash } = require('../src/compiler');
+const publicContract = require('../../../core4/modules/text-layer/contract.json');
+const artifact = require('../../../core4/modules/text-layer/artifact.json');
+const { build } = require('../../../core4/modules/text-layer/implementation');
+const { check } = require('../../../core4/protocol/schema');
 
 const target = { projectId: 'C:\\fixtures\\title-copy.aep', compId: 80 };
 const white = [1, 1, 1];
@@ -16,9 +21,9 @@ const job = {
     { number: 2, name: 'Титр 02', slot: 'title-02', format: 'author-caption-title', candidateId: 'override', lineBreaks: { title: [4] } },
   ],
 };
-const modulePin = 'a'.repeat(64);
-const contract = { moduleId: 'text-layer', operationId: 'write-point-text', contractId: 'b'.repeat(64), modulePin };
-const snapshot = { target, size: [1920, 1080], layers: [],
+const modulePin = hash(artifact);
+const contract = { moduleId: publicContract.moduleId, operationId: publicContract.operationId, contractId: 'b'.repeat(64), modulePin };
+const snapshot = { target, size: [1920, 1080], layers: [], revision: 'fixture-series',
   guides: [{ axis: 'x', position: 1740 }, { axis: 'y', position: 200 }, { axis: 'x', position: 180 }, { axis: 'y', position: 880 }] };
 const inspection = { snapshot, modulePin, evidenceRef: 'evidence-native', synthetic: false };
 
@@ -37,6 +42,7 @@ test('numbered source becomes two exact jobs with separate rubric styles and an 
 test('series compiler uses fresh evidence and an explicit layer ID to edit exactly one title', () => {
   const created = prepareSeriesWrite(job, { number: 1 }, contract, inspection);
   assert.equal(created.steps[0].input.layerId, undefined);
+  check(publicContract.inputSchema, build({ input: created.steps[0].input, evidence: snapshot }).input);
   const withLayers = { ...inspection, snapshot: { ...snapshot, layers: [
     { slot: 'title-01', layerId: 81, name: 'Титр 01' }, { slot: 'title-02', layerId: 82, name: 'Титр 02' },
   ] } };
@@ -46,6 +52,7 @@ test('series compiler uses fresh evidence and an explicit layer ID to edit exact
   assert.equal(edit.steps.length, 1);
   assert.equal(edit.steps[0].input.layerId, 81);
   assert.equal(edit.steps[0].evidenceRef, withLayers.evidenceRef);
+  check(publicContract.inputSchema, build({ input: edit.steps[0].input, evidence: withLayers.snapshot }).input);
 });
 
 test('ambiguous guides, duplicate slots, stale module and unrelated project are rejected', () => {
