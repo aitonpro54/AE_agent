@@ -21,6 +21,11 @@
     { "prefix": "core4/config/admissions/comp-render.json", "owner": "comp-render", "checks": ["comp-render"] },
     { "prefix": "core4/runtime/comp-render-proof.js", "owner": "comp-render", "checks": ["comp-render"] },
     { "prefix": "core4/test/comp-render.test.js", "owner": "comp-render", "checks": ["comp-render"] },
+    { "prefix": "core4/tools/ame-media-export.js", "owner": "ame-media-export", "checks": ["ame-media-export"] },
+    { "prefix": "core4/tools/ame-isolated-export.ps1", "owner": "ame-media-export", "checks": ["ame-media-export"] },
+    { "prefix": "core4/tools/ame-isolated-host.ps1", "owner": "ame-media-export", "checks": ["ame-media-export"] },
+    { "prefix": "core4/test/ame-media-export.test.js", "owner": "ame-media-export", "checks": ["ame-media-export"] },
+    { "prefix": "core4/test/fixtures/ame-isolated-host.ps1", "owner": "ame-media-export", "checks": ["ame-media-export"] },
     { "prefix": "core4/modules/titles-point-layout/", "owner": "point-layout", "checks": ["point-layout"] },
     { "prefix": "core4/modules/titles-point-layout/contract.json", "owner": "point-layout", "checks": ["point-layout", "point-layout-integration"] },
     { "prefix": "core4/config/admissions/titles-point-layout.json", "owner": "point-layout", "checks": ["point-layout"] },
@@ -1336,6 +1341,10 @@
     "comp-render": [
       "modules/comp-render/", "runtime/comp-render-proof.js", "protocol/", "test/comp-render.test.js"
     ],
+    "ame-media-export": [
+      "tools/ame-media-export.js", "tools/ame-isolated-export.ps1", "tools/ame-isolated-host.ps1", "protocol/json.js",
+      "test/ame-media-export.test.js", "test/fixtures/ame-isolated-host.ps1"
+    ],
     "installable-runtime": [
       "runtime/",
       "cep/",
@@ -1732,6 +1741,7 @@
     "text-layer-integration": ["node", "--test", "--test-name-pattern=text-layer", "test/text-layer.test.js"],
     "text-variant": ["node", "--test", "--test-name-pattern=text-variant", "test/text-variant.test.js"],
     "comp-render": ["node", "--test", "--test-name-pattern=comp-render", "test/comp-render.test.js"],
+    "ame-media-export": ["node", "--test", "--test-name-pattern=^AME ", "test/ame-media-export.test.js"],
     "installable-runtime": [
       "node",
       "--test",
@@ -1923,6 +1933,9 @@
       "kind": "integration"
     },
     "comp-render": {
+      "kind": "integration"
+    },
+    "ame-media-export": {
       "kind": "integration"
     },
     "installable-runtime": {

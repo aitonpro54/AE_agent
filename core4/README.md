@@ -138,6 +138,32 @@ Production stdio composition даёт человеку100s caller window и90s p
 
 Далее сохранён контракт предыдущих offline M1/M2 срезов.
 
+## Изолированный экспорт Adobe Media Encoder
+
+Локальная команда из checkout Core работает на Windows с PowerShell 7 и AME,
+сборка которого совпадает с `target` и `build` в JSON задания. Для запуска нужны
+закрытый AME, сохранённый локальный `batch.xml`, пустой список watch folders и
+свободный порт `52741`. Входной MP4, AEP и `.epr` закрепляются SHA-256.
+
+```powershell
+node core4/tools/ame-media-export.js plan job.json
+node core4/tools/ame-media-export.js run job.json
+node core4/tools/ame-media-export.js read job.json
+node core4/tools/ame-media-export.js recover job.json
+```
+
+`run` сохраняет исходный файл очереди и отправляет одно задание через Adobe
+Remote AME API на loopback. После остановки тестового AME файл возвращается с
+проверкой SHA-256. Квитанции лежат рядом с выходом в каталоге
+`<output>.core4-ame.isolated`. Проверка результата покрывает нативную
+квитанцию, заголовок и хеш MP4 до 128 МиБ.
+
+После прерывания вызывайте `recover` с тем же JSON. Команда проверяет исходную
+отправку, закрывает проверенный тестовый процесс и возвращает очередь.
+При отсутствии исходного результата статус остаётся `unknown`. Успешный
+`recover` для завершённого прогона возвращает сохранённую квитанцию.
+Для следующего задания укажите новый выходной путь.
+
 ## M1/M2: самостоятельный offline-срез
 
 `core4/**` не подключает установленный AE Agent и не импортирует прежний bridge. Node builtins, Node 20+, без install. Один broker, один запускаемый по необходимости worker; engine и рабочие пакеты физически необязательны. Публичный stdio MCP использует bounded NDJSON JSON-RPC. До отдельной интеграции trusted transport/session/grant issuer `connect` возвращает `live_transport_not_installed`. Fake fallback отсутствует.
