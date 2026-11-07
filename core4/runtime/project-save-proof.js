@@ -23,9 +23,13 @@ function readAep(file, expectedStamp) {
   const { resolved, info } = plainPath(file);
   if (info.size < 1n || info.size > BigInt(MAX_BYTES)) fail(diskError);
   const stamp = { bytes: Number(info.size), modifiedMs: Number(info.mtimeNs / 1000000n) };
-  // ExtendScript and Node can round a Windows file time to different milliseconds.
-  if (expectedStamp && (stamp.bytes !== expectedStamp.bytes || !Number.isSafeInteger(expectedStamp.modifiedMs) ||
-      Math.abs(stamp.modifiedMs - expectedStamp.modifiedMs) > 1)) fail(diskError);
+  if (expectedStamp) {
+    const { modifiedMs } = expectedStamp;
+    // AE's Windows File.modified has second precision. SHA-256 binds the full preimage.
+    const matchesTime = Number.isSafeInteger(modifiedMs) && (modifiedMs % 1000 === 0
+      ? Math.floor(stamp.modifiedMs / 1000) * 1000 === modifiedMs : Math.abs(stamp.modifiedMs - modifiedMs) <= 1);
+    if (stamp.bytes !== expectedStamp.bytes || !matchesTime) fail(diskError);
+  }
   const fd = fs.openSync(resolved, 'r');
   const assertSame = observed => {
     if (['dev', 'ino', 'size', 'mtimeNs', 'ctimeNs', 'nlink'].some(key => observed[key] !== info[key])) fail(diskError);
@@ -45,8 +49,15 @@ function readAep(file, expectedStamp) {
 }
 
 function createProjectSaveProof({ stateDir, currentSessionId }) {
-  const checkpointRoot = path.join(stateDir, 'project-save-checkpoints');
-  function checkpointPath(ref) {
+  function checkpointDirectory() {
+    const logical = fs.lstatSync(stateDir, { bigint: true });
+    if (!logical.isDirectory() || logical.isSymbolicLink() || !samePath(fs.realpathSync(stateDir), stateDir)) fail(diskError);
+    // AE runs outside Codex's MSIX filesystem redirection and needs the physical path.
+    const physical = plainPath(fs.realpathSync.native(stateDir), true);
+    if (logical.dev !== physical.info.dev || logical.ino !== physical.info.ino) fail(diskError);
+    return path.join(physical.resolved, 'project-save-checkpoints');
+  }
+  function checkpointPath(checkpointRoot, ref) {
     if (!/^checkpoint-[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(ref)) fail('save_checkpoint_binding');
     return path.join(checkpointRoot, ref + '.aep');
   }
@@ -60,14 +71,14 @@ function createProjectSaveProof({ stateDir, currentSessionId }) {
       if (target.sessionId !== currentSessionId()) fail('save_work_session_changed');
     },
     prepareCheckpoint({ input, before, checkpoint }) {
+      const checkpointRoot = checkpointDirectory();
       if (input.checkpointRoot !== checkpointRoot || !sha256.test(input.expectedSavedSha256)) fail('save_checkpoint_binding');
       const source = readAep(input.projectId, before.fileStamp);
       if (source.digest !== input.expectedSavedSha256) fail('save_disk_changed');
-      plainPath(stateDir, true);
       try { fs.mkdirSync(checkpointRoot, { mode: 0o700 }); }
       catch (error) { if (error.code !== 'EEXIST') throw error; }
       plainPath(checkpointRoot, true);
-      const file = checkpointPath(checkpoint.ref);
+      const file = checkpointPath(checkpointRoot, checkpoint.ref);
       const fd = fs.openSync(file, 'wx', 0o600);
       try { fs.writeFileSync(fd, source.bytes); fs.fsyncSync(fd); }
       finally { fs.closeSync(fd); }
@@ -79,16 +90,18 @@ function createProjectSaveProof({ stateDir, currentSessionId }) {
       if (canonical(snapshot.target) !== canonical({ projectId, sessionId }) || snapshot.protected !== projectId ||
           typeof snapshot.revision !== 'string' || typeof snapshot.dirty !== 'boolean' || !snapshot.fileStamp) fail(diskError);
       const saved = readAep(projectId, snapshot.fileStamp);
+      const checkpointRoot = checkpointDirectory();
       const observed = { ...snapshot, savedFileSha256: saved.digest, checkpointRoot };
       if (command.phase !== 'mutate') return observed;
       const { expectedSavedSha256, expectedFileStamp, _execution } = command.payload;
-      if (snapshot.dirty || !sha256.test(expectedSavedSha256)) fail(diskError);
+      if (snapshot.dirty || !sha256.test(expectedSavedSha256) || command.payload.checkpointRoot !== checkpointRoot) fail(diskError);
       plainPath(checkpointRoot, true);
-      const checkpoint = checkpointFacts(checkpointPath(_execution.checkpointRef), expectedSavedSha256, expectedFileStamp.bytes);
+      const checkpoint = checkpointFacts(checkpointPath(checkpointRoot, _execution.checkpointRef), expectedSavedSha256, expectedFileStamp.bytes);
       return { ...observed, checkpoint };
     },
     validateResult({ input, before, checkpoint }, after) {
-      const expected = { path: checkpointPath(checkpoint.ref), sha256: input.expectedSavedSha256,
+      const checkpointRoot = checkpointDirectory();
+      const expected = { path: checkpointPath(checkpointRoot, checkpoint.ref), sha256: input.expectedSavedSha256,
         bytes: before.fileStamp.bytes, scope: 'on-disk-before-save' };
       if (after.dirty !== false || !sha256.test(after.savedFileSha256) || after.checkpointRoot !== checkpointRoot ||
           canonical(after.checkpoint) !== canonical(expected)) fail('save_disk_readback');

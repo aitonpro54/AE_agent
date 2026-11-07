@@ -4,14 +4,14 @@
     function fault(code) { var error = new Error(code); error.coreCode = code; throw error; }
     function current(p) {
         var project = app.project;
-        if (!project || !project.file || String(project.file.fsName) !== p.projectId ||
-            !/\.aep$/i.test(p.projectId) || project.isTeamProjectOpen && project.isTeamProjectOpen()) fault('save_project_changed');
+        if (!project || !project.file || String(project.file.fsName) !== p.projectId || !/\.aep$/i.test(p.projectId)) fault('save_project_changed');
         return project;
     }
     function snapshot(p) {
         var project = current(p), file = project.file, revision = project.revision;
-        if (typeof revision !== 'number' || !isFinite(revision) || Math.floor(revision) !== revision || revision < 1 ||
-            typeof project.dirty !== 'boolean' || !file.exists || file.alias || !file.modified || file.length < 1) fault('save_project_unavailable');
+        if (typeof revision !== 'number' || !isFinite(revision) || Math.floor(revision) !== revision || revision < 0) fault('save_revision_unavailable');
+        if (typeof project.dirty !== 'boolean') fault('save_dirty_unavailable');
+        if (!file.exists || file.alias || file.length < 1 || !file.modified) fault('save_file_unavailable');
         var stamp = { bytes: file.length, modifiedMs: file.modified.getTime() }, dirty = project.dirty;
         return { target: { sessionId: p.sessionId, projectId: p.projectId },
             revision: JSON.stringify([revision, dirty, stamp.bytes, stamp.modifiedMs]), 'protected': p.projectId,
@@ -19,7 +19,7 @@
     }
     function read(p) {
         try { return snapshot(p); }
-        catch (error) { return { readFailureVersion: 1, outcome: 'rejected', code: 'inspection_failed' }; }
+        catch (error) { return { readFailureVersion: 1, outcome: 'rejected', code: error.coreCode || 'inspection_failed' }; }
     }
     function key(path) { return String(path).replace(/\\/g, '/'); }
     function checkBytes(original, checkpoint, bytes) {

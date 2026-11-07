@@ -12,6 +12,7 @@ function consumeProjectObservation(peer, result) {
 }
 const TITLES_READ_FIELDS = ['font', 'font_size', 'apply_fill', 'fill_color', 'apply_stroke', 'stroke_color', 'stroke_width', 'tracking', 'baseline_shift', 'horizontal_scale', 'vertical_scale', 'faux_bold', 'faux_italic', 'justification', 'leading', 'auto_leading'];
 const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsupported_animated_text', 'unsupported_style_proof', 'unsupported_style_api', 'unsupported_mixed_style', 'unsupported_justification_enum', 'titles_native_target', 'titles_native_document', 'titles_native_text', 'titles_native_range', 'titles_native_serialization', ...TITLES_READ_FIELDS.flatMap(field => ['titles_native_' + field, 'titles_missing_' + field])]);
+const SAVE_READ_CODES = new Set(['save_project_changed', 'save_revision_unavailable', 'save_dirty_unavailable', 'save_file_unavailable']);
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
 }
@@ -135,7 +136,9 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         let result = b.payload.result;
         if (result.readFailureVersion === 1) {
           exact(result, ['readFailureVersion', 'outcome', 'code']);
-          if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code) && !(titlesReadCommand(c.command, selectedAsset) && TITLES_READ_CODES.has(result.code))) fail('inspection_result');
+          if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code) &&
+              !(titlesReadCommand(c.command, selectedAsset) && TITLES_READ_CODES.has(result.code)) &&
+              !(projectSave && c.command.phase !== 'mutate' && SAVE_READ_CODES.has(result.code))) fail('inspection_result');
         } else if (manualResultProfile(selectedAsset)) {
           if (c.command.phase === 'mutate') {
             exact(result, ['outcome', 'snapshot', 'code', 'transactionReceipt']);
@@ -185,7 +188,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         const response = { protocolVersion: 1, commandId: c.command.commandId, executorHash: c.command.executorHash, payloadHash: c.command.payloadHash, result }; store.complete(b.payload.commandId, response);
         // One bounded observation of an already durable, authenticated completion.
         // It is not evidence/grant or a statement about current runtime/history.
-        if (result.readFailureVersion === 1 && ['inspect', 'verify'].includes(c.command.phase)) lastReadFailure = Object.freeze({ commandId: c.command.commandId, moduleId: c.command.moduleId, phase: c.command.phase, executorHash: c.command.executorHash, code: result.code, authority: false });
+        if ((result.readFailureVersion === 1 || projectSave && result.diskProofError) && ['inspect', 'verify'].includes(c.command.phase)) lastReadFailure = Object.freeze({ commandId: c.command.commandId, moduleId: c.command.moduleId, phase: c.command.phase, executorHash: c.command.executorHash, code: result.diskProofError || result.code, authority: false });
         const done = pending; pending = null; clearTimeout(done.timer);
         signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } });
         if (projectSave && result.diskProofError) {

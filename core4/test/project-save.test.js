@@ -17,7 +17,10 @@ function saveEnvironment(state) {
   class File {
     constructor(file) { this.fsName = path.normalize(file); this.offset = 0; }
     get exists() { return fs.existsSync(this.fsName); }
-    get modified() { return fs.statSync(this.fsName).mtime; }
+    get modified() {
+      const { mtimeMs } = fs.statSync(this.fsName);
+      return new Date(state.flags.nativeSeconds ? Math.floor(mtimeMs / 1000) * 1000 : Math.round(mtimeMs));
+    }
     get length() { return fs.statSync(this.fsName).size; }
     open(mode) { assert.equal(mode, 'r'); assert.equal(this.encoding, 'BINARY'); this.fd = fs.openSync(this.fsName, 'r'); return true; }
     seek(offset, mode) { assert.equal(mode, 0); this.offset = offset; return true; }
@@ -74,7 +77,7 @@ test('project-save is opt-in and ships in the fixed ES3 registry', () => {
 });
 
 test('project-save verifies a durable checkpoint before one native save and records a fresh disk read', async t => {
-  const f = await flow(t, { confirm: ({ message, state }) => {
+  const f = await flow(t, { flags: { nativeSeconds: true }, confirm: ({ message, state }) => {
     assert.ok(message.includes(state.projectId));
     const files = fs.readdirSync(path.join(state.stateDir, 'project-save-checkpoints'));
     assert.equal(files.length, 1);
