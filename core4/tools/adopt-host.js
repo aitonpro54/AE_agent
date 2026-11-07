@@ -68,7 +68,12 @@ function verifyInstallation(file, options = {}) {
   const manifest = JSON.parse(fs.readFileSync(path.join(d.releaseDir, 'release.json'), 'utf8'));
   if (hash(manifest) !== d.packageHash) fail('installation_package_hash');
   verifyRelease(d.releaseDir, manifest);
-  if (d.version === 2) { const receiver = JSON.parse(fs.readFileSync(path.join(d.releaseDir, 'runtime/receiver-contract.json'), 'utf8')); if (receiver.version !== 1 || receiver.descriptorVersion !== 2 || receiver.journalFormat !== d.receiverFormatVersion || receiver.terminalReadFailureDispositionVersion !== 1) fail('installation_receiver_contract'); verifyCep(d, manifest, d.cepDir); }
+  if (d.version === 2) {
+    // The verified release owns the composition and the generated CEP config.
+    if (!Object.hasOwn(manifest.hashes, 'runtime/stdio-entry.js')) fail('installation_verifier_missing');
+    const verifier = require(path.join(d.releaseDir, 'runtime/stdio-entry.js'));
+    if (canonical(verifier.verifyInstallation(file)) !== canonical(d)) fail('installation_changed_during_adoption');
+  }
   else if (cepDir) verifyCep(d, manifest, cepDir);
   return Object.freeze(d);
 }

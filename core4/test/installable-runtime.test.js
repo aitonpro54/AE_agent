@@ -733,6 +733,29 @@ test('installable-runtime private adoption bootstrap imports no mutable operator
   fs.writeFileSync(path.join(d.releaseDir, 'runtime/windows-reservation-provider.js'), 'require("node:fs").writeFileSync(' + JSON.stringify(sentinel) + ',"executed");');
   const unverified = spawnSync(process.execPath, [operator, '--installation', installed.descriptorPath, '--witness', witness], { encoding: 'utf8', windowsHide: true, timeout: 5000 }); assert.equal(unverified.status, 1); assert.match(unverified.stderr, /installed_release_bytes/); assert.equal(fs.existsSync(sentinel), false);
 });
+test('installable-runtime private adoption preflight verifies the installed Titles composition', t => {
+  const directory = temp();
+  t.after(() => {
+    assert.equal(path.dirname(fs.realpathSync(directory)), fs.realpathSync(os.tmpdir()));
+    assert.match(path.basename(directory), /^core4-installable-/);
+    fs.rmSync(directory, { recursive: true, force: true });
+  });
+  const { plan } = install(directory, buildPackage(root, 'manual-titles-variants', { runtimeModel: 'owner' }));
+  const installed = applyInstall(plan), d = JSON.parse(fs.readFileSync(installed.descriptorPath));
+  const witness = path.join(directory, 'witness.json');
+  fs.writeFileSync(witness, JSON.stringify({ installationId: 'wrong-witness', machineId: d.machineId }));
+  const invoke = () => spawnSync(process.execPath, [path.join(root, 'tools/adopt-host.js'), '--installation', installed.descriptorPath, '--witness', witness],
+    { encoding: 'utf8', windowsHide: true, timeout: 5000 });
+  const verified = invoke();
+  assert.equal(verified.status, 1);
+  assert.equal(verified.stderr.trim(), 'adoption_witness_identity');
+  fs.appendFileSync(path.join(d.cepDir, 'installation.js'), '\n/* changed CEP config */\n');
+  const tampered = invoke();
+  assert.equal(tampered.status, 1);
+  assert.equal(tampered.stderr.trim(), 'installation_cep_bytes');
+  assert.equal(fs.existsSync(path.join(d.stateDir, 'host-adoption.json')), false);
+  assert.equal(fs.existsSync(path.join(d.installRoot, 'install.lock')), false);
+});
 test('installable-runtime real stdio process crash after delivery preserves original ongoing record and blocks new reads after restart', async t => {
   const directory = temp(), { plan } = install(directory), installed = applyInstall(plan), d = JSON.parse(fs.readFileSync(installed.descriptorPath));
   function launch() {
