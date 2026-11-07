@@ -37,7 +37,8 @@ test('owner-installation runtime selector is independent of composition and owne
     assert.equal(binding.runtimeModel, model); assert.equal(verifyPackage(p), p);
     assert.equal(Object.hasOwn(p.files, 'runtime/client-entry.js'), model === 'owner');
     assert.ok(p.files['runtime/composition-policy.json']);
-    assert.equal(Object.keys(p.files).length, (composition === 'readonly' ? 41 : 60) + (model === 'owner' ? 21 : 0));
+    assert.equal(Object.hasOwn(p.files, 'runtime/photo-source-proof.js'), composition === 'manual');
+    assert.equal(Object.keys(p.files).length, (composition === 'readonly' ? 41 : 61) + (model === 'owner' ? 21 : 0));
   }
   assert.equal(buildPackage(SOURCE, 'readonly').packageHash, pkg('readonly', 'stdio').packageHash);
   const p = pkg(), contract = JSON.parse(Buffer.from(p.files['runtime/owner-contract.json'], 'base64'));
