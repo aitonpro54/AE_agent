@@ -1,0 +1,429 @@
+{
+  "moduleId": "project-assembly",
+  "operationId": "assemble-composition",
+  "protocolVersion": 1,
+  "executionPolicy": "current-matching-target-after-local-confirmation-v1",
+  "targetSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId"
+    ],
+    "additionalProperties": false
+  },
+  "buildSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 96
+      },
+      "width": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 8192
+      },
+      "height": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 8192
+      },
+      "fps": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 120
+      },
+      "durationFrames": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 86400
+      },
+      "layers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 96
+            },
+            "sourceId": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "file": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "inFrame": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 86400
+            },
+            "outFrame": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 86400
+            }
+          },
+          "required": [
+            "name",
+            "inFrame",
+            "outFrame"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 0,
+        "maxItems": 12
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "name",
+      "width",
+      "height",
+      "fps",
+      "durationFrames",
+      "layers"
+    ],
+    "additionalProperties": false
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 96
+      },
+      "width": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 8192
+      },
+      "height": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 8192
+      },
+      "fps": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 120
+      },
+      "durationFrames": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 86400
+      },
+      "layers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 96
+            },
+            "sourceId": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "file": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "inFrame": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 86400
+            },
+            "outFrame": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 86400
+            }
+          },
+          "required": [
+            "name",
+            "inFrame",
+            "outFrame"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 0,
+        "maxItems": 12
+      },
+      "expectedRevision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 32768
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "name",
+      "width",
+      "height",
+      "fps",
+      "durationFrames",
+      "layers",
+      "expectedRevision"
+    ],
+    "additionalProperties": false
+  },
+  "snapshotSchema": {
+    "type": "object",
+    "properties": {
+      "target": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192
+          }
+        },
+        "required": [
+          "sessionId",
+          "projectId"
+        ],
+        "additionalProperties": false
+      },
+      "revision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 32768
+      },
+      "protected": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8192
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "name": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 512
+            },
+            "parentId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "comp",
+                "still",
+                "other"
+              ]
+            },
+            "file": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8192
+            },
+            "duration": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10800
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "parentId",
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 0,
+        "maxItems": 128
+      },
+      "assemblies": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 4,
+              "maximum": 8192
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 4,
+              "maximum": 8192
+            },
+            "frameDuration": {
+              "type": "number",
+              "minimum": 0.008264462809917356,
+              "maximum": 1.001
+            },
+            "duration": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 86400
+            },
+            "layers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "sourceId": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 96
+                  },
+                  "inPoint": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 86400
+                  },
+                  "outPoint": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 86400
+                  },
+                  "startTime": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 86400
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "sourceId",
+                  "name",
+                  "inPoint",
+                  "outPoint",
+                  "startTime",
+                  "enabled"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 12
+            },
+            "pixelAspect": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 10
+            }
+          },
+          "required": [
+            "id",
+            "width",
+            "height",
+            "frameDuration",
+            "duration",
+            "layers",
+            "pixelAspect"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 0,
+        "maxItems": 16
+      }
+    },
+    "required": [
+      "target",
+      "revision",
+      "protected",
+      "items",
+      "assemblies"
+    ],
+    "additionalProperties": false
+  },
+  "effectPolicy": {
+    "effect": "project-composition-assembly",
+    "targetFields": [
+      "sessionId",
+      "projectId"
+    ],
+    "expectedBindings": {
+      "expectedRevision": "revision"
+    },
+    "resultBindings": {},
+    "preserve": [
+      "protected"
+    ],
+    "requiresCheckpoint": true,
+    "confirmation": "native-current-target",
+    "checkpointKind": "owned-project-assembly-preimage-v1"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "parent": "manual-titles-variants",
+  "modules": ["project-assembly"],
+  "assets": [
+    {
+      "assetKey": "project-assembly-v1",
+      "moduleId": "project-assembly",
+      "path": "modules/project-assembly",
+      "admission": "config/admissions/project-assembly.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    }
+  ],
+  "profiles": {
+    "project-assembly": {
+      "operationId": "assemble-composition",
+      "resultProfile": "owned-project-assembly-v1"
+    }
+  },
+  "bundle": {
+    "files": ["runtime/project-assembly-proof.js", "config/admissions/project-assembly.json"],
+    "artifactClosures": ["modules/project-assembly/artifact.json"]
+  }
+}

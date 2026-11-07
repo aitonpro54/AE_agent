@@ -18,6 +18,7 @@ const POLICY_FILE = 'runtime/composition-policy.json';
 const RESULT_PROFILES = Object.freeze({
   'manual-text-v1': null,
   'photo-source-v1': 'runtime/photo-source-proof.js',
+  'owned-project-assembly-v1': 'runtime/project-assembly-proof.js',
   'manual-point-layout-v1': 'runtime/point-layout-proof.js',
   'owned-text-layer-v1': 'runtime/text-layer-proof.js',
   'owned-text-variant-v1': 'runtime/text-variant-proof.js',
@@ -61,7 +62,9 @@ function declarativeProfiles(composition, release, json, checked) {
         asset.policy !== 'current-matching-target-after-local-confirmation-v1' || canonical(asset.phases) !== '["inspect","mutate","verify"]' ||
         typeof profile.resultProfile !== 'string' || !Object.hasOwn(RESULT_PROFILES, profile.resultProfile) ||
         (profile.resultProfile === 'manual-text-v1') !== (id === 'titles-current-target') ||
-        profile.resultProfile === 'photo-source-v1' && (id !== 'photo-placeholder' || profile.operationId !== 'replace-source')) fail('composition_not_admitted');
+        profile.resultProfile === 'photo-source-v1' && (id !== 'photo-placeholder' || profile.operationId !== 'replace-source') ||
+        (profile.resultProfile === 'owned-project-assembly-v1') !== (id === 'project-assembly') ||
+        id === 'project-assembly' && profile.operationId !== 'assemble-composition') fail('composition_not_admitted');
     const proof = RESULT_PROFILES[profile.resultProfile];
     if (proof) { checked(proof); proofPaths.add(proof); }
   }
@@ -395,6 +398,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       switch (item.resultProfile) {
         case 'manual-text-v1': return binding;
         case 'photo-source-v1': return { ...binding, ...require('./photo-source-proof.js').createPhotoSourceProof(() => workSession?.status().sessionId ?? installation.installationId) };
+        case 'owned-project-assembly-v1': return { ...binding, ...require('./project-assembly-proof.js').createProjectAssemblyProof(() => workSession?.status().sessionId ?? installation.installationId) };
         case 'manual-point-layout-v1': return { ...binding, proof: require('./point-layout-proof.js').createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
         case 'owned-text-layer-v1': return { ...binding, validateResult: require('./text-layer-proof.js').validateTextLayerCompletion };
         case 'owned-text-variant-v1': return { ...binding, validateResult: require('./text-variant-proof.js').validateTextVariantCompletion };

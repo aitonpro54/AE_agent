@@ -722,3 +722,40 @@ P1–P8 остаётся открытой; локальный успех уст�
 - Configured Codex MCP client не перечитал новую запись в активном чате. Поддержанный CLI app-server proxy не подключился к default control socket (os error10050); новый app-server/чат не создавался, Codex UI не автоматизировался. Для отдельного read-only proof использован root-owned installed stdio client. Он штатно закрыт exit0 без native dispatch; temporary MCP enabled=false восстановлен в true.
 - Для измерения Origin подготовлен отдельный one-request observer на том же127.0.0.1:3457: только header classification, без Core imports/credentials/challenge issuance/AE commands. До следующего CU действия пользователь остановил Computer Use физическим Esc; root прекратил UI и закрыл observer. Native inspection/mutation не выполнялись, AEP не открывался/не менялся, save0. Полная живая приёмка **не завершена**.
 - Следующий ограниченный шаг: измерить actual Origin собственного CEP, затем независимо проверить точный authenticated origin contract без отключения Host/Origin/MAC gates; после scoped repair повторить один native read пустого проекта и configured-client reconnect. Требуется новое разрешение продолжить Computer Use после пользовательской остановки; source/read-only продолжение само по себе не отменяет эту остановку.
+
+## 7 ноября. Типизированная сборка проекта и приоритет штатных операций
+
+### Progress
+
+- В `AGENTS.md` закреплена проверка контракта Core и каталога 3.3.5 перед
+  повторяемым действием через Computer Use.
+- `manual-project-assembly/owner` добавляет `project-assembly / assemble-composition`.
+  Один подтверждённый план в уже сохранённом AEP создаёт композицию, импортирует
+  локальные JPEG/PNG и раскладывает до 12 фото или существующих прекомпов по кадрам.
+  Допустима пустая композиция. Для дробного fps используется фактическая
+  сетка кадров, возвращённая AE.
+
+### Decision Log
+
+- Для AE API переиспользованы приёмы старых `create_comp`, `import_footage` и
+  `add_project_item_to_comp`. Новый исполнитель использует собственный контракт
+  Core4, точную цель, проектный checkpoint, действующий lease и нативный диалог.
+  После диалога перечитываются целевой AEP и входные файлы. Сбой после начала
+  записи оставляет исходную команду в `UNKNOWN`.
+- Следующий самостоятельный шаг — типизированное сохранение текущего рабочего AEP
+  с побайтным файловым checkpoint и подтверждённым результатом на диске. Создание
+  или открытие AEP отдельно связывает смену проекта с рабочей сессией Core.
+
+### Validation
+
+- Первоначальный прогон `project-assembly`, `installed-composition`, `manual-runtime`
+  и `package-location` прошёл 82/82. После расширения формата fps прошли все пять
+  тестов сборки, обнаружение через временный установленный MCP и `package-location`.
+  Сквозной тест использует Broker → signed HTTP → собранный ES3 registry с имитацией
+  AE. Сборки воспроизводимы из путей с пробелами и Unicode, 48 случаев размещения.
+- После объединения с принятым Slideshow `a88cec7` прошло 18/18 тестов сборки,
+  рендера и компилятора S1. Границы 66 файлов и `git diff --check` пройдены.
+  Общий MSI standalone `b0622b971eaeffc0e0d05e1330bbfa9683c753ca1b3a75fcbd26455e824c2ad1`
+  содержит 131 файл. Пакет `86b68cdf2b089d82b6c4a9a12734a4002bac80aa0834b62c0e7c7a6efbb1ae36`.
+- Остаются штатная установка общего состава на MSI и один нативный прогон
+  на собственном AEP. Десктоп отложен по поручению пользователя.

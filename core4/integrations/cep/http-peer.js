@@ -15,7 +15,7 @@ const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsu
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
 }
-function manualResultProfile(asset) { return ['manual-text-v1', 'photo-source-v1', 'manual-point-layout-v1', 'owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1'].includes(asset.resultProfile); }
+function manualResultProfile(asset) { return ['manual-text-v1', 'photo-source-v1', 'manual-point-layout-v1', 'owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1', 'owned-project-assembly-v1'].includes(asset.resultProfile); }
 function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
   if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
@@ -134,6 +134,10 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
             exact(result, ['target', 'revision', 'protected', 'sourceId', 'source']);
             if (!result.target || typeof result.revision !== 'string' || typeof result.protected !== 'string' ||
                 !Number.isSafeInteger(result.sourceId) || result.sourceId < 1 || !result.source) fail('manual_snapshot');
+          } else if (selectedAsset.resultProfile === 'owned-project-assembly-v1') {
+            exact(result, ['target', 'revision', 'protected', 'items', 'assemblies']);
+            if (!result.target || typeof result.revision !== 'string' || typeof result.protected !== 'string' ||
+                !Array.isArray(result.items) || !Array.isArray(result.assemblies)) fail('manual_snapshot');
           } else if (['owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1'].includes(selectedAsset.resultProfile)) {
             const fields = ['target', 'revision', 'protected', 'layers'];
             if (selectedAsset.resultProfile === 'owned-text-layer-v1') fields.push('size', 'guides');

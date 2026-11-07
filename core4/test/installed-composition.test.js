@@ -95,6 +95,17 @@ test('installed-composition text-layer is opt-in and preserves earlier Titles ar
   assert.ok(enabled.files['modules/text-layer/executor.jsx']);
   assert.equal(old.files['modules/text-layer/executor.jsx'], undefined);
 });
+test('installed-composition project assembly is discovered by the installed MCP entry', { timeout: 15000 }, async () => {
+  const pkg = buildPackage(root, 'manual-project-assembly');
+  const f = install(pkg), h = rpcChild(f);
+  try {
+    await h.message('listening');
+    assert.equal((await h.call('core_status')).composition, 'manual-project-assembly');
+    const contract = await h.call('get_module_contract', { moduleId: 'project-assembly' });
+    assert.equal(contract.operationId, 'assemble-composition');
+    assert.deepEqual(contract.contract.effectPolicy.targetFields, ['sessionId', 'projectId']);
+  } finally { await h.close(); fs.rmSync(f.directory, { recursive: true, force: true }); }
+});
 test('installed-composition admits a new render operation through declarations on a relocated source and installed tree', { timeout: 15000 }, async t => {
   const source = temp(), moduleId = 'fixture-render', operationId = 'fixture-render-variant', relative = 'modules/' + moduleId;
   t.after(() => fs.rmSync(source, { recursive: true, force: true }));
