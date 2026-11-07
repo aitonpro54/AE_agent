@@ -1,5 +1,5 @@
 'use strict';
-// Offline assembly of one reviewed slot in a fixed manual/owner release.
+// Offline replacement of one reviewed slot in a pinned Owner release.
 const fs = require('node:fs');
 const path = require('node:path');
 const { Script } = require('node:vm');
@@ -9,13 +9,12 @@ const { deriveComposition, registrySource } = require('../runtime/stdio-entry');
 const { runtimeBinding, verifyPackage } = require('./package-installable');
 const { bundleStandalone, writeStandalone } = require('./package-standalone-installer');
 
-const MODULE = 'titles-current-target';
-const MODULE_PATH = 'modules/' + MODULE;
-const ADMISSION_PATH = 'config/admissions/' + MODULE + '.json';
+const DEFAULT_MODULE = 'titles-current-target';
 const ARTIFACT_FILES = ['contract.json', 'executor.jsx', 'implementation.js'];
 const MODULE_FILES = ['artifact.json', ...ARTIFACT_FILES];
 const FILE_LIMIT = 64 * 1024;
 const SHA256 = /^[a-f0-9]{64}$/;
+const MODULE_ID = /^[a-z][a-z0-9-]{0,63}$/;
 
 function exact(value, keys, code) {
   if (!value || Object.getPrototypeOf(value) !== Object.prototype ||
@@ -58,10 +57,11 @@ function verifyCapability(bundle, expectedHash) {
   exact(bundle, ['capabilityHash', 'manifest', 'files'], 'capability_schema');
   const { manifest, files, capabilityHash } = bundle;
   exact(manifest, ['version', 'moduleId', 'hashes'], 'capability_schema');
+  const moduleId = manifest.moduleId;
   exact(manifest.hashes, MODULE_FILES, 'capability_closure');
   exact(files, MODULE_FILES, 'capability_closure');
   if (MODULE_FILES.some(name => typeof manifest.hashes[name] !== 'string' || !SHA256.test(manifest.hashes[name]))) fail('capability_schema');
-  if (manifest.version !== 1 || manifest.moduleId !== MODULE ||
+  if (manifest.version !== 1 || typeof moduleId !== 'string' || !MODULE_ID.test(moduleId) ||
       typeof expectedHash !== 'string' || !SHA256.test(expectedHash) ||
       capabilityHash !== expectedHash || hash(manifest) !== expectedHash) fail('capability_pin');
   const source = {};
@@ -77,25 +77,27 @@ function verifyCapability(bundle, expectedHash) {
   exact(artifact, ['id', 'version', 'entry', 'hashes', 'publicDependencies'], 'capability_artifact');
   exact(artifact.publicDependencies, [], 'capability_dependencies');
   exact(artifact.hashes, ARTIFACT_FILES, 'capability_artifact');
-  if (artifact.id !== MODULE || typeof artifact.version !== 'string' || !/^\d{1,8}\.\d{1,8}\.\d{1,8}$/.test(artifact.version) ||
+  if (artifact.id !== moduleId || typeof artifact.version !== 'string' || !/^\d{1,8}\.\d{1,8}\.\d{1,8}$/.test(artifact.version) ||
       artifact.entry !== 'implementation.js' || ARTIFACT_FILES.some(name => artifact.hashes[name] !== manifest.hashes[name])) fail('capability_artifact');
   const contract = JSON.parse(source['contract.json']);
-  if (contract?.moduleId !== MODULE || contract.operationId !== 'set-current-text') fail('capability_contract_incompatible');
+  if (contract?.moduleId !== moduleId || typeof contract.operationId !== 'string' || !MODULE_ID.test(contract.operationId)) fail('capability_contract_incompatible');
   reviewCode(source['implementation.js']);
   new Script(source['implementation.js'], { filename: 'implementation.js' });
   return { artifact, contract };
 }
 
-function packageCapability(directory = path.resolve(__dirname, '..', MODULE_PATH)) {
+function packageCapability(directory = path.resolve(__dirname, '..', 'modules', DEFAULT_MODULE)) {
   plain(directory, true);
   if (canonical(fs.readdirSync(directory).sort()) !== canonical(MODULE_FILES)) fail('capability_closure');
   const files = {}, hashes = {};
+  let moduleId;
   for (const name of MODULE_FILES) {
     const bytes = readBounded(path.join(directory, name), FILE_LIMIT);
+    if (name === 'artifact.json') moduleId = JSON.parse(utf8(bytes))?.id;
     files[name] = bytes.toString('base64');
     hashes[name] = hash(bytes);
   }
-  const manifest = { version: 1, moduleId: MODULE, hashes };
+  const manifest = { version: 1, moduleId, hashes };
   const bundle = { manifest, files, capabilityHash: hash(manifest) };
   verifyCapability(bundle, bundle.capabilityHash);
   return bundle;
@@ -116,13 +118,20 @@ function composeCapability(base, bundle, admissionBytes, { basePin, capabilityPi
   verifyPackage(base);
   const readBase = file => Buffer.from(base.files[file], 'base64');
   const selected = deriveComposition(base.release, readBase);
-  if (!['4.1.0', '4.1.1'].includes(base.release.version) || selected.composition?.id !== 'manual' ||
+  const composition = selected.composition;
+  if (!['4.1.0', '4.1.1'].includes(base.release.version) || !composition || composition.id === 'readonly' ||
+      (composition.version === 1 && composition.id !== 'manual') ||
       runtimeBinding(base.release, readBase).runtimeModel !== 'owner') fail('capability_base_composition');
   const { artifact, contract } = verifyCapability(bundle, capabilityPin);
+  const moduleId = artifact.id;
+  const existing = selected.assets.find(asset => asset.moduleId === moduleId && asset.resultProfile);
+  const admissionPath = 'config/admissions/' + moduleId + '.json';
+  if (!existing || (composition.version === 1 && moduleId !== DEFAULT_MODULE)) fail('capability_base_slot');
+  exact(existing.manifest.hashes, ARTIFACT_FILES, 'capability_base_slot');
+  exact(existing.manifest.publicDependencies, [], 'capability_base_slot');
   if (!Buffer.isBuffer(admissionBytes) || admissionBytes.length === 0 || admissionBytes.length > 16384 ||
       typeof admissionPin !== 'string' || !SHA256.test(admissionPin) || hash(admissionBytes) !== admissionPin) fail('capability_admission_pin');
   // Compatibility is anchored to the admitted slot, including its schemas and effect policy.
-  const existing = selected.assets.find(asset => asset.moduleId === MODULE);
   if (canonical(existing.contract) !== canonical(contract)) fail('capability_contract_incompatible');
   utf8(admissionBytes);
 
@@ -133,19 +142,19 @@ function composeCapability(base, bundle, admissionBytes, { basePin, capabilityPi
     files[file] = bytes.toString('base64');
     release.hashes[file] = hash(bytes);
   };
-  for (const name of MODULE_FILES) put(MODULE_PATH + '/' + name, Buffer.from(bundle.files[name], 'base64'));
-  put(ADMISSION_PATH, admissionBytes);
+  for (const name of MODULE_FILES) put(existing.path + '/' + name, Buffer.from(bundle.files[name], 'base64'));
+  put(admissionPath, admissionBytes);
   if (hash(release) === basePin) return base;
 
   const catalog = JSON.parse(read('config/catalog.json'));
-  catalog.modules.find(entry => entry.id === MODULE).version = artifact.version;
+  catalog.modules.find(entry => entry.id === moduleId).version = artifact.version;
   catalog.catalogRevision = 'capability-' + hash({ modules: catalog.modules, engine: catalog.engine, capabilityPin, admissionPin });
   put('config/catalog.json', Buffer.from(canonical(catalog)));
   const composed = deriveComposition(release, read);
-  const updated = composed.assets.find(asset => asset.moduleId === MODULE);
+  const updated = composed.assets.find(asset => asset.moduleId === moduleId);
   const phases = updated.phases.map(phase => 'typeof executor[' + JSON.stringify(phase) + '] === "function"');
   requireInitialization('var executor = ' + updated.executor + '\n; executor != null && ' + phases.join(' && '), 'capability_executor_interface');
-  requireInitialization('var module = {exports:{}};\n(function(module,exports){\n' + utf8(read(MODULE_PATH + '/implementation.js')) +
+  requireInitialization('var module = {exports:{}};\n(function(module,exports){\n' + utf8(read(existing.path + '/implementation.js')) +
     '\n})(module,module.exports);\nmodule.exports != null && typeof module.exports.build === "function";', 'capability_builder_interface');
   const registry = registrySource(composed.assets, utf8(read('runtime/host/json-codec.jsx')));
   requireInitialization(registry + '\n; typeof AECore4Host.dispatch === "function";', 'capability_registry_initialization');
@@ -170,7 +179,7 @@ function main([mode, ...args]) {
     if (path.resolve(output) !== output || !path.isAbsolute(output)) fail('capability_absolute_path');
     plain(path.dirname(output), true);
     fs.writeFileSync(output, canonical(bundle), { flag: 'wx' });
-    return { capabilityHash: bundle.capabilityHash, moduleId: MODULE, output };
+    return { capabilityHash: bundle.capabilityHash, moduleId: bundle.manifest.moduleId, output };
   }
   const base = JSON.parse(utf8(readBounded(options['--base'], 16 * 1024 * 1024)));
   const bundle = JSON.parse(utf8(readBounded(options['--capability'], MAX_FRAME)));

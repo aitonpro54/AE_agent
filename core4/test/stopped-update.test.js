@@ -174,6 +174,67 @@ test('C1b packages, admits and updates one independent Titles capability through
   assert.equal(fs.existsSync(h.barrier), false);
   protectedFiles.forEach((file, index) => assert.deepEqual(fs.readFileSync(file), before[index]));
 });
+test('C1c replaces an already admitted declarative text-layer slot from a relocated capability', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-операция с пробелом-'));
+  t.after(() => {
+    assert.equal(path.dirname(fs.realpathSync(root)), fs.realpathSync(os.tmpdir()));
+    assert.match(path.basename(root), /^core4-операция с пробелом-/);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+  const slot = 'text-layer', modulePath = 'modules/' + slot, admissionPath = 'config/admissions/' + slot + '.json';
+  const source = path.join(root, 'поставка');
+  fs.cpSync(path.join(SOURCE, modulePath), source, { recursive: true });
+  const base = pkg('manual-titles-variants'), baseFile = path.join(root, 'base.json');
+  const artifactFile = path.join(source, 'artifact.json'), executorFile = path.join(source, 'executor.jsx');
+  const artifact = JSON.parse(fs.readFileSync(artifactFile));
+  fs.appendFileSync(executorFile, '\n/* C1c relocated exact-byte fixture */\n');
+  artifact.version = '4.1.2';
+  artifact.hashes['executor.jsx'] = hash(fs.readFileSync(executorFile));
+  fs.writeFileSync(artifactFile, canonical(artifact));
+  const originalAdmission = Buffer.from(base.files[admissionPath], 'base64');
+  const reviewed = { ...JSON.parse(originalAdmission), artifactHash: hash(artifact),
+    executorHash: artifact.hashes['executor.jsx'], trustApprovalId: 'test-c1c-reviewed-source' };
+  const admission = Buffer.from(canonical(reviewed)), admissionFile = path.join(root, 'approval.json');
+  fs.writeFileSync(baseFile, canonical(base));
+  fs.writeFileSync(admissionFile, admission);
+
+  const capability = path.join(root, 'capability.json'), distribution = path.join(root, 'установщик');
+  const cli = (...args) => spawnSync(process.execPath, [path.join(SOURCE, 'tools/package-capability.js'), ...args],
+    { cwd: root, encoding: 'utf8', timeout: 20000, windowsHide: true });
+  const packed = cli('pack', '--source', source, '--output', capability);
+  assert.equal(packed.status, 0, packed.stderr);
+  assert.equal(JSON.parse(packed.stdout).moduleId, slot);
+  const bundle = JSON.parse(fs.readFileSync(capability));
+  assert.deepEqual(bundle, packageCapability(source));
+  const pins = { basePin: base.packageHash, capabilityPin: bundle.capabilityHash, admissionPin: hash(admission) };
+  const composed = cli('compose', '--base', baseFile, '--expected-base-hash', pins.basePin,
+    '--capability', capability, '--expected-capability-hash', pins.capabilityPin,
+    '--admission', admissionFile, '--expected-admission-sha256', pins.admissionPin, '--output', distribution);
+  assert.equal(composed.status, 0, composed.stderr);
+  const checked = verifyStandalone(distribution, JSON.parse(composed.stdout).distributionHash);
+  assert.equal(checked.capabilityBaseHash, base.packageHash);
+  assert.deepEqual(checked.pkg, composeCapability(base, bundle, admission, pins));
+  assert.deepEqual(Object.keys(checked.pkg.files).sort(), Object.keys(base.files).sort());
+  assert.deepEqual(Object.keys(base.files).filter(file => base.files[file] !== checked.pkg.files[file]).sort(),
+    [modulePath + '/artifact.json', modulePath + '/executor.jsx', admissionPath, 'config/catalog.json', 'cep/jsx/registry.jsx'].sort());
+  const smaller = pkg('manual');
+  assert.throws(() => composeCapability(smaller, bundle, admission, { ...pins, basePin: smaller.packageHash }), code('capability_base_slot'));
+  assert.throws(() => composeCapability(base, bundle, originalAdmission, { ...pins, admissionPin: hash(originalAdmission) }), code('composition_not_admitted'));
+  assert.throws(() => packageCapability(path.join(SOURCE, 'modules/comp-render')), code('capability_closure'));
+
+  const h = await harness(t, { current: base, next: checked.pkg, withHistory: true });
+  const journals = ['receiver/completions.ndjson', 'broker/ledger.ndjson'].map(file => path.join(h.d.stateDir, file));
+  const baseline = journals.map(file => fs.readFileSync(file));
+  const prepared = await h.prepared();
+  assert.equal(h.api.applyStoppedUpdate({ plan: h.plan, ...prepared }).phase, 'update-stopped');
+  const installed = h.load(path.join(SOURCE, 'runtime/stdio-entry')).verifyInstallation(h.descriptorPath);
+  assert.equal(installed.packageHash, checked.packageHash);
+  assert.equal(installed.installationId, h.d.installationId);
+  assert.equal(installed.stateDir, h.d.stateDir);
+  assert.equal(hash(fs.readFileSync(path.join(installed.releaseDir, modulePath, 'executor.jsx'))), reviewed.executorHash);
+  assert.equal((await h.api.enableStoppedUpdate({ permit: prepared.permit })).enabled, true);
+  journals.forEach((file, index) => assert.deepEqual(fs.readFileSync(file), baseline[index]));
+});
 test('one branded plan/lease/certificate updates owner while preserving the stop barrier and history', async t => {
   const h = await harness(t), protectedFiles = ['origin.json', 'state/production/origin.json'].map(n => path.join(h.args.installRoot, n)), before = protectedFiles.map(f => fs.readFileSync(f));
   const prepared = await h.prepared();
