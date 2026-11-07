@@ -7,7 +7,7 @@ const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
 const { execFileSync, spawnSync } = require('node:child_process');
 
-const VARIANTS = ['readonly', 'manual', 'manual-titles-variants', 'manual-project-assembly']
+const VARIANTS = ['readonly', 'manual', 'manual-titles-variants', 'manual-project-assembly', 'manual-project-save']
   .flatMap(composition => ['stdio', 'owner'].map(runtimeModel => ({ composition, runtimeModel })));
 const LOCATIONS = ['plain', 'with spaces', 'Юникод 日本語'];
 const SOURCE_DIRS = new Set(['cep', 'config', 'core', 'integrations', 'modules', 'plan-engine', 'protocol', 'runtime']);

@@ -27,6 +27,11 @@
     { "prefix": "core4/config/compositions/manual-project-assembly.json", "owner": "project-assembly", "checks": ["project-assembly", "installed-composition", "package-location"] },
     { "prefix": "core4/runtime/project-assembly-proof.js", "owner": "project-assembly", "checks": ["project-assembly"] },
     { "prefix": "core4/test/project-assembly.test.js", "owner": "project-assembly", "checks": ["project-assembly"] },
+    { "prefix": "core4/modules/project-save/", "owner": "project-save", "checks": ["project-save"] },
+    { "prefix": "core4/config/admissions/project-save.json", "owner": "project-save", "checks": ["project-save"] },
+    { "prefix": "core4/config/compositions/manual-project-save.json", "owner": "project-save", "checks": ["project-save", "installed-composition", "package-location"] },
+    { "prefix": "core4/runtime/project-save-proof.js", "owner": "project-save", "checks": ["project-save"] },
+    { "prefix": "core4/test/project-save.test.js", "owner": "project-save", "checks": ["project-save"] },
     { "prefix": "core4/tools/ame-media-export.js", "owner": "ame-media-export", "checks": ["ame-media-export"] },
     { "prefix": "core4/tools/ame-isolated-export.ps1", "owner": "ame-media-export", "checks": ["ame-media-export"] },
     { "prefix": "core4/tools/ame-isolated-host.ps1", "owner": "ame-media-export", "checks": ["ame-media-export"] },
@@ -1353,6 +1358,12 @@
       "tools/package-installable.js", "test/project-assembly.test.js", "test/fixtures/manual-http-runtime.js",
       "test/fixtures/ae.js"
     ],
+    "project-save": [
+      "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/",
+      "config/catalog.json", "config/admissions/", "config/compositions/", "integrations/cep/",
+      "tools/package-installable.js", "test/project-save.test.js", "test/fixtures/manual-http-runtime.js",
+      "test/fixtures/ae.js"
+    ],
     "ame-media-export": [
       "tools/ame-media-export.js", "tools/ame-isolated-export.ps1", "tools/ame-isolated-host.ps1", "protocol/json.js",
       "test/ame-media-export.test.js", "test/fixtures/ame-isolated-host.ps1"
@@ -1755,6 +1766,7 @@
     "text-variant": ["node", "--test", "--test-name-pattern=text-variant", "test/text-variant.test.js"],
     "comp-render": ["node", "--test", "--test-name-pattern=comp-render", "test/comp-render.test.js"],
     "project-assembly": ["node", "--test", "--test-name-pattern=project-assembly", "test/project-assembly.test.js"],
+    "project-save": ["node", "--test", "--test-name-pattern=project-save", "test/project-save.test.js"],
     "ame-media-export": ["node", "--test", "--test-name-pattern=^AME ", "test/ame-media-export.test.js"],
     "installable-runtime": [
       "node",
@@ -1950,6 +1962,9 @@
       "kind": "integration"
     },
     "project-assembly": {
+      "kind": "integration"
+    },
+    "project-save": {
       "kind": "integration"
     },
     "ame-media-export": {

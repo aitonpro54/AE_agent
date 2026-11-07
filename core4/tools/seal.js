@@ -24,8 +24,8 @@ function main() {
     write(dir + '/artifact.json', artifact);
     console.log(JSON.stringify({ packaged: ['cep-bridge'], pin: hash(artifact), admissionsWritten: false, ...(args.includes('--trace') ? { reads } : {}), liveCalls: 0 })); return;
   }
-  const moduleIds = ['photo-placeholder', 'titles', 'titles-current-target', 'titles-point-layout', 'text-layer', 'text-variant', 'comp-render', 'project-assembly'];
-  const optional = ['titles-point-layout', 'text-layer', 'text-variant', 'comp-render', 'project-assembly'];
+  const moduleIds = ['photo-placeholder', 'titles', 'titles-current-target', 'titles-point-layout', 'text-layer', 'text-variant', 'comp-render', 'project-assembly', 'project-save'];
+  const optional = ['titles-point-layout', 'text-layer', 'text-variant', 'comp-render', 'project-assembly', 'project-save'];
   if (moduleId && !moduleIds.includes(moduleId)) fail('unknown_module');
   if (component && !['core', 'protocol', 'worker', 'engine'].includes(component)) fail('unknown_component');
   let catalog;
@@ -35,10 +35,11 @@ function main() {
   for (const id of all ? moduleIds : moduleId ? [moduleId] : []) {
     const dir = 'modules/' + id;
     const manual = id === 'titles-current-target' || optional.includes(id);
-    const version = id === 'project-assembly' ? '4.1.2' : optional.includes(id) ? '4.1.0' : manual ? '4.0.0' : '4.0.0-m1';
+    const currentProjectModule = ['project-assembly', 'project-save'].includes(id);
+    const version = currentProjectModule ? '4.1.2' : optional.includes(id) ? '4.1.0' : manual ? '4.0.0' : '4.0.0-m1';
     const { pin } = seal(dir, id, 'implementation.js', ['implementation.js', 'contract.json', 'executor.jsx'], manual ? {} : { 'protocol/target-contract.json': true }, version);
     const contract = JSON.parse(read(dir + '/contract.json'));
-    const trustApprovalId = id === 'project-assembly' ? 'source-review-project-assembly-20261107' :
+    const trustApprovalId = currentProjectModule ? 'source-review-' + id + '-20261107' :
       ['text-layer', 'text-variant', 'comp-render'].includes(id) ? 'source-review-' + id + '-20261105' : 'M1-source-review-' + id + '-20261026';
     const admission = { moduleId: id, operationId: contract.operationId, artifactHash: pin, schemaHash: hash(contract.inputSchema), resultSchemaHash: hash(contract.snapshotSchema), effectPolicyHash: hash(contract.effectPolicy), executorHash: hash(read(dir + '/executor.jsx')), protocolVersion: 1, trustApprovalId, revoked: false };
     // Only --reviewed-source writes admission records: generated hashes are not runtime grants.

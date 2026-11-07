@@ -1,0 +1,24 @@
+{
+  "parent": "manual-project-assembly",
+  "modules": ["project-save"],
+  "assets": [
+    {
+      "assetKey": "project-save-v1",
+      "moduleId": "project-save",
+      "path": "modules/project-save",
+      "admission": "config/admissions/project-save.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    }
+  ],
+  "profiles": {
+    "project-save": {
+      "operationId": "save-current-project",
+      "resultProfile": "current-project-save-v1"
+    }
+  },
+  "bundle": {
+    "files": ["runtime/project-save-proof.js", "config/admissions/project-save.json"],
+    "artifactClosures": ["modules/project-save/artifact.json"]
+  }
+}

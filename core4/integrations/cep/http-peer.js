@@ -15,8 +15,13 @@ const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsu
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
 }
-function manualResultProfile(asset) { return ['manual-text-v1', 'photo-source-v1', 'manual-point-layout-v1', 'owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1', 'owned-project-assembly-v1'].includes(asset.resultProfile); }
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
+function manualResultProfile(asset) { return ['manual-text-v1', 'photo-source-v1', 'manual-point-layout-v1', 'owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1', 'owned-project-assembly-v1', 'current-project-save-v1'].includes(asset.resultProfile); }
+function nativeSaveResult(result, phase) {
+  if (phase === 'mutate' && result.outcome !== 'applied') return result;
+  const { savedFileSha256, checkpointRoot, checkpoint, diskProofError, ...snapshot } = phase === 'mutate' ? result.snapshot : result;
+  return phase === 'mutate' ? { ...result, snapshot } : snapshot;
+}
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], observeProjectSave, port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
   if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
   if (startOverControl !== undefined && (typeof startOverControl?.handle !== 'function' || typeof startOverControl?.status !== 'function')) fail('start_over_control');
@@ -33,6 +38,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   const completedReadErrors = new WeakMap();
   const completedProjectReads = new WeakMap();
   const assets = new Map([asset, ...additionalAssets].map(a => [a.executorHash, a])); let brokerBinding;
+  if ([...assets.values()].some(a => a.resultProfile === 'current-project-save-v1') && typeof observeProjectSave !== 'function') fail('save_disk_observer_required');
   const pins = Object.freeze({ packageHash: installation.packageHash, executorHash: asset.executorHash, installationId: installation.installationId });
   const commandPins = command => ({ ...pins, executorHash: command.executorHash });
   function disconnect(reason) {
@@ -118,10 +124,15 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
           signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } }); return;
         }
         if (!c || canonical(c.originalBinding) !== canonical(b.payload.originalBinding) || canonical(b.payload.pins) !== canonical(commandPins(c.command))) fail('completion_correlation');
-        if (c.state === 'completed') { if (canonical(c.response.result) !== canonical(b.payload.result)) fail('completion_conflict'); signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } }); return; }
-        if (!pending || c.state !== 'ongoing' || !pending.delivered || pending.command.commandId !== b.payload.commandId) fail('unknown_no_promotion');
-        const result = b.payload.result;
         const selectedAsset = assets.get(c.command.executorHash);
+        const projectSave = selectedAsset?.resultProfile === 'current-project-save-v1';
+        if (c.state === 'completed') {
+          const original = projectSave ? nativeSaveResult(c.response.result, c.command.phase) : c.response.result;
+          if (canonical(original) !== canonical(b.payload.result)) fail('completion_conflict');
+          signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } }); return;
+        }
+        if (!pending || c.state !== 'ongoing' || !pending.delivered || pending.command.commandId !== b.payload.commandId) fail('unknown_no_promotion');
+        let result = b.payload.result;
         if (result.readFailureVersion === 1) {
           exact(result, ['readFailureVersion', 'outcome', 'code']);
           if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code) && !(titlesReadCommand(c.command, selectedAsset) && TITLES_READ_CODES.has(result.code))) fail('inspection_result');
@@ -130,6 +141,8 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
             exact(result, ['outcome', 'snapshot', 'code', 'transactionReceipt']);
             if (result.outcome === 'unknown') { disconnect('manual_effect_unknown'); fail('manual_effect_unknown'); }
             if (!['applied', 'rejected'].includes(result.outcome)) fail('manual_result');
+          } else if (projectSave) {
+            exact(result, ['target', 'revision', 'protected', 'dirty', 'fileStamp']);
           } else if (selectedAsset.resultProfile === 'photo-source-v1') {
             exact(result, ['target', 'revision', 'protected', 'sourceId', 'source']);
             if (!result.target || typeof result.revision !== 'string' || typeof result.protected !== 'string' ||
@@ -160,13 +173,24 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
           for (const item of result.compositions) { exact(item, ['compId', 'name', 'numLayers', 'duration']); if (!Number.isSafeInteger(item.compId) || item.compId < 1 || typeof item.name !== 'string' || !Number.isSafeInteger(item.numLayers) || item.numLayers < 0 || typeof item.duration !== 'number' || item.duration < 0) fail('inspection_result'); }
           for (const item of result.layers) { exact(item, ['layerId', 'index', 'name', 'textLayer']); if (!Number.isSafeInteger(item.layerId) || item.layerId < 1 || !Number.isSafeInteger(item.index) || item.index < 1 || typeof item.name !== 'string' || typeof item.textLayer !== 'boolean') fail('inspection_result'); }
         }
+        if (projectSave && result.readFailureVersion !== 1) {
+          try {
+            if (c.command.phase !== 'mutate') result = observeProjectSave(c.command, result);
+            else if (result.outcome === 'applied') result = { ...result, snapshot: observeProjectSave(c.command, result.snapshot) };
+          } catch {
+            if (c.command.phase === 'mutate') { disconnect('save_disk_proof_unavailable'); fail('save_disk_proof_unavailable'); }
+            result = { ...result, diskProofError: 'save_disk_proof_unavailable' };
+          }
+        }
         const response = { protocolVersion: 1, commandId: c.command.commandId, executorHash: c.command.executorHash, payloadHash: c.command.payloadHash, result }; store.complete(b.payload.commandId, response);
         // One bounded observation of an already durable, authenticated completion.
         // It is not evidence/grant or a statement about current runtime/history.
         if (result.readFailureVersion === 1 && ['inspect', 'verify'].includes(c.command.phase)) lastReadFailure = Object.freeze({ commandId: c.command.commandId, moduleId: c.command.moduleId, phase: c.command.phase, executorHash: c.command.executorHash, code: result.code, authority: false });
         const done = pending; pending = null; clearTimeout(done.timer);
         signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } });
-        if (result.readFailureVersion === 1) {
+        if (projectSave && result.diskProofError) {
+          done.reject(Object.assign(new Error(result.diskProofError), { code: result.diskProofError }));
+        } else if (result.readFailureVersion === 1) {
           const error = Object.assign(new Error(result.code), { code: result.code });
           // Only this exact direct read, after store.complete has durably returned.
           // Serialized errors, Broker reads and other assets cannot mint this proof.

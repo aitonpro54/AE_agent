@@ -19,6 +19,7 @@ const RESULT_PROFILES = Object.freeze({
   'manual-text-v1': null,
   'photo-source-v1': 'runtime/photo-source-proof.js',
   'owned-project-assembly-v1': 'runtime/project-assembly-proof.js',
+  'current-project-save-v1': 'runtime/project-save-proof.js',
   'manual-point-layout-v1': 'runtime/point-layout-proof.js',
   'owned-text-layer-v1': 'runtime/text-layer-proof.js',
   'owned-text-variant-v1': 'runtime/text-variant-proof.js',
@@ -64,7 +65,9 @@ function declarativeProfiles(composition, release, json, checked) {
         (profile.resultProfile === 'manual-text-v1') !== (id === 'titles-current-target') ||
         profile.resultProfile === 'photo-source-v1' && (id !== 'photo-placeholder' || profile.operationId !== 'replace-source') ||
         (profile.resultProfile === 'owned-project-assembly-v1') !== (id === 'project-assembly') ||
-        id === 'project-assembly' && profile.operationId !== 'assemble-composition') fail('composition_not_admitted');
+        id === 'project-assembly' && profile.operationId !== 'assemble-composition' ||
+        (profile.resultProfile === 'current-project-save-v1') !== (id === 'project-save') ||
+        id === 'project-save' && profile.operationId !== 'save-current-project') fail('composition_not_admitted');
     const proof = RESULT_PROFILES[profile.resultProfile];
     if (proof) { checked(proof); proofPaths.add(proof); }
   }
@@ -388,7 +391,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const asset = { assetKey: inspection.assetKey, executorHash: inspection.executorHash };
   const mutationAssets = selected.assets.filter(a => a.resultProfile);
   const manualAsset = mutationAssets.find(a => a.resultProfile === 'manual-text-v1');
-  let provider, manual, privateEmbedding;
+  let provider, manual, privateEmbedding, projectSave;
   if (manualAsset) {
     const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
     const { createManualPolicy } = require('./manual-policy.js');
@@ -399,6 +402,10 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
         case 'manual-text-v1': return binding;
         case 'photo-source-v1': return { ...binding, ...require('./photo-source-proof.js').createPhotoSourceProof(() => workSession?.status().sessionId ?? installation.installationId) };
         case 'owned-project-assembly-v1': return { ...binding, ...require('./project-assembly-proof.js').createProjectAssemblyProof(() => workSession?.status().sessionId ?? installation.installationId) };
+        case 'current-project-save-v1':
+          projectSave = require('./project-save-proof.js').createProjectSaveProof({ stateDir: installation.stateDir,
+            currentSessionId: () => workSession?.status().sessionId ?? installation.installationId });
+          return { ...binding, ...projectSave };
         case 'manual-point-layout-v1': return { ...binding, proof: require('./point-layout-proof.js').createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
         case 'owned-text-layer-v1': return { ...binding, validateResult: require('./text-layer-proof.js').validateTextLayerCompletion };
         case 'owned-text-variant-v1': return { ...binding, validateResult: require('./text-variant-proof.js').validateTextVariantCompletion };
@@ -420,7 +427,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   };
   const additionalAssets = mutationAssets.map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
     operationId: item.contract.operationId, executorHash: item.executorHash, resultProfile: item.resultProfile }));
-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets, timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
+  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets, observeProjectSave: projectSave?.observe, timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');
     // Retain this exact operation's grant beyond ALS lifetime, including /poll.

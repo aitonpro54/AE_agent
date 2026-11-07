@@ -1,0 +1,11 @@
+{
+  "id": "project-save",
+  "version": "4.1.2",
+  "entry": "implementation.js",
+  "hashes": {
+    "implementation.js": "9c60ddd66cff5519185d8d2db99ebcc36c838508c62606caca515fb5cd6ae3b3",
+    "contract.json": "6c6381cd012111f9752fe1dfd45cfc35354291fc1418e087639940b3ee824db3",
+    "executor.jsx": "8e3fd3e65b0bb35487d81a0d044f573362625106341b960c306bee6742d43a2f"
+  },
+  "publicDependencies": {}
+}
