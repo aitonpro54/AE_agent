@@ -6,15 +6,20 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { build } = require('../modules/text-variant/implementation');
 const { validateTextVariantCompletion } = require('../runtime/text-variant-proof');
+const { check } = require('../protocol/schema');
+const contract = require('../modules/text-variant/contract.json');
 
 const projectId = 'C:/test/owned.aep';
 const input = { projectId, compId: 7, controlledLayerIds: [20, 21] };
 const source = fs.readFileSync(path.join(__dirname, '../modules/text-variant/executor.jsx'), 'utf8');
 
-function fixture({ collision = false, rotation = 0, confirm = () => true } = {}) {
+function fixture({ collision = false, rotation = 0, advanced3D = false, renderer = 'ADBE Calder',
+  renderers = ['ADBE Advanced 3d', 'ADBE Calder'], confirm = () => true } = {}) {
   class CompItem {}
   const property = value => ({ numKeys: 0, value, dimensionsSeparated: false, setValue(next) { this.value = next; } });
   const group = (...names) => ({ numProperties: names.length, property: i => ({ matchName: names[i - 1] }) });
+  const propertyGroup = (matchName, entries) => ({ matchName, numProperties: entries.length,
+    property: key => typeof key === 'number' ? entries[key - 1] : entries.find(entry => entry.matchName === key) });
   const styles = active => {
     const entries = [
       { matchName: 'ADBE Blend Options Group', enabled: active, canSetEnabled: false, isModified: false },
@@ -27,19 +32,29 @@ function fixture({ collision = false, rotation = 0, confirm = () => true } = {})
     eventCuePoint: false, protectedRegion: false, getParameters: () => ['marker', comment] });
   const layers = [];
   function layer(id, name, comment, text, enabled, animated, markers, position) {
-    const t = { 'ADBE Anchor Point': property([0, 0]), 'ADBE Position': property(position), 'ADBE Scale': property([100, 100, 100]),
+    const threeDLayer = advanced3D && animated;
+    const t = { 'ADBE Anchor Point': property(threeDLayer ? [0, 0, 5] : [0, 0]),
+      'ADBE Position': property(threeDLayer ? [...position, 90] : position), 'ADBE Scale': property([100, 100, 100]),
       'ADBE Rotate Z': property(animated ? rotation : 0) };
     const source = property({ pointText: true, text });
+    source.matchName = 'ADBE Text Document';
+    if (threeDLayer) {
+      Object.assign(source, { numKeys: 2, keyTime: index => index - 1, keyValue: index => ({ text: `${text} ${index}` }) });
+    }
+    const transform = propertyGroup('ADBE Transform Group', Object.entries(t).map(([matchName, prop]) => Object.assign(prop, { matchName })));
+    const geometry = propertyGroup('ADBE Extrsn Options Group', [{ ...property(20), matchName: 'ADBE Extrsn Depth' }]);
+    const material = propertyGroup('ADBE Material Options Group', [{ ...property(80), matchName: 'ADBE Diffuse Coefficient' }]);
     const markerKeys = {
       get numKeys() { return markers.length; }, keyValue: index => markers[index - 1][1], keyTime: index => markers[index - 1][0],
       setValueAtTime(time, value) { markers.push([time, value]); markers.sort((a, b) => a[0] - b[0]); },
     };
     const textProperties = { property: key => key === 'ADBE Text Document' ? source : animated ? group('ADBE Text Animator') : group() };
     const item = {
-      id, name, comment, enabled, inPoint: 0, outPoint: 3, trackMatteLayer: animated ? { id: 99 } : null, hasTrackMatte: animated,
+      id, name, comment, enabled, threeDLayer, inPoint: 0, outPoint: 3, trackMatteLayer: animated ? { id: 99 } : null, hasTrackMatte: animated,
       sourceRectAtTime: time => ({ left: 0, top: animated ? time * 40 : 0, width: 100, height: 50 }),
       property(key) {
-        return { 'ADBE Transform Group': { property: key => t[key] }, 'ADBE Text Properties': textProperties,
+        return { 'ADBE Transform Group': transform, 'ADBE Text Properties': textProperties,
+          'ADBE Extrsn Options Group': geometry, 'ADBE Material Options Group': material,
           'ADBE Marker': markerKeys, 'ADBE Effect Parade': animated ? group('ADBE Gaussian Blur 2') : group(),
           'ADBE Layer Styles': styles(animated) }[key];
       },
@@ -56,6 +71,7 @@ function fixture({ collision = false, rotation = 0, confirm = () => true } = {})
     layer(21, 'Layout', 'AE_CORE4_TEXT_V1:short', 'New\rText', true, false, [], [400, 200]),
     layer(23, 'Marker source', '', 'Marker reference', false, false, [[0.5, marker('IN')]], [40, 80]));
   const comp = Object.assign(new CompItem(), { id: 7, name: 'Copy', comment: 'AE_CORE4_TEXT_WORKSPACE_V1',
+    renderer, renderers,
     pixelAspect: 1, width: 800, height: 400, duration: 3, time: 1, layer: index => layers[index - 1] });
   Object.defineProperty(comp, 'numLayers', { get: () => layers.length });
   const app = { project: { file: { fsName: projectId }, itemByID: id => id === comp.id ? comp : null }, beginUndoGroup() {}, endUndoGroup() {} };
@@ -63,9 +79,11 @@ function fixture({ collision = false, rotation = 0, confirm = () => true } = {})
   const plain = value => JSON.parse(JSON.stringify(value));
   const before = plain(jsx.inspect(input));
   function run(desired) {
-    const p = build({ input: { ...input, ...desired }, evidence: before }).input;
+    const desiredInput = check(contract.buildSchema, { ...input, ...desired });
+    const p = check(contract.inputSchema, build({ input: desiredInput, evidence: before }).input);
     const result = plain(jsx.mutate({ ...p, _execution: { policyId: 'current-matching-target-after-local-confirmation-v1',
       baselineRevision: before.revision, baselineProtected: before.protected, target: before.target } }));
+    if (result.outcome === 'applied') check(contract.snapshotSchema, result.snapshot);
     return { result, p };
   }
   return { before, run, read: () => plain(jsx.inspect(input)) };
@@ -114,4 +132,33 @@ test('text-variant: hold alignment refuses rotated or out-of-span text before co
     assert.deepEqual(env.run({ derive: { ...derive, holdTime } }).result, { outcome: 'rejected', code: 'text_variant_hold_geometry' });
     assert.deepEqual(env.read(), env.before);
   }
+});
+
+const preserved3D = { templateLayerId: 20, slot: 'short', name: '3D copy', preserveAdvanced3D: true };
+
+test('text-variant: an Advanced 3D copy preserves source keys and observed geometry', () => {
+  const env = fixture({ advanced3D: true, rotation: 25 });
+  const { result, p } = env.run({ derive: preserved3D });
+  assert.equal(result.outcome, 'applied');
+  const [created, original] = env.read().layers;
+  assert.equal(created.enabled, true);
+  assert.equal(original.enabled, false);
+  assert.equal(created.transform, undefined);
+  assert.match(created.advanced3D, /Legacy 1.*Legacy 2/);
+  assert.match(created.advanced3D, /\[80,120,90\]/);
+  assert.equal(created.advanced3D, original.advanced3D);
+  validateTextVariantCompletion({ input: p, before: env.before }, result.snapshot);
+  result.snapshot.layers[0].advanced3D = 'altered';
+  assert.throws(() => validateTextVariantCompletion({ input: p, before: env.before }, result.snapshot), /text_variant_advanced_3d_readback/);
+});
+
+test('text-variant: Advanced 3D preservation rejects Classic 3D and 2D placement inputs', () => {
+  assert.throws(() => fixture({ advanced3D: true, renderer: 'ADBE Classic 3d' }).run({ derive: preserved3D }), /text_variant_advanced_3d/);
+  assert.throws(() => fixture({ advanced3D: true, renderer: 'ADBE Advanced 3d' }).run({ derive: preserved3D }), /text_variant_advanced_3d/);
+  const distinct = fixture({ advanced3D: true, renderer: 'ADBE Advanced 3d', renderers: ['ADBE Advanced 3d', 'ADBE Classic 3d'] });
+  assert.equal(distinct.run({ derive: preserved3D }).result.outcome, 'applied');
+  const env = fixture({ advanced3D: true });
+  assert.throws(() => env.run({ derive: { ...preserved3D, layoutLayerId: 21 } }), /text_variant_advanced_3d/);
+  assert.throws(() => env.run({ derive: { ...preserved3D, holdTime: 1 } }), /text_variant_advanced_3d/);
+  assert.deepEqual(env.read(), env.before);
 });

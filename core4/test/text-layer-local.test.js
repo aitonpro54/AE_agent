@@ -26,6 +26,37 @@ test('text-layer: font fallback and stroke-aware fit survive local readback', ()
   const altered = structuredClone(result.snapshot);
   altered.layers[0].ranges[0].font = 'Fixture-Bold';
   assert.throws(() => validateTextLayerCompletion({ before, input }, altered), /text_layer_style_readback/);
+  altered.layers[0].ranges[0].font = 'Fixture-Regular';
+  altered.layers[0].ranges[0].substitute = true;
+  assert.throws(() => validateTextLayerCompletion({ before, input }, altered), /text_layer_style_readback/);
   assert.throws(() => validateTextLayerCompletion({ before, input }, { ...result.snapshot,
     layers: [{ ...layer, position: [210, 112] }] }), /text_layer_placement_readback/);
+});
+
+test('text-layer: an existing active stroke with an unavailable color rejects the edit', () => {
+  const operation = localOperation('text-layer', textEnvironment, () => assert.fail('unexpected confirmation'));
+  const { comp } = operation.state.textFixture;
+  const layer = comp.layers.addText('Legacy');
+  Object.assign(layer, { name: 'Legacy', comment: 'AE_CORE4_TEXT_V1:legacy', startTime: 0, inPoint: 0, outPoint: comp.duration });
+  const source = layer.property('ADBE Text Properties').property('ADBE Text Document');
+  source.document.autoLeading = true;
+  Object.assign(source.document.styles[0], { applyStroke: true, strokeWidth: 3 });
+  const target = { projectId: operation.state.projectId, compId: 7 };
+  const before = operation.inspect(target);
+  assert.equal(before.layers[0].issue, 'text_layer_stroke_unavailable');
+  assert.throws(() => operation.run({ ...target, layerId: layer.id, slot: 'legacy', name: 'Legacy', text: 'Changed',
+    leading: 36, justification: 'left', ranges: [{ start: 0, end: 7, font: 'Fixture-Regular', fontSize: 32, tracking: 0, fill: [1, 1, 1] }]
+  }), /text_layer_target/);
+  assert.deepEqual(operation.inspect(target), before);
+});
+
+test('text-layer: a substitute returned by AE cannot satisfy a requested PostScript name', () => {
+  const operation = localOperation('text-layer', textEnvironment, () => assert.fail('unexpected confirmation'));
+  operation.state.textFixture.fonts.push({ postScriptName: 'Legacy-Missing', isSubstitute: true });
+  const target = { projectId: operation.state.projectId, compId: 7 };
+  const { before, result } = operation.run({ ...target, slot: 'legacy', name: 'Legacy', text: 'Legacy', leading: 36, justification: 'left',
+    ranges: [{ start: 0, end: 6, font: 'Legacy-Missing', fontSize: 32, tracking: 0, fill: [1, 1, 1] }]
+  });
+  assert.deepEqual(result, { outcome: 'rejected', code: 'text_layer_font_missing' });
+  assert.deepEqual(operation.inspect(target), before);
 });

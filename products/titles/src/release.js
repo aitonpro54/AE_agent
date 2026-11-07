@@ -18,11 +18,13 @@ function fields(value, required, optional = []) {
 }
 
 function prepareRelease(job, selection, contract, inspection) {
+  const preserved3D = job?.variant?.preserveAdvanced3D === true;
   if (!fields(job, ['schemaVersion', 'target', 'controlledLayerIds', 'variant', 'render']) || job.schemaVersion !== 'release-1' ||
       !fields(job.target, ['projectId', 'compId']) || typeof job.target.projectId !== 'string' || !job.target.projectId ||
       !isId(job.target.compId) || !Array.isArray(job.controlledLayerIds) || !job.controlledLayerIds.length ||
       !job.controlledLayerIds.every(isId) || new Set(job.controlledLayerIds).size !== job.controlledLayerIds.length ||
-      !fields(job.variant, ['templateLayerId', 'layoutLayerId', 'slot', 'name', 'holdTime'], ['markerSourceLayerId']) ||
+      !fields(job.variant, preserved3D ? ['templateLayerId', 'slot', 'name', 'preserveAdvanced3D'] :
+        ['templateLayerId', 'layoutLayerId', 'slot', 'name', 'holdTime'], ['markerSourceLayerId']) ||
       !fields(job.render, ['fileName', 'startFrame', 'frameCount', 'renderTemplate', 'outputTemplate'])) fail('release_job');
   if (!fields(selection, ['phase'], ['variantLayerId', 'jobCompId']) || typeof selection.phase !== 'string' ||
       !Object.hasOwn(PHASES, selection.phase)) fail('release_phase');
@@ -38,6 +40,9 @@ function prepareRelease(job, selection, contract, inspection) {
   let input;
   if (phase === 'derive') {
     if (variantLayerId !== undefined || jobCompId !== undefined) fail('release_phase');
+    if (preserved3D && !snapshot.layers.some(layer => layer.layerId === variant.templateLayerId && layer.advanced3D && layer.eligible)) {
+      fail('release_target');
+    }
     input = { ...target, controlledLayerIds, derive: variant };
   } else {
     if (!isId(variantLayerId) || controlledLayerIds.includes(variantLayerId) ||

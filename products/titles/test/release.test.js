@@ -28,3 +28,13 @@ test('release compiler binds cleanup to the observed job and rejects a stale con
   assert.throws(() => prepareRelease(job, selected, render, inspection), /release_target/);
   assert.throws(() => prepareRelease(job, selected, variant, current), /release_contract/);
 });
+
+test('release compiler prepares an exact Advanced 3D copy without projecting it into the 2D layout', () => {
+  const templateLayerId = job.controlledLayerIds[0];
+  const request = { ...job, variant: { templateLayerId, slot: 'native-3d', name: '3D copy', preserveAdvanced3D: true } };
+  const current = { ...inspection, snapshot: { ...inspection.snapshot,
+    layers: [{ layerId: templateLayerId, eligible: true, advanced3D: 'native observation' }] } };
+  const result = prepareRelease(request, { phase: 'derive' }, variant, current);
+  assert.deepEqual(result.steps[0].input.derive, request.variant);
+  assert.throws(() => prepareRelease(request, { phase: 'derive' }, variant, inspection), /release_target/);
+});

@@ -75,6 +75,13 @@ node products/titles/cli.js prepare-series-write --job JOB.json --selection SELE
 задаёт момент, в который Core выровняет анимированный текст по границам
 оформленного слоя. Для шаблона с `IN` укажите `markerSourceLayerId` явно.
 
+Для варианта с сохранением нативной сцены Advanced 3D укажите в `variant`
+`templateLayerId`, `slot`, `name` и `preserveAdvanced3D: true`. Core дублирует
+слой вместе с исходным текстом и анимацией, сверяет наблюдаемые 3D-параметры
+и меняет видимость только указанных слоёв. Поля `layoutLayerId` и `holdTime`
+относятся к 2D-вёрстке. Поддержку режима подтверждает `advanced3D` в свежем
+снимке `text-variant`.
+
 ```powershell
 node products/titles/cli.js prepare-release --job RELEASE.json --selection SELECT.json --contract CONTRACT.json --inspection CURRENT.json
 ```

@@ -1,11 +1,11 @@
 {
   "moduleId": "text-variant",
   "operationId": "stage-text-variant",
-  "artifactHash": "a0ef48a73564b3c722e9c3e47e1cc9ba8479b5fa69f9a605e22e7795031ade16",
-  "schemaHash": "c26016b9c95b989ef695bdf6600592cc97f382ca6da441d00a3aa57d49ed78f0",
-  "resultSchemaHash": "4bd9b82d75affd88e0cde4643dfac50db3412a7a79ec5e67b6680699cd391571",
+  "artifactHash": "fc264be0719a3181f9dd26e4a464e22cddfa304580884c701afb22f2e357a07a",
+  "schemaHash": "9120c66ded4cf1f93837d89893260b7fe23b42f5708acf84602861343e6ca5e0",
+  "resultSchemaHash": "f239f27f77482a65c02a2a5908a6e2a0bbdf4f14c4755bb9ba4b4a3abc3ba4df",
   "effectPolicyHash": "ce03d6a4d1f35a27bb1a2464f66a23cfbd330550901a550ebc6207189320e66e",
-  "executorHash": "84d13d26bcd599e15c7e4dc2f3bc21d71005a49c1e1152bdad712dc57bcb98af",
+  "executorHash": "a1a2d01a366987734db2e081167dccb5b00f18ae6296a41412b6b9055c7ae772",
   "protocolVersion": 1,
   "trustApprovalId": "source-review-text-variant-20261105",
   "revoked": false

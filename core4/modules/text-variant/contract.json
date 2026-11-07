@@ -31,6 +31,7 @@
         "properties": {
           "templateLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
           "layoutLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "preserveAdvanced3D": { "type": "boolean", "enum": [true] },
           "slot": { "type": "string", "minLength": 1, "maxLength": 40 },
           "name": { "type": "string", "minLength": 1, "maxLength": 256 },
           "markerSourceLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
@@ -38,7 +39,6 @@
         },
         "required": [
           "templateLayerId",
-          "layoutLayerId",
           "slot",
           "name"
         ],
@@ -69,6 +69,7 @@
         "properties": {
           "templateLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
           "layoutLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "preserveAdvanced3D": { "type": "boolean", "enum": [true] },
           "slot": { "type": "string", "minLength": 1, "maxLength": 40 },
           "name": { "type": "string", "minLength": 1, "maxLength": 256 },
           "markerSourceLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
@@ -76,7 +77,6 @@
         },
         "required": [
           "templateLayerId",
-          "layoutLayerId",
           "slot",
           "name"
         ],
@@ -130,6 +130,7 @@
             "enabled": { "type": "boolean" },
             "eligible": { "type": "boolean" },
             "text": { "type": "string", "minLength": 1, "maxLength": 600 },
+            "advanced3D": { "type": "string", "minLength": 1, "maxLength": 12000 },
             "effects": {
               "type": "array",
               "items": { "type": "string", "minLength": 1, "maxLength": 256 },

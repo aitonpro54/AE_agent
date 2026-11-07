@@ -14,13 +14,22 @@ function validateTextVariantCompletion({ input, before }, after) {
     return;
   }
   const template = before.layers.find(layer => layer.layerId === derive.templateLayerId);
-  const layout = before.layers.find(layer => layer.layerId === derive.layoutLayerId);
   const markers = template.markers.slice();
   if (derive.markerSourceLayerId !== undefined) {
     const marker = before.layers.find(layer => layer.layerId === derive.markerSourceLayerId).markers.find(marker => marker.comment === 'IN');
     if (!markers.some(item => canonical(item) === canonical(marker))) markers.push(marker);
     markers.sort((a, b) => a.time - b.time);
   }
+  if (!created || after.layers.length !== before.layers.length + 1 || before.layers.some(layer => layer.layerId === created.layerId) ||
+      created.name !== derive.name || !created.eligible || created.enabled !== true || created.matteLayerId !== template.matteLayerId ||
+      ['effects', 'animators', 'styles'].some(key => canonical(created[key]) !== canonical(template[key])) ||
+      canonical(created.markers) !== canonical(markers)) fail('text_variant_derive_readback');
+  if (derive.preserveAdvanced3D === true) {
+    if (!template.advanced3D || created.advanced3D !== template.advanced3D || created.transform ||
+        created.text !== template.text || after.alignment) fail('text_variant_advanced_3d_readback');
+    return;
+  }
+  const layout = before.layers.find(layer => layer.layerId === derive.layoutLayerId);
   const transform = layout.transform;
   let position = transform.position;
   if (derive.holdTime !== undefined) {
@@ -28,14 +37,10 @@ function validateTextVariantCompletion({ input, before }, after) {
     if (!alignment || alignment.time !== derive.holdTime) fail('text_variant_alignment');
     position = position.map((value, i) => value + (alignment.layoutCenter[i] - alignment.variantCenter[i]) * transform.scale[i] / 100);
   } else if (after.alignment) fail('text_variant_alignment');
-  if (!created?.transform || after.layers.length !== before.layers.length + 1 || before.layers.some(layer => layer.layerId === created.layerId) ||
-      created.name !== derive.name || !created.eligible || created.enabled !== true || created.text !== layout.text ||
-      created.matteLayerId !== template.matteLayerId ||
-      ['effects', 'animators', 'styles'].some(key => canonical(created[key]) !== canonical(template[key])) ||
+  if (!created.transform || created.text !== layout.text ||
       ['anchor', 'scale'].some(key => canonical(created.transform[key]) !== canonical(transform[key])) ||
       (derive.holdTime === undefined ? canonical(created.transform.position) !== canonical(position) :
-        position.some((value, i) => Math.abs(value - created.transform.position[i]) > 0.05)) ||
-      canonical(created.markers) !== canonical(markers)) {
+        position.some((value, i) => Math.abs(value - created.transform.position[i]) > 0.05))) {
     fail('text_variant_derive_readback');
   }
 }

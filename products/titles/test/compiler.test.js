@@ -179,7 +179,8 @@ test('actual owner boundary accepts first compiler payload with server taskId an
   };
   const deny = () => { throw new Error('offline_test_never_executes'); };
   const authority = brandAuthorityPort({ synthetic: true, resourceConstraints: [], registerProposal() {}, authorize: deny });
-  const policy = brandExecutionPolicyPort({ describe: () => ({ policyId: publicContract.executionPolicy, provenance: 'offline-build-test-only' }), assertCurrent() {}, prepareReservation: deny, assertReservation: deny, verifyCompletion: deny });
+  const policy = brandExecutionPolicyPort({ describe: () => ({ policyId: publicContract.executionPolicy, provenance: 'offline-build-test-only' }),
+    assertCurrent() {}, prepareReservation: deny, assertReservation: deny, cancelBeforeSend: deny, verifyCompletion: deny });
   const stateDir = path.join(directory, 'broker-state');
   broker = new Broker({ root: coreRoot, stateDir, privateEmbedding: { authority, executionPolicy: policy, transport } });
   let buildCalls = 0;

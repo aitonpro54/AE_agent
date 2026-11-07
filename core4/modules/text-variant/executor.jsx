@@ -39,7 +39,43 @@
         var group = layer.property('ADBE Transform Group');
         return { anchor: group.property('ADBE Anchor Point'), position: group.property('ADBE Position'), scale: group.property('ADBE Scale') };
     }
-    function read(layer, properties) {
+    function observedProperty(prop, time, budget, textDocument) {
+        if (--budget.remaining < 0) fault('text_variant_3d_budget');
+        var i, entries = [];
+        if (typeof prop.numProperties === 'number') {
+            for (i = 1; i <= prop.numProperties; i++) entries.push(observedProperty(prop.property(i), time, budget, false));
+            return [prop.matchName, entries];
+        }
+        var expression = prop.canSetExpression ? String(prop.expression) : '';
+        if (expression.length > 2000 || prop.numKeys > 32) fault('text_variant_3d_budget');
+        for (i = 1; i <= prop.numKeys; i++) {
+            var key = prop.keyValue(i);
+            entries.push([prop.keyTime(i), textDocument ? String(key.text) : key]);
+        }
+        var value = prop.numKeys ? null : expression ? prop.valueAtTime(time, true) : prop.value;
+        if (textDocument && value) value = String(value.text);
+        return [prop.matchName, expression, prop.expressionEnabled === true, value, entries];
+    }
+    function advanced3D(comp, layer, source) {
+        // Earlier AE builds used the same match name for Classic 3D. Require the distinct Classic entry.
+        if (layer.threeDLayer !== true || !source || layer.parent) return null;
+        var renderer = comp.renderer, renderers = comp.renderers, distinct = false, i;
+        for (i = 0; renderers && i < renderers.length; i++) if (renderers[i] === 'ADBE Classic 3d') distinct = true;
+        if (renderer !== 'ADBE Calder' && !(renderer === 'ADBE Advanced 3d' && distinct)) return null;
+        try {
+            var geometry = layer.property('ADBE Extrsn Options Group');
+            var material = layer.property('ADBE Material Options Group');
+            var transform = layer.property('ADBE Transform Group');
+            if (!geometry || !geometry.numProperties || !material || !material.numProperties || !transform) return null;
+            var budget = { remaining: 64 };
+            var observation = JSON.stringify([renderer, layer.threeDPerChar === true, layer.inPoint, layer.outPoint,
+                layer.startTime, layer.stretch, String(layer.autoOrient), layer.motionBlur === true,
+                observedProperty(transform, comp.time, budget, false), observedProperty(geometry, comp.time, budget, false),
+                observedProperty(material, comp.time, budget, false), observedProperty(source, comp.time, budget, true)]);
+            return observation.length <= 12000 ? observation : null;
+        } catch (e) { return null; }
+    }
+    function read(comp, layer, properties) {
         var source = properties.property('ADBE Text Document'), markers = layer.property('ADBE Marker');
         var result = { layerId: layer.id, name: layer.name, tag: String(layer.comment), enabled: layer.enabled,
             eligible: !layer.locked && !layer.solo && !layer.isTrackMatte && !layer.guideLayer && !layer.adjustmentLayer,
@@ -59,6 +95,8 @@
             var t = xyNames(layer), anchor = xy(t.anchor, 0), position = xy(t.position, 0), scale = xy(t.scale, 100);
             if (anchor && position && scale && t.position.dimensionsSeparated === false) result.transform = { anchor: anchor, position: position, scale: scale };
         }
+        var preserved3D = advanced3D(comp, layer, source);
+        if (preserved3D) result.advanced3D = preserved3D;
         return result;
     }
     function inspect(p) {
@@ -66,7 +104,7 @@
         for (i = 1; i <= comp.numLayers; i++) {
             layer = comp.layer(i);
             properties = layer.property('ADBE Text Properties');
-            if (properties) layers.push(read(layer, properties));
+            if (properties) layers.push(read(comp, layer, properties));
             else outside.push([layer.id, layer.name, layer.enabled, layer.locked, layer.solo]);
         }
         var target = { projectId: p.projectId, compId: comp.id };
@@ -105,9 +143,14 @@
             if (!item.eligible) fault('text_variant_targets');
         }
         if (!desired) return state;
-        var original = byId(before.layers, desired.templateLayerId), layout = byId(before.layers, desired.layoutLayerId);
-        if (!original.text || !layout.text || !original.transform || !layout.transform ||
-            layout.tag.indexOf('AE_CORE4_TEXT_V1:') !== 0 || original.layerId === layout.layerId) fault('text_variant_derive');
+        var original = byId(before.layers, desired.templateLayerId), layout;
+        if (desired.preserveAdvanced3D === true) {
+            if (!original.advanced3D || desired.layoutLayerId !== undefined || desired.holdTime !== undefined) fault('text_variant_advanced_3d');
+        } else {
+            layout = byId(before.layers, desired.layoutLayerId);
+            if (!original.text || !layout.text || !original.transform || !layout.transform ||
+                layout.tag.indexOf('AE_CORE4_TEXT_V1:') !== 0 || original.layerId === layout.layerId) fault('text_variant_derive');
+        }
         if (desired.holdTime !== undefined) {
             var comp = compFor(p), time = desired.holdTime, layoutLayer = nativeLayer(comp, layout.layerId);
             if (time < 0 || time >= comp.duration || !upright(layoutLayer, time, layout.transform.scale) ||
@@ -137,16 +180,17 @@
         owned.layer = output;
         output.name = desired.name;
         output.comment = TAG + desired.slot;
+        if (state.markerIndex) {
+            var fromMarkers = nativeLayer(comp, desired.markerSourceLayerId).property('ADBE Marker');
+            output.property('ADBE Marker').setValueAtTime(state.marker.time, fromMarkers.keyValue(state.markerIndex));
+        }
+        if (desired.preserveAdvanced3D === true) return output;
         var layout = nativeLayer(comp, desired.layoutLayerId);
         var nativeDocument = layout.property('ADBE Text Properties').property('ADBE Text Document').value;
         output.property('ADBE Text Properties').property('ADBE Text Document').setValue(nativeDocument);
         var from = xyNames(layout), to = xyNames(output);
         to.anchor.setValue(from.anchor.value);
         to.scale.setValue(from.scale.value);
-        if (state.markerIndex) {
-            var fromMarkers = nativeLayer(comp, desired.markerSourceLayerId).property('ADBE Marker');
-            output.property('ADBE Marker').setValueAtTime(state.marker.time, fromMarkers.keyValue(state.markerIndex));
-        }
         to.position.setValue(from.position.value);
         if (state.layoutCenter) {
             var center = centerAt(output, desired.holdTime), scale = from.scale.value, position = from.position.value.slice();
@@ -169,7 +213,10 @@
             }
             selected.enabled = true;
             after = inspect(p);
-            if (!byId(after.layers, selected.id).enabled || after['protected'] !== before['protected']) fault('text_variant_readback');
+            var observed = byId(after.layers, selected.id);
+            if (!observed.enabled || after['protected'] !== before['protected']) fault('text_variant_readback');
+            if (p.derive && p.derive.preserveAdvanced3D === true &&
+                observed.advanced3D !== byId(before.layers, p.derive.templateLayerId).advanced3D) fault('text_variant_advanced_3d_readback');
             if (state.alignment) after.alignment = state.alignment;
             return after;
         } catch (e) {
@@ -182,7 +229,8 @@
         var started = false;
         try {
             var before = inspect(p), state = preflight(p, before), after, proof = p._execution;
-            var detail = p.derive ? 'Создать «' + p.derive.name + '» из слоя ' + p.derive.templateLayerId + ', текст из слоя ' + p.derive.layoutLayerId +
+            var detail = p.derive ? 'Создать «' + p.derive.name + '» из слоя ' + p.derive.templateLayerId +
+                (p.derive.preserveAdvanced3D === true ? ', сохранить текст и Advanced 3D шаблона' : ', текст из слоя ' + p.derive.layoutLayerId) +
                 (p.derive.markerSourceLayerId ? ', маркер IN из слоя ' + p.derive.markerSourceLayerId : '') +
                 (p.derive.holdTime !== undefined ? ', выровнять удержание на ' + p.derive.holdTime + ' с' : '') : 'Показать слой ' + p.activeLayerId;
             if (confirm(detail + '?\nПроект: ' + p.projectId + '\ncompId: ' + p.compId +
