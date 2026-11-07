@@ -93,7 +93,10 @@
                     '\ncompId: ' + p.compId + ' / layerId: ' + p.layerId +
                     '\nСтарый источник #' + before.sourceId + ': ' + JSON.stringify(before.source.file || before.source.name) +
                     '\nНовый источник #' + p.newSourceId + ': ' + JSON.stringify(desired.file);
-                if (confirm(message, true, 'AE Agent Core4 — замена источника фото') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
+                var operator = proof.operatorConfirmation;
+                if (operator) {
+                    if (!/^[a-f0-9]{64}$/.test(operator.digest) || typeof operator.expiresAt !== 'number' || operator.expiresAt <= new Date().getTime()) fault('operator_confirmation_expired');
+                } else if (confirm(message, true, 'AE Agent Core4 — замена источника фото') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
                 before = snapshot(p, true);
                 requireBaseline(p, before);
                 source = importedStill(p);

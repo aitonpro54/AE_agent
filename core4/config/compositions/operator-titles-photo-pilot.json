@@ -1,0 +1,16 @@
+{
+  "parent": "operator-titles-pilot",
+  "modules": [],
+  "assets": [],
+  "profiles": {
+    "photo-placeholder": {
+      "operationId": "replace-source",
+      "resultProfile": "photo-source-v1",
+      "operatorConfirmation": true
+    }
+  },
+  "bundle": {
+    "files": [],
+    "artifactClosures": []
+  }
+}

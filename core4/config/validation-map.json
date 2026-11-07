@@ -4,6 +4,7 @@
     { "prefix": "core4/tools/validation-reuse.js", "owner": "validation", "checks": ["validation-routing", "validation-reuse"] },
     { "prefix": "core4/test/validation-reuse.test.js", "owner": "validation", "checks": ["validation-reuse"] },
     { "prefix": "core4/config/compositions/", "owner": "installed-composition", "checks": ["installed-composition", "package-location"] },
+    { "prefix": "core4/runtime/operator-confirmation.js", "owner": "manual-runtime", "checks": ["manual-runtime", "installed-composition"] },
     { "prefix": "core4/tools/check-package-location.js", "owner": "package-location", "checks": ["package-location"] },
     { "prefix": "core4/test/package-location.test.js", "owner": "package-location", "checks": ["package-location"] },
     { "prefix": "core4/modules/text-layer/", "owner": "text-layer", "checks": ["text-layer"] },

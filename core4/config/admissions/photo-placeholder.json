@@ -1,11 +1,11 @@
 {
   "moduleId": "photo-placeholder",
   "operationId": "replace-source",
-  "artifactHash": "b6a1ea3b4bbe778a4a0753217f9188fea481474ff3b4d9e00e04ee994eb9e13b",
+  "artifactHash": "af7a9f92fc21e32321544ed21d139cb5af0415d249c9d8f3cee389b585aca655",
   "schemaHash": "ce6937cdc4c23b71b0416ae75bfd0f70a29588f545fe98c4000474afb8752a63",
   "resultSchemaHash": "68c883a438f5f1ed146480cd10491fcd033db1b6e6ccc5a9bad4562d5f9fd012",
   "effectPolicyHash": "406b9e3dc2f451d44dda605222961b52f11afbe3cae6211ce92fa12260c19792",
-  "executorHash": "18370f14204a6fb5e19684eb65f2d110b282bc0e9eb0e5fa89b4a2214ad1fff4",
+  "executorHash": "7343f5ec184642ff315c64b9ad2102eb26be494d84f6def0aa62ef37ce49a30d",
   "protocolVersion": 1,
   "trustApprovalId": "M1-source-review-photo-placeholder-20261026",
   "revoked": false

@@ -70,6 +70,25 @@ test('installed-composition includes render and text variants only in their sele
   const altered = edit(structuredClone(enabled), extra, p => { p.directory = 'other-output'; });
   assert.throws(() => verifyPackage(altered), /composition_artifact/);
 });
+test('installed-composition adds a second operator-confirmed module by declaration and keeps the shared path identical', () => {
+  const options = { runtimeModel: 'owner' };
+  const titles = buildPackage(root, 'operator-titles-pilot', options);
+  const photo = buildPackage(root, 'operator-titles-photo-pilot', options);
+  const readonly = buildPackage(root, 'readonly', options);
+  const policy = pkg => JSON.parse(Buffer.from(pkg.files['runtime/composition-policy.json'], 'base64'));
+  assert.equal(policy(titles).profiles['photo-placeholder'].operatorConfirmation, undefined);
+  assert.equal(policy(photo).profiles['photo-placeholder'].operatorConfirmation, true);
+  assert.equal(policy(photo).profiles['titles-current-target'].operatorConfirmation, true);
+  assert.deepEqual(policy(readonly).profiles, {});
+  assert.equal(readonly.files['runtime/operator-confirmation.js'], undefined);
+  assert.equal(readonly.files['modules/photo-placeholder/executor.jsx'], undefined);
+  for (const file of ['core/broker.js', 'runtime/operator-confirmation.js', 'runtime/manual-policy.js', 'runtime/stdio-entry.js', 'modules/titles-current-target/executor.jsx']) {
+    assert.equal(photo.release.hashes[file], titles.release.hashes[file]);
+  }
+  assert.throws(() => buildPackage(root, 'operator-titles-photo-pilot'), /operator_confirmation_owner_required/);
+  const save = edit(structuredClone(photo), 'runtime/composition-policy.json', p => { p.profiles['project-save'].operatorConfirmation = true; });
+  assert.throws(() => verifyPackage(save), /composition_not_admitted/);
+});
 test('installed-composition point-layout is opt-in and refuses a package without its proof', () => {
   for (const mode of ['readonly', 'manual']) {
     const pkg = buildPackage(root, mode);

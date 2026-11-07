@@ -18,16 +18,19 @@ test('package-location checks real packages and preserves a reproducible path-de
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const source = path.resolve(__dirname, '..'), output = path.join(directory, 'success');
   const result = run(undefined, output, directory), report = result.report;
-  await t.test('twelve variants, source/foreign cwd, spaces/Unicode and both byte controls', () => {
+  await t.test('standard and operator variants, source/foreign cwd, spaces/Unicode and both byte controls', () => {
     assert.equal(result.status, 0); assert.equal(report.ok, true); assert.deepEqual(report.findings, []);
-    assert.match(report.source.commit, /^[a-f0-9]{40}$/); assert.equal(report.cases.length, 72);
-    assert.equal(report.variants.length, 12);
-    for (const composition of ['readonly', 'manual', 'manual-titles-variants', 'manual-project-assembly', 'manual-project-save', 'manual-project-lifecycle']) for (const runtimeModel of ['stdio', 'owner']) {
+    assert.match(report.source.commit, /^[a-f0-9]{40}$/); assert.equal(report.cases.length, 84);
+    assert.equal(report.variants.length, 14);
+    for (const composition of ['operator-titles-pilot', 'operator-titles-photo-pilot']) {
+      assert.deepEqual(report.variants.filter(row => row.composition === composition).map(row => row.runtimeModel), ['owner']);
+    }
+    for (const variant of report.variants) {
+      const { composition, runtimeModel } = variant;
       const cases = report.cases.filter(row => row.composition === composition && row.runtimeModel === runtimeModel);
       assert.equal(cases.length, 6); assert.equal(new Set(cases.map(row => row.location)).size, 3);
       assert.deepEqual([...new Set(cases.map(row => row.cwd))].sort(), ['foreign', 'source']);
       assert.ok(cases.every(row => row.verifyPackage && row.identicalHashFilesAndBytes && row.localDataExcluded));
-      const variant = report.variants.find(row => row.composition === composition && row.runtimeModel === runtimeModel);
       assert.equal(variant.negativeControls.verifyPackageRejection, 'package_integrity');
       assert.equal(variant.negativeControls.comparisonRejected, true); assert.equal(variant.negativeControls.changedSourceVerified, true);
       assert.notEqual(variant.negativeControls.changedSourcePackageHash, variant.packageHash);

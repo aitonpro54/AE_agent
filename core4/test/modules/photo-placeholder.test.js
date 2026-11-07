@@ -28,6 +28,7 @@ test('[photo-executor-contract] installed registry requires native confirmation 
   const { initialState, environment } = require('../fixtures/ae');
   const { createPhotoSourceProof } = require('../../runtime/photo-source-proof');
   const pkg = buildPackage(undefined, 'manual-titles-variants', { runtimeModel: 'owner' });
+  const pilot = buildPackage(undefined, 'operator-titles-photo-pilot', { runtimeModel: 'owner' });
   const read = file => Buffer.from(pkg.files[file], 'base64').toString('utf8');
   const executorHash = JSON.parse(read('config/admissions/photo-placeholder.json')).executorHash;
   const state = initialState(), host = environment(state, () => {});
@@ -85,4 +86,17 @@ test('[photo-executor-contract] installed registry requires native confirmation 
   assert.doesNotThrow(() => proof.validateResult({ input, before }, after));
   assert.throws(() => proof.validateResult({ input, before }, { ...after, sourceId: 13 }), /photo_source_readback/);
   assert.equal(state.counts.photo, 1);
+  const baseline = { ...target, newSourceId: 11, expectedOldSourceId: 12, expectedRevision: after.revision };
+  const execution = { ...input._execution, baselineRevision: after.revision, baselineProtected: after.protected,
+    operatorConfirmation: { digest: 'a'.repeat(64), expiresAt: Date.now() - 1000 } };
+  vm.runInContext(Buffer.from(pilot.files['cep/jsx/registry.jsx'], 'base64').toString('utf8'), context);
+  const confirmations = dialogCount;
+  assert.equal(call('mutate', { ...baseline, _execution: execution }).code, 'operator_confirmation_expired');
+  execution.operatorConfirmation.expiresAt = Date.now() + 10000;
+  const delegated = call('mutate', { ...baseline, _execution: execution });
+  assert.equal(delegated.outcome, 'applied');
+  assert.equal(delegated.snapshot.sourceId, 11);
+  assert.equal(delegated.snapshot.protected, before.protected);
+  assert.equal(dialogCount, confirmations);
+  assert.equal(state.counts.photo, 2);
 });
