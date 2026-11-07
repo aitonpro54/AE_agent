@@ -32,7 +32,12 @@ function assemblyEnvironment(state) {
       Object.assign(this, { name, width, height, pixelAspect, duration, frameDuration, id: ++next, parentFolder: rootFolder });
       this.stack = [];
       this.layers = { add: source => {
-        const layer = { id: ++next, source, enabled: true };
+        let start = 0;
+        const layer = {
+          id: ++next, source, enabled: true, outPoint: duration,
+          get inPoint() { return start; },
+          set inPoint(value) { this.outPoint += value - start; start = value; }
+        };
         this.stack.unshift(layer);
         return layer;
       } };

@@ -32,8 +32,11 @@
         if (current.numItems > 128) fault('inspection_result_budget');
         for (var i = 1; i <= current.numItems; i++) {
             var item = current.item(i), comp = item instanceof CompItem;
+            var kind = 'other';
+            if (comp) kind = 'comp';
+            else if (still(item)) kind = 'still';
             var info = { id: item.id, name: item.name, parentId: item.parentFolder.id,
-                kind: comp ? 'comp' : still(item) ? 'still' : 'other' };
+                kind: kind };
             if (item instanceof FootageItem && item.file) info.file = String(item.file.fsName);
             if (comp) {
                 info.duration = item.duration;
@@ -133,8 +136,9 @@
                     var layer = comp.layers.add(item);
                     layer.name = desired.name;
                     layer.startTime = desired.inFrame * frame;
-                    layer.outPoint = desired.outFrame * frame;
                     layer.inPoint = desired.inFrame * frame;
+                    // AE can shift outPoint when inPoint changes. Set the end last.
+                    layer.outPoint = desired.outFrame * frame;
                 }
             } finally { app.endUndoGroup(); }
             var after = snapshot(p);

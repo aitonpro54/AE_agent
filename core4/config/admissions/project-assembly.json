@@ -1,11 +1,11 @@
 {
   "moduleId": "project-assembly",
   "operationId": "assemble-composition",
-  "artifactHash": "7605b42b199381bae192c022dec2e2edcb9b8aebf374b7f51332d8e3643bb641",
+  "artifactHash": "dbf65579104deeb136113e9447fc2514415ab2d390ef1605a6fe359fadc4e012",
   "schemaHash": "360d742455d616f7b77d3b8943eee4a565fe832fd146edf15e3e4cc9223103c2",
   "resultSchemaHash": "2c1653b9e1fc66c69c3cb2fe3c9a43b60c3cd933cec409e90ed965d23c973629",
   "effectPolicyHash": "0661f1eead923fb5fe196906535c84179f4d28855ab39f30c541da9215e5131e",
-  "executorHash": "4524ac3d050b0ca0ce0a022a28be709ea86c24d5c24c9b641af1d4acef4169a3",
+  "executorHash": "6911f891263ed67bd042cf1bbd8d7ef625d7d2e33fe28ffe50d9bdadc6431373",
   "protocolVersion": 1,
   "trustApprovalId": "source-review-project-assembly-20261107",
   "revoked": false
