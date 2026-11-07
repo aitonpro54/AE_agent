@@ -39,13 +39,19 @@
         "type": "string",
         "enum": [
           "save-as",
-          "create"
+          "create",
+          "open"
         ]
       },
       "destination": {
         "type": "string",
         "minLength": 1,
         "maxLength": 4096
+      },
+      "expectedDestinationSha256": {
+        "type": "string",
+        "minLength": 64,
+        "maxLength": 64
       }
     },
     "required": [
@@ -107,13 +113,19 @@
         "type": "string",
         "enum": [
           "save-as",
-          "create"
+          "create",
+          "open"
         ]
       },
       "destination": {
         "type": "string",
         "minLength": 1,
         "maxLength": 4096
+      },
+      "expectedDestinationSha256": {
+        "type": "string",
+        "minLength": 64,
+        "maxLength": 64
       }
     },
     "required": [
@@ -210,7 +222,8 @@
             "type": "string",
             "enum": [
               "save-as",
-              "create"
+              "create",
+              "open"
             ]
           },
           "sourceSha256": {

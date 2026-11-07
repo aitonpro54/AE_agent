@@ -12,7 +12,7 @@ const blank = Buffer.from('RIFX empty project');
 
 function lifecycleEnvironment(state) {
   fs.writeFileSync(state.projectId, original);
-  Object.assign(state, { currentFile: state.projectId, writes: 0, creates: 0 });
+  Object.assign(state, { currentFile: state.projectId, writes: 0, creates: 0, opens: 0 });
   class File {
     constructor(file) { this.fsName = path.normalize(file); }
     get exists() { return fs.existsSync(this.fsName); }
@@ -51,6 +51,11 @@ function lifecycleEnvironment(state) {
     state.creates++;
     state.currentFile = null;
     Object.assign(project, { dirty: false, numItems: 0, revision: 1 });
+    return project;
+  }, open(file) {
+    state.opens++;
+    state.currentFile = file.fsName;
+    Object.assign(project, { dirty: false, numItems: 1, revision: 1 });
     return project;
   } }, CompItem, File };
 }
@@ -142,4 +147,36 @@ test('project-lifecycle refuses to create from a dirty source before preparing a
   await assert.rejects(f.prepare({ ...f.target, action: 'create', destination: f.destination }), /lifecycle_clean_source_required/);
   assert.equal(fs.existsSync(path.dirname(f.destination)), false);
   assert.equal(f.h.state.creates, 0);
+});
+
+test('project-lifecycle opens the exact existing AEP and verifies both saved hashes', async t => {
+  const f = await flow(t, { flags: { clean: true } });
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  const input = { ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) };
+  const result = await f.h.broker.run(await f.prepare(input));
+  assert.equal(result.state, 'succeeded', JSON.stringify(result));
+  assert.equal(f.h.state.opens, 1);
+  assert.equal(f.h.state.writes, 0);
+  assert.deepEqual(fs.readFileSync(destination), working);
+  assert.deepEqual(fs.readFileSync(f.target.projectId), original);
+  assert.equal(f.h.broker.ledger.commands()[0].after.currentProject, destination);
+});
+
+test('project-lifecycle refuses a wrong or changed opening target and retains the original project', async t => {
+  const f = await flow(t, { flags: { clean: true }, confirm: ({ state }) => {
+    fs.writeFileSync(path.join(path.dirname(state.projectId), 'Saved target.aep'), Buffer.alloc(working.length, 65));
+    return true;
+  } });
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  const input = { ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) };
+  const wrong = await f.h.broker.run(await f.prepare({ ...input, expectedDestinationSha256: hash(original) }));
+  assert.equal(wrong.code, 'lifecycle_destination_hash');
+  assert.equal(f.h.confirmations, 0);
+  const changed = await f.h.broker.run(await f.prepare(input));
+  assert.equal(changed.code, 'executor_rejected');
+  assert.equal(changed.message, 'lifecycle_disk_changed');
+  assert.equal(f.h.state.opens, 0);
+  assert.equal(f.h.state.currentFile, f.target.projectId);
 });

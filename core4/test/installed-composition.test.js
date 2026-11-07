@@ -117,6 +117,16 @@ test('installed-composition project save is discovered by the installed MCP entr
     assert.equal(contract.contract.effectPolicy.checkpointKind, 'project-save-disk-preimage-v1');
   } finally { await h.close(); fs.rmSync(f.directory, { recursive: true, force: true }); }
 });
+test('installed-composition project lifecycle is discovered by the installed MCP entry', { timeout: 15000 }, async () => {
+  const f = install(buildPackage(root, 'manual-project-lifecycle')), h = rpcChild(f);
+  try {
+    await h.message('listening');
+    assert.equal((await h.call('core_status')).composition, 'manual-project-lifecycle');
+    const contract = await h.call('get_module_contract', { moduleId: 'project-lifecycle' });
+    assert.equal(contract.operationId, 'transition-project');
+    assert.deepEqual(contract.contract.buildSchema.properties.action.enum, ['save-as', 'create', 'open']);
+  } finally { await h.close(); fs.rmSync(f.directory, { recursive: true, force: true }); }
+});
 test('installed-composition admits a new render operation through declarations on a relocated source and installed tree', { timeout: 15000 }, async t => {
   const source = temp(), moduleId = 'fixture-render', operationId = 'fixture-render-variant', relative = 'modules/' + moduleId;
   t.after(() => fs.rmSync(source, { recursive: true, force: true }));
