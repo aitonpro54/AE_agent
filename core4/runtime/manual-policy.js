@@ -2,10 +2,10 @@
 const { brandAuthorityPort, brandExecutionPolicyPort } = require('../core/authority');
 const { hash, canonical, fail, exact } = require('../protocol/json');
 const POLICY = 'current-matching-target-after-local-confirmation-v1';
-function createManualPolicy({ selected, layout, additional = [], provider, installation, getPeer, pinAdoption = false }) {
+function createManualPolicy({ selected, layout, additional = [], provider, installation, getPeer, pinAdoption = false, operatorConfirmation }) {
   const profiles = [selected, ...(layout ? [layout] : []), ...additional].map(value => ({ contractPin: hash(value.contract), modulePin: value.pin,
     admissionPin: hash(value.admission), executorHash: value.admission.executorHash, proof: value.proof, prepareCheckpoint: value.prepareCheckpoint,
-    validateResult: value.validateResult, assertTarget: value.assertTarget }));
+    validateResult: value.validateResult, assertTarget: value.assertTarget, operatorConfirmation: value.operatorConfirmation === true }));
   const approvals = new Map();
   function admitted(candidate) {
     return profiles.find(profile => candidate.pin === profile.modulePin && hash(candidate.contract) === profile.contractPin && hash(candidate.admission) === profile.admissionPin);
@@ -16,7 +16,8 @@ function createManualPolicy({ selected, layout, additional = [], provider, insta
     const { contractPin, modulePin, admissionPin } = profile;
     const target = evidence?.target || {};
     const adoptionPin = pinAdoption ? { adoptionPin: hash(provider.adoption()) } : {};
-    return { policyId: POLICY, pin: hash({ policyId: POLICY, contractPin, modulePin, admissionPin, ...adoptionPin }), verificationKind: 'local-transaction-receipt', executionScope: provider.scope(target) };
+    const confirmation = profile.operatorConfirmation ? { operatorConfirmation: true } : {};
+    return { policyId: POLICY, pin: hash({ policyId: POLICY, contractPin, modulePin, admissionPin, ...adoptionPin, ...confirmation }), verificationKind: 'local-transaction-receipt', executionScope: provider.scope(target), ...confirmation };
   }
   const authority = brandAuthorityPort({ synthetic: false, resourceConstraints: [],
     registerProposal(approval) { const copy = JSON.parse(canonical(approval)), old = approvals.get(copy.proposalId); if (old && canonical(old) !== canonical(copy)) fail('proposal_registration_changed'); approvals.set(copy.proposalId, copy); },
@@ -27,7 +28,12 @@ function createManualPolicy({ selected, layout, additional = [], provider, insta
       if (canonical(base) !== canonical({ proposalId: approval.proposalId, planDigest: approval.planDigest, taskId: approval.taskId, taskEpoch: approval.taskEpoch, ...step })) fail('approval_binding_changed');
       provider.assert(reservation);
       if (reservation.checkpointRef !== checkpoint.ref || reservation.checkpointDigest !== checkpoint.digest || reservation.proposalId !== approval.proposalId) fail('checkpoint_reservation_binding');
-      return { owner: installation.installationId, checkpointRef: checkpoint.ref, allowedEffect: step.effectPolicy.effect, approvalDigest: hash(approval), executionScope: step.executionPolicy.executionScope, reservationRef: reservation.ref, reservation, provenance: 'native-confirmation-delivery-only' };
+      let confirmation;
+      if (step.executionPolicy.operatorConfirmation) {
+        if (!operatorConfirmation) fail('operator_confirmation_unavailable');
+        confirmation = operatorConfirmation(approval, reservation);
+      }
+      return { owner: installation.installationId, checkpointRef: checkpoint.ref, allowedEffect: step.effectPolicy.effect, approvalDigest: hash(approval), executionScope: step.executionPolicy.executionScope, reservationRef: reservation.ref, reservation, provenance: confirmation ? 'local-operator-exact-confirmation-v1' : 'native-confirmation-delivery-only', ...(confirmation ? { operatorConfirmation: confirmation } : {}) };
     }
   });
   const port = brandExecutionPolicyPort({

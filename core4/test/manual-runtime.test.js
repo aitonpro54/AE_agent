@@ -31,6 +31,28 @@ test('manual-runtime actual Broker HTTP compiled JSX generic flow uses one nativ
   const checkpoint = h.broker.ledger.events.find(e => e.type === 'checkpoint'); assert.equal(checkpoint.preimage.text, 'Before'); assert.equal(checkpoint.checkpoint.digest, command.checkpoint.digest);
   const second = await h.proposal('Again'); assert.equal((await h.broker.run(second)).state, 'succeeded'); assert.equal(h.state.counts.titles, 2);
 });
+test('manual-runtime operator authorization binds a single title mutation to its session, baseline and receipt without a dialog', async t => {
+  const { issue, createOperatorConfirmation } = require('../runtime/operator-confirmation');
+  let sessionId = 'session-a';
+  const h = await harness({ operatorSession: () => sessionId });
+  t.after(() => h.close());
+  const authorize = p => issue(h.installation, { sessionId, proposalId: p.proposalId, approvalDigest: p.operatorApprovalDigest });
+  const unapproved = await h.proposal();
+  assert.equal((await h.broker.run(unapproved)).code, 'operator_confirmation_required');
+  const staleSession = await h.proposal(); authorize(staleSession); sessionId = 'session-b';
+  assert.equal((await h.broker.run(staleSession)).code, 'operator_confirmation_binding');
+  const changed = await h.proposal(); authorize(changed); h.state.text = 'Manual edit';
+  assert.equal((await h.broker.run(changed)).code, 'approved_target_drift');
+  assert.equal(h.broker.ledger.commands().length, 0);
+  const request = await h.proposal(); authorize(request);
+  assert.equal((await h.broker.run(request)).state, 'succeeded');
+  assert.equal(h.state.text, 'After'); assert.equal(h.state.counts.titles, 1); assert.equal(h.confirmations, 0);
+  const command = h.broker.ledger.commands()[0], { proposal, plan } = h.broker.proposal(request.proposalId);
+  assert.equal(command.grant.provenance, 'local-operator-exact-confirmation-v1');
+  assert.throws(() => createOperatorConfirmation(h.installation, () => sessionId)(h.broker.approval(proposal, plan), {
+    commandId: 'another-command', ref: 'another-reservation', checkpointRef: command.checkpoint.ref, checkpointDigest: command.checkpoint.digest
+  }), /operator_confirmation_used/);
+});
 test('manual-runtime reserves render after settled text on an overlapping layer with its own checkpoint', async t => {
   const h = await harness(); t.after(() => h.close());
   assert.equal((await h.broker.run(await h.proposal())).state, 'succeeded');

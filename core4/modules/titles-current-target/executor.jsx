@@ -85,7 +85,10 @@
             var proof = p._execution;
             if (!proof || proof.policyId !== 'current-matching-target-after-local-confirmation-v1' || proof.baselineRevision !== before.revision || proof.baselineProtected !== before['protected'] || !proof.target || proof.target.projectId !== before.target.projectId || proof.target.compId !== before.target.compId || proof.target.layerId !== before.target.layerId) fault('manual_approval_binding');
             var message = 'Изменить текст в текущей совпадающей цели?\nПодтверждение относится к текущему проекту, в том числе после повторного открытия.\nПроект: ' + p.projectId + '\ncompId: ' + p.compId + '\nlayerId: ' + p.layerId + '\nСтарый текст: ' + JSON.stringify(before.text) + '\nНовый текст: ' + JSON.stringify(p.text);
-            if (confirm(message, true, 'AE Agent Core4 — изменение текста') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
+            var operator = proof.operatorConfirmation;
+            if (operator) {
+                if (!/^[a-f0-9]{64}$/.test(operator.digest) || typeof operator.expiresAt !== 'number' || operator.expiresAt <= new Date().getTime()) fault('operator_confirmation_expired');
+            } else if (confirm(message, true, 'AE Agent Core4 — изменение текста') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
             // Fresh resolution/CAS after modal boundary, then one synchronous setter
             // and separate local snapshot; no scheduling/modal/Node yield follows.
             before = snapshot(p);

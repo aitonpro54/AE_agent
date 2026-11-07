@@ -59,7 +59,7 @@ function declarativeProfiles(composition, release, json, checked) {
   for (const asset of mutations) {
     exactKeys(asset, ['assetKey', 'moduleId', 'path', 'admission', 'policy', 'phases']);
     const id = asset.moduleId, profile = policy.profiles[id];
-    exactKeys(profile, ['operationId', 'resultProfile']);
+    exactKeys(profile, ['operationId', 'resultProfile', ...(Object.hasOwn(profile, 'operatorConfirmation') ? ['operatorConfirmation'] : [])]);
     if (!composition.modules.includes(id) || asset.assetKey !== id + '-v1' || asset.path !== 'modules/' + id || asset.admission !== 'config/admissions/' + id + '.json' ||
         asset.policy !== 'current-matching-target-after-local-confirmation-v1' || canonical(asset.phases) !== '["inspect","mutate","verify"]' ||
         typeof profile.resultProfile !== 'string' || !Object.hasOwn(RESULT_PROFILES, profile.resultProfile) ||
@@ -70,7 +70,8 @@ function declarativeProfiles(composition, release, json, checked) {
         (profile.resultProfile === 'current-project-save-v1') !== (id === 'project-save') ||
         id === 'project-save' && profile.operationId !== 'save-current-project' ||
         (profile.resultProfile === 'project-lifecycle-v1') !== (id === 'project-lifecycle') ||
-        id === 'project-lifecycle' && profile.operationId !== 'transition-project') fail('composition_not_admitted');
+        id === 'project-lifecycle' && profile.operationId !== 'transition-project' ||
+        Object.hasOwn(profile, 'operatorConfirmation') && (profile.operatorConfirmation !== true || !release.hashes['runtime/operator-confirmation.js'])) fail('composition_not_admitted');
     const proof = RESULT_PROFILES[profile.resultProfile];
     if (proof) { checked(proof); proofPaths.add(proof); }
   }
@@ -134,6 +135,7 @@ function deriveComposition(release, read) {
     if (!value) fail('composition_not_admitted');
     const binding = Object.hasOwn(profiles, asset.moduleId) ? profiles[asset.moduleId] : null;
     if (binding && (value.contract.operationId !== binding.operationId || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
+    if (binding?.operatorConfirmation && !['layer.text', 'layer.source'].includes(value.contract.effectPolicy.effect)) fail('composition_not_admitted');
     let proofConfig;
     if (composition.version === 2 && binding?.resultProfile === 'owned-comp-render-v1') {
       if (!Object.hasOwn(value.manifest.hashes, 'completion.json')) fail('composition_artifact');
@@ -141,9 +143,10 @@ function deriveComposition(release, read) {
       exactKeys(proofConfig, ['directory', 'format']);
       if (typeof proofConfig.directory !== 'string' || !/^[a-z][a-z0-9-]{0,63}$/.test(proofConfig.directory) || proofConfig.format !== 'H.264') fail('composition_not_admitted');
     }
-    return { ...asset, ...value, executorHash: value.admission.executorHash, ...(binding ? { resultProfile: binding.resultProfile } : {}), ...(proofConfig ? { proofConfig } : {}) };
+    return { ...asset, ...value, executorHash: value.admission.executorHash, ...(binding ? { resultProfile: binding.resultProfile } : {}), ...(binding?.operatorConfirmation ? { operatorConfirmation: true } : {}), ...(proofConfig ? { proofConfig } : {}) };
   });
   const startOverSupported = Object.hasOwn(release.hashes, 'runtime/owner-contract.json') && json('runtime/owner-contract.json').version === 4;
+  if (assets.some(item => item.operatorConfirmation) && !startOverSupported) fail('operator_confirmation_owner_required');
   return { composition, assets, ...(startOverSupported ? { startOverSupported: true } : {}) };
 }
 function validateLegacyComposition(composition, release, checked) {
@@ -399,8 +402,12 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
     const { createManualPolicy } = require('./manual-policy.js');
     provider = createWindowsReservationProvider({ installation, getBroker: () => broker, getPeer: () => peer });
+    const operatorConfirmation = mutationAssets.some(item => item.operatorConfirmation)
+      ? require('./operator-confirmation.js').createOperatorConfirmation(installation, () => workSession?.status().sessionId)
+      : undefined;
+    if (operatorConfirmation && !workSession) fail('operator_confirmation_owner_required');
     const profileFor = item => {
-      const binding = { pin: hash(item.manifest), contract: item.contract, admission: item.admission };
+      const binding = { pin: hash(item.manifest), contract: item.contract, admission: item.admission, operatorConfirmation: item.operatorConfirmation };
       switch (item.resultProfile) {
         case 'manual-text-v1': return binding;
         case 'photo-source-v1': return { ...binding, ...require('./photo-source-proof.js').createPhotoSourceProof(() => workSession?.status().sessionId ?? installation.installationId) };
@@ -421,7 +428,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       }
     };
     manual = createManualPolicy({ selected: profileFor(manualAsset), additional: mutationAssets.filter(a => a !== manualAsset).map(profileFor),
-      provider, installation, getPeer: () => peer, pinAdoption: !!projectLifecycle });
+      provider, installation, getPeer: () => peer, pinAdoption: !!projectLifecycle, operatorConfirmation });
     const admissions = Object.fromEntries(mutationAssets.map(a => [a.moduleId, a.admission]));
     const transport = { identity: hash({ packageHash: installation.packageHash, admissions }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
     privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };

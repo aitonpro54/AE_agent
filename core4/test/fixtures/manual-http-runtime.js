@@ -17,12 +17,12 @@ const { decode, encode } = require('../../protocol/codec');
 const { validateExecutionPolicyPort, validateReservationHandle } = require('../../core/authority');
 const { initialState, environment } = require('./ae');
 const root = path.resolve(__dirname, '../..');
-async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, layoutEnvironment, textEnvironment, assemblyEnvironment, saveEnvironment, lifecycleEnvironment } = {}) {
+async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, layoutEnvironment, textEnvironment, assemblyEnvironment, saveEnvironment, lifecycleEnvironment, operatorSession } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-manual-runtime-')), state = initialState(); delete state.sessionId; Object.assign(state.flags, flags);
   const installation = { installationId: 'fixture-installation', machineId: 'fixture-machine', stateDir: path.join(dir, 'state'), packageHash: '1'.repeat(64), panelToken: '2'.repeat(64), controlToken: '3'.repeat(64) };
   if (saveEnvironment || lifecycleEnvironment) Object.assign(state, { projectId: path.join(dir, 'Проект с пробелом.aep'), stateDir: installation.stateDir });
   const contract = JSON.parse(fs.readFileSync(path.join(root, 'modules/titles-current-target/contract.json'))), admission = JSON.parse(fs.readFileSync(path.join(root, 'config/admissions/titles-current-target.json'))), manifest = JSON.parse(fs.readFileSync(path.join(root, 'modules/titles-current-target/artifact.json')));
-  const selected = { pin: hash(manifest), contract, admission }; let broker, peer, confirmations = 0, stopped = false, pump, hostPhase;
+  const selected = { pin: hash(manifest), contract, admission, operatorConfirmation: !!operatorSession }; let broker, peer, confirmations = 0, stopped = false, pump, hostPhase;
   let brokerRoot = root;
   const pkg = buildPackage(undefined, lifecycleEnvironment ? 'manual-project-lifecycle' : saveEnvironment ? 'manual-project-save' : assemblyEnvironment ? 'manual-project-assembly' : textEnvironment ? 'manual-titles' : layoutEnvironment ? 'manual-layout' : 'manual');
   if (layoutEnvironment || textEnvironment || assemblyEnvironment || saveEnvironment || lifecycleEnvironment) {
@@ -75,7 +75,8 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
     ...require('../../runtime/project-lifecycle-proof').createProjectLifecycleProof({ stateDir: installation.stateDir, currentSessionId: () => installation.installationId })
   } : null;
   if (lifecycle) additional.push(lifecycle);
-  const manual = createManualPolicy({ selected, layout, additional, provider, installation, getPeer: () => peer, pinAdoption: !!lifecycle });
+  const operatorConfirmation = operatorSession && require('../../runtime/operator-confirmation').createOperatorConfirmation(installation, operatorSession);
+  const manual = createManualPolicy({ selected, layout, additional, provider, installation, getPeer: () => peer, pinAdoption: !!lifecycle, operatorConfirmation });
   const transport = { identity: 'fixture-http-manual-v1', connect: v => peer.transport.connect(v), send: v => peer.transport.send(v), completion: v => peer.transport.completion(v), disconnect: () => peer.transport.disconnect() };
   broker = new Broker({ root: brokerRoot, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: callerTimeout, privateEmbedding: { authority: manual.authority, executionPolicy: manual.port, transport, recordContext: { purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: path.basename(dir), project: { file: state.projectId }, resources: [{ kind: 'project', identity: state.projectId }] } } });
   const inspection = JSON.parse(fs.readFileSync(path.join(root, 'modules/project-inspection/artifact.json')));
@@ -102,7 +103,8 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
     const c = broker.getContract({ moduleId: 'titles-current-target' }), target = { projectId: state.projectId, compId: 1, layerId: 102 };
     const evidence = await broker.inspect({ moduleId: 'titles-current-target', contractId: c.contractId, target });
     const built = await broker.build({ oneStep: true, steps: [{ stepId: 'title', moduleId: 'titles-current-target', contractId: c.contractId, evidenceRef: evidence.evidenceRef, input: { ...target, text } }] });
-    const p = broker.propose({ buildId: built.buildId }), dry = await broker.dryrun({ proposalId: p.proposalId }); return { proposalId: p.proposalId, dryrunRef: dry.dryrunRef, taskId: built.taskId };
+    const p = broker.propose({ buildId: built.buildId }), dry = await broker.dryrun({ proposalId: p.proposalId });
+    return { proposalId: p.proposalId, dryrunRef: dry.dryrunRef, taskId: built.taskId, ...(p.operatorApprovalDigest ? { operatorApprovalDigest: p.operatorApprovalDigest } : {}) };
   }
   return { broker, peer, provider, state, proposal, dir, brokerRoot, installation, get confirmations() { return confirmations; }, async close() { stopped = true; await peer.close(); broker.close(); await pump.catch(() => {}); } };
 }

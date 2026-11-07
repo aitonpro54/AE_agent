@@ -1,0 +1,16 @@
+{
+  "parent": "manual-project-lifecycle",
+  "modules": [],
+  "assets": [],
+  "profiles": {
+    "titles-current-target": {
+      "operationId": "set-current-text",
+      "resultProfile": "manual-text-v1",
+      "operatorConfirmation": true
+    }
+  },
+  "bundle": {
+    "files": ["runtime/operator-confirmation.js"],
+    "artifactClosures": []
+  }
+}

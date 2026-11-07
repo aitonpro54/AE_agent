@@ -195,9 +195,11 @@ class Broker {
     const plan = this.builds.get(buildId); if (!plan) fail('server_build_required'); this.current(plan.taskId, plan.taskEpoch);
     const proposal = { type: 'proposal', proposalId: id('proposal'), buildId, taskId: plan.taskId, taskEpoch: plan.taskEpoch, planDigest: hash(plan), createdAt: Date.now() };
     if (!this.authority) fail('private_grant_required');
-    this.authority.registerProposal(this.approval(proposal, plan));
+    const approval = this.approval(proposal, plan);
+    this.authority.registerProposal(approval);
     this.ledger.append(proposal); this.proposals.set(proposal.proposalId, proposal);
-    return { proposalId: proposal.proposalId, planRevision: plan.planRevision, taskId: plan.taskId, confirmationRequired: true, effects: plan.steps.map(s => ({ stepId: s.stepId, target: pick(s.desiredInput, s.selected.contract.effectPolicy.targetFields), effect: s.selected.contract.effectPolicy.effect, input: clone(s.input), expectedSnapshotDigest: hash(s.initialEvidence), modulePin: s.selected.pin })), pins: clone(plan.pins) };
+    const confirmation = plan.steps.some(step => step.executionPolicy?.operatorConfirmation) ? { operatorApprovalDigest: hash(approval) } : {};
+    return { proposalId: proposal.proposalId, planRevision: plan.planRevision, taskId: plan.taskId, confirmationRequired: true, effects: plan.steps.map(s => ({ stepId: s.stepId, target: pick(s.desiredInput, s.selected.contract.effectPolicy.targetFields), effect: s.selected.contract.effectPolicy.effect, input: clone(s.input), expectedSnapshotDigest: hash(s.initialEvidence), modulePin: s.selected.pin })), pins: clone(plan.pins), ...confirmation };
   }
   approvalStep(step, proposal) {
     const base = { stepId: step.stepId, moduleId: step.selected.moduleId, operationId: step.selected.contract.operationId, modulePin: step.selected.pin, admissionPin: hash(step.selected.admission), input: clone(step.input), target: pick(step.desiredInput, step.selected.contract.effectPolicy.targetFields), effectPolicy: clone(step.selected.contract.effectPolicy), expectedSnapshotDigest: hash(step.initialEvidence) };
@@ -269,6 +271,7 @@ class Broker {
       const grant = this.authority.authorize(authorization), policy = step.selected.contract.effectPolicy;
       this.resources.authorize(target, policy, grant, before);
       const physicalInput = { ...input, _execution: { policyId: descriptor.policyId, proposalId: proposal.proposalId, planDigest: proposal.planDigest, taskId: plan.taskId, taskEpoch: plan.taskEpoch, stepId: step.stepId, checkpointRef: checkpoint.ref, checkpointDigest: checkpoint.digest, baselineDigest: hash(before), baselineRevision: before.revision, baselineProtected: before.protected, target, pins: plan.pins } };
+      if (grant.operatorConfirmation) physicalInput._execution.operatorConfirmation = grant.operatorConfirmation;
       ctx.physicalInput = physicalInput;
       const originalBinding = this.originalDispatch(step.selected, 'mutate', physicalInput, commandId); ctx.originalBinding = originalBinding;
       const guard = () => {
@@ -277,6 +280,7 @@ class Broker {
         if (this.ledger.unresolved().some(c => c.commandId !== commandId && scopesOverlap(c.target, target))) fail('resource_fenced');
         this.executionPolicy.assertCurrent({ ...ctx, phase: 'mutate', stage: 'before-send' }); this.executionPolicy.assertReservation(ctx, reservation);
         const freshGrant = this.authority.authorize(authorization); this.resources.authorize(target, policy, freshGrant, before);
+        if (canonical(freshGrant.operatorConfirmation || null) !== canonical(grant.operatorConfirmation || null)) fail('operator_confirmation_changed');
         if (!sameDispatch(this.originalDispatch(step.selected, 'mutate', physicalInput, commandId), originalBinding) || canonical(plan.pins.transport || null) !== canonical(this.transportIdentity || null)) fail('dispatch_binding_changed');
       };
       await this.hook('beforeIntent', { commandId, step }); guard();
