@@ -33,7 +33,8 @@ function createProjectLifecycleProof(options) {
   return {
     assertTarget: save.assertTarget,
     prepareCheckpoint(ctx) {
-      if (ctx.input.action !== 'save-as' || !ctx.input.destination || samePath(fileKey(ctx.input.destination), fileKey(ctx.input.projectId))) fail('lifecycle_destination_path');
+      if (!['save-as', 'create'].includes(ctx.input.action) || !ctx.input.destination || samePath(fileKey(ctx.input.destination), fileKey(ctx.input.projectId))) fail('lifecycle_destination_path');
+      if (ctx.input.action === 'create' && ctx.before.dirty) fail('lifecycle_clean_source_required');
       save.prepareCheckpoint(ctx);
       reserveDestination(ctx.input.destination, checkpointFile(ctx.input, ctx.checkpoint.ref) + '.destination.json');
     },
@@ -49,7 +50,7 @@ function createProjectLifecycleProof(options) {
       const observed = { ...snapshot, savedFileSha256: current.digest, checkpointRoot };
       if (!changed) return observed;
       const { expectedSavedSha256, expectedFileStamp } = command.payload;
-      if (snapshot.dirty || action !== 'save-as' || readAep(projectId, expectedFileStamp).digest !== expectedSavedSha256 ||
+      if (snapshot.dirty || !['save-as', 'create'].includes(action) || readAep(projectId, expectedFileStamp).digest !== expectedSavedSha256 ||
           checkpointRoot !== command.payload.checkpointRoot) fail('lifecycle_source_changed');
       const file = checkpointFile(command.payload, _execution.checkpointRef);
       assertDestination(destination, file + '.destination.json');
@@ -61,7 +62,7 @@ function createProjectLifecycleProof(options) {
       const expected = { action: input.action, sourceSha256: input.expectedSavedSha256,
         checkpoint: { path: file, sha256: input.expectedSavedSha256, bytes: before.fileStamp.bytes, scope: 'on-disk-before-save' } };
       if (after.dirty !== false || !sha.test(after.savedFileSha256) || !samePath(fileKey(after.currentProject), fileKey(input.destination)) ||
-          after.inventory !== before.inventory || canonical(after.transition) !== canonical(expected)) fail('lifecycle_disk_readback');
+          after.inventory !== (input.action === 'create' ? '[]' : before.inventory) || canonical(after.transition) !== canonical(expected)) fail('lifecycle_disk_readback');
     }
   };
 }

@@ -53,19 +53,27 @@
             if (before.revision !== p.expectedRevision || app.project.renderQueue.rendering !== false) fault('stale_target');
             if (!proof || proof.policyId !== policy || proof.baselineRevision !== before.revision || proof.baselineProtected !== before['protected'] ||
                 !proof.target || proof.target.projectId !== p.projectId || proof.target.sessionId !== p.sessionId ||
-                !/^checkpoint-[0-9a-f-]{36}$/.test(proof.checkpointRef) || p.action !== 'save-as') fault('manual_approval_binding');
+                !/^checkpoint-[0-9a-f-]{36}$/.test(proof.checkpointRef) ||
+                (p.action !== 'save-as' && p.action !== 'create')) fault('manual_approval_binding');
+            var creating = p.action === 'create';
+            if (creating && before.dirty) fault('lifecycle_clean_source_required');
             var destination = new File(p.destination), checkpoint = new File(p.checkpointRoot + '/' + proof.checkpointRef + '.aep');
             if (!matches(destination, p.destination) || destination.exists || !destination.parent.exists || !checkpoint.exists) fault('lifecycle_destination_unavailable');
-            var message = 'Сохранить проект как новый AEP и переключиться на него?\nТекущий проект: ' + p.projectId +
+            var caption = creating ? 'Создать пустой AEP' : 'Сохранить как';
+            var message = caption + ' и переключиться на него?\nТекущий проект: ' + p.projectId +
                 '\nНовый проект: ' + p.destination + '\nКопия прежней версии: ' + checkpoint.fsName;
-            if (confirm(message, true, 'AE Agent Core — Сохранить как') !== true) fault('local_cancelled');
+            if (confirm(message, true, 'AE Agent Core — ' + caption) !== true) fault('local_cancelled');
             checkBytes(app.project.file, checkpoint, before.fileStamp.bytes);
             if (!same(snapshot(p, p.projectId), before) || app.project.renderQueue.rendering !== false || destination.exists ||
                 !destination.parent.exists || destination.parent.getFiles().length !== 0) fault('stale_target');
             started = true;
+            if (creating) {
+                app.newProject();
+                if (!app.project || app.project.file || app.project.numItems !== 0) fault('lifecycle_create_not_empty');
+            }
             if (app.project.save(destination) !== true) fault('lifecycle_ae_save');
             var after = snapshot(p, p.destination);
-            if (after.dirty || after.inventory !== before.inventory) fault('lifecycle_native_readback');
+            if (after.dirty || after.inventory !== (creating ? '[]' : before.inventory)) fault('lifecycle_native_readback');
             return { outcome: 'applied', snapshot: after, transactionReceipt: { version: 2, policyId: policy,
                 proposalId: proof.proposalId, planDigest: proof.planDigest, taskId: proof.taskId, taskEpoch: proof.taskEpoch,
                 stepId: proof.stepId, checkpointRef: proof.checkpointRef, checkpointDigest: proof.checkpointDigest,

@@ -38,7 +38,8 @@
       "action": {
         "type": "string",
         "enum": [
-          "save-as"
+          "save-as",
+          "create"
         ]
       },
       "destination": {
@@ -105,7 +106,8 @@
       "action": {
         "type": "string",
         "enum": [
-          "save-as"
+          "save-as",
+          "create"
         ]
       },
       "destination": {
@@ -207,7 +209,8 @@
           "action": {
             "type": "string",
             "enum": [
-              "save-as"
+              "save-as",
+              "create"
             ]
           },
           "sourceSha256": {

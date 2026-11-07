@@ -8,10 +8,11 @@ const { harness } = require('./fixtures/manual-http-runtime');
 
 const original = Buffer.from('RIFX saved source');
 const working = Buffer.from('RIFX edited source in memory');
+const blank = Buffer.from('RIFX empty project');
 
 function lifecycleEnvironment(state) {
   fs.writeFileSync(state.projectId, original);
-  Object.assign(state, { currentFile: state.projectId, writes: 0 });
+  Object.assign(state, { currentFile: state.projectId, writes: 0, creates: 0 });
   class File {
     constructor(file) { this.fsName = path.normalize(file); }
     get exists() { return fs.existsSync(this.fsName); }
@@ -35,18 +36,23 @@ function lifecycleEnvironment(state) {
   }
   const project = {
     get file() { return state.currentFile ? new File(state.currentFile) : null; },
-    revision: 7, dirty: true, renderQueue: { rendering: false }, numItems: 1,
+    revision: 7, dirty: !state.flags.clean, renderQueue: { rendering: false }, numItems: 1,
     item: () => new CompItem(),
     save(file) {
       state.writes++;
-      fs.writeFileSync(file.fsName, working);
+      fs.writeFileSync(file.fsName, this.numItems === 0 ? blank : working);
       state.currentFile = file.fsName;
       this.dirty = false;
       return !state.flags.uncertain;
     }
   };
   state.project = project;
-  return { app: { project }, CompItem, File };
+  return { app: { project, newProject() {
+    state.creates++;
+    state.currentFile = null;
+    Object.assign(project, { dirty: false, numItems: 0, revision: 1 });
+    return project;
+  } }, CompItem, File };
 }
 
 async function flow(t, options = {}) {
@@ -116,4 +122,24 @@ test('project-lifecycle rejects proposals from a previous host binding and fence
   assert.equal(f.h.broker.ledger.commands()[0].state, 'UNKNOWN');
   assert.equal(f.h.state.writes, 1);
   await assert.rejects(f.prepare(), /controller_unresolved/);
+});
+
+test('project-lifecycle creates and verifies an empty named AEP after a clean source', async t => {
+  const f = await flow(t, { flags: { clean: true }, confirm: ({ message }) => {
+    assert.match(message, /Создать пустой AEP/); return true;
+  } });
+  const input = { ...f.target, action: 'create', destination: f.destination };
+  const result = await f.h.broker.run(await f.prepare(input));
+  assert.equal(result.state, 'succeeded', JSON.stringify(result));
+  assert.equal(f.h.state.creates, 1);
+  assert.deepEqual(fs.readFileSync(f.destination), blank);
+  assert.deepEqual(fs.readFileSync(f.target.projectId), original);
+  assert.equal(f.h.broker.ledger.commands()[0].after.inventory, '[]');
+});
+
+test('project-lifecycle refuses to create from a dirty source before preparing a destination', async t => {
+  const f = await flow(t);
+  await assert.rejects(f.prepare({ ...f.target, action: 'create', destination: f.destination }), /lifecycle_clean_source_required/);
+  assert.equal(fs.existsSync(path.dirname(f.destination)), false);
+  assert.equal(f.h.state.creates, 0);
 });
