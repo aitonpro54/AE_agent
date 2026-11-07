@@ -1,7 +1,7 @@
-# AE Agent Core 4.1.1 — устанавливаемое ядро
+# AE Agent Core 4.1.2 — устанавливаемое ядро
 
 Core использует внешний Node 20+ и отдельную CEP-панель `com.codex.aeagentcore4`
-с пунктом меню **AE Agent Core 4.1.1**. В основной сборке `manual/owner`
+с пунктом меню **AE Agent Core 4.1.2**. В основной сборке `manual/owner`
 тонкий клиент Codex подключается к отдельному процессу Core, который обслуживает
 HTTP на порту 3457. Для обновления используется тот же идентификатор расширения.
 MCP connect и HTTP link не создают project-incarnation.
@@ -19,14 +19,14 @@ Node append+fsync begin выполняется до публикации ком�
 Команды подготовки из корня репозитория (первые две не меняют установку):
 
 ```powershell
-node core4/tools/package-installable.js --output C:/Temp/core4-4.1.1-package.json --composition manual --runtime owner
-node core4/tools/install-core4.js dry-run --package C:/Temp/core4-4.1.1-package.json
-node core4/tools/install-core4.js apply --package C:/Temp/core4-4.1.1-package.json --expected-package-hash EXACT_HASH_FROM_DRY_RUN
+node core4/tools/package-installable.js --output C:/Temp/core4-4.1.2-package.json --composition manual --runtime owner
+node core4/tools/install-core4.js dry-run --package C:/Temp/core4-4.1.2-package.json
+node core4/tools/install-core4.js apply --package C:/Temp/core4-4.1.2-package.json --expected-package-hash EXACT_HASH_FROM_DRY_RUN
 node core4/tools/install-core4.js rollback C:/Users/USER/AppData/Local/AEAgentCore4/transactions/TRANSACTION.json
 ```
 
 Переносимый комплект `manual/owner` собирается командой
-`node core4/tools/package-standalone-installer.js --output C:/Temp/core4-4.1.1-standalone --composition manual --runtime owner`.
+`node core4/tools/package-standalone-installer.js --output C:\Temp\core4-4.1.2-standalone --composition manual --runtime owner`.
 Для штатного обновления работающего owner Core используйте описанный в `README.txt`
 комплекта цикл остановки, `owner-update` и `update-enable`.
 
@@ -37,6 +37,20 @@ node core4/tools/install-core4.js rollback C:/Users/USER/AppData/Local/AEAgentCo
 состава версии 1 сохраняется маршрут `titles-current-target` в `manual/owner`.
 Изменение состава, зависимостей или публичного контракта поставляется полным
 пакетом. [Команды и проверка отдельной поставки](../plans/core-capability-supply-c1b-20261105.md#сборка).
+
+`photo-placeholder / replace-source` в составах на базе `manual` заменяет
+источник одного существующего 2D-слоя в сохранённом AEP. Цель включает точный
+`projectId`, `compId`, `layerId` и текущий `workSession.sessionId` из
+`core_status` в режиме owner. Для standalone stdio используется
+`installation.installationId`. В рабочем плане задаётся ID уже импортированного
+файлового still с теми же шириной, высотой и pixel aspect. Слой должен быть
+разблокирован, со статическими трансформациями и без time remap.
+
+Снимок показывает текущий источник, трансформации, тайминг и состав слоёв
+композиции. Core сверяет preimage перед доставкой. Диалог AE показывает путь
+AEP, ID слоя и оба источника. После подтверждения исполнитель заново разрешает
+цель и файл, вызывает один `replaceSource` и сверяет снимок. Для приёмки
+сопоставьте исходную квитанцию, новое чтение через MCP и кадр.
 
 Состав `manual-titles/owner` включает оба ранее принятых контракта Titles и
 общий модуль `text-layer`. Модуль применяет новый явный профиль статичного

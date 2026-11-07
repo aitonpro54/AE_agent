@@ -4,7 +4,7 @@ const { hash, canonical, fail, exact } = require('../protocol/json');
 const POLICY = 'current-matching-target-after-local-confirmation-v1';
 function createManualPolicy({ selected, layout, additional = [], provider, installation, getPeer }) {
   const profiles = [selected, ...(layout ? [layout] : []), ...additional].map(value => ({ contractPin: hash(value.contract), modulePin: value.pin,
-    admissionPin: hash(value.admission), executorHash: value.admission.executorHash, proof: value.proof, validateResult: value.validateResult }));
+    admissionPin: hash(value.admission), executorHash: value.admission.executorHash, proof: value.proof, validateResult: value.validateResult, assertTarget: value.assertTarget }));
   const approvals = new Map();
   function admitted(candidate) {
     return profiles.find(profile => candidate.pin === profile.modulePin && hash(candidate.contract) === profile.contractPin && hash(candidate.admission) === profile.admissionPin);
@@ -30,7 +30,13 @@ function createManualPolicy({ selected, layout, additional = [], provider, insta
   });
   const port = brandExecutionPolicyPort({
     describe,
-    assertCurrent(ctx) { if (!admitted(ctx.selected)) fail('execution_policy_pin_changed'); if (!getPeer().status().peer.connected) fail('panel_unavailable'); if (ctx.reservation) provider.assert(ctx.reservation, { afterSend: ctx.stage === 'after-send' }); },
+    assertCurrent(ctx) {
+      const profile = admitted(ctx.selected);
+      if (!profile) fail('execution_policy_pin_changed');
+      profile.assertTarget?.(ctx.target);
+      if (!getPeer().status().peer.connected) fail('panel_unavailable');
+      if (ctx.reservation) provider.assert(ctx.reservation, { afterSend: ctx.stage === 'after-send' });
+    },
     prepareReservation(ctx) { admitted(ctx.selected)?.proof?.beforeReservation(ctx); return provider.prepare(ctx); },
     assertReservation(ctx, handle) { return provider.assert(handle, { afterSend: ctx.stage === 'after-send' }); },
     cancelBeforeSend(handle, code) { provider.cancelBeforeSend(handle, code); },

@@ -10,6 +10,7 @@
     { "prefix": "core4/modules/text-layer/contract.json", "owner": "text-layer", "checks": ["text-layer", "text-layer-integration"] },
     { "prefix": "core4/config/admissions/text-layer.json", "owner": "text-layer", "checks": ["text-layer"] },
     { "prefix": "core4/runtime/text-layer-proof.js", "owner": "text-layer", "checks": ["text-layer", "text-layer-integration"] },
+    { "prefix": "core4/runtime/photo-source-proof.js", "owner": "photo-placeholder", "checks": ["photo-executor-contract", "installed-composition"] },
     { "prefix": "core4/test/text-layer.test.js", "owner": "text-layer", "checks": ["text-layer-integration"] },
     { "prefix": "core4/test/text-layer-local.test.js", "owner": "text-layer", "checks": ["text-layer"] },
     { "prefix": "core4/test/fixtures/text-layer-ae.js", "owner": "text-layer", "checks": ["text-layer", "text-layer-integration"] },
@@ -1507,6 +1508,7 @@
       "test/fixtures/authority.js"
     ],
     "photo-executor-contract": [
+      "runtime/photo-source-proof.js",
       "modules/photo-placeholder/",
       "config/admissions/photo-placeholder.json",
       "core/",

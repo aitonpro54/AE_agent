@@ -119,7 +119,7 @@ function composeCapability(base, bundle, admissionBytes, { basePin, capabilityPi
   const readBase = file => Buffer.from(base.files[file], 'base64');
   const selected = deriveComposition(base.release, readBase);
   const composition = selected.composition;
-  if (!['4.1.0', '4.1.1'].includes(base.release.version) || !composition || composition.id === 'readonly' ||
+  if (!['4.1.0', '4.1.1', '4.1.2'].includes(base.release.version) || !composition || composition.id === 'readonly' ||
       (composition.version === 1 && composition.id !== 'manual') ||
       runtimeBinding(base.release, readBase).runtimeModel !== 'owner') fail('capability_base_composition');
   const { artifact, contract } = verifyCapability(bundle, capabilityPin);

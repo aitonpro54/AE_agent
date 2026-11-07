@@ -2,6 +2,7 @@
   "moduleId": "photo-placeholder",
   "operationId": "replace-source",
   "protocolVersion": 1,
+  "executionPolicy": "current-matching-target-after-local-confirmation-v1",
   "targetSchema": {
     "type": "object",
     "properties": {
@@ -125,6 +126,18 @@
   "snapshotSchema": {
     "type": "object",
     "properties": {
+      "source": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "maxLength": 8192 },
+          "file": { "type": "string", "maxLength": 8192 },
+          "width": { "type": "integer", "minimum": 1 },
+          "height": { "type": "integer", "minimum": 1 },
+          "pixelAspect": { "type": "number", "minimum": 0.01 }
+        },
+        "required": ["name", "file", "width", "height", "pixelAspect"],
+        "additionalProperties": false
+      },
       "target": {
         "type": "object",
         "properties": {
@@ -200,6 +213,7 @@
       "protected"
     ],
     "requiresCheckpoint": true,
+    "checkpointKind": "photo-source-preimage-v1",
     "confirmation": "mutation"
   }
 }

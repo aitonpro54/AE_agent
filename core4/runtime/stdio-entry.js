@@ -17,6 +17,7 @@ function exactKeys(value, keys) { if (!value || Object.getPrototypeOf(value) !==
 const POLICY_FILE = 'runtime/composition-policy.json';
 const RESULT_PROFILES = Object.freeze({
   'manual-text-v1': null,
+  'photo-source-v1': 'runtime/photo-source-proof.js',
   'manual-point-layout-v1': 'runtime/point-layout-proof.js',
   'owned-text-layer-v1': 'runtime/text-layer-proof.js',
   'owned-text-variant-v1': 'runtime/text-variant-proof.js',
@@ -59,7 +60,8 @@ function declarativeProfiles(composition, release, json, checked) {
     if (!composition.modules.includes(id) || asset.assetKey !== id + '-v1' || asset.path !== 'modules/' + id || asset.admission !== 'config/admissions/' + id + '.json' ||
         asset.policy !== 'current-matching-target-after-local-confirmation-v1' || canonical(asset.phases) !== '["inspect","mutate","verify"]' ||
         typeof profile.resultProfile !== 'string' || !Object.hasOwn(RESULT_PROFILES, profile.resultProfile) ||
-        (profile.resultProfile === 'manual-text-v1') !== (id === 'titles-current-target')) fail('composition_not_admitted');
+        (profile.resultProfile === 'manual-text-v1') !== (id === 'titles-current-target') ||
+        profile.resultProfile === 'photo-source-v1' && (id !== 'photo-placeholder' || profile.operationId !== 'replace-source')) fail('composition_not_admitted');
     const proof = RESULT_PROFILES[profile.resultProfile];
     if (proof) { checked(proof); proofPaths.add(proof); }
   }
@@ -167,13 +169,14 @@ function validateLegacyComposition(composition, release, checked) {
 function registrySource(assets, codecSource) {
   const declarations = [], entries = assets.map((asset, index) => {
     const name = 'executor' + index; declarations.push('var ' + name + '=' + asset.executor + ';');
-    return JSON.stringify(asset.assetKey) + ':{"hash":' + JSON.stringify(asset.executorHash) + ',"calls":{' + asset.phases.map(phase => JSON.stringify(phase) + ':' + name + '[' + JSON.stringify(phase) + ']').join(',') + '}}';
+    const method = phase => asset.resultProfile === 'photo-source-v1' ? phase + 'Current' : phase;
+    return JSON.stringify(asset.assetKey) + ':{"hash":' + JSON.stringify(asset.executorHash) + ',"calls":{' + asset.phases.map(phase => JSON.stringify(phase) + ':' + name + '[' + JSON.stringify(method(phase)) + ']').join(',') + '}}';
   });
   return '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + codecSource + ';' + declarations.join('') + 'var assets={' + entries.join(',') + '};return {"dispatch":function(serialized){var frame=JSON.parse(serialized),own=Object.prototype.hasOwnProperty,a=frame&&own.call(assets,frame.assetKey)&&assets[frame.assetKey],call=a&&own.call(a.calls,frame.phase)&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({"readFailureVersion":1,"outcome":"rejected","code":"inspection_failed"});}}};}());\n';
 }
 function installationConfig(d, selected) { const assets = selected.assets.map(a => ({ assetKey: a.assetKey, executorHash: a.executorHash, phases: a.phases })); return { installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: assets[0].executorHash, assetKey: assets[0].assetKey, assets, ...(selected.startOverSupported ? { startOverSupported: true } : {}) }; }
 function verifyRelease(directory, release) {
-  exactKeys(release, ['version', 'format', 'hashes']); if ((release.version !== '4.0.0' && !(['4.1.0', '4.1.1'].includes(release.version) && release.format === 2)) || !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype) fail('release_schema');
+  exactKeys(release, ['version', 'format', 'hashes']); if ((release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2'].includes(release.version) && release.format === 2)) || !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype) fail('release_schema');
   const root = path.resolve(directory), expectedFiles = new Set(['release.json']), expectedDirs = new Set(['']);
   for (const relative of Object.keys(release.hashes || {})) {
     if (!/^[A-Za-z0-9_./-]+$/.test(relative) || relative.includes('\\') || relative.split('/').some(p => !p || p === '.' || p === '..') || path.isAbsolute(relative) || relative === 'release.json') fail('release_path');
@@ -362,7 +365,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     // Broker or opening an execution store. Only authenticated panel reset
     // control is available; the physical command channel remains refused.
     require('./start-over-panel-control.js').attachStartOverHttp({ server: reservedServer, control: startOverControl, reason: 'owner_recovery_required' });
-    const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.1.1',
+    const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.1.2',
       installation: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash, nodeVerified: true },
       lifecycle: ownerLifecycle.state(), ownershipFault: 'owner_recovery_required', physical: { listening: reservedServer.listening, port: reservedServer.address()?.port || null, inspectionAvailable: false, storeClosed: true, unknown: true, coverage: 'diagnostic-only; execution queue not reopened' }, externalLegacyCoverage: 'unobserved' });
     const unavailable = () => ({ available: false, reason: 'owner_recovery_required' });
@@ -391,6 +394,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       const binding = { pin: hash(item.manifest), contract: item.contract, admission: item.admission };
       switch (item.resultProfile) {
         case 'manual-text-v1': return binding;
+        case 'photo-source-v1': return { ...binding, ...require('./photo-source-proof.js').createPhotoSourceProof(() => workSession?.status().sessionId ?? installation.installationId) };
         case 'manual-point-layout-v1': return { ...binding, proof: require('./point-layout-proof.js').createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
         case 'owned-text-layer-v1': return { ...binding, validateResult: require('./text-layer-proof.js').validateTextLayerCompletion };
         case 'owned-text-variant-v1': return { ...binding, validateResult: require('./text-variant-proof.js').validateTextVariantCompletion };
@@ -421,7 +425,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const contractId = hash({ packageHash: installation.packageHash, admission, contract }); let closed = false;
   const facade = Object.create(broker);
   const physical = () => { const value = peer.status(); return { ...value, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && !value.startOverFrozen && !value.storeClosed && !value.storeFault && !value.pending }; };
-  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.1.1', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
+  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.1.2', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
   facade.diagnostics = () => ({ ...broker.diagnostics(), ...facade.status() });
   facade.connect = async () => {
     const result = manual ? await broker.connect() : null;
@@ -467,7 +471,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       return { code: record.code };
     });
   }
-  serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.1.1' } });
+  serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.1.2' } });
   return { close: facade.close, status: facade.status };
   } catch (e) {
     if (ipc) await ipc.close();

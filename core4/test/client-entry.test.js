@@ -28,7 +28,7 @@ function fixture(extraFiles = {}) {
     'runtime/client-stdio.js': Buffer.from("exports.serveAttachment=({output})=>{output.write('fixture-thin-ready\\n');return {close(){}}};"),
     ...extraFiles
   };
-  const manifest = { version: '4.1.1', format: 2, hashes: Object.fromEntries(Object.entries(moduleFiles).map(([f, v]) => [f, hash(v)])) };
+  const manifest = { version: '4.1.2', format: 2, hashes: Object.fromEntries(Object.entries(moduleFiles).map(([f, v]) => [f, hash(v)])) };
   const packageHash = hash(canonical(manifest)), releaseDir = path.join(installRoot, 'releases', packageHash);
   for (const [file, bytes] of Object.entries(moduleFiles)) { fs.mkdirSync(path.dirname(path.join(releaseDir, file)), { recursive: true }); fs.writeFileSync(path.join(releaseDir, file), bytes); }
   fs.writeFileSync(path.join(releaseDir, 'release.json'), canonical(manifest));
