@@ -1,6 +1,7 @@
 'use strict';
 
 const JOB_FIELDS = ['fileName', 'activeLayerId', 'controlledLayerIds', 'startFrame', 'frameCount', 'renderTemplate', 'outputTemplate'];
+const COMPOSITION_WORKSPACE = 'AE_CORE4_COMP_WORKSPACE_V1';
 
 function matchesJob(input, job) {
   return !!job && JOB_FIELDS.every(key => JSON.stringify(input[key]) === JSON.stringify(job[key]));
@@ -8,8 +9,10 @@ function matchesJob(input, job) {
 
 function build({ input, evidence }) {
   const ids = new Set(input.controlledLayerIds);
-  if (ids.size !== input.controlledLayerIds.length || !ids.has(input.activeLayerId) ||
-      [...ids].some(id => !evidence.layers.some(layer => layer.layerId === id && layer.controllable))) {
+  const wholeComposition = JSON.parse(evidence.protected)[1] === COMPOSITION_WORKSPACE;
+  if (ids.size !== input.controlledLayerIds.length || wholeComposition !== (ids.size === 0 && input.activeLayerId === 0) ||
+      (!wholeComposition && (!ids.has(input.activeLayerId) ||
+        [...ids].some(id => !evidence.layers.some(layer => layer.layerId === id && layer.controllable))))) {
     throw new Error('comp_render_targets');
   }
   if (input.mode === 'stage') {

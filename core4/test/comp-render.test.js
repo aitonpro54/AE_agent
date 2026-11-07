@@ -10,7 +10,7 @@ const { createRenderProof, validateRenderResult } = require('../runtime/comp-ren
 const { proof: compRenderProof, validateResult: validateCompRenderCompletion } = createRenderProof(require('../modules/comp-render/completion.json'));
 
 const jsx = fs.readFileSync(path.join(__dirname, '../modules/comp-render/executor.jsx'), 'utf8');
-function fixture(t, { missing = false, template = true } = {}) {
+function fixture(t, { missing = false, template = true, whole = false } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-render-test-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   fs.mkdirSync(path.join(dir, 'titles-output'));
@@ -29,6 +29,12 @@ function fixture(t, { missing = false, template = true } = {}) {
     property: () => ({ numProperties: 1 }) }));
   const comp = Object.assign(new CompItem(), { id: 7, name: 'Copy', comment: 'AE_CORE4_TEXT_WORKSPACE_V1', numLayers: 2,
     width: 800, height: 400, duration: 3, time: 1, frameDuration: 1 / 30, displayStartTime: 0, layer: i => layers[i - 1] });
+  if (whole) {
+    comp.comment = 'AE_CORE4_COMP_WORKSPACE_V1';
+    Object.assign(input, { controlledLayerIds: [], activeLayerId: 0 });
+    for (const layer of layers) Object.assign(layer, { startTime: 0, inPoint: 0, outPoint: 3, stretch: 100,
+      property: name => name === 'ADBE Transform Group' ? { property: () => ({ value: 100, numKeys: 0 }) } : null });
+  }
   let copy, active, confirmation = 0, quality = 'Best', fileTemplate = 'variant.[fileExtension]';
   const confirmations = [];
   comp.duplicate = () => {
@@ -141,4 +147,20 @@ test('comp-render: a forged result and an unsafe host filename fail independentl
   const input = { mode: 'stage', compId: 7, fileName, activeLayerId, controlledLayerIds, startFrame, frameCount, renderTemplate, outputTemplate };
   assert.throws(() => validateRenderResult({ input, before: env.original }, { ...snapshot, job: { ...snapshot.job, file: file + '.forged' } }, { file, format: 'H.264' }), /comp_render_stage_result/);
   assert.throws(() => compRenderProof.beforeReservation({ input: { ...input, projectId: path.join(path.dirname(path.dirname(file)), 'own.aep'), fileName: '../unsafe.mp4' }, before: env.original }), /comp_render_output$/);
+});
+
+test('comp-render: whole marked composition preserves visibility and exact staged timeline', t => {
+  const env = fixture(t, { whole: true });
+  assert.throws(() => env.run({ activeLayerId: 21, controlledLayerIds: [21] }), /comp_render_targets/);
+  assert.equal(env.run().outcome, 'applied');
+  assert.deepEqual([env.copy.layer(1).enabled, env.copy.layer(2).enabled], [true, false]);
+  const stored = env.copy.layer(1).outPoint;
+  env.copy.layer(1).outPoint = 2;
+  assert.throws(env.read, /comp_render_job_timeline/);
+  env.copy.layer(1).outPoint = stored;
+  env.finish(3);
+  assert.equal(env.run({ mode: 'finalize', jobCompId: 8 }).outcome, 'applied');
+  assert.deepEqual(env.read(), env.original);
+  const titles = fixture(t);
+  assert.throws(() => titles.run({ activeLayerId: 0, controlledLayerIds: [] }), /comp_render_targets/);
 });

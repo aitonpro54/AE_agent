@@ -1,0 +1,10 @@
+{
+  "id": "crossfade-two-v1",
+  "marker": "AE_CORE4_COMP_WORKSPACE_V1",
+  "slots": [
+    { "id": "photo-1", "startFrame": 0, "endFrame": 60 },
+    { "id": "photo-2", "startFrame": 30, "endFrame": 90 }
+  ],
+  "frameCount": 90,
+  "audio": false
+}

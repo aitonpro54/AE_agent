@@ -1,6 +1,7 @@
 (function () {
     var POLICY = 'current-matching-target-after-local-confirmation-v1';
     var TAG = 'AE_CORE4_RENDER_V2:';
+    var COMPOSITION_WORKSPACE = 'AE_CORE4_COMP_WORKSPACE_V1';
     function fault(code) { var error = new Error(code); error.coreCode = code; throw error; }
     function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
     function contains(list, value) {
@@ -11,7 +12,7 @@
         var project = app.project;
         if (!project || !project.file || String(project.file.fsName) !== p.projectId) fault('project_cas');
         var comp = project.itemByID(p.compId);
-        if (!(comp instanceof CompItem) || comp.comment !== 'AE_CORE4_TEXT_WORKSPACE_V1' ||
+        if (!(comp instanceof CompItem) || (comp.comment !== 'AE_CORE4_TEXT_WORKSPACE_V1' && comp.comment !== COMPOSITION_WORKSPACE) ||
             comp.displayStartTime !== 0 || comp.numLayers > 60 || comp.numLayers < 1) fault('comp_render_workspace');
         return comp;
     }
@@ -25,6 +26,26 @@
     }
     function identity(p) {
         return [p.compId, p.fileName, p.activeLayerId, p.controlledLayerIds, p.startFrame, p.frameCount, p.renderTemplate, p.outputTemplate];
+    }
+    function timeline(comp, includeLeaves) {
+        var result = [];
+        if (comp.numLayers > 60) fault('comp_render_timeline_profile');
+        for (var i = 1; i <= comp.numLayers; i++) {
+            var layer = comp.layer(i), transform = layer.property('ADBE Transform Group');
+            var opacity = transform && transform.property('ADBE Opacity'), keys = [];
+            if (!opacity || opacity.expressionEnabled || opacity.expression || opacity.numKeys > 16) fault('comp_render_timeline_profile');
+            for (var k = 1; k <= opacity.numKeys; k++) {
+                keys.push([opacity.keyTime(k), opacity.keyValue(k),
+                    opacity.keyInInterpolationType(k) === KeyframeInterpolationType.LINEAR,
+                    opacity.keyOutInterpolationType(k) === KeyframeInterpolationType.LINEAR]);
+            }
+            var entry = { name: layer.name, sourceId: layer.source ? layer.source.id : null,
+                startTime: layer.startTime, inPoint: layer.inPoint, outPoint: layer.outPoint,
+                stretch: layer.stretch, enabled: layer.enabled, opacity: keys.length ? null : opacity.value, keys: keys };
+            if (includeLeaves && layer.source instanceof CompItem) entry.leaf = timeline(layer.source, false);
+            result.push(entry);
+        }
+        return result;
     }
     function settings(item, om) {
         return JSON.stringify([item.getSettings(GetSettingsFormat.STRING_SETTABLE), om.getSettings(GetSettingsFormat.STRING_SETTABLE)]);
@@ -54,6 +75,8 @@
             if (staged.name !== original.name || staged.enabled !== enabled ||
                 (staged.source && staged.source.id) !== (original.source && original.source.id)) fault('comp_render_job_visibility');
         }
+        if (comp.comment === COMPOSITION_WORKSPACE &&
+            (!same(timeline(copy, true), timeline(comp, true)) || tag[9] !== JSON.stringify(timeline(comp, true)))) fault('comp_render_job_timeline');
         var status = 'INCOMPLETE';
         if (item.status === RQItemStatus.DONE) status = 'DONE';
         if (item.status === RQItemStatus.QUEUED) status = 'QUEUED';
@@ -71,7 +94,7 @@
             var comment = String(item.comp.comment);
             if (comment.indexOf(TAG) === 0) {
                 var tag = JSON.parse(comment.slice(TAG.length));
-                if (tag instanceof Array && tag.length === 9 && tag[0] === comp.id) {
+                if (tag instanceof Array && (tag.length === 9 || tag.length === 10) && tag[0] === comp.id) {
                     if (owned) fault('comp_render_job_ambiguous');
                     owned = item;
                     job = jobOf(item, tag, comp, q.rendering);
@@ -86,9 +109,12 @@
                 !layer.locked && !layer.solo && !layer.isTrackMatte && !layer.guideLayer && !layer.adjustmentLayer });
         }
         var target = { projectId: p.projectId, compId: p.compId };
-        var preserved = JSON.stringify([comp.name, comp.comment, comp.width, comp.height, comp.duration, comp.frameDuration, comp.time, queue]);
+        var state = [comp.name, comp.comment, comp.width, comp.height, comp.duration, comp.frameDuration, comp.time, queue];
+        if (comp.comment === COMPOSITION_WORKSPACE) state.push(timeline(comp, true));
+        var preserved = JSON.stringify(state);
         var snapshot = { target: target, revision: JSON.stringify([target, preserved, list, idle, job || null]), 'protected': preserved,
             duration: comp.duration, frameDuration: comp.frameDuration, queueIdle: idle, layers: list };
+        if (comp.comment === COMPOSITION_WORKSPACE && (preserved.length > 20000 || snapshot.revision.length > 24000)) fault('comp_render_snapshot_budget');
         if (job) snapshot.job = job;
         return { snapshot: snapshot, owned: owned };
     }
@@ -127,6 +153,8 @@
             proof.baselineRevision !== before.revision || proof.baselineProtected !== before['protected'] ||
             !proof.target || proof.target.projectId !== p.projectId || proof.target.compId !== p.compId) fault('comp_render_binding');
         var comp = compFor(p), file = output(p.fileName);
+        var wholeComposition = comp.comment === COMPOSITION_WORKSPACE;
+        if (wholeComposition !== (p.controlledLayerIds.length === 0 && p.activeLayerId === 0)) fault('comp_render_targets');
         if (p.mode !== 'stage') {
             var job = before.job;
             if (!job || job.jobCompId !== p.jobCompId || !same(JSON.parse(observation.owned.comp.comment.slice(TAG.length)).slice(0, 8), identity(p)) ||
@@ -142,7 +170,7 @@
             if (!before.layers[i].controllable) fault('comp_render_targets');
             controlled.push(i + 1);
         }
-        if (controlled.length !== p.controlledLayerIds.length || !contains(p.controlledLayerIds, p.activeLayerId)) fault('comp_render_targets');
+        if (controlled.length !== p.controlledLayerIds.length || (!wholeComposition && !contains(p.controlledLayerIds, p.activeLayerId))) fault('comp_render_targets');
         dependencyGraph(comp, p);
         return { comp: comp, controlled: controlled, file: file };
     }
@@ -168,7 +196,9 @@
         item.render = true;
         var nativeSettings = settings(item, item.outputModule(1));
         if (nativeSettings.length > 8192) fault('comp_render_settings_budget');
-        copy.comment = TAG + JSON.stringify(identity(p).concat([nativeSettings]));
+        var binding = identity(p).concat([nativeSettings]);
+        if (comp.comment === COMPOSITION_WORKSPACE) binding.push(JSON.stringify(timeline(comp, true)));
+        copy.comment = TAG + JSON.stringify(binding);
     }
     function removeCopy(copy) {
         var project = app.project, previousCount = project.numItems;
@@ -185,7 +215,8 @@
             var action = 'Снять незавершённое задание и удалить его копию';
             if (p.mode === 'stage') action = 'Подготовить единственное задание в очереди AE';
             if (p.mode === 'finalize') action = 'Подтвердить DONE и удалить временное задание и копию';
-            if (confirm(action + '\nСлой ' + p.activeLayerId + ', compId ' + p.compId + '\n' + p.projectId +
+            var scope = p.activeLayerId === 0 ? 'Вся композиция' : 'Слой ' + p.activeLayerId;
+            if (confirm(action + '\n' + scope + ', compId ' + p.compId + '\n' + p.projectId +
                 '\nКадры: ' + p.startFrame + ' + ' + p.frameCount + '\n' + p.renderTemplate + ' / ' + p.outputTemplate +
                 '\n' + context.file.fsName, true, 'AE Agent Core4 — очередь AE') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
             observation = observe(p);

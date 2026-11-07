@@ -22,10 +22,10 @@
       "controlledLayerIds": {
         "type": "array",
         "items": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
-        "minItems": 1,
+        "minItems": 0,
         "maxItems": 24
       },
-      "activeLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "activeLayerId": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
       "startFrame": { "type": "integer", "minimum": 0, "maximum": 1000000 },
       "frameCount": { "type": "integer", "minimum": 1, "maximum": 600 },
       "fileName": { "type": "string", "minLength": 1, "maxLength": 100 },
@@ -63,10 +63,10 @@
       "controlledLayerIds": {
         "type": "array",
         "items": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
-        "minItems": 1,
+        "minItems": 0,
         "maxItems": 24
       },
-      "activeLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "activeLayerId": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
       "startFrame": { "type": "integer", "minimum": 0, "maximum": 1000000 },
       "frameCount": { "type": "integer", "minimum": 1, "maximum": 600 },
       "fileName": { "type": "string", "minLength": 1, "maxLength": 100 },
@@ -188,11 +188,11 @@
           "file": { "type": "string", "minLength": 1, "maxLength": 8192 },
           "bytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
           "fileName": { "type": "string", "minLength": 1, "maxLength": 100 },
-          "activeLayerId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "activeLayerId": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
           "controlledLayerIds": {
             "type": "array",
             "items": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
-            "minItems": 1,
+            "minItems": 0,
             "maxItems": 24
           },
           "status": {

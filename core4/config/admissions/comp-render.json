@@ -1,12 +1,12 @@
 {
   "moduleId": "comp-render",
   "operationId": "render-text-variant",
-  "artifactHash": "f335954af83b11550f5d1f020a6eed057ab4506a6762f316ec7de5125d812919",
-  "schemaHash": "087c19677eecdd466eeee5bc4a3904138997e7a9c6f9fc667f4a5054ba0dca92",
-  "resultSchemaHash": "61d5323b96e9b697be92d36d4ec2f0d13796c792eb7d1726f7fdc2c6b56a7b46",
+  "artifactHash": "996e6bb4ad89f4bb49eeca143ad788f0e224a04caf0ecb06183083eb84b9105b",
+  "schemaHash": "fbed613e10631f7e04d85686366a830e54213663ba52e3ac439efc8baf39eda1",
+  "resultSchemaHash": "ace9d922712d6b7ede138254119e56e170b522b8becb31e42e327ce1735bb39c",
   "effectPolicyHash": "1789fc1f5c54b8c142605d8d48b9b79206bd99f946627427b02af48eb9a8cf00",
-  "executorHash": "a47171de562f34c5075f1fdecb80dc4d656e6ac95de14cdcb60db91b434c91b9",
+  "executorHash": "6e3b3339b1372a3b840ea20ea73700977075b00b673f3594d0a4c3fa63a7da7f",
   "protocolVersion": 1,
-  "trustApprovalId": "source-review-comp-render-composition-20261106",
+  "trustApprovalId": "source-review-comp-render-20261107",
   "revoked": false
 }

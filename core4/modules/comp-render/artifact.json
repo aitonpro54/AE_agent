@@ -1,11 +1,11 @@
 {
   "id": "comp-render",
-  "version": "4.1.0",
+  "version": "4.1.2",
   "entry": "implementation.js",
   "hashes": {
-    "implementation.js": "1deb7ca4435e6d1dd3d71da5d036eb0b3310c480e874cb7bf20c842a747f6faa",
-    "contract.json": "874292cc41f0c5aa0b5db2484b172ed502cce788adfd042461014d96b54a7bc4",
-    "executor.jsx": "a47171de562f34c5075f1fdecb80dc4d656e6ac95de14cdcb60db91b434c91b9",
+    "implementation.js": "49ffbfeb278fb37bfec741d406397ad212b3dc10d8edc9040e7e179ee1256980",
+    "contract.json": "dbd2134b0a990e1ba6ba3ba74e31da186dddf8f5ca59f518976c228e0e45547c",
+    "executor.jsx": "6e3b3339b1372a3b840ea20ea73700977075b00b673f3594d0a4c3fa63a7da7f",
     "completion.json": "cd2968619199062027a0b3ba8856152aab6b93e644c6ae9fb7b7fe224c1cdc80"
   },
   "publicDependencies": {}

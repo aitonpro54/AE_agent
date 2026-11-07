@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["jobId", "templateId", "template", "project", "slots", "photos", "output", "purpose"],
+  "properties": {
+    "jobId": { "type": "string", "pattern": "^[a-zA-Z0-9_-]{1,80}$" },
+    "templateId": { "const": "crossfade-two-v1" },
+    "template": {
+      "type": "object", "additionalProperties": false, "required": ["file", "sha256"],
+      "properties": { "file": { "$ref": "#/$defs/file" }, "sha256": { "$ref": "#/$defs/digest" } }
+    },
+    "project": {
+      "type": "object", "additionalProperties": false, "required": ["file", "sessionId", "masterCompId"],
+      "properties": { "file": { "$ref": "#/$defs/file" }, "sessionId": { "$ref": "#/$defs/file" }, "masterCompId": { "$ref": "#/$defs/id" } }
+    },
+    "slots": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["compId", "layerId", "placeholderSourceId"],
+        "properties": { "compId": { "$ref": "#/$defs/id" }, "layerId": { "$ref": "#/$defs/id" }, "placeholderSourceId": { "$ref": "#/$defs/id" } }
+      }
+    },
+    "photos": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["sourceId", "file", "sha256"],
+        "properties": { "sourceId": { "$ref": "#/$defs/id" }, "file": { "$ref": "#/$defs/file" }, "sha256": { "$ref": "#/$defs/digest" } }
+      }
+    },
+    "output": {
+      "type": "object", "additionalProperties": false, "required": ["fileName", "renderTemplate", "outputTemplate"],
+      "properties": {
+        "fileName": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,90}\\.mp4$" },
+        "renderTemplate": { "$ref": "#/$defs/file", "maxLength": 128 },
+        "outputTemplate": { "$ref": "#/$defs/file", "maxLength": 128 }
+      }
+    },
+    "purpose": { "enum": ["user_work", "technical_check"] }
+  },
+  "$defs": {
+    "file": { "type": "string", "minLength": 1, "maxLength": 2048 },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "id": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+  }
+}
