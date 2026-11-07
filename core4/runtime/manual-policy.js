@@ -2,7 +2,7 @@
 const { brandAuthorityPort, brandExecutionPolicyPort } = require('../core/authority');
 const { hash, canonical, fail, exact } = require('../protocol/json');
 const POLICY = 'current-matching-target-after-local-confirmation-v1';
-function createManualPolicy({ selected, layout, additional = [], provider, installation, getPeer }) {
+function createManualPolicy({ selected, layout, additional = [], provider, installation, getPeer, pinAdoption = false }) {
   const profiles = [selected, ...(layout ? [layout] : []), ...additional].map(value => ({ contractPin: hash(value.contract), modulePin: value.pin,
     admissionPin: hash(value.admission), executorHash: value.admission.executorHash, proof: value.proof, prepareCheckpoint: value.prepareCheckpoint,
     validateResult: value.validateResult, assertTarget: value.assertTarget }));
@@ -15,7 +15,8 @@ function createManualPolicy({ selected, layout, additional = [], provider, insta
     if (!profile) return null;
     const { contractPin, modulePin, admissionPin } = profile;
     const target = evidence?.target || {};
-    return { policyId: POLICY, pin: hash({ policyId: POLICY, contractPin, modulePin, admissionPin }), verificationKind: 'local-transaction-receipt', executionScope: provider.scope(target) };
+    const adoptionPin = pinAdoption ? { adoptionPin: hash(provider.adoption()) } : {};
+    return { policyId: POLICY, pin: hash({ policyId: POLICY, contractPin, modulePin, admissionPin, ...adoptionPin }), verificationKind: 'local-transaction-receipt', executionScope: provider.scope(target) };
   }
   const authority = brandAuthorityPort({ synthetic: false, resourceConstraints: [],
     registerProposal(approval) { const copy = JSON.parse(canonical(approval)), old = approvals.get(copy.proposalId); if (old && canonical(old) !== canonical(copy)) fail('proposal_registration_changed'); approvals.set(copy.proposalId, copy); },

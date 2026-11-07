@@ -24,8 +24,9 @@ function main() {
     write(dir + '/artifact.json', artifact);
     console.log(JSON.stringify({ packaged: ['cep-bridge'], pin: hash(artifact), admissionsWritten: false, ...(args.includes('--trace') ? { reads } : {}), liveCalls: 0 })); return;
   }
-  const moduleIds = ['photo-placeholder', 'titles', 'titles-current-target', 'titles-point-layout', 'text-layer', 'text-variant', 'comp-render', 'project-assembly', 'project-save'];
-  const optional = ['titles-point-layout', 'text-layer', 'text-variant', 'comp-render', 'project-assembly', 'project-save'];
+  const projectModules = ['project-assembly', 'project-save', 'project-lifecycle'];
+  const optional = ['titles-point-layout', 'text-layer', 'text-variant', 'comp-render', ...projectModules];
+  const moduleIds = ['photo-placeholder', 'titles', 'titles-current-target', ...optional];
   if (moduleId && !moduleIds.includes(moduleId)) fail('unknown_module');
   if (component && !['core', 'protocol', 'worker', 'engine'].includes(component)) fail('unknown_component');
   let catalog;
@@ -35,7 +36,7 @@ function main() {
   for (const id of all ? moduleIds : moduleId ? [moduleId] : []) {
     const dir = 'modules/' + id;
     const manual = id === 'titles-current-target' || optional.includes(id);
-    const currentProjectModule = ['project-assembly', 'project-save'].includes(id);
+    const currentProjectModule = projectModules.includes(id);
     const version = currentProjectModule ? '4.1.2' : optional.includes(id) ? '4.1.0' : manual ? '4.0.0' : '4.0.0-m1';
     const { pin } = seal(dir, id, 'implementation.js', ['implementation.js', 'contract.json', 'executor.jsx'], manual ? {} : { 'protocol/target-contract.json': true }, version);
     const contract = JSON.parse(read(dir + '/contract.json'));

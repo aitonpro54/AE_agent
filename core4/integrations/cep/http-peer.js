@@ -13,16 +13,17 @@ function consumeProjectObservation(peer, result) {
 const TITLES_READ_FIELDS = ['font', 'font_size', 'apply_fill', 'fill_color', 'apply_stroke', 'stroke_color', 'stroke_width', 'tracking', 'baseline_shift', 'horizontal_scale', 'vertical_scale', 'faux_bold', 'faux_italic', 'justification', 'leading', 'auto_leading'];
 const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsupported_animated_text', 'unsupported_style_proof', 'unsupported_style_api', 'unsupported_mixed_style', 'unsupported_justification_enum', 'titles_native_target', 'titles_native_document', 'titles_native_text', 'titles_native_range', 'titles_native_serialization', ...TITLES_READ_FIELDS.flatMap(field => ['titles_native_' + field, 'titles_missing_' + field])]);
 const SAVE_READ_CODES = new Set(['save_project_changed', 'save_revision_unavailable', 'save_dirty_unavailable', 'save_file_unavailable']);
+const LIFECYCLE_READ_CODES = new Set(['lifecycle_project_changed', 'lifecycle_native_state']);
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
 }
-function manualResultProfile(asset) { return ['manual-text-v1', 'photo-source-v1', 'manual-point-layout-v1', 'owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1', 'owned-project-assembly-v1', 'current-project-save-v1'].includes(asset.resultProfile); }
-function nativeSaveResult(result, phase) {
+function manualResultProfile(asset) { return ['manual-text-v1', 'photo-source-v1', 'manual-point-layout-v1', 'owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1', 'owned-project-assembly-v1', 'current-project-save-v1', 'project-lifecycle-v1'].includes(asset.resultProfile); }
+function nativeFileResult(result, phase) {
   if (phase === 'mutate' && result.outcome !== 'applied') return result;
-  const { savedFileSha256, checkpointRoot, checkpoint, diskProofError, ...snapshot } = phase === 'mutate' ? result.snapshot : result;
+  const { savedFileSha256, checkpointRoot, checkpoint, transition, diskProofError, ...snapshot } = phase === 'mutate' ? result.snapshot : result;
   return phase === 'mutate' ? { ...result, snapshot } : snapshot;
 }
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], observeProjectSave, port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], observeProjectSave, observeProjectLifecycle, port = 3457, timeout = 30000, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
   if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
   if (startOverControl !== undefined && (typeof startOverControl?.handle !== 'function' || typeof startOverControl?.status !== 'function')) fail('start_over_control');
@@ -40,6 +41,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   const completedProjectReads = new WeakMap();
   const assets = new Map([asset, ...additionalAssets].map(a => [a.executorHash, a])); let brokerBinding;
   if ([...assets.values()].some(a => a.resultProfile === 'current-project-save-v1') && typeof observeProjectSave !== 'function') fail('save_disk_observer_required');
+  if ([...assets.values()].some(a => a.resultProfile === 'project-lifecycle-v1') && typeof observeProjectLifecycle !== 'function') fail('lifecycle_disk_observer_required');
   const pins = Object.freeze({ packageHash: installation.packageHash, executorHash: asset.executorHash, installationId: installation.installationId });
   const commandPins = command => ({ ...pins, executorHash: command.executorHash });
   function disconnect(reason) {
@@ -127,8 +129,10 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         if (!c || canonical(c.originalBinding) !== canonical(b.payload.originalBinding) || canonical(b.payload.pins) !== canonical(commandPins(c.command))) fail('completion_correlation');
         const selectedAsset = assets.get(c.command.executorHash);
         const projectSave = selectedAsset?.resultProfile === 'current-project-save-v1';
+        const lifecycle = selectedAsset?.resultProfile === 'project-lifecycle-v1';
+        const observeDisk = projectSave ? observeProjectSave : lifecycle ? observeProjectLifecycle : null;
         if (c.state === 'completed') {
-          const original = projectSave ? nativeSaveResult(c.response.result, c.command.phase) : c.response.result;
+          const original = observeDisk ? nativeFileResult(c.response.result, c.command.phase) : c.response.result;
           if (canonical(original) !== canonical(b.payload.result)) fail('completion_conflict');
           signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } }); return;
         }
@@ -138,14 +142,14 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
           exact(result, ['readFailureVersion', 'outcome', 'code']);
           if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code) &&
               !(titlesReadCommand(c.command, selectedAsset) && TITLES_READ_CODES.has(result.code)) &&
-              !(projectSave && c.command.phase !== 'mutate' && SAVE_READ_CODES.has(result.code))) fail('inspection_result');
+              !(observeDisk && c.command.phase !== 'mutate' && (projectSave ? SAVE_READ_CODES : LIFECYCLE_READ_CODES).has(result.code))) fail('inspection_result');
         } else if (manualResultProfile(selectedAsset)) {
           if (c.command.phase === 'mutate') {
             exact(result, ['outcome', 'snapshot', 'code', 'transactionReceipt']);
             if (result.outcome === 'unknown') { disconnect('manual_effect_unknown'); fail('manual_effect_unknown'); }
             if (!['applied', 'rejected'].includes(result.outcome)) fail('manual_result');
-          } else if (projectSave) {
-            exact(result, ['target', 'revision', 'protected', 'dirty', 'fileStamp']);
+          } else if (observeDisk) {
+            exact(result, ['target', 'revision', 'protected', 'dirty', 'fileStamp', ...(lifecycle ? ['currentProject', 'inventory'] : [])]);
           } else if (selectedAsset.resultProfile === 'photo-source-v1') {
             exact(result, ['target', 'revision', 'protected', 'sourceId', 'source']);
             if (!result.target || typeof result.revision !== 'string' || typeof result.protected !== 'string' ||
@@ -176,22 +180,23 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
           for (const item of result.compositions) { exact(item, ['compId', 'name', 'numLayers', 'duration']); if (!Number.isSafeInteger(item.compId) || item.compId < 1 || typeof item.name !== 'string' || !Number.isSafeInteger(item.numLayers) || item.numLayers < 0 || typeof item.duration !== 'number' || item.duration < 0) fail('inspection_result'); }
           for (const item of result.layers) { exact(item, ['layerId', 'index', 'name', 'textLayer']); if (!Number.isSafeInteger(item.layerId) || item.layerId < 1 || !Number.isSafeInteger(item.index) || item.index < 1 || typeof item.name !== 'string' || typeof item.textLayer !== 'boolean') fail('inspection_result'); }
         }
-        if (projectSave && result.readFailureVersion !== 1) {
+        if (observeDisk && result.readFailureVersion !== 1) {
           try {
-            if (c.command.phase !== 'mutate') result = observeProjectSave(c.command, result);
-            else if (result.outcome === 'applied') result = { ...result, snapshot: observeProjectSave(c.command, result.snapshot) };
+            if (c.command.phase !== 'mutate') result = observeDisk(c.command, result);
+            else if (result.outcome === 'applied') result = { ...result, snapshot: observeDisk(c.command, result.snapshot) };
           } catch {
-            if (c.command.phase === 'mutate') { disconnect('save_disk_proof_unavailable'); fail('save_disk_proof_unavailable'); }
-            result = { ...result, diskProofError: 'save_disk_proof_unavailable' };
+            const code = projectSave ? 'save_disk_proof_unavailable' : 'lifecycle_disk_proof_unavailable';
+            if (c.command.phase === 'mutate') { disconnect(code); fail(code); }
+            result = { ...result, diskProofError: code };
           }
         }
         const response = { protocolVersion: 1, commandId: c.command.commandId, executorHash: c.command.executorHash, payloadHash: c.command.payloadHash, result }; store.complete(b.payload.commandId, response);
         // One bounded observation of an already durable, authenticated completion.
         // It is not evidence/grant or a statement about current runtime/history.
-        if ((result.readFailureVersion === 1 || projectSave && result.diskProofError) && ['inspect', 'verify'].includes(c.command.phase)) lastReadFailure = Object.freeze({ commandId: c.command.commandId, moduleId: c.command.moduleId, phase: c.command.phase, executorHash: c.command.executorHash, code: result.diskProofError || result.code, authority: false });
+        if ((result.readFailureVersion === 1 || observeDisk && result.diskProofError) && ['inspect', 'verify'].includes(c.command.phase)) lastReadFailure = Object.freeze({ commandId: c.command.commandId, moduleId: c.command.moduleId, phase: c.command.phase, executorHash: c.command.executorHash, code: result.diskProofError || result.code, authority: false });
         const done = pending; pending = null; clearTimeout(done.timer);
         signed({ ack: { commandId: b.payload.commandId, receiptRef: c.originalBinding.receiptRef } });
-        if (projectSave && result.diskProofError) {
+        if (observeDisk && result.diskProofError) {
           done.reject(Object.assign(new Error(result.diskProofError), { code: result.diskProofError }));
         } else if (result.readFailureVersion === 1) {
           const error = Object.assign(new Error(result.code), { code: result.code });

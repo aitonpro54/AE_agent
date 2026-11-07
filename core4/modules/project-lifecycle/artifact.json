@@ -1,0 +1,11 @@
+{
+  "id": "project-lifecycle",
+  "version": "4.1.2",
+  "entry": "implementation.js",
+  "hashes": {
+    "implementation.js": "10c7cff1ff135491b45b6575036c8a688bfe8f6528744638d4226bdab6397377",
+    "contract.json": "e08084058a663a24f15a1b3166edae4c4cd1d98806527461bde188e1887b0135",
+    "executor.jsx": "76b517c2514d6e0b9e7e0b49cdcb15dd601dda7969bc36abddac3d5d2f9eed46"
+  },
+  "publicDependencies": {}
+}

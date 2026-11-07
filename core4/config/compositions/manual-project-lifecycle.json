@@ -1,0 +1,24 @@
+{
+  "parent": "manual-project-save",
+  "modules": ["project-lifecycle"],
+  "assets": [
+    {
+      "assetKey": "project-lifecycle-v1",
+      "moduleId": "project-lifecycle",
+      "path": "modules/project-lifecycle",
+      "admission": "config/admissions/project-lifecycle.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    }
+  ],
+  "profiles": {
+    "project-lifecycle": {
+      "operationId": "transition-project",
+      "resultProfile": "project-lifecycle-v1"
+    }
+  },
+  "bundle": {
+    "files": ["runtime/project-lifecycle-proof.js", "config/admissions/project-lifecycle.json"],
+    "artifactClosures": ["modules/project-lifecycle/artifact.json"]
+  }
+}

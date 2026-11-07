@@ -1,0 +1,12 @@
+{
+  "moduleId": "project-lifecycle",
+  "operationId": "transition-project",
+  "artifactHash": "3385de6e9ea421ed504d340ae2590697e13eab3e1ae69eaa1168e621fd8dfac9",
+  "schemaHash": "c3d5bd6b4a793f354867a4206d6aac2bfee582bfa462e4d90aac23c50470d6ff",
+  "resultSchemaHash": "540ef45e9c7862dc94a02f05eb8d3138dc605a38e4758b9d208219ca00000802",
+  "effectPolicyHash": "5678aba9de4bf2ca503c834ad0f7f410e540c653ccaee1a73325452cb8aeb338",
+  "executorHash": "76b517c2514d6e0b9e7e0b49cdcb15dd601dda7969bc36abddac3d5d2f9eed46",
+  "protocolVersion": 1,
+  "trustApprovalId": "source-review-project-lifecycle-20261107",
+  "revoked": false
+}

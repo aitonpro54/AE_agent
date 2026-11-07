@@ -67,6 +67,7 @@ function createProjectSaveProof({ stateDir, currentSessionId }) {
     return { path: file, sha256: digest, bytes, scope: 'on-disk-before-save' };
   }
   return {
+    checkpointDirectory, checkpointPath, checkpointFacts,
     assertTarget(target) {
       if (target.sessionId !== currentSessionId()) fail('save_work_session_changed');
     },
@@ -109,4 +110,4 @@ function createProjectSaveProof({ stateDir, currentSessionId }) {
   };
 }
 
-module.exports = { createProjectSaveProof };
+module.exports = { createProjectSaveProof, plainPath, readAep, samePath };

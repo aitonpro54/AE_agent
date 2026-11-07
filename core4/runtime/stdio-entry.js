@@ -20,6 +20,7 @@ const RESULT_PROFILES = Object.freeze({
   'photo-source-v1': 'runtime/photo-source-proof.js',
   'owned-project-assembly-v1': 'runtime/project-assembly-proof.js',
   'current-project-save-v1': 'runtime/project-save-proof.js',
+  'project-lifecycle-v1': 'runtime/project-lifecycle-proof.js',
   'manual-point-layout-v1': 'runtime/point-layout-proof.js',
   'owned-text-layer-v1': 'runtime/text-layer-proof.js',
   'owned-text-variant-v1': 'runtime/text-variant-proof.js',
@@ -67,7 +68,9 @@ function declarativeProfiles(composition, release, json, checked) {
         (profile.resultProfile === 'owned-project-assembly-v1') !== (id === 'project-assembly') ||
         id === 'project-assembly' && profile.operationId !== 'assemble-composition' ||
         (profile.resultProfile === 'current-project-save-v1') !== (id === 'project-save') ||
-        id === 'project-save' && profile.operationId !== 'save-current-project') fail('composition_not_admitted');
+        id === 'project-save' && profile.operationId !== 'save-current-project' ||
+        (profile.resultProfile === 'project-lifecycle-v1') !== (id === 'project-lifecycle') ||
+        id === 'project-lifecycle' && profile.operationId !== 'transition-project') fail('composition_not_admitted');
     const proof = RESULT_PROFILES[profile.resultProfile];
     if (proof) { checked(proof); proofPaths.add(proof); }
   }
@@ -391,7 +394,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const asset = { assetKey: inspection.assetKey, executorHash: inspection.executorHash };
   const mutationAssets = selected.assets.filter(a => a.resultProfile);
   const manualAsset = mutationAssets.find(a => a.resultProfile === 'manual-text-v1');
-  let provider, manual, privateEmbedding, projectSave;
+  let provider, manual, privateEmbedding, projectSave, projectLifecycle;
   if (manualAsset) {
     const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
     const { createManualPolicy } = require('./manual-policy.js');
@@ -406,6 +409,10 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
           projectSave = require('./project-save-proof.js').createProjectSaveProof({ stateDir: installation.stateDir,
             currentSessionId: () => workSession?.status().sessionId ?? installation.installationId });
           return { ...binding, ...projectSave };
+        case 'project-lifecycle-v1':
+          projectLifecycle = require('./project-lifecycle-proof.js').createProjectLifecycleProof({ stateDir: installation.stateDir,
+            currentSessionId: () => workSession?.status().sessionId ?? installation.installationId });
+          return { ...binding, ...projectLifecycle };
         case 'manual-point-layout-v1': return { ...binding, proof: require('./point-layout-proof.js').createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
         case 'owned-text-layer-v1': return { ...binding, validateResult: require('./text-layer-proof.js').validateTextLayerCompletion };
         case 'owned-text-variant-v1': return { ...binding, validateResult: require('./text-variant-proof.js').validateTextVariantCompletion };
@@ -413,7 +420,8 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
         default: fail('composition_not_admitted');
       }
     };
-    manual = createManualPolicy({ selected: profileFor(manualAsset), additional: mutationAssets.filter(a => a !== manualAsset).map(profileFor), provider, installation, getPeer: () => peer });
+    manual = createManualPolicy({ selected: profileFor(manualAsset), additional: mutationAssets.filter(a => a !== manualAsset).map(profileFor),
+      provider, installation, getPeer: () => peer, pinAdoption: !!projectLifecycle });
     const admissions = Object.fromEntries(mutationAssets.map(a => [a.moduleId, a.admission]));
     const transport = { identity: hash({ packageHash: installation.packageHash, admissions }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
     privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };
@@ -427,7 +435,9 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   };
   const additionalAssets = mutationAssets.map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
     operationId: item.contract.operationId, executorHash: item.executorHash, resultProfile: item.resultProfile }));
-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets, observeProjectSave: projectSave?.observe, timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
+  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets,
+    observeProjectSave: projectSave?.observe, observeProjectLifecycle: projectLifecycle?.observe,
+    timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');
     // Retain this exact operation's grant beyond ALS lifetime, including /poll.
