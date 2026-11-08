@@ -106,15 +106,26 @@ function frameFile(i) {
   return 'frames/frame-' + String(i).padStart(2, '0') + '.png';
 }
 
+function roiFile(i) {
+  return 'roi/' + path.basename(frameFile(i));
+}
+
 function referenceFile(i) {
   return 'evidence-' + i + '.json';
+}
+
+function validateRoi(roi, media) {
+  exact(roi, ['x', 'y', 'width', 'height']);
+  check([roi.x, roi.y, roi.width, roi.height].every(Number.isSafeInteger) &&
+    roi.x >= 0 && roi.y >= 0 && roi.width > 0 && roi.height > 0 &&
+    roi.x <= media.width - roi.width && roi.y <= media.height - roi.height, 'roi_out_of_bounds');
 }
 
 function validateSamples(samples) {
   check(Array.isArray(samples) && samples.length > 0 && samples.length <= MAX_FRAMES, 'invalid_sample_count');
   let previous = -1;
   for (const sample of samples) {
-    exact(sample, ['index', 'expectation']);
+    exact(sample, ['index', 'expectation', 'roi']);
     check(Number.isSafeInteger(sample.index) && sample.index > previous && sample.index < MAX_VIDEO_FRAMES &&
       nonempty(sample.expectation, 600), 'invalid_or_unsorted_sample');
     previous = sample.index;
@@ -129,6 +140,14 @@ function pngInfo(ffmpeg, file, expected) {
   mediaTool(ffmpeg, ['-nostdin', '-v', 'error', '-xerror', '-err_detect', 'crccheck+explode',
     '-f', 'image2pipe', '-c:v', 'png', '-i', 'pipe:0', '-f', 'null', '-'], buffer);
   return { sha256, byteLength, width: png.width, height: png.height };
+}
+
+function cropRoi(ffmpeg, directory, frame, index, bounds) {
+  const file = roiFile(index);
+  const crop = [bounds.width, bounds.height, bounds.x, bounds.y].join(':');
+  mediaTool(ffmpeg, ['-nostdin', '-v', 'error', '-xerror', '-n', '-i', path.join(directory, frame),
+    '-vf', 'crop=' + crop + ':exact=1', '-frames:v', '1', '-threads', '1', '-update', '1', path.join(directory, file)]);
+  return { bounds, file, ...pngInfo(ffmpeg, path.join(directory, file), bounds) };
 }
 
 function makeSheet(ffmpeg, directory, samples, timeBase) {
@@ -179,17 +198,20 @@ function prepare(specFile, directory, decoderDirectory) {
   }));
   const { pts, ...media } = probe(ffprobe, movie);
   check(spec.samples.at(-1).index < media.frameCount, 'sample_out_of_range');
+  for (const sample of spec.samples) if (sample.roi !== undefined) validateRoi(sample.roi, media);
   const selected = spec.samples.map(sample => ({ ...sample, pts: pts[sample.index] }));
   fs.mkdirSync(directory);
   fs.mkdirSync(path.join(directory, 'frames'));
+  if (selected.some(sample => sample.roi)) fs.mkdirSync(path.join(directory, 'roi'));
   const select = selected.map(sample => 'eq(n\\,' + sample.index + ')').join('+');
   mediaTool(ffmpeg, ['-nostdin', '-v', 'error', '-xerror', '-n', '-noautorotate', '-i', movie,
     '-map', '0:v:0', '-vf', 'select=' + select, '-fps_mode', 'passthrough', '-pix_fmt', 'rgb24',
     '-threads', '1', '-start_number', '0', path.join(directory, 'frames/frame-%02d.png')]);
   check(fs.readdirSync(path.join(directory, 'frames')).length === selected.length, 'extraction_count_mismatch');
-  const frames = selected.map((sample, i) => {
+  const frames = selected.map(({ roi, ...sample }, i) => {
     const file = frameFile(i);
-    return { ...sample, file, ...pngInfo(ffmpeg, path.join(directory, file), media) };
+    return { ...sample, file, ...pngInfo(ffmpeg, path.join(directory, file), media),
+      ...(roi ? { roi: cropRoi(ffmpeg, directory, file, i, roi) } : {}) };
   });
   makeSheet(ffmpeg, directory, frames, media.timeBase);
   const sheet = { file: 'sheet.png', ...pngInfo(ffmpeg, path.join(directory, 'sheet.png')) };
@@ -203,7 +225,8 @@ function prepare(specFile, directory, decoderDirectory) {
   const manifestSha256 = writeJson(path.join(directory, 'manifest.json'), manifest);
   writeJson(path.join(directory, 'observations.json'), {
     manifestSha256, reviewer: '', frames: frames.map(frame => ({
-      index: frame.index, sha256: frame.sha256, decision: 'unknown', observation: ''
+      index: frame.index, sha256: frame.sha256, ...(frame.roi ? { roiSha256: frame.roi.sha256 } : {}),
+      decision: 'unknown', observation: ''
     }))
   });
   return { manifestSha256, frameCount: frames.length };
@@ -229,10 +252,15 @@ function seal(directory, movie) {
   for (const [i, frame] of manifest.frames.entries()) {
     matchFile(path.join(directory, frameFile(i)), frame, DEFAULT_MAX_PNG_BYTES);
     const observation = observations.frames[i];
-    exact(observation, ['index', 'sha256', 'decision', 'observation']);
+    exact(observation, ['index', 'sha256', 'decision', 'observation', ...(frame.roi === undefined ? [] : ['roiSha256'])]);
     check(observation.index === frame.index && observation.sha256 === frame.sha256 &&
       ['pass', 'fail', 'unknown'].includes(observation.decision) &&
       nonempty(observation.observation, 2000), 'invalid_or_unbound_observation: ' + frame.index);
+    if (frame.roi !== undefined) {
+      validateRoi(frame.roi?.bounds, manifest.media);
+      check(observation.roiSha256 === frame.roi.sha256, 'invalid_or_unbound_roi: ' + frame.index);
+      matchFile(path.join(directory, roiFile(i)), frame.roi, DEFAULT_MAX_PNG_BYTES);
+    }
   }
   matchFile(path.join(directory, 'sheet.png'), manifest.sheet, DEFAULT_MAX_PNG_BYTES);
   for (const [i, ref] of manifest.references.entries()) matchFile(path.join(directory, referenceFile(i)), ref, JSON_LIMIT);

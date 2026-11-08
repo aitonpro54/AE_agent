@@ -1,0 +1,228 @@
+{
+  "schema": "ae-agent-titles-visual-review-evidence.v1",
+  "recordedAt": "2026-11-08T10:49:47.531Z",
+  "machine": "MSI",
+  "node": "v24.15.0",
+  "sourceClosureSha256": {
+    "core4/tools/visual-review.js": "a8f608b2e75d598b4aaaadf35975f1d100eaeedf505e6849e02f74cd03e8d4c7",
+    "core4/tools/png-proof.js": "005d61f5e1a3343d7f07e3d7020dc6605c3957be190c2de457307b7489967e88",
+    "core4/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78"
+  },
+  "localPacket": ".codex-runtime/visual-review-titles-msi-20261108/packet",
+  "source": "snapshots/titles-e2e-20261105/titles-output/core4-titr-all-animated.mp4",
+  "scope": "Архивный анимированный MP4, шесть выбранных кадров. Для операции Titles 4.1.2 «Внутреннее подтверждение» требуется собственный рендер.",
+  "manifest": {
+    "schema": "ae-agent-visual-review.v1",
+    "scope": "sampled_mp4",
+    "movie": {
+      "sha256": "803850e6004c78f70327ee27fbf64bb470be870ac835169fef8fdc2097d7d8fd",
+      "byteLength": 18189304
+    },
+    "decoder": {
+      "ffmpeg": {
+        "version": "ffmpeg version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+        "buildInfoSha256": "711056f2bc922237113d5defe7da4dbd97beaab41098e5f8d425753dbfea99ff"
+      },
+      "ffprobe": {
+        "version": "ffprobe version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers",
+        "buildInfoSha256": "c28ec08933e2c9eeac8a7341b1fced84e23745c7ca69e26e7ca83226714ef209"
+      }
+    },
+    "media": {
+      "width": 1706,
+      "height": 960,
+      "fps": "30/1",
+      "timeBase": "1/30000",
+      "frameCount": 330
+    },
+    "frames": [
+      {
+        "expectation": "Чёрный старт. Плашка и текст ещё не появились.",
+        "index": 0,
+        "pts": 0,
+        "file": "frames/frame-00.png",
+        "sha256": "f9ddbb96eaf3ba8bd5c59ff25435f78f357b30e6fdf403e6525944ce8fd05015",
+        "byteLength": 7077,
+        "width": 1706,
+        "height": 960
+      },
+      {
+        "expectation": "Начало входа. Видна часть плашки; разрозненные буквы допустимы.",
+        "index": 15,
+        "pts": 15000,
+        "file": "frames/frame-01.png",
+        "sha256": "660a6f83b612b719b1f8659aa9477c496763b150ae9e172410236383eb6ad66e",
+        "byteLength": 162473,
+        "width": 1706,
+        "height": 960
+      },
+      {
+        "expectation": "Сборка букв на плашке. Виден промежуточный этап, полного читаемого титра пока нет.",
+        "index": 30,
+        "pts": 30000,
+        "file": "frames/frame-02.png",
+        "sha256": "f3fb075a6cbd843b64bc5026623fdfff6db2f16a3fac8eb44af90769589fa27c",
+        "byteLength": 441532,
+        "width": 1706,
+        "height": 960
+      },
+      {
+        "expectation": "Четыре строки: М.В. Полякова / Хореографическая постановка / «ДОРОГА К СЕВЕРНОМУ / МОРЮ И ОГНИ ДАЛЁКОГО ГОРОДА». Читаемы Ё и кавычки; буквы не срезаны, видны поля, текст различим на синей плашке.",
+        "index": 90,
+        "pts": 90000,
+        "file": "frames/frame-03.png",
+        "sha256": "462259771b1e2954dd0f8f1f1e7da50477a7250f5227659f889877b582923d70",
+        "byteLength": 477057,
+        "width": 1706,
+        "height": 960,
+        "roi": {
+          "bounds": {
+            "y": 535,
+            "x": 180,
+            "height": 395,
+            "width": 1410
+          },
+          "file": "roi/frame-03.png",
+          "sha256": "55c3ed7b70b93d2c479a8be00639575e42f7718e7bbf7fbff991df46705e47ab",
+          "byteLength": 466452,
+          "width": 1410,
+          "height": 395
+        }
+      },
+      {
+        "expectation": "Выход. Плашка сворачивается, собранного титра уже нет.",
+        "index": 299,
+        "pts": 299000,
+        "file": "frames/frame-04.png",
+        "sha256": "41fb1dbf248804a1814d7796db9d7885010c4023441438d9a69e6c504d66babe",
+        "byteLength": 68161,
+        "width": 1706,
+        "height": 960
+      },
+      {
+        "expectation": "Чёрный кадр после выхода. Плашка и буквы исчезли.",
+        "index": 315,
+        "pts": 315000,
+        "file": "frames/frame-05.png",
+        "sha256": "f9ddbb96eaf3ba8bd5c59ff25435f78f357b30e6fdf403e6525944ce8fd05015",
+        "byteLength": 7077,
+        "width": 1706,
+        "height": 960
+      }
+    ],
+    "sheet": {
+      "file": "sheet.png",
+      "sha256": "b2107193ba35fb2080995ae00b230cabb51663ccf42836121120892f5c2f0648",
+      "byteLength": 74954,
+      "width": 960,
+      "height": 448
+    },
+    "references": [
+      {
+        "label": "Свежее чтение слоя 4594 в архивной комп. 4560, точные четыре строки",
+        "sha256": "625117af54aac5d583045e654c8ebaa4a0953ab07eaaf0b80547de3eed527f56",
+        "byteLength": 31930,
+        "file": "evidence-0.json"
+      },
+      {
+        "label": "Архивная постановка задания 4595, кадры 0–329",
+        "sha256": "12c0a8142a7d5c419835e9d3583fd2defa4e7888b9c3dd9f7eae54f8586bd693",
+        "byteLength": 1270,
+        "file": "evidence-1.json"
+      },
+      {
+        "label": "Архивная проверка MP4 803850e6…",
+        "sha256": "9e64da9f43e8a05efff3f778d1281621fba0dd687daebc64bb88de84096fb571",
+        "byteLength": 719,
+        "file": "evidence-2.json"
+      }
+    ]
+  },
+  "observations": {
+    "manifestSha256": "90e97097766a6289375731e31b7b5d0ea927ea1e19bf6f628ece3b7f40ad0382",
+    "reviewer": "Codex, MSI. Просмотр шести полных кадров и ROI кадра 90.",
+    "frames": [
+      {
+        "index": 0,
+        "sha256": "f9ddbb96eaf3ba8bd5c59ff25435f78f357b30e6fdf403e6525944ce8fd05015",
+        "decision": "pass",
+        "observation": "Кадр визуально чёрный, плашка и буквы отсутствуют."
+      },
+      {
+        "index": 15,
+        "sha256": "660a6f83b612b719b1f8659aa9477c496763b150ae9e172410236383eb6ad66e",
+        "decision": "pass",
+        "observation": "В нижней левой части видна часть синей плашки с белой бумажной кромкой. Справа от неё несколько отдельных светлых букв."
+      },
+      {
+        "index": 30,
+        "sha256": "f3fb075a6cbd843b64bc5026623fdfff6db2f16a3fac8eb44af90769589fa27c",
+        "decision": "pass",
+        "observation": "Плашка раскрыта внизу кадра. На ней буквы с разными смещениями, заметны фрагменты МОРЮ и АЛЁКОГО. Полные строки ещё не собраны."
+      },
+      {
+        "index": 90,
+        "sha256": "462259771b1e2954dd0f8f1f1e7da50477a7250f5227659f889877b582923d70",
+        "roiSha256": "55c3ed7b70b93d2c479a8be00639575e42f7718e7bbf7fbff991df46705e47ab",
+        "decision": "pass",
+        "observation": "Читаются четыре строки: М.В. Полякова / Хореографическая постановка / «ДОРОГА К СЕВЕРНОМУ / МОРЮ И ОГНИ ДАЛЁКОГО ГОРОДА». Две точки Ё, кавычки и нижние выступы Д видны. По краям остаётся синее поле, срезанных букв не видно. Вторая строка мягче крупных строк, но читается на синей плашке."
+      },
+      {
+        "index": 299,
+        "sha256": "41fb1dbf248804a1814d7796db9d7885010c4023441438d9a69e6c504d66babe",
+        "decision": "pass",
+        "observation": "Внизу слева остаётся смятый фрагмент белой бумаги с синей частью. Собранных строк не видно."
+      },
+      {
+        "index": 315,
+        "sha256": "f9ddbb96eaf3ba8bd5c59ff25435f78f357b30e6fdf403e6525944ce8fd05015",
+        "decision": "pass",
+        "observation": "Кадр визуально чёрный. Плашка и буквы исчезли."
+      }
+    ]
+  },
+  "validation": {
+    "reviewSha256": "3a031a2db88fcfe1416cb3391fb6ecf834bfeab067299925c777ab2e6a334588",
+    "roiPixelsMatched": 556950,
+    "rejected": [
+      "check-roi-replaced",
+      "check-roi-missing",
+      "check-roi-unbound",
+      "check-roi-out-of-bounds"
+    ],
+    "result": {
+      "schema": "ae-agent-visual-review.v1",
+      "scope": "sampled_mp4",
+      "movie": {
+        "sha256": "803850e6004c78f70327ee27fbf64bb470be870ac835169fef8fdc2097d7d8fd",
+        "byteLength": 18189304
+      },
+      "manifestSha256": "90e97097766a6289375731e31b7b5d0ea927ea1e19bf6f628ece3b7f40ad0382",
+      "observationsSha256": "05d82c58cbb2c3f0449936be91d38c87e93bf53f63f9ec6058a66a612ef01a3a",
+      "integrity": "matched",
+      "mediaVerification": "decoded_video_exact_frame_grid",
+      "coverage": {
+        "required": 6,
+        "decided": 6
+      },
+      "visual": {
+        "verdict": "pass",
+        "evidence": "reviewer_observations",
+        "reviewer": "Codex, MSI. Просмотр шести полных кадров и ROI кадра 90."
+      }
+    }
+  },
+  "regression": {
+    "slideshowS1ManifestAndReviewByteIdentical": true,
+    "scopedCoreTests": {
+      "passed": 9,
+      "failed": 0
+    },
+    "titlesProductTests": {
+      "passed": 24,
+      "failed": 1,
+      "baseline": "a1b09b8",
+      "sameFailure": "incompatible_contract in compiler.test.js:197"
+    }
+  }
+}
