@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "status": "COMPLETE",
+  "reviewId": "20261108-plan-01",
+  "stageId": "core-media-layers-render",
+  "type": "plan",
+  "repository": "AE_agent_core",
+  "baseCommit": "5393963adaf2ad80cb75cd9ed85e7ab32070ac7d",
+  "targetCommit": null,
+  "plan": {
+    "path": "plans/core-media-layers-render-20261108.md",
+    "bytes": 17616,
+    "sha256": "a0fbaf0bd3d30336ce065ea1208df0d30e0f72a1766d3f343180310817221a4f"
+  },
+  "sourceDirtyStatus": [
+    "AGENTS.md: pre-existing local change excluded"
+  ],
+  "classification": "INTERNAL",
+  "recipient": "Argon (Gemini), Aiton Pro",
+  "files": [
+    {
+      "path": "request.md",
+      "role": "local-request-reference",
+      "bytes": 3778,
+      "sha256": "cd3db07c1d032de7bbb1f88d40437d85a2ca61740808814f1290c82ea2170cc3"
+    },
+    {
+      "path": "bundle.md",
+      "role": "outgoing-plan-with-request",
+      "bytes": 21489,
+      "sha256": "7841d77cd9e22b7363d1f3e7b7373121de2d03466782fe4f64f4dae5bf44dfaa"
+    }
+  ],
+  "externalAllowlist": [
+    "bundle.md",
+    "manifest.json"
+  ],
+  "excludes": [
+    "AEP and media assets",
+    "local absolute paths and account identifiers",
+    "credentials, configuration, runtime and browser state",
+    "logs, raw source, and chat transcripts"
+  ],
+  "limits": [
+    "Plan review using source locators and summarized runtime discovery",
+    "Live MCP discovery on MSI; previous acceptance records for desktop",
+    "Candidate render backend still requires both-host validation"
+  ]
+}

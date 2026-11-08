@@ -1,0 +1,22 @@
+{
+  "reviewId": "20261108-plan-01",
+  "stageId": "core-media-layers-render",
+  "type": "plan",
+  "createdAt": "2026-11-08T06:04:34.823Z",
+  "sourceThreadId": "01a1b9ad-c75f-72c1-8197-fbaf65d64a6e",
+  "sourceUserMessageId": "01a1b9ba-e72c-79b3-840e-3a88210b565f",
+  "quote": "Хорошо, давай начнём с аудита. Сверь старые команды с тем, что реально доступно в Core 4, подготовь план по работе со слоями и полноценному рендеру и перед реализацией отдай его Аргону на ревью.",
+  "scope": "Одно ревью подготовленного плана без исходников, пользовательских материалов и runtime данных. Явное поручение передать план Argon подтверждено через read_thread текущего чата.",
+  "snapshot": "5393963adaf2ad80cb75cd9ed85e7ab32070ac7d",
+  "recipient": "Gemini Argon, Aiton Pro",
+  "externalAllowlist": [
+    "bundle.md",
+    "manifest.json"
+  ],
+  "bundleSha256": "7841d77cd9e22b7363d1f3e7b7373121de2d03466782fe4f64f4dae5bf44dfaa",
+  "requestSha256": "cd3db07c1d032de7bbb1f88d40437d85a2ca61740808814f1290c82ea2170cc3",
+  "manifestSha256": "0c6852873d63cf619024559f8fae36545ac9cd09488feb9f18c5561c03b4f40b",
+  "externalPrompt": "Проведи одно ревью плана 20261108-plan-01 (core-media-layers-render) по запросу в bundle.md. Проверь привязки по manifest.json. Верни инженерный verdict и замечания до реализации. Используй только приложенный план и сведения из него, явно отметь недоступное evidence.",
+  "maximumSends": 1,
+  "automaticRetry": false
+}
