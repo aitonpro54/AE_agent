@@ -1,6 +1,35 @@
 # Локальный разбор — visual acceptance
 
-## Актуально: отправка в существующую беседу
+## Итог: полный ответ получен и разобран
+
+После сообщения пользователя о восстановленном подключении контроллер получил полный второй ответ в той же беседе, turn `f54263f934c1041a`. Новых отправок при получении — 0. SHA-256 неизменённого `response.txt`: `ba3d2770abe7dc746e21a9b2bf1fc0b8ff7f038804ffc63bdc8522bd0ced0459`, 35061 байт. Семь bindings (review/stage/type/Core/legacy/request/bundle) совпали. Режим при отправке: Argon «Высокий — Глубокий», максимальный доступный. Предыдущие UNKNOWN и временный `Debugger unattached` остаются историей, текущий status — `received`, complete true.
+
+Внешний verdict — **go с уточнениями F-01..F-04**. Поддержано разделение малого внешнего P0 workflow готового MP4 и последующего P1 typed PNG-export. Argon читал сводку и manifest, а не полные исходники или кадры; это консультация по плану, не независимое native/artistic acceptance. Реализация по-прежнему вне текущего поручения.
+
+### Локальные решения по всем findings
+
+| Finding | Решение | Проверка и уточнение |
+| --- | --- | --- |
+| F-01 / P0: provenance MP4 → job/AEP/comp/receipt | Принять принцип | Bind к существующим receipts/preflight через hashes, не изобретать отсутствующие факты. Старый и async master имеют разные MP4 hashes, но **оба 640×400**, а не разное разрешение, как утверждает ответ. Проверено по обоим локальным JSON. Из одного различия SHA не следует различие pixels. Missing provenance блокирует job-bound acceptance; отдельный artifact-only просмотр допустим с явным ограничением |
+| F-02 / P0: полный размер и реальное декодирование PNG | Принять | Legacy helper явно не декодирует pixels/CRC, S1 PNG действительно уменьшены. Для основных кадров проверять размеры против exact output и decode результата. Уменьшенный contact sheet — индекс. Командный пример Argon не реализовывался и не считается протестированным decoder contract |
+| F-03 / P0: decoded frame indices и PTS | Принять как требование, не как найденный текущий баг | Root уже использовал `select=eq(n,...)` в этом аудите. Ошибка ±1 от `-ss` на наших файлах не наблюдалась и не доказывалась. Зафиксировать frame index/rational fps/PTS и политику nonzero start/VFR; неподдерживаемый профиль не принимать молча |
+| F-04 / P0: Titles ROI 1:1 | Принять с сужением | Полный кадр плюс явная рамка ROI в координатах output с полями; crop без resize. Автоматический composed ROI по одному sourceRect не доказан для вложенных/анимированных/3D/effects сцен, не вводить такой oracle в P0. PNG-crop из MP4 не возвращает потерянные H.264 детали/alpha. Мелкие неопределённые глифы → unknown или P1 native capture |
+| F-05 / P1: typed lossless frame export | Принять по потребности | Через существующие Core module/admission/gates, без нового broker и без служебных compositions ради sheet. MP4 может показать читаемость финального выпуска, но не чистую alpha/докомпрессионные края |
+| F-06 / P1: desktop portability | Принять | MSI/desktop — обязательная адресная проверка нового workflow. Старые неизменённые доказательства переиспользуются; не требуется новый полный release либо повтор всех native тестов ради artifact-only helper |
+| F-07 / P2: внешние stale/diff/retry паттерны | Принять с уточнением | Не переносить auto-resize в strict proof, hash equality не объявлять stale без контекста. Engine Room различает одинаковые tiles внутри sheet и cross-request cache; ложный отказ на наших точных запросах не воспроизводился. Запрет относится к скрытому replay/UNKNOWN, не к любому отдельно допущенному новому capture после установленного отказа |
+
+### Фактические поправки к тексту Argon
+
+- Утверждение, будто async640×400 — установленный неправильный crop, отклонено: это заданный размер технического мастера; желаемый framing не закреплён. Source S1 и оба master720 — разные профили. Корректная рекомендация — проверить против явно заданного target/reference.
+- 16 полей оформления относятся к text/style inspection, не к `comp-render`. `comp-render-proof.js` проверяет queue/snapshot/output, `aerender-jobs.js:147–187` — media verification. Общий вывод о неполном visual pipeline сохранён.
+- В Core уже есть native font substitution observation для поддерживаемого `text-layer` (`executor.jsx:61–87`, поле `substitute`). Его можно переиспользовать, если оно связано с проверяемым артефактом. Stored name не доказывает rendered font. `substitute=true` отклоняет строгий профиль «точный шрифт», но в специально заданном missing-font тесте является ожидаемым обнаружением; неизвестный native факт не подменяется true/false.
+- `seal` может проверять manifest/hashes/coverage/schema наблюдений, но не доказывает факт просмотра или правдивость observations. Это не замена legacy delivery proof; соответствующий уровень evidence должен быть указан явно.
+
+### Уточнённый следующий scope
+
+Один маленький внешний helper с `prepare` (проверить артефакт и lineage, извлечь exact frames, decode/dimensions/hash, sheet и явный Titles ROI) и `seal` (повторно сверить PNG/manifest, покрытие и заданные assertions, записать sampled verdict). Verdict привязан к неизменным bytes, а не current AEP; no broad PASS при missing/unknown. Это уточнение рекомендации, **код не реализован**. Не расширять P0 до автоанализа render graph, OCR, universal ROI, нового runtime или provider orchestration. Повторный Argon review не требуется для фиксации этого вывода.
+
+## История: отправка в существующую беседу
 
 По прямому поручению «Тогда отправь наш запрос по visual acceptance в этот же чат Аргона, на максимальном усилии, и дождись ответа. Новый чат не создавай» выполнена одна отправка в `https://gemini.google.com/app/4f9b9c24e0da796f`. Новый чат не создавался. Exact request и два вложения появились вторым сообщением, turn `f54263f934c1041a`; effort «Высокий — Глубокий» подтверждён. При последнем успешном наблюдении ответ содержал 6285 символов и продолжал генерироваться, final controls отсутствовали.
 

@@ -2,6 +2,8 @@
 
 ## 8 ноября. Аудит визуальной приёмки без реализации
 
+**Итог консультации:** после нового прямого поручения запрос visual acceptance отправлен в указанную существующую беседу Argon; после восстановления browser connection полный ответ получен без нового send. Verdict `go` с P0-уточнениями provenance, full-size PNG decode, frame-index selection и Titles ROI. Все7 bindings совпали; семь findings локально разобраны, неточности о crop/модулях уточнены. Рекомендация — небольшой внешний `prepare`/`seal` workflow, typed PNG-export позже по потребности. Код не менялся. [Ответ и решения](../reviews/argon/visual-acceptance/20261108-research-01/decisions.md). Прежние сбои ниже сохраняют историю.
+
 ### Progress
 
 Исследованы Core `d5bf682…`, legacy `release-3.3.5` на `5d0d255…` и source snapshots Surehand, Engine Room, JUNKDOGE. Сверены saved MP4/PNG, просмотрены три S1 PNG и шесть кадров, извлечённых из точного async MP4 `a6e9e225…`. [Полный отчёт](../docs/visual-acceptance-audit-20261108.md).

@@ -1,0 +1,83 @@
+{
+  "recordedAt": "2026-11-08T09:30:23.4828895Z",
+  "status": "received",
+  "complete": true,
+  "verdict": "go",
+  "conversationUrl": "https://gemini.google.com/app/4f9b9c24e0da796f",
+  "turnId": "f54263f934c1041a",
+  "hashes": [
+    {
+      "file": "manifest.json",
+      "sha256": "01082d9e3907a9fc521c2b85b16451312a68adfdfa28043c565282b7187aed55",
+      "bytes": 1873,
+      "match": true
+    },
+    {
+      "file": "response.txt",
+      "sha256": "ba3d2770abe7dc746e21a9b2bf1fc0b8ff7f038804ffc63bdc8522bd0ced0459",
+      "bytes": 35061,
+      "match": true
+    },
+    {
+      "file": "attempt-03-response-evidence.jpg",
+      "sha256": "9f1a644b3b211d05e313cf767deb1b16b98a41d3b80b3175b4072748d9c9b468",
+      "bytes": 100661,
+      "match": true
+    },
+    {
+      "file": "request.md",
+      "sha256": "49f2032e307a914c07eb069107fce8ef9705d16d76a676ffdbb57dbe1c603467",
+      "bytes": 4327,
+      "match": true
+    },
+    {
+      "file": "bundle.md",
+      "sha256": "1a99020292278a3ba9e6865f35da187e969a5f5d0d1e310ff145074576f08329",
+      "bytes": 18351,
+      "match": true
+    }
+  ],
+  "bindings": [
+    {
+      "field": "reviewId",
+      "value": "20261108-research-01",
+      "present": true
+    },
+    {
+      "field": "stageId",
+      "value": "visual-acceptance",
+      "present": true
+    },
+    {
+      "field": "type",
+      "value": "plan",
+      "present": true
+    },
+    {
+      "field": "baseCommit",
+      "value": "d5bf682eb2b1470cc7f69b5186b8447c8ec5b768",
+      "present": true
+    },
+    {
+      "field": "legacyCommit",
+      "value": "5d0d255e6858477d1c19c1010154389425229028",
+      "present": true
+    },
+    {
+      "field": "requestSha256",
+      "value": "49f2032e307a914c07eb069107fce8ef9705d16d76a676ffdbb57dbe1c603467",
+      "present": true
+    },
+    {
+      "field": "planSha256",
+      "value": "1a99020292278a3ba9e6865f35da187e969a5f5d0d1e310ff145074576f08329",
+      "present": true
+    }
+  ],
+  "localReportLinksChecked": 24,
+  "retrievalNewSends": 0,
+  "codeChanges": 0,
+  "scope": "Summary-only plan critique, no images supplied to Argon; local findings disposition recorded in decisions.md",
+  "rawResponsePreserved": true,
+  "historicalAttempts": "Attempts 1 and 2 remain unknown; attempt 3 received"
+}
