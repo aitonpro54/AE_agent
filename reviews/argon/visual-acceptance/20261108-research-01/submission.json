@@ -128,6 +128,23 @@
       "query": "20261108-research-01",
       "visibleResult": "Ничего не найдено.",
       "conclusion": "После повторной отправки редактор пуст, постоянная ссылка и завершённый ответ не обнаружены. Серверный исход неизвестен."
+    },
+    {
+      "recordedAt": "2026-11-08T09:03:29.685Z",
+      "stage": "direct-url-reconciliation",
+      "sourceUserMessageId": "01a1ba63-0dbf-7832-a279-789947d2d0e8",
+      "url": "https://gemini.google.com/app/4f9b9c24e0da796f",
+      "visibleTurns": 1,
+      "visibleResponses": 1,
+      "matchedReviewId": "20261108-plan-01",
+      "matchedStageId": "core-media-layers-render",
+      "exactRequestMatchesArchivedMediaReview": true,
+      "exactResponseHashMatchesArchivedMediaReview": true,
+      "visualReviewMatch": false,
+      "conclusion": "В указанной беседе прочитана одна пара о слоях и рендере. Visual-acceptance в пределах этого URL не обнаружен. Обе прежние попытки сохраняют неизвестный исход.",
+      "evidence": "direct-url-inspection.json",
+      "newUploads": 0,
+      "newSends": 0
     }
   ],
   "retrieval": "unconfirmed",
@@ -227,5 +244,22 @@
       }
     ],
     "retrievalStoppedAt": "2026-11-08T08:56:57.6503268Z"
+  },
+  "directUrlInspection": {
+    "recordedAt": "2026-11-08T09:03:29.685Z",
+    "stage": "direct-url-reconciliation",
+    "sourceUserMessageId": "01a1ba63-0dbf-7832-a279-789947d2d0e8",
+    "url": "https://gemini.google.com/app/4f9b9c24e0da796f",
+    "visibleTurns": 1,
+    "visibleResponses": 1,
+    "matchedReviewId": "20261108-plan-01",
+    "matchedStageId": "core-media-layers-render",
+    "exactRequestMatchesArchivedMediaReview": true,
+    "exactResponseHashMatchesArchivedMediaReview": true,
+    "visualReviewMatch": false,
+    "conclusion": "В указанной беседе прочитана одна пара о слоях и рендере. Visual-acceptance в пределах этого URL не обнаружен. Обе прежние попытки сохраняют неизвестный исход.",
+    "evidence": "direct-url-inspection.json",
+    "newUploads": 0,
+    "newSends": 0
   }
 }

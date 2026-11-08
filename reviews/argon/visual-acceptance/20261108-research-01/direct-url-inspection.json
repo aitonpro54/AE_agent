@@ -1,0 +1,70 @@
+{
+  "reviewId": "20261108-research-01",
+  "observedAt": "2026-11-08T09:03:29.685Z",
+  "requestedUrl": "https://gemini.google.com/app/4f9b9c24e0da796f",
+  "observedUrl": "https://gemini.google.com/app/4f9b9c24e0da796f",
+  "title": "Ревью плана core-media-layers-render - Google Gemini",
+  "sourceThreadId": "01a1ba42-006c-70c0-8801-895b48f08c43",
+  "sourceUserMessageId": "01a1ba63-0dbf-7832-a279-789947d2d0e8",
+  "account": "Aiton Pro (aitonpro54@gmail.com)",
+  "browserProfile": "Ваш Chrome",
+  "mode": "Argon Высокий",
+  "scope": "Только указанная беседа. Прочитаны все загруженные пары запрос–ответ, включая конец ленты.",
+  "scroll": [
+    {
+      "clientHeight": 639,
+      "id": "",
+      "overflow": "scroll",
+      "rect": [
+        52,
+        0,
+        1484,
+        639.2000122070312
+      ],
+      "scrollHeight": 14495,
+      "scrollTop": 13855.599609375,
+      "tag": "infinite-scroller"
+    }
+  ],
+  "visibleUserMessageCount": 1,
+  "visibleResponseCount": 1,
+  "completionControlsVisible": true,
+  "generationActive": false,
+  "visualMatch": {
+    "reviewIdInRequestOrAnswer": false,
+    "stageIdInRequestOrAnswer": false,
+    "legacyVisualReviewRequest": false,
+    "found": false
+  },
+  "turns": [
+    {
+      "turnId": "5bdfa18db9f8697f",
+      "request": {
+        "path": "direct-url-turn-01-request.txt",
+        "bytes": 418,
+        "sha256": "40ea67a1ee2bee67c459b0fc6e3098e9eb1261d92035126184d659663197e157"
+      },
+      "attachments": [
+        "bundle.md",
+        "manifest.json"
+      ],
+      "response": {
+        "path": "direct-url-turn-01-response.txt",
+        "bytes": 38631,
+        "sha256": "faadb7bef5d43d5763e707de8327d1e0271065e8662104c799f867b412b7fa28"
+      },
+      "reviewId": "20261108-plan-01",
+      "stageId": "core-media-layers-render",
+      "verdict": "revise"
+    }
+  ],
+  "evidence": "direct-url-bottom-evidence.jpg",
+  "newUploads": 0,
+  "newSends": 0,
+  "archiveCrossCheck": {
+    "matchedReviewId": "20261108-plan-01",
+    "requestExact": true,
+    "responseSha256Exact": true,
+    "archiveResponseSha256": "faadb7bef5d43d5763e707de8327d1e0271065e8662104c799f867b412b7fa28"
+  }
+}
