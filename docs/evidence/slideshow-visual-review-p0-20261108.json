@@ -1,0 +1,262 @@
+{
+  "schema": "ae-agent-slideshow-visual-review-evidence.v1",
+  "recordedAt": "2026-11-08T09:44:31.7163497Z",
+  "machine": "MSI",
+  "node": "v24.15.0",
+  "sourceClosureSha256": {
+    "core4/tools/visual-review.js": "c604a42b959eb59b84f579b85ce0671e83761334135955d9cc78d679f6e7f498",
+    "core4/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+    "mcp-server/generated-png-proof.js": "96107e11c599aec6cb4c89c0513ef20edab0219cfcf115ed8ace84ba548e5639"
+  },
+  "ffmpegSha256": "3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec",
+  "ffprobeSha256": "f0d36ecbbdd3bcfac3efa078c96c7271c2e68b3810595552ac3b7f17e9a65c52",
+  "localPacket": ".codex-runtime/visual-review-p0-20261108/accepted",
+  "reviewSha256": "0cf5632d7f0398dcdc87a5d41b7339855c035a90175de92f072c59b5eff2094a",
+  "review": {
+    "schema": "ae-agent-visual-review.v1",
+    "scope": "sampled_mp4",
+    "movie": {
+      "sha256": "cf8fd2e90fbf96ae8e84f5c22fb21ddc84c101e0bdb74cffdc2e86048307af84",
+      "byteLength": 3628869
+    },
+    "manifestSha256": "a280bc0c8ebadc9015fb315847e89200a4300ee36d7c5063974316957c958f19",
+    "observationsSha256": "2964efd8e5ec5fb8ee1b8d103a240f653db7b0121be631e358b8fe6840c9a9b4",
+    "integrity": "matched",
+    "mediaVerification": "decoded_video_exact_frame_grid",
+    "coverage": {
+      "required": 9,
+      "decided": 9
+    },
+    "visual": {
+      "verdict": "pass",
+      "evidence": "reviewer_observations",
+      "reviewer": "Codex, просмотр 9 отдельных PNG и контактного листа на MSI"
+    }
+  },
+  "manifest": {
+    "schema": "ae-agent-visual-review.v1",
+    "scope": "sampled_mp4",
+    "movie": {
+      "sha256": "cf8fd2e90fbf96ae8e84f5c22fb21ddc84c101e0bdb74cffdc2e86048307af84",
+      "byteLength": 3628869
+    },
+    "decoder": {
+      "ffmpeg": {
+        "version": "ffmpeg version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+        "buildInfoSha256": "711056f2bc922237113d5defe7da4dbd97beaab41098e5f8d425753dbfea99ff"
+      },
+      "ffprobe": {
+        "version": "ffprobe version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers",
+        "buildInfoSha256": "c28ec08933e2c9eeac8a7341b1fced84e23745c7ca69e26e7ca83226714ef209"
+      }
+    },
+    "media": {
+      "width": 3840,
+      "height": 2400,
+      "fps": "30000/1001",
+      "timeBase": "1/30000",
+      "frameCount": 90
+    },
+    "frames": [
+      {
+        "index": 10,
+        "expectation": "Удерживается A: целая сфера, видна цветная дуга, пустого кадра нет.",
+        "pts": 10010,
+        "file": "frames/frame-00.png",
+        "sha256": "30d4237075599577578d8b90322ec912a5757ae928725f370d3deecd8ca53a06",
+        "byteLength": 872075,
+        "width": 3840,
+        "height": 2400
+      },
+      {
+        "index": 29,
+        "expectation": "Перед переходом удерживается A, светлые складки B ещё не видны.",
+        "pts": 29029,
+        "file": "frames/frame-01.png",
+        "sha256": "0d49b046b00ed99436a30914659d140808a777a29b91ffd7e5b7678335e8a96b",
+        "byteLength": 1316152,
+        "width": 3840,
+        "height": 2400
+      },
+      {
+        "index": 30,
+        "expectation": "На границе старта виден A, без пустого кадра или скачка к B.",
+        "pts": 30030,
+        "file": "frames/frame-02.png",
+        "sha256": "d0b41db239d530412e8d3b2698f881dc6d012b53812a7ebe4b75fa022a73b753",
+        "byteLength": 996505,
+        "width": 3840,
+        "height": 2400
+      },
+      {
+        "index": 31,
+        "expectation": "Ранний dissolve: A ещё доминирует, проявляются складки B.",
+        "pts": 31031,
+        "file": "frames/frame-03.png",
+        "sha256": "8f79069037abe102e7d3a6f39773ffca32813a96910afb77ad5b17612729d2a6",
+        "byteLength": 1086641,
+        "width": 3840,
+        "height": 2400
+      },
+      {
+        "index": 45,
+        "expectation": "В середине видны одновременно сфера A и складки B.",
+        "pts": 45045,
+        "file": "frames/frame-04.png",
+        "sha256": "c81c5727b15bc73ff7bb6c006da8531f2af8dc40880a240ec43ae0e82f9b9a2a",
+        "byteLength": 1039890,
+        "width": 3840,
+        "height": 2400
+      },
+      {
+        "index": 59,
+        "expectation": "На подходе к концу перехода доминируют складки B.",
+        "pts": 59059,
+        "file": "frames/frame-05.png",
+        "sha256": "7ccb2a2a8f663bb5996430781dece185627a0e2b41d3533feafbcea961c18bff",
+        "byteLength": 1310329,
+        "width": 3840,
+        "height": 2400
+      },
+      {
+        "index": 60,
+        "expectation": "На границе конца перехода виден B без пустого кадра.",
+        "pts": 60060,
+        "file": "frames/frame-06.png",
+        "sha256": "9caa53f5ea9ca9b11ddcf3d882aa5c1ab55bc778e1bf8d10241fd9510f23f6a6",
+        "byteLength": 779246,
+        "width": 3840,
+        "height": 2400
+      },
+      {
+        "index": 61,
+        "expectation": "Сразу после перехода удерживается B, сфера A не видна.",
+        "pts": 61061,
+        "file": "frames/frame-07.png",
+        "sha256": "dd9ffd44b402117b5ebf0d8b446e0a07dac6d2568a1ab10a341a4a07cbb9e2e2",
+        "byteLength": 793715,
+        "width": 3840,
+        "height": 2400
+      },
+      {
+        "index": 75,
+        "expectation": "Удерживается B: светлые складки по кадру, пустого кадра нет.",
+        "pts": 75075,
+        "file": "frames/frame-08.png",
+        "sha256": "662f3de8a673d235d8f7bc37d1a0ee93baa0f80152f311a90614323cc9f75058",
+        "byteLength": 928668,
+        "width": 3840,
+        "height": 2400
+      }
+    ],
+    "sheet": {
+      "file": "sheet.png",
+      "sha256": "500e1d770f3bd8723e82d694f6707ed87643fa272d66c95e90785fd3a675b673",
+      "byteLength": 468329,
+      "width": 960,
+      "height": 672
+    },
+    "references": [
+      {
+        "label": "Архивное задание Slideshow и master comp 29",
+        "sha256": "04c1deeec5882529e28289dbe92b6b00fac968788464206fa07174549d115dcd",
+        "byteLength": 1449,
+        "file": "evidence-0.json"
+      },
+      {
+        "label": "Архивная квитанция AE: DONE, 90 кадров, временная comp 43",
+        "sha256": "270fccf9cebf8a536d7cf9bef41dd3fa894816feb742224a49dd7d4e7aa4d6c7",
+        "byteLength": 105375,
+        "file": "evidence-1.json"
+      },
+      {
+        "label": "Ранее записанная техническая проверка этого SHA MP4",
+        "sha256": "ea40c5d91e39bcc09ffa3d7b014b0ef3581058cc23553b6afd9acaf6804b93be",
+        "byteLength": 2326,
+        "file": "evidence-2.json"
+      }
+    ]
+  },
+  "observations": {
+    "manifestSha256": "a280bc0c8ebadc9015fb315847e89200a4300ee36d7c5063974316957c958f19",
+    "reviewer": "Codex, просмотр 9 отдельных PNG и контактного листа на MSI",
+    "frames": [
+      {
+        "index": 10,
+        "sha256": "30d4237075599577578d8b90322ec912a5757ae928725f370d3deecd8ca53a06",
+        "decision": "pass",
+        "observation": "Сфера A занимает центр, снизу яркая голубая и пурпурная дуга. Изображение заполняет кадр."
+      },
+      {
+        "index": 29,
+        "sha256": "0d49b046b00ed99436a30914659d140808a777a29b91ffd7e5b7678335e8a96b",
+        "decision": "pass",
+        "observation": "Перед началом перехода читается та же нижняя дуга и контур сферы. Диагональных складок B не видно."
+      },
+      {
+        "index": 30,
+        "sha256": "d0b41db239d530412e8d3b2698f881dc6d012b53812a7ebe4b75fa022a73b753",
+        "decision": "pass",
+        "observation": "На границе начала остаётся A с яркой нижней дугой. Внезапной замены на B или пустого кадра нет."
+      },
+      {
+        "index": 31,
+        "sha256": "8f79069037abe102e7d3a6f39773ffca32813a96910afb77ad5b17612729d2a6",
+        "decision": "pass",
+        "observation": "A остаётся главным изображением. Слабая диагональ B различима слева внизу и на синем поле сферы."
+      },
+      {
+        "index": 45,
+        "sha256": "c81c5727b15bc73ff7bb6c006da8531f2af8dc40880a240ec43ae0e82f9b9a2a",
+        "decision": "pass",
+        "observation": "Хорошо различимы и дуга сферы A, и светлые диагонали B. Оба изображения видны по всей зоне перехода."
+      },
+      {
+        "index": 59,
+        "sha256": "7ccb2a2a8f663bb5996430781dece185627a0e2b41d3533feafbcea961c18bff",
+        "decision": "pass",
+        "observation": "Светло-голубые складки B заполняют кадр. Дуга A почти исчезла, пустых областей по краям нет."
+      },
+      {
+        "index": 60,
+        "sha256": "9caa53f5ea9ca9b11ddcf3d882aa5c1ab55bc778e1bf8d10241fd9510f23f6a6",
+        "decision": "pass",
+        "observation": "На границе завершения кадр занят складками B. Сфера не различима, чёрного провала нет."
+      },
+      {
+        "index": 61,
+        "sha256": "dd9ffd44b402117b5ebf0d8b446e0a07dac6d2568a1ab10a341a4a07cbb9e2e2",
+        "decision": "pass",
+        "observation": "Сохраняются светлые складки B и их диагонали, сферы A не видно."
+      },
+      {
+        "index": 75,
+        "sha256": "662f3de8a673d235d8f7bc37d1a0ee93baa0f80152f311a90614323cc9f75058",
+        "decision": "pass",
+        "observation": "B удерживается. Складки доходят до границ кадра, пустого кадра нет."
+      }
+    ]
+  },
+  "independentDecodedRgbFrameHashMatches": 9,
+  "distinctFramesViewed": 9,
+  "viewerDisplay": "Opened each full-size PNG independently, viewer displayed a scaled preview. Also opened the labelled sheet.",
+  "acceptanceScope": "Stored S1 output, sampled frames only. Archived job, finalize receipt and media checks are SHA-pinned context. Exact in-memory AEP lineage is unproven.",
+  "validation": {
+    "tests": [
+      "swapped-frame",
+      "truncated-png",
+      "missing-frame",
+      "changed-sheet",
+      "changed-manifest",
+      "changed-evidence",
+      "missing-observation",
+      "changed-mp4",
+      "verdict-unknown",
+      "verdict-fail",
+      "out-of-range-index",
+      "relocated-exact-seal"
+    ],
+    "pass": 12
+  },
+  "desktop": "not run, no remote project in connected project inventory"
+}
