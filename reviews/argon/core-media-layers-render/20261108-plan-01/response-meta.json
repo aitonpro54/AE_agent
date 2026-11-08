@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "reviewId": "20261108-plan-01",
+  "stageId": "core-media-layers-render",
+  "type": "plan",
+  "status": "received",
+  "complete": true,
+  "verdict": "revise",
+  "response": {
+    "path": "response.txt",
+    "encoding": "UTF-8",
+    "bytes": 38631,
+    "sha256": "faadb7bef5d43d5763e707de8327d1e0271065e8662104c799f867b412b7fa28",
+    "capturedAt": "2026-11-08T06:10:58.767Z",
+    "captureMethod": "Точный видимый innerText model-response-content, UTF-8 без правок и добавленного перевода строки"
+  },
+  "receipt": {
+    "url": "https://gemini.google.com/app/4f9b9c24e0da796f",
+    "reviewIdVisible": true,
+    "attachments": [
+      "bundle.md",
+      "manifest.json"
+    ],
+    "generationActiveAtSubmission": true
+  },
+  "counts": {
+    "uploadInvocations": 1,
+    "filesSelected": 2,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "limitations": [
+    "Plan review using source locators and summarized runtime discovery",
+    "Live MCP discovery on MSI; previous acceptance records for desktop",
+    "Candidate render backend still requires both-host validation"
+  ],
+  "receivedAt": "2026-11-08T06:10:58.767Z",
+  "truncated": false,
+  "binding": {
+    "reviewId": true,
+    "stageId": true,
+    "type": true,
+    "baseCommit": true,
+    "planSha256": true,
+    "requestSha256": true,
+    "bundleSha256": true
+  },
+  "completionEvidence": {
+    "generationActive": false,
+    "finalControlsVisible": true,
+    "responseCount": 1,
+    "fiveQuestionsAnswered": true,
+    "finalSection": "Будущая приёмка",
+    "evidence": "response-evidence.jpg"
+  },
+  "findings": [
+    {
+      "id": "REV-01",
+      "priority": "P0",
+      "summary": "Однозначный выбор композиции и изоляция очереди в рабочей копии AEP"
+    },
+    {
+      "id": "REV-02",
+      "priority": "P0",
+      "summary": "Целостность matte-пар и отказ при риске поломки индексных выражений"
+    },
+    {
+      "id": "REV-03",
+      "priority": "P1",
+      "summary": "Устойчивый intent и сверка после записи в AE до квитанции"
+    },
+    {
+      "id": "REV-04",
+      "priority": "P1",
+      "summary": "Поиск конкретного процесса после spawn до квитанции"
+    },
+    {
+      "id": "REV-05",
+      "priority": "P1",
+      "summary": "Проверка пресета и транзитивных зависимостей в копии AEP"
+    },
+    {
+      "id": "REV-06",
+      "priority": "P2",
+      "summary": "Влияние вставки на повторно используемый прекомп"
+    },
+    {
+      "id": "REV-07",
+      "priority": "P2",
+      "summary": "Проверка диапазона таймингов относительно длительности AV-источника"
+    },
+    {
+      "id": "REV-08",
+      "priority": "P3",
+      "summary": "Предел размера снимка и параллельных заданий"
+    }
+  ],
+  "reviewedMaterials": [
+    "bundle.md с запросом и планом",
+    "manifest.json"
+  ],
+  "unavailableMaterials": [
+    "Полные исходники и упомянутые документы приёмки",
+    "Живой проект и настройки среды",
+    "Нативная двухмашинная проверка aerender"
+  ],
+  "integrityNotes": [
+    "Семь обязательных строковых привязок совпали с пересчитанным локальным пакетом",
+    "Состав на MSI объявлен в штатном MCP discovery. Формулировка о неподтверждённом составе в ответе повторяет оговорку плана и требует разграничения discovery, приёмки установки и нативного рендера",
+    "Совместимость аргументов aerender и утверждения о шаблонах вывода подлежат проверке в рамках будущей приёмки"
+  ],
+  "ownerTriagePerformed": false
+}

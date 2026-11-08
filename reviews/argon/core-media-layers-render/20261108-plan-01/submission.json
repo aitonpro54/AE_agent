@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "reviewId": "20261108-plan-01",
+  "stageId": "core-media-layers-render",
+  "type": "plan",
+  "status": "received",
+  "controllerThreadId": "01a17d90-d9dc-7531-a1d7-e50b3f8a501d",
+  "preparedAt": "2026-11-08T06:06:43.919Z",
+  "authorization": {
+    "reviewId": "20261108-plan-01",
+    "stageId": "core-media-layers-render",
+    "type": "plan",
+    "createdAt": "2026-11-08T06:04:34.823Z",
+    "sourceThreadId": "01a1b9ad-c75f-72c1-8197-fbaf65d64a6e",
+    "sourceUserMessageId": "01a1b9ba-e72c-79b3-840e-3a88210b565f",
+    "quote": "Хорошо, давай начнём с аудита. Сверь старые команды с тем, что реально доступно в Core 4, подготовь план по работе со слоями и полноценному рендеру и перед реализацией отдай его Аргону на ревью.",
+    "scope": "Одно ревью подготовленного плана без исходников, пользовательских материалов и runtime данных. Явное поручение передать план Argon подтверждено через read_thread текущего чата.",
+    "snapshot": "5393963adaf2ad80cb75cd9ed85e7ab32070ac7d",
+    "recipient": "Gemini Argon, Aiton Pro",
+    "externalAllowlist": [
+      "bundle.md",
+      "manifest.json"
+    ],
+    "bundleSha256": "7841d77cd9e22b7363d1f3e7b7373121de2d03466782fe4f64f4dae5bf44dfaa",
+    "requestSha256": "cd3db07c1d032de7bbb1f88d40437d85a2ca61740808814f1290c82ea2170cc3",
+    "manifestSha256": "0c6852873d63cf619024559f8fae36545ac9cd09488feb9f18c5561c03b4f40b",
+    "externalPrompt": "Проведи одно ревью плана 20261108-plan-01 (core-media-layers-render) по запросу в bundle.md. Проверь привязки по manifest.json. Верни инженерный verdict и замечания до реализации. Используй только приложенный план и сведения из него, явно отметь недоступное evidence.",
+    "maximumSends": 1,
+    "automaticRetry": false,
+    "trustedUserMessageVerified": true
+  },
+  "readiness": {
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "effort": "Высокий — Глубокий",
+    "effortOptions": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "conversation": "пустой обычный чат",
+    "observedAt": "2026-11-08T06:06:43.92Z"
+  },
+  "baseCommit": "5393963adaf2ad80cb75cd9ed85e7ab32070ac7d",
+  "targetCommit": null,
+  "planSha256": "a0fbaf0bd3d30336ce065ea1208df0d30e0f72a1766d3f343180310817221a4f",
+  "requestSha256": "cd3db07c1d032de7bbb1f88d40437d85a2ca61740808814f1290c82ea2170cc3",
+  "manifestSha256": "0c6852873d63cf619024559f8fae36545ac9cd09488feb9f18c5561c03b4f40b",
+  "baseline": {
+    "request.md": {
+      "bytes": 3778,
+      "sha256": "cd3db07c1d032de7bbb1f88d40437d85a2ca61740808814f1290c82ea2170cc3"
+    },
+    "approval.json": {
+      "bytes": 1864,
+      "sha256": "1582dab8fe869550983c2a556edf6850fc53ef733c166c8478add44ab3729064"
+    },
+    "verification.md": {
+      "bytes": 2287,
+      "sha256": "73ecc955a6bdf9987e15ca423cb1775da35313116bbb33340be23d53b1176485"
+    },
+    "manifest.json": {
+      "bytes": 1493,
+      "sha256": "0c6852873d63cf619024559f8fae36545ac9cd09488feb9f18c5561c03b4f40b"
+    },
+    "bundle.md": {
+      "bytes": 21489,
+      "sha256": "7841d77cd9e22b7363d1f3e7b7373121de2d03466782fe4f64f4dae5bf44dfaa"
+    }
+  },
+  "payload": [
+    {
+      "name": "bundle.md",
+      "bytes": 21489,
+      "sha256": "7841d77cd9e22b7363d1f3e7b7373121de2d03466782fe4f64f4dae5bf44dfaa"
+    },
+    {
+      "name": "manifest.json",
+      "bytes": 1493,
+      "sha256": "0c6852873d63cf619024559f8fae36545ac9cd09488feb9f18c5561c03b4f40b"
+    }
+  ],
+  "prompt": "Проведи одно ревью плана 20261108-plan-01 (core-media-layers-render) по запросу в bundle.md. Проверь привязки по manifest.json. Верни инженерный verdict и замечания до реализации. Используй только приложенный план и сведения из него, явно отметь недоступное evidence.",
+  "promptSha256": "40ea67a1ee2bee67c459b0fc6e3098e9eb1261d92035126184d659663197e157",
+  "counts": {
+    "uploadInvocations": 1,
+    "filesSelected": 2,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "uploadInvokedAt": "2026-11-08T06:07:00.208Z",
+  "uploadCompletedAt": "2026-11-08T06:07:11.767Z",
+  "promptVerifiedAt": "2026-11-08T06:07:11.767Z",
+  "sendInvokedAt": "2026-11-08T06:07:11.767Z",
+  "confirmedAt": "2026-11-08T06:07:25.347Z",
+  "receipt": {
+    "url": "https://gemini.google.com/app/4f9b9c24e0da796f",
+    "reviewIdVisible": true,
+    "attachments": [
+      "bundle.md",
+      "manifest.json"
+    ],
+    "generationActiveAtSubmission": true
+  },
+  "receivedAt": "2026-11-08T06:10:58.767Z",
+  "response": {
+    "path": "response.txt",
+    "encoding": "UTF-8",
+    "bytes": 38631,
+    "sha256": "faadb7bef5d43d5763e707de8327d1e0271065e8662104c799f867b412b7fa28",
+    "capturedAt": "2026-11-08T06:10:58.767Z",
+    "captureMethod": "Точный видимый innerText model-response-content, UTF-8 без правок и добавленного перевода строки"
+  },
+  "verdict": "revise"
+}
