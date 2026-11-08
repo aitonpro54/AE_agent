@@ -96,7 +96,7 @@
             before.revision.length + 2 * JSON.stringify([p.name, p.layers]).length + 512 * (p.layers.length + 1) > 32768) fault('inspection_result_budget');
         return result;
     }
-    function apply(p) {
+    function apply(p, confirmAction) {
         var started = false;
         try {
             var before = snapshot(p), proof = p._execution;
@@ -113,7 +113,7 @@
             var message = 'Создать композицию в рабочем проекте?\nПроект: ' + p.projectId +
                 '\nКомпозиция: ' + JSON.stringify(p.name) + ' · ' + p.width + '×' + p.height +
                 ' · ' + p.fps + ' fps · ' + p.durationFrames + ' кадров\n' + details.join('\n');
-            if (confirm(message, true, 'AE Agent Core — сборка композиции') !== true) fault('local_cancelled');
+            if ((confirmAction || confirm)(message, true, 'AE Agent Core — сборка композиции') !== true) fault('local_cancelled');
             if (snapshot(p).revision !== before.revision) fault('stale_target');
             current = project(p);
             var checked = sources(p, before, current);

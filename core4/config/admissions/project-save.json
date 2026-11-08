@@ -1,12 +1,12 @@
 {
   "moduleId": "project-save",
   "operationId": "save-current-project",
-  "artifactHash": "ba883ba35f1f51520baf7ee1549316ea93187c43411aab8a85072d4e798af3ed",
+  "artifactHash": "643ab6dacc4f8757de8d58cb994e7a7491431d7f6391673696387724c7599033",
   "schemaHash": "70a0a910453b26ca78c68cd0f4204b74684122a9ddc9040beed69fe6988dafc6",
   "resultSchemaHash": "1d6869d6436157a42b69a5107e3222e94832e685349f29e7e784eeccc3c91ee2",
   "effectPolicyHash": "ab757ca003ea7823f4013c6f4e33b32a52fbb38912300890560f99a63ec74c5b",
-  "executorHash": "70837a45ca44922f255acd714758e11ca50e07daf85d20bf7246f9887203d7e2",
+  "executorHash": "65ce064643eb5c1c0f72c5a6dfddbf3b38cfca7cb64af6cc25d97925c296572d",
   "protocolVersion": 1,
-  "trustApprovalId": "source-review-project-save-20261107",
+  "trustApprovalId": "source-review-project-save-operator-workflows-20261108",
   "revoked": false
 }

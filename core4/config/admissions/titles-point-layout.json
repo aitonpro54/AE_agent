@@ -1,12 +1,12 @@
 {
   "moduleId": "titles-point-layout",
   "operationId": "measure-or-apply-point-layout",
-  "artifactHash": "d62f3363b6677e6b5cfde0ee5f179ea3dcc27c0b3edc5393d490f2ee2bd253eb",
+  "artifactHash": "5194b7b97c042487407ea1f9c4211f7110ca00da8461307662ce45a81774660d",
   "schemaHash": "ba5bb2fad5885a13efaadde8c3aece747a455b2ba944852cfe382722f2658c47",
   "resultSchemaHash": "22e2de7c1a1f2c070ccb252240ec95d1c0eae4d0c6a92093259c431415e4302d",
   "effectPolicyHash": "28994d64cef1c2e5c171fa92d4b0cd1fcd579c3f4cfbed354f1038109c27360b",
-  "executorHash": "acd5c82c4df2c10fd9a619b65e578539409f511574b1ff606a38932b2de8043e",
+  "executorHash": "3ee29546cbf4f7fa331592ba0a010c1ba608c101553e887416497253f6a64795",
   "protocolVersion": 1,
-  "trustApprovalId": "M1-source-review-titles-point-layout-20261026",
+  "trustApprovalId": "source-review-titles-point-layout-operator-workflows-20261108",
   "revoked": false
 }

@@ -35,6 +35,7 @@ node products/slideshow/cli.js compile job.json
 node products/slideshow/cli.js verify-initial job.json
 node products/slideshow/cli.js prepare-build job.json observations.json
 node products/slideshow/cli.js prepare-render job.json observations.json stage
+node products/slideshow/cli.js prepare-render job.json observations.json start
 node products/slideshow/cli.js prepare-render job.json observations.json finalize
 node products/slideshow/cli.js verify-files job.json
 ```
@@ -61,8 +62,10 @@ node products/slideshow/cli.js verify-files job.json
 по исходному ID и журналу Core. Подмена успешного слота вызывает отказ.
 
 После двух подтверждённых замен `stage` ставит одно задание на 90 кадров.
-В Render Queue проверьте, что отмечено только это задание, и запустите его.
-После нативного `DONE` снова получите `master`, `slots` и исходные `tasks`.
+В составе `operator-workflows/owner` получите свежие наблюдения и выполните
+`start`. Core проверит точную строку, параметры и отсутствие других включённых
+заданий. У каждой операции свой внутренний допуск. После нативного `DONE`
+снова получите `master`, `slots` и исходные `tasks`.
 `finalize` снимает временное задание и копию композиции. Сверьте ролик на
 кадрах до перехода, внутри него и после него. Проверьте SHA-256 шаблона
 и изображений командой `verify-files`.

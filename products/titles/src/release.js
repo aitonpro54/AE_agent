@@ -3,6 +3,7 @@
 const PHASES = {
   derive: ['text-variant', 'stage-text-variant'],
   stage: ['comp-render', 'render-text-variant'],
+  start: ['comp-render', 'render-text-variant'],
   finalize: ['comp-render', 'render-text-variant'],
   discard: ['comp-render', 'render-text-variant'],
 };
@@ -36,6 +37,7 @@ function prepareRelease(job, selection, contract, inspection) {
       contract.modulePin !== inspection?.modulePin || inspection.synthetic !== false || typeof inspection.evidenceRef !== 'string' ||
       !inspection.evidenceRef || snapshot?.target?.projectId !== job.target.projectId || snapshot.target.compId !== job.target.compId ||
       !Array.isArray(snapshot.layers)) fail('release_contract');
+  if (phase === 'start' && !contract.contract?.buildSchema?.properties?.mode?.enum?.includes('start')) fail('release_contract');
   const { target, controlledLayerIds, variant, render } = job;
   let input;
   if (phase === 'derive') {
@@ -48,6 +50,7 @@ function prepareRelease(job, selection, contract, inspection) {
     if (!isId(variantLayerId) || controlledLayerIds.includes(variantLayerId) ||
         !snapshot.layers.some(layer => layer.layerId === variantLayerId && layer.controllable) ||
         (phase === 'stage' ? jobCompId !== undefined : !isId(jobCompId) || snapshot.job?.jobCompId !== jobCompId)) fail('release_target');
+    if (phase === 'start' && (snapshot.job.status !== 'QUEUED' || snapshot.job.rendering || snapshot.job.bytes !== 0)) fail('release_target');
     input = { ...target, ...render, mode: phase, controlledLayerIds: [...controlledLayerIds, variantLayerId], activeLayerId: variantLayerId,
       ...(phase === 'stage' ? {} : { jobCompId }) };
   }

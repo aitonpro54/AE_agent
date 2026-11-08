@@ -35,6 +35,7 @@
         "type": "string",
         "enum": [
           "stage",
+          "start",
           "finalize",
           "discard"
         ]
@@ -77,6 +78,7 @@
         "type": "string",
         "enum": [
           "stage",
+          "start",
           "finalize",
           "discard"
         ]

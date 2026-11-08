@@ -89,6 +89,24 @@ test('installed-composition adds a second operator-confirmed module by declarati
   const save = edit(structuredClone(photo), 'runtime/composition-policy.json', p => { p.profiles['project-save'].operatorConfirmation = true; });
   assert.throws(() => verifyPackage(save), /composition_not_admitted/);
 });
+test('installed-composition operator workflows requires proof in the packaged registry for every added executor', () => {
+  const pkg = buildPackage(root, 'operator-workflows', { runtimeModel: 'owner' });
+  const read = file => Buffer.from(pkg.files[file], 'base64');
+  const { assets } = deriveComposition(pkg.release, read);
+  const guarded = assets.filter(asset => asset.registryOperatorConfirmation);
+  assert.deepEqual(guarded.map(asset => asset.moduleId).sort(),
+    ['comp-render', 'layer-insert', 'media-import', 'project-assembly', 'project-lifecycle', 'project-save', 'text-layer', 'text-variant', 'titles-point-layout']);
+  const source = read('cep/jsx/registry.jsx').toString('utf8');
+  const parser = "const fs=require('node:fs'),acorn=require('internal/deps/acorn/acorn/dist/acorn');acorn.parse(fs.readFileSync(0,'utf8'),{ecmaVersion:3,allowReserved:'never'});";
+  const result = spawnSync(process.execPath, ['--expose-internals', '-e', parser], { input: source, encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  const context = vm.createContext({ confirm() { assert.fail('native confirmation opened'); } });
+  vm.runInContext(source, context);
+  for (const { assetKey, executorHash } of guarded) {
+    const frame = { assetKey, phase: 'mutate', pins: { executorHash }, typedPayload: { operatorConfirmation: true } };
+    assert.deepEqual(JSON.parse(context.AECore4Host.dispatch(canonical(frame))), { outcome: 'rejected', code: 'operator_confirmation_required' });
+  }
+});
 test('installed-composition point-layout is opt-in and refuses a package without its proof', () => {
   for (const mode of ['readonly', 'manual']) {
     const pkg = buildPackage(root, mode);

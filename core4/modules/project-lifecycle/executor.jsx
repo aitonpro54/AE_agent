@@ -46,7 +46,7 @@
             finally { if (checkpointOpen) checkpoint.close(); }
         }
     }
-    function apply(p) {
+    function apply(p, confirmAction) {
         var started = false;
         try {
             var before = snapshot(p, p.projectId), proof = p._execution;
@@ -64,7 +64,7 @@
             if (opening) caption = 'Открыть существующий AEP';
             var message = caption + ' и переключиться на него?\nТекущий проект: ' + p.projectId +
                 '\nНовый проект: ' + p.destination + '\nКопия прежней версии: ' + checkpoint.fsName;
-            if (confirm(message, true, 'AE Agent Core — ' + caption) !== true) fault('local_cancelled');
+            if ((confirmAction || confirm)(message, true, 'AE Agent Core — ' + caption) !== true) fault('local_cancelled');
             checkBytes(app.project.file, checkpoint, before.fileStamp.bytes);
             if (opening) {
                 var targetCopy = new File(p.checkpointRoot + '/' + proof.checkpointRef + '.open.aep');

@@ -28,6 +28,19 @@ const RESULT_PROFILES = Object.freeze({
   'owned-text-variant-v1': 'runtime/text-variant-proof.js',
   'owned-comp-render-v1': 'runtime/comp-render-proof.js',
 });
+const OPERATOR_EFFECTS = Object.freeze({
+  'titles-current-target': 'layer.text',
+  'photo-placeholder': 'layer.source',
+  'titles-point-layout': 'layer.text-layout',
+  'text-layer': 'point-text-document-write',
+  'text-variant': 'text-variant-stage',
+  'comp-render': 'owned-native-render',
+  'project-assembly': 'project-composition-assembly',
+  'project-save': 'project-save-in-place',
+  'project-lifecycle': 'project-lifecycle-transition',
+  'media-import': 'project-media-import',
+  'layer-insert': 'composition-layer-insert',
+});
 const INSPECTION_ASSET = { assetKey: 'project-inspection-v1', moduleId: 'project-inspection', path: 'modules/project-inspection', admission: 'modules/project-inspection/artifact.json', policy: 'read-only-current-observation-v1', phases: ['inspect'] };
 function compositionPaths(files, closures, readArtifact) {
   const safe = file => typeof file === 'string' && file !== 'release.json' && /^[A-Za-z0-9_-]+(?:[./][A-Za-z0-9_-]+)*$/.test(file) && !/^(test|experiments|node_modules|logs|state|tools)\//.test(file);
@@ -77,7 +90,8 @@ function declarativeProfiles(composition, release, json, checked) {
         id === 'project-save' && profile.operationId !== 'save-current-project' ||
         (profile.resultProfile === 'project-lifecycle-v1') !== (id === 'project-lifecycle') ||
         id === 'project-lifecycle' && profile.operationId !== 'transition-project' ||
-        Object.hasOwn(profile, 'operatorConfirmation') && (profile.operatorConfirmation !== true || !release.hashes['runtime/operator-confirmation.js'])) fail('composition_not_admitted');
+        Object.hasOwn(profile, 'operatorConfirmation') &&
+          (![true, 'registry-v1'].includes(profile.operatorConfirmation) || !release.hashes['runtime/operator-confirmation.js'])) fail('composition_not_admitted');
     const proof = RESULT_PROFILES[profile.resultProfile];
     if (proof) { checked(proof); proofPaths.add(proof); }
   }
@@ -141,7 +155,11 @@ function deriveComposition(release, read) {
     if (!value) fail('composition_not_admitted');
     const binding = Object.hasOwn(profiles, asset.moduleId) ? profiles[asset.moduleId] : null;
     if (binding && (value.contract.operationId !== binding.operationId || value.contract.executionPolicy !== asset.policy)) fail('composition_not_admitted');
-    if (binding?.operatorConfirmation && !['layer.text', 'layer.source'].includes(value.contract.effectPolicy.effect)) fail('composition_not_admitted');
+    const pilotConfirmation = ['manual-text-v1', 'photo-source-v1'].includes(binding?.resultProfile);
+    if (binding?.operatorConfirmation && (
+      !Object.hasOwn(OPERATOR_EFFECTS, asset.moduleId) || OPERATOR_EFFECTS[asset.moduleId] !== value.contract.effectPolicy.effect ||
+      binding.operatorConfirmation !== (pilotConfirmation ? true : 'registry-v1')
+    )) fail('composition_not_admitted');
     let proofConfig;
     if (composition.version === 2 && binding?.resultProfile === 'owned-comp-render-v1') {
       if (!Object.hasOwn(value.manifest.hashes, 'completion.json')) fail('composition_artifact');
@@ -149,7 +167,10 @@ function deriveComposition(release, read) {
       exactKeys(proofConfig, ['directory', 'format']);
       if (typeof proofConfig.directory !== 'string' || !/^[a-z][a-z0-9-]{0,63}$/.test(proofConfig.directory) || proofConfig.format !== 'H.264') fail('composition_not_admitted');
     }
-    return { ...asset, ...value, executorHash: value.admission.executorHash, ...(binding ? { resultProfile: binding.resultProfile } : {}), ...(binding?.operatorConfirmation ? { operatorConfirmation: true } : {}), ...(proofConfig ? { proofConfig } : {}) };
+    return { ...asset, ...value, executorHash: value.admission.executorHash, ...(binding ? { resultProfile: binding.resultProfile } : {}),
+      ...(binding?.operatorConfirmation ? { operatorConfirmation: true } : {}),
+      ...(binding?.operatorConfirmation === 'registry-v1' ? { registryOperatorConfirmation: true } : {}),
+      ...(proofConfig ? { proofConfig } : {}) };
   });
   const startOverSupported = Object.hasOwn(release.hashes, 'runtime/owner-contract.json') && json('runtime/owner-contract.json').version === 4;
   if (assets.some(item => item.operatorConfirmation) && !startOverSupported) fail('operator_confirmation_owner_required');
@@ -187,10 +208,26 @@ function validateLegacyComposition(composition, release, checked) {
 function registrySource(assets, codecSource) {
   const declarations = [], entries = assets.map((asset, index) => {
     const name = 'executor' + index; declarations.push('var ' + name + '=' + asset.executor + ';');
-    const method = phase => asset.resultProfile === 'photo-source-v1' ? phase + 'Current' : phase;
-    return JSON.stringify(asset.assetKey) + ':{"hash":' + JSON.stringify(asset.executorHash) + ',"calls":{' + asset.phases.map(phase => JSON.stringify(phase) + ':' + name + '[' + JSON.stringify(method(phase)) + ']').join(',') + '}}';
+    const calls = asset.phases.map(phase => {
+      const method = asset.resultProfile === 'photo-source-v1' ? phase + 'Current' : phase;
+      const call = name + '[' + JSON.stringify(method) + ']';
+      const guarded = phase === 'mutate' && asset.registryOperatorConfirmation;
+      const target = guarded ? 'function(p){return applyOperatorApproval(' + call + ',p);}' : call;
+      return JSON.stringify(phase) + ':' + target;
+    });
+    return JSON.stringify(asset.assetKey) + ':{"hash":' + JSON.stringify(asset.executorHash) + ',"calls":{' + calls.join(',') + '}}';
   });
-  return '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + codecSource + ';' + declarations.join('') + 'var assets={' + entries.join(',') + '};return {"dispatch":function(serialized){var frame=JSON.parse(serialized),own=Object.prototype.hasOwnProperty,a=frame&&own.call(assets,frame.assetKey)&&assets[frame.assetKey],call=a&&own.call(a.calls,frame.phase)&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({"readFailureVersion":1,"outcome":"rejected","code":"inspection_failed"});}}};}());\n';
+  const approval = assets.some(asset => asset.registryOperatorConfirmation) ? [
+    'function applyOperatorApproval(call,p){',
+    'var proof=p&&p._execution&&p._execution.operatorConfirmation;',
+    'if(!proof)return {"outcome":"rejected","code":"operator_confirmation_required"};',
+    'if(typeof proof.digest!=="string"||!/^[a-f0-9]{64}$/.test(proof.digest)||',
+    'typeof proof.expiresAt!=="number"||!isFinite(proof.expiresAt)||proof.expiresAt<=new Date().getTime())',
+    'return {"outcome":"rejected","code":"operator_confirmation_expired"};',
+    'return call(p,function(){if(proof.expiresAt<=new Date().getTime()){',
+    'var e=new Error("operator_confirmation_expired");e.coreCode="operator_confirmation_expired";throw e;}return true;});}',
+  ].join('') : '';
+  return '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + codecSource + ';' + declarations.join('') + approval + 'var assets={' + entries.join(',') + '};return {"dispatch":function(serialized){var frame=JSON.parse(serialized),own=Object.prototype.hasOwnProperty,a=frame&&own.call(assets,frame.assetKey)&&assets[frame.assetKey],call=a&&own.call(a.calls,frame.phase)&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({"readFailureVersion":1,"outcome":"rejected","code":"inspection_failed"});}}};}());\n';
 }
 function installationConfig(d, selected) { const assets = selected.assets.map(a => ({ assetKey: a.assetKey, executorHash: a.executorHash, phases: a.phases })); return { installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: assets[0].executorHash, assetKey: assets[0].assetKey, assets, ...(selected.startOverSupported ? { startOverSupported: true } : {}) }; }
 function verifyRelease(directory, release) {
@@ -470,7 +507,16 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   };
   facade.disconnect = async () => ({ disconnected: false, reason: mode === 'owner' ? 'physical_link_owned_by_installation_owner' : 'physical_link_owned_by_stdio_lifetime', physical: physical() });
   facade.listModules = value => { const result = broker.listModules(value); return { ...result, modules: [...result.modules, { id: profile.id, version: '4.0.0', executionPolicy: profile.executionPolicy }] }; };
-  facade.getContract = value => { if (value.moduleId !== profile.id) return broker.getContract(value); exact(value, ['moduleId']); return { contractId, moduleId: profile.id, operationId: contract.operationId, modulePin: hash(admission), contract: JSON.parse(canonical(contract)) }; };
+  facade.getContract = value => {
+    if (value.moduleId === profile.id) {
+      exact(value, ['moduleId']);
+      return { contractId, moduleId: profile.id, operationId: contract.operationId, modulePin: hash(admission), contract: JSON.parse(canonical(contract)) };
+    }
+    const result = broker.getContract(value);
+    return mutationAssets.some(item => item.moduleId === result.moduleId && item.operatorConfirmation)
+      ? { ...result, operatorConfirmation: 'local-operator-exact-confirmation-v1' }
+      : result;
+  };
   facade.inspect = async value => {
     if (value.contractId !== contractId) return broker.inspect(value);
     exact(value, ['moduleId', 'contractId', 'target']);

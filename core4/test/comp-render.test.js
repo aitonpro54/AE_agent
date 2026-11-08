@@ -7,10 +7,12 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { build } = require('../modules/comp-render/implementation');
 const { createRenderProof, validateRenderResult } = require('../runtime/comp-render-proof');
+const { registrySource } = require('../runtime/stdio-entry');
 const { proof: compRenderProof, validateResult: validateCompRenderCompletion } = createRenderProof(require('../modules/comp-render/completion.json'));
 
 const jsx = fs.readFileSync(path.join(__dirname, '../modules/comp-render/executor.jsx'), 'utf8');
-function fixture(t, { missing = false, template = true, whole = false } = {}) {
+const codec = fs.readFileSync(path.join(__dirname, '../runtime/host/json-codec.jsx'), 'utf8');
+function fixture(t, { missing = false, template = true, whole = false, operator = false, renderStatus = 3 } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-render-test-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   fs.mkdirSync(path.join(dir, 'titles-output'));
@@ -35,40 +37,56 @@ function fixture(t, { missing = false, template = true, whole = false } = {}) {
     for (const layer of layers) Object.assign(layer, { startTime: 0, inPoint: 0, outPoint: 3, stretch: 100,
       property: name => name === 'ADBE Transform Group' ? { property: () => ({ value: 100, numKeys: 0 }) } : null });
   }
-  let copy, active, confirmation = 0, quality = 'Best', fileTemplate = 'variant.[fileExtension]';
+  let copy, active, other, renderCalls = 0, confirmation = 0, quality = 'Best', fileTemplate = 'variant.[fileExtension]';
   const confirmations = [];
   comp.duplicate = () => {
     const clone = layers.map(layer => ({ ...layer, id: layer.id + 10 }));
     copy = Object.assign(new CompItem(), comp, { id: 8, usedIn: [], layer: i => clone[i - 1], remove() { copy = null; } });
     return copy;
   };
-  const om = { templates: template ? ['H264'] : [], applyTemplate() {}, getSettings: () => ({ Format: 'H.264', 'Output File Info': { 'File Template': fileTemplate } }) };
-  const queue = { rendering: false, get numItems() { return active ? 1 : 0; }, item: () => active,
+  const nativeValue = value => parseNative(JSON.stringify(value));
+  const om = { templates: template ? ['H264'] : [], applyTemplate() {},
+    getSettings: () => nativeValue({ Format: 'H.264', 'Output File Info': { 'File Template': fileTemplate } }) };
+  const queue = { rendering: false, get numItems() { return Number(!!active) + Number(!!other); },
+    item: index => [active, other].filter(Boolean)[index - 1],
     items: { add: staged => (active = { comp: staged, templates: ['Best Settings'], outputModule: () => om,
-      numOutputModules: 1, applyTemplate() {}, getSettings: () => ({ Quality: quality }),
+      numOutputModules: 1, applyTemplate() {}, getSettings: () => nativeValue({ Quality: quality }),
       get render() { return this.status === 1; }, set render(value) { this.status = value ? 1 : 2; },
       remove() { active = null; } }) },
-    render() { assert.fail('render must not run in a CEP command'); },
+    render() { renderCalls++; finish(renderStatus); },
   };
-  const project = { file: { fsName: input.projectId, parent: { fsName: dir } }, renderQueue: queue,
+  const project = { file: { fsName: input.projectId, parent: { fsName: dir } }, renderQueue: queue, revision: 1,
     get numItems() { return copy ? 2 : 1; },
     itemByID(id) {
       if (id === comp.id) return comp;
       if (copy && id === copy.id) return copy;
       throw new Error('Item Not Found');
     } };
-  const host = vm.runInNewContext(jsx, { app: { project }, CompItem, FootageItem, File, Folder,
+  const globals = { app: { project }, CompItem, FootageItem, File, Folder,
     GetSettingsFormat: { STRING: 1, STRING_SETTABLE: 2 }, RQItemStatus: { QUEUED: 1, DONE: 3 }, PostRenderAction: { NONE: 0 },
-    confirm: message => { confirmation++; confirmations.push(message.split('\n')[0]); return true; } });
+    confirm: message => { confirmation++; confirmations.push(message.split('\n')[0]); return true; } };
+  const host = vm.runInNewContext(jsx, globals);
+  const parseNative = vm.runInContext('JSON.parse', globals);
+  const assetKey = 'comp-render-v1', executorHash = 'b'.repeat(64);
+  if (operator) {
+    const registry = registrySource([{ assetKey, executorHash, executor: jsx, phases: ['inspect', 'mutate', 'verify'],
+      resultProfile: 'owned-comp-render-v1', registryOperatorConfirmation: true }], codec);
+    vm.runInNewContext(registry, globals);
+  }
   const plain = value => JSON.parse(JSON.stringify(value));
   const read = () => plain(host.inspect(input));
   const original = read();
-  function run(patch = {}) {
+  function run(patch = {}, operatorConfirmation) {
     const before = read(), desired = { ...input, ...patch };
     const p = build({ input: desired, evidence: before }).input;
     compRenderProof.beforeReservation({ input: p, before });
-    const result = plain(host.mutate({ ...p, _execution: { policyId: 'current-matching-target-after-local-confirmation-v1',
-      baselineRevision: before.revision, baselineProtected: before.protected, target: before.target } }));
+    const typedPayload = { ...p, _execution: { policyId: 'current-matching-target-after-local-confirmation-v1',
+      proposalId: 'proposal', planDigest: 'plan', taskId: 'task', taskEpoch: 1, stepId: 'step',
+      checkpointRef: 'checkpoint', checkpointDigest: 'checkpoint-digest', baselineDigest: 'baseline',
+      baselineRevision: before.revision, baselineProtected: before.protected, target: before.target, operatorConfirmation } };
+    const result = operator ? JSON.parse(globals.AECore4Host.dispatch(JSON.stringify({
+      assetKey, pins: { executorHash }, phase: 'mutate', typedPayload
+    }))) : plain(host.mutate(typedPayload));
     if (result.outcome === 'applied') validateCompRenderCompletion({ input: p, before }, result.snapshot);
     return result;
   }
@@ -79,8 +97,44 @@ function fixture(t, { missing = false, template = true, whole = false } = {}) {
     if (status === 3) fileTemplate = resolvedTemplate;
   }
   return { run, read, original, finish, confirmations, changeQuality: () => { quality = 'Draft'; },
-    get copy() { return copy; }, get confirmation() { return confirmation; } };
+    addOtherJob: (render, status) => { other = { comp: { id: 9, comment: '' }, render, status }; },
+    get renderCalls() { return renderCalls; }, get copy() { return copy; }, get confirmation() { return confirmation; } };
 }
+
+test('comp-render: typed stage, start and finalize use the fixed registry with an exact operator proof and zero dialogs', t => {
+  const env = fixture(t, { operator: true });
+  const approval = { digest: 'a'.repeat(64), expiresAt: Date.now() + 60000 };
+  assert.deepEqual(env.run(), { outcome: 'rejected', code: 'operator_confirmation_required' });
+  assert.deepEqual(env.run({}, { ...approval, expiresAt: 0 }), { outcome: 'rejected', code: 'operator_confirmation_expired' });
+  assert.deepEqual(env.read(), env.original);
+  const staged = env.run({}, approval);
+  assert.equal(staged.outcome, 'applied', staged.code);
+  const start = { mode: 'start', jobCompId: 8 };
+  assert.deepEqual(env.run(start), { outcome: 'rejected', code: 'operator_confirmation_required' });
+  env.addOtherJob(false, 1);
+  assert.deepEqual(env.run(start, approval), { outcome: 'rejected', code: 'comp_render_queue_busy' });
+  env.addOtherJob(true, 2);
+  assert.deepEqual(env.run(start, approval), { outcome: 'rejected', code: 'comp_render_queue_busy' });
+  assert.equal(env.renderCalls, 0);
+  env.addOtherJob(false, 2);
+  const { job } = env.run(start, approval).snapshot;
+  assert.equal(job.status, 'DONE');
+  assert.equal(env.renderCalls, 1);
+  assert.throws(() => env.run(start, approval), /comp_render_job/);
+  assert.equal(env.run({ mode: 'finalize', jobCompId: 8 }, approval).snapshot.render.status, 'DONE');
+  assert.equal(env.copy, null);
+  assert.equal(env.confirmation, 0);
+});
+
+test('comp-render: an interrupted start keeps the temporary job and file for reconciliation', t => {
+  const env = fixture(t, { renderStatus: 2 });
+  assert.equal(env.run().outcome, 'applied');
+  assert.deepEqual(env.run({ mode: 'start', jobCompId: 8 }), { outcome: 'unknown', code: 'comp_render_incomplete' });
+  assert.ok(env.copy);
+  assert.equal(env.read().job.status, 'INCOMPLETE');
+  assert.throws(() => env.run({ mode: 'start', jobCompId: 8 }), /comp_render_job/);
+  assert.equal(env.renderCalls, 1);
+});
 
 test('comp-render: stage, native completion and scoped cleanup leave source visibility and the rest of the queue intact', t => {
   const env = fixture(t);

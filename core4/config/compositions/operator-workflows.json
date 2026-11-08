@@ -1,0 +1,17 @@
+{
+  "parent": "manual-media-layers",
+  "modules": [],
+  "assets": [],
+  "profiles": {
+    "titles-point-layout": { "operationId": "measure-or-apply-point-layout", "resultProfile": "manual-point-layout-v1", "operatorConfirmation": "registry-v1" },
+    "text-layer": { "operationId": "write-point-text", "resultProfile": "owned-text-layer-v1", "operatorConfirmation": "registry-v1" },
+    "text-variant": { "operationId": "stage-text-variant", "resultProfile": "owned-text-variant-v1", "operatorConfirmation": "registry-v1" },
+    "comp-render": { "operationId": "render-text-variant", "resultProfile": "owned-comp-render-v1", "operatorConfirmation": "registry-v1" },
+    "project-assembly": { "operationId": "assemble-composition", "resultProfile": "owned-project-assembly-v1", "operatorConfirmation": "registry-v1" },
+    "project-save": { "operationId": "save-current-project", "resultProfile": "current-project-save-v1", "operatorConfirmation": "registry-v1" },
+    "project-lifecycle": { "operationId": "transition-project", "resultProfile": "project-lifecycle-v1", "operatorConfirmation": "registry-v1" },
+    "media-import": { "operationId": "ingest-footage", "resultProfile": "media-import-v1", "operatorConfirmation": "registry-v1" },
+    "layer-insert": { "operationId": "insert-footage-layer", "resultProfile": "layer-insert-v1", "operatorConfirmation": "registry-v1" }
+  },
+  "bundle": { "files": [], "artifactClosures": [] }
+}

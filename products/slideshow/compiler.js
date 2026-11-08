@@ -10,6 +10,7 @@ const PHOTO = { moduleId: 'photo-placeholder', operationId: 'replace-source',
 const OPERATOR_PHOTO = { ...PHOTO, modulePin: 'af7a9f92fc21e32321544ed21d139cb5af0415d249c9d8f3cee389b585aca655' };
 const RENDER = { moduleId: 'comp-render', operationId: 'render-text-variant',
   modulePin: '996e6bb4ad89f4bb49eeca143ad788f0e224a04caf0ecb06183083eb84b9105b' };
+const START_RENDER = { ...RENDER, modulePin: 'a275ad0a088adef49171e34f8dd52a9e7b7fc7f7ef523d80c66ed6fdce3b6e2f' };
 const digest = /^[a-f0-9]{64}$/;
 const ref = /^evidence-[a-f0-9-]{36}$/;
 function requireCondition(ok, code) {
@@ -104,10 +105,10 @@ function checkTimeline(job, master) {
   }
   return { width, height, frame, leaves: indices.map(index => layers[index].leaf) };
 }
-function inspect(job, evidence, planned, photoModule) {
+function inspect(job, evidence, planned, photoModule, renderModule) {
   const { project } = job;
   const masterTarget = { projectId: project.file, compId: project.masterCompId };
-  const master = observation(evidence.master, RENDER, masterTarget);
+  const master = observation(evidence.master, renderModule, masterTarget);
   const geometry = checkTimeline(job, master);
   requireCondition(Array.isArray(evidence.slots) && evidence.slots.length === 2, 'slideshow_slot_evidence');
   const tasks = evidence.tasks ?? [];
@@ -143,11 +144,16 @@ function inspect(job, evidence, planned, photoModule) {
 function photoModule(response) {
   return response?.modulePin === OPERATOR_PHOTO.modulePin ? OPERATOR_PHOTO : PHOTO;
 }
+function renderModule(response) {
+  return response?.modulePin === START_RENDER.modulePin ? START_RENDER : RENDER;
+}
 function prepareBuild(job, evidence) {
   const planned = compile(job);
   const module = photoModule(evidence.photoContract);
   const contractId = contract(evidence.photoContract, module);
-  const { photos } = inspect(job, evidence, planned, module);
+  const render = renderModule(evidence.renderContract);
+  if (render === START_RENDER) contract(evidence.renderContract, render);
+  const { photos } = inspect(job, evidence, planned, module, render);
   const steps = planned.slots.map((slot, i) => ({
     stepId: slot.id, moduleId: module.moduleId, contractId, evidenceRef: evidence.slots[i].evidenceRef,
     input: { ...photos[i].target, newSourceId: slot.photo.sourceId }
@@ -164,15 +170,17 @@ function prepareRender(job, evidence, mode) {
   const planned = compile(job);
   const module = photoModule(evidence.photoContract);
   contract(evidence.photoContract, module);
-  const { masterTarget, master, photos } = inspect(job, evidence, planned, module);
+  const render = renderModule(evidence.renderContract);
+  const contractId = contract(evidence.renderContract, render);
+  const { masterTarget, master, photos } = inspect(job, evidence, planned, module, render);
   requireCondition(photos.every(photo => photo.done), 'slideshow_photos_incomplete');
   requireCondition(mode === 'stage' ? master.queueIdle && !master.job :
+    mode === 'start' ? render === START_RENDER && master.job?.status === 'QUEUED' && !master.job.rendering && master.job.bytes === 0 :
     mode === 'finalize' && master.job?.status === 'DONE' && !master.job.rendering, 'slideshow_render_state');
-  const contractId = contract(evidence.renderContract, RENDER);
   return { oneStep: true, recordContext: planned.recordContext, steps: [{
-    stepId: 'render-' + mode, moduleId: RENDER.moduleId, contractId, evidenceRef: evidence.master.evidenceRef,
+    stepId: 'render-' + mode, moduleId: render.moduleId, contractId, evidenceRef: evidence.master.evidenceRef,
     input: { ...masterTarget, ...job.output, mode, activeLayerId: 0, controlledLayerIds: [],
-      startFrame: 0, frameCount: planned.frameCount, ...(mode === 'finalize' ? { jobCompId: master.job.jobCompId } : {}) }
+      startFrame: 0, frameCount: planned.frameCount, ...(mode !== 'stage' ? { jobCompId: master.job.jobCompId } : {}) }
   }] };
 }
-module.exports = { compile, prepareBuild, prepareRender, PHOTO, OPERATOR_PHOTO, RENDER };
+module.exports = { compile, prepareBuild, prepareRender, PHOTO, OPERATOR_PHOTO, RENDER, START_RENDER };

@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
-const { compile, prepareBuild, prepareRender, PHOTO, OPERATOR_PHOTO, RENDER } = require('../compiler');
+const { compile, prepareBuild, prepareRender, PHOTO, OPERATOR_PHOTO, RENDER, START_RENDER } = require('../compiler');
 const { verifyFiles } = require('../cli');
 
 const job = {
@@ -19,7 +19,7 @@ const job = {
   purpose: 'technical_check'
 };
 
-function evidence(completed = 0, photo = PHOTO) {
+function evidence(completed = 0, photo = PHOTO, render = RENDER) {
   const frame = 1 / 30;
   const observation = (module, snapshot) => ({ modulePin: module.modulePin, evidenceRef: 'evidence-' + '1'.repeat(36),
     synthetic: false, snapshot: { revision: 'fresh', ...snapshot } });
@@ -30,7 +30,7 @@ function evidence(completed = 0, photo = PHOTO) {
     opacity: index ? 100 : null, keys: index ? [] : [[1, 100, true, true], [2, 0, true, true]],
     leaf: [{ sourceId: index < completed ? job.photos[index].sourceId : slot.placeholderSourceId,
       enabled: true, opacity: 100, keys: [] }] }));
-  const master = observation(RENDER, { target: { projectId: job.project.file, compId: 10 }, duration: 3, frameDuration: frame,
+  const master = observation(render, { target: { projectId: job.project.file, compId: 10 }, duration: 3, frameDuration: frame,
     protected: JSON.stringify(['Master', 'AE_CORE4_COMP_WORKSPACE_V1', 960, 600, 3, frame, 0, [], timeline]),
     queueIdle: true });
   const slots = job.slots.map((slot, index) => observation(photo, { target: { sessionId: job.project.sessionId,
@@ -38,7 +38,7 @@ function evidence(completed = 0, photo = PHOTO) {
     protected: JSON.stringify({ enabled: true, stretch: 100, threeDLayer: false, startTime: 0, inPoint: 0, outPoint: 2,
       comp: ['Slot', 960, 600], layers: [[slot.layerId]] }),
     sourceId: timeline[index].leaf[0].sourceId, source: { file: job.photos[index].file } }));
-  const result = { photoContract: contract(photo), renderContract: contract(RENDER), master, slots };
+  const result = { photoContract: contract(photo), renderContract: contract(render), master, slots };
   if (completed) {
     result.tasks = [{ taskId: 'task-' + '2'.repeat(36), reset: false, commands: slots.slice(0, completed).map((slot, i) => ({
       workflowId: compile(job).workflowId, stepId: 'photo-' + (i + 1), state: 'succeeded',
@@ -104,6 +104,21 @@ test('renderer requires both original successes and the verified queue state', (
   assert.throws(() => prepareRender(job, completed, 'stage'), /slideshow_render_state/);
   completed.master.snapshot.job = { status: 'DONE', rendering: false, jobCompId: 35 };
   assert.equal(prepareRender(job, completed, 'finalize').steps[0].input.jobCompId, 35);
+});
+
+test('renderer compiles typed start only for the admitted render pin and an untouched queue row', () => {
+  const queued = { status: 'QUEUED', rendering: false, jobCompId: 35, bytes: 0 };
+  const completed = evidence(2, OPERATOR_PHOTO, START_RENDER);
+  completed.master.snapshot.job = queued;
+  const step = prepareRender(job, completed, 'start').steps[0];
+  assert.equal(step.input.jobCompId, 35);
+  assert.equal(step.input.mode, 'start');
+  const old = evidence(2, OPERATOR_PHOTO, RENDER);
+  old.master.snapshot.job = queued;
+  assert.throws(() => prepareRender(job, old, 'start'), /slideshow_render_state/);
+  completed.master.snapshot.job = { ...queued, bytes: 10 };
+  assert.throws(() => prepareRender(job, completed, 'start'), /slideshow_render_state/);
+  assert.throws(() => prepareBuild(job, evidence(0, OPERATOR_PHOTO, { ...START_RENDER, modulePin: 'a'.repeat(64) })), /slideshow_observation/);
 });
 
 test('wrong master transition and replacing an unowned slot are refused', () => {

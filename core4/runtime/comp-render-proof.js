@@ -34,6 +34,13 @@ function validateRenderResult({ input, before }, after, { file, format }) {
         [...parameters, 'activeLayerId', 'controlledLayerIds', 'fileName'].some(field => canonical(job[field]) !== canonical(input[field]))) fail('comp_render_stage_result');
     return;
   }
+  if (input.mode === 'start') {
+    if (render || !previous || previous.jobCompId !== input.jobCompId || previous.file !== file ||
+        previous.status !== 'QUEUED' || previous.bytes !== 0 || previous.rendering ||
+        !job || job.status !== 'DONE' || job.bytes < 1 ||
+        canonical(job) !== canonical({ ...previous, status: 'DONE', bytes: job.bytes })) fail('comp_render_start_result');
+    return;
+  }
   if (job || !previous || previous.jobCompId !== input.jobCompId || previous.file !== file || previous.rendering) fail('comp_render_result');
   if (input.mode === 'discard') {
     if (render || previous.status === 'DONE') fail('comp_render_result');
@@ -51,7 +58,7 @@ function createRenderProof({ directory, format }) {
       beforeReservation({ input, before }) {
         const file = output(input, directory);
         plainOutputDirectory(file);
-        if (input.mode === 'stage' && fs.lstatSync(file, { throwIfNoEntry: false })) fail('comp_render_output_exists');
+        if ((input.mode === 'stage' || input.mode === 'start') && fs.lstatSync(file, { throwIfNoEntry: false })) fail('comp_render_output_exists');
         if (input.mode === 'finalize') plainMedia(file, before.job.bytes);
       },
     },
@@ -60,6 +67,7 @@ function createRenderProof({ directory, format }) {
       validateRenderResult(ctx, after, { file, format });
       plainOutputDirectory(file);
       if (ctx.input.mode === 'stage' && fs.lstatSync(file, { throwIfNoEntry: false })) fail('comp_render_stage_result');
+      if (ctx.input.mode === 'start') plainMedia(file, after.job.bytes);
       if (ctx.input.mode === 'finalize') plainMedia(file, after.render.bytes);
     },
   };

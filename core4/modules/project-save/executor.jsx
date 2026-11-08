@@ -38,7 +38,7 @@
             finally { if (checkpointOpen) checkpoint.close(); }
         }
     }
-    function apply(p) {
+    function apply(p, confirmAction) {
         var started = false;
         try {
             var before = snapshot(p), proof = p._execution;
@@ -50,7 +50,7 @@
             if (key(checkpoint.fsName) !== file || !checkpoint.exists) fault('save_checkpoint_unavailable');
             var message = 'Сохранить текущий проект After Effects?\nПроект: ' + p.projectId +
                 '\nРезервная копия версии с диска: ' + checkpoint.fsName;
-            if (confirm(message, true, 'AE Agent Core — сохранение проекта') !== true) fault('local_cancelled');
+            if ((confirmAction || confirm)(message, true, 'AE Agent Core — сохранение проекта') !== true) fault('local_cancelled');
             var project = current(p);
             checkBytes(project.file, checkpoint, before.fileStamp.bytes);
             if (JSON.stringify(snapshot(p)) !== JSON.stringify(before)) fault('stale_target');

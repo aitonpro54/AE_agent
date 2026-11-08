@@ -225,7 +225,7 @@
             throw e;
         }
     }
-    function mutate(p) {
+    function mutate(p, confirmAction) {
         var started = false;
         try {
             var before = inspect(p), state = preflight(p, before), after, proof = p._execution;
@@ -233,7 +233,7 @@
                 (p.derive.preserveAdvanced3D === true ? ', сохранить текст и Advanced 3D шаблона' : ', текст из слоя ' + p.derive.layoutLayerId) +
                 (p.derive.markerSourceLayerId ? ', маркер IN из слоя ' + p.derive.markerSourceLayerId : '') +
                 (p.derive.holdTime !== undefined ? ', выровнять удержание на ' + p.derive.holdTime + ' с' : '') : 'Показать слой ' + p.activeLayerId;
-            if (confirm(detail + '?\nПроект: ' + p.projectId + '\ncompId: ' + p.compId +
+            if ((confirmAction || confirm)(detail + '?\nПроект: ' + p.projectId + '\ncompId: ' + p.compId +
                 '\nУправляемая видимость слоёв: ' + p.controlledLayerIds.join(', '), true, 'AE Agent Core4 — вариант текста') !== true) {
                 return { outcome: 'rejected', code: 'local_cancelled' };
             }

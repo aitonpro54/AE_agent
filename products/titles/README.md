@@ -189,6 +189,7 @@ node products/titles/cli.js prepare-release --job release.json --selection phase
 | --- | --- | --- |
 | Создать оформленный вариант | `text-variant` | `{"phase":"derive"}` |
 | Подготовить единственное задание | `comp-render` | `{"phase":"stage","variantLayerId":123}` |
+| Запустить проверенное задание | `comp-render` | `{"phase":"start","variantLayerId":123,"jobCompId":456}` |
 | Принять `DONE` и очистить очередь | `comp-render` | `{"phase":"finalize","variantLayerId":123,"jobCompId":456}` |
 | Снять незавершённое задание | `comp-render` | `{"phase":"discard","variantLayerId":123,"jobCompId":456}` |
 

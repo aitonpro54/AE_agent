@@ -1,12 +1,12 @@
 {
   "moduleId": "project-assembly",
   "operationId": "assemble-composition",
-  "artifactHash": "dbf65579104deeb136113e9447fc2514415ab2d390ef1605a6fe359fadc4e012",
+  "artifactHash": "84fb1d3979f416e4d33b5bad4f1e14701a1e5b5eede2388376b8ff06dd3136a2",
   "schemaHash": "360d742455d616f7b77d3b8943eee4a565fe832fd146edf15e3e4cc9223103c2",
   "resultSchemaHash": "2c1653b9e1fc66c69c3cb2fe3c9a43b60c3cd933cec409e90ed965d23c973629",
   "effectPolicyHash": "0661f1eead923fb5fe196906535c84179f4d28855ab39f30c541da9215e5131e",
-  "executorHash": "6911f891263ed67bd042cf1bbd8d7ef625d7d2e33fe28ffe50d9bdadc6431373",
+  "executorHash": "06dd0d7f8b1ea965302807833b58a333eeefa9a639bf412f61a27f268654b338",
   "protocolVersion": 1,
-  "trustApprovalId": "source-review-project-assembly-20261107",
+  "trustApprovalId": "source-review-project-assembly-operator-workflows-20261108",
   "revoked": false
 }

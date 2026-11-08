@@ -20,6 +20,7 @@ function build({ input, evidence }) {
   } else {
     const job = evidence.job;
     if (!matchesJob(input, job) || job.jobCompId !== input.jobCompId || job.rendering ||
+        input.mode === 'start' && (job.status !== 'QUEUED' || job.bytes !== 0) ||
         input.mode === 'finalize' && (job.status !== 'DONE' || job.bytes < 1) ||
         input.mode === 'discard' && job.status === 'DONE') throw new Error('comp_render_job');
   }

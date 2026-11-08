@@ -1,12 +1,12 @@
 {
   "moduleId": "text-variant",
   "operationId": "stage-text-variant",
-  "artifactHash": "fc264be0719a3181f9dd26e4a464e22cddfa304580884c701afb22f2e357a07a",
+  "artifactHash": "06f02cabe4ece1e9b3840f32d51da4ef70df27138093c8fc443f909103f755fe",
   "schemaHash": "9120c66ded4cf1f93837d89893260b7fe23b42f5708acf84602861343e6ca5e0",
   "resultSchemaHash": "f239f27f77482a65c02a2a5908a6e2a0bbdf4f14c4755bb9ba4b4a3abc3ba4df",
   "effectPolicyHash": "ce03d6a4d1f35a27bb1a2464f66a23cfbd330550901a550ebc6207189320e66e",
-  "executorHash": "a1a2d01a366987734db2e081167dccb5b00f18ae6296a41412b6b9055c7ae772",
+  "executorHash": "96cf6de5220861e995146f2c468b91f8662bd777c8f7cdb98f740402893ef423",
   "protocolVersion": 1,
-  "trustApprovalId": "source-review-text-variant-20261105",
+  "trustApprovalId": "source-review-text-variant-operator-workflows-20261108",
   "revoked": false
 }

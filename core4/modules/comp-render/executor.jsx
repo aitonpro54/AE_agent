@@ -87,7 +87,10 @@
     function observe(p) {
         var comp = compFor(p), q = app.project.renderQueue, queue = [], list = [], i, item, layer, owned, job;
         if (q.numItems > 64) fault('comp_render_queue_budget');
-        var idle = !q.rendering;
+        var projectRevision = app.project.revision;
+        if (typeof projectRevision !== 'number' || !isFinite(projectRevision) ||
+            projectRevision < 0 || Math.floor(projectRevision) !== projectRevision) fault('comp_render_project_revision');
+        var idle = !q.rendering, foreignQueued = false;
         for (i = 1; i <= q.numItems; i++) {
             item = q.item(i);
             if (item.render) idle = false;
@@ -101,6 +104,7 @@
                     continue;
                 }
             }
+            if (item.render || item.status === RQItemStatus.QUEUED) foreignQueued = true;
             queue.push([item.comp.id, item.render, Number(item.status)]);
         }
         for (i = 1; i <= comp.numLayers; i++) {
@@ -112,11 +116,11 @@
         var state = [comp.name, comp.comment, comp.width, comp.height, comp.duration, comp.frameDuration, comp.time, queue];
         if (comp.comment === COMPOSITION_WORKSPACE) state.push(timeline(comp, true));
         var preserved = JSON.stringify(state);
-        var snapshot = { target: target, revision: JSON.stringify([target, preserved, list, idle, job || null]), 'protected': preserved,
+        var snapshot = { target: target, revision: JSON.stringify([target, preserved, list, idle, job || null, projectRevision]), 'protected': preserved,
             duration: comp.duration, frameDuration: comp.frameDuration, queueIdle: idle, layers: list };
         if (comp.comment === COMPOSITION_WORKSPACE && (preserved.length > 20000 || snapshot.revision.length > 24000)) fault('comp_render_snapshot_budget');
         if (job) snapshot.job = job;
-        return { snapshot: snapshot, owned: owned };
+        return { snapshot: snapshot, owned: owned, foreignQueued: foreignQueued };
     }
     function inspect(p) { return observe(p).snapshot; }
     function dependencyGraph(root, p) {
@@ -158,7 +162,13 @@
         if (p.mode !== 'stage') {
             var job = before.job;
             if (!job || job.jobCompId !== p.jobCompId || !same(JSON.parse(observation.owned.comp.comment.slice(TAG.length)).slice(0, 8), identity(p)) ||
-                job.rendering || (p.mode === 'finalize' ? job.status !== 'DONE' || job.bytes < 1 : p.mode !== 'discard' || job.status === 'DONE')) fault('comp_render_job');
+                job.rendering) fault('comp_render_job');
+            if (p.mode === 'start') {
+                if (app.project.renderQueue.rendering !== false || observation.foreignQueued ||
+                    observation.owned.render !== true || job.status !== 'QUEUED') fault('comp_render_queue_busy');
+                if (file.exists) fault('comp_render_output_exists');
+                dependencyGraph(comp, p);
+            } else if (p.mode === 'finalize' ? job.status !== 'DONE' || job.bytes < 1 : p.mode !== 'discard' || job.status === 'DONE') fault('comp_render_job');
             return { comp: comp, file: file };
         }
         if (!before.queueIdle || before.job || p.jobCompId !== undefined) fault('comp_render_queue_busy');
@@ -206,7 +216,7 @@
         // AE throws Item Not Found from itemByID after successful removal.
         if (project.numItems !== previousCount - 1) fault('comp_render_restore');
     }
-    function mutate(p) {
+    function mutate(p, confirmAction) {
         var before, context, observation, owned = {}, started = false;
         try {
             observation = observe(p);
@@ -214,9 +224,10 @@
             context = preflight(p, observation);
             var action = 'Снять незавершённое задание и удалить его копию';
             if (p.mode === 'stage') action = 'Подготовить единственное задание в очереди AE';
+            if (p.mode === 'start') action = 'Запустить единственное задание в очереди AE';
             if (p.mode === 'finalize') action = 'Подтвердить DONE и удалить временное задание и копию';
             var scope = p.activeLayerId === 0 ? 'Вся композиция' : 'Слой ' + p.activeLayerId;
-            if (confirm(action + '\n' + scope + ', compId ' + p.compId + '\n' + p.projectId +
+            if ((confirmAction || confirm)(action + '\n' + scope + ', compId ' + p.compId + '\n' + p.projectId +
                 '\nКадры: ' + p.startFrame + ' + ' + p.frameCount + '\n' + p.renderTemplate + ' / ' + p.outputTemplate +
                 '\n' + context.file.fsName, true, 'AE Agent Core4 — очередь AE') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
             observation = observe(p);
@@ -227,6 +238,11 @@
                 if (p.mode === 'stage') {
                     started = true;
                     stage(p, context, owned);
+                } else if (p.mode === 'start') {
+                    started = true;
+                    // AE renders the enabled queue. The fresh preflight above
+                    // proved that this is the sole enabled item.
+                    app.project.renderQueue.render();
                 } else {
                     var copy = observation.owned.comp;
                     started = true;
@@ -234,8 +250,11 @@
                     removeCopy(copy);
                 }
                 after = inspect(p);
-                if (after['protected'] !== before['protected'] || !same(after.layers, before.layers) ||
-                    (p.mode === 'stage' ? !after.job || after.job.status !== 'QUEUED' || after.job.bytes !== 0 : !!after.job)) fault('comp_render_restore');
+                if (after['protected'] !== before['protected'] || !same(after.layers, before.layers)) fault('comp_render_restore');
+                if (p.mode === 'stage' && (!after.job || after.job.status !== 'QUEUED' || after.job.bytes !== 0)) fault('comp_render_restore');
+                if (p.mode === 'start' && (!after.job || after.job.jobCompId !== p.jobCompId || after.job.rendering ||
+                    after.job.status !== 'DONE' || after.job.bytes < 1)) fault('comp_render_incomplete');
+                if ((p.mode === 'finalize' || p.mode === 'discard') && after.job) fault('comp_render_restore');
             } catch (e) {
                 if (owned.item) owned.item.remove();
                 if (owned.copy) {

@@ -182,13 +182,13 @@
         if (after.text !== p.text || after['protected'] !== before['protected']) fault('layout_apply_readback');
         return after;
     }
-    function mutate(p) {
+    function mutate(p, confirmAction) {
         var started = false;
         try {
             var before = inspect(p);
             preflight(p, before);
             var description = p.mode === 'measure' ? 'Измерить ' + p.candidates.length + ' вариантов на скрытом слое и восстановить исходник?' : 'Применить вёрстку к видимому слою?\nТекст: ' + JSON.stringify(p.text) + '\nМасштаб: ' + (100 * p.scale) + '%\nПоложение: ' + JSON.stringify(p.position);
-            if (confirm(description + '\nПроект: ' + p.projectId + '\ncompId: ' + p.compId + '\nlayerId: ' + p.layerId, true, 'AE Agent Core4 — вёрстка титра') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
+            if ((confirmAction || confirm)(description + '\nПроект: ' + p.projectId + '\ncompId: ' + p.compId + '\nlayerId: ' + p.layerId, true, 'AE Agent Core4 — вёрстка титра') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
             before = inspect(p);
             preflight(p, before);
             var t = target(p), after;

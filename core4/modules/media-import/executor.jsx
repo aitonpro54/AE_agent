@@ -40,7 +40,7 @@
         }
         if (before.items.length >= 512 || before.revision.length > 31700) fault('inspection_result_budget');
     }
-    function mutate(p) {
+    function mutate(p, confirmAction) {
         var started = false;
         try {
             var current = capture(p), before = current.snapshot, proof = p._execution;
@@ -51,7 +51,7 @@
                 proof.target.file !== p.file) fault('manual_approval_binding');
             var message = 'Импортировать один файл как футаж?\nПроект: ' + p.projectId +
                 '\nФайл: ' + p.file + '\nSHA-256: ' + p.sha256;
-            if (confirm(message, true, 'AE Agent Core — импорт футажа') !== true) fault('local_cancelled');
+            if ((confirmAction || confirm)(message, true, 'AE Agent Core — импорт футажа') !== true) fault('local_cancelled');
             current = capture(p);
             validate(p, current.snapshot);
             var options = new ImportOptions(current.file);

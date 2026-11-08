@@ -126,7 +126,7 @@
             p.outFrame * frame > before.duration + 0.00002 ||
             (before.source.kind !== 'still' && (p.outFrame - p.startFrame) * frame > before.source.duration + 0.00002)) fault('layer_insert_frame_range');
     }
-    function mutate(p) {
+    function mutate(p, confirmAction) {
         var started = false;
         try {
             var current = capture(p), before = current.snapshot, proof = p._execution;
@@ -150,7 +150,7 @@
                 '\nВхождения comp/layer → source: ' + (usages.length ? usages.join(', ') : 'нет');
             if (p.position) message += '\nПозиция XY: ' + p.position.join(', ');
             if (p.scale) message += '\nМасштаб XY: ' + p.scale.join(', ');
-            if (confirm(message, true, 'AE Agent Core — вставка футажа') !== true) fault('local_cancelled');
+            if ((confirmAction || confirm)(message, true, 'AE Agent Core — вставка футажа') !== true) fault('local_cancelled');
             current = capture(p);
             validate(p, current);
             var frame = before.frameDuration;

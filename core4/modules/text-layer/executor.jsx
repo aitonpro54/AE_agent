@@ -243,7 +243,7 @@
             throw e;
         }
     }
-    function mutate(p) {
+    function mutate(p, confirmAction) {
         var started = false;
         try {
             var before = inspect(p), fonts = prepare(p, before);
@@ -251,7 +251,7 @@
             var description = operation + ' «' + p.name + '»?\n' + p.text + '\ncompId: ' + p.compId +
                 '\n' + p.projectId + '\nВыравнивание: ' + p.justification + ', интерлиньяж: ' + p.leading +
                 '\nДиапазоны: ' + JSON.stringify(p.ranges) + (p.placement ? '\nРамка: ' + JSON.stringify(p.placement) : '');
-            if (confirm(description, true, 'AE Agent Core4 — текстовый слой') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
+            if ((confirmAction || confirm)(description, true, 'AE Agent Core4 — текстовый слой') !== true) return { outcome: 'rejected', code: 'local_cancelled' };
             before = inspect(p);
             fonts = prepare(p, before);
             var after, proof = p._execution;

@@ -29,6 +29,16 @@ test('release compiler binds cleanup to the observed job and rejects a stale con
   assert.throws(() => prepareRelease(job, selected, variant, current), /release_contract/);
 });
 
+test('release compiler starts only a queued job on a Core contract that supports start', () => {
+  const selected = { phase: 'start', variantLayerId: 4594, jobCompId: 6000 };
+  const current = { ...inspection, snapshot: { ...inspection.snapshot, job: { jobCompId: 6000, status: 'QUEUED', bytes: 0, rendering: false } } };
+  const supported = { ...render, contract: { buildSchema: { properties: { mode: { enum: ['stage', 'start', 'finalize'] } } } } };
+  assert.equal(prepareRelease(job, selected, supported, current).steps[0].input.mode, 'start');
+  assert.throws(() => prepareRelease(job, selected, render, current), /release_contract/);
+  current.snapshot.job.bytes = 1;
+  assert.throws(() => prepareRelease(job, selected, supported, current), /release_target/);
+});
+
 test('release compiler prepares an exact Advanced 3D copy without projecting it into the 2D layout', () => {
   const templateLayerId = job.controlledLayerIds[0];
   const request = { ...job, variant: { templateLayerId, slot: 'native-3d', name: '3D copy', preserveAdvanced3D: true } };
