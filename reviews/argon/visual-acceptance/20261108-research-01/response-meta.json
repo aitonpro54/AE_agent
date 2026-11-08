@@ -17,10 +17,10 @@
     "generationActiveAtSubmission": true
   },
   "counts": {
-    "uploadInvocations": 1,
-    "filesSelected": 2,
-    "sendInvocations": 1,
-    "retries": 0
+    "uploadInvocations": 2,
+    "filesSelected": 4,
+    "sendInvocations": 2,
+    "retries": 1
   },
   "effort": {
     "profileName": "Ваш Chrome",
@@ -60,10 +60,132 @@
       "query": "20261108-research-01",
       "visibleResult": "Ничего не найдено.",
       "conclusion": "Видимая история не подтвердила сохранение запроса. Серверный исход остаётся неизвестным."
+    },
+    {
+      "recordedAt": "2026-11-08T08:51:37.173Z",
+      "stage": "new-user-authorized-check",
+      "sourceUserMessageId": "01a1ba58-a3da-7da3-b46c-70d521b6c139",
+      "queries": [
+        "20261108-research-01",
+        "визуальн"
+      ],
+      "result": "Ничего не найдено по обоим запросам"
+    },
+    {
+      "recordedAt": "2026-11-08T08:56:57.6503268Z",
+      "stage": "retry-read-only-reconciliation",
+      "attempt": 2,
+      "query": "20261108-research-01",
+      "visibleResult": "Ничего не найдено.",
+      "conclusion": "После повторной отправки редактор пуст, постоянная ссылка и завершённый ответ не обнаружены. Серверный исход неизвестен."
     }
   ],
   "binding": null,
   "responseFileCreated": false,
-  "blocker": "После видимого начала генерации Gemini вернулся к пустому редактору. Постоянная ссылка и сохранённый ответ не обнаружены.",
-  "retrievalStoppedAt": "2026-11-08T08:40:04.7157615Z"
+  "blocker": "Обе попытки вернулись к пустому редактору после видимого начала генерации. История Gemini не нашла беседу по ID.",
+  "retrievalStoppedAt": "2026-11-08T08:56:57.6503268Z",
+  "retryReceipt": {
+    "url": "https://gemini.google.com/app",
+    "reviewIdVisible": true,
+    "attachments": [
+      "bundle.md",
+      "manifest.json"
+    ],
+    "generationActiveAtSubmission": true
+  },
+  "retryOutcome": "unknown",
+  "initialAttempt": {
+    "attempt": 1,
+    "status": "submission-unknown",
+    "counts": {
+      "uploadInvocations": 1,
+      "filesSelected": 2,
+      "sendInvocations": 1,
+      "retries": 0
+    },
+    "receipt": {
+      "url": "https://gemini.google.com/app",
+      "reviewIdVisible": true,
+      "attachments": [
+        "bundle.md",
+        "manifest.json"
+      ],
+      "generationActiveAtSubmission": true
+    },
+    "sendInvokedAt": "2026-11-08T08:34:53.089Z",
+    "confirmedAt": "2026-11-08T08:35:06.607Z",
+    "retrievalHistory": [
+      {
+        "recordedAt": "2026-11-08T08:38:48.518Z",
+        "stage": "response-read",
+        "event": "После видимого подтверждения отправки и активной генерации страница вернулась к пустому редактору /app. Вкладка больше не показывает сообщение, вложения, ответ или Stop. Постоянный URL не наблюдался.",
+        "evidence": "submission-disappeared-evidence.jpg",
+        "sendRepeated": false
+      },
+      {
+        "recordedAt": "2026-11-08T08:40:04.7157615Z",
+        "stage": "read-only-reconciliation",
+        "method": "Штатный поиск по чатам Gemini",
+        "query": "20261108-research-01",
+        "visibleResult": "Ничего не найдено.",
+        "conclusion": "Видимая история не подтвердила сохранение запроса. Серверный исход остаётся неизвестным."
+      }
+    ],
+    "evidence": "submission-evidence.jpg"
+  },
+  "retryAttempt": {
+    "attempt": 2,
+    "status": "submission-unknown",
+    "approval": "retry-approval.json",
+    "readiness": {
+      "profileName": "Ваш Chrome",
+      "account": "Aiton Pro (aitonpro54@gmail.com)",
+      "mode": "4 Argon",
+      "effort": "Высокий — Глубокий",
+      "effortOptions": [
+        "Низкий",
+        "Средний",
+        "Высокий"
+      ],
+      "maximumAvailable": true,
+      "conversation": "пустой обычный чат",
+      "observedAt": "2026-11-08T08:51:37.173Z",
+      "evidence": "retry-02-readiness-evidence.jpg"
+    },
+    "counts": {
+      "uploadInvocations": 1,
+      "filesSelected": 2,
+      "sendInvocations": 1
+    },
+    "uploadInvokedAt": "2026-11-08T08:52:00.206Z",
+    "promptVerifiedAt": "2026-11-08T08:52:18.333Z",
+    "sendInvokedAt": "2026-11-08T08:52:18.333Z",
+    "confirmedAt": "2026-11-08T08:52:30.363Z",
+    "receipt": {
+      "url": "https://gemini.google.com/app",
+      "reviewIdVisible": true,
+      "attachments": [
+        "bundle.md",
+        "manifest.json"
+      ],
+      "generationActiveAtSubmission": true
+    },
+    "responseOutcome": "unknown",
+    "retrievalHistory": [
+      {
+        "recordedAt": "2026-11-08T08:56:02.576Z",
+        "event": "После видимого начала генерации чат вернулся к пустому редактору. Постоянный URL не появлялся.",
+        "evidence": "retry-02-disappeared-evidence.jpg"
+      },
+      {
+        "recordedAt": "2026-11-08T08:56:57.6503268Z",
+        "stage": "retry-read-only-reconciliation",
+        "attempt": 2,
+        "query": "20261108-research-01",
+        "visibleResult": "Ничего не найдено.",
+        "conclusion": "После повторной отправки редактор пуст, постоянная ссылка и завершённый ответ не обнаружены. Серверный исход неизвестен."
+      }
+    ],
+    "retrievalStoppedAt": "2026-11-08T08:56:57.6503268Z"
+  }
 }

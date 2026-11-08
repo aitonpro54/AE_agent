@@ -1,0 +1,11 @@
+{
+  "schema": "visual-review-authorized-retry-check.v1",
+  "payloadHashesUnchanged": true,
+  "status": "submission-unknown",
+  "newSends": 1,
+  "totalSends": 2,
+  "authorizedRetries": 1,
+  "responsePresent": false,
+  "codeChanges": 0,
+  "thirdSend": false
+}

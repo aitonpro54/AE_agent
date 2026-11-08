@@ -1,0 +1,37 @@
+{
+  "reviewId": "20261108-research-01",
+  "stageId": "visual-acceptance",
+  "type": "plan",
+  "attempt": 2,
+  "createdAt": "2026-11-08T08:51:37.172Z",
+  "sourceThreadId": "01a1ba42-006c-70c0-8801-895b48f08c43",
+  "sourceUserMessageId": "01a1ba58-a3da-7da3-b46c-70d521b6c139",
+  "quote": "проверь еще раз аргон, вроде появился ответ. Если нет, отправь туда повторно",
+  "trustedUserMessageVerified": true,
+  "conditionCheck": {
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "visibleTabs": [
+      "https://gemini.google.com/app/4f9b9c24e0da796f"
+    ],
+    "queries": [
+      "20261108-research-01",
+      "визуальн"
+    ],
+    "result": "Ничего не найдено по обоим запросам",
+    "initialOutcome": "submission-unknown"
+  },
+  "recipient": "Gemini Argon, Aiton Pro",
+  "externalAllowlist": [
+    "bundle.md",
+    "manifest.json"
+  ],
+  "payloadSha256": {
+    "request.md": "49f2032e307a914c07eb069107fce8ef9705d16d76a676ffdbb57dbe1c603467",
+    "bundle.md": "1a99020292278a3ba9e6865f35da187e969a5f5d0d1e310ff145074576f08329",
+    "manifest.json": "01082d9e3907a9fc521c2b85b16451312a68adfdfa28043c565282b7187aed55"
+  },
+  "promptSource": "request.md",
+  "externalPrompt": "# Консультация Argon: минимальное возвращение визуальной приёмки\n\nreview_id: 20261108-research-01\nstage_id: visual-acceptance\ntype: plan\nbase_commit: d5bf682eb2b1470cc7f69b5186b8447c8ec5b768\nlegacy_commit: 5d0d255e6858477d1c19c1010154389425229028\n\nПользователь поручил исследовать visual review legacy AE Agent и Core 4.1.2, сравнить Surehand, Engine Room и JUNKDOGE и посоветоваться с Argon на максимальном доступном в интерфейсе усилии. Это один новый самостоятельный research scope. Нужен аудит и минимальный план, без реализации, рефакторинга, запуска AE или установки внешних MCP.\n\nПрочитай приложенный bundle и manifest. Это ограниченная сводка проверенных исходников и evidence, а не весь репозиторий и не изображения. Не утверждай, что видел кадры или независимо выполнил код. Отделяй VERIFIED по переданным данным, INFERRED и UNKNOWN.\n\nПроверь:\n1. Верно ли различение: legacy имел работающие части visual review; Core имеет render/structural/media verification и разовые визуальные проверки, но не повторяемый общий visual acceptance workflow?\n2. Достаточен ли первый шаг вне Owner: manifest точного готового MP4, явные кадры, PNG, просмотр и отдельный sampled verdict? Что минимально нужно добавить, чтобы не принять чужой, старый, повреждённый или неполный материал?\n3. Когда действительно нужен новый typed frame-export в Core, а когда он только задерживает результат? Какие части legacy можно переиспользовать без его runner/authority/session store?\n4. Какие идеи трёх внешних MCP полезны, а какие избыточны? Учитывай false positives stale-hash, автоматически изменяемый размер A/B и отличие integrity от художественной приёмки.\n5. Какие критерии для Titles и Slideshow должны быть P0, чтобы исправный MP4 с неправильным кадрированием или глифами не прошёл только по метаданным?\n6. Есть ли пропущенная архитектурная причина, из-за которой предложенный маленький workflow не сработает? Предложи самое простое исправление без нового broker, SDK, обязательной модели или полной миграции legacy.\n\nОтвет по-русски: перечисли review_id, stage_id, type, base_commit, legacy_commit, request SHA из manifest; что прочитано/пропущено; verdict go/revise/stop/insufficient-evidence; затем конкретные findings с приоритетом, доказательством/допущением и минимальной рекомендацией. Заверши P0 / P1 / REJECT. Повторное review не запрашивай как обязательный gate. Внешнее мнение не даёт полномочий на изменения.\n\nКлассификация: INTERNAL — сводка собственного проекта; PUBLIC — ссылки на открытые внешние исходники. В пакет не включены пользовательские медиа/AEP/PNG, содержимое runtime/session logs, credentials, cookies, токены, аккаунты, локальные абсолютные пути и клиентские данные. Пробелы evidence перечислены в bundle явно; это заданная граница консультации.\n",
+  "maximumNewSends": 1,
+  "automaticRetry": false
+}
