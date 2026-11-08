@@ -5,7 +5,7 @@ const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const { hash, exact } = require('../protocol/json');
-const { sameFileSnapshot, verifyCompletePngBuffer, DEFAULT_MAX_PNG_BYTES } = require('../../mcp-server/generated-png-proof');
+const { sameFileSnapshot, inspectPngBuffer, DEFAULT_MAX_PNG_BYTES } = require('./png-proof');
 
 const SCHEMA = 'ae-agent-visual-review.v1';
 const JSON_LIMIT = 256 * 1024;
@@ -123,8 +123,8 @@ function validateSamples(samples) {
 
 function pngInfo(ffmpeg, file, expected) {
   const { buffer, sha256, byteLength } = snapshot(file, DEFAULT_MAX_PNG_BYTES, true);
-  const png = verifyCompletePngBuffer(buffer);
-  check(png.ok, 'invalid_png: ' + file + ' (' + png.reason + ')');
+  const png = inspectPngBuffer(buffer);
+  check(png.complete, 'invalid_png: ' + file + ' (' + png.reason + ')');
   if (expected) check(png.width === expected.width && png.height === expected.height, 'wrong_png_dimensions: ' + file);
   mediaTool(ffmpeg, ['-nostdin', '-v', 'error', '-xerror', '-err_detect', 'crccheck+explode',
     '-f', 'image2pipe', '-c:v', 'png', '-i', 'pipe:0', '-f', 'null', '-'], buffer);

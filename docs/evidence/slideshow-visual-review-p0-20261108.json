@@ -258,5 +258,28 @@
     ],
     "pass": 12
   },
-  "desktop": "not run, no remote project in connected project inventory"
+  "desktop": "not run, no remote project in connected project inventory",
+  "sourceBoundaryRecheck": {
+    "recordedAt": "2026-11-08T10:03:29.7400075Z",
+    "machine": "MSI",
+    "archiveSha256": "7f3b6a5c21b8f307d64fda4b97bae6d69fcea05251568fc5e509180f51406ff6",
+    "sourceClosureSha256": {
+      "core4/tools/visual-review.js": "54ed044a847968299e3cc7e1e4d47381b8999e8ec10f40e54110e6848ac6ed8b",
+      "core4/tools/png-proof.js": "005d61f5e1a3343d7f07e3d7020dc6605c3957be190c2de457307b7489967e88",
+      "core4/protocol/json.js": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78"
+    },
+    "legacyPngSha256": "96107e11c599aec6cb4c89c0513ef20edab0219cfcf115ed8ace84ba548e5639",
+    "manifestSha256": "a280bc0c8ebadc9015fb315847e89200a4300ee36d7c5063974316957c958f19",
+    "reviewSha256": "0cf5632d7f0398dcdc87a5d41b7339855c035a90175de92f072c59b5eff2094a",
+    "matchedPriorManifest": true,
+    "matchedPriorReview": true,
+    "swappedFrameRejected": true,
+    "pngParity": {
+      "valid": 1,
+      "invalid": 4
+    },
+    "scopedCoreTestsPassed": 9,
+    "slideshowTestsPassed": 6,
+    "desktop": "not run, no remote project in connected project inventory"
+  }
 }
