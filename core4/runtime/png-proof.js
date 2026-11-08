@@ -1,6 +1,6 @@
 'use strict';
 
-// Pure checks extracted from the byte-pinned legacy generated-png-proof.js.
+// Shared checks extracted from the byte-pinned legacy generated-png-proof.js.
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
 const DEFAULT_MAX_PNG_BYTES = 64 * 1024 * 1024; // 64 MB cap
 const IHDR_DATA_LENGTH = 13;

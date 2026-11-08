@@ -5,7 +5,7 @@ const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const { hash, exact } = require('../protocol/json');
-const { sameFileSnapshot, inspectPngBuffer, DEFAULT_MAX_PNG_BYTES } = require('./png-proof');
+const { sameFileSnapshot, inspectPngBuffer, DEFAULT_MAX_PNG_BYTES } = require('../runtime/png-proof');
 
 const SCHEMA = 'ae-agent-visual-review.v1';
 const JSON_LIMIT = 256 * 1024;

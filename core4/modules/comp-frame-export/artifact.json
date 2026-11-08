@@ -1,0 +1,11 @@
+{
+  "id": "comp-frame-export",
+  "version": "4.1.2",
+  "entry": "implementation.js",
+  "hashes": {
+    "implementation.js": "0f9fef96718078f4b54a3f6248e1f7a4538bad32935632bf208bf9e855d800eb",
+    "contract.json": "eaa6bef9892f26681be0772412ea9e71eb61dbcdaff55ae28497f1b301f3873b",
+    "executor.jsx": "dc734ced8715c342431500751c788b766d03ee4b739f2527391b5425c1395d99"
+  },
+  "publicDependencies": {}
+}

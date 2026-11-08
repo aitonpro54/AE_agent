@@ -78,7 +78,7 @@ node products/slideshow/cli.js verify-files job.json
 используется системный Arial.
 
 Для отдельного запуска достаточно трёх файлов с сохранением путей
-`core4/tools/visual-review.js`, `core4/tools/png-proof.js` и
+`core4/tools/visual-review.js`, `core4/runtime/png-proof.js` и
 `core4/protocol/json.js`. Пакет можно перенести в другой каталог и запустить
 с установленным Node. Бинарники для `prepare` берутся из локальной среды.
 

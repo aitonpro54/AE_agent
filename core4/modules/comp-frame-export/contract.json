@@ -1,0 +1,81 @@
+{
+  "moduleId": "comp-frame-export",
+  "operationId": "save-comp-frame-png",
+  "protocolVersion": 1,
+  "targetSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+    },
+    "required": ["projectId", "compId"],
+    "additionalProperties": false
+  },
+  "buildSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "frame": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+      "fileName": { "type": "string", "minLength": 5, "maxLength": 95 }
+    },
+    "required": ["projectId", "compId", "frame", "fileName"],
+    "additionalProperties": false
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+      "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+      "frame": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+      "fileName": { "type": "string", "minLength": 5, "maxLength": 95 },
+      "expectedRevision": { "type": "string", "minLength": 1, "maxLength": 24000 }
+    },
+    "required": ["projectId", "compId", "frame", "fileName", "expectedRevision"],
+    "additionalProperties": false
+  },
+  "snapshotSchema": {
+    "type": "object",
+    "properties": {
+      "target": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string", "minLength": 1, "maxLength": 8192 },
+          "compId": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+        },
+        "required": ["projectId", "compId"],
+        "additionalProperties": false
+      },
+      "revision": { "type": "string", "minLength": 1, "maxLength": 24000 },
+      "protected": { "type": "string", "minLength": 1, "maxLength": 20000 },
+      "width": { "type": "integer", "minimum": 1, "maximum": 30000 },
+      "height": { "type": "integer", "minimum": 1, "maximum": 30000 },
+      "duration": { "type": "number", "minimum": 0.001, "maximum": 86400 },
+      "frameDuration": { "type": "number", "minimum": 0.0001, "maximum": 1 },
+      "fullResolution": { "type": "boolean" },
+      "output": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string", "minLength": 1, "maxLength": 8192 },
+          "frame": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+          "bytes": { "type": "integer", "minimum": 1, "maximum": 67108864 }
+        },
+        "required": ["file", "frame", "bytes"],
+        "additionalProperties": false
+      }
+    },
+    "required": ["target", "revision", "protected", "width", "height", "duration", "frameDuration", "fullResolution"],
+    "additionalProperties": false
+  },
+  "effectPolicy": {
+    "effect": "composition-frame-png-export",
+    "targetFields": ["projectId", "compId"],
+    "expectedBindings": { "expectedRevision": "revision" },
+    "resultBindings": {},
+    "preserve": ["protected"],
+    "requiresCheckpoint": true,
+    "confirmation": "native-current-target",
+    "checkpointKind": "composition-frame-preimage-v1"
+  },
+  "executionPolicy": "current-matching-target-after-local-confirmation-v1"
+}

@@ -20,9 +20,9 @@ test('package-location checks real packages and preserves a reproducible path-de
   const result = run(undefined, output, directory), report = result.report;
   await t.test('standard and operator variants, source/foreign cwd, spaces/Unicode and both byte controls', () => {
     assert.equal(result.status, 0); assert.equal(report.ok, true); assert.deepEqual(report.findings, []);
-    assert.match(report.source.commit, /^[a-f0-9]{40}$/); assert.equal(report.cases.length, 96);
-    assert.equal(report.variants.length, 16);
-    for (const composition of ['operator-titles-pilot', 'operator-titles-photo-pilot', 'manual-media-layers', 'operator-workflows']) {
+    assert.match(report.source.commit, /^[a-f0-9]{40}$/); assert.equal(report.cases.length, 102);
+    assert.equal(report.variants.length, 17);
+    for (const composition of ['operator-titles-pilot', 'operator-titles-photo-pilot', 'manual-media-layers', 'operator-workflows', 'operator-frame-export']) {
       assert.deepEqual(report.variants.filter(row => row.composition === composition).map(row => row.runtimeModel), ['owner']);
     }
     for (const variant of report.variants) {

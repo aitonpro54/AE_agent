@@ -27,6 +27,7 @@ const RESULT_PROFILES = Object.freeze({
   'owned-text-layer-v1': 'runtime/text-layer-proof.js',
   'owned-text-variant-v1': 'runtime/text-variant-proof.js',
   'owned-comp-render-v1': 'runtime/comp-render-proof.js',
+  'comp-frame-export-v1': 'runtime/comp-frame-export-proof.js',
 });
 const OPERATOR_EFFECTS = Object.freeze({
   'titles-current-target': 'layer.text',
@@ -35,6 +36,7 @@ const OPERATOR_EFFECTS = Object.freeze({
   'text-layer': 'point-text-document-write',
   'text-variant': 'text-variant-stage',
   'comp-render': 'owned-native-render',
+  'comp-frame-export': 'composition-frame-png-export',
   'project-assembly': 'project-composition-assembly',
   'project-save': 'project-save-in-place',
   'project-lifecycle': 'project-lifecycle-transition',
@@ -90,6 +92,9 @@ function declarativeProfiles(composition, release, json, checked) {
         id === 'project-save' && profile.operationId !== 'save-current-project' ||
         (profile.resultProfile === 'project-lifecycle-v1') !== (id === 'project-lifecycle') ||
         id === 'project-lifecycle' && profile.operationId !== 'transition-project' ||
+        (profile.resultProfile === 'comp-frame-export-v1') !== (id === 'comp-frame-export') ||
+        id === 'comp-frame-export' && (profile.operationId !== 'save-comp-frame-png' || profile.operatorConfirmation !== 'registry-v1' ||
+          !release.hashes['runtime/png-proof.js'] || !release.hashes['runtime/project-save-proof.js']) ||
         Object.hasOwn(profile, 'operatorConfirmation') &&
           (![true, 'registry-v1'].includes(profile.operatorConfirmation) || !release.hashes['runtime/operator-confirmation.js'])) fail('composition_not_admitted');
     const proof = RESULT_PROFILES[profile.resultProfile];
@@ -469,6 +474,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
         case 'owned-text-layer-v1': return { ...binding, validateResult: require('./text-layer-proof.js').validateTextLayerCompletion };
         case 'owned-text-variant-v1': return { ...binding, validateResult: require('./text-variant-proof.js').validateTextVariantCompletion };
         case 'owned-comp-render-v1': return { ...binding, ...require('./comp-render-proof.js').createRenderProof(item.proofConfig) };
+        case 'comp-frame-export-v1': return { ...binding, ...require('./comp-frame-export-proof.js') };
         default: fail('composition_not_admitted');
       }
     };
