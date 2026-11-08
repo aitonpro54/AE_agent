@@ -1,0 +1,295 @@
+{
+  "schema": "ae-agent-titles-current-render-visual-review.v1",
+  "recordedAt": "2026-11-08T11:13:33.853Z",
+  "machine": "MSI",
+  "core": {
+    "version": "AE Agent Core 4.1.2",
+    "packageHash": "9fa26dcbf70430eda667bb763ac1d2c55321018e99802be600d2ff268b163904",
+    "peerOrigin": "file://",
+    "readoption": {
+      "id": "e40c8c76-b77c-4de4-883a-8f49a22ecab9",
+      "phase": "enabled"
+    }
+  },
+  "input": {
+    "copy": {
+      "sha256": "cca3be6ed4dae1a40464d77b5417e978b3dd9904f5956acb07fbb1f2d56aea80",
+      "source": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\operator-titles-msi-20261107\\titles-operator-pilot.aep",
+      "destination": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\titles-current-render-msi-20261108\\titles-review.aep"
+    },
+    "compId": 1,
+    "layerId": 13,
+    "text": "Внутреннее подтверждение",
+    "style": {
+      "character": {
+        "font": "CenturyGothic",
+        "fontSize": 56,
+        "applyFill": true,
+        "fillColor": [
+          1,
+          1,
+          1
+        ],
+        "applyStroke": true,
+        "strokeColor": [
+          0,
+          0,
+          0
+        ],
+        "strokeWidth": 2,
+        "tracking": 0,
+        "baselineShift": 0,
+        "horizontalScale": 1,
+        "verticalScale": 1,
+        "fauxBold": true,
+        "fauxItalic": false
+      },
+      "paragraph": {
+        "justification": 7415,
+        "leading": 56,
+        "autoLeading": false
+      }
+    },
+    "previousProjectSha256": "f9aca469508c46aa69524cd78b4289e48917b0cf594fd83e0e0517c67741d9be"
+  },
+  "native": {
+    "open": {
+      "commandId": "command-decb7b76-4781-40c1-9454-37805307b626",
+      "state": "succeeded",
+      "receiverRecordHash": "c53e3a5fbf046b57a2d4680c30c1ff408ca06851b0b81415f246b8b1d8b4a148"
+    },
+    "stage": {
+      "commandId": "command-7f131863-4684-4ff8-8fa9-b2cc5ed14c56",
+      "state": "succeeded",
+      "receiverRecordHash": "ee9cf3c1a8077c184c38ab40d4eef20e401198932c6bd1dff73396e8371ae7a2"
+    },
+    "done": {
+      "activeLayerId": 13,
+      "bytes": 41785,
+      "controlledLayerIds": [
+        13
+      ],
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\titles-current-render-msi-20261108\\titles-output\\titles-internal-confirmation-msi-20261108.mp4",
+      "fileName": "titles-internal-confirmation-msi-20261108.mp4",
+      "frameCount": 25,
+      "jobCompId": 27,
+      "outputTemplate": "H.264 - Match Render Settings - 15 Mbps",
+      "renderTemplate": "Best Settings",
+      "rendering": false,
+      "startFrame": 0,
+      "status": "DONE"
+    },
+    "finalize": {
+      "commandId": "command-17e993fc-6133-4001-9734-49879b488a28",
+      "state": "succeeded",
+      "receiverRecordHash": "3d1c9d4fe324755b0557d5b72efcdcca9608c4746b6b5380b74412f18044ebdc"
+    },
+    "postFinalize": {
+      "compIds": [
+        1
+      ],
+      "queueRows": 0,
+      "leaseReleased": true,
+      "pending": false,
+      "unresolved": false,
+      "fault": false
+    }
+  },
+  "localPacket": ".codex-runtime/titles-current-render-msi-20261108/packet",
+  "localMovie": ".codex-runtime/titles-current-render-msi-20261108/titles-output/titles-internal-confirmation-msi-20261108.mp4",
+  "reviewSha256": "31b50e2ef87ea8091e2642cfa0bbbf5decb83534510ec41adef95b31ceee30bd",
+  "manifest": {
+    "schema": "ae-agent-visual-review.v1",
+    "scope": "sampled_mp4",
+    "movie": {
+      "sha256": "d3768464cc60368b99b4a1c0de72f4bb00773e5eff9e7e020bc6d47f31d1f67d",
+      "byteLength": 41785
+    },
+    "decoder": {
+      "ffmpeg": {
+        "version": "ffmpeg version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+        "buildInfoSha256": "711056f2bc922237113d5defe7da4dbd97beaab41098e5f8d425753dbfea99ff"
+      },
+      "ffprobe": {
+        "version": "ffprobe version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers",
+        "buildInfoSha256": "c28ec08933e2c9eeac8a7341b1fced84e23745c7ca69e26e7ca83226714ef209"
+      }
+    },
+    "media": {
+      "width": 1280,
+      "height": 720,
+      "fps": "25/1",
+      "timeBase": "1/25000",
+      "frameCount": 25
+    },
+    "frames": [
+      {
+        "expectation": "Одна целая строка «Внутреннее подтверждение», видны первые и последние буквы, левое и правое поля, края букв не обрезаны.",
+        "index": 0,
+        "pts": 0,
+        "file": "frames/frame-00.png",
+        "sha256": "c516221c135249f826d43aa6db1a86f4e57c65cf6c9b9c4d9a6df081a7103d56",
+        "byteLength": 21292,
+        "width": 1280,
+        "height": 720,
+        "roi": {
+          "bounds": {
+            "x": 0,
+            "y": 288,
+            "width": 736,
+            "height": 112
+          },
+          "file": "roi/frame-00.png",
+          "sha256": "0b75c623f6924d3a7dd5b1555e644b853fefc94161b6229113aa6d8b8b47d36e",
+          "byteLength": 16025,
+          "width": 736,
+          "height": 112
+        }
+      },
+      {
+        "expectation": "Одна целая строка «Внутреннее подтверждение», видны первые и последние буквы, левое и правое поля, края букв не обрезаны.",
+        "index": 12,
+        "pts": 12000,
+        "file": "frames/frame-01.png",
+        "sha256": "643369e54b04871a506c054b20c6d98966785dbdf84117d591d5ab8c3b3973f1",
+        "byteLength": 18155,
+        "width": 1280,
+        "height": 720,
+        "roi": {
+          "bounds": {
+            "x": 0,
+            "y": 288,
+            "width": 736,
+            "height": 112
+          },
+          "file": "roi/frame-01.png",
+          "sha256": "489ca3e09d319c833e4ad7b68ac03b6f4207c16fc7c1a796bff5aba4236cbfa5",
+          "byteLength": 13032,
+          "width": 736,
+          "height": 112
+        }
+      },
+      {
+        "expectation": "Одна целая строка «Внутреннее подтверждение», видны первые и последние буквы, левое и правое поля, края букв не обрезаны.",
+        "index": 24,
+        "pts": 24000,
+        "file": "frames/frame-02.png",
+        "sha256": "643369e54b04871a506c054b20c6d98966785dbdf84117d591d5ab8c3b3973f1",
+        "byteLength": 18155,
+        "width": 1280,
+        "height": 720,
+        "roi": {
+          "bounds": {
+            "x": 0,
+            "y": 288,
+            "width": 736,
+            "height": 112
+          },
+          "file": "roi/frame-02.png",
+          "sha256": "489ca3e09d319c833e4ad7b68ac03b6f4207c16fc7c1a796bff5aba4236cbfa5",
+          "byteLength": 13032,
+          "width": 736,
+          "height": 112
+        }
+      }
+    ],
+    "sheet": {
+      "file": "sheet.png",
+      "sha256": "9e84dff5bbb530ba6e55357f55caddc6756a8ad11a65dee891b7b67082fc8e29",
+      "byteLength": 10419,
+      "width": 960,
+      "height": 224
+    },
+    "references": [
+      {
+        "label": "copy.json",
+        "sha256": "0ea13fd24304564b0c3e06dc50ea9794e48ff2e678e18b60beebed48eaa2e3d6",
+        "byteLength": 363,
+        "file": "evidence-0.json"
+      },
+      {
+        "label": "stage-attempt-02.json",
+        "sha256": "2c637dd1854c4a2ccfa33dbe1923bb3dc7c6bd0d71633bb736d73c6ff5cfd0bf",
+        "byteLength": 34961,
+        "file": "evidence-1.json"
+      },
+      {
+        "label": "inspect-attempt-02.json",
+        "sha256": "55d808cbcd81c0ea72d3de12dbd4e7aa452535ddca0fde9659f386648e05dfec",
+        "byteLength": 14836,
+        "file": "evidence-2.json"
+      },
+      {
+        "label": "finalize.json",
+        "sha256": "71920c8fc0f4f259125dc26713333b00dfd60ffaa2359d180eb31c5a116dcaac",
+        "byteLength": 33760,
+        "file": "evidence-3.json"
+      }
+    ]
+  },
+  "observations": {
+    "manifestSha256": "abf571b9bc7d2536e017cb5db832d0772126b251d6b74e8e4374e77e1ee2f259",
+    "reviewer": "Codex на MSI. Просмотр трёх полных кадров и трёх фрагментов в масштабе 1:1.",
+    "frames": [
+      {
+        "index": 0,
+        "sha256": "c516221c135249f826d43aa6db1a86f4e57c65cf6c9b9c4d9a6df081a7103d56",
+        "roiSha256": "0b75c623f6924d3a7dd5b1555e644b853fefc94161b6229113aa6d8b8b47d36e",
+        "decision": "fail",
+        "observation": "Слева строка начинается у самой границы изображения с фрагмента буквы и «ннее». Начало слова «Внутреннее» не помещается. «подтверждение» читается целиком."
+      },
+      {
+        "index": 12,
+        "sha256": "643369e54b04871a506c054b20c6d98966785dbdf84117d591d5ab8c3b3973f1",
+        "roiSha256": "489ca3e09d319c833e4ad7b68ac03b6f4207c16fc7c1a796bff5aba4236cbfa5",
+        "decision": "fail",
+        "observation": "На удержании видна та же обрезка по x=0. У первого слова виден только хвост, второе слово и правое поле сохранены."
+      },
+      {
+        "index": 24,
+        "sha256": "643369e54b04871a506c054b20c6d98966785dbdf84117d591d5ab8c3b3973f1",
+        "roiSha256": "489ca3e09d319c833e4ad7b68ac03b6f4207c16fc7c1a796bff5aba4236cbfa5",
+        "decision": "fail",
+        "observation": "В последнем кадре отрезано начало первого слова по левой границе. Фрагмент совпадает по SHA с кадром 12, повторный просмотр подтвердил ту же видимую строку."
+      }
+    ]
+  },
+  "review": {
+    "schema": "ae-agent-visual-review.v1",
+    "scope": "sampled_mp4",
+    "movie": {
+      "sha256": "d3768464cc60368b99b4a1c0de72f4bb00773e5eff9e7e020bc6d47f31d1f67d",
+      "byteLength": 41785
+    },
+    "manifestSha256": "abf571b9bc7d2536e017cb5db832d0772126b251d6b74e8e4374e77e1ee2f259",
+    "observationsSha256": "5f45d4af2ade01ffcf78671a0d415016d5477adb6d79e0f6be4c0648a9638d4b",
+    "integrity": "matched",
+    "mediaVerification": "decoded_video_exact_frame_grid",
+    "coverage": {
+      "required": 3,
+      "decided": 3
+    },
+    "visual": {
+      "verdict": "fail",
+      "evidence": "reviewer_observations",
+      "reviewer": "Codex на MSI. Просмотр трёх полных кадров и трёх фрагментов в масштабе 1:1."
+    }
+  },
+  "measurements": [
+    {
+      "index": 0,
+      "roiPixelsMatched": 82432,
+      "edgePixelsAbove200": 14
+    },
+    {
+      "index": 12,
+      "roiPixelsMatched": 82432,
+      "edgePixelsAbove200": 14
+    },
+    {
+      "index": 24,
+      "roiPixelsMatched": 82432,
+      "edgePixelsAbove200": 14
+    }
+  ]
+}
