@@ -42,9 +42,10 @@ const proof = {
 };
 
 function validateResult({ input, before }, after) {
-  const { output: written, ...snapshot } = after;
+  const { output: written, revision, ...snapshot } = after;
+  const { revision: beforeRevision, ...preimage } = before;
   const file = output(input);
-  if (canonical(snapshot) !== canonical(before) || !written || typeof written.file !== 'string' || !samePath(path.normalize(written.file), file) ||
+  if (canonical(snapshot) !== canonical(preimage) || !written || typeof written.file !== 'string' || !samePath(path.normalize(written.file), file) ||
       written.frame !== input.frame || !Number.isSafeInteger(written.bytes) || written.bytes < 1) fail('frame_export_result');
   const png = readPng(file, written.bytes);
   if (!png.complete || png.width !== before.width || png.height !== before.height) fail('frame_export_png');

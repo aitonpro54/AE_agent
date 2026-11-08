@@ -24,6 +24,24 @@
 
     function inspect(p) { return snapshot(p, composition(p)); }
 
+    function completedPng(path) {
+        for (var attempt = 0; attempt < 50; attempt++) {
+            var file = new File(path), size = file.exists ? file.length : 0;
+            if (file.alias || size > 67108864) fault('frame_export_readback');
+            if (size >= 45) {
+                file.encoding = 'BINARY';
+                if (file.open('r')) {
+                    var end = '';
+                    try { if (file.seek(size - 12, 0)) end = file.read(12); }
+                    finally { file.close(); }
+                    if (end.length === 12 && end.substr(0, 8) === '\x00\x00\x00\x00IEND' && file.length === size) return size;
+                }
+            }
+            $.sleep(100);
+        }
+        fault('frame_export_output_incomplete');
+    }
+
     function mutate(p, confirmAction) {
         var started = false;
         try {
@@ -45,9 +63,10 @@
             if (snapshot(p, composition(p)).revision !== before.revision || file.exists || file.alias) fault('frame_export_stale');
             started = true;
             comp.saveFrameToPng(time, file);
+            var bytes = completedPng(file.fsName);
             var after = inspect(p);
-            if (after.revision !== before.revision || !file.exists || file.alias || file.length < 1) fault('frame_export_readback');
-            after.output = { file: String(file.fsName), frame: p.frame, bytes: file.length };
+            if (after['protected'] !== before['protected']) fault('frame_export_state_changed');
+            after.output = { file: String(file.fsName), frame: p.frame, bytes: bytes };
             return { outcome: 'applied', snapshot: after, transactionReceipt: { version: 2, policyId: POLICY,
                 proposalId: proof.proposalId, planDigest: proof.planDigest, taskId: proof.taskId, taskEpoch: proof.taskEpoch,
                 stepId: proof.stepId, checkpointRef: proof.checkpointRef, checkpointDigest: proof.checkpointDigest,

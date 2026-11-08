@@ -19,11 +19,17 @@ function frameEnvironment(state) {
     constructor(file) { this.fsName = path.normalize(file); }
     get exists() { return fs.existsSync(this.fsName); }
     get length() { return fs.statSync(this.fsName).size; }
+    open() { this.data = fs.readFileSync(this.fsName); return true; }
+    seek(offset) { this.offset = offset; return true; }
+    read(count) { return this.data.subarray(this.offset, this.offset + count).toString('latin1'); }
+    close() { this.data = null; }
   }
   class CompItem {
     saveFrameToPng(time, file) {
       state.captures.push(time);
-      fs.writeFileSync(file.fsName, state.flags.truncated ? pixel.subarray(0, -12) : pixel, { flag: 'wx' });
+      state.writeCapture = () => fs.writeFileSync(file.fsName, state.flags.truncated ? pixel.subarray(0, -12) : pixel, { flag: 'wx' });
+      if (!state.flags.delayed) state.writeCapture();
+      if (state.flags.revisionChanges) state.project.revision++;
     }
   }
   state.captures = [];
@@ -31,7 +37,9 @@ function frameEnvironment(state) {
     frameDuration: 1 / 25, displayStartTime: 0, time: 0, resolutionFactor: [1, 1], numLayers: 1 });
   const project = state.project = { file: { fsName: state.projectId, parent: { fsName: parent } }, revision: 7, dirty: false,
     itemByID: id => id === comp.id ? comp : null };
-  return { app: { project }, CompItem, File, Folder: File };
+  return { app: { project }, CompItem, File, Folder: File, $: { sleep() {
+    if (state.flags.delayed) { state.flags.delayed = false; state.writeCapture(); }
+  } } };
 }
 
 async function fixture(t, flags) {
@@ -88,8 +96,18 @@ test('comp-frame-export refuses a changed revision, an out-of-range frame and a 
 test('comp-frame-export leaves a truncated output fenced and preserves the original command', async t => {
   const h = await fixture(t, { truncated: true });
   const result = await h.run();
-  assert.equal(result.code, 'frame_export_png');
+  assert.equal(result.state, 'stopped');
   assert.equal(h.broker.ledger.unresolved().length, 1);
   assert.equal(h.state.captures.length, 1);
   assert.ok(fs.existsSync(h.output));
+});
+
+test('comp-frame-export waits for native output and preserves state across render revision ticks', async t => {
+  const h = await fixture(t, { delayed: true, revisionChanges: true });
+  const { snapshot: before } = await h.inspect();
+  assert.equal((await h.run()).state, 'succeeded');
+  const { snapshot: after } = await h.inspect();
+  assert.notEqual(after.revision, before.revision);
+  assert.equal(after.protected, before.protected);
+  assert.deepEqual(fs.readFileSync(h.output), pixel);
 });
