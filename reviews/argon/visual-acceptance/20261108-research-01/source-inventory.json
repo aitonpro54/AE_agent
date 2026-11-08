@@ -1,0 +1,93 @@
+{
+  "schema": "visual-audit-source-inventory.v1",
+  "legacyCommit": "5d0d255e6858477d1c19c1010154389425229028",
+  "coreCommit": "d5bf682eb2b1470cc7f69b5186b8447c8ec5b768",
+  "legacy": [
+    {
+      "path": "docs/placeholder-visual-review.md",
+      "gitBlobSha": "feaf61d42573cbee239a7ff26149cc30a046610d",
+      "sourceUrl": "https://github.com/aitonpro54/AE_agent/blob/codex/release-3.3.5/docs/placeholder-visual-review.md"
+    },
+    {
+      "path": "docs/codex-visual-review-benchmark-2026-10-03.md",
+      "gitBlobSha": "6548919c7d184454c040628d222f587c703120f1",
+      "sourceUrl": "https://github.com/aitonpro54/AE_agent/blob/codex/release-3.3.5/docs/codex-visual-review-benchmark-2026-10-03.md"
+    },
+    {
+      "path": "mcp-server/codex-visual-evidence.js",
+      "gitBlobSha": "c3b84500942fe9de950ebea30d955df5f389af36",
+      "sourceUrl": "https://github.com/aitonpro54/AE_agent/blob/5d0d255e6858477d1c19c1010154389425229028/mcp-server/codex-visual-evidence.js"
+    },
+    {
+      "path": "mcp-server/comp-visual-review-plan.js",
+      "gitBlobSha": "7d314fb3efefa3399ed956c7098caeb2e0ab8761",
+      "sourceUrl": "https://github.com/aitonpro54/AE_agent/blob/5d0d255e6858477d1c19c1010154389425229028/mcp-server/comp-visual-review-plan.js"
+    },
+    {
+      "path": "mcp-server/placeholder-visual-review.js",
+      "gitBlobSha": "2badb7fa549e3a6714af931b5664375d1db0c893",
+      "sourceUrl": "https://github.com/aitonpro54/AE_agent/blob/5d0d255e6858477d1c19c1010154389425229028/mcp-server/placeholder-visual-review.js"
+    },
+    {
+      "path": "mcp-server/text-visual-review-plan.js",
+      "gitBlobSha": "0ad77cf444a97df10c686b49b67306d261d15395",
+      "sourceUrl": "https://github.com/aitonpro54/AE_agent/blob/5d0d255e6858477d1c19c1010154389425229028/mcp-server/text-visual-review-plan.js"
+    },
+    {
+      "path": "recipes/comp-visual-review-plan.md",
+      "gitBlobSha": "575c26494174c01ef5907282bc6ea8f5e7193717",
+      "sourceUrl": "https://github.com/aitonpro54/AE_agent/blob/5d0d255e6858477d1c19c1010154389425229028/recipes/comp-visual-review-plan.md"
+    },
+    {
+      "path": "recipes/placeholder-cover-visual-review-plan.md",
+      "gitBlobSha": "61c7305a23c2e41183a2e680b02e1164fddcf473",
+      "sourceUrl": "https://github.com/aitonpro54/AE_agent/blob/5d0d255e6858477d1c19c1010154389425229028/recipes/placeholder-cover-visual-review-plan.md"
+    }
+  ],
+  "limits": [
+    "Source verification only, no new legacy native run",
+    "Full report separates source, recorded, viewed, inferred, unknown"
+  ],
+  "core": [
+    {
+      "path": "core4/runtime/source-package.json",
+      "sha256": "683502b52d19ded9cf4b444653656e06cbba81158bbf7c5549563556a21b9b2a",
+      "bytes": 6239
+    },
+    {
+      "path": "core4/core/stdio.js",
+      "sha256": "e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401",
+      "bytes": 3660
+    },
+    {
+      "path": "core4/config/compositions/manual-titles-variants.json",
+      "sha256": "d753f1281f329d11af6201cc26ad495af00eb7780801a5c3b3b6c3d868cddd43",
+      "bytes": 1347
+    },
+    {
+      "path": "products/slideshow/README.md",
+      "sha256": "51a00af631c28f101f58f842325adccaf2129894b538544d7534db48b4a9b0e2",
+      "bytes": 5944
+    },
+    {
+      "path": "products/titles/README.md",
+      "sha256": "ab134ffc7680c1c284dbad8b8498cba4ead1f280391098c4d54384c7721f6855",
+      "bytes": 21194
+    },
+    {
+      "path": "plans/core-4.0.0-installable.md",
+      "sha256": "fb012f756c375c7408d0a5acc623e85d03b4fc2ba48c5cf68a70d49f8f7b71cd",
+      "bytes": 145265
+    },
+    {
+      "path": "docs/core-modularity-review-20261106.md",
+      "sha256": "a243edcb297ba0a233cbc2acb33bd912867f96545eca22cfbf6874fbceff41a0",
+      "bytes": 10737
+    },
+    {
+      "path": "plans/core-modularity-pilot-20261106.md",
+      "sha256": "fc2c5529786933a12170c75a1541e6e1be7cf53d32d025e71b873908c710ad7c",
+      "bytes": 20352
+    }
+  ]
+}

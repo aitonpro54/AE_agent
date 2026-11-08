@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "reviewId": "20261108-research-01",
+  "stageId": "visual-acceptance",
+  "type": "plan",
+  "status": "submission-unknown",
+  "complete": false,
+  "verdict": null,
+  "response": null,
+  "receipt": {
+    "url": "https://gemini.google.com/app",
+    "reviewIdVisible": true,
+    "attachments": [
+      "bundle.md",
+      "manifest.json"
+    ],
+    "generationActiveAtSubmission": true
+  },
+  "counts": {
+    "uploadInvocations": 1,
+    "filesSelected": 2,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "effort": {
+    "profileName": "Ваш Chrome",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "effort": "Высокий — Глубокий",
+    "effortOptions": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "conversation": "новый пустой обычный чат",
+    "observedAt": "2026-11-08T08:34:14.028Z",
+    "evidence": "readiness-evidence.jpg"
+  },
+  "limitations": [
+    "Summary-only independent critique; no full source or images supplied",
+    "Legacy native results are recorded, not reproduced",
+    "External MCP runtime untested",
+    "No fresh current-AEP capture",
+    "One review only; no automatic retries"
+  ],
+  "responseOutcome": "unknown",
+  "retrievalHistory": [
+    {
+      "recordedAt": "2026-11-08T08:38:48.518Z",
+      "stage": "response-read",
+      "event": "После видимого подтверждения отправки и активной генерации страница вернулась к пустому редактору /app. Вкладка больше не показывает сообщение, вложения, ответ или Stop. Постоянный URL не наблюдался.",
+      "evidence": "submission-disappeared-evidence.jpg",
+      "sendRepeated": false
+    },
+    {
+      "recordedAt": "2026-11-08T08:40:04.7157615Z",
+      "stage": "read-only-reconciliation",
+      "method": "Штатный поиск по чатам Gemini",
+      "query": "20261108-research-01",
+      "visibleResult": "Ничего не найдено.",
+      "conclusion": "Видимая история не подтвердила сохранение запроса. Серверный исход остаётся неизвестным."
+    }
+  ],
+  "binding": null,
+  "responseFileCreated": false,
+  "blocker": "После видимого начала генерации Gemini вернулся к пустому редактору. Постоянная ссылка и сохранённый ответ не обнаружены.",
+  "retrievalStoppedAt": "2026-11-08T08:40:04.7157615Z"
+}

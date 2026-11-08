@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "status": "COMPLETE",
+  "reviewId": "20261108-research-01",
+  "stageId": "visual-acceptance",
+  "type": "plan",
+  "baseCommit": "d5bf682eb2b1470cc7f69b5186b8447c8ec5b768",
+  "legacyCommit": "5d0d255e6858477d1c19c1010154389425229028",
+  "planSha256": "1a99020292278a3ba9e6865f35da187e969a5f5d0d1e310ff145074576f08329",
+  "dirtyStatus": "Pre-existing AGENTS.md modification; audit docs only added by this task",
+  "recipient": "Argon in existing ARGON_BrowserUse controller",
+  "request": {
+    "path": "request.md",
+    "role": "request",
+    "classification": "INTERNAL",
+    "bytes": 4327,
+    "sha256": "49f2032e307a914c07eb069107fce8ef9705d16d76a676ffdbb57dbe1c603467"
+  },
+  "files": [
+    {
+      "path": "request.md",
+      "role": "request",
+      "classification": "INTERNAL",
+      "bytes": 4327,
+      "sha256": "49f2032e307a914c07eb069107fce8ef9705d16d76a676ffdbb57dbe1c603467"
+    },
+    {
+      "path": "bundle.md",
+      "role": "research-summary",
+      "classification": "INTERNAL",
+      "bytes": 18351,
+      "sha256": "1a99020292278a3ba9e6865f35da187e969a5f5d0d1e310ff145074576f08329"
+    }
+  ],
+  "externalAllowlist": [
+    "bundle.md",
+    "manifest.json"
+  ],
+  "promptSource": "request.md",
+  "classification": [
+    "INTERNAL own-project summary",
+    "PUBLIC upstream source links"
+  ],
+  "exclusions": [
+    "credentials and browser/session/config state",
+    "AEP/media/PNG",
+    "absolute local paths and personal/account data",
+    "unrelated repository files",
+    "raw native logs"
+  ],
+  "limits": [
+    "Summary-only independent critique; no full source or images supplied",
+    "Legacy native results are recorded, not reproduced",
+    "External MCP runtime untested",
+    "No fresh current-AEP capture",
+    "One review only; no automatic retries"
+  ]
+}

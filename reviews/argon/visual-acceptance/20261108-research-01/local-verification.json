@@ -1,0 +1,16 @@
+{
+  "schema": "visual-audit-final-check.v1",
+  "sourceCommit": "d5bf682eb2b1470cc7f69b5186b8447c8ec5b768",
+  "packetHashesUnchanged": true,
+  "reportLocalLinksValid": true,
+  "argonStatus": "submission-unknown",
+  "argonMaxUiEffort": true,
+  "sendCount": 1,
+  "retries": 0,
+  "reportSha256": "71df80dc0a72322621eeec17969ac38c32c8f8ab6747210a1bccd5c5b4c2f4a0",
+  "codeChanges": 0,
+  "newAeCalls": 0,
+  "newRenders": 0,
+  "testsRun": 0,
+  "validation": "Read-only source/evidence review and saved-frame visual inspection; documentation link/hash/whitespace checks"
+}

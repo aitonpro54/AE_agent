@@ -1,5 +1,19 @@
 # Core4 — создание устанавливаемого runtime на MSI
 
+## 8 ноября. Аудит визуальной приёмки без реализации
+
+### Progress
+
+Исследованы Core `d5bf682…`, legacy `release-3.3.5` на `5d0d255…` и source snapshots Surehand, Engine Room, JUNKDOGE. Сверены saved MP4/PNG, просмотрены три S1 PNG и шесть кадров, извлечённых из точного async MP4 `a6e9e225…`. [Полный отчёт](../docs/visual-acceptance-audit-20261108.md).
+
+### Decision Log
+
+Core имеет render/structural/media verification и отдельные реальные visual checks; общего повторяемого visual acceptance workflow нет. Минимальный следующий implementation scope — внешний review packet готового артефакта с явными frames, ожиданиями и sampled verdict, с выборочным переиспользованием legacy. Typed PNG-export нужен отдельно при потребности в live/lossless capture. Реализация не входит в поручение аудита.
+
+### Validation
+
+Код, runtime и AEP не изменялись; тесты и новый рендер не запускались. PNG/SHA и конкретные наблюдения закреплены в локальном audit evidence. Одна консультация Argon с максимальным UI-усилием «Высокий — Глубокий» завершилась `submission-unknown`: ответ не получен, повторов нет. Вывод отчёта самостоятельный, согласие Argon не заявляется. Fresh current-AEP и full timeline acceptance не выполнялись.
+
 ## 8 ноября. Асинхронный рендер мастера на MSI
 
 ### Progress
