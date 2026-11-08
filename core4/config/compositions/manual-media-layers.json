@@ -1,0 +1,30 @@
+{
+  "parent": "operator-titles-photo-pilot",
+  "modules": ["media-import", "layer-insert"],
+  "assets": [
+    {
+      "assetKey": "media-import-v1",
+      "moduleId": "media-import",
+      "path": "modules/media-import",
+      "admission": "config/admissions/media-import.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    },
+    {
+      "assetKey": "layer-insert-v1",
+      "moduleId": "layer-insert",
+      "path": "modules/layer-insert",
+      "admission": "config/admissions/layer-insert.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    }
+  ],
+  "profiles": {
+    "media-import": { "operationId": "ingest-footage", "resultProfile": "media-import-v1" },
+    "layer-insert": { "operationId": "insert-footage-layer", "resultProfile": "layer-insert-v1" }
+  },
+  "bundle": {
+    "files": ["runtime/media-layer-proof.js", "config/admissions/media-import.json", "config/admissions/layer-insert.json"],
+    "artifactClosures": ["modules/media-import/artifact.json", "modules/layer-insert/artifact.json"]
+  }
+}

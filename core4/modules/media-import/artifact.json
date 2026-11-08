@@ -1,0 +1,11 @@
+{
+  "id": "media-import",
+  "version": "4.1.2",
+  "entry": "implementation.js",
+  "hashes": {
+    "implementation.js": "f6ef49dc86714476622ae9d7ef63c77cc0169d51beb3bd01b75d75781b3809f6",
+    "contract.json": "ec535d325258278afdc34d78d11fba3ce2e0d7613f25fc7a1151dcd1395af5b0",
+    "executor.jsx": "819cde3dc49b73cf5b87704c8b6bf88e9bbc051e179fd3baf9deea2bd84e19d6"
+  },
+  "publicDependencies": {}
+}

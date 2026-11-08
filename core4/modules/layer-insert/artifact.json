@@ -1,0 +1,11 @@
+{
+  "id": "layer-insert",
+  "version": "4.1.2",
+  "entry": "implementation.js",
+  "hashes": {
+    "implementation.js": "55ab0ede30e53b6a365cdbbdd1b37b8cfc23662040691aa34543d5d8dddbc3fb",
+    "contract.json": "2398946b79a9307bb5f04b9f0343a0fa7db12855cf26e14878cec36b502bf3cf",
+    "executor.jsx": "f10e8d99a9388cbe3dc35bfbd1fd01609a61f94dfefc798f05f94d91c12be612"
+  },
+  "publicDependencies": {}
+}

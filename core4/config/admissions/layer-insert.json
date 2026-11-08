@@ -1,0 +1,12 @@
+{
+  "moduleId": "layer-insert",
+  "operationId": "insert-footage-layer",
+  "artifactHash": "13630c099b7447cb10102d4a2f1f5930a9db816874107a41431dbb08d4afb006",
+  "schemaHash": "280c7681ecdf0c60a7e79683bed9dbbdc1362a730a9c59584d65d7e7cc983513",
+  "resultSchemaHash": "5645e352d3276824f635b7f22e54843a2d3e837cc1069b964f488f3dcbdfeae4",
+  "effectPolicyHash": "355a27169e5b9d72e9c87f1526dc0bf6402c22316c72a77c4b665f35bf5138de",
+  "executorHash": "f10e8d99a9388cbe3dc35bfbd1fd01609a61f94dfefc798f05f94d91c12be612",
+  "protocolVersion": 1,
+  "trustApprovalId": "source-review-layer-insert-20261108",
+  "revoked": false
+}

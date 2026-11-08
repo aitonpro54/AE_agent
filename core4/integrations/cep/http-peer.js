@@ -17,7 +17,7 @@ const LIFECYCLE_READ_CODES = new Set(['lifecycle_project_changed', 'lifecycle_na
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
 }
-function manualResultProfile(asset) { return ['manual-text-v1', 'photo-source-v1', 'manual-point-layout-v1', 'owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1', 'owned-project-assembly-v1', 'current-project-save-v1', 'project-lifecycle-v1'].includes(asset.resultProfile); }
+function manualResultProfile(asset) { return ['manual-text-v1', 'photo-source-v1', 'manual-point-layout-v1', 'owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1', 'owned-project-assembly-v1', 'current-project-save-v1', 'project-lifecycle-v1', 'media-import-v1', 'layer-insert-v1'].includes(asset.resultProfile); }
 function nativeFileResult(result, phase) {
   if (phase === 'mutate' && result.outcome !== 'applied') return result;
   const { savedFileSha256, checkpointRoot, checkpoint, transition, diskProofError, ...snapshot } = phase === 'mutate' ? result.snapshot : result;
@@ -158,6 +158,12 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
             exact(result, ['target', 'revision', 'protected', 'items', 'assemblies']);
             if (!result.target || typeof result.revision !== 'string' || typeof result.protected !== 'string' ||
                 !Array.isArray(result.items) || !Array.isArray(result.assemblies)) fail('manual_snapshot');
+          } else if (selectedAsset.resultProfile === 'media-import-v1') {
+            exact(result, ['target', 'revision', 'protected', 'items', 'bytes', 'modifiedMs']);
+            if (!Array.isArray(result.items) || !Number.isSafeInteger(result.bytes) || !Number.isSafeInteger(result.modifiedMs)) fail('manual_snapshot');
+          } else if (selectedAsset.resultProfile === 'layer-insert-v1') {
+            exact(result, ['target', 'revision', 'protected', 'stack', 'uses', 'source', 'frameDuration', 'duration', 'hasExpressions']);
+            if (!Array.isArray(result.stack) || !Array.isArray(result.uses) || !result.source || typeof result.hasExpressions !== 'boolean') fail('manual_snapshot');
           } else if (['owned-text-layer-v1', 'owned-text-variant-v1', 'owned-comp-render-v1'].includes(selectedAsset.resultProfile)) {
             const fields = ['target', 'revision', 'protected', 'layers'];
             if (selectedAsset.resultProfile === 'owned-text-layer-v1') fields.push('size', 'guides');

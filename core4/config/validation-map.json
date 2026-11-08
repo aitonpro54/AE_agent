@@ -28,6 +28,13 @@
     { "prefix": "core4/config/compositions/manual-project-assembly.json", "owner": "project-assembly", "checks": ["project-assembly", "installed-composition", "package-location"] },
     { "prefix": "core4/runtime/project-assembly-proof.js", "owner": "project-assembly", "checks": ["project-assembly"] },
     { "prefix": "core4/test/project-assembly.test.js", "owner": "project-assembly", "checks": ["project-assembly"] },
+    { "prefix": "core4/modules/media-import/", "owner": "media-layers", "checks": ["media-layers"] },
+    { "prefix": "core4/modules/layer-insert/", "owner": "media-layers", "checks": ["media-layers"] },
+    { "prefix": "core4/config/admissions/media-import.json", "owner": "media-layers", "checks": ["media-layers"] },
+    { "prefix": "core4/config/admissions/layer-insert.json", "owner": "media-layers", "checks": ["media-layers"] },
+    { "prefix": "core4/config/compositions/manual-media-layers.json", "owner": "media-layers", "checks": ["media-layers", "installed-composition", "package-location"] },
+    { "prefix": "core4/runtime/media-layer-proof.js", "owner": "media-layers", "checks": ["media-layers"] },
+    { "prefix": "core4/test/media-layers.test.js", "owner": "media-layers", "checks": ["media-layers"] },
     { "prefix": "core4/modules/project-save/", "owner": "project-save", "checks": ["project-save"] },
     { "prefix": "core4/config/admissions/project-save.json", "owner": "project-save", "checks": ["project-save"] },
     { "prefix": "core4/config/compositions/manual-project-save.json", "owner": "project-save", "checks": ["project-save", "installed-composition", "package-location"] },
@@ -1376,6 +1383,12 @@
       "tools/package-installable.js", "test/project-lifecycle.test.js", "test/fixtures/manual-http-runtime.js",
       "test/fixtures/ae.js"
     ],
+    "media-layers": [
+      "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/",
+      "config/catalog.json", "config/admissions/", "config/compositions/", "integrations/cep/",
+      "tools/package-installable.js", "test/media-layers.test.js", "test/fixtures/manual-http-runtime.js",
+      "test/fixtures/ae.js"
+    ],
     "ame-media-export": [
       "tools/ame-media-export.js", "tools/ame-isolated-export.ps1", "tools/ame-isolated-host.ps1", "protocol/json.js",
       "test/ame-media-export.test.js", "test/fixtures/ame-isolated-host.ps1"
@@ -1780,6 +1793,7 @@
     "project-assembly": ["node", "--test", "--test-name-pattern=project-assembly", "test/project-assembly.test.js"],
     "project-save": ["node", "--test", "--test-name-pattern=project-save", "test/project-save.test.js"],
     "project-lifecycle": ["node", "--test", "--test-name-pattern=project-lifecycle", "test/project-lifecycle.test.js"],
+    "media-layers": ["node", "--test", "--test-name-pattern=media-layers", "test/media-layers.test.js"],
     "ame-media-export": ["node", "--test", "--test-name-pattern=^AME ", "test/ame-media-export.test.js"],
     "installable-runtime": [
       "node",
@@ -1981,6 +1995,9 @@
       "kind": "integration"
     },
     "project-lifecycle": {
+      "kind": "integration"
+    },
+    "media-layers": {
       "kind": "integration"
     },
     "ame-media-export": {

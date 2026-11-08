@@ -1,0 +1,218 @@
+{
+  "moduleId": "media-import",
+  "operationId": "ingest-footage",
+  "protocolVersion": 1,
+  "executionPolicy": "current-matching-target-after-local-confirmation-v1",
+  "targetSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "file": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "file"
+    ],
+    "additionalProperties": false
+  },
+  "buildSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "file": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "sha256": {
+        "type": "string",
+        "minLength": 64,
+        "maxLength": 64
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "file",
+      "sha256"
+    ],
+    "additionalProperties": false
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "file": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "sha256": {
+        "type": "string",
+        "minLength": 64,
+        "maxLength": 64
+      },
+      "expectedRevision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 32768
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "file",
+      "sha256",
+      "expectedRevision"
+    ],
+    "additionalProperties": false
+  },
+  "snapshotSchema": {
+    "type": "object",
+    "properties": {
+      "target": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "file": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "sessionId",
+          "projectId",
+          "file"
+        ],
+        "additionalProperties": false
+      },
+      "revision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 32768
+      },
+      "protected": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "file": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "other",
+                "still",
+                "av"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "file",
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 0,
+        "maxItems": 512
+      },
+      "bytes": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1073741824
+      },
+      "modifiedMs": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      }
+    },
+    "required": [
+      "target",
+      "revision",
+      "protected",
+      "items",
+      "bytes",
+      "modifiedMs"
+    ],
+    "additionalProperties": false
+  },
+  "effectPolicy": {
+    "effect": "project-media-import",
+    "targetFields": [
+      "sessionId",
+      "projectId",
+      "file"
+    ],
+    "expectedBindings": {
+      "expectedRevision": "revision"
+    },
+    "resultBindings": {},
+    "preserve": [
+      "protected"
+    ],
+    "requiresCheckpoint": true,
+    "confirmation": "native-current-target",
+    "checkpointKind": "media-import-preimage-v1"
+  }
+}

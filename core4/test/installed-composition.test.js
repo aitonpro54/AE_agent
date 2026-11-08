@@ -114,6 +114,24 @@ test('installed-composition text-layer is opt-in and preserves earlier Titles ar
   assert.ok(enabled.files['modules/text-layer/executor.jsx']);
   assert.equal(old.files['modules/text-layer/executor.jsx'], undefined);
 });
+test('installed-composition admits media import and layer insertion only in their owner package', () => {
+  const options = { runtimeModel: 'owner' };
+  const original = buildPackage(root, 'operator-titles-photo-pilot', options);
+  const candidate = buildPackage(root, 'manual-media-layers', options);
+  const read = file => Buffer.from(candidate.files[file], 'base64');
+  const selected = deriveComposition(candidate.release, read);
+  assert.deepEqual(selected.assets.filter(asset => ['media-import', 'layer-insert'].includes(asset.moduleId))
+    .map(asset => [asset.moduleId, asset.contract.operationId, asset.resultProfile]), [
+    ['media-import', 'ingest-footage', 'media-import-v1'],
+    ['layer-insert', 'insert-footage-layer', 'layer-insert-v1']
+  ]);
+  assert.equal(original.files['runtime/media-layer-proof.js'], undefined);
+  assert.equal(original.files['modules/comp-render/executor.jsx'], candidate.files['modules/comp-render/executor.jsx']);
+  const source = read('cep/jsx/registry.jsx');
+  const parser = "const fs=require('node:fs'),acorn=require('internal/deps/acorn/acorn/dist/acorn');acorn.parse(fs.readFileSync(0,'utf8'),{ecmaVersion:3,allowReserved:'never'});";
+  const result = spawnSync(process.execPath, ['--expose-internals', '-e', parser], { input: source, encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+});
 test('installed-composition project assembly is discovered by the installed MCP entry', { timeout: 15000 }, async () => {
   const pkg = buildPackage(root, 'manual-project-assembly');
   const f = install(pkg), h = rpcChild(f);

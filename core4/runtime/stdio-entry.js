@@ -19,6 +19,8 @@ const RESULT_PROFILES = Object.freeze({
   'manual-text-v1': null,
   'photo-source-v1': 'runtime/photo-source-proof.js',
   'owned-project-assembly-v1': 'runtime/project-assembly-proof.js',
+  'media-import-v1': 'runtime/media-layer-proof.js',
+  'layer-insert-v1': 'runtime/media-layer-proof.js',
   'current-project-save-v1': 'runtime/project-save-proof.js',
   'project-lifecycle-v1': 'runtime/project-lifecycle-proof.js',
   'manual-point-layout-v1': 'runtime/point-layout-proof.js',
@@ -67,6 +69,10 @@ function declarativeProfiles(composition, release, json, checked) {
         profile.resultProfile === 'photo-source-v1' && (id !== 'photo-placeholder' || profile.operationId !== 'replace-source') ||
         (profile.resultProfile === 'owned-project-assembly-v1') !== (id === 'project-assembly') ||
         id === 'project-assembly' && profile.operationId !== 'assemble-composition' ||
+        (profile.resultProfile === 'media-import-v1') !== (id === 'media-import') ||
+        id === 'media-import' && profile.operationId !== 'ingest-footage' ||
+        (profile.resultProfile === 'layer-insert-v1') !== (id === 'layer-insert') ||
+        id === 'layer-insert' && profile.operationId !== 'insert-footage-layer' ||
         (profile.resultProfile === 'current-project-save-v1') !== (id === 'project-save') ||
         id === 'project-save' && profile.operationId !== 'save-current-project' ||
         (profile.resultProfile === 'project-lifecycle-v1') !== (id === 'project-lifecycle') ||
@@ -412,6 +418,8 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
         case 'manual-text-v1': return binding;
         case 'photo-source-v1': return { ...binding, ...require('./photo-source-proof.js').createPhotoSourceProof(() => workSession?.status().sessionId ?? installation.installationId) };
         case 'owned-project-assembly-v1': return { ...binding, ...require('./project-assembly-proof.js').createProjectAssemblyProof(() => workSession?.status().sessionId ?? installation.installationId) };
+        case 'media-import-v1':
+        case 'layer-insert-v1': return { ...binding, ...require('./media-layer-proof.js').createMediaLayerProof(item.moduleId, () => workSession?.status().sessionId ?? installation.installationId) };
         case 'current-project-save-v1':
           projectSave = require('./project-save-proof.js').createProjectSaveProof({ stateDir: installation.stateDir,
             currentSessionId: () => workSession?.status().sessionId ?? installation.installationId });
