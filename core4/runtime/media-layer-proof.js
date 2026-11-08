@@ -47,7 +47,7 @@ function createMediaLayerProof(moduleId, currentSessionId) {
       assertImportFile(input, after);
       const previous = new Set(before.items.map(item => item.id));
       const additions = after.items.filter(item => !previous.has(item.id));
-      if (additions.length !== 1 || !['still', 'av'].includes(additions[0].kind) ||
+      if (additions.length !== 1 || after.createdItemId !== additions[0].id || !['still', 'av'].includes(additions[0].kind) ||
           fileKey(additions[0].file) !== fileKey(input.file) || before.bytes !== after.bytes ||
           before.modifiedMs !== after.modifiedMs ||
           !same(after.items.filter(item => previous.has(item.id)), before.items)) fail('media_import_readback');
@@ -59,7 +59,7 @@ function createMediaLayerProof(moduleId, currentSessionId) {
     validateResult({ input, before }, after) {
       const index = before.stack.findIndex(layer => layer.id === input.layerId) + (input.placement === 'below' ? 1 : 0);
       const inserted = after.stack[index], frame = before.frameDuration;
-      if (after.stack.length !== before.stack.length + 1 || !inserted ||
+      if (after.stack.length !== before.stack.length + 1 || !inserted || after.createdLayerId !== inserted.id ||
           before.stack.some(layer => layer.id === inserted.id) || inserted.sourceId !== input.itemId ||
           inserted.name !== input.name || !inserted.enabled || inserted.solo || inserted.parentId || inserted.matteId ||
           inserted.stretch !== 100 || !near(inserted.start, input.startFrame * frame) ||

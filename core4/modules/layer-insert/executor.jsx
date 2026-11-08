@@ -171,6 +171,7 @@
             } finally { app.endUndoGroup(); }
             var after = capture(p).snapshot;
             if (after.revision !== capture(p).snapshot.revision) fault('local_transaction_readback');
+            after.createdLayerId = layer.id;
             return { outcome: 'applied', snapshot: after, transactionReceipt: { version: 2, policyId: policy,
                 proposalId: proof.proposalId, planDigest: proof.planDigest, taskId: proof.taskId,
                 taskEpoch: proof.taskEpoch, stepId: proof.stepId, checkpointRef: proof.checkpointRef,

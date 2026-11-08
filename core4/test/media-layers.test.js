@@ -128,8 +128,10 @@ test('media-layers imports once and inserts by ID above a same-named layer with 
   } });
   t.after(() => h.close());
   const ingest = importer(h);
-  assert.equal((await ingest.run()).state, 'succeeded');
+  const imported = await ingest.run();
+  assert.equal(imported.state, 'succeeded');
   const newItem = (await ingest.inspect()).snapshot.items.find(item => item.file === h.state.overlayFile);
+  assert.equal(imported.outputs.operation.createdItemId, newItem.id);
   await assert.rejects(ingest.plan(), /media_already_imported/);
   const insert = inserter(h, newItem.id);
   const before = (await insert.inspect()).snapshot;
@@ -137,6 +139,7 @@ test('media-layers imports once and inserts by ID above a same-named layer with 
   assert.equal(result.state, 'succeeded', JSON.stringify(result));
   const after = (await insert.inspect()).snapshot;
   assert.deepEqual([after.stack[0], after.stack[2]], before.stack);
+  assert.equal(result.outputs.operation.createdLayerId, after.stack[1].id);
   assert.equal(after.stack[1].sourceId, newItem.id);
   assert.deepEqual(after.stack[1].position, [160, 90]);
   assert.equal(after.stack[1].outPoint, 72 * before.frameDuration);

@@ -273,6 +273,11 @@
         "minLength": 1,
         "maxLength": 32768
       },
+      "createdLayerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
       "protected": {
         "type": "string",
         "minLength": 1,
