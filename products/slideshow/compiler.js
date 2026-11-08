@@ -7,6 +7,7 @@ const schema = require('./job.schema.json');
 const POLICY = 'current-matching-target-after-local-confirmation-v1';
 const PHOTO = { moduleId: 'photo-placeholder', operationId: 'replace-source',
   modulePin: 'b6a1ea3b4bbe778a4a0753217f9188fea481474ff3b4d9e00e04ee994eb9e13b' };
+const OPERATOR_PHOTO = { ...PHOTO, modulePin: 'af7a9f92fc21e32321544ed21d139cb5af0415d249c9d8f3cee389b585aca655' };
 const RENDER = { moduleId: 'comp-render', operationId: 'render-text-variant',
   modulePin: '996e6bb4ad89f4bb49eeca143ad788f0e224a04caf0ecb06183083eb84b9105b' };
 const digest = /^[a-f0-9]{64}$/;
@@ -103,7 +104,7 @@ function checkTimeline(job, master) {
   }
   return { width, height, frame, leaves: indices.map(index => layers[index].leaf) };
 }
-function inspect(job, evidence, planned) {
+function inspect(job, evidence, planned, photoModule) {
   const { project } = job;
   const masterTarget = { projectId: project.file, compId: project.masterCompId };
   const master = observation(evidence.master, RENDER, masterTarget);
@@ -117,7 +118,7 @@ function inspect(job, evidence, planned) {
     ['succeeded', 'rejected'].includes(command.state)), 'slideshow_reconcile_original_task');
   const photos = planned.slots.map((slot, i) => {
     const target = { sessionId: project.sessionId, projectId: project.file, compId: slot.compId, layerId: slot.layerId };
-    const snapshot = observation(evidence.slots[i], PHOTO, target);
+    const snapshot = observation(evidence.slots[i], photoModule, target);
     const state = JSON.parse(snapshot.protected);
     const size = state.comp, leaf = geometry.leaves[i];
     requireCondition(state.enabled === true && state.stretch === 100 && !state.threeDLayer &&
@@ -130,7 +131,7 @@ function inspect(job, evidence, planned) {
     requireCondition(accepted.length <= 1, 'slideshow_duplicate_receipt');
     if (accepted.length) {
       const done = accepted[0];
-      requireCondition(done.modulePin === PHOTO.modulePin && same(done.after, snapshot) &&
+      requireCondition(done.modulePin === photoModule.modulePin && same(done.after, snapshot) &&
         snapshot.sourceId === slot.photo.sourceId && same(snapshot.source.file, slot.photo.file), 'slideshow_successful_slot_drift');
     } else {
       requireCondition(snapshot.sourceId === slot.placeholderSourceId, 'slideshow_unowned_slot_change');
@@ -139,19 +140,31 @@ function inspect(job, evidence, planned) {
   });
   return { masterTarget, master, photos };
 }
+function photoModule(response) {
+  return response?.modulePin === OPERATOR_PHOTO.modulePin ? OPERATOR_PHOTO : PHOTO;
+}
 function prepareBuild(job, evidence) {
   const planned = compile(job);
-  const { photos } = inspect(job, evidence, planned);
-  const contractId = contract(evidence.photoContract, PHOTO);
-  return { workflowId: planned.workflowId, recordContext: planned.recordContext,
-    steps: planned.slots.map((slot, i) => ({
-      stepId: slot.id, moduleId: PHOTO.moduleId, contractId, evidenceRef: evidence.slots[i].evidenceRef,
-      input: { ...photos[i].target, newSourceId: slot.photo.sourceId }, ...(i ? { dependsOn: [planned.slots[i - 1].id] } : {})
-    })) };
+  const module = photoModule(evidence.photoContract);
+  const contractId = contract(evidence.photoContract, module);
+  const { photos } = inspect(job, evidence, planned, module);
+  const steps = planned.slots.map((slot, i) => ({
+    stepId: slot.id, moduleId: module.moduleId, contractId, evidenceRef: evidence.slots[i].evidenceRef,
+    input: { ...photos[i].target, newSourceId: slot.photo.sourceId }
+  }));
+  const base = { workflowId: planned.workflowId, recordContext: planned.recordContext };
+  if (module === OPERATOR_PHOTO) {
+    const next = photos.findIndex(photo => !photo.done);
+    requireCondition(next >= 0, 'slideshow_photos_complete');
+    return { ...base, oneStep: true, steps: [steps[next]] };
+  }
+  return { ...base, steps: [steps[0], { ...steps[1], dependsOn: [steps[0].stepId] }] };
 }
 function prepareRender(job, evidence, mode) {
   const planned = compile(job);
-  const { masterTarget, master, photos } = inspect(job, evidence, planned);
+  const module = photoModule(evidence.photoContract);
+  contract(evidence.photoContract, module);
+  const { masterTarget, master, photos } = inspect(job, evidence, planned, module);
   requireCondition(photos.every(photo => photo.done), 'slideshow_photos_incomplete');
   requireCondition(mode === 'stage' ? master.queueIdle && !master.job :
     mode === 'finalize' && master.job?.status === 'DONE' && !master.job.rendering, 'slideshow_render_state');
@@ -162,4 +175,4 @@ function prepareRender(job, evidence, mode) {
       startFrame: 0, frameCount: planned.frameCount, ...(mode === 'finalize' ? { jobCompId: master.job.jobCompId } : {}) }
   }] };
 }
-module.exports = { compile, prepareBuild, prepareRender, PHOTO, RENDER };
+module.exports = { compile, prepareBuild, prepareRender, PHOTO, OPERATOR_PHOTO, RENDER };

@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
-const { compile, prepareBuild, prepareRender, PHOTO, RENDER } = require('../compiler');
+const { compile, prepareBuild, prepareRender, PHOTO, OPERATOR_PHOTO, RENDER } = require('../compiler');
 const { verifyFiles } = require('../cli');
 
 const job = {
@@ -19,7 +19,7 @@ const job = {
   purpose: 'technical_check'
 };
 
-function evidence(completed = 0) {
+function evidence(completed = 0, photo = PHOTO) {
   const frame = 1 / 30;
   const observation = (module, snapshot) => ({ modulePin: module.modulePin, evidenceRef: 'evidence-' + '1'.repeat(36),
     synthetic: false, snapshot: { revision: 'fresh', ...snapshot } });
@@ -33,16 +33,16 @@ function evidence(completed = 0) {
   const master = observation(RENDER, { target: { projectId: job.project.file, compId: 10 }, duration: 3, frameDuration: frame,
     protected: JSON.stringify(['Master', 'AE_CORE4_COMP_WORKSPACE_V1', 960, 600, 3, frame, 0, [], timeline]),
     queueIdle: true });
-  const slots = job.slots.map((slot, index) => observation(PHOTO, { target: { sessionId: job.project.sessionId,
+  const slots = job.slots.map((slot, index) => observation(photo, { target: { sessionId: job.project.sessionId,
     projectId: job.project.file, compId: slot.compId, layerId: slot.layerId },
     protected: JSON.stringify({ enabled: true, stretch: 100, threeDLayer: false, startTime: 0, inPoint: 0, outPoint: 2,
       comp: ['Slot', 960, 600], layers: [[slot.layerId]] }),
     sourceId: timeline[index].leaf[0].sourceId, source: { file: job.photos[index].file } }));
-  const result = { photoContract: contract(PHOTO), renderContract: contract(RENDER), master, slots };
+  const result = { photoContract: contract(photo), renderContract: contract(RENDER), master, slots };
   if (completed) {
     result.tasks = [{ taskId: 'task-' + '2'.repeat(36), reset: false, commands: slots.slice(0, completed).map((slot, i) => ({
       workflowId: compile(job).workflowId, stepId: 'photo-' + (i + 1), state: 'succeeded',
-      modulePin: PHOTO.modulePin, after: structuredClone(slot.snapshot)
+      modulePin: photo.modulePin, after: structuredClone(slot.snapshot)
     })) }];
   }
   return result;
@@ -63,6 +63,23 @@ test('compiler binds the order, render range and a stable two-step workflow to f
   timeline[8][1].inPoint += 0.001;
   fractional.master.snapshot.protected = JSON.stringify(timeline);
   assert.doesNotThrow(() => prepareBuild(job, fractional));
+});
+
+test('operator package plans one photo at a time in the same workflow', () => {
+  const first = prepareBuild(job, evidence(0, OPERATOR_PHOTO));
+  const partial = evidence(1, OPERATOR_PHOTO);
+  const second = prepareBuild(job, partial);
+  assert.equal(first.workflowId, second.workflowId);
+  assert.equal(first.oneStep, true);
+  assert.equal(second.oneStep, true);
+  assert.deepEqual([first, second].map(plan => plan.steps.map(step => step.stepId)), [['photo-1'], ['photo-2']]);
+  assert.equal(second.steps[0].dependsOn, undefined);
+  assert.throws(() => prepareRender(job, partial, 'stage'), /slideshow_photos_incomplete/);
+  partial.tasks[0].commands[0].modulePin = PHOTO.modulePin;
+  assert.throws(() => prepareBuild(job, partial), /slideshow_successful_slot_drift/);
+  const completed = evidence(2, OPERATOR_PHOTO);
+  assert.throws(() => prepareBuild(job, completed), /slideshow_photos_complete/);
+  assert.equal(prepareRender(job, completed, 'stage').steps[0].stepId, 'render-stage');
 });
 
 test('partial success preserves the workflow and refuses a drifted or unresolved original command', () => {
