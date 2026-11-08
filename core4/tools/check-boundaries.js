@@ -66,7 +66,7 @@ function checkStandaloneSource(source) {
 function checkStartOverOperatorSource(source) {
   const marker = "const options=require('./standalone-installer').assertStartOverBootstrap(capability);", barrier=source.indexOf(marker);
   if (barrier<0 || source.lastIndexOf(marker)!==barrier || !source.includes("require('./maintain-owner').verifyOwnerInstallation(options.descriptor,options.expectedCurrentPackageHash)")) fail('start_over_operator_verification_layout');
-  for (const match of source.matchAll(/require\s*\(\s*(['"])([^'"]+)\1\s*\)/g)) if (!match[2].startsWith('node:') && (match.index<barrier || !['./standalone-installer','./maintain-owner','../protocol/json','../runtime/installation','../runtime/start-over-state','../runtime/start-over-finisher','../integrations/cep/peer-protocol'].includes(match[2]))) fail('unverified_start_over_import');
+  for (const match of source.matchAll(/require\s*\(\s*(['"])([^'"]+)\1\s*\)/g)) if (!match[2].startsWith('node:') && (match.index<barrier || !['./standalone-installer','./maintain-owner','../protocol/json','../runtime/installation','../runtime/start-over-state','../runtime/start-over-finisher','../runtime/client-ipc.js','../runtime/client-entry.js','../integrations/cep/peer-protocol'].includes(match[2]))) fail('unverified_start_over_import');
   if (/require\s*\(\s*[^'"\s]/.test(source)) fail('unverified_start_over_import'); return true;
 }
 function checkUpdateOperatorSource(source) {

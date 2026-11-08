@@ -4,7 +4,7 @@
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), crypto = require('node:crypto');
 const { canonical, hash, fail } = require('../protocol/json');
 const { inspectStartOverHistory, assertStartOverHistoryContinuation } = require('./start-over-inspection');
-const { observeStartOverInventory } = require('./start-over-process');
+const { observeStartOverInventory, observeStartOverStop } = require('./start-over-process');
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/, HEX = /^[a-f0-9]{64}$/;
 const STATS = ['dev', 'ino', 'size', 'birthtimeNs', 'mtimeNs', 'ctimeNs'];
 const MARKERS = ['runtime-owner.json', 'runtime-owner.next', 'runtime-diagnostic.json', 'broker/broker-owner.lock', 'broker/broker-owner.gate', 'receiver/owner'];
@@ -235,6 +235,62 @@ function inspect(c) {
   return Object.freeze({ id: a.body.id, intentHash: a.barrier.hash, newSessionId: a.body.newSessionId, phase: stop ? 'stop-requested' : inventory ? 'intent-with-inventory' : 'intent-without-inventory', requiresAEExit: h.requiresAEExit, inventoryRecorded: !!inventory, actors: Object.freeze(a.body.actors.map(s => Object.freeze({ ...s }))), resetComplete: false, resetPermit: false, aeAuthority: false });
 }
 function inspectStartOver(options) { return inspect(context(options)); }
+function publishReset(c, id, requestor, protectedFacts, markers, histories, initial) {
+  if (!initial.archiveEligibleHistory) fail('start_over_resource_fenced');
+  if (!markers.actors.some(a => equal(a, requestor))) fail('start_over_scope');
+  if (markers.owner?.receiverIdentity != null && markers.owner.receiverIdentity !== initial.receiver.identity) fail('start_over_marker_history');
+  const dir = path.join(c.d.installRoot, 'transactions', id + '-start-over');
+  plain(path.dirname(dir), false, true); fs.mkdirSync(dir); plain(dir, false, true);
+  const prefix = Object.fromEntries(['receiver', 'ledger'].map(k => [k, { ...info(histories[k]), byteLength: histories[k].bytes?.length ?? 0 }]));
+  const original = atomic(path.join(dir, 'intent.json'), c.seal('start-over-intent', { id, newSessionId: crypto.randomUUID(), directory: directoryStamp(fs.lstatSync(dir, { bigint: true })), requestor, actors: markers.actors, protected: protectedFacts, markers: markers.facts, prefix, createdAt: new Date().toISOString() }));
+  if (!equal(c.protectedFacts(), protectedFacts) || !equal(c.markers().facts, markers.facts)) fail('start_over_changed');
+  // Keep each original journal inode anchored before admitting a reset.
+  for (const k of ['receiver', 'ledger']) if (histories[k].bytes !== null) {
+    fs.linkSync(histories[k].file, path.join(dir, 'original-' + k));
+    const anchor = read(path.join(dir, 'original-' + k), 64 * 1024 * 1024);
+    if (!anchor.bytes?.equals(histories[k].bytes) || !same(anchor.stat, histories[k].stat, ['ctimeNs'])) fail('start_over_prefix_changed');
+  }
+  fs.linkSync(original.file, path.join(c.d.stateDir, 'runtime-start-over.json'));
+  return c.active();
+}
+async function stoppedStartOver({ installation, descriptorPath, operationId, confirmedPlanHash }) {
+  if (!UUID.test(operationId) || confirmedPlanHash !== undefined && !HEX.test(confirmedPlanHash)) fail('start_over_stopped_options');
+  const c = context({ installation, descriptorPath });
+  const physical = require('node:net').createServer(socket => socket.destroy());
+  const ipc = require('node:net').createServer(socket => socket.destroy());
+  const listen = (server, address) => new Promise((resolve, reject) => {
+    server.once('error', reject); server.listen(address, resolve);
+  });
+  const close = server => server.listening && new Promise(resolve => server.close(resolve));
+  try {
+    await listen(physical, { host: '127.0.0.1', port: 3457 });
+    await listen(ipc, require('./client-entry').ownerEndpoint(installation));
+    function snapshot() {
+      if (c.active() || read(path.join(c.d.installRoot, 'install.lock')).bytes || read(path.join(c.d.stateDir, 'runtime-maintenance.json')).bytes) fail('start_over_install_busy');
+      const protectedFacts = c.protectedFacts(), markers = c.markers(), histories = c.histories();
+      const initial = inspectStartOverHistory(c.historyOptions(histories));
+      if (!markers.owner || !initial.requiresAEExit || !initial.archiveEligibleHistory) fail('start_over_stopped_scope');
+      const requestor = short(markers.owner.scope);
+      const ae = [...new Map([...initial.requiredAE, ...c.historicalAE()].map(a => [a.pid + ':' + a.birthTicks, a])).values()];
+      const plan = { operationId, installationId: installation.installationId, packageHash: installation.packageHash,
+        requestor, actors: markers.actors, ae, protectedDigest: hash(protectedFacts), markersDigest: hash(markers.facts),
+        receiver: { bytes: histories.receiver.bytes?.length ?? 0, sha256: initial.receiver.byteHash },
+        ledger: { bytes: histories.ledger.bytes?.length ?? 0, sha256: initial.ledger.byteHash } };
+      return { plan, requestor, protectedFacts, markers, histories, initial };
+    }
+    const before = snapshot();
+    const native = await observeStartOverStop({ actors: before.plan.actors.map(({pid,birthTicks}) => ({pid,birthTicks})), ae: before.plan.ae });
+    if (native.inventory.machineId !== installation.machineId || native.inventory.processes.length || !native.allObservedIncarnationsGone) fail('start_over_stopped_producers_alive');
+    const now = snapshot(), planHash = hash(now.plan);
+    if (!equal(now.plan, before.plan) || Math.abs(Date.now() - Date.parse(native.inventory.observedAt)) > 5000) fail('start_over_stopped_changed');
+    if (confirmedPlanHash === undefined) return { plan: now.plan, planHash, dispatched: false, aeAuthority: false };
+    if (confirmedPlanHash !== planHash) fail('start_over_operator_confirmation_changed');
+    const a = publishReset(c, crypto.randomUUID(), now.requestor, now.protectedFacts, now.markers, now.histories, now.initial);
+    c.validateInventory(native.inventory);
+    atomic(path.join(a.dir, 'inventory.json'), c.seal('start-over-inventory', { id: a.body.id, intentHash: a.barrier.hash, observation: native.inventory }));
+    return { operationId, planHash, reset: inspect(c), dispatched: true, aeAuthority: false };
+  } finally { await close(ipc); await close(physical); }
+}
 function createOwnerStartOver(options) {
   exact(options, ['installation', 'descriptorPath', 'lifecycle', 'freeze', 'fencePhysical', 'stop']);
   const { lifecycle, freeze, fencePhysical, stop } = options;
@@ -248,22 +304,9 @@ function createOwnerStartOver(options) {
       if (read(path.join(c.d.installRoot, 'install.lock')).bytes !== null || read(path.join(c.d.stateDir, 'runtime-maintenance.json')).bytes !== null) fail('start_over_install_busy');
       const protectedFacts = c.protectedFacts(), markers = c.markers(), histories = c.histories(), initial = inspectStartOverHistory(c.historyOptions(histories));
       if (!initial.archiveEligibleHistory) fail('start_over_resource_fenced');
-      if (!markers.actors.some(a => equal(a, requestor))) fail('start_over_scope');
-      if (markers.owner?.receiverIdentity !== null && markers.owner?.receiverIdentity !== undefined && markers.owner.receiverIdentity !== initial.receiver.identity) fail('start_over_marker_history');
-      id = crypto.randomUUID(); const dir = path.join(c.d.installRoot, 'transactions', id + '-start-over'); plain(path.dirname(dir), false, true); fs.mkdirSync(dir); plain(dir, false, true);
-      const prefix = Object.fromEntries(['receiver', 'ledger'].map(k => [k, { ...info(histories[k]), byteLength: histories[k].bytes?.length ?? 0 }]));
-      const original = atomic(path.join(dir, 'intent.json'), c.seal('start-over-intent', { id, newSessionId: crypto.randomUUID(), directory: directoryStamp(fs.lstatSync(dir, { bigint: true })), requestor, actors: markers.actors, protected: protectedFacts, markers: markers.facts, prefix, createdAt: new Date().toISOString() }));
-      if (!equal(c.protectedFacts(), protectedFacts) || !equal(c.markers().facts, markers.facts)) fail('start_over_changed');
-      // Retain each observed journal inode before publishing admission intent.
-      // Its prefix remains hash-bound while legitimate completions may append;
-      // removing/recreating both current names cannot exploit inode reuse.
-      for (const k of ['receiver', 'ledger']) if (histories[k].bytes !== null) {
-        fs.linkSync(histories[k].file, path.join(dir, 'original-' + k));
-        const anchor = read(path.join(dir, 'original-' + k), 64 * 1024 * 1024);
-        if (!anchor.bytes?.equals(histories[k].bytes) || !same(anchor.stat, histories[k].stat, ['ctimeNs'])) fail('start_over_prefix_changed');
-      }
-      fs.linkSync(original.file, path.join(c.d.stateDir, 'runtime-start-over.json'));
-      const a = c.active(); c.continuation(a);
+      id = crypto.randomUUID();
+      const a = publishReset(c, id, requestor, protectedFacts, markers, histories, initial);
+      const dir = a.dir; c.continuation(a);
       const observation = await observeStartOverInventory();
       c.continuation(a); c.validateInventory(observation);
       if (Math.abs(Date.now() - Date.parse(observation.observedAt)) > 5000) fail('start_over_inventory');
@@ -283,4 +326,4 @@ function startOverBarrierContext(capability) {
 function startOverFinisherContext(capability) {
   const p = require('./start-over-finisher').startOverFinisherRequest(capability); return context({ installation: p.installation, descriptorPath: p.descriptorPath });
 }
-module.exports = { createOwnerStartOver, inspectStartOver, startOverBarrierContext, startOverFinisherContext };
+module.exports = { createOwnerStartOver, inspectStartOver, stoppedStartOver, startOverBarrierContext, startOverFinisherContext };

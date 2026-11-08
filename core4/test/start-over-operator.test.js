@@ -11,13 +11,35 @@ function fixture(t,model='owner'){
 }
 function run(distribution,expected,f,mode,extra=[]){return spawnSync(process.execPath,[path.join(distribution,'tools/standalone-installer.js'),mode,'--expected-distribution-hash',expected,'--expected-current-package-hash',f.d.packageHash,'--installation',f.installed.descriptorPath,'--operation',id,...extra],{encoding:'utf8',windowsHide:true,timeout:15000});}
 function bytes(f){return{descriptor:fs.readFileSync(f.installed.descriptorPath),config:fs.readFileSync(f.args.configPath),client:fs.existsSync(path.join(f.d.installRoot,'core-client.json'))?fs.readFileSync(path.join(f.d.installRoot,'core-client.json')):null};}
-function legacyPackage(){const value=structuredClone(ownerPkg),contract=JSON.parse(Buffer.from(value.files['runtime/owner-contract.json'],'base64')),oldFiles=contract.requiredFiles.slice(0,10);for(const file of contract.requiredFiles.slice(10)){delete value.files[file];delete value.release.hashes[file];}const encoded=canonical({...contract,version:3,requiredFiles:oldFiles});value.files['runtime/owner-contract.json']=Buffer.from(encoded).toString('base64');value.release.hashes['runtime/owner-contract.json']=hash(encoded);value.packageHash=hash(value.release);return verifyPackage(value);}
+function legacyPackage(){
+  const value=structuredClone(ownerPkg), contractFile='runtime/owner-contract.json', policyFile='runtime/composition-policy.json';
+  const read=file=>JSON.parse(Buffer.from(value.files[file],'base64'));
+  const replace=(file,body)=>{const encoded=canonical(body);value.files[file]=Buffer.from(encoded).toString('base64');value.release.hashes[file]=hash(encoded);};
+  const contract=read(contractFile), policy=read(policyFile), oldFiles=contract.requiredFiles.slice(0,10), removed=contract.requiredFiles.slice(10);
+  for(const file of removed){delete value.files[file];delete value.release.hashes[file];}
+  replace(contractFile,{...contract,version:3,requiredFiles:oldFiles});
+  replace(policyFile,{...policy,files:policy.files.filter(file=>!removed.includes(file))});
+  value.packageHash=hash(value.release);
+  return verifyPackage(value);
+}
 test('start-over-operator JSON lookalikes and weakened source bootstrap never reach reset state or a writer',async()=>{
   await assert.rejects(require('../tools/operate-start-over').operate({mode:'start-over-finish',id}),e=>e.code==='start_over_bootstrap_brand');const text=fs.readFileSync(path.join(source,'tools/operate-start-over.js'),'utf8');assert.equal(checkStartOverOperatorSource(text),true);assert.throws(()=>checkStartOverOperatorSource("require('../runtime/start-over-finisher');\n"+text),/unverified_start_over_import/);assert.throws(()=>checkStartOverOperatorSource(text.replace("const options=require('./standalone-installer').assertStartOverBootstrap(capability);",'const options=capability;')),/start_over_operator_verification_layout/);
 });
 test('start-over-operator official inspect is read-only and missing finish pin refuses before effects',t=>{
   const f=fixture(t);bundle||=buildStandalone(source,'readonly',{runtimeModel:'owner'});const distribution=path.join(f.directory,'distribution');writeStandalone(distribution,bundle);const before=bytes(f),inspected=run(distribution,bundle.distributionHash,f,'start-over-inspect');assert.equal(inspected.status,0,inspected.stderr);const value=JSON.parse(inspected.stdout);assert.equal(value.phase,'running');assert.equal(value.aeAuthority,false);assert.deepEqual(bytes(f),before);
   const denied=run(distribution,bundle.distributionHash,f,'start-over-finish');assert.equal(denied.status,1);assert.match(denied.stderr,/standalone_usage/);assert.deepEqual(bytes(f),before);
+});
+test('start-over-operator either initiation route requires an explicit confirmation digest before effects',t=>{
+  const f=fixture(t);bundle||=buildStandalone(source,'readonly',{runtimeModel:'owner'});
+  const distribution=path.join(f.directory,'distribution');writeStandalone(distribution,bundle);
+  const before=bytes(f);
+  for(const mode of ['start-over-request','start-over-stopped-request']){
+    for(const flags of [[],['--confirm-plan-hash','wrong']]){
+      const result=run(distribution,bundle.distributionHash,f,mode,flags);
+      assert.equal(result.status,1);assert.match(result.stderr,/standalone_usage/);
+    }
+  }
+  assert.deepEqual(bytes(f),before);
 });
 test('start-over-operator changed distributed helper is rejected before its first import',t=>{
   const f=fixture(t);bundle||=buildStandalone(source,'readonly',{runtimeModel:'owner'});const distribution=path.join(f.directory,'distribution');writeStandalone(distribution,bundle);const marker=path.join(f.directory,'unexpected-import');fs.appendFileSync(path.join(distribution,'tools/operate-start-over.js'),'\nrequire("node:fs").writeFileSync('+JSON.stringify(marker)+',"unexpected");\n');const before=bytes(f),result=run(distribution,bundle.distributionHash,f,'start-over-inspect');assert.equal(result.status,1);assert.match(result.stderr,/standalone_closure_bytes/);assert.equal(fs.existsSync(marker),false);assert.deepEqual(bytes(f),before);

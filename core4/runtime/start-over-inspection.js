@@ -50,15 +50,29 @@ function aeScope(origin, machineId) {
   if (ticks < 1n || ticks > 3155378975999999999n) return null;
   return { pid: origin.aePid, birthTicks: String(ticks) };
 }
-function constraints(entries, ledger, installationId, machineId) {
+function constraints(entries, ledger, receives, installationId, machineId) {
   const latest = new Map(), invalid = new Set(ledger.constraintFences);
   for (const e of entries) if (e.type === 'constraint') latest.set(e.record.constraintId, e.record);
+  const intents = new Map(entries.filter(e => e.type === 'intent').map(e => [e.checkpoint?.ref, e]));
+  const terminals = new Map(entries.filter(e => e.type === 'command').map(e => [e.commandId, e]));
+  const reservations = new Map(entries.filter(e => e.type === 'reservation' && e.reservationRef).map(e => [e.reservationRef, e]));
+  const replies = new Map(receives.filter(e => e.type === 'complete').map(e => [e.commandId, e]));
   return [...latest].flatMap(([constraintId, record]) => {
     // AE process death can retire this installation's AE-local execution fence.
     // It cannot release a foreign writer, a file/output lease, or an unfamiliar
     // schema. The first reset implementation refuses these cases explicitly.
     const foreign = record.owner !== installationId || record.reservationOwner !== null && record.reservationOwner !== installationId;
-    const external = record.resource && ['file', 'output'].some(k => Object.hasOwn(record.resource, k));
+    const intent = intents.get(record.checkpointRef), terminal = terminals.get(intent?.commandId), reply = replies.get(intent?.commandId);
+    const reservation = reservations.get(intent?.grant?.reservationRef);
+    // An imported input is read-only. Require every original success and
+    // reservation binding before distinguishing it from an external fence.
+    const settledInput = !foreign && !invalid.has(constraintId) && record.unresolvedOutcome === false &&
+      record.resource?.file && !Object.hasOwn(record.resource, 'output') &&
+      equal(record.allowedEffects, ['project-media-import']) && intent?.selected?.contract?.operationId === 'ingest-footage' &&
+      intent.grant?.allowedEffect === 'project-media-import' && intent.grant.owner === installationId &&
+      equal(intent.target, record.resource) && equal(intent.grant.executionScope?.origin, record.origin) &&
+      reservation?.state === 'succeeded' && terminal?.state === 'succeeded' && reply?.response?.result?.outcome === 'applied';
+    const external = !settledInput && record.resource && ['file', 'output'].some(k => Object.hasOwn(record.resource, k));
     const malformed = invalid.has(constraintId) && record.unresolvedOutcome !== true;
     // Validate an unresolved own record with that one field normalized for
     // schema inspection only. The original record/UNKNOWN bytes stay untouched.
@@ -76,7 +90,7 @@ function constraints(entries, ledger, installationId, machineId) {
 function inspectStartOverHistory(value) {
   const { receiver, ledger, receives, entries } = input(value);
   crossCheck(receives, entries);
-  const blockedConstraints = constraints(entries, ledger, value.installationId, value.machineId);
+  const blockedConstraints = constraints(entries, ledger, receives, value.installationId, value.machineId);
   const requiredAE = new Map();
   // Preserve exact known AE incarnations needed by unresolved own constraints;
   // death of just the currently adopted/new AE cannot retire an older scope.

@@ -1,19 +1,25 @@
 'use strict';
-// Distribution-only private continuation. Never creates a new reset, kills AE,
-// replays a command or changes a pending installation's credentials.
-const path=require('node:path'),http=require('node:http');
+// Distribution-only local operator. The owner creates the reset and enforces
+// its barriers. This helper can neither stop AE nor dispatch AE work.
+const path=require('node:path'),http=require('node:http'),fs=require('node:fs');
 async function operate(capability){
   const options=require('./standalone-installer').assertStartOverBootstrap(capability);
   const d=require('./maintain-owner').verifyOwnerInstallation(options.descriptor,options.expectedCurrentPackageHash);
   if(d.releaseDir===path.resolve(__dirname,'..'))throw Object.assign(Error('start_over_distribution_separate'),{code:'start_over_distribution_separate'});
-  const{canonical,fail}=require('../protocol/json');
+  const{canonical,hash,fail}=require('../protocol/json');
   if(canonical(require('../runtime/installation').verifyInstallation(options.descriptor))!==canonical(d))fail('start_over_installation_changed');
-  const current=require('../runtime/start-over-state').inspectStartOver({installation:d,descriptorPath:options.descriptor});
+  const state=require('../runtime/start-over-state');
+  if(['start-over-stopped-plan','start-over-stopped-request'].includes(options.mode)){
+    return state.stoppedStartOver({installation:d,descriptorPath:options.descriptor,operationId:options.id,confirmedPlanHash:options.confirmedPlanHash});
+  }
+  const inspect=()=>state.inspectStartOver({installation:d,descriptorPath:options.descriptor});
+  const current=inspect();
   if(options.mode==='start-over-inspect'){
     if(current.id!==null&&current.id!==options.id)fail('start_over_intent_changed');return current;
   }
   if(options.mode==='start-over-finish')return require('../runtime/start-over-finisher').finishStartOver({installation:d,descriptorPath:options.descriptor,id:options.id,expectedIntentHash:options.expectedIntentHash});
-  if(options.mode!=='start-over-continue'||current.id!==options.id||current.intentHash!==options.expectedIntentHash)fail('start_over_intent_changed');
+  const initiating=['start-over-plan','start-over-request'].includes(options.mode);
+  if(initiating ? current.id!==null : options.mode!=='start-over-continue'||current.id!==options.id||current.intentHash!==options.expectedIntentHash)fail('start_over_intent_changed');
   const{mac,validMac}=require('../integrations/cep/peer-protocol'),domain='ae-core4/panel-start-over/v1';
   async function post(route,input){return new Promise((resolve,reject)=>{
     let settled=false,timer;
@@ -28,7 +34,63 @@ async function operate(capability){
     const response=await post('/start-over/challenge',{action}),c=response.challenge;
     if(!c||c.version!==1||c.purpose!=='start-over'||c.role!=='panel'||c.action!==action||c.origin!=='null'||c.installationId!==d.installationId||c.packageHash!==d.packageHash||typeof c.nonce!=='string'||!/^[a-f0-9]{64}$/.test(c.nonce))fail('start_over_continue_auth');
     const reply=await post('/start-over/'+action,{challenge:c,proof:mac({domain,kind:'request',challenge:c},d.panelToken)}),b=reply.body;
-    if(!b||b.version!==1||b.purpose!=='start-over'||b.action!==action||b.epoch!==c.epoch||b.nonce!==c.nonce||b.origin!==c.origin||b.installationId!==d.installationId||b.packageHash!==d.packageHash||!validMac({domain,kind:'response',body:b},reply.mac,d.panelToken)||b.status?.id!==options.id||b.status.aeAuthority!==false)fail('start_over_continue_auth');return b.status;
+    if(!b||b.version!==1||b.purpose!=='start-over'||b.action!==action||b.epoch!==c.epoch||b.nonce!==c.nonce||b.origin!==c.origin||b.installationId!==d.installationId||b.packageHash!==d.packageHash||!validMac({domain,kind:'response',body:b},reply.mac,d.panelToken)||(!initiating&&b.status?.id!==options.id)||b.status?.aeAuthority!==false)fail('start_over_continue_auth');return b.status;
+  }
+  if(initiating){
+    const {createIpcClient}=require('../runtime/client-ipc.js');
+    const {ownerEndpoint}=require('../runtime/client-entry.js');
+    const client=await createIpcClient({endpoint:ownerEndpoint(d),identity:{installationId:d.installationId,machineId:d.machineId,packageHash:d.packageHash},secret:d.controlToken,timeoutMs:5000});
+    async function observe(){
+      const reply=await client.call('core_status',{}), s=reply?.value, owner=s?.attachmentOwner, activity=owner?.activity;
+      if(!reply?.ok||!s.lifecycle||!owner||!activity||activity.pending!==false||activity.fault!==false||
+         s.maintenance?.requested!==false||owner.frozen||(!activity.unresolved&&owner.holderClientId!==null)||
+         s.startOver?.phase!=='ready'||s.workSession?.resetPending!==false||inspect().id!==null)fail('start_over_operator_busy');
+      const {pid,birthTicks,processBootId}=s.lifecycle;
+      const {sessionId,resetId}=s.workSession;
+      if(!sessionId||!processBootId||!Number.isSafeInteger(pid)||typeof birthTicks!=='string')fail('start_over_operator_identity');
+      return {pid,birthTicks,processBootId,sessionId,resetId,unresolved:s.unresolved??[],requiresAEExit:activity.unresolved===true};
+    }
+    function journal(relative){
+      const file=path.join(d.stateDir,relative), before=fs.lstatSync(file,{bigint:true,throwIfNoEntry:false});
+      if(!before)return null;
+      if(!before.isFile()||before.isSymbolicLink()||before.size>64n*1024n*1024n||fs.realpathSync(file)!==file)fail('start_over_operator_journal');
+      const fd=fs.openSync(file,'r');
+      try{
+        const same=value=>value&&['dev','ino','size','mtimeNs','ctimeNs','nlink'].every(key=>before[key]===value[key]);
+        if(!same(fs.fstatSync(fd,{bigint:true})))fail('start_over_operator_journal');
+        const bytes=Buffer.alloc(Number(before.size));
+        for(let offset=0;offset<bytes.length;){
+          const count=fs.readSync(fd,bytes,offset,bytes.length-offset,offset);
+          if(!count)fail('start_over_operator_journal');
+          offset+=count;
+        }
+        if(!same(fs.fstatSync(fd,{bigint:true}))||!same(fs.lstatSync(file,{bigint:true,throwIfNoEntry:false})))fail('start_over_operator_journal');
+        return {bytes:bytes.length,sha256:hash(bytes)};
+      }finally{fs.closeSync(fd);}
+    }
+    try{
+      const status=await observe(), panel=await rpc('status');
+      const history=()=>({receiver:journal('receiver/completions.ndjson'),ledger:journal('broker/ledger.ndjson')});
+      const journals=history();
+      if(panel.phase!=='ready'||panel.sessionId!==status.sessionId||panel.id!==status.resetId||
+         canonical(status)!==canonical(await observe())||canonical(journals)!==canonical(history()))fail('start_over_operator_changed');
+      const plan={version:1,operationId:options.id,installationId:d.installationId,packageHash:d.packageHash,
+        descriptorHash:hash(fs.readFileSync(options.descriptor)),status,journals};
+      const planHash=hash(plan);
+      if(options.mode==='start-over-plan')return {plan,planHash,dispatched:false,aeAuthority:false};
+      if(options.confirmedPlanHash!==planHash)fail('start_over_operator_confirmation_changed');
+      // Claim this session before any request. A lost reply is resolved by
+      // inspecting the owner intent, never by another operator request.
+      const claim=path.join(d.stateDir,'operator-start-over-'+hash(status.sessionId)+'.json');
+      const fd=fs.openSync(claim,'wx',0o600);
+      try{
+        fs.writeFileSync(fd,canonical({plan,planHash,mac:mac({domain:'ae-core4/operator-start-over/v1',planHash},d.controlToken)}));
+        fs.fsyncSync(fd);
+      }finally{fs.closeSync(fd);}
+      const reset=await rpc('request');
+      if(!reset.id||reset.id===status.resetId)fail('start_over_operator_outcome_uncertain');
+      return {operationId:options.id,planHash,reset,dispatched:true,aeAuthority:false};
+    }finally{client.close();}
   }
   const status=await rpc('status');
   if(status.phase!=='blocked')return{...status,continueRequested:false};

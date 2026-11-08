@@ -66,6 +66,22 @@ test('start-over-inspection foreign owner reservation and shared file output fen
     const result = inspect(null, journal([constraint(change)])); assert.equal(result.archiveEligibleHistory, false); assert.deepEqual(result.blockedConstraints, [{ constraintId: 'constraint-test', reason }]);
   }
 });
+test('start-over-inspection archives a read-only import input only after original correlated success', () => {
+  const c = { ...command('imported'), moduleId: 'media-import', operationId: 'ingest-footage', phase: 'mutate' };
+  const r = constraint({ resource: { projectId: 'test.aep', file: 'source.jpg' }, allowedEffects: ['project-media-import'] });
+  const i = { ...intent(c), checkpoint: { ref: r.record.checkpointRef }, target: r.record.resource,
+    selected: { contract: { operationId: 'ingest-footage' } }, grant: { allowedEffect: 'project-media-import',
+      owner: base.installationId, executionScope: { origin: r.record.origin }, reservationRef: 'reservation-import' } };
+  const reserved = { type: 'reservation', state: 'reserved', reservation: { ref: 'reservation-import', commandId: c.commandId } };
+  const completed = { type: 'reservation', state: 'succeeded', reservationRef: 'reservation-import' };
+  const receiver = journal([origin, begin(c), complete(c, 'applied')]);
+  const done = terminal(c, 'succeeded');
+  assert.equal(inspect(receiver, journal([reserved, r, i, completed, done])).archiveEligibleHistory, true);
+  for (const entries of [[reserved, r, i, done], [reserved, r, i, completed],
+    [reserved, constraint({ ...r.record, unresolvedOutcome: true }), i, completed, done]]) {
+    assert.equal(inspect(receiver, journal(entries)).archiveEligibleHistory, false);
+  }
+});
 test('start-over-inspection unresolved own AE-local fence can retire only behind AE exit and original bytes remain unknown', () => {
   const bytes = journal([constraint({ unresolvedOutcome: true })]), before = Buffer.from(bytes), result = inspect(null, bytes);
   assert.equal(result.requiresAEExit, true); assert.equal(result.archiveEligibleHistory, true); assert.equal(result.ledger.unresolved[0].kind, 'constraint'); assert.deepEqual(bytes, before);

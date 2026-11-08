@@ -69,17 +69,19 @@ function main(args = process.argv.slice(2)) {
   const maintenance = ['maintenance-inspect', 'maintenance-finish', 'stopped-inspect', 'stopped-certify'].includes(mode);
   const update = ['migrate-legacy', 'owner-update', 'update-inspect', 'update-finish', 'update-enable', 'enable-finish', 'legacy-inspect', 'legacy-finish', 'owner-pre-ready-inspect', 'owner-pre-ready-finish'].includes(mode);
   const readoption = ['readopt-inspect', 'readopt-apply', 'readopt-finish', 'readopt-enable', 'readopt-enable-finish'].includes(mode);
-  const startOver = ['start-over-inspect', 'start-over-finish', 'start-over-continue'].includes(mode);
+  const startOver = ['start-over-plan', 'start-over-request', 'start-over-stopped-plan', 'start-over-stopped-request', 'start-over-inspect', 'start-over-finish', 'start-over-continue'].includes(mode);
   const action = ['maintenance-finish', 'stopped-certify'].includes(mode);
   if (!['dry-run', 'apply'].includes(mode) && !maintenance && !update && !readoption && !startOver || args.length % 2 !== 1) fail('standalone_usage');
   if (startOver) {
-    const allowed = ['--expected-distribution-hash', '--expected-current-package-hash', '--installation', '--operation', ...(mode === 'start-over-inspect' ? [] : ['--expected-intent-hash'])];
+    const pin = ['start-over-request', 'start-over-stopped-request'].includes(mode) ? ['--confirm-plan-hash'] :
+      ['start-over-finish', 'start-over-continue'].includes(mode) ? ['--expected-intent-hash'] : [];
+    const allowed = ['--expected-distribution-hash', '--expected-current-package-hash', '--installation', '--operation', ...pin];
     for (let i = 1; i < args.length; i += 2) { if (!allowed.includes(args[i]) || Object.hasOwn(options, args[i]) || typeof args[i + 1] !== 'string' || !args[i + 1] || args[i + 1].startsWith('--')) fail('standalone_usage'); options[args[i]] = args[i + 1]; }
     if (Object.keys(options).length !== allowed.length || allowed.filter(k => k.includes('hash')).some(k => !HASH.test(options[k])) || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(options['--operation'])) fail('standalone_usage');
     absolute(options['--installation']);
     const checked = verifyStandalone(path.resolve(__dirname, '..'), options['--expected-distribution-hash']);
     for (const name of ['owner-contract.json', 'start-over-state.js', 'start-over-finisher.js', 'start-over-driver.js', 'work-session.js']) if (!Object.hasOwn(checked.pkg.release.hashes, 'runtime/' + name)) fail('start_over_distribution_unavailable');
-    const capability = Object.freeze({}); startOverBootstraps.set(capability, Object.freeze({ mode, descriptor: options['--installation'], id: options['--operation'], expectedCurrentPackageHash: options['--expected-current-package-hash'], expectedIntentHash: options['--expected-intent-hash'] }));
+    const capability = Object.freeze({}); startOverBootstraps.set(capability, Object.freeze({ mode, descriptor: options['--installation'], id: options['--operation'], expectedCurrentPackageHash: options['--expected-current-package-hash'], expectedIntentHash: options['--expected-intent-hash'], confirmedPlanHash: options['--confirm-plan-hash'] }));
     return (async () => { try { return await require('./operate-start-over.js').operate(capability); } finally { startOverBootstraps.delete(capability); } })();
   }
   if (readoption) {
