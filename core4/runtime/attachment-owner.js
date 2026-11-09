@@ -10,7 +10,7 @@ const TOOL_METHODS = Object.freeze({ core_status: 'status', core_connect: 'conne
 const CONTROL_METHODS = Object.freeze(['owner_status', 'controller_acquire', 'controller_renew', 'controller_release', 'controller_transfer']);
 const OWNER_METHODS = Object.freeze([...Object.keys(TOOL_METHODS), ...CONTROL_METHODS]);
 const LEASE_ERRORS = Object.freeze(['controller_busy', 'controller_fenced', 'controller_lease_identity', 'controller_lease_expired', 'controller_draining', 'controller_client_detached', 'controller_clock_fault', 'controller_operation_pending', 'controller_expected', 'controller_transfer_changed', 'controller_not_expired']);
-const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_inspection_contract_required', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed', 'owner_work_session_required', 'owner_work_session_changed', 'owner_work_session_unavailable', 'owner_baseline_required', 'fresh_dryrun_required']);
+const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_inspection_contract_required', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed', 'owner_work_session_required', 'owner_work_session_changed', 'owner_work_session_unavailable', 'owner_baseline_required', 'fresh_dryrun_required', 'media_already_imported']);
 const OBSERVERS = new Set(['core_status', 'core_diagnostics', 'list_modules', 'get_module_contract', 'get_task']);
 const READ_REJECTION_CODES = Object.freeze(['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable',
   'layer_overlay_layer_profile', 'layer_overlay_expression_scope', 'layer_overlay_existing_or_partial']);
@@ -54,7 +54,8 @@ function classifyPhysicalRead(value) {
   return null;
 }
 
-function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, isFreshDryrunRefusal = () => false, canResumeTask = () => false, workSession = () => ({ sessionId: null, baselineRequired: false, resetPending: false }), clock, ttlMs, drainIntervalMs = 100 } = {}) {
+function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, isFreshDryrunRefusal = () => false,
+  consumeMediaDuplicateBuildRefusal = () => false, canResumeTask = () => false, workSession = () => ({ sessionId: null, baselineRequired: false, resetPending: false }), clock, ttlMs, drainIntervalMs = 100 } = {}) {
   if (!runtime || typeof runtime.status !== 'function' || typeof activity !== 'function' || typeof invoke !== 'function' || typeof workSession !== 'function' || !Number.isSafeInteger(drainIntervalMs) || drainIntervalMs < 1 || drainIntervalMs > 1000) throw new Error('owner_options');
   const lease = createControllerLease({ clock, ttlMs }), sessions = new Map(), accepted = new Set(), timers = new Set(), ownErrors = new WeakSet();
   const rejectedReads = new WeakSet();
@@ -170,11 +171,13 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
       try { result = await invoke(TOOL_METHODS[method], payload, context); }
       catch (error) {
         if (method === 'run_plan' && isFreshDryrunRefusal(error)) fail('fresh_dryrun_required');
+        const duplicateBuild = method === 'build_solution_plan' && consumeMediaDuplicateBuildRefusal(error);
         // Consume even if facts/context prevent classification. Clean facts alone
         // never prove completion, and the original grant need not still be live.
         let rejection;
         try { rejection = consumeReadRejection(error, { method, payload, context }); } catch {}
         const value = facts();
+        if (duplicateBuild && !value.pending && !value.unresolved && !value.fault) fail('media_already_imported');
         const physical = method === 'inspect_module_target' && classifyPhysicalRead(rejection?.physical);
         if (physical && (physical.outcome !== 'rejected' || !value.pending && !value.unresolved && !value.fault)) {
           const rejected = new Error(physical.code);

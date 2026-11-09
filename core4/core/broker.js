@@ -16,8 +16,10 @@ const { hash, canonical, exact, fail, id, bounded } = require('../protocol/json'
 const clone = value => JSON.parse(canonical(value));
 const pick = (object, fields) => Object.fromEntries(fields.map(k => [k, object[k]]));
 const freshDryrunRefusals = new WeakSet();
+const mediaDuplicateBuildRefusals = new WeakSet();
 class Broker {
   static isFreshDryrunRefusal(error) { return freshDryrunRefusals.has(error); }
+  static consumeMediaDuplicateBuildRefusal(error) { return mediaDuplicateBuildRefusals.delete(error); }
 
   constructor({ root = path.resolve(__dirname, '..'), stateDir, trace, workerTimeout, transportTimeout = 2000, projectOpenTransportTimeout, privateEmbedding, stateLockToken } = {}) {
     if (!stateDir) fail('explicit_state_directory_required');
@@ -192,7 +194,13 @@ class Broker {
       const evidence = this.evidence.get(request.evidenceRef);
       if (!evidence || evidence.modulePin !== selected.pin) fail('server_evidence_required');
       check(selected.contract.buildSchema, request.input);
-      const intent = await this.job(task, 'build', selected, { input: request.input, evidence: evidence.snapshot });
+      let intent;
+      try { intent = await this.job(task, 'build', selected, { input: request.input, evidence: evidence.snapshot }); }
+      catch (error) {
+        // Only the selected media builder can prove this refusal before plan publication.
+        if (selected.moduleId === 'media-import' && error.code === 'media_already_imported') mediaDuplicateBuildRefusals.add(error);
+        throw error;
+      }
       const input = this.validateIntent(selected, intent, request.input, evidence.snapshot);
       const executionPolicy = this.executionDescription(selected, evidence.snapshot.target);
       steps.push({ stepId: request.stepId, selected, input, desiredInput: request.input, inputDigest: hash({ input: request.input, modulePin: selected.pin, bindings: request.bindings || [] }), dependsOn: request.dependsOn || [], bindings: request.bindings || [], initialEvidence: evidence.snapshot, ...(executionPolicy ? { executionPolicy } : {}) });

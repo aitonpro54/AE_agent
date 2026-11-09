@@ -408,12 +408,12 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     return startOverView();
   }
   if (mode === 'owner') startOverControl = require('./start-over-panel-control.js').createStartOverPanelControl({ installation, status: startOverView, request: requestStartOver });
-  async function exposeOwner(facade, activity, invoke, consumeReadRejection, isFreshDryrunRefusal, canResumeTask) {
+  async function exposeOwner(facade, activity, invoke, options = {}) {
     const { createAttachmentOwner, OWNER_METHODS } = require('./attachment-owner.js');
     const { createIpcServer } = require('./client-ipc.js');
     const { ownerEndpoint } = require('./client-entry.js');
     const { PRIVATE_METHODS, createOwnerMaintenance, createStopAuthorization } = require('./owner-maintenance.js');
-    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke, consumeReadRejection, isFreshDryrunRefusal, canResumeTask, workSession: workSession.status });
+    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke, ...options, workSession: workSession.status });
     const endpoint = ownerEndpoint(installation);
     let closed = false, closing, maintenance;
     async function closeRuntime() {
@@ -647,11 +647,16 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     return await exposeOwner(facade, activity, (method, payload, context) => {
       const receiver = Object.hasOwn(facade, method) ? facade : broker;
       return invocationContext.run(context, () => { if (!context.observer) context.assertCurrent(); return receiver[method](payload); });
-    }, (error, request) => {
-      const record = completedReadErrors.get(error); completedReadErrors.delete(error);
-      if (!record || request.context !== record.context || request.method !== 'inspect_module_target' || request.payload.moduleId !== record.moduleId || request.payload.contractId !== record.contractId || hash(canonical(request.payload.target || {})) !== record.targetHash) return null;
-      return { code: record.code, ...(record.phase ? { phase: record.phase } : {}), ...(record.physical ? { physical: record.physical } : {}) };
-    }, Broker.isFreshDryrunRefusal, canResumeMontageTask);
+    }, {
+      consumeReadRejection(error, request) {
+        const record = completedReadErrors.get(error); completedReadErrors.delete(error);
+        if (!record || request.context !== record.context || request.method !== 'inspect_module_target' || request.payload.moduleId !== record.moduleId || request.payload.contractId !== record.contractId || hash(canonical(request.payload.target || {})) !== record.targetHash) return null;
+        return { code: record.code, ...(record.phase ? { phase: record.phase } : {}), ...(record.physical ? { physical: record.physical } : {}) };
+      },
+      isFreshDryrunRefusal: Broker.isFreshDryrunRefusal,
+      consumeMediaDuplicateBuildRefusal: Broker.consumeMediaDuplicateBuildRefusal,
+      canResumeTask: canResumeMontageTask
+    });
   }
   serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.1.2' } });
   return { close: facade.close, status: facade.status };

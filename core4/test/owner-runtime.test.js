@@ -491,6 +491,20 @@ nodeTest('owner-runtime installed montage locks approved bytes, binds receipts a
       return { proposalId, dryrunRef };
     }
     const fileTarget = ({ projectId, sessionId, file }) => ({ projectId, sessionId, file });
+    const duplicate = importInput(state.originalSource);
+    const { evidenceRef: duplicateEvidence } = await inspect('media-import', fileTarget(duplicate));
+    const receiverPath = path.join(f.d.stateDir, 'receiver/completions.ndjson');
+    const ledgerPath = path.join(f.d.stateDir, 'broker/ledger.ndjson');
+    const receiverBeforeDuplicate = fs.readFileSync(receiverPath), ledgerBeforeDuplicate = records(ledgerPath).length;
+    const refusedDuplicate = await client.rpc('tools/call', { name: 'build_solution_plan', arguments: { payload: {
+      oneStep: true, steps: [{ stepId: 'duplicate', moduleId: 'media-import', contractId: contracts['media-import'],
+        evidenceRef: duplicateEvidence, input: duplicate }]
+    } } });
+    assert.deepEqual(refusedDuplicate.error, { code: -32000, message: 'media_already_imported' });
+    assert.deepEqual(fs.readFileSync(receiverPath), receiverBeforeDuplicate);
+    assert.deepEqual(records(ledgerPath).slice(ledgerBeforeDuplicate).map(record => record.type), ['task']);
+    assert.deepEqual((await client.call('core_status')).attachmentOwner.activity, { pending: false, unresolved: false, fault: false });
+    assert.equal(state.project.numItems, 1109);
     const firstPlan = await build('media-import', fileTarget(first), first);
     const { taskId } = firstPlan;
     const { issueMontageMandate, revokeMontageMandate } = require(path.join(f.d.releaseDir, 'runtime/montage-mandate.js'));

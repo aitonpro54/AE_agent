@@ -15,7 +15,7 @@ function build({ input, evidence }) {
   if (version !== 2 || !Array.isArray(directories) || !Array.isArray(rows)) throw new Error('media_import_inventory');
   if (rows.some(([, , , directory, suffix]) => suffix !== undefined &&
       fileKey((directory ? directories[directory - 1] : '') + suffix) === file)) {
-    throw new Error('media_already_imported');
+    throw Object.assign(new Error('media_already_imported'), { code: 'media_already_imported' });
   }
   const bytes = Buffer.byteLength(JSON.stringify(evidence));
   if (rows.length >= 2048 || bytes > 84 * 1024 ||

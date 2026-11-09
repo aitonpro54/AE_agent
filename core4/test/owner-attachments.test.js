@@ -12,6 +12,7 @@ function fixture(options = {}) {
   const runtime = { status: () => ({ ready: true, store: 'fixture-single-store' }), close() { closes++; } };
   const owner = createAttachmentOwner({ runtime, activity: () => ({ ...facts }), clock: () => time, ttlMs: 1000, drainIntervalMs: 1,
     consumeReadRejection: options.consumeReadRejection,
+    consumeMediaDuplicateBuildRefusal: options.consumeMediaDuplicateBuildRefusal,
     async invoke(method, payload, context) {
       calls.push({ method, payload, context });
       if (options.invoke) return options.invoke(method, payload, context);
@@ -142,6 +143,31 @@ test('owner-attachments prior generation evidence/build/proposal/dryrun cannot b
 test('owner-attachments runtime secret messages and arbitrary error codes do not cross attachment', async () => {
   const f = fixture({ invoke() { throw Object.assign(new Error('secret-fixture-value'), { code: 'secret-fixture-value' }); } }), a = f.attach();
   await denied(f.call(a, 'core_status'), 'runtime_request_failed'); await f.owner.close();
+});
+test('owner-attachments duplicate build refusal requires private proof and clean facts', async () => {
+  for (const mode of ['forged', 'fault', 'wrong-method']) {
+    const error = Object.assign(new Error('private detail'), { code: 'media_already_imported' });
+    let consumed = 0, f;
+    f = fixture({
+      invoke(method) {
+        if (method === 'inspect') return { evidenceRef: 'evidence-duplicate' };
+        if (mode === 'fault') f.facts.fault = true;
+        throw error;
+      },
+      consumeMediaDuplicateBuildRefusal(value) {
+        consumed++;
+        return mode !== 'forged' && value === error;
+      }
+    });
+    const a = f.attach();
+    await ok(f.call(a, 'controller_acquire'));
+    const { evidenceRef } = await ok(f.call(a, 'inspect_module_target', inspection));
+    const method = mode === 'wrong-method' ? 'core_connect' : 'build_solution_plan';
+    await denied(f.call(a, method, mode === 'wrong-method' ? {} : { steps: [{ evidenceRef }] }), 'owner_outcome_uncertain');
+    assert.equal(consumed, mode === 'wrong-method' ? 0 : 1);
+    f.facts.fault = false;
+    await f.owner.close();
+  }
 });
 test('owner-attachments observer context cannot be used for physical access', async () => {
   const f = fixture({ invoke(_method, _payload, context) { context.assertCurrent(); } }), a = f.attach();
