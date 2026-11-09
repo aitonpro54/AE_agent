@@ -87,6 +87,19 @@ test('start-over-inspection unresolved own AE-local fence can retire only behind
   assert.equal(result.requiresAEExit, true); assert.equal(result.archiveEligibleHistory, true); assert.equal(result.ledger.unresolved[0].kind, 'constraint'); assert.deepEqual(bytes, before);
   assert.deepEqual(result.requiredAE, [{ pid: 12, birthTicks: '639292254253597850' }]);
 });
+test('start-over-inspection preserves valid large revisions for both settled and unresolved commands', () => {
+  const c = { ...command('large-overlay'), phase: 'mutate', moduleId: 'layer-overlay', operationId: 'duplicate-and-replace-still' };
+  const revision = JSON.stringify(['層'.repeat(8500), 'Кадр']);
+  for (const settled of [true, false]) {
+    const receiver = journal([origin, begin(c), settled ? complete(c, 'applied') : { type: 'unknown', commandId: c.commandId }]);
+    const record = constraint({ revision, unresolvedOutcome: !settled });
+    const entries = [record, intent(c), ...(settled ? [terminal(c, 'succeeded')] : [])];
+    const result = inspect(receiver, journal(entries));
+    assert.equal(result.archiveEligibleHistory, true);
+    assert.equal(result.requiresAEExit, !settled);
+  }
+  assert.equal(inspect(null, journal([constraint({ revision: { value: 'invalid' } })])).blockedConstraints[0].reason, 'unsupported_resource_fence');
+});
 test('start-over-inspection another machine legacy origin and imprecise AE birth cannot retire behind local process death', () => {
   for (const origin of [{ ...constraint({}).record.origin, machineId: 'other-machine' }, { ...constraint({}).record.origin, aeProcessBirth: '2026-11-02T14:10:25.359Z' }, { ...constraint({}).record.origin, aeProcessBirth: '2026-02-30T14:10:25.3597850Z' }]) {
     const result = inspect(null, journal([constraint({ origin })])); assert.equal(result.archiveEligibleHistory, false); assert.equal(result.blockedConstraints[0].reason, 'uncovered_resource_origin');

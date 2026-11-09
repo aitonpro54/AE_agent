@@ -61,6 +61,7 @@
             if (file.exists || file.alias) fault('frame_export_exists');
             if (!confirmAction || confirmAction() !== true) fault('operator_confirmation_required');
             if (snapshot(p, composition(p)).revision !== before.revision || file.exists || file.alias) fault('frame_export_stale');
+            if (confirmAction() !== true) fault('operator_confirmation_expired');
             started = true;
             comp.saveFrameToPng(time, file);
             var bytes = completedPng(file.fsName);

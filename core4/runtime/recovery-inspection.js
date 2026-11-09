@@ -162,7 +162,9 @@ function inspectLedgerHistory(bytes, context = {}) {
   const constraintFences = [...constraints.values()].filter(c => {
     const keys = ['constraintId', 'schemaVersion', 'resource', 'owner', 'checkpointRef', 'allowedEffects', 'reservationOwner', 'unresolvedOutcome', 'revision', 'provenance', ...(c.schemaVersion === 2 ? ['origin'] : [])];
     if (Object.keys(c).length !== keys.length || keys.some(k => !Object.hasOwn(c, k)) || ![1, 2].includes(c.schemaVersion) || !text(c.owner) || !text(c.checkpointRef) || !text(c.provenance) ||
-        !Array.isArray(c.allowedEffects) || c.allowedEffects.some(e => !text(e)) || c.revision !== null && !text(c.revision) || typeof c.unresolvedOutcome !== 'boolean' || c.unresolvedOutcome ||
+        !Array.isArray(c.allowedEffects) || c.allowedEffects.some(e => !text(e)) ||
+        // Revisions are opaque snapshots. The journal frame already bounds their bytes.
+        c.revision !== null && (typeof c.revision !== 'string' || !c.revision.length) || typeof c.unresolvedOutcome !== 'boolean' || c.unresolvedOutcome ||
         c.reservationOwner !== null && (!text(c.reservationOwner) || c.reservationOwner !== context.installationId)) return true;
     const r = c.resource;
     const ids = ['compId', 'layerId', 'itemId', ...(c.schemaVersion === 2 ? ['originalSourceId'] : [])];

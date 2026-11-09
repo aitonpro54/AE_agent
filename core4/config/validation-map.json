@@ -44,19 +44,24 @@
     { "prefix": "core4/config/admissions/layer-insert.json", "owner": "media-layers", "checks": ["media-layers"] },
     { "prefix": "core4/config/compositions/manual-media-layers.json", "owner": "media-layers", "checks": ["media-layers", "installed-composition", "package-location"] },
     { "prefix": "core4/runtime/media-layer-proof.js", "owner": "media-layers", "checks": ["media-layers"] },
+    { "prefix": "core4/runtime/layer-insert-proof.js", "owner": "media-layers", "checks": ["media-layers"] },
     { "prefix": "core4/test/media-layers.test.js", "owner": "media-layers", "checks": ["media-layers"] },
+    { "prefix": "core4/test/fixtures/media-layer-host.js", "owner": "media-layers", "checks": ["media-layers", "owner-runtime"] },
     { "prefix": "core4/modules/layer-overlay/", "owner": "layer-overlay", "checks": ["layer-overlay"] },
     { "prefix": "core4/config/admissions/layer-overlay.json", "owner": "layer-overlay", "checks": ["layer-overlay"] },
     { "prefix": "core4/config/compositions/manual-layer-overlay.json", "owner": "layer-overlay", "checks": ["layer-overlay", "installed-composition", "package-location"] },
     { "prefix": "core4/config/compositions/operator-photo-montage.json", "owner": "layer-overlay", "checks": ["layer-overlay", "installed-composition", "package-location"] },
     { "prefix": "core4/runtime/layer-overlay-proof.js", "owner": "layer-overlay", "checks": ["layer-overlay"] },
     { "prefix": "core4/test/layer-overlay.test.js", "owner": "layer-overlay", "checks": ["layer-overlay"] },
+    { "prefix": "core4/test/fixtures/montage-host.js", "owner": "layer-overlay", "checks": ["layer-overlay", "owner-runtime"] },
     { "prefix": "core4/modules/project-save/", "owner": "project-save", "checks": ["project-save"] },
     { "prefix": "core4/config/admissions/project-save.json", "owner": "project-save", "checks": ["project-save"] },
     { "prefix": "core4/config/compositions/manual-project-save.json", "owner": "project-save", "checks": ["project-save", "installed-composition", "package-location"] },
     { "prefix": "core4/runtime/project-save-proof.js", "owner": "project-save", "checks": ["project-save"] },
+    { "prefix": "core4/runtime/project-file.js", "owner": "project-file", "checks": ["project-save", "project-lifecycle", "media-layers", "layer-overlay", "comp-frame-export", "aerender-jobs"] },
     { "prefix": "core4/test/project-save.test.js", "owner": "project-save", "checks": ["project-save"] },
     { "prefix": "core4/modules/project-lifecycle/", "owner": "project-lifecycle", "checks": ["project-lifecycle"] },
+    { "prefix": "core4/test/fixtures/project-lifecycle-host.js", "owner": "project-lifecycle", "checks": ["project-lifecycle", "owner-runtime"] },
     { "prefix": "core4/config/admissions/project-lifecycle.json", "owner": "project-lifecycle", "checks": ["project-lifecycle"] },
     { "prefix": "core4/config/compositions/manual-project-lifecycle.json", "owner": "project-lifecycle", "checks": ["project-lifecycle", "installed-composition", "package-location"] },
     { "prefix": "core4/runtime/project-lifecycle-proof.js", "owner": "project-lifecycle", "checks": ["project-lifecycle"] },
@@ -1253,7 +1258,7 @@
     ],
     "controller-transfer": ["runtime/controller-lease.js", "runtime/attachment-owner.js", "runtime/client-ipc.js", "test/controller-transfer-ipc.test.js"],
     "client-entry": ["runtime/client-entry.js", "runtime/client-stdio.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/client-ipc.js", "runtime/owner-entry.js", "test/client-entry.test.js", "tools/check-boundaries.js"],
-    "owner-runtime": ["runtime/", "test/owner-runtime.test.js", "test/fixtures/owner-runtime-child.js", "tools/check-boundaries.js", "tools/install-core4.js", "tools/package-installable.js", "config/compositions/", "tools/disposition-install-preflight.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
+    "owner-runtime": ["runtime/", "test/owner-runtime.test.js", "test/fixtures/owner-runtime-child.js", "test/fixtures/montage-host.js", "test/fixtures/media-layer-host.js", "test/fixtures/project-lifecycle-host.js", "tools/check-boundaries.js", "tools/install-core4.js", "tools/package-installable.js", "config/compositions/", "tools/disposition-install-preflight.js", "core/", "protocol/", "config/", "modules/", "plan-engine/", "cep/", "integrations/", "worker.js"],
     "client-ipc": ["runtime/client-ipc.js", "test/client-ipc.test.js"],
     "owner-attachments": ["runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/controller-lease.js", "test/owner-attachments.test.js", "core/", "protocol/"],
     "owner-ipc-process": ["runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/client-ipc.js", "runtime/controller-lease.js", "test/owner-ipc-process.test.js", "test/fixtures/attachment-process.js", "test/helpers.js", "test/fixtures/ae.js", "test/fixtures/authority.js", "core/", "protocol/", "modules/", "plan-engine/", "config/admissions/", "config/catalog.json", "worker.js"],
@@ -1409,21 +1414,22 @@
       "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/",
       "config/catalog.json", "config/admissions/", "config/compositions/", "integrations/cep/",
       "tools/package-installable.js", "test/project-lifecycle.test.js", "test/fixtures/manual-http-runtime.js",
-      "test/fixtures/ae.js"
+      "test/fixtures/project-lifecycle-host.js", "test/fixtures/ae.js"
     ],
     "media-layers": [
       "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/",
       "config/catalog.json", "config/admissions/", "config/compositions/", "integrations/cep/",
       "tools/package-installable.js", "test/media-layers.test.js", "test/fixtures/manual-http-runtime.js",
-      "test/fixtures/ae.js"
+      "test/fixtures/media-layer-host.js", "test/fixtures/ae.js"
     ],
     "layer-overlay": [
       "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/",
       "config/catalog.json", "config/admissions/", "config/compositions/", "integrations/cep/",
-      "tools/package-installable.js", "test/layer-overlay.test.js", "test/fixtures/manual-http-runtime.js", "test/fixtures/ae.js"
+      "tools/package-installable.js", "test/layer-overlay.test.js", "test/fixtures/manual-http-runtime.js",
+      "test/fixtures/montage-host.js", "test/fixtures/ae.js"
     ],
     "aerender-jobs": [
-      "tools/aerender-jobs.js", "runtime/project-save-proof.js", "protocol/json.js", "test/aerender-jobs.test.js"
+      "tools/aerender-jobs.js", "runtime/project-save-proof.js", "runtime/project-file.js", "protocol/json.js", "test/aerender-jobs.test.js"
     ],
     "ame-media-export": [
       "tools/ame-media-export.js", "tools/ame-isolated-export.ps1", "tools/ame-isolated-host.ps1", "protocol/json.js",

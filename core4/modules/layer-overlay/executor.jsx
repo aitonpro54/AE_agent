@@ -42,7 +42,7 @@
         for (var i = 0; i < value.length; i++) values.push(isArray(value[i]) ? vector(value[i]) : number(value[i]));
         return values;
     }
-    function plainValue(property, value) {
+    function plainValue(property, value, transform) {
         if (property.propertyValueType === PropertyValueType.SHAPE) {
             var feathers = ['featherSegLocs', 'featherRelSegLocs', 'featherRadii', 'featherInterps',
                 'featherTensions', 'featherTypes', 'featherRelCornerAngles'];
@@ -53,8 +53,10 @@
             return [bool(value.closed), vector(value.vertices), vector(value.inTangents), vector(value.outTangents)];
         }
         if (property.propertyValueType === PropertyValueType.OneD) return number(value);
-        if (property.propertyValueType === PropertyValueType.TwoD || property.propertyValueType === PropertyValueType.TwoD_SPATIAL ||
-            property.propertyValueType === PropertyValueType.COLOR) return vector(value);
+        var type = property.propertyValueType;
+        // AE exposes three components for some transforms on a 2D layer.
+        if (type === PropertyValueType.TwoD || type === PropertyValueType.TwoD_SPATIAL || type === PropertyValueType.COLOR ||
+            transform && (type === PropertyValueType.ThreeD || type === PropertyValueType.ThreeD_SPATIAL)) return vector(value);
         fault('layer_overlay_property_value');
     }
     function ease(entries) {
@@ -63,16 +65,16 @@
         for (var i = 0; i < entries.length; i++) result.push([number(entries[i].speed), number(entries[i].influence)]);
         return result;
     }
-    function propertyState(property, keysAllowed) {
+    function propertyState(property, transform) {
         if (!property || property.propertyType !== PropertyType.PROPERTY || property.expressionEnabled === true ||
             property.canSetExpression && (typeof property.expressionEnabled !== 'boolean' || property.expression) ||
             property.isSeparationLeader && property.dimensionsSeparated || property.isSeparationFollower) fault('layer_overlay_property');
         var count = number(property.numKeys);
-        if (!count) return [property.matchName, plainValue(property, property.value)];
-        if (!keysAllowed || count > 24) fault('layer_overlay_key_profile');
-        var spatial = property.propertyValueType === PropertyValueType.TwoD_SPATIAL, keys = [];
+        if (!count) return [property.matchName, plainValue(property, property.value, transform)];
+        if (!transform || count > 24) fault('layer_overlay_key_profile');
+        var spatial = property.propertyValueType === PropertyValueType.TwoD_SPATIAL || property.propertyValueType === PropertyValueType.ThreeD_SPATIAL, keys = [];
         for (var i = 1; i <= count; i++) {
-            var key = [number(property.keyTime(i)), plainValue(property, property.keyValue(i)),
+            var key = [number(property.keyTime(i)), plainValue(property, property.keyValue(i), transform),
                 number(Number(property.keyInInterpolationType(i))), number(Number(property.keyOutInterpolationType(i))),
                 ease(property.keyInTemporalEase(i)), ease(property.keyOutTemporalEase(i)),
                 bool(property.keyTemporalContinuous(i)), bool(property.keyTemporalAutoBezier(i))];
@@ -170,7 +172,8 @@
         var projectRevision = number(project.revision);
         if (projectRevision < 0 || projectRevision > maxRevision || projectRevision % 1 !== 0) fault('layer_overlay_project_changed');
         if (project.numItems > 2048) fault('inspection_result_budget');
-        var comp = project.itemByID(p.compId), source = project.itemByID(p.itemId);
+        var prospective = p.itemId === undefined;
+        var comp = project.itemByID(p.compId), source = project.itemByID(prospective ? p.originalSourceId : p.itemId);
         if (!(comp instanceof CompItem) || comp.numLayers > 64 || p.originalSourceId === p.itemId) fault('layer_overlay_target');
         var stack = [], layers = [], original = null, originalIndex = -1, originalProperties = 0;
         var incoming = {}, count = 0, budget = { properties: 0 };
@@ -211,7 +214,7 @@
                 var overlaySignature = signature(layers[n], candidate);
                 var applied = n === originalIndex - 1 && Number(mark[2]) === p.itemId && candidate.sourceId === p.itemId &&
                     overlaySignature === inherited && layers[n].name === original.name &&
-                    layers[n].comment === taggedComment(original, p);
+                    layers[n].comment === taggedComment(original, p.layerId, p.itemId);
                 overlay = { id: candidate.id, sourceId: candidate.sourceId, state: applied ? 'applied' : 'partial', signature: overlaySignature };
             } else if (!mark && (candidate.sourceId === p.originalSourceId || candidate.sourceId === p.itemId) &&
                 (n === originalIndex - 1 || signature(layers[n], candidate) === inherited)) {
@@ -231,7 +234,8 @@
         }
         uses.sort(function (a, b) { return a.compId - b.compId || a.layerId - b.layerId; });
         var target = { sessionId: p.sessionId, projectId: p.projectId, compId: comp.id,
-            layerId: original.id, originalSourceId: original.source.id, itemId: source.id };
+            layerId: original.id, originalSourceId: original.source.id };
+        if (!prospective) target.itemId = source.id;
         var protectedFields = JSON.stringify([target, [text(comp.name), number(comp.width), number(comp.height), number(comp.pixelAspect),
             number(comp.duration), number(comp.frameDuration), number(comp.displayStartTime)], stack[originalIndex], inherited, oldMedia, media, uses]);
         if (project.revision !== projectRevision) fault('layer_overlay_project_changed');
@@ -248,28 +252,52 @@
             JSON.stringify(result).length > 28000) fault('inspection_result_budget');
         return result;
     }
-    function taggedComment(layer, p) {
-        return layer.comment + '\n[AECore4 overlay v1:' + p.layerId + ':' + p.itemId + ']';
+    function taggedComment(layer, layerId, itemId) {
+        return layer.comment + '\n[AECore4 overlay v1:' + layerId + ':' + itemId + ']';
     }
     function inspect(p) {
-        try { return captures(p).snapshot; }
+        try {
+            var state = captures(p);
+            if (p.itemId === undefined) checkOverlayCapacity(state, 2147483647);
+            return state.snapshot;
+        }
         catch (e) { return { readFailureVersion: 1, outcome: 'rejected',
-            code: e.coreCode === 'inspection_result_budget' ? e.coreCode : 'inspection_failed' }; }
+            code: e.coreCode === 'inspection_result_budget' || p.itemId === undefined &&
+                listed(['layer_overlay_layer_profile', 'layer_overlay_expression_scope', 'layer_overlay_existing_or_partial'], e.coreCode)
+                ? e.coreCode : 'inspection_failed' }; }
+    }
+    function checkOverlayCapacity(state, itemId) {
+        var before = state.snapshot;
+        if (before.overlay.state !== 'none') fault('layer_overlay_existing_or_partial');
+        var comment = taggedComment(state.original, before.target.layerId, itemId);
+        if (state.comp.numLayers >= 64 || state.layersAfter > maxProjectLayers ||
+            state.propertiesAfter > maxProperties || comment.length > 512) fault('inspection_result_budget');
+        var stack = before.stack.slice(), position = state.original.index - 1, copyId = 2147483647;
+        var stamp = JSON.parse(stack[position].stamp);
+        stamp[1] = comment;
+        stack.splice(position, 0, { id: copyId, sourceId: itemId, stamp: JSON.stringify(stamp) });
+        var target = before.target, protectedFields = before['protected'], source = before.source;
+        if (target.itemId === undefined) {
+            var projected = JSON.parse(protectedFields);
+            target = projected[0];
+            target.itemId = itemId;
+            // Project the largest escaped pathname and numeric/alpha fields
+            // admitted by the replacement contract, including nested JSON.
+            source = { file: new Array(513).join(String.fromCharCode(0x2028)),
+                bytes: 1073741824, modifiedMs: maxRevision, width: source.width, height: source.height,
+                pixelAspect: source.pixelAspect, alpha: new Array(513).join('0') };
+            projected[5] = source;
+            protectedFields = JSON.stringify(projected);
+        }
+        resultSnapshot(target, protectedFields, stack, before.uses, source, before.signature,
+            { id: copyId, sourceId: itemId, state: 'applied', signature: before.signature }, maxRevision);
     }
     function baseline(p, state) {
         var before = state.snapshot, proof = p._execution;
-        if (before.overlay.state !== 'none') fault('layer_overlay_existing_or_partial');
-        if (state.comp.numLayers >= 64 || state.layersAfter > maxProjectLayers ||
-            state.propertiesAfter > maxProperties || taggedComment(state.original, p).length > 512) fault('inspection_result_budget');
+        checkOverlayCapacity(state, p.itemId);
         if (before.revision !== p.expectedRevision || before.source.file !== p.file) fault('stale_target');
         if (!proof || proof.policyId !== policy || proof.baselineRevision !== before.revision ||
             proof.baselineProtected !== before['protected'] || !sameTarget(proof.target, before.target)) fault('manual_approval_binding');
-        var stack = before.stack.slice(), position = state.original.index - 1, copyId = 2147483647;
-        var stamp = JSON.parse(stack[position].stamp);
-        stamp[1] = taggedComment(state.original, p);
-        stack.splice(position, 0, { id: copyId, sourceId: p.itemId, stamp: JSON.stringify(stamp) });
-        resultSnapshot(before.target, before['protected'], stack, before.uses, before.source, before.signature,
-            { id: copyId, sourceId: p.itemId, state: 'applied', signature: before.signature }, maxRevision);
     }
     function sameTarget(a, b) {
         return a && a.sessionId === b.sessionId && a.projectId === b.projectId && a.compId === b.compId &&
@@ -278,6 +306,7 @@
     function mutate(p, confirmAction) {
         var started = false;
         try {
+            if (p.itemId === undefined) fault('layer_overlay_preflight_only');
             var current = captures(p), before = current.snapshot, proof = p._execution;
             baseline(p, current);
             var uses = [];
@@ -304,7 +333,7 @@
                 if (current.comp.numLayers !== before.stack.length + 1 || copy.index !== position || origin.index !== position + 1 ||
                     current.comp.layer(position).id !== copyId || current.comp.layer(position + 1).id !== p.layerId)
                     fault('layer_overlay_duplicate_position');
-                var comment = taggedComment(origin, p);
+                var comment = taggedComment(origin, p.layerId, p.itemId);
                 copy.comment = comment;
                 if (copy.comment !== comment) fault('layer_overlay_marker_write');
                 copy.replaceSource(current.source, false);

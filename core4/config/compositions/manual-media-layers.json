@@ -24,7 +24,7 @@
     "layer-insert": { "operationId": "insert-footage-layer", "resultProfile": "layer-insert-v1" }
   },
   "bundle": {
-    "files": ["runtime/media-layer-proof.js", "config/admissions/media-import.json", "config/admissions/layer-insert.json"],
+    "files": ["runtime/media-layer-proof.js", "runtime/layer-insert-proof.js", "config/admissions/media-import.json", "config/admissions/layer-insert.json"],
     "artifactClosures": ["modules/media-import/artifact.json", "modules/layer-insert/artifact.json"]
   }
 }

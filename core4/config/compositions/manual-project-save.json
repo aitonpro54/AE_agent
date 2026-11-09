@@ -18,7 +18,7 @@
     }
   },
   "bundle": {
-    "files": ["runtime/project-save-proof.js", "config/admissions/project-save.json"],
+    "files": ["runtime/project-file.js", "runtime/project-save-proof.js", "config/admissions/project-save.json"],
     "artifactClosures": ["modules/project-save/artifact.json"]
   }
 }

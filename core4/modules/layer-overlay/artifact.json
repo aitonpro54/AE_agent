@@ -3,9 +3,9 @@
   "version": "4.1.2",
   "entry": "implementation.js",
   "hashes": {
-    "implementation.js": "117da7995fa6fe144bd274ad2952950da3b87826d6d734ede5c62c8ccbf4d079",
-    "contract.json": "8d5374dd61ccb1e2aa78d0f457edb8e7bd8bb6db85cb5dfc50b9319a60aa141a",
-    "executor.jsx": "5d6d69d6cb9db8eaae5e4ae786030dda87ff7df071aa58e4809ab16f52767c99"
+    "implementation.js": "38c20d4eaacec25277bea5d618d3e4316dcfbcd9afdcefb8f0efafec2063f9c3",
+    "contract.json": "4478438e4b7beb60128cbfb5d97d315307f7a45ff59df673fd75364f2a3e20c4",
+    "executor.jsx": "30db4300a02d237a5ddd17ca1b6a6b5729a6bc2ee27fd3eecb9d47059ebcb015"
   },
   "publicDependencies": {}
 }

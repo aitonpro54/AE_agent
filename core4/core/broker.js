@@ -412,9 +412,13 @@ class Broker {
     } catch (e) { return { runId, workflowId: plan.workflowId, state: 'stopped', code: e.code || 'execution_failed', message: e.message, task: this.getTask({ taskId: plan.taskId }) }; }
     finally { this.running = false; this.releaseIfDrained(); }
   }
-  getTask({ taskId }) {
-    const commands = this.ledger.commands(taskId);
-    return { ...this.ledger.task(taskId), commands: commands.map(c => ({ commandId: c.commandId, workflowId: c.workflowId, runId: c.runId, stepId: c.stepId, attemptId: c.attemptId, state: c.state, target: c.target, modulePin: c.selected.pin, ...(c.after ? { after: c.after } : {}) })) };
+  getTask({ taskId, commandId, offset = 0 }) {
+    if (!Number.isSafeInteger(offset) || offset < 0 || commandId !== undefined && (typeof commandId !== 'string' || offset !== 0)) fail('task_command_selection');
+    const history = this.ledger.commands(taskId);
+    const commands = commandId === undefined ? history.slice(offset) : history.filter(command => command.commandId === commandId);
+    return { ...this.ledger.task(taskId),
+      commands: commands.map(c => ({ commandId: c.commandId, workflowId: c.workflowId, runId: c.runId, stepId: c.stepId, attemptId: c.attemptId, state: c.state, target: c.target, modulePin: c.selected.pin, ...(c.after ? { after: c.after } : {}) })),
+      ...(offset ? { commandPage: { offset, total: history.length, nextOffset: null } } : {}) };
   }
   reset({ taskId }) {
     const previous = this.ledger.task(taskId); const task = { type: 'task', taskId, epoch: previous.epoch + 1, reset: true }; this.ledger.append(task);

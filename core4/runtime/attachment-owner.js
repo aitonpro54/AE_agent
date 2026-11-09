@@ -1,6 +1,7 @@
 'use strict';
 const { randomBytes } = require('node:crypto');
 const { createControllerLease } = require('./controller-lease');
+const { fitsIpcResult } = require('./client-ipc');
 
 // Private composition seam. No listener, credentials, Broker or state IO here.
 // Production embedding must restore durable state before exposing this owner,
@@ -11,8 +12,34 @@ const OWNER_METHODS = Object.freeze([...Object.keys(TOOL_METHODS), ...CONTROL_ME
 const LEASE_ERRORS = Object.freeze(['controller_busy', 'controller_fenced', 'controller_lease_identity', 'controller_lease_expired', 'controller_draining', 'controller_client_detached', 'controller_clock_fault', 'controller_operation_pending', 'controller_expected', 'controller_transfer_changed', 'controller_not_expired']);
 const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_inspection_contract_required', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed', 'owner_work_session_required', 'owner_work_session_changed', 'owner_work_session_unavailable', 'owner_baseline_required', 'fresh_dryrun_required']);
 const OBSERVERS = new Set(['core_status', 'core_diagnostics', 'list_modules', 'get_module_contract', 'get_task']);
-const READ_REJECTION_CODES = Object.freeze(['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']);
+const READ_REJECTION_CODES = Object.freeze(['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable',
+  'layer_overlay_layer_profile', 'layer_overlay_expression_scope', 'layer_overlay_existing_or_partial']);
 const PRE_DISPATCH_READ_CODES = Object.freeze(['ae_modal_observed', 'ae_unresponsive']);
+const TASK_RESULT_METHODS = new Set(['get_task', 'reset_task', 'reconcile_task']);
+
+function taskReplyWithinBudget(task, wrap) {
+  const commands = task.commands.map(({ after, ...command }) => after === undefined ? command : { ...command, afterOmitted: true });
+  const view = { ...task, commands };
+  if (fitsIpcResult(wrap(view))) return wrap(view);
+  const offset = task.commandPage?.offset ?? 0, total = task.commandPage?.total ?? commands.length;
+  const page = count => wrap({ ...view, commands: commands.slice(0, count), commandPage: { offset, total, nextOffset: offset + count } });
+  let low = 0, high = commands.length;
+  while (high - low > 1) {
+    const middle = Math.floor((high + low) / 2);
+    if (fitsIpcResult(page(middle))) low = middle;
+    else high = middle;
+  }
+  return page(low);
+}
+
+function fitTaskResult(method, value) {
+  if (method === 'run_plan' && !fitsIpcResult(value)) {
+    if (value.state === 'stopped') return taskReplyWithinBudget(value.task, task => ({ ...value, task }));
+    if (value.state === 'succeeded') return { ...value, outputs: {}, outputsOmitted: true };
+  }
+  if (TASK_RESULT_METHODS.has(method) && !fitsIpcResult(value)) return taskReplyWithinBudget(value, task => task);
+  return value;
+}
 
 function classifyPhysicalRead(value) {
   const { stage, code, terminalReceipt, handoff, nativeStart, queue } = value || {};
@@ -167,7 +194,7 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
     finally { finalize(operation); }
   }
   async function onRequest(request) {
-    try { return { ok: true, value: await dispatch(request) }; }
+    try { return { ok: true, value: fitTaskResult(request.method, await dispatch(request)) }; }
     catch (error) {
       const physical = physicalReadErrors.get(error);
       if (physical) return { ok: false, ...physical, ...(physical.outcome === 'unknown' ? { requestId: request.requestId || null } : {}) };

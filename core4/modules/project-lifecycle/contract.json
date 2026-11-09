@@ -213,7 +213,7 @@
       "inventory": {
         "type": "string",
         "minLength": 2,
-        "maxLength": 24576
+        "maxLength": 40000
       },
       "transition": {
         "type": "object",

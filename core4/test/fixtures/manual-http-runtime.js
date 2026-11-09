@@ -16,6 +16,7 @@ const { buildPackage } = require('../../tools/package-installable');
 const { decode, encode } = require('../../protocol/codec');
 const { validateExecutionPolicyPort, validateReservationHandle } = require('../../core/authority');
 const { initialState, environment } = require('./ae');
+const { assertImportFile } = require('../../runtime/media-layer-proof');
 const root = path.resolve(__dirname, '../..');
 async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, layoutEnvironment, textEnvironment, assemblyEnvironment, saveEnvironment, lifecycleEnvironment, mediaEnvironment, overlayEnvironment, frameEnvironment, operatorSession } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-manual-runtime-')), state = initialState(); delete state.sessionId; Object.assign(state.flags, flags);
@@ -56,6 +57,12 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
       admission: require('../../config/admissions/titles-point-layout.json'), proof: createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
   }
   const additional = [];
+  // These VM fixtures have a synthetic PID. The installed owner test exercises
+  // the real Windows sharing guard against the observed process identity.
+  const sourceLock = (input, observed) => {
+    assertImportFile(input, observed);
+    return { assert() {}, release() {} };
+  };
   if (textEnvironment) {
     const { validateTextLayerCompletion } = require('../../runtime/text-layer-proof');
     additional.push({ pin: hash(require('../../modules/text-layer/artifact.json')), contract: require('../../modules/text-layer/contract.json'),
@@ -88,20 +95,23 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
   const overlay = overlayEnvironment ? {
     pin: hash(require('../../modules/layer-overlay/artifact.json')), contract: require('../../modules/layer-overlay/contract.json'),
     admission: require('../../config/admissions/layer-overlay.json'), operatorConfirmation: true,
-    ...require('../../runtime/layer-overlay-proof').createLayerOverlayProof(() => installation.installationId)
+    ...require('../../runtime/layer-overlay-proof').createLayerOverlayProof(() => installation.installationId, sourceLock)
   } : null;
   if (overlay) additional.push(overlay);
   const mediaAssets = mediaEnvironment ? ['media-import', 'layer-insert'].map(moduleId => {
     const contract = require('../../modules/' + moduleId + '/contract.json');
     const admission = require('../../config/admissions/' + moduleId + '.json');
     const pin = hash(require('../../modules/' + moduleId + '/artifact.json'));
+    const proof = moduleId === 'media-import' ? require('../../runtime/media-layer-proof').createMediaImportProof :
+      require('../../runtime/layer-insert-proof').createLayerInsertProof;
     additional.push({ pin, contract, admission, operatorConfirmation: !!overlayEnvironment && moduleId === 'media-import',
-      ...require('../../runtime/media-layer-proof').createMediaLayerProof(moduleId, () => installation.installationId) });
+      ...proof(() => installation.installationId, sourceLock) });
     return { assetKey: moduleId + '-v1', moduleId, operationId: contract.operationId, executorHash: admission.executorHash, resultProfile: moduleId + '-v1' };
   }) : [];
+  const montage = overlayEnvironment && require('../../runtime/montage-mandate');
   const operatorConfirmation = operatorSession && require('../../runtime/operator-confirmation').createOperatorConfirmation(
     installation, operatorSession, () => state.projectId, operatorSession, (mandate, input) =>
-      require('../../runtime/montage-mandate').importedMontageItem(broker.ledger.commands(mandate.body.taskId), mandate, input));
+      montage.importedMontageItem(broker.ledger.commands(mandate.body.taskId), mandate, input), montage);
   const manual = createManualPolicy({ selected, layout, additional, provider, installation, getPeer: () => peer, pinAdoption: !!lifecycle, operatorConfirmation });
   const transport = { identity: 'fixture-http-manual-v1', connect: v => peer.transport.connect(v), send: (v, offer) => peer.transport.send(v, offer), completion: v => peer.transport.completion(v), disconnect: () => peer.transport.disconnect() };
   broker = new Broker({ root: brokerRoot, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: callerTimeout, privateEmbedding: { authority: manual.authority, executionPolicy: manual.port, transport, recordContext: { purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: path.basename(dir), project: { file: state.projectId }, resources: [{ kind: 'project', identity: state.projectId }] } } });
@@ -116,7 +126,10 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
   if (overlay) additionalAssets.push({ assetKey: 'layer-overlay-v1', moduleId: 'layer-overlay', operationId: overlay.contract.operationId, executorHash: overlay.admission.executorHash, resultProfile: 'layer-overlay-v1' });
   additionalAssets.push(...mediaAssets);
   peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), port: 0, pollTimeout: 5, timeout: callbackTimeout, asset: { assetKey: 'project-inspection-v1', executorHash: inspection.executorHash }, additionalAssets, observeProjectSave: save?.observe, observeProjectLifecycle: lifecycle?.observe, requireMutationGuard: true,
-    captureDeliveryGuard: command => () => operatorConfirmation?.assertDelivery(command),
+    assertMediaSourceLock(commandId) {
+      if (state.flags.loseMediaSourceLock) throw new Error('fixture source lock lost after native mutation');
+      manual.assertSourceLock(commandId);
+    }, captureDeliveryGuard: command => () => operatorConfirmation?.assertDelivery(command),
     admissionGuard: command => { if (broker.ledger.unresolved().some(c => c.commandId !== command.commandId)) throw Object.assign(new Error('controller_unresolved'), { code: 'controller_unresolved' }); } }); await peer.listen();
   let sequence = 0;
   async function raw(route, body) { return new Promise((resolve, reject) => { const req = http.request('http://127.0.0.1:' + peer.status().port + route, { method: 'POST', headers: { Origin: 'null', 'Content-Type': 'application/json' } }, res => { let data = ''; res.on('data', b => data += b); res.on('end', () => res.statusCode === 200 ? resolve(JSON.parse(data)) : reject(new Error(data))); }); req.on('error', reject); req.end(canonical(JSON.parse(JSON.stringify(body)))); }); }

@@ -3,22 +3,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { canonical, exact, fail } = require('../protocol/json');
+const { plainPath, samePath } = require('./project-file');
 
 const MAX_BYTES = 96 * 1024 * 1024;
 const CHUNK_BYTES = 1024 * 1024;
 const diskError = 'save_disk_proof_unavailable';
 const sha256 = /^[a-f0-9]{64}$/;
-const samePath = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
-
-function plainPath(file, directory = false) {
-  const resolved = path.resolve(file);
-  if (!path.isAbsolute(file) || !samePath(resolved, file.replace(/[\\/]/g, path.sep)) ||
-      process.platform === 'win32' && !/^[a-z]:[\\/]/i.test(file)) fail(diskError);
-  const info = fs.lstatSync(resolved, { bigint: true });
-  if (info.isSymbolicLink() || !samePath(fs.realpathSync.native(resolved), resolved) ||
-      (directory ? !info.isDirectory() : !info.isFile() || info.nlink !== 1n)) fail(diskError);
-  return { resolved, info };
-}
 
 function readAep(file, expectedStamp, copyFd) {
   if (!/\.aep$/i.test(file) || /[\x00-\x1f]/.test(file) || file.replace(/^[a-z]:/i, '').includes(':')) fail(diskError);

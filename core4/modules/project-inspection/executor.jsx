@@ -7,11 +7,13 @@
     try { return object[key]; } catch (_) { return null; }
   }
   function finite(value) { return typeof value === 'number' && isFinite(value) ? value : null; }
+  function observedBool(value) { return typeof value === 'boolean' ? value : null; }
   function inspect(input) {
     if (!input || Object.prototype.toString.call(input) !== '[object Object]') throw new Error('invalid_inspection');
     var key;
-    for (key in input) if (Object.prototype.hasOwnProperty.call(input, key) && key !== 'compId' && key !== 'cursor') throw new Error('invalid_inspection');
+    for (key in input) if (Object.prototype.hasOwnProperty.call(input, key) && key !== 'compId' && key !== 'cursor' && key !== 'includeLayerContext') throw new Error('invalid_inspection');
     if (input.compId !== undefined && !uint(input.compId, 1)) throw new Error('invalid_comp_id');
+    if (input.includeLayerContext !== undefined && (input.includeLayerContext !== true || input.compId === undefined)) throw new Error('invalid_layer_context');
     if (input.cursor !== undefined && (typeof input.cursor !== 'string' || !input.cursor.length || input.cursor.length > 96)) throw new Error('invalid_inspection_cursor');
 
     var p = app.project;
@@ -78,7 +80,17 @@
     }
     var numLayers = selected ? selected.numLayers : 0;
     for (i = 1; i <= Math.min(numLayers, 100); i++) {
-      l = selected.layer(i); layers.push({ layerId: l.id, index: i, name: display(l.name), textLayer: !!l.property('ADBE Text Properties') });
+      l = selected.layer(i);
+      var row = { layerId: l.id, index: i, name: display(l.name), textLayer: !!l.property('ADBE Text Properties') };
+      if (input.includeLayerContext) {
+        var source = read(l, 'source'), sourceId = source && read(source, 'id');
+        row.context = { sourceId: uint(sourceId, 1) ? sourceId : null,
+          enabled: observedBool(read(l, 'enabled')), solo: observedBool(read(l, 'solo')),
+          guideLayer: observedBool(read(l, 'guideLayer')), inPoint: finite(read(l, 'inPoint')),
+          outPoint: finite(read(l, 'outPoint')), stretch: finite(read(l, 'stretch')),
+          timeRemapEnabled: observedBool(read(l, 'timeRemapEnabled')) };
+      }
+      layers.push(row);
     }
 
     var active = read(p, 'activeItem'), activeId = active instanceof CompItem ? read(active, 'id') : null;
@@ -108,6 +120,8 @@
       updateCoverage();
     }
     if (JSON.stringify(result).length > 40000) return { readFailureVersion: 1, outcome: 'rejected', code: 'inspection_result_budget' };
+    if (input.includeLayerContext && revision !== null && read(p, 'revision') !== revision)
+      return { readFailureVersion: 1, outcome: 'rejected', code: 'inspection_failed' };
     if (coverage.inventory.nextCursor !== null) {
       pageState.cursors.push(coverage.inventory.nextCursor);
       if (pageState.cursors.length > 16) pageState.cursors.shift();

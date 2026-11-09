@@ -54,6 +54,8 @@
             var project = current(p);
             checkBytes(project.file, checkpoint, before.fileStamp.bytes);
             if (JSON.stringify(snapshot(p)) !== JSON.stringify(before)) fault('stale_target');
+            if (confirmAction && confirmAction(message, true, 'AE Agent Core — сохранение проекта') !== true)
+                fault('operator_confirmation_expired');
             started = true;
             if (project.save() !== true) fault('save_ae_failed');
             var after = snapshot(p);

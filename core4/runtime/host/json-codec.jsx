@@ -77,5 +77,14 @@
         }
         var result = encode(value, 0); if (result.length > 262144) fault(); return result;
     }
-    return { parse: parse, stringify: stringify };
+    function utf8Bytes(text) {
+        var bytes = 0;
+        for (var i = 0; i < text.length; i++) {
+            var code = text.charCodeAt(i), next = text.charCodeAt(i + 1);
+            if (code >= 0xD800 && code <= 0xDBFF && next >= 0xDC00 && next <= 0xDFFF) { bytes += 4; i++; }
+            else bytes += code < 128 ? 1 : code < 2048 ? 2 : 3;
+        }
+        return bytes;
+    }
+    return { parse: parse, stringify: stringify, utf8Bytes: utf8Bytes };
 }())

@@ -24,8 +24,7 @@
     },
     "required": [
       "sessionId",
-      "projectId",
-      "file"
+      "projectId"
     ],
     "additionalProperties": false
   },
@@ -88,6 +87,11 @@
         "type": "string",
         "minLength": 1,
         "maxLength": 32768
+      },
+      "expectedInventory": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 98304
       }
     },
     "required": [
@@ -95,7 +99,8 @@
       "projectId",
       "file",
       "sha256",
-      "expectedRevision"
+      "expectedRevision",
+      "expectedInventory"
     ],
     "additionalProperties": false
   },
@@ -123,8 +128,7 @@
         },
         "required": [
           "sessionId",
-          "projectId",
-          "file"
+          "projectId"
         ],
         "additionalProperties": false
       },
@@ -179,7 +183,7 @@
           "additionalProperties": false
         },
         "minItems": 0,
-        "maxItems": 512
+        "maxItems": 2048
       },
       "bytes": {
         "type": "integer",
@@ -196,9 +200,7 @@
       "target",
       "revision",
       "protected",
-      "items",
-      "bytes",
-      "modifiedMs"
+      "items"
     ],
     "additionalProperties": false
   },

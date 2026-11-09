@@ -36,9 +36,18 @@ function frameEnvironment(state) {
   state.captures = [];
   const comp = state.comp = Object.assign(new CompItem(), { id: 8, name: 'Frame', width: 1, height: 1, duration: 1,
     frameDuration: 1 / 25, displayStartTime: 0, time: 0, resolutionFactor: [1, 1], numLayers: 1 });
+  const nativeDate = class extends Date {
+    constructor(...args) { super(...(args.length ? args : [Date.now() + (state.clockShift || 0)])); }
+  };
+  if (state.flags.expireOnFinalSnapshot) {
+    Object.defineProperty(comp, 'resolutionFactor', { get() {
+      if (state.clockReads > 0 && --state.clockReads === 0) state.clockShift = 180000;
+      return [1, 1];
+    } });
+  }
   const project = state.project = { file: { fsName: state.projectId, parent: { fsName: parent } }, revision: 7, dirty: false,
     itemByID: id => id === comp.id ? comp : null };
-  return { app: { project }, CompItem, File, Folder: File, $: { sleep() {
+  return { app: { project }, CompItem, File, Folder: File, Date: nativeDate, $: { sleep() {
     if (state.flags.delayed) { state.flags.delayed = false; state.writeCapture(); }
   } } };
 }
@@ -120,6 +129,16 @@ test('comp-frame-export expires a dry run before either journal or output change
   const fresh = await h.broker.dryrun({ proposalId: proposal.proposalId });
   assert.equal((await h.broker.run(fresh)).state, 'succeeded');
   assert.deepEqual(h.state.captures, [3 / 25]);
+});
+
+test('comp-frame-export checks expiry again after the final snapshot', async t => {
+  const h = await fixture(t, { expireOnFinalSnapshot: true });
+  const result = await h.run(true, () => { h.state.clockReads = 3; });
+  assert.equal(result.code, 'executor_rejected');
+  assert.equal(result.message, 'operator_confirmation_expired');
+  assert.equal(h.broker.ledger.commands()[0].state, 'rejected');
+  assert.deepEqual(h.state.captures, []);
+  assert.equal(fs.existsSync(h.output), false);
 });
 
 test('comp-frame-export waits for native output and preserves state across render revision ticks', async t => {

@@ -1,19 +1,26 @@
 (function () {
     var policy = 'current-matching-target-after-local-confirmation-v1';
+    var maxInventoryUnits = 40000;
     function fault(code) { var error = new Error(code); error.coreCode = code; throw error; }
     function key(file) { return String(file).replace(/\\/g, '/').toLowerCase(); }
     function matches(file, expected) { return file && key(file.fsName) === key(expected); }
     function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
     function inventory(project) {
-        var rows = [], count = project.numItems;
-        if (count > 256) fault('inspection_result_budget');
+        var rows = [], ids = {}, count = project.numItems, length = 2;
+        if (typeof count !== 'number' || count < 0 || count % 1 !== 0) fault('lifecycle_native_state');
+        if (count > 2048) fault('inspection_result_budget');
         for (var i = 1; i <= count; i++) {
-            var item = project.item(i);
-            rows.push([item.id, item.name, item instanceof CompItem ? item.numLayers : 0]);
+            var item = project.item(i), id = item && item.id;
+            if (typeof id !== 'number' || id < 1 || id > 2147483647 || id % 1 !== 0 ||
+                ids[id] || typeof item.name !== 'string') fault('lifecycle_native_state');
+            ids[id] = true;
+            var row = [id, item.name, item instanceof CompItem ? item.numLayers : 0];
+            length += JSON.stringify(row).length + (i > 1 ? 1 : 0);
+            if (length > maxInventoryUnits) fault('inspection_result_budget');
+            rows.push(row);
         }
-        var result = JSON.stringify(rows);
-        if (result.length > 24576) fault('inspection_result_budget');
-        return result;
+        if (project.numItems !== count) fault('lifecycle_native_state');
+        return JSON.stringify(rows);
     }
     function snapshot(p, expected) {
         var project = app.project;
@@ -22,9 +29,13 @@
         if (!file.exists || file.alias || !file.modified || file.length < 1 || typeof dirty !== 'boolean' ||
             typeof revision !== 'number' || !isFinite(revision) || Math.floor(revision) !== revision || revision < 0) fault('lifecycle_native_state');
         var stamp = { bytes: file.length, modifiedMs: file.modified.getTime() };
-        return { target: { sessionId: p.sessionId, projectId: p.projectId }, currentProject: String(file.fsName),
+        var result = { target: { sessionId: p.sessionId, projectId: p.projectId }, currentProject: String(file.fsName),
             revision: JSON.stringify([revision, dirty, stamp.bytes, stamp.modifiedMs]), 'protected': p.projectId,
             dirty: dirty, fileStamp: stamp, inventory: inventory(project) };
+        if (project.revision !== revision || project.dirty !== dirty) fault('lifecycle_native_state');
+        // Bound the outer JSON, including the second escape of inventory names.
+        if (JSON.stringify(result).length > maxInventoryUnits) fault('inspection_result_budget');
+        return result;
     }
     function read(p) {
         try { return snapshot(p, p.projectId); }
@@ -45,6 +56,22 @@
             try { if (sourceOpen) file.close(); }
             finally { if (checkpointOpen) checkpoint.close(); }
         }
+    }
+    function openOutcome(p) {
+        var location = 'unobserved', dirty = 'unobserved';
+        try {
+            var project = app.project;
+            if (project) {
+                var file = project.file;
+                if (!file) location = 'unsaved';
+                else if (matches(file, p.destination)) location = 'destination';
+                else if (matches(file, p.projectId)) location = 'source';
+                else location = 'other';
+                var value = project.dirty;
+                if (typeof value === 'boolean') dirty = value ? 'dirty' : 'clean';
+            }
+        } catch (_) { /* Preserve whichever facts could be read. */ }
+        return 'lifecycle_open_' + location + '_' + dirty;
     }
     function apply(p, confirmAction) {
         var started = false;
@@ -73,6 +100,7 @@
             }
             if (!same(snapshot(p, p.projectId), before) || app.project.renderQueue.rendering !== false ||
                 destination.exists !== opening || !destination.parent.exists || !opening && destination.parent.getFiles().length !== 0) fault('stale_target');
+            if (confirmAction && confirmAction(message, true, 'AE Agent Core — ' + caption) !== true) fault('operator_confirmation_expired');
             started = true;
             if (creating) {
                 app.newProject();
@@ -87,7 +115,8 @@
                 stepId: proof.stepId, checkpointRef: proof.checkpointRef, checkpointDigest: proof.checkpointDigest,
                 baselineDigest: proof.baselineDigest, baselineRevision: proof.baselineRevision, target: after.target,
                 resultRevision: after.revision, protectedFields: after['protected'] } };
-        } catch (error) { return { outcome: started ? 'unknown' : 'rejected', code: error.coreCode || 'ae_error' }; }
+        } catch (error) { return { outcome: started ? 'unknown' : 'rejected',
+            code: started && p.action === 'open' ? openOutcome(p) : error.coreCode || 'ae_error' }; }
     }
     return { inspect: read, verify: read, mutate: apply };
 }())

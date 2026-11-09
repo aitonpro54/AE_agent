@@ -1,11 +1,11 @@
 {
   "moduleId": "comp-frame-export",
   "operationId": "save-comp-frame-png",
-  "artifactHash": "021a6b7e560ac06fb90810ecfe71a219dcddc0acc28dccab184b724c9af3fdb5",
+  "artifactHash": "05629b619760ccafdfa609ec97e0a3d4b486c89455db18d6e662d491c75ec1be",
   "schemaHash": "3fd8cb8fbff3ec602a243d65113204d683dba12ed073c0779883e93ddd3ec586",
   "resultSchemaHash": "3392d85abb6a40dc6b2a056f277b64fced598fb2333d70db79833f5f6ad138b9",
   "effectPolicyHash": "3d8a69bf6b149a630389e3d74cb4c9fa436ebcb55d6320200289950b911db380",
-  "executorHash": "a065a0a6bf686cb55c85c9bc77ba0d29bd838b18ec2f819b3b52cdd598e41801",
+  "executorHash": "1edee30b792be42ffbfd2e78dcb15b0c097af5eae3cba5979232a7a7c70a32ae",
   "protocolVersion": 1,
   "trustApprovalId": "source-review-comp-frame-export-completion-20261108",
   "revoked": false

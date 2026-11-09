@@ -6,91 +6,7 @@ const path = require('node:path');
 const { hash } = require('../protocol/json');
 const { harness } = require('./fixtures/manual-http-runtime');
 
-function mediaEnvironment(state) {
-  let next = 20;
-  const folder = { id: 1 };
-  const file = state.overlayFile = path.join(state.fixtureDirectory, 'Фото для слоя.png');
-  fs.writeFileSync(file, 'fixture media bytes');
-  class File {
-    constructor(fsName) {
-      const info = fs.statSync(fsName, { throwIfNoEntry: false });
-      Object.assign(this, { fsName, exists: !!info, length: info?.size, modified: info?.mtime, alias: false });
-    }
-  }
-  class FootageItem {
-    constructor(file) {
-      Object.assign(this, { id: ++next, name: path.basename(file.fsName), parentFolder: folder,
-        file, hasVideo: true, mainSource: { isStill: true }, duration: 0, footageMissing: false, useProxy: false });
-    }
-  }
-  class ImportOptions {
-    constructor(file) { this.file = file; }
-    canImportAs(kind) { return kind === 1; }
-  }
-  function property(value) {
-    return { value, propertyType: 1, canSetExpression: true, expressionEnabled: false,
-      setValue(nextValue) { this.value = nextValue; } };
-  }
-  class AVLayer {
-    constructor(comp, source, name) {
-      Object.assign(this, { id: ++next, comp, source, name, matchName: 'ADBE AV Layer', numProperties: 0,
-        hasTrackMatte: false, trackMatteLayer: null, trackMatteType: 5012, parent: null,
-        startTime: 0, inPoint: 0, outPoint: comp.duration, enabled: true, solo: false, stretch: 100 });
-      const properties = [property([320, 180]), property([100, 100])];
-      this.transform = { numProperties: 2, property: key => properties[{ 'ADBE Position': 0, 'ADBE Scale': 1 }[key] ?? key - 1] };
-    }
-    get index() { return this.comp.stack.indexOf(this) + 1; }
-    property(key) { return key === 'ADBE Transform Group' ? this.transform : null; }
-    moveBefore(anchor) { this.move(anchor, 0); }
-    moveAfter(anchor) { this.move(anchor, 1); }
-    move(anchor, offset) {
-      if (state.flags.moveThrows) throw new Error('injected move failure');
-      const stack = this.comp.stack;
-      stack.splice(this.index - 1, 1);
-      stack.splice(anchor.index - 1 + offset, 0, this);
-    }
-  }
-  class CompItem {
-    constructor(name) {
-      Object.assign(this, { id: ++next, name, parentFolder: folder, duration: 30, frameDuration: 1001 / 30000 });
-      this.stack = [];
-      this.layers = { add: source => {
-        const layer = new AVLayer(this, source, 'Duplicated name');
-        this.stack.unshift(layer);
-        return layer;
-      } };
-    }
-    layer(index) { return this.stack[index - 1]; }
-    get numLayers() { return this.stack.length; }
-  }
-  const comp = state.comp = new CompItem('Placeholder');
-  const master = state.master = new CompItem('Master');
-  const stock = state.stock = new FootageItem(new File(path.join(state.fixtureDirectory, 'stock.png')));
-  fs.writeFileSync(stock.file.fsName, 'existing fixture bytes');
-  stock.file = new File(stock.file.fsName);
-  state.anchor = comp.layers.add(stock);
-  state.neighbor = comp.layers.add(stock);
-  master.layers.add(comp);
-  master.layers.add(comp);
-  const items = [comp, master, stock];
-  const project = {
-    file: { fsName: state.projectId, exists: true },
-    get numItems() { return items.length; },
-    item(index) { return items[index - 1]; },
-    itemByID(id) { return items.find(item => item.id === id); },
-    importFile(options) {
-      assert.equal(options.importAs, 1);
-      assert.equal(options.sequence, false);
-      const item = new FootageItem(new File(options.file.fsName));
-      items.push(item);
-      if (state.flags.importThrows) throw new Error('injected callback failure');
-      return item;
-    }
-  };
-  state.items = items;
-  return { app: { project, beginUndoGroup() {}, endUndoGroup() {} }, File, FootageItem, CompItem, AVLayer, ImportOptions,
-    ImportAsType: { FOOTAGE: 1 }, PropertyType: { PROPERTY: 1 }, PropertyValueType: { LAYER_INDEX: 2 } };
-}
+const { mediaEnvironment } = require('./fixtures/media-layer-host');
 
 function operation(h, moduleId, target, params) {
   const { contractId } = h.broker.getContract({ moduleId });
@@ -167,18 +83,92 @@ test('media-layers refuses matte split, cross-comp expression, and source ranges
   assert.equal((await insertion.inspect()).snapshot.stack[1].matteId, neighbor.id);
 });
 
+test('media-layers never records or promotes an applied callback after the source lock is lost', windows, async t => {
+  const h = await harness({ mediaEnvironment });
+  t.after(() => h.close());
+  h.state.flags.loseMediaSourceLock = true;
+  const result = await importer(h).run();
+  assert.equal(result.state, 'stopped');
+  assert.equal(result.code, 'media_file_lock_unavailable');
+  const [command] = result.task.commands;
+  assert.equal(command.state, 'UNKNOWN');
+  assert.equal(h.state.items.filter(item => item.file?.fsName === h.state.overlayFile).length, 1);
+  const records = fs.readFileSync(path.join(h.installation.stateDir, 'receiver', 'completions.ndjson'), 'utf8')
+    .trim().split('\n').map(JSON.parse).filter(row => row.commandId === command.commandId);
+  assert.deepEqual(records.map(row => row.type), ['begin', 'unknown']);
+  await assert.rejects(importer(h).plan(), /controller_unresolved|receiver_lane_closed/);
+});
+
 test('media-layers rejects a wrong input SHA before confirm and a changed stack after confirm', windows, async t => {
-  const h = await harness({ mediaEnvironment, confirm: ({ state }) => {
-    state.anchor.name = 'Changed while confirming';
+  const h = await harness({ mediaEnvironment, confirm: ({ message, state }) => {
+    if (message.includes('Импортировать')) state.items[0].name = 'Changed inventory with the same revision';
+    else state.anchor.name = 'Changed while confirming';
     return true;
   } });
   t.after(() => h.close());
   const wrong = await importer(h).run({ sha256: '0'.repeat(64) });
   assert.equal(wrong.code, 'media_import_digest_mismatch', JSON.stringify(wrong));
   assert.equal(h.confirmations, 0);
+  const drift = await importer(h).run();
+  assert.equal(drift.message, 'stale_target');
+  assert.equal(h.state.items.length, 3);
   const stale = await inserter(h).run();
   assert.equal(stale.message, 'stale_target');
   assert.equal(h.state.comp.numLayers, 2);
+});
+
+test('media-layers preserves a 1079-item inventory within the wire budget and refuses wide names', windows, async t => {
+  const h = await harness({ mediaEnvironment, flags: { items: 1079, wireNames: true } });
+  t.after(() => h.close());
+  const ingest = importer(h), { snapshot: before } = await ingest.inspect();
+  assert.equal(before.items.length, 1079);
+  assert.ok(Buffer.byteLength(JSON.stringify(before)) > 65536);
+  const result = await ingest.run();
+  assert.equal(result.state, 'succeeded', JSON.stringify(result));
+  const after = result.outputs.operation;
+  assert.deepEqual(after.items.filter(item => item.id !== after.createdItemId), before.items);
+  assert.equal((await inserter(h, after.createdItemId).run()).state, 'succeeded');
+  const receiver = fs.readFileSync(path.join(h.installation.stateDir, 'receiver/completions.ndjson'), 'utf8');
+  const receiverMax = Math.max(...receiver.trim().split('\n').map(line => Buffer.byteLength(line)));
+  assert.ok(receiverMax < 256 * 1024);
+  t.diagnostic('media-import snapshot bytes=' + Buffer.byteLength(JSON.stringify(before)) + ', receiver max bytes=' + receiverMax);
+  const wide = await harness({ mediaEnvironment, flags: { items: 1079, longNames: true } });
+  t.after(() => wide.close());
+  await assert.rejects(importer(wide).inspect(), /inspection_result_budget/);
+  assert.equal(wide.broker.ledger.commands().length, 0);
+});
+
+test('media-layers preflights import capacity before the media file exists', windows, async t => {
+  const h = await harness({ mediaEnvironment, flags: { items: 1079 } });
+  t.after(() => h.close());
+  const file = h.state.overlayFile, bytes = fs.readFileSync(file);
+  fs.unlinkSync(file);
+  const moduleId = 'media-import', { contractId } = h.broker.getContract({ moduleId });
+  const target = { projectId: h.state.projectId, sessionId: h.installation.installationId };
+  const { snapshot, evidenceRef } = await h.broker.inspect({ moduleId, contractId, target });
+  assert.deepEqual(snapshot.target, target);
+  assert.equal(snapshot.items.length, 1079);
+  assert.equal(snapshot.bytes, undefined);
+  fs.writeFileSync(file, bytes);
+  await assert.rejects(h.broker.build({ oneStep: true, steps: [{ stepId: 'import', moduleId, contractId, evidenceRef,
+    input: { ...target, file, sha256: hash(bytes) } }] }), /media_import_preflight_only/);
+  assert.equal(h.confirmations, 0);
+  assert.equal(h.broker.ledger.commands().length, 0);
+});
+
+test('media-layers refuses oversized layer-insert read and intent before mutation', windows, async t => {
+  for (const wideStack of [68, 60]) {
+    const h = await harness({ mediaEnvironment, flags: { items: 1079, wideStack } });
+    t.after(() => h.close());
+    if (wideStack === 68) await assert.rejects(inserter(h).inspect(), /inspection_result_budget/);
+    else {
+      const { snapshot } = await inserter(h).inspect();
+      assert.ok(Buffer.byteLength(JSON.stringify(snapshot)) < 128 * 1024);
+      await assert.rejects(inserter(h).plan(), /inspection_result_budget/);
+    }
+    assert.equal(h.state.comp.numLayers, wideStack);
+    assert.equal(h.broker.ledger.commands().length, 0);
+  }
 });
 
 for (const [flag, action] of [['importThrows', importer], ['moveThrows', inserter]]) {

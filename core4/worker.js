@@ -23,8 +23,9 @@ async function handle(message) {
   if (message.method === 'build') return implementation.build(message.payload);
   return implementation.transition(message.payload);
 }
+process.stdin.setEncoding('utf8');
 process.stdin.on('data', data => {
-  buffer += data.toString('utf8'); if (Buffer.byteLength(buffer) > MAX_FRAME && !buffer.includes('\n')) process.exit(70);
+  buffer += data; if (Buffer.byteLength(buffer) > MAX_FRAME && !buffer.includes('\n')) process.exit(70);
   while (buffer.includes('\n')) {
     const index = buffer.indexOf('\n'); const line = buffer.slice(0, index); buffer = buffer.slice(index + 1);
     let message; try { message = parse(line); } catch { process.exit(70); }

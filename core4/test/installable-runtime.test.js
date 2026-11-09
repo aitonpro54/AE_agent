@@ -70,7 +70,8 @@ function projectInspectionHost(pkg, items, state = {}) {
   function CompItem(id, { name = 'Повтор', numLayers = 1 } = {}) {
     Object.assign(this, { id, name, numLayers, duration: 5, time: 2, workAreaStart: 1, workAreaDuration: 3 });
   }
-  CompItem.prototype.layer = index => ({ id: 1000 + index, name: '層'.repeat(260), property: () => ({}) });
+  CompItem.prototype.layer = index => ({ id: 1000 + index, name: '層'.repeat(260), property: () => ({}),
+    source: { id: 1078 }, enabled: true, solo: false, guideLayer: false, inPoint: 0.5, outPoint: 5, stretch: -80, timeRemapEnabled: true });
   const rows = items.map((options, index) => options ? new CompItem(index + 1, options) : { id: index + 1 });
   const project = { file: { fsName: 'C:/test/project.aep', name: 'project.aep' }, revision: 17, dirty: true, numItems: rows.length,
     activeItem: rows.at(-1), item: index => rows[index - 1],
@@ -111,6 +112,11 @@ test('installable-runtime project inspection resolves exact IDs independently of
     assert.equal(result.dirty, true);
     assert.deepEqual(result.activeComp, { compId: 1079, time: 2, workAreaStart: 1, workAreaDuration: 3 });
   }
+  const working = await next({ compId: 1079, includeLayerContext: true });
+  assert.equal(working.coverage.layers.total, working.coverage.layers.returned);
+  assert.deepEqual(working.layers[0].context, { sourceId: 1078, enabled: true, solo: false, guideLayer: false,
+    inPoint: 0.5, outPoint: 5, stretch: -80, timeRemapEnabled: true });
+  assert.throws(() => f.peer.inspect({ includeLayerContext: true }), /invalid_layer_context/);
   const first = await next({}), cursor = first.coverage.inventory.nextCursor;
   const second = await next({ cursor }), third = await next({ cursor: second.coverage.inventory.nextCursor });
   assert.deepEqual([first, second, third].map(x => [x.coverage.inventory.startItemIndex, x.coverage.inventory.throughItemIndex, x.coverage.inventory.itemsScanned, x.coverage.inventory.status]),

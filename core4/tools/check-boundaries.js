@@ -106,7 +106,8 @@ function checkBoundaries(root = path.resolve(__dirname, '..')) {
     if (/require\s*\(\s*[^'"\s]/.test(source) || /require\s*\(\s*['"][^'"]*(?:bridge-daemon|modules\/|plan-engine\/|core-tool-dispatch)/.test(source)) fail('runtime_domain_import', file);
     if (path.basename(file) === 'stdio-entry.js') {
       checkEntrySource(source);
-      if (!source.includes('if (manualAsset) {') || source.indexOf("require('./manual-policy.js')") < source.indexOf('if (manualAsset) {') || source.indexOf("require('./windows-reservation-provider.js')") < source.indexOf('if (manualAsset) {')) fail('runtime_optional_policy_import', file);
+      const mutationGuard = source.indexOf('if (mutationAssets.length) {');
+      if (mutationGuard < 0 || source.indexOf("require('./manual-policy.js')") < mutationGuard || source.indexOf("require('./windows-reservation-provider.js')") < mutationGuard) fail('runtime_optional_policy_import', file);
     }
     if (path.basename(file) === 'client-entry.js') checkClientEntrySource(source);
     if (path.basename(file) === 'owner-entry.js') checkOwnerEntrySource(source);

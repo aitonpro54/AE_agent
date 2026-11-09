@@ -11,144 +11,9 @@ const { inspectReceiverHistory, inspectLedgerHistory } = require('../runtime/rec
 const { scopesOverlap } = require('../core/resources');
 const { harness } = require('./fixtures/manual-http-runtime');
 
-const PropertyValueType = { OneD: 1, TwoD: 2, TwoD_SPATIAL: 3, COLOR: 4, SHAPE: 5, LAYER_INDEX: 6, CUSTOM_VALUE: 7 };
+const { overlayEnvironment } = require('./fixtures/montage-host');
 const moduleId = 'layer-overlay';
 const sessionId = 'fixture-installation';
-const group = (entries = []) => ({ propertyType: 2, numProperties: entries.length,
-  property(key) { return typeof key === 'number' ? entries[key - 1] : entries.find(item => item.matchName === key); } });
-const leaf = (matchName, propertyValueType, value) => ({
-  matchName, value, propertyType: 1, propertyValueType, numKeys: 0, canSetExpression: true, expressionEnabled: false, expression: ''
-});
-
-function overlayEnvironment(state) {
-  let next = 20;
-  class FootageItem {
-    constructor(name, hasAlpha = false) {
-      const fsName = path.join(state.fixtureDirectory, name);
-      fs.writeFileSync(fsName, name);
-      const stats = fs.statSync(fsName);
-      Object.assign(this, { id: ++next, width: 1920, height: 1080, pixelAspect: 1, useProxy: false,
-        footageMissing: false, hasVideo: true, hasAudio: false, mainSource: { isStill: true, hasAlpha, alphaMode: 2, invertAlpha: false },
-        file: { fsName, exists: true, alias: false, length: stats.size, modified: stats.mtime } });
-    }
-  }
-  class CompItem {
-    constructor(name) {
-      Object.assign(this, { id: ++next, name, width: 1920, height: 1080, pixelAspect: 1, duration: 5,
-        frameDuration: 1 / 25, displayStartTime: 0, stack: [] });
-    }
-    get numLayers() { return this.stack.length; }
-    layer(index) { return this.stack[index - 1]; }
-  }
-  const { OneD, TwoD, TwoD_SPATIAL, COLOR, SHAPE } = PropertyValueType;
-  const position = leaf('ADBE Position', TwoD_SPATIAL, [100, 120]);
-  const ease = () => [{ speed: 0, influence: 33 }];
-  Object.assign(position, { numKeys: 2, keyTime: i => i - 1, keyValue: i => [100 * i, 120],
-    keyInInterpolationType: () => 1, keyOutInterpolationType: () => 1, keyInTemporalEase: ease, keyOutTemporalEase: ease,
-    keyTemporalContinuous: () => false, keyTemporalAutoBezier: () => false, keyInSpatialTangent: () => [0, 0],
-    keyOutSpatialTangent: () => [0, 0], keySpatialContinuous: () => false, keySpatialAutoBezier: () => false, keyRoving: () => false });
-  const transform = group([leaf('ADBE Anchor Point', TwoD_SPATIAL, [960, 540]), position,
-    leaf('ADBE Scale', TwoD, [90, 90]), leaf('ADBE Rotate Z', OneD, 5), leaf('ADBE Opacity', OneD, 80)]);
-  const shape = { closed: true, vertices: [[0, 0], [190, 0], [90, 180]], inTangents: [[0, 0], [0, 0], [0, 0]],
-    outTangents: [[0, 0], [0, 0], [0, 0]], featherSegLocs: null, featherRelSegLocs: null, featherRadii: null,
-    featherInterps: null, featherTensions: null, featherTypes: null, featherRelCornerAngles: null };
-  const masks = group([Object.assign(group([leaf('ADBE Mask Shape', SHAPE, shape)]), {
-    matchName: 'ADBE Mask Atom', name: 'Photo mask', enabled: true, maskMode: 1, inverted: false,
-    rotoBezier: false, maskMotionBlur: 1, maskFeatherFalloff: 1, locked: false
-  })]);
-  const effects = group([Object.assign(group([leaf('ADBE Fill-0002', COLOR, [0.1, 0.2, 0.3, 1])]),
-    { matchName: 'ADBE Fill', name: 'Fill', enabled: true })]);
-  state.writes = { duplicate: 0, replace: 0, matte: 0 };
-  class AVLayer {
-    constructor(comp, source, name) {
-      Object.assign(this, { id: ++next, containingComp: comp, source, name, matchName: 'ADBE AV Layer',
-        propertyType: 2, numProperties: 2, comment: 'note', enabled: true, solo: false, locked: false,
-        shy: false, label: 8, startTime: 0.5, inPoint: 1, outPoint: 4, stretch: 100, parent: null,
-        trackMatteLayer: null, trackMatteType: 0, hasTrackMatte: false, isTrackMatte: false, threeDLayer: false,
-        nullLayer: false, adjustmentLayer: false, timeRemapEnabled: false, hasAudio: false,
-        collapseTransformation: false, motionBlur: true, guideLayer: false, effectsActive: true, frameBlending: false,
-        preserveTransparency: false, blendingMode: 1, quality: 2, samplingQuality: 3, autoOrient: 0,
-        transforms: transform, masks, effects });
-    }
-    get index() { return this.containingComp.stack.indexOf(this) + 1; }
-    property(key) { return ({
-      'ADBE Transform Group': this.transforms, 'ADBE Mask Parade': this.masks, 'ADBE Effect Parade': this.effects,
-      1: this.masks, 2: this.effects
-    })[key] ?? null; }
-    duplicate() {
-      state.writes.duplicate++;
-      if (state.flags.returnsExisting) return state.parent;
-      const copy = Object.assign(new AVLayer(this.containingComp, this.source, this.name), this, { id: ++next });
-      copy.trackMatteLayer = null;
-      copy.trackMatteType = 0;
-      copy.hasTrackMatte = false;
-      this.containingComp.stack.splice(this.index - 1, 0, copy);
-      state.project.revision++;
-      if (state.flags.duplicateThrows) throw new Error('duplicate callback failed after creating a layer');
-      if (state.flags.ignoresMarker) Object.defineProperty(copy, 'comment', { get: () => this.comment, set() {} });
-      return copy;
-    }
-    replaceSource(source, fixExpressions) {
-      assert.equal(fixExpressions, false);
-      state.writes.replace++;
-      this.source = source;
-      state.project.revision++;
-    }
-    setTrackMatte(layer, type) {
-      state.writes.matte++;
-      this.trackMatteLayer = layer; this.trackMatteType = type; this.hasTrackMatte = true;
-    }
-  }
-  const comp = state.comp = new CompItem('Photo slot');
-  const master = new CompItem('Shared master');
-  const unrelated = new CompItem('Other layers');
-  const originalSource = state.originalSource = new FootageItem('Old.png');
-  const replacement = state.replacement = new FootageItem('Фото с альфа.png', true);
-  const otherSource = new FootageItem('Controls.png');
-  const original = state.original = new AVLayer(comp, originalSource, 'Photo');
-  const parent = state.parent = new AVLayer(comp, otherSource, 'Parent');
-  const matte = state.matte = new AVLayer(comp, otherSource, 'Matte');
-  matte.isTrackMatte = true;
-  matte.enabled = false;
-  original.parent = parent;
-  original.trackMatteLayer = matte; original.trackMatteType = 1; original.hasTrackMatte = true;
-  comp.stack.push(parent, original, matte);
-  master.stack.push(new AVLayer(master, comp, 'Use 1'), new AVLayer(master, comp, 'Use 2'));
-  state.shared = master;
-  if (state.flags.fullLayerBudget) {
-    const filler = new AVLayer(unrelated, otherSource, 'Outside slot');
-    unrelated.stack = Array(2048 - comp.numLayers - master.numLayers).fill(filler);
-  }
-  const items = [comp, master, unrelated, originalSource, otherSource];
-  if (!state.flags.importOnDemand) items.push(replacement);
-  class File {
-    constructor(fsName) {
-      const stat = fs.statSync(fsName, { throwIfNoEntry: false });
-      Object.assign(this, { fsName, exists: !!stat, alias: false, length: stat?.size, modified: stat?.mtime });
-    }
-  }
-  class ImportOptions {
-    constructor(file) { this.file = file; }
-    canImportAs(kind) { return kind === 1; }
-  }
-  const project = state.project = { file: { fsName: state.projectId, exists: true }, revision: 7,
-    get numItems() { return items.length; }, item: index => items[index - 1], itemByID: id => items.find(item => item.id === id),
-    importFile(options) {
-      assert.equal(options.importAs, 1);
-      assert.equal(options.sequence, false);
-      assert.equal(options.file.fsName, replacement.file.fsName);
-      assert.ok(!items.includes(replacement));
-      items.push(replacement);
-      this.revision++;
-      return replacement;
-    }
-  };
-  replacement.name = path.basename(replacement.file.fsName);
-  originalSource.name = path.basename(originalSource.file.fsName);
-  otherSource.name = path.basename(otherSource.file.fsName);
-  return { app: { project, beginUndoGroup() {}, endUndoGroup() {} }, CompItem, AVLayer, FootageItem, File, ImportOptions,
-    ImportAsType: { FOOTAGE: 1 }, PropertyType: { PROPERTY: 1 }, PropertyValueType, AlphaMode: { PREMULTIPLIED: 1 } };
-}
 
 async function fixture(t, options = {}) {
   const h = await harness({ overlayEnvironment, operatorSession: () => sessionId, ...options });
@@ -175,9 +40,13 @@ async function fixture(t, options = {}) {
 }
 
 test('layer-overlay copies the exact slot and verifies shared uses, keys, mask, effect, parent, matte and alpha', async t => {
-  const h = await fixture(t);
+  const h = await fixture(t, { flags: { nativeTransformComponents: true } });
   assert.equal((await h.broker.run(await h.prepare(false))).code, 'operator_confirmation_required');
   const { snapshot: before } = await h.inspect();
+  const transforms = JSON.parse(before.signature)[10];
+  assert.deepEqual(transforms[0], ['ADBE Anchor Point', [960, 540, 0]]);
+  assert.deepEqual(transforms[1][1][0][8], [0, 0, 0]);
+  assert.deepEqual(transforms[2], ['ADBE Scale', [90, 90, 100]]);
   const result = await h.broker.run(await h.prepare());
   assert.equal(result.state, 'succeeded', JSON.stringify(result));
   const { snapshot: after } = await h.inspect(), copy = h.state.comp.layer(2);
@@ -230,6 +99,33 @@ test('layer-overlay rejects a project at the total layer limit before duplicate'
   const h = await fixture(t, { flags: { fullLayerBudget: true } });
   const result = await h.broker.run(await h.prepare());
   assert.equal(result.message, 'inspection_result_budget');
+  assert.deepEqual(h.state.writes, { duplicate: 0, replace: 0, matte: 0 });
+});
+
+test('layer-overlay preflights the original slot and shared uses before a replacement item exists', async t => {
+  const h = await fixture(t, { flags: { importOnDemand: true } });
+  const { itemId, ...target } = h.target;
+  const { contractId } = h.broker.getContract({ moduleId });
+  const preflight = () => h.broker.inspect({ moduleId, contractId, target });
+  h.state.original.stretch = -80;
+  const { snapshot, evidenceRef } = await preflight();
+  assert.deepEqual(snapshot.target, target);
+  assert.equal(snapshot.uses.length, 2);
+  assert.equal(snapshot.source.file, h.state.originalSource.file.fsName);
+  const original = snapshot.stack.find(layer => layer.id === target.layerId);
+  assert.equal(JSON.parse(original.stamp)[10], -80);
+  await assert.rejects(h.broker.build({ oneStep: true, steps: [{ stepId: 'overlay', moduleId, contractId, evidenceRef,
+    input: h.input }] }), /layer_overlay_preflight_only/);
+  h.state.original.timeRemapEnabled = true;
+  await assert.rejects(preflight(), /layer_overlay_layer_profile/);
+  assert.deepEqual(h.state.writes, { duplicate: 0, replace: 0, matte: 0 });
+});
+
+test('layer-overlay preflight reserves capacity for a longer escaped replacement path', async t => {
+  const h = await fixture(t, { flags: { importOnDemand: true, longOverlayLayers: 21 } });
+  const { itemId, ...target } = h.target;
+  const { contractId } = h.broker.getContract({ moduleId });
+  await assert.rejects(h.broker.inspect({ moduleId, contractId, target }), /inspection_result_budget/);
   assert.deepEqual(h.state.writes, { duplicate: 0, replace: 0, matte: 0 });
 });
 

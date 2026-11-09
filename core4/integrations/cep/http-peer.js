@@ -15,6 +15,11 @@ const TITLES_READ_FIELDS = ['font', 'font_size', 'apply_fill', 'fill_color', 'ap
 const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsupported_animated_text', 'unsupported_style_proof', 'unsupported_style_api', 'unsupported_mixed_style', 'unsupported_justification_enum', 'titles_native_target', 'titles_native_document', 'titles_native_text', 'titles_native_range', 'titles_native_serialization', ...TITLES_READ_FIELDS.flatMap(field => ['titles_native_' + field, 'titles_missing_' + field])]);
 const SAVE_READ_CODES = new Set(['save_project_changed', 'save_revision_unavailable', 'save_dirty_unavailable', 'save_file_unavailable']);
 const LIFECYCLE_READ_CODES = new Set(['lifecycle_project_changed', 'lifecycle_native_state']);
+const OVERLAY_PREFLIGHT_READ_CODES = new Set(['layer_overlay_layer_profile', 'layer_overlay_expression_scope', 'layer_overlay_existing_or_partial']);
+function montagePreflight(command) {
+  return command.phase === 'inspect' && (command.moduleId === 'media-import' && command.payload.file === undefined ||
+    command.moduleId === 'layer-overlay' && command.payload.itemId === undefined);
+}
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
 }
@@ -23,6 +28,28 @@ function nativeFileResult(result, phase) {
   if (phase === 'mutate' && result.outcome !== 'applied') return result;
   const { savedFileSha256, checkpointRoot, checkpoint, transition, diskProofError, ...snapshot } = phase === 'mutate' ? result.snapshot : result;
   return phase === 'mutate' ? { ...result, snapshot } : snapshot;
+}
+function observedOpen(command, result) {
+  const { action, projectId, sessionId, destination } = command.payload;
+  const snapshot = result.snapshot;
+  const key = file => file.replace(/\\/g, '/').toLowerCase();
+  if (action !== 'open' || typeof destination !== 'string' || result.outcome !== 'applied' || !snapshot ||
+      !snapshot.target || canonical(snapshot.target) !== canonical({ projectId, sessionId }) ||
+      snapshot.protected !== projectId || typeof snapshot.currentProject !== 'string' ||
+      snapshot.currentProject.length > 512 || key(snapshot.currentProject) !== key(destination) ||
+      typeof snapshot.dirty !== 'boolean') return {};
+  return { openObservation: Object.freeze({ currentProject: snapshot.currentProject, dirty: snapshot.dirty, diskVerified: false }) };
+}
+function validateInspectionLayer(item, includeContext) {
+  exact(item, ['layerId', 'index', 'name', 'textLayer', ...(includeContext ? ['context'] : [])]);
+  if (!Number.isSafeInteger(item.layerId) || item.layerId < 1 || !Number.isSafeInteger(item.index) ||
+      item.index < 1 || typeof item.name !== 'string' || typeof item.textLayer !== 'boolean') fail('inspection_result');
+  if (!includeContext) return;
+  const context = item.context;
+  exact(context, ['sourceId', 'enabled', 'solo', 'guideLayer', 'inPoint', 'outPoint', 'stretch', 'timeRemapEnabled']);
+  if (context.sourceId !== null && (!Number.isSafeInteger(context.sourceId) || context.sourceId < 1) ||
+      ['enabled', 'solo', 'guideLayer', 'timeRemapEnabled'].some(key => context[key] !== null && typeof context[key] !== 'boolean') ||
+      ['inPoint', 'outPoint', 'stretch'].some(key => context[key] !== null && !Number.isFinite(context[key]))) fail('inspection_result');
 }
 function validateInspectionCoverage(result, payload) {
   const uint = (value, min = 0) => Number.isSafeInteger(value) && value >= min;
@@ -56,7 +83,7 @@ function validateInspectionCoverage(result, payload) {
       (lookup.status === 'not_found' && lookup.method === 'page_scan' && (start !== 1 || itemsScanned !== total))) fail('inspection_result');
   if (result.truncated !== (displayNamesShortened || status !== 'complete' || layers.returned < layers.total)) fail('inspection_result');
 }
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], observeProjectSave, observeProjectLifecycle, port = 3457, timeout = 30000, directReadDrainMs = 0, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, requireMutationGuard = false, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], observeProjectSave, observeProjectLifecycle, assertMediaSourceLock, port = 3457, timeout = 30000, directReadDrainMs = 0, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, requireMutationGuard = false, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
   if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
   if (!Number.isSafeInteger(directReadDrainMs) || directReadDrainMs < 0 || directReadDrainMs > 10000) fail('physical_drain_window');
@@ -87,7 +114,8 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     if (entry.callerSettled) return;
     entry.callerSettled = true;
     const error = Object.assign(new Error(code), { code });
-    if (entry.directRead && physical) completedReadErrors.set(error, Object.freeze({ code, commandId: entry.command.commandId,
+    const layerBudgetRead = entry.command.phase === 'inspect' && entry.command.moduleId === 'layer-insert' && code === 'inspection_result_budget';
+    if (physical && (entry.directRead || physical.stage === 'terminal' && (montagePreflight(entry.command) || layerBudgetRead))) completedReadErrors.set(error, Object.freeze({ code, commandId: entry.command.commandId,
       executorHash: entry.command.executorHash, payloadHash: entry.command.payloadHash, physical }));
     entry.reject(error);
   }
@@ -95,12 +123,12 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     lastPhysicalFault = Object.freeze({ commandId: entry.command.commandId, reason,
       code: /^[a-z][a-z0-9_]{0,79}$/.test(error.code) ? error.code : 'physical_persist_failed', authority: false });
   }
-  function disconnect(reason) {
+  function disconnect(reason, diagnostics = {}) {
     if (!pending) return;
     const old = pending;
     try { store.unknown(old.command.commandId); }
     catch (e) { noteFault(old, reason, e); }
-    lastCommandOutcome = commandOutcome(old, 'unknown', { code: reason, queue: 'fenced' });
+    lastCommandOutcome = commandOutcome(old, 'unknown', { code: reason, queue: 'fenced', ...diagnostics });
     pending = null; clearTimeout(old.timer);
     // A persist failure must not escape a timer, retain its Promise forever or
     // masquerade as a terminal rejection. The store's fault/UNKNOWN fence stays.
@@ -284,11 +312,17 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
           exact(result, ['readFailureVersion', 'outcome', 'code']);
           if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code) &&
               !(titlesReadCommand(c.command, selectedAsset) && TITLES_READ_CODES.has(result.code)) &&
+              !(selectedAsset?.resultProfile === 'layer-overlay-v1' && montagePreflight(c.command) && OVERLAY_PREFLIGHT_READ_CODES.has(result.code)) &&
               !(observeDisk && c.command.phase !== 'mutate' && (projectSave ? SAVE_READ_CODES : LIFECYCLE_READ_CODES).has(result.code))) fail('inspection_result');
         } else if (manualResultProfile(selectedAsset)) {
           if (c.command.phase === 'mutate') {
             exact(result, ['outcome', 'snapshot', 'code', 'transactionReceipt']);
-            if (result.outcome === 'unknown') { disconnect('manual_effect_unknown'); fail('manual_effect_unknown'); }
+            if (result.outcome === 'unknown') {
+              const code = lifecycle && c.command.payload.action === 'open' && typeof result.code === 'string' &&
+                /^lifecycle_open_(source|destination|other|unsaved|unobserved)_(clean|dirty|unobserved)$/.test(result.code)
+                ? result.code : 'manual_effect_unknown';
+              disconnect(code); fail(code);
+            }
             if (!['applied', 'rejected'].includes(result.outcome)) fail('manual_result');
           } else if (observeDisk) {
             exact(result, ['target', 'revision', 'protected', 'dirty', 'fileStamp', ...(lifecycle ? ['currentProject', 'inventory'] : [])]);
@@ -301,8 +335,9 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
             if (!result.target || typeof result.revision !== 'string' || typeof result.protected !== 'string' ||
                 !Array.isArray(result.items) || !Array.isArray(result.assemblies)) fail('manual_snapshot');
           } else if (selectedAsset.resultProfile === 'media-import-v1') {
-            exact(result, ['target', 'revision', 'protected', 'items', 'bytes', 'modifiedMs']);
-            if (!Array.isArray(result.items) || !Number.isSafeInteger(result.bytes) || !Number.isSafeInteger(result.modifiedMs)) fail('manual_snapshot');
+            const preflight = c.command.phase === 'inspect' && c.command.payload.file === undefined;
+            exact(result, ['target', 'revision', 'protected', 'items', ...(preflight ? [] : ['bytes', 'modifiedMs'])]);
+            if (!Array.isArray(result.items) || !preflight && (!Number.isSafeInteger(result.bytes) || !Number.isSafeInteger(result.modifiedMs))) fail('manual_snapshot');
           } else if (selectedAsset.resultProfile === 'layer-insert-v1') {
             exact(result, ['target', 'revision', 'protected', 'stack', 'uses', 'source', 'frameDuration', 'duration', 'hasExpressions']);
             if (!Array.isArray(result.stack) || !Array.isArray(result.uses) || !result.source || typeof result.hasExpressions !== 'boolean') fail('manual_snapshot');
@@ -333,8 +368,9 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
           exact(result.target, ['projectId', 'compId']); exact(result.project, ['name', 'numItems', 'saved']);
           if (result.target.projectId !== null && typeof result.target.projectId !== 'string' || result.target.compId !== null && (!Number.isSafeInteger(result.target.compId) || result.target.compId < 1) || typeof result.project.name !== 'string' || !Number.isSafeInteger(result.project.numItems) || result.project.numItems < 0 || typeof result.project.saved !== 'boolean') fail('inspection_result');
           for (const item of result.compositions) { exact(item, ['compId', 'name', 'numLayers', 'duration']); if (!Number.isSafeInteger(item.compId) || item.compId < 1 || typeof item.name !== 'string' || !Number.isSafeInteger(item.numLayers) || item.numLayers < 0 || typeof item.duration !== 'number' || item.duration < 0) fail('inspection_result'); }
-          for (const item of result.layers) { exact(item, ['layerId', 'index', 'name', 'textLayer']); if (!Number.isSafeInteger(item.layerId) || item.layerId < 1 || !Number.isSafeInteger(item.index) || item.index < 1 || typeof item.name !== 'string' || typeof item.textLayer !== 'boolean') fail('inspection_result'); }
-          if (c.command.payload.cursor !== undefined || ['dirty', 'projectRevision', 'activeComp', 'coverage'].some(key => Object.hasOwn(result, key))) validateInspectionCoverage(result, c.command.payload);
+          for (const item of result.layers) validateInspectionLayer(item, c.command.payload.includeLayerContext === true);
+          if (c.command.payload.includeLayerContext || c.command.payload.cursor !== undefined ||
+              ['dirty', 'projectRevision', 'activeComp', 'coverage'].some(key => Object.hasOwn(result, key))) validateInspectionCoverage(result, c.command.payload);
         }
         if (observeDisk && result.readFailureVersion !== 1) {
           try {
@@ -342,12 +378,19 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
             else if (result.outcome === 'applied') result = { ...result, snapshot: observeDisk(c.command, result.snapshot) };
           } catch {
             const code = projectSave ? 'save_disk_proof_unavailable' : 'lifecycle_disk_proof_unavailable';
-            if (c.command.phase === 'mutate') { disconnect(code); fail(code); }
+            if (c.command.phase === 'mutate') {
+              disconnect(code, lifecycle ? observedOpen(c.command, result) : undefined); fail(code);
+            }
             result = { ...result, diskProofError: code };
           }
         }
         expirePending();
         if (pending !== done) fail('unknown_no_promotion');
+        if (c.command.phase === 'mutate' && result.outcome === 'applied' &&
+            ['media-import-v1', 'layer-overlay-v1'].includes(selectedAsset?.resultProfile)) {
+          try { if (!assertMediaSourceLock) fail('media_file_lock_unavailable'); assertMediaSourceLock(c.command.commandId); }
+          catch { disconnect('media_file_lock_unavailable'); fail('media_file_lock_unavailable'); }
+        }
         const response = completionResponse(c.command, result);
         let recordHash;
         try { recordHash = store.complete(b.payload.commandId, response); }
@@ -439,7 +482,8 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); }); return status();
     },
     inspect(payload = {}) {
-      exact(payload, ['compId', 'cursor']); if (payload.compId !== undefined && (!Number.isSafeInteger(payload.compId) || payload.compId < 1)) fail('invalid_comp_id');
+      exact(payload, ['compId', 'cursor', 'includeLayerContext']); if (payload.compId !== undefined && (!Number.isSafeInteger(payload.compId) || payload.compId < 1)) fail('invalid_comp_id');
+      if (payload.includeLayerContext !== undefined && (payload.includeLayerContext !== true || payload.compId === undefined)) fail('invalid_layer_context');
       if (payload.cursor !== undefined && (typeof payload.cursor !== 'string' || payload.cursor.length < 1 || payload.cursor.length > 96)) fail('invalid_inspection_cursor');
       payload = Object.freeze({ ...payload });
       const command = { protocolVersion: 1, controllerId, channelEpoch: epoch, commandId: id('inspect'), moduleId: 'project-inspection', operationId: 'inspect', executorHash: asset.executorHash, phase: 'inspect', payloadHash: hash(canonical(payload)), payload };

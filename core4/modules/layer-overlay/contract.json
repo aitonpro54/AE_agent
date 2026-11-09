@@ -42,8 +42,7 @@
       "projectId",
       "compId",
       "layerId",
-      "originalSourceId",
-      "itemId"
+      "originalSourceId"
     ],
     "additionalProperties": false
   },
@@ -207,8 +206,7 @@
           "projectId",
           "compId",
           "layerId",
-          "originalSourceId",
-          "itemId"
+          "originalSourceId"
         ],
         "additionalProperties": false
       },

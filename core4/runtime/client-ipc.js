@@ -13,7 +13,7 @@ const DOMAIN = 'ae-core4/local-client-ipc/v1\0';
 // Error strings/properties from another source cannot authorize reattachment.
 const preSendClosures = new WeakSet();
 const isPreSendClosed = error => preSendClosures.has(error);
-const IPC_LIMITS = Object.freeze({ frameBytes: 65536, connections: 64, sessions: 32,
+const IPC_LIMITS = Object.freeze({ frameBytes: 128 * 1024, connections: 64, sessions: 32,
   inflight: 8, pending: 64, requests: 4096, handshakeMs: 3000, frameMs: 3000, sessionMs: 300000 });
 const nonce = () => randomBytes(32).toString('hex');
 const token = value => typeof value === 'string' && /^[a-zA-Z0-9._:-]{1,128}$/.test(value);
@@ -26,7 +26,7 @@ function exact(value, keys) {
 function canonical(value) {
   let nodes = 0;
   function walk(v, depth) {
-    if (++nodes > 8192 || depth > 24) fail('ipc_json');
+    if (++nodes > 16384 || depth > 24) fail('ipc_json');
     if (v === null || typeof v === 'boolean') return JSON.stringify(v);
     if (typeof v === 'number') { if (!Number.isFinite(v)) fail('ipc_json'); return JSON.stringify(v); }
     if (typeof v === 'string') { if (Buffer.byteLength(v) > IPC_LIMITS.frameBytes) fail('ipc_json'); return JSON.stringify(v); }
@@ -49,6 +49,14 @@ function canonical(value) {
   const result = walk(value, 0);
   if (Buffer.byteLength(result) > IPC_LIMITS.frameBytes - 1) fail('ipc_frame_size');
   return result;
+}
+function fitsIpcResult(value) {
+  const hex = '0'.repeat(64);
+  try {
+    canonical({ type: 'response', sessionId: hex, seq: IPC_LIMITS.requests, requestId: hex,
+      ok: true, result: { ok: true, value }, mac: hex });
+    return true;
+  } catch { return false; }
 }
 function mac(key, kind, body) { return createHmac('sha256', key).update(DOMAIN + kind + '\0' + canonical(body)).digest('hex'); }
 function signed(key, kind, body) { return { ...body, mac: mac(key, kind, body) }; }
@@ -286,4 +294,4 @@ async function createIpcClient(opts) {
     }, config);
   });
 }
-module.exports = { createIpcServer, createIpcClient, IPC_LIMITS, isPreSendClosed };
+module.exports = { createIpcServer, createIpcClient, IPC_LIMITS, isPreSendClosed, fitsIpcResult };

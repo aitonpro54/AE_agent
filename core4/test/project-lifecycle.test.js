@@ -6,59 +6,7 @@ const path = require('node:path');
 const { hash } = require('../protocol/json');
 const { harness } = require('./fixtures/manual-http-runtime');
 
-const original = Buffer.from('RIFX saved source');
-const working = Buffer.from('RIFX edited source in memory');
-const blank = Buffer.from('RIFX empty project');
-
-function lifecycleEnvironment(state) {
-  fs.writeFileSync(state.projectId, original);
-  Object.assign(state, { currentFile: state.projectId, writes: 0, creates: 0, opens: 0 });
-  class File {
-    constructor(file) { this.fsName = path.normalize(file); }
-    get exists() { return fs.existsSync(this.fsName); }
-    get modified() { return new Date(Math.floor(fs.statSync(this.fsName).mtimeMs / 1000) * 1000); }
-    get length() { return fs.statSync(this.fsName).size; }
-    get parent() {
-      const dir = path.dirname(this.fsName);
-      return { exists: fs.existsSync(dir), getFiles: () => fs.readdirSync(dir) };
-    }
-    open(mode) { assert.equal(mode, 'r'); assert.equal(this.encoding, 'BINARY'); this.fd = fs.openSync(this.fsName, 'r'); return true; }
-    seek(offset, mode) { assert.equal(mode, 0); this.offset = offset; return true; }
-    read(count) {
-      const buffer = Buffer.alloc(count), actual = fs.readSync(this.fd, buffer, 0, count, this.offset);
-      this.offset += actual;
-      return buffer.toString('latin1', 0, actual);
-    }
-    close() { fs.closeSync(this.fd); }
-  }
-  class CompItem {
-    constructor() { this.id = 20; this.name = 'Сборка'; this.numLayers = 2; }
-  }
-  const project = {
-    get file() { return state.currentFile ? new File(state.currentFile) : null; },
-    revision: 7, dirty: !state.flags.clean, renderQueue: { rendering: false }, numItems: 1,
-    item: () => new CompItem(),
-    save(file) {
-      state.writes++;
-      fs.writeFileSync(file.fsName, this.numItems === 0 ? blank : working);
-      state.currentFile = file.fsName;
-      this.dirty = false;
-      return !state.flags.uncertain;
-    }
-  };
-  state.project = project;
-  return { app: { project, newProject() {
-    state.creates++;
-    state.currentFile = null;
-    Object.assign(project, { dirty: false, numItems: 0, revision: 1 });
-    return project;
-  }, open(file) {
-    state.opens++;
-    state.currentFile = file.fsName;
-    Object.assign(project, { dirty: false, numItems: 1, revision: 1 });
-    return project;
-  } }, CompItem, File };
-}
+const { lifecycleEnvironment, original, working, blank } = require('./fixtures/project-lifecycle-host');
 
 async function flow(t, options = {}) {
   const h = await harness({ lifecycleEnvironment, ...options });
@@ -179,4 +127,71 @@ test('project-lifecycle refuses a wrong or changed opening target and retains th
   assert.equal(changed.message, 'lifecycle_disk_changed');
   assert.equal(f.h.state.opens, 0);
   assert.equal(f.h.state.currentFile, f.target.projectId);
+});
+
+test('project-lifecycle compares the complete compact inventory above 1079 items and fails closed above its text budget', async t => {
+  const f = await flow(t, { flags: { items: 1080 } });
+  const { snapshot } = await f.inspect();
+  assert.equal(JSON.parse(snapshot.inventory).length, 1080);
+  const result = await f.h.broker.run(await f.prepare());
+  assert.equal(result.state, 'succeeded', JSON.stringify(result));
+  assert.equal(result.outputs.transition.inventory, snapshot.inventory);
+  t.diagnostic('lifecycle inventory bytes=' + Buffer.byteLength(snapshot.inventory));
+  const wide = await flow(t, { flags: { items: 1080, wideInventory: true } });
+  await assert.rejects(wide.inspect(), /inspection_result_budget/);
+  assert.equal(wide.h.state.writes, 0);
+});
+
+test('project-lifecycle partial open preserves both disk checkpoints and blocks replay', async t => {
+  const f = await flow(t, { flags: { clean: true, partialOpen: true } });
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  const input = { ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) };
+  const run = await f.prepare(input);
+  const result = await f.h.broker.run(run);
+  assert.equal(result.state, 'stopped');
+  assert.equal(result.code, 'lifecycle_open_destination_dirty');
+  const [command] = f.h.broker.ledger.commands();
+  assert.equal(command.state, 'UNKNOWN');
+  assert.equal(f.h.peer.status().lastCommandOutcome.code, 'lifecycle_open_destination_dirty');
+  assert.equal(f.h.peer.status().lastCommandOutcome.queue, 'fenced');
+  const checkpoints = path.join(f.h.installation.stateDir, 'project-save-checkpoints');
+  const file = path.join(checkpoints, command.checkpoint.ref + '.aep');
+  assert.deepEqual(fs.readFileSync(file), original);
+  assert.deepEqual(fs.readFileSync(file.replace(/\.aep$/, '.open.aep')), working);
+  assert.deepEqual(fs.readFileSync(f.target.projectId), original);
+  assert.deepEqual(fs.readFileSync(destination), working);
+  assert.equal(f.h.state.currentFile, destination);
+  await assert.rejects(f.h.broker.run(run), /fresh_dryrun_required/);
+  await assert.rejects(f.prepare(input), /controller_unresolved/);
+  assert.equal(f.h.state.opens, 1);
+});
+
+test('project-lifecycle reports an already switched AEP when its post-open inventory exceeds the limit', async t => {
+  const f = await flow(t, { flags: { clean: true, afterOpenItems: 2049 } });
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  const result = await f.h.broker.run(await f.prepare({ ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) }));
+  assert.equal(result.code, 'lifecycle_open_destination_clean');
+  assert.equal(f.h.peer.status().lastCommandOutcome.queue, 'fenced');
+  assert.equal(f.h.broker.ledger.commands()[0].state, 'UNKNOWN');
+  assert.equal(f.h.state.currentFile, destination);
+  assert.equal(f.h.state.opens, 1);
+});
+
+test('project-lifecycle retains the authenticated open observation after disk proof fails', async t => {
+  const f = await flow(t, { flags: { clean: true, diskChangedAfterOpen: true } });
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  const result = await f.h.broker.run(await f.prepare({ ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) }));
+  assert.equal(result.code, 'lifecycle_disk_proof_unavailable');
+  const outcome = f.h.peer.status().lastCommandOutcome;
+  assert.equal(outcome.queue, 'fenced');
+  assert.deepEqual(outcome.openObservation, { currentProject: destination, dirty: false, diskVerified: false });
+  const [command] = f.h.broker.ledger.commands();
+  assert.equal(command.state, 'UNKNOWN');
+  const saved = path.join(f.h.installation.stateDir, 'project-save-checkpoints', command.checkpoint.ref);
+  assert.deepEqual(fs.readFileSync(saved + '.aep'), original);
+  assert.deepEqual(fs.readFileSync(saved + '.open.aep'), working);
+  assert.equal(f.h.state.opens, 1);
 });

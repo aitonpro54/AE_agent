@@ -3,7 +3,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHmac, timingSafeEqual } = require('node:crypto');
 const { canonical, hash, fail } = require('../protocol/json');
-const { authorizeMontageStep, observeMontageMandate, issueMontageMandate, revokeMontageMandate, matchesMontageAction } = require('./montage-mandate');
 
 const HEX = /^[a-f0-9]{64}$/;
 const PROPOSAL = /^proposal-[a-f0-9-]{36}$/;
@@ -47,7 +46,7 @@ function issue(installation, { sessionId, proposalId, approvalDigest }) {
   writeOnce(file, { body, mac: sign(installation, body) });
   return { proposalId, approvalDigest, expiresAt };
 }
-function createOperatorConfirmation(installation, currentSession, observedProject = () => null, currentMandateSession = currentSession, importedItem = () => null) {
+function createOperatorConfirmation(installation, currentSession, observedProject = () => null, currentMandateSession = currentSession, importedItem = () => null, montage) {
   function authorize(approval, reservation) {
     if (approval.steps.length !== 1) fail('operator_confirmation_single_step');
     const file = fileFor(installation, approval.proposalId), record = read(file);
@@ -61,7 +60,7 @@ function createOperatorConfirmation(installation, currentSession, observedProjec
       if (canonical(body) !== canonical(expected)) fail('operator_confirmation_binding');
       proof = { digest: hash(body), expiresAt };
     } else {
-      const mandate = authorizeMontageStep(installation, approval, currentMandateSession(), observedProject(), importedItem);
+      const mandate = montage?.authorizeMontageStep(installation, approval, currentMandateSession(), observedProject(), importedItem);
       if (!mandate) fail('operator_confirmation_required');
       proof = { digest: hash({ approval, mandate: mandate.digest }), expiresAt: mandate.expiresAt, mandateDigest: mandate.digest };
     }
@@ -82,11 +81,11 @@ function createOperatorConfirmation(installation, currentSession, observedProjec
     if (command.phase !== 'mutate' || !proof) return;
     if (!Number.isSafeInteger(proof.expiresAt) || proof.expiresAt <= Date.now()) fail('operator_confirmation_expired');
     if (!proof.mandateDigest) return;
-    const mandate = observeMontageMandate(installation, execution.taskId, currentMandateSession());
+    const mandate = montage?.observeMontageMandate(installation, execution.taskId, currentMandateSession());
     if (!mandate || mandate.digest !== proof.mandateDigest || mandate.body.taskEpoch !== execution.taskEpoch ||
         mandate.body.projectId !== observedProject() || mandate.body.projectId !== command.payload.projectId ||
         proof.expiresAt !== mandate.body.expiresAt ||
-        !matchesMontageAction(mandate, command.moduleId, command.operationId, command.payload, importedItem)) fail('montage_mandate_binding');
+        !montage.matchesMontageAction(mandate, command.moduleId, command.operationId, command.payload, importedItem)) fail('montage_mandate_binding');
   };
   return authorize;
 }
@@ -99,7 +98,13 @@ if (require.main === module) {
     if (!approvalDigest || !mandateAction && !sessionId || mandateAction && sessionId || extra.length) fail('operator_confirmation_arguments');
     const installation = require('./stdio-entry').verifyInstallation(descriptor);
     if (installation.packageHash !== packageHash || path.join(installation.releaseDir, 'runtime', path.basename(__filename)) !== __filename) fail('operator_confirmation_installation');
-    if (proposalId === '--montage-revoke') console.log(JSON.stringify(revokeMontageMandate(installation, approvalDigest)));
+    let montage;
+    if (mandateAction) {
+      const bytes = fs.readFileSync(path.join(installation.releaseDir, 'release.json'));
+      if (hash(bytes) !== packageHash || !Object.hasOwn(JSON.parse(bytes).hashes, 'runtime/montage-mandate.js')) fail('montage_mandate_unavailable');
+      montage = require('./montage-mandate');
+    }
+    if (proposalId === '--montage-revoke') console.log(JSON.stringify(montage.revokeMontageMandate(installation, approvalDigest)));
     else {
       const work = require('./work-session').createWorkSession({ installation, descriptorPath: descriptor });
       if (proposalId === '--montage-issue') {
@@ -108,7 +113,7 @@ if (require.main === module) {
         const input = JSON.parse(fs.readFileSync(approvalDigest, 'utf8'));
         const session = work.status();
         if (session.resetPending || session.baselineRequired || (session.sessionId ?? installation.installationId) !== input.sessionId) fail('operator_confirmation_baseline');
-        console.log(JSON.stringify(issueMontageMandate(installation, input)));
+        console.log(JSON.stringify(montage.issueMontageMandate(installation, input)));
       } else {
         const session = work.assertCurrent(sessionId);
         if (session.baselineRequired) fail('operator_confirmation_baseline');

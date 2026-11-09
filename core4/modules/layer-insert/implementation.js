@@ -4,6 +4,10 @@ function build({ input, evidence }) {
   if (evidence.hasExpressions) throw new Error('layer_insert_expression_scope');
   const anchor = evidence.stack.findIndex(layer => layer.id === input.layerId);
   if (anchor < 0 || evidence.stack.length >= 96 || evidence.revision.length > 31700) throw new Error('layer_insert_stack');
+  const snapshotBytes = Buffer.byteLength(JSON.stringify(evidence));
+  // The intent includes the snapshot plus three escaped copies of the revision.
+  if (snapshotBytes > 116 * 1024 || snapshotBytes + 3 * Buffer.byteLength(JSON.stringify(evidence.revision)) > 224 * 1024)
+    throw new Error('inspection_result_budget');
   const index = anchor + (input.placement === 'below' ? 1 : 0);
   const upper = evidence.stack[index - 1], lower = evidence.stack[index];
   if (upper && lower && (upper.matteId === lower.id || lower.matteId === upper.id)) throw new Error('layer_insert_matte_pair');

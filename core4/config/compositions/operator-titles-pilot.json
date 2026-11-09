@@ -10,7 +10,7 @@
     }
   },
   "bundle": {
-    "files": ["runtime/operator-confirmation.js", "runtime/montage-mandate.js"],
+    "files": ["runtime/operator-confirmation.js"],
     "artifactClosures": []
   }
 }

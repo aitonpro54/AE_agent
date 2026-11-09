@@ -150,6 +150,24 @@ test('installed-composition admits media import and layer insertion only in thei
   const result = spawnSync(process.execPath, ['--expose-internals', '-e', parser], { input: source, encoding: 'utf8', windowsHide: true });
   assert.equal(result.status, 0, result.stderr);
 });
+test('installed-composition isolates the montage mandate and admits only three montage effects', () => {
+  const options = { runtimeModel: 'owner' };
+  const montage = buildPackage(root, 'operator-photo-montage', options);
+  const read = file => Buffer.from(montage.files[file], 'base64');
+  const selected = deriveComposition(montage.release, read);
+  assert.deepEqual(selected.composition.modules, ['media-import', 'layer-overlay', 'comp-frame-export']);
+  assert.deepEqual(selected.assets.map(asset => asset.moduleId), ['project-inspection', ...selected.composition.modules]);
+  assert.ok(selected.assets.slice(1).every(asset => asset.operatorConfirmation && asset.registryOperatorConfirmation));
+  for (const file of ['runtime/montage-mandate.js', 'runtime/operator-confirmation.js', 'runtime/project-file.js']) {
+    assert.ok(montage.files[file], file);
+  }
+  for (const file of ['runtime/project-save-proof.js', 'runtime/project-lifecycle-proof.js', 'runtime/layer-insert-proof.js']) {
+    assert.equal(montage.files[file], undefined, file);
+  }
+  const titles = buildPackage(root, 'operator-titles-photo-pilot', options);
+  assert.ok(titles.files['runtime/operator-confirmation.js']);
+  assert.equal(titles.files['runtime/montage-mandate.js'], undefined);
+});
 test('installed-composition project assembly is discovered by the installed MCP entry', { timeout: 15000 }, async () => {
   const pkg = buildPackage(root, 'manual-project-assembly');
   const f = install(pkg), h = rpcChild(f);

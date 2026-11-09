@@ -6,7 +6,8 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const { canonical } = require('../protocol/json');
 const { createOperatorConfirmation } = require('../runtime/operator-confirmation');
-const { issueMontageMandate, observeMontageMandate, revokeMontageMandate, importedMontageItem } = require('../runtime/montage-mandate');
+const montage = require('../runtime/montage-mandate');
+const { issueMontageMandate, observeMontageMandate, revokeMontageMandate, importedMontageItem } = montage;
 
 function fixture(t) {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-mandate-'));
@@ -34,7 +35,7 @@ function fixture(t) {
 test('montage-mandate reuses exact operator claim and checks cancellation before handoff', t => {
   const { installation, scope, approval, reservation } = fixture(t);
   let project = null, session = scope.sessionId;
-  const authorize = createOperatorConfirmation(installation, () => session, () => project);
+  const authorize = createOperatorConfirmation(installation, () => session, () => project, undefined, undefined, montage);
   assert.throws(() => authorize(approval, reservation), { code: 'operator_confirmation_required' });
   const issued = issueMontageMandate(installation, scope);
   assert.equal(issued.backend, 'core');
@@ -75,7 +76,7 @@ test('montage-mandate binds a future footage ID to one settled import of the sam
     after: { createdItemId: itemId, items: [{ id: itemId, file: future.file, kind: 'still' }] } };
   let history = [];
   const authorize = createOperatorConfirmation(installation, () => scope.sessionId, () => scope.projectId,
-    () => scope.sessionId, (mandate, input) => importedMontageItem(history, mandate, input));
+    () => scope.sessionId, (mandate, input) => importedMontageItem(history, mandate, input), montage);
   for (const mismatched of [[], [{ ...command, taskEpoch: 2 }], [{ ...command, state: 'UNKNOWN' }],
     [{ ...command, grant: {} }], [command, command]]) {
     history = mismatched;
@@ -112,7 +113,7 @@ test('montage-mandate stages fsync before publication and requires both role cre
 
 test('montage-mandate rejects expanded tasks, changed files and invalid binding', t => {
   const { installation, scope, approval, reservation } = fixture(t);
-  const authorize = createOperatorConfirmation(installation, () => scope.sessionId, () => scope.projectId);
+  const authorize = createOperatorConfirmation(installation, () => scope.sessionId, () => scope.projectId, undefined, undefined, montage);
   for (const moduleId of ['project-save', 'project-lifecycle', 'comp-render']) {
     assert.throws(() => issueMontageMandate(installation, { ...scope, actions: [{ moduleId, input: {} }] }), { code: 'montage_mandate_action' });
   }

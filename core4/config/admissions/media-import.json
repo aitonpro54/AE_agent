@@ -1,12 +1,12 @@
 {
   "moduleId": "media-import",
   "operationId": "ingest-footage",
-  "artifactHash": "b4b6afb0321f6123f723d35445e1139924783c4139acb757cdd0d78507b149eb",
-  "schemaHash": "4efe411b75a7f5e4662b29e2a312f126f1f376f0fa1e7537a36fcd4baa2e7c3e",
-  "resultSchemaHash": "67b15a875ba1489fe38290a98cf7cef7f29b05fd666d8e8ac07209d79eadb5a3",
+  "artifactHash": "5b1d22013f4b9ffb31633b4d3d6cbf68d04c060515854925df8a80722572de54",
+  "schemaHash": "3f974ed09942f758d4fe34a1dcee9e0f74ca2836236e76e0a150d767a80b4649",
+  "resultSchemaHash": "6a3c2ab7f0cb662bc70260fef299a1ceb4dcd478354d39334ede46357e25773a",
   "effectPolicyHash": "1d80cf18153d089b0ce8796bb9a51e96f1c62a5044d9b5218c13f53f1ae3124c",
-  "executorHash": "5c98e05d595e0533c64d473f651d8e229f7a7db5506d8bd134c3e03b0c50d2a4",
+  "executorHash": "5d55791f138394f89ec4b0ff3a0d08c3251bcb4457fb63c8830687c3a71eb4f9",
   "protocolVersion": 1,
-  "trustApprovalId": "source-review-media-import-operator-workflows-20261108",
+  "trustApprovalId": "source-review-media-import-20261108",
   "revoked": false
 }

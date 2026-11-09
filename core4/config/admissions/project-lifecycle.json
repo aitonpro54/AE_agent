@@ -1,12 +1,12 @@
 {
   "moduleId": "project-lifecycle",
   "operationId": "transition-project",
-  "artifactHash": "0fca9a468c8cb4babe6faabe5d92eb670a2f6db36e5a660f1b6840e9e9e178e4",
+  "artifactHash": "5ef49e5573f822f7b11d6747cd6f29fcaf9dff361c3a192c1318890f2963c1be",
   "schemaHash": "457a452f5cf5edca28cfd641879ead44da80866c8bb6a7dac60f9be6d955a0ef",
-  "resultSchemaHash": "5ab6fa6d5c1fdde541bafe7c7ac52a37e52f8df00bedfce1c1e99cead8fcc7ea",
+  "resultSchemaHash": "446c2a99e4e1e79aa1c764479b8bdbb63dba914614b387e91c11b74684a2c179",
   "effectPolicyHash": "5678aba9de4bf2ca503c834ad0f7f410e540c653ccaee1a73325452cb8aeb338",
-  "executorHash": "5662ae392ad53488667b068a908961c7d4225b6fa4a1e88c4de4b4455cb2ba98",
+  "executorHash": "6b6937f7bbb50d60c42895569d4aec0e0138a4923b5240cbc993f4368e4fbdbb",
   "protocolVersion": 1,
-  "trustApprovalId": "source-review-project-lifecycle-streaming-20261109",
+  "trustApprovalId": "source-review-project-lifecycle-20261107",
   "revoked": false
 }

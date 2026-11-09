@@ -1,7 +1,23 @@
 {
-  "parent": "manual-layer-overlay",
-  "modules": ["comp-frame-export"],
+  "parent": "readonly",
+  "modules": ["media-import", "layer-overlay", "comp-frame-export"],
   "assets": [
+    {
+      "assetKey": "media-import-v1",
+      "moduleId": "media-import",
+      "path": "modules/media-import",
+      "admission": "config/admissions/media-import.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    },
+    {
+      "assetKey": "layer-overlay-v1",
+      "moduleId": "layer-overlay",
+      "path": "modules/layer-overlay",
+      "admission": "config/admissions/layer-overlay.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    },
     {
       "assetKey": "comp-frame-export-v1",
       "moduleId": "comp-frame-export",
@@ -12,6 +28,16 @@
     }
   ],
   "profiles": {
+    "media-import": {
+      "operationId": "ingest-footage",
+      "resultProfile": "media-import-v1",
+      "operatorConfirmation": "registry-v1"
+    },
+    "layer-overlay": {
+      "operationId": "duplicate-and-replace-still",
+      "resultProfile": "layer-overlay-v1",
+      "operatorConfirmation": "registry-v1"
+    },
     "comp-frame-export": {
       "operationId": "save-comp-frame-png",
       "resultProfile": "comp-frame-export-v1",
@@ -19,7 +45,25 @@
     }
   },
   "bundle": {
-    "files": ["runtime/comp-frame-export-proof.js", "runtime/png-proof.js", "config/admissions/comp-frame-export.json"],
-    "artifactClosures": ["modules/comp-frame-export/artifact.json"]
+    "files": [
+      "runtime/manual-policy.js",
+      "runtime/windows-reservation-provider.js",
+      "runtime/operator-confirmation.js",
+      "runtime/montage-mandate.js",
+      "runtime/project-file.js",
+      "runtime/media-layer-proof.js",
+      "runtime/layer-overlay-proof.js",
+      "runtime/comp-frame-export-proof.js",
+      "runtime/png-proof.js",
+      "config/admissions/media-import.json",
+      "config/admissions/layer-overlay.json",
+      "config/admissions/comp-frame-export.json"
+    ],
+    "artifactClosures": [
+      "plan-engine/artifact.json",
+      "modules/media-import/artifact.json",
+      "modules/layer-overlay/artifact.json",
+      "modules/comp-frame-export/artifact.json"
+    ]
   }
 }

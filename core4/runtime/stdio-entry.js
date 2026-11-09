@@ -22,7 +22,7 @@ const RESULT_PROFILES = Object.freeze({
   'photo-source-v1': 'runtime/photo-source-proof.js',
   'owned-project-assembly-v1': 'runtime/project-assembly-proof.js',
   'media-import-v1': 'runtime/media-layer-proof.js',
-  'layer-insert-v1': 'runtime/media-layer-proof.js',
+  'layer-insert-v1': 'runtime/layer-insert-proof.js',
   'layer-overlay-v1': 'runtime/layer-overlay-proof.js',
   'current-project-save-v1': 'runtime/project-save-proof.js',
   'project-lifecycle-v1': 'runtime/project-lifecycle-proof.js',
@@ -73,7 +73,11 @@ function declarativeProfiles(composition, release, json, checked) {
   if (canonical(composition.assets[0]) !== canonical(INSPECTION_ASSET) || new Set(composition.modules).size !== composition.modules.length ||
       !composition.modules.every(id => typeof id === 'string' && /^[a-z][a-z0-9-]*$/.test(id))) fail('composition_assets');
   const mutations = composition.assets.slice(1);
-  if (composition.id === 'readonly' ? mutations.length || composition.modules.length : !mutations.some(a => a.moduleId === 'titles-current-target')) fail('composition_assets');
+  if (composition.id === 'readonly' ? mutations.length || composition.modules.length : !mutations.length) fail('composition_assets');
+  if (mutations.length) {
+    checked('runtime/manual-policy.js');
+    checked('runtime/windows-reservation-provider.js');
+  }
   if (new Set(mutations.map(a => a.moduleId)).size !== mutations.length || new Set(composition.assets.map(a => a.assetKey)).size !== composition.assets.length) fail('composition_assets');
   exactKeys(policy.profiles, mutations.map(a => a.moduleId));
   const proofPaths = new Set();
@@ -101,11 +105,19 @@ function declarativeProfiles(composition, release, json, checked) {
         id === 'project-lifecycle' && profile.operationId !== 'transition-project' ||
         (profile.resultProfile === 'comp-frame-export-v1') !== (id === 'comp-frame-export') ||
         id === 'comp-frame-export' && (profile.operationId !== 'save-comp-frame-png' || profile.operatorConfirmation !== 'registry-v1' ||
-          !release.hashes['runtime/png-proof.js'] || !release.hashes['runtime/project-save-proof.js']) ||
+          !release.hashes['runtime/png-proof.js'] ||
+          !(release.hashes['runtime/project-file.js'] || release.hashes['runtime/project-save-proof.js'])) ||
         Object.hasOwn(profile, 'operatorConfirmation') &&
           (![true, 'registry-v1'].includes(profile.operatorConfirmation) || !release.hashes['runtime/operator-confirmation.js'])) fail('composition_not_admitted');
-    const proof = RESULT_PROFILES[profile.resultProfile];
+    // Earlier packages kept both media proofs in the same pinned file.
+    const proof = profile.resultProfile === 'layer-insert-v1' && !release.hashes['runtime/layer-insert-proof.js']
+      ? 'runtime/media-layer-proof.js' : RESULT_PROFILES[profile.resultProfile];
     if (proof) { checked(proof); proofPaths.add(proof); }
+  }
+  if (release.hashes['runtime/project-file.js']) checked('runtime/project-file.js');
+  if (composition.id === 'operator-photo-montage') {
+    checked('runtime/montage-mandate.js');
+    if (!release.hashes['runtime/project-save-proof.js']) checked('runtime/project-file.js');
   }
   const modules = new Set(['project-inspection', ...composition.modules]);
   for (const file of paths) {
@@ -463,7 +475,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const profile = { id: inspection.moduleId, executionPolicy: inspection.policy };
   const asset = { assetKey: inspection.assetKey, executorHash: inspection.executorHash };
   const mutationAssets = selected.assets.filter(a => a.resultProfile);
-  const manualAsset = mutationAssets.find(a => a.resultProfile === 'manual-text-v1');
+  const montage = release.hashes['runtime/montage-mandate.js'] ? require('./montage-mandate.js') : null;
   let provider, manual, privateEmbedding, projectSave, projectLifecycle, operatorConfirmation, latestProjectRead;
   const observedMontageProject = () => {
     const physical = peer.status(), session = workSession?.status();
@@ -472,25 +484,24 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       performance.now() - latestProjectRead.at <= 120000 ? latestProjectRead.projectId : null;
   };
   function canResumeMontageTask({ taskId, steps, oneStep }) {
-    if (!operatorConfirmation || oneStep !== true || !Array.isArray(steps) || steps.length !== 1 ||
+    if (!montage || !operatorConfirmation || oneStep !== true || !Array.isArray(steps) || steps.length !== 1 ||
         !broker.ledger.events.some(event => event.type === 'task' && event.taskId === taskId)) return false;
     const task = broker.ledger.task(taskId), projectId = observedMontageProject();
     if (task.reset || !projectId) return false;
     try {
-      const { observeMontageMandate } = require('./montage-mandate.js');
-      const mandate = observeMontageMandate(installation, taskId, workSession.status().sessionId ?? installation.installationId);
+      const mandate = montage.observeMontageMandate(installation, taskId, workSession.status().sessionId ?? installation.installationId);
       return !!mandate && mandate.body.taskEpoch === task.epoch && mandate.body.projectId === projectId &&
         mandate.body.actions.some(action => action.moduleId === steps[0]?.moduleId);
     } catch { return false; }
   }
-  if (manualAsset) {
+  if (mutationAssets.length) {
     const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
     const { createManualPolicy } = require('./manual-policy.js');
     provider = createWindowsReservationProvider({ installation, getBroker: () => broker, getPeer: () => peer });
     operatorConfirmation = mutationAssets.some(item => item.operatorConfirmation)
       ? require('./operator-confirmation.js').createOperatorConfirmation(installation,
         () => workSession?.status().sessionId, observedMontageProject, () => workSession?.status().sessionId ?? installation.installationId,
-        (mandate, input) => require('./montage-mandate.js').importedMontageItem(broker.ledger.commands(mandate.body.taskId), mandate, input))
+        (mandate, input) => montage.importedMontageItem(broker.ledger.commands(mandate.body.taskId), mandate, input), montage)
       : undefined;
     if (operatorConfirmation && !workSession) fail('operator_confirmation_owner_required');
     const profileFor = item => {
@@ -499,8 +510,8 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
         case 'manual-text-v1': return binding;
         case 'photo-source-v1': return { ...binding, ...require('./photo-source-proof.js').createPhotoSourceProof(() => workSession?.status().sessionId ?? installation.installationId) };
         case 'owned-project-assembly-v1': return { ...binding, ...require('./project-assembly-proof.js').createProjectAssemblyProof(() => workSession?.status().sessionId ?? installation.installationId) };
-        case 'media-import-v1':
-        case 'layer-insert-v1': return { ...binding, ...require('./media-layer-proof.js').createMediaLayerProof(item.moduleId, () => workSession?.status().sessionId ?? installation.installationId) };
+        case 'media-import-v1': return { ...binding, ...require('./media-layer-proof.js').createMediaImportProof(() => workSession?.status().sessionId ?? installation.installationId) };
+        case 'layer-insert-v1': return { ...binding, ...require('./layer-insert-proof.js').createLayerInsertProof(() => workSession?.status().sessionId ?? installation.installationId) };
         case 'layer-overlay-v1': return { ...binding, ...require('./layer-overlay-proof.js').createLayerOverlayProof(() => workSession.status().sessionId ?? installation.installationId) };
         case 'current-project-save-v1':
           projectSave = require('./project-save-proof.js').createProjectSaveProof({ stateDir: installation.stateDir,
@@ -518,8 +529,8 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
         default: fail('composition_not_admitted');
       }
     };
-    manual = createManualPolicy({ selected: profileFor(manualAsset), additional: mutationAssets.filter(a => a !== manualAsset).map(profileFor),
-      provider, installation, getPeer: () => peer, pinAdoption: !!projectLifecycle, operatorConfirmation });
+    manual = createManualPolicy({ additional: mutationAssets.map(profileFor),
+      provider, installation, getPeer: () => peer, pinAdoption: !!projectLifecycle || !!montage, operatorConfirmation });
     const admissions = Object.fromEntries(mutationAssets.map(a => [a.moduleId, a.admission]));
     const transport = { identity: hash({ packageHash: installation.packageHash, admissions }), connect: value => peer.transport.connect(value), send: (value, offer) => peer.transport.send(value, offer), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
     privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };
@@ -534,7 +545,8 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const additionalAssets = mutationAssets.map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
     operationId: item.contract.operationId, executorHash: item.executorHash, resultProfile: item.resultProfile, effect: item.contract.effectPolicy.effect }));
   peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets,
-    observeProjectSave: projectSave?.observe, observeProjectLifecycle: projectLifecycle?.observe, requireMutationGuard: mode === 'owner',
+    observeProjectSave: projectSave?.observe, observeProjectLifecycle: projectLifecycle?.observe,
+    assertMediaSourceLock: manual?.assertSourceLock, requireMutationGuard: mode === 'owner',
     timeout: PRODUCTION_TIMING.callbackTimeoutMs, directReadDrainMs: DIRECT_READ_DRAIN_MS, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard(command) {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');
@@ -571,7 +583,19 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       : result;
   };
   facade.inspect = async value => {
-    if (value.contractId !== contractId) return broker.inspect(value);
+    if (value.contractId !== contractId) {
+      try { return await broker.inspect(value); }
+      catch (error) {
+        const rejection = peer.consumeReadRejection(error), context = invocationContext?.getStore();
+        const selected = mutationAssets.find(item => item.moduleId === value.moduleId && item.executorHash === rejection?.executorHash);
+        if (selected && context && !context.observer && rejection.physical.stage === 'terminal' &&
+            rejection.payloadHash === hash(canonical(value.target))) {
+          completedReadErrors.set(error, { context, moduleId: value.moduleId, contractId: value.contractId,
+            targetHash: rejection.payloadHash, code: rejection.code, physical: rejection.physical });
+        }
+        throw error;
+      }
+    }
     exact(value, ['moduleId', 'contractId', 'target']);
     if (value.moduleId !== profile.id) fail('contract_identity');
     const blocker = aeReadiness.blocker();

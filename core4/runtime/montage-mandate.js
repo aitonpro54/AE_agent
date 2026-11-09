@@ -178,9 +178,10 @@ function authorizeMontageStep(installation, approval, sessionId, observedProject
   const mandate = observeMontageMandate(installation, approval.taskId, sessionId);
   if (!mandate) return null;
   const { body } = mandate, { operationId, effect, fields, target } = OPERATIONS[id];
+  const baseline = id === 'media-import' && own(step.input, 'expectedInventory') ? ['expectedRevision', 'expectedInventory'] : ['expectedRevision'];
   if (approval.taskEpoch !== body.taskEpoch || observedProject !== body.projectId ||
       step.operationId !== operationId || step.effectPolicy.effect !== effect ||
-      !exact(step.input, [...fields, 'expectedRevision']) || !exact(step.target, target)) fail('montage_mandate_binding');
+      !exact(step.input, [...fields, ...baseline]) || !exact(step.target, target)) fail('montage_mandate_binding');
   const input = pick(step.input, fields);
   if (!same(step.target, pick(input, target)) ||
       !matchesMontageAction(mandate, id, step.operationId, input, importedItem)) fail('montage_mandate_action');

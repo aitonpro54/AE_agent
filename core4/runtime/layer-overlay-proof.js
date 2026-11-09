@@ -1,9 +1,9 @@
 'use strict';
 
 const { canonical, fail } = require('../protocol/json');
-const { assertImportFile } = require('./media-layer-proof');
+const { assertImportFile, lockImportFile } = require('./media-layer-proof');
 
-function createLayerOverlayProof(currentSessionId) {
+function createLayerOverlayProof(currentSessionId, lock = lockImportFile) {
   function assertTarget(target) {
     if (target.sessionId !== currentSessionId()) fail('layer_overlay_work_session_changed');
   }
@@ -13,9 +13,10 @@ function createLayerOverlayProof(currentSessionId) {
   }
   return {
     assertTarget,
-    prepareCheckpoint({ input, before }) {
+    lockSource({ input, before, descriptor }) {
       if (before.overlay.state !== 'none') fail('layer_overlay_existing_or_partial');
-      assertSource(input, before);
+      if (input.file !== before.source.file) fail('layer_overlay_source_path');
+      return lock(input, before.source, descriptor.executionScope.origin);
     },
     validateResult({ input, before }, after) {
       assertSource(input, after);

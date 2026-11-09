@@ -1,5 +1,6 @@
 (function () {
     var policy = 'current-matching-target-after-local-confirmation-v1';
+    var maxSnapshotBytes = 120 * 1024, resultAllowance = 4096;
     var optionalRoots = ['ADBE Marker', 'ADBE Time Remapping', 'ADBE Audio Group', 'ADBE Layer Overrides',
         'ADBE Layer Styles', 'ADBE Blend Options Group', 'ADBE Material Options Group', 'ADBE Plane Options Group',
         'ADBE Extrsn Options Group'];
@@ -64,7 +65,7 @@
     function capture(p) {
         var project = app.project;
         if (!project || !project.file || !project.file.exists || String(project.file.fsName) !== p.projectId) fault('layer_insert_project_changed');
-        if (project.numItems > 512) fault('inspection_result_budget');
+        if (project.numItems > 2048) fault('inspection_result_budget');
         var comp = project.itemByID(p.compId), source = project.itemByID(p.itemId);
         if (!(comp instanceof CompItem) || comp === source) fault('layer_insert_composition');
         var media = sourceInfo(source);
@@ -105,9 +106,11 @@
             layerId: p.layerId, itemId: p.itemId };
         var revision = JSON.stringify([target, comp.name, stack, uses, media, comp.frameDuration, comp.duration, budget.unsafe]);
         if (stack.length > 96 || uses.length > 256 || revision.length > 32768) fault('inspection_result_budget');
-        return { comp: comp, anchor: anchor, source: source, snapshot: { target: target, revision: revision,
+        var snapshot = { target: target, revision: revision,
             'protected': p.projectId, stack: stack, uses: uses, source: media, hasExpressions: budget.unsafe,
-            frameDuration: comp.frameDuration, duration: comp.duration } };
+            frameDuration: comp.frameDuration, duration: comp.duration };
+        if (JSON.utf8Bytes(JSON.stringify(snapshot)) > maxSnapshotBytes) fault('inspection_result_budget');
+        return { comp: comp, anchor: anchor, source: source, snapshot: snapshot };
     }
     function inspect(p) {
         try { return capture(p).snapshot; }
@@ -118,7 +121,11 @@
         var before = state.snapshot, frame = before.frameDuration;
         if (before.revision !== p.expectedRevision) fault('stale_target');
         if (before.hasExpressions) fault('layer_insert_expression_scope');
-        if (before.stack.length >= 96 || before.revision.length > 31700) fault('inspection_result_budget');
+        var snapshotBytes = JSON.utf8Bytes(JSON.stringify(before));
+        if (before.stack.length >= 96 || before.revision.length > 31700 ||
+            before.revision.length + JSON.stringify(p.name).length + 640 > 32768 ||
+            snapshotBytes > maxSnapshotBytes - resultAllowance ||
+            snapshotBytes + 3 * JSON.utf8Bytes(JSON.stringify(before.revision)) > 224 * 1024) fault('inspection_result_budget');
         var index = state.anchor.index - (p.placement === 'above' ? 1 : 0);
         var upper = before.stack[index - 1], lower = before.stack[index];
         if (upper && lower && (upper.matteId === lower.id || lower.matteId === upper.id)) fault('layer_insert_matte_pair');

@@ -10,7 +10,7 @@ const vm = require('node:vm');
 const { AsyncLocalStorage } = require('node:async_hooks');
 const { fork, spawn, spawnSync } = require('node:child_process');
 const { once } = require('node:events');
-const { canonical } = require('../protocol/json');
+const { canonical, hash } = require('../protocol/json');
 const { buildPackage } = require('../tools/package-installable');
 const { planInstall, applyInstall } = require('../tools/install-core4');
 const { verifyInstallation } = require('../runtime/stdio-entry');
@@ -95,6 +95,7 @@ function rpcProcess(t, f) {
   const pending = new Map(); let serial = 0, buffer = '', stderr = '';
   const exit = new Promise(resolve => child.once('exit', (code, signal) => resolve({ code, signal })));
   child.stderr.on('data', data => { stderr += data; });
+  child.stdout.setEncoding('utf8');
   child.stdout.on('data', data => {
     buffer += data;
     while (buffer.includes('\n')) { const n = buffer.indexOf('\n'), value = JSON.parse(buffer.slice(0, n)); buffer = buffer.slice(n + 1); pending.get(value.id)?.(value); pending.delete(value.id); }
@@ -117,7 +118,7 @@ async function directOwner(t, f) {
 function raw(port, route, body) {
   return new Promise((resolve, reject) => {
     const request = http.request({ hostname: '127.0.0.1', port, path: route, method: 'POST', agent: false, headers: { Origin: 'null', 'Content-Type': 'application/json' } }, response => {
-      let bytes = ''; response.on('data', data => { bytes += data; }); response.on('end', () => { try { resolve({ status: response.statusCode, value: JSON.parse(bytes) }); } catch (e) { reject(e); } });
+      let bytes = ''; response.setEncoding('utf8'); response.on('data', data => { bytes += data; }); response.on('end', () => { try { resolve({ status: response.statusCode, value: JSON.parse(bytes) }); } catch (e) { reject(e); } });
     }); request.on('error', reject); request.end(canonical(body));
   });
 }
@@ -268,6 +269,24 @@ test('installed montage CLI scopes one task across controller generations using 
   const first = await c.call('controller_acquire', leaseInput);
   await c.call('core_connect');
   await root();
+  const mediaContract = await c.call('get_module_contract', { moduleId: 'media-import' });
+  const mediaTarget = { projectId, sessionId };
+  const items = Array.from({ length: 1079 }, (_, i) => ({ id: i + 1, name: 'Кадр "🚀" А ' + i, file: '', kind: 'other' }));
+  const inventory = { target: mediaTarget, revision: '7', protected: projectId, items };
+  assert.ok(Buffer.byteLength(canonical(inventory)) > 65536);
+  const wide = await observe('media-import', mediaContract.contractId, mediaTarget, inventory);
+  assert.deepEqual(wide.snapshot.items, items);
+  const overlayContract = await c.call('get_module_contract', { moduleId: 'layer-overlay' });
+  const refused = call('inspect_module_target', { moduleId: 'layer-overlay', contractId: overlayContract.contractId,
+    target: { ...mediaTarget, compId: target.compId, layerId: 9, originalSourceId: 10 } });
+  await until(() => runtime.status().physical.pending);
+  const overlayFrame = (await p.request('/poll', {})).value.command;
+  assert.equal((await p.request('/complete', completion(overlayFrame,
+    { readFailureVersion: 1, outcome: 'rejected', code: 'layer_overlay_layer_profile' }))).status, 200);
+  const refusal = (await refused).result;
+  assert.equal(refusal.isError, true);
+  assert.equal(JSON.parse(refusal.content[0].text).code, 'layer_overlay_layer_profile');
+  assert.equal(runtime.status().physical.storeClosed, false);
   const { evidenceRef } = await frame();
   const built = await c.call('build_solution_plan', request(evidenceRef));
   const proposal = await c.call('propose_plan', { buildId: built.buildId });
@@ -300,6 +319,307 @@ test('installed montage CLI scopes one task across controller generations using 
   await c.call('controller_release', { leaseToken: third.leaseToken });
   assert.equal(runtime.status().physical.storeClosed, false);
 });
+
+async function syntheticHostProcess(t) {
+  const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore', windowsHide: true });
+  const exit = once(child, 'exit');
+  const stop = async () => { if (child.exitCode === null && child.signalCode === null) child.kill(); await exit; };
+  resources(t).closers.push(stop);
+  const { observeOwnerProcess } = require('../runtime/windows-owner-process');
+  const observed = await observeOwnerProcess(child.pid);
+  assert.equal(observed.status, 'present');
+  const ticks = BigInt(observed.birthTicks) - 621355968000000000n;
+  const birth = new Date(Number(ticks / 10000n)).toISOString().slice(0, -1) + String(ticks % 10000n).padStart(4, '0') + 'Z';
+  return { pid: child.pid, birth, executablePath: observed.executablePath, stop };
+}
+
+async function adoptedOwner(t, f, projectId) {
+  const { pid, birth, executablePath } = await syntheticHostProcess(t);
+  const executableHash = hash(fs.readFileSync(executablePath));
+  const expected = { machineId: f.d.machineId, aePid: pid, aeProcessBirth: birth, executablePath, executableHash };
+  const windows = require(path.join(f.d.releaseDir, 'runtime/windows-reservation-provider.js'));
+  const originalFactory = windows.createWindowsReservationProvider;
+  let provider, runtime;
+  windows.createWindowsReservationProvider = options => (provider = originalFactory({ ...options, probe: async () => ({
+    version: 1, observedAt: new Date().toISOString(), hostname: f.d.machineId,
+    processes: [{ pid, birth, executablePath, executableHash }],
+    endpoints: [{ port: 3456, state: 'observed-absent' }, { port: 8787, state: 'observed-absent' }], completedAt: Date.now()
+  }) }));
+  try { runtime = await directOwner(t, f); }
+  finally { windows.createWindowsReservationProvider = originalFactory; }
+  const adoption = await provider.adopt({ expected, allowedProject: projectId, rootObservationDigest: '6'.repeat(64) });
+  assert.equal(adoption.adopted, true);
+  return { runtime, adoption };
+}
+
+async function ownerVm(t, f, runtime, host) {
+  const client = rpcProcess(t, f), p = await panel(runtime.status().physical.port, f.d);
+  const { sessionId } = (await client.call('core_status')).workSession;
+  await client.call('controller_acquire', sessionId ? { sessionId } : {});
+  await client.call('core_connect');
+  const context = vm.createContext({ ...host, JSON: undefined, confirm: () => true });
+  vm.runInContext(Buffer.from(f.pkg.files['cep/jsx/registry.jsx'], 'base64').toString('utf8'), context);
+  async function deliver(phase, expect = 200, beforeNative = () => {}) {
+    await until(() => runtime.status().physical.pending);
+    const frame = (await p.request('/poll', {})).value.command;
+    assert.equal(frame.phase, phase);
+    beforeNative(frame);
+    context.serialized = canonical(frame);
+    const result = JSON.parse(vm.runInContext('AECore4Host.dispatch(serialized)', context));
+    const sent = completion(frame, result);
+    const reply = await p.request('/complete', sent);
+    assert.equal(reply.status, expect, JSON.stringify(reply));
+    if (expect === 200) assert.equal(reply.value.ack.receiptRef, frame.originalBinding.receiptRef);
+    return { frame, result, sent, reply };
+  }
+  return { client, p, sessionId: sessionId ?? f.d.installationId, deliver };
+}
+
+const records = file => fs.readFileSync(file, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse);
+
+nodeTest('owner-runtime media lock survives owner EOF until the adopted host exits',
+  { timeout: 15000, skip: process.platform !== 'win32' }, async t => {
+    const directory = temp(t);
+    const sourceDir = path.join(directory, 'approved');
+    const file = path.join(sourceDir, 'source.png');
+    fs.mkdirSync(sourceDir);
+    const bytes = Buffer.from('approved image bytes');
+    fs.writeFileSync(file, bytes);
+    const proof = { bytes: bytes.length, modifiedMs: Math.floor(fs.statSync(file).mtimeMs) };
+    const host = await syntheticHostProcess(t);
+    const origin = { aePid: host.pid, aeProcessBirth: host.birth };
+    const source = `const { lockImportFile } = require(process.argv[1]);
+      lockImportFile(...JSON.parse(process.argv[2])).then(() => console.log('held'), error => {
+        console.error(error); process.exitCode = 1;
+      });`;
+    const owner = spawn(process.execPath, ['-e', source, require.resolve('../runtime/media-layer-proof'),
+      JSON.stringify([{ file, sha256: hash(bytes) }, proof, origin])], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    const ownerExit = once(owner, 'exit');
+    resources(t).closers.push(async () => { if (owner.exitCode === null && owner.signalCode === null) owner.kill(); await ownerExit; });
+    let out = '', err = '';
+    owner.stdout.setEncoding('utf8').on('data', chunk => { out += chunk; });
+    owner.stderr.setEncoding('utf8').on('data', chunk => { err += chunk; });
+    await once(owner, 'close');
+    assert.equal(owner.exitCode, 0, err);
+    assert.equal(out.trim(), 'held');
+    const denied = { code: /^(EPERM|EACCES|EBUSY)$/ };
+    assert.throws(() => fs.writeFileSync(file, Buffer.alloc(bytes.length)), denied);
+    assert.throws(() => fs.renameSync(sourceDir, path.join(directory, 'renamed')), denied);
+    assert.deepEqual(fs.readFileSync(file), bytes);
+    await host.stop();
+    await until(() => {
+      try { fs.closeSync(fs.openSync(file, 'r+')); return true; }
+      catch (error) { assert.match(error.code, denied.code); return false; }
+    });
+  });
+
+nodeTest('owner-runtime installed montage locks approved bytes, binds receipts and returns bounded task outcomes',
+  { timeout: 45000, skip: process.platform !== 'win32' }, async t => {
+    const f = install(t, buildPackage(SOURCE, 'operator-photo-montage', { runtimeModel: 'owner' }));
+    const state = { projectId: path.join(f.directory, 'Стальной снимок.aep'), fixtureDirectory: f.directory,
+      flags: { importOnDemand: true, twoImports: true, items: 1079, longOverlayLayers: 12 } };
+    fs.writeFileSync(state.projectId, 'synthetic AEP');
+    const outputDir = path.join(f.directory, 'frames-output');
+    fs.mkdirSync(outputDir);
+    const host = require('./fixtures/montage-host').overlayEnvironment(state);
+    state.comp.width = state.comp.height = 1;
+    const { runtime, adoption } = await adoptedOwner(t, f, state.projectId);
+    const { client, p, sessionId, deliver } = await ownerVm(t, f, runtime, host);
+    const locks = [];
+    function checkMediaLock(frame) {
+      if (!['media-import-v1', 'layer-overlay-v1'].includes(frame.assetKey)) return;
+      const { file, sha256 } = frame.typedPayload;
+      const bytes = fs.readFileSync(file);
+      assert.equal(hash(bytes), sha256);
+      assert.throws(() => fs.writeFileSync(file, Buffer.alloc(bytes.length, 0x78)), { code: /^(EPERM|EACCES|EBUSY)$/ });
+      assert.deepEqual(fs.readFileSync(file), bytes);
+      locks.push(file);
+    }
+    const contracts = {};
+    for (const id of ['project-inspection', 'media-import', 'layer-overlay', 'comp-frame-export'])
+      contracts[id] = (await client.call('get_module_contract', { moduleId: id })).contractId;
+    async function inspect(moduleId, target) {
+      const pending = client.call('inspect_module_target', { moduleId, contractId: contracts[moduleId], target });
+      await deliver('inspect');
+      return pending;
+    }
+    await inspect('project-inspection', { compId: state.comp.id, includeLayerContext: true });
+    const projectId = state.projectId;
+    const importInput = item => ({ projectId, sessionId, file: item.file.fsName, sha256: hash(fs.readFileSync(item.file.fsName)) });
+    const first = importInput(state.replacement), second = importInput(state.second);
+    const overlay = { ...first, compId: state.comp.id, layerId: state.original.id, originalSourceId: state.originalSource.id };
+    const png = { projectId, compId: state.comp.id, frame: 3, fileName: 'control.png' };
+    async function build(moduleId, target, input, taskId) {
+      const { evidenceRef } = await inspect(moduleId, target);
+      return client.call('build_solution_plan', { oneStep: true, ...(taskId ? { taskId } : {}),
+        steps: [{ stepId: 'operation', moduleId, contractId: contracts[moduleId], evidenceRef, input }] });
+    }
+    async function proposal(plan) {
+      const { proposalId } = await client.call('propose_plan', { buildId: plan.buildId });
+      const { dryrunRef } = await client.call('dry_run_plan', { proposalId });
+      return { proposalId, dryrunRef };
+    }
+    const fileTarget = ({ projectId, sessionId, file }) => ({ projectId, sessionId, file });
+    const firstPlan = await build('media-import', fileTarget(first), first);
+    const { taskId } = firstPlan;
+    const { issueMontageMandate, revokeMontageMandate } = require(path.join(f.d.releaseDir, 'runtime/montage-mandate.js'));
+    const actions = [{ moduleId: 'media-import', input: first }, { moduleId: 'media-import', input: second },
+      { moduleId: 'layer-overlay', input: overlay }, { moduleId: 'comp-frame-export', input: png }];
+    const scope = { taskId, taskEpoch: 0, sessionId, projectId, expiresAt: Date.now() + 60000, actions };
+    const mandate = issueMontageMandate(f.d, scope);
+    const captures = [];
+    async function apply(plan) {
+      const pending = client.call('run_plan', await proposal(plan));
+      await deliver('inspect');
+      captures.push(await deliver('mutate', 200, checkMediaLock));
+      const value = await pending;
+      assert.equal(value.state, 'succeeded', JSON.stringify(value));
+      return value.outputs.operation;
+    }
+    const imported = await apply(firstPlan);
+    assert.equal(imported.items.length, 1080);
+    assert.equal(imported.createdItemId, state.replacement.id);
+    const overlayTarget = { projectId, sessionId, compId: overlay.compId, layerId: overlay.layerId,
+      originalSourceId: overlay.originalSourceId, itemId: imported.createdItemId };
+    const applied = await apply(await build('layer-overlay', overlayTarget, { ...overlay, itemId: imported.createdItemId }, taskId));
+    assert.equal(applied.overlay.sourceId, imported.createdItemId);
+    assert.equal(state.original.source.id, state.originalSource.id);
+    assert.equal((await apply(await build('media-import', fileTarget(second), second, taskId))).items.length, 1081);
+    const pngTarget = { projectId, compId: state.comp.id };
+    const rendered = await apply(await build('comp-frame-export', pngTarget, png, taskId));
+    assert.equal(rendered.output.file, path.join(outputDir, png.fileName));
+    assert.deepEqual(locks, [first.file, first.file, second.file]);
+    const next = await proposal(await build('comp-frame-export', pngTarget, { ...png, fileName: 'revoked.png' }, taskId));
+    revokeMontageMandate(f.d, taskId);
+    const stopped = client.call('run_plan', next);
+    await deliver('inspect');
+    const refusal = await stopped;
+    assert.equal(refusal.state, 'stopped');
+    assert.equal(refusal.code, 'montage_mandate_revoked');
+    assert.equal(refusal.task.commands.length, captures.length);
+    assert.ok(refusal.task.commands.every(command => command.afterOmitted === true));
+    const firstReceipt = await client.call('get_task', { taskId, commandId: captures[0].frame.commandId });
+    assert.equal(firstReceipt.commands[0].after.items.length, 1080);
+    assert.equal(fs.existsSync(path.join(outputDir, 'revoked.png')), false);
+    const receiverFile = path.join(f.d.stateDir, 'receiver/completions.ndjson');
+    const ledgerFile = path.join(f.d.stateDir, 'broker/ledger.ndjson');
+    const receiver = records(receiverFile), ledger = records(ledgerFile);
+    assert.equal(receiver.filter(row => row.type === 'begin' && row.command.phase === 'mutate').length, 4);
+    for (const { frame, result } of captures) {
+      const begin = receiver.find(row => row.type === 'begin' && row.commandId === frame.commandId);
+      const complete = receiver.find(row => row.type === 'complete' && row.commandId === frame.commandId);
+      const intent = ledger.find(row => row.type === 'intent' && row.commandId === frame.commandId);
+      assert.deepEqual(begin.originalBinding, frame.originalBinding);
+      assert.deepEqual(intent.dispatchBinding, frame.originalBinding);
+      assert.equal(intent.grant.operatorConfirmation.mandateDigest, mandate.digest);
+      const reservation = ledger.find(row => row.type === 'reservation' && row.state === 'reserved' &&
+        row.reservation.ref === intent.grant.reservationRef);
+      assert.equal(reservation.reservation.adoptionDigest, adoption.adoptionDigest);
+      assert.deepEqual(complete.response.result.transactionReceipt, result.transactionReceipt);
+      assert.equal(result.transactionReceipt.checkpointRef, intent.checkpoint.ref);
+      if (frame.assetKey === 'layer-overlay-v1') assert.ok(Buffer.byteLength(intent.before.revision) > 8192);
+      assert.ok(ledger.some(row => row.type === 'command' && row.commandId === frame.commandId && row.state === 'succeeded'));
+    }
+    const inspectHistory = require(path.join(f.d.releaseDir, 'runtime/start-over-inspection.js')).inspectStartOverHistory;
+    const history = inspectHistory({ installationId: f.d.installationId, machineId: f.d.machineId, descriptorPath: f.descriptor,
+      receiverBytes: fs.readFileSync(receiverFile), ledgerBytes: fs.readFileSync(ledgerFile) });
+    assert.equal(history.archiveEligibleHistory, true, JSON.stringify(history.blockedConstraints));
+    assert.equal(history.requiresAEExit, false);
+    const faultInput = { ...png, fileName: 'partial.png' };
+    const faultPlan = await build('comp-frame-export', pngTarget, faultInput);
+    issueMontageMandate(f.d, { ...scope, taskId: faultPlan.taskId, actions: [{ moduleId: 'comp-frame-export', input: faultInput }] });
+    const faultRun = await proposal(faultPlan);
+    state.flags.truncatedPng = true;
+    const fault = client.rpc('tools/call', { name: 'run_plan', arguments: { payload: faultRun } });
+    await deliver('inspect');
+    const { frame, sent } = await deliver('mutate', 403);
+    assert.equal((await fault).error.message, 'owner_outcome_uncertain');
+    assert.equal((await p.request('/complete', sent)).value.error, 'unknown_no_promotion');
+    const retry = await client.rpc('tools/call', { name: 'run_plan', arguments: { payload: faultRun } });
+    assert.equal(retry.error.message, 'owner_recovery_required');
+    const retained = await client.call('get_task', { taskId: faultPlan.taskId, commandId: frame.commandId });
+    assert.equal(retained.commands[0].state, 'UNKNOWN');
+    assert.ok(records(receiverFile).some(row => row.type === 'unknown' && row.commandId === frame.commandId));
+    assert.equal(runtime.status().physical.storeClosed, true);
+  });
+
+nodeTest('owner-runtime installed layer insertion refuses wide inspection and intent before any mutation offer',
+  { timeout: 30000, skip: process.platform !== 'win32' }, async t => {
+    const f = install(t, buildPackage(SOURCE, 'manual-media-layers', { runtimeModel: 'owner' }));
+    const state = { projectId: path.join(f.directory, 'Слои.aep'), fixtureDirectory: f.directory,
+      flags: { items: 1079, wideStack: 68 } };
+    fs.writeFileSync(state.projectId, 'synthetic AEP');
+    const host = require('./fixtures/media-layer-host').mediaEnvironment(state);
+    const runtime = await directOwner(t, f);
+    const { client, sessionId, deliver } = await ownerVm(t, f, runtime, host);
+    const moduleId = 'layer-insert';
+    const { contractId } = await client.call('get_module_contract', { moduleId });
+    const target = { projectId: state.projectId, sessionId, compId: state.comp.id, layerId: state.anchor.id, itemId: state.stock.id };
+    const read = client.rpc('tools/call', { name: 'inspect_module_target', arguments: { payload: { moduleId, contractId, target } } });
+    const rejected = await deliver('inspect');
+    const refusal = await read;
+    assert.equal(refusal.result?.isError, true, JSON.stringify(refusal));
+    assert.equal(JSON.parse(refusal.result.content[0].text).code, 'inspection_result_budget');
+    assert.equal(rejected.result.code, 'inspection_result_budget');
+    state.comp.stack.splice(0, 8);
+    const inspect = client.call('inspect_module_target', { moduleId, contractId, target });
+    await deliver('inspect');
+    const { evidenceRef } = await inspect;
+    assert.equal(typeof evidenceRef, 'string');
+    const input = { ...target, name: 'Новый слой', placement: 'above', startFrame: 12, inFrame: 18,
+      outFrame: 72, position: [160, 90], scale: [80, 80] };
+    const plan = await client.rpc('tools/call', { name: 'build_solution_plan', arguments: { payload: {
+      oneStep: true, steps: [{ stepId: 'insert', moduleId, contractId, evidenceRef, input }]
+    } } });
+    assert.ok(plan.error);
+    assert.equal(state.comp.numLayers, 60);
+    const receiver = records(path.join(f.d.stateDir, 'receiver/completions.ndjson'));
+    const completion = receiver.find(row => row.type === 'complete' && row.commandId === rejected.frame.commandId);
+    assert.deepEqual(completion.response.result, rejected.result);
+    assert.ok(receiver.filter(row => row.type === 'begin').every(row => row.command.phase === 'inspect'));
+    assert.ok(records(path.join(f.d.stateDir, 'broker/ledger.ndjson')).every(row => row.type !== 'intent'));
+  });
+
+nodeTest('owner-runtime installed lifecycle retains open observation and both checkpoints after disk proof fails',
+  { timeout: 30000, skip: process.platform !== 'win32' }, async t => {
+    const f = install(t, buildPackage(SOURCE, 'manual-project-lifecycle', { runtimeModel: 'owner' }));
+    const state = { projectId: path.join(f.directory, 'Source.aep'), flags: { clean: true, diskChangedAfterOpen: true } };
+    const { lifecycleEnvironment, original, working } = require('./fixtures/project-lifecycle-host');
+    const host = lifecycleEnvironment(state), destination = path.join(f.directory, 'Target.aep');
+    fs.writeFileSync(destination, working);
+    const { runtime } = await adoptedOwner(t, f, state.projectId);
+    const { client, sessionId, deliver } = await ownerVm(t, f, runtime, host);
+    const moduleId = 'project-lifecycle', { contractId } = await client.call('get_module_contract', { moduleId });
+    const target = { projectId: state.projectId, sessionId };
+    const inspect = client.call('inspect_module_target', { moduleId, contractId, target });
+    await deliver('inspect');
+    const { evidenceRef } = await inspect;
+    const input = { ...target, action: 'open', destination, expectedDestinationSha256: hash(working) };
+    const { taskId, buildId } = await client.call('build_solution_plan', { oneStep: true,
+      steps: [{ stepId: 'open', moduleId, contractId, evidenceRef, input }] });
+    const { proposalId } = await client.call('propose_plan', { buildId });
+    const { dryrunRef } = await client.call('dry_run_plan', { proposalId });
+    const run = client.rpc('tools/call', { name: 'run_plan', arguments: { payload: { proposalId, dryrunRef } } });
+    await deliver('inspect');
+    const { frame, result, reply } = await deliver('mutate', 403);
+    assert.equal(result.outcome, 'applied');
+    assert.equal(reply.value.error, 'lifecycle_disk_proof_unavailable');
+    assert.equal((await run).error.message, 'owner_outcome_uncertain');
+    const { commands } = await client.call('get_task', { taskId, commandId: frame.commandId });
+    assert.equal(commands[0].state, 'UNKNOWN');
+    const outcome = (await client.call('core_status')).physical.lastCommandOutcome;
+    assert.deepEqual(outcome.openObservation, { currentProject: destination, dirty: false, diskVerified: false });
+    const receiver = records(path.join(f.d.stateDir, 'receiver/completions.ndjson')).filter(row => row.commandId === frame.commandId);
+    const intent = records(path.join(f.d.stateDir, 'broker/ledger.ndjson')).find(row => row.type === 'intent' && row.commandId === frame.commandId);
+    assert.deepEqual(receiver.map(row => row.type), ['begin', 'unknown']);
+    assert.deepEqual(receiver[0].originalBinding, intent.dispatchBinding);
+    const checkpoint = path.join(f.d.stateDir, 'project-save-checkpoints', intent.checkpoint.ref);
+    assert.deepEqual(fs.readFileSync(checkpoint + '.aep'), original);
+    assert.deepEqual(fs.readFileSync(checkpoint + '.open.aep'), working);
+    const retry = await client.rpc('tools/call', { name: 'run_plan', arguments: { payload: { proposalId, dryrunRef } } });
+    assert.equal(retry.error.message, 'owner_recovery_required');
+    assert.equal(state.opens, 1);
+  });
 
 test('only a Broker-issued fresh dry-run refusal crosses the owner boundary as a known refusal', async () => {
   const { Broker } = require('../core/broker');

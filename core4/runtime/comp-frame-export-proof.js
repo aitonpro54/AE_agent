@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { canonical, fail } = require('../protocol/json');
-const { plainPath, samePath } = require('./project-save-proof');
+const { plainPath, samePath } = require('./project-file');
 const { inspectPngBuffer, DEFAULT_MAX_PNG_BYTES } = require('./png-proof');
 
 function output(input) {

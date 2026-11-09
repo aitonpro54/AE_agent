@@ -9,7 +9,8 @@ const { execFileSync, spawnSync } = require('node:child_process');
 
 const VARIANTS = ['readonly', 'manual', 'manual-titles-variants', 'manual-project-assembly', 'manual-project-save', 'manual-project-lifecycle']
   .flatMap(composition => ['stdio', 'owner'].map(runtimeModel => ({ composition, runtimeModel })))
-  .concat(['operator-titles-pilot', 'operator-titles-photo-pilot', 'manual-media-layers', 'operator-workflows', 'operator-frame-export'].map(composition => ({ composition, runtimeModel: 'owner' })));
+  .concat(['operator-titles-pilot', 'operator-titles-photo-pilot', 'manual-media-layers', 'operator-workflows', 'operator-frame-export',
+    'operator-photo-montage'].map(composition => ({ composition, runtimeModel: 'owner' })));
 const LOCATIONS = ['plain', 'with spaces', 'Юникод 日本語'];
 const SOURCE_DIRS = new Set(['cep', 'config', 'core', 'integrations', 'modules', 'plan-engine', 'protocol', 'runtime']);
 const LOCAL_FILES = [

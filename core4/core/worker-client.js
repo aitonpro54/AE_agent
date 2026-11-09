@@ -14,8 +14,9 @@ class WorkerClient {
     this.environmentKeys = Object.keys(env);
     const child = spawn(process.execPath, [path.join(this.runtime.path, 'worker.js')], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, env });
     this.child = child; let buffer = '';
+    child.stdout.setEncoding('utf8');
     child.stdout.on('data', data => {
-      buffer += data.toString('utf8');
+      buffer += data;
       if (Buffer.byteLength(buffer) > MAX_FRAME && !buffer.includes('\n')) return this.stop('worker_frame_too_large');
       while (buffer.includes('\n')) {
         const index = buffer.indexOf('\n'); const line = buffer.slice(0, index); buffer = buffer.slice(index + 1);
