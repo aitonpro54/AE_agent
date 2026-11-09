@@ -74,6 +74,13 @@ test('montage-mandate binds a future footage ID to one settled import of the sam
     verificationKind: 'local-transaction-receipt', selected: { moduleId: 'media-import' },
     grant: { operatorConfirmation: { mandateDigest: issued.digest } }, input: scope.actions[0].input,
     after: { createdItemId: itemId, items: [{ id: itemId, file: future.file, kind: 'still' }] } };
+  const directory = future.file.slice(0, -'prepared.png'.length);
+  for (const version of [1, 2]) {
+    const inventory = JSON.stringify([version, [directory], [[itemId, null, 1, 1, 'prepared.png']]]);
+    const receipt = { ...command, after: { createdItemId: itemId, inventory } };
+    assert.equal(importedMontageItem([receipt], { body: scope, digest: issued.digest }, future), itemId);
+    assert.equal(importedMontageItem([{ ...receipt, state: 'UNKNOWN' }], { body: scope, digest: issued.digest }, future), null);
+  }
   let history = [];
   const authorize = createOperatorConfirmation(installation, () => scope.sessionId, () => scope.projectId,
     () => scope.sessionId, (mandate, input) => importedMontageItem(history, mandate, input), montage);
