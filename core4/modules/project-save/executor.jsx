@@ -52,7 +52,9 @@
             var message = 'Сохранить текущий проект After Effects?\nПроект: ' + p.projectId +
                 '\nРезервная копия версии с диска: ' + checkpoint.fsName;
             preMutationError = 'save_native_confirmation_error';
-            if ((confirmAction || confirm)(message, true, 'AE Agent Core — сохранение проекта') !== true) fault('local_cancelled');
+            var accepted = confirmAction ? confirmAction(message, true, 'AE Agent Core — сохранение проекта') :
+                confirm(message, true, 'AE Agent Core — сохранение проекта');
+            if (accepted !== true) fault('local_cancelled');
             preMutationError = 'save_native_checkpoint_error';
             var project = current(p);
             checkBytes(project.file, checkpoint, before.fileStamp.bytes);

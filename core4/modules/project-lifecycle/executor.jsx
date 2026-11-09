@@ -93,7 +93,9 @@
             var message = caption + ' и переключиться на него?\nТекущий проект: ' + p.projectId +
                 '\nНовый проект: ' + p.destination + '\nКопия прежней версии: ' + checkpoint.fsName;
             preMutationError = 'lifecycle_native_confirmation_error';
-            if ((confirmAction || confirm)(message, true, 'AE Agent Core — ' + caption) !== true) fault('local_cancelled');
+            var accepted = confirmAction ? confirmAction(message, true, 'AE Agent Core — ' + caption) :
+                confirm(message, true, 'AE Agent Core — ' + caption);
+            if (accepted !== true) fault('local_cancelled');
             preMutationError = 'lifecycle_native_source_checkpoint_error';
             checkBytes(app.project.file, checkpoint, before.fileStamp.bytes);
             if (opening) {

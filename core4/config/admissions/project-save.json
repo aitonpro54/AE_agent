@@ -1,11 +1,11 @@
 {
   "moduleId": "project-save",
   "operationId": "save-current-project",
-  "artifactHash": "a6b840d00c09b8bfaa7cde3f6f479fc399d4538d7fe3aada985ce339c45358a6",
+  "artifactHash": "6e383c5c9a6ee78b7f917aefff5b493d109a9da341d44ada432ae6b88077c24c",
   "schemaHash": "b3dec9d496d8653ab11e31c2067ab2efc6b325339ab53f158091a42a90950d92",
   "resultSchemaHash": "5256e33c8f74150aa94dee5d5f7b64b4f0389a21dcdb242cb1cfa3e9582c4d4b",
   "effectPolicyHash": "ab757ca003ea7823f4013c6f4e33b32a52fbb38912300890560f99a63ec74c5b",
-  "executorHash": "e154eff470d40417b9636b000323db5f902da4d4280eebe3f33a291d97c6968c",
+  "executorHash": "259652812007d78f344e5da2ac5dad304b9e340df4f5e4b73e5934d29a74bef0",
   "protocolVersion": 1,
   "trustApprovalId": "source-review-project-save-20261107",
   "revoked": false
