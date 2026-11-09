@@ -1,0 +1,226 @@
+{
+  "collected_at": "2026-11-09T07:22:22.057049+00:00",
+  "source_head": "57689fe5ee46ac338358e6f8af42f66b4a0f1f74",
+  "runtime_confirmed_thread_id": "01a1bb7a-970f-7680-85fe-6b65faa3452c",
+  "rollout_file": "C:\\Users\\Ant\\.codex\\sessions\\2026\\11\\08\\rollout-2026-11-08T19-05-36-01a1bb7a-970f-7680-85fe-6b65faa3452c.jsonl",
+  "package_hash_on_disk": "582744df1a5c1a6d7e235f28549cc0884ab6ca7e5f183e98c6fadce6087b7a8d",
+  "module_hash_comparison": [
+    {
+      "module": "media-import",
+      "sha256": {
+        "source": "5c98e05d595e0533c64d473f651d8e229f7a7db5506d8bd134c3e03b0c50d2a4",
+        "distribution": "5c98e05d595e0533c64d473f651d8e229f7a7db5506d8bd134c3e03b0c50d2a4",
+        "installed": "5c98e05d595e0533c64d473f651d8e229f7a7db5506d8bd134c3e03b0c50d2a4"
+      },
+      "all_equal": true
+    },
+    {
+      "module": "layer-insert",
+      "sha256": {
+        "source": "dfd6f8b20b866e5ad02d4f8c71f088795696e2afc0c27917b2d3aac2cc898560",
+        "distribution": "dfd6f8b20b866e5ad02d4f8c71f088795696e2afc0c27917b2d3aac2cc898560",
+        "installed": "dfd6f8b20b866e5ad02d4f8c71f088795696e2afc0c27917b2d3aac2cc898560"
+      },
+      "all_equal": true
+    },
+    {
+      "module": "project-inspection",
+      "sha256": {
+        "source": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+        "distribution": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+        "installed": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019"
+      },
+      "all_equal": true
+    },
+    {
+      "module": "project-lifecycle",
+      "sha256": {
+        "source": "5662ae392ad53488667b068a908961c7d4225b6fa4a1e88c4de4b4455cb2ba98",
+        "distribution": "5662ae392ad53488667b068a908961c7d4225b6fa4a1e88c4de4b4455cb2ba98",
+        "installed": "5662ae392ad53488667b068a908961c7d4225b6fa4a1e88c4de4b4455cb2ba98"
+      },
+      "all_equal": true
+    },
+    {
+      "module": "photo-placeholder",
+      "sha256": {
+        "source": "7343f5ec184642ff315c64b9ad2102eb26be494d84f6def0aa62ef37ce49a30d",
+        "distribution": "7343f5ec184642ff315c64b9ad2102eb26be494d84f6def0aa62ef37ce49a30d",
+        "installed": "7343f5ec184642ff315c64b9ad2102eb26be494d84f6def0aa62ef37ce49a30d"
+      },
+      "all_equal": true
+    },
+    {
+      "module": "comp-frame-export",
+      "sha256": {
+        "source": "a065a0a6bf686cb55c85c9bc77ba0d29bd838b18ec2f819b3b52cdd598e41801",
+        "distribution": "a065a0a6bf686cb55c85c9bc77ba0d29bd838b18ec2f819b3b52cdd598e41801",
+        "installed": "a065a0a6bf686cb55c85c9bc77ba0d29bd838b18ec2f819b3b52cdd598e41801"
+      },
+      "all_equal": true
+    }
+  ],
+  "events": [
+    {
+      "event": "uncertainty_response_without_fence",
+      "rollout_line": 67,
+      "time_local": "2026-11-08T19:07:36.979000+05:00",
+      "observations": {
+        "error": "owner_outcome_uncertain"
+      },
+      "verified_by": "independent_read_only_reviewer"
+    },
+    {
+      "event": "following_physical_state",
+      "rollout_line": 72,
+      "time_local": "2026-11-08T19:07:44.920000+05:00",
+      "observations": {
+        "pending": null,
+        "storeClosed": false,
+        "unknown": false
+      },
+      "verified_by": "independent_read_only_reviewer"
+    },
+    {
+      "event": "restart_question",
+      "rollout_line": 471,
+      "time_local": "2026-11-08T19:16:28.614000+05:00"
+    },
+    {
+      "event": "restart_authorized",
+      "rollout_line": 872,
+      "time_local": "2026-11-08T22:20:06.099000+05:00"
+    },
+    {
+      "event": "dirty_save_question",
+      "rollout_line": 896,
+      "time_local": "2026-11-08T22:21:51.876000+05:00"
+    },
+    {
+      "event": "second_read_unknown_response",
+      "rollout_line": 1334,
+      "time_local": "2026-11-09T00:13:54.550000+05:00",
+      "observations": {
+        "outcome": "unknown"
+      },
+      "verified_by": "independent_read_only_reviewer"
+    },
+    {
+      "event": "following_physical_fence",
+      "rollout_line": 1361,
+      "time_local": "2026-11-09T00:14:28.718000+05:00",
+      "observations": {
+        "storeClosed": true,
+        "unknown": true
+      },
+      "verified_by": "independent_read_only_reviewer"
+    },
+    {
+      "event": "successful_read_call_begin",
+      "rollout_line": 1845,
+      "time_local": "2026-11-09T00:25:29.082000+05:00"
+    },
+    {
+      "event": "inspection_completed",
+      "rollout_line": 1850,
+      "time_local": "2026-11-09T00:25:29.621000+05:00",
+      "observations": {
+        "result": "native_inspection_result_returned"
+      },
+      "verified_by": "independent_read_only_reviewer"
+    },
+    {
+      "event": "controller_release_completed",
+      "rollout_line": 1851,
+      "time_local": "2026-11-09T00:25:29.702000+05:00",
+      "observations": {
+        "released": true
+      },
+      "verified_by": "independent_read_only_reviewer"
+    },
+    {
+      "event": "band_batch_begin",
+      "rollout_line": 1966,
+      "time_local": "2026-11-09T00:28:54.473000+05:00"
+    },
+    {
+      "event": "band_batch_end",
+      "rollout_line": 1969,
+      "time_local": "2026-11-09T00:28:55.464000+05:00"
+    },
+    {
+      "event": "night_batch_begin",
+      "rollout_line": 2113,
+      "time_local": "2026-11-09T01:04:51.657000+05:00"
+    },
+    {
+      "event": "night_batch_end",
+      "rollout_line": 2116,
+      "time_local": "2026-11-09T01:04:52.079000+05:00"
+    },
+    {
+      "event": "day_batch_begin",
+      "rollout_line": 2160,
+      "time_local": "2026-11-09T01:20:54.927000+05:00"
+    },
+    {
+      "event": "day_batch_end",
+      "rollout_line": 2163,
+      "time_local": "2026-11-09T01:20:55.348000+05:00"
+    }
+  ],
+  "limits": [
+    "No live AE calls, mutation, tests, reset or installation during this audit.",
+    "Installed files and previous rollout do not prove current in-memory owner state.",
+    "Wall-call elapsed is not pure AE CPU duration or whole montage duration.",
+    "No evidence identifies the remote-access outage cause.",
+    "No raw tokens, client artwork, AEP or full rollout copied.",
+    "Core delivered marker denotes server poll handoff, not proven native acceptance or execution."
+  ],
+  "review": {
+    "role": "ae_reviewer",
+    "configured_model": "gpt-6.1-sol",
+    "configured_effort": "high",
+    "source_check_scope": "bounded read-only, three findings incorporated; no native testing"
+  },
+  "current_aep_file_stat": {
+    "collected_at": "2026-11-09T07:37:38.135396+00:00",
+    "bytes": 95724372,
+    "mib": 91.28987503051758,
+    "mtime_utc": "2026-11-08T20:48:57.454060+00:00",
+    "save_proof_limit_bytes": 67108864,
+    "exceeds_limit": true,
+    "historical_incident_file_version_proven": false,
+    "aep_contents_not_read": true
+  },
+  "save_proof_hashes": {
+    "source": "5b92037c8a9572b6bfee726e7ab44deb5fd42b3f55df6d1d1b18bf186b735a82",
+    "installed": "5b92037c8a9572b6bfee726e7ab44deb5fd42b3f55df6d1d1b18bf186b735a82"
+  },
+  "argon_attempts": [
+    {
+      "review_id": "ae-core-autonomy-20261109",
+      "profile": "Aiton",
+      "mode_ui": "Argon Высокий",
+      "state": "delivery_unknown_after_connection_error",
+      "attempts": 1,
+      "attempted_at": "2026-11-09T07:19:31.879Z",
+      "server_delivery_confirmed": false,
+      "response_file": null,
+      "chat_url": null
+    },
+    {
+      "review_id": "ae-core-autonomy-20261109-rohan-01",
+      "profile": "Rohan",
+      "mode_ui": "Argon High",
+      "state": "delivery_unknown_after_blank_reset",
+      "attempts": 1,
+      "attempted_at": "2026-11-09T07:32:13.400Z",
+      "server_delivery_confirmed": false,
+      "response_file": null,
+      "chat_url": null
+    }
+  ],
+  "argon_review_complete": false,
+  "finalized_at": "2026-11-09T07:38:18.610034+00:00"
+}
