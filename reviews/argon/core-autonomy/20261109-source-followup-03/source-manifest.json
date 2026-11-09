@@ -1,0 +1,846 @@
+{
+  "review_id": "ae-core-autonomy-source-followup-03",
+  "prepared_at": "2026-11-09T08:16:55.173196+00:00",
+  "source_head": "de61ff9106526db6b2b2c33d5fca9c2d9ae329fd",
+  "kumo_version": "0.3.2",
+  "completeness": "COMPLETE",
+  "selected_scope": "complete files on explicit allowlist, not entire repositories",
+  "files": [
+    {
+      "group": "core",
+      "origin_relative_path": "core4/core/broker.js",
+      "packet_path": "core4/core/broker.js",
+      "bytes": 42532,
+      "lines": 471,
+      "sha256": "bc944c8e45ef5cb5b8946cae8fed19caedaa666100ea38df8bda910624f613df",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/protocol/json.js",
+      "packet_path": "core4/protocol/json.js",
+      "bytes": 1495,
+      "lines": 20,
+      "sha256": "4f65c7ad56d7df844628d2c0a5d156f75be5e0ede51a78ad4659b2f611eb4d78",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/core/receiver.js",
+      "packet_path": "core4/core/receiver.js",
+      "bytes": 3521,
+      "lines": 52,
+      "sha256": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/core/ledger.js",
+      "packet_path": "core4/core/ledger.js",
+      "bytes": 2535,
+      "lines": 52,
+      "sha256": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/core/authority.js",
+      "packet_path": "core4/core/authority.js",
+      "bytes": 4772,
+      "lines": 59,
+      "sha256": "2ac5bd1fd69a0c9a98e271ddbf2ab7759293d1a72cda5e73232e5d1d27cbb04e",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/core/state-lock.js",
+      "packet_path": "core4/core/state-lock.js",
+      "bytes": 6101,
+      "lines": 99,
+      "sha256": "4e515580ec7ceb03cc7a7a5d789048aee9bf0e9a7866d4cf0ee108958ff58e23",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/protocol/dispatch.js",
+      "packet_path": "core4/protocol/dispatch.js",
+      "bytes": 904,
+      "lines": 14,
+      "sha256": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/integrations/cep/http-peer.js",
+      "packet_path": "core4/integrations/cep/http-peer.js",
+      "bytes": 27313,
+      "lines": 273,
+      "sha256": "0ab723c816334d135353dbc02eda44ce892e60e422f2e7d2e62a29d96b0a4d01",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/attachment-owner.js",
+      "packet_path": "core4/runtime/attachment-owner.js",
+      "bytes": 13182,
+      "lines": 164,
+      "sha256": "0e994b984df7c1374e55d2411e95d9da59215b732c84b06ce0ca5e19db965e38",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/stdio-entry.js",
+      "packet_path": "core4/runtime/stdio-entry.js",
+      "bytes": 55019,
+      "lines": 581,
+      "sha256": "6c8ca02b4138dcfe6f40edfc788bdddc5ee2a85fe03275a6146d97a6595ed73d",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/controller-lease.js",
+      "packet_path": "core4/runtime/controller-lease.js",
+      "bytes": 5529,
+      "lines": 103,
+      "sha256": "454030025198334d7ce1fdd3c57aefcd109998b15ddd3c266811b886e817c253",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/work-session.js",
+      "packet_path": "core4/runtime/work-session.js",
+      "bytes": 9883,
+      "lines": 78,
+      "sha256": "6956afea74d8d5b1261f116ad775204a0ec6def6f620847311d21d65d502eff9",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/start-over-state.js",
+      "packet_path": "core4/runtime/start-over-state.js",
+      "bytes": 33877,
+      "lines": 329,
+      "sha256": "a7d4c4a13bb3aae10c72e9fe8e4f58ab3963cc8ffbbb481a057c3f96625deb8c",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/start-over-inspection.js",
+      "packet_path": "core4/runtime/start-over-inspection.js",
+      "bytes": 11013,
+      "lines": 137,
+      "sha256": "586714dfbdd25856d6e74e1c5f779d7add3eefb4f8287d273ac35fb58f8412f6",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/start-over-panel-control.js",
+      "packet_path": "core4/runtime/start-over-panel-control.js",
+      "bytes": 5285,
+      "lines": 51,
+      "sha256": "7ab4f4abe03b9c3c9a675684d55599f3688f292e9141b63736d4108aad785770",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/tools/operate-start-over.js",
+      "packet_path": "core4/tools/operate-start-over.js",
+      "bytes": 8297,
+      "lines": 101,
+      "sha256": "b8e5041bb6e756a9abe8bc9d115af8d861d3831f67fce6b3187d6451972b0cff",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/cep/js/panel.js",
+      "packet_path": "core4/cep/js/panel.js",
+      "bytes": 23459,
+      "lines": 231,
+      "sha256": "6565cfd6bdc8528a53b6e1322ce247f7c880aeb5425d9e9f08afe1e534cb20e8",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/cep/js/poll-dispatcher.js",
+      "packet_path": "core4/cep/js/poll-dispatcher.js",
+      "bytes": 5549,
+      "lines": 61,
+      "sha256": "fb7b4d211b08518b920afec68a97ac11c6b3f48a788724ab0805fae28af5033d",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/manual-policy.js",
+      "packet_path": "core4/runtime/manual-policy.js",
+      "bytes": 7771,
+      "lines": 90,
+      "sha256": "01d69df958fd0b77a19562672c4c8ec4cd770c6d6c4a448081cdad3a9ce986d3",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/operator-confirmation.js",
+      "packet_path": "core4/runtime/operator-confirmation.js",
+      "bytes": 4664,
+      "lines": 85,
+      "sha256": "48ac67c0fb2b1147656c487e405a48b8a364355fe457613de1521564be4353f6",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/windows-reservation-provider.js",
+      "packet_path": "core4/runtime/windows-reservation-provider.js",
+      "bytes": 14521,
+      "lines": 140,
+      "sha256": "1a9783c1f623e956fdd917d05d026bf168274c4aa11d2689ffcc8b99c2c81622",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/project-save-proof.js",
+      "packet_path": "core4/runtime/project-save-proof.js",
+      "bytes": 6250,
+      "lines": 113,
+      "sha256": "5b92037c8a9572b6bfee726e7ab44deb5fd42b3f55df6d1d1b18bf186b735a82",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/project-lifecycle-proof.js",
+      "packet_path": "core4/runtime/project-lifecycle-proof.js",
+      "bytes": 5353,
+      "lines": 87,
+      "sha256": "510ca940d06d0ae983785bb411b0051b3c8209c70d2a85699df62af9a4b8c0c2",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/media-layer-proof.js",
+      "packet_path": "core4/runtime/media-layer-proof.js",
+      "bytes": 3983,
+      "lines": 75,
+      "sha256": "810b02c43e7a31ab8e65bdc7c4d34ad683914d85137d2571e1beaa2e730ba566",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/test/integration/cep-transport.test.js",
+      "packet_path": "core4/test/integration/cep-transport.test.js",
+      "bytes": 27176,
+      "lines": 291,
+      "sha256": "11acc54cd72d2e18a7529c13329c8022297f2d31811e69e9711be95aec111162",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/test/owner-attachments.test.js",
+      "packet_path": "core4/test/owner-attachments.test.js",
+      "bytes": 26185,
+      "lines": 302,
+      "sha256": "630f122eacbf283c5bafbb1a7bbe16660c5eca19470804bf60d7bee7a3f27a25",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/test/start-over-operator.test.js",
+      "packet_path": "core4/test/start-over-operator.test.js",
+      "bytes": 8134,
+      "lines": 56,
+      "sha256": "d63dc4282b8ff01f235b3fc665ee9e274ced7ce42709782b3790c46674d35f97",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/test/panel-start-over.test.js",
+      "packet_path": "core4/test/panel-start-over.test.js",
+      "bytes": 9548,
+      "lines": 48,
+      "sha256": "5502f0c4dbf507f9b7207e3713f39c47beec9f6a3003bdbb0cbf264d8e6b8dd7",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/test/manual-runtime.test.js",
+      "packet_path": "core4/test/manual-runtime.test.js",
+      "bytes": 31725,
+      "lines": 293,
+      "sha256": "6dea0826889d6f9167423e819fc56cf52baad1cac783f8a9de0619e336f7784c",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/test/media-layers.test.js",
+      "packet_path": "core4/test/media-layers.test.js",
+      "bytes": 9272,
+      "lines": 193,
+      "sha256": "9de7d693e24764846c741a4a95f50800daf4cf7e6eccd21cfa29c1833690fa22",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/test/modules/photo-placeholder.test.js",
+      "packet_path": "core4/test/modules/photo-placeholder.test.js",
+      "bytes": 7604,
+      "lines": 102,
+      "sha256": "843eacd66dedddc62dd5530e522d28d86d585540ecda638663fb188d9aa656a2",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/test/project-lifecycle.test.js",
+      "packet_path": "core4/test/project-lifecycle.test.js",
+      "bytes": 9261,
+      "lines": 182,
+      "sha256": "835d7b3109acf545b70a7d3a66501dd32dbad145a3626b7562e08eb55b16196e",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/test/project-save.test.js",
+      "packet_path": "core4/test/project-save.test.js",
+      "bytes": 8656,
+      "lines": 175,
+      "sha256": "40e5ede3fec671886e7c49c09f41d421fbbcd9f0bd9e27c1fee8d5f68d5a04c3",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-inspection/contract.json",
+      "packet_path": "core4/modules/project-inspection/contract.json",
+      "bytes": 556,
+      "lines": 10,
+      "sha256": "c0290ed5543ba5a54623adee2ca78945ff31baca96a909d1088c194c0667e0c2",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-inspection/artifact.json",
+      "packet_path": "core4/modules/project-inspection/artifact.json",
+      "bytes": 268,
+      "lines": 6,
+      "sha256": "e8e080b06fd4ddf6a6f79c93a4ed9904710b97054c4838a78a8ded577f3215f5",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-inspection/executor.jsx",
+      "packet_path": "core4/modules/project-inspection/executor.jsx",
+      "bytes": 2121,
+      "lines": 29,
+      "sha256": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/media-import/contract.json",
+      "packet_path": "core4/modules/media-import/contract.json",
+      "bytes": 4661,
+      "lines": 223,
+      "sha256": "a0de97200aea9ac285ec96deb2ffe2dae8cfb5bc66c6b821395fa29acf20966e",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/media-import/artifact.json",
+      "packet_path": "core4/modules/media-import/artifact.json",
+      "bytes": 397,
+      "lines": 11,
+      "sha256": "b4745900d5a78024cdae91e2dfe733fa72be635973c841576a3711b7c8a3bfad",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/media-import/implementation.js",
+      "packet_path": "core4/modules/media-import/implementation.js",
+      "bytes": 918,
+      "lines": 17,
+      "sha256": "f6ef49dc86714476622ae9d7ef63c77cc0169d51beb3bd01b75d75781b3809f6",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/media-import/executor.jsx",
+      "packet_path": "core4/modules/media-import/executor.jsx",
+      "bytes": 5131,
+      "lines": 79,
+      "sha256": "5c98e05d595e0533c64d473f651d8e229f7a7db5506d8bd134c3e03b0c50d2a4",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/config/admissions/media-import.json",
+      "packet_path": "core4/config/admissions/media-import.json",
+      "bytes": 627,
+      "lines": 12,
+      "sha256": "b18354f1621517984cd7b62c296d076f7a5c988340257c1692b6225d79ee70f7",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/layer-insert/contract.json",
+      "packet_path": "core4/modules/layer-insert/contract.json",
+      "bytes": 11039,
+      "lines": 499,
+      "sha256": "0c3aa9dd55bf8ed8e88ad10619a8b849ef4548e8e36b7d1860e1dc0ca29aaa1a",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/layer-insert/artifact.json",
+      "packet_path": "core4/modules/layer-insert/artifact.json",
+      "bytes": 397,
+      "lines": 11,
+      "sha256": "a39a59b7014814c6185951a0add5ba192bbf6ca571695b04c75da188e5af5d17",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/layer-insert/implementation.js",
+      "packet_path": "core4/modules/layer-insert/implementation.js",
+      "bytes": 1314,
+      "lines": 21,
+      "sha256": "55ab0ede30e53b6a365cdbbdd1b37b8cfc23662040691aa34543d5d8dddbc3fb",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/layer-insert/executor.jsx",
+      "packet_path": "core4/modules/layer-insert/executor.jsx",
+      "bytes": 12240,
+      "lines": 184,
+      "sha256": "dfd6f8b20b866e5ad02d4f8c71f088795696e2afc0c27917b2d3aac2cc898560",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/config/admissions/layer-insert.json",
+      "packet_path": "core4/config/admissions/layer-insert.json",
+      "bytes": 633,
+      "lines": 12,
+      "sha256": "8e1978a760ae1375e1ef9d2845d64db62f9cd4bcd7fe784e2f204487693051c1",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/photo-placeholder/contract.json",
+      "packet_path": "core4/modules/photo-placeholder/contract.json",
+      "bytes": 4851,
+      "lines": 219,
+      "sha256": "d15d022ba4ecba319d52d4baf4388e2bcc3f686d8cb5b405e0250ab7a6c435c8",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/photo-placeholder/artifact.json",
+      "packet_path": "core4/modules/photo-placeholder/artifact.json",
+      "bytes": 512,
+      "lines": 13,
+      "sha256": "60f512364f5b0289d7b94eec444bfe69a597c7c7d10e07f800175d734ffb9e07",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/photo-placeholder/implementation.js",
+      "packet_path": "core4/modules/photo-placeholder/implementation.js",
+      "bytes": 224,
+      "lines": 5,
+      "sha256": "c041620adcfeff37d825f86020a5d3f7f230bbfd1c4fc95b9be170b8ec9fa93e",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/photo-placeholder/executor.jsx",
+      "packet_path": "core4/modules/photo-placeholder/executor.jsx",
+      "bytes": 8322,
+      "lines": 124,
+      "sha256": "7343f5ec184642ff315c64b9ad2102eb26be494d84f6def0aa62ef37ce49a30d",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/config/admissions/photo-placeholder.json",
+      "packet_path": "core4/config/admissions/photo-placeholder.json",
+      "bytes": 621,
+      "lines": 12,
+      "sha256": "2ae628c7fcbb767813ff5c4044767aa6ef3cfa78f23f630ba0629392a3c082d0",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-lifecycle/contract.json",
+      "packet_path": "core4/modules/project-lifecycle/contract.json",
+      "bytes": 6830,
+      "lines": 310,
+      "sha256": "7b52b6f2539a67089c59bd7db71b64180a6904f195de34824eab97866baecaa3",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-lifecycle/artifact.json",
+      "packet_path": "core4/modules/project-lifecycle/artifact.json",
+      "bytes": 402,
+      "lines": 11,
+      "sha256": "be51dce9a6d1c4862910137832eb9c9c25843fc0a8f6b273eeffc11391967f71",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-lifecycle/implementation.js",
+      "packet_path": "core4/modules/project-lifecycle/implementation.js",
+      "bytes": 1055,
+      "lines": 17,
+      "sha256": "0b0ed2b8e28ea73587ce91341d2e90406fdbb70e9d52156364b2305841c2147c",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-lifecycle/executor.jsx",
+      "packet_path": "core4/modules/project-lifecycle/executor.jsx",
+      "bytes": 6808,
+      "lines": 93,
+      "sha256": "5662ae392ad53488667b068a908961c7d4225b6fa4a1e88c4de4b4455cb2ba98",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/config/admissions/project-lifecycle.json",
+      "packet_path": "core4/config/admissions/project-lifecycle.json",
+      "bytes": 641,
+      "lines": 12,
+      "sha256": "4bc9dfbcbb5adf689aa14954e297b9899d8ebb8ef41aa059a6ddb9753fcec438",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-save/contract.json",
+      "packet_path": "core4/modules/project-save/contract.json",
+      "bytes": 5082,
+      "lines": 234,
+      "sha256": "6c6381cd012111f9752fe1dfd45cfc35354291fc1418e087639940b3ee824db3",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-save/artifact.json",
+      "packet_path": "core4/modules/project-save/artifact.json",
+      "bytes": 397,
+      "lines": 11,
+      "sha256": "8a228c8d8d9af31200694876a64f3801368de861d40e22ee080c0235da4cdc33",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-save/implementation.js",
+      "packet_path": "core4/modules/project-save/implementation.js",
+      "bytes": 327,
+      "lines": 9,
+      "sha256": "9c60ddd66cff5519185d8d2db99ebcc36c838508c62606caca515fb5cd6ae3b3",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/project-save/executor.jsx",
+      "packet_path": "core4/modules/project-save/executor.jsx",
+      "bytes": 4883,
+      "lines": 71,
+      "sha256": "65ce064643eb5c1c0f72c5a6dfddbf3b38cfca7cb64af6cc25d97925c296572d",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/config/admissions/project-save.json",
+      "packet_path": "core4/config/admissions/project-save.json",
+      "bytes": 633,
+      "lines": 12,
+      "sha256": "0fb08b3ae059ff075ace69530c9e9ef4f382b662e3131c9b878e155442e2a175",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/comp-frame-export/contract.json",
+      "packet_path": "core4/modules/comp-frame-export/contract.json",
+      "bytes": 3330,
+      "lines": 81,
+      "sha256": "eaa6bef9892f26681be0772412ea9e71eb61dbcdaff55ae28497f1b301f3873b",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/comp-frame-export/artifact.json",
+      "packet_path": "core4/modules/comp-frame-export/artifact.json",
+      "bytes": 402,
+      "lines": 11,
+      "sha256": "fe8020b57a2f416d209343b2c9275f1482a0f993c3816c79ab16c9b33fa3dc28",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/comp-frame-export/implementation.js",
+      "packet_path": "core4/modules/comp-frame-export/implementation.js",
+      "bytes": 595,
+      "lines": 11,
+      "sha256": "0f9fef96718078f4b54a3f6248e1f7a4538bad32935632bf208bf9e855d800eb",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/modules/comp-frame-export/executor.jsx",
+      "packet_path": "core4/modules/comp-frame-export/executor.jsx",
+      "bytes": 5071,
+      "lines": 80,
+      "sha256": "a065a0a6bf686cb55c85c9bc77ba0d29bd838b18ec2f819b3b52cdd598e41801",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/config/admissions/comp-frame-export.json",
+      "packet_path": "core4/config/admissions/comp-frame-export.json",
+      "bytes": 634,
+      "lines": 12,
+      "sha256": "95d8710c831c44dae038e636724efd751e34666466f4bde21893a81a29d35932",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "LICENSE",
+      "packet_path": "kumo/LICENSE",
+      "bytes": 1079,
+      "lines": 21,
+      "sha256": "cbc6c6a7b34a34349be3f086746521f00aa742fb86c49eb912a0e55daca2df2d",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/policy.js",
+      "packet_path": "kumo/policy.js",
+      "bytes": 4354,
+      "lines": 96,
+      "sha256": "a59807fead4e91883723a07bb534a5f6a3c85e722c1888b4891e0bf56aaaa333",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/registry.js",
+      "packet_path": "kumo/registry.js",
+      "bytes": 6563,
+      "lines": 140,
+      "sha256": "64ecaae46a18e6213488e6af71b28f00b9f9ad0193e35a53abe4bae1ffe7aef2",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/opschema.js",
+      "packet_path": "kumo/opschema.js",
+      "bytes": 5775,
+      "lines": 150,
+      "sha256": "5a7f3f9c13c472d8ced6aabdced746db87cb1128272805fa08abdf841e0d1b37",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/tools/do.js",
+      "packet_path": "kumo/tools/do.js",
+      "bytes": 12825,
+      "lines": 249,
+      "sha256": "ae6e85b97377092273509384a69419fdf6ffdf8ef9db4a48fc1047c9fefcf4cf",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/operations/batch.js",
+      "packet_path": "kumo/operations/batch.js",
+      "bytes": 7103,
+      "lines": 146,
+      "sha256": "aa9ecfdb1830bce45d6423c8e4c8637644312f39dd20174abeba1783687c7d0c",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/operations/instance.js",
+      "packet_path": "kumo/operations/instance.js",
+      "bytes": 21626,
+      "lines": 459,
+      "sha256": "de14844cc3d776107702bee56d69807f8d22d5340649b9bf06060631466b0117",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/operations/layer.js",
+      "packet_path": "kumo/operations/layer.js",
+      "bytes": 28741,
+      "lines": 698,
+      "sha256": "b8f8e8d347f78e82432aef07ce362ee242c4488748ac2744eea2d6054e6dcfec",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/operations/layer-advanced.js",
+      "packet_path": "kumo/operations/layer-advanced.js",
+      "bytes": 19982,
+      "lines": 430,
+      "sha256": "50b70986b92a1f214f2be9e14b9cd65611be68485e0e433a99fe03ad5a6ecfd1",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/operations/project.js",
+      "packet_path": "kumo/operations/project.js",
+      "bytes": 45094,
+      "lines": 940,
+      "sha256": "24a8e550ba8af5e6c97de273edaceef3615fe0685459743198cf2144a0861eb6",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/transport/AeTransport.js",
+      "packet_path": "kumo/transport/AeTransport.js",
+      "bytes": 450,
+      "lines": 8,
+      "sha256": "9626cf08eae6411663182bf927cc0d74c8ac41d9811462aa63e0d909e3355389",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/transport/FileIpcTransport.js",
+      "packet_path": "kumo/transport/FileIpcTransport.js",
+      "bytes": 33721,
+      "lines": 675,
+      "sha256": "2450d3bf0e9fedfba0d9dfdcd20072168e2b1e8ed7bbab64a01b06ec16d43342",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/transport/dialogs.js",
+      "packet_path": "kumo/transport/dialogs.js",
+      "bytes": 22036,
+      "lines": 446,
+      "sha256": "19eb01c36e2c36ceb2b5949fc59dbe24e5ecf116f8706306b075f981b82a8bcf",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/transport/instances.js",
+      "packet_path": "kumo/transport/instances.js",
+      "bytes": 8943,
+      "lines": 201,
+      "sha256": "1bb554196d90a4d5ed929c263c3901c5b5f2c9a67b7313736aaa7515152906d0",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/config.js",
+      "packet_path": "kumo/config.js",
+      "bytes": 17158,
+      "lines": 336,
+      "sha256": "1fe6387cea28ca5a6681c53a54c8c78c524f866d0e4ff592a993af198cb6c543",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "jsx/agent.jsx",
+      "packet_path": "kumo/jsx/agent.jsx",
+      "bytes": 11483,
+      "lines": 276,
+      "sha256": "d8396eda6e8e04161d2c65d42ec413c09fec40c4c2d1a9a4cd8853ebe56c02e7",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "jsx/dispatcher.jsx",
+      "packet_path": "kumo/jsx/dispatcher.jsx",
+      "bytes": 9444,
+      "lines": 194,
+      "sha256": "7ba833c578532386e0855e11e1dd0204cb7e8b7282966c8ad889a485d1811834",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "jsx/serve.jsx",
+      "packet_path": "kumo/jsx/serve.jsx",
+      "bytes": 13889,
+      "lines": 331,
+      "sha256": "9506d175bd58b4e82fab07f42694e35de50054768eba6b406c2d230726446bc4",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "jsx/helpers.jsx",
+      "packet_path": "kumo/jsx/helpers.jsx",
+      "bytes": 42596,
+      "lines": 950,
+      "sha256": "1ce47442e1a6f092645a53d0da9c0c0a5fc3e0d02871310e580f6cf35ce0a0f2",
+      "content": "full file, exact bytes, no redactions"
+    }
+  ],
+  "scanner_runs": [
+    {
+      "group": "core",
+      "exit_code": 3,
+      "raw_report": "core-raw-scanner.md"
+    },
+    {
+      "group": "kumo",
+      "exit_code": 3,
+      "raw_report": "kumo-raw-scanner.md"
+    }
+  ],
+  "candidate_match_count": 83,
+  "original_source_modifications": 0,
+  "project_code_executed": false,
+  "software_tests_run": false,
+  "browser_upload_authorized_by_user": true,
+  "excluded": [
+    "AEP/media/client content",
+    "runtime state and installation credentials/configuration",
+    "browser profiles",
+    "full runtime logs",
+    "unselected code"
+  ],
+  "completeness_basis": "Every explicitly selected full file included; raw regex findings independently resolved as source-code/test/numeric/hash false positives. No source files redacted or skipped in final attachments.",
+  "raw_scanner_clean": false,
+  "semantic_review": {
+    "verdict": "ACCEPT",
+    "reviewer_role": "ae_reviewer",
+    "configured_model": "gpt-6.1-sol",
+    "configured_effort": "high",
+    "scope": "all 85 staged source files, request and manifest; original bytes and independent regex reproduction; no live code executed",
+    "candidate_matches_reviewed": 83,
+    "unresolved_findings": 0,
+    "manifest_sha256": "64a2bbdaa4749cfec1751629601a5b454ca98efdf57c8920b6fe965243d98743",
+    "scanner_hits_sha256": "7013e329c543527b3329ca4bcce696063b3f4b130d3e33b6ae51e81225219c91",
+    "request_sha256": "f06d641f4af182c4351f06f6b4f10c5ad1d70f30763d6243eb0e7bda68c07c7d",
+    "actual_credentials_or_pii_found": false,
+    "raw_scanner_status": "INCOMPLETE retained, exit3; false positives and authority.js auth filename denial individually resolved",
+    "generic_secret": {
+      "rng_calls": 2,
+      "source_property_references": 9,
+      "synthetic_cep_literals": 2,
+      "test_lease_references": 8
+    },
+    "phone_like": {
+      "dotnet_constants": 6,
+      "test_uuid": 3,
+      "test_timestamp_fragments": 2,
+      "numeric_bounds": 42,
+      "sha_fragments": 8,
+      "random_id_alphabet": 1
+    },
+    "raw_logs_upload": false
+  },
+  "unresolved_findings": 0,
+  "attachments": [
+    {
+      "file": "core-source-review.md",
+      "bytes": 561516,
+      "sha256": "ef947d4fcc47a3c93c7529984df4f8cb0fd3ac3aad32da3f90ab8f671a9820a1",
+      "source_file_count": 66
+    },
+    {
+      "file": "kumo-source-review.md",
+      "bytes": 330984,
+      "sha256": "8b8bb133e19ed47480ea1ea33c6071390e056e96854be3edfa8da127546fcaf8",
+      "source_file_count": 19
+    }
+  ],
+  "finalized_at": "2026-11-09T08:19:43.334753+00:00"
+}

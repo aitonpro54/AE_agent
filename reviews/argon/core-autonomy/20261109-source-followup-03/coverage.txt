@@ -1,0 +1,26 @@
+Источник — финальный ответ Аргона, ae-core-autonomy-source-followup-03. Это отчёт модели о чтении, а не независимая проверка каждого прочитанного файла.
+
+В процессе генерации промежуточный статус говорил об усечении. В окончательном ответе Аргон заявил, что оба вложения прочитаны полностью, «100% объёма, без сокращений и без запуска кода». Поэтому финальный список усечённых вложенных файлов отсутствует. Переданы и обработаны интерфейсом два файла, содержащие 85 выбранных исходных файлов. Чтение всех 85 подтверждено только заявлением модели.
+
+Аргон отдельно перечислил зависимости, отсутствующие в выбранном пакете (это не усечение загрузки).
+
+Core:
+- core4/integrations/cep/completion-store.js — openCompletionStore, store.begin/complete/unknown, terminalDisposition
+- core4/runtime/recovery-inspection.js
+- core4/runtime/native-read-disposition.js — разбор completions.ndjson и terminalReadFailureDispositionVersion
+- core4/core/resources.js — scopesOverlap, currentTargetConstraintId
+- core4/runtime/owner-lifecycle.js
+- core4/runtime/start-over-process.js
+- core4/runtime/start-over-finisher.js
+- core4/runtime/start-over-archive.js
+- core4/runtime/photo-source-proof.js
+- core4/runtime/comp-frame-export-proof.js
+
+Kumo:
+- dist/transport/launcher.js — buildLaunchPlan, buildInstanceLaunchPlan
+- dist/operations/comp.js
+- dist/operations/render.js — render.frame
+
+Вердикт модели REVISE. Аргон отозвал предположение о дешёвом тонком адаптере Kumo, поддержал P0 Core и нативный либо заимствованный по MIT примитив layer-duplicate-replace. Он предложил STOP на runtime-адаптер внешнего транспорта Kumo для мутаций того же AE. Это рекомендация, не авторизация реализации.
+
+Требуют отдельной локальной проверки его формулировки о «~120–150 строках» реализации и «автоматическом получении всех гарантий», особенно при отсутствующем в пакете completion-store.js и прочих перечисленных зависимостях. Ссылки на строки и функции сохранены в оригинале и в рамках браузерного поручения не перепроверялись.

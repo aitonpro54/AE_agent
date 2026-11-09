@@ -1,0 +1,50 @@
+{
+  "review_id": "ae-core-autonomy-source-followup-03",
+  "profile": "Rohan",
+  "model": "4 Argon",
+  "mode": "Task follow-up",
+  "effort": "No separate selector",
+  "chat_url": "https://gemini.google.com/app/3df76960cae8bec8",
+  "state": "response_received_persistence_verified",
+  "attempts": 1,
+  "attachments": [
+    {
+      "file": "core-source-review.md",
+      "bytes": 561516,
+      "sha256": "ef947d4fcc47a3c93c7529984df4f8cb0fd3ac3aad32da3f90ab8f671a9820a1",
+      "source_file_count": 66
+    },
+    {
+      "file": "kumo-source-review.md",
+      "bytes": 330984,
+      "sha256": "8b8bb133e19ed47480ea1ea33c6071390e056e96854be3edfa8da127546fcaf8",
+      "source_file_count": 19
+    }
+  ],
+  "manifest_completeness": "COMPLETE",
+  "semantic_review": "ACCEPT",
+  "unresolved_findings": 0,
+  "raw_scanner_clean": false,
+  "duplicate_in_target_chat": false,
+  "prepared_at": "2026-11-09T08:21:06.236Z",
+  "upload_started_at": "2026-11-09T08:21:21.029Z",
+  "ui_attachment_names": [
+    "core-source-review",
+    "kumo-source-review"
+  ],
+  "ui_attachment_count": 2,
+  "upload_progressbars": 0,
+  "upload_completed_at": "2026-11-09T08:21:56.653Z",
+  "sent_at": "2026-11-09T08:21:56.881Z",
+  "response_chars": 44072,
+  "response_sha256": "cfb273ae7b294b8a36770ba50880658e94728fcf0a8c489e6ac841aab4822e33",
+  "received_at": "2026-11-09T08:26:22.542Z",
+  "response_file": "ae-core-autonomy-source-followup-03-response-original.txt",
+  "reopened_at": "2026-11-09T08:27:14.675Z",
+  "reopen_sha256": "cfb273ae7b294b8a36770ba50880658e94728fcf0a8c489e6ac841aab4822e33",
+  "reopen_exact_match": true,
+  "coverage_file": "ae-core-autonomy-source-followup-03-coverage.txt",
+  "provider_claimed_full_read": true,
+  "independent_full_read_verification": false,
+  "privacy_note": "Account identity omitted from archived receipt; original response bytes unchanged."
+}

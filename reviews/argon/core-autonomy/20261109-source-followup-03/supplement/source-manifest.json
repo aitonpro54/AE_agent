@@ -1,0 +1,201 @@
+{
+  "review_id": "ae-core-autonomy-source-followup-03-supplement",
+  "prepared_at": "2026-11-09T08:30:28.305450+00:00",
+  "source_head": "de61ff9106526db6b2b2c33d5fca9c2d9ae329fd",
+  "kumo_version": "0.3.2",
+  "completeness": "COMPLETE",
+  "selected_scope": "complete files on explicit allowlist, not entire repositories",
+  "files": [
+    {
+      "group": "core",
+      "origin_relative_path": "core4/integrations/cep/completion-store.js",
+      "packet_path": "core4/integrations/cep/completion-store.js",
+      "bytes": 10229,
+      "lines": 137,
+      "sha256": "40aed48f5208f06176e548efd93b59d811203154bf922b02b295f74787f4ddf2",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/recovery-inspection.js",
+      "packet_path": "core4/runtime/recovery-inspection.js",
+      "bytes": 14636,
+      "lines": 182,
+      "sha256": "29c0625f84d38123617380e21018f7a75adc68fd010cc0b498a1f6d20ac5dfd8",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/native-read-disposition.js",
+      "packet_path": "core4/runtime/native-read-disposition.js",
+      "bytes": 21495,
+      "lines": 131,
+      "sha256": "20053d0df8780feb975bf3302efd0cd32f07770c752d1acefc100f96fefaeb5b",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/core/resources.js",
+      "packet_path": "core4/core/resources.js",
+      "bytes": 11673,
+      "lines": 122,
+      "sha256": "4931f87e510d6758bb4857c8da6e477aad6aa76bab31935e900a27146424f28f",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/owner-lifecycle.js",
+      "packet_path": "core4/runtime/owner-lifecycle.js",
+      "bytes": 45398,
+      "lines": 497,
+      "sha256": "c9d9328e7e3ffdee86f4ece7e4ea45a13e0e472d52c99a9fd4e75fda070e9f5b",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/start-over-process.js",
+      "packet_path": "core4/runtime/start-over-process.js",
+      "bytes": 7795,
+      "lines": 92,
+      "sha256": "e6d441f94fe8050ab32b3029bbf919bd2c826f9b4b5a356d5ac22b7fc2c6edff",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/start-over-finisher.js",
+      "packet_path": "core4/runtime/start-over-finisher.js",
+      "bytes": 18528,
+      "lines": 198,
+      "sha256": "d5c49bb71907a3e14314a1f222fa2b42a26bd7504088da3a5b0c4a494f2a484d",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/start-over-archive.js",
+      "packet_path": "core4/runtime/start-over-archive.js",
+      "bytes": 14604,
+      "lines": 156,
+      "sha256": "47e3cc4b7161df21195859683f399293f9a2f77d640df357bb2bf4ceb08334ad",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/photo-source-proof.js",
+      "packet_path": "core4/runtime/photo-source-proof.js",
+      "bytes": 573,
+      "lines": 16,
+      "sha256": "17f462d27e00451ea4b2e17443f41747e8b87f4c823899e4dbb01c05e9377bde",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/comp-frame-export-proof.js",
+      "packet_path": "core4/runtime/comp-frame-export-proof.js",
+      "bytes": 2420,
+      "lines": 54,
+      "sha256": "71bb78baa597b72898f8e2fa8fcd62fece482f77f80432203e7bd2123c461b6b",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "core",
+      "origin_relative_path": "core4/runtime/png-proof.js",
+      "packet_path": "core4/runtime/png-proof.js",
+      "bytes": 5176,
+      "lines": 143,
+      "sha256": "7e892a80761a83ff825c31d462105f8b0207b21536168f177506b3e42af2d160",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/transport/launcher.js",
+      "packet_path": "kumo/transport/launcher.js",
+      "bytes": 4103,
+      "lines": 80,
+      "sha256": "82cce9277551d3645caf5bad42b7ff1fae4c99d1c0902cb76e4874cfdb00f83d",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/operations/comp.js",
+      "packet_path": "kumo/operations/comp.js",
+      "bytes": 11363,
+      "lines": 272,
+      "sha256": "d363a7ab15725d649fee6f08dbfc0dfb31da13cef2e8de40e78657262adb8e73",
+      "content": "full file, exact bytes, no redactions"
+    },
+    {
+      "group": "kumo",
+      "origin_relative_path": "dist/operations/render.js",
+      "packet_path": "kumo/operations/render.js",
+      "bytes": 31625,
+      "lines": 675,
+      "sha256": "a497349eb62631149daf8e611fe81e8e0acff71a5152fc547b892682567d374d",
+      "content": "full file, exact bytes, no redactions"
+    }
+  ],
+  "scanner_runs": [
+    {
+      "group": "core",
+      "exit_code": 3,
+      "raw_report": "core-raw-scanner.md"
+    },
+    {
+      "group": "kumo",
+      "exit_code": 0,
+      "raw_report": "kumo-raw-scanner.md"
+    }
+  ],
+  "candidate_match_count": 15,
+  "original_source_modifications": 0,
+  "project_code_executed": false,
+  "software_tests_run": false,
+  "browser_upload_authorized_by_user": true,
+  "excluded": [
+    "AEP/media/client content",
+    "runtime state and installation credentials/configuration",
+    "browser profiles",
+    "full runtime logs",
+    "unselected code"
+  ],
+  "completeness_basis": "Every explicitly selected full file included; raw regex findings independently resolved as source-code/test/numeric/hash false positives. No source files redacted or skipped in final attachments.",
+  "raw_scanner_clean": false,
+  "semantic_review": {
+    "verdict": "ACCEPT",
+    "reviewer_role": "ae_reviewer",
+    "configured_model": "gpt-6.1-sol",
+    "configured_effort": "high",
+    "scope": "14 full source files and request/manifest independently verified against Git and installed originals",
+    "candidate_matches_reviewed": 15,
+    "unresolved_findings": 0,
+    "manifest_sha256": "2b4fa2d5df87bff666a5141f45f98accbe941e3652d9c946f94b893cf92e27d9",
+    "scanner_hits_sha256": "f36db7ddd08a57c22dead872adc7a64187c94b73148eab9afc7e7086c179f546",
+    "request_sha256": "b3aab9be9750ca61fc3cebfc2a8bfe4a4385cdeb748fd318b861577de7a624af",
+    "actual_credentials_or_pii_found": false,
+    "raw_scanner_status": "Core INCOMPLETE exit3 one skipped filename and three false-positive warnings; Kumo COMPLETE exit0; raw reports retained locally",
+    "generic_secret": {
+      "rng_calls": 3,
+      "source_property_references": 8
+    },
+    "phone_like": {
+      "dotnet_constants": 3,
+      "int32_bound": 1
+    },
+    "raw_logs_upload": false
+  },
+  "unresolved_findings": 0,
+  "attachments": [
+    {
+      "file": "core-source-review.md",
+      "bytes": 161178,
+      "sha256": "d3781ab98247887e7cafe4c5b5de1654cfa953d988e88e3c2cd4035c81558463",
+      "source_file_count": 11
+    },
+    {
+      "file": "kumo-source-review.md",
+      "bytes": 53988,
+      "sha256": "3383e82c00d357b172bb8f4e3f87a1fe24dea853f140a7a9ecb288e04bc2ee55",
+      "source_file_count": 3
+    }
+  ],
+  "finalized_at": "2026-11-09T08:34:39.503496+00:00"
+}

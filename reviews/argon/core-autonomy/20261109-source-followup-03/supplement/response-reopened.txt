@@ -1,0 +1,291 @@
+Завершен детальный разбор технических возражений по ae-core-autonomy.
+Я проанализировал запрос и содержимое приложенных файлов, не выполняя никакого кода.
+Я определил недостающие данные, составил пять ответов на возражения, а также определил конкретные действия для скорейшего решения текущей задачи.
+Я обнаружил несоответствия в обработке состояний и журналах, указывающие на потенциальные уязвимости в процедурах завершения и проверке истории.
+Я отказался от предыдущих предложений и сосредоточился на безопасном исправлении тайм-аутов чтения, четко определив этапы команды.
+Я уточнил логику обработки тайм-аутов и предложен способ безопасного завершения транзакций с учетом различных состояний.
+Я пересмотрел свое предложение, поняв, что оно нарушит важный тест на целостность данных во время подтверждения.
+Я определил потенциальную ошибку, связанную с ограничением размера файла, и предложил изменить внутренние переменные и размеры блоков.
+Я проанализировал пределы размера кадра и поняла, что предыдущий подход не подойдет.
+Я выявил двойное кодирование данных, из-за которого ограничения по размеру фрейма превышаются, и предложил конкретные способы оптимизации.
+Я пересмотрел свои предыдущие выводы, признав уязвимость TOCTOU и сделав акцент на защите в JSX-среде.
+Я определил требования к объему кода для изменения основного модуля, включая файлы контрактов, схемы и регистрацию.
+Я определил четкие условия для оптимизации операций замены слоев, уделяя особое внимание безопасности и производительности.
+Готово
+Ответ Gemini
+(а) Реально прочитанные файлы дополнения и статус полноты данных
+
+Оба дополнительных вложения (2164d1da.md — 11 файлов Core, 152 527 байт; fa753469.md — 3 файла Kumo, 47 091 байт) прочитаны полностью (100% текста, без сокращений и без запуска кода) в совокупности с 85 файлами основного пакета (всего 99 файлов):
+
+Прочитанные файлы Core (2164d1da.md, ревизия de61ff9106526db6b2b2c33d5fca9c2d9ae329fd):
+
+core4/integrations/cep/completion-store.js (openCompletionStore, checkOwner, append, begin, complete, unknown, close, стр. 1–137).
+
+core4/runtime/recovery-inspection.js (inspectReceiverHistory, inspectLedgerHistory, checkpointMatchesReservation, стр. 1–182).
+
+core4/runtime/native-read-disposition.js (fixedPrefix, validateCaptureSeal, inspectSealedDispositionFacts, verifyDispositionInstallEdge, validateDisposition, assertReceiverJournalSettled, стр. 1–131).
+
+core4/core/resources.js (scopesOverlap, Resources.authorize, authorizeCurrentTarget, isPriorCurrentTargetCheckpoint, стр. 1–122).
+
+core4/runtime/owner-lifecycle.js (lifecycleOperation, settled, finishReady, finishRecovery, resumeReferenced, стр. 1–497).
+
+core4/runtime/start-over-process.js (QUERY, observeStartOverInventory, observeStartOverStop, стр. 1–92).
+
+core4/runtime/start-over-finisher.js (inspectStartOverLeases, claimLease, finishStartOver, стр. 1–198).
+
+core4/runtime/start-over-archive.js (ROLES, snapshot, readArchive, executeArchive, стр. 1–156).
+
+core4/runtime/photo-source-proof.js (createPhotoSourceProof, стр. 1–16).
+
+core4/runtime/comp-frame-export-proof.js (output, readPng, proof.beforeReservation, validateResult, стр. 1–54).
+
+core4/runtime/png-proof.js (inspectPngBuffer, sameFileSnapshot, стр. 1–143).
+
+Прочитанные файлы Kumo (fa753469.md, версия 0.3.2):
+
+dist/transport/launcher.js (buildInstanceLaunchPlan, buildLaunchPlan, стр. 1–80).
+
+dist/operations/comp.js (comp.create, comp.set_props, comp.set_renderer, comp.set_work_area, и др., стр. 1–272).
+
+dist/operations/render.js (render.add_to_queue, render.start, render.set_output, render.variants, и др., стр. 1–675).
+
+Оставшиеся вне пакета файлы (для текущего архитектурного решения не блокируют выводы, но фиксируются явно):
+
+В Core: core4/runtime/start-over-barrier.js и core4/runtime/start-over-driver.js (вызываются из start-over-finisher.js:97 и stdio-entry.js:158), core4/runtime/installation-lineage.js (вызывается из native-read-disposition.js:5 и work-session.js:35), core4/runtime/owner-maintenance.js (вызывается из stdio-entry.js:194,209).
+
+В Kumo: файл инструмента ae_render_frame / render.frame (в dist/operations/render.js находятся операции очереди рендера render.*, тогда как render.frame объявлен в другом модуле операций).
+
+(б) Адресный разбор пяти возражений по коду (Accept / Revise / Retract)
+Возражение 1. Перенос store.begin к /poll, историческая природа native-read-disposition и минимальный ремонт таймаута чтения
+
+Статус моих прежних предложений:
+
+ОТОЗВАНО (RETRACT): предложение использовать terminal-read-failure-disposition как рантайм-механизм закрытия зависших чтений.
+
+ОТОЗВАНО (RETRACT): предложение безусловно переносить store.begin в /poll для всех команд или отключать UNKNOWN только по признаку delivered === false / phase === 'inspect'.
+
+ИСПРАВЛЕНО (REVISE): протокол разделения стадий intent / queued / handoff / native begin и узкий ремонт read-timeout.
+
+Доказательство по коду:
+
+native-read-disposition.js — это запечатанный исторический валидатор конкретного префикса, а не рантайм-механизм: в core4/runtime/native-read-disposition.js:7–10 зашиты фиксированные хэши SOURCE_A, EXECUTOR, CONTRACT, DISPATCHER; функция fixedPrefix (стр. 26–36) требует ровно 3 записи в журнале (if (parsed.events.length !== 3) fail('disposition_prefix_scope'): origin, begin, unknown для project-inspection), validateCaptureSeal (стр. 42) требует фиксированный результат { readFailureVersion: 1, outcome: 'rejected', code: 'host_registry_unavailable' }, а inspectSealedDispositionFacts (стр. 76) проверяет event.seq !== 4 и связку с транзакцией переустановки verifyDispositionInstallEdge (стр. 83–86). Генератора таких записей в рантайме нет (// Fixed semantic reader. No issuance/sign-proof API, стр. 2).
+
+Почему нельзя просто задержать store.begin для команд Broker: для любой команды Broker (broker.js:214,256) в ledger.ndjson сначала синхронно пишется type: 'intent' с dispatchBinding. При проверке целостности истории в core4/runtime/owner-lifecycle.js:167–171 (settled) и core4/runtime/start-over-inspection.js:35 (crossCheck) действует жёсткий инвариант:
+if (begin ? canonical(begin.originalBinding) !== canonical(intent.dispatchBinding) : terminal?.state !== 'rejected') fail('owner_lifecycle_history_correlation');
+Если intent записан в ledger.ndjson, а процесс упал до записи begin в completions.ndjson (и в ledger нет терминальной записи command со state: 'rejected'), старт нового owner-lifecycle упадёт в diagnostic-режим (owner_lifecycle_history_correlation).
+
+Различие 4 стадий и где находится реальное окно отказа:
+
+Стадия 1 (intent в ledger.ndjson): возникает только в broker.js:214,256 перед this.send(...). Прямой вызов peer.inspect() (stdio-entry.js:256 
+→
+→ http-peer.js:199) не пишет в ledger.ndjson, он обращается напрямую к submit() в http-peer.js:176.
+
+Стадия 2 (queued в http-peer.js:184–185): submit() вызывает store.begin(command, binding), создавая запись begin (state: 'ongoing') в completions.ndjson, и кладёт команду в память (pending = { ..., delivered: false }). Если CEP-панель ещё не прислала /poll (или заблокирована до начала опроса), команда находится в памяти http-peer, но в completions.ndjson уже записан begin.
+
+Стадия 3 (handoff в http-peer.js:56,99): обработчик /poll вызывает guardDelivery(), ставит pending.delivered = true и вызывает signed({ command: value }) 
+→
+→ reply(res, 200, ...). Между отправкой HTTP-ответа из Node и получением его в panel.js:158 существует сетевое окно loopback-сокета: если соединение оборвётся здесь, Node не знает, успела ли панель получить байты.
+
+Стадия 4 (native begin в poll-dispatcher.js:35–46): dispatch(frame) синхронно пишет frame в localStorage (save(record)), взводит nativeGuard.active = callbackToken и вызывает csInterface.evalScript(script, cb).
+
+Самый узкий безопасный ремонт read-timeout без ослабления UNKNOWN:
+
+Не менять store.begin и store.unknown для mutate/verify и для любых команд Broker. Write-ahead запись store.begin в submit() (http-peer.js:184) остаётся на месте.
+
+Для доставленного чтения (pending.delivered === true), ждущего ответа от AE при модальном окне: в stdio-entry.js:4 сейчас задано callerTimeoutMs: 100000, callbackTimeoutMs: 90000. Когда evalScript в CEP заблокирован модальным окном AE (например, Missing Fonts после reopen), по истечении 90 с в http-peer.js:185 срабатывает таймер disconnect('host_callback_timeout'), который вызывает store.unknown(commandId) и навсегда закрывает completion-store (closed = true в completion-store.js:97). Из-за этого даже если через 5 секунд модальное окно закрыто и evalScript в панели нормально завершился, пришедший запрос /complete отвергается в http-peer.js:124 (if (!pending || c.state !== 'ongoing' ...) fail('unknown_no_promotion'))!
+
+Минимальный ремонт: разделить клиентский дедлайн ожидания вызова MCP и физическое закрытие completion-store при живом соединении с панелью:
+
+Пока процесс AE и CEP-панель живы (peer.lastSeen обновляется или висит активный evalScript), истечение таймера ожидания вызывающего кода должно завершать промис вызова ошибкой таймаута (оставляя pending в состоянии ongoing и activity().pending = true 
+→
+→ owner_draining), не вызывая store.unknown(), пока панель не отвалилась и не нарушила инвариант сессии.
+
+Пока pending остаётся ongoing, никакая новая команда не может быть принята или отправлена (if (pending) fail('physical_lane_pending') в http-peer.js:183, if (value.pending) fail('owner_draining') в attachment-owner.js:35).
+
+Как только модальное окно в AE закрыто и тот же экземпляр панели (epoch, peerId, sequence, originalBinding) присылает штатный подписанный /complete, http-peer.js:152 штатно выполняет store.complete(commandId, response), снимая pending без перевода хранилища в вечный unknown и без требования убивать AE!
+
+Если же ответ так и не пришёл, либо панель перезагрузилась/потеряла канал, либо оператор нажал start-over (fenceForStartOver в http-peer.js:190), вызывается disconnect() 
+→
+→ store.unknown(commandId), и вступает в силу полный штатный UNKNOWN-карантин с requiresAEExit = true.
+
+Возражение 2. TOCTOU при снятии checkBytes в JSX (project-save и project-lifecycle)
+
+Статус моего прежнего предложения:
+
+ОТОЗВАНО (RETRACT): предложение убрать побайтовую сверку checkBytes(original, checkpoint, bytes) из core4/modules/project-save/executor.jsx:27–38 и core4/modules/project-lifecycle/executor.jsx:29–40, заменив её только на проверку file.length, file.modified и Node-хэшей.
+
+Доказательство по коду:
+
+В core4/modules/project-save/executor.jsx:48–50 и core4/modules/project-lifecycle/executor.jsx:56–62 вызов checkBytes(...) расположен после диалога подтверждения (confirmAction || confirm)(message, ...) и непосредственно перед started = true; project.save().
+
+Как доказывают спецификационные тесты core4/test/project-save.test.js:126–138 ("project-save detects same-length disk drift during confirmation before AE writes") и core4/test/project-lifecycle.test.js:158–174, во время ожидания в confirm() файл .aep на диске может быть изменён без изменения длины (changed[changed.length - 1] ^= 0xff) и в пределах той же секунды File.modified (на Windows у ExtendScript File.modified секундная точность, см. комментарий в project-save-proof.js:24). Node-проверка prepareCheckpoint (project-save-proof.js:61) к этому моменту уже завершилась (до отправки кадра mutate в CEP), а observe (project-save-proof.js:75) запустится уже после того, как project.save() перезапишет файл на диске!
+
+Следовательно, удаление checkBytes из executor.jsx открывает реальное окно TOCTOU между prepareCheckpoint в Node и project.save() / app.open() в AE.
+
+Конкретный безопасный протокол для проектов > 64 МиБ (например, 91,3 МиБ) с сохранением инварианта:
+
+В самом checkBytes внутри project-save/executor.jsx:27–38 и project-lifecycle/executor.jsx:29–40 нет лимита 64 МиБ — он читает до before.fileStamp.bytes. Лимит 64 * 1024 * 1024 (67108864) зашит только в core4/runtime/project-save-proof.js:6 (MAX_BYTES), core4/modules/project-save/contract.json:83,139,174 и core4/modules/project-lifecycle/contract.json:93,167,219.
+
+Поэтому для поддержки .aep размером 91,3 МиБ с полным сохранением существующей защиты от TOCTOU необходимо:
+
+Оставить checkBytes в project-save/executor.jsx и project-lifecycle/executor.jsx (при необходимости увеличив размер блока чтения в цикле offset += ... с 65536 до 262144 или 524288 байт после замера на целевой машине, не меняя семантику побайтового равенства chunk !== checkpoint.read(count)).
+
+В project-save-proof.js:20–43 (readAep) заменить единовременную аллокацию Buffer.allocUnsafe(stamp.bytes) на чтение в фиксированный буфер (по образцу media-layer-proof.js:24–30) с сохранением двойной проверки assertSame(fs.fstatSync(fd, { bigint: true })) до и после чтения, а в prepareCheckpoint копировать проверенный дескриптор в checkpoint с проверкой checkpointFacts.
+
+Поднять константу MAX_BYTES в project-save-proof.js:6 и maximum в project-save/contract.json и project-lifecycle/contract.json до согласованного потолка (например, 268435456 байт / 256 МиБ).
+
+Возражение 3. Потери при хэшировании name.length / FNV и точная защита полей в inventory / media-import
+
+Статус моего прежнего предложения:
+
+ОТОЗВАНО (RETRACT): предложение заменить inventory в project-lifecycle и items в media-import на некриптографический FNV-хэш или кортежи с name.length вместо полного имени.
+
+Доказательство по коду (какие именно поля защищаются сейчас):
+
+В project-lifecycle (core4/modules/project-lifecycle/executor.jsx:6–17, 73 и project-lifecycle-proof.js:76):
+Функция inventory(project) строит JSON-строку массива кортежей [item.id, item.name, item instanceof CompItem ? item.numLayers : 0] в порядке 1..project.numItems. При save-as проверяется точное равенство after.inventory === before.inventory (и в JSX на стр. 73, и в Node validateResult на стр. 76). Это гарантирует неизменность: (а) количества и порядка всех элементов проекта, (б) каждого item.id, (в) полной строки item.name каждого элемента, (г) numLayers каждой композиции. Любая замена item.name на item.name.length пропускает переименование той же длины, а некриптографический хэш допускает коллизии.
+
+В media-import (core4/modules/media-import/executor.jsx:19–32 и core4/runtime/media-layer-proof.js:44–53):
+capture(p) собирает массив items из объектов { id, name, file, kind }, отсортированный по id, и проверяет в media-layer-proof.js:51:
+!same(after.items.filter(item => previous.has(item.id)), before.items)
+Это защищает неизменность id, полного name, полного пути file (fsName) и kind ('still' | 'av' | 'other') для каждого ранее существовавшего элемента проекта, а также гарантирует, что добавлен ровно один новый элемент с id === after.createdItemId и путём input.file.
+
+Компактное представление, сохраняющее 100% этих инвариантов без потери полей:
+
+В project-lifecycle: для проекта из ~1079 элементов строка JSON.stringify(rows) из кортежей [item.id, item.name, numLayers] занимает ~40–60 КиБ, что свободно помещается в транспортный кадр MAX_FRAME = 256 * 1024 (core4/protocol/json.js:3 и http-peer.js:70), но упирается в искусственные пороги if (count > 256) и if (result.length > 24576) в project-lifecycle/executor.jsx:9,15 и maxLength: 24576 в project-lifecycle/contract.json:189.
+
+Решение без ослабления гарантий: сохранить в inventory(project) полный JSON-массив [item.id, item.name, numLayers] без урезания полей, подняв лимит count в project-lifecycle/executor.jsx:9 с 256 до 2048, а лимит длины строки inventory в executor.jsx:15 и contract.json:189 — с 24576 (24 КиБ) до 131072 (128 КиБ), что оставляет двукратный запас до MAX_FRAME (256 КиБ).
+
+В media-import: сейчас capture(p) (media-import/executor.jsx:28–31) сериализует полный массив items дважды в одном ответе: один раз как массив snapshot.items, и второй раз внутри строки snapshot.revision = JSON.stringify([target, items, file.length, modifiedMs]) (с лимитом 32768 байт). На 1079 элементах с длинными путями file двойная сериализация превысит MAX_FRAME (256 КиБ).
+
+Если требуется сохранить 100% проверку всех полей в Node (media-layer-proof.js:51) в пределах 256 KiB:
+
+Во-первых, убрать дублирование полного массива items внутри строки snapshot.revision: поскольку snapshot.items уже передаётся в том же подписанном MAC-ответе /complete и валидируется в media-layer-proof.js:51, а before целиком хэшируется в broker.js:192 (baselineDigest: hash(before)) и manual-policy.js:65 (execution.baselineDigest !== hash(ctx.before)), либо вычислять revision в JSX по канонической строке items без хранения гигантской копии JSON-текста в поле revision сверх лимита, либо (если expectedRevision должен оставаться полной строкой JSON.stringify(...) для побайтового сравнения в validate(p, before) на стр. 37) заметить, что у элементов, не являющихся FootageItem с файлом (композиции, папки, солиды), file равен "".
+
+Честная граница: если суммарный JSON snapshot (items + revision) для 1079 элементов превышает MAX_FRAME = 256 KiB, то без увеличения MAX_FRAME (в protocol/json.js:3, http-peer.js:70, recovery-inspection.js:27 и json-codec.jsx) передать два полных дампа по >128 КиБ в одном кадре нельзя. Тогда выбор строго бинарный: либо точечно поднять maxItems до 2048 и MAX_FRAME / maxLength revision до 512 KiB, либо в executor.jsx сверять неизменность существующих элементов внутри JSX (между before до confirm и after после importFile), а в Node передавать items только для FootageItem (или криптографический SHA-256 в ES3). Первый вариант (поднять лимит в схеме и MAX_FRAME до 512 KiB при сохранении полной структуры items) не меняет ни одной строчки логики доказывания в media-layer-proof.js!
+
+Возражение 4. Отсутствие эксклюзивности по heartbeat Kumo, TOCTOU и реальные границы windows-reservation-provider.js
+
+Статус моего прежнего предложения:
+
+ИСПРАВЛЕНО / ОТОЗВАНО (REVISE / RETRACT): отзывается утверждение, что проверка heartbeat.json / dispatcher-busy.lock в %TEMP%/mcp-aftereffects/runtime гарантирует отсутствие конкурирующего писателя Kumo; явное согласие с тем, что установленный Kumo не должен автоматически отключаться или удаляться.
+
+Доказательство по коду:
+
+В core4/runtime/windows-reservation-provider.js:85 сам провайдер честно декларирует границы своего покрытия:
+coverage: { core4Lane: 'cooperating-Core4-only', hostProcess: a ? 'adopted-reprobe-required' : 'unavailable', legacyEndpoints: 'named-probes-only', legacyPhysicalQueue: 'not-proven', otherAEActors: 'outside-coverage', sharedOutputs: 'not-requested' }.
+
+В Kumo (kumo/config.js:56–61, kumo/jsx/dispatcher.jsx:64–95, kumo/transport/launcher.js:53–55) путь к mailbox может быть переопределён через AE_MCP_RUNTIME_DIR, runtime-dir.txt или $.global.AE_MCP_RUNTIME_DIR_OVERRIDE, а AfterFX.exe -r (launcher.js:69) может быть запущен в любой момент после завершения probeWindows(). Наоборот, наличие heartbeat.json от резидентного agent.jsx (kumo/jsx/agent.jsx:186–215) означает лишь то, что в Scripts/Startup загружен фоновый таймер, даже если сервер Kumo вообще не запущен.
+
+Какие гарантии реально может обещать observer и какую границу нужно технически закрыть:
+
+Что может обещать windows-reservation-provider.js: только то, что на момент prepare() (windows-reservation-provider.js:87–96) ровно один процесс AfterFX.exe соответствует host-adoption.json (pid, birth, executableHash), наш собственный канал Core4 свободен (!b.ledger.unresolved().length && !p.storeClosed && !p.pending), и на фиксированных legacy-портах 3456/8787 нет активных слушателей. Он не может доказать отсутствие внешних файловых IPC или действий пользователя в UI (otherAEActors: 'outside-coverage').
+
+Какую техническую границу нужно закрыть внутри AE против TOCTOU:
+Поскольку ExtendScript внутри AfterFX.exe однопоточный, сторонняя команда (например, тик agent.jsx в app.scheduleTask каждые 250 мс или -r dispatcher.jsx) может вклиниться только между отдельными вызовами evalScript (между inspect и mutate) либо во время модального диалога confirm(...) внутри mutate, когда AE крутит вложенный цикл сообщений ОС.
+
+В существующих модулях Core (photo-placeholder/executor.jsx:88–91, layer-insert/executor.jsx:148–149, project-save/executor.jsx:51) повторный снимок capture(p) / snapshot(p, true) и validate(p, current) выполняются после выхода из confirm(...) и в одном непрерывном синхронном блоке перед started = true и мутацией AE DOM.
+
+Если же модуль использует operatorConfirmation: 'registry-v1' (stdio-entry.js:97–106, как в comp-frame-export), то внутри mutate вообще нет модального вызова confirm() — проверка before.revision === p.expectedRevision, мутация и снятие after-снимка происходят в одном атомарном тике интерпретатора ExtendScript, внутрь которого ни app.scheduleTask, ни -r физически вклиниться не могут.
+
+Возражение 5. Границы receipt / proof / started и честный профиль выражений для нативного модуля layer-duplicate-replace
+
+Статус моих прежних предложений:
+
+ОТОЗВАНО (RETRACT): неизмеренная оценка «120–150 строк кода» как достаточная оценка полной реализации модуля.
+
+ОТОЗВАНО (RETRACT): предложение искать выражения регулярными выражениями (layer(index)) по тексту выражений.
+
+УТОЧНЕНО (REVISE): точная спецификация границ started / transactionReceipt / proof и честного ограниченного профиля для нативного модуля.
+
+Доказательство по коду (реальный состав замыкания модуля в Core):
+
+Полный объём изменений в репозитории Core (по stdio-entry.js:24–106 и http-peer.js:20,125–150):
+Чтобы модуль был допущен verifyRelease и deriveComposition в stdio-entry.js:40–106, кроме executor.jsx, implementation.js, contract.json, artifact.json и config/admissions/<id>.json, обязательны:
+
+Модуль доказательства runtime/<proof>.js (включаемый в RESULT_PROFILES в stdio-entry.js:13–26 и проверяющий assertTarget по workSession и validateResult в Node).
+
+Регистрация эффекта в OPERATOR_EFFECTS (stdio-entry.js:27–40) и валидатора профиля в declarativeProfiles (stdio-entry.js:50–80).
+
+Ветка валидации полей result для фаз inspect/verify в core4/integrations/cep/http-peer.js:125–150 и включение профиля в manualResultProfile (http-peer.js:20).
+
+Пересборка runtime/composition.json, runtime/composition-policy.json, config/catalog.json, cep/jsx/registry.jsx (с проверкой ES3-парсером Acorn, project-save.test.js:65) и release.json.
+
+Точные границы started, transactionReceipt и proof (почему примитив должен быть послойным, а не неконтролируемым пакетом):
+
+В manual-policy.js:58–83 (verifyCompletion) и broker.js:272–290 (run) Core уже умеет выполнять многошаговый план (steps до 16 шагов в broker.js:132) с проверкой каждого шага через reinspect_success (broker.js:280–284: если шаг 
+𝑘
+k уже имеет state === 'succeeded' в ledger.ndjson, при повторном запуске run после восстановления он не выполняется заново, а проверяется через verify!).
+
+Если сделать примитив layer-duplicate-replace однослойным (1 целевой anchorLayerId + 1 уже импортированный newSourceId на шаг):
+
+До started = true (все отказы дают outcome: 'rejected', проект чист):
+capture(p) проверяет project.file.fsName === p.projectId, находит comp = project.itemByID(p.compId), anchor по p.layerId, source = project.itemByID(p.newSourceId) (FootageItem, isStill === true), сверяет before.revision === p.expectedRevision, проверяет _execution (policyId, baselineRevision, baselineProtected, target), проверяет отсутствие разрыва track matte пары над anchor и выполняет confirmAction (registry-v1 или confirm) с повторным capture(p) и validate(p, current).
+
+После started = true (любое исключение внутри блока или при after-сверке даёт outcome: 'unknown', закрывая completion-store и ставя fence):
+
+JavaScript
+app.beginUndoGroup('AE Agent Core — дублирование слоя с заменой источника');
+try {
+    started = true;
+    var dup = current.anchor.duplicate();
+    if (dup.index !== current.anchor.index - 1) fault('duplicate_index_unexpected');
+    dup.replaceSource(current.source, false);
+    if (p.name) dup.name = p.name;
+} finally { app.endUndoGroup(); }
+
+
+Чтение after и transactionReceipt v2:
+Снимается after = capture(p).snapshot (и второй контрольный capture(p).snapshot.revision для проверки детерминизма сериализации, как в layer-insert/executor.jsx:167), проверяется, что after.stack.length === before.stack.length + 1, на позиции anchorIndex - 1 стоит новый слой dup.id с sourceId === p.newSourceId и теми же inPoint, outPoint, startTime, stretch, parentId, matteType, numMasks, numEffects, transformSummary, а сам anchor сдвинулся на anchorIndex без единого изменения своих свойств. В Node validateResult({ input, before }, after) (по образцу media-layer-proof.js:57–71) перепроверяет это разностью стеков after.stack.filter(l => l.id !== after.createdLayerId) против before.stack.
+
+Честный ограниченный профиль выражений и зависимостей (без иллюзии regex-парсера):
+
+В layer-insert/executor.jsx:24–55 обход inspectProperties проверяет два точных факта DOM: group.expressionEnabled === true и group.propertyValueType === PropertyValueType.LAYER_INDEX && (group.numKeys !== 0 || group.value !== 0).
+
+Поскольку duplicate() вставляет новый слой в стек композиции compId и сдвигает index всех нижележащих слоёв на +1, статический анализ без исполнения движка выражений AE не может доказать, что произвольное текстовое выражение expressionEnabled === true (в этой или другой композиции) не обращается к слоям compId по числовому индексу layer(i) или numLayers.
+
+Поэтому честный контракт имеет ровно два явных режима:
+
+expressionPolicy: "forbid-active" (строгий режим по умолчанию, как в layer-insert): inspectLayer проверяет отсутствие expressionEnabled === true и ненулевых LAYER_INDEX-свойств; если они есть — детерминированный rejected (layer_duplicate_expression_scope).
+
+expressionPolicy: "allow-with-frame-verify" (явно декларируемый операторский профиль для шаблонов с выражениями): модуль проверяет отсутствие PropertyValueType.LAYER_INDEX (эффектов с выпадающим списком выбора слоя, которые могут сбиться или требуют проверки), не парсит текст выражений регулярками, но явно записывает в snapshot и transactionReceipt поле unverifiedExpressionsPresent: true и требует в плане обязательного последующего шага comp-frame-export (контрольный рендер PNG с проверкой comp-frame-export-proof.js + png-proof.js).
+
+(в) Окончательный архитектурный выбор и минимальный порядок P0
+
+Окончательный архитектурный выбор:
+
+Единый контур Core (Core-only для управляемых мутаций): все операции чтения, сохранения, жизненного цикла, импорта, дублирования с заменой источника (layer-duplicate-replace) и контрольного экспорта PNG выполняются только через штатный пайплайн Core (Broker 
+→
+→ http-peer 
+→
+→ completion-store 
+→
+→ poll-dispatcher 
+→
+→ cep/jsx/registry.jsx).
+
+Отказ от частного runtime-адаптера к Kumo: внешний Kumo MCP не подключается как backend к Broker и не используется параллельно в том же процессе AE.
+
+Точечное заимствование из Kumo (только как read-only / MIT-справка): из Kumo используется только read-only идея Win32-опроса окон #32770 (kumo/transport/dialogs.js:53–121) для диагностического объяснения причин подвисания AE в core_diagnostics (без иллюзии защиты от TOCTOU и без авто-удаления Kumo).
+
+Минимальный порядок P0 (узкий, проверяемый scope перед любыми новыми функциями):
+
+Шаг P0.1 — Выравнивание CLI operate-start-over.js с панелью при baseline-required:
+В core4/tools/operate-start-over.js:41–42, 65 разрешить инициацию сброса в фазе 'baseline-required' (как уже сделано в core4/cep/js/panel.js:21 resetReady) и при activity.unresolved === true.
+
+Шаг P0.2 — Узкий ремонт read-timeout без ослабления store.begin и UNKNOWN:
+Сохранить write-ahead store.begin в http-peer.js:184. Для доставленного inspect-запроса при живом соединении с панелью не вызывать преждевременно store.unknown() по истечении таймера ожидания, пока evalScript удерживает nativeGuard.active (удерживая состояние pending / owner_draining и запрещая любые новые команды), чтобы после закрытия модального окна AE штатный ответ /complete от той же сессии панели мог завершить запись через store.complete. При обрыве панели, перезагрузке или запросе start-over — переводить в store.unknown() с полным requiresAEExit = true.
+
+Шаг P0.3 — Точный поиск композиции по ID в project-inspection:
+В core4/modules/project-inspection/executor.jsx:10–15 резолвить целевую композицию input.compId через app.project.itemByID(input.compId) (как в comp-frame-export/executor.jsx:8), не ограничивая целевой поиск первыми 500 элементами.
+
+Шаг P0.4 — Поддержка крупных .aep (> 64 МиБ) и проектов > 256/512 items с сохранением checkBytes и всех защищаемых полей:
+
+Сохранить checkBytes в project-save/executor.jsx:27 и project-lifecycle/executor.jsx:29 (защита от TOCTOU во время confirm), подняв MAX_BYTES в project-save-proof.js:6 и схемах project-save/project-lifecycle до 256 МиБ и переведя readAep в Node на потоковое чтение буфером фиксированного размера.
+
+В project-lifecycle/executor.jsx:9,15 и contract.json:189 сохранить полную структуру кортежей [item.id, item.name, numLayers] в inventory, подняв лимит count до 2048 и maxLength до 131072 (в рамках MAX_FRAME = 256 KiB).
+
+В media-import поднять лимит numItems с 512 до 2048 (при необходимости расширив MAX_FRAME и revision maxLength до 512 KiB, чтобы сохранить полный массив items и полную проверку media-layer-proof.js:51 без изменения структуры данных).
+
+Шаг P0.5 — Однослойный нативный модуль layer-duplicate-replace в полном замыкании Core:
+Реализовать и включить в composition-policy.json / registry.jsx одношаговый модуль дублирования anchor.duplicate() + dup.replaceSource(source, false) с transactionReceipt v2, проверкой разрыва track matte, явным флагом expressionPolicy и верификацией разности стеков в media-layer-proof.js.

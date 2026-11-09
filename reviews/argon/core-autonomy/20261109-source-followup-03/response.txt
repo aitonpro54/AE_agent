@@ -1,0 +1,270 @@
+Изучены исходные коды Core и Kumo для интеграции.
+Я проверил наличие полной информации из обоих файлов, убедившись, что ничто не было усечено.
+Я определил конкретные недостающие файлы в core4 и kumo, необходимые для выполнения требований.
+Я определил и перечислил основные файлы, связанные с завершением процессов и ресурсами в core4, а также недостающие файлы в kumo.
+Я проанализировал взаимодействие функций с таймерами и обработку исключений, учитывая состояние хранилища.
+Я выявил потенциальные проблемы, связанные с порядком выполнения операций в разных средах и механизмами восстановления.
+Готово
+Ответ Gemini
+1. Перечень реально прочитанных вложений, ключевых файлов и границ пакета
+
+Оба прикреплённых архива (core-source-review.md и kumo-source-review.md, суммарно 85 файлов, 845 153 байта исходного кода) прочитаны полностью (100% объёма, без сокращений и без запуска кода):
+
+Вложение 1 — core-source-review.md (ревизия Core de61ff9106526db6b2b2c33d5fca9c2d9ae329fd, 66 файлов, 532 291 байт):
+
+Ядро и протокол (7 файлов): core4/core/broker.js (471 стр.), core4/protocol/json.js (20 стр.), core4/core/receiver.js (52 стр.), core4/core/ledger.js (52 стр.), core4/core/authority.js (59 стр.), core4/core/state-lock.js (99 стр.), core4/protocol/dispatch.js (14 стр.).
+
+Транспорт CEP, панель и runtime-владение (17 файлов): core4/integrations/cep/http-peer.js (273 стр.), core4/runtime/attachment-owner.js (164 стр.), core4/runtime/stdio-entry.js (581 стр.), core4/runtime/controller-lease.js (103 стр.), core4/runtime/work-session.js (78 стр.), core4/runtime/start-over-state.js (329 стр.), core4/runtime/start-over-inspection.js (137 стр.), core4/runtime/start-over-panel-control.js (51 стр.), core4/tools/operate-start-over.js (101 стр.), core4/cep/js/panel.js (231 стр.), core4/cep/js/poll-dispatcher.js (61 стр.), core4/runtime/manual-policy.js (90 стр.), core4/runtime/operator-confirmation.js (85 стр.), core4/runtime/windows-reservation-provider.js (140 стр.), core4/runtime/project-save-proof.js (113 стр.), core4/runtime/project-lifecycle-proof.js (87 стр.), core4/runtime/media-layer-proof.js (75 стр.).
+
+Спецификационные тесты (9 файлов): core4/test/integration/cep-transport.test.js (291 стр.), core4/test/owner-attachments.test.js (302 стр.), core4/test/start-over-operator.test.js (56 стр.), core4/test/panel-start-over.test.js (48 стр.), core4/test/manual-runtime.test.js (293 стр.), core4/test/media-layers.test.js (193 стр.), core4/test/modules/photo-placeholder.test.js (102 стр.), core4/test/project-lifecycle.test.js (182 стр.), core4/test/project-save.test.js (175 стр.).
+
+Модули, контракты, JSX-исполнители и допуски (33 файла): полные комплекты (contract.json, artifact.json, implementation.js, executor.jsx, config/admissions/*.json) для project-inspection, media-import, layer-insert, photo-placeholder, project-lifecycle, project-save, comp-frame-export.
+
+Вложение 2 — kumo-source-review.md (@kumoproductions/mcp-aftereffects 0.3.2, 19 файлов, 312 862 байта):
+
+Лицензия, политика, схемы и диспетчеризация (6 файлов): kumo/LICENSE (21 стр.), kumo/policy.js (96 стр.), kumo/registry.js (140 стр.), kumo/opschema.js (150 стр.), kumo/tools/do.js (249 стр.), kumo/operations/batch.js (146 стр.).
+
+Операции и транспорт Node.js (9 файлов): kumo/operations/instance.js (459 стр.), kumo/operations/layer.js (698 стр.), kumo/operations/layer-advanced.js (430 стр.), kumo/operations/project.js (940 стр.), kumo/transport/AeTransport.js (8 стр.), kumo/transport/FileIpcTransport.js (675 стр.), kumo/transport/dialogs.js (446 стр.), kumo/transport/instances.js (201 стр.), kumo/config.js (336 стр.).
+
+JSX-рантайм в AE (4 файла): kumo/jsx/agent.jsx (276 стр.), kumo/jsx/dispatcher.jsx (194 стр.), kumo/jsx/serve.jsx (331 стр.), kumo/jsx/helpers.jsx (950 стр.).
+
+Недостающие в пакете файлы/символы (упомянуты в require/import, но не входят в 85 файлов среза):
+
+В Core: core4/integrations/cep/completion-store.js (реализация openCompletionStore, store.begin/complete/unknown, terminalDisposition), core4/runtime/recovery-inspection.js и core4/runtime/native-read-disposition.js (разбор completions.ndjson и terminalReadFailureDispositionVersion), core4/core/resources.js (scopesOverlap, currentTargetConstraintId), core4/runtime/owner-lifecycle.js, core4/runtime/start-over-process.js, core4/runtime/start-over-finisher.js, core4/runtime/start-over-archive.js, core4/runtime/photo-source-proof.js, core4/runtime/comp-frame-export-proof.js.
+
+В Kumo: dist/transport/launcher.js (buildLaunchPlan, buildInstanceLaunchPlan), dist/operations/comp.js и dist/operations/render.js (render.frame).
+
+2. Итоговый вердикт (Verdict: REVISE)
+
+Вердикт по текущему локальному решению: REVISE (Уточнить архитектуру: GO на P0 в Core и создание нативного/заимствованного по MIT примитива layer-duplicate-replace внутри Core; STOP на разработку частного runtime-адаптера к внешнему процессу/транспорту Kumo для мутаций в том же экземпляре AE).
+
+Ключевой вывод из анализа исходного кода:
+В предыдущем ревью (без доступа к исходникам) я ошибочно полагал, что Kumo 0.3.2 можно обернуть «тонким/дешёвым адаптером» под управлением Core. Прямое чтение core4/core/broker.js, core4/integrations/cep/http-peer.js, core4/runtime/manual-policy.js и kumo/jsx/serve.jsx + kumo/transport/FileIpcTransport.js опровергает гипотезу «тонкого адаптера»:
+
+Kumo (kumo/jsx/serve.jsx:233–236) удаляет файл запроса до начала выполнения кода (consume-on-read), не ведёт append-only журнала begin/complete с fsync, а при таймауте (kumo/transport/FileIpcTransport.js:244,394) удаляет request-<id>.json или теряет связь с выполняющимся скриптом. После потери ACK или рестарта owner-процесса Kumo физически не может предоставить криптографически связанный completion(commandId) с transactionReceipt и originalBinding, которых требует manual-policy.js:58–83 и broker.js:295–332.
+
+Более того, в Kumo batch.run (kumo/operations/batch.js:90–115) и все операции layer.js / layer-advanced.js выполняются внутри app.beginSuppressDialogs() (kumo/jsx/serve.jsx:276), без CAS-проверки ревизии до/после и без защиты от частичной мутации при ошибке на середине батча (_failed++, уже созданные дубликаты остаются в композиции).
+
+Напротив, нативный (или перенесённый по MIT из kumo/operations/layer.js + layer-advanced.js в формат executor.jsx Core) примитив внутри Core занимает ~120–150 строк ES3-кода по готовому шаблону photo-placeholder/executor.jsx + layer-insert/executor.jsx и автоматически получает все гарантии http-peer.js, completion-store, manual-policy.js и start-over-inspection.js без единой правки транспортного протокола.
+
+3. Сводная таблица доказанных находок по коду (Findings)
+№	Находка / Механизм	Точная привязка (файл : функция / строки)	Уровень доказанности
+F1	Любой таймаут project-inspection (даже до доставки в CEP-панель!) вызывает store.unknown(), закрывает completion-store (storeClosed = true), переводит activity().unresolved в true и ставит sticky-fence на controller-lease.	core4/integrations/cep/http-peer.js (submit стр. 176–186, disconnect стр. 42–50, status стр. 59); core4/runtime/stdio-entry.js (activity стр. 274–278); core4/runtime/attachment-owner.js (dispatch стр. 116–129, finalize стр. 66–73); core4/runtime/controller-lease.js (complete стр. 80–90).	Доказано по коду (и подтверждено тестом cep-transport.test.js:90–112).
+F2	Флаг pending.delivered = true в Node выставляется в момент записи в HTTP-сокет /poll, до того как CEP-панель получила кадр, записала localStorage-защёлку и вызвала evalScript.	core4/integrations/cep/http-peer.js (deliver стр. 53–58, /poll стр. 95–107); core4/cep/js/panel.js (start стр. 146–161); core4/cep/js/poll-dispatcher.js (dispatch стр. 26–49).	Доказано по коду.
+F3	Расхождение CLI reset и Panel reset при baseline-required: панель считает ready || baseline-required допустимыми для нового сброса, а CLI-оператор жёстко требует phase === 'ready' и holderClientId === null.	core4/cep/js/panel.js (resetReady стр. 21); core4/tools/operate-start-over.js (observe стр. 38–47, проверка panel.phase !== 'ready' стр. 65); core4/runtime/stdio-entry.js (startOverView стр. 187–196).	Доказано по коду.
+F4	start-over требует закрытия AE (requiresAEExit = true) при любом receiver.unresolved.length > 0, так как store.begin() вызывается в http-peer.js:184 сразу при submit(), включая чистый read (inspect).	core4/runtime/start-over-inspection.js (inspectStartOverHistory стр. 83–98); core4/integrations/cep/http-peer.js (submit стр. 184).	Доказано по коду (детали inspectReceiverHistory во внешнем recovery-inspection.js).
+F5	Жёсткие потолки размера проекта и элементов зашиты в 6 местах: 500 items в project-inspection, 512 items в media-import и layer-insert, 256 items / 24576 символов в project-lifecycle, 64 MiB (67108864 байт) в project-save и project-lifecycle, 256 KiB (MAX_FRAME) в protocol/json.js.	core4/modules/project-inspection/executor.jsx:10; core4/modules/media-import/executor.jsx:19; core4/modules/layer-insert/executor.jsx:64,74,104; core4/modules/project-lifecycle/executor.jsx:9,15; core4/runtime/project-save-proof.js:6,21; core4/protocol/json.js:3.	Доказано по коду.
+F6	layer-insert сканирует все композиции и слои проекта (лимит 2048 слоёв, 100 000 свойств) и выставляет budget.unsafe = true (hasExpressions), если где угодно в проекте есть хотя бы одно expressionEnabled === true или ненулевой LAYER_INDEX.	core4/modules/layer-insert/executor.jsx (inspectProperties стр. 24–35, цикл по project.numItems стр. 70–86); core4/modules/layer-insert/implementation.js:4.	Доказано по коду (и подтверждено тестом media-layers.test.js:150–153).
+F7	operator-confirmation.js привязан к sessionId, proposalId, approvalDigest, имеет жёсткий TTL_MS = 120000 (2 мин), требует ровно 1 шаг (approval.steps.length !== 1) и одноразовый файл .used.	core4/runtime/operator-confirmation.js (TTL_MS стр. 8, issue стр. 34–41, createOperatorConfirmation стр. 42–62).	Доказано по коду.
+F8	windows-reservation-provider.js проверяет только TCP-порты 3456 и 8787 (endpoints), но не видит файловый IPC Kumo (%TEMP%/mcp-aftereffects/runtime) и его резидентный agent.jsx (app.scheduleTask каждые 250 мс).	core4/runtime/windows-reservation-provider.js (probeWindows стр. 59, freshObservation стр. 68, status стр. 85: otherAEActors: 'outside-coverage'); kumo/jsx/agent.jsx:19,257.	Доказано по коду.
+F9	В Kumo serve.jsx удаляет request-<id>.json до new Function(...) (consume-on-read), а FileIpcTransport удаляет response-<id>.json при чтении и sweepStaleFiles чистит файлы старше 60 мин. Нет durable-журнала для reconciliation после сбоя.	kumo/jsx/serve.jsx (serveRequest стр. 233–236); kumo/transport/FileIpcTransport.js (executePull стр. 206, executePush стр. 327, sweepStaleFiles стр. 585–618).	Доказано по коду.
+F10	В Kumo layer.duplicate (_layer.duplicate()) создаёт дубликат непосредственно над исходным слоем (в AE DOM duplicate() помещает копию на index оригинала, сдвигая оригинал на index + 1), но batch.run не проверяет pre/post snapshot и при ошибке после duplicate() оставляет осиротевший дубликат.	kumo/operations/layer.js (layer.duplicate стр. 262–280); kumo/operations/layer-advanced.js (layer.replace_source стр. 152–188, layer.split стр. 283–286); kumo/operations/batch.js (toJsx стр. 86–115).	Доказано по коду.
+4. Детальный разбор семи вопросов по коду Core и Kumo
+Вопрос 1. Цепочки read failure, physical fence, baseline-required и reset в Core: где локальный аудит прав/неправ и что минимально исправить без ослабления mutation guarantees
+
+Точная цепочка read failure vs read timeout (почему таймаут чтения вызывает тотальный fence):
+
+Конечный (детерминированный) отказ чтения (completedReadErrors): когда executor.jsx (или registry.jsx:117) внутри AE ловит ошибку и возвращает {"readFailureVersion":1,"outcome":"rejected","code":"..."}, CEP-панель присылает этот JSON в /complete (http-peer.js:108). В http-peer.js:152 вызывается store.complete(b.payload.commandId, response), pending очищается, а для прямого вызова project-inspection в completedReadErrors (http-peer.js:163–165) записывается одноразовый маркер { code, commandId, executorHash, payloadHash }. Далее stdio-entry.js:259–263 перекладывает его в completedReadErrors по context, а attachment-owner.js:119–123 через consumeReadRejection распознаёт код из READ_REJECTION_CODES (['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']), видит !value.pending && !value.unresolved && !value.fault и возвращает чистый { ok: false, outcome: 'rejected', code, nextAction: 'core_diagnostics' } без owner_outcome_uncertain и без блокировки lease.
+
+Таймаут чтения (host_callback_timeout): когда вызывается peer.inspect() (http-peer.js:199–203 
+→
+→ submit() стр. 176–186), ещё до получения /poll от панели вызывается store.begin(command, binding) (стр. 184). Если через 90 с (PRODUCTION_TIMING.callbackTimeoutMs, stdio-entry.js:4) срабатывает таймер submit(), вызывается disconnect('host_callback_timeout') (http-peer.js:42–50), который безусловно вызывает store.unknown(old.command.commandId). Это закрывает completion-store (store.closed = true), из-за чего stdio-entry.js:276 выставляет activity().unresolved = true, attachment-owner.js:124 выбрасывает owner_outcome_uncertain, а finalize() (attachment-owner.js:72) переводит controller-lease в fenced = true (controller-lease.js:87).
+
+Где локальный аудит прав и где требуется уточнение по коду:
+
+Локальный аудит прав в том, что pending.delivered = true в http-peer.js:56,99 выставляется при отправке ответа на /poll и не доказывает, что evalScript начался или завершился. Более того, в poll-dispatcher.js:35 запись в localStorage (save(record)) и взведение nativeGuard.active = callbackToken происходят перед csInterface.evalScript. Пока nativeGuard.active !== null, в окне CEP висит незавершённый вызов ExtendScript.
+
+Что можно и нужно минимально исправить без ослабления mutation guarantees:
+
+Не вызывать store.begin() до фактической выдачи в /poll (или разделять queued_undelivered и dispatched): если в http-peer.js:184 команда не была забрана /poll (pending.delivered === false) к моменту отмены/таймаута или если /poll отвергнут в guardDelivery() (http-peer.js:54,98), физическая отправка в CEP не состоялась — вызывать store.unknown() и закрывать store здесь не нужно, достаточно отменить ожидание до записи begin в журнал получателя.
+
+Разрешить terminalDisposition для phase: 'inspect' после позднего ответа: в http-peer.js:114–118 уже предусмотрена ветка if (c?.state === 'unknown' && c.terminalDisposition) и в stdio-entry.js:138 проверяется receiver.terminalReadFailureDispositionVersion !== 1. Если inspect (не mutate!) ушёл в delivered = true и превысил таймаут (например, из-за модального окна при открытии AEP), то пока ответ не пришёл, канал обязан оставаться в состоянии pending/draining (никакие новые команды в AE не шлются!). Но когда модальное окно закрыто и CEP-панель присылает аутентифицированный /complete для этого commandId (доказывающий, что evalScript в AE завершился и nativeGuard.active в poll-dispatcher.js:45 сброшен в null), для phase === 'inspect' (где effectPolicy.effect === 'none') допустима фиксация завершённого read-исхода без требования убивать процесс AE (requiresAEExit).
+
+Устранить рассинхрон CLI и панели в baseline-required: в core4/tools/operate-start-over.js:42 и 65 заменить проверку s.startOver?.phase !== 'ready' / panel.phase !== 'ready' на ![ 'ready', 'baseline-required' ].includes(...) (в точном соответствии с resetReady в panel.js:21), а также разрешить инициировать start-over при activity.unresolved === true даже если старый holderClientId !== null (сейчас строка 41 (!activity.unresolved && owner.holderClientId !== null) блокирует CLI-сброс, если сессия застряла в baseline-required с активным держателем lease, хотя панель через /start-over/request этот сброс пропускает).
+
+Вопрос 2. Владение, очередь и durable outcome в Core и Kumo: почему простой обёртки недостаточно и какие изменения обязательны для частного адаптера
+Механизм	Реализация в Core (core4/*)	Реализация в Kumo 0.3.2 (kumo/*)	Что ломается при «простой обёртке» Kumo из Core
+Владение процессом и защита от чужих писателей	3-уровневая: state-lock.js (broker-owner.lock по PID+inode), controller-lease.js (single holder + generation), windows-reservation-provider.js (проверка единственного AfterFX.exe по PID+birth+SHA256 и отсутствия слушателей на портах 3456/8787).	Внутри одного процесса — this.inflight (FileIpcTransport.js:126). Между процессами — dispatcher-busy.lock (config.js:244) только для push-пути (AfterFX.exe -r). Pull-путь (executePull, стр. 193–204) вообще не берёт busy.lock, а agent.jsx:218 просто читает самый старый request-*.json из %TEMP%/mcp-aftereffects/runtime/instances/<id>/ каждые 250 мс.	Если в AE загружен резидентный agent.jsx от Kumo, windows-reservation-provider.js:59,68 его не обнаруживает (он не слушает TCP 3456/8787). Любой процесс, записавший файл в %TEMP%/mcp-aftereffects/runtime/instances/<id>/, выполнит код в AE в обход Core lease и во время start-over fence.
+Запись намерения и корреляция ответа (Durable Outcome)	До отправки broker.js:214 (и 256) пишет intent с fsyncSync в ledger.ndjson. Получатель (http-peer.js:184 / receiver.js:31) пишет begin с originalBinding и receiverStoreIdentity. Исполнитель (executor.jsx) возвращает transactionReceipt, связывающий proposalId, checkpointRef, baselineRevision, resultRevision.	Node пишет request-<uuid>.json. В AE serve.jsx:233–236 сразу удаляет request-<uuid>.json (requestFile.remove()) до выполнения new Function(...). После выполнения пишет response-<uuid>.json. Node читает response-<uuid>.json и сразу удаляет его (FileIpcTransport.js:206,327).	Если Node-процесс упал или истёк таймаут во время работы скрипта, а затем скрипт доработал: в Kumo request уже удалён, а response не содержит ни baselineRevision, ни checkpointDigest, ни receiverStoreIdentity. Если же request не был подхвачен к таймауту, FileIpcTransport.js:244,394 удаляет его, но при гонке между open("r") в serve.jsx:223 и safeUnlink в Node возможна неоднозначность.
+Поведение при частичном отказе внутри мутации	Все executor.jsx в Core используют флаг var started = false;. Любая ошибка до started = true возвращает outcome: 'rejected' (мутации не было). Любая ошибка после started = true возвращает outcome: 'unknown' (http-peer.js:127 переводит канал в manual_effect_unknown и закрывает store), запрещая повторную отправку.	batch.run (kumo/operations/batch.js:97–108) выполняет массив операций в цикле. По умолчанию stopOnError = false; даже при stopOnError = true, если 3 из 6 операций прошли, а 4-я вернула { ok: false } или бросила исключение, serve.jsx:286,297 возвращает response.ok = true, result.ok = false (OPERATION_FAILED в do.js:176) и нормально закрывает app.endUndoGroup() (serve.jsx:307).	Для Core ответ COMPLETED_FAILURE от batch.run означает частично мутировавший проект (3 слоя уже сдублированы и изменены в AE!), который в Kumo маскируется под обычный OPERATION_FAILED без UNKNOWN-карантина.
+
+Вывод по Вопросу 2: простая обёртка над FileIpcTransport или MCP-вызовом Kumo не может обеспечить инварианты Core (reconcile, checkpoint_completion_binding, запрет повторной мутации при ACK loss). Чтобы сделать Kumo полноценным частным адаптером Core, пришлось бы:
+
+Выключить автономный agent.jsx (scheduleTask) или переписать serve.jsx на хранение персистентного append-only журнала completions.ndjson с receiverStoreIdentity и fsync вместо consume-on-read / safeUnlink.
+
+Внедрить в генератор кода batch.js расчёт pre/post revision, проверку expectedRevision и генерацию transactionReceipt v2.
+
+Это по объёму работ равноценно переписыванию транспорта Kumo в клон http-peer.js + poll-dispatcher.js, которые уже написаны и работают в Core.
+
+Вопрос 3. Минимальный native/перенесённый overlay-примитив внутри Core vs адаптер Kumo при одинаковом контракте
+
+Сравним объём и сложность реализации операции дублирования слоёв над оригиналами с заменой источника (layer-duplicate-replace) напрямую как модуля Core против адаптера к Kumo при одинаковых требованиях к проверке и восстановлению:
+
+Как устроен минимальный нативный модуль Core (modules/layer-duplicate-replace):
+
+В существующем photo-placeholder/executor.jsx (124 строки) уже реализованы target(p, current), проверка importedStill(p), protectNeighbors(t, state), snapshot(p, true) и формирование transactionReceipt v2.
+
+В существующем Kumo layer.duplicate (kumo/operations/layer.js:275: var _dup = _layer.duplicate();) и layer.replace_source (kumo/operations/layer-advanced.js:184: _layer.replaceSource(_item, fixExpressions);) сама предметная логика AE DOM занимает две строки кода ExtendScript:
+
+В AE DOM вызов var dup = anchorLayer.duplicate(); нативно создаёт точную копию слоя непосредственно над anchorLayer (на позиции anchorLayer.index, сдвигая anchorLayer на anchorLayer.index + 1) и нативно копирует все Masks, Effects, Transform (включая все keyframes, spatial/temporal tangents и ease), startTime, inPoint, outPoint, stretch, blendingMode, parent и trackMatteType!
+
+Последующий вызов dup.replaceSource(newSource, false); заменяет источник дубликата на новый импортированный PNG, сохраняя все скопированные маски, эффекты, ключи и тайминг, при этом оригинальный слой anchorLayer под ним остаётся абсолютно нетронутым.
+
+Ограниченный профиль проверки безопасности (без парсера всех выражений):
+Вместо полного обхода всех 1079 элементов и всех композиций проекта (как сейчас ошибочно делает layer-insert/executor.jsx:70–86), примитиву layer-duplicate-replace для ограниченного профиля достаточно проверить:
+
+Track Matte защиту на паре соседних слоёв: если anchorLayer.hasTrackMatte использует старый верхний слой comp.layer(anchorLayer.index - 1) как legacy positional track matte (или наоборот), простая вставка дубликата между ними разорвёт matte-связь (как справедливо проверяется в layer-insert/implementation.js:8: if (upper && lower && (upper.matteId === lower.id || lower.matteId === upper.id))). В AE 23.0+ (setTrackMatte(matteLayer, type), см. kumo/operations/layer-advanced.js:228) track matte привязывается по ссылке на слой, но проверка hasTrackMatte / trackMatteLayer на anchorLayer и его непосредственном соседе сверху обязательна.
+
+Пакетное исполнение (1..8 пар layerId -> newSourceId за одну транзакцию Core): чтобы не вызывать 8 отдельных диалогов подтверждения и 8 отдельных snapshot-циклов, входная схема layer-duplicate-replace принимает массив replacements: [{ anchorLayerId, newSourceId, newName? }] (от 1 до 16 элементов) в рамках одной целевой композиции compId.
+
+Весь цикл for выполняется внутри одного app.beginUndoGroup(...): перед циклом проверяются все пары (anchorLayerId, newSourceId), затем ставится started = true, выполняются duplicate() + replaceSource(), и в конце снимается единый post-snapshot стека целевой композиции (layer.id, layer.index, layer.source.id, inPoint, outPoint, parentId, matteId, numMasks, numEffects) с возвратом одного transactionReceipt v2.
+
+Почему нативный примитив в Core существенно проще и надёжнее адаптера Kumo:
+
+Нативный модуль в Core — это ~130 строк в executor.jsx + ~60 строк в proof.js + JSON-контракт, работающий поверх уже готового http-peer.js, completion-store, manual-policy.js и operator-confirmation.js.
+
+Частный адаптер к Kumo требует решать проблему двух несовместимых протоколов хранения состояния (ledger.ndjson + completions.ndjson против безжурнального consume-on-read в %TEMP%), проблему отсутствия transactionReceipt и проблему частичного выполнения batch.run без started-границы. При одинаковых требованиях к recovery нативный примитив в Core дешевле и архитектурно чище.
+
+Вопрос 4. Доказательства для работы с большим проектом (~1079 items, 91,3 МиБ) и save / lifecycle: где target snapshot достаточен, а где теряет необходимые свойства
+
+Прямой разбор кода project-save, project-lifecycle, project-inspection, media-import и layer-insert выявляет 5 конкретных архитектурных узких мест на проекте в 1079 items / 91,3 МиБ:
+
+Двойное чтение 91,3 МиБ файла по 64 КиБ внутри однопоточного ExtendScript (project-save/executor.jsx:27–38 и project-lifecycle/executor.jsx:29–40):
+
+Находка в коде: функция checkBytes(original, checkpoint, bytes) внутри executor.jsx открывает исходный .aep и .aep-чекпойнт в ExtendScript (file.encoding = 'BINARY'), читает оба файла кусками по 65536 байт в строки ES3 (chunk = file.read(count)) и сравнивает их (chunk !== checkpoint.read(count)). В project-lifecycle при action === 'open' она делает это дважды (executor.jsx:57,61).
+
+Последствие для больших проектов: даже если просто поднять константу MAX_BYTES = 64 * 1024 * 1024 в project-save-proof.js:6 и contract.json (67108864), чтение и посимвольное сравнение 
+2
+×
+91,3
+ МиБ
+=
+182,6
+ МиБ
+2×91,3 МиБ=182,6 МиБ бинарных строк внутри интерпретатора ES3 в главном потоке AE создаст около 2800 итераций аллокации строк по 64 КиБ, замораживая UI и поток ExtendScript вплоть до host_callback_timeout!
+
+Как исправить без потери гарантий: побайтовую сверку и SHA-256 файла на диске уже выполняет Node.js в project-save-proof.js:20–43 (readAep) и media-layer-proof.js:11–35 (assertImportFile, причём в media-layer-proof.js:24 уже используется потоковый буфер по 1 МиБ без загрузки всего файла в память!). На стороне ExtendScript (executor.jsx) достаточно проверить file.exists, !file.alias, file.length === before.fileStamp.bytes, file.modified.getTime() === before.fileStamp.modifiedMs и app.project.revision === beforeSnapshotRevision, а полную криптографическую сверку sha256 и dev/ino/mtimeNs/ctimeNs оставить в Node (prepareCheckpoint и observe в project-save-proof.js), переведя readAep на потоковое чтение чанками по 4 МиБ (вместо Buffer.allocUnsafe(stamp.bytes) на весь файл) и подняв лимит размера в контракте до 512 МиБ.
+
+Где Target Comp Snapshot достаточен, а где он ТЕРЯЕТ необходимые свойства:
+
+В project-lifecycle (executor.jsx:6–17): функция inventory(project) сериализует массив [item.id, item.name, numLayers] для всех элементов проекта (лимит count > 256 и 24576 байт) и проверяет в apply() (стр. 73): after.inventory !== (creating ? '[]' : before.inventory).
+
+Возражение из пакета полностью подтверждается по коду: нельзя заменить inventory в project-lifecycle на Target Comp Digest одной композиции! Задача project-lifecycle (save-as, open, create) — доказать, что при сохранении копии или переоткрытии весь проект не потерял элементы и структуры папок/композиций.
+
+Правильное решение для project-lifecycle на >256 items: вместо передачи полного JSON-массива строк всех 1079 имён через IPC-кадр (ограниченный 24 КиБ), вычислять внутри project-lifecycle/executor.jsx компактный детерминированный агрегированный дайджест инвентаря проекта (numItems, numComps, numFootages, numFolders, плюс полиномиальный/FNV-1a/SHA-256 хэш кортежей [id, type, numLayers, name.length] по всем 1..project.numItems) и передавать в inventory эту сводку фиксированного размера (< 1 КиБ для любого числа элементов).
+
+В media-import (executor.jsx:19–30): сейчас capture(p) дампит в snapshot.items все элементы проекта (if (project.numItems > 512) fault('inspection_result_budget')) только ради двух проверок: (а) убедиться, что файл p.file ещё не импортирован (validate, стр. 38), и (б) в media-layer-proof.js:46–52 найти новый createdItemId разностью множеств after.items.filter(item => !previous.has(item.id)).
+
+Как исправить без потери свойств: проверять отсутствие дубликата fileKey(item.file.fsName) === fileKey(p.file) прямо в цикле внутри executor.jsx по всем 1..project.numItems (без лимита 512), а для доказательства неизменности остальных элементов возвращать projectItemCount: project.numItems, existingTargetFileIds: [...] и компактный хэш списка [item.id, kind] вместо пересылки массива из 1079 полных объектов с путями через JSON-схему.
+
+В project-inspection (executor.jsx:10–15): сейчас input.compId ищется внутри цикла for (i = 1; i <= Math.min(p.numItems, 500); i++). Если input.compId передан, нужно резолвить его напрямую через var direct = p.itemByID(input.compId); if (direct instanceof CompItem) selected = direct; (как уже сделано в layer-insert/executor.jsx:65 и comp-frame-export/executor.jsx:8!), а обзорный список comps (до 50 шт.) собирать с явным полем scannedItems: Math.min(p.numItems, 500) и totalItems: p.numItems.
+
+Вопрос 5. Подтверждение раннего bounded comparison: минимальный план испытаний (ACK loss, partial duplicate до тега, late command, competing writer) и критерии прекращения интеграции
+
+Полностью подтверждаю новый порядок: сначала общие исправления P0 в Core, затем раннее ограниченное сравнение (bounded comparison) на одном контракте duplicate-overlay, и только затем масштабирование выбранного пути.
+
+Однако, поскольку статический анализ кода уже показал фундаментальные пробелы транспорта Kumo (Вопрос 2), bounded comparison должен проводиться не на «успешном happy-path батче» (где оба уложатся в 1–2 секунды), а сразу на матрице из 4 разрушающих сценариев (Failure-Injection Matrix):
+
+Сценарий испытания	Как воспроизводится на стенде	Требование к кандидату (Нативный примитив Core vs Частный адаптер Kumo)	Критерий немедленной остановки (Stop Criterion) для адаптера Kumo
+T1. Потеря ответа после выполнения (ACK Loss / Owner Restart)	Хук afterPhysicalSend (по аналогии с cep-transport.test.js:169 / manual-runtime.test.js:132) обрывает получение ответа после того, как AE выполнил дублирование и замену источника. Затем вызывается reconcile_task.	Должен по сохранённому completion(commandId) и transactionReceipt перевести команду из UNKNOWN в succeeded (verifyCompletion в manual-policy.js:58) без повторного вызова duplicate().	STOP для адаптера Kumo, если после обрыва ответа невозможна сверка originalBinding + transactionReceipt без эвристического угадывания по именам слоёв или если требуется повторный запуск скрипта.
+T2. Частичный сбой внутри пакета (Partial Duplicate Before Tag / Mid-Batch Fault)	В пакете из 6 слоёв на 4-м слое инжектируется ошибка (replaceSource throws или несовпадение геометрии после duplicate(), но до записи метаданных/тега).	Операция обязана перейти в UNKNOWN (started = true), закрыть receiver lane (storeClosed = true), заблокировать новые мутации (controller_unresolved) и сохранить точный pre-mutation дисковый чекпойнт AEP для отката.	STOP для адаптера Kumo, если сбой посреди батча возвращается как обычный OPERATION_FAILED (do.js:176), оставляя в AE 3 немаркированных слоя-дубликата и открытую сессию для повторных попыток агента.
+T3. Запоздавшая команда (Late Command / Stale Epoch)	Команда 
+C
+1
+	​
+
+ задерживается (таймаут чтения/мутации), инициируется start-over (fenceForStartOver в http-peer.js:190 / смена channelEpoch), затем 
+C
+1
+	​
+
+ пытается выполниться или вернуть callback.	В CEP poll-dispatcher.js:41 (nativeGuard.active) обязан удерживать старый слот и не пускать новую сессию до завершения evalScript (или до закрытия AE при requiresAEExit = true), а старый результат не может мутировать новый сеанс (panel-start-over.test.js:46).	STOP для адаптера Kumo, если запрос, записанный в файловый mailbox до таймаута, но прочитанный serve.jsx за милисекунду до safeUnlink(requestPath), исполняется в AE после возврата TIMEOUT клиенту.
+T4. Конкурирующий писатель (Competing Writer)	Во время активного controller_acquire / prepareReservation запускается второй процесс (или резидентный agent.jsx Kumo в pull-папке).	windows-reservation-provider.js должен детектировать активного стороннего агента/писателя до выдачи reservation и отказать с known_managed_writer_or_unknown_probe.	STOP для сосуществования с Kumo, если в AE установлен mcp-aftereffects-agent.jsx в Scripts/Startup, так как он поллит %TEMP%/mcp-aftereffects/runtime/instances/<id>/ каждые 250 мс в обход любых блокировок Core.
+Вопрос 6. Ревизия предыдущего ответа по приложенному коду: отозванные и уточнённые утверждения, принятые и отвергнутые локальные возражения
+
+Честно фиксирую изменения своей позиции после чтения исходников обоих пакетов:
+
+Отозванные / исправленные утверждения из моего предыдущего ревью:
+
+Отозвано утверждение 1 («Адаптер Kumo внутри Core — это тонкая и дешёвая обёртка, рекомендуемый целевой Вариант B»): по коду kumo/jsx/serve.jsx:233 (consume-on-read) и core4/runtime/manual-policy.js:58 (verifyCompletion) доказано, что у Kumo отсутствует персистентный журнал завершения и transactionReceipt. Сделать Kumo безопасным исполнителем мутаций под Core сложнее, чем написать/перенести executor.jsx в сам Core. Целевой выбор меняется с «Core + внешний Kumo Adapter» на «Core + встроенный (native / MIT-ported) примитив layer-duplicate-replace без участия Kumo MCP в контуре записи».
+
+Отозвано утверждение 2 («Достаточно локального скана индексных выражений в одной целевой композиции и замены lifecycle capture на Target Comp Digest»): код core4/modules/layer-insert/executor.jsx:70–100 и тест core4/test/media-layers.test.js:150 показывают, что на целевую композицию или её слои могут ссылаться выражения из родительских/внешних композиций (comp("Placeholder").layer(1)). А в project-lifecycle/executor.jsx:6–17 inventory защищает целостность всего проекта при save-as/open, поэтому заменять его слепком одной композиции нельзя (нужен компактный хэш-инвентарь всего проекта).
+
+Отозвано утверждение 3 («Пинг ExtendScript или delivered маркер доказывает, что старый запрос завершён, а idempotency_key в имени/комментарии слоя даёт идемпотентность»): по http-peer.js:56,99 delivered выставляется до HTTP-ответа; по poll-dispatcher.js:35 сбой возможен между layer.duplicate() и записью комментария/имени, а layer.name — это пользовательские данные в таймлайне AE.
+
+Отозваны неизмеренные численные оценки как SLA (O(1), < 200 мс, < 500 мс, <= 3 с, 5–10 с, 90%+ проектов): в коде нет телеметрии, подтверждающей эти пороги как гарантированные SLA; они переводятся в статус ориентиров для бенчмарка, а не доказанных фактов.
+
+Проверка локальных возражений из пакета по коду (Принято / Частично принято с уточнением):
+
+Возражение из пакета	Статус по коду	Доказательство (файл : строки) и технический вывод
+1. COMPLETED_FAILURE может оставлять partial mutation; неизвестной бывает и запись PNG; delivered 
+
+= native begin; ping не отменяет queued request.	Принято полностью	В kumo/operations/batch.js:97–108 отказ на 
+k-м шаге оставляет 
+1..k−1 мутаций при COMPLETED_FAILURE. В core4/modules/comp-frame-export/executor.jsx:61–63 после started = true и comp.saveFrameToPng(time, file) ошибка в completedPng() возвращает outcome: 'unknown', так как файл на диске уже мог быть создан. В http-peer.js:56,99 pending.delivered = true ставится до отправки HTTP-ответа в CEP.
+2. Mutex, epoch, stopOnError, undo group и тег в comment не дают exactly-once / атомарности; сбой возможен после duplicate до тега; имя слоя — пользовательский контент.	Принято полностью	В kumo/jsx/serve.jsx:281–310 endUndoGroup() закрывается даже при ошибке внутри batch.run. Если исключение произойдёт сразу после _layer.duplicate() (layer.js:275), дубликат уже в DOM без тега, а переименование (_dup.name) портит пользовательские имена слоёв или ломает выражения comp.layer("Name").
+3. Pull queue без push busy-lock — не обязательно дефект сам по себе; нужен доказанный конфликт одинакового ресурса.	Принято с важным уточнением	Для двух клиентов только Kumo в pull-режиме agent.jsx:218 (oldestRequestIn) действительно сериализует выполнение по одному файлу за тик (250 мс) без риска окна "Attempt was made to run a second script". Но при совместной работе с Core это доказанный конфликт ресурса: agent.jsx (app.scheduleTask) и CEP evalScript (poll-dispatcher.js:39) оба выполняются в одном процессе AE, не зная друг о друге, и windows-reservation-provider.js:68 не проверяет %TEMP%/mcp-aftereffects/runtime/instances/.
+4. Local-comp expression scan, visible-layer digest или один PNG не покрывают cross-comp/name/index/dynamic ссылки, matte/parent и shared uses; lifecycle baseline нельзя заменить digest одной comp.	Принято полностью	Доказано в core4/modules/layer-insert/executor.jsx:70–99 (incoming[sourceId], uses, inspectProperties) и core4/modules/project-lifecycle/executor.jsx:6–17 (inventory). Для layer-duplicate-replace без полного запрета выражений в проекте нужно явно фиксировать в контракте, что примитив проверяет отсутствие LAYER_INDEX-свойств и текстовых паттернов layer(<number>) / index в целевой композиции и в композициях из uses (список вхождений compId), вместо слепого запрета любого wiggle() на трансформации.
+5. OS modal scan помогает, но между проверкой и dispatch состояние меняется (TOCTOU); отсутствие диалога 
+
+= native-ready.	Принято полностью	В kumo/transport/dialogs.js:50,256 запуск PowerShell с компиляцией Add-Type C# занимает ~600 мс. За время между завершением scanAeDialogs() и фактическим выполнением evalScript в poll-dispatcher.js:39 AE может открыть фоновый диалог (например, при догрузке шрифтов/футажей). Поэтому Win32-скан — это диагностический pre-flight и post-timeout классификатор, а не замена проверке готовности AECore4Host и localStorage-защёлке.
+6. Общий запрос на монтаж не означает автоматический save-in-place / kill; смысловое разрешение может пережить restart, но bindings/baseline/grants проверяются заново; save-as меняет активный путь.	Принято полностью	В core4/modules/project-lifecycle/executor.jsx:71–72 после app.project.save(destination) текущий проект в AE меняет app.project.file.fsName на destination (after.currentProject = p.destination), а в windows-reservation-provider.js:90 prepare() жёстко сверяет ctx.target.projectId !== a.allowedProject из host-adoption.json! Значит, после save-as или рестарта host-adoption.json, work-session-baseline.json (work-session.js:66) и operator-confirmation.js:50 (binding по sessionId и proposalId) обязаны перевыпускаться на актуальный sessionId и projectId.
+Вопрос 7. Итоговый архитектурный выбор для проекта: что оставлять в Core, что брать из Kumo как исходник (MIT), что (не) делать через адаптер и какие данные ещё нужны
+
+Что оставлять и дорабатывать непосредственно в Core (core4/*):
+
+Оставить без изменений: весь контур управления владением и доказательствами (state-lock.js, ledger.js, controller-lease.js, attachment-owner.js, manual-policy.js, start-over-*).
+
+Точечно исправить в Core (Минимальный Scope P0):
+
+core4/tools/operate-start-over.js:41–42, 65: разрешить CLI start-over-plan / start-over-request в фазе 'baseline-required' (синхронно с panel.js:21) и при activity.unresolved === true.
+
+core4/integrations/cep/http-peer.js:54, 98, 176–186: записывать store.begin(command, binding) в момент фактической выдачи кадра в /poll (когда guardDelivery() прошёл успешно), чтобы отмена/таймаут недоставленного запроса не закрывала completion-store ложным store.unknown().
+
+core4/modules/project-inspection/executor.jsx:10–15: добавить прямой резолв app.project.itemByID(input.compId) вне лимита первых 500 элементов (по образцу comp-frame-export/executor.jsx:8).
+
+core4/runtime/project-save-proof.js:6, 21–43 и core4/modules/project-save/executor.jsx:27–38 (и аналогично в project-lifecycle): поднять лимит размера .aep с 64 МиБ (67108864) до 512 МиБ, перевести readAep в Node на потоковое чтение буфером 4 МиБ (как в media-layer-proof.js:24) и убрать из executor.jsx (checkBytes) синхронное побайтовое чтение двух .aep файлов по 64 КиБ внутри ExtendScript (оставив в JSX проверку file.length + file.modified.getTime() + project.revision, а побайтовый SHA-256 проверять в Node prepareCheckpoint / observe).
+
+core4/modules/project-lifecycle/executor.jsx:6–17 и core4/modules/media-import/executor.jsx:19–30: снять лимиты count > 256 и project.numItems > 512 за счёт замены полнотекстового JSON-дампа всех элементов проекта на компактный детерминированный дайджест инвентаря + точную проверку целевых элементов.
+
+Что взять из Kumo 0.3.2 как исходный код по лицензии MIT (kumo/LICENSE) внутрь Core (без запуска Kumo MCP сервера):
+
+Примитив Win32-диагностики модальных окон (kumo/transport/dialogs.js:53–121, SCAN_SCRIPT / Get-AeDialogs): встроить read-only вызов Get-AeDialogs (классы #32770 с непустым Edit/Static текстом у процесса AfterFX.exe) в core4/runtime/windows-reservation-provider.js (probeWindows) и в core_diagnostics. Это позволит Core до отправки команды (в prepareReservation) или сразу после таймаута чтения точно сообщать, какое именно модальное окно (Missing Fonts, Save changes, и т.д.) заблокировало AE, вместо слепого ожидания.
+
+Предметную логику duplicate + replaceSource + setTrackMatte (kumo/operations/layer.js:275, kumo/operations/layer-advanced.js:184, 228, kumo/jsx/helpers.jsx:117 findLayerById): оформить как штатный модуль Core core4/modules/layer-duplicate-replace/ с поддержкой пакета замен replacements[] в одной композиции и выдачей стандартного transactionReceipt v2.
+
+Проверку отсутствия активного Kumo в windows-reservation-provider.js: добавить в probeWindows / freshObservation проверку отсутствия живого heartbeat.json (age < 5000 ms или busy === true, см. kumo/transport/instances.js:15–19) в %TEMP%/mcp-aftereffects/runtime/instances/ и отсутствия dispatcher-busy.lock, чтобы Core гарантированно не вступал в гонку с забытым в Scripts/Startup агентом Kumo.
+
+Что НЕ делать через отдельный адаптер Kumo (и когда Kumo допустим):
+
+Не строить частный адаптер Core -> Kumo MCP для мутаций в том же процессе AE: из-за consume-on-read в kumo/jsx/serve.jsx:233 и отсутствия transactionReceipt адаптер не проходит критерии reconcile и защиты от partial batch failure.
+
+Где внешний Kumo оправдан: только как отдельный инструмент во внешнем процессе AfterFX.exe -m на отдельной копии файла проекта (copyFrom / copyTo в kumo/operations/instance.js:126–146), когда пользователю нужен быстрый исследовательский прототип или нестандартные операции (шейпы, 3D-камеры, пресеты .ffx), не входящие в закрытый каталог Core, без смешивания с продуктовой сессией Core.
+
+Какие данные ещё действительно нужны (не входят в текущий пакет из 85 файлов):
+
+Исходники core4/integrations/cep/completion-store.js, core4/runtime/recovery-inspection.js и core4/runtime/native-read-disposition.js — чтобы точно верифицировать формат terminalDisposition при доработке закрытия зависшего inspect-чтения без requiresAEExit.
+
+Исходники core4/runtime/comp-frame-export-proof.js и core4/runtime/png-proof.js (упомянуты в stdio-entry.js:21, 56) — чтобы проверить, как Node-сторона верифицирует созданный PNG-файл в frames-output/ при reconcile.
+
+5. Минимальный Scope доработок и жёсткие Stop Criteria
+
+Минимальный достаточный Scope (без раздувания Core в «новый AE DOM»):
+
+Исправить 5 пунктов P0 в Core (CLI reset в baseline-required, отложенный store.begin до выдачи в /poll, itemByID в project-inspection, потоковый SHA-256 без checkBytes в JSX для .aep > 64 МиБ, компактный инвентарь в project-lifecycle и media-import для > 512 items).
+
+Добавить в windows-reservation-provider.js read-only детекцию модальных окон #32770 (из MIT-кода kumo/transport/dialogs.js) и проверку отсутствия живого heartbeat.json / dispatcher-busy.lock от Kumo.
+
+Реализовать один композитный модуль core4/modules/layer-duplicate-replace (дублирование списка anchorLayerId с replaceSource(newSourceId, false) и проверкой локальных/входящих uses на отсутствие LAYER_INDEX-зависимостей).
+
+Критерии прекращения разработки (Stop Criteria):
+
+Полный стоп на разработку IPC-адаптера Core 
+↔
+↔ Kumo, так как статическое доказательство по kumo/jsx/serve.jsx:233 и core4/runtime/manual-policy.js:58 уже показало отсутствие в Kumo персистентного журнала begin/complete и transactionReceipt, необходимых для reconcile после потери ответа.
+
+Стоп на создание новых узких модулей в Core сверх layer-duplicate-replace, если задача требует произвольного генеративного дизайна (создание шейпов, кейфреймов, эффектов с нуля) — такие задачи должны выполняться либо в изолированной копии проекта через instance.start({ copyFrom }), либо после явного освобождения controller_release в Core.
+
+Стоп на синхронное чтение файлов в ExtendScript (file.read в цикле) для любых файлов крупнее 1 МиБ — все файловые хэши и проверки целостности .aep / .png должны выполняться только потоково на стороне Node.js (fs.readSync фиксированным буфером).
+
+Готово
