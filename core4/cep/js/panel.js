@@ -70,7 +70,13 @@
       resetCurrent(g);
       if (!value) {
         try { value = await resetRpc('status', g); }
-        catch (e) { if (!e.transportUnavailable) throw e; show('waiting', 'Ожидание Core для проверки сеанса'); detail.textContent = 'Проверка состояния возобновится автоматически. Запрос сброса не повторяется.'; await resetWait(Date.now() >= deadline ? 15000 : 3000, g); continue; }
+        catch (e) {
+          if (e.message === 'stale_reset') throw e;
+          resetState = null; updateResetButton();
+          if (resetButton) resetButton.title = e.transportUnavailable ? 'start_over_owner_not_ready' : e.message;
+          if (!e.transportUnavailable) throw e;
+          show('waiting', 'Ожидание Core для проверки сеанса'); detail.textContent = 'Проверка состояния возобновится автоматически. Запрос сброса не повторяется.'; await resetWait(Date.now() >= deadline ? 15000 : 3000, g); continue;
+        }
       }
       showReset(value);
       if (sessionAvailable(value)) {

@@ -14,7 +14,8 @@ function panel(t,options={}){
   elements.status={dataset:{},textContent:''};elements.detail={textContent:''};
   const storage={getItem:k=>values.has(k)?values.get(k):null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
   if(options.oldLatch)storage.setItem('aeagentcore4-physical-'+cfg.installationId,JSON.stringify(options.oldLatch));
-  const control=createStartOverPanelControl({installation:cfg,status:()=>state,request:async()=>{resetRequests++;state={...ready,id,phase:'stopping',baselineRequired:true,eligibility:pending};return state;}});
+  const installation=options.foreign?{...cfg,installationId:'foreign'}:cfg;
+  const control=createStartOverPanelControl({installation,status:()=>state,request:async()=>{resetRequests++;state={...ready,id,phase:'stopping',baselineRequired:true,eligibility:pending};return state;}});
   const response=(code,value)=>({ok:code>=200&&code<300,status:code,json:async()=>JSON.parse(JSON.stringify(value))});
   function frame(){return{assetKey:cfg.assetKey,phase:'inspect',typedPayload:{},commandId:'old-native-read',originalBinding:{commandId:'old-native-read',executorHash:cfg.executorHash,phase:'inspect',receiptRef:'old-receipt'},pins};}
   const context=vm.createContext({JSON,Object,Array,Promise,Error,isFinite,TextEncoder,Uint8Array,AbortController,crypto:webcrypto,Date:class extends Date{static now(){return now;}},localStorage:storage,document:{getElementById:k=>elements[k]},
@@ -22,6 +23,7 @@ function panel(t,options={}){
     setTimeout(callback,ms){const timer={callback,ms,request:/RequestTimedOut|requestTimedOut/.test(callback.name)};timers.push(timer);return timer;},clearTimeout(timer){const at=timers.indexOf(timer);if(at>=0)timers.splice(at,1);},
     async fetch(url,request){const route=new URL(url).pathname,value=JSON.parse(request.body);requests.push({route,value});
       if(route.startsWith('/start-over/')){
+        if(options.stopped)throw new TypeError('owner absent');
         const result=await control.handle(route,value,'null');
         if(options.lostRequestReply&&route==='/start-over/request')throw new TypeError('lost reset reply');
         if(options.tamperStatus&&route==='/start-over/status'&&result.body)result.mac='0'.repeat(64);
@@ -58,4 +60,14 @@ test('panel-start-over a new pending command revokes the cached action before co
   f.set({eligibility:{action:'none',reason:'start_over_command_pending'}});await f.click();
   assert.equal(f.elements['start-over'].disabled,true);assert.equal(f.elements['start-over'].title,'start_over_command_pending');
   assert.equal(f.confirms(),0);assert.equal(f.resetRequests(),0);assert.equal(f.polls(),1);
+});
+test('panel-start-over an unavailable owner disables reset while status polling waits',async t=>{
+  const f=panel(t,{stopped:true});await until(()=>f.hasWait());await f.click();
+  assert.equal(f.elements['start-over'].disabled,true);assert.equal(f.elements['start-over'].title,'start_over_owner_not_ready');
+  assert.equal(f.confirms(),0);assert.equal(f.resetRequests(),0);
+});
+test('panel-start-over a foreign installation is rejected before a role proof is sent',async t=>{
+  const f=panel(t,{foreign:true});await until(()=>f.elements.connect.disabled===false);await f.click();
+  assert.equal(f.elements['start-over'].disabled,true);assert.equal(f.elements['start-over'].title,'start_over_binding_changed');
+  assert.deepEqual(f.requests.map(r=>r.route),['/start-over/challenge']);assert.equal(f.confirms(),0);
 });
