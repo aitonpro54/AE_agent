@@ -3,6 +3,15 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
+function capacityFootage(FootageItem, index) {
+  const name = 'Кадр 🚀 documentary sequence ' + String(index).padStart(4, '0') + '.jpg';
+  const folder = 'Архив_' + 'SeasonPart'.repeat(18);
+  const prefix = [`C:\\Проект\\${folder}\\`, `c:/Проект/${folder}/`, `C:\\Проект/${folder}\\`][index % 3];
+  return Object.assign(Object.create(FootageItem.prototype), { id: 5000 + index,
+    name: index % 31 === 0 ? name.toUpperCase() : name, file: { fsName: prefix + name },
+    hasVideo: true, mainSource: { isStill: index % 11 !== 0 }, footageMissing: index % 13 === 0 });
+}
+
 function mediaEnvironment(state) {
   let next = 20;
   const folder = { id: 1 };
@@ -74,7 +83,7 @@ function mediaEnvironment(state) {
   const items = [comp, master, stock];
   for (let index = items.length; index < (state.flags.items || 0); index++) {
     const name = state.flags.longNames ? 'Фото'.repeat(45) : state.flags.wireNames ? 'Кадр "🚀" А ' + index : 'Кадр ' + index;
-    items.push({ id: 5000 + index, name });
+    items.push(state.flags.capacityFootage ? capacityFootage(FootageItem, index) : { id: 5000 + index, name });
   }
   const project = {
     file: { fsName: state.projectId, exists: true },
@@ -97,4 +106,4 @@ function mediaEnvironment(state) {
     ImportAsType: { FOOTAGE: 1 }, PropertyType: { PROPERTY: 1 }, PropertyValueType: { LAYER_INDEX: 2 } };
 }
 
-module.exports = { mediaEnvironment };
+module.exports = { mediaEnvironment, capacityFootage };

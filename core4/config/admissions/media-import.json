@@ -1,11 +1,11 @@
 {
   "moduleId": "media-import",
   "operationId": "ingest-footage",
-  "artifactHash": "f40f4e6667db17049cfd98d8cb279ecfb02d9e8c0866841f9631a214e3936c70",
-  "schemaHash": "3f974ed09942f758d4fe34a1dcee9e0f74ca2836236e76e0a150d767a80b4649",
-  "resultSchemaHash": "6a3c2ab7f0cb662bc70260fef299a1ceb4dcd478354d39334ede46357e25773a",
-  "effectPolicyHash": "1d80cf18153d089b0ce8796bb9a51e96f1c62a5044d9b5218c13f53f1ae3124c",
-  "executorHash": "fc3a868eb7fd913cc4a6aabc8e7f061680f579797160f4fb013345af9cfbc677",
+  "artifactHash": "c4861ce201a5d9b760fe411506819db284c49e892e6e10bd1e44c2f4c88b39e9",
+  "schemaHash": "65a158198804f5bfc14bebead47535df022c34a21346a51a05f47f7af8a4208d",
+  "resultSchemaHash": "61290d1d506732c506fab3774b175b8f8a2f038339772043f74b7463799f297f",
+  "effectPolicyHash": "73f97a598f2a09b8bd4377c441e9cabdf5e21a32cf200ca81277a9e082e09b5c",
+  "executorHash": "9174419b44a447b02774aa9f864d4770e2fea00fc1dc77b4876f889e3724d9bb",
   "protocolVersion": 1,
   "trustApprovalId": "source-review-media-import-20261108",
   "revoked": false

@@ -10,10 +10,14 @@ function build({ input, evidence }) {
     throw new Error('media_import_path');
   }
   if (!/^[a-f0-9]{64}$/.test(input.sha256)) throw new Error('media_import_digest');
-  if (evidence.items.some(item => item.file && fileKey(item.file) === file)) throw new Error('media_already_imported');
-  const expectedInventory = JSON.stringify(evidence.items.map(item => [item.id, item.name, item.file, item.kind]));
+  const expectedInventory = evidence.inventory;
+  const [version, directories, rows] = JSON.parse(expectedInventory);
+  if (version !== 1 || !Array.isArray(directories) || !Array.isArray(rows)) throw new Error('media_import_inventory');
+  if (rows.some(([, , , directory, suffix]) => fileKey((directory ? directories[directory - 1] : '') + suffix) === file)) {
+    throw new Error('media_already_imported');
+  }
   const bytes = Buffer.byteLength(JSON.stringify(evidence));
-  if (evidence.items.length >= 2048 || bytes > 88 * 1024 ||
+  if (rows.length >= 2048 || bytes > 84 * 1024 ||
       bytes + 2 * Buffer.byteLength(JSON.stringify(expectedInventory)) > 224 * 1024) throw new Error('inspection_result_budget');
   return { operationId: 'ingest-footage', input: { ...input, expectedRevision: evidence.revision, expectedInventory } };
 }

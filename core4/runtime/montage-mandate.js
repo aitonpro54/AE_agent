@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHmac, timingSafeEqual, randomUUID } = require('node:crypto');
 const { canonical, hash, fail } = require('../protocol/json');
+const { mediaReceiptItems } = require('./media-layer-proof');
 
 const MAX_AGE_MS = 8 * 60 * 60 * 1000;
 const MAX_BYTES = 64 * 1024;
@@ -168,7 +169,7 @@ function importedMontageItem(commands, { body, digest }, input) {
     command.selected?.moduleId === 'media-import' && command.grant?.operatorConfirmation?.mandateDigest === digest &&
     command.input.projectId === body.projectId && command.input.sessionId === body.sessionId &&
     command.input.file === input.file && command.input.sha256 === input.sha256 &&
-    positive(command.after?.createdItemId) && command.after.items.some(item => item.id === command.after.createdItemId &&
+    positive(command.after?.createdItemId) && mediaReceiptItems(command.after).some(item => item.id === command.after.createdItemId &&
       item.file === input.file && item.kind === 'still'));
   return imports.length === 1 ? imports[0].after.createdItemId : null;
 }

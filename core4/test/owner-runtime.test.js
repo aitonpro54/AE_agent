@@ -21,6 +21,7 @@ const { createHttpPeer } = require('../integrations/cep/http-peer');
 const { openCompletionStore } = require('../integrations/cep/completion-store');
 const { mac } = require('../integrations/cep/peer-protocol');
 const { checkEntrySource } = require('../tools/check-boundaries');
+const { decodeMediaInventory } = require('../runtime/media-layer-proof');
 const SOURCE = path.resolve(__dirname, '..'), preload = path.join(__dirname, 'fixtures/owner-runtime-child.js');
 const EXTRA = ['owner-entry', 'client-entry', 'client-ipc', 'client-stdio', 'controller-lease', 'attachment-owner', 'owner-lifecycle', 'recovery-inspection', 'windows-owner-process', 'owner-maintenance', 'start-over-inspection', 'start-over-process', 'start-over-state', 'start-over-barrier', 'start-over-archive', 'start-over-finisher', 'work-session', 'start-over-panel-control', 'start-over-driver', 'owner-launch'].map(name => 'runtime/' + name + '.js');
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
@@ -111,8 +112,15 @@ async function ipc(t, f) {
   resources(t).closers.push(() => client.close()); return client;
 }
 async function ok(promise) { const result = await promise; assert.equal(result.ok, true, JSON.stringify(result)); return result.value; }
-async function directOwner(t, f) {
-  const runtime = await require(path.join(f.d.releaseDir, 'runtime/owner-entry.js')).startOwner({ descriptor: f.descriptor, port: 0 });
+async function directOwner(t, f, syntheticReadiness = false) {
+  const { startOwner } = require(path.join(f.d.releaseDir, 'runtime/owner-entry.js'));
+  const readiness = require(path.join(f.d.releaseDir, 'runtime/ae-readiness.js'));
+  const create = readiness.createAeReadiness;
+  // The VM panel must not depend on the user's real AE windows.
+  if (syntheticReadiness) readiness.createAeReadiness = () => create({ platform: 'fixture' });
+  let runtime;
+  try { runtime = await startOwner({ descriptor: f.descriptor, port: 0 }); }
+  finally { readiness.createAeReadiness = create; }
   resources(t).closers.push(() => runtime.close()); return runtime;
 }
 function raw(port, route, body) {
@@ -238,7 +246,7 @@ test('operator-confirmation owner composition reads a project without requiring 
 
 test('installed montage CLI scopes one task across controller generations using fresh evidence', async t => {
   const f = install(t, buildPackage(SOURCE, 'operator-photo-montage', { runtimeModel: 'owner' }));
-  const runtime = await directOwner(t, f), c = rpcProcess(t, f), p = await panel(runtime.status().physical.port, f.d);
+  const runtime = await directOwner(t, f, true), c = rpcProcess(t, f), p = await panel(runtime.status().physical.port, f.d);
   const { workSession } = await c.call('core_status');
   const sessionId = workSession.sessionId ?? f.d.installationId;
   const leaseInput = workSession.sessionId ? { sessionId } : {};
@@ -271,11 +279,11 @@ test('installed montage CLI scopes one task across controller generations using 
   await root();
   const mediaContract = await c.call('get_module_contract', { moduleId: 'media-import' });
   const mediaTarget = { projectId, sessionId };
-  const items = Array.from({ length: 1079 }, (_, i) => ({ id: i + 1, name: 'Кадр "🚀" А ' + i, file: '', kind: 'other' }));
-  const inventory = { target: mediaTarget, revision: '7', protected: projectId, items };
+  const rows = Array.from({ length: 1079 }, (_, i) => [i + 1, 'Кадр "🚀" А ' + 'Ф'.repeat(15) + i, 0, 0, '']);
+  const inventory = { target: mediaTarget, revision: '7', protected: projectId, inventory: JSON.stringify([1, [], rows]) };
   assert.ok(Buffer.byteLength(canonical(inventory)) > 65536);
   const wide = await observe('media-import', mediaContract.contractId, mediaTarget, inventory);
-  assert.deepEqual(wide.snapshot.items, items);
+  assert.equal(wide.snapshot.inventory, inventory.inventory);
   const overlayContract = await c.call('get_module_contract', { moduleId: 'layer-overlay' });
   const refused = call('inspect_module_target', { moduleId: 'layer-overlay', contractId: overlayContract.contractId,
     target: { ...mediaTarget, compId: target.compId, layerId: 9, originalSourceId: 10 } });
@@ -345,7 +353,7 @@ async function adoptedOwner(t, f, projectId) {
     processes: [{ pid, birth, executablePath, executableHash }],
     endpoints: [{ port: 3456, state: 'observed-absent' }, { port: 8787, state: 'observed-absent' }], completedAt: Date.now()
   }) }));
-  try { runtime = await directOwner(t, f); }
+  try { runtime = await directOwner(t, f, true); }
   finally { windows.createWindowsReservationProvider = originalFactory; }
   const adoption = await provider.adopt({ expected, allowedProject: projectId, rootObservationDigest: '6'.repeat(64) });
   assert.equal(adoption.adopted, true);
@@ -417,7 +425,7 @@ nodeTest('owner-runtime installed montage locks approved bytes, binds receipts a
   { timeout: 45000, skip: process.platform !== 'win32' }, async t => {
     const f = install(t, buildPackage(SOURCE, 'operator-photo-montage', { runtimeModel: 'owner' }));
     const state = { projectId: path.join(f.directory, 'Стальной снимок.aep'), fixtureDirectory: f.directory,
-      flags: { importOnDemand: true, twoImports: true, items: 1079, longOverlayLayers: 12 } };
+      flags: { importOnDemand: true, twoImports: true, items: 1109, capacityFootage: true, longOverlayLayers: 12 } };
     fs.writeFileSync(state.projectId, 'synthetic AEP');
     const outputDir = path.join(f.directory, 'frames-output');
     fs.mkdirSync(outputDir);
@@ -477,14 +485,15 @@ nodeTest('owner-runtime installed montage locks approved bytes, binds receipts a
       return value.outputs.operation;
     }
     const imported = await apply(firstPlan);
-    assert.equal(imported.items.length, 1080);
+    assert.equal(decodeMediaInventory(imported.inventory).length, 1110);
     assert.equal(imported.createdItemId, state.replacement.id);
     const overlayTarget = { projectId, sessionId, compId: overlay.compId, layerId: overlay.layerId,
       originalSourceId: overlay.originalSourceId, itemId: imported.createdItemId };
     const applied = await apply(await build('layer-overlay', overlayTarget, { ...overlay, itemId: imported.createdItemId }, taskId));
     assert.equal(applied.overlay.sourceId, imported.createdItemId);
     assert.equal(state.original.source.id, state.originalSource.id);
-    assert.equal((await apply(await build('media-import', fileTarget(second), second, taskId))).items.length, 1081);
+    const secondImport = await apply(await build('media-import', fileTarget(second), second, taskId));
+    assert.equal(decodeMediaInventory(secondImport.inventory).length, 1111);
     const pngTarget = { projectId, compId: state.comp.id };
     const rendered = await apply(await build('comp-frame-export', pngTarget, png, taskId));
     assert.equal(rendered.output.file, path.join(outputDir, png.fileName));
@@ -499,11 +508,15 @@ nodeTest('owner-runtime installed montage locks approved bytes, binds receipts a
     assert.equal(refusal.task.commands.length, captures.length);
     assert.ok(refusal.task.commands.every(command => command.afterOmitted === true));
     const firstReceipt = await client.call('get_task', { taskId, commandId: captures[0].frame.commandId });
-    assert.equal(firstReceipt.commands[0].after.items.length, 1080);
+    assert.equal(firstReceipt.commands[0].after.inventory, imported.inventory);
     assert.equal(fs.existsSync(path.join(outputDir, 'revoked.png')), false);
     const receiverFile = path.join(f.d.stateDir, 'receiver/completions.ndjson');
     const ledgerFile = path.join(f.d.stateDir, 'broker/ledger.ndjson');
     const receiver = records(receiverFile), ledger = records(ledgerFile);
+    const receiverMax = Math.max(...fs.readFileSync(receiverFile, 'utf8').trimEnd().split('\n').map(line => Buffer.byteLength(line)));
+    const ledgerMax = Math.max(...fs.readFileSync(ledgerFile, 'utf8').trimEnd().split('\n').map(line => Buffer.byteLength(line)));
+    assert.ok(receiverMax < 256 * 1024 && ledgerMax < 256 * 1024);
+    t.diagnostic(`receiver max=${receiverMax}, broker ledger max=${ledgerMax}, owner run output=${Buffer.byteLength(canonical(imported))} bytes`);
     assert.equal(receiver.filter(row => row.type === 'begin' && row.command.phase === 'mutate').length, 4);
     for (const { frame, result } of captures) {
       const begin = receiver.find(row => row.type === 'begin' && row.commandId === frame.commandId);
@@ -517,6 +530,10 @@ nodeTest('owner-runtime installed montage locks approved bytes, binds receipts a
       assert.equal(reservation.reservation.adoptionDigest, adoption.adoptionDigest);
       assert.deepEqual(complete.response.result.transactionReceipt, result.transactionReceipt);
       assert.equal(result.transactionReceipt.checkpointRef, intent.checkpoint.ref);
+      if (frame.assetKey === 'media-import-v1') {
+        assert.equal(intent.input.expectedInventory, intent.before.inventory);
+        assert.equal(intent.physicalInput.expectedInventory, intent.before.inventory);
+      }
       if (frame.assetKey === 'layer-overlay-v1') assert.ok(Buffer.byteLength(intent.before.revision) > 8192);
       assert.ok(ledger.some(row => row.type === 'command' && row.commandId === frame.commandId && row.state === 'succeeded'));
     }

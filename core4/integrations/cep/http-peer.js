@@ -51,7 +51,7 @@ function validateMontageDiagnostic(command, selected, { code, diagnostic }) {
         stage === 'snapshot_bytes' && snapshotBytes <= 96 * 1024 ||
         stage === 'prospect_capacity' && (snapshotBytes > 96 * 1024 || projectedSnapshotBytes !== snapshotBytes + 8192 ||
           projectedIntentBytes !== projectedSnapshotBytes + 2 * escapedInventoryBytes ||
-          itemCount < 2048 && projectedSnapshotBytes <= 88 * 1024 && projectedIntentBytes <= 224 * 1024)) fail('inspection_result');
+          itemCount < 2048 && projectedSnapshotBytes <= 84 * 1024 && projectedIntentBytes <= 224 * 1024)) fail('inspection_result');
     return;
   }
   if (selected.assetKey !== 'layer-overlay-v1' || selected.moduleId !== 'layer-overlay' ||
@@ -64,6 +64,16 @@ function validateMontageDiagnostic(command, selected, { code, diagnostic }) {
       propertyIndices.length > (root === 'layer' ? 32 : 31) || propertyIndices.some(index => !uint(index, 1, 100000)) ||
       !['unsupported_expression', 'expression_unavailable'].includes(cause) || !uint(expressionUnits) ||
       cause === 'expression_unavailable' && expressionUnits !== 0) fail('inspection_result');
+}
+function validateMediaSnapshot(snapshot, preflight, mutation = false) {
+  exact(snapshot, ['target', 'revision', 'protected', 'inventory', ...(preflight ? [] : ['bytes', 'modifiedMs']),
+    ...(mutation ? ['createdItemId'] : [])]);
+  if (!snapshot.target || typeof snapshot.revision !== 'string' || typeof snapshot.protected !== 'string' ||
+      !preflight && (!Number.isSafeInteger(snapshot.bytes) || !Number.isSafeInteger(snapshot.modifiedMs)) ||
+      mutation && (!Number.isSafeInteger(snapshot.createdItemId) || snapshot.createdItemId < 1) ||
+      Buffer.byteLength(canonical(snapshot)) > 96 * 1024) fail('manual_snapshot');
+  // Only the selected media profile has this optional package dependency.
+  require('../../runtime/media-layer-proof').decodeMediaInventory(snapshot.inventory);
 }
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
@@ -371,6 +381,8 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
               disconnect(code); fail(code);
             }
             if (!['applied', 'rejected'].includes(result.outcome)) fail('manual_result');
+            if (result.outcome === 'applied' && selectedAsset.resultProfile === 'media-import-v1')
+              validateMediaSnapshot(result.snapshot, false, true);
           } else if (observeDisk) {
             exact(result, ['target', 'revision', 'protected', 'dirty', 'fileStamp', ...(lifecycle ? ['currentProject', 'inventory'] : [])]);
           } else if (selectedAsset.resultProfile === 'photo-source-v1') {
@@ -383,8 +395,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
                 !Array.isArray(result.items) || !Array.isArray(result.assemblies)) fail('manual_snapshot');
           } else if (selectedAsset.resultProfile === 'media-import-v1') {
             const preflight = c.command.phase === 'inspect' && c.command.payload.file === undefined;
-            exact(result, ['target', 'revision', 'protected', 'items', ...(preflight ? [] : ['bytes', 'modifiedMs'])]);
-            if (!Array.isArray(result.items) || !preflight && (!Number.isSafeInteger(result.bytes) || !Number.isSafeInteger(result.modifiedMs))) fail('manual_snapshot');
+            validateMediaSnapshot(result, preflight);
           } else if (selectedAsset.resultProfile === 'layer-insert-v1') {
             exact(result, ['target', 'revision', 'protected', 'stack', 'uses', 'source', 'frameDuration', 'duration', 'hasExpressions']);
             if (!Array.isArray(result.stack) || !Array.isArray(result.uses) || !result.source || typeof result.hasExpressions !== 'boolean') fail('manual_snapshot');

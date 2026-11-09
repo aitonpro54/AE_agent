@@ -90,7 +90,7 @@
       },
       "expectedInventory": {
         "type": "string",
-        "minLength": 2,
+        "minLength": 9,
         "maxLength": 98304
       }
     },
@@ -147,43 +147,10 @@
         "minLength": 1,
         "maxLength": 512
       },
-      "items": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "id": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 2147483647
-            },
-            "name": {
-              "type": "string",
-              "maxLength": 512
-            },
-            "file": {
-              "type": "string",
-              "maxLength": 512
-            },
-            "kind": {
-              "type": "string",
-              "enum": [
-                "other",
-                "still",
-                "av"
-              ]
-            }
-          },
-          "required": [
-            "id",
-            "name",
-            "file",
-            "kind"
-          ],
-          "additionalProperties": false
-        },
-        "minItems": 0,
-        "maxItems": 2048
+      "inventory": {
+        "type": "string",
+        "minLength": 9,
+        "maxLength": 98304
       },
       "bytes": {
         "type": "integer",
@@ -200,7 +167,7 @@
       "target",
       "revision",
       "protected",
-      "items"
+      "inventory"
     ],
     "additionalProperties": false
   },
@@ -212,7 +179,8 @@
       "file"
     ],
     "expectedBindings": {
-      "expectedRevision": "revision"
+      "expectedRevision": "revision",
+      "expectedInventory": "inventory"
     },
     "resultBindings": {},
     "preserve": [

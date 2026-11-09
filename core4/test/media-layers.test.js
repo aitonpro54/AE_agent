@@ -3,7 +3,9 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 const { hash } = require('../protocol/json');
+const { decodeMediaInventory } = require('../runtime/media-layer-proof');
 const { harness } = require('./fixtures/manual-http-runtime');
 
 const { mediaEnvironment } = require('./fixtures/media-layer-host');
@@ -37,6 +39,90 @@ function inserter(h, sourceId = h.state.stock.id, placement = 'above') {
 }
 
 const windows = { skip: process.platform !== 'win32' };
+test('media catalog decodes only complete ID-ordered rows and exact directory references', () => {
+  const directory = 'c:\\Архив/Съёмка\\';
+  const suffix = 'Ё 🚀.png';
+  const valid = [1, [directory], [[1, null, 0, 0, ''], [17, null, 1, 1, suffix], [50, 'ё 🚀', 2, 1, suffix]]];
+  assert.deepEqual(decodeMediaInventory(JSON.stringify(valid)), [
+    { id: 1, name: '', file: '', kind: 'other' },
+    { id: 17, name: suffix, file: directory + suffix, kind: 'still' },
+    { id: 50, name: 'ё 🚀', file: directory + suffix, kind: 'av' }
+  ]);
+  const invalid = [
+    [2, valid[1], valid[2]],
+    [1, [directory, directory], [[1, null, 0, 2, suffix]]],
+    [1, [directory, 'C:/Other/'], [[1, null, 0, 2, suffix], [2, null, 0, 1, suffix]]],
+    [1, [directory], [[1, null, 0, 0, suffix]]],
+    [1, [], [[1, null, 0, 1, suffix]]],
+    [1, [], [[1, null, 0, 0, suffix], [1, null, 1, 0, suffix]]],
+    [1, [], [[1, null, 0, 0, 'sub/' + suffix]]],
+    [1, [], [[1, suffix, 0, 0, suffix]]],
+    [1, [], [[1, null, 3, 0, suffix]]]
+  ];
+  for (const catalog of invalid) assert.throws(() => decodeMediaInventory(JSON.stringify(catalog)), { code: 'media_import_inventory' });
+  assert.throws(() => decodeMediaInventory(' [1,[],[]]'), { code: 'media_import_inventory' });
+});
+
+test('media catalog reserves UTF-8 bytes for a maximum native path, a renamed item and wider directory indices', t => {
+  const projectId = 'C:\\Кадр.aep', sessionId = 'fixture-session';
+  const file = 'C:\\' + '\u2029'.repeat(505) + '.png';
+  const name = '\u2028'.repeat(502) + 'e\u0301\b\t\n\f\r\\n\ud800';
+  assert.equal(file.length, 512);
+  assert.equal(name.length, 512);
+  class File {
+    constructor(fsName) { Object.assign(this, { fsName, exists: true, length: 1, modified: new Date(0) }); }
+  }
+  class FootageItem {
+    constructor(id, name, fsName) {
+      Object.assign(this, { id, name, file: new File(fsName), hasVideo: true, mainSource: { isStill: true } });
+    }
+  }
+  class ImportOptions { canImportAs(value) { return value === 1; } }
+  const items = Array.from({ length: 1400 }, (_, index) => {
+    const basename = `Frame-${index}-${'x'.repeat(16)}.jpg`;
+    return new FootageItem(100 + index, basename, `C:/Reel${Math.min(9, index + 1)}/${basename}`);
+  });
+  const project = { file: new File(projectId), revision: 7, get numItems() { return items.length; },
+    item(index) { return items[index - 1]; },
+    importFile() {
+      const item = new FootageItem(1, name, file);
+      items.push(item);
+      this.revision++;
+      return item;
+    } };
+  const host = vm.createContext({ JSON: undefined, app: { project, beginUndoGroup() {}, endUndoGroup() {} },
+    File, FootageItem, ImportOptions, ImportAsType: { FOOTAGE: 1 }, confirm: () => true });
+  const codec = fs.readFileSync(path.join(__dirname, '../runtime/host/json-codec.jsx'), 'utf8');
+  const executor = fs.readFileSync(path.join(__dirname, '../modules/media-import/executor.jsx'), 'utf8');
+  vm.runInContext(`var JSON = ${codec}; var media = ${executor};`, host);
+  function call(method, args) {
+    host.serialized = JSON.stringify(args);
+    const reply = vm.runInContext(`JSON.stringify(media.${method}(JSON.parse(serialized)))`, host);
+    return { data: JSON.parse(reply), bytes: Buffer.byteLength(reply) };
+  }
+  const target = { projectId, sessionId, file };
+  const preflight = call('inspect', { projectId, sessionId }).data;
+  assert.ok(preflight.inventory, JSON.stringify(preflight));
+  const { data: before, bytes: beforeBytes } = call('inspect', target);
+  assert.ok(before.inventory, JSON.stringify(before));
+  const input = { ...target, sha256: '0'.repeat(64), expectedRevision: before.revision, expectedInventory: before.inventory,
+    _execution: { target, policyId: 'current-matching-target-after-local-confirmation-v1',
+      baselineRevision: before.revision, baselineProtected: before.protected, proposalId: 'fixture', planDigest: 'fixture',
+      taskId: 'fixture', taskEpoch: 0, stepId: 'fixture', checkpointRef: 'fixture', checkpointDigest: 'fixture', baselineDigest: 'fixture' } };
+  const { data: applied } = call('mutate', input);
+  assert.equal(applied.outcome, 'applied', JSON.stringify(applied));
+  const { data: after, bytes: afterBytes } = call('verify', target);
+  const [added, ...originals] = decodeMediaInventory(after.inventory);
+  assert.deepEqual(added, { id: 1, name, file, kind: 'still' });
+  assert.deepEqual(originals, decodeMediaInventory(before.inventory));
+  assert.equal(JSON.parse(before.inventory)[2].at(-1)[3], 9);
+  assert.equal(JSON.parse(after.inventory)[2].at(-1)[3], 10);
+  assert.ok(afterBytes - beforeBytes > 8192 && afterBytes - beforeBytes < 12 * 1024, `${beforeBytes} → ${afterBytes}`);
+  assert.ok(afterBytes < 96 * 1024);
+  assert.throws(() => decodeMediaInventory(JSON.stringify(JSON.parse(after.inventory))), { code: 'media_import_inventory' });
+  t.diagnostic(`native data codec snapshot before=${beforeBytes}, after=${afterBytes} bytes`);
+});
+
 test('media-layers imports once and inserts by ID above a same-named layer with signed read-back', windows, async t => {
   const h = await harness({ mediaEnvironment, confirm: ({ message }) => {
     if (message.includes('в существующую композицию')) assert.match(message, /Вхождения comp\/layer → source: \d+\/\d+ → \d+, \d+\/\d+ → \d+/);
@@ -46,7 +132,7 @@ test('media-layers imports once and inserts by ID above a same-named layer with 
   const ingest = importer(h);
   const imported = await ingest.run();
   assert.equal(imported.state, 'succeeded');
-  const newItem = (await ingest.inspect()).snapshot.items.find(item => item.file === h.state.overlayFile);
+  const newItem = decodeMediaInventory((await ingest.inspect()).snapshot.inventory).find(item => item.file === h.state.overlayFile);
   assert.equal(imported.outputs.operation.createdItemId, newItem.id);
   await assert.rejects(ingest.plan(), /media_already_imported/);
   const insert = inserter(h, newItem.id);
@@ -117,16 +203,21 @@ test('media-layers rejects a wrong input SHA before confirm and a changed stack 
   assert.equal(h.state.comp.numLayers, 2);
 });
 
-test('media-layers preserves a 1079-item inventory within the wire budget and refuses wide names', windows, async t => {
-  const h = await harness({ mediaEnvironment, flags: { items: 1079, wireNames: true } });
+test('media-layers preserves a long-path 1109-item inventory within the wire budget and refuses wide names', windows, async t => {
+  const h = await harness({ mediaEnvironment, flags: { items: 1109, capacityFootage: true } });
   t.after(() => h.close());
   const ingest = importer(h), { snapshot: before } = await ingest.inspect();
-  assert.equal(before.items.length, 1079);
-  assert.ok(Buffer.byteLength(JSON.stringify(before)) > 65536);
+  const previous = decodeMediaInventory(before.inventory);
+  assert.equal(previous.length, 1109);
+  for (const [index, item] of h.state.items.entries()) {
+    assert.deepEqual(previous[index], { id: item.id, name: item.name, file: item.file?.fsName ?? '',
+      kind: !item.file || item.footageMissing ? 'other' : item.mainSource.isStill ? 'still' : 'av' });
+  }
+  assert.ok(Buffer.byteLength(JSON.stringify(previous)) > 256 * 1024);
   const result = await ingest.run();
   assert.equal(result.state, 'succeeded', JSON.stringify(result));
   const after = result.outputs.operation;
-  assert.deepEqual(after.items.filter(item => item.id !== after.createdItemId), before.items);
+  assert.deepEqual(decodeMediaInventory(after.inventory).filter(item => item.id !== after.createdItemId), previous);
   assert.equal((await inserter(h, after.createdItemId).run()).state, 'succeeded');
   const receiver = fs.readFileSync(path.join(h.installation.stateDir, 'receiver/completions.ndjson'), 'utf8');
   const receiverMax = Math.max(...receiver.trim().split('\n').map(line => Buffer.byteLength(line)));
@@ -147,7 +238,7 @@ test('media-layers preflights import capacity before the media file exists', win
   const target = { projectId: h.state.projectId, sessionId: h.installation.installationId };
   const { snapshot, evidenceRef } = await h.broker.inspect({ moduleId, contractId, target });
   assert.deepEqual(snapshot.target, target);
-  assert.equal(snapshot.items.length, 1079);
+  assert.equal(decodeMediaInventory(snapshot.inventory).length, 1079);
   assert.equal(snapshot.bytes, undefined);
   fs.writeFileSync(file, bytes);
   await assert.rejects(h.broker.build({ oneStep: true, steps: [{ stepId: 'import', moduleId, contractId, evidenceRef,
@@ -161,7 +252,7 @@ test('media-layers records numeric import preflight budget stages without exposi
   t.after(() => h.close());
   const { items, projectId } = h.state;
   const preflight = operation(h, 'media-import', { projectId, sessionId: h.installation.installationId });
-  const { snapshot: initial } = await preflight.inspect();
+  await preflight.inspect();
   async function refused(inspect = preflight.inspect) {
     await assert.rejects(inspect(), /inspection_result_budget/);
     const { lastReadFailure } = h.peer.status();
@@ -181,24 +272,18 @@ test('media-layers records numeric import preflight budget stages without exposi
   assert.equal(inventory.itemCount, 1000);
   assert.ok(inventory.itemIndex < 1000 && inventory.inventoryBytes > 96 * 1024);
 
-  for (const item of initial.items.slice(3)) item.name = '';
-  let remaining = 96 * 1024 - Buffer.byteLength(JSON.stringify(initial.items));
-  for (const item of items.slice(3)) {
-    const units = Math.min(512, remaining);
-    item.name = 'x'.repeat(units);
-    remaining -= units;
-  }
-  assert.equal(remaining, 0);
+  for (const item of items.slice(3)) item.name = '\\'.repeat(35);
   const snapshot = await refused();
   assert.equal(snapshot.stage, 'snapshot_bytes');
   assert.ok(snapshot.snapshotBytes > 96 * 1024);
 
-  for (const item of items.slice(3)) item.name = 'Ф'.repeat(22);
+  for (const item of items.slice(3)) item.name = 'Ф'.repeat(36);
   const prospect = await refused();
   assert.equal(prospect.stage, 'prospect_capacity');
   assert.equal(prospect.projectedSnapshotBytes, prospect.snapshotBytes + 8192);
   assert.equal(prospect.projectedIntentBytes, prospect.projectedSnapshotBytes + 2 * prospect.escapedInventoryBytes);
   assert.ok(prospect.snapshotBytes <= 96 * 1024);
+  await assert.rejects(importer(h).plan(), /inspection_result_budget/);
 
   items.length = 2049;
   assert.deepEqual(await refused(), { version: 1, stage: 'item_count', itemCount: 2049 });

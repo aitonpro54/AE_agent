@@ -10,6 +10,52 @@ const { plainPath } = require('./project-file');
 const fileKey = file => file.replace(/\\/g, '/').toLowerCase();
 const same = (a, b) => canonical(a) === canonical(b);
 const lockError = 'media_file_lock_unavailable';
+const mediaKinds = ['other', 'still', 'av'];
+const hostJsonEscapes = {
+  '\\b': '\\u0008', '\\t': '\\u0009', '\\n': '\\u000a', '\\f': '\\u000c', '\\r': '\\u000d',
+  '\u2028': '\\u2028', '\u2029': '\\u2029'
+};
+
+function decodeMediaInventory(text) {
+  const invalid = () => fail('media_import_inventory');
+  const units = value => typeof value === 'string' && value.length <= 512;
+  if (typeof text !== 'string' || Buffer.byteLength(text) > 96 * 1024) invalid();
+  let catalog;
+  try { catalog = JSON.parse(text); } catch { invalid(); }
+  if (!Array.isArray(catalog) || catalog.length !== 3 || catalog[0] !== 1) invalid();
+  const [, directories, rows] = catalog;
+  if (!Array.isArray(directories) || !Array.isArray(rows) || rows.length > 2048 || directories.length > rows.length ||
+      new Set(directories).size !== directories.length ||
+      directories.some(dir => !units(dir) || !/[\\/]$/.test(dir))) invalid();
+  let lastId = 0, seenDirectories = 0;
+  const items = rows.map(row => {
+    if (!Array.isArray(row) || row.length !== 5) invalid();
+    const [id, storedName, kind, directory, suffix] = row;
+    if (!Number.isInteger(id) || id <= lastId || id > 2147483647 ||
+        !Number.isInteger(kind) || kind < 0 || kind >= mediaKinds.length ||
+        !Number.isInteger(directory) || directory < 0 || directory > directories.length || directory > seenDirectories + 1 ||
+        !units(suffix) || /[\\/]/.test(suffix) ||
+        storedName !== null && (!units(storedName) || storedName === suffix)) invalid();
+    const file = (directory ? directories[directory - 1] : '') + suffix;
+    if (!units(file)) invalid();
+    lastId = id;
+    seenDirectories = Math.max(seenDirectories, directory);
+    return { id, name: storedName === null ? suffix : storedName, file, kind: mediaKinds[kind] };
+  });
+  if (seenDirectories !== directories.length) invalid();
+  // Match the native data codec, which uses long escapes for controls and
+  // line separators. Match doubled backslashes whole so literal \\n survives.
+  const encoded = JSON.stringify(catalog).replace(/\\\\|\\[bfnrt]|[\u2028\u2029]/g, escape => hostJsonEscapes[escape] ?? escape);
+  if (encoded !== text) invalid();
+  return items;
+}
+
+function mediaReceiptItems(snapshot) {
+  if (typeof snapshot?.inventory === 'string') return decodeMediaInventory(snapshot.inventory);
+  // Historical receipts retain their pinned schema and original ledger bytes.
+  if (Array.isArray(snapshot?.items) && !Object.hasOwn(snapshot, 'inventory')) return snapshot.items;
+  fail('media_import_inventory');
+}
 // Fixed Windows command, like the host probe. File and process identities are
 // data in the child environment, never interpolated into the command.
 const LOCK_COMMAND = String.raw`
@@ -164,14 +210,15 @@ function createMediaImportProof(currentSessionId, lock = lockImportFile) {
     lockSource({ input, before, descriptor }) { return lock(input, before, descriptor.executionScope.origin); },
     validateResult({ input, before }, after) {
       assertImportFile(input, after);
-      const previous = new Set(before.items.map(item => item.id));
-      const additions = after.items.filter(item => !previous.has(item.id));
+      const oldItems = mediaReceiptItems(before), newItems = mediaReceiptItems(after);
+      const previous = new Set(oldItems.map(item => item.id));
+      const additions = newItems.filter(item => !previous.has(item.id));
       if (additions.length !== 1 || after.createdItemId !== additions[0].id || !['still', 'av'].includes(additions[0].kind) ||
           fileKey(additions[0].file) !== fileKey(input.file) || before.bytes !== after.bytes ||
           before.modifiedMs !== after.modifiedMs ||
-          !same(after.items.filter(item => previous.has(item.id)), before.items)) fail('media_import_readback');
+          !same(newItems.filter(item => previous.has(item.id)), oldItems)) fail('media_import_readback');
     }
   };
 }
 
-module.exports = { createMediaImportProof, assertImportFile, lockImportFile };
+module.exports = { createMediaImportProof, assertImportFile, lockImportFile, decodeMediaInventory, mediaReceiptItems };

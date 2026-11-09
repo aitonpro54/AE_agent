@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { capacityFootage } = require('./media-layer-host');
 
 const PropertyValueType = { OneD: 1, TwoD: 2, TwoD_SPATIAL: 3, COLOR: 4, SHAPE: 5, LAYER_INDEX: 6, CUSTOM_VALUE: 7, ThreeD: 8, ThreeD_SPATIAL: 9 };
 const group = (entries = []) => ({ propertyType: 2, numProperties: entries.length,
@@ -130,7 +131,8 @@ function overlayEnvironment(state) {
   const items = [comp, master, unrelated, originalSource, otherSource];
   if (!state.flags.importOnDemand) items.push(...replacements);
   while (items.length < (state.flags.items || 0)) {
-    items.push({ id: 5000 + items.length, name: 'Кадр "🚀" А ' + items.length });
+    items.push(state.flags.capacityFootage ? capacityFootage(FootageItem, items.length) :
+      { id: 5000 + items.length, name: 'Кадр "🚀" А ' + items.length });
   }
   class File {
     constructor(fsName) {
