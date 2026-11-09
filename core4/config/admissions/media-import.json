@@ -1,11 +1,11 @@
 {
   "moduleId": "media-import",
   "operationId": "ingest-footage",
-  "artifactHash": "5b1d22013f4b9ffb31633b4d3d6cbf68d04c060515854925df8a80722572de54",
+  "artifactHash": "f40f4e6667db17049cfd98d8cb279ecfb02d9e8c0866841f9631a214e3936c70",
   "schemaHash": "3f974ed09942f758d4fe34a1dcee9e0f74ca2836236e76e0a150d767a80b4649",
   "resultSchemaHash": "6a3c2ab7f0cb662bc70260fef299a1ceb4dcd478354d39334ede46357e25773a",
   "effectPolicyHash": "1d80cf18153d089b0ce8796bb9a51e96f1c62a5044d9b5218c13f53f1ae3124c",
-  "executorHash": "5d55791f138394f89ec4b0ff3a0d08c3251bcb4457fb63c8830687c3a71eb4f9",
+  "executorHash": "fc3a868eb7fd913cc4a6aabc8e7f061680f579797160f4fb013345af9cfbc677",
   "protocolVersion": 1,
   "trustApprovalId": "source-review-media-import-20261108",
   "revoked": false

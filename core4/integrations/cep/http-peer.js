@@ -16,9 +16,54 @@ const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsu
 const SAVE_READ_CODES = new Set(['save_project_changed', 'save_revision_unavailable', 'save_dirty_unavailable', 'save_file_unavailable']);
 const LIFECYCLE_READ_CODES = new Set(['lifecycle_project_changed', 'lifecycle_native_state']);
 const OVERLAY_PREFLIGHT_READ_CODES = new Set(['layer_overlay_layer_profile', 'layer_overlay_expression_scope', 'layer_overlay_existing_or_partial']);
+const OVERLAY_DIAGNOSTIC_ROOTS = new Set(['layer', 'ADBE Transform Group', 'ADBE Text Properties', 'ADBE Root Vectors Group',
+  'ADBE Camera Options Group', 'ADBE Light Options Group', 'ADBE Marker', 'ADBE Time Remapping', 'ADBE Audio Group',
+  'ADBE Layer Overrides', 'ADBE Layer Styles', 'ADBE Blend Options Group', 'ADBE Material Options Group',
+  'ADBE Plane Options Group', 'ADBE Extrsn Options Group']);
+const MEDIA_DIAGNOSTIC_FIELDS = new Map([
+  ['item_count', []],
+  ['field_units', ['itemIndex', 'nameUnits', 'fileUnits']],
+  ['inventory_bytes', ['itemIndex', 'inventoryBytes']],
+  ['snapshot_bytes', ['snapshotBytes']],
+  ['prospect_capacity', ['snapshotBytes', 'projectedSnapshotBytes', 'escapedInventoryBytes', 'projectedIntentBytes']]
+]);
 function montagePreflight(command) {
   return command.phase === 'inspect' && (command.moduleId === 'media-import' && command.payload.file === undefined ||
     command.moduleId === 'layer-overlay' && command.payload.itemId === undefined);
+}
+function validateMontageDiagnostic(command, selected, { code, diagnostic }) {
+  if (!montagePreflight(command) || !selected || selected.moduleId !== command.moduleId ||
+      selected.operationId !== command.operationId || selected.executorHash !== command.executorHash ||
+      !diagnostic || diagnostic.version !== 1) fail('inspection_result');
+  const uint = (value, min = 0, max = 2147483647) => Number.isSafeInteger(value) && value >= min && value <= max;
+  if (selected.assetKey === 'media-import-v1' && selected.moduleId === 'media-import' &&
+      selected.operationId === 'ingest-footage' && selected.resultProfile === 'media-import-v1' && code === 'inspection_result_budget') {
+    const { stage, itemCount, itemIndex, nameUnits, fileUnits, inventoryBytes, snapshotBytes,
+      projectedSnapshotBytes, escapedInventoryBytes, projectedIntentBytes } = diagnostic;
+    const fields = MEDIA_DIAGNOSTIC_FIELDS.get(stage);
+    if (!fields) fail('inspection_result');
+    exact(diagnostic, ['version', 'stage', 'itemCount', ...fields]);
+    if (!uint(itemCount, stage === 'item_count' ? 2049 : 0, stage === 'item_count' ? 2147483647 : 2048) ||
+        fields.some(field => !uint(diagnostic[field]))) fail('inspection_result');
+    if ((stage === 'field_units' || stage === 'inventory_bytes') && !uint(itemIndex, 1, itemCount) ||
+        stage === 'field_units' && nameUnits <= 512 && fileUnits <= 512 ||
+        stage === 'inventory_bytes' && inventoryBytes <= 96 * 1024 ||
+        stage === 'snapshot_bytes' && snapshotBytes <= 96 * 1024 ||
+        stage === 'prospect_capacity' && (snapshotBytes > 96 * 1024 || projectedSnapshotBytes !== snapshotBytes + 8192 ||
+          projectedIntentBytes !== projectedSnapshotBytes + 2 * escapedInventoryBytes ||
+          itemCount < 2048 && projectedSnapshotBytes <= 88 * 1024 && projectedIntentBytes <= 224 * 1024)) fail('inspection_result');
+    return;
+  }
+  if (selected.assetKey !== 'layer-overlay-v1' || selected.moduleId !== 'layer-overlay' ||
+      selected.operationId !== 'duplicate-and-replace-still' || selected.resultProfile !== 'layer-overlay-v1' ||
+      code !== 'layer_overlay_expression_scope') fail('inspection_result');
+  exact(diagnostic, ['version', 'projectRevision', 'compId', 'layerId', 'root', 'propertyIndices', 'cause', 'expressionUnits']);
+  const { projectRevision, compId, layerId, root, propertyIndices, cause, expressionUnits } = diagnostic;
+  if (!uint(projectRevision, 0, Number.MAX_SAFE_INTEGER) || !uint(compId, 1) || !uint(layerId, 1) ||
+      !OVERLAY_DIAGNOSTIC_ROOTS.has(root) || !Array.isArray(propertyIndices) ||
+      propertyIndices.length > (root === 'layer' ? 32 : 31) || propertyIndices.some(index => !uint(index, 1, 100000)) ||
+      !['unsupported_expression', 'expression_unavailable'].includes(cause) || !uint(expressionUnits) ||
+      cause === 'expression_unavailable' && expressionUnits !== 0) fail('inspection_result');
 }
 function titlesReadCommand(command, selected) {
   return selected?.assetKey === 'titles-current-target-v1' && selected.moduleId === 'titles-current-target' && selected.operationId === 'set-current-text' && selected.resultProfile === 'manual-text-v1' && selected.executorHash === command.executorHash && command.moduleId === selected.moduleId && command.operationId === selected.operationId && ['inspect', 'verify'].includes(command.phase);
@@ -309,11 +354,13 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         const done = pending;
         let result = b.payload.result;
         if (result.readFailureVersion === 1) {
-          exact(result, ['readFailureVersion', 'outcome', 'code']);
+          const diagnostic = Object.hasOwn(result, 'diagnostic');
+          exact(result, ['readFailureVersion', 'outcome', 'code', ...(diagnostic ? ['diagnostic'] : [])]);
           if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code) &&
               !(titlesReadCommand(c.command, selectedAsset) && TITLES_READ_CODES.has(result.code)) &&
               !(selectedAsset?.resultProfile === 'layer-overlay-v1' && montagePreflight(c.command) && OVERLAY_PREFLIGHT_READ_CODES.has(result.code)) &&
               !(observeDisk && c.command.phase !== 'mutate' && (projectSave ? SAVE_READ_CODES : LIFECYCLE_READ_CODES).has(result.code))) fail('inspection_result');
+          if (diagnostic) validateMontageDiagnostic(c.command, selectedAsset, result);
         } else if (manualResultProfile(selectedAsset)) {
           if (c.command.phase === 'mutate') {
             exact(result, ['outcome', 'snapshot', 'code', 'transactionReceipt']);

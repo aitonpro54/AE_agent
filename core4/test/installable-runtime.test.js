@@ -17,6 +17,7 @@ const { createHttpPeer } = require('../integrations/cep/http-peer');
 const { buildPackage, verifyPackage } = require('../tools/package-installable');
 const { planInstall, applyInstall, rollback, configText, snapshot } = require('../tools/install-core4');
 const { verifyInstallation } = require('../runtime/installation');
+const { inspectReceiverHistory } = require('../runtime/recovery-inspection');
 const root = path.resolve(__dirname, '..');
 function temp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'core4-installable-')); }
 function install(directory, pkg = buildPackage()) {
@@ -190,8 +191,8 @@ async function readDiagnosticPeer(t, changes = {}) {
   const directory = temp(), manual = { assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', operationId: 'set-current-text', executorHash: '7'.repeat(64), resultProfile: 'manual-text-v1', ...changes };
   const peer = createHttpPeer({ installation, directory, asset, additionalAssets: [manual], port: 0, timeout: 5000 }); await peer.listen(); t.after(() => peer.close());
   const c = await client(peer.status().port), binding = { controllerId: 'diagnostic-controller', channelEpoch: 'diagnostic-channel', secret: '4'.repeat(64) }; await peer.transport.connect(binding); let serial = 0;
-  async function begin(phase = 'inspect', selected = manual) {
-    const payload = {}, command = { protocolVersion: 1, controllerId: binding.controllerId, channelEpoch: binding.channelEpoch, commandId: 'diagnostic-' + ++serial, moduleId: selected.moduleId || 'project-inspection', operationId: selected.operationId || 'inspect', executorHash: selected.executorHash, phase, payloadHash: hash(canonical(payload)), payload };
+  async function begin(phase = 'inspect', selected = manual, payload = {}) {
+    const command = { protocolVersion: 1, controllerId: binding.controllerId, channelEpoch: binding.channelEpoch, commandId: 'diagnostic-' + ++serial, moduleId: selected.moduleId || 'project-inspection', operationId: selected.operationId || 'inspect', executorHash: selected.executorHash, phase, payloadHash: hash(canonical(payload)), payload };
     const promise = peer.transport.send(encode(command, binding.secret)); const frame = (await c.call('/poll', {})).command; assert.equal(frame.commandId, command.commandId);
     return { command, frame, promise, receipt(result) { return { commandId: frame.commandId, originalBinding: structuredClone(frame.originalBinding), pins: structuredClone(frame.pins), result }; } };
   }
@@ -244,6 +245,58 @@ test('installable-runtime read diagnostic rejects unknown codes extra fields and
   }
   await f.c.call('/complete', q.receipt(result)); await observed; assert.equal(f.peer.status().lastReadFailure.code, result.code);
 });
+
+const montageDiagnostics = [
+  {
+    asset: { assetKey: 'media-import-v1', moduleId: 'media-import', operationId: 'ingest-footage', resultProfile: 'media-import-v1' },
+    code: 'inspection_result_budget', exactTarget: { file: 'C:/fixture.jpg' },
+    diagnostic: { version: 1, stage: 'field_units', itemCount: 1109, itemIndex: 22, nameUnits: 513, fileUnits: 0 },
+    malformed: [{ stage: 'other' }, { itemIndex: 1110 }, { nameUnits: 512 }, { path: 'C:/private.jpg' }]
+  },
+  {
+    asset: { assetKey: 'layer-overlay-v1', moduleId: 'layer-overlay', operationId: 'duplicate-and-replace-still', resultProfile: 'layer-overlay-v1' },
+    code: 'layer_overlay_expression_scope', exactTarget: { itemId: 80 },
+    diagnostic: { version: 1, projectRevision: 7, compId: 19, layerId: 28, root: 'ADBE Transform Group',
+      propertyIndices: [2], cause: 'unsupported_expression', expressionUnits: 43 },
+    malformed: [{ compId: 0 }, { propertyIndices: Array(32).fill(1) }, { propertyIndices: [0] }, { root: 'Private root' },
+      { cause: 'expression_unavailable' }, { expression: 'private expression' }]
+  }
+];
+for (const item of montageDiagnostics) test('installable-runtime montage diagnostic admits only the exact prospective rejection for ' + item.asset.moduleId, async t => {
+  const { code, diagnostic, exactTarget, malformed } = item;
+  const f = await readDiagnosticPeer(t, item.asset);
+  const result = { readFailureVersion: 1, outcome: 'rejected', code, diagnostic };
+  const reject = async (fixture, command, value) => {
+    const journal = path.join(fixture.directory, 'completions.ndjson'), before = fs.readFileSync(journal);
+    const response = await fixture.c.raw('/complete', fixture.c.envelope('/complete', command.receipt(value)));
+    assert.equal(response.status, 403);
+    assert.deepEqual(fs.readFileSync(journal), before);
+  };
+  const exact = await f.begin(), refusal = assert.rejects(exact.promise, { code });
+  for (const changes of malformed) await reject(f, exact, { ...result, diagnostic: { ...diagnostic, ...changes } });
+  await reject(f, exact, { ...result, code: 'inspection_failed' });
+  assert.equal(f.peer.status().lastReadFailure, null);
+  await f.c.call('/complete', exact.receipt(result));
+  await refusal;
+  const status = f.peer.status();
+  assert.equal(status.lastReadFailure.code, code);
+  assert.equal(status.lastReadFailure.diagnostic, undefined);
+  assert.equal(status.lastCommandOutcome.diagnostic, undefined);
+  assert.deepEqual(decode(await f.peer.transport.completion(exact.command.commandId), f.binding.secret).response.result, result);
+  assert.equal(inspectReceiverHistory(fs.readFileSync(path.join(f.directory, 'completions.ndjson'))).settled, true);
+  await f.c.call('/complete', exact.receipt(result));
+
+  const wrongProfile = await readDiagnosticPeer(t, { ...item.asset, resultProfile: 'manual-text-v1' });
+  for (const [fixture, phase, payload] of [[f, 'inspect', exactTarget], [f, 'verify', {}], [f, 'mutate', {}], [wrongProfile, 'inspect', {}]]) {
+    const q = await fixture.begin(phase, fixture.manual, payload);
+    const settled = phase === 'mutate' ? q.promise : assert.rejects(q.promise, { code: 'inspection_failed' });
+    await reject(fixture, q, result);
+    await fixture.c.call('/complete', q.receipt(phase === 'mutate' ? { outcome: 'rejected', code: 'fixture_cancelled' }
+      : { readFailureVersion: 1, outcome: 'rejected', code: 'inspection_failed' }));
+    await settled;
+  }
+});
+
 test('installable-runtime render queue read durably accepts its owned job field only in the render profile', async t => {
   const config = { assetKey: 'comp-render-v1', moduleId: 'comp-render', operationId: 'render-text-variant', resultProfile: 'owned-comp-render-v1' };
   const f = await readDiagnosticPeer(t, config), q = await f.begin();

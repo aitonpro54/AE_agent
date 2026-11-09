@@ -125,32 +125,51 @@
     }
     // The same project-wide scan as layer-insert guards references across unrelated
     // compositions. Only a literal number or pre-expression value is admitted.
-    function scan(group, budget, depth) {
+    function scan(group, budget, depth, location) {
         if (!group || ++budget.properties > maxProperties || depth > 32) fault('inspection_result_budget');
         if (group.propertyType === PropertyType.PROPERTY) {
             if (group.canSetExpression && typeof group.expressionEnabled !== 'boolean') fault('layer_overlay_dependency_unobserved');
-            if (group.expressionEnabled === true &&
-                (typeof group.expression !== 'string' || !/^\s*(?:value|[+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*;?\s*$/.test(group.expression))) fault('layer_overlay_expression_scope');
+            if (group.expressionEnabled === true) {
+                var expression = group.expression, readable = typeof expression === 'string';
+                if (!readable || !/^\s*(?:value|[+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*;?\s*$/.test(expression)) {
+                    if (location) {
+                        location.cause = readable ? 'unsupported_expression' : 'expression_unavailable';
+                        location.expressionUnits = readable ? Math.min(expression.length, 2147483647) : 0;
+                    }
+                    fault('layer_overlay_expression_scope');
+                }
+            }
             if (group.propertyValueType === PropertyValueType.LAYER_INDEX &&
                 (group.numKeys !== 0 || group.value !== 0)) fault('layer_overlay_index_reference');
             if (group.propertyValueType === PropertyValueType.CUSTOM_VALUE) fault('layer_overlay_dependency_unobserved');
             return;
         }
         if (typeof group.numProperties !== 'number') fault('layer_overlay_dependency_unobserved');
-        for (var i = 1; i <= group.numProperties; i++) scan(group.property(i), budget, depth + 1);
+        for (var i = 1; i <= group.numProperties; i++) {
+            if (location) location.propertyIndices.push(i);
+            scan(group.property(i), budget, depth + 1, location);
+            if (location) location.propertyIndices.pop();
+        }
     }
-    function scanLayer(layer, budget) {
+    function scanLayer(layer, budget, location) {
         var root = ['ADBE Transform Group'], kind = layer.matchName;
         if (kind === 'ADBE Text Layer') root.push('ADBE Text Properties');
         else if (kind === 'ADBE Vector Layer') root.push('ADBE Root Vectors Group');
         else if (kind === 'ADBE Camera Layer') root.push('ADBE Camera Options Group');
         else if (kind === 'ADBE Light Layer') root.push('ADBE Light Options Group');
         else if (kind !== 'ADBE AV Layer') fault('layer_overlay_dependency_unobserved');
-        scan(layer, budget, 0);
-        for (var i = 0; i < root.length; i++) scan(layer.property(root[i]), budget, 1);
+        if (location) location.root = 'layer';
+        scan(layer, budget, 0, location);
+        for (var i = 0; i < root.length; i++) {
+            if (location) location.root = root[i];
+            scan(layer.property(root[i]), budget, 1, location);
+        }
         for (var j = 0; j < extraRoots.length; j++) {
             var property = layer.property(extraRoots[j]);
-            if (property) scan(property, budget, 1);
+            if (property) {
+                if (location) location.root = extraRoots[j];
+                scan(property, budget, 1, location);
+            }
         }
     }
     function sourceInfo(item) {
@@ -166,11 +185,12 @@
             width: number(item.width), height: number(item.height), pixelAspect: number(item.pixelAspect),
             alpha: JSON.stringify([alpha, interpretation]) };
     }
-    function captures(p) {
+    function captures(p, location) {
         var project = app.project;
         if (!project || !project.file || !project.file.exists || String(project.file.fsName) !== p.projectId) fault('layer_overlay_project_changed');
         var projectRevision = number(project.revision);
         if (projectRevision < 0 || projectRevision > maxRevision || projectRevision % 1 !== 0) fault('layer_overlay_project_changed');
+        if (location) location.projectRevision = projectRevision;
         if (project.numItems > 2048) fault('inspection_result_budget');
         var prospective = p.itemId === undefined;
         var comp = project.itemByID(p.compId), source = project.itemByID(prospective ? p.originalSourceId : p.itemId);
@@ -185,7 +205,8 @@
             for (var j = 1; j <= item.numLayers; j++) {
                 var layer = item.layer(j);
                 var beforeScan = budget.properties;
-                scanLayer(layer, budget);
+                if (location) { location.comp = item; location.layer = layer; }
+                scanLayer(layer, budget, location);
                 if (item.id === comp.id) {
                     var summary = layerSummary(layer);
                     if (layer.id === p.layerId) {
@@ -255,16 +276,36 @@
     function taggedComment(layer, layerId, itemId) {
         return layer.comment + '\n[AECore4 overlay v1:' + layerId + ':' + itemId + ']';
     }
-    function inspect(p) {
+    function expressionDiagnostic(p, location) {
         try {
-            var state = captures(p);
+            var compId = location.comp.id, layerId = location.layer.id, project = app.project;
+            if (typeof compId !== 'number' || compId < 1 || compId > 2147483647 || compId % 1 !== 0 ||
+                typeof layerId !== 'number' || layerId < 1 || layerId > 2147483647 || layerId % 1 !== 0 ||
+                !project || !project.file || String(project.file.fsName) !== p.projectId ||
+                project.revision !== location.projectRevision) return null;
+            return { version: 1, projectRevision: location.projectRevision, compId: compId, layerId: layerId,
+                root: location.root, propertyIndices: location.propertyIndices, cause: location.cause,
+                expressionUnits: location.expressionUnits };
+        } catch (_) { return null; }
+    }
+    function read(p, collectDiagnostic) {
+        var location = collectDiagnostic && p.itemId === undefined ? { propertyIndices: [] } : null;
+        try {
+            var state = captures(p, location);
             if (p.itemId === undefined) checkOverlayCapacity(state, 2147483647);
             return state.snapshot;
         }
-        catch (e) { return { readFailureVersion: 1, outcome: 'rejected',
-            code: e.coreCode === 'inspection_result_budget' || p.itemId === undefined &&
-                listed(['layer_overlay_layer_profile', 'layer_overlay_expression_scope', 'layer_overlay_existing_or_partial'], e.coreCode)
-                ? e.coreCode : 'inspection_failed' }; }
+        catch (e) {
+            var result = { readFailureVersion: 1, outcome: 'rejected',
+                code: e.coreCode === 'inspection_result_budget' || p.itemId === undefined &&
+                    listed(['layer_overlay_layer_profile', 'layer_overlay_expression_scope', 'layer_overlay_existing_or_partial'], e.coreCode)
+                    ? e.coreCode : 'inspection_failed' };
+            if (location && result.code === 'layer_overlay_expression_scope') {
+                var diagnostic = expressionDiagnostic(p, location);
+                if (diagnostic) result.diagnostic = diagnostic;
+            }
+            return result;
+        }
     }
     function checkOverlayCapacity(state, itemId) {
         var before = state.snapshot;
@@ -354,5 +395,6 @@
                 resultRevision: after.revision, protectedFields: after['protected'] } };
         } catch (e) { return { outcome: started ? 'unknown' : 'rejected', code: e.coreCode || 'layer_overlay_ae_error' }; }
     }
-    return { inspect: inspect, mutate: mutate, verify: inspect };
+    return { inspect: function (p) { return read(p, true); }, mutate: mutate,
+        verify: function (p) { return read(p, false); } };
 }())

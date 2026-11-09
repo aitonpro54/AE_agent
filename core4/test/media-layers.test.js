@@ -156,6 +156,56 @@ test('media-layers preflights import capacity before the media file exists', win
   assert.equal(h.broker.ledger.commands().length, 0);
 });
 
+test('media-layers records numeric import preflight budget stages without exposing item data', windows, async t => {
+  const h = await harness({ mediaEnvironment, flags: { items: 1000 } });
+  t.after(() => h.close());
+  const { items, projectId } = h.state;
+  const preflight = operation(h, 'media-import', { projectId, sessionId: h.installation.installationId });
+  const { snapshot: initial } = await preflight.inspect();
+  async function refused(inspect = preflight.inspect) {
+    await assert.rejects(inspect(), /inspection_result_budget/);
+    const { lastReadFailure } = h.peer.status();
+    assert.equal(lastReadFailure.diagnostic, undefined);
+    const receipt = fs.readFileSync(path.join(h.installation.stateDir, 'receiver/completions.ndjson'), 'utf8')
+      .trim().split('\n').map(JSON.parse).find(row => row.type === 'complete' && row.commandId === lastReadFailure.commandId);
+    assert.equal(receipt.response.result.code, 'inspection_result_budget');
+    return receipt.response.result.diagnostic;
+  }
+  items[3].name = 'private'.repeat(75);
+  assert.deepEqual(await refused(), { version: 1, stage: 'field_units', itemCount: 1000, itemIndex: 4, nameUnits: 525, fileUnits: 0 });
+  assert.equal(await refused(importer(h).inspect), undefined);
+
+  for (const item of items.slice(3)) item.name = 'Ф'.repeat(180);
+  const inventory = await refused();
+  assert.equal(inventory.stage, 'inventory_bytes');
+  assert.equal(inventory.itemCount, 1000);
+  assert.ok(inventory.itemIndex < 1000 && inventory.inventoryBytes > 96 * 1024);
+
+  for (const item of initial.items.slice(3)) item.name = '';
+  let remaining = 96 * 1024 - Buffer.byteLength(JSON.stringify(initial.items));
+  for (const item of items.slice(3)) {
+    const units = Math.min(512, remaining);
+    item.name = 'x'.repeat(units);
+    remaining -= units;
+  }
+  assert.equal(remaining, 0);
+  const snapshot = await refused();
+  assert.equal(snapshot.stage, 'snapshot_bytes');
+  assert.ok(snapshot.snapshotBytes > 96 * 1024);
+
+  for (const item of items.slice(3)) item.name = 'Ф'.repeat(22);
+  const prospect = await refused();
+  assert.equal(prospect.stage, 'prospect_capacity');
+  assert.equal(prospect.projectedSnapshotBytes, prospect.snapshotBytes + 8192);
+  assert.equal(prospect.projectedIntentBytes, prospect.projectedSnapshotBytes + 2 * prospect.escapedInventoryBytes);
+  assert.ok(prospect.snapshotBytes <= 96 * 1024);
+
+  items.length = 2049;
+  assert.deepEqual(await refused(), { version: 1, stage: 'item_count', itemCount: 2049 });
+  assert.equal(h.confirmations, 0);
+  assert.equal(h.broker.ledger.commands().length, 0);
+});
+
 test('media-layers refuses oversized layer-insert read and intent before mutation', windows, async t => {
   for (const wideStack of [68, 60]) {
     const h = await harness({ mediaEnvironment, flags: { items: 1079, wideStack } });

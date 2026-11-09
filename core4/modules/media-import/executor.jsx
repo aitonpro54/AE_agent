@@ -1,7 +1,12 @@
 (function () {
     var policy = 'current-matching-target-after-local-confirmation-v1';
     var maxItems = 2048, maxSnapshotBytes = 96 * 1024, addedItemAllowance = 8192;
-    function fault(code) { var error = new Error(code); error.coreCode = code; throw error; }
+    function fault(code, diagnostic) {
+        var error = new Error(code);
+        error.coreCode = code;
+        if (diagnostic) error.diagnostic = diagnostic;
+        throw error;
+    }
     function fileKey(file) { return String(file).replace(/\\/g, '/').toLowerCase(); }
     function mediaKind(item) {
         if (!(item instanceof FootageItem) || !item.file || item.footageMissing || !item.mainSource ||
@@ -30,7 +35,8 @@
         if (typeof count !== 'number' || count < 0 || count % 1 !== 0 ||
             typeof projectRevision !== 'number' || !isFinite(projectRevision) || projectRevision < 0 ||
             projectRevision % 1 !== 0 || projectRevision > 9007199254740991) fault('media_project_changed');
-        if (count > maxItems) fault('inspection_result_budget');
+        if (count > maxItems) fault('inspection_result_budget', { version: 1, stage: 'item_count',
+            itemCount: Math.min(count, 2147483647) });
         var items = [], ids = {}, inventoryBytes = 2;
         for (var i = 1; i <= count; i++) {
             var item = project.item(i), id = item && item.id;
@@ -38,10 +44,13 @@
                 ids[id] || typeof item.name !== 'string') fault('media_project_changed');
             ids[id] = true;
             var itemFile = item instanceof FootageItem && item.file ? String(item.file.fsName) : '';
-            if (item.name.length > 512 || itemFile.length > 512) fault('inspection_result_budget');
+            if (item.name.length > 512 || itemFile.length > 512) fault('inspection_result_budget', {
+                version: 1, stage: 'field_units', itemCount: count, itemIndex: i,
+                nameUnits: Math.min(item.name.length, 2147483647), fileUnits: Math.min(itemFile.length, 2147483647) });
             var row = { id: id, name: item.name, file: itemFile, kind: mediaKind(item) };
             inventoryBytes += utf8Bytes(JSON.stringify(row)) + (i > 1 ? 1 : 0);
-            if (inventoryBytes > maxSnapshotBytes) fault('inspection_result_budget');
+            if (inventoryBytes > maxSnapshotBytes) fault('inspection_result_budget', {
+                version: 1, stage: 'inventory_bytes', itemCount: count, itemIndex: i, inventoryBytes: inventoryBytes });
             items.push(row);
         }
         if (project.revision !== projectRevision || project.numItems !== count) fault('media_project_changed');
@@ -56,24 +65,34 @@
             stamp.push(snapshot.bytes, snapshot.modifiedMs);
         }
         snapshot.revision = JSON.stringify([target, stamp]);
-        if (utf8Bytes(JSON.stringify(snapshot)) > maxSnapshotBytes) fault('inspection_result_budget');
+        var snapshotBytes = utf8Bytes(JSON.stringify(snapshot));
+        if (snapshotBytes > maxSnapshotBytes) fault('inspection_result_budget', {
+            version: 1, stage: 'snapshot_bytes', itemCount: count, snapshotBytes: snapshotBytes });
         return { project: project, file: file, snapshot: snapshot };
     }
-    function inspect(p) {
+    function read(p, collectDiagnostic) {
         try {
             var before = capture(p).snapshot;
             if (p.file === undefined) requireSpace(before, 8192);
             return before;
         }
-        catch (error) { return { readFailureVersion: 1, outcome: 'rejected',
-            code: error.coreCode === 'inspection_result_budget' ? error.coreCode : 'inspection_failed' }; }
+        catch (error) {
+            var result = { readFailureVersion: 1, outcome: 'rejected',
+                code: error.coreCode === 'inspection_result_budget' ? error.coreCode : 'inspection_failed' };
+            if (collectDiagnostic && p.file === undefined && result.code === 'inspection_result_budget' &&
+                error.diagnostic) result.diagnostic = error.diagnostic;
+            return result;
+        }
     }
     function requireSpace(before, extra) {
-        var bytes = utf8Bytes(JSON.stringify(before)) + extra;
+        var snapshotBytes = utf8Bytes(JSON.stringify(before)), bytes = snapshotBytes + extra;
         // The intent keeps the same compact inventory in both input and physicalInput.
         var baselineBytes = utf8Bytes(JSON.stringify(JSON.stringify(compactInventory(before.items))));
+        var projectedIntentBytes = bytes + 2 * baselineBytes;
         if (before.items.length >= maxItems || bytes > maxSnapshotBytes - addedItemAllowance ||
-            bytes + 2 * baselineBytes > 224 * 1024) fault('inspection_result_budget');
+            projectedIntentBytes > 224 * 1024) fault('inspection_result_budget', {
+                version: 1, stage: 'prospect_capacity', itemCount: before.items.length, snapshotBytes: snapshotBytes,
+                projectedSnapshotBytes: bytes, escapedInventoryBytes: baselineBytes, projectedIntentBytes: projectedIntentBytes });
     }
     function compactInventory(items) {
         var rows = [];
@@ -130,5 +149,6 @@
                 protectedFields: after['protected'] } };
         } catch (error) { return { outcome: started ? 'unknown' : 'rejected', code: error.coreCode || 'ae_error' }; }
     }
-    return { inspect: inspect, mutate: mutate, verify: inspect };
+    return { inspect: function (p) { return read(p, true); }, mutate: mutate,
+        verify: function (p) { return read(p, false); } };
 }())

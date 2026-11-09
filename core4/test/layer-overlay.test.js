@@ -121,6 +121,37 @@ test('layer-overlay preflights the original slot and shared uses before a replac
   assert.deepEqual(h.state.writes, { duplicate: 0, replace: 0, matte: 0 });
 });
 
+test('layer-overlay journals the first expression location only for the same prospective project revision', async t => {
+  const h = await fixture(t);
+  const { itemId, ...target } = h.target;
+  const { contractId } = h.broker.getContract({ moduleId });
+  const preflight = () => h.broker.inspect({ moduleId, contractId, target });
+  const layer = h.state.shared.layer(1), transform = layer.transforms;
+  const expression = 'thisComp.layer(2).position';
+  const blocker = { ...transform.property(2), expressionEnabled: true, expression };
+  layer.transforms = { ...transform, property: index => index === 2 ? blocker : transform.property(index) };
+  async function refused(inspect = preflight, code = 'layer_overlay_expression_scope') {
+    await assert.rejects(inspect(), new RegExp(code));
+    const { lastReadFailure } = h.peer.status();
+    assert.equal(lastReadFailure.diagnostic, undefined);
+    const receipt = fs.readFileSync(path.join(h.installation.stateDir, 'receiver/completions.ndjson'), 'utf8')
+      .trim().split('\n').map(JSON.parse).find(row => row.type === 'complete' && row.commandId === lastReadFailure.commandId);
+    assert.equal(receipt.response.result.code, code);
+    return receipt.response.result.diagnostic;
+  }
+  const expected = { version: 1, projectRevision: h.state.project.revision, compId: h.state.shared.id,
+    layerId: layer.id, root: 'ADBE Transform Group', propertyIndices: [2],
+    cause: 'unsupported_expression', expressionUnits: expression.length };
+  assert.deepEqual(await refused(), expected);
+  assert.equal(await refused(h.inspect, 'inspection_failed'), undefined);
+  blocker.expression = null;
+  assert.deepEqual(await refused(), { ...expected, cause: 'expression_unavailable', expressionUnits: 0 });
+  Object.defineProperty(blocker, 'expression', { get() { h.state.project.revision++; return expression; } });
+  assert.equal(await refused(), undefined);
+  assert.deepEqual(h.state.writes, { duplicate: 0, replace: 0, matte: 0 });
+  assert.equal(h.broker.ledger.commands().length, 0);
+});
+
 test('layer-overlay preflight reserves capacity for a longer escaped replacement path', async t => {
   const h = await fixture(t, { flags: { importOnDemand: true, longOverlayLayers: 21 } });
   const { itemId, ...target } = h.target;
