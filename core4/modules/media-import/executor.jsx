@@ -96,7 +96,8 @@
     function compactInventory(items) {
         // Directory indices follow first use in ID order. Zero denotes the empty
         // prefix. A null name copies the exact suffix (no case/path conversion).
-        var directories = [], indices = {}, rows = [], inventoryBytes = 9;
+        // V2 stores ID deltas and omits file fields for pathless other items.
+        var directories = [], indices = {}, rows = [], inventoryBytes = 9, previousId = 0;
         for (var i = 0; i < items.length; i++) {
             var item = items[i], split = Math.max(item.file.lastIndexOf('\\'), item.file.lastIndexOf('/')) + 1;
             var prefix = item.file.slice(0, split), suffix = item.file.slice(split), directory = 0;
@@ -109,13 +110,16 @@
                     inventoryBytes += utf8Bytes(JSON.stringify(prefix)) + (directory > 1 ? 1 : 0);
                 }
             }
-            var row = [item.id, item.name === suffix ? null : item.name, item.kind, directory, suffix];
+            var delta = item.id - previousId;
+            previousId = item.id;
+            var row = item.kind === 0 && item.file === '' ? [delta, item.name] :
+                [delta, item.name === suffix ? null : item.name, item.kind, directory, suffix];
             inventoryBytes += utf8Bytes(JSON.stringify(row)) + (i > 0 ? 1 : 0);
             if (inventoryBytes > maxSnapshotBytes) fault('inspection_result_budget', {
                 version: 1, stage: 'inventory_bytes', itemCount: items.length, itemIndex: i + 1, inventoryBytes: inventoryBytes });
             rows.push(row);
         }
-        return JSON.stringify([1, directories, rows]);
+        return JSON.stringify([2, directories, rows]);
     }
     function validate(p, current) {
         var before = current.snapshot, items = current.items;

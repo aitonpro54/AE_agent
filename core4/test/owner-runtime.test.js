@@ -425,7 +425,7 @@ nodeTest('owner-runtime installed montage locks approved bytes, binds receipts a
   { timeout: 45000, skip: process.platform !== 'win32' }, async t => {
     const f = install(t, buildPackage(SOURCE, 'operator-photo-montage', { runtimeModel: 'owner' }));
     const state = { projectId: path.join(f.directory, 'Стальной снимок.aep'), fixtureDirectory: f.directory,
-      flags: { importOnDemand: true, twoImports: true, items: 1109, capacityFootage: true, longOverlayLayers: 12 } };
+      flags: { importOnDemand: true, twoImports: true, items: 1109, montageCapacity: true, longOverlayLayers: 12 } };
     fs.writeFileSync(state.projectId, 'synthetic AEP');
     const outputDir = path.join(f.directory, 'frames-output');
     fs.mkdirSync(outputDir);
@@ -453,6 +453,29 @@ nodeTest('owner-runtime installed montage locks approved bytes, binds receipts a
     }
     await inspect('project-inspection', { compId: state.comp.id, includeLayerContext: true });
     const projectId = state.projectId;
+    const preflightResult = await inspect('media-import', { projectId, sessionId });
+    const { snapshot: preflight } = preflightResult;
+    assert.ok(preflight, JSON.stringify(preflightResult));
+    const [version, directories, rows] = JSON.parse(preflight.inventory);
+    assert.equal(version, 2);
+    assert.equal(directories.length, 15);
+    assert.equal(rows.filter(row => row.length === 2).length, 933);
+    assert.equal(rows.filter(row => row.length === 5).length, 176);
+    let previousId = 0;
+    const v1Rows = rows.map(([delta, name, ...fields]) => {
+      previousId += delta;
+      return fields.length ? [previousId, name, ...fields] : [previousId, name || null, 0, 0, ''];
+    });
+    const v1 = { ...preflight, inventory: JSON.stringify([1, directories, v1Rows]) };
+    const decoded = decodeMediaInventory(preflight.inventory);
+    assert.equal(decoded.filter(item => item.kind === 'still').length, 119);
+    assert.equal(decoded.filter(item => item.kind === 'av').length, 57);
+    assert.deepEqual(decodeMediaInventory(v1.inventory), decoded);
+    const projectedIntentBytes = snapshot => Buffer.byteLength(canonical(snapshot)) + 8192 +
+      2 * Buffer.byteLength(canonical(snapshot.inventory));
+    const oldProjectedBytes = projectedIntentBytes(v1), newProjectedBytes = projectedIntentBytes(preflight);
+    assert.ok(oldProjectedBytes > 224 * 1024 && newProjectedBytes < 216 * 1024, `${oldProjectedBytes} → ${newProjectedBytes}`);
+    t.diagnostic(`mixed 1109-item fixture prospective intent v1=${oldProjectedBytes}, v2=${newProjectedBytes} bytes`);
     const importInput = item => ({ projectId, sessionId, file: item.file.fsName, sha256: hash(fs.readFileSync(item.file.fsName)) });
     const first = importInput(state.replacement), second = importInput(state.second);
     const overlay = { ...first, compId: state.comp.id, layerId: state.original.id, originalSourceId: state.originalSource.id };

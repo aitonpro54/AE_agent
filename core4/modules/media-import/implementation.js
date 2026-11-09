@@ -12,8 +12,9 @@ function build({ input, evidence }) {
   if (!/^[a-f0-9]{64}$/.test(input.sha256)) throw new Error('media_import_digest');
   const expectedInventory = evidence.inventory;
   const [version, directories, rows] = JSON.parse(expectedInventory);
-  if (version !== 1 || !Array.isArray(directories) || !Array.isArray(rows)) throw new Error('media_import_inventory');
-  if (rows.some(([, , , directory, suffix]) => fileKey((directory ? directories[directory - 1] : '') + suffix) === file)) {
+  if (version !== 2 || !Array.isArray(directories) || !Array.isArray(rows)) throw new Error('media_import_inventory');
+  if (rows.some(([, , , directory, suffix]) => suffix !== undefined &&
+      fileKey((directory ? directories[directory - 1] : '') + suffix) === file)) {
     throw new Error('media_already_imported');
   }
   const bytes = Buffer.byteLength(JSON.stringify(evidence));

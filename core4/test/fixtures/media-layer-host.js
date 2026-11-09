@@ -3,10 +3,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-function capacityFootage(FootageItem, index) {
+function capacityFootage(FootageItem, index, directories = 3) {
   const name = 'Кадр 🚀 documentary sequence ' + String(index).padStart(4, '0') + '.jpg';
-  const folder = 'Архив_' + 'SeasonPart'.repeat(18);
-  const prefix = [`C:\\Проект\\${folder}\\`, `c:/Проект/${folder}/`, `C:\\Проект/${folder}\\`][index % 3];
+  const directory = index % directories;
+  const folder = 'Архив_' + 'SeasonPart'.repeat(18) + (directories > 3 ? directory : '');
+  const prefix = [`C:\\Проект\\${folder}\\`, `c:/Проект/${folder}/`, `C:\\Проект/${folder}\\`][directory % 3];
   return Object.assign(Object.create(FootageItem.prototype), { id: 5000 + index,
     name: index % 31 === 0 ? name.toUpperCase() : name, file: { fsName: prefix + name },
     hasVideo: true, mainSource: { isStill: index % 11 !== 0 }, footageMissing: index % 13 === 0 });

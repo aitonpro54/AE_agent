@@ -131,8 +131,15 @@ function overlayEnvironment(state) {
   const items = [comp, master, unrelated, originalSource, otherSource];
   if (!state.flags.importOnDemand) items.push(...replacements);
   while (items.length < (state.flags.items || 0)) {
-    items.push(state.flags.capacityFootage ? capacityFootage(FootageItem, items.length) :
-      { id: 5000 + items.length, name: 'Кадр "🚀" А ' + items.length });
+    const index = items.length;
+    if (state.flags.montageCapacity && index < 179) {
+      const item = capacityFootage(FootageItem, index, 14);
+      item.footageMissing = false;
+      item.mainSource.isStill = index >= 62;
+      items.push(item);
+    } else items.push(state.flags.montageCapacity
+      ? { id: 50000 + 17 * index, name: 'Разворот «Сцена» "' + index + '" 🚀' }
+      : { id: 5000 + index, name: 'Кадр "🚀" А ' + index });
   }
   class File {
     constructor(fsName) {

@@ -42,14 +42,21 @@ const windows = { skip: process.platform !== 'win32' };
 test('media catalog decodes only complete ID-ordered rows and exact directory references', () => {
   const directory = 'c:\\Архив/Съёмка\\';
   const suffix = 'Ё 🚀.png';
-  const valid = [1, [directory], [[1, null, 0, 0, ''], [17, null, 1, 1, suffix], [50, 'ё 🚀', 2, 1, suffix]]];
-  assert.deepEqual(decodeMediaInventory(JSON.stringify(valid)), [
+  const validV1 = [1, [directory], [[1, null, 0, 0, ''], [17, null, 1, 1, suffix], [50, 'ё 🚀', 2, 1, suffix]]];
+  const validV2 = [2, [directory], [[1, ''], [16, null, 1, 1, suffix], [33, 'ё 🚀', 2, 1, suffix]]];
+  const expected = [
     { id: 1, name: '', file: '', kind: 'other' },
     { id: 17, name: suffix, file: directory + suffix, kind: 'still' },
     { id: 50, name: 'ё 🚀', file: directory + suffix, kind: 'av' }
-  ]);
+  ];
+  for (const catalog of [validV1, validV2]) assert.deepEqual(decodeMediaInventory(JSON.stringify(catalog)), expected);
   const invalid = [
-    [2, valid[1], valid[2]],
+    [3, validV1[1], validV1[2]],
+    [1, validV2[1], validV2[2]],
+    [2, [], [[1, null, 0, 0, '']]],
+    [2, [], [[1, null]]],
+    [2, [], [[1, ''], [0, '']]],
+    [2, [], [[2147483647, ''], [1, '']]],
     [1, [directory, directory], [[1, null, 0, 2, suffix]]],
     [1, [directory, 'C:/Other/'], [[1, null, 0, 2, suffix], [2, null, 0, 1, suffix]]],
     [1, [directory], [[1, null, 0, 0, suffix]]],

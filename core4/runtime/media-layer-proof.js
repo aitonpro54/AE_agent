@@ -22,23 +22,30 @@ function decodeMediaInventory(text) {
   if (typeof text !== 'string' || Buffer.byteLength(text) > 96 * 1024) invalid();
   let catalog;
   try { catalog = JSON.parse(text); } catch { invalid(); }
-  if (!Array.isArray(catalog) || catalog.length !== 3 || catalog[0] !== 1) invalid();
-  const [, directories, rows] = catalog;
+  if (!Array.isArray(catalog) || catalog.length !== 3 || ![1, 2].includes(catalog[0])) invalid();
+  const [version, directories, rows] = catalog;
   if (!Array.isArray(directories) || !Array.isArray(rows) || rows.length > 2048 || directories.length > rows.length ||
       new Set(directories).size !== directories.length ||
       directories.some(dir => !units(dir) || !/[\\/]$/.test(dir))) invalid();
   let lastId = 0, seenDirectories = 0;
   const items = rows.map(row => {
-    if (!Array.isArray(row) || row.length !== 5) invalid();
-    const [id, storedName, kind, directory, suffix] = row;
-    if (!Number.isInteger(id) || id <= lastId || id > 2147483647 ||
-        !Number.isInteger(kind) || kind < 0 || kind >= mediaKinds.length ||
+    if (!Array.isArray(row) || row.length !== 5 && !(version === 2 && row.length === 2)) invalid();
+    const [storedId, storedName, kind, directory, suffix] = row;
+    if (!Number.isInteger(storedId)) invalid();
+    const id = version === 2 ? lastId + storedId : storedId;
+    if (id <= lastId || id > 2147483647) invalid();
+    lastId = id;
+    if (row.length === 2) {
+      if (!units(storedName)) invalid();
+      return { id, name: storedName, file: '', kind: mediaKinds[0] };
+    }
+    if (!Number.isInteger(kind) || kind < 0 || kind >= mediaKinds.length ||
         !Number.isInteger(directory) || directory < 0 || directory > directories.length || directory > seenDirectories + 1 ||
         !units(suffix) || /[\\/]/.test(suffix) ||
+        version === 2 && kind === 0 && directory === 0 && suffix === '' ||
         storedName !== null && (!units(storedName) || storedName === suffix)) invalid();
     const file = (directory ? directories[directory - 1] : '') + suffix;
     if (!units(file)) invalid();
-    lastId = id;
     seenDirectories = Math.max(seenDirectories, directory);
     return { id, name: storedName === null ? suffix : storedName, file, kind: mediaKinds[kind] };
   });
