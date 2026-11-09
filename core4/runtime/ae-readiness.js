@@ -103,9 +103,9 @@ function createAeReadiness({ scan = scanWindows, platform = process.platform, no
   let observed = null, inFlight = null, nativeRead = null;
   function fresh() { return observed && now() - observed.observedAt <= FRESH_MS; }
   return {
-    async refresh() {
+    async refresh({ force = false } = {}) {
       if (platform !== 'win32') return;
-      if (fresh()) return;
+      if (!inFlight && !force && fresh()) return;
       if (!inFlight) inFlight = (async () => {
         try { observed = { ...parseObservation(await scan()), observedAt: now(), coverage: 'visible-top-level-windows-in-observer-desktop' }; }
         catch { observed = { state: 'scan-failed', observedAt: now(), coverage: 'unavailable' }; }

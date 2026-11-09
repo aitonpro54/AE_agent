@@ -341,6 +341,7 @@
       "prefix": "core4/runtime/stdio-entry.js",
       "owner": "recovery-integration",
       "checks": [
+        "ae-readiness",
         "owner-runtime",
         "native-read-recovery",
         "installable-runtime",
@@ -1162,7 +1163,7 @@
   ],
   "checkDependencies": {
     "montage-mandate": ["runtime/montage-mandate.js", "runtime/operator-confirmation.js", "protocol/", "test/montage-mandate.test.js"],
-    "ae-readiness": ["runtime/ae-readiness.js", "test/ae-readiness.test.js"],
+    "ae-readiness": ["runtime/ae-readiness.js", "runtime/stdio-entry.js", "runtime/controller-lease.js", "protocol/json.js", "test/ae-readiness.test.js"],
     "package-location": ["tools/check-package-location.js", "tools/package-installable.js", "test/package-location.test.js", "package.json", "worker.js", "runtime/", "config/", "core/", "protocol/", "modules/", "plan-engine/", "integrations/", "cep/"],
     "start-over-driver": ["runtime/start-over-driver.js", "runtime/start-over-panel-control.js", "runtime/start-over-finisher.js", "runtime/start-over-barrier.js", "runtime/start-over-archive.js", "runtime/start-over-state.js", "runtime/start-over-inspection.js", "runtime/start-over-process.js", "runtime/owner-launch.js", "runtime/windows-owner-process.js", "runtime/client-ipc.js", "runtime/client-entry.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js", "core/", "protocol/", "test/fixtures/start-over-finisher.js", "test/fixtures/owner-lifecycle-fixture.js", "test/start-over-driver.test.js"],
     "start-over-panel-control": ["runtime/start-over-panel-control.js", "protocol/", "integrations/cep/peer-protocol.js", "test/start-over-panel-control.test.js"],

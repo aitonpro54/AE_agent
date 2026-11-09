@@ -598,19 +598,23 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     }
     exact(value, ['moduleId', 'contractId', 'target']);
     if (value.moduleId !== profile.id) fail('contract_identity');
+    const target = value.target || {};
+    const context = invocationContext?.getStore();
+    // A new project baseline may follow an AE open or a newly visible modal.
+    await aeReadiness.refresh({ force: Object.keys(target).length === 0 });
+    context?.assertCurrent();
     const blocker = aeReadiness.blocker();
     if (blocker) {
       const error = Object.assign(new Error(blocker), { code: blocker });
-      const context = invocationContext?.getStore();
-      if (context && !context.observer) completedReadErrors.set(error, { context, moduleId: value.moduleId, contractId, targetHash: hash(canonical(value.target || {})), code: blocker, phase: 'pre-dispatch' });
+      if (context && !context.observer) completedReadErrors.set(error, { context, moduleId: value.moduleId, contractId, targetHash: hash(canonical(target)), code: blocker, phase: 'pre-dispatch' });
       throw error;
     }
     const originalPeerId = peer.status().peer.peerId, originalLink = peer.linkIdentity();
     let result;
-    try { result = await peer.inspect(value.target || {}); }
+    try { result = await peer.inspect(target); }
     catch (error) {
-      const rejection = peer.consumeReadRejection(error), context = invocationContext?.getStore();
-      if (rejection && context && !context.observer && rejection.executorHash === asset.executorHash && rejection.payloadHash === hash(canonical(value.target || {}))) {
+      const rejection = peer.consumeReadRejection(error);
+      if (rejection && context && !context.observer && rejection.executorHash === asset.executorHash && rejection.payloadHash === hash(canonical(target))) {
         completedReadErrors.set(error, { context, moduleId: value.moduleId, contractId, targetHash: rejection.payloadHash, code: rejection.code, physical: rejection.physical });
       }
       throw error;
