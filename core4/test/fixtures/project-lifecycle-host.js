@@ -55,7 +55,7 @@ function lifecycleEnvironment(state) {
   }, open(file) {
     state.opens++;
     state.currentFile = file.fsName;
-    Object.assign(project, { dirty: false, numItems: state.flags.afterOpenItems || 1, revision: 1 });
+    Object.assign(project, { dirty: state.flags.dirtyAfterOpen === true, numItems: state.flags.afterOpenItems || 1, revision: 1 });
     if (state.flags.partialOpen) { project.dirty = true; throw new Error('injected failure after switch'); }
     if (state.flags.diskChangedAfterOpen) fs.writeFileSync(file.fsName, Buffer.alloc(working.length, 65));
     return project;

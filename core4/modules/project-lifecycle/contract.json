@@ -52,6 +52,9 @@
         "type": "string",
         "minLength": 64,
         "maxLength": 64
+      },
+      "allowDirtyDestination": {
+        "type": "boolean"
       }
     },
     "required": [
@@ -126,6 +129,9 @@
         "type": "string",
         "minLength": 64,
         "maxLength": 64
+      },
+      "allowDirtyDestination": {
+        "type": "boolean"
       }
     },
     "required": [

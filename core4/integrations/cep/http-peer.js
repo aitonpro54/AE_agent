@@ -138,10 +138,11 @@ function validateInspectionCoverage(result, payload) {
       (lookup.status === 'not_found' && lookup.method === 'page_scan' && (start !== 1 || itemsScanned !== total))) fail('inspection_result');
   if (result.truncated !== (displayNamesShortened || status !== 'complete' || layers.returned < layers.total)) fail('inspection_result');
 }
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], observeProjectSave, observeProjectLifecycle, assertMediaSourceLock, port = 3457, timeout = 30000, directReadDrainMs = 0, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, requireMutationGuard = false, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], observeProjectSave, observeProjectLifecycle, assertMediaSourceLock, port = 3457, timeout = 30000, projectOpenTimeout, directReadDrainMs = 0, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, requireMutationGuard = false, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
   if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
   if (!Number.isSafeInteger(directReadDrainMs) || directReadDrainMs < 0 || directReadDrainMs > 10000) fail('physical_drain_window');
+  if (projectOpenTimeout !== undefined && (!Number.isSafeInteger(projectOpenTimeout) || projectOpenTimeout <= timeout || projectOpenTimeout >= 120000)) fail('project_open_callback_timeout');
   if (startOverControl !== undefined && (typeof startOverControl?.handle !== 'function' || typeof startOverControl?.status !== 'function')) fail('start_over_control');
   if (preboundServer !== undefined) {
     const address = preboundServer instanceof http.Server && preboundServer.listening && preboundServer.address();
@@ -505,11 +506,14 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     if (closed || store.closed) fail('receiver_lane_closed'); if (!peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); if (pending) fail('physical_lane_pending');
     const directRead = !broker && selected === asset && asset.assetKey === 'project-inspection-v1' && command.moduleId === 'project-inspection' && command.operationId === 'inspect' && command.phase === 'inspect';
     const effect = directRead ? 'none' : command.phase === 'mutate' ? selected.effect || 'unclassified' : 'unclassified';
+    const isProjectOpen = broker && offer && selected.resultProfile === 'project-lifecycle-v1' && command.phase === 'mutate' &&
+      command.moduleId === 'project-lifecycle' && command.operationId === 'transition-project' && command.payload.action === 'open';
+    const callbackTimeout = isProjectOpen ? projectOpenTimeout ?? timeout : timeout;
     const binding = dispatchBinding(command, store.identity); store.begin(command, binding);
     return new Promise((resolve, reject) => {
-      const deadline = performance.now() + timeout;
+      const deadline = performance.now() + callbackTimeout;
       const entry = { command, binding, pins: Object.freeze(commandPins(command)), peer, effect, directRead, deliveryGuard, resolve, reject, broker, offer,
-        delivered: false, callerSettled: false, deadline, drainDeadline: deadline + directReadDrainMs, drainDeadlineAt: Date.now() + timeout + directReadDrainMs };
+        delivered: false, callerSettled: false, deadline, drainDeadline: deadline + directReadDrainMs, drainDeadlineAt: Date.now() + callbackTimeout + directReadDrainMs };
       pending = entry; armDeadline(entry, deadline); deliver();
     });
   }

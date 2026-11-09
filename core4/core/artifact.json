@@ -4,7 +4,7 @@
   "hashes": {
     "core/artifacts.js": "d92cab3fc958edaf606318f0f5fbf4995a98077f94630affd3c991109d3177a6",
     "core/authority.js": "2ac5bd1fd69a0c9a98e271ddbf2ab7759293d1a72cda5e73232e5d1d27cbb04e",
-    "core/broker.js": "10e954b007ae1dc25db64f5de02e764e817be67d2ebc1afd261deac74ff72f7f",
+    "core/broker.js": "20db5d396d6496bcf3d2838f174129e3893b463324b578eec6c300116315c7d6",
     "core/ledger.js": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
     "core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
     "core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",

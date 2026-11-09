@@ -4,6 +4,8 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { performance } = require('node:perf_hooks');
 const PRODUCTION_TIMING = Object.freeze({ callerTimeoutMs: 100000, callbackTimeoutMs: 90000, mcpToolTimeoutSec: 120 });
+// A large project with a native load warning returned its authenticated result after 103 s.
+const PROJECT_OPEN_TIMING = Object.freeze({ callerTimeoutMs: 115000, callbackTimeoutMs: 110000 });
 const DIRECT_READ_DRAIN_MS = 10000;
 // ONLY builtins are loaded until the entire installed release is verified.
 function fail(code) { throw Object.assign(new Error(code), { code }); }
@@ -535,7 +537,9 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     const transport = { identity: hash({ packageHash: installation.packageHash, admissions }), connect: value => peer.transport.connect(value), send: (value, offer) => peer.transport.send(value, offer), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
     privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };
   }
-  broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, ...(ownerLifecycle ? { stateLockToken: ownerLifecycle.brokerToken } : {}), ...(privateEmbedding ? { privateEmbedding } : {}) });
+  broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs,
+    ...(projectLifecycle ? { projectOpenTransportTimeout: PROJECT_OPEN_TIMING.callerTimeoutMs } : {}),
+    ...(ownerLifecycle ? { stateLockToken: ownerLifecycle.brokerToken } : {}), ...(privateEmbedding ? { privateEmbedding } : {}) });
   const admissionGuard = command => {
     if (broker.closed) fail('broker_closed');
     if (broker.stateLock.error) fail(broker.stateLock.error);
@@ -547,7 +551,8 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets,
     observeProjectSave: projectSave?.observe, observeProjectLifecycle: projectLifecycle?.observe,
     assertMediaSourceLock: manual?.assertSourceLock, requireMutationGuard: mode === 'owner',
-    timeout: PRODUCTION_TIMING.callbackTimeoutMs, directReadDrainMs: DIRECT_READ_DRAIN_MS, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard(command) {
+    timeout: PRODUCTION_TIMING.callbackTimeoutMs, ...(projectLifecycle ? { projectOpenTimeout: PROJECT_OPEN_TIMING.callbackTimeoutMs } : {}),
+    directReadDrainMs: DIRECT_READ_DRAIN_MS, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard(command) {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');
     // Retain this exact operation's grant beyond ALS lifetime, including /poll.

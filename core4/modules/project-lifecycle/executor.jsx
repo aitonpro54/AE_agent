@@ -83,6 +83,8 @@
                 !/^checkpoint-[0-9a-f-]{36}$/.test(proof.checkpointRef) ||
                 (p.action !== 'save-as' && p.action !== 'create' && p.action !== 'open')) fault('manual_approval_binding');
             var creating = p.action === 'create', opening = p.action === 'open';
+            if (p.allowDirtyDestination !== undefined && (!opening || typeof p.allowDirtyDestination !== 'boolean')) fault('lifecycle_dirty_destination_policy');
+            var allowDirtyDestination = opening && p.allowDirtyDestination === true;
             if ((creating || opening) && before.dirty) fault('lifecycle_clean_source_required');
             preMutationError = 'lifecycle_native_file_setup_error';
             var destination = new File(p.destination), checkpoint = new File(p.checkpointRoot + '/' + proof.checkpointRef + '.aep');
@@ -92,6 +94,7 @@
             if (opening) caption = 'Открыть существующий AEP';
             var message = caption + ' и переключиться на него?\nТекущий проект: ' + p.projectId +
                 '\nНовый проект: ' + p.destination + '\nКопия прежней версии: ' + checkpoint.fsName;
+            if (allowDirtyDestination) message += '\nДопускается, что после загрузки AE отметит открытый проект как изменённый. Открытие выполняется без сохранения.';
             preMutationError = 'lifecycle_native_confirmation_error';
             var accepted = confirmAction ? confirmAction(message, true, 'AE Agent Core — ' + caption) :
                 confirm(message, true, 'AE Agent Core — ' + caption);
@@ -114,10 +117,13 @@
                 app.newProject();
                 if (!app.project || app.project.file || app.project.numItems !== 0) fault('lifecycle_create_not_empty');
             }
-            if (opening) app.open(destination);
-            else if (app.project.save(destination) !== true) fault('lifecycle_ae_save');
+            if (opening) {
+                var opened = app.open(destination);
+                if (opened === null || opened === undefined) fault('lifecycle_ae_open');
+            } else if (app.project.save(destination) !== true) fault('lifecycle_ae_save');
             var after = snapshot(p, p.destination);
-            if (after.dirty || !opening && after.inventory !== (creating ? '[]' : before.inventory)) fault('lifecycle_native_readback');
+            if (after.dirty !== false && !allowDirtyDestination) fault('lifecycle_native_readback');
+            if (!opening && after.inventory !== (creating ? '[]' : before.inventory)) fault('lifecycle_native_readback');
             return { outcome: 'applied', snapshot: after, transactionReceipt: { version: 2, policyId: policy,
                 proposalId: proof.proposalId, planDigest: proof.planDigest, taskId: proof.taskId, taskEpoch: proof.taskEpoch,
                 stepId: proof.stepId, checkpointRef: proof.checkpointRef, checkpointDigest: proof.checkpointDigest,

@@ -18,7 +18,7 @@ const { validateExecutionPolicyPort, validateReservationHandle } = require('../.
 const { initialState, environment } = require('./ae');
 const { assertImportFile } = require('../../runtime/media-layer-proof');
 const root = path.resolve(__dirname, '../..');
-async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, layoutEnvironment, textEnvironment, assemblyEnvironment, saveEnvironment, lifecycleEnvironment, mediaEnvironment, overlayEnvironment, frameEnvironment, operatorSession } = {}) {
+async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, projectOpenTransportTimeout, projectOpenTimeout, layoutEnvironment, textEnvironment, assemblyEnvironment, saveEnvironment, lifecycleEnvironment, mediaEnvironment, overlayEnvironment, frameEnvironment, operatorSession } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-manual-runtime-')), state = initialState(); delete state.sessionId; Object.assign(state.flags, flags);
   const installation = { installationId: 'fixture-installation', machineId: 'fixture-machine', stateDir: path.join(dir, 'state'), packageHash: '1'.repeat(64), panelToken: '2'.repeat(64), controlToken: '3'.repeat(64) };
   if (saveEnvironment || lifecycleEnvironment || frameEnvironment) Object.assign(state, { projectId: path.join(dir, 'Проект с пробелом.aep'), stateDir: installation.stateDir });
@@ -114,7 +114,7 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
       montage.importedMontageItem(broker.ledger.commands(mandate.body.taskId), mandate, input), montage);
   const manual = createManualPolicy({ selected, layout, additional, provider, installation, getPeer: () => peer, pinAdoption: !!lifecycle, operatorConfirmation });
   const transport = { identity: 'fixture-http-manual-v1', connect: v => peer.transport.connect(v), send: (v, offer) => peer.transport.send(v, offer), completion: v => peer.transport.completion(v), disconnect: () => peer.transport.disconnect() };
-  broker = new Broker({ root: brokerRoot, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: callerTimeout, privateEmbedding: { authority: manual.authority, executionPolicy: manual.port, transport, recordContext: { purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: path.basename(dir), project: { file: state.projectId }, resources: [{ kind: 'project', identity: state.projectId }] } } });
+  broker = new Broker({ root: brokerRoot, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: callerTimeout, projectOpenTransportTimeout, privateEmbedding: { authority: manual.authority, executionPolicy: manual.port, transport, recordContext: { purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: path.basename(dir), project: { file: state.projectId }, resources: [{ kind: 'project', identity: state.projectId }] } } });
   const inspection = JSON.parse(fs.readFileSync(path.join(root, 'modules/project-inspection/artifact.json')));
   const additionalAssets = [{ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', operationId: contract.operationId, executorHash: admission.executorHash, resultProfile: 'manual-text-v1' }];
   if (layout) additionalAssets.push({ assetKey: 'titles-point-layout-v1', moduleId: 'titles-point-layout', operationId: layout.contract.operationId, executorHash: layout.admission.executorHash, resultProfile: 'manual-point-layout-v1' });
@@ -125,7 +125,7 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
   if (frame) additionalAssets.push({ assetKey: 'comp-frame-export-v1', moduleId: 'comp-frame-export', operationId: frame.contract.operationId, executorHash: frame.admission.executorHash, resultProfile: 'comp-frame-export-v1' });
   if (overlay) additionalAssets.push({ assetKey: 'layer-overlay-v1', moduleId: 'layer-overlay', operationId: overlay.contract.operationId, executorHash: overlay.admission.executorHash, resultProfile: 'layer-overlay-v1' });
   additionalAssets.push(...mediaAssets);
-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), port: 0, pollTimeout: 5, timeout: callbackTimeout, asset: { assetKey: 'project-inspection-v1', executorHash: inspection.executorHash }, additionalAssets, observeProjectSave: save?.observe, observeProjectLifecycle: lifecycle?.observe, requireMutationGuard: true,
+  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), port: 0, pollTimeout: 5, timeout: callbackTimeout, projectOpenTimeout, asset: { assetKey: 'project-inspection-v1', executorHash: inspection.executorHash }, additionalAssets, observeProjectSave: save?.observe, observeProjectLifecycle: lifecycle?.observe, requireMutationGuard: true,
     assertMediaSourceLock(commandId) {
       if (state.flags.loseMediaSourceLock) throw new Error('fixture source lock lost after native mutation');
       manual.assertSourceLock(commandId);
@@ -146,6 +146,7 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
       if (hostPhase === 'mutate' && state.flags.holdMutationCallback) state.releaseMutationCallback = () => {
         delete state.releaseMutationCallback;
         cb(result);
+        return pump;
       };
       else cb(result);
     };

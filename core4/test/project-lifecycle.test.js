@@ -3,6 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { setTimeout: pause } = require('node:timers/promises');
 const { hash } = require('../protocol/json');
 const { harness } = require('./fixtures/manual-http-runtime');
 
@@ -111,6 +112,105 @@ test('project-lifecycle opens the exact existing AEP and verifies both saved has
   assert.equal(f.h.broker.ledger.commands()[0].after.currentProject, destination);
 });
 
+test('project-lifecycle explicit dirty Open confirms, preserves disk bytes and exposes the native dirty state', async t => {
+  const f = await flow(t, { flags: { clean: true, dirtyAfterOpen: true }, confirm: ({ message }) => {
+    assert.match(message, /отметит открытый проект как изменённый/);
+    assert.match(message, /Открытие выполняется без сохранения/);
+    return true;
+  } });
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  const input = { ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working), allowDirtyDestination: true };
+  const result = await f.h.broker.run(await f.prepare(input));
+  assert.equal(result.state, 'succeeded', JSON.stringify(result));
+  const [command] = f.h.broker.ledger.commands();
+  assert.equal(command.physicalInput.allowDirtyDestination, true);
+  assert.equal(command.after.dirty, true);
+  assert.equal(result.outputs.transition.dirty, true);
+  assert.equal(command.after.savedFileSha256, hash(working));
+  const fresh = (await f.inspect({ ...f.target, projectId: destination })).snapshot;
+  assert.equal(fresh.currentProject, destination);
+  assert.equal(fresh.dirty, true);
+  assert.equal(fresh.revision, command.after.revision);
+  assert.equal(fresh.inventory, command.after.inventory);
+  assert.equal(fresh.savedFileSha256, command.after.savedFileSha256);
+  const checkpoint = command.after.transition.checkpoint.path;
+  for (const [file, expected] of [[f.target.projectId, original], [checkpoint, original], [destination, working], [checkpoint.replace(/\.aep$/, '.open.aep'), working]]) {
+    assert.deepEqual(fs.readFileSync(file), expected);
+  }
+  assert.equal(f.h.state.opens, 1);
+  assert.equal(f.h.state.writes, 0);
+});
+
+test('project-lifecycle dirty Open defaults to the clean-destination gate', async t => {
+  const f = await flow(t, { flags: { clean: true, dirtyAfterOpen: true }, confirm: ({ message }) => {
+    assert.doesNotMatch(message, /отметит открытый проект как изменённый/);
+    return true;
+  } });
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  const result = await f.h.broker.run(await f.prepare({ ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) }));
+  assert.equal(result.code, 'lifecycle_open_destination_dirty');
+  assert.equal(f.h.broker.ledger.commands()[0].state, 'UNKNOWN');
+  assert.equal(f.h.peer.status().lastCommandOutcome.queue, 'fenced');
+  assert.equal(f.h.state.opens, 1);
+  assert.equal(f.h.state.writes, 0);
+});
+
+test('project-lifecycle dirty destination opt-in is exclusive to Open and still needs a clean source', async t => {
+  const f = await flow(t);
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  await assert.rejects(f.prepare({ ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working), allowDirtyDestination: true }), /lifecycle_clean_source_required/);
+  await assert.rejects(f.prepare({ ...f.target, action: 'save-as', destination: f.destination, allowDirtyDestination: true }), /lifecycle_dirty_destination_policy/);
+  f.h.state.project.dirty = false;
+  await assert.rejects(f.prepare({ ...f.target, action: 'create', destination: f.destination, allowDirtyDestination: false }), /lifecycle_dirty_destination_policy/);
+  assert.equal(f.h.confirmations, 0);
+  assert.equal(f.h.state.opens, 0);
+  assert.equal(f.h.state.writes, 0);
+});
+
+test('project-lifecycle only Open receives the longer callback and Broker deadline', async t => {
+  const options = { flags: { clean: true, holdMutationCallback: true }, callbackTimeout: 150, callerTimeout: 220,
+    projectOpenTimeout: 1000, projectOpenTransportTimeout: 1200 };
+  const f = await flow(t, options);
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  const input = { ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) };
+  const running = f.h.broker.run(await f.prepare(input));
+  const deadline = Date.now() + 2000;
+  while (!f.h.state.releaseMutationCallback && Date.now() < deadline) await pause(5);
+  assert.equal(typeof f.h.state.releaseMutationCallback, 'function');
+  await pause(250);
+  assert.equal(f.h.peer.status().pending.stage, 'handed_to_poll');
+  f.h.state.releaseMutationCallback();
+  assert.equal((await running).state, 'succeeded');
+
+  const ordinary = await flow(t, options);
+  const result = await ordinary.h.broker.run(await ordinary.prepare());
+  assert.equal(result.code, 'host_callback_timeout');
+  assert.equal(ordinary.h.broker.ledger.commands()[0].state, 'UNKNOWN');
+  assert.equal(ordinary.h.peer.status().pending, null);
+});
+
+test('project-lifecycle Open timeout keeps UNKNOWN when the original callback later arrives', async t => {
+  const f = await flow(t, { flags: { clean: true, holdMutationCallback: true }, callbackTimeout: 150, callerTimeout: 220,
+    projectOpenTimeout: 330, projectOpenTransportTimeout: 450 });
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  const input = { ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) };
+  const run = await f.prepare(input);
+  const result = await f.h.broker.run(run);
+  assert.equal(result.code, 'host_callback_timeout');
+  assert.equal(f.h.peer.status().lastCommandOutcome.queue, 'fenced');
+  await assert.rejects(f.h.state.releaseMutationCallback(), /unknown_no_promotion/);
+  await assert.rejects(f.prepare(input), /controller_unresolved/);
+  assert.equal(f.h.broker.ledger.commands()[0].state, 'UNKNOWN');
+  const records = fs.readFileSync(path.join(f.h.installation.stateDir, 'receiver', 'completions.ndjson'), 'utf8').trim().split('\n').map(JSON.parse);
+  assert.deepEqual(records.filter(row => row.commandId === f.h.broker.ledger.commands()[0].commandId).map(row => row.type), ['begin', 'unknown']);
+  assert.equal(f.h.state.opens, 1);
+});
+
 test('project-lifecycle refuses a wrong or changed opening target and retains the original project', async t => {
   const f = await flow(t, { flags: { clean: true }, confirm: ({ state }) => {
     fs.writeFileSync(path.join(path.dirname(state.projectId), 'Saved target.aep'), Buffer.alloc(working.length, 65));
@@ -169,7 +269,7 @@ test('project-lifecycle partial open preserves both disk checkpoints and blocks 
   const f = await flow(t, { flags: { clean: true, partialOpen: true } });
   const destination = path.join(f.h.dir, 'Saved target.aep');
   fs.writeFileSync(destination, working);
-  const input = { ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) };
+  const input = { ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working), allowDirtyDestination: true };
   const run = await f.prepare(input);
   const result = await f.h.broker.run(run);
   assert.equal(result.state, 'stopped');
@@ -203,14 +303,14 @@ test('project-lifecycle reports an already switched AEP when its post-open inven
 });
 
 test('project-lifecycle retains the authenticated open observation after disk proof fails', async t => {
-  const f = await flow(t, { flags: { clean: true, diskChangedAfterOpen: true } });
+  const f = await flow(t, { flags: { clean: true, dirtyAfterOpen: true, diskChangedAfterOpen: true } });
   const destination = path.join(f.h.dir, 'Saved target.aep');
   fs.writeFileSync(destination, working);
-  const result = await f.h.broker.run(await f.prepare({ ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) }));
+  const result = await f.h.broker.run(await f.prepare({ ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working), allowDirtyDestination: true }));
   assert.equal(result.code, 'lifecycle_disk_proof_unavailable');
   const outcome = f.h.peer.status().lastCommandOutcome;
   assert.equal(outcome.queue, 'fenced');
-  assert.deepEqual(outcome.openObservation, { currentProject: destination, dirty: false, diskVerified: false });
+  assert.deepEqual(outcome.openObservation, { currentProject: destination, dirty: true, diskVerified: false });
   const [command] = f.h.broker.ledger.commands();
   assert.equal(command.state, 'UNKNOWN');
   const saved = path.join(f.h.installation.stateDir, 'project-save-checkpoints', command.checkpoint.ref);

@@ -19,8 +19,9 @@ const freshDryrunRefusals = new WeakSet();
 class Broker {
   static isFreshDryrunRefusal(error) { return freshDryrunRefusals.has(error); }
 
-  constructor({ root = path.resolve(__dirname, '..'), stateDir, trace, workerTimeout, transportTimeout = 2000, privateEmbedding, stateLockToken } = {}) {
+  constructor({ root = path.resolve(__dirname, '..'), stateDir, trace, workerTimeout, transportTimeout = 2000, projectOpenTransportTimeout, privateEmbedding, stateLockToken } = {}) {
     if (!stateDir) fail('explicit_state_directory_required');
+    if (projectOpenTransportTimeout !== undefined && (!Number.isSafeInteger(projectOpenTransportTimeout) || projectOpenTransportTimeout <= transportTimeout || projectOpenTransportTimeout >= 120000)) fail('project_open_transport_timeout');
     this.stateLock = acquireStateLock(stateDir, stateLockToken === undefined ? {} : { token: stateLockToken });
     this.closed = false; this.ledger = new Ledger(path.join(stateDir, 'ledger.ndjson')); this.ledger.ownerFault = this.stateLock.error; this.ledger.writeGuard = () => !this.closed;
     try {
@@ -30,7 +31,8 @@ class Broker {
       } });
     } catch (e) { if (!this.stateLock.error) this.stateLock.release(); throw e; }
     this.worker = new WorkerClient({ timeout: workerTimeout, runtime: this.artifacts.runtime });
-    this.transportTimeout = transportTimeout; this.contracts = new Map(); this.evidence = new Map(); this.builds = new Map(); this.proposals = new Map(); this.dryruns = new Map();
+    this.transportTimeout = transportTimeout; this.projectOpenTransportTimeout = projectOpenTransportTimeout;
+    this.contracts = new Map(); this.evidence = new Map(); this.builds = new Map(); this.proposals = new Map(); this.dryruns = new Map();
     this.controllerId = id('controller'); this.channelEpoch = id('channel'); this.secret = crypto.randomBytes(32).toString('hex');
     this.connected = false; this.running = false; this.reconciling = false; this.controllerBusy = false; this.controlPending = 0; this.hooks = {};
     if (privateEmbedding) {
@@ -128,6 +130,8 @@ class Broker {
       commandId, payloadHash: body.payloadHash,
       assert: () => this.assertExecution(selected, payload, phase, executionContext)
     }) : null;
+    const isProjectOpen = offer && body.moduleId === 'project-lifecycle' && body.operationId === 'transition-project' && payload.action === 'open';
+    const timeout = isProjectOpen ? this.projectOpenTransportTimeout ?? this.transportTimeout : this.transportTimeout;
     this.controllerBusy = true;
     let actual;
     try {
@@ -146,7 +150,7 @@ class Broker {
     pending.catch(() => {});
     if (onDispatched) onDispatched();
     let timer;
-    try { const result = await Promise.race([pending, new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error('transport_timeout'), { code: 'transport_timeout' })), this.transportTimeout); })]); if (this.closed) fail('broker_closed'); this.assertExecution(selected, payload, phase, executionContext, 'after-send'); return result; }
+    try { const result = await Promise.race([pending, new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error('transport_timeout'), { code: 'transport_timeout' })), timeout); })]); if (this.closed) fail('broker_closed'); this.assertExecution(selected, payload, phase, executionContext, 'after-send'); return result; }
     finally { clearTimeout(timer); }
   }
   originalDispatch(selected, phase, payload, commandId) {

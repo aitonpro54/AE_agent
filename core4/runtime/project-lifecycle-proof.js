@@ -7,6 +7,10 @@ const { createProjectSaveProof, plainPath, readAep, copyAep, samePath } = requir
 const fileKey = file => path.normalize(file);
 const sha = /^[a-f0-9]{64}$/;
 const supportedActions = ['save-as', 'create', 'open'];
+function allowsDirtyDestination({ action, allowDirtyDestination }) {
+  if (allowDirtyDestination !== undefined && (action !== 'open' || typeof allowDirtyDestination !== 'boolean')) fail('lifecycle_dirty_destination_policy');
+  return action === 'open' && allowDirtyDestination === true;
+}
 
 function writeExclusive(file, bytes) {
   const fd = fs.openSync(file, 'wx', 0o600);
@@ -41,6 +45,7 @@ function createProjectLifecycleProof(options) {
       const { action, destination, projectId, expectedDestinationSha256 } = ctx.input;
       if (!supportedActions.includes(action) || !destination || samePath(fileKey(destination), fileKey(projectId))) fail('lifecycle_destination_path');
       if (action !== 'save-as' && ctx.before.dirty) fail('lifecycle_clean_source_required');
+      allowsDirtyDestination(ctx.input);
       const target = action === 'open' ? readAep(destination) : null;
       if (target && target.digest !== expectedDestinationSha256) fail('lifecycle_destination_hash');
       save.prepareCheckpoint(ctx);
@@ -63,7 +68,9 @@ function createProjectLifecycleProof(options) {
       const observed = { ...snapshot, savedFileSha256: current.digest, checkpointRoot };
       if (!changed) return observed;
       const { expectedSavedSha256, expectedFileStamp } = command.payload;
-      if (snapshot.dirty || !supportedActions.includes(action) || readAep(projectId, expectedFileStamp).digest !== expectedSavedSha256 ||
+      const dirtyAllowed = allowsDirtyDestination(command.payload);
+      if (snapshot.dirty && !dirtyAllowed) fail('lifecycle_native_readback');
+      if (!supportedActions.includes(action) || readAep(projectId, expectedFileStamp).digest !== expectedSavedSha256 ||
           checkpointRoot !== command.payload.checkpointRoot) fail('lifecycle_source_changed');
       const file = checkpointFile(command.payload, _execution.checkpointRef);
       if (action === 'open') {
@@ -77,7 +84,8 @@ function createProjectLifecycleProof(options) {
       const file = checkpointFile(input, checkpoint.ref);
       const expected = { action: input.action, sourceSha256: input.expectedSavedSha256,
         checkpoint: { path: file, sha256: input.expectedSavedSha256, bytes: before.fileStamp.bytes, scope: 'on-disk-before-save' } };
-      if (after.dirty !== false || !sha.test(after.savedFileSha256) || !samePath(fileKey(after.currentProject), fileKey(input.destination)) ||
+      const dirtyAllowed = allowsDirtyDestination(input);
+      if (typeof after.dirty !== 'boolean' || after.dirty && !dirtyAllowed || !sha.test(after.savedFileSha256) || !samePath(fileKey(after.currentProject), fileKey(input.destination)) ||
           (input.action === 'open' ? after.savedFileSha256 !== input.expectedDestinationSha256 :
             after.inventory !== (input.action === 'create' ? '[]' : before.inventory)) || canonical(after.transition) !== canonical(expected)) fail('lifecycle_disk_readback');
     }
