@@ -1,6 +1,7 @@
 (function () {
     var policy = 'current-matching-target-after-local-confirmation-v1';
-    var ownerTag = /(?:^|\n)\[AECore4 overlay v1:(\d+):(\d+)\]$/;
+    var maxProjectLayers = 2048, maxProperties = 100000, maxRevision = 9007199254740991;
+    var ownerTag = /^\[AECore4 overlay v1:(\d+):(\d+)\]$/;
     var transformNames = ['ADBE Anchor Point', 'ADBE Position', 'ADBE Scale', 'ADBE Rotate Z', 'ADBE Opacity'];
     var supportedEffects = ['ADBE Gaussian Blur 2', 'ADBE Fill'];
     var extraRoots = ['ADBE Marker', 'ADBE Time Remapping', 'ADBE Audio Group', 'ADBE Layer Overrides',
@@ -23,6 +24,16 @@
     function listed(names, key) {
         for (var i = 0; i < names.length; i++) if (names[i] === key) return true;
         return false;
+    }
+    function overlayMark(comment) {
+        var lines = text(comment).split(/\r\n|[\r\n]/), found = null;
+        for (var i = 0; i < lines.length; i++) {
+            var mark = ownerTag.exec(lines[i]);
+            if (!mark) continue;
+            if (found) fault('layer_overlay_ownership_ambiguous');
+            found = mark;
+        }
+        return found;
     }
     function isArray(value) { return Object.prototype.toString.call(value) === '[object Array]'; }
     function vector(value) {
@@ -98,7 +109,8 @@
         if (!(layer instanceof AVLayer) || layer.matchName !== 'ADBE AV Layer' || layer.locked !== false ||
             layer.threeDLayer !== false || layer.nullLayer !== false || layer.adjustmentLayer !== false ||
             layer.timeRemapEnabled !== false || layer.isTrackMatte !== false || layer.hasAudio !== false ||
-            layer.solo !== false || layer.collapseTransformation !== false) fault('layer_overlay_layer_profile');
+            layer.solo !== false || layer.collapseTransformation !== false ||
+            layer.trackMatteLayer && layer.trackMatteLayer.enabled !== false) fault('layer_overlay_layer_profile');
         var styles = layer.property('ADBE Layer Styles'), marker = layer.property('ADBE Marker');
         if (styles && number(styles.numProperties) || marker && number(marker.numKeys)) fault('layer_overlay_layer_profile');
         var transforms = layer.property('ADBE Transform Group'), values = [];
@@ -112,7 +124,7 @@
     // The same project-wide scan as layer-insert guards references across unrelated
     // compositions. Only a literal number or pre-expression value is admitted.
     function scan(group, budget, depth) {
-        if (!group || ++budget.properties > 100000 || depth > 32) fault('inspection_result_budget');
+        if (!group || ++budget.properties > maxProperties || depth > 32) fault('inspection_result_budget');
         if (group.propertyType === PropertyType.PROPERTY) {
             if (group.canSetExpression && typeof group.expressionEnabled !== 'boolean') fault('layer_overlay_dependency_unobserved');
             if (group.expressionEnabled === true &&
@@ -155,21 +167,28 @@
     function captures(p) {
         var project = app.project;
         if (!project || !project.file || !project.file.exists || String(project.file.fsName) !== p.projectId) fault('layer_overlay_project_changed');
+        var projectRevision = number(project.revision);
+        if (projectRevision < 0 || projectRevision > maxRevision || projectRevision % 1 !== 0) fault('layer_overlay_project_changed');
         if (project.numItems > 2048) fault('inspection_result_budget');
         var comp = project.itemByID(p.compId), source = project.itemByID(p.itemId);
         if (!(comp instanceof CompItem) || comp.numLayers > 64 || p.originalSourceId === p.itemId) fault('layer_overlay_target');
-        var stack = [], layers = [], original = null, originalIndex = -1, incoming = {}, count = 0, budget = { properties: 0 };
+        var stack = [], layers = [], original = null, originalIndex = -1, originalProperties = 0;
+        var incoming = {}, count = 0, budget = { properties: 0 };
         for (var i = 1; i <= project.numItems; i++) {
             var item = project.item(i);
             if (!(item instanceof CompItem)) continue;
             count += item.numLayers;
-            if (count > 2048) fault('inspection_result_budget');
+            if (count > maxProjectLayers) fault('inspection_result_budget');
             for (var j = 1; j <= item.numLayers; j++) {
                 var layer = item.layer(j);
+                var beforeScan = budget.properties;
                 scanLayer(layer, budget);
                 if (item.id === comp.id) {
                     var summary = layerSummary(layer);
-                    if (layer.id === p.layerId) { original = layer; originalIndex = stack.length; }
+                    if (layer.id === p.layerId) {
+                        original = layer; originalIndex = stack.length;
+                        originalProperties = budget.properties - beforeScan;
+                    }
                     stack.push(summary);
                     layers.push(layer);
                 }
@@ -180,13 +199,13 @@
                 }
             }
         }
-        if (!original || !original.source || original.source.id !== p.originalSourceId || ownerTag.test(original.comment)) fault('layer_overlay_original_changed');
+        if (!original || !original.source || original.source.id !== p.originalSourceId || overlayMark(original.comment)) fault('layer_overlay_original_changed');
         var oldMedia = sourceInfo(original.source), media = sourceInfo(source);
         if (oldMedia.width !== media.width || oldMedia.height !== media.height || oldMedia.pixelAspect !== media.pixelAspect) fault('layer_overlay_source_geometry');
         var inherited = signature(original, stack[originalIndex]), overlay = { id: 0, sourceId: 0, state: 'none', signature: '' };
         for (var n = 0; n < stack.length; n++) {
             if (n === originalIndex) continue;
-            var mark = ownerTag.exec(layers[n].comment), candidate = stack[n];
+            var mark = overlayMark(layers[n].comment), candidate = stack[n];
             if (mark && Number(mark[1]) === original.id) {
                 if (overlay.state !== 'none') fault('layer_overlay_ownership_ambiguous');
                 var overlaySignature = signature(layers[n], candidate);
@@ -215,11 +234,13 @@
             layerId: original.id, originalSourceId: original.source.id, itemId: source.id };
         var protectedFields = JSON.stringify([target, [text(comp.name), number(comp.width), number(comp.height), number(comp.pixelAspect),
             number(comp.duration), number(comp.frameDuration), number(comp.displayStartTime)], stack[originalIndex], inherited, oldMedia, media, uses]);
-        var result = resultSnapshot(target, protectedFields, stack, uses, media, inherited, overlay);
-        return { comp: comp, original: original, source: source, snapshot: result };
+        if (project.revision !== projectRevision) fault('layer_overlay_project_changed');
+        var result = resultSnapshot(target, protectedFields, stack, uses, media, inherited, overlay, projectRevision);
+        return { comp: comp, original: original, source: source, snapshot: result,
+            layersAfter: count + 1, propertiesAfter: budget.properties + originalProperties };
     }
-    function resultSnapshot(target, protectedFields, stack, uses, media, inherited, overlay) {
-        var revision = JSON.stringify([protectedFields, stack, overlay]);
+    function resultSnapshot(target, protectedFields, stack, uses, media, inherited, overlay, projectRevision) {
+        var revision = JSON.stringify([projectRevision, protectedFields, stack, overlay]);
         var result = { target: target, revision: revision, 'protected': protectedFields, stack: stack,
             uses: uses, source: media, signature: inherited, overlay: overlay };
         // Bound escaped snapshot and repeated receipt / frame strings before dispatch.
@@ -238,7 +259,8 @@
     function baseline(p, state) {
         var before = state.snapshot, proof = p._execution;
         if (before.overlay.state !== 'none') fault('layer_overlay_existing_or_partial');
-        if (state.comp.numLayers >= 64 || taggedComment(state.original, p).length > 512) fault('inspection_result_budget');
+        if (state.comp.numLayers >= 64 || state.layersAfter > maxProjectLayers ||
+            state.propertiesAfter > maxProperties || taggedComment(state.original, p).length > 512) fault('inspection_result_budget');
         if (before.revision !== p.expectedRevision || before.source.file !== p.file) fault('stale_target');
         if (!proof || proof.policyId !== policy || proof.baselineRevision !== before.revision ||
             proof.baselineProtected !== before['protected'] || !sameTarget(proof.target, before.target)) fault('manual_approval_binding');
@@ -247,7 +269,7 @@
         stamp[1] = taggedComment(state.original, p);
         stack.splice(position, 0, { id: copyId, sourceId: p.itemId, stamp: JSON.stringify(stamp) });
         resultSnapshot(before.target, before['protected'], stack, before.uses, before.source, before.signature,
-            { id: copyId, sourceId: p.itemId, state: 'applied', signature: before.signature });
+            { id: copyId, sourceId: p.itemId, state: 'applied', signature: before.signature }, maxRevision);
     }
     function sameTarget(a, b) {
         return a && a.sessionId === b.sessionId && a.projectId === b.projectId && a.compId === b.compId &&
@@ -269,18 +291,31 @@
             var origin = current.original, copy, copyId, position = origin.index;
             app.beginUndoGroup('AE Agent Core — фото поверх исходного слоя');
             try {
+                if (confirmAction && confirmAction(message, true, 'AE Agent Core — фото поверх исходного слоя') !== true)
+                    fault('operator_confirmation_expired');
                 started = true;
                 copy = origin.duplicate();
-                if (!copy || copy.id === origin.id || copy.containingComp !== current.comp) fault('layer_overlay_duplicate_unobserved');
+                if (!copy || !copy.containingComp || copy.containingComp.id !== current.comp.id) fault('layer_overlay_duplicate_unobserved');
                 copyId = number(copy.id);
-                copy.comment = taggedComment(origin, p);
-                if (copy.index !== position || origin.index !== position + 1) fault('layer_overlay_duplicate_position');
+                if (copyId < 1 || copyId % 1 !== 0) fault('layer_overlay_duplicate_unobserved');
+                for (var n = 0; n < before.stack.length; n++) {
+                    if (before.stack[n].id === copyId) fault('layer_overlay_duplicate_unobserved');
+                }
+                if (current.comp.numLayers !== before.stack.length + 1 || copy.index !== position || origin.index !== position + 1 ||
+                    current.comp.layer(position).id !== copyId || current.comp.layer(position + 1).id !== p.layerId)
+                    fault('layer_overlay_duplicate_position');
+                var comment = taggedComment(origin, p);
+                copy.comment = comment;
+                if (copy.comment !== comment) fault('layer_overlay_marker_write');
                 copy.replaceSource(current.source, false);
+                var matte = origin.trackMatteLayer, copiedMatte = copy.trackMatteLayer;
+                if (matte && (!copiedMatte || copiedMatte.id !== matte.id || copy.trackMatteType !== origin.trackMatteType))
+                    copy.setTrackMatte(matte, origin.trackMatteType);
                 copy.name = origin.name;
             } finally { app.endUndoGroup(); }
             var after = captures(p).snapshot, previous = [];
             for (var j = 0; j < after.stack.length; j++) if (after.stack[j].id !== copyId) previous.push(after.stack[j]);
-            if (after.overlay.id !== copyId || after.overlay.state !== 'applied' ||
+            if (after.stack.length !== before.stack.length + 1 || after.overlay.id !== copyId || after.overlay.state !== 'applied' ||
                 after['protected'] !== before['protected'] || !same(previous, before.stack) ||
                 after.revision !== captures(p).snapshot.revision) fault('layer_overlay_readback');
             return { outcome: 'applied', snapshot: after, transactionReceipt: { version: 2, policyId: policy,

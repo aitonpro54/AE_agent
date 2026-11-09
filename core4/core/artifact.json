@@ -9,7 +9,7 @@
     "core/receiver-api.js": "44b21771195db0511174fa5badf2c36fae6852079ee89be2a11eec0409c20872",
     "core/receiver.js": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
     "core/record-context.js": "a20497076dbe443fc54035d65c0bb9c148000a4dbac2af819e52652e2545b580",
-    "core/resources.js": "4931f87e510d6758bb4857c8da6e477aad6aa76bab31935e900a27146424f28f",
+    "core/resources.js": "04ca0c0422014da712e11dd57155662424c08507b9e21b390f75c44ad79abde4",
     "core/state-lock.js": "4e515580ec7ceb03cc7a7a5d789048aee9bf0e9a7866d4cf0ee108958ff58e23",
     "core/stdio.js": "e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401",
     "core/worker-client.js": "0b6de176b6a4b68c0b968e468e653408977c500045ebfdd5f0b19844782da93e",

@@ -122,8 +122,27 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
   vm.runInContext('Object.keys=undefined;', context);
   vm.runInContext(Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString(), context);
   const browser = vm.createContext({ JSON, Object, Array, Promise, Error, isFinite }); vm.runInContext(Buffer.from(pkg.files['cep/js/poll-dispatcher.js'], 'base64').toString(), browser);
-  const map = new Map(), dispatcher = browser.Core4PollDispatcher.createDispatcher({ installationId: installation.installationId, pins: { packageHash: installation.packageHash, installationId: installation.installationId, executorHash: inspection.executorHash }, assets: additionalAssets.map(({ assetKey, executorHash }) => ({ assetKey, executorHash, phases: ['inspect', 'mutate', 'verify'] })), storage: { getItem: k => map.get(k) || null, setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) }, csInterface: { evalScript(script, cb) { const run = () => cb(vm.runInContext(script, context)); if (hostPhase === 'mutate' && humanDelayMs) setTimeout(run, humanDelayMs); else run(); } }, complete: p => call('/complete', p) });
-  pump = (async () => { while (!stopped) { const p = await call('/poll', {}); if (p.command) { hostPhase = p.command.phase; await dispatcher.dispatch(p.command); } } })(); pump.catch(() => {});
+  const map = new Map(), dispatcher = browser.Core4PollDispatcher.createDispatcher({ installationId: installation.installationId, pins: { packageHash: installation.packageHash, installationId: installation.installationId, executorHash: inspection.executorHash }, assets: additionalAssets.map(({ assetKey, executorHash }) => ({ assetKey, executorHash, phases: ['inspect', 'mutate', 'verify'] })), storage: { getItem: k => map.get(k) || null, setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) }, csInterface: { evalScript(script, cb) {
+    const run = () => {
+      const result = vm.runInContext(script, context);
+      if (hostPhase === 'mutate' && state.flags.holdMutationCallback) state.releaseMutationCallback = () => {
+        delete state.releaseMutationCallback;
+        cb(result);
+      };
+      else cb(result);
+    };
+    if (hostPhase === 'mutate' && humanDelayMs) setTimeout(run, humanDelayMs); else run();
+  } }, complete: p => call('/complete', p) });
+  pump = (async () => {
+    while (!stopped) {
+      const { command } = await call('/poll', {});
+      if (!command) continue;
+      hostPhase = command.phase;
+      const result = dispatcher.dispatch(command);
+      if (hostPhase === 'mutate' && state.flags.holdMutationCallback) state.retryPendingMutation = () => dispatcher.dispatch(command);
+      await result;
+    }
+  })(); pump.catch(() => {});
   await broker.connect();
   async function proposal(text = 'After') {
     const c = broker.getContract({ moduleId: 'titles-current-target' }), target = { projectId: state.projectId, compId: 1, layerId: 102 };
@@ -132,6 +151,6 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
     const p = broker.propose({ buildId: built.buildId }), dry = await broker.dryrun({ proposalId: p.proposalId });
     return { proposalId: p.proposalId, dryrunRef: dry.dryrunRef, taskId: built.taskId, ...(p.operatorApprovalDigest ? { operatorApprovalDigest: p.operatorApprovalDigest } : {}) };
   }
-  return { broker, peer, provider, state, proposal, dir, brokerRoot, installation, get confirmations() { return confirmations; }, async close() { stopped = true; await peer.close(); broker.close(); await pump.catch(() => {}); } };
+  return { broker, peer, provider, state, proposal, dir, brokerRoot, installation, get confirmations() { return confirmations; }, async close() { stopped = true; await peer.close(); state.releaseMutationCallback?.(); broker.close(); await pump.catch(() => {}); } };
 }
 module.exports = { harness };

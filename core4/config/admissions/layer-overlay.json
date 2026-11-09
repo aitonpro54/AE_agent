@@ -1,11 +1,11 @@
 {
   "moduleId": "layer-overlay",
   "operationId": "duplicate-and-replace-still",
-  "artifactHash": "a1bf615b50de9ec666f0eb37cdeb05fb5b93495efc4ad8cccc2f4b80b634e517",
+  "artifactHash": "c55c681e92f93bf4b83361f8f8b0d614eca43694846c0c94d51084f2f912f9f7",
   "schemaHash": "211346710038ce49bb7deb88d9bab92383915642c30119e392030bae63a59674",
   "resultSchemaHash": "3760024a2906b7b9b543af06e202f74ec29218095677da82cc1fe41932f4078d",
   "effectPolicyHash": "c42009c86f3be65f4fce4ed0c948ced633dc6b04ec41deabf421a84c06262965",
-  "executorHash": "320b85ff751d4e83769199130839c76cf9c34da420eb8a385dd9ef98b9b4f2bc",
+  "executorHash": "5d6d69d6cb9db8eaae5e4ae786030dda87ff7df071aa58e4809ab16f52767c99",
   "protocolVersion": 1,
   "trustApprovalId": "source-review-layer-overlay-20261109",
   "revoked": false

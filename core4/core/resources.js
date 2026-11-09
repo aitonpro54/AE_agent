@@ -12,7 +12,11 @@ function scopesOverlap(a, b) {
   }
   if (a.projectId !== b.projectId) return false;
   if (a.sessionId && b.sessionId && a.sessionId !== b.sessionId) return false;
-  return ['compId', 'layerId', 'itemId', 'file', 'output'].every(k => a[k] === undefined || b[k] === undefined || a[k] === b[k]);
+  if (!['compId', 'layerId', 'file', 'output'].every(k => a[k] === undefined || b[k] === undefined || a[k] === b[k])) return false;
+  // An overlay reserves its original slot. Replacing the proposed source
+  // cannot turn an unresolved overlay of that same slot into unrelated work.
+  return a.originalSourceId !== undefined || b.originalSourceId !== undefined ||
+    a.itemId === undefined || b.itemId === undefined || a.itemId === b.itemId;
 }
 // Neutral durable constraints. This class knows no module IDs or domain effects.
 class Resources {
@@ -72,9 +76,11 @@ class Resources {
       if (!record || !record.resource || typeof record.resource.projectId !== 'string') fail('constraint_schema_unavailable');
       exact(record, ['constraintId', 'schemaVersion', 'resource', 'origin', 'owner', 'checkpointRef', 'allowedEffects', 'reservationOwner', 'unresolvedOutcome', 'revision', 'provenance']);
       if (![1, 2].includes(record.schemaVersion) || typeof record.owner !== 'string' || typeof record.checkpointRef !== 'string' || !Array.isArray(record.allowedEffects) || record.allowedEffects.some(e => typeof e !== 'string') || typeof record.unresolvedOutcome !== 'boolean' || record.schemaVersion === 1 && (!record.resource.sessionId || record.origin !== undefined)) fail('constraint_schema_unavailable');
-      exact(record.resource, ['sessionId', 'projectId', 'compId', 'layerId', 'itemId', 'file', 'output']);
+      exact(record.resource, ['sessionId', 'projectId', 'compId', 'layerId', 'itemId', 'file', 'output',
+        ...(record.schemaVersion === 2 ? ['originalSourceId'] : [])]);
       for (const key of ['sessionId', 'projectId', 'file', 'output']) if (key in record.resource && (typeof record.resource[key] !== 'string' || !record.resource[key])) fail('constraint_schema_unavailable');
-      for (const key of ['compId', 'layerId', 'itemId']) if (key in record.resource && (!Number.isSafeInteger(record.resource[key]) || record.resource[key] < 1)) fail('constraint_schema_unavailable');
+      for (const key of ['compId', 'layerId', 'itemId', 'originalSourceId']) if (key in record.resource && (!Number.isSafeInteger(record.resource[key]) || record.resource[key] < 1)) fail('constraint_schema_unavailable');
+      if ('originalSourceId' in record.resource && ['compId', 'layerId', 'itemId'].some(key => !(key in record.resource))) fail('constraint_schema_unavailable');
       if (record.schemaVersion === 2 && (!record.origin || typeof record.origin.machineId !== 'string' || !Number.isSafeInteger(record.origin.aePid) || record.origin.aePid < 1 || typeof record.origin.aeProcessBirth !== 'string')) fail('constraint_schema_unavailable');
       if (record.schemaVersion === 2) exact(record.origin, ['machineId', 'aePid', 'aeProcessBirth']);
       if (!scopesOverlap({ ...record.resource, ...(record.origin ? { origin: record.origin } : {}) }, scope)) continue;
