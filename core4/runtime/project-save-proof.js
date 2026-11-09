@@ -1,9 +1,11 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-const { hash, canonical, exact, fail } = require('../protocol/json');
+const { createHash } = require('node:crypto');
+const { canonical, exact, fail } = require('../protocol/json');
 
-const MAX_BYTES = 64 * 1024 * 1024;
+const MAX_BYTES = 96 * 1024 * 1024;
+const CHUNK_BYTES = 1024 * 1024;
 const diskError = 'save_disk_proof_unavailable';
 const sha256 = /^[a-f0-9]{64}$/;
 const samePath = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
@@ -18,7 +20,7 @@ function plainPath(file, directory = false) {
   return { resolved, info };
 }
 
-function readAep(file, expectedStamp) {
+function readAep(file, expectedStamp, copyFd) {
   if (!/\.aep$/i.test(file) || /[\x00-\x1f]/.test(file) || file.replace(/^[a-z]:/i, '').includes(':')) fail(diskError);
   const { resolved, info } = plainPath(file);
   if (info.size < 1n || info.size > BigInt(MAX_BYTES)) fail(diskError);
@@ -36,15 +38,33 @@ function readAep(file, expectedStamp) {
   };
   try {
     assertSame(fs.fstatSync(fd, { bigint: true }));
-    const bytes = Buffer.allocUnsafe(stamp.bytes);
-    for (let offset = 0; offset < bytes.length;) {
-      const count = fs.readSync(fd, bytes, offset, bytes.length - offset, offset);
+    const chunk = Buffer.allocUnsafe(Math.min(CHUNK_BYTES, stamp.bytes));
+    const digest = createHash('sha256');
+    for (let offset = 0; offset < stamp.bytes;) {
+      const count = fs.readSync(fd, chunk, 0, Math.min(chunk.length, stamp.bytes - offset), offset);
       if (!count) fail(diskError);
+      digest.update(chunk.subarray(0, count));
+      if (copyFd !== undefined) {
+        for (let written = 0; written < count;) {
+          const size = fs.writeSync(copyFd, chunk, written, count - written);
+          if (!size) fail(diskError);
+          written += size;
+        }
+      }
       offset += count;
     }
     assertSame(fs.fstatSync(fd, { bigint: true }));
     assertSame(plainPath(resolved).info);
-    return { bytes, digest: hash(bytes) };
+    return { bytes: stamp.bytes, digest: digest.digest('hex') };
+  } finally { fs.closeSync(fd); }
+}
+
+function copyAep(source, destination, expected, expectedStamp) {
+  const fd = fs.openSync(destination, 'wx', 0o600);
+  try {
+    const copied = readAep(source, expectedStamp, fd);
+    if (copied.digest !== expected.digest || copied.bytes !== expected.bytes) fail('save_checkpoint_changed');
+    fs.fsyncSync(fd);
   } finally { fs.closeSync(fd); }
 }
 
@@ -63,7 +83,7 @@ function createProjectSaveProof({ stateDir, currentSessionId }) {
   }
   function checkpointFacts(file, digest, bytes) {
     const verified = readAep(file);
-    if (verified.digest !== digest || verified.bytes.length !== bytes) fail('save_checkpoint_changed');
+    if (verified.digest !== digest || verified.bytes !== bytes) fail('save_checkpoint_changed');
     return { path: file, sha256: digest, bytes, scope: 'on-disk-before-save' };
   }
   return {
@@ -80,10 +100,8 @@ function createProjectSaveProof({ stateDir, currentSessionId }) {
       catch (error) { if (error.code !== 'EEXIST') throw error; }
       plainPath(checkpointRoot, true);
       const file = checkpointPath(checkpointRoot, checkpoint.ref);
-      const fd = fs.openSync(file, 'wx', 0o600);
-      try { fs.writeFileSync(fd, source.bytes); fs.fsyncSync(fd); }
-      finally { fs.closeSync(fd); }
-      checkpointFacts(file, source.digest, source.bytes.length);
+      copyAep(input.projectId, file, source, before.fileStamp);
+      checkpointFacts(file, source.digest, source.bytes);
     },
     observe(command, snapshot) {
       exact(snapshot, ['target', 'revision', 'protected', 'dirty', 'fileStamp']);
@@ -110,4 +128,4 @@ function createProjectSaveProof({ stateDir, currentSessionId }) {
   };
 }
 
-module.exports = { createProjectSaveProof, plainPath, readAep, samePath };
+module.exports = { createProjectSaveProof, plainPath, readAep, copyAep, samePath };

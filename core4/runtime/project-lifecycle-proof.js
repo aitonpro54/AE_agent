@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { canonical, exact, fail } = require('../protocol/json');
-const { createProjectSaveProof, plainPath, readAep, samePath } = require('./project-save-proof');
+const { createProjectSaveProof, plainPath, readAep, copyAep, samePath } = require('./project-save-proof');
 
 const fileKey = file => path.normalize(file);
 const sha = /^[a-f0-9]{64}$/;
@@ -47,8 +47,8 @@ function createProjectLifecycleProof(options) {
       const file = checkpointFile(ctx.input, ctx.checkpoint.ref);
       if (target) {
         const copy = file.replace(/\.aep$/, '.open.aep');
-        writeExclusive(copy, target.bytes);
-        save.checkpointFacts(copy, target.digest, target.bytes.length);
+        copyAep(destination, copy, target);
+        save.checkpointFacts(copy, target.digest, target.bytes);
       } else reserveDestination(destination, file + '.destination.json');
     },
     observe(command, snapshot) {
@@ -68,7 +68,7 @@ function createProjectLifecycleProof(options) {
       const file = checkpointFile(command.payload, _execution.checkpointRef);
       if (action === 'open') {
         if (current.digest !== command.payload.expectedDestinationSha256) fail('lifecycle_destination_hash');
-        save.checkpointFacts(file.replace(/\.aep$/, '.open.aep'), current.digest, current.bytes.length);
+        save.checkpointFacts(file.replace(/\.aep$/, '.open.aep'), current.digest, current.bytes);
       } else assertDestination(destination, file + '.destination.json');
       const checkpoint = save.checkpointFacts(file, expectedSavedSha256, expectedFileStamp.bytes);
       return { ...observed, transition: { action, sourceSha256: expectedSavedSha256, checkpoint } };

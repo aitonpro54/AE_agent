@@ -91,7 +91,7 @@
           "bytes": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 67108864
+            "maximum": 100663296
           },
           "modifiedMs": {
             "type": "integer",
@@ -182,7 +182,7 @@
           "bytes": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 67108864
+            "maximum": 100663296
           },
           "modifiedMs": {
             "type": "integer",
@@ -247,7 +247,7 @@
               "bytes": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 67108864
+                "maximum": 100663296
               },
               "scope": {
                 "type": "string",

@@ -2,14 +2,38 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { hash } = require('../protocol/json');
 const { buildPackage } = require('../tools/package-installable');
 const { harness } = require('./fixtures/manual-http-runtime');
+const { readAep, copyAep } = require('../runtime/project-save-proof');
 
 const original = Buffer.concat([Buffer.from('RIFX'), Buffer.from(Array.from({ length: 70000 }, (_, index) => index % 256))]);
 const revised = Buffer.concat([original, Buffer.from('changed')]);
+
+test('project-save streams and verifies a 91.3 MiB checkpoint with bounded file size', t => {
+  const root = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'core4-large-aep-'));
+  const source = path.join(root, 'source.aep'), copy = path.join(root, 'checkpoint.aep');
+  t.after(() => {
+    for (const file of [copy, source]) if (fs.existsSync(file)) fs.unlinkSync(file);
+    fs.rmdirSync(root);
+  });
+  const bytes = 95724372;
+  fs.writeFileSync(source, original);
+  fs.truncateSync(source, bytes);
+  const expected = readAep(source);
+  assert.equal(expected.bytes, bytes);
+  assert.equal(expected.digest, hash(fs.readFileSync(source)));
+  const stamp = { bytes, modifiedMs: Math.floor(fs.statSync(source).mtimeMs) };
+  copyAep(source, copy, expected, stamp);
+  assert.deepEqual(readAep(copy), expected);
+  assert.throws(() => copyAep(source, copy, expected, stamp), { code: 'EEXIST' });
+  assert.throws(() => readAep(source, { ...stamp, bytes: bytes - 1 }), { code: 'save_disk_proof_unavailable' });
+  fs.truncateSync(source, 96 * 1024 * 1024 + 1);
+  assert.throws(() => readAep(source), { code: 'save_disk_proof_unavailable' });
+});
 
 function saveEnvironment(state) {
   fs.writeFileSync(state.projectId, original);
