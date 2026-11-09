@@ -129,6 +129,29 @@ test('project-lifecycle refuses a wrong or changed opening target and retains th
   assert.equal(f.h.state.currentFile, f.target.projectId);
 });
 
+test('project-lifecycle records the destination checkpoint stage when native read throws before open', async t => {
+  const f = await flow(t, { flags: { clean: true, throwDestinationCheckpointRead: true } });
+  const destination = path.join(f.h.dir, 'Saved target.aep');
+  fs.writeFileSync(destination, working);
+  const input = { ...f.target, action: 'open', destination, expectedDestinationSha256: hash(working) };
+  const result = await f.h.broker.run(await f.prepare(input));
+  const code = 'lifecycle_native_destination_checkpoint_error';
+  assert.equal(result.code, 'executor_rejected');
+  assert.equal(result.message, code);
+  const [command] = f.h.broker.ledger.commands();
+  assert.equal(command.state, 'rejected');
+  assert.equal(f.h.peer.status().lastCommandOutcome.code, code);
+  assert.equal(f.h.peer.status().lastCommandOutcome.queue, 'idle');
+  assert.equal(f.h.confirmations, 1);
+  assert.equal(f.h.state.opens, 0);
+  assert.equal(f.h.state.currentFile, f.target.projectId);
+  const checkpoint = path.join(f.h.state.stateDir, 'project-save-checkpoints', command.checkpoint.ref);
+  assert.deepEqual(fs.readFileSync(checkpoint + '.aep'), original);
+  assert.deepEqual(fs.readFileSync(checkpoint + '.open.aep'), working);
+  assert.deepEqual(fs.readFileSync(f.target.projectId), original);
+  assert.deepEqual(fs.readFileSync(destination), working);
+});
+
 test('project-lifecycle compares the complete compact inventory above 1079 items and fails closed above its text budget', async t => {
   const f = await flow(t, { flags: { items: 1080 } });
   const { snapshot } = await f.inspect();

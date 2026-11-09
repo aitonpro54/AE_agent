@@ -49,6 +49,9 @@ function saveEnvironment(state) {
     open(mode) { assert.equal(mode, 'r'); assert.equal(this.encoding, 'BINARY'); this.fd = fs.openSync(this.fsName, 'r'); return true; }
     seek(offset, mode) { assert.equal(mode, 0); this.offset = offset; return true; }
     read(count) {
+      if (state.flags.throwCheckpointRead && this.fsName !== state.projectId) {
+        throw new Error('injected File.read failure at ' + this.fsName);
+      }
       const data = Buffer.alloc(count), read = fs.readSync(this.fd, data, 0, count, this.offset);
       this.offset += read;
       return data.toString('latin1', 0, read);
@@ -161,6 +164,23 @@ test('project-save detects same-length disk drift during confirmation before AE 
   assert.equal(result.message, 'save_checkpoint_changed');
   assert.equal(f.h.state.saves, 0);
   assert.deepEqual(fs.readFileSync(f.target.projectId), changed);
+});
+
+test('project-save records the checkpoint stage when native read throws before save', async t => {
+  const f = await flow(t, { flags: { throwCheckpointRead: true } });
+  const result = await f.h.broker.run(await f.prepare());
+  const code = 'save_native_checkpoint_error';
+  assert.equal(result.code, 'executor_rejected');
+  assert.equal(result.message, code);
+  const [command] = f.h.broker.ledger.commands();
+  assert.equal(command.state, 'rejected');
+  assert.equal(f.h.peer.status().lastCommandOutcome.code, code);
+  assert.equal(f.h.peer.status().lastCommandOutcome.queue, 'idle');
+  assert.equal(f.h.confirmations, 1);
+  assert.equal(f.h.state.saves, 0);
+  const checkpoint = path.join(f.h.state.stateDir, 'project-save-checkpoints', command.checkpoint.ref + '.aep');
+  assert.deepEqual(fs.readFileSync(checkpoint), original);
+  assert.deepEqual(fs.readFileSync(f.target.projectId), original);
 });
 
 test('project-save fences an uncertain native write and preserves the original checkpoint', async t => {

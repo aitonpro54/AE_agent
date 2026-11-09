@@ -22,6 +22,9 @@ function lifecycleEnvironment(state) {
     open(mode) { assert.equal(mode, 'r'); assert.equal(this.encoding, 'BINARY'); this.fd = fs.openSync(this.fsName, 'r'); return true; }
     seek(offset, mode) { assert.equal(mode, 0); this.offset = offset; return true; }
     read(count) {
+      if (state.flags.throwDestinationCheckpointRead && this.fsName.endsWith('.open.aep')) {
+        throw new Error('injected File.read failure at ' + this.fsName);
+      }
       const buffer = Buffer.alloc(count), actual = fs.readSync(this.fd, buffer, 0, count, this.offset);
       this.offset += actual;
       return buffer.toString('latin1', 0, actual);

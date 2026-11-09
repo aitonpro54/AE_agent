@@ -74,7 +74,7 @@
         return 'lifecycle_open_' + location + '_' + dirty;
     }
     function apply(p, confirmAction) {
-        var started = false;
+        var started = false, preMutationError = 'lifecycle_native_baseline_error';
         try {
             var before = snapshot(p, p.projectId), proof = p._execution;
             if (before.revision !== p.expectedRevision || app.project.renderQueue.rendering !== false) fault('stale_target');
@@ -84,6 +84,7 @@
                 (p.action !== 'save-as' && p.action !== 'create' && p.action !== 'open')) fault('manual_approval_binding');
             var creating = p.action === 'create', opening = p.action === 'open';
             if ((creating || opening) && before.dirty) fault('lifecycle_clean_source_required');
+            preMutationError = 'lifecycle_native_file_setup_error';
             var destination = new File(p.destination), checkpoint = new File(p.checkpointRoot + '/' + proof.checkpointRef + '.aep');
             if (!matches(destination, p.destination) || destination.exists !== opening || !destination.parent.exists || !checkpoint.exists) fault('lifecycle_destination_unavailable');
             var caption = 'Сохранить как';
@@ -91,15 +92,20 @@
             if (opening) caption = 'Открыть существующий AEP';
             var message = caption + ' и переключиться на него?\nТекущий проект: ' + p.projectId +
                 '\nНовый проект: ' + p.destination + '\nКопия прежней версии: ' + checkpoint.fsName;
+            preMutationError = 'lifecycle_native_confirmation_error';
             if ((confirmAction || confirm)(message, true, 'AE Agent Core — ' + caption) !== true) fault('local_cancelled');
+            preMutationError = 'lifecycle_native_source_checkpoint_error';
             checkBytes(app.project.file, checkpoint, before.fileStamp.bytes);
             if (opening) {
+                preMutationError = 'lifecycle_native_destination_checkpoint_error';
                 var targetCopy = new File(p.checkpointRoot + '/' + proof.checkpointRef + '.open.aep');
                 if (!destination.exists || destination.alias) fault('lifecycle_destination_unavailable');
                 checkBytes(destination, targetCopy, targetCopy.length);
             }
+            preMutationError = 'lifecycle_native_recheck_error';
             if (!same(snapshot(p, p.projectId), before) || app.project.renderQueue.rendering !== false ||
                 destination.exists !== opening || !destination.parent.exists || !opening && destination.parent.getFiles().length !== 0) fault('stale_target');
+            preMutationError = 'lifecycle_native_confirmation_error';
             if (confirmAction && confirmAction(message, true, 'AE Agent Core — ' + caption) !== true) fault('operator_confirmation_expired');
             started = true;
             if (creating) {
@@ -116,7 +122,8 @@
                 baselineDigest: proof.baselineDigest, baselineRevision: proof.baselineRevision, target: after.target,
                 resultRevision: after.revision, protectedFields: after['protected'] } };
         } catch (error) { return { outcome: started ? 'unknown' : 'rejected',
-            code: started && p.action === 'open' ? openOutcome(p) : error.coreCode || 'ae_error' }; }
+            code: started && p.action === 'open' ? openOutcome(p) :
+                error && error.coreCode || (started ? 'ae_error' : preMutationError) }; }
     }
     return { inspect: read, verify: read, mutate: apply };
 }())

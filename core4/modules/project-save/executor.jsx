@@ -39,21 +39,26 @@
         }
     }
     function apply(p, confirmAction) {
-        var started = false;
+        var started = false, preMutationError = 'save_native_baseline_error';
         try {
             var before = snapshot(p), proof = p._execution;
             if (before.revision !== p.expectedRevision) fault('stale_target');
             if (!proof || proof.policyId !== policy || proof.baselineRevision !== before.revision ||
                 proof.baselineProtected !== before['protected'] || !proof.target || proof.target.sessionId !== p.sessionId ||
                 proof.target.projectId !== p.projectId || !/^checkpoint-[0-9a-f-]{36}$/.test(proof.checkpointRef)) fault('manual_approval_binding');
+            preMutationError = 'save_native_file_setup_error';
             var file = key(p.checkpointRoot) + '/' + proof.checkpointRef + '.aep', checkpoint = new File(file);
             if (key(checkpoint.fsName) !== file || !checkpoint.exists) fault('save_checkpoint_unavailable');
             var message = 'Сохранить текущий проект After Effects?\nПроект: ' + p.projectId +
                 '\nРезервная копия версии с диска: ' + checkpoint.fsName;
+            preMutationError = 'save_native_confirmation_error';
             if ((confirmAction || confirm)(message, true, 'AE Agent Core — сохранение проекта') !== true) fault('local_cancelled');
+            preMutationError = 'save_native_checkpoint_error';
             var project = current(p);
             checkBytes(project.file, checkpoint, before.fileStamp.bytes);
+            preMutationError = 'save_native_recheck_error';
             if (JSON.stringify(snapshot(p)) !== JSON.stringify(before)) fault('stale_target');
+            preMutationError = 'save_native_confirmation_error';
             if (confirmAction && confirmAction(message, true, 'AE Agent Core — сохранение проекта') !== true)
                 fault('operator_confirmation_expired');
             started = true;
@@ -66,7 +71,8 @@
                 baselineDigest: proof.baselineDigest, baselineRevision: proof.baselineRevision, target: after.target,
                 resultRevision: after.revision, protectedFields: after['protected'] } };
         } catch (error) {
-            return { outcome: started ? 'unknown' : 'rejected', code: error.coreCode || 'ae_error' };
+            return { outcome: started ? 'unknown' : 'rejected',
+                code: error && error.coreCode || (started ? 'ae_error' : preMutationError) };
         }
     }
     return { inspect: read, verify: read, mutate: apply };
