@@ -14,10 +14,24 @@ const OBSERVERS = new Set(['core_status', 'core_diagnostics', 'list_modules', 'g
 const READ_REJECTION_CODES = Object.freeze(['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']);
 const PRE_DISPATCH_READ_CODES = Object.freeze(['ae_modal_observed', 'ae_unresponsive']);
 
+function classifyPhysicalRead(value) {
+  const { stage, code, terminalReceipt, handoff, nativeStart, queue } = value || {};
+  if (!value || value.moduleId !== 'project-inspection' || value.phase !== 'inspect' || value.effect !== 'none' || value.intentRecorded !== true ||
+      !/^inspect-[a-f0-9-]{36}$/.test(value.commandId) || !['none', 'offered'].includes(handoff) ||
+      (handoff === 'none' ? nativeStart !== 'not_started' : nativeStart !== 'unknown')) return null;
+  const receipt = terminalReceipt && /^[a-f0-9]{64}$/.test(terminalReceipt.receiptRef) && /^[a-f0-9]{64}$/.test(terminalReceipt.recordHash);
+  if (stage === 'not_dispatched' && code === 'inspection_not_dispatched' && handoff === 'none' && queue === 'idle' && receipt && terminalReceipt.source === 'receiver') return { outcome: 'rejected', code, nextAction: 'core_status' };
+  if (stage === 'terminal' && READ_REJECTION_CODES.includes(code) && handoff === 'offered' && queue === 'idle' && receipt && ['host', 'registry'].includes(terminalReceipt.source)) return { outcome: 'rejected', code, nextAction: 'core_diagnostics' };
+  if (stage === 'draining' && code === 'inspection_callback_pending' && handoff === 'offered' && queue === 'busy' && terminalReceipt === null && Number.isSafeInteger(value.drainDeadlineAt)) return { outcome: 'pending', code, nextAction: 'core_status' };
+  if (stage === 'unknown' && queue === 'fenced' && terminalReceipt === null) return { outcome: 'unknown', code: 'owner_outcome_uncertain', nextAction: 'core_diagnostics' };
+  return null;
+}
+
 function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, workSession = () => ({ sessionId: null, baselineRequired: false, resetPending: false }), clock, ttlMs, drainIntervalMs = 100 } = {}) {
   if (!runtime || typeof runtime.status !== 'function' || typeof activity !== 'function' || typeof invoke !== 'function' || typeof workSession !== 'function' || !Number.isSafeInteger(drainIntervalMs) || drainIntervalMs < 1 || drainIntervalMs > 1000) throw new Error('owner_options');
   const lease = createControllerLease({ clock, ttlMs }), sessions = new Map(), accepted = new Set(), timers = new Set(), ownErrors = new WeakSet();
   const rejectedReads = new WeakSet();
+  const physicalReadErrors = new WeakMap();
   const refs = { evidence: new Map(), build: new Map(), proposal: new Map(), dryrun: new Map(), task: new Map() };
   let closed = false, frozen = false;
   function fail(code) { const e = new Error(code); ownErrors.add(e); e.code = code; throw e; }
@@ -133,6 +147,12 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
         let rejection;
         try { rejection = consumeReadRejection(error, { method, payload, context }); } catch {}
         const value = facts();
+        const physical = method === 'inspect_module_target' && classifyPhysicalRead(rejection?.physical);
+        if (physical && (physical.outcome !== 'rejected' || !value.pending && !value.unresolved && !value.fault)) {
+          const rejected = new Error(physical.code);
+          physicalReadErrors.set(rejected, { ...physical, physical: rejection.physical });
+          throw rejected;
+        }
         const supportedRejection = rejection?.phase === 'pre-dispatch' ? PRE_DISPATCH_READ_CODES.includes(rejection.code) : READ_REJECTION_CODES.includes(rejection?.code);
         if (method === 'inspect_module_target' && supportedRejection && !value.pending && !value.unresolved && !value.fault) {
           const rejected = new Error(rejection.code); rejected.code = rejection.code; rejectedReads.add(rejected); throw rejected;
@@ -148,6 +168,8 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
   async function onRequest(request) {
     try { return { ok: true, value: await dispatch(request) }; }
     catch (error) {
+      const physical = physicalReadErrors.get(error);
+      if (physical) return { ok: false, ...physical, ...(physical.outcome === 'unknown' ? { requestId: request.requestId || null } : {}) };
       if (rejectedReads.has(error)) return { ok: false, outcome: 'rejected', code: error.code, nextAction: 'core_diagnostics' };
       // Only our own errors and the fixed private lease vocabulary cross IPC.
       const code = ownErrors.has(error) || LEASE_ERRORS.includes(error?.code) ? error.code : 'runtime_request_failed';
@@ -163,4 +185,4 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
   }
   return Object.freeze({ onAttach, onDetach, onRequest, status, close, freeze() { frozen = true; }, bootId: lease.status().bootId });
 }
-module.exports = { createAttachmentOwner, TOOL_METHODS, OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES, PRE_DISPATCH_READ_CODES };
+module.exports = { createAttachmentOwner, TOOL_METHODS, OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES, PRE_DISPATCH_READ_CODES, classifyPhysicalRead };

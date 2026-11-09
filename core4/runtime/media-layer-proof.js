@@ -72,4 +72,4 @@ function createMediaLayerProof(moduleId, currentSessionId) {
   };
 }
 
-module.exports = { createMediaLayerProof };
+module.exports = { createMediaLayerProof, assertImportFile };

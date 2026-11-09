@@ -198,7 +198,12 @@ test('durable project read rejections cross the production owner IPC and stdio w
     const frame = (await p.request('/poll', {})).value.command; assert.ok(frame);
     assert.equal((await p.request('/complete', completion(frame, { readFailureVersion: 1, outcome: 'rejected', code }))).status, 200);
     const response = await read; assert.equal(response.error, undefined); assert.equal(response.result.isError, true);
-    assert.deepEqual(JSON.parse(response.result.content[0].text), { outcome: 'rejected', code, nextAction: 'core_diagnostics' });
+    const outcome = JSON.parse(response.result.content[0].text);
+    assert.equal(outcome.outcome, 'rejected'); assert.equal(outcome.code, code); assert.equal(outcome.nextAction, 'core_diagnostics');
+    assert.equal(outcome.physical.commandId, frame.commandId); assert.equal(outcome.physical.phase, 'inspect');
+    assert.equal(outcome.physical.handoff, 'offered'); assert.equal(outcome.physical.nativeStart, 'unknown');
+    assert.equal(outcome.physical.terminalReceipt.receiptRef, frame.originalBinding.receiptRef);
+    assert.equal(outcome.physical.terminalReceipt.source, code.startsWith('host_') ? 'registry' : 'host');
     const events = fs.readFileSync(journalFile, 'utf8').trim().split('\n').map(JSON.parse);
     assert.equal(events.at(-1).type, 'complete'); assert.equal(events.at(-1).response.result.code, code);
     assert.equal(runtime.status().attachmentOwner.fenced, false); assert.equal(runtime.status().attachmentOwner.accepted, 0);
@@ -436,17 +441,19 @@ test('owner main signal persists desired-stop and drains original completion wit
   assert.equal((await main.exit).code, 0); assert.equal(main.stderr, 'owner_draining\n'); assert.equal(fs.existsSync(path.join(f.d.stateDir, 'runtime-maintenance.json')), true);
 });
 
-test('later panel poll after controller detach cannot deliver a queued command and keeps the receiver fenced', async t => {
+test('later panel poll after controller detach durably settles an undelivered read without a receiver fence', async t => {
   const f = install(t), runtime = await directOwner(t, f), client = await ipc(t, f), observer = await ipc(t, f), p = await panel(runtime.status().physical.port, f.d);
   await ok(client.call('controller_acquire', {})); const contract = await ok(client.call('get_module_contract', { moduleId: 'project-inspection' }));
   const result = client.call('inspect_module_target', { moduleId: 'project-inspection', contractId: contract.contractId, target: {} });
   await until(() => runtime.status().physical.pending); const unknown = assert.rejects(result, e => e.code === 'ipc_outcome_uncertain'); client.close(); await unknown;
   await until(() => runtime.status().attachmentOwner.attachments === 1);
-  const denied = await p.request('/poll', {}); assert.equal(denied.status, 403); assert.equal(denied.value.error, 'controller_client_detached');
-  await until(() => runtime.status().attachmentOwner.accepted === 0); assert.equal(runtime.status().physical.storeClosed, true);
-  assert.equal((await observer.call('controller_acquire', {})).code, 'owner_recovery_required');
+  const denied = await p.request('/poll', {}); assert.equal(denied.status, 200); assert.equal(denied.value.command, null);
+  await until(() => runtime.status().attachmentOwner.accepted === 0); assert.equal(runtime.status().physical.storeClosed, false);
+  assert.equal(runtime.status().physical.lastCommandOutcome.reason, 'controller_client_detached');
+  const grant = await ok(observer.call('controller_acquire', {}));
+  await ok(observer.call('controller_release', { leaseToken: grant.leaseToken }));
   const events = fs.readFileSync(path.join(f.d.stateDir, 'receiver/completions.ndjson'), 'utf8').trim().split('\n').map(JSON.parse);
-  assert.deepEqual(events.map(e => e.type), ['origin', 'begin', 'unknown']);
+  assert.deepEqual(events.map(e => e.type), ['origin', 'begin', 'complete']);
 });
 
 async function guardedFixture(t, { expireAtBegin = false, beforeSubmit } = {}) {
@@ -471,16 +478,16 @@ async function guardedFixture(t, { expireAtBegin = false, beforeSubmit } = {}) {
 
 test('captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry', async t => {
   const f = await guardedFixture(t), result = f.call('inspect_module_target', { contractId: 'a'.repeat(64), target: {} }); await until(() => f.peer.status().pending); f.at(1000);
-  const denied = await f.p.request('/poll', {}); assert.equal(denied.status, 403); assert.equal(denied.value.error, 'controller_lease_expired');
+  const denied = await f.p.request('/poll', {}); assert.equal(denied.status, 200); assert.equal(denied.value.command, null);
   assert.equal((await result).code, 'owner_outcome_uncertain'); await until(() => f.owner.status().accepted === 0);
-  assert.equal(f.peer.status().storeClosed, true); assert.equal(f.checks(), 1);
+  assert.equal(f.peer.status().storeClosed, false); assert.equal(f.peer.status().lastCommandOutcome.reason, 'controller_lease_expired'); assert.equal(f.checks(), 1);
 });
 
 test('active poll delivery checks the captured lease again immediately after store.begin', async t => {
   const f = await guardedFixture(t, { expireAtBegin: true }), waitingPoll = f.p.request('/poll', {});
   await new Promise(resolve => setTimeout(resolve, 10));
   const result = await f.call('inspect_module_target', { contractId: 'a'.repeat(64), target: {} }); assert.equal(result.code, 'owner_outcome_uncertain');
-  assert.equal((await waitingPoll).value.command, null); assert.equal(f.peer.status().pending, null); assert.equal(f.peer.status().storeClosed, true);
+  assert.equal((await waitingPoll).value.command, null); assert.equal(f.peer.status().pending, null); assert.equal(f.peer.status().storeClosed, false);
 });
 
 test('lease expiry across a trusted await is checked at physical submit before durable begin', async t => {

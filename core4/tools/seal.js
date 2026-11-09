@@ -24,7 +24,7 @@ function main() {
     write(dir + '/artifact.json', artifact);
     console.log(JSON.stringify({ packaged: ['cep-bridge'], pin: hash(artifact), admissionsWritten: false, ...(args.includes('--trace') ? { reads } : {}), liveCalls: 0 })); return;
   }
-  const mediaModules = ['media-import', 'layer-insert'];
+  const mediaModules = ['media-import', 'layer-insert', 'layer-overlay'];
   const projectModules = ['project-assembly', 'project-save', 'project-lifecycle', ...mediaModules];
   const optional = ['titles-point-layout', 'text-layer', 'text-variant', 'comp-render', ...projectModules];
   const moduleIds = ['photo-placeholder', 'titles', 'titles-current-target', ...optional];
@@ -41,7 +41,7 @@ function main() {
     const version = currentProjectModule ? '4.1.2' : optional.includes(id) ? '4.1.0' : manual ? '4.0.0' : '4.0.0-m1';
     const { pin } = seal(dir, id, 'implementation.js', ['implementation.js', 'contract.json', 'executor.jsx'], manual ? {} : { 'protocol/target-contract.json': true }, version);
     const contract = JSON.parse(read(dir + '/contract.json'));
-    const trustApprovalId = currentProjectModule ? 'source-review-' + id + (mediaModules.includes(id) ? '-20261108' : '-20261107') :
+    const trustApprovalId = id === 'layer-overlay' ? 'source-review-layer-overlay-20261109' : currentProjectModule ? 'source-review-' + id + (mediaModules.includes(id) ? '-20261108' : '-20261107') :
       ['text-layer', 'text-variant', 'comp-render'].includes(id) ? 'source-review-' + id + '-20261105' : 'M1-source-review-' + id + '-20261026';
     const admission = { moduleId: id, operationId: contract.operationId, artifactHash: pin, schemaHash: hash(contract.inputSchema), resultSchemaHash: hash(contract.snapshotSchema), effectPolicyHash: hash(contract.effectPolicy), executorHash: hash(read(dir + '/executor.jsx')), protocolVersion: 1, trustApprovalId, revoked: false };
     // Only --reviewed-source writes admission records: generated hashes are not runtime grants.

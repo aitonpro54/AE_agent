@@ -92,8 +92,9 @@ function openCompletionStore({ directory, io = fs, installationContext, ownerTok
     },
     complete(commandId, response) {
       const record = records.get(commandId); if (!record || record.state !== 'ongoing') fail('receiver_completion_order');
-      append({ type: 'complete', commandId, response });
+      const terminal = append({ type: 'complete', commandId, response });
       records.set(commandId, { ...record, state: 'completed', response: JSON.parse(canonical(response)) });
+      return terminal.recordHash;
     },
     unknown(commandId) {
       const record = records.get(commandId);

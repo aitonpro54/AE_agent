@@ -1,5 +1,7 @@
 {
   "owners": [
+    { "prefix": "core4/runtime/montage-mandate.js", "owner": "montage-mandate", "checks": ["montage-mandate"] },
+    { "prefix": "core4/test/montage-mandate.test.js", "owner": "montage-mandate", "checks": ["montage-mandate"] },
     { "prefix": "core4/runtime/ae-readiness.js", "owner": "ae-readiness", "checks": ["ae-readiness"] },
     { "prefix": "core4/test/ae-readiness.test.js", "owner": "ae-readiness", "checks": ["ae-readiness"] },
     { "prefix": "core4/tools/validate-diff.js", "owner": "validation", "checks": ["validation-routing", "validation-reuse"] },
@@ -1148,6 +1150,7 @@
     }
   ],
   "checkDependencies": {
+    "montage-mandate": ["runtime/montage-mandate.js", "runtime/operator-confirmation.js", "protocol/", "test/montage-mandate.test.js"],
     "ae-readiness": ["runtime/ae-readiness.js", "test/ae-readiness.test.js"],
     "package-location": ["tools/check-package-location.js", "tools/package-installable.js", "test/package-location.test.js", "package.json", "worker.js", "runtime/", "config/", "core/", "protocol/", "modules/", "plan-engine/", "integrations/", "cep/"],
     "start-over-driver": ["runtime/start-over-driver.js", "runtime/start-over-panel-control.js", "runtime/start-over-finisher.js", "runtime/start-over-barrier.js", "runtime/start-over-archive.js", "runtime/start-over-state.js", "runtime/start-over-inspection.js", "runtime/start-over-process.js", "runtime/owner-launch.js", "runtime/windows-owner-process.js", "runtime/client-ipc.js", "runtime/client-entry.js", "runtime/attachment-owner.js", "runtime/controller-lease.js", "runtime/installation.js", "runtime/stdio-entry.js", "runtime/recovery-inspection.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js", "core/", "protocol/", "test/fixtures/start-over-finisher.js", "test/fixtures/owner-lifecycle-fixture.js", "test/start-over-driver.test.js"],
@@ -1721,6 +1724,7 @@
     "standalone-installer": ["tools/package-standalone-installer.js","tools/finish-owner-maintenance.js","tools/maintain-owner.js","tools/standalone-installer.js","tools/package-installable.js", "config/compositions/","tools/install-core4.js","tools/disposition-install-preflight.js","test/standalone-installer.test.js","test/fixtures/standalone-history.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-project-inspection-v1.txt","test/fixtures/legacy-installation-v1.js","runtime/","cep/","core/","protocol/","modules/","plan-engine/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","worker.js","config/catalog.json","config/admissions/","tools/legacy-owner-migration.js","tools/operate-stopped-readoption.js","tools/operate-stopped-update.js","tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/windows-retained-process.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"]
   },
   "checkCommands": {
+    "montage-mandate": ["node", "--test", "--test-name-pattern=montage-mandate", "test/montage-mandate.test.js"],
     "ae-readiness": ["node", "--test", "--test-name-pattern=ae-readiness", "test/ae-readiness.test.js"],
     "validation-reuse": ["node", "--test", "--test-name-pattern=validation-reuse", "test/validation-reuse.test.js"],
     "package-location": ["node", "--test", "--test-name-pattern=package-location", "test/package-location.test.js"],
@@ -1931,6 +1935,7 @@
     ]
   },
   "checkPolicy": {
+    "montage-mandate": { "kind": "component" },
     "ae-readiness": { "kind": "component" },
     "validation-reuse": { "kind": "integration" },
     "package-location": { "kind": "integration" },

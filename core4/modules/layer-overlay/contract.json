@@ -1,0 +1,411 @@
+{
+  "moduleId": "layer-overlay",
+  "operationId": "duplicate-and-replace-still",
+  "protocolVersion": 1,
+  "executionPolicy": "current-matching-target-after-local-confirmation-v1",
+  "targetSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "compId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "layerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "originalSourceId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "itemId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId",
+      "originalSourceId",
+      "itemId"
+    ],
+    "additionalProperties": false
+  },
+  "buildSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "compId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "layerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "originalSourceId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "itemId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "file": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "sha256": {
+        "type": "string",
+        "minLength": 64,
+        "maxLength": 64
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId",
+      "originalSourceId",
+      "itemId",
+      "file",
+      "sha256"
+    ],
+    "additionalProperties": false
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "projectId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "compId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "layerId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "originalSourceId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "itemId": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2147483647
+      },
+      "file": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      },
+      "sha256": {
+        "type": "string",
+        "minLength": 64,
+        "maxLength": 64
+      },
+      "expectedRevision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 15000
+      }
+    },
+    "required": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId",
+      "originalSourceId",
+      "itemId",
+      "file",
+      "sha256",
+      "expectedRevision"
+    ],
+    "additionalProperties": false
+  },
+  "snapshotSchema": {
+    "type": "object",
+    "properties": {
+      "target": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "compId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "layerId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "originalSourceId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "itemId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "sessionId",
+          "projectId",
+          "compId",
+          "layerId",
+          "originalSourceId",
+          "itemId"
+        ],
+        "additionalProperties": false
+      },
+      "revision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 15000
+      },
+      "protected": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 10000
+      },
+      "stack": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "sourceId": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "stamp": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "id",
+            "sourceId",
+            "stamp"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 1,
+        "maxItems": 64
+      },
+      "uses": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "compId": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "layerId": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "sourceId": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          "required": [
+            "compId",
+            "layerId",
+            "sourceId"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 0,
+        "maxItems": 128
+      },
+      "source": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1073741824
+          },
+          "modifiedMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "pixelAspect": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 100
+          },
+          "alpha": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "file",
+          "bytes",
+          "modifiedMs",
+          "width",
+          "height",
+          "pixelAspect",
+          "alpha"
+        ],
+        "additionalProperties": false
+      },
+      "signature": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 10000
+      },
+      "overlay": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "sourceId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "none",
+              "applied",
+              "partial",
+              "suspect"
+            ]
+          },
+          "signature": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "id",
+          "sourceId",
+          "state",
+          "signature"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "target",
+      "revision",
+      "protected",
+      "stack",
+      "uses",
+      "source",
+      "signature",
+      "overlay"
+    ],
+    "additionalProperties": false
+  },
+  "effectPolicy": {
+    "effect": "composition-layer-overlay",
+    "targetFields": [
+      "sessionId",
+      "projectId",
+      "compId",
+      "layerId",
+      "originalSourceId",
+      "itemId"
+    ],
+    "expectedBindings": {
+      "expectedRevision": "revision"
+    },
+    "resultBindings": {},
+    "preserve": [
+      "protected"
+    ],
+    "requiresCheckpoint": true,
+    "confirmation": "native-current-target",
+    "checkpointKind": "layer-overlay-preimage-v1"
+  }
+}

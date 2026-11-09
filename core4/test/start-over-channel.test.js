@@ -9,11 +9,11 @@ async function fixture(t,options={}) {
   const directory=fs.mkdtempSync(path.join(os.tmpdir(),'core4-reset-channel-'));
   const peer=peerFactory({installation,asset,directory,port:0,timeout:200,pollTimeout:80,...peerOptions});await peer.listen();
   t.after(async()=>{await peer.close();assert.ok(path.resolve(directory).startsWith(path.resolve(os.tmpdir())+path.sep));fs.rmSync(directory,{recursive:true});});
-  function raw(route,body) {return new Promise((resolve,reject)=>{const req=http.request({host:'127.0.0.1',port:peer.status().port,path:route,method:'POST',agent:false,headers:{Origin:'null','Content-Type':'application/json'}},res=>{let text='';res.on('data',b=>text+=b);res.on('end',()=>resolve({status:res.statusCode,value:JSON.parse(text)}));});req.on('error',reject);req.end(canonical(body));});}
+  function raw(route,body,discard=false) {return new Promise((resolve,reject)=>{const req=http.request({host:'127.0.0.1',port:peer.status().port,path:route,method:'POST',agent:false,headers:{Origin:'null','Content-Type':'application/json'}},res=>{if(discard){res.destroy();resolve({status:res.statusCode});return;}let text='';res.on('data',b=>text+=b);res.on('end',()=>resolve({status:res.statusCode,value:JSON.parse(text)}));});req.on('error',reject);req.end(canonical(body));});}
   const challenge=(await raw('/challenge',{role:'panel'})).value,peerId='channel-panel';assert.equal((await raw('/link',{challenge,peerId,proof:mac({challenge,peerId},installation.panelToken)})).status,200);let sequence=0;
-  async function request(route,payload){const body={epoch:challenge.epoch,peerId,sequence:++sequence,method:'POST',path:route,payload};return raw(route,{body,mac:mac(body,installation.panelToken)});}
+  async function request(route,payload,discard){const body={epoch:challenge.epoch,peerId,sequence:++sequence,method:'POST',path:route,payload};return raw(route,{body,mac:mac(body,installation.panelToken)},discard);}
   async function call(route,payload){const response=await request(route,payload);assert.equal(response.status,200,JSON.stringify(response.value));assert.equal(response.value.mac,mac(response.value.body,installation.panelToken));return response.value.body.payload;}
-  return {peer,call,request,raw,directory,events:()=>fs.readFileSync(path.join(directory,'completions.ndjson'),'utf8').trim().split('\n').map(JSON.parse)};
+  return {peer,call,request,raw,directory,challenge,peerId,events:()=>fs.readFileSync(path.join(directory,'completions.ndjson'),'utf8').trim().split('\n').map(JSON.parse)};
 }
 const observation={observationVersion:1,target:{projectId:null,compId:null},project:{name:'',numItems:0,saved:false},compositions:[],layers:[],truncated:false,aeVersion:'fixture'};
 function completion(frame){return{commandId:frame.commandId,originalBinding:frame.originalBinding,pins:frame.pins,result:observation};}
@@ -132,8 +132,8 @@ test('start-over-channel session keys preserve legacy latch and reject caller ma
   assert.notEqual(api.storageKey(installation.installationId,sid1),api.storageKey(installation.installationId,sid2));for(const bad of ['',{},'foreign-session','../escape'])assert.throws(()=>f.dispatcher(bad),/physical_session_binding/);
   const key=api.storageKey(installation.installationId);f.storage.setItem(key,'{"legacy":true}');f.dispatcher(sid2);assert.equal(f.storage.getItem(key),'{"legacy":true}');
 });
-function faultPeer(){
-  let failSync=false;const io={...fs,fsyncSync(fd){if(failSync)throw Object.assign(Error('fixture_fsync'),{code:'fixture_fsync'});return fs.fsyncSync(fd);}};
+function faultPeer(observeSync = () => {}){
+  let failSync=false;const io={...fs,fsyncSync(fd){observeSync();if(failSync)throw Object.assign(Error('fixture_fsync'),{code:'fixture_fsync'});return fs.fsyncSync(fd);}};
   const filename=path.resolve(__dirname,'../integrations/cep/http-peer.js'),m=new Module(filename,module);m.filename=filename;m.paths=Module._nodeModulePaths(path.dirname(filename));
   m.require=name=>name==='./completion-store'?{openCompletionStore:options=>require('../integrations/cep/completion-store').openCompletionStore({...options,io})}:require(name.startsWith('.')?path.resolve(path.dirname(filename),name):name);
   m._compile(fs.readFileSync(filename,'utf8'),filename);return{...m.exports,arm(){failSync=true;}};
@@ -145,4 +145,105 @@ test('start-over-channel UNKNOWN persist failure cannot escape timer or retain a
 test('start-over-channel failed durable completion cannot mint positive baseline proof and timeout stays finite',async t=>{
   const api=faultPeer(),f=await fixture(t,{peerFactory:api.createHttpPeer,timeout:80}),result=f.peer.inspect({}).catch(e=>e),frame=(await f.call('/poll',{})).command;api.arm();
   assert.equal((await f.request('/complete',completion(frame))).status,403);const error=await result;assert.equal(error.code,'host_callback_timeout');assert.equal(api.consumeProjectObservation(f.peer,error),null);assert.equal(f.peer.status().storeFault,true);assert.equal(f.peer.status().pending,null);
+});
+
+test('start-over-channel no poll settles direct intent durably without dispatch or a new channel', async t => {
+  const f = await fixture(t, { timeout: 80, directReadDrainMs: 500 });
+  const result = f.peer.inspect({}).catch(error => error);
+  const begin = f.events().at(-1);
+  assert.equal(begin.type, 'begin');
+  assert.equal(f.peer.status().pending.stage, 'queued');
+  const refusal = f.peer.consumeReadRejection(await result);
+  const terminal = f.events().at(-1);
+  assert.equal(refusal.code, 'inspection_not_dispatched');
+  assert.equal(refusal.physical.handoff, 'none');
+  assert.equal(refusal.physical.nativeStart, 'not_started');
+  assert.equal(refusal.physical.queue, 'idle');
+  assert.equal(refusal.physical.terminalReceipt.recordHash, terminal.recordHash);
+  assert.deepEqual(terminal.response.result, { notDispatchedVersion: 1, outcome: 'rejected', code: refusal.code });
+  assert.equal(f.peer.status().storeClosed, false);
+  const forgedFrame = { commandId: begin.commandId, originalBinding: begin.originalBinding,
+    pins: { installationId: installation.installationId, packageHash: installation.packageHash, executorHash: asset.executorHash } };
+  assert.equal((await f.request('/complete', { ...forgedFrame, result: terminal.response.result })).value.error, 'unknown_no_promotion');
+  assert.deepEqual(await f.call('/poll', {}), { command: null });
+  const fresh = f.peer.inspect({});
+  const frame = (await f.call('/poll', {})).command;
+  assert.notEqual(frame.commandId, begin.commandId);
+  assert.equal(frame.originalBinding.channelEpoch, begin.originalBinding.channelEpoch);
+  await f.call('/complete', completion(frame));
+  assert.deepEqual((await fresh).observation, observation);
+  const file = fs.readFileSync(path.join(f.directory, 'completions.ndjson'));
+  assert.equal(require('../runtime/recovery-inspection').inspectReceiverHistory(file).settled, true);
+});
+
+test('start-over-channel direct late callback requires its original authenticated delivery and settles before unlock', async t => {
+  let durableWrite;
+  const api = faultPeer(() => { if (durableWrite) durableWrite(); });
+  const f = await fixture(t, { peerFactory: api.createHttpPeer, timeout: 150, directReadDrainMs: 3000, workSessionId: sid1 });
+  const ui = dispatcherWindow(), old = ui.dispatcher(sid1, httpCompletion(f));
+  const result = f.peer.inspect({}).catch(error => error);
+  const frame = (await f.call('/poll', {})).command;
+  const dispatched = old.dispatch(frame);
+  const error = await result, outcome = f.peer.consumeReadRejection(error).physical;
+  assert.equal(error.code, 'inspection_callback_pending');
+  assert.equal(outcome.stage, 'draining'); assert.equal(outcome.nativeStart, 'unknown');
+  assert.equal(f.peer.status().pending.commandId, frame.commandId);
+  assert.equal(f.peer.status().storeClosed, false);
+  assert.throws(() => f.peer.inspect({}), e => e.code === 'physical_lane_pending');
+  assert.deepEqual(await f.call('/poll', {}), { command: null });
+  const history = f.events();
+  for (const changed of [{ pins: { ...frame.pins, executorHash: 'f'.repeat(64) } },
+    { originalBinding: { ...frame.originalBinding, channelEpoch: 'foreign' } },
+    { originalBinding: { ...frame.originalBinding, receiverStoreIdentity: 'foreign' } }, { commandId: 'foreign' }]) {
+    assert.equal((await f.request('/complete', { ...completion(frame), ...changed })).value.error, 'completion_correlation');
+  }
+  for (const changed of [{ epoch: 'foreign' }, { peerId: 'reloaded-panel' }]) {
+    const body = { epoch: f.challenge.epoch, peerId: f.peerId, sequence: 1, method: 'POST', path: '/complete', payload: completion(frame), ...changed };
+    assert.equal((await f.raw('/complete', { body, mac: mac(body, installation.panelToken) })).value.error, 'peer_auth_or_replay');
+  }
+  const now = Date.now;
+  try {
+    Date.now = () => now() + 46000;
+    const challenge = (await f.raw('/challenge', { role: 'panel' })).value, peerId = 'reloaded-panel';
+    assert.equal((await f.raw('/link', { challenge, peerId, proof: mac({ challenge, peerId }, installation.panelToken) })).value.error, 'duplicate_peer');
+  } finally { Date.now = now; }
+  assert.deepEqual(f.events(), history);
+  let observedFsync = false;
+  durableWrite = () => {
+    observedFsync = true;
+    assert.equal(f.peer.status().pending.stage, 'draining');
+    assert.equal(f.peer.status().lastCommandOutcome.terminalReceipt, null);
+  };
+  ui.callbacks[0](JSON.stringify(observation));
+  await dispatched;
+  durableWrite = null;
+  assert.equal(observedFsync, true);
+  assert.equal(await result, error);
+  assert.equal(api.consumeProjectObservation(f.peer, error), null);
+  assert.equal(f.peer.status().pending, null);
+  assert.equal(f.peer.status().lastCommandOutcome.late, true);
+  assert.equal(f.peer.status().lastCommandOutcome.terminalReceipt.recordHash, f.events().at(-1).recordHash);
+  const settled = f.events();
+  await f.call('/complete', completion(frame));
+  assert.deepEqual(f.events(), settled);
+  assert.equal(old.pending(), null);
+});
+
+test('start-over-channel lost poll response remains handed-off unknown after drain expiry', async t => {
+  const f = await fixture(t, { timeout: 120, directReadDrainMs: 160 });
+  const result = f.peer.inspect({}).catch(error => error);
+  assert.equal((await f.request('/poll', {}, true)).status, 200);
+  const begin = f.events().at(-1);
+  assert.equal(f.peer.status().pending.handoff, 'offered');
+  assert.equal(f.peer.status().pending.nativeStart, 'unknown');
+  assert.equal((await result).code, 'inspection_callback_pending');
+  while (!f.peer.status().storeClosed) await new Promise(resolve => setTimeout(resolve, 10));
+  const unknown = f.events();
+  const receipt = { commandId: begin.commandId, originalBinding: begin.originalBinding, result: observation,
+    pins: { installationId: installation.installationId, packageHash: installation.packageHash, executorHash: asset.executorHash } };
+  assert.equal((await f.request('/complete', receipt)).value.error, 'unknown_no_promotion');
+  assert.deepEqual(f.events(), unknown);
+  assert.deepEqual(unknown.map(event => event.type), ['origin', 'begin', 'unknown']);
+  assert.equal(f.peer.status().lastCommandOutcome.queue, 'fenced');
+  assert.throws(() => f.peer.inspect({}), e => e.code === 'receiver_lane_closed');
 });

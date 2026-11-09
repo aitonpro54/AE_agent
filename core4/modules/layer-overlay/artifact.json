@@ -1,0 +1,11 @@
+{
+  "id": "layer-overlay",
+  "version": "4.1.2",
+  "entry": "implementation.js",
+  "hashes": {
+    "implementation.js": "0002f5803f103aa1bd1452bac8475c017aed869a51c3f34328350c543d1b95d8",
+    "contract.json": "8d5374dd61ccb1e2aa78d0f457edb8e7bd8bb6db85cb5dfc50b9319a60aa141a",
+    "executor.jsx": "320b85ff751d4e83769199130839c76cf9c34da420eb8a385dd9ef98b9b4f2bc"
+  },
+  "publicDependencies": {}
+}

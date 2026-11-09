@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const PRODUCTION_TIMING = Object.freeze({ callerTimeoutMs: 100000, callbackTimeoutMs: 90000, mcpToolTimeoutSec: 120 });
+const DIRECT_READ_DRAIN_MS = 10000;
 // ONLY builtins are loaded until the entire installed release is verified.
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function canonical(value) {
@@ -21,6 +22,7 @@ const RESULT_PROFILES = Object.freeze({
   'owned-project-assembly-v1': 'runtime/project-assembly-proof.js',
   'media-import-v1': 'runtime/media-layer-proof.js',
   'layer-insert-v1': 'runtime/media-layer-proof.js',
+  'layer-overlay-v1': 'runtime/layer-overlay-proof.js',
   'current-project-save-v1': 'runtime/project-save-proof.js',
   'project-lifecycle-v1': 'runtime/project-lifecycle-proof.js',
   'manual-point-layout-v1': 'runtime/point-layout-proof.js',
@@ -42,6 +44,7 @@ const OPERATOR_EFFECTS = Object.freeze({
   'project-lifecycle': 'project-lifecycle-transition',
   'media-import': 'project-media-import',
   'layer-insert': 'composition-layer-insert',
+  'layer-overlay': 'composition-layer-overlay',
 });
 const INSPECTION_ASSET = { assetKey: 'project-inspection-v1', moduleId: 'project-inspection', path: 'modules/project-inspection', admission: 'modules/project-inspection/artifact.json', policy: 'read-only-current-observation-v1', phases: ['inspect'] };
 function compositionPaths(files, closures, readArtifact) {
@@ -88,6 +91,9 @@ function declarativeProfiles(composition, release, json, checked) {
         id === 'media-import' && profile.operationId !== 'ingest-footage' ||
         (profile.resultProfile === 'layer-insert-v1') !== (id === 'layer-insert') ||
         id === 'layer-insert' && profile.operationId !== 'insert-footage-layer' ||
+        (profile.resultProfile === 'layer-overlay-v1') !== (id === 'layer-overlay') ||
+        id === 'layer-overlay' && (profile.operationId !== 'duplicate-and-replace-still' ||
+          profile.operatorConfirmation !== 'registry-v1' || !release.hashes['runtime/media-layer-proof.js']) ||
         (profile.resultProfile === 'current-project-save-v1') !== (id === 'project-save') ||
         id === 'project-save' && profile.operationId !== 'save-current-project' ||
         (profile.resultProfile === 'project-lifecycle-v1') !== (id === 'project-lifecycle') ||
@@ -457,13 +463,19 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const asset = { assetKey: inspection.assetKey, executorHash: inspection.executorHash };
   const mutationAssets = selected.assets.filter(a => a.resultProfile);
   const manualAsset = mutationAssets.find(a => a.resultProfile === 'manual-text-v1');
-  let provider, manual, privateEmbedding, projectSave, projectLifecycle;
+  let provider, manual, privateEmbedding, projectSave, projectLifecycle, operatorConfirmation, latestProjectRead;
+  const observedMontageProject = () => {
+    const linked = peer.status().peer;
+    return latestProjectRead && linked.connected && linked.peerId === latestProjectRead.peerId &&
+      Date.now() - latestProjectRead.at <= 120000 ? latestProjectRead.projectId : null;
+  };
   if (manualAsset) {
     const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
     const { createManualPolicy } = require('./manual-policy.js');
     provider = createWindowsReservationProvider({ installation, getBroker: () => broker, getPeer: () => peer });
-    const operatorConfirmation = mutationAssets.some(item => item.operatorConfirmation)
-      ? require('./operator-confirmation.js').createOperatorConfirmation(installation, () => workSession?.status().sessionId)
+    operatorConfirmation = mutationAssets.some(item => item.operatorConfirmation)
+      ? require('./operator-confirmation.js').createOperatorConfirmation(installation,
+        () => workSession?.status().sessionId, observedMontageProject, () => workSession?.status().sessionId ?? installation.installationId)
       : undefined;
     if (operatorConfirmation && !workSession) fail('operator_confirmation_owner_required');
     const profileFor = item => {
@@ -474,6 +486,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
         case 'owned-project-assembly-v1': return { ...binding, ...require('./project-assembly-proof.js').createProjectAssemblyProof(() => workSession?.status().sessionId ?? installation.installationId) };
         case 'media-import-v1':
         case 'layer-insert-v1': return { ...binding, ...require('./media-layer-proof.js').createMediaLayerProof(item.moduleId, () => workSession?.status().sessionId ?? installation.installationId) };
+        case 'layer-overlay-v1': return { ...binding, ...require('./layer-overlay-proof.js').createLayerOverlayProof(() => workSession.status().sessionId ?? installation.installationId) };
         case 'current-project-save-v1':
           projectSave = require('./project-save-proof.js').createProjectSaveProof({ stateDir: installation.stateDir,
             currentSessionId: () => workSession?.status().sessionId ?? installation.installationId });
@@ -504,14 +517,14 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (broker.ledger.unresolved().some(c => c.commandId !== command?.commandId)) fail('controller_unresolved');
   };
   const additionalAssets = mutationAssets.map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
-    operationId: item.contract.operationId, executorHash: item.executorHash, resultProfile: item.resultProfile }));
+    operationId: item.contract.operationId, executorHash: item.executorHash, resultProfile: item.resultProfile, effect: item.contract.effectPolicy.effect }));
   peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets,
     observeProjectSave: projectSave?.observe, observeProjectLifecycle: projectLifecycle?.observe,
-    timeout: PRODUCTION_TIMING.callbackTimeoutMs, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
+    timeout: PRODUCTION_TIMING.callbackTimeoutMs, directReadDrainMs: DIRECT_READ_DRAIN_MS, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');
     // Retain this exact operation's grant beyond ALS lifetime, including /poll.
-    return () => context.assertCurrent();
+    return () => { context.assertCurrent(); operatorConfirmation?.assertDelivery(command); };
   } } : {}), installationContext: { descriptorPath: descriptor }, ...(ownerLifecycle ? { ownerToken: ownerLifecycle.receiverToken } : {}) });
   const contractId = hash({ packageHash: installation.packageHash, admission, contract }); let closed = false;
   const facade = Object.create(broker);
@@ -559,7 +572,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     catch (error) {
       const rejection = peer.consumeReadRejection(error), context = invocationContext?.getStore();
       if (rejection && context && !context.observer && rejection.executorHash === asset.executorHash && rejection.payloadHash === hash(canonical(value.target || {}))) {
-        completedReadErrors.set(error, { context, moduleId: value.moduleId, contractId, targetHash: rejection.payloadHash, code: rejection.code });
+        completedReadErrors.set(error, { context, moduleId: value.moduleId, contractId, targetHash: rejection.payloadHash, code: rejection.code, physical: rejection.physical });
       }
       throw error;
     }
@@ -569,6 +582,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (workSession && value.target?.cursor === undefined &&
         (!coverage || coverage.inventory.status !== 'scan_incomplete' && ['not_requested', 'found'].includes(coverage.lookup.status))) {
       workSession.recordProjectBaseline(peer, result);
+      latestProjectRead = { peerId: originalPeerId, projectId: result.observation.target.projectId, at: Date.now() };
     }
     return { evidenceRef: id('observation'), moduleId: profile.id, contractId, ...result, authority: false };
   };
@@ -588,7 +602,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     }, (error, request) => {
       const record = completedReadErrors.get(error); completedReadErrors.delete(error);
       if (!record || request.context !== record.context || request.method !== 'inspect_module_target' || request.payload.moduleId !== record.moduleId || request.payload.contractId !== record.contractId || hash(canonical(request.payload.target || {})) !== record.targetHash) return null;
-      return { code: record.code, ...(record.phase ? { phase: record.phase } : {}) };
+      return { code: record.code, ...(record.phase ? { phase: record.phase } : {}), ...(record.physical ? { physical: record.physical } : {}) };
     });
   }
   serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.1.2' } });

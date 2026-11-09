@@ -17,18 +17,19 @@ const { decode, encode } = require('../../protocol/codec');
 const { validateExecutionPolicyPort, validateReservationHandle } = require('../../core/authority');
 const { initialState, environment } = require('./ae');
 const root = path.resolve(__dirname, '../..');
-async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, layoutEnvironment, textEnvironment, assemblyEnvironment, saveEnvironment, lifecycleEnvironment, mediaEnvironment, frameEnvironment, operatorSession } = {}) {
+async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, layoutEnvironment, textEnvironment, assemblyEnvironment, saveEnvironment, lifecycleEnvironment, mediaEnvironment, overlayEnvironment, frameEnvironment, operatorSession } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-manual-runtime-')), state = initialState(); delete state.sessionId; Object.assign(state.flags, flags);
   const installation = { installationId: 'fixture-installation', machineId: 'fixture-machine', stateDir: path.join(dir, 'state'), packageHash: '1'.repeat(64), panelToken: '2'.repeat(64), controlToken: '3'.repeat(64) };
   if (saveEnvironment || lifecycleEnvironment || frameEnvironment) Object.assign(state, { projectId: path.join(dir, 'Проект с пробелом.aep'), stateDir: installation.stateDir });
-  if (mediaEnvironment) state.fixtureDirectory = dir;
+  if (mediaEnvironment || overlayEnvironment) state.fixtureDirectory = dir;
   const contract = JSON.parse(fs.readFileSync(path.join(root, 'modules/titles-current-target/contract.json'))), admission = JSON.parse(fs.readFileSync(path.join(root, 'config/admissions/titles-current-target.json'))), manifest = JSON.parse(fs.readFileSync(path.join(root, 'modules/titles-current-target/artifact.json')));
   const selected = { pin: hash(manifest), contract, admission, operatorConfirmation: !!operatorSession }; let broker, peer, confirmations = 0, stopped = false, pump, hostPhase;
   let brokerRoot = root;
   const pkg = frameEnvironment ? buildPackage(undefined, 'operator-frame-export', { runtimeModel: 'owner' }) :
+    overlayEnvironment ? buildPackage(undefined, 'manual-layer-overlay', { runtimeModel: 'owner' }) :
     mediaEnvironment ? buildPackage(undefined, 'manual-media-layers', { runtimeModel: 'owner' }) :
     buildPackage(undefined, lifecycleEnvironment ? 'manual-project-lifecycle' : saveEnvironment ? 'manual-project-save' : assemblyEnvironment ? 'manual-project-assembly' : textEnvironment ? 'manual-titles' : layoutEnvironment ? 'manual-layout' : 'manual');
-  if (layoutEnvironment || textEnvironment || assemblyEnvironment || saveEnvironment || lifecycleEnvironment || mediaEnvironment || frameEnvironment) {
+  if (layoutEnvironment || textEnvironment || assemblyEnvironment || saveEnvironment || lifecycleEnvironment || mediaEnvironment || overlayEnvironment || frameEnvironment) {
     brokerRoot = path.join(dir, 'layout-package');
     for (const [relative, bytes] of Object.entries(pkg.files)) {
       const file = path.join(brokerRoot, relative);
@@ -84,6 +85,12 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
     ...require('../../runtime/comp-frame-export-proof')
   } : null;
   if (frame) additional.push(frame);
+  const overlay = overlayEnvironment ? {
+    pin: hash(require('../../modules/layer-overlay/artifact.json')), contract: require('../../modules/layer-overlay/contract.json'),
+    admission: require('../../config/admissions/layer-overlay.json'), operatorConfirmation: true,
+    ...require('../../runtime/layer-overlay-proof').createLayerOverlayProof(() => installation.installationId)
+  } : null;
+  if (overlay) additional.push(overlay);
   const mediaAssets = mediaEnvironment ? ['media-import', 'layer-insert'].map(moduleId => {
     const contract = require('../../modules/' + moduleId + '/contract.json');
     const admission = require('../../config/admissions/' + moduleId + '.json');
@@ -103,13 +110,14 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
   if (save) additionalAssets.push({ assetKey: 'project-save-v1', moduleId: 'project-save', operationId: save.contract.operationId, executorHash: save.admission.executorHash, resultProfile: 'current-project-save-v1' });
   if (lifecycle) additionalAssets.push({ assetKey: 'project-lifecycle-v1', moduleId: 'project-lifecycle', operationId: lifecycle.contract.operationId, executorHash: lifecycle.admission.executorHash, resultProfile: 'project-lifecycle-v1' });
   if (frame) additionalAssets.push({ assetKey: 'comp-frame-export-v1', moduleId: 'comp-frame-export', operationId: frame.contract.operationId, executorHash: frame.admission.executorHash, resultProfile: 'comp-frame-export-v1' });
+  if (overlay) additionalAssets.push({ assetKey: 'layer-overlay-v1', moduleId: 'layer-overlay', operationId: overlay.contract.operationId, executorHash: overlay.admission.executorHash, resultProfile: 'layer-overlay-v1' });
   additionalAssets.push(...mediaAssets);
   peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), port: 0, pollTimeout: 5, timeout: callbackTimeout, asset: { assetKey: 'project-inspection-v1', executorHash: inspection.executorHash }, additionalAssets, observeProjectSave: save?.observe, observeProjectLifecycle: lifecycle?.observe, admissionGuard: command => { if (broker.ledger.unresolved().some(c => c.commandId !== command.commandId)) throw Object.assign(new Error('controller_unresolved'), { code: 'controller_unresolved' }); } }); await peer.listen();
   let sequence = 0;
   async function raw(route, body) { return new Promise((resolve, reject) => { const req = http.request('http://127.0.0.1:' + peer.status().port + route, { method: 'POST', headers: { Origin: 'null', 'Content-Type': 'application/json' } }, res => { let data = ''; res.on('data', b => data += b); res.on('end', () => res.statusCode === 200 ? resolve(JSON.parse(data)) : reject(new Error(data))); }); req.on('error', reject); req.end(canonical(JSON.parse(JSON.stringify(body)))); }); }
   const challenge = await raw('/challenge', { role: 'panel' }), peerId = 'fixture-peer'; await raw('/link', { challenge, peerId, proof: mac({ challenge, peerId }, installation.panelToken) });
   async function call(route, payload) { const body = { epoch: challenge.epoch, peerId, sequence: ++sequence, method: 'POST', path: route, payload: JSON.parse(JSON.stringify(payload)) }; const response = await raw(route, { body, mac: mac(body, installation.panelToken) }); assert.equal(response.mac, mac(response.body, installation.panelToken)); return response.body.payload; }
-  const host = frameEnvironment || mediaEnvironment || lifecycleEnvironment || saveEnvironment || assemblyEnvironment || textEnvironment || layoutEnvironment || environment;
+  const host = frameEnvironment || overlayEnvironment || mediaEnvironment || lifecycleEnvironment || saveEnvironment || assemblyEnvironment || textEnvironment || layoutEnvironment || environment;
   const context = vm.createContext({ ...host(state, () => {}), JSON: undefined, confirm: message => { confirmations++; return confirm({ state, message }); } });
   vm.runInContext('Object.keys=undefined;', context);
   vm.runInContext(Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString(), context);

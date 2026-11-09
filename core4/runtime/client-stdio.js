@@ -1,6 +1,6 @@
 'use strict';
 const { createInterface } = require('node:readline');
-const { OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES, PRE_DISPATCH_READ_CODES } = require('./attachment-owner');
+const { OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES, PRE_DISPATCH_READ_CODES, classifyPhysicalRead } = require('./attachment-owner');
 
 // Thin private fixture/embedding adapter, not the configured production entry.
 // EOF closes this authenticated attachment only. No Broker/HTTP/store/bootstrap.
@@ -9,7 +9,7 @@ function serveAttachment({ client, input, output } = {}) {
   const MAX = 256 * 1024;
   let pending = 0, bytes = 0, ended = false;
   const ownErrors = new WeakSet();
-  function fail(code, requestId) { const error = new Error(code); ownErrors.add(error); error.requestId = requestId; throw error; }
+  function fail(code, requestId, physical) { const error = new Error(code); ownErrors.add(error); error.requestId = requestId; error.physical = physical; throw error; }
   function reply(value) {
     if (ended || output.destroyed || output.writableEnded) return;
     const id = Number.isSafeInteger(value.id) || typeof value.id === 'string' && Buffer.byteLength(value.id) <= 256 ? value.id : null;
@@ -67,7 +67,12 @@ function serveAttachment({ client, input, output } = {}) {
         const payload = args.payload === undefined ? {} : args.payload;
         if (!payload || Object.getPrototypeOf(payload) !== Object.prototype) fail('invalid_payload');
         const response = await client.call(request.params.name, payload);
-        if (request.params.name === 'inspect_module_target' && response?.ok === false && response.outcome === 'rejected' && [...READ_REJECTION_CODES, ...PRE_DISPATCH_READ_CODES].includes(response.code) && response.nextAction === 'core_diagnostics' && Object.keys(response).every(key => ['ok', 'outcome', 'code', 'nextAction'].includes(key))) {
+        const physical = request.params.name === 'inspect_module_target' && response?.ok === false && classifyPhysicalRead(response.physical);
+        if (physical && ['outcome', 'code', 'nextAction'].every(key => response[key] === physical[key]) &&
+            Object.keys(response).every(key => ['ok', 'outcome', 'code', 'nextAction', 'physical', ...(physical.outcome === 'unknown' ? ['requestId'] : [])].includes(key))) {
+          if (physical.outcome === 'unknown') fail(physical.code, response.requestId, { nextAction: physical.nextAction, physical: response.physical });
+          result = { content: [{ type: 'text', text: JSON.stringify({ ...physical, physical: response.physical }) }], isError: true };
+        } else if (request.params.name === 'inspect_module_target' && response?.ok === false && response.outcome === 'rejected' && [...READ_REJECTION_CODES, ...PRE_DISPATCH_READ_CODES].includes(response.code) && response.nextAction === 'core_diagnostics' && Object.keys(response).every(key => ['ok', 'outcome', 'code', 'nextAction'].includes(key))) {
           result = { content: [{ type: 'text', text: JSON.stringify({ outcome: 'rejected', code: response.code, nextAction: response.nextAction }) }], isError: true };
         } else {
           if (!response || response.ok !== true) fail(OWNER_ERRORS.includes(response?.code) ? response.code : 'owner_request_failed', response?.requestId);
@@ -80,7 +85,7 @@ function serveAttachment({ client, input, output } = {}) {
       const message = ipcErrors.includes(error?.code) ? error.code : ownErrors.has(error) ? error.message : 'request_failed';
       const uncertain = message === 'ipc_outcome_uncertain' || message === 'owner_outcome_uncertain';
       reply({ jsonrpc: '2.0', id: request?.id ?? null, error: { code: -32000, message,
-        ...(uncertain ? { data: { outcome: 'unknown', requestId: typeof error.requestId === 'string' && /^[a-f0-9]{64}$/.test(error.requestId) ? error.requestId : null } } : message === 'owner_inspection_contract_required' ? { data: { nextAction: 'get_module_contract' } } : {}) } });
+        ...(uncertain ? { data: { outcome: 'unknown', requestId: typeof error.requestId === 'string' && /^[a-f0-9]{64}$/.test(error.requestId) ? error.requestId : null, ...(ownErrors.has(error) ? error.physical : undefined) } } : message === 'owner_inspection_contract_required' ? { data: { nextAction: 'get_module_contract' } } : {}) } });
     } finally { if (counted) pending--; }
   });
   return Object.freeze({ close() { finish(); lines.close(); }, status() { return { closed: ended, pending }; } });

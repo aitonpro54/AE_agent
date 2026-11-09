@@ -1,0 +1,25 @@
+{
+  "parent": "manual-layer-overlay",
+  "modules": ["comp-frame-export"],
+  "assets": [
+    {
+      "assetKey": "comp-frame-export-v1",
+      "moduleId": "comp-frame-export",
+      "path": "modules/comp-frame-export",
+      "admission": "config/admissions/comp-frame-export.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    }
+  ],
+  "profiles": {
+    "comp-frame-export": {
+      "operationId": "save-comp-frame-png",
+      "resultProfile": "comp-frame-export-v1",
+      "operatorConfirmation": "registry-v1"
+    }
+  },
+  "bundle": {
+    "files": ["runtime/comp-frame-export-proof.js", "runtime/png-proof.js", "config/admissions/comp-frame-export.json"],
+    "artifactClosures": ["modules/comp-frame-export/artifact.json"]
+  }
+}

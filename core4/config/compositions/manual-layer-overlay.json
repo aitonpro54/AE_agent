@@ -1,0 +1,22 @@
+{
+  "parent": "manual-media-layers",
+  "modules": ["layer-overlay"],
+  "assets": [
+    {
+      "assetKey": "layer-overlay-v1",
+      "moduleId": "layer-overlay",
+      "path": "modules/layer-overlay",
+      "admission": "config/admissions/layer-overlay.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    }
+  ],
+  "profiles": {
+    "media-import": { "operationId": "ingest-footage", "resultProfile": "media-import-v1", "operatorConfirmation": "registry-v1" },
+    "layer-overlay": { "operationId": "duplicate-and-replace-still", "resultProfile": "layer-overlay-v1", "operatorConfirmation": "registry-v1" }
+  },
+  "bundle": {
+    "files": ["runtime/layer-overlay-proof.js", "config/admissions/layer-overlay.json"],
+    "artifactClosures": ["modules/layer-overlay/artifact.json"]
+  }
+}
