@@ -358,3 +358,44 @@ test('start-over-channel only direct project inspection can drain after its ordi
     });
   }
 });
+
+test('start-over-channel private mutation reservation is checked at offer and is not required for its original completion', async t => {
+  const title = { assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', operationId: 'set-current-text',
+    executorHash: 'e'.repeat(64), resultProfile: 'manual-text-v1', effect: 'layer.text' };
+  for (const expireBeforeOffer of [true, false]) {
+    await t.test(expireBeforeOffer ? 'before offer' : 'after offer', async t => {
+      const f = await fixture(t, { additionalAssets: [title], requireMutationGuard: true, timeout: 1000 });
+      const broker = { controllerId: 'broker', channelEpoch: 'broker-epoch', secret: '7'.repeat(64) };
+      await f.peer.transport.connect(broker);
+      const command = { protocolVersion: 1, controllerId: broker.controllerId, channelEpoch: broker.channelEpoch,
+        commandId: 'test-reservation', moduleId: title.moduleId, operationId: title.operationId,
+        executorHash: title.executorHash, phase: 'mutate', payload: {}, payloadHash: hash({}) };
+      const wire = encode(command, broker.secret);
+      await assert.rejects(f.peer.transport.send(wire), { code: 'physical_delivery_guard' });
+      await assert.rejects(f.peer.transport.send(wire, { commandId: 'foreign', payloadHash: command.payloadHash, assert() {} }),
+        { code: 'physical_delivery_guard' });
+      assert.deepEqual(f.events().map(event => event.type), ['origin']);
+      let expired = false, checks = 0;
+      const offered = f.peer.transport.send(wire, { commandId: command.commandId, payloadHash: command.payloadHash, assert() {
+        checks++;
+        if (expired) throw Object.assign(new Error('reservation_observation_expired'), { code: 'reservation_observation_expired' });
+      } });
+      if (expireBeforeOffer) {
+        const refused = assert.rejects(offered, { code: 'reservation_observation_expired' });
+        expired = true;
+        assert.deepEqual(await f.call('/poll', {}), { command: null });
+        await refused;
+        assert.equal(f.peer.status().lastCommandOutcome.handoff, 'none');
+        assert.deepEqual(f.events().map(event => event.type), ['origin', 'begin', 'unknown']);
+      } else {
+        const frame = (await f.call('/poll', {})).command;
+        expired = true;
+        const result = { outcome: 'rejected', code: 'local_cancelled' };
+        assert.ok((await f.call('/complete', { ...completion(frame), result })).ack);
+        await offered;
+        assert.deepEqual(f.events().map(event => event.type), ['origin', 'begin', 'complete']);
+      }
+      assert.equal(checks, 1);
+    });
+  }
+});

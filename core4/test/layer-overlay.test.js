@@ -5,6 +5,7 @@ const path = require('node:path');
 const test = require('node:test');
 const { hash } = require('../protocol/json');
 const { issue } = require('../runtime/operator-confirmation');
+const { issueMontageMandate } = require('../runtime/montage-mandate');
 const { createLayerOverlayProof } = require('../runtime/layer-overlay-proof');
 const { inspectReceiverHistory, inspectLedgerHistory } = require('../runtime/recovery-inspection');
 const { scopesOverlap } = require('../core/resources');
@@ -118,11 +119,35 @@ function overlayEnvironment(state) {
     const filler = new AVLayer(unrelated, otherSource, 'Outside slot');
     unrelated.stack = Array(2048 - comp.numLayers - master.numLayers).fill(filler);
   }
-  const items = [comp, master, unrelated, originalSource, replacement, otherSource];
+  const items = [comp, master, unrelated, originalSource, otherSource];
+  if (!state.flags.importOnDemand) items.push(replacement);
+  class File {
+    constructor(fsName) {
+      const stat = fs.statSync(fsName, { throwIfNoEntry: false });
+      Object.assign(this, { fsName, exists: !!stat, alias: false, length: stat?.size, modified: stat?.mtime });
+    }
+  }
+  class ImportOptions {
+    constructor(file) { this.file = file; }
+    canImportAs(kind) { return kind === 1; }
+  }
   const project = state.project = { file: { fsName: state.projectId, exists: true }, revision: 7,
-    get numItems() { return items.length; }, item: index => items[index - 1], itemByID: id => items.find(item => item.id === id) };
-  return { app: { project, beginUndoGroup() {}, endUndoGroup() {} }, CompItem, AVLayer, FootageItem,
-    PropertyType: { PROPERTY: 1 }, PropertyValueType, AlphaMode: { PREMULTIPLIED: 1 } };
+    get numItems() { return items.length; }, item: index => items[index - 1], itemByID: id => items.find(item => item.id === id),
+    importFile(options) {
+      assert.equal(options.importAs, 1);
+      assert.equal(options.sequence, false);
+      assert.equal(options.file.fsName, replacement.file.fsName);
+      assert.ok(!items.includes(replacement));
+      items.push(replacement);
+      this.revision++;
+      return replacement;
+    }
+  };
+  replacement.name = path.basename(replacement.file.fsName);
+  originalSource.name = path.basename(originalSource.file.fsName);
+  otherSource.name = path.basename(otherSource.file.fsName);
+  return { app: { project, beginUndoGroup() {}, endUndoGroup() {} }, CompItem, AVLayer, FootageItem, File, ImportOptions,
+    ImportAsType: { FOOTAGE: 1 }, PropertyType: { PROPERTY: 1 }, PropertyValueType, AlphaMode: { PREMULTIPLIED: 1 } };
 }
 
 async function fixture(t, options = {}) {
@@ -206,6 +231,34 @@ test('layer-overlay rejects a project at the total layer limit before duplicate'
   const result = await h.broker.run(await h.prepare());
   assert.equal(result.message, 'inspection_result_budget');
   assert.deepEqual(h.state.writes, { duplicate: 0, replace: 0, matte: 0 });
+});
+
+test('layer-overlay uses one montage mandate for a real Broker import receipt and the derived footage ID', async t => {
+  const h = await fixture(t, { mediaEnvironment: true, flags: { importOnDemand: true } });
+  const moduleId = 'media-import', { contractId } = h.broker.getContract({ moduleId });
+  const { projectId, file, sha256, itemId, ...slot } = h.input;
+  const target = { projectId, sessionId, file };
+  const input = { ...target, sha256 };
+  const { evidenceRef } = await h.broker.inspect({ moduleId, contractId, target });
+  const built = await h.broker.build({ oneStep: true, steps: [{ stepId: 'import', moduleId, contractId, evidenceRef, input }] });
+  const { taskId } = built;
+  const issued = issueMontageMandate(h.installation, { projectId, sessionId, taskId, taskEpoch: 0, expiresAt: Date.now() + 60000,
+    actions: [{ moduleId, input }, { moduleId: 'layer-overlay', input: { ...slot, ...input } }] });
+  async function run(buildId) {
+    const { proposalId } = h.broker.propose({ buildId });
+    return h.broker.run(await h.broker.dryrun({ proposalId }));
+  }
+  const imported = await run(built.buildId);
+  assert.equal(imported.state, 'succeeded', JSON.stringify(imported));
+  assert.equal(imported.outputs.import.createdItemId, itemId);
+  const overlay = await h.build({ taskId });
+  assert.equal(overlay.taskId, taskId);
+  const rendered = await run(overlay.buildId);
+  assert.equal(rendered.state, 'succeeded', JSON.stringify(rendered));
+  assert.equal(rendered.outputs.overlay.overlay.sourceId, itemId);
+  assert.deepEqual(h.broker.ledger.commands(taskId).map(command => command.grant.operatorConfirmation.mandateDigest),
+    [issued.digest, issued.digest]);
+  assert.equal(h.confirmations, 0);
 });
 
 for (const flag of ['duplicateThrows', 'ignoresMarker', 'returnsExisting', 'holdMutationCallback']) {

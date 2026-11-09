@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const { canonical } = require('../protocol/json');
 const { createOperatorConfirmation } = require('../runtime/operator-confirmation');
-const { issueMontageMandate, observeMontageMandate, revokeMontageMandate } = require('../runtime/montage-mandate');
+const { issueMontageMandate, observeMontageMandate, revokeMontageMandate, importedMontageItem } = require('../runtime/montage-mandate');
 
 function fixture(t) {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-mandate-'));
@@ -14,7 +14,7 @@ function fixture(t) {
     for (const name of fs.readdirSync(stateDir)) fs.unlinkSync(path.join(stateDir, name));
     fs.rmdirSync(stateDir);
   });
-  const installation = { installationId: 'installation-1', packageHash: 'a'.repeat(64), controlToken: 'b'.repeat(64), stateDir };
+  const installation = { installationId: 'installation-1', packageHash: 'a'.repeat(64), controlToken: 'b'.repeat(64), panelToken: 'e'.repeat(64), stateDir };
   const projectId = path.join(stateDir, 'fixture.aep'), taskId = 'task-11111111-1111-4111-8111-111111111111';
   const taskEpoch = 1, sessionId = 'session-1';
   const file = path.join(stateDir, 'prepared.png'), sha256 = 'c'.repeat(64);
@@ -45,7 +45,8 @@ test('montage-mandate reuses exact operator claim and checks cancellation before
   assert.equal(proof.mandateDigest, issued.digest);
   assert.deepEqual(authorize(approval, reservation), proof);
   assert.throws(() => authorize(approval, { ...reservation, commandId: 'another' }), { code: 'operator_confirmation_used' });
-  const command = { phase: 'mutate', payload: { projectId: scope.projectId, _execution: {
+  const command = { phase: 'mutate', moduleId: approval.steps[0].moduleId, operationId: approval.steps[0].operationId,
+    payload: { ...approval.steps[0].input, _execution: {
     taskId: scope.taskId, taskEpoch: scope.taskEpoch, operatorConfirmation: proof } } };
   authorize.assertDelivery(command);
   session = 'foreign-session';
@@ -53,6 +54,60 @@ test('montage-mandate reuses exact operator claim and checks cancellation before
   session = scope.sessionId;
   assert.deepEqual(revokeMontageMandate(installation, scope.taskId), { taskId: scope.taskId, revoked: true });
   assert.throws(() => authorize.assertDelivery(command), { code: 'montage_mandate_revoked' });
+});
+
+test('montage-mandate binds a future footage ID to one settled import of the same mandate and epoch', t => {
+  const { installation, scope, approval, reservation } = fixture(t);
+  const overlay = scope.actions[1];
+  const { itemId, ...future } = overlay.input;
+  const action = { ...overlay, input: future };
+  assert.throws(() => issueMontageMandate(installation, { ...scope, actions: [action] }), { code: 'montage_mandate_import_required' });
+  const issued = issueMontageMandate(installation, { ...scope, actions: [scope.actions[0], action] });
+  const step = { moduleId: overlay.moduleId, operationId: 'duplicate-and-replace-still',
+    effectPolicy: { effect: 'composition-layer-overlay' },
+    target: { projectId: scope.projectId, sessionId: scope.sessionId, compId: future.compId, layerId: future.layerId,
+      originalSourceId: future.originalSourceId, itemId },
+    input: { ...overlay.input, expectedRevision: 'revision' } };
+  const pending = { ...approval, steps: [step] };
+  const command = { taskId: scope.taskId, taskEpoch: scope.taskEpoch, state: 'succeeded',
+    verificationKind: 'local-transaction-receipt', selected: { moduleId: 'media-import' },
+    grant: { operatorConfirmation: { mandateDigest: issued.digest } }, input: scope.actions[0].input,
+    after: { createdItemId: itemId, items: [{ id: itemId, file: future.file, kind: 'still' }] } };
+  let history = [];
+  const authorize = createOperatorConfirmation(installation, () => scope.sessionId, () => scope.projectId,
+    () => scope.sessionId, (mandate, input) => importedMontageItem(history, mandate, input));
+  for (const mismatched of [[], [{ ...command, taskEpoch: 2 }], [{ ...command, state: 'UNKNOWN' }],
+    [{ ...command, grant: {} }], [command, command]]) {
+    history = mismatched;
+    assert.throws(() => authorize(pending, reservation), { code: 'montage_mandate_action' });
+  }
+  history = [command];
+  const foreign = { ...step, target: { ...step.target, itemId: 99 }, input: { ...step.input, itemId: 99 } };
+  assert.throws(() => authorize({ ...pending, steps: [foreign] }, reservation), { code: 'montage_mandate_action' });
+  const proof = authorize(pending, reservation);
+  const delivery = { phase: 'mutate', moduleId: step.moduleId, operationId: step.operationId,
+    payload: { ...step.input, _execution: { taskId: scope.taskId, taskEpoch: scope.taskEpoch, operatorConfirmation: proof } } };
+  authorize.assertDelivery(delivery);
+  history = [];
+  assert.throws(() => authorize.assertDelivery(delivery), { code: 'montage_mandate_binding' });
+});
+
+test('montage-mandate stages fsync before publication and requires both role credentials', t => {
+  const { installation, scope } = fixture(t);
+  assert.throws(() => issueMontageMandate({ ...installation, panelToken: undefined }, scope), { code: 'montage_mandate_signer' });
+  const sync = fs.fsyncSync;
+  let beforePublish = false;
+  try {
+    fs.fsyncSync = fd => {
+      beforePublish = true;
+      assert.equal(observeMontageMandate(installation, scope.taskId, scope.sessionId), null);
+      sync(fd);
+    };
+    issueMontageMandate(installation, scope);
+  } finally { fs.fsyncSync = sync; }
+  assert.equal(beforePublish, true);
+  assert.equal(observeMontageMandate(installation, scope.taskId, scope.sessionId).body.version, 2);
+  assert.deepEqual(fs.readdirSync(installation.stateDir), ['montage-mandate-' + scope.taskId + '.json']);
 });
 
 test('montage-mandate rejects expanded tasks, changed files and invalid binding', t => {

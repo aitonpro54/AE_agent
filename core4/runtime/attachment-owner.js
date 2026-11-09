@@ -27,7 +27,7 @@ function classifyPhysicalRead(value) {
   return null;
 }
 
-function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, isFreshDryrunRefusal = () => false, workSession = () => ({ sessionId: null, baselineRequired: false, resetPending: false }), clock, ttlMs, drainIntervalMs = 100 } = {}) {
+function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, isFreshDryrunRefusal = () => false, canResumeTask = () => false, workSession = () => ({ sessionId: null, baselineRequired: false, resetPending: false }), clock, ttlMs, drainIntervalMs = 100 } = {}) {
   if (!runtime || typeof runtime.status !== 'function' || typeof activity !== 'function' || typeof invoke !== 'function' || typeof workSession !== 'function' || !Number.isSafeInteger(drainIntervalMs) || drainIntervalMs < 1 || drainIntervalMs > 1000) throw new Error('owner_options');
   const lease = createControllerLease({ clock, ttlMs }), sessions = new Map(), accepted = new Set(), timers = new Set(), ownErrors = new WeakSet();
   const rejectedReads = new WeakSet();
@@ -68,7 +68,7 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
   function reference(kind, value, grant) { if (typeof value !== 'string' || refs[kind].get(value) !== grant) fail('owner_reference_generation'); }
   function inputs(method, payload, grant) {
     if (method === 'build_solution_plan') {
-      if (payload.taskId !== undefined) reference('task', payload.taskId, grant);
+      if (payload.taskId !== undefined && refs.task.get(payload.taskId) !== grant && !canResumeTask(payload)) fail('owner_reference_generation');
       if (!Array.isArray(payload.steps)) fail('owner_payload');
       for (const step of payload.steps) reference('evidence', step?.evidenceRef, grant);
     }

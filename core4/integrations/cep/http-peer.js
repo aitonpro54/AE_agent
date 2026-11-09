@@ -56,7 +56,7 @@ function validateInspectionCoverage(result, payload) {
       (lookup.status === 'not_found' && lookup.method === 'page_scan' && (start !== 1 || itemsScanned !== total))) fail('inspection_result');
   if (result.truncated !== (displayNamesShortened || status !== 'complete' || layers.returned < layers.total)) fail('inspection_result');
 }
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], observeProjectSave, observeProjectLifecycle, port = 3457, timeout = 30000, directReadDrainMs = 0, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
+function createHttpPeer({ installation, directory, asset, additionalAssets = [], observeProjectSave, observeProjectLifecycle, port = 3457, timeout = 30000, directReadDrainMs = 0, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, requireMutationGuard = false, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
   if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
   if (!Number.isSafeInteger(directReadDrainMs) || directReadDrainMs < 0 || directReadDrainMs > 10000) fail('physical_drain_window');
@@ -161,6 +161,12 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       poll.finish(command, entry && (() => {
         expirePending();
         if (pending !== entry || !poll.open()) return false;
+        if (entry.offer) {
+          try { guardDelivery(); entry.offer.assert(); }
+          catch (error) { abandonBeforeHandoff(error.code || 'physical_admission_closed'); return false; }
+          expirePending();
+          if (pending !== entry || !poll.open()) return false;
+        }
         // Mark before the first write. Bytes offered to HTTP do not prove
         // receipt, evalScript or start, including when the write throws.
         entry.delivered = true;
@@ -221,7 +227,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         expirePending();
         if (peer && (Date.now() - peer.lastSeen < 45000 || pending)) fail('duplicate_peer');
         flushPoll();
-        peer = { peerId: input.peerId, origin: challenge.value.origin, sequence: 0, lastSeen: Date.now() };
+        peer = { peerId: input.peerId, origin: challenge.value.origin, sequence: 0, lastSeen: Date.now(), identity: Object.freeze({}) };
         const body = { linked: true, epoch, peerId: peer.peerId, controllerId, pins, receiverStoreIdentity: store.identity, laneClosed: store.closed, ...(startOverControl ? { workSessionId, startOver: startOverControl.status() } : {}) };
         reply(res, 200, { body, mac: mac(body, secret) }, corsOrigin); return;
       }
@@ -385,12 +391,15 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       catch { res.destroy(); }
     }
   });
-  function submit(command, broker = false) {
+  function submit(command, broker = false, offer) {
     if (startOverFrozen) fail('start_over_frozen');
     const selected = assets.get(command.executorHash);
     if (!selected || selected.moduleId && (selected.moduleId !== command.moduleId || selected.operationId !== command.operationId) || !['inspect', 'mutate', 'verify'].includes(command.phase) || command.phase !== 'inspect' && !manualResultProfile(selected)) fail('http_asset_not_admitted');
     const deliveryGuard = captureDeliveryGuard(command);
     if (typeof deliveryGuard !== 'function') fail('physical_delivery_guard');
+    if (broker && command.phase === 'mutate' && (requireMutationGuard || offer) &&
+        (offer?.commandId !== command.commandId || offer?.payloadHash !== command.payloadHash || typeof offer?.assert !== 'function'))
+      fail('physical_delivery_guard');
     admissionGuard(command); deliveryGuard();
     if (closed || store.closed) fail('receiver_lane_closed'); if (!peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); if (pending) fail('physical_lane_pending');
     const directRead = !broker && selected === asset && asset.assetKey === 'project-inspection-v1' && command.moduleId === 'project-inspection' && command.operationId === 'inspect' && command.phase === 'inspect';
@@ -398,13 +407,14 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     const binding = dispatchBinding(command, store.identity); store.begin(command, binding);
     return new Promise((resolve, reject) => {
       const deadline = performance.now() + timeout;
-      const entry = { command, binding, pins: Object.freeze(commandPins(command)), peer, effect, directRead, deliveryGuard, resolve, reject, broker,
+      const entry = { command, binding, pins: Object.freeze(commandPins(command)), peer, effect, directRead, deliveryGuard, resolve, reject, broker, offer,
         delivered: false, callerSettled: false, deadline, drainDeadline: deadline + directReadDrainMs, drainDeadlineAt: Date.now() + timeout + directReadDrainMs };
       pending = entry; armDeadline(entry, deadline); deliver();
     });
   }
   const api = Object.freeze({
     status,
+    linkIdentity: () => peer?.identity || null,
     // B3 has a stronger physical fence than normal maintenance drain. This
     // synchronous private switch covers previously accepted, undelivered work.
     // Already delivered native callbacks may still settle in the OLD journal;
@@ -420,7 +430,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     identity: hash({ packageHash: installation.packageHash, assets: [...assets.values()] }),
     transport: Object.freeze({
       async connect(value) { if (store.closed || !peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); exact(value, ['controllerId', 'channelEpoch', 'secret']); brokerBinding = Object.freeze({ ...value }); return { receiverStoreIdentity: store.identity }; },
-      async send(frame) { if (!brokerBinding) fail('transport_disconnected'); const command = envelope(decode(frame, brokerBinding.secret)); if (command.controllerId !== brokerBinding.controllerId || command.channelEpoch !== brokerBinding.channelEpoch) fail('controller_binding'); return encode(await submit(command, true), brokerBinding.secret); },
+      async send(frame, offer) { if (!brokerBinding) fail('transport_disconnected'); const command = envelope(decode(frame, brokerBinding.secret)); if (command.controllerId !== brokerBinding.controllerId || command.channelEpoch !== brokerBinding.channelEpoch) fail('controller_binding'); return encode(await submit(command, true, offer), brokerBinding.secret); },
       async completion(commandId) { if (!brokerBinding) fail('transport_disconnected'); const c = store.get(commandId); return encode({ commandId, state: c?.state || 'unknown', ...(c?.originalBinding ? { originalBinding: c.originalBinding } : {}), ...(c?.response ? { response: c.response } : {}) }, brokerBinding.secret); },
       async disconnect() { if (pending) fail('physical_lane_pending'); brokerBinding = undefined; }
     }),

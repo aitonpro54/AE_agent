@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { performance } = require('node:perf_hooks');
 const PRODUCTION_TIMING = Object.freeze({ callerTimeoutMs: 100000, callbackTimeoutMs: 90000, mcpToolTimeoutSec: 120 });
 const DIRECT_READ_DRAIN_MS = 10000;
 // ONLY builtins are loaded until the entire installed release is verified.
@@ -393,12 +394,12 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     return startOverView();
   }
   if (mode === 'owner') startOverControl = require('./start-over-panel-control.js').createStartOverPanelControl({ installation, status: startOverView, request: requestStartOver });
-  async function exposeOwner(facade, activity, invoke, consumeReadRejection, isFreshDryrunRefusal) {
+  async function exposeOwner(facade, activity, invoke, consumeReadRejection, isFreshDryrunRefusal, canResumeTask) {
     const { createAttachmentOwner, OWNER_METHODS } = require('./attachment-owner.js');
     const { createIpcServer } = require('./client-ipc.js');
     const { ownerEndpoint } = require('./client-entry.js');
     const { PRIVATE_METHODS, createOwnerMaintenance, createStopAuthorization } = require('./owner-maintenance.js');
-    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke, consumeReadRejection, isFreshDryrunRefusal, workSession: workSession.status });
+    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke, consumeReadRejection, isFreshDryrunRefusal, canResumeTask, workSession: workSession.status });
     const endpoint = ownerEndpoint(installation);
     let closed = false, closing, maintenance;
     async function closeRuntime() {
@@ -465,17 +466,31 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const manualAsset = mutationAssets.find(a => a.resultProfile === 'manual-text-v1');
   let provider, manual, privateEmbedding, projectSave, projectLifecycle, operatorConfirmation, latestProjectRead;
   const observedMontageProject = () => {
-    const linked = peer.status().peer;
-    return latestProjectRead && linked.connected && linked.peerId === latestProjectRead.peerId &&
-      Date.now() - latestProjectRead.at <= 120000 ? latestProjectRead.projectId : null;
+    const physical = peer.status(), session = workSession?.status();
+    return latestProjectRead && physical.peer.connected && !physical.startOverFrozen && !session?.baselineRequired &&
+      !session?.resetPending && peer.linkIdentity() === latestProjectRead.link &&
+      performance.now() - latestProjectRead.at <= 120000 ? latestProjectRead.projectId : null;
   };
+  function canResumeMontageTask({ taskId, steps, oneStep }) {
+    if (!operatorConfirmation || oneStep !== true || !Array.isArray(steps) || steps.length !== 1 ||
+        !broker.ledger.events.some(event => event.type === 'task' && event.taskId === taskId)) return false;
+    const task = broker.ledger.task(taskId), projectId = observedMontageProject();
+    if (task.reset || !projectId) return false;
+    try {
+      const { observeMontageMandate } = require('./montage-mandate.js');
+      const mandate = observeMontageMandate(installation, taskId, workSession.status().sessionId ?? installation.installationId);
+      return !!mandate && mandate.body.taskEpoch === task.epoch && mandate.body.projectId === projectId &&
+        mandate.body.actions.some(action => action.moduleId === steps[0]?.moduleId);
+    } catch { return false; }
+  }
   if (manualAsset) {
     const { createWindowsReservationProvider } = require('./windows-reservation-provider.js');
     const { createManualPolicy } = require('./manual-policy.js');
     provider = createWindowsReservationProvider({ installation, getBroker: () => broker, getPeer: () => peer });
     operatorConfirmation = mutationAssets.some(item => item.operatorConfirmation)
       ? require('./operator-confirmation.js').createOperatorConfirmation(installation,
-        () => workSession?.status().sessionId, observedMontageProject, () => workSession?.status().sessionId ?? installation.installationId)
+        () => workSession?.status().sessionId, observedMontageProject, () => workSession?.status().sessionId ?? installation.installationId,
+        (mandate, input) => require('./montage-mandate.js').importedMontageItem(broker.ledger.commands(mandate.body.taskId), mandate, input))
       : undefined;
     if (operatorConfirmation && !workSession) fail('operator_confirmation_owner_required');
     const profileFor = item => {
@@ -506,7 +521,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     manual = createManualPolicy({ selected: profileFor(manualAsset), additional: mutationAssets.filter(a => a !== manualAsset).map(profileFor),
       provider, installation, getPeer: () => peer, pinAdoption: !!projectLifecycle, operatorConfirmation });
     const admissions = Object.fromEntries(mutationAssets.map(a => [a.moduleId, a.admission]));
-    const transport = { identity: hash({ packageHash: installation.packageHash, admissions }), connect: value => peer.transport.connect(value), send: value => peer.transport.send(value), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
+    const transport = { identity: hash({ packageHash: installation.packageHash, admissions }), connect: value => peer.transport.connect(value), send: (value, offer) => peer.transport.send(value, offer), completion: value => peer.transport.completion(value), disconnect: () => peer.transport.disconnect() };
     privateEmbedding = { authority: manual.authority, executionPolicy: manual.port, transport };
   }
   broker = new Broker({ root, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: PRODUCTION_TIMING.callerTimeoutMs, ...(ownerLifecycle ? { stateLockToken: ownerLifecycle.brokerToken } : {}), ...(privateEmbedding ? { privateEmbedding } : {}) });
@@ -519,7 +534,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const additionalAssets = mutationAssets.map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
     operationId: item.contract.operationId, executorHash: item.executorHash, resultProfile: item.resultProfile, effect: item.contract.effectPolicy.effect }));
   peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets,
-    observeProjectSave: projectSave?.observe, observeProjectLifecycle: projectLifecycle?.observe,
+    observeProjectSave: projectSave?.observe, observeProjectLifecycle: projectLifecycle?.observe, requireMutationGuard: mode === 'owner',
     timeout: PRODUCTION_TIMING.callbackTimeoutMs, directReadDrainMs: DIRECT_READ_DRAIN_MS, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard(command) {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');
@@ -566,7 +581,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       if (context && !context.observer) completedReadErrors.set(error, { context, moduleId: value.moduleId, contractId, targetHash: hash(canonical(value.target || {})), code: blocker, phase: 'pre-dispatch' });
       throw error;
     }
-    const originalPeerId = peer.status().peer.peerId;
+    const originalPeerId = peer.status().peer.peerId, originalLink = peer.linkIdentity();
     let result;
     try { result = await peer.inspect(value.target || {}); }
     catch (error) {
@@ -579,10 +594,10 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (result.observation?.readFailureVersion === 1) fail(result.observation.code || 'inspection_failed');
     aeReadiness.recordRead(originalPeerId);
     const coverage = result.observation?.coverage;
-    if (workSession && !peer.status().startOverFrozen && value.target?.cursor === undefined &&
+    if (workSession && originalLink === peer.linkIdentity() && !peer.status().startOverFrozen && value.target?.cursor === undefined &&
         (!coverage || coverage.inventory.status !== 'scan_incomplete' && ['not_requested', 'found'].includes(coverage.lookup.status))) {
       workSession.recordProjectBaseline(peer, result);
-      latestProjectRead = { peerId: originalPeerId, projectId: result.observation.target.projectId, at: Date.now() };
+      latestProjectRead = { link: originalLink, projectId: result.observation.target.projectId, at: performance.now() };
     }
     return { evidenceRef: id('observation'), moduleId: profile.id, contractId, ...result, authority: false };
   };
@@ -603,7 +618,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       const record = completedReadErrors.get(error); completedReadErrors.delete(error);
       if (!record || request.context !== record.context || request.method !== 'inspect_module_target' || request.payload.moduleId !== record.moduleId || request.payload.contractId !== record.contractId || hash(canonical(request.payload.target || {})) !== record.targetHash) return null;
       return { code: record.code, ...(record.phase ? { phase: record.phase } : {}), ...(record.physical ? { physical: record.physical } : {}) };
-    }, Broker.isFreshDryrunRefusal);
+    }, Broker.isFreshDryrunRefusal, canResumeMontageTask);
   }
   serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.1.2' } });
   return { close: facade.close, status: facade.status };

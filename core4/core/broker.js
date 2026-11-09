@@ -123,9 +123,17 @@ class Broker {
     this.artifacts.recheck(selected);
     const body = { protocolVersion: 1, controllerId: this.controllerId, channelEpoch: this.channelEpoch, commandId, moduleId: selected.moduleId, operationId: selected.contract.operationId, executorHash: selected.admission.executorHash, phase, payloadHash: hash(canonical(payload)), payload };
     if (expectedDispatch && !sameDispatch(dispatchBinding(body, this.receiverStoreIdentity), expectedDispatch)) fail('dispatch_binding_changed');
-    bounded(body); this.assertExecution(selected, payload, phase, executionContext); this.controllerBusy = true;
+    bounded(body); this.assertExecution(selected, payload, phase, executionContext);
+    const offer = executionContext?.reservation && phase === 'mutate' ? Object.freeze({
+      commandId, payloadHash: body.payloadHash,
+      assert: () => this.assertExecution(selected, payload, phase, executionContext)
+    }) : null;
+    this.controllerBusy = true;
     let actual;
-    try { actual = Promise.resolve(this.transport.send(encode(body, this.secret))); }
+    try {
+      const wire = encode(body, this.secret);
+      actual = Promise.resolve(offer ? this.transport.send(wire, offer) : this.transport.send(wire));
+    }
     catch (e) { this.controllerBusy = false; throw e; }
     const pending = actual.then(frame => {
       const response = decode(frame, this.secret);

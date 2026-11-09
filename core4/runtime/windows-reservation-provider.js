@@ -4,6 +4,7 @@ const path = require('node:path');
 const net = require('node:net');
 const os = require('node:os');
 const childProcess = require('node:child_process');
+const { performance } = require('node:perf_hooks');
 const { hash, canonical, fail, id } = require('../protocol/json');
 const { brandReservationHandle, validateReservationHandle } = require('../core/authority');
 const { scopesOverlap, currentTargetConstraintId, CURRENT_TARGET_PROVENANCE } = require('../core/resources');
@@ -88,7 +89,7 @@ function createWindowsReservationProvider({ installation, getBroker, getPeer, pr
   function assert(handle, { afterSend = false } = {}) {
     validateReservationHandle(handle); const item = reservations.get(handle.ref); if (!item || item.handle !== handle || item.terminal) fail('reservation_unavailable');
     const b = getBroker(), p = getPeer().status(); if (b.closed || b.stateLock.error || b.ledger.corrupt || !p.peer.connected || p.peer.peerId !== handle.peerId || p.receiverStoreIdentity !== handle.receiverStoreIdentity || hash(adoption()) !== handle.adoptionDigest) fail('reservation_identity_lost');
-    if (!afterSend) { try { freshObservation(cache, 2000); } catch { fail('reservation_observation_expired'); } if (Date.now() > handle.expiresAt) fail('reservation_observation_expired'); }
+    if (!afterSend) { try { freshObservation(cache, 2000); } catch { fail('reservation_observation_expired'); } if (Date.now() > handle.expiresAt || performance.now() > item.deadline) fail('reservation_observation_expired'); }
     return handle;
   }
   return {
@@ -96,14 +97,14 @@ function createWindowsReservationProvider({ installation, getBroker, getPeer, pr
     status() { const a = adoption(); return { adopted: !!a, origin: a?.host || null, coverage: { core4Lane: 'cooperating-Core4-only', hostProcess: a ? 'adopted-reprobe-required' : 'unavailable', legacyEndpoints: 'named-probes-only', legacyPhysicalQueue: 'not-proven', otherAEActors: 'outside-coverage', sharedOutputs: 'not-requested' } }; },
     async prepare(ctx) {
       const a = adoption(); if (!a) fail('resource_reservation_provider_unavailable');
-      const before = lane(); cache = await probe(installation); const host = hostIdentity(cache);
+      const before = lane(); cache = await probe(installation); const deadline = performance.now() + 2000; const host = hostIdentity(cache);
       freshObservation(cache);
       if (canonical(host) !== canonical(a.host) || host.machineId !== installation.machineId || ctx.target.projectId !== a.allowedProject) fail('host_or_managed_writer_changed');
       const after = lane(); if (before.peerId !== after.peerId || before.receiverStoreIdentity !== after.receiverStoreIdentity) fail('peer_replaced');
       const executionScope = scope(ctx.target); if (canonical(executionScope) !== canonical(ctx.descriptor.executionScope)) fail('execution_scope_changed');
       for (const record of after.broker.resources.records()) if (scopesOverlap({ ...record.resource, ...(record.origin ? { origin: record.origin } : {}) }, { ...ctx.target, origin: executionScope.origin }) && (record.unresolvedOutcome || record.reservationOwner && record.reservationOwner !== installation.installationId)) fail('shared_resource_fenced');
       const handle = brandReservationHandle({ ref: id('reservation'), executionScope, peerId: after.peerId, receiverStoreIdentity: after.receiverStoreIdentity, adoptionDigest: hash(a), checkpointRef: ctx.checkpoint.ref, checkpointDigest: ctx.checkpoint.digest, proposalId: ctx.proposal.proposalId, commandId: ctx.commandId, expiresAt: Date.now() + 2000 });
-      reservations.set(handle.ref, { handle, terminal: false });
+      reservations.set(handle.ref, { handle, terminal: false, deadline });
       after.broker.ledger.append({ type: 'reservation', state: 'reserved', reservation: handle, taskId: ctx.plan.taskId, taskEpoch: ctx.plan.taskEpoch, effect: ctx.step.selected.contract.effectPolicy.effect, observationDigest: hash(cache), coverage: this.status().coverage });
       after.broker.ledger.append({ type: 'constraint', record: { constraintId: currentTargetConstraintId(executionScope.origin, ctx.target), schemaVersion: 2, resource: ctx.target, origin: executionScope.origin, owner: installation.installationId, checkpointRef: ctx.checkpoint.ref, allowedEffects: [ctx.step.selected.contract.effectPolicy.effect], reservationOwner: installation.installationId, unresolvedOutcome: false, revision: ctx.before.revision, provenance: CURRENT_TARGET_PROVENANCE } });
       return handle;

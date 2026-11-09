@@ -8,7 +8,7 @@ const os = require('node:os');
 const http = require('node:http');
 const vm = require('node:vm');
 const { AsyncLocalStorage } = require('node:async_hooks');
-const { fork, spawn } = require('node:child_process');
+const { fork, spawn, spawnSync } = require('node:child_process');
 const { once } = require('node:events');
 const { canonical } = require('../protocol/json');
 const { buildPackage } = require('../tools/package-installable');
@@ -232,6 +232,72 @@ test('operator-confirmation owner composition reads a project without requiring 
   assert.equal((await p.request('/complete', completion(frame, vmObservation(f.pkg, frame)))).status, 200);
   assert.equal((await read).authority, false);
   await c.call('controller_release', { leaseToken: grant.leaseToken });
+  assert.equal(runtime.status().physical.storeClosed, false);
+});
+
+test('installed montage CLI scopes one task across controller generations using fresh evidence', async t => {
+  const f = install(t, buildPackage(SOURCE, 'operator-photo-montage', { runtimeModel: 'owner' }));
+  const runtime = await directOwner(t, f), c = rpcProcess(t, f), p = await panel(runtime.status().physical.port, f.d);
+  const { workSession } = await c.call('core_status');
+  const sessionId = workSession.sessionId ?? f.d.installationId;
+  const leaseInput = workSession.sessionId ? { sessionId } : {};
+  const projectId = path.join(f.directory, 'fixture.aep');
+  const target = { projectId, compId: 8 };
+  const input = { ...target, frame: 3, fileName: 'control.png' };
+  const projectContract = await c.call('get_module_contract', { moduleId: 'project-inspection' });
+  const exportContract = await c.call('get_module_contract', { moduleId: 'comp-frame-export' });
+  async function observe(moduleId, contractId, target, snapshot) {
+    const reading = c.call('inspect_module_target', { moduleId, contractId, target });
+    await until(() => runtime.status().physical.pending);
+    const { command } = (await p.request('/poll', {})).value;
+    assert.equal(command.phase, 'inspect');
+    assert.equal((await p.request('/complete', completion(command, snapshot))).status, 200);
+    return reading;
+  }
+  const root = () => observe('project-inspection', projectContract.contractId, {}, {
+    observationVersion: 1, target: { projectId, compId: null }, project: { name: 'fixture.aep', numItems: 1, saved: true },
+    compositions: [{ compId: target.compId, name: 'Fixture', numLayers: 0, duration: 1 }],
+    layers: [], truncated: false, aeVersion: 'fixture'
+  });
+  const frame = () => observe('comp-frame-export', exportContract.contractId, target, {
+    target, revision: '7', protected: 'fixture', width: 1920, height: 1080, duration: 1, frameDuration: 1 / 25, fullResolution: true
+  });
+  const request = (evidenceRef, taskId) => ({ oneStep: true, ...(taskId ? { taskId } : {}),
+    steps: [{ stepId: 'frame', moduleId: 'comp-frame-export', contractId: exportContract.contractId, evidenceRef, input }] });
+  const call = (name, payload) => c.rpc('tools/call', { name, arguments: { payload } });
+  const first = await c.call('controller_acquire', leaseInput);
+  await c.call('core_connect');
+  await root();
+  const { evidenceRef } = await frame();
+  const built = await c.call('build_solution_plan', request(evidenceRef));
+  const proposal = await c.call('propose_plan', { buildId: built.buildId });
+  const file = path.join(f.directory, 'mandate.json');
+  const scope = { taskId: built.taskId, taskEpoch: 0, sessionId, projectId, expiresAt: Date.now() + 60000,
+    actions: [{ moduleId: 'comp-frame-export', input }] };
+  const cli = (action, value) => spawnSync(process.execPath, [path.join(f.d.releaseDir, 'runtime/operator-confirmation.js'),
+    f.descriptor, f.d.packageHash, action, value], { encoding: 'utf8', windowsHide: true, timeout: 5000 });
+  fs.writeFileSync(file, JSON.stringify({ ...scope, sessionId: 'foreign-session' }));
+  assert.match(cli('--montage-issue', file).stderr, /operator_confirmation_baseline/);
+  fs.writeFileSync(file, JSON.stringify(scope));
+  const issued = cli('--montage-issue', file);
+  assert.equal(issued.status, 0, issued.stderr);
+  assert.equal(JSON.parse(issued.stdout).taskId, built.taskId);
+  await c.call('controller_release', { leaseToken: first.leaseToken });
+  const second = await c.call('controller_acquire', leaseInput);
+  assert.equal((await call('dry_run_plan', { proposalId: proposal.proposalId })).error.message, 'owner_reference_generation');
+  assert.equal((await call('build_solution_plan', request(evidenceRef, built.taskId))).error.message, 'owner_reference_generation');
+  await root();
+  const fresh = await frame();
+  assert.equal((await c.call('build_solution_plan', request(fresh.evidenceRef, built.taskId))).taskId, built.taskId);
+  const revoked = cli('--montage-revoke', built.taskId);
+  assert.equal(revoked.status, 0, revoked.stderr);
+  assert.equal(JSON.parse(revoked.stdout).revoked, true);
+  await c.call('controller_release', { leaseToken: second.leaseToken });
+  const third = await c.call('controller_acquire', leaseInput);
+  await root();
+  const reread = await frame();
+  assert.equal((await call('build_solution_plan', request(reread.evidenceRef, built.taskId))).error.message, 'owner_reference_generation');
+  await c.call('controller_release', { leaseToken: third.leaseToken });
   assert.equal(runtime.status().physical.storeClosed, false);
 });
 

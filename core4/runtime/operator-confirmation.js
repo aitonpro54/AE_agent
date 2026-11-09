@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHmac, timingSafeEqual } = require('node:crypto');
 const { canonical, hash, fail } = require('../protocol/json');
-const { authorizeMontageStep, observeMontageMandate, issueMontageMandate, revokeMontageMandate } = require('./montage-mandate');
+const { authorizeMontageStep, observeMontageMandate, issueMontageMandate, revokeMontageMandate, matchesMontageAction } = require('./montage-mandate');
 
 const HEX = /^[a-f0-9]{64}$/;
 const PROPOSAL = /^proposal-[a-f0-9-]{36}$/;
@@ -47,7 +47,7 @@ function issue(installation, { sessionId, proposalId, approvalDigest }) {
   writeOnce(file, { body, mac: sign(installation, body) });
   return { proposalId, approvalDigest, expiresAt };
 }
-function createOperatorConfirmation(installation, currentSession, observedProject = () => null, currentMandateSession = currentSession) {
+function createOperatorConfirmation(installation, currentSession, observedProject = () => null, currentMandateSession = currentSession, importedItem = () => null) {
   function authorize(approval, reservation) {
     if (approval.steps.length !== 1) fail('operator_confirmation_single_step');
     const file = fileFor(installation, approval.proposalId), record = read(file);
@@ -61,7 +61,7 @@ function createOperatorConfirmation(installation, currentSession, observedProjec
       if (canonical(body) !== canonical(expected)) fail('operator_confirmation_binding');
       proof = { digest: hash(body), expiresAt };
     } else {
-      const mandate = authorizeMontageStep(installation, approval, currentMandateSession(), observedProject());
+      const mandate = authorizeMontageStep(installation, approval, currentMandateSession(), observedProject(), importedItem);
       if (!mandate) fail('operator_confirmation_required');
       proof = { digest: hash({ approval, mandate: mandate.digest }), expiresAt: mandate.expiresAt, mandateDigest: mandate.digest };
     }
@@ -79,11 +79,14 @@ function createOperatorConfirmation(installation, currentSession, observedProjec
   }
   authorize.assertDelivery = command => {
     const execution = command.payload?._execution, proof = execution?.operatorConfirmation;
-    if (command.phase !== 'mutate' || !proof?.mandateDigest) return;
+    if (command.phase !== 'mutate' || !proof) return;
+    if (!Number.isSafeInteger(proof.expiresAt) || proof.expiresAt <= Date.now()) fail('operator_confirmation_expired');
+    if (!proof.mandateDigest) return;
     const mandate = observeMontageMandate(installation, execution.taskId, currentMandateSession());
     if (!mandate || mandate.digest !== proof.mandateDigest || mandate.body.taskEpoch !== execution.taskEpoch ||
         mandate.body.projectId !== observedProject() || mandate.body.projectId !== command.payload.projectId ||
-        proof.expiresAt !== mandate.body.expiresAt) fail('montage_mandate_binding');
+        proof.expiresAt !== mandate.body.expiresAt ||
+        !matchesMontageAction(mandate, command.moduleId, command.operationId, command.payload, importedItem)) fail('montage_mandate_binding');
   };
   return authorize;
 }

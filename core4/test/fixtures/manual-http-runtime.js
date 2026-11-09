@@ -95,12 +95,15 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
     const contract = require('../../modules/' + moduleId + '/contract.json');
     const admission = require('../../config/admissions/' + moduleId + '.json');
     const pin = hash(require('../../modules/' + moduleId + '/artifact.json'));
-    additional.push({ pin, contract, admission, ...require('../../runtime/media-layer-proof').createMediaLayerProof(moduleId, () => installation.installationId) });
+    additional.push({ pin, contract, admission, operatorConfirmation: !!overlayEnvironment && moduleId === 'media-import',
+      ...require('../../runtime/media-layer-proof').createMediaLayerProof(moduleId, () => installation.installationId) });
     return { assetKey: moduleId + '-v1', moduleId, operationId: contract.operationId, executorHash: admission.executorHash, resultProfile: moduleId + '-v1' };
   }) : [];
-  const operatorConfirmation = operatorSession && require('../../runtime/operator-confirmation').createOperatorConfirmation(installation, operatorSession);
+  const operatorConfirmation = operatorSession && require('../../runtime/operator-confirmation').createOperatorConfirmation(
+    installation, operatorSession, () => state.projectId, operatorSession, (mandate, input) =>
+      require('../../runtime/montage-mandate').importedMontageItem(broker.ledger.commands(mandate.body.taskId), mandate, input));
   const manual = createManualPolicy({ selected, layout, additional, provider, installation, getPeer: () => peer, pinAdoption: !!lifecycle, operatorConfirmation });
-  const transport = { identity: 'fixture-http-manual-v1', connect: v => peer.transport.connect(v), send: v => peer.transport.send(v), completion: v => peer.transport.completion(v), disconnect: () => peer.transport.disconnect() };
+  const transport = { identity: 'fixture-http-manual-v1', connect: v => peer.transport.connect(v), send: (v, offer) => peer.transport.send(v, offer), completion: v => peer.transport.completion(v), disconnect: () => peer.transport.disconnect() };
   broker = new Broker({ root: brokerRoot, stateDir: path.join(installation.stateDir, 'broker'), transportTimeout: callerTimeout, privateEmbedding: { authority: manual.authority, executionPolicy: manual.port, transport, recordContext: { purpose: 'technical_check', lifetime: 'ephemeral_check', contextId: path.basename(dir), project: { file: state.projectId }, resources: [{ kind: 'project', identity: state.projectId }] } } });
   const inspection = JSON.parse(fs.readFileSync(path.join(root, 'modules/project-inspection/artifact.json')));
   const additionalAssets = [{ assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', operationId: contract.operationId, executorHash: admission.executorHash, resultProfile: 'manual-text-v1' }];
@@ -112,7 +115,9 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
   if (frame) additionalAssets.push({ assetKey: 'comp-frame-export-v1', moduleId: 'comp-frame-export', operationId: frame.contract.operationId, executorHash: frame.admission.executorHash, resultProfile: 'comp-frame-export-v1' });
   if (overlay) additionalAssets.push({ assetKey: 'layer-overlay-v1', moduleId: 'layer-overlay', operationId: overlay.contract.operationId, executorHash: overlay.admission.executorHash, resultProfile: 'layer-overlay-v1' });
   additionalAssets.push(...mediaAssets);
-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), port: 0, pollTimeout: 5, timeout: callbackTimeout, asset: { assetKey: 'project-inspection-v1', executorHash: inspection.executorHash }, additionalAssets, observeProjectSave: save?.observe, observeProjectLifecycle: lifecycle?.observe, admissionGuard: command => { if (broker.ledger.unresolved().some(c => c.commandId !== command.commandId)) throw Object.assign(new Error('controller_unresolved'), { code: 'controller_unresolved' }); } }); await peer.listen();
+  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), port: 0, pollTimeout: 5, timeout: callbackTimeout, asset: { assetKey: 'project-inspection-v1', executorHash: inspection.executorHash }, additionalAssets, observeProjectSave: save?.observe, observeProjectLifecycle: lifecycle?.observe, requireMutationGuard: true,
+    captureDeliveryGuard: command => () => operatorConfirmation?.assertDelivery(command),
+    admissionGuard: command => { if (broker.ledger.unresolved().some(c => c.commandId !== command.commandId)) throw Object.assign(new Error('controller_unresolved'), { code: 'controller_unresolved' }); } }); await peer.listen();
   let sequence = 0;
   async function raw(route, body) { return new Promise((resolve, reject) => { const req = http.request('http://127.0.0.1:' + peer.status().port + route, { method: 'POST', headers: { Origin: 'null', 'Content-Type': 'application/json' } }, res => { let data = ''; res.on('data', b => data += b); res.on('end', () => res.statusCode === 200 ? resolve(JSON.parse(data)) : reject(new Error(data))); }); req.on('error', reject); req.end(canonical(JSON.parse(JSON.stringify(body)))); }); }
   const challenge = await raw('/challenge', { role: 'panel' }), peerId = 'fixture-peer'; await raw('/link', { challenge, peerId, proof: mac({ challenge, peerId }, installation.panelToken) });

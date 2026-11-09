@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-const { createHmac, timingSafeEqual } = require('node:crypto');
+const { createHmac, timingSafeEqual, randomUUID } = require('node:crypto');
 const { canonical, hash, fail } = require('../protocol/json');
 
 const MAX_AGE_MS = 8 * 60 * 60 * 1000;
@@ -30,16 +30,18 @@ const exact = (value, keys) => value && Object.getPrototypeOf(value) === Object.
 const same = (a, b) => canonical(a) === canonical(b);
 const pick = (source, keys) => Object.fromEntries(keys.map(key => [key, source[key]]));
 const identifier = value => typeof value === 'string' && /^[a-zA-Z0-9-]{1,160}$/.test(value);
-const filePath = value => typeof value === 'string' && value.length <= 4096 && path.isAbsolute(value) && !/[\x00-\x1f]/.test(value);
-const positive = value => Number.isSafeInteger(value) && value > 0;
+const filePath = value => typeof value === 'string' && value.length <= 512 && path.isAbsolute(value) && !/[\x00-\x1f]/.test(value);
+const positive = value => Number.isInteger(value) && value > 0 && value <= 2147483647;
 
 function filename(installation, taskId) {
   if (typeof taskId !== 'string' || !TASK.test(taskId)) fail('montage_mandate_task');
   return path.join(installation.stateDir, 'montage-mandate-' + taskId + '.json');
 }
 function mac(installation, body) {
-  if (!HEX.test(installation.controlToken)) fail('montage_mandate_signer');
-  return createHmac('sha256', Buffer.from(installation.controlToken, 'hex')).update('ae-core4/montage-mandate/v1\0' + canonical(body)).digest('hex');
+  if (!HEX.test(installation.controlToken) || !HEX.test(installation.panelToken) || installation.panelToken === installation.controlToken)
+    fail('montage_mandate_signer');
+  return createHmac('sha256', Buffer.from(installation.controlToken + installation.panelToken, 'hex'))
+    .update('ae-core4/montage-mandate/v2\0' + canonical(body)).digest('hex');
 }
 function read(file) {
   let before;
@@ -86,13 +88,19 @@ function validateActions({ projectId, sessionId, actions }) {
     if (!exact(input, fields) || input.projectId !== projectId || own(input, 'sessionId') && input.sessionId !== sessionId ||
         fields.filter(key => key === 'compId' || key === 'layerId' || key === 'itemId' || key === 'originalSourceId').some(key => !positive(input[key])) ||
         own(input, 'file') && (!filePath(input.file) || typeof input.sha256 !== 'string' || !HEX.test(input.sha256)) ||
-        own(input, 'frame') && (!Number.isSafeInteger(input.frame) || input.frame < 0 || !/^[a-z0-9][a-z0-9_-]{0,90}\.png$/i.test(input.fileName))) fail('montage_mandate_action');
+        own(input, 'frame') && (!Number.isSafeInteger(input.frame) || input.frame < 0 || input.frame > 1000000 ||
+          typeof input.fileName !== 'string' || !/^[a-z0-9][a-z0-9_-]{0,90}\.png$/i.test(input.fileName))) fail('montage_mandate_action');
     const key = canonical(action), slot = input.compId + '/' + input.layerId, output = String(input.fileName).toLowerCase();
     if (keys.has(key) || action.moduleId === 'layer-overlay' && slots.has(slot) ||
         action.moduleId === 'comp-frame-export' && outputs.has(output)) fail('montage_mandate_duplicate_action');
     keys.add(key);
     if (action.moduleId === 'layer-overlay') slots.add(slot);
     if (action.moduleId === 'comp-frame-export') outputs.add(output);
+  }
+  for (const action of actions) {
+    if (action.moduleId === 'layer-overlay' && !own(action.input, 'itemId') &&
+        !actions.some(candidate => candidate.moduleId === 'media-import' && candidate.input.file === action.input.file &&
+          candidate.input.sha256 === action.input.sha256)) fail('montage_mandate_import_required');
   }
 }
 function scopeFields(moduleId, input) {
@@ -107,9 +115,16 @@ function issueMontageMandate(installation, input, now = Date.now()) {
   validateActions(input);
   const file = filename(installation, input.taskId);
   if (revoked(file)) fail('montage_mandate_revoked');
-  const body = { ...input, version: 1, backend: 'core', installationId: installation.installationId,
+  const body = { ...input, version: 2, backend: 'core', installationId: installation.installationId,
     packageHash: installation.packageHash, createdAt: now, policies: POLICIES };
-  writeOnce(file, { body, mac: mac(installation, body) });
+  const staged = file + '.' + randomUUID() + '.stage';
+  try {
+    writeOnce(staged, { body, mac: mac(installation, body) });
+    if (revoked(file)) fail('montage_mandate_revoked');
+    fs.linkSync(staged, file);
+  } finally {
+    try { fs.unlinkSync(staged); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  }
   return { taskId: input.taskId, expiresAt: input.expiresAt, digest: hash(body), backend: 'core', policies: POLICIES };
 }
 function revokeMontageMandate(installation, taskId) {
@@ -131,14 +146,33 @@ function observeMontageMandate(installation, taskId, sessionId, now = Date.now()
   if (!exact(record, ['body', 'mac']) || !exact(body, ['version', 'backend', 'taskId', 'taskEpoch', 'sessionId', 'projectId', 'expiresAt',
     'actions', 'installationId', 'packageHash', 'createdAt', 'policies']) || typeof record.mac !== 'string' ||
     !HEX.test(record.mac) || !timingSafeEqual(Buffer.from(record.mac, 'hex'), Buffer.from(mac(installation, body), 'hex'))) fail('montage_mandate_signature');
-  if (body.version !== 1 || body.backend !== 'core' || body.taskId !== taskId || body.sessionId !== sessionId ||
+  if (body.version !== 2 || body.backend !== 'core' || body.taskId !== taskId || body.sessionId !== sessionId ||
       body.installationId !== installation.installationId || body.packageHash !== installation.packageHash ||
       !same(body.policies, POLICIES)) fail('montage_mandate_binding');
   if (body.expiresAt <= now || body.createdAt > now || body.expiresAt > body.createdAt + MAX_AGE_MS) fail('montage_mandate_expired');
   validateActions(body);
+  if (revoked(file)) fail('montage_mandate_revoked');
   return { body, digest: hash(body) };
 }
-function authorizeMontageStep(installation, approval, sessionId, observedProject) {
+function matchesMontageAction(mandate, moduleId, operationId, input, importedItem) {
+  const op = OPERATIONS[moduleId];
+  return own(OPERATIONS, moduleId) && operationId === op.operationId && mandate.body.actions.some(action => {
+    if (action.moduleId !== moduleId || !same(action.input, pick(input, scopeFields(moduleId, action.input)))) return false;
+    return moduleId !== 'layer-overlay' || own(action.input, 'itemId') ||
+      importedItem(mandate, action.input) === input.itemId;
+  });
+}
+function importedMontageItem(commands, { body, digest }, input) {
+  const imports = commands.filter(command => command.taskId === body.taskId && command.state === 'succeeded' &&
+    command.verificationKind === 'local-transaction-receipt' && command.taskEpoch === body.taskEpoch &&
+    command.selected?.moduleId === 'media-import' && command.grant?.operatorConfirmation?.mandateDigest === digest &&
+    command.input.projectId === body.projectId && command.input.sessionId === body.sessionId &&
+    command.input.file === input.file && command.input.sha256 === input.sha256 &&
+    positive(command.after?.createdItemId) && command.after.items.some(item => item.id === command.after.createdItemId &&
+      item.file === input.file && item.kind === 'still'));
+  return imports.length === 1 ? imports[0].after.createdItemId : null;
+}
+function authorizeMontageStep(installation, approval, sessionId, observedProject, importedItem) {
   const step = approval.steps[0], id = step.moduleId;
   if (!own(OPERATIONS, id)) return null;
   const mandate = observeMontageMandate(installation, approval.taskId, sessionId);
@@ -149,8 +183,8 @@ function authorizeMontageStep(installation, approval, sessionId, observedProject
       !exact(step.input, [...fields, 'expectedRevision']) || !exact(step.target, target)) fail('montage_mandate_binding');
   const input = pick(step.input, fields);
   if (!same(step.target, pick(input, target)) ||
-      !body.actions.some(action => action.moduleId === id && same(action.input, pick(input, scopeFields(id, action.input))))) fail('montage_mandate_action');
+      !matchesMontageAction(mandate, id, step.operationId, input, importedItem)) fail('montage_mandate_action');
   return { digest: mandate.digest, expiresAt: body.expiresAt };
 }
 
-module.exports = { issueMontageMandate, revokeMontageMandate, observeMontageMandate, authorizeMontageStep };
+module.exports = { issueMontageMandate, revokeMontageMandate, observeMontageMandate, authorizeMontageStep, matchesMontageAction, importedMontageItem };
