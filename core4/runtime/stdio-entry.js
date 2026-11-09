@@ -393,12 +393,12 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     return startOverView();
   }
   if (mode === 'owner') startOverControl = require('./start-over-panel-control.js').createStartOverPanelControl({ installation, status: startOverView, request: requestStartOver });
-  async function exposeOwner(facade, activity, invoke, consumeReadRejection) {
+  async function exposeOwner(facade, activity, invoke, consumeReadRejection, isFreshDryrunRefusal) {
     const { createAttachmentOwner, OWNER_METHODS } = require('./attachment-owner.js');
     const { createIpcServer } = require('./client-ipc.js');
     const { ownerEndpoint } = require('./client-entry.js');
     const { PRIVATE_METHODS, createOwnerMaintenance, createStopAuthorization } = require('./owner-maintenance.js');
-    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke, consumeReadRejection, workSession: workSession.status });
+    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke, consumeReadRejection, isFreshDryrunRefusal, workSession: workSession.status });
     const endpoint = ownerEndpoint(installation);
     let closed = false, closing, maintenance;
     async function closeRuntime() {
@@ -520,7 +520,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     operationId: item.contract.operationId, executorHash: item.executorHash, resultProfile: item.resultProfile, effect: item.contract.effectPolicy.effect }));
   peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets,
     observeProjectSave: projectSave?.observe, observeProjectLifecycle: projectLifecycle?.observe,
-    timeout: PRODUCTION_TIMING.callbackTimeoutMs, directReadDrainMs: DIRECT_READ_DRAIN_MS, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard() {
+    timeout: PRODUCTION_TIMING.callbackTimeoutMs, directReadDrainMs: DIRECT_READ_DRAIN_MS, port, admissionGuard, ...(workSession ? { workSessionId: workSession.status().sessionId, startOverControl } : {}), ...(reservedServer ? { preboundServer: reservedServer } : {}), ...(invocationContext ? { captureDeliveryGuard(command) {
     const context = invocationContext.getStore();
     if (!context) fail('owner_controller_required');
     // Retain this exact operation's grant beyond ALS lifetime, including /poll.
@@ -579,7 +579,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (result.observation?.readFailureVersion === 1) fail(result.observation.code || 'inspection_failed');
     aeReadiness.recordRead(originalPeerId);
     const coverage = result.observation?.coverage;
-    if (workSession && value.target?.cursor === undefined &&
+    if (workSession && !peer.status().startOverFrozen && value.target?.cursor === undefined &&
         (!coverage || coverage.inventory.status !== 'scan_incomplete' && ['not_requested', 'found'].includes(coverage.lookup.status))) {
       workSession.recordProjectBaseline(peer, result);
       latestProjectRead = { peerId: originalPeerId, projectId: result.observation.target.projectId, at: Date.now() };
@@ -603,7 +603,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       const record = completedReadErrors.get(error); completedReadErrors.delete(error);
       if (!record || request.context !== record.context || request.method !== 'inspect_module_target' || request.payload.moduleId !== record.moduleId || request.payload.contractId !== record.contractId || hash(canonical(request.payload.target || {})) !== record.targetHash) return null;
       return { code: record.code, ...(record.phase ? { phase: record.phase } : {}), ...(record.physical ? { physical: record.physical } : {}) };
-    });
+    }, Broker.isFreshDryrunRefusal);
   }
   serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.1.2' } });
   return { close: facade.close, status: facade.status };

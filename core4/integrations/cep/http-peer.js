@@ -153,23 +153,41 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       return null;
     }
     expirePending();
-    const value = frame();
-    if (value && poll.open()) pending.delivered = true;
-    else return null;
-    // Bytes offered to the response do not prove receipt, evalScript or start.
-    return value;
+    return poll.open() ? frame() : null;
+  }
+  function finishPoll(poll, command = null) {
+    const entry = command ? pending : null;
+    try {
+      poll.finish(command, entry && (() => {
+        expirePending();
+        if (pending !== entry || !poll.open()) return false;
+        // Mark before the first write. Bytes offered to HTTP do not prove
+        // receipt, evalScript or start, including when the write throws.
+        entry.delivered = true;
+        return true;
+      }));
+    } catch {
+      if (entry && pending === entry) abandonBeforeHandoff('poll_response_failed');
+      poll.abort();
+    }
+  }
+  function flushPoll() {
+    if (!activePoll) return;
+    const poll = activePoll; activePoll = null;
+    finishPoll(poll);
   }
   function deliver() {
     if (!activePoll || !frame()) return;
     const poll = activePoll; activePoll = null;
-    try { poll.finish(handoff(poll)); }
-    catch { disconnect('poll_response_failed'); poll.finish(null); }
+    finishPoll(poll, handoff(poll));
   }
   function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId, origin: peer.origin } : { connected: false, origin: null }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { ...commandOutcome(pending, pending.callerSettled ? 'draining' : pending.delivered ? 'handed_to_poll' : 'queued'), delivered: pending.delivered, ...(pending.callerSettled ? { drainDeadlineAt: pending.drainDeadlineAt } : {}) } : null, lastReadFailure, lastPhysicalFault, lastCommandOutcome, startOverFrozen, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
-  function reply(res, statusCode, value, origin) {
-    if (res.destroyed || res.writableEnded) return;
+  function reply(res, statusCode, value, origin, beforeWrite) {
+    if (res.destroyed || res.writableEnded) return false;
     const body = bounded(value);
+    if (beforeWrite && !beforeWrite()) return false;
     res.writeHead(statusCode, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) }); res.end(body);
+    return true;
   }
   server.on('request', async (req, res) => {
     const origin = req.headers.origin;
@@ -202,7 +220,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         if (role !== 'panel') fail('panel_role_required');
         expirePending();
         if (peer && (Date.now() - peer.lastSeen < 45000 || pending)) fail('duplicate_peer');
-        if (activePoll) { const poll = activePoll; activePoll = null; poll.finish(null); }
+        flushPoll();
         peer = { peerId: input.peerId, origin: challenge.value.origin, sequence: 0, lastSeen: Date.now() };
         const body = { linked: true, epoch, peerId: peer.peerId, controllerId, pins, receiverStoreIdentity: store.identity, laneClosed: store.closed, ...(startOverControl ? { workSessionId, startOver: startOverControl.status() } : {}) };
         reply(res, 200, { body, mac: mac(body, secret) }, corsOrigin); return;
@@ -210,18 +228,24 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       exact(input, ['body', 'mac']); const b = requestBody(input.body);
       if (!peer || origin !== peer.origin || b.epoch !== epoch || b.peerId !== peer.peerId || b.sequence !== peer.sequence + 1 || b.method !== req.method || b.path !== req.url || !validMac(b, input.mac, installation.panelToken)) fail('peer_auth_or_replay');
       peer.sequence = b.sequence; peer.lastSeen = Date.now();
-      function signed(payload) { const body = { epoch, peerId: b.peerId, sequence: b.sequence, payload }; reply(res, 200, { body, mac: mac(body, installation.panelToken) }, corsOrigin); }
+      function signed(payload, beforeWrite) { const body = { epoch, peerId: b.peerId, sequence: b.sequence, payload }; return reply(res, 200, { body, mac: mac(body, installation.panelToken) }, corsOrigin, beforeWrite); }
       if (req.url === '/poll') {
         exact(b.payload, []); if (activePoll) fail('concurrent_poll');
         expirePending();
-        if (startOverFrozen || pending?.delivered) { signed({ command: null }); return; }
         const open = () => !req.aborted && !res.destroyed && !res.writableEnded;
-        if (frame()) { signed({ command: handoff({ peer, open }, true) }); return; }
+        const poll = { peer, open, abort: () => res.destroy(), finish(command, beforeWrite) {
+          if (!signed({ command }, beforeWrite) && command && open()) signed({ command: null });
+        } };
+        if (startOverFrozen || pending?.delivered) { finishPoll(poll); return; }
+        if (frame()) { finishPoll(poll, handoff(poll, true)); return; }
         await new Promise(resolve => {
-          const poll = { peer, open, finish(value) { clearTimeout(timer); try { signed({ command: value }); } finally { resolve(); } } };
-          const timer = setTimeout(() => { if (activePoll === poll) activePoll = null; poll.finish(null); }, pollTimeout);
-          activePoll = poll;
-          res.on('close', () => { if (activePoll === poll) { activePoll = null; clearTimeout(timer); resolve(); } });
+          const waiting = { ...poll, finish(command, beforeWrite) {
+            clearTimeout(timer);
+            try { poll.finish(command, beforeWrite); } finally { resolve(); }
+          } };
+          const timer = setTimeout(() => { if (activePoll === waiting) flushPoll(); }, pollTimeout);
+          activePoll = waiting;
+          res.on('close', () => { if (activePoll === waiting) { activePoll = null; clearTimeout(timer); resolve(); } });
         }); return;
       }
       if (req.url === '/complete') {
@@ -319,7 +343,13 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         expirePending();
         if (pending !== done) fail('unknown_no_promotion');
         const response = completionResponse(c.command, result);
-        const recordHash = store.complete(b.payload.commandId, response);
+        let recordHash;
+        try { recordHash = store.complete(b.payload.commandId, response); }
+        catch (error) {
+          noteFault(done, 'completion_persist_failed', error);
+          disconnect('completion_persist_failed');
+          throw error;
+        }
         const code = result.diskProofError || result.code;
         lastCommandOutcome = commandOutcome(done, 'terminal', { queue: startOverFrozen ? 'fenced' : 'idle',
           nativeStart: done.directRead && result.observationVersion === 1 ? 'observed' : 'unknown',
@@ -347,7 +377,13 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         return;
       }
       fail('unknown_peer_route');
-    } catch (e) { reply(res, e.code === 'frame_too_large' ? 413 : 403, { error: e.code || 'peer_request_failed' }, corsOrigin); }
+    } catch (e) {
+      try {
+        if (res.headersSent) res.destroy();
+        else reply(res, e.code === 'frame_too_large' ? 413 : 403, { error: e.code || 'peer_request_failed' }, corsOrigin);
+      }
+      catch { res.destroy(); }
+    }
   });
   function submit(command, broker = false) {
     if (startOverFrozen) fail('start_over_frozen');
@@ -376,7 +412,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     fenceForStartOver() {
       startOverFrozen = true;
       if (pending?.callerSettled) disconnect('start_over_frozen');
-      if (activePoll) { const poll = activePoll; activePoll = null; poll.finish(null); }
+      flushPoll();
     },
     consumeReadRejection(error) {
       const record = completedReadErrors.get(error); completedReadErrors.delete(error); return record || null;
@@ -399,7 +435,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       const command = { protocolVersion: 1, controllerId, channelEpoch: epoch, commandId: id('inspect'), moduleId: 'project-inspection', operationId: 'inspect', executorHash: asset.executorHash, phase: 'inspect', payloadHash: hash(canonical(payload)), payload };
       return submit(command);
     },
-    async close() { closed = true; disconnect('runtime_closed'); if (activePoll) { const poll = activePoll; activePoll = null; poll.finish(null); } await new Promise(resolve => server.close(resolve)); store.close(); }
+    async close() { closed = true; disconnect('runtime_closed'); flushPoll(); await new Promise(resolve => server.close(resolve)); store.close(); }
   });
   observationPeers.set(api, completedProjectReads); return api;
 }

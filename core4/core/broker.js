@@ -15,7 +15,10 @@ const { encode, decode } = require('../protocol/codec');
 const { hash, canonical, exact, fail, id, bounded } = require('../protocol/json');
 const clone = value => JSON.parse(canonical(value));
 const pick = (object, fields) => Object.fromEntries(fields.map(k => [k, object[k]]));
+const freshDryrunRefusals = new WeakSet();
 class Broker {
+  static isFreshDryrunRefusal(error) { return freshDryrunRefusals.has(error); }
+
   constructor({ root = path.resolve(__dirname, '..'), stateDir, trace, workerTimeout, transportTimeout = 2000, privateEmbedding, stateLockToken } = {}) {
     if (!stateDir) fail('explicit_state_directory_required');
     this.stateLock = acquireStateLock(stateDir, stateLockToken === undefined ? {} : { token: stateLockToken });
@@ -363,7 +366,11 @@ class Broker {
   }
   async run({ proposalId, dryrunRef }) {
     const { proposal, plan } = this.proposal(proposalId); const dryrun = this.dryruns.get(dryrunRef);
-    if (!dryrun || dryrun.proposalId !== proposalId || dryrun.taskEpoch !== plan.taskEpoch || Date.now() - dryrun.createdAt > 5000) fail('fresh_dryrun_required');
+    if (!dryrun || dryrun.proposalId !== proposalId || dryrun.taskEpoch !== plan.taskEpoch || Date.now() - dryrun.createdAt > 5000) {
+      const error = Object.assign(new Error('fresh_dryrun_required'), { code: 'fresh_dryrun_required' });
+      freshDryrunRefusals.add(error);
+      throw error;
+    }
     this.ensureConnection(); if (this.running || this.reconciling || this.controlPending) fail('broker_busy');
     this.dryruns.delete(dryrunRef);
     if (canonical(plan.pins.transport || null) !== canonical(this.transportIdentity || null)) fail('transport_pin_changed');

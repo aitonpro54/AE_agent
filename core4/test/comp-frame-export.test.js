@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const { Broker } = require('../core/broker');
 const { issue } = require('../runtime/operator-confirmation');
 const { harness } = require('./fixtures/manual-http-runtime');
 
@@ -100,6 +101,25 @@ test('comp-frame-export leaves a truncated output fenced and preserves the origi
   assert.equal(h.broker.ledger.unresolved().length, 1);
   assert.equal(h.state.captures.length, 1);
   assert.ok(fs.existsSync(h.output));
+});
+
+test('comp-frame-export expires a dry run before either journal or output changes', async t => {
+  const h = await fixture(t);
+  const { buildId } = await h.build();
+  const proposal = h.broker.propose({ buildId });
+  issue(h.installation, { sessionId, proposalId: proposal.proposalId, approvalDigest: proposal.operatorApprovalDigest });
+  const dry = await h.broker.dryrun({ proposalId: proposal.proposalId });
+  const receiver = path.join(h.installation.stateDir, 'receiver/completions.ndjson');
+  const ledger = path.join(h.installation.stateDir, 'broker/ledger.ndjson');
+  const before = [receiver, ledger].map(file => fs.readFileSync(file));
+  h.broker.dryruns.get(dry.dryrunRef).createdAt -= 5001;
+  await assert.rejects(h.broker.run(dry), error => error.code === 'fresh_dryrun_required' && Broker.isFreshDryrunRefusal(error));
+  assert.deepEqual([receiver, ledger].map(file => fs.readFileSync(file)), before);
+  assert.deepEqual(h.state.captures, []);
+  assert.equal(fs.existsSync(h.output), false);
+  const fresh = await h.broker.dryrun({ proposalId: proposal.proposalId });
+  assert.equal((await h.broker.run(fresh)).state, 'succeeded');
+  assert.deepEqual(h.state.captures, [3 / 25]);
 });
 
 test('comp-frame-export waits for native output and preserves state across render revision ticks', async t => {

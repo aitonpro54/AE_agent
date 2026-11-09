@@ -142,9 +142,23 @@ test('start-over-channel UNKNOWN persist failure cannot escape timer or retain a
   const api=faultPeer(),f=await fixture(t,{peerFactory:api.createHttpPeer,timeout:45}),result=f.peer.inspect({}).catch(e=>e);api.arm();
   assert.equal((await result).code,'host_callback_timeout');assert.equal(f.peer.status().pending,null);assert.equal(f.peer.status().storeFault,true);assert.equal(f.peer.status().storeClosed,true);assert.equal(f.peer.status().lastPhysicalFault.authority,false);assert.throws(()=>f.peer.inspect({}),e=>e.code==='receiver_lane_closed');
 });
-test('start-over-channel failed durable completion cannot mint positive baseline proof and timeout stays finite',async t=>{
-  const api=faultPeer(),f=await fixture(t,{peerFactory:api.createHttpPeer,timeout:80}),result=f.peer.inspect({}).catch(e=>e),frame=(await f.call('/poll',{})).command;api.arm();
-  assert.equal((await f.request('/complete',completion(frame))).status,403);const error=await result;assert.equal(error.code,'host_callback_timeout');assert.equal(api.consumeProjectObservation(f.peer,error),null);assert.equal(f.peer.status().storeFault,true);assert.equal(f.peer.status().pending,null);
+test('start-over-channel failed terminal fsync immediately fences the original read even with a drain window', async t => {
+  const api = faultPeer(), f = await fixture(t, { peerFactory: api.createHttpPeer, timeout: 2000, directReadDrainMs: 3000 });
+  const result = f.peer.inspect({}).catch(error => error);
+  const frame = (await f.call('/poll', {})).command;
+  api.arm();
+  assert.equal((await f.request('/complete', completion(frame))).status, 403);
+  const error = await result, proof = f.peer.consumeReadRejection(error);
+  assert.equal(error.code, 'completion_persist_failed');
+  assert.equal(proof.physical.stage, 'unknown');
+  assert.equal(proof.physical.handoff, 'offered');
+  assert.equal(proof.physical.terminalReceipt, null);
+  assert.equal(api.consumeProjectObservation(f.peer, error), null);
+  assert.equal(f.peer.status().storeFault, true);
+  assert.equal(f.peer.status().pending, null);
+  const bytes = fs.readFileSync(path.join(f.directory, 'completions.ndjson'));
+  assert.equal((await f.request('/complete', completion(frame))).status, 403);
+  assert.deepEqual(fs.readFileSync(path.join(f.directory, 'completions.ndjson')), bytes);
 });
 
 test('start-over-channel no poll settles direct intent durably without dispatch or a new channel', async t => {
@@ -246,4 +260,101 @@ test('start-over-channel lost poll response remains handed-off unknown after dra
   assert.deepEqual(unknown.map(event => event.type), ['origin', 'begin', 'unknown']);
   assert.equal(f.peer.status().lastCommandOutcome.queue, 'fenced');
   assert.throws(() => f.peer.inspect({}), e => e.code === 'receiver_lane_closed');
+});
+
+async function pollWriteFault(t) {
+  const server = http.createServer();
+  let resolvePoll;
+  const observedPoll = new Promise(resolve => { resolvePoll = resolve; });
+  let writes = 0;
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const f = await fixture(t, { preboundServer: server, timeout: 2000, pollTimeout: 100, directReadDrainMs: 3000 });
+  server.prependListener('request', (request, response) => {
+    if (request.url !== '/poll') return;
+    request.once('end', () => setImmediate(resolvePoll));
+    const writeHead = response.writeHead;
+    response.writeHead = function (...args) {
+      if (++writes === 1) {
+        writeHead.apply(this, args);
+        throw new Error('fixture_poll_write_failed');
+      }
+      return writeHead.apply(this, args);
+    };
+  });
+  return { ...f, observedPoll, writes: () => writes };
+}
+
+test('start-over-channel failed offered response fences the same command for immediate and held polls', async t => {
+  for (const held of [false, true]) {
+    await t.test(held ? 'held' : 'immediate', async t => {
+      const f = await pollWriteFault(t);
+      let call;
+      if (held) {
+        call = assert.rejects(f.request('/poll', {}), { code: 'ECONNRESET' });
+        await f.observedPoll;
+      }
+      const result = f.peer.inspect({}).catch(error => error);
+      if (!held) call = assert.rejects(f.request('/poll', {}), { code: 'ECONNRESET' });
+      await call;
+      const error = await result, proof = f.peer.consumeReadRejection(error);
+      assert.equal(error.code, 'poll_response_failed');
+      assert.equal(proof.physical.handoff, 'offered');
+      assert.equal(proof.physical.nativeStart, 'unknown');
+      assert.equal(proof.physical.queue, 'fenced');
+      assert.equal(f.writes(), 1);
+      assert.equal(f.peer.status().pending, null);
+      assert.deepEqual(f.events().map(event => event.type), ['origin', 'begin', 'unknown']);
+      assert.deepEqual(await f.call('/poll', {}), { command: null });
+    });
+  }
+});
+
+test('start-over-channel failed empty poll timeout does not fence or retain the lane', async t => {
+  const f = await pollWriteFault(t);
+  await assert.rejects(f.request('/poll', {}), { code: 'ECONNRESET' });
+  assert.deepEqual(f.events().map(event => event.type), ['origin']);
+  assert.equal(f.peer.status().storeClosed, false);
+  const result = f.peer.inspect({});
+  const frame = (await f.call('/poll', {})).command;
+  await f.call('/complete', completion(frame));
+  assert.deepEqual((await result).observation, observation);
+});
+
+test('start-over-channel start-over fences a direct read already draining and refuses its callback', async t => {
+  const f = await fixture(t, { timeout: 150, directReadDrainMs: 3000 });
+  const result = f.peer.inspect({}).catch(error => error);
+  const frame = (await f.call('/poll', {})).command;
+  assert.equal((await result).code, 'inspection_callback_pending');
+  f.peer.fenceForStartOver();
+  assert.equal(f.peer.status().lastCommandOutcome.code, 'start_over_frozen');
+  assert.equal(f.peer.status().pending, null);
+  assert.equal((await f.request('/complete', completion(frame))).value.error, 'unknown_no_promotion');
+  assert.deepEqual(f.events().map(event => event.type), ['origin', 'begin', 'unknown']);
+});
+
+test('start-over-channel only direct project inspection can drain after its ordinary callback deadline', async t => {
+  const png = { assetKey: 'comp-frame-export-v1', moduleId: 'comp-frame-export', operationId: 'save-comp-frame-png',
+    executorHash: 'f'.repeat(64), resultProfile: 'comp-frame-export-v1', effect: 'file' };
+  const text = { assetKey: 'titles-current-target-v1', moduleId: 'titles-current-target', operationId: 'set-current-text',
+    executorHash: 'e'.repeat(64), resultProfile: 'manual-text-v1', effect: 'layer.text' };
+  const brokerInspection = { ...asset, moduleId: 'project-inspection', operationId: 'inspect' };
+  for (const selected of [png, text, brokerInspection]) {
+    await t.test(selected.moduleId, async t => {
+      const f = await fixture(t, { additionalAssets: [png, text], timeout: 180, directReadDrainMs: 3000 });
+      const broker = { controllerId: 'broker', channelEpoch: 'broker-epoch', secret: '7'.repeat(64) };
+      await f.peer.transport.connect(broker);
+      const command = { protocolVersion: 1, controllerId: broker.controllerId, channelEpoch: broker.channelEpoch,
+        commandId: 'test-' + selected.moduleId, moduleId: selected.moduleId, operationId: selected.operationId,
+        executorHash: selected.executorHash, phase: selected === brokerInspection ? 'inspect' : 'mutate', payload: {}, payloadHash: hash({}) };
+      const result = assert.rejects(f.peer.transport.send(encode(command, broker.secret)), { code: 'host_callback_timeout' });
+      const frame = (await f.call('/poll', {})).command;
+      assert.equal(frame.commandId, command.commandId);
+      await result;
+      assert.equal(f.peer.status().pending, null);
+      assert.equal(f.peer.status().lastCommandOutcome.stage, 'unknown');
+      assert.equal((await f.request('/complete', completion(frame))).value.error, 'unknown_no_promotion');
+      assert.deepEqual(await f.call('/poll', {}), { command: null });
+      assert.deepEqual(f.events().map(event => event.type), ['origin', 'begin', 'unknown']);
+    });
+  }
 });

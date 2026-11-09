@@ -72,3 +72,25 @@
 - **Progress.** На DESKTOP-32974QF остановлены оба writer-блока после завершения их текущих правок. XHigh подготовил direct-read outcome/drain P0b. Sol 6.1 High подготовил нативный `layer-overlay` и профиль P1a. Координатор связал мандат монтажа с действующим operator confirmation и подключил состав `operator-photo-montage`. После checkpoint продолжение записи переходит на MSI.
 - **Decision Log.** P0b сохраняет Core write-ahead, старую схему журнала и historical validator. Перед выдачей прямой read может закрыться доказанным zero-handoff. Для выданного direct read предусмотрено ограниченное ожидание исходного callback. P1a использует Core photo-placeholder/layer-insert, legacy duplicate/replace и прямой matte, а также действующую проверку SHA файла. Мандат берёт текущие proposal/reservation/claim из Core, а ограниченный реестр действий сверён с legacy montage manifest. Отмена проверяется перед выдачей. Save/reopen имеют отдельный допуск. Kumo в реализацию пока не включён.
 - **Validation.** На WIP-байтах `start-over-channel` 17/17, readiness/mandate 4/4, проверка границ 81 и diff PASS. TEMP recovery 12/13 при меняющемся checkout. Одна проверка сравнила хеши двух разных сборок, нужен повтор на закреплённых байтах. `operator-photo-montage` пока отказывает `package_artifact_mismatch`, поскольку последние правки overlay ещё не закреплены в artifact/admission. Нативный AE, контрольные PNG и итоговый пакет не проверены. Детальный порядок продолжения записан в [передаче на MSI](core-autonomy-msi-handoff-20261109.md).
+
+#### P0b на MSI, выдача и исход команды
+
+- **Progress.** Один путь записи подписанного poll для немедленного и
+  ожидающего запроса. Отметка handoff устанавливается перед первой записью
+  HTTP, после сериализации. Явный сбой записи после handoff фиксирует
+  UNKNOWN. Сбой `fsync` терминального результата сразу закрывает очередь
+  и завершает вызов без ACK и baseline. Owner сохраняет точный отказ
+  `fresh_dryrun_required` для исходной ошибки Broker.
+- **Decision Log.** Сохранены write-ahead receiver и корреляция исходного
+  callback. Продление применяется только к прямому `project-inspection`.
+  Start-over закрывает уже ожидающее позднее чтение и не выдаёт baseline
+  из старого канала. Старый AE Agent подтвердил пользу разделения
+  отправки HTTP и факта исполнения. Действующий код Core дал нужные
+  примитивы, перенос legacy и Kumo для этого этапа не потребовался.
+- **Validation.** 92/92 на MSI в `start-over-channel`, `owner-runtime`,
+  `comp-frame-export`, `native-read-capture` и `native-read-recovery`.
+  Включены сбой записи poll, ошибка fsync, freeze, потерянный poll,
+  исходный и чужой callback, отсутствие drain для PNG/мутации и
+  просроченный dry-run без записи в оба журнала. Временный owner
+  `operator-frame-export` подтвердил прямое чтение при подключённом
+  операторском профиле. Границы 81, diff PASS. Нативный прогон открытый.

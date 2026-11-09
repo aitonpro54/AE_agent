@@ -217,6 +217,54 @@ test('durable project read rejections cross the production owner IPC and stdio w
   assert.deepEqual(fs.readFileSync(journalFile, 'utf8').trim().split('\n').map(JSON.parse).map(e => e.type), ['origin', ...Array(5).fill(['begin', 'complete']).flat()]);
 });
 
+test('operator-confirmation owner composition reads a project without requiring a mutation grant', async t => {
+  const f = install(t, buildPackage(SOURCE, 'operator-frame-export', { runtimeModel: 'owner' }));
+  const runtime = await directOwner(t, f), c = rpcProcess(t, f), p = await panel(runtime.status().physical.port, f.d);
+  const status = await c.call('core_status');
+  const grant = await c.call('controller_acquire', { sessionId: status.workSession.sessionId });
+  const { contractId } = await c.call('get_module_contract', { moduleId: 'project-inspection' });
+  const frameContract = await c.call('get_module_contract', { moduleId: 'comp-frame-export' });
+  assert.equal(frameContract.operatorConfirmation, 'local-operator-exact-confirmation-v1');
+  const read = c.call('inspect_module_target', { moduleId: 'project-inspection', contractId, target: {} });
+  await until(() => runtime.status().physical.pending);
+  const frame = (await p.request('/poll', {})).value.command;
+  assert.equal(frame.phase, 'inspect');
+  assert.equal((await p.request('/complete', completion(frame, vmObservation(f.pkg, frame)))).status, 200);
+  assert.equal((await read).authority, false);
+  await c.call('controller_release', { leaseToken: grant.leaseToken });
+  assert.equal(runtime.status().physical.storeClosed, false);
+});
+
+test('only a Broker-issued fresh dry-run refusal crosses the owner boundary as a known refusal', async () => {
+  const { Broker } = require('../core/broker');
+  const proposalId = 'proposal', dryrunRef = 'dryrun';
+  const broker = { proposal: () => ({ plan: { taskEpoch: 1 } }), dryruns: new Map([[dryrunRef, {
+    proposalId, taskEpoch: 1, createdAt: Date.now() - 6000
+  }]]) };
+  const values = { inspect: { evidenceRef: 'evidence' }, build: { buildId: 'build', taskId: 'task' },
+    propose: { proposalId }, dryrun: { dryrunRef } };
+  let forged = false;
+  const owner = createAttachmentOwner({ runtime: { status: () => ({}), close: async () => {} },
+    activity: () => ({ pending: false, unresolved: false, fault: false }), isFreshDryrunRefusal: Broker.isFreshDryrunRefusal,
+    invoke(method, payload) {
+      if (method !== 'run') return values[method];
+      if (forged) throw Object.assign(new Error('fresh_dryrun_required'), { code: 'fresh_dryrun_required' });
+      return Broker.prototype.run.call(broker, payload);
+    } });
+  const session = {};
+  owner.onAttach(session);
+  const call = (method, payload = {}) => owner.onRequest({ session, method, payload });
+  await ok(call('controller_acquire'));
+  await ok(call('inspect_module_target', { contractId: 'a'.repeat(64) }));
+  await ok(call('build_solution_plan', { steps: [{ evidenceRef: 'evidence' }] }));
+  await ok(call('propose_plan', { buildId: 'build' }));
+  await ok(call('dry_run_plan', { proposalId }));
+  assert.deepEqual(await call('run_plan', { proposalId, dryrunRef }), { ok: false, code: 'fresh_dryrun_required' });
+  forged = true;
+  assert.equal((await call('run_plan', { proposalId, dryrunRef })).code, 'owner_outcome_uncertain');
+  await owner.close();
+});
+
 test('default verified entry markers remain exact and new owner files stay outside the ordinary source package', async t => {
   const entrySource = fs.readFileSync(path.join(SOURCE, 'runtime/stdio-entry.js'), 'utf8');
   assert.equal(checkEntrySource(entrySource), true);

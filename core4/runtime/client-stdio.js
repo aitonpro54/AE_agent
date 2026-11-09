@@ -68,7 +68,9 @@ function serveAttachment({ client, input, output } = {}) {
         if (!payload || Object.getPrototypeOf(payload) !== Object.prototype) fail('invalid_payload');
         const response = await client.call(request.params.name, payload);
         const physical = request.params.name === 'inspect_module_target' && response?.ok === false && classifyPhysicalRead(response.physical);
-        if (physical && ['outcome', 'code', 'nextAction'].every(key => response[key] === physical[key]) &&
+        if (request.params.name === 'run_plan' && response?.ok === false && response.code === 'fresh_dryrun_required') {
+          result = { content: [{ type: 'text', text: JSON.stringify({ outcome: 'rejected', code: response.code, nextAction: 'dry_run_plan' }) }], isError: true };
+        } else if (physical && ['outcome', 'code', 'nextAction'].every(key => response[key] === physical[key]) &&
             Object.keys(response).every(key => ['ok', 'outcome', 'code', 'nextAction', 'physical', ...(physical.outcome === 'unknown' ? ['requestId'] : [])].includes(key))) {
           if (physical.outcome === 'unknown') fail(physical.code, response.requestId, { nextAction: physical.nextAction, physical: response.physical });
           result = { content: [{ type: 'text', text: JSON.stringify({ ...physical, physical: response.physical }) }], isError: true };
