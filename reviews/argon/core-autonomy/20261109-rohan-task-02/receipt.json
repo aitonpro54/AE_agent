@@ -1,0 +1,22 @@
+{
+  "review_id": "ae-core-autonomy-20261109-rohan-task-02",
+  "profile": "Rohan",
+  "model": "4 Argon",
+  "mode": "Задача",
+  "effort": "Отдельный переключатель отсутствует в этом режиме",
+  "state": "response_received_persistence_verified",
+  "attempts": 1,
+  "prompt_sha256": "49160888e19191cc8ec93b3b8bc2f3eeafd087ed2be646a194c2aea79464888a",
+  "prior_probe": "ordinary chat probe hung, stop requested and stop control disappeared; returned to blank composer",
+  "authorization": "User explicitly asked retry and troubleshoot, incorporate confirmed adjacent chat review",
+  "created_at": "2026-11-09T07:48:11.183Z",
+  "sent_at": "2026-11-09T07:48:18.346Z",
+  "chat_url": "https://gemini.google.com/app/3df76960cae8bec8",
+  "response_chars": 28570,
+  "response_sha256": "7d137839b3ff51e13acb2ed3bc9dfa42384c9a055e412986e2768373f278d61c",
+  "received_at": "2026-11-09T07:51:18.782Z",
+  "reopen_sha256": "7d137839b3ff51e13acb2ed3bc9dfa42384c9a055e412986e2768373f278d61c",
+  "reopen_exact_match": true,
+  "local_file_sha256_verified": "7d137839b3ff51e13acb2ed3bc9dfa42384c9a055e412986e2768373f278d61c",
+  "privacy_note": "Google account email omitted; response copied byte-for-byte; no AEP, images, credentials or full rollout included."
+}
