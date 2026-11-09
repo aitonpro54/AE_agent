@@ -12,6 +12,7 @@ const LEASE_ERRORS = Object.freeze(['controller_busy', 'controller_fenced', 'con
 const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_inspection_contract_required', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed', 'owner_work_session_required', 'owner_work_session_changed', 'owner_work_session_unavailable', 'owner_baseline_required']);
 const OBSERVERS = new Set(['core_status', 'core_diagnostics', 'list_modules', 'get_module_contract', 'get_task']);
 const READ_REJECTION_CODES = Object.freeze(['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']);
+const PRE_DISPATCH_READ_CODES = Object.freeze(['ae_modal_observed', 'ae_unresponsive']);
 
 function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, workSession = () => ({ sessionId: null, baselineRequired: false, resetPending: false }), clock, ttlMs, drainIntervalMs = 100 } = {}) {
   if (!runtime || typeof runtime.status !== 'function' || typeof activity !== 'function' || typeof invoke !== 'function' || typeof workSession !== 'function' || !Number.isSafeInteger(drainIntervalMs) || drainIntervalMs < 1 || drainIntervalMs > 1000) throw new Error('owner_options');
@@ -132,7 +133,8 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
         let rejection;
         try { rejection = consumeReadRejection(error, { method, payload, context }); } catch {}
         const value = facts();
-        if (method === 'inspect_module_target' && READ_REJECTION_CODES.includes(rejection?.code) && !value.pending && !value.unresolved && !value.fault) {
+        const supportedRejection = rejection?.phase === 'pre-dispatch' ? PRE_DISPATCH_READ_CODES.includes(rejection.code) : READ_REJECTION_CODES.includes(rejection?.code);
+        if (method === 'inspect_module_target' && supportedRejection && !value.pending && !value.unresolved && !value.fault) {
           const rejected = new Error(rejection.code); rejected.code = rejection.code; rejectedReads.add(rejected); throw rejected;
         }
         fail('owner_outcome_uncertain');
@@ -161,4 +163,4 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
   }
   return Object.freeze({ onAttach, onDetach, onRequest, status, close, freeze() { frozen = true; }, bootId: lease.status().bootId });
 }
-module.exports = { createAttachmentOwner, TOOL_METHODS, OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES };
+module.exports = { createAttachmentOwner, TOOL_METHODS, OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES, PRE_DISPATCH_READ_CODES };

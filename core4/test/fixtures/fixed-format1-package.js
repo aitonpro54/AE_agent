@@ -20,6 +20,21 @@ function fixedFormat1Package() {
   const panel = fs.readFileSync(path.join(__dirname, 'legacy-panel-v1.txt'), 'utf8');
   if (hash(panel) !== '8ee7446ec1bf9a667c5e7d578dba0a0545453cb6d1ac1404eb6514f937e40e1d') throw new Error('historical_panel_fixture_bytes');
   add('cep/js/panel.js', panel);
+  // The historical tools intentionally accept only their original read asset.
+  const readExecutor = fs.readFileSync(path.join(__dirname, 'legacy-project-inspection-v1.txt'), 'utf8');
+  const readContract = {
+    moduleId: 'project-inspection', operationId: 'inspect-project', version: '4.0.0',
+    executionPolicy: 'read-only-current-observation-v1', snapshotProfile: 'project-observation-v1',
+    targetSchema: { type: 'object', properties: { compId: { type: 'integer', minimum: 1 } }, additionalProperties: false },
+    effectPolicy: { effect: 'none', continuity: false, boundedItemsScanned: 500, boundedComps: 50, boundedLayers: 100, displayNameMaxCodeUnits: 256, resultMaxCodeUnits: 40000 },
+    buildSupported: false
+  };
+  const readAdmission = { moduleId: readContract.moduleId, executionPolicy: readContract.executionPolicy, executorHash: hash(readExecutor), contractHash: hash(readContract) };
+  if (readAdmission.executorHash !== '787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019' ||
+      readAdmission.contractHash !== 'cd0e85894e11e2e070cb73113321b24dfca95b00aa934364313f04319ea6dc5a') throw new Error('historical_inspection_fixture_bytes');
+  add('modules/project-inspection/executor.jsx', readExecutor);
+  add('modules/project-inspection/contract.json', readContract);
+  add('modules/project-inspection/artifact.json', readAdmission);
   add('runtime/profiles.json', { profiles: [{ id: 'project-inspection', path: 'modules/project-inspection', executionPolicy: 'read-only-current-observation-v1' }] });
   add('runtime/source-package.json', { version: 1, files: Object.keys(pkg.files).sort(), artifactClosures: [] });
   const read = file => Buffer.from(pkg.files[file], 'base64').toString();

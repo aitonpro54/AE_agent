@@ -2,7 +2,7 @@
   'use strict';
   var cfg = window.Core4Installation, api = window.Core4PollDispatcher, status = document.getElementById('status'), detail = document.getElementById('detail'), button = document.getElementById('connect'), resetButton = document.getElementById('start-over');
   var peerId, epoch, sequence = 0, running = false, disposed = false, generation = 0, activeRequest, retryTimer, cancelWait;
-  var workSessionId = null, resetGeneration = 0, resetControllers = [], resetTimer, cancelResetWait, resetPosting = false, resetRequested = false, resetState = null, resumeRequested = false;
+  var workSessionId = null, resetGeneration = 0, resetControllers = [], resetTimer, cancelResetWait, resetPosting = false, resetRequested = false, resetState = null, resetUncertain = null, resumeRequested = false;
   function show(state, text) { if (status.dataset) status.dataset.state = state; status.textContent = text; }
   function error(code, transport) { var e = new Error(code); e.transportUnavailable = transport === true; return e; }
   function current(g) { if (disposed || g !== generation) throw error('stale_channel'); }
@@ -11,15 +11,24 @@
   function resetCurrent(g) { if (disposed || g !== resetGeneration) throw error('stale_reset'); }
   function validReset(value) {
     var uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
-    return object(value, ['id', 'sessionId', 'phase', 'requiresAEExit', 'resetComplete', 'baselineRequired', 'fault', 'aeAuthority']) && (value.id === null || typeof value.id === 'string' && uuid.test(value.id)) && (value.sessionId === null || typeof value.sessionId === 'string' && uuid.test(value.sessionId)) && ['ready', 'stopping', 'awaiting-core', 'awaiting-ae', 'finishing', 'baseline-required', 'blocked'].indexOf(value.phase) >= 0 && ['requiresAEExit', 'resetComplete', 'baselineRequired'].every(function (k) { return typeof value[k] === 'boolean'; }) && (value.fault === null || typeof value.fault === 'string' && /^[a-z][a-z0-9_]{0,99}$/.test(value.fault)) && value.aeAuthority === false;
+    return object(value, ['id', 'sessionId', 'ownerBootId', 'phase', 'requiresAEExit', 'resetComplete', 'baselineRequired', 'fault', 'eligibility', 'aeAuthority']) && (value.id === null || typeof value.id === 'string' && uuid.test(value.id)) && (value.sessionId === null || typeof value.sessionId === 'string' && uuid.test(value.sessionId)) && typeof value.ownerBootId === 'string' && uuid.test(value.ownerBootId) && ['ready', 'stopping', 'awaiting-core', 'awaiting-ae', 'finishing', 'baseline-required', 'blocked'].indexOf(value.phase) >= 0 && ['requiresAEExit', 'resetComplete', 'baselineRequired'].every(function (k) { return typeof value[k] === 'boolean'; }) && (value.fault === null || typeof value.fault === 'string' && /^[a-z][a-z0-9_]{0,99}$/.test(value.fault)) && object(value.eligibility, ['action', 'reason']) && ['request', 'continue', 'none'].indexOf(value.eligibility.action) >= 0 && typeof value.eligibility.reason === 'string' && /^[a-z][a-z0-9_]{0,99}$/.test(value.eligibility.reason) && value.aeAuthority === false;
   }
-  function resetReady(value) { return value.phase === 'ready' || value.phase === 'baseline-required'; }
+  function sessionAvailable(value) { return value.phase === 'ready' || value.phase === 'baseline-required'; }
+  function resetBinding(value) { return { ownerBootId: value.ownerBootId, id: value.id, sessionId: value.sessionId, action: value.eligibility.action, reason: value.eligibility.reason }; }
+  function updateResetButton() {
+    if (!resetButton || disposed) return;
+    var action = resetState && resetState.eligibility.action;
+    resetButton.textContent = action === 'continue' ? 'Продолжить сброс' : 'Начать заново';
+    resetButton.title = resetUncertain ? 'start_over_request_unconfirmed' : resetState ? resetState.eligibility.reason : '';
+    resetButton.disabled = resetPosting || !!resetUncertain || !action || action === 'none';
+  }
   function showReset(value) {
     resetState = value;
-    if (resetButton) { resetButton.textContent = value.id && !resetReady(value) ? 'Продолжить сброс' : 'Начать заново'; resetButton.disabled = resetPosting || !resetReady(value) && value.phase !== 'blocked'; }
-    if (value.phase === 'blocked') { show('recovery', 'Сброс требует проверки'); detail.textContent = 'Старая история сохранена. Причина: ' + (value.fault || 'start_over_blocked') + '. Проверьте core_diagnostics; команды не повторяются.'; }
+    if (resetUncertain && value.id && value.id !== resetUncertain.id) resetUncertain = null;
+    updateResetButton();
+    if (value.phase === 'blocked') { show('recovery', 'Сброс требует проверки'); detail.textContent = 'Старая история сохранена. Причина: ' + value.eligibility.reason + '. Проверьте core_diagnostics; команды не повторяются.'; }
     else if (value.phase === 'awaiting-ae') { show('recovery', 'Для завершения сброса нужно закрыть прежний After Effects'); detail.textContent = 'Сохраните проекты и закройте прежние экземпляры After Effects. Сброс продолжится автоматически; старые UNKNOWN останутся в истории.'; }
-    else if (!resetReady(value)) { show('waiting', value.phase === 'finishing' ? 'Подготовка нового сеанса' : 'Завершение прежней работы'); detail.textContent = 'Старая история сохраняется. Ожидайте завершения сброса; команды не повторяются.'; }
+    else if (!sessionAvailable(value)) { show('waiting', value.phase === 'finishing' ? 'Подготовка нового сеанса' : 'Завершение прежней работы'); detail.textContent = 'Старая история сохраняется. Ожидайте завершения сброса; команды не повторяются.'; }
   }
   function showReady() {
     var baseline = resetState && resetState.baselineRequired;
@@ -38,9 +47,12 @@
     } catch (e) { resetCurrent(g); if (timedOut && refused !== null) throw error('http_' + refused + '_body_timeout'); if (timedOut || !received && e && e.name === 'TypeError') throw error(timedOut ? 'transport_timeout' : 'transport_unavailable', true); throw e; }
     finally { clearTimeout(timer); var at = resetControllers.indexOf(controller); if (at >= 0) resetControllers.splice(at, 1); }
   }
-  async function resetRpc(action, g) {
-    var reply = await resetPost('/start-over/challenge', { action: action }, g), c = reply.challenge;
-    if (!object(reply, ['challenge']) || !object(c, ['version', 'purpose', 'role', 'action', 'nonce', 'epoch', 'origin', 'installationId', 'packageHash']) || c.version !== 1 || c.purpose !== 'start-over' || c.role !== 'panel' || c.action !== action || c.installationId !== cfg.installationId || c.packageHash !== cfg.packageHash || typeof c.nonce !== 'string' || !/^[a-f0-9]{64}$/.test(c.nonce) || typeof c.epoch !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(c.epoch) || ['null', 'file://'].indexOf(c.origin) < 0) throw error('start_over_challenge_auth');
+  async function resetRpc(action, g, expected) {
+    var input = { action: action }, keys = ['version', 'purpose', 'role', 'action', 'nonce', 'epoch', 'origin', 'installationId', 'packageHash'];
+    if (expected) { input.expected = expected; keys.push('expected'); }
+    var reply = await resetPost('/start-over/challenge', input, g), c = reply.challenge;
+    if (!object(reply, ['challenge']) || !object(c, keys) || c.version !== 1 || c.purpose !== 'start-over' || c.role !== 'panel' || c.action !== action || typeof c.nonce !== 'string' || !/^[a-f0-9]{64}$/.test(c.nonce) || typeof c.epoch !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(c.epoch) || ['null', 'file://'].indexOf(c.origin) < 0 || expected && api.canonical(c.expected) !== api.canonical(expected)) throw error('start_over_challenge_auth');
+    if (c.installationId !== cfg.installationId || c.packageHash !== cfg.packageHash) throw error('start_over_binding_changed');
     var proof = await sign({ domain: 'ae-core4/panel-start-over/v1', kind: 'request', challenge: c }); resetCurrent(g);
     var response = await resetPost('/start-over/' + action, { challenge: c, proof: proof }, g), body = response.body;
     if (!object(response, ['body', 'mac']) || !object(body, ['version', 'purpose', 'action', 'epoch', 'nonce', 'origin', 'installationId', 'packageHash', 'status']) || body.version !== 1 || body.purpose !== 'start-over' || body.action !== action || body.epoch !== c.epoch || body.nonce !== c.nonce || body.origin !== c.origin || body.installationId !== c.installationId || body.packageHash !== c.packageHash || response.mac !== await sign({ domain: 'ae-core4/panel-start-over/v1', kind: 'response', body: body }) || !validReset(body.status)) throw error('start_over_response_auth');
@@ -61,7 +73,7 @@
         catch (e) { if (!e.transportUnavailable) throw e; show('waiting', 'Ожидание Core для проверки сеанса'); detail.textContent = 'Проверка состояния возобновится автоматически. Запрос сброса не повторяется.'; await resetWait(Date.now() >= deadline ? 15000 : 3000, g); continue; }
       }
       showReset(value);
-      if (resetReady(value)) {
+      if (sessionAvailable(value)) {
         if (unconfirmedId !== undefined && value.id === unconfirmedId) throw error('start_over_request_unconfirmed');
         workSessionId = value.sessionId; resetRequested = false; return true;
       }
@@ -74,20 +86,22 @@
   function interruptMain() { generation++; if (activeRequest) activeRequest.abort(); if (retryTimer) clearTimeout(retryTimer); if (cancelWait) cancelWait(); }
   function interruptReset() { resetGeneration++; resetControllers.slice().forEach(function (c) { c.abort(); }); if (resetTimer) clearTimeout(resetTimer); if (cancelResetWait) cancelResetWait(); }
   async function beginReset() {
-    if (disposed || resetPosting || !cfg || cfg.startOverSupported !== true) return;
-    var continuing = resetState && resetState.id && !resetReady(resetState);
-    if (!continuing && !window.confirm('Прекратить прежнюю работу и начать новый сеанс? UNKNOWN сохранятся в истории, внесённые изменения не откатываются. Может потребоваться сохранить проекты и закрыть After Effects.')) return;
-    var priorId = resetState ? resetState.id : null;
-    resetPosting = true; resetRequested = true; if (resetButton) resetButton.disabled = true;
-    interruptReset(); interruptMain(); var g = resetGeneration, value, uncertain = false;
-    show('waiting', 'Запрос нового сеанса');
+    if (disposed || resetPosting || resetUncertain || !resetState || resetState.eligibility.action === 'none') return;
+    var expected = resetBinding(resetState), g = resetGeneration, value, uncertain = false;
+    resetPosting = true; updateResetButton();
     try {
-      try { value = await resetRpc('request', g); }
-      catch (e) { if (!e.transportUnavailable) throw e; uncertain = true; }
-      var ready = await watchReset(value, g, uncertain ? priorId : undefined);
+      var observed = await resetRpc('status', g);
+      showReset(observed);
+      if (api.canonical(resetBinding(observed)) !== api.canonical(expected)) return;
+      if (expected.action === 'request' && !window.confirm('Прекратить прежнюю работу и начать новый сеанс? UNKNOWN сохранятся в истории, внесённые изменения не откатываются. Может потребоваться сохранить проекты и закрыть After Effects.')) return;
+      resetRequested = true; interruptReset(); interruptMain(); g = resetGeneration;
+      show('waiting', expected.action === 'continue' ? 'Продолжение прежнего сброса' : 'Запрос нового сеанса');
+      try { value = await resetRpc('request', g, expected); }
+      catch (e) { if (!e.transportUnavailable) throw e; uncertain = true; if (expected.action === 'request') resetUncertain = expected; }
+      var ready = await watchReset(value, g, uncertain && expected.action === 'request' ? expected.id : undefined);
       if (ready) { if (running) resumeRequested = true; else start(); }
     } catch (e) { if (!disposed && e.message !== 'stale_reset') { show('recovery', 'Сброс не завершён: ' + e.message); detail.textContent = 'Автоматической повторной отправки нет. Проверьте core_status и core_diagnostics; история и UNKNOWN сохраняются.'; } }
-    finally { resetPosting = false; if (resetButton && !disposed) resetButton.disabled = !!(resetState && !resetReady(resetState) && resetState.phase !== 'blocked'); }
+    finally { resetPosting = false; updateResetButton(); }
   }
   function newChannel() {
     generation++; var random = new Uint8Array(24); crypto.getRandomValues(random);
@@ -174,7 +188,7 @@
         if (!object(response, ['body', 'mac']) || !object(response.body, linkKeys) || response.mac !== await sign(response.body) || response.body.linked !== true || response.body.peerId !== peerId || response.body.epoch !== handshake.challenge.epoch || response.body.controllerId !== handshake.challenge.controllerId || api.canonical(response.body.pins) !== api.canonical({ installationId: cfg.installationId, packageHash: cfg.packageHash, executorHash: cfg.executorHash }) || typeof response.body.receiverStoreIdentity !== 'string' || typeof response.body.laneClosed !== 'boolean') throw error('link_auth');
         if (cfg.startOverSupported === true) {
           if (!validReset(response.body.startOver)) throw error('link_auth');
-          if (!resetReady(response.body.startOver)) throw error('start_over_in_progress');
+          if (!sessionAvailable(response.body.startOver)) throw error('start_over_in_progress');
           if (response.body.workSessionId !== response.body.startOver.sessionId) throw error('link_auth');
           workSessionId = response.body.workSessionId; showReset(response.body.startOver);
         }
@@ -201,11 +215,12 @@
             // No reconnect/poll timer spans evalScript or native confirmation.
             await dispatcher.dispatch(next.command); current(g); delivered = false;
             if (latched()) throw error('physical_latch_present');
-            if (cfg.startOverSupported === true && resetState && resetState.baselineRequired) {
-              var updated = await resetRpc('status', resetGeneration); current(g); showReset(updated);
-              if (!resetReady(updated)) throw error('start_over_in_progress');
-            }
             budget = { deadline: Date.now() + 50000, attempts: 0 };
+            showReady();
+          }
+          if (cfg.startOverSupported === true && !resetPosting) {
+            var updated = await resetRpc('status', resetGeneration); current(g); showReset(updated);
+            if (!sessionAvailable(updated) || updated.sessionId !== workSessionId) throw error('start_over_in_progress');
             showReady();
           }
         }
@@ -226,6 +241,6 @@
     } finally { running = false; if (!disposed) button.disabled = false; if (resumeRequested && !disposed) { resumeRequested = false; setTimeout(start, 0); } }
   }
   if (typeof window.addEventListener === 'function') window.addEventListener('unload', function () { disposed = true; interruptMain(); interruptReset(); });
-  if (resetButton) { resetButton.disabled = !cfg || cfg.startOverSupported !== true; resetButton.addEventListener('click', beginReset); }
+  if (resetButton) { resetButton.disabled = true; resetButton.addEventListener('click', beginReset); }
   button.addEventListener('click', start); start();
 }());

@@ -10,7 +10,7 @@ const { webcrypto } = require('node:crypto');
 const { spawn, spawnSync } = require('node:child_process');
 const { PassThrough } = require('node:stream');
 const { once } = require('node:events');
-const { hash, canonical } = require('../protocol/json');
+const { hash, canonical, MAX_FRAME } = require('../protocol/json');
 const { mac } = require('../integrations/cep/peer-protocol');
 const { encode, decode } = require('../protocol/codec');
 const { createHttpPeer } = require('../integrations/cep/http-peer');
@@ -65,6 +65,118 @@ function dispatcher(pkg, options) {
   return context.Core4PollDispatcher.createDispatcher(options);
 }
 function memoryStorage() { const map = new Map(); return { getItem: k => map.get(k) || null, setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) }; }
+
+function projectInspectionHost(pkg, items, state = {}) {
+  function CompItem(id, { name = 'Повтор', numLayers = 1 } = {}) {
+    Object.assign(this, { id, name, numLayers, duration: 5, time: 2, workAreaStart: 1, workAreaDuration: 3 });
+  }
+  CompItem.prototype.layer = index => ({ id: 1000 + index, name: '層'.repeat(260), property: () => ({}) });
+  const rows = items.map((options, index) => options ? new CompItem(index + 1, options) : { id: index + 1 });
+  const project = { file: { fsName: 'C:/test/project.aep', name: 'project.aep' }, revision: 17, dirty: true, numItems: rows.length,
+    activeItem: rows.at(-1), item: index => rows[index - 1],
+    itemByID: id => { if (!rows[id - 1]) throw new Error('Item Not Found'); return rows[id - 1]; }, ...state };
+  const app = { version: '26.0-test', project }, context = vm.createContext({ JSON: undefined, CompItem, app });
+  vm.runInContext(Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString(), context);
+  const inspect = target => JSON.parse(context.AECore4Host.dispatch(JSON.stringify({ assetKey: asset.assetKey, phase: 'inspect',
+    pins: { executorHash: asset.executorHash }, typedPayload: target })));
+  return { app, project, inspect };
+}
+
+test('installable-runtime project inspection resolves exact IDs independently of discovery and correlates paged receipts', async t => {
+  const pkg = buildPackage(root, 'readonly'), items = Array.from({ length: 1079 }, (_, i) => [254, 255, 256, 498, 499, 500, 510, 511, 512, 1078].includes(i) ? {} : null);
+  const { app, project, inspect } = projectInspectionHost(pkg, items), f = await readDiagnosticPeer(t);
+  const next = async (target, checkRejectedReceipt) => {
+    const pending = f.peer.inspect(target), frame = (await f.c.call('/poll', {})).command;
+    assert.deepEqual(frame.typedPayload, target);
+    const result = inspect(target), receipt = { commandId: frame.commandId, originalBinding: frame.originalBinding, pins: frame.pins, result };
+    if (checkRejectedReceipt) {
+      const bad = structuredClone(receipt); bad.result.coverage.lookup.compId++;
+      const rejected = await f.c.raw('/complete', f.c.envelope('/complete', bad));
+      assert.equal(rejected.status, 403);
+      assert.equal(rejected.value.error, 'inspection_result');
+      assert.equal(f.peer.status().pending.commandId, frame.commandId);
+    }
+    await f.c.call('/complete', receipt);
+    const response = await pending;
+    assert.equal(response.continuity, false);
+    return response.observation;
+  };
+  for (const compId of [255, 256, 257, 499, 500, 501, 511, 512, 513, 1079]) {
+    const result = await next({ compId }, compId === 1079);
+    assert.deepEqual(result.coverage.lookup, { compId, status: 'found', method: 'item_by_id' });
+    assert.equal(result.target.compId, compId);
+    assert.equal(result.layers.length, 1);
+    assert.equal(result.compositions.some(comp => comp.compId === compId), compId <= 500);
+    assert.equal(result.project.saved, true);
+    assert.equal(result.dirty, true);
+    assert.deepEqual(result.activeComp, { compId: 1079, time: 2, workAreaStart: 1, workAreaDuration: 3 });
+  }
+  const first = await next({}), cursor = first.coverage.inventory.nextCursor;
+  const second = await next({ cursor }), third = await next({ cursor: second.coverage.inventory.nextCursor });
+  assert.deepEqual([first, second, third].map(x => [x.coverage.inventory.startItemIndex, x.coverage.inventory.throughItemIndex, x.coverage.inventory.itemsScanned, x.coverage.inventory.status]),
+    [[1, 500, 500, 'more'], [501, 1000, 500, 'more'], [1001, 1079, 79, 'complete']]);
+  assert.deepEqual([first, second, third].flatMap(x => x.compositions.map(comp => comp.compId)), [255, 256, 257, 499, 500, 501, 511, 512, 513, 1079]);
+  assert.equal(third.truncated, false);
+  assert.equal((await next({ compId: 1080 })).coverage.lookup.status, 'scan_incomplete');
+  assert.equal((await next({ compId: 1078 })).coverage.lookup.status, 'not_found', 'native resolves the ID to footage');
+  assert.equal((await next({ cursor: cursor.replace(/:\d+$/, ':502') })).coverage.inventory.status, 'cursor_stale');
+  project.revision++;
+  const stale = await next({ cursor, compId: 1079 });
+  assert.equal(stale.coverage.inventory.status, 'cursor_stale');
+  assert.equal(stale.target.compId, null);
+  const fresh = await next({});
+  app.project = { ...project };
+  assert.equal((await next({ cursor: fresh.coverage.inventory.nextCursor })).coverage.inventory.status, 'cursor_stale');
+  assert.throws(() => f.peer.inspect({ cursor: 'x'.repeat(97) }), /invalid_inspection_cursor/);
+});
+
+test('installable-runtime project inspection makes incomplete native reads and result budget coverage explicit', async t => {
+  const pkg = buildPackage(root, 'readonly');
+  const { inspect } = projectInspectionHost(pkg, [{}, null], { itemByID: undefined, dirty: undefined, file: null });
+  assert.equal(inspect({ compId: 1 }).coverage.lookup.method, 'page_scan');
+  const absent = inspect({ compId: 3 });
+  assert.equal(absent.coverage.lookup.status, 'not_found');
+  assert.equal(absent.project.saved, false);
+  assert.equal(absent.dirty, null);
+  assert.equal(absent.activeComp, null);
+  const interrupted = projectInspectionHost(pkg, [{}, null], { item: () => { throw new Error('unobserved item'); } }).inspect({ compId: 3 });
+  assert.equal(interrupted.coverage.lookup.status, 'scan_incomplete');
+  assert.equal(interrupted.coverage.inventory.status, 'scan_incomplete');
+  assert.equal(interrupted.coverage.inventory.itemsScanned, 0);
+  const dense = Array.from({ length: 60 }, () => ({ name: '層'.repeat(256) + 'x', numLayers: 101 }));
+  const fallback = projectInspectionHost(pkg, dense, { itemByID: undefined });
+  assert.deepEqual(fallback.inspect({ compId: 60 }).coverage.lookup, { compId: 60, status: 'found', method: 'page_scan' });
+  assert.deepEqual(fallback.inspect({ compId: 61 }).coverage.lookup, { compId: 61, status: 'not_found', method: 'page_scan' });
+  const unversioned = projectInspectionHost(pkg, dense, { revision: undefined }).inspect({});
+  assert.equal(unversioned.compositions.length, 50);
+  assert.equal(unversioned.coverage.inventory.status, 'revision_unavailable');
+  assert.equal(unversioned.coverage.inventory.nextCursor, null);
+  const long = projectInspectionHost(pkg, dense).inspect({ compId: 60 });
+  assert.ok(long.layers.length < 100);
+  assert.deepEqual(long.coverage.layers, { total: 101, returned: long.layers.length });
+  const escaped = projectInspectionHost(pkg, dense.map(x => ({ ...x, name: '\u0001'.repeat(256) })));
+  const cut = escaped.inspect({});
+  assert.ok(cut.compositions.length < 50);
+  assert.equal(cut.coverage.inventory.itemsScanned, 50);
+  assert.equal(cut.coverage.inventory.throughItemIndex, cut.compositions.length);
+  const tail = escaped.inspect({ cursor: cut.coverage.inventory.nextCursor });
+  assert.equal(tail.compositions[0].compId, cut.compositions.at(-1).compId + 1);
+  const f = await readDiagnosticPeer(t);
+  for (const [label, target, observation] of [['unicode', { compId: 60 }, long], ['escaped', {}, cut]]) {
+    const pending = f.peer.inspect(target), frame = (await f.c.call('/poll', {})).command;
+    const receipt = f.c.envelope('/complete', { commandId: frame.commandId, originalBinding: frame.originalBinding, pins: frame.pins, result: observation });
+    assert.equal((await f.c.raw('/complete', receipt)).status, 200);
+    const response = await pending, line = fs.readFileSync(path.join(f.directory, 'completions.ndjson'), 'utf8').trimEnd().split('\n').at(-1);
+    assert.deepEqual(response.observation, observation);
+    const toolResult = { evidenceRef: 'observation-' + '0'.repeat(36), moduleId: 'project-inspection', contractId: '0'.repeat(64), ...response, authority: false };
+    const mcp = { jsonrpc: '2.0', id: 1, result: { content: [{ type: 'text', text: canonical(toolResult) }], isError: false } };
+    const wire = canonical(observation);
+    assert.ok(wire.length <= 40000);
+    const sizes = [wire, canonical(receipt), line, canonical(mcp)].map(value => Buffer.byteLength(value));
+    assert.ok(sizes.every(bytes => bytes < MAX_FRAME));
+    t.diagnostic(label + ': ' + wire.length + ' code units, ' + sizes.join('/') + ' UTF-8 bytes (observation/HTTP/journal/MCP)');
+  }
+});
 
 const titlesReadAliases = ['font', 'font_size', 'apply_fill', 'fill_color', 'apply_stroke', 'stroke_color', 'stroke_width', 'tracking', 'baseline_shift', 'horizontal_scale', 'vertical_scale', 'faux_bold', 'faux_italic', 'justification', 'leading', 'auto_leading'];
 const titlesReadCodes = ['project_cas', 'comp_cas', 'layer_cas', 'unsupported_animated_text', 'unsupported_style_proof', 'unsupported_style_api', 'unsupported_mixed_style', 'unsupported_justification_enum', 'titles_native_target', 'titles_native_document', 'titles_native_text', 'titles_native_range', 'titles_native_serialization', ...titlesReadAliases.flatMap(field => ['titles_native_' + field, 'titles_missing_' + field])];

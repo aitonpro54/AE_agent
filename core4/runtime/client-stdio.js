@@ -1,6 +1,6 @@
 'use strict';
 const { createInterface } = require('node:readline');
-const { OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES } = require('./attachment-owner');
+const { OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES, PRE_DISPATCH_READ_CODES } = require('./attachment-owner');
 
 // Thin private fixture/embedding adapter, not the configured production entry.
 // EOF closes this authenticated attachment only. No Broker/HTTP/store/bootstrap.
@@ -22,6 +22,7 @@ function serveAttachment({ client, input, output } = {}) {
   function description(name) {
     if (name === 'controller_acquire' || name === 'controller_transfer') return 'Явное получение управления. Сначала прочитайте core_status; для нового сеанса передайте его workSession.sessionId в payload.sessionId. Это не допуск к изменению AE.';
     if (name === 'core_status') return 'Статус Core, текущего сеанса и сброса. baselineRequired снимается свежей project-inspection; старое управление автоматически не восстанавливается.';
+    if (name === 'core_diagnostics') return 'Статус очереди, привязки CEP, окна Windows и подтверждённого нативного ответа.';
     if (name === 'inspect_module_target') return 'Прочитайте get_module_contract и передайте его moduleId и обязательный contractId в payload вместе с target по контракту. Требуется действующий controller lease; чтение не выдаёт допуск к изменению AE.';
     if (name === 'controller_release' || name === 'controller_renew') return 'Передайте в payload.leaseToken точный токен, полученный от controller_acquire/controller_transfer текущим клиентом.';
     return 'Подключение к owner Core4; управление требует явного controller_acquire.';
@@ -66,7 +67,7 @@ function serveAttachment({ client, input, output } = {}) {
         const payload = args.payload === undefined ? {} : args.payload;
         if (!payload || Object.getPrototypeOf(payload) !== Object.prototype) fail('invalid_payload');
         const response = await client.call(request.params.name, payload);
-        if (request.params.name === 'inspect_module_target' && response?.ok === false && response.outcome === 'rejected' && READ_REJECTION_CODES.includes(response.code) && response.nextAction === 'core_diagnostics' && Object.keys(response).every(key => ['ok', 'outcome', 'code', 'nextAction'].includes(key))) {
+        if (request.params.name === 'inspect_module_target' && response?.ok === false && response.outcome === 'rejected' && [...READ_REJECTION_CODES, ...PRE_DISPATCH_READ_CODES].includes(response.code) && response.nextAction === 'core_diagnostics' && Object.keys(response).every(key => ['ok', 'outcome', 'code', 'nextAction'].includes(key))) {
           result = { content: [{ type: 'text', text: JSON.stringify({ outcome: 'rejected', code: response.code, nextAction: response.nextAction }) }], isError: true };
         } else {
           if (!response || response.ok !== true) fail(OWNER_ERRORS.includes(response?.code) ? response.code : 'owner_request_failed', response?.requestId);

@@ -21,7 +21,7 @@ async function continueStartOverStartup({installation,descriptorPath,port=3457})
   const bootId=crypto.randomUUID(),capability=Object.freeze({}),physical=http.createServer();
   const s={installation:d,descriptorPath,physical,ipc:null,id:null,intentHash:null,newSessionId:null,requiresAEExit:false,phase:'awaiting-core',fault:null,lastFault:null,waiting:null,closed:false,borrowed:false,finishing:false,restarting:false,timer:null};
   let resolveDone,rejectDone;const done=new Promise((resolve,reject)=>{resolveDone=resolve;rejectDone=reject;});
-  function publicStatus(){return{id:s.id,sessionId:s.newSessionId,phase:s.phase,requiresAEExit:s.requiresAEExit,resetComplete:false,baselineRequired:true,fault:s.fault,aeAuthority:false};}
+  function publicStatus(){return{id:s.id,sessionId:s.newSessionId,ownerBootId:bootId,phase:s.phase,requiresAEExit:s.requiresAEExit,resetComplete:false,baselineRequired:true,fault:s.fault,eligibility:startOverEligibility({phase:s.phase,fault:s.fault,canContinue:!!s.id&&!s.restarting&&!s.finishing&&!s.closed}),aeAuthority:false};}
   function status(){return{ready:false,closed:s.closed,pid:process.pid,product:'AE Agent Core 4.1.2',installation:{installationId:d.installationId,machineId:d.machineId,packageHash:d.packageHash,nodeVerified:true},lifecycle:{mode:'start-over',pid:process.pid,birthTicks:native.birthTicks,processBootId:bootId,ready:false},startOver:publicStatus(),resetDiagnostic:{lastFault:s.lastFault,waiting:s.waiting},physical:{listening:physical.listening,port:physical.address()?.port||null,inspectionAvailable:false,coverage:'read-only-reset-observer; execution stores not opened'},controllerAvailable:false,externalLegacyCoverage:'unobserved'};}
   async function close(){
     if(s.closed)return;if(s.borrowed)fail('start_over_finishing');s.closed=true;clearTimeout(s.timer);
@@ -34,8 +34,13 @@ async function continueStartOverStartup({installation,descriptorPath,port=3457})
     try{await close();await require('./owner-launch').launchInstalledOwner({installation:d,descriptorPath});rejectDone(Object.assign(Error('start_over_driver_restarted'),{code:'start_over_driver_restarted'}));}
     catch(e){rejectDone(e);}
   }
-  const{createStartOverPanelControl,attachStartOverHttp}=require('./start-over-panel-control');
-  const control=createStartOverPanelControl({installation:d,status:publicStatus,request:async()=>{if(s.phase==='blocked'&&!s.restarting&&!s.finishing){s.phase='awaiting-core';setTimeout(()=>{void restart();},25);}return publicStatus();}});
+  const{createStartOverPanelControl,attachStartOverHttp,startOverEligibility}=require('./start-over-panel-control');
+  const inspect=()=>require('./start-over-state').inspectStartOver({installation:d,descriptorPath});
+  const control=createStartOverPanelControl({installation:d,status:publicStatus,request:async()=>{
+    const current=inspect();
+    if(current.id!==s.id||current.intentHash!==s.intentHash)fail('start_over_binding_changed');
+    s.phase='awaiting-core';setTimeout(()=>{void restart();},25);return publicStatus();
+  }});
   const{createIpcServer}=require('./client-ipc'),{ownerEndpoint}=require('./client-entry'),{OWNER_METHODS}=require('./attachment-owner');
   s.ipc=createIpcServer({endpoint:ownerEndpoint(d),identity:{installationId:d.installationId,machineId:d.machineId,packageHash:d.packageHash},secret:d.controlToken,bootId,methods:OWNER_METHODS,onRequest:async request=>{
     if(['core_status','core_diagnostics','owner_status'].includes(request.method)){
@@ -50,7 +55,7 @@ async function continueStartOverStartup({installation,descriptorPath,port=3457})
     async function attempt(){
       if(s.closed||s.restarting||s.finishing)return;s.finishing=true;
       try{
-        const current=require('./start-over-state').inspectStartOver({installation:d,descriptorPath});
+        const current=inspect();
         if(!current.id)fail('start_over_intent_changed');
         if(s.id!==null&&(s.id!==current.id||s.intentHash!==current.intentHash))fail('start_over_intent_changed');
         s.id=current.id;s.intentHash=current.intentHash;s.newSessionId=current.newSessionId;s.requiresAEExit=current.requiresAEExit;s.phase='finishing';s.fault=null;

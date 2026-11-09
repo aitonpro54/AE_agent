@@ -15,3 +15,24 @@ Core предоставляет typed MCP инструменты для дете
 После известного результата прочти изменённые цели подходящими read tools, например `get_project_info`, `get_comp_details`, `get_layer_details` или `get_layer_essential_properties`. `get_plan_run_evidence` читает сохранённый evidence и не заменяет свежий AE read-back. Для визуального результата получи кадр через `save_comp_frame_png` и действительно просмотри изображение, если визуальная проверка требуется поручением.
 
 При timeout или неизвестном submit сначала сверь proposal/run state и фактический read-back. Не повторяй потенциально завершённую мутацию вслепую. Объём проверки указывай точно: опубликованный tool, offline smoke, live read и визуальная приёмка — разные факты.
+
+## Штатный сброс Core
+
+`core_status.startOver.eligibility` сообщает доступное действие и причину.
+Панель и CLI используют это решение владельца. Ожидание baseline и
+незавершённый сброс отображаются отдельно. После обычного сброса сначала
+выполняется чтение проекта. Если само чтение осталось с неизвестным исходом,
+владелец может допустить восстановление с сохранением истории. Пока команда
+выполняется, новый сброс ждёт её исхода.
+
+Для живого владельца используйте проверенный standalone и UUID операции.
+
+```text
+node tools/standalone-installer.js start-over-plan --expected-distribution-hash DIST_SHA --expected-current-package-hash CURRENT_SHA --installation ABS_DESCRIPTOR --operation UUID
+node tools/standalone-installer.js start-over-request --expected-distribution-hash DIST_SHA --expected-current-package-hash CURRENT_SHA --installation ABS_DESCRIPTOR --operation UUID --confirm-plan-hash PLAN_SHA
+```
+
+После сверки плана подтвердите его SHA во второй команде. При потере ответа
+сверьте `core_status` или `start-over-inspect` с UUID сброса, если он известен.
+Поддерживаемый путь для остановленного владельца и продолжения прежнего
+intent описан в [инструкции Core4](../core4/README.md#начало-сброса-через-cli).

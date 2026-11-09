@@ -1,6 +1,6 @@
 {
   "moduleId": "project-inspection",
   "executionPolicy": "read-only-current-observation-v1",
-  "executorHash": "787a1cc3b2a084a7a2bed11008def8be75aa61e889f48a1469c3db0b7056e019",
-  "contractHash": "cd0e85894e11e2e070cb73113321b24dfca95b00aa934364313f04319ea6dc5a"
+  "executorHash": "3826783f3878a7898c35694fa43122298abf94b6434c9652bddcc591b81fbe53",
+  "contractHash": "1996ab6db08dc5ad2aed735ab35c6f8976221d9d77dd330f0c371344a40d531c"
 }

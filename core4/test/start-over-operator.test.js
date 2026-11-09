@@ -28,6 +28,7 @@ test('start-over-operator JSON lookalikes and weakened source bootstrap never re
 test('start-over-operator official inspect is read-only and missing finish pin refuses before effects',t=>{
   const f=fixture(t);bundle||=buildStandalone(source,'readonly',{runtimeModel:'owner'});const distribution=path.join(f.directory,'distribution');writeStandalone(distribution,bundle);const before=bytes(f),inspected=run(distribution,bundle.distributionHash,f,'start-over-inspect');assert.equal(inspected.status,0,inspected.stderr);const value=JSON.parse(inspected.stdout);assert.equal(value.phase,'running');assert.equal(value.aeAuthority,false);assert.deepEqual(bytes(f),before);
   const denied=run(distribution,bundle.distributionHash,f,'start-over-finish');assert.equal(denied.status,1);assert.match(denied.stderr,/standalone_usage/);assert.deepEqual(bytes(f),before);
+  const stopped=run(distribution,bundle.distributionHash,f,'start-over-plan');assert.equal(stopped.status,1);assert.match(stopped.stderr,/start_over_owner_not_ready/);assert.deepEqual(bytes(f),before);
 });
 test('start-over-operator either initiation route requires an explicit confirmation digest before effects',t=>{
   const f=fixture(t);bundle||=buildStandalone(source,'readonly',{runtimeModel:'owner'});

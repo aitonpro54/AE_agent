@@ -345,17 +345,29 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       try { fs.lstatSync(path.join(installation.stateDir, name)); fail('owner_work_session_requires_owner_runtime'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
     }
   }
+  const aeReadiness = require('./ae-readiness').createAeReadiness();
   function startOverView() {
+    const { startOverEligibility } = require('./start-over-panel-control.js');
+    const ownerBootId = ownerLifecycle.state().processBootId;
+    const status = (value, facts) => ({ ...value, ownerBootId, eligibility: startOverEligibility({ phase: value.phase, fault: value.fault, ...facts }), aeAuthority: false });
+    const faultCode = e => typeof e.code === 'string' && /^[a-z][a-z0-9_]{0,99}$/.test(e.code) ? e.code : 'start_over_state_unavailable';
     const requested = startOverOwner?.status();
+    const maintenance = ownerMaintenance?.status();
     if (requested?.requested) {
       let observed;
       try { observed = startOverOwner.inspect(); }
-      catch (e) { return { id: requested.id, sessionId: null, phase: 'blocked', requiresAEExit: true, resetComplete: false, baselineRequired: true, fault: /^[a-z][a-z0-9_]{0,99}$/.test(e.code) ? e.code : 'start_over_state_unavailable', aeAuthority: false }; }
-      const stopped = ownerMaintenance?.status(), fault = requested.fault || stopped?.fault || null;
-      return { id: observed.id || requested.id, sessionId: observed.newSessionId || null, phase: stopped?.fault || requested.fault && !stopped?.requested ? 'blocked' : 'stopping', requiresAEExit: observed.requiresAEExit !== false, resetComplete: false, baselineRequired: true, fault, aeAuthority: false };
+      catch (e) { return status({ id: requested.id, sessionId: null, phase: 'blocked', requiresAEExit: true, resetComplete: false, baselineRequired: true, fault: faultCode(e) }); }
+      const fault = requested.fault || maintenance?.fault || null;
+      const canContinue = !!(requested.fault && observed.id && observed.id === requested.id && maintenance?.requested === false);
+      const phase = maintenance?.fault || requested.fault && !maintenance?.requested ? 'blocked' : 'stopping';
+      return status({ id: observed.id || requested.id, sessionId: observed.newSessionId || null, phase, requiresAEExit: observed.requiresAEExit !== false, resetComplete: false, baselineRequired: true, fault }, { canContinue });
     }
-    const value = workSession.status();
-    return { id: value.resetId, sessionId: value.sessionId, phase: value.resetPending ? 'blocked' : value.baselineRequired ? 'baseline-required' : 'ready', requiresAEExit: false, resetComplete: value.mode === 'work-session' && !value.resetPending, baselineRequired: value.baselineRequired, fault: value.resetPending ? 'start_over_in_progress' : null, aeAuthority: false };
+    try {
+      const value = workSession.status(), owner = attachmentOwner?.status();
+      return status({ id: value.resetId, sessionId: value.sessionId, phase: value.resetPending ? 'blocked' : value.baselineRequired ? 'baseline-required' : 'ready', requiresAEExit: owner?.activity.unresolved === true, resetComplete: value.mode === 'work-session' && !value.resetPending, baselineRequired: value.baselineRequired, fault: value.resetPending ? 'start_over_in_progress' : null }, { ownerMode: ownerLifecycle.mode, owner, maintenance });
+    } catch (e) {
+      return status({ id: null, sessionId: null, phase: 'blocked', requiresAEExit: false, resetComplete: false, baselineRequired: true, fault: faultCode(e) });
+    }
   }
   async function requestStartOver() {
     if (!startOverOwner || !ownerMaintenance) fail('start_over_owner_not_ready');
@@ -401,7 +413,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     });
     const currentStatus = facade.status, currentDiagnostics = facade.diagnostics;
     facade.status = () => ({ ...currentStatus(), maintenance: maintenance.status(), workSession: workSession.status(), startOver: startOverView() });
-    facade.diagnostics = () => ({ ...currentDiagnostics(), maintenance: maintenance.status(), workSession: workSession.status(), startOver: startOverView() });
+    facade.diagnostics = async () => ({ ...await currentDiagnostics(), maintenance: maintenance.status(), workSession: workSession.status(), startOver: startOverView() });
     ipc = createIpcServer({ endpoint, identity: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash },
       secret: installation.controlToken, bootId: attachmentOwner.bootId, methods: [...OWNER_METHODS, ...PRIVATE_METHODS],
       onAttach: attachmentOwner.onAttach, onDetach: attachmentOwner.onDetach, onRequest: request => {
@@ -427,9 +439,9 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     require('./start-over-panel-control.js').attachStartOverHttp({ server: reservedServer, control: startOverControl, reason: 'owner_recovery_required' });
     const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.1.2',
       installation: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash, nodeVerified: true },
-      lifecycle: ownerLifecycle.state(), ownershipFault: 'owner_recovery_required', physical: { listening: reservedServer.listening, port: reservedServer.address()?.port || null, inspectionAvailable: false, storeClosed: true, unknown: true, coverage: 'diagnostic-only; execution queue not reopened' }, externalLegacyCoverage: 'unobserved' });
+      lifecycle: ownerLifecycle.state(), ownershipFault: 'owner_recovery_required', physical: { listening: reservedServer.listening, port: reservedServer.address()?.port || null, inspectionAvailable: false, storeClosed: true, unknown: true, coverage: 'diagnostic-only; execution queue not reopened', readiness: aeReadiness.status({ peer: { connected: false }, storeClosed: true }, true) }, externalLegacyCoverage: 'unobserved' });
     const unavailable = () => ({ available: false, reason: 'owner_recovery_required' });
-    const facade = { status, diagnostics: status, listModules: unavailable, getContract: unavailable, getTask: unavailable,
+    const facade = { status, diagnostics: async () => { await aeReadiness.refresh(); return status(); }, listModules: unavailable, getContract: unavailable, getTask: unavailable,
       close: () => new Promise(resolve => { reservedServer.close(resolve); reservedServer.closeAllConnections(); }) };
     return await exposeOwner(facade, () => ({ pending: false, unresolved: true, fault: true }), (method, payload) => facade[method](payload));
   }
@@ -503,9 +515,16 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   } } : {}), installationContext: { descriptorPath: descriptor }, ...(ownerLifecycle ? { ownerToken: ownerLifecycle.receiverToken } : {}) });
   const contractId = hash({ packageHash: installation.packageHash, admission, contract }); let closed = false;
   const facade = Object.create(broker);
-  const physical = () => { const value = peer.status(); return { ...value, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && !value.startOverFrozen && !value.storeClosed && !value.storeFault && !value.pending }; };
+  const physical = () => {
+    const value = peer.status();
+    const readiness = aeReadiness.status(value, workSession?.status().baselineRequired ?? null);
+    return { ...value, readiness, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && !value.startOverFrozen && !value.storeClosed && !value.storeFault && !value.pending && !aeReadiness.blocker() };
+  };
   facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.1.2', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
-  facade.diagnostics = () => ({ ...broker.diagnostics(), ...facade.status() });
+  facade.diagnostics = async () => {
+    await aeReadiness.refresh();
+    return { ...broker.diagnostics(), ...facade.status() };
+  };
   facade.connect = async () => {
     const result = manual ? await broker.connect() : null;
     const snapshot = physical();
@@ -527,6 +546,14 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (value.contractId !== contractId) return broker.inspect(value);
     exact(value, ['moduleId', 'contractId', 'target']);
     if (value.moduleId !== profile.id) fail('contract_identity');
+    const blocker = aeReadiness.blocker();
+    if (blocker) {
+      const error = Object.assign(new Error(blocker), { code: blocker });
+      const context = invocationContext?.getStore();
+      if (context && !context.observer) completedReadErrors.set(error, { context, moduleId: value.moduleId, contractId, targetHash: hash(canonical(value.target || {})), code: blocker, phase: 'pre-dispatch' });
+      throw error;
+    }
+    const originalPeerId = peer.status().peer.peerId;
     let result;
     try { result = await peer.inspect(value.target || {}); }
     catch (error) {
@@ -537,7 +564,12 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       throw error;
     }
     if (result.observation?.readFailureVersion === 1) fail(result.observation.code || 'inspection_failed');
-    if (workSession) workSession.recordProjectBaseline(peer, result);
+    aeReadiness.recordRead(originalPeerId);
+    const coverage = result.observation?.coverage;
+    if (workSession && value.target?.cursor === undefined &&
+        (!coverage || coverage.inventory.status !== 'scan_incomplete' && ['not_requested', 'found'].includes(coverage.lookup.status))) {
+      workSession.recordProjectBaseline(peer, result);
+    }
     return { evidenceRef: id('observation'), moduleId: profile.id, contractId, ...result, authority: false };
   };
   facade.build = value => { if (value.contractId === contractId || value.steps?.some(s => s.contractId === contractId)) fail('read_only_module_build_unsupported'); return broker.build(value); };
@@ -556,7 +588,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     }, (error, request) => {
       const record = completedReadErrors.get(error); completedReadErrors.delete(error);
       if (!record || request.context !== record.context || request.method !== 'inspect_module_target' || request.payload.moduleId !== record.moduleId || request.payload.contractId !== record.contractId || hash(canonical(request.payload.target || {})) !== record.targetHash) return null;
-      return { code: record.code };
+      return { code: record.code, ...(record.phase ? { phase: record.phase } : {}) };
     });
   }
   serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.1.2' } });
