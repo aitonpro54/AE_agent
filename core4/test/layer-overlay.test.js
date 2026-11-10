@@ -22,6 +22,16 @@ async function fixture(t, options = {}) {
   const { contractId } = broker.getContract({ moduleId });
   const target = { projectId: state.projectId, sessionId, compId: state.comp.id,
     layerId: state.original.id, originalSourceId: state.originalSource.id, itemId: state.replacement.id };
+  if (state.flags.verifiedCopy) target.replacement = {
+    referenceProject: state.referenceProject,
+    projectSha256: hash(fs.readFileSync(state.referenceProject)),
+    itemCount: state.project.numItems,
+    layerCount: Array.from({ length: state.project.numItems }, (_, i) => state.project.item(i + 1).numLayers ?? 0)
+      .reduce((count, n) => count + n, 0),
+    retiredLayerId: state.retired.id,
+    sharedOriginalLayerId: state.sibling.id,
+    name: 'New visible overlay'
+  };
   const file = state.replacement.file.fsName;
   const input = { ...target, file, sha256: hash(fs.readFileSync(file)) };
   const inspect = () => broker.inspect({ moduleId, contractId, target });
@@ -100,6 +110,89 @@ test('layer-overlay captures and verifies static TwoD Mask Feather under Mask At
   const result = await h.broker.run(await h.prepare());
   assert.equal(result.state, 'succeeded', JSON.stringify(result));
   assert.equal((await h.inspect()).snapshot.overlay.signature, before.signature);
+});
+
+test('layer-overlay verified copy inserts a visible layer, retires its exact predecessor and keeps Texturize on the same layer', async t => {
+  const h = await fixture(t, { flags: { verifiedCopy: true, verifiedLayerCount: 3109, items: 1109 },
+    callerTimeout: 15000, callbackTimeout: 15000 });
+  const { comp, original, retired, sibling, texture } = h.state;
+  const before = (await h.inspect()).snapshot;
+  assert.equal(before.target.replacement.layerCount, 3109);
+  assert.equal(before.target.replacement.itemCount, 1109);
+  const beforeIndex = texture.value;
+  const { buildId, taskId } = await h.build();
+  const proposal = h.broker.propose({ buildId });
+  issueMontageMandate(h.installation, { taskId, taskEpoch: 0, projectId: h.target.projectId, sessionId,
+    expiresAt: Date.now() + 60000, actions: [{ moduleId, input: h.input }] });
+  const { dryrunRef } = await h.broker.dryrun({ proposalId: proposal.proposalId });
+  const result = await h.broker.run({ proposalId: proposal.proposalId, dryrunRef });
+  assert.equal(result.state, 'succeeded', JSON.stringify(result));
+  const after = (await h.inspect()).snapshot;
+  const copy = comp.layer(original.index - 1);
+  assert.equal(after.overlay.id, copy.id);
+  assert.equal(copy.name, h.target.replacement.name);
+  assert.equal(copy.source, h.state.replacement);
+  assert.equal(copy.enabled, true);
+  assert.equal(retired.enabled, false);
+  assert.equal(original.enabled, true);
+  assert.equal(sibling.enabled, true);
+  assert.equal(texture.value, beforeIndex + 1);
+  assert.equal(comp.layer(texture.value).id, h.state.matte.id);
+  assert.equal(after.protected, before.protected);
+  assert.deepEqual(after.stack.find(row => row.id === sibling.id), before.stack.find(row => row.id === sibling.id));
+  assert.equal(hash(fs.readFileSync(h.state.projectId)), h.target.replacement.projectSha256);
+  assert.equal(hash(fs.readFileSync(h.state.referenceProject)), h.target.replacement.projectSha256);
+  assert.equal(scopesOverlap(h.target, { ...h.target, layerId: retired.id, replacement: undefined }), true);
+  await assert.rejects(h.build(), /layer_overlay_existing_or_partial/);
+  const receiver = inspectReceiverHistory(fs.readFileSync(path.join(h.installation.stateDir, 'receiver/completions.ndjson')));
+  const ledger = inspectLedgerHistory(fs.readFileSync(path.join(h.installation.stateDir, 'broker/ledger.ndjson')),
+    { receiver, installationId: h.installation.installationId });
+  assert.equal(ledger.settled, true);
+});
+
+test('layer-overlay verified copy fails closed on incomplete counts, unsafe dependencies and a partial predecessor', async t => {
+  const h = await fixture(t, { flags: { verifiedCopy: true } });
+  const inspectWith = replacement => h.broker.inspect({ moduleId, contractId: h.broker.getContract({ moduleId }).contractId,
+    target: { ...h.target, replacement: { ...h.target.replacement, ...replacement } } });
+  await assert.rejects(inspectWith({ referenceProject: h.target.projectId }), /layer_overlay_copy_binding/);
+  await assert.rejects(inspectWith({ itemCount: h.target.replacement.itemCount - 1 }), /layer_overlay_copy_binding/);
+  await assert.rejects(inspectWith({ layerCount: h.target.replacement.layerCount - 1 }), /layer_overlay_existing_or_partial/);
+  const { fill, custom, retired } = h.state;
+  const expression = fill.expression;
+  for (const bad of ['comp("Photo slot").layer("Old overlay").position', 'thisComp["layer"](1)', 'index', 'var x=comp; x("Photo slot")']) {
+    fill.expression = bad;
+    await assert.rejects(h.inspect(), /layer_overlay_expression_scope/);
+  }
+  fill.expression = expression;
+  custom.matchName = 'Opaque unknown property';
+  await assert.rejects(h.inspect(), /layer_overlay_dependency_unobserved/);
+  custom.matchName = 'ADBE CurvesCustom-0001';
+  retired.enabled = false;
+  await assert.rejects(h.inspect(), /layer_overlay_existing_or_partial/);
+  retired.enabled = true;
+  const prepared = await h.prepare();
+  h.state.project.revision++;
+  assert.equal((await h.broker.run(prepared)).code, 'approved_target_drift');
+  assert.equal(h.state.writes.duplicate, 0);
+});
+
+test('layer-overlay verified copy requires an independent byte-identical reference before native dispatch', async t => {
+  const h = await fixture(t, { flags: { verifiedCopy: true } });
+  const prepared = await h.prepare();
+  fs.writeFileSync(h.state.referenceProject, 'independent AEP bytex');
+  const result = await h.broker.run(prepared);
+  assert.equal(result.code, 'media_import_digest_mismatch', JSON.stringify(result));
+  assert.equal(h.state.writes.duplicate, 0);
+  assert.equal(h.broker.ledger.commands().length, 0);
+});
+
+test('layer-overlay verified copy preserves UNKNOWN if the native index keeps its number and changes identity', async t => {
+  const h = await fixture(t, { flags: { verifiedCopy: true, brokenIndex: true } });
+  const result = await h.broker.run(await h.prepare());
+  assert.equal(result.state, 'stopped');
+  assert.equal(h.broker.ledger.unresolved().length, 1);
+  assert.equal(h.state.writes.duplicate, 1);
+  assert.equal(h.state.retired.enabled, false);
 });
 
 test('layer-overlay refuses unsupported Mask Feather values and keeps other property guards', async t => {

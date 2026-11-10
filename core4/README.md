@@ -1,7 +1,7 @@
-# AE Agent Core 4.1.2 — устанавливаемое ядро
+# AE Agent Core 4.2.1 — устанавливаемое ядро
 
 Core использует внешний Node 20+ и отдельную CEP-панель `com.codex.aeagentcore4`
-с пунктом меню **AE Agent Core 4.1.2**. В основной сборке `manual/owner`
+с пунктом меню **AE Agent Core 4.2.1**. В основной сборке `manual/owner`
 тонкий клиент Codex подключается к отдельному процессу Core, который обслуживает
 HTTP на порту 3457. Для обновления используется тот же идентификатор расширения.
 MCP connect и HTTP link не создают project-incarnation.
@@ -21,14 +21,14 @@ Node append+fsync begin выполняется до публикации ком�
 Команды подготовки из корня репозитория (первые две не меняют установку):
 
 ```powershell
-node core4/tools/package-installable.js --output C:/Temp/core4-4.1.2-package.json --composition manual --runtime owner
-node core4/tools/install-core4.js dry-run --package C:/Temp/core4-4.1.2-package.json
-node core4/tools/install-core4.js apply --package C:/Temp/core4-4.1.2-package.json --expected-package-hash EXACT_HASH_FROM_DRY_RUN
+node core4/tools/package-installable.js --output C:/Temp/core4-4.2.1-package.json --composition manual --runtime owner
+node core4/tools/install-core4.js dry-run --package C:/Temp/core4-4.2.1-package.json
+node core4/tools/install-core4.js apply --package C:/Temp/core4-4.2.1-package.json --expected-package-hash EXACT_HASH_FROM_DRY_RUN
 node core4/tools/install-core4.js rollback C:/Users/USER/AppData/Local/AEAgentCore4/transactions/TRANSACTION.json
 ```
 
 Переносимый комплект `manual/owner` собирается командой
-`node core4/tools/package-standalone-installer.js --output C:\Temp\core4-4.1.2-standalone --composition manual --runtime owner`.
+`node core4/tools/package-standalone-installer.js --output C:\Temp\core4-4.2.1-standalone --composition manual --runtime owner`.
 Для штатного обновления работающего owner Core используйте описанный в `README.txt`
 комплекта цикл остановки, `owner-update` и `update-enable`.
 

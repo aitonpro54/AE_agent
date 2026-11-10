@@ -51,6 +51,7 @@
     { "prefix": "core4/config/admissions/layer-overlay.json", "owner": "layer-overlay", "checks": ["layer-overlay"] },
     { "prefix": "core4/config/compositions/manual-layer-overlay.json", "owner": "layer-overlay", "checks": ["layer-overlay", "installed-composition", "package-location"] },
     { "prefix": "core4/config/compositions/operator-photo-montage.json", "owner": "layer-overlay", "checks": ["layer-overlay", "installed-composition", "package-location"] },
+    { "prefix": "core4/config/compositions/operator-workflows-montage.json", "owner": "layer-overlay", "checks": ["layer-overlay", "installed-composition", "package-location"] },
     { "prefix": "core4/runtime/layer-overlay-proof.js", "owner": "layer-overlay", "checks": ["layer-overlay"] },
     { "prefix": "core4/test/layer-overlay.test.js", "owner": "layer-overlay", "checks": ["layer-overlay"] },
     { "prefix": "core4/test/fixtures/montage-host.js", "owner": "layer-overlay", "checks": ["layer-overlay", "owner-runtime"] },

@@ -8,7 +8,8 @@ const PropertyValueType = { OneD: 1, TwoD: 2, TwoD_SPATIAL: 3, COLOR: 4, SHAPE: 
 const group = (entries = []) => ({ propertyType: 2, numProperties: entries.length,
   property(key) { return typeof key === 'number' ? entries[key - 1] : entries.find(item => item.matchName === key); } });
 const leaf = (matchName, propertyValueType, value) => ({
-  matchName, value, propertyType: 1, propertyValueType, numKeys: 0, canSetExpression: true, expressionEnabled: false, expression: ''
+  matchName, value, propertyType: 1, propertyValueType, numKeys: 0, canSetExpression: true, expressionEnabled: false,
+  expression: '', expressionError: ''
 });
 const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2XcAAAAASUVORK5CYII=', 'base64');
 
@@ -50,12 +51,12 @@ function overlayEnvironment(state) {
   const shape = { closed: true, vertices: [[0, 0], [190, 0], [90, 180]], inTangents: [[0, 0], [0, 0], [0, 0]],
     outTangents: [[0, 0], [0, 0], [0, 0]], featherSegLocs: null, featherRelSegLocs: null, featherRadii: null,
     featherInterps: null, featherTensions: null, featherTypes: null, featherRelCornerAngles: null };
-  const masks = group([Object.assign(group([leaf('ADBE Mask Shape', SHAPE, shape)]), {
+  const masks = Object.assign(group([Object.assign(group([leaf('ADBE Mask Shape', SHAPE, shape)]), {
     matchName: 'ADBE Mask Atom', name: 'Photo mask', enabled: true, maskMode: 1, inverted: false,
     rotoBezier: false, maskMotionBlur: 1, maskFeatherFalloff: 1, locked: false
-  })]);
-  const effects = group([Object.assign(group([leaf('ADBE Fill-0002', COLOR, [0.1, 0.2, 0.3, 1])]),
-    { matchName: 'ADBE Fill', name: 'Fill', enabled: true })]);
+  })]), { matchName: 'ADBE Mask Parade' });
+  const effects = Object.assign(group([Object.assign(group([leaf('ADBE Fill-0002', COLOR, [0.1, 0.2, 0.3, 1])]),
+    { matchName: 'ADBE Fill', name: 'Fill', enabled: true })]), { matchName: 'ADBE Effect Parade' });
   state.writes = { duplicate: 0, replace: 0, matte: 0 };
   class AVLayer {
     constructor(comp, source, name) {
@@ -117,6 +118,29 @@ function overlayEnvironment(state) {
   original.parent = parent;
   original.trackMatteLayer = matte; original.trackMatteType = 1; original.hasTrackMatte = true;
   comp.stack.push(parent, original, matte);
+  if (state.flags.verifiedCopy) {
+    state.retired = Object.assign(new AVLayer(comp, replacement, 'Old overlay'), original, {
+      id: ++next, name: 'Old overlay', source: replacement
+    });
+    state.sibling = new AVLayer(comp, originalSource, 'Second original');
+    state.sibling.inPoint = 2;
+    comp.stack.splice(original.index - 1, 0, state.retired);
+    comp.stack.push(state.sibling);
+    const texture = state.texture = leaf('ADBE Texturize-0001', PropertyValueType.LAYER_INDEX, 0);
+    const originalIndex = matte.index;
+    Object.defineProperty(texture, 'value', { get: () => state.flags.brokenIndex ? originalIndex : matte.index });
+    const custom = state.custom = leaf('ADBE CurvesCustom-0001', PropertyValueType.CUSTOM_VALUE, null);
+    parent.effects = Object.assign(group([
+      Object.assign(group([texture]), { matchName: 'ADBE Texturize' }),
+      Object.assign(group([custom]), { matchName: 'ADBE CurvesCustom' })
+    ]), { matchName: 'ADBE Effect Parade' });
+    const fill = state.fill = { ...effects.property(1).property(1),
+      expressionEnabled: true, expression: 'comp("Shared master").layer("Use 1").effect("Fill")("Color")' };
+    matte.effects = Object.assign(group([Object.assign(group([fill]), { matchName: 'ADBE Fill' })]), { matchName: 'ADBE Effect Parade' });
+    state.referenceProject = path.join(state.fixtureDirectory, 'Reference.aep');
+    fs.writeFileSync(state.projectId, 'independent AEP bytes');
+    fs.copyFileSync(state.projectId, state.referenceProject, fs.constants.COPYFILE_EXCL);
+  }
   for (let i = 0; i < (state.flags.longOverlayLayers || 0); i++) {
     const layer = new AVLayer(comp, otherSource, 'Protected context');
     layer.comment = 'x'.repeat(415);
@@ -127,6 +151,10 @@ function overlayEnvironment(state) {
   if (state.flags.fullLayerBudget) {
     const filler = new AVLayer(unrelated, otherSource, 'Outside slot');
     unrelated.stack = Array(2048 - comp.numLayers - master.numLayers).fill(filler);
+  }
+  if (state.flags.verifiedLayerCount) {
+    const count = state.flags.verifiedLayerCount - comp.numLayers - master.numLayers;
+    unrelated.stack = Array.from({ length: count }, () => new AVLayer(unrelated, otherSource, 'Outside slot'));
   }
   const items = [comp, master, unrelated, originalSource, otherSource];
   if (!state.flags.importOnDemand) items.push(...replacements);
@@ -156,7 +184,7 @@ function overlayEnvironment(state) {
     constructor(file) { this.file = file; }
     canImportAs(kind) { return kind === 1; }
   }
-  const project = state.project = { file: { fsName: state.projectId, name: path.basename(state.projectId), exists: true,
+  const project = state.project = { file: { fsName: state.projectId, name: path.basename(state.projectId), exists: true, alias: false,
     parent: { fsName: path.dirname(state.projectId) } }, revision: 7, dirty: false, activeItem: comp,
     get numItems() { return items.length; }, item: index => items[index - 1], itemByID: id => items.find(item => item.id === id),
     importFile(options) {

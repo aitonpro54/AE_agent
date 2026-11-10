@@ -14,7 +14,7 @@ const { check } = require('../protocol/schema');
 const { encode, decode } = require('../protocol/codec');
 const { hash, canonical, exact, fail, id, bounded } = require('../protocol/json');
 const clone = value => JSON.parse(canonical(value));
-const pick = (object, fields) => Object.fromEntries(fields.map(k => [k, object[k]]));
+const pick = (object, fields) => Object.fromEntries(fields.filter(k => Object.hasOwn(object, k)).map(k => [k, object[k]]));
 const freshDryrunRefusals = new WeakSet();
 const mediaDuplicateBuildRefusals = new WeakSet();
 class Broker {

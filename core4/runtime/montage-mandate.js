@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHmac, timingSafeEqual, randomUUID } = require('node:crypto');
 const { canonical, hash, fail } = require('../protocol/json');
+const { validReplacementScope } = require('../core/resources');
 const { mediaReceiptItems } = require('./media-layer-proof');
 
 const MAX_AGE_MS = 8 * 60 * 60 * 1000;
@@ -89,6 +90,7 @@ function validateActions({ projectId, sessionId, actions }) {
     if (!exact(input, fields) || input.projectId !== projectId || own(input, 'sessionId') && input.sessionId !== sessionId ||
         fields.filter(key => key === 'compId' || key === 'layerId' || key === 'itemId' || key === 'originalSourceId').some(key => !positive(input[key])) ||
         own(input, 'file') && (!filePath(input.file) || typeof input.sha256 !== 'string' || !HEX.test(input.sha256)) ||
+        own(input, 'replacement') && (!validReplacementScope(input) || !filePath(input.replacement.referenceProject)) ||
         own(input, 'frame') && (!Number.isSafeInteger(input.frame) || input.frame < 0 || input.frame > 1000000 ||
           typeof input.fileName !== 'string' || !/^[a-z0-9][a-z0-9_-]{0,90}\.png$/i.test(input.fileName))) fail('montage_mandate_action');
     const key = canonical(action), slot = input.compId + '/' + input.layerId, output = String(input.fileName).toLowerCase();
@@ -106,7 +108,9 @@ function validateActions({ projectId, sessionId, actions }) {
 }
 function scopeFields(moduleId, input) {
   const { fields } = OPERATIONS[moduleId];
-  return moduleId === 'layer-overlay' && input && !own(input, 'itemId') ? fields.filter(key => key !== 'itemId') : fields;
+  if (moduleId !== 'layer-overlay' || !input) return fields;
+  if (own(input, 'replacement')) return [...fields, 'replacement'];
+  return own(input, 'itemId') ? fields : fields.filter(key => key !== 'itemId');
 }
 
 function issueMontageMandate(installation, input, now = Date.now()) {
@@ -158,7 +162,9 @@ function observeMontageMandate(installation, taskId, sessionId, now = Date.now()
 function matchesMontageAction(mandate, moduleId, operationId, input, importedItem) {
   const op = OPERATIONS[moduleId];
   return own(OPERATIONS, moduleId) && operationId === op.operationId && mandate.body.actions.some(action => {
-    if (action.moduleId !== moduleId || !same(action.input, pick(input, scopeFields(moduleId, action.input)))) return false;
+    if (action.moduleId !== moduleId || own(action.input, 'replacement') !== own(input, 'replacement') ||
+        scopeFields(moduleId, action.input).some(key => !own(input, key)) ||
+        !same(action.input, pick(input, scopeFields(moduleId, action.input)))) return false;
     return moduleId !== 'layer-overlay' || own(action.input, 'itemId') ||
       importedItem(mandate, action.input) === input.itemId;
   });
@@ -178,7 +184,10 @@ function authorizeMontageStep(installation, approval, sessionId, observedProject
   if (!own(OPERATIONS, id)) return null;
   const mandate = observeMontageMandate(installation, approval.taskId, sessionId);
   if (!mandate) return null;
-  const { body } = mandate, { operationId, effect, fields, target } = OPERATIONS[id];
+  const { body } = mandate, { operationId, effect, fields: baseFields, target: baseTarget } = OPERATIONS[id];
+  const replace = id === 'layer-overlay' && own(step.input, 'replacement');
+  const fields = replace ? [...baseFields, 'replacement'] : baseFields;
+  const target = replace ? [...baseTarget, 'replacement'] : baseTarget;
   const baseline = id === 'media-import' && own(step.input, 'expectedInventory') ? ['expectedRevision', 'expectedInventory'] : ['expectedRevision'];
   if (approval.taskEpoch !== body.taskEpoch || observedProject !== body.projectId ||
       step.operationId !== operationId || step.effectPolicy.effect !== effect ||

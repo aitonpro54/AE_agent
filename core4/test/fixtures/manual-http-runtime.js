@@ -21,7 +21,8 @@ const root = path.resolve(__dirname, '../..');
 async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, projectOpenTransportTimeout, projectOpenTimeout, layoutEnvironment, textEnvironment, assemblyEnvironment, saveEnvironment, lifecycleEnvironment, mediaEnvironment, overlayEnvironment, frameEnvironment, operatorSession } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-manual-runtime-')), state = initialState(); delete state.sessionId; Object.assign(state.flags, flags);
   const installation = { installationId: 'fixture-installation', machineId: 'fixture-machine', stateDir: path.join(dir, 'state'), packageHash: '1'.repeat(64), panelToken: '2'.repeat(64), controlToken: '3'.repeat(64) };
-  if (saveEnvironment || lifecycleEnvironment || frameEnvironment) Object.assign(state, { projectId: path.join(dir, 'Проект с пробелом.aep'), stateDir: installation.stateDir });
+  if (saveEnvironment || lifecycleEnvironment || frameEnvironment || flags.verifiedCopy)
+    Object.assign(state, { projectId: path.join(dir, 'Проект с пробелом.aep'), stateDir: installation.stateDir });
   if (mediaEnvironment || overlayEnvironment) state.fixtureDirectory = dir;
   const contract = JSON.parse(fs.readFileSync(path.join(root, 'modules/titles-current-target/contract.json'))), admission = JSON.parse(fs.readFileSync(path.join(root, 'config/admissions/titles-current-target.json'))), manifest = JSON.parse(fs.readFileSync(path.join(root, 'modules/titles-current-target/artifact.json')));
   const selected = { pin: hash(manifest), contract, admission, operatorConfirmation: !!operatorSession }; let broker, peer, confirmations = 0, stopped = false, pump, hostPhase;

@@ -16,6 +16,8 @@ const TITLES_READ_CODES = new Set(['project_cas', 'comp_cas', 'layer_cas', 'unsu
 const SAVE_READ_CODES = new Set(['save_project_changed', 'save_revision_unavailable', 'save_dirty_unavailable', 'save_file_unavailable']);
 const LIFECYCLE_READ_CODES = new Set(['lifecycle_project_changed', 'lifecycle_native_state']);
 const OVERLAY_PREFLIGHT_READ_CODES = new Set(['layer_overlay_layer_profile', 'layer_overlay_expression_scope', 'layer_overlay_existing_or_partial']);
+const OVERLAY_COPY_READ_CODES = new Set(['layer_overlay_copy_binding', 'layer_overlay_dependency_unobserved',
+  'layer_overlay_index_reference', 'layer_overlay_project_changed', 'layer_overlay_expression_scope', 'layer_overlay_existing_or_partial']);
 const OVERLAY_DIAGNOSTIC_ROOTS = new Set(['layer', 'ADBE Transform Group', 'ADBE Text Properties', 'ADBE Root Vectors Group',
   'ADBE Camera Options Group', 'ADBE Light Options Group', 'ADBE Marker', 'ADBE Time Remapping', 'ADBE Audio Group',
   'ADBE Layer Overrides', 'ADBE Layer Styles', 'ADBE Blend Options Group', 'ADBE Material Options Group',
@@ -370,6 +372,8 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
           if (result.outcome !== 'rejected' || !['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable'].includes(result.code) &&
               !(titlesReadCommand(c.command, selectedAsset) && TITLES_READ_CODES.has(result.code)) &&
               !(selectedAsset?.resultProfile === 'layer-overlay-v1' && montagePreflight(c.command) && OVERLAY_PREFLIGHT_READ_CODES.has(result.code)) &&
+              !(selectedAsset?.resultProfile === 'layer-overlay-v1' && c.command.phase !== 'mutate' &&
+                c.command.payload.itemId !== undefined && c.command.payload.replacement && OVERLAY_COPY_READ_CODES.has(result.code)) &&
               !(observeDisk && c.command.phase !== 'mutate' && (projectSave ? SAVE_READ_CODES : LIFECYCLE_READ_CODES).has(result.code))) fail('inspection_result');
           if (diagnostic) validateMontageDiagnostic(c.command, selectedAsset, result);
         } else if (manualResultProfile(selectedAsset)) {

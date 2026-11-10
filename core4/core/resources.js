@@ -12,11 +12,28 @@ function scopesOverlap(a, b) {
   }
   if (a.projectId !== b.projectId) return false;
   if (a.sessionId && b.sessionId && a.sessionId !== b.sessionId) return false;
+  if (a.replacement || b.replacement) return a.compId === undefined || b.compId === undefined || a.compId === b.compId;
   if (!['compId', 'layerId', 'file', 'output'].every(k => a[k] === undefined || b[k] === undefined || a[k] === b[k])) return false;
   // An overlay reserves its original slot. Replacing the proposed source
   // cannot turn an unresolved overlay of that same slot into unrelated work.
   return a.originalSourceId !== undefined || b.originalSourceId !== undefined ||
     a.itemId === undefined || b.itemId === undefined || a.itemId === b.itemId;
+}
+function validReplacementScope(target) {
+  const { replacement: value, projectId, compId, layerId, itemId, originalSourceId } = target;
+  if (!Object.hasOwn(target, 'replacement')) return true;
+  const positive = (id, max = 2147483647) => Number.isSafeInteger(id) && id > 0 && id <= max;
+  const required = ['referenceProject', 'projectSha256', 'itemCount', 'layerCount', 'retiredLayerId', 'name'];
+  return value && Object.getPrototypeOf(value) === Object.prototype && required.every(k => Object.hasOwn(value, k)) &&
+    Object.keys(value).every(k => required.includes(k) || k === 'sharedOriginalLayerId') &&
+    [compId, layerId, itemId, originalSourceId, value.retiredLayerId].every(id => positive(id)) &&
+    value.retiredLayerId !== layerId && (!Object.hasOwn(value, 'sharedOriginalLayerId') ||
+      positive(value.sharedOriginalLayerId) && ![layerId, value.retiredLayerId].includes(value.sharedOriginalLayerId)) &&
+    typeof value.referenceProject === 'string' && value.referenceProject.length <= 512 &&
+    /\.aep$/i.test(value.referenceProject) && value.referenceProject !== projectId &&
+    typeof value.projectSha256 === 'string' && /^[a-f0-9]{64}$/.test(value.projectSha256) &&
+    positive(value.itemCount, 2048) && positive(value.layerCount, 3200) &&
+    typeof value.name === 'string' && value.name.length > 0 && value.name.length <= 128 && !/[\x00-\x1f]/.test(value.name);
 }
 // Neutral durable constraints. This class knows no module IDs or domain effects.
 class Resources {
@@ -77,10 +94,11 @@ class Resources {
       exact(record, ['constraintId', 'schemaVersion', 'resource', 'origin', 'owner', 'checkpointRef', 'allowedEffects', 'reservationOwner', 'unresolvedOutcome', 'revision', 'provenance']);
       if (![1, 2].includes(record.schemaVersion) || typeof record.owner !== 'string' || typeof record.checkpointRef !== 'string' || !Array.isArray(record.allowedEffects) || record.allowedEffects.some(e => typeof e !== 'string') || typeof record.unresolvedOutcome !== 'boolean' || record.schemaVersion === 1 && (!record.resource.sessionId || record.origin !== undefined)) fail('constraint_schema_unavailable');
       exact(record.resource, ['sessionId', 'projectId', 'compId', 'layerId', 'itemId', 'file', 'output',
-        ...(record.schemaVersion === 2 ? ['originalSourceId'] : [])]);
+        ...(record.schemaVersion === 2 ? ['originalSourceId', 'replacement'] : [])]);
       for (const key of ['sessionId', 'projectId', 'file', 'output']) if (key in record.resource && (typeof record.resource[key] !== 'string' || !record.resource[key])) fail('constraint_schema_unavailable');
       for (const key of ['compId', 'layerId', 'itemId', 'originalSourceId']) if (key in record.resource && (!Number.isSafeInteger(record.resource[key]) || record.resource[key] < 1)) fail('constraint_schema_unavailable');
       if ('originalSourceId' in record.resource && ['compId', 'layerId', 'itemId'].some(key => !(key in record.resource))) fail('constraint_schema_unavailable');
+      if (!validReplacementScope(record.resource)) fail('constraint_schema_unavailable');
       if (record.schemaVersion === 2 && (!record.origin || typeof record.origin.machineId !== 'string' || !Number.isSafeInteger(record.origin.aePid) || record.origin.aePid < 1 || typeof record.origin.aeProcessBirth !== 'string')) fail('constraint_schema_unavailable');
       if (record.schemaVersion === 2) exact(record.origin, ['machineId', 'aePid', 'aeProcessBirth']);
       if (!scopesOverlap({ ...record.resource, ...(record.origin ? { origin: record.origin } : {}) }, scope)) continue;
@@ -125,4 +143,4 @@ class Resources {
       canonical(priorGrant.executionScope) === executionScope;
   }
 }
-module.exports = { Resources, scopesOverlap, currentTargetConstraintId, CURRENT_TARGET_PROVENANCE };
+module.exports = { Resources, scopesOverlap, validReplacementScope, currentTargetConstraintId, CURRENT_TARGET_PROVENANCE };

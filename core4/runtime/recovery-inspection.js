@@ -4,6 +4,7 @@
 // legacy dispositions retain the existing read-only lineage/crypto validator.
 const { hash, canonical, fail, MAX_FRAME } = require('../protocol/json');
 const { dispatchBinding, sameDispatch } = require('../protocol/dispatch');
+const { validReplacementScope } = require('../core/resources');
 const { parseJournalBytes, validateDisposition } = require('./native-read-disposition');
 const HISTORY_LIMITS = Object.freeze({ bytes: 64 * 1024 * 1024, events: 65536 });
 const LEDGER_TYPES = new Set(['task', 'evidence', 'build', 'proposal', 'checkpoint', 'intent', 'command', 'engine', 'reservation', 'constraint']);
@@ -169,10 +170,11 @@ function inspectLedgerHistory(bytes, context = {}) {
     const r = c.resource;
     const ids = ['compId', 'layerId', 'itemId', ...(c.schemaVersion === 2 ? ['originalSourceId'] : [])];
     if (!r || Object.getPrototypeOf(r) !== Object.prototype || !text(r.projectId) || c.schemaVersion === 1 && !text(r.sessionId) ||
-        Object.keys(r).some(k => !['sessionId', 'projectId', 'file', 'output', ...ids].includes(k)) ||
+        Object.keys(r).some(k => !['sessionId', 'projectId', 'file', 'output', ...ids, ...(c.schemaVersion === 2 ? ['replacement'] : [])].includes(k)) ||
         ['sessionId', 'projectId', 'file', 'output'].some(k => Object.hasOwn(r, k) && !text(r[k])) ||
         ids.some(k => Object.hasOwn(r, k) && (!Number.isSafeInteger(r[k]) || r[k] < 1)) ||
-        Object.hasOwn(r, 'originalSourceId') && ['compId', 'layerId', 'itemId'].some(k => !Object.hasOwn(r, k))) return true;
+        Object.hasOwn(r, 'originalSourceId') && ['compId', 'layerId', 'itemId'].some(k => !Object.hasOwn(r, k)) ||
+        !validReplacementScope(r)) return true;
     if (c.schemaVersion === 2) {
       const o = c.origin;
       if (!o || Object.keys(o).sort().join(',') !== 'aePid,aeProcessBirth,machineId' || !text(o.machineId) || !text(o.aeProcessBirth) || !Number.isSafeInteger(o.aePid) || o.aePid < 1) return true;

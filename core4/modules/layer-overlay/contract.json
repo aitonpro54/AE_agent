@@ -35,6 +35,55 @@
         "type": "integer",
         "minimum": 1,
         "maximum": 2147483647
+      },
+      "replacement": {
+        "type": "object",
+        "properties": {
+          "referenceProject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "projectSha256": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2048
+          },
+          "layerCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3200
+          },
+          "retiredLayerId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "sharedOriginalLayerId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "referenceProject",
+          "projectSha256",
+          "itemCount",
+          "layerCount",
+          "retiredLayerId",
+          "name"
+        ],
+        "additionalProperties": false
       }
     },
     "required": [
@@ -88,6 +137,55 @@
         "type": "string",
         "minLength": 64,
         "maxLength": 64
+      },
+      "replacement": {
+        "type": "object",
+        "properties": {
+          "referenceProject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "projectSha256": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2048
+          },
+          "layerCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3200
+          },
+          "retiredLayerId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "sharedOriginalLayerId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "referenceProject",
+          "projectSha256",
+          "itemCount",
+          "layerCount",
+          "retiredLayerId",
+          "name"
+        ],
+        "additionalProperties": false
       }
     },
     "required": [
@@ -149,6 +247,55 @@
         "type": "string",
         "minLength": 1,
         "maxLength": 15000
+      },
+      "replacement": {
+        "type": "object",
+        "properties": {
+          "referenceProject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "projectSha256": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2048
+          },
+          "layerCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3200
+          },
+          "retiredLayerId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "sharedOriginalLayerId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "referenceProject",
+          "projectSha256",
+          "itemCount",
+          "layerCount",
+          "retiredLayerId",
+          "name"
+        ],
+        "additionalProperties": false
       }
     },
     "required": [
@@ -199,6 +346,55 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 2147483647
+          },
+          "replacement": {
+            "type": "object",
+            "properties": {
+              "referenceProject": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "projectSha256": {
+                "type": "string",
+                "minLength": 64,
+                "maxLength": 64
+              },
+              "itemCount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2048
+              },
+              "layerCount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3200
+              },
+              "retiredLayerId": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "sharedOriginalLayerId": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [
+              "referenceProject",
+              "projectSha256",
+              "itemCount",
+              "layerCount",
+              "retiredLayerId",
+              "name"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -393,7 +589,8 @@
       "compId",
       "layerId",
       "originalSourceId",
-      "itemId"
+      "itemId",
+      "replacement"
     ],
     "expectedBindings": {
       "expectedRevision": "revision"
