@@ -1,0 +1,51 @@
+{
+  "parent": "readonly",
+  "modules": ["project-save", "project-lifecycle"],
+  "assets": [
+    {
+      "assetKey": "project-save-v1",
+      "moduleId": "project-save",
+      "path": "modules/project-save",
+      "admission": "config/admissions/project-save.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    },
+    {
+      "assetKey": "project-lifecycle-v1",
+      "moduleId": "project-lifecycle",
+      "path": "modules/project-lifecycle",
+      "admission": "config/admissions/project-lifecycle.json",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "phases": ["inspect", "mutate", "verify"]
+    }
+  ],
+  "profiles": {
+    "project-save": {
+      "operationId": "save-current-project",
+      "resultProfile": "current-project-save-v1",
+      "operatorConfirmation": "registry-v1"
+    },
+    "project-lifecycle": {
+      "operationId": "transition-project",
+      "resultProfile": "project-lifecycle-v1",
+      "operatorConfirmation": "registry-v1"
+    }
+  },
+  "bundle": {
+    "files": [
+      "runtime/manual-policy.js",
+      "runtime/windows-reservation-provider.js",
+      "runtime/operator-confirmation.js",
+      "runtime/project-file.js",
+      "runtime/project-save-proof.js",
+      "runtime/project-lifecycle-proof.js",
+      "config/admissions/project-save.json",
+      "config/admissions/project-lifecycle.json"
+    ],
+    "artifactClosures": [
+      "plan-engine/artifact.json",
+      "modules/project-save/artifact.json",
+      "modules/project-lifecycle/artifact.json"
+    ]
+  }
+}

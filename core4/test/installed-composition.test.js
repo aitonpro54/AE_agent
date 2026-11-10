@@ -79,6 +79,20 @@ test('installed-composition R1 extends the operator montage closure only in owne
   assert.equal(verifyPackage(r1), r1);
   assert.throws(() => buildPackage(root, 'operator-render-jobs'), /operator_confirmation_owner_required|render_job_owner_required/);
 });
+test('installed-composition minimal R1 contains only saved-project dependencies', () => {
+  const options = { runtimeModel: 'owner' };
+  const minimal = buildPackage(root, 'operator-r1-minimal', options);
+  const lifecycle = buildPackage(root, 'operator-project-lifecycle', options);
+  const combined = buildPackage(root, 'operator-render-jobs', options);
+  const selection = deriveComposition(minimal.release, file => Buffer.from(minimal.files[file], 'base64'));
+  assert.deepEqual(selection.assets.map(asset => asset.moduleId), ['project-inspection', 'project-save', 'project-lifecycle']);
+  assert.equal(selection.renderJobs, true);
+  assert.ok(selection.assets.slice(1).every(asset => asset.registryOperatorConfirmation));
+  assert.deepEqual(Object.keys(minimal.files).filter(file => !Object.hasOwn(lifecycle.files, file)).sort(),
+    ['runtime/aerender-jobs.js', 'runtime/aerender-profile.js', 'runtime/render-job-owner.js']);
+  assert.ok(Object.keys(minimal.files).every(file => Object.hasOwn(combined.files, file)));
+  assert.ok(Object.keys(minimal.files).every(file => !/montage|photo|overlay|titles|comp-render|comp-frame-export|png-proof/.test(file)));
+});
 test('installed-composition selects R1 by versioned capability and serves the same tools from the installed MCP', { timeout: 60000 }, t => {
   const options = { runtimeModel: 'owner' }, r1 = buildPackage(root, 'operator-render-jobs', options);
   const directory = temp(), policyPath = 'runtime/composition-policy.json', compositionPath = 'runtime/composition.json';

@@ -634,6 +634,93 @@ nodeTest('owner-runtime installed layer insertion refuses wide inspection and in
     assert.ok(records(path.join(f.d.stateDir, 'broker/ledger.ndjson')).every(row => row.type !== 'intent'));
   });
 
+function seedCompletedWorkSessionFixture(f) {
+  // Only the pre-existing reset records are synthetic. The initial baseline
+  // below must come through the installed Owner and the signed VM panel.
+  const { randomUUID, createHmac } = require('node:crypto');
+  const resetId = randomUUID(), sessionId = randomUUID(), intentHash = 'a'.repeat(64);
+  const tx = path.join(f.d.installRoot, 'transactions', resetId + '-start-over');
+  const key = createHmac('sha256', Buffer.from(f.d.panelToken, 'hex')).update('ae-core4/start-over-key/v1\0')
+    .update(Buffer.from(f.d.controlToken, 'hex')).digest();
+  const descriptorHash = hash(fs.readFileSync(f.descriptor));
+  const seal = (kind, fields) => {
+    const body = { version: 1, kind, descriptorHash, installationId: f.d.installationId, machineId: f.d.machineId, ...fields };
+    return canonical({ body, mac: createHmac('sha256', key).update('ae-core4/start-over-record/v1\0' + canonical(body)).digest('hex') });
+  };
+  fs.mkdirSync(tx);
+  const master = seal('work-session', { resetId, sessionId, intentHash, baselineRequired: true });
+  fs.writeFileSync(path.join(tx, 'session-candidate.json'), master);
+  fs.linkSync(path.join(tx, 'session-candidate.json'), path.join(f.d.stateDir, 'work-session.json'));
+  const completed = seal('start-over-completed', { id: resetId, intentHash, archiveManifestHash: 'b'.repeat(64), sessionHash: hash(master), baselineRequired: true });
+  fs.writeFileSync(path.join(tx, 'reset-completed.json'), completed);
+  fs.writeFileSync(path.join(tx, 'enable-intent.json'), seal('start-over-enable-intent', { id: resetId, intentHash, completedHash: hash(completed) }));
+}
+
+for (const [selector, enabled] of [['operator-r1-minimal', true], ['operator-project-lifecycle', false]]) {
+  nodeTest('owner-runtime installed ' + selector + ' enforces R1 admission without montage',
+    { timeout: 45000, skip: process.platform !== 'win32' }, async t => {
+      const f = install(t, buildPackage(SOURCE, selector, { runtimeModel: 'owner' }));
+      assert.equal(f.pkg.files['runtime/montage-mandate.js'], undefined);
+      seedCompletedWorkSessionFixture(f);
+      const state = { projectId: path.join(f.directory, 'Source.aep'), flags: { clean: true, allowRenderCopy: true } };
+      const { lifecycleEnvironment, original } = require('./fixtures/project-lifecycle-host');
+      const host = lifecycleEnvironment(state), destination = path.join(f.directory, 'render-copy', 'Copy.aep');
+      host.app.version = '26-fixture';
+      const { runtime } = await adoptedOwner(t, f, state.projectId);
+      const { client, sessionId, deliver } = await ownerVm(t, f, runtime, host);
+      const project = await client.call('get_module_contract', { moduleId: 'project-inspection' });
+      const baseline = client.call('inspect_module_target', { moduleId: project.moduleId, contractId: project.contractId, target: {} });
+      await deliver('inspect');
+      const observed = await baseline;
+      assert.equal(observed.observation?.target.projectId, state.projectId, JSON.stringify(observed));
+      const names = (await client.rpc('tools/list')).result.tools.map(item => item.name);
+      assert.equal(names.includes('render_job_prepare'), enabled);
+      const moduleId = 'project-lifecycle', contract = await client.call('get_module_contract', { moduleId });
+      const { contractId } = contract, target = { projectId: state.projectId, sessionId };
+      assert.equal(contract.operatorConfirmation, 'local-operator-exact-confirmation-v1');
+      const inspect = client.call('inspect_module_target', { moduleId, contractId, target });
+      await deliver('inspect');
+      const { evidenceRef } = await inspect;
+      const input = { ...target, action: 'stage-render-copy', destination,
+        render: { compId: 20, fps: '30000/1001', audio: false, startFrame: 151, endFrameExclusive: 239,
+          output: path.join(f.directory, 'result.mp4') } };
+      const { taskId, buildId } = await client.call('build_solution_plan', { oneStep: true,
+        steps: [{ stepId: 'stage', moduleId, contractId, evidenceRef, input }] });
+      const proposal = await client.call('propose_plan', { buildId });
+      assert.equal(proposal.confirmationRequired, true);
+      const { issue } = require(path.join(f.d.releaseDir, 'runtime/operator-confirmation.js'));
+      issue(f.d, { sessionId, proposalId: proposal.proposalId, approvalDigest: proposal.operatorApprovalDigest });
+      const { dryrunRef } = await client.call('dry_run_plan', { proposalId: proposal.proposalId });
+      const pending = client.call('run_plan', { proposalId: proposal.proposalId, dryrunRef });
+      await deliver('inspect');
+      if (enabled) {
+        const early = pending.then(value => { assert.fail('render-copy ended before offer: ' + JSON.stringify(value)); });
+        const { frame, result } = await Promise.race([deliver('mutate'), early]);
+        assert.equal(result.outcome, 'applied');
+        assert.equal((await pending).state, 'succeeded');
+        const toolchain = Object.fromEntries(Object.entries({ engine: 'aerender.exe', ffmpeg: 'ffmpeg.exe', ffprobe: 'ffprobe.exe' })
+          .map(([role, name]) => {
+            const file = path.join(f.directory, name);
+            fs.writeFileSync(file, name);
+            return [role, { path: file, sha256: hash(name) }];
+          }));
+        fs.writeFileSync(path.join(f.d.stateDir, 'render-job-toolchain.json'), canonical(toolchain));
+        const prepared = await client.call('render_job_prepare', { taskId, commandId: frame.commandId });
+        assert.equal(prepared.state, 'prepared', JSON.stringify(prepared));
+        assert.equal((await client.call('render_job_cancel', { id: prepared.id })).state, 'cancelled');
+        assert.equal(state.writes, 2);
+        assert.ok(fs.existsSync(destination));
+      } else {
+        assert.equal((await pending).code, 'lifecycle_render_policy');
+        assert.equal(state.writes, 0);
+        assert.equal(fs.existsSync(path.dirname(destination)), false);
+        assert.ok(records(path.join(f.d.stateDir, 'receiver/completions.ndjson')).filter(row => row.type === 'begin')
+          .every(row => row.command.phase === 'inspect'));
+      }
+      assert.deepEqual(fs.readFileSync(state.projectId), original);
+    });
+}
+
 nodeTest('owner-runtime installed lifecycle retains open observation and both checkpoints after disk proof fails',
   { timeout: 30000, skip: process.platform !== 'win32' }, async t => {
     const f = install(t, buildPackage(SOURCE, 'manual-project-lifecycle', { runtimeModel: 'owner' }));

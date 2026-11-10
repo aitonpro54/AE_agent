@@ -73,6 +73,8 @@
     { "prefix": "core4/test/aerender-profile.test.js", "owner": "aerender-profile", "checks": ["aerender-profile"] },
     { "prefix": "core4/tools/package-aerender-operator.js", "owner": "aerender-operator", "checks": ["aerender-operator"] },
     { "prefix": "core4/test/package-aerender-operator.test.js", "owner": "aerender-operator", "checks": ["aerender-operator"] },
+    { "prefix": "core4/config/compositions/operator-project-lifecycle.json", "owner": "project-lifecycle", "checks": ["owner-runtime", "installed-composition"] },
+    { "prefix": "core4/config/compositions/operator-r1-minimal.json", "owner": "render-job-owner", "checks": ["owner-runtime", "installed-composition", "render-job-owner"] },
     { "prefix": "core4/config/compositions/operator-render-jobs.json", "owner": "render-job-owner", "checks": ["render-job-owner", "installed-composition", "package-location"] },
     { "prefix": "core4/runtime/render-job-owner.js", "owner": "render-job-owner", "checks": ["render-job-owner"] },
     { "prefix": "core4/runtime/render-job-history.js", "owner": "aerender-jobs", "checks": ["aerender-jobs", "aerender-profile", "aerender-operator", "render-job-owner", "stopped-update"] },
