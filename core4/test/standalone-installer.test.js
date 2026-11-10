@@ -7,12 +7,14 @@ const { buildPackage } = require('../tools/package-installable');
 const { buildStandalone, writeStandalone } = require('../tools/package-standalone-installer');
 const { HELPERS, verifyStandalone } = require('../tools/standalone-installer');
 const { snapshot } = require('../tools/install-core4');
+const { verifyInstallation } = require('../runtime/installation');
+const { verifyClientDescriptor } = require('../runtime/client-entry');
 const { signedHistory } = require('./fixtures/standalone-history');
 const { validateDisposition } = require('../runtime/native-read-disposition');
 const { openCompletionStore } = require('../integrations/cep/completion-store');
-function fixture(t, selector = 'manual') {
+function fixture(t, selector = 'manual', options = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-standalone-')); t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
-  const distribution = path.join(directory, 'distribution'), bundle = buildStandalone(undefined, selector); writeStandalone(distribution, bundle);
+  const distribution = path.join(directory, 'distribution'), bundle = buildStandalone(undefined, selector, options); writeStandalone(distribution, bundle);
   const args = { nodePath: fs.realpathSync(process.execPath), installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'), configPath: path.join(directory, 'project/.codex/config.toml') };
   const trace = path.join(directory, 'imports.json'), preload = path.join(directory, 'deny-source.cjs');
   fs.writeFileSync(preload, `const fs=require('node:fs'),path=require('node:path'),M=require('node:module'),net=require('node:net');
@@ -36,8 +38,9 @@ test('standalone-installer deterministic manual/readonly distributions include e
     const f = fixture(t, selector), runtime = buildPackage(undefined, selector), checked = verifyStandalone(f.distribution, f.bundle.distributionHash);
     assert.equal(checked.packageHash, runtime.packageHash); assert.deepEqual(buildStandalone(undefined, selector), f.bundle);
     assert.ok(runtime.files['runtime/composition-policy.json']);
+    assert.ok(runtime.files['runtime/ae-readiness.js']);
     assert.equal(Object.hasOwn(runtime.files, 'runtime/photo-source-proof.js'), selector === 'manual');
-    assert.equal(Object.keys(runtime.files).length, selector === 'manual' ? 61 : 41);
+    assert.equal(Object.keys(runtime.files).length, selector === 'manual' ? 62 : 42);
     assert.deepEqual(Object.keys(f.bundle.files).filter(file => HELPERS.includes(file)).sort(), [...HELPERS]);
     assert.equal(Object.keys(runtime.files).some(file => file.startsWith('tools/')), false);
     assert.throws(() => writeStandalone(f.distribution, f.bundle), /new_absolute_standalone_output_required/);
@@ -46,6 +49,58 @@ test('standalone-installer deterministic manual/readonly distributions include e
     const before = snapshot(f.distribution), result = f.run('dry-run'); assert.equal(result.status, 0, result.stderr); assert.deepEqual(snapshot(f.distribution), before);
     assert.equal(fs.existsSync(f.args.installRoot), false); assert.equal(fs.existsSync(f.args.configPath), false); assert.equal(result.report.liveProof, false);
   }
+});
+test('standalone-installer preserves the exact montage owner closure through dry-run and initial apply', t => {
+  const options = { runtimeModel: 'owner' };
+  const f = fixture(t, 'operator-photo-montage', options);
+  const { pkg } = verifyStandalone(f.distribution, f.bundle.distributionHash);
+  const base = buildPackage(undefined, 'readonly', options);
+  const modules = ['comp-frame-export', 'layer-overlay', 'media-import'];
+  const montageFiles = [
+    ...modules.map(id => 'config/admissions/' + id + '.json'),
+    ...modules.flatMap(id => ['artifact.json', 'contract.json', 'executor.jsx', 'implementation.js'].map(file => 'modules/' + id + '/' + file)),
+    'plan-engine/artifact.json', 'plan-engine/index.js',
+    'runtime/comp-frame-export-proof.js', 'runtime/layer-overlay-proof.js',
+    'runtime/manual-policy.js', 'runtime/media-layer-proof.js',
+    'runtime/montage-mandate.js', 'runtime/operator-confirmation.js',
+    'runtime/png-proof.js', 'runtime/project-file.js', 'runtime/windows-reservation-provider.js',
+  ];
+  const expectedFiles = [...Object.keys(base.files), ...montageFiles].sort();
+  assert.deepEqual(Object.keys(pkg.files).sort(), expectedFiles);
+  assert.deepEqual(Object.keys(f.bundle.manifest.hashes).sort(),
+    [...expectedFiles, ...HELPERS, 'README.txt', 'candidate.json'].sort());
+  const composition = JSON.parse(Buffer.from(pkg.files['runtime/composition.json'], 'base64'));
+  assert.equal(composition.id, 'operator-photo-montage');
+  assert.deepEqual(composition.modules, ['media-import', 'layer-overlay', 'comp-frame-export']);
+
+  const distributionBefore = snapshot(f.distribution);
+  const dry = f.run('dry-run');
+  assert.equal(dry.status, 0, dry.stderr);
+  assert.equal(dry.report.dryRun, true);
+  assert.equal(dry.report.distributionHash, f.bundle.distributionHash);
+  assert.equal(dry.report.packageHash, pkg.packageHash);
+  assert.equal(dry.report.liveProof, false);
+  for (const destination of [f.args.installRoot, f.args.extensionsDir, f.args.configPath]) {
+    assert.equal(fs.existsSync(destination), false);
+  }
+  assert.deepEqual(snapshot(f.distribution), distributionBefore);
+
+  const applied = f.run('apply', [], f.bundle.distributionHash, { packageHash: dry.report.packageHash });
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.equal(applied.report.installed, true);
+  assert.equal(applied.report.liveProof, false);
+  assert.equal(applied.report.descriptorPath, dry.report.descriptorPath);
+  const installed = verifyInstallation(applied.report.descriptorPath);
+  const clientPath = path.join(f.args.installRoot, 'core-client.json');
+  const client = verifyClientDescriptor(clientPath);
+  assert.equal(installed.packageHash, pkg.packageHash);
+  assert.equal(installed.cepDir, dry.report.cepDir);
+  assert.equal(client.packageHash, installed.packageHash);
+  assert.equal(client.installationId, installed.installationId);
+  const config = fs.readFileSync(f.args.configPath, 'utf8');
+  assert.deepEqual(JSON.parse(/^args = (.+)$/m.exec(config)[1]),
+    [path.join(installed.releaseDir, 'runtime/client-entry.js'), '--client-descriptor', clientPath]);
+  assert.deepEqual(snapshot(f.distribution), distributionBefore);
 });
 test('standalone-installer rejects output below an existing ancestor junction before any target writes', t => {
   const f = fixture(t), target = path.join(f.directory, 'junction-target'), alias = path.join(f.directory, 'junction-alias'); fs.mkdirSync(target); fs.mkdirSync(path.join(target, 'nested'));
