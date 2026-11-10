@@ -71,7 +71,7 @@ function verifyClientDescriptor(file) {
   if (hash(originBytes) !== d.originHash || origin.installationId !== d.installationId || origin.machineId !== d.machineId) fail('client_origin');
   if (path.resolve(process.execPath).toLowerCase() !== path.resolve(d.nodePath).toLowerCase() || Number(process.versions.node.split('.')[0]) < 20 || hash(read(d.nodePath, 512 * 1024 * 1024)) !== d.nodeHash) fail('client_node');
   const manifestBytes = read(path.join(d.releaseDir, 'release.json'), 1024 * 1024), manifest = JSON.parse(manifestBytes.toString('utf8'));
-  if (hash(manifestBytes) !== d.packageHash || canonical(manifest) !== manifestBytes.toString('utf8') || Object.keys(manifest).sort().join(',') !== 'format,hashes,version' || manifest.version !== '4.2.2' || manifest.format !== 2 || !manifest.hashes || Object.getPrototypeOf(manifest.hashes) !== Object.prototype) fail('client_release');
+  if (hash(manifestBytes) !== d.packageHash || canonical(manifest) !== manifestBytes.toString('utf8') || Object.keys(manifest).sort().join(',') !== 'format,hashes,version' || !['4.2.2', '4.2.3'].includes(manifest.version) || manifest.format !== 2 || !manifest.hashes || Object.getPrototypeOf(manifest.hashes) !== Object.prototype) fail('client_release');
   const files = new Set(['release.json']), dirs = new Set(['']); let total = 0;
   const entries = Object.entries(manifest.hashes);
   if (entries.length < 1 || entries.length > 1024 || !Object.hasOwn(manifest.hashes, 'runtime/client-entry.js')) fail('client_release');
@@ -226,7 +226,10 @@ async function startClient({ descriptor, input = process.stdin, output = process
   try {
     const release = read(path.join(d.releaseDir, 'release.json'), 1024 * 1024);
     if (hash(release) !== d.packageHash) fail('client_release');
-    const renderJobs = Object.hasOwn(JSON.parse(release).hashes, 'runtime/render-job-owner.js');
+    const manifest = JSON.parse(release);
+    if (!hex(manifest.hashes['runtime/stdio-entry.js'])) fail('client_release');
+    const { deriveComposition } = require('./stdio-entry.js');
+    const renderJobs = deriveComposition(manifest, file => read(path.join(d.releaseDir, file), 4 * 1024 * 1024)).renderJobs === true;
     return serveAttachment({ client, input, output, ...(renderJobs ? { renderJobs: true } : {}) });
   } catch (error) { client.close(); throw error; }
 }

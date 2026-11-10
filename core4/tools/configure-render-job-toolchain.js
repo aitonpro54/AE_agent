@@ -24,7 +24,8 @@ async function main([descriptor, expectedPackageHash, witness, ...extra]) {
   const d = verifyInstallation(descriptor);
   if (d.packageHash !== expectedPackageHash || d.machineId !== hostname()) fail('render_job_toolchain_installation');
   const manifest = JSON.parse(fs.readFileSync(path.join(d.releaseDir, 'release.json'), 'utf8'));
-  if (hash(manifest) !== expectedPackageHash || !Object.hasOwn(manifest.hashes, 'runtime/render-job-owner.js')) fail('render_job_toolchain_installation');
+  if (hash(manifest) !== expectedPackageHash || !require('../runtime/stdio-entry').deriveComposition(manifest,
+    file => fs.readFileSync(path.join(d.releaseDir, file))).renderJobs) fail('render_job_toolchain_installation');
   const source = plainPath(witness);
   if (source.info.size > 16384n) fail('render_job_toolchain_witness');
   const data = JSON.parse(fs.readFileSync(source.resolved, 'utf8'));

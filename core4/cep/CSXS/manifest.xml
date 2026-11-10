@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="7.0" ExtensionBundleId="com.codex.aeagentcore4" ExtensionBundleVersion="4.2.2" ExtensionBundleName="AE Agent Core 4.2.2">
-  <ExtensionList><Extension Id="com.codex.aeagentcore4.panel" Version="4.2.2"/></ExtensionList>
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.codex.aeagentcore4" ExtensionBundleVersion="4.2.3" ExtensionBundleName="AE Agent Core 4.2.3">
+  <ExtensionList><Extension Id="com.codex.aeagentcore4.panel" Version="4.2.3"/></ExtensionList>
   <ExecutionEnvironment><HostList><Host Name="AEFT" Version="[24.3,99.9]"/></HostList><LocaleList><Locale Code="All"/></LocaleList><RequiredRuntimeList><RequiredRuntime Name="CSXS" Version="11.0"/></RequiredRuntimeList></ExecutionEnvironment>
   <DispatchInfoList><Extension Id="com.codex.aeagentcore4.panel"><DispatchInfo>
     <Resources><MainPath>./index.html</MainPath><ScriptPath>./jsx/registry.jsx</ScriptPath></Resources>
-    <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle><UI><Type>Panel</Type><Menu>AE Agent Core 4.2.2</Menu><Geometry><Size><Width>340</Width><Height>240</Height></Size><MinSize><Width>280</Width><Height>180</Height></MinSize></Geometry></UI>
+    <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle><UI><Type>Panel</Type><Menu>AE Agent Core 4.2.3</Menu><Geometry><Size><Width>340</Width><Height>240</Height></Size><MinSize><Width>280</Width><Height>180</Height></MinSize></Geometry></UI>
   </DispatchInfo></Extension></DispatchInfoList>
 </ExtensionManifest>

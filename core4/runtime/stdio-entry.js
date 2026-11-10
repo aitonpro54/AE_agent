@@ -19,7 +19,15 @@ function canonical(value) {
 function hash(value) { return crypto.createHash('sha256').update(typeof value === 'string' || Buffer.isBuffer(value) ? value : canonical(value)).digest('hex'); }
 function exactKeys(value, keys) { if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).length !== keys.length || keys.some(key => !Object.hasOwn(value, key))) fail('composition_schema'); }
 const POLICY_FILE = 'runtime/composition-policy.json';
-const RENDER_JOB_FILES = ['runtime/render-job-owner.js', 'runtime/aerender-jobs.js', 'runtime/aerender-profile.js'];
+const BUILTIN_CAPABILITIES = Object.freeze({ 'render-jobs': Object.freeze({ version: 1,
+  files: Object.freeze(['runtime/render-job-owner.js', 'runtime/aerender-jobs.js', 'runtime/aerender-profile.js']) }) });
+function builtinCapabilityFiles(capabilities) {
+  if (!capabilities || Object.getPrototypeOf(capabilities) !== Object.prototype) fail('composition_capabilities');
+  return Object.entries(capabilities).flatMap(([id, version]) => {
+    if (!Object.hasOwn(BUILTIN_CAPABILITIES, id) || version !== BUILTIN_CAPABILITIES[id].version) fail('composition_capabilities');
+    return BUILTIN_CAPABILITIES[id].files;
+  });
+}
 const RESULT_PROFILES = Object.freeze({
   'manual-text-v1': null,
   'photo-source-v1': 'runtime/photo-source-proof.js',
@@ -68,7 +76,11 @@ function compositionPaths(files, closures, readArtifact) {
 }
 function declarativeProfiles(composition, release, json, checked) {
   const policy = json(POLICY_FILE);
-  exactKeys(policy, ['id', 'modules', 'assets', 'profiles', 'files', 'closures']);
+  const declared = Object.hasOwn(policy, 'version');
+  exactKeys(policy, ['id', 'modules', 'assets', 'profiles', 'files', 'closures', ...(declared ? ['version', 'capabilities'] : [])]);
+  if (declared ? policy.version !== 2 || release.version !== '4.2.3' : release.version === '4.2.3') fail('composition_policy_version');
+  const capabilities = declared ? policy.capabilities : release.version === '4.2.2' && composition.id === 'operator-render-jobs' ? { 'render-jobs': 1 } : {};
+  builtinCapabilityFiles(capabilities);
   if (policy.id !== composition.id || canonical(policy.modules) !== canonical(composition.modules) || canonical(policy.assets) !== canonical(composition.assets)) fail('composition_assets');
   const paths = compositionPaths(policy.files, policy.closures, json);
   for (const file of ['config/catalog.json', 'runtime/composition.json', POLICY_FILE, 'cep/jsx/registry.jsx']) paths.add(file);
@@ -129,7 +141,7 @@ function declarativeProfiles(composition, release, json, checked) {
         Object.values(RESULT_PROFILES).includes(file) && !proofPaths.has(file)) fail('composition_optional_closure');
   }
   if (composition.id === 'readonly' && [...paths].some(file => /^(plan-engine\/|runtime\/(manual-policy|windows-reservation-provider)\.js$)/.test(file))) fail('composition_optional_closure');
-  return policy.profiles;
+  return { profiles: policy.profiles, capabilities };
 }
 // Compatibility table for previously issued composition-v1 packages.
 const LEGACY_PROFILES = Object.freeze({
@@ -146,7 +158,8 @@ function deriveComposition(release, read) {
   const checked = file => { if (!Object.hasOwn(release.hashes, file)) fail('composition_unhashed_path'); const bytes = read(file); if (hash(bytes) !== release.hashes[file]) fail('composition_bytes'); return bytes; };
   const json = file => JSON.parse(checked(file));
   if (release.format === 1) {
-    if (Object.hasOwn(release.hashes, 'runtime/composition.json') || Object.hasOwn(release.hashes, POLICY_FILE)) fail('composition_downgrade');
+    if (Object.hasOwn(release.hashes, 'runtime/composition.json') || Object.hasOwn(release.hashes, POLICY_FILE) ||
+        builtinCapabilityFiles({ 'render-jobs': 1 }).some(file => Object.hasOwn(release.hashes, file))) fail('composition_downgrade');
     if (!Object.hasOwn(release.hashes, 'runtime/profiles.json') || !Object.hasOwn(release.hashes, 'runtime/source-package.json')) fail('composition_downgrade');
     const inspection = json('modules/project-inspection/artifact.json');
     const manual = json('config/admissions/titles-current-target.json');
@@ -157,7 +170,8 @@ function deriveComposition(release, read) {
   if (![1, 2].includes(composition.version) || (composition.version === 2) !== Object.hasOwn(release.hashes, POLICY_FILE) ||
       typeof composition.id !== 'string' || !/^[a-z][a-z0-9-]*$/.test(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
   const catalog = json('config/catalog.json'); exactKeys(catalog, ['catalogRevision', 'modules', 'engine']);
-  const profiles = composition.version === 2 ? declarativeProfiles(composition, release, json, checked) : LEGACY_PROFILES;
+  if (release.version === '4.2.3' && composition.version !== 2) fail('composition_policy_version');
+  const { profiles, capabilities } = composition.version === 2 ? declarativeProfiles(composition, release, json, checked) : { profiles: LEGACY_PROFILES, capabilities: {} };
   if (composition.version === 1) validateLegacyComposition(composition, release, checked);
   if (!Array.isArray(catalog.modules) || canonical(catalog.modules.map(m => m.id)) !== canonical(composition.modules) || canonical(catalog.engine) !== canonical(composition.engine) || (composition.id === 'readonly' ? composition.engine !== null : !composition.engine || composition.engine.path !== 'plan-engine')) fail('composition_catalog');
   function admitted(entry) {
@@ -201,11 +215,16 @@ function deriveComposition(release, read) {
   });
   const startOverSupported = Object.hasOwn(release.hashes, 'runtime/owner-contract.json') && json('runtime/owner-contract.json').version === 4;
   if (assets.some(item => item.operatorConfirmation) && !startOverSupported) fail('operator_confirmation_owner_required');
-  const renderJobs = composition.id === 'operator-render-jobs';
+  const renderJobs = Object.hasOwn(capabilities, 'render-jobs');
+  for (const [id, capability] of Object.entries(BUILTIN_CAPABILITIES)) {
+    if (Object.hasOwn(capabilities, id)) for (const file of capability.files) checked(file);
+    else if (capability.files.some(file => Object.hasOwn(release.hashes, file))) fail('composition_optional_closure');
+  }
   if (renderJobs) {
-    if (!startOverSupported || composition.version !== 2 || !assets.some(item => item.resultProfile === 'project-lifecycle-v1' && item.registryOperatorConfirmation)) fail('render_job_owner_required');
-    for (const file of RENDER_JOB_FILES) checked(file);
-  } else if (RENDER_JOB_FILES.some(file => Object.hasOwn(release.hashes, file))) fail('composition_optional_closure');
+    if (!startOverSupported || !assets.some(item => item.resultProfile === 'project-lifecycle-v1' && item.registryOperatorConfirmation) ||
+        !assets.some(item => item.resultProfile === 'current-project-save-v1')) fail('render_job_owner_required');
+    if (release.version === '4.2.3') for (const file of ['runtime/project-file.js', 'runtime/render-job-history.js', 'runtime/render-job-maintenance.js']) checked(file);
+  }
   return { composition, assets, ...(startOverSupported ? { startOverSupported: true } : {}), ...(renderJobs ? { renderJobs: true } : {}) };
 }
 function validateLegacyComposition(composition, release, checked) {
@@ -263,7 +282,7 @@ function registrySource(assets, codecSource) {
 }
 function installationConfig(d, selected) { const assets = selected.assets.map(a => ({ assetKey: a.assetKey, executorHash: a.executorHash, phases: a.phases })); return { installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: assets[0].executorHash, assetKey: assets[0].assetKey, assets, ...(selected.startOverSupported ? { startOverSupported: true } : {}) }; }
 function verifyRelease(directory, release) {
-  exactKeys(release, ['version', 'format', 'hashes']); if ((release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2'].includes(release.version) && release.format === 2)) || !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype) fail('release_schema');
+  exactKeys(release, ['version', 'format', 'hashes']); if ((release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3'].includes(release.version) && release.format === 2)) || !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype) fail('release_schema');
   const root = path.resolve(directory), expectedFiles = new Set(['release.json']), expectedDirs = new Set(['']);
   for (const relative of Object.keys(release.hashes || {})) {
     if (!/^[A-Za-z0-9_./-]+$/.test(relative) || relative.includes('\\') || relative.split('/').some(p => !p || p === '.' || p === '..') || path.isAbsolute(relative) || relative === 'release.json') fail('release_path');
@@ -283,7 +302,11 @@ function verifyRelease(directory, release) {
   }
   visit(root, ''); if (expectedFiles.size || expectedDirs.size) fail('release_tree_mismatch');
   if (release.format !== 1 && release.format !== 2) fail('release_format');
-  if (release.format === 1) { if (Object.hasOwn(release.hashes, 'runtime/composition.json') || Object.hasOwn(release.hashes, POLICY_FILE)) fail('composition_downgrade'); return; }
+  if (release.format === 1) {
+    if (Object.hasOwn(release.hashes, 'runtime/composition.json') || Object.hasOwn(release.hashes, POLICY_FILE) ||
+        builtinCapabilityFiles({ 'render-jobs': 1 }).some(file => Object.hasOwn(release.hashes, file))) fail('composition_downgrade');
+    return;
+  }
   const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
   if (fs.readFileSync(path.join(root, 'cep/jsx/registry.jsx'), 'utf8') !== registrySource(selected.assets, fs.readFileSync(path.join(root, 'runtime/host/json-codec.jsx'), 'utf8'))) fail('composition_registry');
 }
@@ -465,7 +488,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     // Broker or opening an execution store. Only authenticated panel reset
     // control is available; the physical command channel remains refused.
     require('./start-over-panel-control.js').attachStartOverHttp({ server: reservedServer, control: startOverControl, reason: 'owner_recovery_required' });
-    const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.2.2',
+    const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.2.3',
       installation: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash, nodeVerified: true },
       lifecycle: ownerLifecycle.state(), ownershipFault: 'owner_recovery_required', physical: { listening: reservedServer.listening, port: reservedServer.address()?.port || null, inspectionAvailable: false, storeClosed: true, unknown: true, coverage: 'diagnostic-only; execution queue not reopened', readiness: aeReadiness.status({ peer: { connected: false }, storeClosed: true }, true) }, externalLegacyCoverage: 'unobserved' });
     const unavailable = () => ({ available: false, reason: 'owner_recovery_required' });
@@ -572,7 +595,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     const readiness = aeReadiness.status(value, workSession?.status().baselineRequired ?? null);
     return { ...value, readiness, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && !value.startOverFrozen && !value.storeClosed && !value.storeFault && !value.pending && !aeReadiness.blocker() };
   };
-  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.2.2', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
+  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.2.3', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
   facade.diagnostics = async () => {
     await aeReadiness.refresh();
     return { ...broker.diagnostics(), ...facade.status() };
@@ -691,7 +714,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       renderJobs: selected.renderJobs === true
     });
   }
-  serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.2.2' } });
+  serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.2.3' } });
   return { close: facade.close, status: facade.status };
   } catch (e) {
     if (ipc) await ipc.close();
@@ -703,7 +726,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
 }
 // Direct-main start imports the historical reader synchronously. Publish these
 // builtin verifiers first so its installation.js import sees initialized exports.
-module.exports = { start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, compositionPaths, registrySource, installationConfig, PRODUCTION_TIMING };
+module.exports = { start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, compositionPaths, builtinCapabilityFiles, registrySource, installationConfig, PRODUCTION_TIMING };
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.length !== 2 || args[0] !== '--installation') { process.stderr.write('Explicit --installation ABSOLUTE_DESCRIPTOR required.\n'); process.exitCode = 2; }

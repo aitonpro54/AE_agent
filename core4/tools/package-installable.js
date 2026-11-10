@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { hash, canonical, fail } = require('../protocol/json');
-const { deriveComposition, compositionPaths, registrySource } = require('../runtime/stdio-entry.js');
+const { deriveComposition, compositionPaths, builtinCapabilityFiles, registrySource } = require('../runtime/stdio-entry.js');
 const OWNER_V3_FILES = Object.freeze(['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js']);
 const OWNER_FILES = Object.freeze([...OWNER_V3_FILES, 'runtime/start-over-inspection.js', 'runtime/start-over-process.js', 'runtime/start-over-state.js', 'runtime/start-over-barrier.js', 'runtime/start-over-archive.js', 'runtime/start-over-finisher.js', 'runtime/work-session.js', 'runtime/start-over-panel-control.js', 'runtime/start-over-driver.js', 'runtime/owner-launch.js']);
 function runtimeBinding(release, read) {
@@ -43,7 +43,12 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
     lineage.add(key); parts.unshift(part); key = part.parent;
   }
   const optional = parts.flatMap(part => part.packagePart === null ? [] : [part.bundle ?? spec.optional[part.packagePart]]);
-  const filesInPolicy = [...spec.files, ...optional.flatMap(part => part.files), ...(runtimeModel === 'owner' ? spec.optional.owner.files : [])];
+  const capabilities = Object.assign({}, ...parts.map(part => {
+    const declared = Object.hasOwn(part, 'capabilities') ? part.capabilities : {};
+    builtinCapabilityFiles(declared);
+    return declared;
+  }));
+  const filesInPolicy = [...spec.files, ...builtinCapabilityFiles(capabilities), ...optional.flatMap(part => part.files), ...(runtimeModel === 'owner' ? spec.optional.owner.files : [])];
   const closures = [...spec.artifactClosures, ...optional.flatMap(part => part.artifactClosures)];
   const artifacts = new Map();
   const paths = compositionPaths(filesInPolicy, closures, relative => {
@@ -63,7 +68,7 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
     const full = path.resolve(root, relative); if (fs.realpathSync(full) !== full) fail('package_symlink');
     const bytes = fs.readFileSync(full); hashes[relative] = hash(bytes); files[relative] = bytes.toString('base64');
   }
-  const release = { version: '4.2.2', format: 2, hashes };
+  const release = { version: '4.2.3', format: 2, hashes };
   const original = JSON.parse(fs.readFileSync(path.join(root, 'config/catalog.json'), 'utf8'));
   const modules = parts.flatMap(part => part.modules), assets = parts.flatMap(part => part.assets);
   const profiles = Object.assign({}, ...parts.map(part => part.profiles));
@@ -78,7 +83,7 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
   const composition = { version: 2, id: selector, modules, engine: catalog.engine, assets };
   const add = (file, source) => { const bytes = typeof source === 'string' ? source : canonical(source); files[file] = Buffer.from(bytes).toString('base64'); hashes[file] = hash(bytes); };
   add('config/catalog.json', catalog); add('runtime/composition.json', composition);
-  add('runtime/composition-policy.json', { id: selector, modules, assets, profiles, files: filesInPolicy, closures });
+  add('runtime/composition-policy.json', { version: 2, id: selector, modules, assets, profiles, capabilities, files: filesInPolicy, closures });
   // Reserve the generated registry slot before checking the declared closure.
   add('cep/jsx/registry.jsx', '');
   const selected = deriveComposition(release, file => Buffer.from(files[file], 'base64'));
@@ -86,7 +91,7 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
   return verifyPackage({ packageHash: hash(release), release, files });
 }
 function verifyPackage(pkg) {
-  if (pkg.packageHash !== hash(pkg.release) || (pkg.release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2'].includes(pkg.release.version) && pkg.release.format === 2)) || canonical(Object.keys(pkg.files).sort()) !== canonical(Object.keys(pkg.release.hashes).sort())) fail('package_integrity');
+  if (pkg.packageHash !== hash(pkg.release) || (pkg.release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3'].includes(pkg.release.version) && pkg.release.format === 2)) || canonical(Object.keys(pkg.files).sort()) !== canonical(Object.keys(pkg.release.hashes).sort())) fail('package_integrity');
   for (const [relative, data] of Object.entries(pkg.files)) {
     if (!/^[a-zA-Z0-9_./-]+$/.test(relative) || relative.split('/').includes('..') || path.isAbsolute(relative) || /^(test|experiments|node_modules|\.git|logs|state|tools)\//.test(relative) || hash(Buffer.from(data, 'base64')) !== pkg.release.hashes[relative]) fail('package_integrity');
   }

@@ -23,6 +23,7 @@ function fixture(extraFiles = {}) {
   fs.writeFileSync(path.join(installRoot, 'origin.json'), canonical({ installationId, machineId }));
   const moduleFiles = {
     'runtime/client-entry.js': source,
+    'runtime/stdio-entry.js': Buffer.from('exports.deriveComposition=()=>({});'),
     // Explicit trusted fixture modules prove loader ordering only, not IPC/AE.
     'runtime/client-ipc.js': Buffer.from("exports.createIpcClient=async o=>{if('panelToken' in o||'stateDir' in o)throw Error('fixture_role_leak');return {call(){},close(){}}};"),
     'runtime/client-stdio.js': Buffer.from("exports.serveAttachment=({output})=>{output.write('fixture-thin-ready\\n');return {close(){}}};"),

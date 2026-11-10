@@ -79,6 +79,47 @@ test('installed-composition R1 extends the operator montage closure only in owne
   assert.equal(verifyPackage(r1), r1);
   assert.throws(() => buildPackage(root, 'operator-render-jobs'), /operator_confirmation_owner_required|render_job_owner_required/);
 });
+test('installed-composition selects R1 by versioned capability and serves the same tools from the installed MCP', { timeout: 60000 }, t => {
+  const options = { runtimeModel: 'owner' }, r1 = buildPackage(root, 'operator-render-jobs', options);
+  const directory = temp(), policyPath = 'runtime/composition-policy.json', compositionPath = 'runtime/composition.json';
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  for (const file of [...Object.keys(r1.files), 'runtime/source-package.json']) {
+    const from = path.join(root, file), to = path.join(directory, file);
+    if (fs.existsSync(from)) { fs.mkdirSync(path.dirname(to), { recursive: true }); fs.copyFileSync(from, to); }
+  }
+  fs.cpSync(path.join(root, 'config/compositions'), path.join(directory, 'config/compositions'), { recursive: true });
+  fs.copyFileSync(path.join(directory, 'config/compositions/operator-render-jobs.json'),
+    path.join(directory, 'config/compositions/fixture-r1.json'));
+  const alternate = buildPackage(directory, 'fixture-r1', options);
+  const read = pkg => file => Buffer.from(pkg.files[file], 'base64');
+  assert.equal(deriveComposition(alternate.release, read(alternate)).renderJobs, true);
+  const f = install(alternate);
+  t.after(() => fs.rmSync(f.directory, { recursive: true, force: true }));
+  const client = spawnSync(process.execPath, [path.join(f.d.releaseDir, 'runtime/client-entry.js'), '--client-descriptor',
+    path.join(f.d.installRoot, 'core-client.json')], { input: '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n',
+      encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  assert.equal(client.status, 0, client.stderr);
+  assert.deepEqual(JSON.parse(client.stdout).result.tools.map(tool => tool.name).filter(name => name.startsWith('render_job_')).sort(),
+    ['cancel', 'finalize', 'prepare', 'reconcile', 'start', 'status'].map(action => 'render_job_' + action));
+
+  const reject = (transform, pattern) => assert.throws(() => verifyPackage(transform(structuredClone(alternate))), pattern);
+  reject(pkg => edit(pkg, policyPath, policy => { delete policy.capabilities; }), /composition_schema/);
+  reject(pkg => edit(pkg, policyPath, policy => { policy.capabilities['render-jobs'] = 2; }), /composition_capabilities/);
+  reject(pkg => edit(pkg, policyPath, policy => { policy.capabilities = {}; }), /composition_optional_closure/);
+  reject(pkg => {
+    const missing = 'runtime/render-job-owner.js';
+    delete pkg.files[missing]; delete pkg.release.hashes[missing];
+    return edit(pkg, policyPath, policy => { policy.files = policy.files.filter(file => file !== missing); });
+  }, /composition_unhashed_path/);
+  reject(pkg => edit(pkg, policyPath, policy => { delete policy.version; delete policy.capabilities; }), /composition_policy_version/);
+  const legacy = structuredClone(r1); legacy.release.version = '4.2.2';
+  edit(legacy, policyPath, policy => { delete policy.version; delete policy.capabilities; });
+  assert.equal(verifyPackage(legacy), legacy);
+  assert.equal(deriveComposition(legacy.release, read(legacy)).renderJobs, true);
+  edit(legacy, compositionPath, c => { c.id = 'fixture-r1'; });
+  edit(legacy, policyPath, policy => { policy.id = 'fixture-r1'; });
+  assert.throws(() => verifyPackage(legacy), /composition_optional_closure/);
+});
 test('installed-composition adds a second operator-confirmed module by declaration and keeps the shared path identical', () => {
   const options = { runtimeModel: 'owner' };
   const titles = buildPackage(root, 'operator-titles-pilot', options);

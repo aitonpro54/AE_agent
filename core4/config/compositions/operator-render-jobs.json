@@ -3,12 +3,9 @@
   "modules": [],
   "assets": [],
   "profiles": {},
+  "capabilities": { "render-jobs": 1 },
   "bundle": {
-    "files": [
-      "runtime/render-job-owner.js",
-      "runtime/aerender-jobs.js",
-      "runtime/aerender-profile.js"
-    ],
+    "files": [],
     "artifactClosures": []
   }
 }
