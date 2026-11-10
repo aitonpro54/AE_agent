@@ -1,0 +1,409 @@
+{
+  "version": "4.2.4",
+  "host": "MSI",
+  "scope": "operator-render-jobs/owner",
+  "sourceAcceptanceCommit": "041a773",
+  "sourceAcceptancePackage": "1d61f0c7790f96f20e1e4878be2cb4c156049ccd39eb88c68e90857e89af140f",
+  "package": {
+    "packageHash": "193539dfe14a0760317aa92c451423f076f84d5f9e809f48faf2923e04030684",
+    "distributionHash": "a803a685cf2f1c0f5636abca35347eef286d8de0c2f5e1facced616c8f0811d3",
+    "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\standalone",
+    "files": 177,
+    "deterministic": true,
+    "delta": [
+      "cep/CSXS/manifest.xml",
+      "cep/index.html",
+      "cep/js/panel.js",
+      "config/catalog.json",
+      "runtime/client-entry.js",
+      "runtime/client-stdio.js",
+      "runtime/owner-entry.js",
+      "runtime/start-over-driver.js",
+      "runtime/stdio-entry.js"
+    ],
+    "catalogChangedFields": [
+      "catalogRevision"
+    ]
+  },
+  "installation": {
+    "id": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+    "stopId": "0a381f3a-b5d1-45e2-a06a-4a53946dbbff",
+    "updateId": "4dfff738-a07f-48b2-b273-f518a0807d6f",
+    "preserved": {
+      "receiver": "6de6700d7a88001e1b82ba9bcaa5ddcfca363de7c8f6d5a55544ec3f391f66f6",
+      "ledger": "d0a0ab999362e918dc9a5c93de7f0efd5d3be019a127d3749e47be43c77e7f17",
+      "origin": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+      "workSession": "5dfd58bf1139f228ce23159d90bfb4d76939abccf6deddc65027fc491be0be61",
+      "baseline": "71ac623134c2add52c4dad3a31e72b57424c38b6ab8a99a8a6de6bd3cc113779",
+      "adoption": "71d5c7b68aa0a25cee15548056e7a993332e620be55ec0fdde9a9936ffc213ea"
+    },
+    "registry": "84d8e3b7dc48df0d98144d24c672f81f44f1d882ba0e64d6c6342fc39a1afb27",
+    "keysRotated": true,
+    "preferenceCount": 40,
+    "configOutsideCore": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "globalConfig": "49d750b8bcccc064f8c409eaa1c4f9722c0eb105ee1d11319690568dfe955750",
+    "project": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\edit-copy\\photo.aep",
+      "sha256": "91b0e005e66aa61ac5f907d6462b2ba439dde5299664dde24207f30f6336fd9f"
+    },
+    "audit": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\update-release.json",
+      "sha256": "8b61744d49cc3bc541122a6079486cd822da14f0452ce4585bb73a4e17f5a5cc"
+    }
+  },
+  "connection": {
+    "mcp": {
+      "name": "ae-agent-core4",
+      "version": "4.2.4"
+    },
+    "firstColdStatusMs": 9022,
+    "ownerPid": 32644,
+    "cepOrigin": "file://",
+    "activeProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\edit-copy\\photo.aep",
+    "released": true,
+    "activity": {
+      "fault": false,
+      "pending": false,
+      "unresolved": false
+    },
+    "history": [
+      {
+        "id": "0a6afefd-038a-8f91-a415-7004ae8fea22",
+        "state": "cancelled"
+      },
+      {
+        "id": "104f86dc-cb0b-8e00-b094-96deb7df021c",
+        "state": "published",
+        "sha256": "b661dba96c85d9bbe7535dabadbb0e45786308c537cad28f9a0609fa18b27e8b"
+      },
+      {
+        "id": "311d15b0-119b-810c-8fcf-de0497e4b5be",
+        "state": "published",
+        "sha256": "02fdb82fd38e78aecd7cf65327aa7a5c86e3f5e89cd44ca5993d9433faaa0222"
+      },
+      {
+        "id": "587e9fee-6439-8ae1-8c97-a7f5a494de42",
+        "state": "published",
+        "sha256": "5151c4d46764a8bf040d97bf97be078c0b409163cb94eb583b2bcf42c9ebc53c"
+      },
+      {
+        "id": "6b2081a2-a918-80a9-880d-e3d5111a3d37",
+        "state": "cancelled"
+      },
+      {
+        "id": "727aed80-5855-85a0-94b5-f80104abb5d6",
+        "state": "cancelled"
+      },
+      {
+        "id": "72942b7a-9b7b-8eb5-a1f6-dd920d34546b",
+        "state": "cancelled"
+      },
+      {
+        "id": "7cb6fdbd-4ad3-8b65-8838-06bc306fa2f2",
+        "state": "published",
+        "sha256": "f734f5da2d754440dc0a206baf02871d214fb2cf3d2a8239c6c02d5bfafd370d"
+      },
+      {
+        "id": "7cd5b285-7b61-8c99-a79b-e1ff5c9984d1",
+        "state": "cancelled"
+      },
+      {
+        "id": "8f9418a4-b6e2-8a4a-b21d-7fd965a78b4a",
+        "state": "published",
+        "sha256": "475a0709921c175e9f3ea7c2e0c021d5280c6897b7cda4effc627b19fd2b8c32"
+      },
+      {
+        "id": "91826cbe-fe22-83a7-af5f-57980375c9e2",
+        "state": "cancelled"
+      },
+      {
+        "id": "936b5ec7-1333-887c-8d2d-cc49ac33756a",
+        "state": "published",
+        "sha256": "ed5af48d5a35562d86fa5026bf75f3846675fb6378b8c1fb75594b73416f3fa5"
+      },
+      {
+        "id": "02735290-8dd3-8140-a17b-4aaba3d12359",
+        "state": "published",
+        "sha256": "7735a51a14c89cb75aa10496b9cf28a512fc2b9fe699d69b436093cf6e20bb02"
+      },
+      {
+        "id": "58e6fa4b-ff21-84ba-ae79-52352d93725d",
+        "state": "published",
+        "sha256": "28699536d554abdfe35f1ec32233867ce9022a9c9ccb54af6ba8f6c0a966f885"
+      }
+    ],
+    "frameModulePin": "7f001f2961627012242757eca5c59abd271a93da0a15b64a8b2cb202796fcbd2",
+    "renderModulePin": "5bbf9aa1276a5329f9557e80cc7d8a76a830bbff830317bfd3c2ffb99edd4b4f",
+    "coldAudit": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\native-release-cold.json",
+      "sha256": "ce3cc145e4e19408a87aff58cde8c41c5c12522af84be63058bddcf8148ae1c2"
+    },
+    "nativeAudit": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\native-release-connected.json",
+      "sha256": "75388f47af155d2c5d1a0c6196050dab3b70c96ad2eb9b1fec2624a34526b832"
+    }
+  },
+  "checks": [
+    {
+      "check": "comp-frame-export",
+      "evidenceKey": "c5534e01d116b1f74516760bcf972a76b49882f7a894fc9d818387338cd0df11",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=comp-frame-export",
+        "test/comp-frame-export.test.js"
+      ],
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-ZUe2ON",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 6,
+        "fail": 0,
+        "skipped": 0
+      },
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\source\\comp-frame-export\\output.log",
+        "sha256": "1e1c33c36c639a39fe31a12c27deb5bcd5e814a97e00e8187827350f24576064"
+      }
+    },
+    {
+      "check": "comp-render",
+      "evidenceKey": "5cbea8ab9358da7505b84a5f0d5de92b3fa9abe885b669c573e26c89faf5c1a8",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=comp-render",
+        "test/comp-render.test.js"
+      ],
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-8MHJc0",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 10,
+        "fail": 0,
+        "skipped": 0
+      },
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\source\\comp-render\\output.log",
+        "sha256": "9ddfee9e1e3facf471d658fb5c4162df1098e713822c8c5fb2c16cc9cec0474e"
+      }
+    },
+    {
+      "check": "documentation",
+      "evidenceKey": "322c16530296b9ad93a9b9cf18b7b1d217a812b3e2f86fdebb5c9e82e55496ed",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=documentation",
+        "test/core4.test.js"
+      ],
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-zCAQhL",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\source-docs\\documentation\\output.log",
+        "sha256": "1dd2a917accd3f100420efa61b5f35de2d4a0bcd1b09e390866230b428903d80"
+      }
+    },
+    {
+      "check": "frame-export-slot",
+      "evidenceKey": "5c704ec6a11067ce97ad2958679d19a2106e78665e75392b479292389e979621",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^frame-export-slot",
+        "test/stopped-update.test.js"
+      ],
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-5hiXQN",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\source\\frame-export-slot\\output.log",
+        "sha256": "7452809f24311ea2dc8fde1c7b06fa349acde4848482b79d3e4f7a395ec8b628"
+      }
+    },
+    {
+      "check": "installable-runtime",
+      "evidenceKey": "2db4e1f598421d1fc962d0c758828f8c808af2ffef8a642b2d3b23db9c29bd83",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ],
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-BHjLDB",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 53,
+        "fail": 0,
+        "skipped": 0
+      },
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\source\\installable-runtime\\output.log",
+        "sha256": "6fa4cd38318fcb7588086f2ebdd6e20a137711513fe5f706b31bb2c730445c99"
+      }
+    },
+    {
+      "check": "panel-reconnect",
+      "evidenceKey": "aa7132454a2bf1338759ef2a16ad8c8fbbdfe5fa22ae1732cdd4bdc658ef636b",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-reconnect",
+        "test/panel-reconnect.test.js"
+      ],
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-5ZW0hk",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 69,
+        "fail": 0,
+        "skipped": 0
+      },
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\source\\panel-reconnect\\output.log",
+        "sha256": "81826573e725b847cb58323d55bdbbe45dc7b818355865d61393255f33ea07d4"
+      }
+    },
+    {
+      "check": "render-job-owner",
+      "evidenceKey": "6a430bc94e9a214df1fcf95e38f5f43c00789c19fdd461b62702c876d7e7edc6",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^",
+        "test/render-job-owner.test.js"
+      ],
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-Og0oeu",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0
+      },
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\source\\render-job-owner\\output.log",
+        "sha256": "8cdabbfd0ab3ca48e5f1cddeebb0ef7078c020936ce8e0a6e2f71b13cdaac288"
+      }
+    },
+    {
+      "check": "standalone-installer",
+      "evidenceKey": "61c9906a8deeec8da1c3bb18a476afe0d42996a58ae2bb828ad90f7da7f9168b",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=standalone-installer",
+        "test/standalone-installer.test.js"
+      ],
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-fIseZt",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\source\\standalone-installer\\output.log",
+        "sha256": "20645577403a2180969511437cb24f18bdbc2efbdc73530c56d66a70bc3ce3e2"
+      }
+    },
+    {
+      "check": "validation-routing",
+      "evidenceKey": "46f006269233e36a2b6c9866adb9ef5cae2f92b1c6c0f374998aa761f1c863b3",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=validation-routing",
+        "test/core4.test.js"
+      ],
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-Vge0Zq",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 5,
+        "fail": 0,
+        "skipped": 0
+      },
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core424-msi-20261110\\source\\validation-routing\\output.log",
+        "sha256": "7b2c1069e1411f1459bd5dabb659514bbdca7846274c91518800a7585227d926"
+      }
+    }
+  ]
+}

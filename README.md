@@ -1,8 +1,8 @@
 # AE Agent Core
 
-Версия в разработке — **4.2.2**. Ветка `codex/ae-agent-core-4.2.2`,
-имя панели в сборке — **AE Agent Core 4.2.2**.
-Упаковка и команды проверки описаны в [README Core4](core4/README.md).
+Текущий выпуск — **AE Agent Core 4.2.4**. Состав `operator-render-jobs/owner`
+включает R1, `comp-render` и `comp-frame-export`. Команды сборки и обновления
+описаны в [README Core4](core4/README.md).
 
 Постоянное архитектурное требование проекта — [переносимость десктоп ↔ MSI](docs/portability.md)
 без ручной перенастройки после первичной подготовки сред. Приёмка P1–P8 для

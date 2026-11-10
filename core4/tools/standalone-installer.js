@@ -55,7 +55,7 @@ function verifyStandalone(root, expectedHash) {
   }
   visit(root, ''); if (files.size || dirs.size) fail('standalone_closure_tree');
   const pkg = JSON.parse(read(path.join(root, 'candidate.json'))); exact(pkg, ['packageHash', 'release', 'files']);
-  if (pkg.packageHash !== manifest.packageHash || hash(pkg.release) !== pkg.packageHash || !['4.0.0', '4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3'].includes(pkg.release.version) || pkg.release.format !== 2) fail('standalone_candidate');
+  if (pkg.packageHash !== manifest.packageHash || hash(pkg.release) !== pkg.packageHash || !['4.0.0', '4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3', '4.2.4'].includes(pkg.release.version) || pkg.release.format !== 2) fail('standalone_candidate');
   exact(pkg.files, Object.keys(pkg.release.hashes));
   const expected = [...Object.keys(pkg.files), ...HELPERS, 'candidate.json', 'README.txt'].sort();
   if (canonical(Object.keys(manifest.hashes).sort()) !== canonical(expected)) fail('standalone_helper_closure');

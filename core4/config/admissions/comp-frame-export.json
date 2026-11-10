@@ -1,12 +1,1 @@
-{
-  "moduleId": "comp-frame-export",
-  "operationId": "save-comp-frame-png",
-  "artifactHash": "156b5cef7347d42fb9ae444d606e61b74dd4e780b168abdfdf362815858a2b37",
-  "schemaHash": "3fd8cb8fbff3ec602a243d65113204d683dba12ed073c0779883e93ddd3ec586",
-  "resultSchemaHash": "3392d85abb6a40dc6b2a056f277b64fced598fb2333d70db79833f5f6ad138b9",
-  "effectPolicyHash": "3d8a69bf6b149a630389e3d74cb4c9fa436ebcb55d6320200289950b911db380",
-  "executorHash": "a8211fd9544eeb05dea1cc83a5bc03d776ec5e39cea03eddce4e30d5a705f31c",
-  "protocolVersion": 1,
-  "trustApprovalId": "source-review-comp-frame-export-completion-20261108",
-  "revoked": false
-}
+{"artifactHash":"7f001f2961627012242757eca5c59abd271a93da0a15b64a8b2cb202796fcbd2","effectPolicyHash":"3d8a69bf6b149a630389e3d74cb4c9fa436ebcb55d6320200289950b911db380","executorHash":"a8211fd9544eeb05dea1cc83a5bc03d776ec5e39cea03eddce4e30d5a705f31c","moduleId":"comp-frame-export","operationId":"save-comp-frame-png","protocolVersion":1,"resultSchemaHash":"3392d85abb6a40dc6b2a056f277b64fced598fb2333d70db79833f5f6ad138b9","revoked":false,"schemaHash":"3fd8cb8fbff3ec602a243d65113204d683dba12ed073c0779883e93ddd3ec586","trustApprovalId":"source-review-comp-frame-export-independent-msi-20261110"}

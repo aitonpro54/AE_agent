@@ -1,12 +1,1 @@
-{
-  "moduleId": "comp-render",
-  "operationId": "render-text-variant",
-  "artifactHash": "a275ad0a088adef49171e34f8dd52a9e7b7fc7f7ef523d80c66ed6fdce3b6e2f",
-  "schemaHash": "cc304b82a2c4bae5d766f59acc35603f9e3e59fd0dfe1b40043fb15d1bba923d",
-  "resultSchemaHash": "ace9d922712d6b7ede138254119e56e170b522b8becb31e42e327ce1735bb39c",
-  "effectPolicyHash": "1789fc1f5c54b8c142605d8d48b9b79206bd99f946627427b02af48eb9a8cf00",
-  "executorHash": "f313bcb55dd168aafccbe7c68853fd442e79c8b625e5bfc845ef287a3b134064",
-  "protocolVersion": 1,
-  "trustApprovalId": "source-review-comp-render-operator-workflows-20261108",
-  "revoked": false
-}
+{"artifactHash":"5bbf9aa1276a5329f9557e80cc7d8a76a830bbff830317bfd3c2ffb99edd4b4f","effectPolicyHash":"1789fc1f5c54b8c142605d8d48b9b79206bd99f946627427b02af48eb9a8cf00","executorHash":"f8ef6499c9b625356537f6481e86c69ceb79c9018626bd793d44241c98b6d560","moduleId":"comp-render","operationId":"render-text-variant","protocolVersion":1,"resultSchemaHash":"ace9d922712d6b7ede138254119e56e170b522b8becb31e42e327ce1735bb39c","revoked":false,"schemaHash":"cc304b82a2c4bae5d766f59acc35603f9e3e59fd0dfe1b40043fb15d1bba923d","trustApprovalId":"core423-msi-comp-render-compatible-completion"}

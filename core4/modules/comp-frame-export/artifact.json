@@ -1,11 +1,1 @@
-{
-  "id": "comp-frame-export",
-  "version": "4.1.2",
-  "entry": "implementation.js",
-  "hashes": {
-    "implementation.js": "0f9fef96718078f4b54a3f6248e1f7a4538bad32935632bf208bf9e855d800eb",
-    "contract.json": "eaa6bef9892f26681be0772412ea9e71eb61dbcdaff55ae28497f1b301f3873b",
-    "executor.jsx": "a8211fd9544eeb05dea1cc83a5bc03d776ec5e39cea03eddce4e30d5a705f31c"
-  },
-  "publicDependencies": {}
-}
+{"entry":"implementation.js","hashes":{"contract.json":"eaa6bef9892f26681be0772412ea9e71eb61dbcdaff55ae28497f1b301f3873b","executor.jsx":"a8211fd9544eeb05dea1cc83a5bc03d776ec5e39cea03eddce4e30d5a705f31c","implementation.js":"0f9fef96718078f4b54a3f6248e1f7a4538bad32935632bf208bf9e855d800eb"},"id":"comp-frame-export","publicDependencies":{},"version":"4.2.3"}

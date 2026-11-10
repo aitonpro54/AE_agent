@@ -1,12 +1,1 @@
-{
-  "id": "comp-render",
-  "version": "4.1.2",
-  "entry": "implementation.js",
-  "hashes": {
-    "implementation.js": "0342db38f45543748ef588643167e51c53cff2d9d6e5bd4b3c30b920a9b01fa9",
-    "contract.json": "84ba65644ec246903b12311de72f74bfbdd2c81a6cd22412f1f2a84a69482971",
-    "executor.jsx": "f313bcb55dd168aafccbe7c68853fd442e79c8b625e5bfc845ef287a3b134064",
-    "completion.json": "cd2968619199062027a0b3ba8856152aab6b93e644c6ae9fb7b7fe224c1cdc80"
-  },
-  "publicDependencies": {}
-}
+{"entry":"implementation.js","hashes":{"completion.json":"385ae7c4669e44f21b602bea4f7b16e1ada50f553e24d9aaf04a7a2f9006c5a6","contract.json":"84ba65644ec246903b12311de72f74bfbdd2c81a6cd22412f1f2a84a69482971","executor.jsx":"f8ef6499c9b625356537f6481e86c69ceb79c9018626bd793d44241c98b6d560","implementation.js":"0342db38f45543748ef588643167e51c53cff2d9d6e5bd4b3c30b920a9b01fa9"},"id":"comp-render","publicDependencies":{},"version":"4.2.3"}

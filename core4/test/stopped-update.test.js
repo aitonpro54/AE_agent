@@ -375,7 +375,7 @@ nodeTest('frame-export-slot keeps the R1 package and native operation bytes acro
   const base = pkg('operator-render-jobs');
   const artifactFile = path.join(source, 'artifact.json'), artifact = JSON.parse(fs.readFileSync(artifactFile));
   const contractFile = path.join(source, 'contract.json'), contractBytes = fs.readFileSync(contractFile);
-  artifact.version = '4.2.3';
+  artifact.version = '4.2.4';
   fs.writeFileSync(artifactFile, canonical(artifact));
   const approval = JSON.parse(Buffer.from(base.files[approvalPath], 'base64'));
   const admission = Buffer.from(canonical({ ...approval, artifactHash:hash(artifact), trustApprovalId:'test-independent-frame-export' }));

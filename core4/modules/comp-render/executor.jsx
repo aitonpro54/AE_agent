@@ -16,6 +16,7 @@
             comp.displayStartTime !== 0 || comp.numLayers > 60 || comp.numLayers < 1) fault('comp_render_workspace');
         return comp;
     }
+    // Keep the output directory aligned with completion.json and the public workflow.
     function output(name) {
         var dir = new Folder(app.project.file.parent.fsName + '/titles-output');
         if (!dir.exists || dir.alias || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,90}\.mp4$/.test(name) ||
