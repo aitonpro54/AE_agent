@@ -67,6 +67,9 @@
     { "prefix": "core4/config/compositions/manual-project-lifecycle.json", "owner": "project-lifecycle", "checks": ["project-lifecycle", "installed-composition", "package-location"] },
     { "prefix": "core4/runtime/project-lifecycle-proof.js", "owner": "project-lifecycle", "checks": ["project-lifecycle"] },
     { "prefix": "core4/test/project-lifecycle.test.js", "owner": "project-lifecycle", "checks": ["project-lifecycle"] },
+    { "prefix": "core4/tools/visual-review.js", "owner": "visual-review", "checks": ["visual-review"] },
+    { "prefix": "core4/tools/package-visual-review.js", "owner": "visual-review", "checks": ["visual-review"] },
+    { "prefix": "core4/test/visual-review.test.js", "owner": "visual-review", "checks": ["visual-review"] },
     { "prefix": "core4/tools/aerender-jobs.js", "owner": "aerender-jobs", "checks": ["aerender-jobs", "aerender-operator"] },
     { "prefix": "core4/test/aerender-jobs.test.js", "owner": "aerender-jobs", "checks": ["aerender-jobs"] },
     { "prefix": "core4/tools/aerender-profile.js", "owner": "aerender-profile", "checks": ["aerender-profile", "aerender-jobs", "aerender-operator"] },
@@ -1447,6 +1450,7 @@
     "aerender-jobs": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js",
       "tools/aerender-jobs.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "protocol/json.js", "test/aerender-jobs.test.js"
     ],
+    "visual-review": ["tools/visual-review.js", "tools/package-visual-review.js", "protocol/json.js", "runtime/png-proof.js", "runtime/project-file.js", "test/visual-review.test.js"],
     "aerender-profile": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "tools/aerender-profile.js", "runtime/aerender-profile.js", "test/aerender-profile.test.js"],
     "aerender-operator": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "tools/package-aerender-operator.js", "tools/aerender-jobs.js", "tools/aerender-profile.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "protocol/json.js", "test/package-aerender-operator.test.js"],
     "render-job-owner": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "config/compositions/operator-render-jobs.json", "runtime/render-job-owner.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/stdio-entry.js", "tools/configure-render-job-toolchain.js", "protocol/json.js", "test/render-job-owner.test.js"],
@@ -1860,6 +1864,7 @@
     "project-lifecycle": ["node", "--test", "--test-name-pattern=project-lifecycle", "test/project-lifecycle.test.js"],
     "media-layers": ["node", "--test", "--test-name-pattern=media-layers", "test/media-layers.test.js"],
     "layer-overlay": ["node", "--test", "--test-name-pattern=layer-overlay", "test/layer-overlay.test.js"],
+    "visual-review": ["node", "--test", "--test-name-pattern=^visual-review", "test/visual-review.test.js"],
     "aerender-jobs": ["node", "--test", "--test-name-pattern=^aerender-jobs", "test/aerender-jobs.test.js"],
     "aerender-profile": ["node", "--test", "--test-name-pattern=^", "test/aerender-profile.test.js"],
     "aerender-operator": ["node", "--test", "--test-name-pattern=^", "test/package-aerender-operator.test.js"],
@@ -2078,6 +2083,7 @@
     "layer-overlay": {
       "kind": "integration"
     },
+    "visual-review": { "kind": "component" },
     "aerender-jobs": {
       "kind": "integration"
     },

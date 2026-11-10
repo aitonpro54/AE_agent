@@ -4,10 +4,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
-const { hash, exact } = require('../protocol/json');
+const { hash, exact, canonical } = require('../protocol/json');
 const { sameFileSnapshot, inspectPngBuffer, DEFAULT_MAX_PNG_BYTES } = require('../runtime/png-proof');
 
 const SCHEMA = 'ae-agent-visual-review.v1';
+const BOUND_SCOPE = 'published_r1_mp4';
+const uuid = '[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}';
+const jobId = new RegExp('^' + uuid + '$');
+const commandId = new RegExp('^command-' + uuid + '$');
 const JSON_LIMIT = 256 * 1024;
 const MAX_FRAMES = 12;
 const MAX_VIDEO_FRAMES = 3600;
@@ -72,6 +76,36 @@ function mediaTool(program, args, input) {
 function rational(value) {
   check(typeof value === 'string' && /^[1-9]\d{0,8}\/[1-9]\d{0,8}$/.test(value), 'unsupported_time_base_or_rate');
   return value.split('/').map(BigInt);
+}
+
+function publication(file, expectedSha256) {
+  check(digest(expectedSha256), 'r1_evidence_pin_required');
+  const { value, sha256 } = readJson(file);
+  check(sha256 === expectedSha256, 'r1_evidence_hash_mismatch');
+  exact(value, ['schema', 'id', 'state', 'compId', 'stage', 'publicationSha256', 'source', 'movie']);
+  check(value.schema === 'ae-agent-r1-publication.v1' && value.state === 'published' &&
+    typeof value.id === 'string' && jobId.test(value.id) && Number.isSafeInteger(value.compId) && value.compId > 0 &&
+    digest(value.publicationSha256), 'invalid_r1_publication');
+  exact(value.stage, ['commandId', 'specSha256', 'preparationSha256', 'renderCopySha256']);
+  check(typeof value.stage.commandId === 'string' && commandId.test(value.stage.commandId) &&
+    ['specSha256', 'preparationSha256', 'renderCopySha256'].every(k => digest(value.stage[k])), 'invalid_r1_preparation');
+  exact(value.source, ['startFrame', 'endFrameExclusive', 'fps']);
+  exact(value.movie, ['sha256', 'byteLength', 'width', 'height']);
+  const { startFrame, endFrameExclusive, fps } = value.source;
+  check([startFrame, endFrameExclusive].every(Number.isSafeInteger) && startFrame >= 0 &&
+    endFrameExclusive > startFrame && endFrameExclusive <= 2147483648, 'invalid_r1_range');
+  rational(fps);
+  check(digest(value.movie.sha256) && [value.movie.byteLength, value.movie.width, value.movie.height]
+    .every(n => Number.isSafeInteger(n) && n > 0), 'invalid_r1_movie');
+  return { sha256, evidence: value };
+}
+
+function verifyR1(binding, movie, media) {
+  const { movie: pin, source } = binding.evidence;
+  check(movie.sha256 === pin.sha256 && movie.byteLength === pin.byteLength, 'r1_movie_mismatch');
+  const [num, den] = rational(media.fps), [sourceNum, sourceDen] = rational(source.fps);
+  check(media.frameCount === source.endFrameExclusive - source.startFrame && num * sourceDen === sourceNum * den &&
+    media.width === pin.width && media.height === pin.height, 'r1_media_mismatch');
 }
 
 function probe(ffprobe, movie) {
@@ -171,13 +205,21 @@ function makeSheet(ffmpeg, directory, samples, timeBase) {
 
 function prepare(specFile, directory, decoderDirectory) {
   const { value: spec } = readJson(specFile);
-  exact(spec, ['movie', 'sha256', 'samples', 'references']);
+  exact(spec, ['movie', 'sha256', 'samples', 'references', 'r1']);
   check(nonempty(spec.movie, 4096) && path.extname(spec.movie).toLowerCase() === '.mp4' && digest(spec.sha256), 'invalid_movie_spec');
   validateSamples(spec.samples);
   const fromSpec = file => path.resolve(path.dirname(specFile), file);
   const movie = fromSpec(spec.movie);
   const input = snapshot(movie, 1024 ** 3);
   check(input.sha256 === spec.sha256, 'movie_hash_mismatch');
+  let r1;
+  if (spec.r1 !== undefined) {
+    exact(spec.r1, ['file', 'sha256', 'jobId']);
+    check(nonempty(spec.r1.file, 4096) && typeof spec.r1.jobId === 'string' && jobId.test(spec.r1.jobId), 'invalid_r1_spec');
+    r1 = publication(fromSpec(spec.r1.file), spec.r1.sha256);
+    check(r1.evidence.id === spec.r1.jobId, 'r1_job_mismatch');
+    check(input.sha256 === r1.evidence.movie.sha256 && input.byteLength === r1.evidence.movie.byteLength, 'r1_movie_mismatch');
+  }
   const references = spec.references ?? [];
   check(Array.isArray(references) && references.length <= 4, 'invalid_reference_count');
   const evidence = references.map(ref => {
@@ -197,9 +239,12 @@ function prepare(specFile, directory, decoderDirectory) {
     return [name, { version: version.split(/\r?\n/)[0], buildInfoSha256: hash(version) }];
   }));
   const { pts, ...media } = probe(ffprobe, movie);
+  if (r1) verifyR1(r1, input, media);
   check(spec.samples.at(-1).index < media.frameCount, 'sample_out_of_range');
   for (const sample of spec.samples) if (sample.roi !== undefined) validateRoi(sample.roi, media);
-  const selected = spec.samples.map(sample => ({ ...sample, pts: pts[sample.index] }));
+  const selected = spec.samples.map(sample => ({ ...sample, pts: pts[sample.index], ...(r1 ? {
+    compFrame: r1.evidence.source.startFrame + sample.index, source: 'decoded_mp4_full_frame'
+  } : {}) }));
   fs.mkdirSync(directory);
   fs.mkdirSync(path.join(directory, 'frames'));
   if (selected.some(sample => sample.roi)) fs.mkdirSync(path.join(directory, 'roi'));
@@ -211,22 +256,24 @@ function prepare(specFile, directory, decoderDirectory) {
   const frames = selected.map(({ roi, ...sample }, i) => {
     const file = frameFile(i);
     return { ...sample, file, ...pngInfo(ffmpeg, path.join(directory, file), media),
-      ...(roi ? { roi: cropRoi(ffmpeg, directory, file, i, roi) } : {}) };
+      ...(roi ? { roi: { ...cropRoi(ffmpeg, directory, file, i, roi), ...(r1 ? { source: 'decoded_mp4_roi' } : {}) } } : {}) };
   });
   makeSheet(ffmpeg, directory, frames, media.timeBase);
-  const sheet = { file: 'sheet.png', ...pngInfo(ffmpeg, path.join(directory, 'sheet.png')) };
+  const sheet = { file: 'sheet.png', ...pngInfo(ffmpeg, path.join(directory, 'sheet.png')),
+    ...(r1 ? { source: 'contact_sheet' } : {}) };
   check(snapshot(movie, 1024 ** 3).sha256 === input.sha256, 'movie_changed_during_prepare');
   const recordedReferences = evidence.map(({ buffer, ...record }, i) => {
     const file = referenceFile(i);
     fs.writeFileSync(path.join(directory, file), buffer, { flag: 'wx' });
     return { ...record, file };
   });
-  const manifest = { schema: SCHEMA, scope: 'sampled_mp4', movie: input, decoder, media, frames, sheet, references: recordedReferences };
+  const manifest = { schema: SCHEMA, scope: r1 ? BOUND_SCOPE : 'sampled_mp4', movie: input, decoder, media, frames,
+    sheet, references: recordedReferences, ...(r1 ? { r1 } : {}) };
   const manifestSha256 = writeJson(path.join(directory, 'manifest.json'), manifest);
   writeJson(path.join(directory, 'observations.json'), {
     manifestSha256, reviewer: '', frames: frames.map(frame => ({
       index: frame.index, sha256: frame.sha256, ...(frame.roi ? { roiSha256: frame.roi.sha256 } : {}),
-      decision: 'unknown', observation: ''
+      decision: 'unknown', observation: '', ...(r1 && frame.roi ? { roiDecision: 'unknown', roiObservation: '' } : {})
     }))
   });
   return { manifestSha256, frameCount: frames.length };
@@ -237,11 +284,19 @@ function matchFile(file, pin, limit) {
   check(actual.sha256 === pin.sha256 && actual.byteLength === pin.byteLength, 'packet_file_changed: ' + file);
 }
 
-function seal(directory, movie) {
+function seal(directory, movie, evidenceFile, evidenceSha256) {
   const { value: manifest, sha256: manifestSha256 } = readJson(path.join(directory, 'manifest.json'));
   const { value: observations, sha256: observationsSha256 } = readJson(path.join(directory, 'observations.json'));
-  check(manifest.schema === SCHEMA && manifest.scope === 'sampled_mp4' &&
+  const bound = manifest.scope === BOUND_SCOPE;
+  check(manifest.schema === SCHEMA && (bound || manifest.scope === 'sampled_mp4') &&
     observations.manifestSha256 === manifestSha256, 'manifest_binding_mismatch');
+  check(bound === Boolean(evidenceFile && evidenceSha256) && bound === Object.hasOwn(manifest, 'r1'), 'r1_evidence_binding_required');
+  if (bound) {
+    const r1 = publication(evidenceFile, evidenceSha256);
+    check(canonical(r1) === canonical(manifest.r1), 'r1_evidence_binding_mismatch');
+    verifyR1(r1, manifest.movie, manifest.media);
+    check(manifest.sheet?.source === 'contact_sheet', 'invalid_r1_sheet');
+  }
   check(Array.isArray(manifest.frames) && Array.isArray(manifest.references) &&
     manifest.references.length <= 4, 'invalid_manifest');
   validateSamples(manifest.frames.map(({ index, expectation }) => ({ index, expectation })));
@@ -249,28 +304,45 @@ function seal(directory, movie) {
   check(nonempty(observations.reviewer, 200) && Array.isArray(observations.frames) &&
     observations.frames.length === manifest.frames.length, 'observation_coverage_mismatch');
   matchFile(movie, manifest.movie, 1024 ** 3);
+  const decisions = [];
+  const verdicts = ['pass', 'fail', 'unknown'];
   for (const [i, frame] of manifest.frames.entries()) {
+    if (bound) {
+      const { startFrame, endFrameExclusive } = manifest.r1.evidence.source;
+      const [num, den] = rational(manifest.media.fps), [timeNum, timeDen] = rational(manifest.media.timeBase);
+      check(frame.source === 'decoded_mp4_full_frame' && frame.file === frameFile(i) && frame.compFrame === startFrame + frame.index &&
+        frame.compFrame < endFrameExclusive && Number.isSafeInteger(frame.pts) &&
+        BigInt(frame.pts) * timeNum * num === BigInt(frame.index) * timeDen * den, 'invalid_r1_frame_mapping');
+    }
     matchFile(path.join(directory, frameFile(i)), frame, DEFAULT_MAX_PNG_BYTES);
     const observation = observations.frames[i];
-    exact(observation, ['index', 'sha256', 'decision', 'observation', ...(frame.roi === undefined ? [] : ['roiSha256'])]);
+    exact(observation, ['index', 'sha256', 'decision', 'observation', ...(frame.roi === undefined ? [] :
+      ['roiSha256', ...(bound ? ['roiDecision', 'roiObservation'] : [])])]);
     check(observation.index === frame.index && observation.sha256 === frame.sha256 &&
-      ['pass', 'fail', 'unknown'].includes(observation.decision) &&
+      verdicts.includes(observation.decision) && (!bound || observation.decision !== 'unknown') &&
       nonempty(observation.observation, 2000), 'invalid_or_unbound_observation: ' + frame.index);
+    decisions.push(observation.decision);
     if (frame.roi !== undefined) {
       validateRoi(frame.roi?.bounds, manifest.media);
       check(observation.roiSha256 === frame.roi.sha256, 'invalid_or_unbound_roi: ' + frame.index);
       matchFile(path.join(directory, roiFile(i)), frame.roi, DEFAULT_MAX_PNG_BYTES);
+      if (bound) {
+        check(frame.roi.source === 'decoded_mp4_roi' && frame.roi.file === roiFile(i) &&
+          ['pass', 'fail'].includes(observation.roiDecision) && nonempty(observation.roiObservation, 2000),
+        'missing_roi_observation: ' + frame.index);
+        decisions.push(observation.roiDecision);
+      }
     }
   }
   matchFile(path.join(directory, 'sheet.png'), manifest.sheet, DEFAULT_MAX_PNG_BYTES);
   for (const [i, ref] of manifest.references.entries()) matchFile(path.join(directory, referenceFile(i)), ref, JSON_LIMIT);
-  const decisions = observations.frames.map(frame => frame.decision);
   const verdict = decisions.includes('fail') ? 'fail' : decisions.includes('unknown') ? 'incomplete' : 'pass';
   const result = {
     schema: SCHEMA, scope: manifest.scope, movie: manifest.movie, manifestSha256, observationsSha256,
     integrity: 'matched', mediaVerification: 'decoded_video_exact_frame_grid',
     coverage: { required: decisions.length, decided: decisions.filter(decision => decision !== 'unknown').length },
-    visual: { verdict, evidence: 'reviewer_observations', reviewer: observations.reviewer }
+    visual: { verdict, evidence: 'reviewer_observations', reviewer: observations.reviewer },
+    ...(bound ? { r1: manifest.r1 } : {})
   };
   writeJson(path.join(directory, 'review.json'), result);
   return result;
@@ -278,13 +350,13 @@ function seal(directory, movie) {
 
 if (require.main === module) {
   try {
-    const [command, first, second, decoderDirectory, ...extra] = process.argv.slice(2);
-    check(first && second && extra.length === 0 &&
-      (command === 'prepare' || (command === 'seal' && !decoderDirectory)),
-    'usage: visual-review.js prepare <spec.json> <new-packet-dir> [decoder-bin-dir] | seal <packet-dir> <mp4>');
+    const [command, first, second, optional, evidenceSha256, ...extra] = process.argv.slice(2);
+    check(first && second && extra.length === 0 && (command === 'prepare' && !evidenceSha256 ||
+      command === 'seal' && Boolean(optional) === Boolean(evidenceSha256)),
+    'usage: visual-review.js prepare <spec.json> <new-packet-dir> [decoder-bin-dir] | seal <packet-dir> <mp4> [r1-evidence.json sha256]');
     const result = command === 'prepare'
-      ? prepare(path.resolve(first), path.resolve(second), decoderDirectory)
-      : seal(path.resolve(first), path.resolve(second));
+      ? prepare(path.resolve(first), path.resolve(second), optional)
+      : seal(path.resolve(first), path.resolve(second), optional && path.resolve(optional), evidenceSha256);
     console.log(JSON.stringify(result));
     if (result.visual && result.visual.verdict !== 'pass') process.exitCode = 2;
   } catch (error) {

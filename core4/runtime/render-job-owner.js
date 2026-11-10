@@ -146,6 +146,25 @@ function createRenderJobOwner({ stateDir, installationId, getCommand }) {
 
   const exists = file => Boolean(fs.lstatSync(file, { throwIfNoEntry:false }));
   const readStatus = (jobs, id, job) => job ? publicResult(jobs.status(id)) : { id, state:'unknown' };
+  function reviewEvidence(jobs, id, preparation, job, authorization) {
+    if (!job) fail('render_job_not_published');
+    const { published, publicationSha256 } = jobs.publicationEvidence(id);
+    const { compId, fps, frames, width, height, timeline, range } = job.spec.target;
+    const startFrame = range?.startFrame ?? timeline.startFrame;
+    const endFrameExclusive = range?.endFrameExclusive ?? timeline.startFrame + timeline.frameCount;
+    const media = published.media;
+    if (!Number.isSafeInteger(compId) || compId < 1 || !matches(job.spec.project.sha256, sha256) ||
+        ![startFrame, endFrameExclusive].every(Number.isSafeInteger) || startFrame < 0 ||
+        endFrameExclusive - startFrame !== frames || frames < 1 || media.frames !== frames ||
+        media.fps !== fps || media.width !== width || media.height !== height) fail('render_job_publication_binding');
+    return { ...publicResult(published), reviewEvidence: {
+      schema: 'ae-agent-r1-publication.v1', id, state: 'published', compId,
+      stage: { commandId: authorization.commandId, specSha256: authorization.stageHash,
+        preparationSha256: hash(preparation.intent), renderCopySha256: job.spec.project.sha256 },
+      publicationSha256, source: { startFrame, endFrameExclusive, fps },
+      movie: { sha256: published.sha256, byteLength: published.bytes, width, height }
+    } };
+  }
   return {
     prepare(args, assertCurrent = noGuard) {
       try {
@@ -180,10 +199,13 @@ function createRenderJobOwner({ stateDir, installationId, getCommand }) {
     ...Object.fromEntries(['start', 'status', 'reconcile', 'finalize', 'cancel'].map(action =>
       [action, async (args, assertCurrent = noGuard) => {
         try {
-          if (!exact(args, ['id']) || !matches(args.id, jobId)) fail('render_job_arguments');
+          const wantsEvidence = action === 'status' && args?.reviewEvidence === true;
+          if (!exact(args, wantsEvidence ? ['id', 'reviewEvidence'] : ['id']) || !matches(args.id, jobId)) fail('render_job_arguments');
           const { id } = args, { root, directory, protectedDirectories } = locations();
           if (!exists(root)) fail('render_job_missing');
-          const jobs = createJobs(root), { job, authorization } = readPreparation(jobs, id);
+          const jobs = createJobs(root), preparation = jobs.preparation(id);
+          const { job, authorization } = readPreparation(jobs, id, preparation);
+          if (wantsEvidence) return reviewEvidence(jobs, id, preparation, job, authorization);
           if (!job || action === 'status') return readStatus(jobs, id, job);
           if (action === 'start') {
             const state = readStatus(jobs, id, job);

@@ -386,6 +386,25 @@ function createJobs(root, identity = processIdentity, listRenderers = rendererRo
       } catch { return { id, state:'unknown' }; }
       return { id, state:'unknown' };
     },
+    publicationEvidence(id) {
+      const job = get(id);
+      const published = bound(job, 'published.json');
+      requireFact(published?.state === 'published', 'render_job_not_published');
+      const { request, receipt } = cancellation(job);
+      const dispatch = bound(job, 'dispatch.json');
+      const end = settled(job, bound(job, 'terminal.json'));
+      requireFact(dispatch?.observationVersion === 1 && end?.state === 'verified' && !request && !receipt &&
+        noSlotFor(id, record(active)) && !present(job.partial), 'render_job_publication_binding');
+      const intent = observed(job, dispatch, publishStage);
+      requireFact(intent?.path === job.spec.output && published.path === intent.path &&
+        intent.proofHash === jobHash(end) && sameFingerprint(intent.output, end.output) &&
+        published.sha256 === end.output.sha256 && published.bytes === end.output.bytes &&
+        jobHash(published.media) === jobHash(end.media), 'render_job_publication_binding');
+      const output = fingerprint(published.path);
+      requireFact(output.sha256 === published.sha256 && output.bytes === published.bytes,
+        'aerender_published_changed');
+      return { published, publicationSha256:jobHash(published) };
+    },
     reconcile(id, assertCurrent = () => {}) {
       return withLock(root, () => {
         const job = get(id), { request, receipt } = cancellation(job);

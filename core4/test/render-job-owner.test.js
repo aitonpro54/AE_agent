@@ -7,6 +7,7 @@ const path = require('node:path');
 const test = require('node:test');
 const { hash } = require('../protocol/json');
 const { createRenderJobOwner } = require('../runtime/render-job-owner');
+const { jobHash } = require('../runtime/render-job-history');
 
 function fixture(t) {
   const temp = fs.realpathSync.native(os.tmpdir());
@@ -160,4 +161,36 @@ test('R1 requires current stage authority for a fresh start and preserves post-r
   assert.deepEqual(await owner.status(args), prepared);
   assert.deepEqual(await owner.cancel(args), { ...args, state:'cancelled' });
   assert.deepEqual(await owner.start(args), { ...args, state:'cancelled' });
+});
+
+test('R1 exports only a bound, verified publication and refuses changed evidence or movie', async t => {
+  const f = fixture(t), owner = f.owner(), { id } = owner.prepare(f.ids);
+  const record = name => path.join(f.jobDir(id), name + '.json');
+  const write = (name, value) => fs.writeFileSync(record(name), JSON.stringify(value));
+  const args = { id, reviewEvidence:true };
+  assert.deepEqual(await owner.status(args), { state:'rejected', code:'render_job_not_published' });
+  const job = JSON.parse(fs.readFileSync(record('prepared'))), pin = jobHash(job);
+  const intent = JSON.parse(fs.readFileSync(record('prepare-intent')));
+  const dispatch = { id, jobHash:pin, observationVersion:1 };
+  const bytes = Buffer.from('fixture MP4 bytes'), output = { sha256:hash(bytes), bytes:bytes.length, dev:'1', ino:'2' };
+  const media = { frames:2, fps:'30/1', width:320, height:180, audio:false, duration:0.067 };
+  const terminal = { id, jobHash:pin, state:'verified', output, media };
+  const publication = { id, jobHash:pin, state:'published', path:job.spec.output, sha256:output.sha256, bytes:output.bytes, media };
+  const publish = { id, jobHash:pin, dispatchHash:jobHash(dispatch), stage:'publish-intent.json',
+    path:job.spec.output, proofHash:jobHash(terminal), output };
+  write('dispatch', dispatch); write('terminal', terminal); write('publish-intent', publish); write('published', publication);
+  fs.writeFileSync(job.spec.output, bytes);
+  assert.deepEqual((await owner.status(args)).reviewEvidence, {
+    schema:'ae-agent-r1-publication.v1', id, state:'published', compId:7,
+    stage:{ commandId:f.ids.commandId, specSha256:intent.authorization.stageHash,
+      preparationSha256:hash(intent), renderCopySha256:f.project.sha256 },
+    publicationSha256:jobHash(publication), source:{ startFrame:11, endFrameExclusive:13, fps:'30/1' },
+    movie:{ sha256:output.sha256, byteLength:output.bytes, width:320, height:180 }
+  });
+  assert.equal((await owner.status({ id })).reviewEvidence, undefined);
+  write('publish-intent', { ...publish, proofHash:'0'.repeat(64) });
+  assert.deepEqual(await owner.status(args), { state:'rejected', code:'render_job_publication_binding' });
+  write('publish-intent', publish);
+  fs.writeFileSync(job.spec.output, Buffer.alloc(bytes.length));
+  assert.deepEqual(await owner.status(args), { state:'rejected', code:'aerender_published_changed' });
 });
