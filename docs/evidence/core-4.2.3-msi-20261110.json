@@ -1,0 +1,419 @@
+{
+  "finalReadRefusals": [
+    "inspect_module_target: {\"outcome\":\"rejected\",\"code\":\"inspection_failed\",\"nextAction\":\"core_diagnostics\",\"physical\":{\"code\":\"inspection_failed\",\"commandId\":\"inspect-cbb75b76-03f3-4f4e-9c9e-d32426f3e27c\",\"effect\":\"none\",\"handoff\":\"offered\",\"intentRecorded\":true,\"late\":false,\"moduleId\":\"project-inspection\",\"nativeStart\":\"unknown\",\"phase\":\"inspect\",\"queue\":\"idle\",\"stage\":\"terminal\",\"terminalReceipt\":{\"receiptRef\":\"faeaf1f9f6678a1b7380ec4a95228909f0fb0a5b274c757dd94b59bf8cd02652\",\"recordHash\":\"3b1f58e4f068259681f7e163c4e6a234a07081caccba6fa0de8642d80d31cafc\",\"source\":\"host\"}}}",
+    "inspect_module_target: {\"outcome\":\"rejected\",\"code\":\"inspection_failed\",\"nextAction\":\"core_diagnostics\",\"physical\":{\"code\":\"inspection_failed\",\"commandId\":\"inspect-2a43a7c4-5885-4236-bf76-93018e5a3d05\",\"effect\":\"none\",\"handoff\":\"offered\",\"intentRecorded\":true,\"late\":false,\"moduleId\":\"project-inspection\",\"nativeStart\":\"unknown\",\"phase\":\"inspect\",\"queue\":\"idle\",\"stage\":\"terminal\",\"terminalReceipt\":{\"receiptRef\":\"a89dab522881719c9b90cb5b4eebd8604cb966701be1289b5f331d78e3227982\",\"recordHash\":\"4bfe86b94dd2af490c6c8cfb8e4ac5adb96f9e1408d03c299490bf939a138eb0\",\"source\":\"host\"}}}"
+  ],
+  "machine": "MSI",
+  "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+  "aePid": 20548,
+  "ownerPid": 34532,
+  "sessionId": "7381334b-f4aa-420a-b3d7-98a9bfd35682",
+  "origin": "file://",
+  "packages": {
+    "combined": {
+      "distributionHash": "a3ffee48286481c67568ede197d2e8ecaab69db0d1aab99fbcb6d67e2080d74c",
+      "files": 177,
+      "liveProof": false,
+      "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\combined",
+      "packageHash": "ad521042be22705a1f1376e4bb0dd5bc7e547662c0a9b3a2ed93b92cf7383533"
+    },
+    "minimal": {
+      "distributionHash": "d459d089359aa5606768e72435a79fb88a863494fe89ed4dc70a0d3b687aa86c",
+      "files": 104,
+      "liveProof": false,
+      "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\minimal",
+      "packageHash": "d73afac711d901f35c3dcd8655de8e85daedd1f425d59bb697fd81e0afbb1b3f"
+    },
+    "operation": {
+      "admissionHash": "dc65943edce09823b364b67f02da6ec7c5611cbfeb7cb82a2b8e8df2302d4ec6",
+      "capabilityHash": "68b6030f48bb994859f1c0c29a2152781cc147496189d152dda1715aa0586e97",
+      "delta": [
+        "cep/jsx/registry.jsx",
+        "config/admissions/comp-render.json",
+        "config/catalog.json",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/executor.jsx"
+      ]
+    },
+    "operationCompatible": {
+      "admissionHash": "ed6c11d106b4ef89ccbc11a07dd9adf0dd75edc76f3f172aba1ca12944278737",
+      "capabilityHash": "e3439447470a95828c85b609d2d5eb21aae7fb91630d6da0f076063a8b0e47d9",
+      "delta": [
+        "cep/jsx/registry.jsx",
+        "config/admissions/comp-render.json",
+        "config/catalog.json",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/executor.jsx"
+      ],
+      "directory": "titles-output"
+    },
+    "slot": {
+      "distributionHash": "5df7e622da4079d391faadebe1c12c502f10c9bca99555e2d244cb5d39977409",
+      "files": 177,
+      "liveProof": false,
+      "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\slot",
+      "packageHash": "2375b744ea99ad06d0f5eaf4740c98c793dbbfa5f483d646b0f90ae16e615a3f"
+    },
+    "slotCompatTransition": {
+      "distributionHash": "9fb1f34b5fe7db1bddf54e4a099fde2504148f1c334e2354757d5ba8cdc0ca8e",
+      "files": 177,
+      "liveProof": false,
+      "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\slot-compat-transition",
+      "packageHash": "0aaf2b29690724c8cc424311d2ee0ea0a1a0808eaa063f9b61256e3d1c5ed748"
+    },
+    "slotCompatible": {
+      "distributionHash": "ada48d7dcf7b71ce3a065235632065b108fbb2c694f92f21669c74dba73b27cb",
+      "files": 177,
+      "liveProof": false,
+      "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\slot-compatible",
+      "packageHash": "0aaf2b29690724c8cc424311d2ee0ea0a1a0808eaa063f9b61256e3d1c5ed748"
+    }
+  },
+  "updates": {
+    "initial": {
+      "stopId": "1b73ae99-a7d5-4e26-a9d6-6a2eb9b0c1b2",
+      "transactionId": "8506613f-bde1-4ed8-9f32-f1c66db40e45",
+      "oldPin": "fb73272de25b8934b59c96391fe29f91a8d9562d27c798d0204ab29c2058479e",
+      "newPin": "ad521042be22705a1f1376e4bb0dd5bc7e547662c0a9b3a2ed93b92cf7383533",
+      "keysRotated": true,
+      "historyEqual": true,
+      "registry": "581506d14f539d72d91a5f749078f21f19bf961e93d9aaf157b10fd3e3b9b5a2"
+    },
+    "minimal": {
+      "stopId": "66844655-bba6-469c-b494-ea84c2938fb7",
+      "transactionId": "19b1f1cf-1912-43b9-aa4b-860fce284e05",
+      "oldPin": "ad521042be22705a1f1376e4bb0dd5bc7e547662c0a9b3a2ed93b92cf7383533",
+      "newPin": "d73afac711d901f35c3dcd8655de8e85daedd1f425d59bb697fd81e0afbb1b3f",
+      "keysRotated": true,
+      "historyEqual": true,
+      "registry": "72dd2390db90506c5a3293fd63f690abe7bbb4e46194225e899794301d113b66"
+    },
+    "combined": {
+      "stopId": "16e3564f-b6ed-42fb-8c3c-a127a96f1a75",
+      "transactionId": "09e2a2d4-601c-4a9f-9f63-f80a4c2c38f4",
+      "oldPin": "d73afac711d901f35c3dcd8655de8e85daedd1f425d59bb697fd81e0afbb1b3f",
+      "newPin": "ad521042be22705a1f1376e4bb0dd5bc7e547662c0a9b3a2ed93b92cf7383533",
+      "keysRotated": true,
+      "historyEqual": true,
+      "registry": "25208c8ee32e9ea9baf45ad9bd34fb17717a159ccbde12d4d5539f743d41d800"
+    },
+    "slot": {
+      "stopId": "25e0bbbe-f489-4874-998e-38365515e736",
+      "transactionId": "2c1de009-ec15-4c27-9bc8-e72325887a9d",
+      "oldPin": "ad521042be22705a1f1376e4bb0dd5bc7e547662c0a9b3a2ed93b92cf7383533",
+      "newPin": "2375b744ea99ad06d0f5eaf4740c98c793dbbfa5f483d646b0f90ae16e615a3f",
+      "keysRotated": true,
+      "historyEqual": true,
+      "registry": "25208c8ee32e9ea9baf45ad9bd34fb17717a159ccbde12d4d5539f743d41d800"
+    },
+    "compat": {
+      "stopId": "0b4ceeba-8e6e-4ebf-a641-5227e49f1ffa",
+      "transactionId": "6fe56ceb-d740-4602-8f0d-c9fcade189f2",
+      "oldPin": "2375b744ea99ad06d0f5eaf4740c98c793dbbfa5f483d646b0f90ae16e615a3f",
+      "newPin": "0aaf2b29690724c8cc424311d2ee0ea0a1a0808eaa063f9b61256e3d1c5ed748",
+      "keysRotated": true,
+      "historyEqual": true,
+      "registry": "25208c8ee32e9ea9baf45ad9bd34fb17717a159ccbde12d4d5539f743d41d800"
+    }
+  },
+  "refusedStop": "ccebad1d-8d3d-461d-8314-7acf86bfabd1",
+  "r1": [
+    {
+      "id": "91826cbe-fe22-83a7-af5f-57980375c9e2",
+      "state": "cancelled",
+      "receiptSha256": "b088d4c42cd7abc721f90c5dee0d23b8ff1a0c6d989efca4058b5578d704b93f"
+    },
+    {
+      "id": "104f86dc-cb0b-8e00-b094-96deb7df021c",
+      "state": "published",
+      "receiptSha256": "e0903136d364dbf6b66d41609360507321742aa5a01ec32e59ba50abea35d8e5"
+    },
+    {
+      "id": "8f9418a4-b6e2-8a4a-b21d-7fd965a78b4a",
+      "state": "published",
+      "receiptSha256": "9ed81ba764f2f6aee760a74fb463b605b2155716c9b609176e3b5337bd18c36a"
+    }
+  ],
+  "registry": "df11e1a188be34097bc6bdcaff2f905b223bb7d1c0c2a0b676941b629b3b4279",
+  "slotDelta": [
+    "cep/jsx/registry.jsx",
+    "config/admissions/comp-render.json",
+    "config/catalog.json",
+    "modules/comp-render/artifact.json",
+    "modules/comp-render/completion.json",
+    "modules/comp-render/executor.jsx"
+  ],
+  "nativeReceipts": {
+    "photo-copy": [
+      {
+        "commandId": "command-0ccf0d46-f8eb-4add-bb3c-80b4f343210b",
+        "receiptRef": "a8edab5ca7a903b079e80152ee584209b4308f5c4945e4dabf68df1682924300",
+        "hash": "ec77ca611f8e6983e44634687fdb3a46dad8dad3d37688c8d2f8fc06a112241e"
+      }
+    ],
+    "range": [
+      {
+        "commandId": "command-b9ad366b-dc78-46b0-9522-ae78d5ed717e",
+        "receiptRef": "b05988977f137e2d82893e3a035ee79f521391cc85df02448efc52eebaa84129",
+        "hash": "58fae2ed01168acfb52ab043321c5f08423f257b579f343f1df18cbc82a03484"
+      }
+    ],
+    "comp-stage": [
+      {
+        "commandId": "command-1b496477-9d19-4da0-9c14-e8fcc0e99fbd",
+        "receiptRef": "8840e0ee5254166e4266b88d18282a6c3a2a1a8d3d7d705933a0a7f7aaefd981",
+        "hash": "4c67ef5b9acd034fbff28fe3607d249f2202e37c0b9d0546a821b7713fe1cfac"
+      }
+    ],
+    "comp-discard": [
+      {
+        "commandId": "command-26e055d1-bd66-49ef-9040-88aac281749f",
+        "receiptRef": "a14b1793826bccea9bcee0d6d0415f4d17e39a6f0623092e98c745c2691240f5",
+        "hash": "8f35749c8427d7ba39b7ee3133856ee1c6bd1204d301b0c1fb9c50f37a4d2a24"
+      }
+    ],
+    "photo": [
+      {
+        "commandId": "command-9b8af0eb-37ef-422b-ab82-4843bcb809fb",
+        "receiptRef": "d8c4538cbf5e736febd01e58b3b26ecd4a1eb7de3c41022109e72624e8036676",
+        "hash": "24d419efee8c05f64b7141ab0c1c0d407357b45a57c85dcddabfff7f972e3f4e"
+      }
+    ],
+    "save-photo": [
+      {
+        "commandId": "command-db4ef4f5-ead0-4cbc-821c-db65e369716a",
+        "receiptRef": "82d99f52695b7e8bedbe2cf21938eb07c3af4198e2cabb32fd0a3768536e423e",
+        "hash": "6168078a10b287ac30ff1f191622e4cf5732fe59c71c1662cac022d912603813"
+      }
+    ],
+    "photo-render": [
+      {
+        "commandId": "command-c93cdd16-580e-4d3a-9f21-06b9b8408c40",
+        "receiptRef": "034c23850a4d7141f98a7551c5668fd79e4816e758d5b66de92dfcdbaeb40438",
+        "hash": "bc564a283c9b362218c98e5dcce78bd39699507c62795424477d7f8ea8c98afb"
+      }
+    ]
+  },
+  "adoption": "29e9927a-f97c-4963-8075-2c1a4d2937b5",
+  "prefixMatches": {
+    "receiver": true,
+    "ledger": true
+  },
+  "neighborConfigSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+  "prefFiles": 40,
+  "changedPreferences": [
+    "After Effects/26.3\\Adobe After Effects 26.3 Prefs.txt"
+  ],
+  "sourceSha256": "a4608b17b5a804672b70d559c5dd6edf42a2d8d9a2096f6715d88d07b908ee65",
+  "photoAep": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\edit-copy\\photo.aep",
+  "photoAepSha256": "91b0e005e66aa61ac5f907d6462b2ba439dde5299664dde24207f30f6336fd9f",
+  "range": {
+    "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\output\\range.mp4",
+    "sha256": "b661dba96c85d9bbe7535dabadbb0e45786308c537cad28f9a0609fa18b27e8b",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 640,
+          "height": 400,
+          "avg_frame_rate": "30000/1001",
+          "duration": "2.936267",
+          "nb_read_frames": "88"
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "avg_frame_rate": "0/0",
+          "duration": "2.936271",
+          "nb_read_frames": "138"
+        }
+      ],
+      "format": {
+        "duration": "2.936271"
+      }
+    },
+    "first": 151,
+    "last": 238,
+    "contact": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\range-contact.png",
+    "fullDecode": true,
+    "sourceSha256": "a4608b17b5a804672b70d559c5dd6edf42a2d8d9a2096f6715d88d07b908ee65",
+    "reference": "f734f5da2d754440dc0a206baf02871d214fb2cf3d2a8239c6c02d5bfafd370d",
+    "minimumPsnr": "65.21"
+  },
+  "photo": {
+    "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\output\\photo-render.mp4",
+    "sha256": "475a0709921c175e9f3ea7c2e0c021d5280c6897b7cda4effc627b19fd2b8c32",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 3840,
+          "height": 2400,
+          "avg_frame_rate": "30000/1001",
+          "duration": "0.400400",
+          "nb_read_frames": "12"
+        }
+      ],
+      "format": {
+        "duration": "0.400400"
+      }
+    },
+    "first": 8,
+    "last": 19,
+    "contact": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\photo-render-contact.png",
+    "fullDecode": true,
+    "sourceSha256": "a4608b17b5a804672b70d559c5dd6edf42a2d8d9a2096f6715d88d07b908ee65",
+    "photo": {
+      "before": {
+        "toOld": 5.352801922911582,
+        "toNew": 112.32496311133586
+      },
+      "frames": [
+        {
+          "toOld": 110.8116815212822,
+          "toNew": 2.417169487920393
+        },
+        {
+          "toOld": 110.81371301899217,
+          "toNew": 2.4156127970320878
+        },
+        {
+          "toOld": 110.81232570331595,
+          "toNew": 2.41111671146303
+        },
+        {
+          "toOld": 110.7964856250046,
+          "toNew": 2.3997371576749664
+        },
+        {
+          "toOld": 110.79518323155938,
+          "toNew": 2.3981812167032226
+        },
+        {
+          "toOld": 110.7880387292011,
+          "toNew": 2.3851634387667504
+        },
+        {
+          "toOld": 110.78500773938148,
+          "toNew": 2.3564946699769194
+        },
+        {
+          "toOld": 110.77386327434023,
+          "toNew": 2.2937364390556847
+        },
+        {
+          "toOld": 110.77547074592589,
+          "toNew": 2.209957474033615
+        },
+        {
+          "toOld": 110.7791777152989,
+          "toNew": 2.204110217718672
+        },
+        {
+          "toOld": 110.77821572269389,
+          "toNew": 2.2023372475286003
+        },
+        {
+          "toOld": 110.77801068110477,
+          "toNew": 2.2024292144004187
+        }
+      ]
+    }
+  },
+  "removed": [
+    "stop-fixture-copy",
+    "range-copy",
+    "photo-render-copy"
+  ],
+  "settled": true,
+  "desktopTouched": false,
+  "finalState": {
+    "project": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\edit-copy\\photo.aep",
+    "dirty": false,
+    "reopenedAepSha256": "91b0e005e66aa61ac5f907d6462b2ba439dde5299664dde24207f30f6336fd9f",
+    "photoSourceId": 2,
+    "compRenderQueueIdle": true,
+    "slotJobRemoved": true,
+    "controllerReleased": true,
+    "pending": null,
+    "unknown": false,
+    "activity": {
+      "fault": false,
+      "pending": false,
+      "unresolved": false
+    },
+    "r1": [
+      {
+        "id": "91826cbe-fe22-83a7-af5f-57980375c9e2",
+        "state": "cancelled"
+      },
+      {
+        "id": "104f86dc-cb0b-8e00-b094-96deb7df021c",
+        "state": "published"
+      },
+      {
+        "id": "8f9418a4-b6e2-8a4a-b21d-7fd965a78b4a",
+        "state": "published"
+      }
+    ]
+  },
+  "compRender": {
+    "compId": 29,
+    "jobCompId": 79,
+    "status": "QUEUED",
+    "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\edit-copy\\titles-output\\core423-comp.mp4",
+    "frameCount": 12,
+    "removed": true,
+    "fixtureQueueSetup": {
+      "before": [
+        [
+          29,
+          false,
+          3013
+        ],
+        [
+          57,
+          true,
+          3015
+        ]
+      ],
+      "after": [
+        [
+          29,
+          false,
+          3013
+        ],
+        [
+          57,
+          false,
+          3014
+        ]
+      ]
+    }
+  },
+  "preferenceChanges": [
+    {
+      "file": "After Effects/26.3\\Adobe After Effects 26.3 Prefs.txt",
+      "before": "9fe599110cba5dd13cd24e12e8a7760992e24a65417e023eb52900a8def7b72f",
+      "after": "9521d4557b5601153dc9a2dd17692c51542949e97327e6451882b762b411232a"
+    }
+  ],
+  "configObservation": {
+    "projectConfig": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml",
+    "neighborConfigSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "globalConfig": {
+      "file": "C:\\Users\\Ant\\.codex\\config.toml",
+      "currentSha256": "49d750b8bcccc064f8c409eaa1c4f9722c0eb105ee1d11319690568dfe955750",
+      "lastWrite": "2026-11-10T08:00:25.512Z",
+      "predatesFirstUpdate": true
+    }
+  }
+}
