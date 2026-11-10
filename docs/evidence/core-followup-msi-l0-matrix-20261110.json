@@ -1,0 +1,1666 @@
+{
+  "schemaVersion": 1,
+  "baseline": "636ab0e9f26491354ca366ca744e040e24975342",
+  "registry": {
+    "file": "core4/config/validation-map.json",
+    "sha256": "f41e5c558f0876ac53a8bc55d5f2cc1d5d0d68fd0492837012bc527d906cbd7d"
+  },
+  "releaseCertified": false,
+  "checks": [
+    {
+      "check": "ae-readiness",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=ae-readiness",
+        "test/ae-readiness.test.js"
+      ],
+      "evidenceKey": "f910511c15c3eec191a9c14a31c2449d65dc7f9d68415fdf9e0cfb9063249254",
+      "dependencyCount": 5,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "aerender-jobs",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^aerender-jobs",
+        "test/aerender-jobs.test.js"
+      ],
+      "evidenceKey": "e750ebcb96fb048e6bf5b401e1bc0bc74660e1680fad9020374d422e0330b8ac",
+      "dependencyCount": 9,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "aerender-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^",
+        "test/package-aerender-operator.test.js"
+      ],
+      "evidenceKey": "aa3b18f7bd7d3ab89f33856823febd679e2d6a2ed0de86c255f1e86c2f4c3f96",
+      "dependencyCount": 11,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "aerender-profile",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^",
+        "test/aerender-profile.test.js"
+      ],
+      "evidenceKey": "a2eb07de51f5089b03573b3b93882b868c8f92bf95b15aa969c7bfaf99ca590c",
+      "dependencyCount": 5,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "ame-media-export",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^AME ",
+        "test/ame-media-export.test.js"
+      ],
+      "evidenceKey": "a3662acdd10e9a90714c2daad49d3b26be85ad2e35f32ecf98d5d6b6dbbdb817",
+      "dependencyCount": 6,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "artifact-boundaries",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=artifact-boundaries",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "a0b76db6ea0372fa54399245e2a8a6835377ea8ea2f4dd6c0aab9cae685e76a6",
+      "dependencyCount": 139,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "audit-repairs",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=audit-repairs",
+        "test/audit-repairs.test.js"
+      ],
+      "evidenceKey": "c198043ba8cd13d78b58a1bb21b1863c32a4e2dd97f517f920d3e003147b77de",
+      "dependencyCount": 110,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "catalog-discovery",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=catalog-discovery",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "d71d37c16764dc2ce382626eeaa6b12f16af50eca88346f9cb09723a8874cb56",
+      "dependencyCount": 8,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "cep-transport",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=cep-transport",
+        "test/integration/cep-transport.test.js"
+      ],
+      "evidenceKey": "3d02f0c5b85a64dfc81b54aded2676520278d66d8f10bae42b5f55c91caafb7d",
+      "dependencyCount": 147,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "client-entry",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=client-entry",
+        "test/client-entry.test.js"
+      ],
+      "evidenceKey": "50e79b5f367bab8e767bf36d5ed50081249be560c3e6ffbe3ddb0339a51bbc26",
+      "dependencyCount": 8,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "client-ipc",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^IPC ",
+        "test/client-ipc.test.js"
+      ],
+      "evidenceKey": "0d05d5cf638661023724b5389fc874240919b2e6e95ea28374dc6f019235712e",
+      "dependencyCount": 2,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "client-launcher",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=client-launcher",
+        "test/client-launcher.test.js"
+      ],
+      "evidenceKey": "dc11cbbb39d5d27ee5648cb852c8cae422fc3c3a299ba848c2b86d85f16bea35",
+      "dependencyCount": 7,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "comp-frame-export",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=comp-frame-export",
+        "test/comp-frame-export.test.js"
+      ],
+      "evidenceKey": "b237cb1ca8617b637e1d42bf6c7388cbe65775b7801da253a1b073e5695cd5e5",
+      "dependencyCount": 184,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "comp-render",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=comp-render",
+        "test/comp-render.test.js"
+      ],
+      "evidenceKey": "fbfa88ac1ea5121010e81a3fcb52fbab1dcbf86782084c4dd77fa5c4649d5eba",
+      "dependencyCount": 13,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "controller-lease",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=controller-lease",
+        "test/controller-lease.test.js"
+      ],
+      "evidenceKey": "1b822fd41b19872f5825fa5b047e76a37377289791a27b942cb64fcb1d9145af",
+      "dependencyCount": 2,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "controller-transfer",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=controller-transfer",
+        "test/controller-transfer-ipc.test.js"
+      ],
+      "evidenceKey": "5d63b2bfafd4df959fb494f16ca8fc8126181008a45a80a9f44369202984bbde",
+      "dependencyCount": 4,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "core-admission",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=core-admission",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "e42d1adc18d1265cf19f85113e7058ea4d092bf7c7bd01d794040ac907b66a49",
+      "dependencyCount": 138,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "core-control",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=core-control",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "ce15a96642c27b872c731977ce6107b407910d000aec51add9c0340c9f04d588",
+      "dependencyCount": 138,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "documentation",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=documentation",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "b673c0c45a57c0003ded0264e4d4e81ec633744a9cdcd26db9525fd7b479e320",
+      "dependencyCount": 2,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "endpoint-observation",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=endpoint-observation",
+        "test/endpoint-observation.test.js"
+      ],
+      "evidenceKey": "b1fdc7a5103a49c462dd01978839fdb12504beb76689e92784ba6ecd4fda5c5d",
+      "dependencyCount": 3,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "exact-f548-transition",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=exact-f548-transition",
+        "test/exact-f548-transition.test.js"
+      ],
+      "evidenceKey": "07e670b5b405018ba59455389c7037e86756a2d972b1f37955acc9e0449227b2",
+      "dependencyCount": 189,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "human-window",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=human-window",
+        "test/human-window.test.js"
+      ],
+      "evidenceKey": "76f65b0b7045b921fdf5d4eac669ce1dc176e7886ab76dd7ccf5eefd9cbfbcae",
+      "dependencyCount": 181,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "installable-runtime",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ],
+      "evidenceKey": "7cb4de836fe0b6e6a2f126412aa3fecfa3555b4b0e1c922ee77fb85b4f1ea5ab",
+      "dependencyCount": 134,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "installed-composition",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installed-composition",
+        "test/installed-composition.test.js"
+      ],
+      "evidenceKey": "80a66bdc2255dc3fefda540ebbc98b0e6460a1eb8af5e5670f584273259de0dc",
+      "dependencyCount": 190,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "layer-overlay",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=layer-overlay",
+        "test/layer-overlay.test.js"
+      ],
+      "evidenceKey": "74b79a951f9d1bc26ce5a5839690e047c098d292b41c327320fac38f1f4fe80c",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "legacy-owner-migration",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=legacy-owner-migration",
+        "test/legacy-owner-migration.test.js"
+      ],
+      "evidenceKey": "7f33fd5a6e456edf00ca02220f5e86bc46988660aaf5ecce5f7749f0f27dd4fa",
+      "dependencyCount": 187,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "lifecycle-simulation",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=lifecycle-simulation",
+        "test/lifecycle-simulation.test.js"
+      ],
+      "evidenceKey": "b85a4ef99546faf8fc352fe76f254c650dd2f2054d7cf6c8165e2d174995ac51",
+      "dependencyCount": 267,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "maintenance-finish",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish",
+        "test/maintenance-finish.test.js"
+      ],
+      "evidenceKey": "50c1f0265a3bb152f6889eda6955776e47db3574ddaf956e525be6d71f177042",
+      "dependencyCount": 78,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish-operator",
+        "test/maintenance-finish-operator.test.js"
+      ],
+      "evidenceKey": "eba3d0d6a6daeb0a3c2d5bff45814a298e2e886e0cd9a210baf4a0d37191394d",
+      "dependencyCount": 218,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "maintenance-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-operator",
+        "test/maintenance-operator.test.js"
+      ],
+      "evidenceKey": "8bca68ab38299e593b2d90a0bc9dc199f8f2a10c2a9539486a592f6ef6dc98e0",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "manual-current-target",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-current-target",
+        "test/manual-current-target.test.js"
+      ],
+      "evidenceKey": "344b39ed2d9d7e3dc0771be7c6e474a009f54a0a9bd81e10b435d7e246039947",
+      "dependencyCount": 23,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "manual-runtime",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-runtime",
+        "test/manual-runtime.test.js"
+      ],
+      "evidenceKey": "b2ad53fd0dd640adaaf5edc77c27b3bd2e505989a4cbe1e41514cacd4305a34c",
+      "dependencyCount": 179,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "media-layers",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=media-layers",
+        "test/media-layers.test.js"
+      ],
+      "evidenceKey": "5fcb9b1c3a423703f06d6ea5e246eda8b812a33ad0d0319e48170fd9d4081abe",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "montage-mandate",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=montage-mandate",
+        "test/montage-mandate.test.js"
+      ],
+      "evidenceKey": "c76aab3ead7b266df10dd291c3e8cccb20417f726e03e229ef63b382f314da31",
+      "dependencyCount": 9,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "native-read-capture",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-capture",
+        "test/native-read-capture.test.js"
+      ],
+      "evidenceKey": "473be26991255b3a8f1ab1ccafa2436c5a5bc8007cffc65973135c747f2f6e4c",
+      "dependencyCount": 182,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "native-read-recovery",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-recovery",
+        "test/native-read-recovery.test.js"
+      ],
+      "evidenceKey": "a8b9622b94bc5d700a95816633e309e21250bcf3d4cba6bbf638ae8099f629a6",
+      "dependencyCount": 192,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "owner-attachments",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-attachments",
+        "test/owner-attachments.test.js"
+      ],
+      "evidenceKey": "971ff1e2d477a19ae2d8947d16ed06032efe4588771424563c024ad10d4e54c3",
+      "dependencyCount": 22,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "owner-installation",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-installation",
+        "test/owner-installation.test.js"
+      ],
+      "evidenceKey": "76dbfc183e075d3d32c3eef5969c5fa31390745036c00b7b1c1c7c2a1e21df31",
+      "dependencyCount": 200,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "owner-ipc-process",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-ipc-process",
+        "test/owner-ipc-process.test.js"
+      ],
+      "evidenceKey": "b50a11d8ac238d01d88b2e3b1fc0c1dc9dca261943bfbf627e4acceb237f9c45",
+      "dependencyCount": 105,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "owner-lifecycle",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-lifecycle",
+        "test/owner-lifecycle.test.js"
+      ],
+      "evidenceKey": "ba2ec4df196975377669ff8c08b49810e06a4c0eaa15cc4b3d6ab2c3bc9b2948",
+      "dependencyCount": 17,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "owner-lifecycle-faults",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-lifecycle-faults",
+        "test/owner-lifecycle-faults.test.js"
+      ],
+      "evidenceKey": "3692c7842d9507fdc90da75250f1add4eeb6097fb99d204f78efb41fa0a76531",
+      "dependencyCount": 17,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "owner-maintenance",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-maintenance",
+        "test/owner-maintenance.test.js"
+      ],
+      "evidenceKey": "22509b0cc7fe4b800a451b071a725f0ebabb4a133eb376bba815b3ccd3e08101",
+      "dependencyCount": 77,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "owner-marker-publication",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-marker-publication",
+        "test/owner-marker-publication.test.js"
+      ],
+      "evidenceKey": "00dd8ca81b590540d4a6e6bb1ec3ee40149de03a86943cac3cf31e686d36cbeb",
+      "dependencyCount": 17,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "owner-runtime",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-runtime",
+        "test/owner-runtime.test.js"
+      ],
+      "evidenceKey": "e6772a876e11570bf82773af19f403c7a6476bac6e6a21ef5afa7fb0da8f43a4",
+      "dependencyCount": 190,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "package-location",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=package-location",
+        "test/package-location.test.js"
+      ],
+      "evidenceKey": "6961e9b6b1b7fc3ec98ae2f9f32da4e4c09a37e84694b65d0cbcce2b37470a95",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "panel-reconnect",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-reconnect",
+        "test/panel-reconnect.test.js"
+      ],
+      "evidenceKey": "c23a08ed8afb87801a5d9157b070908cbb2ed47d79ad58a21af5e0507c614715",
+      "dependencyCount": 4,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "panel-start-over",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-start-over",
+        "test/panel-start-over.test.js"
+      ],
+      "evidenceKey": "64f9a9f049dbd59aedb72bebbc250c1e81e0a2db07b945ce9dee1cc5a7f27dc3",
+      "dependencyCount": 12,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "photo-executor-contract",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=photo-executor-contract",
+        "test/modules/photo-placeholder.test.js"
+      ],
+      "evidenceKey": "8151aeebb530042576f1021569bbc77ef2c06cc6ca746922e4b6d15a910b17dd",
+      "dependencyCount": 30,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "photo-owner",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=photo-owner",
+        "test/modules/photo-placeholder.test.js"
+      ],
+      "evidenceKey": "7fd28dece42dcda8b021e259401c3f19cf27d9a976add41e3dcaf8e209073ae1",
+      "dependencyCount": 29,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "point-layout",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=point-layout",
+        "test/point-layout-local.test.js"
+      ],
+      "evidenceKey": "47979c18a40af8a9baf617ebcab0bd3fdacfeb7fda7960263f3d6ea2fbde916e",
+      "dependencyCount": 11,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "point-layout-integration",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=point-layout",
+        "test/point-layout.test.js"
+      ],
+      "evidenceKey": "99a5a0a80a3057d09076a4fcc13490b7743b207b8ee2a95d8faaa04df7ad03cf",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "project-assembly",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=project-assembly",
+        "test/project-assembly.test.js"
+      ],
+      "evidenceKey": "d1373c1fb6bae6f12c04f1b4ce26208204ee42e71a88d639253d5662a05f03d4",
+      "dependencyCount": 184,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "project-lifecycle",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=project-lifecycle",
+        "test/project-lifecycle.test.js"
+      ],
+      "evidenceKey": "c0cae631a4792b9e292ee5140e201173cf7b677f8a5bc19953539de1f37dfa9d",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "project-save",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=project-save",
+        "test/project-save.test.js"
+      ],
+      "evidenceKey": "adec2b5fb9516e59deaf4dc81d805c0c7e4567f52384640833872a27769f9fe5",
+      "dependencyCount": 184,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "protocol-codec",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=protocol-codec",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "fa3856c72a22f6dc22c3decd69de17c358dc24a6aa687e4a4f4941e02dbe78a3",
+      "dependencyCount": 138,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "readoption-core",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-core",
+        "test/stopped-host-readoption-core.test.js"
+      ],
+      "evidenceKey": "cab2dbe5e9790359e2754b7c6559d7352743cec32e0cf81e5aca0787c3ba782f",
+      "dependencyCount": 32,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "readoption-enable",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-enable",
+        "test/stopped-host-readoption-enable.test.js"
+      ],
+      "evidenceKey": "1af21bccab37cf222edd4e7a6c9f40cf9b9fa4bf457838978abd74c830d004ba",
+      "dependencyCount": 32,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "readoption-probe",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-probe",
+        "test/stopped-host-readoption-probe.test.js"
+      ],
+      "evidenceKey": "a8aaf7d8bb956f744bc2d33652e558f98b1f54b922bbb39dd623875e1e5048eb",
+      "dependencyCount": 32,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "readoption-recovery",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-recovery",
+        "test/stopped-host-readoption-recovery.test.js"
+      ],
+      "evidenceKey": "19a3c4c3d57f1c0ca08e243fc4b9cc8beb347ab0ba54f6d7a072f3e494a3ac04",
+      "dependencyCount": 32,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "recovery-inspection",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=recovery-inspection",
+        "test/recovery-inspection.test.js"
+      ],
+      "evidenceKey": "eaf247ffccbd06c839090d9f17cab6e9aa4d1d4fa207feecbf6cbec146a1fd3a",
+      "dependencyCount": 20,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "render-job-owner",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^",
+        "test/render-job-owner.test.js"
+      ],
+      "evidenceKey": "44b29baf3dbdb40761cb3cc0a16a7595d1f241aeeb2755996e0ac1484b4f9fea",
+      "dependencyCount": 14,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "standalone-installer",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=standalone-installer",
+        "test/standalone-installer.test.js"
+      ],
+      "evidenceKey": "a97a0474d7202f1a6983922967f636c812417643784c086e282e078028c3520d",
+      "dependencyCount": 197,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "start-over-barrier",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-barrier",
+        "test/start-over-barrier.test.js"
+      ],
+      "evidenceKey": "a058fb95e0ec4360bc5dbb53b6fcd87c51722372f710eddb9a84192def0980a4",
+      "dependencyCount": 38,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "start-over-channel",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-channel",
+        "test/start-over-channel.test.js"
+      ],
+      "evidenceKey": "bfabd476ee3bd7c94bf90de1764a299692059b7bcafd1aa280e58cdbd3e3940b",
+      "dependencyCount": 14,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "start-over-driver",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-driver",
+        "test/start-over-driver.test.js"
+      ],
+      "evidenceKey": "d64f2ab2ff8c4ae03daf4bd1c220c5e8f5caf7a94f15e899dd23ece2d43537da",
+      "dependencyCount": 43,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "start-over-finisher",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-finisher",
+        "test/start-over-finisher.test.js"
+      ],
+      "evidenceKey": "b2ea155e775b56d079ed4026ed9568221e81247c595d5cbac3d6b11e1ebeca78",
+      "dependencyCount": 38,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "start-over-inspection",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-inspection",
+        "test/start-over-inspection.test.js"
+      ],
+      "evidenceKey": "fdd5bc45da2a5c752bdc957509167b7edb4fd4bde8b35d05ab904b3d0a74c2cb",
+      "dependencyCount": 21,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "start-over-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-operator",
+        "test/start-over-operator.test.js"
+      ],
+      "evidenceKey": "802bc09599c2243e4f84fb864349cfe53374881131db41b61a13e2f354ff6a09",
+      "dependencyCount": 189,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "start-over-panel-control",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-panel-control",
+        "test/start-over-panel-control.test.js"
+      ],
+      "evidenceKey": "a7f35c5518b9dc516021fd4d3eeca8698d1d70f5d6e252bffc3ed3fec0590675",
+      "dependencyCount": 9,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "start-over-process",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-process",
+        "test/start-over-process.test.js"
+      ],
+      "evidenceKey": "be4cdba7650d826cbbee2725d9c40eb49e0272b01d5702e91e682bc1bb64300a",
+      "dependencyCount": 2,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "start-over-runtime",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-runtime",
+        "test/start-over-runtime.test.js"
+      ],
+      "evidenceKey": "b8f7caa2348e4c866ddb1580cb99f4308ab115f73fe49d33e6216428f75ac6e3",
+      "dependencyCount": 190,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "start-over-state",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-state",
+        "test/start-over-state.test.js"
+      ],
+      "evidenceKey": "14a8befa82377b3a4b91b4017562b654b72e50a9750d95ae1a3067740bed23db",
+      "dependencyCount": 36,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "stopped-certification",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-certification",
+        "test/stopped-certification.test.js"
+      ],
+      "evidenceKey": "017852a4c9dc78543df6b2e1bb80e82d9f3c621be93e428755df48a07540844d",
+      "dependencyCount": 77,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "stopped-host-readoption",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "evidenceKey": "4dbf5fb7e87f69c6e7ef30b1ed18211b68101b728c3a969f819ec88d7aa8b7f5",
+      "dependencyCount": 32,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption-operator",
+        "test/stopped-host-readoption-operator.test.js"
+      ],
+      "evidenceKey": "b41cee531bd6cb74a3d56d6901b9810accaa24959db5aaa475bffa3e08f2e7a5",
+      "dependencyCount": 218,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "stopped-update",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-update",
+        "test/stopped-update.test.js"
+      ],
+      "evidenceKey": "a56b75f5edd675bba0f6966ed768b6527405586a0454aa9254ef9f46d5603763",
+      "dependencyCount": 191,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "stopped-update-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-update-operator",
+        "test/stopped-update-operator.test.js"
+      ],
+      "evidenceKey": "06891f0b9cc7b05ca3de45d2bea08588536801c86bf4a9d02890987b9c0f76c9",
+      "dependencyCount": 197,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "text-layer",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=text-layer",
+        "test/text-layer-local.test.js"
+      ],
+      "evidenceKey": "cdcba17a61bad3e3b78bf53a0f7bf87dd421dad096c8e0df89458abe888c1941",
+      "dependencyCount": 11,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "text-layer-integration",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=text-layer",
+        "test/text-layer.test.js"
+      ],
+      "evidenceKey": "6b2b1068965f3841cff6845013dc34cf0f42f5014b4556f0924ba950c3f91eb1",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "text-variant",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=text-variant",
+        "test/text-variant.test.js"
+      ],
+      "evidenceKey": "41c667d212895ed0773cf86cc76ab032f56bc6be0c0786133666d9cbee50d176",
+      "dependencyCount": 12,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "titles-executor-contract",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=titles-executor-contract",
+        "test/modules/titles.test.js"
+      ],
+      "evidenceKey": "393342c7f524945d92f6359266a63f417a0a862bb984bdcfe395dc84906d6411",
+      "dependencyCount": 29,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "titles-owner",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=titles-owner",
+        "test/modules/titles.test.js"
+      ],
+      "evidenceKey": "e250620731f2f5ccde46a5f94add5edb0876c60b040a5ed2a307b74883e003c7",
+      "dependencyCount": 29,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "validation-reuse",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=validation-reuse",
+        "test/validation-reuse.test.js"
+      ],
+      "evidenceKey": "b56aa7c8035aee7967d5764433dcda24f0a94b0493bab2066ad0a01cd639f8dc",
+      "dependencyCount": 36,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": null,
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "validation-routing",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=validation-routing",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "0b2a723bdfdf61c2951bc53def2d8ba6e5d354546f83b6b5305fdf547fad851f",
+      "dependencyCount": 139,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "windows-cim-probe",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=windows-cim-probe",
+        "test/windows-cim-probe.test.js"
+      ],
+      "evidenceKey": "44dd33bd186e4fd5041dfdb7c2fae22a80b1cc41f169e36e47175368ece4cac8",
+      "dependencyCount": 177,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "windows-owner-process",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=windows-owner-process",
+        "test/windows-owner-process.test.js"
+      ],
+      "evidenceKey": "cdb8dee5d714a9979c3c0f5ba87b3592087a0e0582bd7a6088a830172876c24d",
+      "dependencyCount": 2,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "windows-retained-process",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=windows-retained-process",
+        "test/windows-retained-process.test.js"
+      ],
+      "evidenceKey": "5ca4e221b70e21444cbc6a9d33e745c55620d34c864aa89b42bb03a4c5cd76e7",
+      "dependencyCount": 3,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "work-session",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=work-session",
+        "test/work-session.test.js"
+      ],
+      "evidenceKey": "0224d95f162993822af02bb4d7aa75519251f07a04bfdc317e394111019b6c46",
+      "dependencyCount": 34,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "work-session-owner",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=work-session",
+        "test/work-session-owner.test.js"
+      ],
+      "evidenceKey": "7d8fd181e256a2adf46da83fa0899cb33b841f76ab727cfcd29fe66cc96bf424",
+      "dependencyCount": 4,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "worker-isolation",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=worker-isolation",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "440e743f04e00e46018d0b91c3a058ca246449c39257e39b3d2c8c52601044da",
+      "dependencyCount": 138,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "workflow-recovery",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=workflow-recovery",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "a1f507615ba344cbb1aad7c1b9a34936c40b714563252576aeb0cbbf35dc6f30",
+      "dependencyCount": 138,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=zero-dispatch",
+        "test/recover-zero-dispatch-owner.test.js"
+      ],
+      "evidenceKey": "5e9a2ff4efb5891c520abbe93c8b7acac667d64827c1a2f3cda521d9f712e8a1",
+      "dependencyCount": 179,
+      "cwd": "core4",
+      "environment": "MSI Windows; Node 24.15.0; изолированные TEMP и профили для свежих прогонов",
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "pending-current",
+      "evidence": null
+    }
+  ],
+  "required": [
+    {
+      "check": "titles-tests",
+      "cwd": "products/titles",
+      "command": [
+        "node",
+        "--test"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "slideshow-tests",
+      "cwd": "products/slideshow",
+      "command": [
+        "node",
+        "--test"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "visual-review-temp",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "--test",
+        "test/visual-review.test.js"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "boundaries",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/check-boundaries.js"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "offline-visual-bundle",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/package-visual-review.js"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "frame-slot-temp",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/package-capability.js",
+        "pack/compose"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "combined-and-minimal-packages",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/package-installable.js"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "combined-standalone",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/package-standalone-installer.js"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "no-r1-early-refusal",
+      "cwd": "TEMP",
+      "command": [
+        "MCP",
+        "stage-render-copy"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "installed-update-and-cold-owner",
+      "cwd": "MSI",
+      "command": [
+        "maintain-owner",
+        "owner-update",
+        "update-inspect",
+        "update-enable",
+        "core_status"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "native-png",
+      "cwd": "MSI",
+      "command": [
+        "MCP",
+        "save-comp-frame-png"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "native-titles-r1",
+      "cwd": "MSI",
+      "command": [
+        "MCP",
+        "write-point-text",
+        "save-current-project",
+        "stage-render-copy",
+        "render_job_finalize"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "native-slideshow-s1-r1",
+      "cwd": "MSI",
+      "command": [
+        "MCP",
+        "photo-placeholder",
+        "save-current-project",
+        "stage-render-copy",
+        "render_job_finalize"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "native-review-and-cross-job-refusal",
+      "cwd": "MSI",
+      "command": [
+        "node",
+        "core4/tools/visual-review.js",
+        "prepare/seal"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    },
+    {
+      "check": "final-history-and-release",
+      "cwd": "MSI",
+      "command": [
+        "MCP",
+        "core_status",
+        "render_job_status"
+      ],
+      "status": "pending-current",
+      "evidence": null
+    }
+  ],
+  "excluded": [
+    {
+      "check": "native-advanced-3d",
+      "reason": "За пределами поручения."
+    },
+    {
+      "check": "native-ame",
+      "reason": "За пределами поручения. Source-регрессия при наличии остаётся в реестре."
+    },
+    {
+      "check": "new-slideshow-templates-and-r1-formats",
+      "reason": "Проверяются прежние S1 и R1."
+    },
+    {
+      "check": "desktop-and-p2",
+      "reason": "Приёмка проводится на MSI; P2 закрыт."
+    }
+  ]
+}

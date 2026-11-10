@@ -1,0 +1,264 @@
+{
+  "machine": "MSI",
+  "node": "v24.15.0",
+  "ae": "26.3x87",
+  "owner": 19476,
+  "origin": "file://",
+  "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+  "packageHash": "bffa39df006f637b532064d6112ac2e4e6b3ac5ad0f29ff907b0cdf59b43e0d3",
+  "registry": "df11e1a188be34097bc6bdcaff2f905b223bb7d1c0c2a0b676941b629b3b4279",
+  "jobs": [
+    {
+      "id": "0a6afefd-038a-8f91-a415-7004ae8fea22",
+      "state": "cancelled",
+      "sha256": "73236ab3f243f2c7a98734c6c66df7dfffc3b62b37c8ee1e571fe51f55e0c405"
+    },
+    {
+      "id": "104f86dc-cb0b-8e00-b094-96deb7df021c",
+      "state": "published",
+      "sha256": "e0903136d364dbf6b66d41609360507321742aa5a01ec32e59ba50abea35d8e5"
+    },
+    {
+      "id": "311d15b0-119b-810c-8fcf-de0497e4b5be",
+      "state": "published",
+      "sha256": "2878f3f193c2b8e5f9c5d78e5c468950cc721354743efa60c9baa6102b70b40b"
+    },
+    {
+      "id": "587e9fee-6439-8ae1-8c97-a7f5a494de42",
+      "state": "published",
+      "sha256": "0898bf20de4d83161a7b5531717378e9680f1ea865a7c29bf82f8c0d99142562"
+    },
+    {
+      "id": "6b2081a2-a918-80a9-880d-e3d5111a3d37",
+      "state": "cancelled",
+      "sha256": "864e463c993ed1fc6443a6374893cf55d56460bb0bdbde1b75b49d664eb52204"
+    },
+    {
+      "id": "727aed80-5855-85a0-94b5-f80104abb5d6",
+      "state": "cancelled",
+      "sha256": "23c251e8f9c8cd2c8f038139e722df88dc28354eec3fd8563441e423bd39f0ad"
+    },
+    {
+      "id": "72942b7a-9b7b-8eb5-a1f6-dd920d34546b",
+      "state": "cancelled",
+      "sha256": "6d6460d3db6dcc54866ff50d985851c2016b1f4be886f8e9ca16ffd7e87c4ad6"
+    },
+    {
+      "id": "7cb6fdbd-4ad3-8b65-8838-06bc306fa2f2",
+      "state": "published",
+      "sha256": "8e2030584bedad01e13c89528323c8e563140e9424df9826150f9961cbf90468"
+    },
+    {
+      "id": "7cd5b285-7b61-8c99-a79b-e1ff5c9984d1",
+      "state": "cancelled",
+      "sha256": "792e7e700a550d123cb428351de8d40fa41af7f830440fd4490c30b8967fc667"
+    },
+    {
+      "id": "8f9418a4-b6e2-8a4a-b21d-7fd965a78b4a",
+      "state": "published",
+      "sha256": "9ed81ba764f2f6aee760a74fb463b605b2155716c9b609176e3b5337bd18c36a"
+    },
+    {
+      "id": "91826cbe-fe22-83a7-af5f-57980375c9e2",
+      "state": "cancelled",
+      "sha256": "b088d4c42cd7abc721f90c5dee0d23b8ff1a0c6d989efca4058b5578d704b93f"
+    },
+    {
+      "id": "936b5ec7-1333-887c-8d2d-cc49ac33756a",
+      "state": "published",
+      "sha256": "a6b4dece972233002db8de864d93e9dda4b75dee6f35090aeddbd60e7ea27a6e"
+    }
+  ],
+  "tools": {
+    "engine": {
+      "file": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\aerender.exe",
+      "sha256": "711859d183bdabec7c358a344208323bbbd665fffd7e88e42b9b234f9b99692a"
+    },
+    "ffmpeg": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\slideshow-s1-msi-20261107\\decoder\\ffmpeg-9.0.2-essentials_build\\bin\\ffmpeg.exe",
+      "sha256": "3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec"
+    },
+    "ffprobe": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\slideshow-s1-msi-20261107\\decoder\\ffmpeg-9.0.2-essentials_build\\bin\\ffprobe.exe",
+      "sha256": "f0d36ecbbdd3bcfac3efa078c96c7271c2e68b3810595552ac3b7f17e9a65c52"
+    }
+  },
+  "installedRelease": {
+    "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\bffa39df006f637b532064d6112ac2e4e6b3ac5ad0f29ff907b0cdf59b43e0d3\\release.json",
+    "sha256": "bffa39df006f637b532064d6112ac2e4e6b3ac5ad0f29ff907b0cdf59b43e0d3",
+    "bytes": 16007
+  },
+  "descriptorSha256": "e449da0b314a2d959fe9d602665d2e267ab839c4a42e209b0e9de9bf62812cd6",
+  "projectConfig": {
+    "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex\\config.toml",
+    "sha256": "9e696f88a74df9e2a20308f632cbe3d0e9faf8fc959ff83be6bc9144a97ceec1",
+    "bytes": 366
+  },
+  "globalConfig": {
+    "file": "C:\\Users\\Ant\\.codex\\config.toml",
+    "sha256": "49d750b8bcccc064f8c409eaa1c4f9722c0eb105ee1d11319690568dfe955750",
+    "bytes": 13693
+  },
+  "protectedFiles": [
+    {
+      "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\receiver\\completions.ndjson",
+      "sha256": "a0233b4e2dcfc2132407a4842adc4bd5e9318ced660e590c58d8c1e78714cfd6",
+      "bytes": 1020626
+    },
+    {
+      "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+      "sha256": "bef292cfe11b0e775fd802c910fe42c087742cb6d943c6eab21210b3dbdde0d9",
+      "bytes": 2777313
+    },
+    {
+      "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\origin.json",
+      "sha256": "00d9c5d09409fa02d972aff45ab770525a1eb694c349be934d367d069baa1dd0",
+      "bytes": 139
+    },
+    {
+      "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\work-session.json",
+      "sha256": "a09e3cfb002008671f51f1bfe8363fe89d40d9661695ef3d7cda531f9244ea87",
+      "bytes": 492
+    },
+    {
+      "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\work-session-baseline.json",
+      "sha256": "f2f6fd36e0a129eda93f114681c201663b6cbed160c5f8f3843d5f83781366c3",
+      "bytes": 873
+    },
+    {
+      "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\host-adoption.json",
+      "sha256": "03498cc2c60bf64685a5cb0e16cbc71faa273f3f80fd3291af042059a252c67c",
+      "bytes": 784
+    }
+  ],
+  "prefs": {
+    "After Effects/26.2\\Adobe After Effects 26.2 MC Prefs": "7fd28aece60ecbab3f3560a9781a032ff967cb3d891ae9951a4379435d3ef4b5",
+    "After Effects/26.2\\Adobe After Effects 26.2 Prefs-effects.txt": "667b39871b81af559820541a11df3aadd11c8c135e6099125d9b58e8a1cba709",
+    "After Effects/26.2\\Adobe After Effects 26.2 Prefs-indep-composition.txt": "1d0d9e6989d7ca711ec97fd56a40c68b31e64ec4a5b85575165739717ac0085e",
+    "After Effects/26.2\\Adobe After Effects 26.2 Prefs-indep-general.txt": "eaa21fab93c023c0d0ca2a36aa9f4f50fb52ff85e72258cb5610dfa456a53cbc",
+    "After Effects/26.2\\Adobe After Effects 26.2 Prefs-indep-output.txt": "0f00993e0fb7ecf76d356f0bf657d2b72726ec328b0a57b69eb533f4be8e1d73",
+    "After Effects/26.2\\Adobe After Effects 26.2 Prefs-indep-render.txt": "8c5d6761ce7873e3a4d5f80f94b50da7870d4ddde7b40e7cde7ea386e63a1b7d",
+    "After Effects/26.2\\Adobe After Effects 26.2 Prefs-paint.txt": "e38c5d94a02d86fca0381e268d44dfcb2bc684add8ad4381d8b801d5124182f8",
+    "After Effects/26.2\\Adobe After Effects 26.2 Prefs-text.txt": "e7e494ee69d99ce2388b15b23fdd5daaf1a74adae7b241ddecf15e7aaa4e7587",
+    "After Effects/26.2\\Adobe After Effects 26.2 Prefs.txt": "37ca8d0601e13c82fcada56aa97829cc99c1b7df468c968d81f756af1c60c385",
+    "After Effects/26.2\\DVADialogPrefs\\DVADialogPrefs.xml": "824aa8392b8b62e1134b2806e90eb3d48c23ce8ac0199d6539f5e5b2bca5a343",
+    "After Effects/26.2\\ModifiedWorkspaces\\UserWorkspace.xml": "b06347d0dadc92fba927af1c3ac7c465944b1ee2edc8ae9d724691057859c0e8",
+    "After Effects/26.2\\ModifiedWorkspaces\\UserWorkspace_1.xml": "ef7a1336338c7b6dacfb3c04f02d66dfa839dd347a0b7b73653dfc561b8a668f",
+    "After Effects/26.2\\ModifiedWorkspaces\\UserWorkspace_2.xml": "f206a14c88df481bb3cffa1c3cc3b2f409aa17091773af5f841df4be78af0b23",
+    "After Effects/26.2\\ModifiedWorkspaces\\UserWorkspace_3.xml": "0f24caefca5449c84e46c7922720bacf4dc6fb537d5ca94ddf2563814b8cfbdf",
+    "After Effects/26.2\\ModifiedWorkspaces\\UserWorkspace_4.xml": "cff06c8cb859ac5f923b4be0944783ece23fbb8838eb0064a335470c8009bc96",
+    "After Effects/26.2\\ModifiedWorkspaces\\UserWorkspace_5.xml": "0fc1ff05a9d98f601c5a00bd541d87aab6731d4443865ca36655faa2738d0f97",
+    "After Effects/26.2\\Workspaces.xml": "a97be2127cca4a9978b80fd0830ead120db089c42e304ba6e76ccba3da353582",
+    "After Effects/26.3\\Adobe After Effects 26.3 MC Prefs": "5bc0155c1f2128cbb9c70293fbf56a509ad4374624d52e1c9d20cb21ae696da0",
+    "After Effects/26.3\\Adobe After Effects 26.3 Prefs-effects.txt": "667b39871b81af559820541a11df3aadd11c8c135e6099125d9b58e8a1cba709",
+    "After Effects/26.3\\Adobe After Effects 26.3 Prefs-indep-composition.txt": "1d0d9e6989d7ca711ec97fd56a40c68b31e64ec4a5b85575165739717ac0085e",
+    "After Effects/26.3\\Adobe After Effects 26.3 Prefs-indep-general.txt": "bbc3fb72122687077bc9cb6a7cb85ea6520411fe8a4dcc95401987923e664504",
+    "After Effects/26.3\\Adobe After Effects 26.3 Prefs-indep-output.txt": "0f00993e0fb7ecf76d356f0bf657d2b72726ec328b0a57b69eb533f4be8e1d73",
+    "After Effects/26.3\\Adobe After Effects 26.3 Prefs-indep-render.txt": "8c5d6761ce7873e3a4d5f80f94b50da7870d4ddde7b40e7cde7ea386e63a1b7d",
+    "After Effects/26.3\\Adobe After Effects 26.3 Prefs-paint.txt": "e38c5d94a02d86fca0381e268d44dfcb2bc684add8ad4381d8b801d5124182f8",
+    "After Effects/26.3\\Adobe After Effects 26.3 Prefs-text.txt": "e7e494ee69d99ce2388b15b23fdd5daaf1a74adae7b241ddecf15e7aaa4e7587",
+    "After Effects/26.3\\Adobe After Effects 26.3 Prefs.txt": "663bec3f93e80406a2063d613aa02ed85a55863f13ccc4c125faaad11f7ff92f",
+    "After Effects/26.3\\DVADialogPrefs\\DVADialogPrefs.xml": "dfc8e59fbc531f1c7ae51167629ac3b289a30b5b805810817f95b31a329d6654",
+    "After Effects/26.3\\ModifiedWorkspaces\\UserWorkspace.xml": "b06347d0dadc92fba927af1c3ac7c465944b1ee2edc8ae9d724691057859c0e8",
+    "After Effects/26.3\\ModifiedWorkspaces\\UserWorkspace_1.xml": "8453cc73c156c165b0b1e8fda232045c05774f670494aacfd471b08a94d04dae",
+    "After Effects/26.3\\ModifiedWorkspaces\\UserWorkspace_2.xml": "f206a14c88df481bb3cffa1c3cc3b2f409aa17091773af5f841df4be78af0b23",
+    "After Effects/26.3\\ModifiedWorkspaces\\UserWorkspace_3.xml": "0f24caefca5449c84e46c7922720bacf4dc6fb537d5ca94ddf2563814b8cfbdf",
+    "After Effects/26.3\\ModifiedWorkspaces\\UserWorkspace_4.xml": "cff06c8cb859ac5f923b4be0944783ece23fbb8838eb0064a335470c8009bc96",
+    "After Effects/26.3\\ModifiedWorkspaces\\UserWorkspace_5.xml": "6c23de36510c552594a99e3f2cc00bb3eccaefdc95bcbb33e3645a32c193b47b",
+    "CEP/extension-backups\\com.codex.psmcpbridge\\com.codex.psmcpbridge.backup-20260514-113001\\CSXS\\manifest.xml": "c14d80f3d80ddfa34b591da664816c1948959ddf5e32514e42a39053dec817fd",
+    "CEP/extension-backups\\com.codex.psmcpbridge\\com.codex.psmcpbridge.backup-20260514-114229\\CSXS\\manifest.xml": "5dee7a59d3930360caba6df406cd15358a3eea34c994e038650880d5ccfdf385",
+    "CEP/extension-backups\\com.codex.psmcpbridge\\com.codex.psmcpbridge.backup-20260514-125033\\CSXS\\manifest.xml": "c40d50a3ad3420f5bc9396798ccdffaa9944e250e01cd132a98c67c0a47fbaf0",
+    "CEP/extension-backups\\com.codex.psmcpbridge\\com.codex.psmcpbridge.backup-20260515-002751\\CSXS\\manifest.xml": "762d37349e8d8c65eb08cca79f84acc032d0f6a8dc4588b7f39dadaf569a0db9",
+    "CEP/extension-backups\\com.codex.psmcpbridge\\com.codex.psmcpbridge.backup-20260515-150259\\CSXS\\manifest.xml": "3f5e4c2b6d85ce2074655947311762383303d316b0f68b9a8dc78fac26f6650a",
+    "CEP/extension-backups\\com.codex.psmcpbridge\\com.codex.psmcpbridge.backup-20260515-150626\\CSXS\\manifest.xml": "20afa6fea350edef3be9ef064a0b9d3879b6b03fc36e97c54deee8985563751f",
+    "CEP/extension-backups\\com.codex.psmcpbridge\\com.codex.psmcpbridge.backup-20260516-162136\\CSXS\\manifest.xml": "1ec4ec158092964fc3b946dee33fe6ada90d953946e75e4a048e434c27127a27"
+  },
+  "current": {
+    "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core423-msi-20261110\\edit-copy\\photo.aep",
+    "sha256": "91b0e005e66aa61ac5f907d6462b2ba439dde5299664dde24207f30f6336fd9f",
+    "bytes": 578456
+  },
+  "fixtures": {
+    "title": {
+      "source": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\titles-current-render-msi-20261108\\titles-review.aep",
+        "sha256": "cca3be6ed4dae1a40464d77b5417e978b3dd9904f5956acb07fbb1f2d56aea80",
+        "bytes": 85127
+      },
+      "copy": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\titles\\titles.aep",
+        "sha256": "cca3be6ed4dae1a40464d77b5417e978b3dd9904f5956acb07fbb1f2d56aea80",
+        "bytes": 85127
+      },
+      "baseComp": 1,
+      "media": [],
+      "font": {
+        "file": "C:/Windows/Fonts/arial.ttf",
+        "sha256": "b3658eadae55e682b5f69eb64c439c1ecc8f196c0bb8d4756d145d13bc86476a",
+        "bytes": 1045720
+      },
+      "legacyFont": "Century Gothic",
+      "legacyStyle": {
+        "character": {
+          "font": "CenturyGothic",
+          "fontSize": 56,
+          "applyFill": true,
+          "fillColor": [
+            1,
+            1,
+            1
+          ],
+          "applyStroke": true,
+          "strokeColor": [
+            0,
+            0,
+            0
+          ],
+          "strokeWidth": 2,
+          "tracking": 0,
+          "baselineShift": 0,
+          "horizontalScale": 1,
+          "verticalScale": 1,
+          "fauxBold": true,
+          "fauxItalic": false
+        },
+        "paragraph": {
+          "justification": 7415,
+          "leading": 56,
+          "autoLeading": false
+        }
+      },
+      "historicalEvidence": "docs/evidence/titles-current-render-visual-review-msi-20261108.json"
+    },
+    "slideshow": {
+      "source": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\slideshow-s1-msi-20261107\\slideshow-template.aep",
+        "sha256": "627c7461b172c5428026a69b7d132773e79f6d60528316c2d30e827b9989aa91",
+        "bytes": 215191
+      },
+      "copy": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\slideshow\\slideshow.aep",
+        "sha256": "627c7461b172c5428026a69b7d132773e79f6d60528316c2d30e827b9989aa91",
+        "bytes": 215191
+      },
+      "masterComp": 29,
+      "photos": [
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\slideshow-s1-msi-20261107\\slide-A.jpg",
+          "sha256": "25f520fc92151159441a816e29e2e225362cc0b25538ef7d5d52b13166d86a58",
+          "bytes": 833851
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\slideshow-s1-msi-20261107\\slide-B.jpg",
+          "sha256": "a639f4ae6850380f668c5514bb551df40578b4a1526e6bfdf123126a31a727fe",
+          "bytes": 680031
+        }
+      ],
+      "expectedWindow": {
+        "startFrame": 10,
+        "endFrameExclusive": 76
+      },
+      "historicalEvidence": ".codex-runtime/slideshow-recovered-msi-20261108/video-verification.json"
+    }
+  }
+}
