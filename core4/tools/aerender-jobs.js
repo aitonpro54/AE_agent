@@ -7,11 +7,11 @@ const path = require('node:path');
 const { createHash, randomUUID } = require('node:crypto');
 const { spawn, execFileSync } = require('node:child_process');
 const { createServer } = require('node:net');
-const { plainPath, samePath } = require('../runtime/project-save-proof');
+const { plainPath, readAep, samePath } = require('../runtime/project-save-proof');
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const sha = /^[0-9a-f]{64}$/;
-const aepBudget = 64 * 1024 * 1024;
+const aepBudget = 96n * 1024n * 1024n; // Matches project-save-proof.
 
 function requireFact(condition, code) {
   if (!condition) throw Error(code);
@@ -56,13 +56,22 @@ function fingerprint(file, allowLink = false) {
   } finally { fs.closeSync(fd); }
 }
 
-function verifyInput(input, filename, max = Infinity) {
+function projectDigest(file, copyFd) {
+  try { return readAep(file, undefined, copyFd).digest; }
+  catch (error) {
+    if (error.code === 'save_disk_proof_unavailable' || error.code === 'ENOENT') throw Error('aerender_input_changed');
+    throw error;
+  }
+}
+
+function verifyInput(input, filename, project = false) {
   requireFact(input && sha.test(input.sha256) && typeof input.path === 'string' &&
     path.isAbsolute(input.path) && samePath(path.resolve(input.path), input.path), 'aerender_input');
   if (filename) requireFact(filename.test(path.basename(input.path)), 'aerender_input_kind');
   const { info } = plainPath(input.path);
-  requireFact(info.size > 0n && Number(info.size) <= max, 'aerender_input_budget');
-  requireFact(fingerprint(input.path).sha256 === input.sha256, 'aerender_input_changed');
+  requireFact(info.size > 0n && (!project || info.size <= aepBudget), 'aerender_input_budget');
+  const digest = project ? projectDigest(input.path) : fingerprint(input.path).sha256;
+  requireFact(digest === input.sha256, 'aerender_input_changed');
 }
 
 function validateSpec(spec) {
@@ -86,8 +95,8 @@ function validateSpec(spec) {
 }
 
 function checkInputs(spec, working) {
-  verifyInput(spec.project, /\.aep$/i, aepBudget);
-  if (working) verifyInput({ path: working, sha256: spec.project.sha256 }, /\.aep$/i, aepBudget);
+  verifyInput(spec.project, /\.aep$/i, true);
+  if (working) verifyInput({ path: working, sha256: spec.project.sha256 }, /\.aep$/i, true);
   for (const item of spec.media) verifyInput(item);
   verifyInput(spec.engine, /^aerender\.exe$/i);
   verifyInput(spec.ffprobe, /^ffprobe\.exe$/i);
@@ -215,15 +224,34 @@ function createJobs(root, identity = processIdentity) {
       validateSpec(spec);
       checkInputs(spec);
       requireFact(!present(spec.output), 'aerender_output_exists');
-      const id = randomUUID(), directory = path.dirname(file(id, 'prepared.json'));
+      const id = randomUUID(), prepared = file(id, 'prepared.json');
       const working = path.join(path.dirname(spec.project.path), 'core4-render-' + id + '.aep');
       const partial = path.join(path.dirname(spec.output), 'core4-render-' + id + '.partial.mp4');
-      fs.mkdirSync(directory);
-      fs.copyFileSync(spec.project.path, working, fs.constants.COPYFILE_EXCL);
-      verifyInput({ path: working, sha256: spec.project.sha256 }, /\.aep$/i, aepBudget);
-      const job = { id, spec, working, partial, createdAt: new Date().toISOString() };
-      writeOnce(file(id, 'prepared.json'), job);
-      return { id, state:'prepared' };
+      // Keep the exclusive destination handle here so failure cleanup can prove ownership.
+      const fd = fs.openSync(working, 'wx', 0o600);
+      let owned;
+      try {
+        try {
+          owned = fs.fstatSync(fd, { bigint: true });
+          requireFact(projectDigest(spec.project.path, fd) === spec.project.sha256, 'aerender_input_changed');
+          fs.fsyncSync(fd);
+        } finally { fs.closeSync(fd); }
+        verifyInput({ path: working, sha256: spec.project.sha256 }, /\.aep$/i, true);
+        fs.mkdirSync(path.dirname(prepared));
+        const job = { id, spec, working, partial, createdAt: new Date().toISOString() };
+        writeOnce(prepared, job);
+        return { id, state:'prepared' };
+      } catch (error) {
+        if (owned) {
+          try {
+            const { info } = plainPath(working);
+            // Receipt publication may already have linked the file before stage cleanup failed.
+            if (info.dev === owned.dev && info.ino === owned.ino &&
+                info.birthtimeNs === owned.birthtimeNs && !present(prepared)) fs.unlinkSync(working);
+          } catch { /* Preserve the failure and leave unproven paths alone. */ }
+        }
+        throw error;
+      }
     },
     start(id) {
       return withLock(root, async () => {

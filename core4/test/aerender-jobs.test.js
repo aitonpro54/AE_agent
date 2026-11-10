@@ -9,6 +9,13 @@ const { createJobs } = require('../tools/aerender-jobs');
 
 const windows = { skip:process.platform !== 'win32' };
 const digest = value => createHash('sha256').update(value).digest('hex');
+const aepLimit = 96 * 1024 * 1024;
+
+async function fileDigest(file) {
+  const hash = createHash('sha256');
+  for await (const chunk of fs.createReadStream(file)) hash.update(chunk);
+  return hash.digest('hex');
+}
 
 function fixture(t, identity = () => null) {
   const parent = fs.realpathSync.native(os.tmpdir());
@@ -48,6 +55,58 @@ test('aerender-jobs binds a saved queue and refuses drift and extra ready rows',
   fs.appendFileSync(f.job(id).working,'changed');
   await assert.rejects(f.jobs.start(id), /aerender_input_changed/);
   assert.equal(f.jobs.status(id).state,'prepared');
+});
+
+test('aerender-jobs verifies a 96 MiB AEP and fences same-size copy drift before dispatch', windows, async t => {
+  const f = fixture(t);
+  fs.truncateSync(f.spec.project.path, aepLimit);
+  f.spec.project.sha256 = await fileDigest(f.spec.project.path);
+  const { id } = f.jobs.prepare(f.spec);
+  const job = f.job(id);
+  assert.equal(path.dirname(job.working), path.dirname(f.spec.project.path));
+  assert.equal(fs.statSync(job.working).size, aepLimit);
+  assert.equal(await fileDigest(job.working), f.spec.project.sha256);
+
+  const fd = fs.openSync(job.working, 'r+');
+  try { fs.writeSync(fd, Buffer.from([1]), 0, 1, aepLimit - 1); }
+  finally { fs.closeSync(fd); }
+  await assert.rejects(f.jobs.start(id), { message:'aerender_input_changed' });
+  assert.equal(f.jobs.status(id).state, 'prepared');
+  assert.deepEqual(fs.readdirSync(f.root), [id]);
+  assert.deepEqual(fs.readdirSync(path.join(f.root, id)), ['prepared.json']);
+});
+
+test('aerender-jobs refuses a saved AEP one byte over 96 MiB before preparing a job', windows, t => {
+  const f = fixture(t);
+  const dir = path.dirname(f.spec.project.path);
+  const before = fs.readdirSync(dir);
+  fs.truncateSync(f.spec.project.path, aepLimit + 1);
+  assert.throws(() => f.jobs.prepare(f.spec), { message:'aerender_input_budget' });
+  assert.deepEqual(fs.readdirSync(f.root), []);
+  assert.deepEqual(fs.readdirSync(dir), before);
+});
+
+test('aerender-jobs keeps the AEP when cleaning up a published prepare receipt fails', windows, t => {
+  const f = fixture(t);
+  const failure = Error('injected stage unlink failure');
+  const unlink = fs.unlinkSync;
+  let stage;
+  const mock = t.mock.method(fs, 'unlinkSync', file => {
+    if (path.dirname(path.dirname(file)) === f.root && /^prepared\.json\..+\.tmp$/.test(path.basename(file))) {
+      stage = file;
+      throw failure;
+    }
+    return unlink(file);
+  });
+  try { assert.throws(() => f.jobs.prepare(f.spec), error => error === failure); }
+  finally { mock.mock.restore(); }
+
+  const [id] = fs.readdirSync(f.root);
+  assert.equal(fs.statSync(stage).nlink, 2);
+  assert.throws(() => f.jobs.status(id), { code:'save_disk_proof_unavailable' });
+  fs.unlinkSync(stage);
+  assert.deepEqual(f.jobs.status(id), { id, state:'prepared' });
+  assert.equal(digest(fs.readFileSync(f.job(id).working)), f.spec.project.sha256);
 });
 
 test('aerender-jobs observes the original worker and renderer and fences a reused PID', windows, async t => {
