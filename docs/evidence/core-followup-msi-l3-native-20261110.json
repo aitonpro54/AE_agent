@@ -1,0 +1,446 @@
+{
+  "packageHash": "1d61f0c7790f96f20e1e4878be2cb4c156049ccd39eb88c68e90857e89af140f",
+  "installed": {
+    "base": {
+      "stopId": "f5a2395a-6911-42a0-86b2-1db2a541bef4",
+      "transactionId": "1fc2c81c-1524-4638-9460-6d5d40e86961",
+      "previous": "bffa39df006f637b532064d6112ac2e4e6b3ac5ad0f29ff907b0cdf59b43e0d3",
+      "next": "411f9df833902eacf20555b888932c8940aad622b75da867048ea7c1dbd476df",
+      "distributionHash": "a003ed6b90cd81aad866859f75b3e1ab509ba027a8924862712a0cbc308d6dc6",
+      "rotated": true,
+      "settingsCount": 40,
+      "registry": "df11e1a188be34097bc6bdcaff2f905b223bb7d1c0c2a0b676941b629b3b4279",
+      "audit": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\update-base.json",
+        "sha256": "b3361ac472054125dd689455a63360c63b7a38f49f5b9dc08d7a2e8ed9298a74",
+        "bytes": 15997
+      }
+    },
+    "slot": {
+      "stopId": "a6b1a598-53cc-4c26-9ddc-2721df396d8e",
+      "transactionId": "4aabb9db-a09a-4ada-a06b-0b0efe838907",
+      "previous": "411f9df833902eacf20555b888932c8940aad622b75da867048ea7c1dbd476df",
+      "next": "1d61f0c7790f96f20e1e4878be2cb4c156049ccd39eb88c68e90857e89af140f",
+      "distributionHash": "7c88250eadc00d60416065fb4700eb2f985a2679bbc467547bb4a19f14643caf",
+      "rotated": true,
+      "settingsCount": 40,
+      "registry": "df11e1a188be34097bc6bdcaff2f905b223bb7d1c0c2a0b676941b629b3b4279",
+      "audit": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\update-slot.json",
+        "sha256": "59b19a01b06d25422d9a0f6b644969f4a916018b541a214ee508830625c84ba6",
+        "bytes": 15997
+      }
+    },
+    "coldFirstStatusMs": 23722,
+    "firstOwnerPid": 11832,
+    "installedOperation": "save-comp-frame-png",
+    "modulePin": "7f001f2961627012242757eca5c59abd271a93da0a15b64a8b2cb202796fcbd2"
+  },
+  "recovery": {
+    "resetId": "2ad2a0d0-693c-4b2a-a9a7-9a682f1e07fc",
+    "operationId": "b1720a6c-7433-43c2-80d7-25f5038da40a",
+    "oldTask": "task-457511b9-318d-4a0a-9c08-4c5e23e70626",
+    "oldCommand": "command-8fb64dbd-8d3b-418a-ab0f-5088cd035878",
+    "code": "lifecycle_open_destination_dirty",
+    "state": "UNKNOWN archived",
+    "repeats": 0,
+    "planHash": "801264c586db3d630cc13bd7f5645a4361d478e2e5b4db1ef46f00d0adc05eb8",
+    "journalHashes": {
+      "ledger": {
+        "bytes": 2862410,
+        "sha256": "b78e459196bfe58ce6bbd1a9b0f28f6f0d5a054cad36f5aa276b95ee5594df27"
+      },
+      "receiver": {
+        "bytes": 1034206,
+        "sha256": "677d968b5823ca6ce62ae0b45882aebb090c2ced08fc5640b78e45685a5e0cf5"
+      }
+    },
+    "oldAePid": 20548,
+    "newAePid": 11892,
+    "refusedRead": "inspect-9cc0aa72-4505-4556-8f75-c6387132e332",
+    "refusedReadOutcome": "inspection_not_dispatched"
+  },
+  "operations": {
+    "png-connected": {
+      "audit": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-png-connected.json",
+        "sha256": "0523db45b36823ade24652693c43a24c783ab9718b1b9b1051e62c7b84a2143b",
+        "bytes": 28976
+      },
+      "commands": [
+        {
+          "step": "native-s1-frame",
+          "taskId": "task-a0481616-172f-4230-9d2d-33f81ffbe5c4",
+          "commandId": "command-2ee4e2e9-f04d-47e8-b1ea-4ed7cd3cb726",
+          "receiptRef": "8d0db538720e676a4af7c1b2ac14faaddbe46c7daaf5ad473bc01d047b2cc3fe",
+          "recordHash": "c0a0b3a04e303efd46edc316edba0d5b486cf35bbff6e683e7557d4cf92d4d0e"
+        }
+      ]
+    },
+    "slideshow-photos": {
+      "audit": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-slideshow-photos.json",
+        "sha256": "3b7a6a82717dc80500e31df024650c3b22358f38fcfe333051b6e2679f851d47",
+        "bytes": 70716
+      },
+      "commands": [
+        {
+          "step": "replace-s1-1",
+          "taskId": "task-d72ec96c-8b8d-49f5-ab25-5d1518462145",
+          "commandId": "command-b7447997-61e5-4d4f-b592-a594840da0d9",
+          "receiptRef": "8e4367906ff6a306528ba63ee2f77012abd16ad221f6e97f01d8067ee730ff2b",
+          "recordHash": "40810677d156f651106ce8f4ef9a0b7105c2f6702204a0f79795cca5d88e4475"
+        },
+        {
+          "step": "replace-s1-2",
+          "taskId": "task-2c6df745-30f0-45fd-b853-3fe591203c52",
+          "commandId": "command-bc8a338d-6486-4741-80d2-70a230ff3027",
+          "receiptRef": "1784ed1bf4b011a80454363e37aa49a0ab728395dd440615b09e745647acf5dd",
+          "recordHash": "71acba7f91837693301664ae45914641aa0c112086d06a89940d2fd246e51123"
+        }
+      ]
+    },
+    "save-slideshow": {
+      "audit": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-save-slideshow.json",
+        "sha256": "000ff12d251a87ee4ba821f2c9ebfa46ad3079f0b8515916f7f38935f189af80",
+        "bytes": 31488
+      },
+      "commands": [
+        {
+          "step": "save-own-aep",
+          "taskId": "task-4276bae1-db12-4dc5-b34d-6911d128f380",
+          "commandId": "command-6617779e-a721-4be0-ab77-21d6ecd0607b",
+          "receiptRef": "92603198b6f8ee1fdb754613d1e85620ab98b06494834f83cce93184e4d97f0e",
+          "recordHash": "921d92b584aa946622b3460ee3b70a457296d7947a288cea7e5b97339c389fd5"
+        }
+      ]
+    },
+    "render-slideshow": {
+      "audit": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-render-slideshow.json",
+        "sha256": "6ed23892f6853097b01167d3fd94625e16b69bb85a47ee4935e2f25d0ccc2f75",
+        "bytes": 45373
+      },
+      "commands": [
+        {
+          "step": "stage-r1-copy",
+          "taskId": "task-64757a19-0649-4e37-a77d-b33c69cb0828",
+          "commandId": "command-f19df20a-e7d9-4a70-bec4-4b2646b2030e",
+          "receiptRef": "66611ce0555dca5c7f78931ebf44eaede0825d0139288f623c8c0807cb99bd44",
+          "recordHash": "f0b4bfb762baa65b4e936cdbc15666dcf332bc2d2a724c8711193e6f4449f2f9"
+        }
+      ]
+    },
+    "titles-comp": {
+      "audit": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-titles-comp.json",
+        "sha256": "48c7fbfd8d18e838e1cb206880dc260c8c9f3ee761743cb6f9ae3092642c46d2",
+        "bytes": 32447
+      },
+      "commands": [
+        {
+          "step": "assemble-title-fixture",
+          "taskId": "task-f2dfe491-b532-4f64-beec-417a62de7722",
+          "commandId": "command-199d93e7-85e0-407a-801a-c0218941909e",
+          "receiptRef": "539288ff6a666d1fd204338ee843384070e58d526b16d567a4ec81b9968cc753",
+          "recordHash": "4e9ff5ddeabde70856265088ebd8c43f3f327024823e7746557e8e39ddf9e2f1"
+        }
+      ]
+    },
+    "titles-text-marked": {
+      "audit": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-titles-text-marked.json",
+        "sha256": "7b098e614aac79035b4e902bfda70c861d57efc97f46eef9ae5a743b6ce81f17",
+        "bytes": 39717
+      },
+      "commands": [
+        {
+          "step": "write-multiline-title",
+          "taskId": "task-3e843450-e382-4514-b72f-2a3b755fed39",
+          "commandId": "command-fb72ebe6-173c-4cc1-ad0a-71d6e75a9991",
+          "receiptRef": "b5341ef8933b2062145cbe2cbf43770124a3db5965ec6e754915d6ba04dfbd71",
+          "recordHash": "5f9128f1e6e19b4010721bf850bb1791029a7d6b6ee201eb90bfe25f8f6f81ca"
+        }
+      ]
+    },
+    "save-titles": {
+      "audit": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-save-titles.json",
+        "sha256": "d2907b4c4136abd2d409d7fc5d3e9a019ac6cf72b1d539866eb5892c007d4b7b",
+        "bytes": 31557
+      },
+      "commands": [
+        {
+          "step": "save-own-aep",
+          "taskId": "task-f512413a-d41d-4a73-94ed-12d8e3d42f69",
+          "commandId": "command-976b1ece-b944-46fb-8dc3-edd2fd085911",
+          "receiptRef": "15b7e1d4021f93382b5a2cfa7054b2d650e75db03d9c566827d5e6277fd4bbec",
+          "recordHash": "98da91d640f51872aa0aac0fd1458241514df19bfba3d72726af5d7ba6f6cecd"
+        }
+      ]
+    },
+    "render-titles": {
+      "audit": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-render-titles.json",
+        "sha256": "6928932d42bb25d423b8575a5d85f5d00485fbe754a53e584c32b0406e8ebab0",
+        "bytes": 41601
+      },
+      "commands": [
+        {
+          "step": "stage-r1-copy",
+          "taskId": "task-a2f5c192-ce0e-4a1f-bad0-32f5c8ee17de",
+          "commandId": "command-07f82bfd-2447-4bae-a189-ef6b1aa5d8ff",
+          "receiptRef": "0fdefba76247a924d575c3cf1570d42389143968a940463a572537684b15c527",
+          "recordHash": "d0a65f3ab738e1bc0c73b9872efdcc6d313b7aa1782bf8cee2d85d299c7a4668"
+        }
+      ]
+    }
+  },
+  "png": {
+    "bytes": 3666785,
+    "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\slideshow-live\\frames-output\\native-s1-frame-45.png",
+    "frame": 45,
+    "sha256": "26dcbaa460b27cfeff6077f36fff050f1cdbdedae1d7cf5b7b2f77bdfe8313d2",
+    "width": 3840,
+    "height": 2400,
+    "source": "native_ae_png",
+    "aepSha256": "627c7461b172c5428026a69b7d132773e79f6d60528316c2d30e827b9989aa91",
+    "observed": "Нативный кадр 45: видны голубые складки и фиолетовое кольцо, оба изображения в переходе."
+  },
+  "published": {
+    "slideshow": {
+      "publication": {
+        "bytes": 3084410,
+        "id": "58e6fa4b-ff21-84ba-ae79-52352d93725d",
+        "media": {
+          "audio": false,
+          "duration": 2.2022,
+          "fps": "30000/1001",
+          "frames": 66,
+          "height": 2400,
+          "width": 3840
+        },
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow.mp4",
+        "sha256": "28699536d554abdfe35f1ec32233867ce9022a9c9ccb54af6ba8f6c0a966f885",
+        "state": "published"
+      },
+      "proof": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-published.json",
+        "sha256": "eb8952b370b3f1146dce81a4f3ab6b7c40a64f4f5bcc58f758c6618d015e3ac3",
+        "bytes": 836
+      },
+      "source": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\slideshow-live\\slideshow-live.aep",
+        "sha256": "fa2c12aaf4e3300969fe761452ac15d63f9b27d5e97a46afd3ffb4ded3e55b9d",
+        "bytes": 276729
+      },
+      "renderCopy": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\slideshow-render-copy\\render.aep",
+        "sha256": "ce90dd511a164e6724a2020772c3c75f3706c70fcee9bff51da4d2289d809141",
+        "bytes": 316271
+      },
+      "decoded": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-decode.json",
+        "sha256": "a6055b60ccfa59eb81c482d59fb78dffcbdf4d9147be0f18380fae05d250e226",
+        "bytes": 1309
+      },
+      "frameRange": {
+        "endFrameExclusive": 76,
+        "fps": "30000/1001",
+        "startFrame": 10
+      },
+      "manifest": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-review\\manifest.json",
+        "sha256": "d7aa4cb67010340eaff9455d1998335a8c6ba1b7c0f3df082ee18b8d34a05c78",
+        "bytes": 3306
+      },
+      "review": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-review\\review.json",
+        "sha256": "34a38f9141d46f76fe943c5b7b4281fa34c819319eca7307bb56d818787dc067",
+        "bytes": 1673
+      },
+      "sheet": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-review\\sheet.png",
+        "sha256": "cbc565edc013135f256cec53592de691255f0d728039739f60846277000ff413",
+        "bytes": 171801
+      },
+      "observations": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-review\\observations.json",
+        "sha256": "1a9aa7febbe5287befeb8848fdd9f9e6cd2c2cf98149471021a7d53ab9898963",
+        "bytes": 1191
+      },
+      "frames": [
+        {
+          "frame": 10,
+          "pts": 0,
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-review\\frames\\frame-00.png",
+          "sha256": "99ab4752240c759b0507ed44bdcd121460a49e07c9135d8a8e321a247ed69a70",
+          "bytes": 624311
+        },
+        {
+          "frame": 45,
+          "pts": 35035,
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-review\\frames\\frame-01.png",
+          "sha256": "6dff252b7a83f6a876069f277db5e21c6d54147806a5c33d7995ab165f5462b5",
+          "bytes": 992594
+        },
+        {
+          "frame": 75,
+          "pts": 65065,
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-review\\frames\\frame-02.png",
+          "sha256": "efe70e4fc934a0b73350c42eeaa676f323c8607c3b2e400522bc02e877b1c829",
+          "bytes": 839344
+        }
+      ],
+      "decode": {
+        "fps": "30000/1001",
+        "frames": 66,
+        "duration": 2.2022,
+        "allFramesNonEmpty": true,
+        "minimumLumaContrast": 36
+      }
+    },
+    "titles": {
+      "publication": {
+        "bytes": 344919,
+        "id": "02735290-8dd3-8140-a17b-4aaba3d12359",
+        "media": {
+          "audio": false,
+          "duration": 3,
+          "fps": "25/1",
+          "frames": 75,
+          "height": 720,
+          "width": 1280
+        },
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles.mp4",
+        "sha256": "7735a51a14c89cb75aa10496b9cf28a512fc2b9fe699d69b436093cf6e20bb02",
+        "state": "published"
+      },
+      "proof": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-published.json",
+        "sha256": "999ece843be3ec86a1484a5630ee415e6785fb80ebb1ae3db673aab421c98e42",
+        "bytes": 827
+      },
+      "source": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\titles\\titles.aep",
+        "sha256": "da93a3c1de228b3bc726bfda9375fa8a3e37498a5b6edd827399d258f56c3943",
+        "bytes": 160883
+      },
+      "renderCopy": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\titles-render-copy\\render.aep",
+        "sha256": "cac5d06e3ce73432069cb7517d46eec9a89de9798d8eb43cf13ad2c70256b433",
+        "bytes": 199966
+      },
+      "decoded": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-decode.json",
+        "sha256": "99b4b1a76b654feac6419734f4f969545a1863f9eb526e81c5c91ef4e6d75317",
+        "bytes": 1719
+      },
+      "frameRange": {
+        "endFrameExclusive": 75,
+        "fps": "25/1",
+        "startFrame": 0
+      },
+      "manifest": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\manifest.json",
+        "sha256": "1f54223e1854fb23b78b2802018807eed6e7d4a2b3345810587a5a7ac95af404",
+        "bytes": 3685
+      },
+      "review": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\review.json",
+        "sha256": "8c9f519fb9a5f11857f7d4d2cbef23fe8e988ef0df277bc80f4273035e246d33",
+        "bytes": 1663
+      },
+      "sheet": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\sheet.png",
+        "sha256": "dc19a068cc440c607e246c1f08cedaceb14e5e2fb5449816bfedf76e0cc06744",
+        "bytes": 17839
+      },
+      "observations": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\observations.json",
+        "sha256": "5d9965272e6179809caf4b01366268da5909847958c433fcbcae4c473dcd77c3",
+        "bytes": 1572
+      },
+      "frames": [
+        {
+          "frame": 5,
+          "pts": 5000,
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\frames\\frame-00.png",
+          "sha256": "21f59eda1026526cc0c4f18a4a5b5ddce27d6fb047e55e96115644fdcf7bd4ed",
+          "bytes": 19869
+        },
+        {
+          "frame": 35,
+          "pts": 35000,
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\frames\\frame-01.png",
+          "sha256": "0485c02165f143ddbb84923580391ea387a3d4f821bbe9be4b9ef77fdc2565e3",
+          "bytes": 20850,
+          "roi": {
+            "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\roi\\frame-01.png",
+            "sha256": "1f534d3ec17930790ddd2076ff946677c76666ee6b30356ed424d3810c3cce47",
+            "bytes": 15852
+          }
+        },
+        {
+          "frame": 68,
+          "pts": 68000,
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\frames\\frame-02.png",
+          "sha256": "0f834acf4d911fedf3c48603ee49dc75c657f81763e128cf809252a1cb34c0a2",
+          "bytes": 20384
+        }
+      ],
+      "decode": {
+        "fps": "25/1",
+        "frames": 75,
+        "duration": 3,
+        "keyframes": [
+          0,
+          12,
+          62,
+          74
+        ],
+        "luminanceSamples": [
+          {
+            "frame": 0,
+            "yAvg": 16
+          },
+          {
+            "frame": 5,
+            "yAvg": 17.021
+          },
+          {
+            "frame": 12,
+            "yAvg": 18.4619
+          },
+          {
+            "frame": 35,
+            "yAvg": 18.4619
+          },
+          {
+            "frame": 62,
+            "yAvg": 18.4619
+          },
+          {
+            "frame": 68,
+            "yAvg": 17.2338
+          },
+          {
+            "frame": 74,
+            "yAvg": 16
+          }
+        ]
+      }
+    }
+  },
+  "foreignReportRefusals": {
+    "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\cross-job-refusals.log",
+    "sha256": "74ff890d3ed89931739e0f906eb2a8230df6b8dfb6eb66c8dbdd51432061544e",
+    "bytes": 363
+  },
+  "previouslyPublishedRegression": {
+    "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\historical-review-check.json",
+    "sha256": "5b7f1af976aaada7ac31f30fddff2bcf94a58fcbbdd0752086b679b709869119",
+    "bytes": 2147
+  }
+}
