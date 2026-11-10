@@ -181,9 +181,9 @@ async function startClient({ descriptor, input = process.stdin, output = process
       launchAttempted = true;
       try { await launch(); }
       catch (failure) { if (preSpawnStops.has(failure)) launchAttempted = false; throw failure; }
-      // Cold owner verification/recovery may exceed five seconds. This is one
-      // bounded, absence-only boot wait following the one guarded launch.
-      const deadline = performance.now() + 15000;
+      // Installation and history checks can keep the pipe absent past 15s on
+      // Windows. Wait within the normal MCP tool budget after one guarded launch.
+      const deadline = performance.now() + 45000;
       while (!closed) {
         const remaining = Math.ceil(deadline - performance.now()); if (remaining < 1) unavailable();
         try { return await attach(Math.min(3000, remaining)); }

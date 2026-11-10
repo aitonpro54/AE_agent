@@ -1,6 +1,6 @@
 'use strict';
 const nodeTest = require('node:test');
-const test = (name, fn) => nodeTest('client-launcher ' + name, { timeout: 25000, skip: process.platform !== 'win32' }, fn);
+const test = (name, fn, timeout = 25000) => nodeTest('client-launcher ' + name, { timeout, skip: process.platform !== 'win32' }, fn);
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), net = require('node:net');
 const cp = require('node:child_process');
@@ -171,10 +171,11 @@ test('concurrent requests share one actual spawn; authenticated child receives o
   assert.equal(actual.cwd, f.releaseDir);
 });
 
-test('first ordinary request waits for fixture readiness beyond five seconds with one guarded launch', async t => {
-  const f = fixture(t, { delayMs: 5600 }), d = await driver(t, f), started = performance.now();
+test('first ordinary request waits for fixture readiness past the former 15 second deadline with one guarded launch', async t => {
+  const delayMs = 16200;
+  const f = fixture(t, { delayMs }), d = await driver(t, f), started = performance.now();
   const status = value(await d.call('core_status'));
-  assert.equal(status.method, 'core_status'); assert.ok(performance.now() - started >= 5600);
+  assert.equal(status.method, 'core_status'); assert.ok(performance.now() - started >= delayMs);
   assert.equal(d.observed.length, 1); assert.equal(lines(f.starts).length, 1);
   assert.equal(lines(f.calls).filter(row => row.method === 'core_status').length, 1);
 });
@@ -257,7 +258,8 @@ test('EOF after spawn exits the thin process while the IPC-only fixture owner su
 test('failed actual start stays latched and later explicit requests never spawn a second process', async t => {
   const f = fixture(t, { mode: 'fail' }), d = await driver(t, f), started = performance.now();
   assert.equal((await d.call('core_status')).error.message, 'owner_unavailable'); assert.equal(d.observed.length, 1); assert.equal(lines(f.starts).length, 1);
-  assert.ok(performance.now() - started >= 15000); assert.ok(performance.now() - started < 20000);
+  const elapsed = performance.now() - started;
+  assert.ok(elapsed >= 45000 && elapsed < 50000, 'boot wait ended after ' + elapsed + 'ms');
   assert.equal((await d.call('core_status')).error.message, 'owner_unavailable'); assert.equal(d.observed.length, 1);
   const winner = createIpcServer({ endpoint: f.d.ownerEndpoint, identity: f.identity, secret: f.d.controlToken, bootId: 'external-fixture-winner', methods: ['core_status'], onRequest: () => ({ ok: true, value: { external: true } }) });
   await winner.listen(); resources(t).closers.push(() => winner.close());
@@ -267,7 +269,7 @@ test('failed actual start stays latched and later explicit requests never spawn 
   const oldSocket = await d.call('core_status');
   if (oldSocket.error) assert.ok(['ipc_closed', 'ipc_outcome_uncertain'].includes(oldSocket.error.message));
   assert.equal(value(oldSocket.error ? await d.call('core_status') : oldSocket).method, 'core_status'); assert.equal(d.observed.length, 2);
-});
+}, 55000);
 
 test('descriptor rotation or wrong owner contract refuses before spawn and preserves the failed launch latch', async t => {
   const f = fixture(t, { files: { 'runtime/client-ipc.js': absenceModule('ipc_endpoint_absent') } }), d = await driver(t, f);
