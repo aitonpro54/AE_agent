@@ -1333,6 +1333,10 @@
     "zero-dispatch-recovery": [
       "tools/recover-zero-dispatch-owner.js",
       "test/recover-zero-dispatch-owner.test.js",
+      "test/fixtures/fixed-format1-package.js",
+      "test/fixtures/legacy-poll-dispatcher-v1.txt",
+      "test/fixtures/legacy-panel-v1.txt",
+      "test/fixtures/legacy-project-inspection-v1.txt",
       "tools/install-core4.js",
       "tools/package-installable.js", "config/compositions/",
       "core/",

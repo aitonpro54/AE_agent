@@ -7,7 +7,10 @@ const MODULE = 'titles-current-target';
 const OPERATION = 'set-current-text';
 const POLICY = 'current-matching-target-after-local-confirmation-v1';
 // Public module artifact identity, not installer/package/machine identity.
-const MODULE_PIN = '189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79';
+const MODULE_PINS = new Set([
+  '189c58bf5335a8ce7c889159808b7791a39dc0ad3f0641cd522342bcdb8c6e79',
+  '704e67f0793eb9ebcf7fafc41e0d777ed6d3cd4d801d9f847da08eefb892e284'
+]);
 const CONTRACT_HASH = '6226f911063f94f471bff23e9ebb60f1ee49323c2f25d54e6a4bdabf95bbe55b';
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function canonical(value, depth = 0, seen = new Set()) {
@@ -73,7 +76,7 @@ function compile(value) {
 function prepareBuild(value, contractResponse, inspectionResponse) {
   const job = validJob(value), response = boundedCopy(contractResponse), inspection = boundedCopy(inspectionResponse);
   exact(response, ['contractId', 'moduleId', 'operationId', 'modulePin', 'admissionPin', 'contract']);
-  if (response.moduleId !== MODULE || response.operationId !== OPERATION || response.modulePin !== MODULE_PIN ||
+  if (response.moduleId !== MODULE || response.operationId !== OPERATION || !MODULE_PINS.has(response.modulePin) ||
       hash(response.contract) !== CONTRACT_HASH || hash(publicContract) !== CONTRACT_HASH) fail('incompatible_contract');
   for (const key of ['contractId', 'admissionPin']) if (typeof response[key] !== 'string' || !/^[a-f0-9]{64}$/.test(response[key])) fail('contract_reference');
   exact(inspection, ['evidenceRef', 'snapshot', 'modulePin', 'synthetic']);

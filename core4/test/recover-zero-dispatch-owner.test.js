@@ -7,11 +7,12 @@ const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 const { hash, canonical } = require('../protocol/json');
 const { buildPackage } = require('../tools/package-installable');
+const { fixedFormat1Package } = require('./fixtures/fixed-format1-package');
 const { planInstall, applyInstall } = require('../tools/install-core4');
 const { createRecovery, PROCESS_PROBE } = require('../tools/recover-zero-dispatch-owner');
-function fixture() {
+function fixture(pkg = fixedFormat1Package()) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-zero-dispatch-'));
-  const plan = planInstall({ pkg: buildPackage(), nodePath: fs.realpathSync(process.execPath), installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'), configPath: path.join(directory, 'project/.codex/config.toml'), machineId: 'explicit-offline-fixture-machine' });
+  const plan = planInstall({ pkg, nodePath: fs.realpathSync(process.execPath), installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'), configPath: path.join(directory, 'project/.codex/config.toml'), machineId: 'explicit-offline-fixture-machine' });
   const installed = applyInstall(plan), descriptor = installed.descriptorPath, d = JSON.parse(fs.readFileSync(descriptor)), broker = path.join(d.stateDir, 'broker'), receiver = path.join(d.stateDir, 'receiver'); fs.mkdirSync(broker, { recursive: true }); fs.mkdirSync(receiver);
   const ownerFile = path.join(broker, 'broker-owner.lock'), receiverOwner = path.join(receiver, 'owner'), journal = path.join(receiver, 'completions.ndjson'), ledger = path.join(broker, 'ledger.ndjson');
   const ownerBytes = Buffer.from(JSON.stringify({ pid: 123456789, token: '00000000-1111-4222-8333-444444444444' })); fs.writeFileSync(ownerFile, ownerBytes); fs.writeFileSync(receiverOwner, '');
@@ -81,4 +82,10 @@ test('zero-dispatch recovery rejects junction state and unverified dependency se
 test('zero-dispatch Windows inventory probe is fixed data-only script, emits no command lines; package excludes operator recovery', () => {
   assert.ok(PROCESS_PROBE.includes('Get-CimInstance Win32_Process')); assert.ok(PROCESS_PROBE.includes('matchedPids')); assert.ok(!PROCESS_PROBE.includes('CommandLine=$')); assert.ok(!PROCESS_PROBE.includes('Invoke-Expression'));
   const pkg = buildPackage(); assert.ok(!Object.keys(pkg.files).some(file => /recover-zero-dispatch|recovery/.test(file)));
+});
+test('zero-dispatch refuses current compositions outside its fixed historical CEP contract', async () => {
+  const f = fixture(buildPackage()), recovery = createRecovery(f.probes);
+  await assert.rejects(recovery.inspect(f), /installation_cep_bytes/);
+  assert.ok(fs.readFileSync(f.ownerFile).equals(f.ownerBytes));
+  assert.equal(fs.existsSync(f.installGate), false);
 });

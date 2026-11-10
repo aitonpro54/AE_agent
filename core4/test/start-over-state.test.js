@@ -84,11 +84,13 @@ test('native query failure retains original intent and markers; status does not 
 });
 test('late original completion during native observation is append-only history without weakening the initial risk requirement', async t => {
   const f = await harness(t); f.stores.store.begin(f.c, dispatchBinding(f.c, f.stores.store.identity));
-  f.scan(async () => f.stores.store.complete(f.c.commandId, { protocolVersion: 1, commandId: f.c.commandId, executorHash: f.c.executorHash, payloadHash: f.c.payloadHash, result: { outcome: 'rejected' } }));
+  f.scan(async () => {
+    f.stores.store.complete(f.c.commandId, { protocolVersion: 1, commandId: f.c.commandId, executorHash: f.c.executorHash, payloadHash: f.c.payloadHash, result: { outcome: 'rejected' } });
+  });
   const result = await f.owner.request(); assert.equal(result.requiresAEExit, true); assert.equal(result.phase, 'stop-requested');
 });
 test('new physical begin across the observation await preserves the intent and refuses stop continuation', async t => {
-  const f = await harness(t); f.scan(async () => f.stores.store.begin(f.c, dispatchBinding(f.c, f.stores.store.identity)));
+  const f = await harness(t); f.scan(async () => { f.stores.store.begin(f.c, dispatchBinding(f.c, f.stores.store.identity)); });
   await assert.rejects(f.owner.request(), error('start_over_new_physical_command')); assert.equal(fs.existsSync(f.path('runtime-start-over.json')), true); assert.equal(f.calls.some(v => v.startsWith('stop:')), false);
 });
 test('clean close after request keeps inspection valid even when ordinary close removed current owner markers', async t => {

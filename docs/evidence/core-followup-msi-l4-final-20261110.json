@@ -1,0 +1,4290 @@
+{
+  "schemaVersion": 1,
+  "baseline": "82ae35bd29d0c42df4f4e9fb064250244abd9ab4",
+  "registry": {
+    "file": "core4/config/validation-map.json",
+    "sha256": "b577ab5ea4f9c0115cec5892b31a652206918c98391e0deab93aea477d586d7c"
+  },
+  "releaseCertified": true,
+  "checks": [
+    {
+      "check": "ae-readiness",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=ae-readiness",
+        "test/ae-readiness.test.js"
+      ],
+      "evidenceKey": "f910511c15c3eec191a9c14a31c2449d65dc7f9d68415fdf9e0cfb9063249254",
+      "dependencyCount": 5,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-4ubpgQ",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\ae-readiness\\output.log",
+        "sha256": "7aec7b005c604b2a57d81b4c1b257915c7ff2ec310128c7b35d276dec53f5c53"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 5,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "aerender-jobs",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^aerender-jobs",
+        "test/aerender-jobs.test.js"
+      ],
+      "evidenceKey": "890c0889ac8d399d3540320ebe5cd2cc65aaea0205232e71b92804120ae45350",
+      "dependencyCount": 9,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-NVHCvL",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\aerender-jobs\\output.log",
+        "sha256": "e72ccddaaa595e0013bf527e7d0f980cf900a2209dc0038a6c7260e43b4c5657"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "aerender-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^",
+        "test/package-aerender-operator.test.js"
+      ],
+      "evidenceKey": "99185f5ae959711ee971ea35e899316656d192a2e524f3fe9b26991f9738b5ec",
+      "dependencyCount": 11,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-b6g70X",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\aerender-operator\\output.log",
+        "sha256": "97022d240d7ac94eee4ba2e33382d4a8728aca140769781e209000c8b004482a"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 4,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "aerender-profile",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^",
+        "test/aerender-profile.test.js"
+      ],
+      "evidenceKey": "a2eb07de51f5089b03573b3b93882b868c8f92bf95b15aa969c7bfaf99ca590c",
+      "dependencyCount": 5,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-kpIfMc",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\aerender-profile\\output.log",
+        "sha256": "863349a64809ce8cd57783b8bfe356a1fdc704f142a0ea69c2561ea87390d3b8"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "ame-media-export",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^AME ",
+        "test/ame-media-export.test.js"
+      ],
+      "evidenceKey": "a3662acdd10e9a90714c2daad49d3b26be85ad2e35f32ecf98d5d6b6dbbdb817",
+      "dependencyCount": 6,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-vcCqs5",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\ame-media-export\\output.log",
+        "sha256": "55c4d7782ab19a3af862a94a900527f5d4538a0b2fe5ac974bae425b52cbd29f"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "artifact-boundaries",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=artifact-boundaries",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "0716a9094fca0d1e2a8c925085b44f3e0a9ee51e071874b9839b83a9d0429416",
+      "dependencyCount": 140,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-BO7yWj",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\artifact-boundaries\\output.log",
+        "sha256": "bce12561dfc410a416ddbcdcde6f846579cfeeb7e6b2e377831dc2e55950e3fa"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 5,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "audit-repairs",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=audit-repairs",
+        "test/audit-repairs.test.js"
+      ],
+      "evidenceKey": "c198043ba8cd13d78b58a1bb21b1863c32a4e2dd97f517f920d3e003147b77de",
+      "dependencyCount": 110,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-Dq3eKn",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\audit-repairs\\output.log",
+        "sha256": "0c7d87a9f5b2ea1e06c853510771cb57c1342b46aeab5f4d03982da06f6c20ce"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 32,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "catalog-discovery",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=catalog-discovery",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "d71d37c16764dc2ce382626eeaa6b12f16af50eca88346f9cb09723a8874cb56",
+      "dependencyCount": 8,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-M2AhOo",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\catalog-discovery\\output.log",
+        "sha256": "f0a1fa5e9a8fce9054055130262af030342964f53b3105b42dbf4c64a06651e4"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "cep-transport",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=cep-transport",
+        "test/integration/cep-transport.test.js"
+      ],
+      "evidenceKey": "bf1ef77e68a84137ba8638d3298616a65e95bc30da580dd1a7844d0b8014b054",
+      "dependencyCount": 148,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-7rQuuo",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\cep-transport\\output.log",
+        "sha256": "00f07223009bbbfb9c068d9afec10b82f97abbc113a65d13c36e70845e5a38b7"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 15,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "fbcb2ec3c3e1c94e6180ae9c68625a5aa137b8fbfdf619a3936d96db50018147",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\cep-transport\\output.log",
+            "sha256": "2117f33db00f8e842a99858f1ac0fd6ac52ee044149242377ffa4172cd0a1076"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 15,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "client-entry",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=client-entry",
+        "test/client-entry.test.js"
+      ],
+      "evidenceKey": "50e79b5f367bab8e767bf36d5ed50081249be560c3e6ffbe3ddb0339a51bbc26",
+      "dependencyCount": 8,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-7MwXBf",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\client-entry\\output.log",
+        "sha256": "d6553fe669533aebecef138b58b10a8156dc2001de14ba202c4eda4e0a05fc37"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 12,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "client-ipc",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^IPC ",
+        "test/client-ipc.test.js"
+      ],
+      "evidenceKey": "0d05d5cf638661023724b5389fc874240919b2e6e95ea28374dc6f019235712e",
+      "dependencyCount": 2,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-iTqIeJ",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\client-ipc\\output.log",
+        "sha256": "725ef59e12a499204d61406fd5c8bcf02d6f0f4b496cb0636d0b87f3f6c6eb38"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 27,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "client-launcher",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=client-launcher",
+        "test/client-launcher.test.js"
+      ],
+      "evidenceKey": "dc11cbbb39d5d27ee5648cb852c8cae422fc3c3a299ba848c2b86d85f16bea35",
+      "dependencyCount": 7,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-eaDBLU",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\client-launcher\\output.log",
+        "sha256": "61a8e83fa2b1d002200c4a30c8a8f96a7b210a5ed0f7876d0dbe5dde01cb50fc"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 21,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "comp-frame-export",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=comp-frame-export",
+        "test/comp-frame-export.test.js"
+      ],
+      "evidenceKey": "bec9643cb99e6f87feefdc4c13477cfd2405a24e527fae24aec58d663d11d94b",
+      "dependencyCount": 184,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-B8kNfl",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\comp-frame-export\\output.log",
+        "sha256": "02d1b5f6740ae8a1e99850f1222de45b50ecb00101bfbd1fd18a709781cc0ab0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 6,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "comp-render",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=comp-render",
+        "test/comp-render.test.js"
+      ],
+      "evidenceKey": "fbfa88ac1ea5121010e81a3fcb52fbab1dcbf86782084c4dd77fa5c4649d5eba",
+      "dependencyCount": 13,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-QBktap",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\comp-render\\output.log",
+        "sha256": "b922cd6431c7dfe5637b7a3a0fec139d998cb3cad538f4e86b4c2cc558213e23"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 10,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "controller-lease",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=controller-lease",
+        "test/controller-lease.test.js"
+      ],
+      "evidenceKey": "1b822fd41b19872f5825fa5b047e76a37377289791a27b942cb64fcb1d9145af",
+      "dependencyCount": 2,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-MEFGhU",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\controller-lease\\output.log",
+        "sha256": "6776ec6a1cf9e168e6e2c68ef1f3c0c2ac9515e34460ea9ec8e8c8bfdce90307"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 16,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "controller-transfer",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=controller-transfer",
+        "test/controller-transfer-ipc.test.js"
+      ],
+      "evidenceKey": "5d63b2bfafd4df959fb494f16ca8fc8126181008a45a80a9f44369202984bbde",
+      "dependencyCount": 4,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-xOZ5Ds",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\controller-transfer\\output.log",
+        "sha256": "a572ea02111c2f72c8cd3653b90b5df092fde09bfcd77eca31e570c8dbc05aca"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "core-admission",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=core-admission",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "8e862baad96bfdca4bd7be5d90f74a17e54ace40a3bcaf16748a07179d1e3121",
+      "dependencyCount": 139,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-yTmksI",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\core-admission\\output.log",
+        "sha256": "6de1775618e8c38e16f66436850e3b14c98c214558b408a05f4073912b4a2794"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "core-control",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=core-control",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "c5c07160d18a07486b7e54e1f02cd17513ad5f5921ed18a74f9704d2d13e40b2",
+      "dependencyCount": 139,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-QzTSPd",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\core-control\\output.log",
+        "sha256": "23ce88dd6188e5be7b792947489c5916b70ab6b613ed2f4cd8e6dd8a9b393ba0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 16,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "documentation",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=documentation",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "c3e5ca284c87085cd6b45ced2f68b278ea9add7ed1697954d046394c77f32339",
+      "dependencyCount": 2,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-H6U7J0",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\documentation\\output.log",
+        "sha256": "1fa9247f2da0c878bb07bed0ea3d042fc54347c64f7402bb210d37f816c7cfd3"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "endpoint-observation",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=endpoint-observation",
+        "test/endpoint-observation.test.js"
+      ],
+      "evidenceKey": "b1fdc7a5103a49c462dd01978839fdb12504beb76689e92784ba6ecd4fda5c5d",
+      "dependencyCount": 3,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-Z1QzZH",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\endpoint-observation\\output.log",
+        "sha256": "7c405a4baebe187ccf4579b501f07c8623e8613b9025d8d823e3aff35e85210a"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 15,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "exact-f548-transition",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=exact-f548-transition",
+        "test/exact-f548-transition.test.js"
+      ],
+      "evidenceKey": "7576cd792078e70f7bd7310e477460d78131ba9bdd6c64020a09b42d4a279035",
+      "dependencyCount": 189,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-N3FpNX",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\exact-f548-transition\\output.log",
+        "sha256": "e944ae215d77eef03567583dba2820ba74823701884449c0e3c1cc4e1f84f33e"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "frame-export-slot",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^frame-export-slot",
+        "test/stopped-update.test.js"
+      ],
+      "evidenceKey": "4ef9fdb1f4c1e7bc7088ff3c95ecf600440f86ff02b5545544c481b76d5d6b8f",
+      "dependencyCount": 187,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-wlbA2H",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\frame-export-slot\\output.log",
+        "sha256": "5ca16d6d655ee6e4bf7f96054e97732dee4936c5453ca07ddfae6a23a7a79ecc"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "human-window",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=human-window",
+        "test/human-window.test.js"
+      ],
+      "evidenceKey": "b7d858f0e3b9119d74629caa8429d7eb5b3542e03d13621f75c5498443be666a",
+      "dependencyCount": 181,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-SBwwqw",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\human-window\\output.log",
+        "sha256": "3566a2dcefe83b20782cfbb2a8a2afcd14eccd4bdc2bd2af8840814b6d0e835c"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "installable-runtime",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ],
+      "evidenceKey": "0fcf0fd8f2f6e8c19038ea3e2e6e3e7222aad38c5455981f3c39179d3c558e58",
+      "dependencyCount": 134,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-XOnjTJ",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\installable-runtime\\output.log",
+        "sha256": "de5f4f041a961d5fa4de4823ed2cad2c00e0f30a514ccdabcaa1d35e63cec2e0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 53,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "installed-composition",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installed-composition",
+        "test/installed-composition.test.js"
+      ],
+      "evidenceKey": "96a9268a1f2886c2e5799e6fcde1b0626b2cf31c48b4c86e3de31314fbef75b5",
+      "dependencyCount": 190,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-eiWhHB",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\installed-composition\\output.log",
+        "sha256": "b2c5510148a1508f19a90013a3fa8c53b807aa63f0c98c519070587ff5e0a278"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 23,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "layer-overlay",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=layer-overlay",
+        "test/layer-overlay.test.js"
+      ],
+      "evidenceKey": "140e4e43a9154dc0d2dd7aca49dfa377b20236e1cac2316d9dc840b713cfa276",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-iqysYK",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\layer-overlay\\output.log",
+        "sha256": "d1865663161020465bb3d52b4abc4949286ee45999de0a1044dc60be8953b499"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "legacy-owner-migration",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=legacy-owner-migration",
+        "test/legacy-owner-migration.test.js"
+      ],
+      "evidenceKey": "ed94b2d654db686b0fe1e1faf8d05ed9e3f3f35bafeddb6bc8703a1a51c3ff9f",
+      "dependencyCount": 187,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-d6gQAx",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\legacy-owner-migration\\output.log",
+        "sha256": "f2d29149b5224e76f8d68480b74e95a25c648db50de24957f63a1a2828338bf3"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 29,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "lifecycle-simulation",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=lifecycle-simulation",
+        "test/lifecycle-simulation.test.js"
+      ],
+      "evidenceKey": "f9144e345a31f72d7bcc7002782743d7b5970fe6a3798b50fbfe582d87970cda",
+      "dependencyCount": 269,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-mezx8W",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\lifecycle-simulation\\output.log",
+        "sha256": "f21ea81e9a765ca993ffb1af77b492028683d13b166c10a58c17d6784d86dda9"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 31,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "077481782372c404ad2bb91d9bd75ad388276515ef4695bdc6bec5842eeb7656",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\lifecycle-simulation\\output.log",
+            "sha256": "ab672c5df3f67a5ddf2032bb52f3ccbe18eff6d0eab52f3103cc69e62935d910"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 31,
+            "fail": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "evidenceKey": "1fee6978048da19552e190ee70d7be1199f182056acb7ba13c65e9926c2a5548",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck\\lifecycle-simulation\\output.log",
+            "sha256": "a54c50a8f180b5158c3d4f6518b6b6a46018c58ebd6ebcfebf6d07fa0f5f9741"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 31,
+            "fail": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "evidenceKey": "62077c61cae28d600527b7728abc7d3d07e0c09eb35be94835ef1b3a48d29bc5",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-2\\lifecycle-simulation\\output.log",
+            "sha256": "c06dcc284ae0cff4bbb6e940f70064870beff922e7e5957af192ed223ad408b5"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 31,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "maintenance-finish",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish",
+        "test/maintenance-finish.test.js"
+      ],
+      "evidenceKey": "465600fbd5c3922557822185f1fe3aa3b5d92d65840de12eb53f13321ff292b1",
+      "dependencyCount": 78,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-LvYUJZ",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\maintenance-finish\\output.log",
+        "sha256": "d61bbf2cc06d5718aea44e672cba7b8cb0455cf3087c496fa480a31f3c032830"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 32,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish-operator",
+        "test/maintenance-finish-operator.test.js"
+      ],
+      "evidenceKey": "e09bb258da9dd661227a5bcbc8fe2dd54712612847a5274d0e1265ae66dab765",
+      "dependencyCount": 219,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-TiSJre",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\maintenance-finish-operator\\output.log",
+        "sha256": "27631d43a7a8f9fe0ed41fb175df6e65c2cdbea39b53a124ed9f2335a416d1f9"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "3df198208db77348051f08caf2b13308aa80e2abaa850799965b9b9c4572ec77",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\maintenance-finish-operator\\output.log",
+            "sha256": "4974961d4c2e512189b6e7f0048911cf8cf813b80f8e1483d6dc273d93c57c02"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 7,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-operator",
+        "test/maintenance-operator.test.js"
+      ],
+      "evidenceKey": "370f8f6ea15d2f3ce3f2cc7c1fa269b4e8e061a6790298f0ce88796889deca61",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-BfRePz",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\maintenance-operator\\output.log",
+        "sha256": "d82b42cb0fc8b918eb0f49f4a0da146f2e9fe01f459b76977a807bf8986fe94b"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "manual-current-target",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-current-target",
+        "test/manual-current-target.test.js"
+      ],
+      "evidenceKey": "344b39ed2d9d7e3dc0771be7c6e474a009f54a0a9bd81e10b435d7e246039947",
+      "dependencyCount": 23,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-fj8sir",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\manual-current-target\\output.log",
+        "sha256": "bb74a144c5d59956fe6ab450dc2ee0f1f803d5e1caec89f7c6993df621034b45"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 13,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "manual-runtime",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-runtime",
+        "test/manual-runtime.test.js"
+      ],
+      "evidenceKey": "3781f1fc19bbea45dcc50a656d12853255893cb8f12f41dd7132835010ef1db2",
+      "dependencyCount": 179,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-NeE6Tv",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\manual-runtime\\output.log",
+        "sha256": "95e5dd498738fb8cadabd4eafce42dc9bce529c2637073e688f35faebf085332"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 62,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "media-layers",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=media-layers",
+        "test/media-layers.test.js"
+      ],
+      "evidenceKey": "7bdb9a265e9914cf3eb8f57f57ddf0db4b5e6b302e19bb20b510cf71284d6e38",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-J8B67u",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\media-layers\\output.log",
+        "sha256": "4adc6474ceff34c019b8ef03ee110e55e194ca23014e454e8cf23b5fb636e0a3"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 10,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "montage-mandate",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=montage-mandate",
+        "test/montage-mandate.test.js"
+      ],
+      "evidenceKey": "c76aab3ead7b266df10dd291c3e8cccb20417f726e03e229ef63b382f314da31",
+      "dependencyCount": 9,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-2fAj8k",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\montage-mandate\\output.log",
+        "sha256": "9ae3acf7865d54fbb6228b8de84f0752d5a81280c660272efaa67849f88c5b7e"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 4,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "native-read-capture",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-capture",
+        "test/native-read-capture.test.js"
+      ],
+      "evidenceKey": "1689ccd09dac7b7b756a9d1e18212c09e42aee99ede3d17e3c24147c45be19b0",
+      "dependencyCount": 182,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-qT9I0l",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\native-read-capture\\output.log",
+        "sha256": "83b811edcb4d2dd8bc98c95f3a077f3bd4e28edb9fc05c0a42c4192bc4a16d02"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "native-read-recovery",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-recovery",
+        "test/native-read-recovery.test.js"
+      ],
+      "evidenceKey": "ef1a2b36073349296984e95dc14eef12cd7102610a53a380e01ae8763c524824",
+      "dependencyCount": 192,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-M52B79",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\native-read-recovery\\output.log",
+        "sha256": "b2cb6bffc46f70d796653b35dd680a1d1df05c8cf520bb1d07e3fa0b0a7156c6"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 19,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "owner-attachments",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-attachments",
+        "test/owner-attachments.test.js"
+      ],
+      "evidenceKey": "971ff1e2d477a19ae2d8947d16ed06032efe4588771424563c024ad10d4e54c3",
+      "dependencyCount": 22,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-w760kr",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\owner-attachments\\output.log",
+        "sha256": "3009422b5cb1ace7d252bd611b5de8d3d62c877ae3eab78e7eaba00df7cbe45e"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 34,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "owner-installation",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-installation",
+        "test/owner-installation.test.js"
+      ],
+      "evidenceKey": "f60f7ecd897f01d10a89cfe00868cb89b52ce93c94c72b3ce8803c52e61178e2",
+      "dependencyCount": 200,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-AyxIwY",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\owner-installation\\output.log",
+        "sha256": "c480a27368c68935d7ab9b4a99cc11df92259b396c8281a328233780c13c2a1b"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 18,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "ad0af93833352f7b822fcc53235eae1e219cbcb00485de2aecc7b2b8cfb689ca",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\owner-installation\\output.log",
+            "sha256": "deec289284f5276a3939c4bc547ca6f214c07f5586da8ce12b995bccb194ecf4"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 18,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "owner-ipc-process",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-ipc-process",
+        "test/owner-ipc-process.test.js"
+      ],
+      "evidenceKey": "b50a11d8ac238d01d88b2e3b1fc0c1dc9dca261943bfbf627e4acceb237f9c45",
+      "dependencyCount": 105,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-yOmoNo",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\owner-ipc-process\\output.log",
+        "sha256": "c8b09db7b30b19f4aa750b0f4873ecb20db23a5be2aac3eedc51cb707f072c67"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "owner-lifecycle",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-lifecycle",
+        "test/owner-lifecycle.test.js"
+      ],
+      "evidenceKey": "ba2ec4df196975377669ff8c08b49810e06a4c0eaa15cc4b3d6ab2c3bc9b2948",
+      "dependencyCount": 17,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-HDL007",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\owner-lifecycle\\output.log",
+        "sha256": "590923986c33d7b34dea466b5ba3570d1eb76c36449547b8eeb689c041aa76cf"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 12,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "owner-lifecycle-faults",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-lifecycle-faults",
+        "test/owner-lifecycle-faults.test.js"
+      ],
+      "evidenceKey": "3692c7842d9507fdc90da75250f1add4eeb6097fb99d204f78efb41fa0a76531",
+      "dependencyCount": 17,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-wKD07T",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\owner-lifecycle-faults\\output.log",
+        "sha256": "05c423d56502a7dedf47df2e334354d8ae9497e708a4ea568cf9b96300b7cb85"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 21,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "owner-maintenance",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-maintenance",
+        "test/owner-maintenance.test.js"
+      ],
+      "evidenceKey": "fdcc5bec12489bffad2fa9df83ee29a045daa3565f1c41bb514e148ccab4a601",
+      "dependencyCount": 77,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-XOLKOq",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\owner-maintenance\\output.log",
+        "sha256": "1ae032ba3895292c8ed7e667669ebfd14c433dadc9ba85fb3b35412260ed2b3e"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 24,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "owner-marker-publication",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-marker-publication",
+        "test/owner-marker-publication.test.js"
+      ],
+      "evidenceKey": "00dd8ca81b590540d4a6e6bb1ec3ee40149de03a86943cac3cf31e686d36cbeb",
+      "dependencyCount": 17,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-9YwdXP",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\owner-marker-publication\\output.log",
+        "sha256": "8ab51217a7e12bb4cc4a80c434ee3383bd3caf04ba99267a7d58644f8a709f9c"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 14,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "owner-runtime",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-runtime",
+        "test/owner-runtime.test.js"
+      ],
+      "evidenceKey": "dd9336e032cfc22c89cc6c95086747942e29ff9e087191d93885734f944e904b",
+      "dependencyCount": 190,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-buMUsn",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-4\\owner-runtime\\output.log",
+        "sha256": "dc4386dd1fffd8f17ede9686c7ed2016d3fe6aa6319ed00287335867f5e70142"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 32,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "e337c0822abf2d12947bbd03c27b7e363ccaacf7c362b1c9d46d69ead329d597",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\owner-runtime\\output.log",
+            "sha256": "632a54315211510d34d3d3388f67fb7a5f7932e7fed9f411aa191dc854136a85"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 32,
+            "fail": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "evidenceKey": "dd9336e032cfc22c89cc6c95086747942e29ff9e087191d93885734f944e904b",
+          "status": "failed-or-empty",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\owner-runtime\\output.log",
+            "sha256": "4008c7ec9a9fe12a18133b11c2d906e017384757476c15ba0a2c533d7f6f2db0"
+          },
+          "result": {
+            "exitCode": 1,
+            "signal": null,
+            "pass": 28,
+            "fail": 1,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "package-location",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=package-location",
+        "test/package-location.test.js"
+      ],
+      "evidenceKey": "67eb94c4b5d4d1a6ff1c03676eda64a80102b778bc0d91d3e0825c5749d5f6fa",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-F5Ybab",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\package-location\\output.log",
+        "sha256": "fdc7b548859910ffc371c9c865f799bc77e5cd247c63b9255abd411f45942afe"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "c6a75975d16caff1bdcc85987e57400f2e59a7fa06b5f211764636cb669d1deb",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\package-location\\output.log",
+            "sha256": "bfb333d0fea722cec02437779beacc622d1fa36a9e63eefab87b09a1c622a75d"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 3,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "panel-reconnect",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-reconnect",
+        "test/panel-reconnect.test.js"
+      ],
+      "evidenceKey": "c23a08ed8afb87801a5d9157b070908cbb2ed47d79ad58a21af5e0507c614715",
+      "dependencyCount": 4,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-8cnP9a",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\panel-reconnect\\output.log",
+        "sha256": "37478528987788319c698a61cda977f361de95b896aaf16361b535c4604b6dc9"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 69,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "panel-start-over",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-start-over",
+        "test/panel-start-over.test.js"
+      ],
+      "evidenceKey": "64f9a9f049dbd59aedb72bebbc250c1e81e0a2db07b945ce9dee1cc5a7f27dc3",
+      "dependencyCount": 12,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-vWMfUN",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\panel-start-over\\output.log",
+        "sha256": "2a55cf432a465850c9aa2e9da6e522ae1458dcea29ce6114823584e09778b045"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 11,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "photo-executor-contract",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=photo-executor-contract",
+        "test/modules/photo-placeholder.test.js"
+      ],
+      "evidenceKey": "8151aeebb530042576f1021569bbc77ef2c06cc6ca746922e4b6d15a910b17dd",
+      "dependencyCount": 30,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-MCfhw9",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\photo-executor-contract\\output.log",
+        "sha256": "0e09fdc835c632a1dba90b11be44de3cad5476ef4aac5f059c34c5197547a5ec"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "photo-owner",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=photo-owner",
+        "test/modules/photo-placeholder.test.js"
+      ],
+      "evidenceKey": "7fd28dece42dcda8b021e259401c3f19cf27d9a976add41e3dcaf8e209073ae1",
+      "dependencyCount": 29,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-4n1AZb",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\photo-owner\\output.log",
+        "sha256": "beee89094cf5f4e00f37dfce60d8684440af26887888f43ff6cfd537a9be8dd4"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "point-layout",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=point-layout",
+        "test/point-layout-local.test.js"
+      ],
+      "evidenceKey": "47979c18a40af8a9baf617ebcab0bd3fdacfeb7fda7960263f3d6ea2fbde916e",
+      "dependencyCount": 11,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-UZr1jV",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\point-layout\\output.log",
+        "sha256": "89a9e4b6977a62f9990970d7bd02405a3940779ebee31dafba07317527141054"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "point-layout-integration",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=point-layout",
+        "test/point-layout.test.js"
+      ],
+      "evidenceKey": "200105df7705f0e2621d2e422dd7412a46b46aace37eb1eccb033fc7bf4b8a48",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-u0rjHl",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\point-layout-integration\\output.log",
+        "sha256": "2abbe3343b8ffec208d9deec929b7fa5ba24da1d1189478e1fd7f149d9395c08"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 4,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "project-assembly",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=project-assembly",
+        "test/project-assembly.test.js"
+      ],
+      "evidenceKey": "87524e937e68629dc221ae82e816a3b483b5208f7f5c588391ea3a40f97a25b3",
+      "dependencyCount": 184,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-NluH07",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\project-assembly\\output.log",
+        "sha256": "8f8038f841505ee983d4124e05536b9aeb7c1ef10001898d9b2f4bed5557b081"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 5,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "project-lifecycle",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=project-lifecycle",
+        "test/project-lifecycle.test.js"
+      ],
+      "evidenceKey": "957543a06390a951261a638d3048345749071cffdd66e6cb53cbbf5bb4fb3672",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-KcnkT0",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\project-lifecycle\\output.log",
+        "sha256": "0a8aa3086b81ba92f0936db5b1387f435085d0228dcc240b5e233e522ef60724"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 21,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "project-save",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=project-save",
+        "test/project-save.test.js"
+      ],
+      "evidenceKey": "7aca0896ef24da83faab5bb7b81c2ad05b4acd04b4af531e150b335179f4d90d",
+      "dependencyCount": 184,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-QrI1Au",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\project-save\\output.log",
+        "sha256": "d0be13605e7f102f20ad567d7d6465c4ab6e06d170ac2ee3e962cc895d16ff2b"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 9,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "protocol-codec",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=protocol-codec",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "3d9f69928dffacaf4de8947c5d7eaca096eea1f7212613b94c600ec68cc81de1",
+      "dependencyCount": 139,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-p02oHx",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\protocol-codec\\output.log",
+        "sha256": "0c83cee411e824d5e72392ae97505d2ad51f4845341751acd02dcf256cb76b6a"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "readoption-core",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-core",
+        "test/stopped-host-readoption-core.test.js"
+      ],
+      "evidenceKey": "cab2dbe5e9790359e2754b7c6559d7352743cec32e0cf81e5aca0787c3ba782f",
+      "dependencyCount": 32,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-m4EzYq",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\readoption-core\\output.log",
+        "sha256": "4e5e87c35d77a4ddf4a8e1f21cb8100098ba22010cb43c6cab5306125da36e74"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 13,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "readoption-enable",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-enable",
+        "test/stopped-host-readoption-enable.test.js"
+      ],
+      "evidenceKey": "1af21bccab37cf222edd4e7a6c9f40cf9b9fa4bf457838978abd74c830d004ba",
+      "dependencyCount": 32,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-PHuGfi",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\readoption-enable\\output.log",
+        "sha256": "fb57502f23000fb473517f7e311bd43299672917ed9681339636e2b6ff37a3cd"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 22,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "readoption-probe",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-probe",
+        "test/stopped-host-readoption-probe.test.js"
+      ],
+      "evidenceKey": "a8aaf7d8bb956f744bc2d33652e558f98b1f54b922bbb39dd623875e1e5048eb",
+      "dependencyCount": 32,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-Mj02yS",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\readoption-probe\\output.log",
+        "sha256": "cd9436dd3201488b11f86024f55b72d0c98f896de6b647c862340dac3af352ac"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "readoption-recovery",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-recovery",
+        "test/stopped-host-readoption-recovery.test.js"
+      ],
+      "evidenceKey": "19a3c4c3d57f1c0ca08e243fc4b9cc8beb347ab0ba54f6d7a072f3e494a3ac04",
+      "dependencyCount": 32,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-n9tv92",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\readoption-recovery\\output.log",
+        "sha256": "902ee2f73a561f14b6f1e168841485ead8debf6caf56c6494e9eeaea2f1d99c4"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 34,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "recovery-inspection",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=recovery-inspection",
+        "test/recovery-inspection.test.js"
+      ],
+      "evidenceKey": "eaf247ffccbd06c839090d9f17cab6e9aa4d1d4fa207feecbf6cbec146a1fd3a",
+      "dependencyCount": 20,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-jWW6Fq",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\recovery-inspection\\output.log",
+        "sha256": "46be3aa6a9e1529427385511b4f5e7ef771edd761d294cb0184af2037580ce67"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 12,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "render-job-owner",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^",
+        "test/render-job-owner.test.js"
+      ],
+      "evidenceKey": "f00ff6270bdb5e047b4e04f614d14b4e66b28016109d55ba878147dc582297c8",
+      "dependencyCount": 14,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-JaDUfd",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\render-job-owner\\output.log",
+        "sha256": "cfc5fb6e1d7c94cc96cf58615bab97e7f4b2a061433894ab3bcabc5bbb8dea2b"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "standalone-installer",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=standalone-installer",
+        "test/standalone-installer.test.js"
+      ],
+      "evidenceKey": "cabb4d7d2a2d79a67488c70eb17718c8fa156e397c0ba4b2ef0910f11d289a21",
+      "dependencyCount": 197,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-74B2DU",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck\\standalone-installer\\output.log",
+        "sha256": "609e6d33d262ce86e25a8305c95bb58b0fb16c5588a61a2f0274e290a8746439"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "619bc7e665e6cc0f9a6e3a3044f64062f9a62ea32d3d11fa00ecaf0738aebb38",
+          "status": "failed-or-empty",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\standalone-installer\\output.log",
+            "sha256": "88633552e53045e3857b315b2c80e8c2facadbabc79bebf90139156155ccae57"
+          },
+          "result": {
+            "exitCode": 1,
+            "signal": null,
+            "pass": 7,
+            "fail": 1,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "start-over-barrier",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-barrier",
+        "test/start-over-barrier.test.js"
+      ],
+      "evidenceKey": "a058fb95e0ec4360bc5dbb53b6fcd87c51722372f710eddb9a84192def0980a4",
+      "dependencyCount": 38,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-JLP7It",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\start-over-barrier\\output.log",
+        "sha256": "07333fc1ef89079074a60668a303846f1c1ef127e510ea86b0b54d05c69e2f85"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 14,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "start-over-channel",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-channel",
+        "test/start-over-channel.test.js"
+      ],
+      "evidenceKey": "bfabd476ee3bd7c94bf90de1764a299692059b7bcafd1aa280e58cdbd3e3940b",
+      "dependencyCount": 14,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-oohAzB",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\start-over-channel\\output.log",
+        "sha256": "6dc24802f321eeb5d3f205a2c4863884b1444880508d397f05d39a5d1791de00"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 29,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "start-over-driver",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-driver",
+        "test/start-over-driver.test.js"
+      ],
+      "evidenceKey": "d64f2ab2ff8c4ae03daf4bd1c220c5e8f5caf7a94f15e899dd23ece2d43537da",
+      "dependencyCount": 43,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-jqzqFC",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\start-over-driver\\output.log",
+        "sha256": "730d2559fda06ea83ea95d610b2e38fa013298d1870387e7c3bcc81f2d117baf"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "start-over-finisher",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-finisher",
+        "test/start-over-finisher.test.js"
+      ],
+      "evidenceKey": "b2ea155e775b56d079ed4026ed9568221e81247c595d5cbac3d6b11e1ebeca78",
+      "dependencyCount": 38,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-jwuHOp",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\start-over-finisher\\output.log",
+        "sha256": "853133983f4b8b96e4680cf8954d3f3ffaadf7bbd33f47ee9951e8f36412fe0e"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 20,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "start-over-inspection",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-inspection",
+        "test/start-over-inspection.test.js"
+      ],
+      "evidenceKey": "fdd5bc45da2a5c752bdc957509167b7edb4fd4bde8b35d05ab904b3d0a74c2cb",
+      "dependencyCount": 21,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-qjqXNS",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\start-over-inspection\\output.log",
+        "sha256": "10e2b6369e62d882e5343cd8640bd1e394a957aaa1b0a4e6e0746176a7d998d7"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 21,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "start-over-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-operator",
+        "test/start-over-operator.test.js"
+      ],
+      "evidenceKey": "5935bf618c012c7283547c8c38a2507d3123e291770324a549c5ab823ae705a9",
+      "dependencyCount": 189,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-FuId2r",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\start-over-operator\\output.log",
+        "sha256": "3931b476b97ad54c9f20e75899138ff14bae8e41405ef6e94c143379c48a7476"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "788b152357936e762509fdc655c4351fc1ff6898485afc4870fc8267e5520ddd",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\start-over-operator\\output.log",
+            "sha256": "a209a5e661d1f4e4bb029930582fbb354b336caa70b2812552c8d36d284c4427"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 7,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "start-over-panel-control",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-panel-control",
+        "test/start-over-panel-control.test.js"
+      ],
+      "evidenceKey": "a7f35c5518b9dc516021fd4d3eeca8698d1d70f5d6e252bffc3ed3fec0590675",
+      "dependencyCount": 9,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-vQI2uB",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\start-over-panel-control\\output.log",
+        "sha256": "57b314283d8ecfb9a320381b970d81097561813b96d210735f26c258829f3ae8"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 10,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "start-over-process",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-process",
+        "test/start-over-process.test.js"
+      ],
+      "evidenceKey": "be4cdba7650d826cbbee2725d9c40eb49e0272b01d5702e91e682bc1bb64300a",
+      "dependencyCount": 2,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-MU1BSv",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\start-over-process\\output.log",
+        "sha256": "bce2ef6519130918d915450cc243cc23c846b5dd004acd123ffdca0569c90dcf"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 10,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "start-over-runtime",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-runtime",
+        "test/start-over-runtime.test.js"
+      ],
+      "evidenceKey": "1397970423756b29bbe1ebd9d5c2bc5a774a900f0cd70c687cae6a42eb1223c0",
+      "dependencyCount": 190,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-d8xYY9",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\start-over-runtime\\output.log",
+        "sha256": "31baec18b19dee030a08129df9daf9fd2923e197f81b0322b309962f37231282"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "d3cac8bda3ce1e3fb2214a67c585a4dd9b007cd1864d1f5c0ef214ff375ab85b",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\start-over-runtime\\output.log",
+            "sha256": "a3a3567d21aff8f0356174752ad2f1dbc7484c6991cd2ed7fcd21ece2affbc37"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 3,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "start-over-state",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-state",
+        "test/start-over-state.test.js"
+      ],
+      "evidenceKey": "2879d033a3b26570311bddb0e1eddde71d8fadb2c83e0c6d51ca66a21a06cfc3",
+      "dependencyCount": 36,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-rq9Bpi",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-2\\start-over-state\\output.log",
+        "sha256": "26180f9d592ca90940f728f65ac9f270807ee03a9989f60c947fb9f993a43094"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 20,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "14a8befa82377b3a4b91b4017562b654b72e50a9750d95ae1a3067740bed23db",
+          "status": "failed-or-empty",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\start-over-state\\output.log",
+            "sha256": "3f4b5f87d8f15f4ac2bdd9a44591c172b5d8fd87206cd00042a3762460bd9a63"
+          },
+          "result": {
+            "exitCode": 1,
+            "signal": null,
+            "pass": 19,
+            "fail": 1,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "stopped-certification",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-certification",
+        "test/stopped-certification.test.js"
+      ],
+      "evidenceKey": "db39ce2e867413a833dbbf6b154ee1db977aafedc47d1b29017ea2b3d6b04f71",
+      "dependencyCount": 77,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-apKzeV",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\stopped-certification\\output.log",
+        "sha256": "dc7d70bbc301e98b670c1ab19d1025b49db4665aab3d134b9ff34d1655d9d3ac"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 30,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "stopped-host-readoption",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption",
+        "test/stopped-host-readoption.test.js"
+      ],
+      "evidenceKey": "4dbf5fb7e87f69c6e7ef30b1ed18211b68101b728c3a969f819ec88d7aa8b7f5",
+      "dependencyCount": 32,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-J1vQJY",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\stopped-host-readoption\\output.log",
+        "sha256": "b323c1bdd1d79649bc473472eb941f62245aea2f8dcb22da4ebd5712c381b2a9"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 25,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption-operator",
+        "test/stopped-host-readoption-operator.test.js"
+      ],
+      "evidenceKey": "3c0bb11fe52af7cc9f27220d4c78296899eb31741e5070c29660e3c04f47a81a",
+      "dependencyCount": 219,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-QX4lyh",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\stopped-host-readoption-operator\\output.log",
+        "sha256": "bcfd1eda143f8cb8c0580f91360d0d3a874019e62afd4b86f1b1ffc0be788207"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "3eb1704904d6208ee7bc1eed2c3e5d81a8650470f6cebf9f1a90a7970e665466",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\stopped-host-readoption-operator\\output.log",
+            "sha256": "c27e2687813be9013ff71ac588e3a8b5d10ff4f498a6a1ff42d88a9203efe913"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 17,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-update",
+        "test/stopped-update.test.js"
+      ],
+      "evidenceKey": "824210e7140aeed29fb34e74a07ebad4a7bf0dca0c90e5c3bd12876af102288a",
+      "dependencyCount": 191,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-JY9exo",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\stopped-update\\output.log",
+        "sha256": "4054d31186dddcd96e28ec34e5f6ec9ad59ff4a2b0c7ea3f87617a5796700f64"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 60,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "stopped-update-operator",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-update-operator",
+        "test/stopped-update-operator.test.js"
+      ],
+      "evidenceKey": "fe8cb030e241ca9406b672585722147b0bce73622fafc20d35f5e86a407af46e",
+      "dependencyCount": 197,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-ppPq1N",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\stopped-update-operator\\output.log",
+        "sha256": "a6a1a41589ace09a8883546cdfa03937426a1b08c57948d6c7374ddd566209dd"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 4,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "text-layer",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=text-layer",
+        "test/text-layer-local.test.js"
+      ],
+      "evidenceKey": "cdcba17a61bad3e3b78bf53a0f7bf87dd421dad096c8e0df89458abe888c1941",
+      "dependencyCount": 11,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-HcfWAv",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\text-layer\\output.log",
+        "sha256": "db1fc52b102f8c8b5c6eb8a83aef3771dc474d65500d4a7ca57d1864ba534225"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "text-layer-integration",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=text-layer",
+        "test/text-layer.test.js"
+      ],
+      "evidenceKey": "8107f06184019e83ad8a885866538d881017fd636633e102ed5c1180a640c475",
+      "dependencyCount": 185,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-SbrITO",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\text-layer-integration\\output.log",
+        "sha256": "7ff797562f248fb56367b487e2b23f576c1ce40e7682672efbca55c1c254c22e"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "text-variant",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=text-variant",
+        "test/text-variant.test.js"
+      ],
+      "evidenceKey": "41c667d212895ed0773cf86cc76ab032f56bc6be0c0786133666d9cbee50d176",
+      "dependencyCount": 12,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-iJSk3z",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\text-variant\\output.log",
+        "sha256": "a4a59d9eee9f44f1df5dae11ac966265f8331e63739cf40ea6f29359d118ae31"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "titles-executor-contract",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=titles-executor-contract",
+        "test/modules/titles.test.js"
+      ],
+      "evidenceKey": "393342c7f524945d92f6359266a63f417a0a862bb984bdcfe395dc84906d6411",
+      "dependencyCount": 29,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-2eC4qx",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\titles-executor-contract\\output.log",
+        "sha256": "77561551dd6c7e36248b2547e419fb53e7c7d93e8b9ca5f0d25b9cb6d33ebc97"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "titles-owner",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=titles-owner",
+        "test/modules/titles.test.js"
+      ],
+      "evidenceKey": "e250620731f2f5ccde46a5f94add5edb0876c60b040a5ed2a307b74883e003c7",
+      "dependencyCount": 29,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-AHC6gY",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\titles-owner\\output.log",
+        "sha256": "3240b1a9930a8e511aac4254819605984a72fef477e97a08d5ac0da2835aab28"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "validation-reuse",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=validation-reuse",
+        "test/validation-reuse.test.js"
+      ],
+      "evidenceKey": "4a9dcc630a473c98c0d5d73ddf759148215c4b31eac5e763079d340b0009baaa",
+      "dependencyCount": 36,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-25DTgY",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\validation-reuse\\output.log",
+        "sha256": "e33a61b0bfbe5f9e26ab66c17e6fe398e2c02e4cf02ed3f01a85aba1c92c9bf3"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "9afc6ff1fa87a96c728adf00cef747f4340d87159d34e87f5120fb5062ce8ca9",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\validation-reuse\\output.log",
+            "sha256": "7a2ff57ec18f95e2c71551f74f68fb2c1f93484e089e2cb57c36d43594e1c736"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 2,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "validation-routing",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=validation-routing",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "a36a213225983444c6d195181aa67d868f70f0bcd639c081c4eaf81ab0b19eae",
+      "dependencyCount": 140,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-DeVSp8",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\validation-routing\\output.log",
+        "sha256": "aa2558ac487abcf1f2cf313aaf90493f8e3ae6d828d59df12a889dbcef5f5ff1"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 5,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "b4431c5cb848f29b67a55133ad33502a2f6ab2a1f2c734b1807e497ff4aab990",
+          "status": "fresh-pass",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\validation-routing\\output.log",
+            "sha256": "521f10bfb0c8097b91273b471cbdbe276db595baf9a7a1b6953c4cf8c2b8bc15"
+          },
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 5,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "check": "visual-review",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^visual-review",
+        "test/visual-review.test.js"
+      ],
+      "evidenceKey": "88d3b7f7ab8d6254c0c47bcd0287af8dfb83a2c9c88c82723509c1452e626fe9",
+      "dependencyCount": 6,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-ReQxZh",
+        "profiles": "isolated",
+        "decoder": {
+          "directory": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\slideshow-s1-msi-20261107\\decoder\\ffmpeg-9.0.2-essentials_build\\bin",
+          "ffmpegSha256": "3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec",
+          "ffprobeSha256": "f0d36ecbbdd3bcfac3efa078c96c7271c2e68b3810595552ac3b7f17e9a65c52"
+        }
+      },
+      "historical": null,
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\visual-review\\output.log",
+        "sha256": "90c06a0280498792e05fc1cd589442133b126047a4e99deb24d5473ca8c849be"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "windows-cim-probe",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=windows-cim-probe",
+        "test/windows-cim-probe.test.js"
+      ],
+      "evidenceKey": "5b65762c265c6d5fbfcb5b58c89721fd2a81db2c60d2cadb87fa85d38117eb45",
+      "dependencyCount": 177,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-bKEb7u",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\windows-cim-probe\\output.log",
+        "sha256": "aff244caadb3bcbf2f9d4eba4d810fa788fd608a39b6fa4b8f4e64d596aa323e"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "windows-owner-process",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=windows-owner-process",
+        "test/windows-owner-process.test.js"
+      ],
+      "evidenceKey": "cdb8dee5d714a9979c3c0f5ba87b3592087a0e0582bd7a6088a830172876c24d",
+      "dependencyCount": 2,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-77IGtT",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\windows-owner-process\\output.log",
+        "sha256": "036cd19c50cd20f33100ed2386a598e85ea14c59f6f7fa38e9702ac208126aec"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "windows-retained-process",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=windows-retained-process",
+        "test/windows-retained-process.test.js"
+      ],
+      "evidenceKey": "5ca4e221b70e21444cbc6a9d33e745c55620d34c864aa89b42bb03a4c5cd76e7",
+      "dependencyCount": 3,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-dJj3gY",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\windows-retained-process\\output.log",
+        "sha256": "f0bd514ab3ad0b57b332b604b2f294846642dc8919fb415b6ddedcece15e4264"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "work-session",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=work-session",
+        "test/work-session.test.js"
+      ],
+      "evidenceKey": "0224d95f162993822af02bb4d7aa75519251f07a04bfdc317e394111019b6c46",
+      "dependencyCount": 34,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-k3heWl",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\work-session\\output.log",
+        "sha256": "f91acb6ff363ad5311e70f5b78d23351c2bb1f4d6dd878c38e43bb1426262e66"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "work-session-owner",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=work-session",
+        "test/work-session-owner.test.js"
+      ],
+      "evidenceKey": "7d8fd181e256a2adf46da83fa0899cb33b841f76ab727cfcd29fe66cc96bf424",
+      "dependencyCount": 4,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-9NmQGq",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\work-session-owner\\output.log",
+        "sha256": "814585c1f8a61e7d1c4cd0a6152b9ffeb4744a704932669ca0370575a5c8189d"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "worker-isolation",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=worker-isolation",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "bcd5ceccf420f98823a9f818c5d82025c29e2cfb8e22469b27651bdd9b159f87",
+      "dependencyCount": 139,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-3h6bLO",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\worker-isolation\\output.log",
+        "sha256": "7e0592af7d7754aa421baaef49f1bd58265de96228af36a636300861651301a4"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 4,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "workflow-recovery",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=workflow-recovery",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "3c75083f866961e0abff741ef398a90ecd130a4e5cad26eda93a93fd53198cd2",
+      "dependencyCount": 139,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-4vfS94",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\workflow-recovery\\output.log",
+        "sha256": "30f2ecc5b88eb7e90a4061f080e5237efe2529a06cd6a6e1d467b2cb13513a8c"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=zero-dispatch",
+        "test/recover-zero-dispatch-owner.test.js"
+      ],
+      "evidenceKey": "3e037199ba1df7b355eed51c338d4d5f346e79d575e17b4c8af325d8d056d9b0",
+      "dependencyCount": 183,
+      "cwd": "core4",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-I3Gjla",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "historical": "docs/core-release-manifest-20261103.json",
+      "status": "fresh-pass",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\zero-dispatch-recovery\\output.log",
+        "sha256": "c7b90040b83437ccf1c50f19d8049e844998be17e82755224a318bf587d8f49d"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 9,
+        "fail": 0,
+        "skipped": 0
+      },
+      "previousAttempts": [
+        {
+          "evidenceKey": "a7233212a6fa8f50272a726bd97ca741ae4e63752582607ae4564edd3a69c869",
+          "status": "failed-or-empty",
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\zero-dispatch-recovery\\output.log",
+            "sha256": "fa425ac7800975ec797e134b92d8444b77ac024d56d999d389186de58b73e237"
+          },
+          "result": {
+            "exitCode": 1,
+            "signal": null,
+            "pass": 1,
+            "fail": 7,
+            "skipped": 0
+          }
+        }
+      ]
+    }
+  ],
+  "required": [
+    {
+      "check": "titles-tests",
+      "cwd": "products/titles",
+      "command": [
+        "node",
+        "--test"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "check": "titles-tests",
+          "command": [
+            "node",
+            "--test"
+          ],
+          "cwd": "products/titles",
+          "status": "fresh-pass",
+          "exactKey": "3b1b28ae49ed3ece999d455cf2c968f79ab7e278e54dd3498ab4ba59ed5fce83",
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\titles-tests\\output.log",
+          "sha256": "6d996c4e1b51feca0ab35df173bcb6a02f769c830a74737c2f4e1261d1eaef2b",
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 26,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ],
+      "observed": "Компилятор Titles и поддерживаемые сценарии раскладки.",
+      "environment": "MSI; Node v24.15.0; локальные изолированные проверки"
+    },
+    {
+      "check": "slideshow-tests",
+      "cwd": "products/slideshow",
+      "command": [
+        "node",
+        "--test"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "check": "slideshow-tests",
+          "command": [
+            "node",
+            "--test"
+          ],
+          "cwd": "products/slideshow",
+          "status": "fresh-pass",
+          "exactKey": "7c10a126a90f508e6d36002031b39ecdf4889562145d75b47a4d28e088067844",
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\slideshow-tests\\output.log",
+          "sha256": "2be7d79442133b343b8d694139a2e20fa7cd9f97496f5db4df574eff1e7364b0",
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 7,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ],
+      "observed": "Проверки внешнего workflow S1.",
+      "environment": "MSI; Node v24.15.0; локальные изолированные проверки"
+    },
+    {
+      "check": "visual-review-temp",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "--test",
+        "test/visual-review.test.js"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "check": "visual-review",
+          "command": [
+            "node",
+            "--test",
+            "--test-name-pattern=^visual-review",
+            "test/visual-review.test.js"
+          ],
+          "cwd": "core4",
+          "status": "fresh-pass",
+          "exactKey": "88d3b7f7ab8d6254c0c47bcd0287af8dfb83a2c9c88c82723509c1452e626fe9",
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\visual-review\\output.log",
+          "sha256": "90c06a0280498792e05fc1cd589442133b126047a4e99deb24d5473ca8c849be",
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 1,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ],
+      "observed": "Повторная подготовка, прежний формат, подмена файлов/границ/публикации и пропуск ROI.",
+      "environment": "MSI; Node v24.15.0; локальные изолированные проверки"
+    },
+    {
+      "check": "boundaries",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/check-boundaries.js"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "check": "boundaries",
+          "command": [
+            "node",
+            "tools/check-boundaries.js"
+          ],
+          "cwd": "core4",
+          "status": "fresh-pass",
+          "exactKey": "8571f59f07c8f0398f7a6f70fcffff1d31aae9f210f5b8d98c18dd0b13998b25",
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\boundaries\\output.log",
+          "sha256": "2c1f1eeb23c346f07b04493310b595f7851e4888f3872b587e3490a7c80da710",
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 0,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ],
+      "observed": "88 исходных файлов, liveCalls=0.",
+      "environment": "MSI; Node v24.15.0; локальные изолированные проверки"
+    },
+    {
+      "check": "offline-visual-bundle",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/package-visual-review.js"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\visual-review-offline\\visual-review-package.json",
+          "sha256": "a713ffb92a01986bed57d3894ff53b98b37d7fa74df33a376a5fbfef8a858a5c"
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\offline-package-verification.log",
+          "sha256": "d8aa70fb6c32237030ac5075cbc1449a3a96cdef98ce123d02186e6822d2d0fd"
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\review.json",
+          "sha256": "8c9f519fb9a5f11857f7d4d2cbef23fe8e988ef0df277bc80f4273035e246d33",
+          "bytes": 1663
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-review\\review.json",
+          "sha256": "34a38f9141d46f76fe943c5b7b4281fa34c819319eca7307bb56d818787dc067",
+          "bytes": 1673
+        }
+      ],
+      "observed": "Проверенный внешний пакет из трёх файлов и манифеста выполнил prepare/seal для обоих MP4 без обращения к AE.",
+      "environment": "MSI; Node v24.15.0; локальные изолированные проверки"
+    },
+    {
+      "check": "frame-slot-temp",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/package-capability.js",
+        "pack/compose"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "check": "frame-export-slot",
+          "command": [
+            "node",
+            "--test",
+            "--test-name-pattern=^frame-export-slot",
+            "test/stopped-update.test.js"
+          ],
+          "cwd": "core4",
+          "status": "fresh-pass",
+          "exactKey": "4ef9fdb1f4c1e7bc7088ff3c95ecf600440f86ff02b5545544c481b76d5d6b8f",
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\frame-export-slot\\output.log",
+          "sha256": "5ca16d6d655ee6e4bf7f96054e97732dee4936c5453ca07ddfae6a23a7a79ecc",
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 1,
+            "fail": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "file": "docs/evidence/core-followup-msi-l2-packages-20261110.json",
+          "sha256": "e7ffc0d8665bb0bed397c77fa3d0829bccc4da759ce7fab3248472b417b9effa"
+        }
+      ],
+      "observed": "TEMP pack/compose/stopped update/enable, обнаружение контракта; неверная база, контракт, файл и admission отклонены.",
+      "environment": "MSI; Node v24.15.0; локальные изолированные проверки"
+    },
+    {
+      "check": "combined-and-minimal-packages",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/package-installable.js"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "file": "docs/evidence/core-followup-msi-l2-packages-20261110.json",
+          "sha256": "e7ffc0d8665bb0bed397c77fa3d0829bccc4da759ce7fab3248472b417b9effa"
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\package-reproduction-proof.json",
+          "sha256": "d670c83544df48cc708b503916549f943bfb2332ed5801001d1666c3a54caa98"
+        }
+      ],
+      "observed": "Три installable состава воспроизведены побайтно.",
+      "environment": "MSI; Node v24.15.0; локальные изолированные проверки"
+    },
+    {
+      "check": "combined-standalone",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/package-standalone-installer.js"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "file": "docs/evidence/core-followup-msi-l2-packages-20261110.json",
+          "sha256": "e7ffc0d8665bb0bed397c77fa3d0829bccc4da759ce7fab3248472b417b9effa"
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\package-reproduction-proof.json",
+          "sha256": "d670c83544df48cc708b503916549f943bfb2332ed5801001d1666c3a54caa98"
+        },
+        {
+          "check": "standalone-installer",
+          "command": [
+            "node",
+            "--test",
+            "--test-name-pattern=standalone-installer",
+            "test/standalone-installer.test.js"
+          ],
+          "cwd": "core4",
+          "status": "fresh-pass",
+          "exactKey": "cabb4d7d2a2d79a67488c70eb17718c8fa156e397c0ba4b2ef0910f11d289a21",
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck\\standalone-installer\\output.log",
+          "sha256": "609e6d33d262ce86e25a8305c95bb58b0fb16c5588a61a2f0274e290a8746439",
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 8,
+            "fail": 0,
+            "skipped": 0
+          }
+        }
+      ],
+      "observed": "Три standalone состава проверены по манифестам; установщик прошёл текущий тест.",
+      "environment": "MSI; Node v24.15.0; локальные изолированные проверки"
+    },
+    {
+      "check": "no-r1-early-refusal",
+      "cwd": "TEMP",
+      "command": [
+        "MCP",
+        "stage-render-copy"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "check": "owner-runtime",
+          "command": [
+            "node",
+            "--test",
+            "--test-name-pattern=owner-runtime",
+            "test/owner-runtime.test.js"
+          ],
+          "cwd": "core4",
+          "status": "fresh-pass",
+          "exactKey": "dd9336e032cfc22c89cc6c95086747942e29ff9e087191d93885734f944e904b",
+          "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-4\\owner-runtime\\output.log",
+          "sha256": "dc4386dd1fffd8f17ede9686c7ed2016d3fe6aa6319ed00287335867f5e70142",
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 32,
+            "fail": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "file": "docs/evidence/core-followup-msi-l2-packages-20261110.json",
+          "sha256": "e7ffc0d8665bb0bed397c77fa3d0829bccc4da759ce7fab3248472b417b9effa"
+        }
+      ],
+      "observed": "TEMP operator-project-lifecycle без R1 отказал до записи проекта; operator-r1-minimal принят.",
+      "environment": "MSI; Node v24.15.0; локальные изолированные проверки"
+    },
+    {
+      "check": "installed-update-and-cold-owner",
+      "cwd": "MSI",
+      "command": [
+        "maintain-owner",
+        "owner-update",
+        "update-inspect",
+        "update-enable",
+        "core_status"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\update-base.json",
+          "sha256": "b3361ac472054125dd689455a63360c63b7a38f49f5b9dc08d7a2e8ed9298a74",
+          "bytes": 15997
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\update-slot.json",
+          "sha256": "59b19a01b06d25422d9a0f6b644969f4a916018b541a214ee508830625c84ba6",
+          "bytes": 15997
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-base-cold.json",
+          "sha256": "03c395e146ccdd0d183d585511b86a51f90b8617e93922c838e9bfb46fbcfab6"
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-final-cold.json",
+          "sha256": "796895816410e45977a97fcd3deea4ef1632dc877689d9999a028d034239dd24"
+        }
+      ],
+      "observed": "Две транзакции, сохранённые история и настройки, ротация ключей, обнаружение операции из свежего MCP.",
+      "environment": "MSI; AE 26.3x87; настроенный MCP/CEP"
+    },
+    {
+      "check": "native-png",
+      "cwd": "MSI",
+      "command": [
+        "MCP",
+        "save-comp-frame-png"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-png-connected.json",
+          "sha256": "0523db45b36823ade24652693c43a24c783ab9718b1b9b1051e62c7b84a2143b",
+          "bytes": 28976
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\slideshow-live\\frames-output\\native-s1-frame-45.png",
+          "sha256": "26dcbaa460b27cfeff6077f36fff050f1cdbdedae1d7cf5b7b2f77bdfe8313d2"
+        }
+      ],
+      "observed": "Один save-comp-frame-png для comp 29/frame 45 с точной квитанцией и неизменным AEP.",
+      "environment": "MSI; AE 26.3x87; настроенный MCP/CEP"
+    },
+    {
+      "check": "native-titles-r1",
+      "cwd": "MSI",
+      "command": [
+        "MCP",
+        "write-point-text",
+        "save-current-project",
+        "stage-render-copy",
+        "render_job_finalize"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-titles-text-marked.json",
+          "sha256": "7b098e614aac79035b4e902bfda70c861d57efc97f46eef9ae5a743b6ce81f17",
+          "bytes": 39717
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-render-titles.json",
+          "sha256": "6928932d42bb25d423b8575a5d85f5d00485fbe754a53e584c32b0406e8ebab0",
+          "bytes": 41601
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-decode.json",
+          "sha256": "99b4b1a76b654feac6419734f4f969545a1863f9eb526e81c5c91ef4e6d75317",
+          "bytes": 1719
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\review.json",
+          "sha256": "8c9f519fb9a5f11857f7d4d2cbef23fe8e988ef0df277bc80f4273035e246d33",
+          "bytes": 1663
+        }
+      ],
+      "observed": "Две строки, чтение обратно, публикация 02735290…; вход, удержание, выход и ROI.",
+      "environment": "MSI; AE 26.3x87; настроенный MCP/CEP"
+    },
+    {
+      "check": "native-slideshow-s1-r1",
+      "cwd": "MSI",
+      "command": [
+        "MCP",
+        "photo-placeholder",
+        "save-current-project",
+        "stage-render-copy",
+        "render_job_finalize"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-slideshow-photos.json",
+          "sha256": "3b7a6a82717dc80500e31df024650c3b22358f38fcfe333051b6e2679f851d47",
+          "bytes": 70716
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-render-slideshow.json",
+          "sha256": "6ed23892f6853097b01167d3fd94625e16b69bb85a47ee4935e2f25d0ccc2f75",
+          "bytes": 45373
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-decode.json",
+          "sha256": "a6055b60ccfa59eb81c482d59fb78dffcbdf4d9147be0f18380fae05d250e226",
+          "bytes": 1309
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-review\\review.json",
+          "sha256": "34a38f9141d46f76fe943c5b7b4281fa34c819319eca7307bb56d818787dc067",
+          "bytes": 1673
+        }
+      ],
+      "observed": "Два источника, порядок и тайминг, публикация 58e6fa4b…; 66 непустых кадров диапазона [10,76).",
+      "environment": "MSI; AE 26.3x87; настроенный MCP/CEP"
+    },
+    {
+      "check": "native-review-and-cross-job-refusal",
+      "cwd": "MSI",
+      "command": [
+        "node",
+        "core4/tools/visual-review.js",
+        "prepare/seal"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\titles-review\\manifest.json",
+          "sha256": "1f54223e1854fb23b78b2802018807eed6e7d4a2b3345810587a5a7ac95af404",
+          "bytes": 3685
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\slideshow-review\\manifest.json",
+          "sha256": "d7aa4cb67010340eaff9455d1998335a8c6ba1b7c0f3df082ee18b8d34a05c78",
+          "bytes": 3306
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\outputs\\cross-job-refusals.log",
+          "sha256": "74ff890d3ed89931739e0f906eb2a8230df6b8dfb6eb66c8dbdd51432061544e",
+          "bytes": 363
+        }
+      ],
+      "observed": "Две публикации и два перекрёстных отказа по квитанции и MP4.",
+      "environment": "MSI; AE 26.3x87; настроенный MCP/CEP"
+    },
+    {
+      "check": "final-history-and-release",
+      "cwd": "MSI",
+      "command": [
+        "MCP",
+        "core_status",
+        "render_job_status"
+      ],
+      "status": "fresh-pass",
+      "evidence": [
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\final-snapshot.json",
+          "sha256": "5132a22244e0c11350e7ebe88616361051f5dc5b6688d512812961b9c58390ea"
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-final-after-cleanup.json",
+          "sha256": "59b9efef27c1191169e62d951840251d50b2127144c2fddc75cd47639d095dfb"
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\final-cleanup.json",
+          "sha256": "509c9f71afc09ff9fb74275be4a5785df99d526084880bbc6764ee8ace5fd9fb"
+        }
+      ],
+      "observed": "14 заданий закрыты, 12 старых квитанций побайтно совпали; контроллер и слот свободны, photo.aep открыт без изменений.",
+      "environment": "MSI; AE 26.3x87; настроенный MCP/CEP"
+    }
+  ],
+  "excluded": [
+    {
+      "check": "native-advanced-3d",
+      "reason": "За пределами поручения."
+    },
+    {
+      "check": "native-ame",
+      "reason": "За пределами поручения. Source-регрессия при наличии остаётся в реестре."
+    },
+    {
+      "check": "new-slideshow-templates-and-r1-formats",
+      "reason": "Проверяются прежние S1 и R1."
+    },
+    {
+      "check": "desktop-and-p2",
+      "reason": "Приёмка проводится на MSI; P2 закрыт."
+    }
+  ],
+  "supplemental": [
+    {
+      "check": "titles-tests",
+      "cwd": "products/titles",
+      "command": [
+        "node",
+        "--test"
+      ],
+      "status": "fresh-pass",
+      "dependencyDigest": "3b1b28ae49ed3ece999d455cf2c968f79ab7e278e54dd3498ab4ba59ed5fce83",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-Omc1ua",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "pid": 32524,
+      "started": "2026-11-10T17:13:56.846Z",
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 26,
+        "fail": 0,
+        "skipped": 0
+      },
+      "finished": "2026-11-10T17:13:58.719Z",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\titles-tests\\output.log",
+        "sha256": "6d996c4e1b51feca0ab35df173bcb6a02f769c830a74737c2f4e1261d1eaef2b"
+      },
+      "previousAttempts": [
+        {
+          "status": "failed-or-empty",
+          "result": {
+            "exitCode": 1,
+            "signal": null,
+            "pass": 24,
+            "fail": 2,
+            "skipped": 0
+          },
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\titles-tests\\output.log",
+            "sha256": "b866f55104557297b370a943a68248ac82b22c8d7bef1215ed5d32accf9a2195"
+          },
+          "dependencyDigest": "eb4649b0d64a8df7b09ce1423792af40a07afd9676e193ef17340ad4018cd3f6"
+        }
+      ]
+    },
+    {
+      "check": "slideshow-tests",
+      "cwd": "products/slideshow",
+      "command": [
+        "node",
+        "--test"
+      ],
+      "status": "fresh-pass",
+      "dependencyDigest": "7c10a126a90f508e6d36002031b39ecdf4889562145d75b47a4d28e088067844",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-1ny8VY",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "pid": 29128,
+      "started": "2026-11-10T17:08:36.455Z",
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0
+      },
+      "finished": "2026-11-10T17:08:36.611Z",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\slideshow-tests\\output.log",
+        "sha256": "2be7d79442133b343b8d694139a2e20fa7cd9f97496f5db4df574eff1e7364b0"
+      },
+      "previousAttempts": []
+    },
+    {
+      "check": "boundaries",
+      "cwd": "core4",
+      "command": [
+        "node",
+        "tools/check-boundaries.js"
+      ],
+      "status": "fresh-pass",
+      "dependencyDigest": "8571f59f07c8f0398f7a6f70fcffff1d31aae9f210f5b8d98c18dd0b13998b25",
+      "environment": {
+        "platform": "win32",
+        "node": "v24.15.0",
+        "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-followup-check-ASxvFN",
+        "profiles": "isolated",
+        "decoder": null
+      },
+      "pid": 34644,
+      "started": "2026-11-10T17:13:58.719Z",
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "pass": 0,
+        "fail": 0,
+        "skipped": 0
+      },
+      "finished": "2026-11-10T17:13:58.809Z",
+      "evidence": {
+        "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\boundaries\\output.log",
+        "sha256": "2c1f1eeb23c346f07b04493310b595f7851e4888f3872b587e3490a7c80da710"
+      },
+      "previousAttempts": [
+        {
+          "status": "fresh-pass",
+          "result": {
+            "exitCode": 0,
+            "signal": null,
+            "pass": 0,
+            "fail": 0,
+            "skipped": 0
+          },
+          "evidence": {
+            "log": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\boundaries\\output.log",
+            "sha256": "2c1f1eeb23c346f07b04493310b595f7851e4888f3872b587e3490a7c80da710"
+          },
+          "dependencyDigest": "b9616fac45eadc52602ea922822c404210104a640ff9693ac9626b99486c43a8"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "fresh-pass": 97
+  },
+  "sourceCandidate": {
+    "packageSourceCommit": "7603901aa6cd2944f12544ab8cc16909508bd5c5",
+    "parentCommit": "82ae35bd29d0c42df4f4e9fb064250244abd9ab4",
+    "validatedTree": "d134dba7095556ff3efc4cc13344ca035d6a303f",
+    "notes": "Дерево включает итоговые исходники, тесты и инструменты приёмки до добавления двух документов L4."
+  },
+  "packages": {
+    "admissionSha256": "5f3bf4424b32100bfbe13016fb0532010384cdcdcea0e1535361780a4c27abd9",
+    "base": {
+      "distributionHash": "a003ed6b90cd81aad866859f75b3e1ab509ba027a8924862712a0cbc308d6dc6",
+      "files": 177,
+      "liveProof": false,
+      "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\packages\\base",
+      "packageHash": "411f9df833902eacf20555b888932c8940aad622b75da867048ea7c1dbd476df"
+    },
+    "baseDelta": [
+      "runtime/aerender-jobs.js",
+      "runtime/render-job-owner.js"
+    ],
+    "capabilitySha256": "ee0db33b52cffaff1959fdfffb79e033c9e4dff67cebd74b06efc48a5642c888",
+    "compRenderAdmissionSha256": "ed6c11d106b4ef89ccbc11a07dd9adf0dd75edc76f3f172aba1ca12944278737",
+    "compRenderCapabilitySha256": "e3439447470a95828c85b609d2d5eb21aae7fb91630d6da0f076063a8b0e47d9",
+    "contract": {
+      "contractSha256": "eaa6bef9892f26681be0772412ea9e71eb61dbcdaff55ae28497f1b301f3873b",
+      "executorSha256": "a8211fd9544eeb05dea1cc83a5bc03d776ec5e39cea03eddce4e30d5a705f31c",
+      "operationId": "save-comp-frame-png",
+      "policy": "current-matching-target-after-local-confirmation-v1",
+      "profile": "comp-frame-export-v1"
+    },
+    "final": {
+      "distributionHash": "7c88250eadc00d60416065fb4700eb2f985a2679bbc467547bb4a19f14643caf",
+      "files": 177,
+      "liveProof": false,
+      "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\packages\\combined",
+      "packageHash": "1d61f0c7790f96f20e1e4878be2cb4c156049ccd39eb88c68e90857e89af140f"
+    },
+    "minimal": {
+      "distributionHash": "e485e2ec6d3be018cc1c47a01172e3ac3526810fd706de44a98d31330e113795",
+      "files": 104,
+      "liveProof": false,
+      "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\packages\\minimal",
+      "packageHash": "5a6fb5dd377222086854f2c0f3992654c8c5c91fa69292b8064311d6fe979cb7"
+    },
+    "prior": "bffa39df006f637b532064d6112ac2e4e6b3ac5ad0f29ff907b0cdf59b43e0d3",
+    "slotDelta": [
+      "config/admissions/comp-frame-export.json",
+      "config/catalog.json",
+      "modules/comp-frame-export/artifact.json"
+    ]
+  },
+  "installed": {
+    "installationId": "installation-1304c438-5794-4d5c-bf72-d8101f3d2a24",
+    "packageHash": "1d61f0c7790f96f20e1e4878be2cb4c156049ccd39eb88c68e90857e89af140f",
+    "distributionHash": "7c88250eadc00d60416065fb4700eb2f985a2679bbc467547bb4a19f14643caf",
+    "releaseManifestSha256": "1d61f0c7790f96f20e1e4878be2cb4c156049ccd39eb88c68e90857e89af140f",
+    "registry": "84d8e3b7dc48df0d98144d24c672f81f44f1d882ba0e64d6c6342fc39a1afb27",
+    "slotFree": true,
+    "jobs": [
+      {
+        "id": "02735290-8dd3-8140-a17b-4aaba3d12359",
+        "state": "published",
+        "sha256": "fbb9f46499c8b85d32ef6bc58d5e94b1743601ab51c38626bb5b9e2a1605e4d0",
+        "baseline": false
+      },
+      {
+        "id": "0a6afefd-038a-8f91-a415-7004ae8fea22",
+        "state": "cancelled",
+        "sha256": "73236ab3f243f2c7a98734c6c66df7dfffc3b62b37c8ee1e571fe51f55e0c405",
+        "baseline": true
+      },
+      {
+        "id": "104f86dc-cb0b-8e00-b094-96deb7df021c",
+        "state": "published",
+        "sha256": "e0903136d364dbf6b66d41609360507321742aa5a01ec32e59ba50abea35d8e5",
+        "baseline": true
+      },
+      {
+        "id": "311d15b0-119b-810c-8fcf-de0497e4b5be",
+        "state": "published",
+        "sha256": "2878f3f193c2b8e5f9c5d78e5c468950cc721354743efa60c9baa6102b70b40b",
+        "baseline": true
+      },
+      {
+        "id": "587e9fee-6439-8ae1-8c97-a7f5a494de42",
+        "state": "published",
+        "sha256": "0898bf20de4d83161a7b5531717378e9680f1ea865a7c29bf82f8c0d99142562",
+        "baseline": true
+      },
+      {
+        "id": "58e6fa4b-ff21-84ba-ae79-52352d93725d",
+        "state": "published",
+        "sha256": "322465095e8a54a91953354638c9e59869960c8a068fbd210d0062a63e233bbf",
+        "baseline": false
+      },
+      {
+        "id": "6b2081a2-a918-80a9-880d-e3d5111a3d37",
+        "state": "cancelled",
+        "sha256": "864e463c993ed1fc6443a6374893cf55d56460bb0bdbde1b75b49d664eb52204",
+        "baseline": true
+      },
+      {
+        "id": "727aed80-5855-85a0-94b5-f80104abb5d6",
+        "state": "cancelled",
+        "sha256": "23c251e8f9c8cd2c8f038139e722df88dc28354eec3fd8563441e423bd39f0ad",
+        "baseline": true
+      },
+      {
+        "id": "72942b7a-9b7b-8eb5-a1f6-dd920d34546b",
+        "state": "cancelled",
+        "sha256": "6d6460d3db6dcc54866ff50d985851c2016b1f4be886f8e9ca16ffd7e87c4ad6",
+        "baseline": true
+      },
+      {
+        "id": "7cb6fdbd-4ad3-8b65-8838-06bc306fa2f2",
+        "state": "published",
+        "sha256": "8e2030584bedad01e13c89528323c8e563140e9424df9826150f9961cbf90468",
+        "baseline": true
+      },
+      {
+        "id": "7cd5b285-7b61-8c99-a79b-e1ff5c9984d1",
+        "state": "cancelled",
+        "sha256": "792e7e700a550d123cb428351de8d40fa41af7f830440fd4490c30b8967fc667",
+        "baseline": true
+      },
+      {
+        "id": "8f9418a4-b6e2-8a4a-b21d-7fd965a78b4a",
+        "state": "published",
+        "sha256": "9ed81ba764f2f6aee760a74fb463b605b2155716c9b609176e3b5337bd18c36a",
+        "baseline": true
+      },
+      {
+        "id": "91826cbe-fe22-83a7-af5f-57980375c9e2",
+        "state": "cancelled",
+        "sha256": "b088d4c42cd7abc721f90c5dee0d23b8ff1a0c6d989efca4058b5578d704b93f",
+        "baseline": true
+      },
+      {
+        "id": "936b5ec7-1333-887c-8d2d-cc49ac33756a",
+        "state": "published",
+        "sha256": "a6b4dece972233002db8de864d93e9dda4b75dee6f35090aeddbd60e7ea27a6e",
+        "baseline": true
+      }
+    ],
+    "archives": {
+      "ledger": {
+        "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\2ad2a0d0-693c-4b2a-a9a7-9a682f1e07fc-start-over\\archive-broker\\ledger.ndjson",
+        "sha256": "b78e459196bfe58ce6bbd1a9b0f28f6f0d5a054cad36f5aa276b95ee5594df27",
+        "originalPrefixVerified": true
+      },
+      "receiver": {
+        "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\2ad2a0d0-693c-4b2a-a9a7-9a682f1e07fc-start-over\\archive-receiver\\completions.ndjson",
+        "sha256": "677d968b5823ca6ce62ae0b45882aebb090c2ced08fc5640b78e45685a5e0cf5",
+        "originalPrefixVerified": true
+      }
+    },
+    "globalConfigSha256": "49d750b8bcccc064f8c409eaa1c4f9722c0eb105ee1d11319690568dfe955750",
+    "neighborConfigSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "preferences": {
+      "checked": 40,
+      "delta": [
+        {
+          "name": "After Effects/26.3\\Adobe After Effects 26.3 Prefs.txt",
+          "before": "663bec3f93e80406a2063d613aa02ed85a55863f13ccc4c125faaad11f7ff92f",
+          "after": "ed28d4e373d340d9b75758e093e641915b8bf32547514cffbbc52a9e58f81e51"
+        },
+        {
+          "name": "After Effects/26.3\\ModifiedWorkspaces\\UserWorkspace_1.xml",
+          "before": "8453cc73c156c165b0b1e8fda232045c05774f670494aacfd471b08a94d04dae",
+          "after": "5cb86b97d3b5e222ae6aa61f711b6c316fb376d7ed52d5fdd9e6d7c3f82c7c54"
+        },
+        {
+          "name": "After Effects/26.3\\ModifiedWorkspaces\\UserWorkspace_5.xml",
+          "before": "6c23de36510c552594a99e3f2cc00bb3eccaefdc95bcbb33e3645a32c193b47b",
+          "after": "32d8685c322a78c5c7d91fbf3d382904fc95e162c5881929d3b533a2223744a2"
+        }
+      ],
+      "unchangedDuringUpdates": true
+    },
+    "sourcesUnchanged": true,
+    "latestRead": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-final-after-cleanup.json",
+      "sha256": "59b9efef27c1191169e62d951840251d50b2127144c2fddc75cd47639d095dfb"
+    }
+  },
+  "slotEvidenceKeys": {
+    "identical": 52,
+    "changed": 42,
+    "evidence": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\slot-evidence-keys.json",
+      "sha256": "f894bf50b338d6de1e19d89dd0a1f249d2cc485b538ef38e3d53a9a1df46d2cb"
+    }
+  },
+  "nativeObservedRefusals": [
+    {
+      "stage": "S1 PNG preflight",
+      "outcome": "Нет подключённого CEP, операций 0.",
+      "evidence": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-png.json",
+        "sha256": "e2cb05a196e9c7f69579fe206b4332f68f59ca23618e997c0e444e03d78be175"
+      }
+    },
+    {
+      "stage": "Первое чтение text-layer",
+      "outcome": "Чтение завершилось отказом; план и команда не создавались. После маркировки рабочего пространства новый read прошёл.",
+      "evidence": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\native-titles-text.json",
+        "sha256": "d6a6158585973195d32c402415b10cfaf297632fd5cc8dc95af3eaf58e9ef2ed"
+      }
+    },
+    {
+      "stage": "Перепривязка Titles",
+      "outcome": "Тайм-аут клиента; сертификация продолжена по исходной транзакции.",
+      "id": "24430cfb-c46b-4a27-bdf5-ae98d6a00a57",
+      "evidence": [
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\witness-titles-connected-readopt-audit.json",
+          "sha256": "8da4303fd67a2ebe6a6b36bf3da1763cd59683df2e24384acd47550ddf9a9864"
+        },
+        {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\witness-titles-connected-readopt-resume.json",
+          "sha256": "61649e838d63e2232d694c2a6409de53ce0a8d76a0c27d05ec5ae561731fa0de"
+        }
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-matrix\\results.json",
+      "sha256": "6ea3ba09016880744e617ddf0cd371dae27252ab8b838e7751bc9459780c011e"
+    },
+    {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck\\results.json",
+      "sha256": "692ad6ff9d9c538374abe80b62f280d55c84b3241bc5918f135e2a78d400c758"
+    },
+    {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-2\\results.json",
+      "sha256": "8aba7a1b9ebc3167e565b44703f10193b267906ef72ec065d8583c46cb7eb9fc"
+    },
+    {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-3\\results.json",
+      "sha256": "aec641cc65d80d85ba73295661a7fdb2f2fb3b2bc01424b96bbf751c08c8f19b"
+    },
+    {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\source-recheck-4\\results.json",
+      "sha256": "077f493f8a3608017665b1df94e22675bafb927f7903f6e557114d8436b5ebb6"
+    }
+  ],
+  "interruptedAttempt": {
+    "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\core-followup-msi-20261110\\owner-recheck-3-stop.json",
+    "sha256": "b8a29f85717dd313691bca69c4c411d8b1928f090893562ac90cbfb7e007101d"
+  },
+  "scope": "MSI; итоговый operator-render-jobs/owner; минимальный R1 проверен в TEMP.",
+  "toolchain": {
+    "engine": {
+      "file": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\aerender.exe",
+      "sha256": "711859d183bdabec7c358a344208323bbbd665fffd7e88e42b9b234f9b99692a"
+    },
+    "ffmpeg": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\slideshow-s1-msi-20261107\\decoder\\ffmpeg-9.0.2-essentials_build\\bin\\ffmpeg.exe",
+      "sha256": "3256173f3f8bffd7df12227c68adf68025edb1832273a9530688a7bb1ed8edec"
+    },
+    "ffprobe": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\.codex-runtime\\slideshow-s1-msi-20261107\\decoder\\ffmpeg-9.0.2-essentials_build\\bin\\ffprobe.exe",
+      "sha256": "f0d36ecbbdd3bcfac3efa078c96c7271c2e68b3810595552ac3b7f17e9a65c52"
+    }
+  }
+}

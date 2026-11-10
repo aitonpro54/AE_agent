@@ -4,7 +4,10 @@ const { boundedCopy, hash, exact, fail } = require('./compiler');
 const { prepareLayout, fitLayout } = require('./layout');
 const MODULE = 'titles-point-layout';
 const OPERATION = 'measure-or-apply-point-layout';
-const MODULE_PIN = 'd62f3363b6677e6b5cfde0ee5f179ea3dcc27c0b3edc5393d490f2ee2bd253eb';
+const MODULE_PINS = new Set([
+  'd62f3363b6677e6b5cfde0ee5f179ea3dcc27c0b3edc5393d490f2ee2bd253eb',
+  '5194b7b97c042487407ea1f9c4211f7110ca00da8461307662ce45a81774660d'
+]);
 const CONTRACT_PIN = '617e69c4de6ca14c7c1e3731c329ad8291d2f9796e8b8276160d87b4a2c7df25';
 const HEX = /^[a-f0-9]{64}$/;
 const UUID = '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}';
@@ -20,10 +23,10 @@ function prepareLayoutBuild(mode, job, targetValue, contractValue, inspectionVal
   if (typeof target.projectId !== 'string' || !target.projectId || target.projectId.length > 8192 ||
       ![target.compId, target.layerId].every(id => Number.isSafeInteger(id) && id >= 1 && id <= 2147483647)) fail('layout_target');
   exact(contract, ['contractId', 'moduleId', 'operationId', 'modulePin', 'admissionPin', 'contract']);
-  if (contract.moduleId !== MODULE || contract.operationId !== OPERATION || contract.modulePin !== MODULE_PIN ||
+  if (contract.moduleId !== MODULE || contract.operationId !== OPERATION || !MODULE_PINS.has(contract.modulePin) ||
       hash(contract.contract) !== CONTRACT_PIN || ![contract.contractId, contract.admissionPin].every(ref => typeof ref === 'string' && HEX.test(ref))) fail('incompatible_contract');
   exact(inspection, ['evidenceRef', 'modulePin', 'synthetic', 'snapshot']);
-  if (inspection.synthetic !== false || inspection.modulePin !== MODULE_PIN || !reference(inspection.evidenceRef, 'evidence')) fail('layout_inspection');
+  if (inspection.synthetic !== false || inspection.modulePin !== contract.modulePin || !reference(inspection.evidenceRef, 'evidence')) fail('layout_inspection');
   const snapshot = inspection.snapshot;
   if (!snapshot || hash(snapshot.target) !== hash(target) || snapshot.role !== mode) fail('inspection_target');
   const candidates = preview.candidates.map(candidate => ({ id: candidate.id, text: candidate.lines.map(line => line.text).join('\n') }));
@@ -33,7 +36,7 @@ function prepareLayoutBuild(mode, job, targetValue, contractValue, inspectionVal
   else if (mode === 'apply') {
     const task = boundedCopy(taskValue);
     if (!reference(task.taskId, 'task') || task.reset !== false || !Array.isArray(task.commands)) fail('layout_measurement_task');
-    const measurements = task.commands.filter(command => command.state === 'succeeded' && command.modulePin === MODULE_PIN &&
+    const measurements = task.commands.filter(command => command.state === 'succeeded' && command.modulePin === contract.modulePin &&
       command.after?.role === 'measure' && command.after.layoutId === layoutId && command.after.style === snapshot.style &&
       command.after.time === snapshot.time && command.target?.projectId === target.projectId && command.target?.compId === target.compId &&
       command.target?.layerId !== target.layerId && reference(command.commandId, 'command'));

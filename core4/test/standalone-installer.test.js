@@ -40,7 +40,10 @@ test('standalone-installer deterministic manual/readonly distributions include e
     assert.ok(runtime.files['runtime/composition-policy.json']);
     assert.ok(runtime.files['runtime/ae-readiness.js']);
     assert.equal(Object.hasOwn(runtime.files, 'runtime/photo-source-proof.js'), selector === 'manual');
-    assert.equal(Object.keys(runtime.files).length, selector === 'manual' ? 62 : 42);
+    assert.ok(runtime.files['runtime/render-job-history.js']);
+    assert.ok(runtime.files['runtime/render-job-maintenance.js']);
+    assert.equal(Object.hasOwn(runtime.files, 'runtime/render-job-owner.js'), false);
+    assert.equal(Object.keys(runtime.files).length, selector === 'manual' ? 64 : 44);
     assert.deepEqual(Object.keys(f.bundle.files).filter(file => HELPERS.includes(file)).sort(), [...HELPERS]);
     assert.equal(Object.keys(runtime.files).some(file => file.startsWith('tools/')), false);
     assert.throws(() => writeStandalone(f.distribution, f.bundle), /new_absolute_standalone_output_required/);
