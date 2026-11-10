@@ -287,7 +287,7 @@ test('C1c replaces an already admitted declarative text-layer slot from a reloca
   const smaller = pkg('manual');
   assert.throws(() => composeCapability(smaller, bundle, admission, { ...pins, basePin: smaller.packageHash }), code('capability_base_slot'));
   assert.throws(() => composeCapability(base, bundle, originalAdmission, { ...pins, admissionPin: hash(originalAdmission) }), code('composition_not_admitted'));
-  assert.throws(() => packageCapability(path.join(SOURCE, 'modules/comp-render')), code('capability_closure'));
+  assert.equal(packageCapability(path.join(SOURCE, 'modules/comp-render')).manifest.version, 2);
 
   const h = await harness(t, { current: base, next: checked.pkg, withHistory: true });
   const journals = ['receiver/completions.ndjson', 'broker/ledger.ndjson'].map(file => path.join(h.d.stateDir, file));
@@ -301,6 +301,65 @@ test('C1c replaces an already admitted declarative text-layer slot from a reloca
   assert.equal(hash(fs.readFileSync(path.join(installed.releaseDir, modulePath, 'executor.jsx'))), reviewed.executorHash);
   assert.equal((await h.api.enableStoppedUpdate({ permit: prepared.permit })).enabled, true);
   journals.forEach((file, index) => assert.deepEqual(fs.readFileSync(file), baseline[index]));
+});
+test('comp-render supplies completion data in a pinned single-slot update', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-capability-render-'));
+  t.after(() => {
+    assert.ok(root.startsWith(path.join(os.tmpdir(), 'core4-capability-render-')) && path.resolve(root) === root);
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+  const modulePath = 'modules/comp-render', admissionPath = 'config/admissions/comp-render.json';
+  const source = path.join(root, 'comp-render');
+  fs.cpSync(path.join(SOURCE, modulePath), source, { recursive: true });
+  const artifactPath = path.join(source, 'artifact.json'), artifact = JSON.parse(fs.readFileSync(artifactPath));
+  const put = (name, bytes) => {
+    fs.writeFileSync(path.join(source, name), bytes);
+    artifact.hashes[name] = hash(bytes);
+    fs.writeFileSync(artifactPath, canonical(artifact));
+  };
+  artifact.version = '4.2.3';
+  const completion = canonical({ directory: 'reviewed-render-output', format: 'H.264' });
+  const contract = fs.readFileSync(path.join(source, 'contract.json'));
+  put('executor.jsx', fs.readFileSync(path.join(source, 'executor.jsx'), 'utf8').replace('/titles-output', '/reviewed-render-output'));
+  for (const invalid of ['{', canonical({ directory: '../escape', format: 'H.264' }),
+    canonical({ directory: 'con', format: 'H.264' }), canonical({ directory: 'valid', format: 'ProRes' }),
+    canonical({ directory: 'valid', format: 'H.264', extra: true })]) {
+    put('completion.json', invalid);
+    assert.throws(() => packageCapability(source), code('capability_completion_schema'));
+  }
+  put('completion.json', completion);
+  fs.writeFileSync(path.join(source, 'extra.json'), '{}');
+  assert.throws(() => packageCapability(source), code('capability_closure'));
+  fs.unlinkSync(path.join(source, 'extra.json'));
+  const base = pkg('operator-render-jobs'), originalAdmission = JSON.parse(Buffer.from(base.files[admissionPath], 'base64'));
+  const bundle = packageCapability(source);
+  const approval = Buffer.from(canonical({ ...originalAdmission, artifactHash: hash(artifact),
+    executorHash: artifact.hashes['executor.jsx'], trustApprovalId: 'test-reviewed-comp-render' }));
+  const pins = { basePin: base.packageHash, capabilityPin: bundle.capabilityHash, admissionPin: hash(approval) };
+  assert.deepEqual(Object.keys(bundle.files).sort(), ['artifact.json', 'completion.json', 'contract.json', 'executor.jsx', 'implementation.js']);
+  assert.throws(() => composeCapability(base, bundle, approval, { ...pins, basePin: '0'.repeat(64) }), code('capability_base_pin'));
+  const wrongProfile = structuredClone(bundle);
+  wrongProfile.manifest.moduleId = 'titles-current-target';
+  wrongProfile.capabilityHash = hash(wrongProfile.manifest);
+  assert.throws(() => composeCapability(base, wrongProfile, approval, { ...pins, capabilityPin: wrongProfile.capabilityHash }), code('capability_data_profile'));
+  put('contract.json', Buffer.concat([contract, Buffer.from('\n')]));
+  const changedContract = packageCapability(source);
+  assert.throws(() => composeCapability(base, changedContract, approval, { ...pins, capabilityPin: changedContract.capabilityHash }), code('capability_contract_incompatible'));
+  const originalBytes = Buffer.from(canonical(originalAdmission));
+  assert.throws(() => composeCapability(base, bundle, originalBytes, { ...pins, admissionPin: hash(originalBytes) }), code('composition_not_admitted'));
+  const composed = composeCapability(base, bundle, approval, pins);
+  const changed = [modulePath + '/artifact.json', modulePath + '/executor.jsx', modulePath + '/completion.json',
+    admissionPath, 'config/catalog.json', 'cep/jsx/registry.jsx'].sort();
+  assert.deepEqual(Object.keys(composed.release.hashes), Object.keys(base.release.hashes));
+  assert.deepEqual(Object.keys(base.files).filter(file => base.files[file] !== composed.files[file]).sort(), changed);
+  const h = await harness(t, { current: base, next: composed });
+  const prepared = await h.prepared();
+  assert.equal(h.api.applyStoppedUpdate({ plan: h.plan, ...prepared }).phase, 'update-stopped');
+  assert.equal((await h.api.enableStoppedUpdate({ permit: prepared.permit })).enabled, true);
+  const next = JSON.parse(fs.readFileSync(h.descriptorPath));
+  assert.equal(next.installationId, h.d.installationId);
+  for (const [file, digest] of Object.entries(composed.release.hashes))
+    assert.equal(hash(fs.readFileSync(path.join(next.releaseDir, file))), digest, file);
 });
 test('one branded plan/lease/certificate updates owner while preserving the stop barrier and history', async t => {
   const h = await harness(t), protectedFiles = ['origin.json', 'state/production/origin.json'].map(n => path.join(h.args.installRoot, n)), before = protectedFiles.map(f => fs.readFileSync(f));

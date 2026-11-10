@@ -5,7 +5,7 @@ const path = require('node:path');
 const { Script } = require('node:vm');
 const { canonical, fail, hash, MAX_FRAME } = require('../protocol/json');
 const { reviewCode } = require('../core/artifacts');
-const { deriveComposition, registrySource } = require('../runtime/stdio-entry');
+const { deriveComposition, registrySource, validateCompRenderCompletion } = require('../runtime/stdio-entry');
 const { runtimeBinding, verifyPackage } = require('./package-installable');
 const { bundleStandalone, writeStandalone } = require('./package-standalone-installer');
 
@@ -13,6 +13,7 @@ const DEFAULT_MODULE = 'titles-current-target';
 const ARTIFACT_FILES = ['contract.json', 'executor.jsx', 'implementation.js'];
 const MODULE_FILES = ['artifact.json', ...ARTIFACT_FILES];
 const FILE_LIMIT = 64 * 1024;
+const COMPLETION_FILE = 'completion.json';
 const SHA256 = /^[a-f0-9]{64}$/;
 const MODULE_ID = /^[a-z][a-z0-9-]{0,63}$/;
 
@@ -53,51 +54,66 @@ function utf8(bytes) {
   return value;
 }
 
+function filesFor(version, moduleId) {
+  if (version === 1) return MODULE_FILES;
+  if (version === 2 && moduleId === 'comp-render') return [...MODULE_FILES, COMPLETION_FILE].sort();
+  fail('capability_data_profile');
+}
+const fileLimit = name => name === COMPLETION_FILE ? 4096 : FILE_LIMIT;
+function checkCompletion(source) {
+  try { validateCompRenderCompletion(JSON.parse(source)); }
+  catch { fail('capability_completion_schema'); }
+}
+
 function verifyCapability(bundle, expectedHash) {
   exact(bundle, ['capabilityHash', 'manifest', 'files'], 'capability_schema');
   const { manifest, files, capabilityHash } = bundle;
   exact(manifest, ['version', 'moduleId', 'hashes'], 'capability_schema');
   const moduleId = manifest.moduleId;
-  exact(manifest.hashes, MODULE_FILES, 'capability_closure');
-  exact(files, MODULE_FILES, 'capability_closure');
-  if (MODULE_FILES.some(name => typeof manifest.hashes[name] !== 'string' || !SHA256.test(manifest.hashes[name]))) fail('capability_schema');
-  if (manifest.version !== 1 || typeof moduleId !== 'string' || !MODULE_ID.test(moduleId) ||
+  const allowed = filesFor(manifest.version, moduleId), artifactFiles = allowed.filter(name => name !== 'artifact.json');
+  exact(manifest.hashes, allowed, 'capability_closure');
+  exact(files, allowed, 'capability_closure');
+  if (allowed.some(name => typeof manifest.hashes[name] !== 'string' || !SHA256.test(manifest.hashes[name]))) fail('capability_schema');
+  if (typeof moduleId !== 'string' || !MODULE_ID.test(moduleId) ||
       typeof expectedHash !== 'string' || !SHA256.test(expectedHash) ||
       capabilityHash !== expectedHash || hash(manifest) !== expectedHash) fail('capability_pin');
   const source = {};
-  for (const name of MODULE_FILES) {
-    const encoded = files[name];
-    if (typeof encoded !== 'string' || encoded.length > Math.ceil(FILE_LIMIT / 3) * 4) fail('capability_budget');
+  for (const name of allowed) {
+    const encoded = files[name], limit = fileLimit(name);
+    if (typeof encoded !== 'string' || encoded.length > Math.ceil(limit / 3) * 4) fail('capability_budget');
     const bytes = Buffer.from(encoded, 'base64');
-    if (!bytes.length || bytes.length > FILE_LIMIT || bytes.toString('base64') !== encoded || hash(bytes) !== manifest.hashes[name]) fail('capability_bytes');
+    if (!bytes.length || bytes.length > limit || bytes.toString('base64') !== encoded || hash(bytes) !== manifest.hashes[name]) fail('capability_bytes');
     source[name] = utf8(bytes);
   }
   if (Buffer.byteLength(canonical(bundle)) > MAX_FRAME) fail('capability_budget');
   const artifact = JSON.parse(source['artifact.json']);
   exact(artifact, ['id', 'version', 'entry', 'hashes', 'publicDependencies'], 'capability_artifact');
   exact(artifact.publicDependencies, [], 'capability_dependencies');
-  exact(artifact.hashes, ARTIFACT_FILES, 'capability_artifact');
+  exact(artifact.hashes, artifactFiles, 'capability_artifact');
   if (artifact.id !== moduleId || typeof artifact.version !== 'string' || !/^\d{1,8}\.\d{1,8}\.\d{1,8}$/.test(artifact.version) ||
-      artifact.entry !== 'implementation.js' || ARTIFACT_FILES.some(name => artifact.hashes[name] !== manifest.hashes[name])) fail('capability_artifact');
+      artifact.entry !== 'implementation.js' || artifactFiles.some(name => artifact.hashes[name] !== manifest.hashes[name])) fail('capability_artifact');
+  if (manifest.version === 2) checkCompletion(source[COMPLETION_FILE]);
   const contract = JSON.parse(source['contract.json']);
   if (contract?.moduleId !== moduleId || typeof contract.operationId !== 'string' || !MODULE_ID.test(contract.operationId)) fail('capability_contract_incompatible');
   reviewCode(source['implementation.js']);
   new Script(source['implementation.js'], { filename: 'implementation.js' });
-  return { artifact, contract };
+  return { artifact, contract, allowed, artifactFiles };
 }
 
 function packageCapability(directory = path.resolve(__dirname, '..', 'modules', DEFAULT_MODULE)) {
   plain(directory, true);
-  if (canonical(fs.readdirSync(directory).sort()) !== canonical(MODULE_FILES)) fail('capability_closure');
+  const artifactBytes = readBounded(path.join(directory, 'artifact.json'), FILE_LIMIT);
+  const moduleId = JSON.parse(utf8(artifactBytes))?.id;
+  const names = fs.readdirSync(directory).sort(), version = names.includes(COMPLETION_FILE) ? 2 : 1;
+  const allowed = filesFor(version, moduleId);
+  if (canonical(names) !== canonical(allowed)) fail('capability_closure');
   const files = {}, hashes = {};
-  let moduleId;
-  for (const name of MODULE_FILES) {
-    const bytes = readBounded(path.join(directory, name), FILE_LIMIT);
-    if (name === 'artifact.json') moduleId = JSON.parse(utf8(bytes))?.id;
+  for (const name of allowed) {
+    const bytes = name === 'artifact.json' ? artifactBytes : readBounded(path.join(directory, name), fileLimit(name));
     files[name] = bytes.toString('base64');
     hashes[name] = hash(bytes);
   }
-  const manifest = { version: 1, moduleId, hashes };
+  const manifest = { version, moduleId, hashes };
   const bundle = { manifest, files, capabilityHash: hash(manifest) };
   verifyCapability(bundle, bundle.capabilityHash);
   return bundle;
@@ -122,17 +138,19 @@ function composeCapability(base, bundle, admissionBytes, { basePin, capabilityPi
   if (!['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3'].includes(base.release.version) || !composition || composition.id === 'readonly' ||
       (composition.version === 1 && composition.id !== 'manual') ||
       runtimeBinding(base.release, readBase).runtimeModel !== 'owner') fail('capability_base_composition');
-  const { artifact, contract } = verifyCapability(bundle, capabilityPin);
+  const { artifact, contract, allowed, artifactFiles } = verifyCapability(bundle, capabilityPin);
   const moduleId = artifact.id;
   const existing = selected.assets.find(asset => asset.moduleId === moduleId && asset.resultProfile);
   const admissionPath = 'config/admissions/' + moduleId + '.json';
   if (!existing || (composition.version === 1 && moduleId !== DEFAULT_MODULE)) fail('capability_base_slot');
-  exact(existing.manifest.hashes, ARTIFACT_FILES, 'capability_base_slot');
+  exact(existing.manifest.hashes, artifactFiles, 'capability_base_slot');
   exact(existing.manifest.publicDependencies, [], 'capability_base_slot');
+  if (bundle.manifest.version === 2 && (existing.resultProfile !== 'owned-comp-render-v1' || !existing.proofConfig)) fail('capability_base_slot');
   if (!Buffer.isBuffer(admissionBytes) || admissionBytes.length === 0 || admissionBytes.length > 16384 ||
       typeof admissionPin !== 'string' || !SHA256.test(admissionPin) || hash(admissionBytes) !== admissionPin) fail('capability_admission_pin');
   // Compatibility is anchored to the admitted slot, including its schemas and effect policy.
-  if (canonical(existing.contract) !== canonical(contract)) fail('capability_contract_incompatible');
+  if (canonical(existing.contract) !== canonical(contract) ||
+      bundle.manifest.version === 2 && existing.manifest.hashes['contract.json'] !== artifact.hashes['contract.json']) fail('capability_contract_incompatible');
   utf8(admissionBytes);
 
   const release = { ...base.release, hashes: { ...base.release.hashes } };
@@ -142,7 +160,7 @@ function composeCapability(base, bundle, admissionBytes, { basePin, capabilityPi
     files[file] = bytes.toString('base64');
     release.hashes[file] = hash(bytes);
   };
-  for (const name of MODULE_FILES) put(existing.path + '/' + name, Buffer.from(bundle.files[name], 'base64'));
+  for (const name of allowed) put(existing.path + '/' + name, Buffer.from(bundle.files[name], 'base64'));
   put(admissionPath, admissionBytes);
   if (hash(release) === basePin) return base;
 

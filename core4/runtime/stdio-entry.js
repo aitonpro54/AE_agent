@@ -28,6 +28,12 @@ function builtinCapabilityFiles(capabilities) {
     return BUILTIN_CAPABILITIES[id].files;
   });
 }
+function validateCompRenderCompletion(value) {
+  exactKeys(value, ['directory', 'format']);
+  if (typeof value.directory !== 'string' || !/^[a-z][a-z0-9-]{0,63}$/.test(value.directory) ||
+      /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/.test(value.directory) || value.format !== 'H.264') fail('composition_not_admitted');
+  return value;
+}
 const RESULT_PROFILES = Object.freeze({
   'manual-text-v1': null,
   'photo-source-v1': 'runtime/photo-source-proof.js',
@@ -204,9 +210,7 @@ function deriveComposition(release, read) {
     let proofConfig;
     if (composition.version === 2 && binding?.resultProfile === 'owned-comp-render-v1') {
       if (!Object.hasOwn(value.manifest.hashes, 'completion.json')) fail('composition_artifact');
-      proofConfig = json(asset.path + '/completion.json');
-      exactKeys(proofConfig, ['directory', 'format']);
-      if (typeof proofConfig.directory !== 'string' || !/^[a-z][a-z0-9-]{0,63}$/.test(proofConfig.directory) || proofConfig.format !== 'H.264') fail('composition_not_admitted');
+      proofConfig = validateCompRenderCompletion(json(asset.path + '/completion.json'));
     }
     return { ...asset, ...value, executorHash: value.admission.executorHash, ...(binding ? { resultProfile: binding.resultProfile } : {}),
       ...(binding?.operatorConfirmation ? { operatorConfirmation: true } : {}),
@@ -726,7 +730,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
 }
 // Direct-main start imports the historical reader synchronously. Publish these
 // builtin verifiers first so its installation.js import sees initialized exports.
-module.exports = { start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, compositionPaths, builtinCapabilityFiles, registrySource, installationConfig, PRODUCTION_TIMING };
+module.exports = { start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, compositionPaths, builtinCapabilityFiles, validateCompRenderCompletion, registrySource, installationConfig, PRODUCTION_TIMING };
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.length !== 2 || args[0] !== '--installation') { process.stderr.write('Explicit --installation ABSOLUTE_DESCRIPTOR required.\n'); process.exitCode = 2; }
