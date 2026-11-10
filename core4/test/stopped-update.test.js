@@ -9,7 +9,7 @@ const { classifyOwnerProcess } = require('../runtime/windows-owner-process');
 const SOURCE = path.resolve(__dirname, '..'), packages = new Map();
 const test = (name, fn) => nodeTest('stopped-update ' + name, { timeout: 90000 }, fn);
 function pkg(composition) { if (!packages.has(composition)) packages.set(composition, buildPackage(SOURCE, composition, { runtimeModel: 'owner' })); return packages.get(composition); }
-async function harness(t, { current = pkg('readonly'), next = pkg('manual'), withHistory = false } = {}) {
+async function harness(t, { current = pkg('readonly'), next = pkg('manual'), withHistory = false, beforeStop } = {}) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-stopped-update-')), tracked = new Set(), names = new Map();
   const io = { ...fs, openSync(file, ...args) { const fd = fs.openSync(file, ...args); tracked.add(fd); names.set(fd, file); return fd; }, closeSync(fd) { tracked.delete(fd); names.delete(fd); return fs.closeSync(fd); } };
   let birth = 638000000000000000n, probeHook, unavailable = false, legacyPort;
@@ -37,8 +37,11 @@ async function harness(t, { current = pkg('readonly'), next = pkg('manual'), wit
     new Ledger(path.join(d.stateDir, 'broker/ledger.ndjson')).append({ type: 'task', taskId: 'fixture-settled-task', epoch: 1, reset: true });
   }
   const originalScope = { bootId: crypto.randomUUID(), pid: 2147483000, birthTicks: String(birth) }, id = crypto.randomUUID();
-  const m = maintenance.createOwnerMaintenance({ installation: d, descriptorPath, lifecycle: { state: () => ({ processBootId: originalScope.bootId, ...originalScope }) }, freeze() {}, activity: () => ({ pending: false }), accepted: () => 0, close: async () => {}, intervalMs: 1 });
-  m.request(maintenance.createStopAuthorization({ installation: d, descriptorPath, scope: originalScope, id })); assert.equal((await m.done).phase, 'stopped');
+  let frozen = false;
+  const m = maintenance.createOwnerMaintenance({ installation: d, descriptorPath, lifecycle: { state: () => ({ processBootId: originalScope.bootId, ...originalScope }) }, freeze() { frozen = true; }, activity: () => ({ pending: false }), accepted: () => 0, close: async () => {}, intervalMs: 1 });
+  const stop = () => m.request(maintenance.createStopAuthorization({ installation: d, descriptorPath, scope: originalScope, id }));
+  const render = await beforeStop?.({ args, d, m, stop, frozen: () => frozen, load });
+  stop(); assert.equal((await m.done).phase, 'stopped');
   const server = http.createServer(); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const certifier = load(path.join(SOURCE, 'runtime/stopped-certification')), certOptions = { installation: d, descriptorPath, id, reservedServer: server };
   const cert = await certifier.certifyStoppedInstallation({ ...certOptions, expectedProofHash: (await certifier.inspectStoppedCertification(certOptions)).proofHash });
@@ -46,12 +49,76 @@ async function harness(t, { current = pkg('readonly'), next = pkg('manual'), wit
   const oldHash = hash(fs.readFileSync(descriptorPath)), barrier = path.join(d.stateDir, 'runtime-maintenance.json');
   const recovery = () => ({ installation: d, descriptorPath, transactionId: plan.transactionId, expectedPreviousDescriptorHash: oldHash, expectedPackageHash: plan.pkg.packageHash, reservedServer: server });
   t.after(async () => { for (const fd of tracked) { try { fs.closeSync(fd); } catch {} } tracked.clear(); await new Promise(resolve => server.close(resolve)); assert.ok(base.startsWith(path.join(os.tmpdir(), 'core4-stopped-update-')) && path.resolve(base) === base); fs.rmSync(base, { recursive: true, force: true }); });
-  return { base, args, d, descriptorPath, cert, plan, options, api, installer, io, names, barrier, recovery, load, server, certifier,
+  return { base, args, d, descriptorPath, cert, plan, options, api, installer, io, names, barrier, recovery, load, server, certifier, render,
     legacyPort(port) { legacyPort = port; },
     dead() { for (const fd of [...tracked]) io.closeSync(fd); birth += 10n; }, reviveFixtureActor() { birth -= 10n; }, onProbe(fn) { probeHook = fn; }, unavailable(v) { unavailable = v; },
     async prepared() { return api.prepareStoppedUpdate(options); } };
 }
 const code = v => e => e.code === v;
+async function settledRender({ args, d, m, stop, frozen, load }) {
+  const { createJobs } = load(path.join(SOURCE, 'runtime/aerender-jobs'));
+  const root = path.join(d.stateDir, 'render-jobs-v1');
+  const writeInput = name => {
+    const file = path.join(path.dirname(args.installRoot), name);
+    fs.writeFileSync(file, name);
+    return { path: file, sha256: hash(name) };
+  };
+  const staged = { project: writeInput('source.aep'), output: path.join(args.installRoot, '../out.mp4'),
+    media: [], target: { compId: 1, compName: 'Fixture', queueIndex: 1, frames: 2, fps: '24/1', width: 64, height: 64, audio: false },
+    queue: [{ index: 1, name: 'Fixture', status: 'Queued', compId: 1, frames: 2, format: 'H.264' }] };
+  const tools = { engine: writeInput('aerender.exe'), ffmpeg: writeInput('ffmpeg.exe'), ffprobe: writeInput('ffprobe.exe') };
+  const toolchain = path.join(d.stateDir, 'render-job-toolchain.json');
+  fs.writeFileSync(toolchain, canonical(tools));
+  const jobs = createJobs(root, pid => ({ pid, parent: 0, exe: process.execPath, commandLine: 'fixture', birth: new Date(0).toISOString() }));
+  const authorize = () => {
+    const commandId = 'command-' + crypto.randomUUID(), taskId = 'task-' + crypto.randomUUID();
+    const hex = hash(['ae-core4/render-job/v1', d.installationId, commandId]);
+    const id = [hex.slice(0,8), hex.slice(8,12), '8' + hex.slice(13,16),
+      ((parseInt(hex[16], 16) & 3) | 8).toString(16) + hex.slice(17,20), hex.slice(20,32)].join('-');
+    return { id, authorization: { installationId: d.installationId, commandId, taskId, stageHash: hash(staged) } };
+  };
+  const spec = { ...staged, ...tools }, interrupted = authorize();
+  fs.mkdirSync(path.join(root, interrupted.id));
+  fs.writeFileSync(path.join(root, interrupted.id, 'prepare-intent.json'), canonical(interrupted));
+  assert.throws(stop, code('render_job_maintenance_unsettled'));
+  assert.equal(frozen(), false);
+  assert.equal(m.status().phase, 'running');
+  fs.unlinkSync(path.join(root, interrupted.id, 'prepare-intent.json'));
+  fs.rmdirSync(path.join(root, interrupted.id));
+  const prepared = authorize();
+  const { id } = jobs.prepare(spec, prepared);
+  // Start is waiting for the R1 lock when the stop request inspects the
+  // registry. Stop refuses without freezing or revoking the live controller.
+  const start = jobs.start(id, () => { assert.equal(frozen(), false); throw Error('test_before_dispatch'); });
+  assert.throws(stop, code('render_job_maintenance_unsettled'));
+  await assert.rejects(start, /test_before_dispatch/);
+  assert.equal(jobs.status(id).state, 'prepared');
+  assert.equal((await jobs.cancel(id)).state, 'cancelled');
+  const history = path.join(root, id, 'cancelled.json');
+  return { id, history, historyHash: hash(fs.readFileSync(history)), toolchain,
+    prepare: () => jobs.prepare(spec, authorize()), start: () => jobs.start(id) };
+}
+test('R1 refuses stop while prepare or start is unsettled, then updates and enables with exact settled history', async t => {
+  const h = await harness(t, { current: pkg('operator-render-jobs'), beforeStop: settledRender });
+  assert.throws(h.render.prepare, /render_job_maintenance/);
+  const updated = h.api.applyStoppedUpdate({ plan: h.plan, ...await h.prepared() });
+  assert.equal(updated.updated, true);
+  h.dead(); // Separate update and enable invocations, with proven original actor exit.
+  const view = await h.api.inspectStoppedUpdate(h.recovery());
+  const enabled = await h.api.enableStoppedUpdate({ ...h.recovery(), expectedProofHash: view.proofHash });
+  assert.equal(enabled.enabled, true);
+  assert.equal(JSON.parse(fs.readFileSync(h.descriptorPath)).installationId, h.d.installationId);
+  assert.equal(hash(fs.readFileSync(h.render.history)), h.render.historyHash);
+  assert.equal(JSON.parse(fs.readFileSync(h.render.history)).id, h.render.id);
+});
+test('R1 toolchain drift after switching leaves enable fenced', async t => {
+  const h = await harness(t, { current: pkg('operator-render-jobs'), beforeStop: settledRender });
+  h.api.applyStoppedUpdate({ plan: h.plan, ...await h.prepared() });
+  fs.appendFileSync(h.render.toolchain, '\n');
+  await assert.rejects(h.api.inspectStoppedUpdate(h.recovery()), code('stopped_update_render_jobs_changed'));
+  assert.ok(fs.existsSync(h.barrier));
+  assert.equal(hash(fs.readFileSync(h.render.history)), h.render.historyHash);
+});
 function intercept(h, method, callback) { const original = h.io[method]; h.io[method] = (...args) => callback(original, ...args); return () => { h.io[method] = original; }; }
 test('C1b packages, admits and updates one independent Titles capability through the stopped owner path', async t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-capability-'));

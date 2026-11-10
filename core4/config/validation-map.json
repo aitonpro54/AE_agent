@@ -75,6 +75,8 @@
     { "prefix": "core4/test/package-aerender-operator.test.js", "owner": "aerender-operator", "checks": ["aerender-operator"] },
     { "prefix": "core4/config/compositions/operator-render-jobs.json", "owner": "render-job-owner", "checks": ["render-job-owner", "installed-composition", "package-location"] },
     { "prefix": "core4/runtime/render-job-owner.js", "owner": "render-job-owner", "checks": ["render-job-owner"] },
+    { "prefix": "core4/runtime/render-job-history.js", "owner": "aerender-jobs", "checks": ["aerender-jobs", "aerender-profile", "aerender-operator", "render-job-owner", "stopped-update"] },
+    { "prefix": "core4/runtime/render-job-maintenance.js", "owner": "owner-maintenance", "checks": ["aerender-jobs", "owner-maintenance", "stopped-certification", "stopped-update"] },
     { "prefix": "core4/runtime/aerender-jobs.js", "owner": "aerender-jobs", "checks": ["aerender-jobs", "aerender-operator", "render-job-owner"] },
     { "prefix": "core4/runtime/aerender-profile.js", "owner": "aerender-profile", "checks": ["aerender-profile", "aerender-jobs", "aerender-operator", "render-job-owner"] },
     { "prefix": "core4/tools/configure-render-job-toolchain.js", "owner": "render-job-owner", "checks": ["render-job-owner"] },
@@ -1224,13 +1226,13 @@
       "tools/stopped-host-readoption-store.js",
       "tools/stopped-host-readoption-transaction.js"
     ],
-    "stopped-update": ["tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js", "config/compositions/","tools/package-capability.js","tools/package-standalone-installer.js","tools/standalone-installer.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/stopped-update.test.js","test/fixtures/owner-pre-ready-claim-child.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
+    "stopped-update": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "tools/stopped-update.js","tools/install-core4.js","tools/package-installable.js", "config/compositions/","tools/package-capability.js","tools/package-standalone-installer.js","tools/standalone-installer.js","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/stopped-update.test.js","test/fixtures/owner-pre-ready-claim-child.js","tools/legacy-owner-migration.js","tools/windows-retained-process.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
     "legacy-owner-migration": ["tools/legacy-owner-migration.js","tools/windows-retained-process.js","tools/install-core4.js","tools/package-installable.js", "config/compositions/","tools/disposition-install-preflight.js","runtime/","core/","protocol/","integrations/cep/completion-store.js","test/legacy-owner-migration.test.js","tools/stopped-update.js","cep/","worker.js","modules/","plan-engine/","config/catalog.json","config/admissions/","integrations/"],
     "windows-retained-process": ["tools/windows-retained-process.js", "runtime/windows-owner-process.js", "test/windows-retained-process.test.js"],
-    "stopped-certification": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/stopped-certification.test.js"],
+    "stopped-certification": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/stopped-certification.test.js"],
     "maintenance-finish": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/fixtures/maintenance-finish.js", "test/maintenance-finish.test.js"],
     "maintenance-finish-operator": ["runtime/", "core/", "protocol/", "tools/", "config/", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "test/maintenance-finish-operator.test.js"],
-    "owner-maintenance": ["runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-maintenance.test.js"],
+    "owner-maintenance": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "runtime/", "core/", "protocol/", "integrations/cep/completion-store.js", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-maintenance.test.js"],
     "maintenance-operator": ["runtime/", "core/", "protocol/", "tools/maintain-owner.js", "tools/install-core4.js", "tools/package-installable.js", "config/compositions/", "tools/check-boundaries.js", "worker.js", "modules/", "plan-engine/", "integrations/", "cep/", "config/catalog.json", "config/admissions/", "test/maintenance-operator.test.js"],
     "windows-owner-process": ["runtime/windows-owner-process.js", "test/windows-owner-process.test.js"],
     "owner-lifecycle": ["runtime/owner-lifecycle.js", "runtime/recovery-inspection.js", "runtime/windows-owner-process.js", "runtime/native-read-disposition.js", "runtime/installation-lineage.js", "runtime/install-lease.js", "runtime/stdio-entry.js", "core/state-lock.js", "integrations/cep/completion-store.js", "protocol/", "test/fixtures/owner-lifecycle-fixture.js", "test/owner-lifecycle.test.js"],
@@ -1440,12 +1442,12 @@
       "tools/package-installable.js", "test/layer-overlay.test.js", "test/fixtures/manual-http-runtime.js",
       "test/fixtures/montage-host.js", "test/fixtures/ae.js"
     ],
-    "aerender-jobs": [
+    "aerender-jobs": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js",
       "tools/aerender-jobs.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "protocol/json.js", "test/aerender-jobs.test.js"
     ],
-    "aerender-profile": ["tools/aerender-profile.js", "runtime/aerender-profile.js", "test/aerender-profile.test.js"],
-    "aerender-operator": ["tools/package-aerender-operator.js", "tools/aerender-jobs.js", "tools/aerender-profile.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "protocol/json.js", "test/package-aerender-operator.test.js"],
-    "render-job-owner": ["config/compositions/operator-render-jobs.json", "runtime/render-job-owner.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/stdio-entry.js", "tools/configure-render-job-toolchain.js", "protocol/json.js", "test/render-job-owner.test.js"],
+    "aerender-profile": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "tools/aerender-profile.js", "runtime/aerender-profile.js", "test/aerender-profile.test.js"],
+    "aerender-operator": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "tools/package-aerender-operator.js", "tools/aerender-jobs.js", "tools/aerender-profile.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "protocol/json.js", "test/package-aerender-operator.test.js"],
+    "render-job-owner": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "config/compositions/operator-render-jobs.json", "runtime/render-job-owner.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/stdio-entry.js", "tools/configure-render-job-toolchain.js", "protocol/json.js", "test/render-job-owner.test.js"],
     "ame-media-export": [
       "tools/ame-media-export.js", "tools/ame-isolated-export.ps1", "tools/ame-isolated-host.ps1", "protocol/json.js",
       "test/ame-media-export.test.js", "test/fixtures/ame-isolated-host.ps1"

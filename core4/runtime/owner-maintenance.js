@@ -2,6 +2,7 @@
 // Private full-installation operator protocol. No MCP tool, AE grant or launcher.
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto'), http = require('node:http'), os = require('node:os');
 const { canonical, hash, fail } = require('../protocol/json');
+const { inspectRenderJobs } = require('./render-job-maintenance');
 const { inspectReceiverHistory, inspectLedgerHistory } = require('./recovery-inspection');
 const { observeOwnerProcess, classifyOwnerProcess } = require('./windows-owner-process');
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/, HEX = /^[a-f0-9]{64}$/;
@@ -57,11 +58,13 @@ function context(d, descriptorPath) {
   const p = { descriptor: descriptorPath, origin: path.join(d.installRoot, 'origin.json'), anchor: path.join(d.stateDir, 'origin.json'), client: path.join(d.installRoot, 'core-client.json'), journal: path.join(d.stateDir, 'receiver/completions.ndjson'), ledger: path.join(d.stateDir, 'broker/ledger.ndjson'), barrier: path.join(d.stateDir, 'runtime-maintenance.json') };
   const markerPaths = ['runtime-owner.json', 'runtime-owner.next', 'runtime-diagnostic.json', 'broker/broker-owner.lock', 'broker/broker-owner.gate', 'receiver/owner'];
   const info = v => ({ hash: v.bytes === null ? null : hash(v.bytes), stat: v.stat });
+  const renderJobs = () => inspectRenderJobs(d.stateDir, { installationId: d.installationId });
   function snapshot(histories = false) {
     const names = ['descriptor', 'origin', 'anchor', 'client', ...(histories ? ['journal', 'ledger'] : [])], values = Object.fromEntries(names.map(k => [k, read(p[k], histories && ['journal', 'ledger'].includes(k) ? 64 * 1024 * 1024 : 16384)]));
     if (!values.descriptor.bytes?.equals(initial.bytes) || !same(values.descriptor.stat, initial.stat) || !values.origin.bytes || !values.anchor.bytes || !values.origin.bytes.equals(values.anchor.bytes) || !values.client.bytes) fail('maintenance_changed');
     const origin = JSON.parse(values.origin.bytes); if (origin.installationId !== d.installationId || origin.machineId !== d.machineId) fail('maintenance_changed');
-    return { values, facts: Object.fromEntries(names.map(k => [k, info(values[k])])) };
+    const render = histories ? renderJobs() : null;
+    return { values, facts: { ...Object.fromEntries(names.map(k => [k, info(values[k])])), ...(render && { renderJobs: render }) } };
   }
   function seal(kind, value) {
     const body = { version: 1, kind, installationId: d.installationId, machineId: d.machineId, descriptorHash, ...value };
@@ -91,7 +94,7 @@ function context(d, descriptorPath) {
     const begins = new Map(receiver.filter(e => e.type === 'begin').map(e => [e.commandId, e])), replies = new Map(receiver.filter(e => e.type === 'complete').map(e => [e.commandId, e.response.result?.outcome])), terminals = new Map(ledger.filter(e => e.type === 'command').map(e => [e.commandId, e.state]));
     for (const e of ledger.filter(e => e.type === 'intent')) { const b = begins.get(e.commandId), t = terminals.get(e.commandId), outcome = replies.get(e.commandId); if (b ? canonical(b.originalBinding) !== canonical(e.dispatchBinding) : t !== 'rejected') fail('maintenance_unsettled'); if (outcome === 'applied' && t === 'rejected' || outcome === 'rejected' && t === 'succeeded') fail('maintenance_unsettled'); }
   }
-  return { d, descriptorPath, descriptorHash, p, info, snapshot, seal, decode, dir, markers, scope, authorization, verifyAuthorization, settled, reverify };
+  return { d, renderJobs, descriptorPath, descriptorHash, p, info, snapshot, seal, decode, dir, markers, scope, authorization, verifyAuthorization, settled, reverify };
 }
 function createStopAuthorization({ installation, descriptorPath, scope, id }) { return context(installation, descriptorPath).authorization(scope, id); }
 function createOwnerMaintenance({ installation, descriptorPath, lifecycle, freeze, activity, accepted, close, intervalMs = 50 }) {
@@ -106,8 +109,10 @@ function createOwnerMaintenance({ installation, descriptorPath, lifecycle, freez
       const pending = activity().pending, count = accepted();
       if (typeof pending !== 'boolean' || !Number.isSafeInteger(count) || count < 0) fail('maintenance_activity');
       if (count || pending) { timer = setTimeout(drain, intervalMs); return; }
+      if (canonical(c.renderJobs()) !== canonical(stop.render)) fail('render_job_maintenance_changed');
       closing = true; await close();
       const snap = c.snapshot(true), markers = c.markers(); let settled = true;
+      if (canonical(snap.facts.renderJobs ?? null) !== canonical(stop.render)) fail('render_job_maintenance_changed');
       try { c.settled(snap); } catch { settled = false; }
       stopped = atomic(path.join(c.dir(stop.id), 'stopped.json'), c.seal('maintenance-stopped', { id: stop.id, stopHash: stop.hash, scope, protected: snap.facts, markers, settled }), stop.nonce);
       resolveDone(status());
@@ -116,15 +121,25 @@ function createOwnerMaintenance({ installation, descriptorPath, lifecycle, freez
   function request(value) {
     const id = c.verifyAuthorization(value, scope);
     if (stop || fault) { if (stop?.id === id) return status(); fail('maintenance_in_progress'); }
+    // A refusal here leaves the Owner running so the operator can settle R1.
+    // No asynchronous admission can interleave between this check and freeze.
+    const render = c.renderJobs();
     // Freeze is synchronous and is never undone after a persist failure.
     freeze();
     try {
-      const baseline = c.snapshot().facts, nonce = crypto.randomUUID(); c.dir(id, true);
+      const baseline = { ...c.snapshot().facts, renderJobs: render }, nonce = crypto.randomUUID(); c.dir(id, true);
       const barrier = atomic(c.p.barrier, c.seal('maintenance-stop', { id, scope, protected: baseline, authorizationHash: hash(value), nonce }), nonce);
-      stop = { id, hash: hash(barrier.bytes), nonce }; timer = setTimeout(drain, 10); return status();
+      stop = { id, hash: hash(barrier.bytes), nonce, render }; timer = setTimeout(drain, 10); return status();
     } catch { fault = 'maintenance_persist_failed'; fail(fault); }
   }
   return Object.freeze({ request, requestLocal: () => stop || fault ? status() : request(c.authorization(scope)), status, done, scope: Object.freeze(scope) });
+}
+function stopProtected(facts, recorded) {
+  return Object.fromEntries(['descriptor', 'origin', 'anchor', 'client', ...(Object.hasOwn(recorded, 'renderJobs') ? ['renderJobs'] : [])].map(k => [k, facts[k] ?? null]));
+}
+function receiptProtected(facts, recorded) {
+  const { renderJobs, ...legacy } = facts;
+  return Object.hasOwn(recorded, 'renderJobs') ? facts : legacy;
 }
 async function gone(scope) { const o = await observeOwnerProcess(scope.pid); if (!['absent', 'pid-reused'].includes(classifyOwnerProcess({ pid: scope.pid, birthTicks: scope.birthTicks }, o))) fail('maintenance_process_not_dead'); }
 function phaseSnapshot(c, directory, finishing = false) {
@@ -182,7 +197,7 @@ async function inspected(c, id) {
     if (completed && (!Array.isArray(lease.facts) || lease.facts.length !== 2 || lease.facts[index].file !== gate.file || lease.facts[index].hash !== hash(gate.bytes) || !same(lease.facts[index].stat, gate.stat))) fail('maintenance_changed');
     if (index === 1) markers['broker/broker-owner.gate'] = { hash: null, stat: null };
   }
-  if (canonical(Object.fromEntries(['descriptor', 'origin', 'anchor', 'client'].map(k => [k, snap.facts[k]]))) !== canonical(b.protected) || canonical(snap.facts) !== canonical(r.protected) || canonical(markers) !== canonical(r.markers)) fail('maintenance_changed');
+  if (canonical(stopProtected(snap.facts, b.protected)) !== canonical(b.protected) || canonical(receiptProtected(snap.facts, b.protected)) !== canonical(r.protected) || canonical(markers) !== canonical(r.markers)) fail('maintenance_changed');
   await gone(b.scope);
   assertPhase(c, directory, phase);
   const after = c.snapshot(true); if (canonical(after.facts) !== canonical(snap.facts) || canonical(c.markers()) !== actualMarkers || gates.some(v => canonical(c.info(read(v.file))) !== canonical(c.info(v)))) fail('maintenance_changed');
@@ -282,7 +297,7 @@ function readFinish(c, id) {
   const receiptView = get('stopped.json'), r = c.decode(receiptView, 'maintenance-stopped', ['id', 'stopHash', 'scope', 'protected', 'markers', 'settled']);
   const intentView = get('resume-intent.json'), intent = c.decode(intentView, 'maintenance-resume-intent', ['id', 'resumeId', 'stopHash', 'snapshot', 'operator', 'gates']);
   c.scope(intent.operator);
-  if (r.id !== id || r.stopHash !== hash(original.bytes) || canonical(r.scope) !== canonical(b.scope) || intent.id !== id || !UUID.test(intent.resumeId) || intent.stopHash !== r.stopHash || canonical(intent.snapshot) !== canonical(facts.snapshot) || canonical(r.protected) !== canonical(facts.snapshot) || canonical(b.protected) !== canonical(Object.fromEntries(['descriptor', 'origin', 'anchor', 'client'].map(k => [k, facts.snapshot[k]]))) || !Array.isArray(intent.gates) || intent.gates.length !== 2) fail('maintenance_changed');
+  if (r.id !== id || r.stopHash !== hash(original.bytes) || canonical(r.scope) !== canonical(b.scope) || intent.id !== id || !UUID.test(intent.resumeId) || intent.stopHash !== r.stopHash || canonical(intent.snapshot) !== canonical(facts.snapshot) || canonical(r.protected) !== canonical(receiptProtected(facts.snapshot, b.protected)) || canonical(b.protected) !== canonical(stopProtected(facts.snapshot, b.protected)) || !Array.isArray(intent.gates) || intent.gates.length !== 2) fail('maintenance_changed');
   intent.gates.forEach((value, index) => {
     if (!encoded(value)) fail('maintenance_record');
     const g = finishRecord(c, { bytes: Buffer.from(value, 'base64') }, 'maintenance-lease-gate', ['id', 'resumeId', 'operator', 'role', 'nonce'], id, intent.resumeId);
@@ -458,4 +473,4 @@ function stoppedCertificationContext(capability) {
   const p = require('./stopped-certification').stoppedContextPermit(capability);
   return { ...context(p.installation, p.descriptorPath), read, atomic, plain, same };
 }
-module.exports = { PRIVATE_METHODS, createStopAuthorization, createOwnerMaintenance, inspectMaintenance, resumeMaintenance, maintenanceLeasePermit, inspectMaintenanceFinish, finishMaintenance, stoppedCertificationContext };
+module.exports = { PRIVATE_METHODS, stopProtected, receiptProtected, createStopAuthorization, createOwnerMaintenance, inspectMaintenance, resumeMaintenance, maintenanceLeasePermit, inspectMaintenanceFinish, finishMaintenance, stoppedCertificationContext };

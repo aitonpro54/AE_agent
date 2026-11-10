@@ -113,7 +113,12 @@ async function dead(value) {
   const o = await observeOwnerProcess(value.pid);
   if (!['absent', 'pid-reused'].includes(classifyOwnerProcess({ pid: value.pid, birthTicks: value.birthTicks }, o))) fail('stopped_update_process_not_dead');
 }
+function checkRenderJobs(c) {
+  const { inspectRenderJobs } = require('../runtime/render-job-maintenance');
+  if (!equal(inspectRenderJobs(c.old.stateDir, { installationId: c.old.installationId }), c.facts.snapshot.renderJobs ?? null)) fail('stopped_update_render_jobs_changed');
+}
 function critical(c) {
+  checkRenderJobs(c);
   const d = c.old, p = d.stateDir, original = c.facts;
   const names = { origin: path.join(d.installRoot, 'origin.json'), anchor: path.join(p, 'origin.json'), journal: path.join(p, 'receiver/completions.ndjson'), ledger: path.join(p, 'broker/ledger.ndjson') };
   for (const [name, file] of Object.entries(names)) if (!sameFact(read(file), original.snapshot[name])) fail('stopped_update_history_changed');
@@ -173,6 +178,7 @@ async function prepare(options, source) {
   const c = { source, plan, old, next: plan.descriptor, descriptorPath, stopId, server: reservedServer || legacy?.reservedServer, certificate: legacy ? options.stoppedCapability : options.certificate, lease: options.lease || null, binding: binding(old, plan.descriptor, plan.transactionId, plan.previousDescriptor), directory: path.join(old.installRoot, 'transactions', plan.transactionId + '-stopped-update') };
   endpoint(c.server);
   c.facts = legacy ? legacy.facts : require('../runtime/stopped-certification').assertStoppedCertificate(c.certificate, { installation: old, descriptorPath, id: stopId });
+  checkRenderJobs(c);
   if (!c.facts.stop || c.facts.stop.hash !== c.facts.stopHash || c.facts.descriptorHash !== hash(plan.previousDescriptor)) fail('stopped_update_certificate');
   const before = structuredClone(c.facts), a = await actor(old); endpoint(c.server); certificateCheck(c); installer.assertPreparedInstallBaseline(plan);
   if (!equal(before, c.facts)) fail('stopped_update_certificate_changed');

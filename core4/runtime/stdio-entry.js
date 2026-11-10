@@ -398,6 +398,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   }
   async function requestStartOver() {
     if (!startOverOwner || !ownerMaintenance) fail('start_over_owner_not_ready');
+    require('./render-job-maintenance').inspectRenderJobs(installation.stateDir, { installationId: installation.installationId });
     try { await startOverOwner.request(); }
     catch (error) {
       // An inventory failure must not strand a published reset in a live
@@ -446,7 +447,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       onAttach: attachmentOwner.onAttach, onDetach: attachmentOwner.onDetach, onRequest: request => {
         if (!PRIVATE_METHODS.includes(request.method)) return attachmentOwner.onRequest(request);
         try { return { ok: true, value: maintenance.request(request.payload) }; }
-        catch (e) { return { ok: false, code: ['maintenance_authorization', 'maintenance_in_progress', 'maintenance_persist_failed', 'maintenance_schema', 'maintenance_id'].includes(e.code) ? e.code : 'maintenance_refused' }; }
+        catch (e) { return { ok: false, code: ['maintenance_authorization', 'maintenance_in_progress', 'maintenance_persist_failed', 'maintenance_schema', 'maintenance_id', 'render_job_maintenance_unsettled', 'render_job_maintenance_unverifiable', 'render_job_maintenance_toolchain_changed'].includes(e.code) ? e.code : 'maintenance_refused' }; }
       } });
     if (ownerLifecycle.mode === 'active') ownerLifecycle.markReady();
     await ipc.listen(); ownerLifecycle.releaseStartup();
@@ -655,8 +656,12 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       if (!context || context.observer) fail('owner_controller_required');
       context.assertCurrent();
     };
-    facade.renderJobPrepare = value => render.prepare(value, current);
-    facade.renderJobStart = value => render.start(value, current);
+    const admitting = () => {
+      current();
+      if (attachmentOwner.status().frozen) fail('render_job_maintenance');
+    };
+    facade.renderJobPrepare = value => render.prepare(value, admitting);
+    facade.renderJobStart = value => render.start(value, admitting);
     facade.renderJobStatus = value => render.status(value);
     facade.renderJobReconcile = value => render.reconcile(value, current);
     facade.renderJobFinalize = value => render.finalize(value, current);

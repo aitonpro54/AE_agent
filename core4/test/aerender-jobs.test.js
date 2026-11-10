@@ -19,7 +19,7 @@ async function fileDigest(file) {
   return hash.digest('hex');
 }
 
-function fixture(t, identity = () => null) {
+function fixture(t, identity = () => null, owned = false) {
   const parent = fs.realpathSync.native(os.tmpdir());
   const dir = fs.mkdtempSync(path.join(parent,'core4-aerender-test-'));
   t.after(() => {
@@ -31,7 +31,7 @@ function fixture(t, identity = () => null) {
     fs.writeFileSync(file,bytes,{flag:'wx'});
     return { path:file, sha256:digest(bytes) };
   }
-  const root = path.join(dir,'jobs');
+  const root = path.join(dir,owned ? 'render-jobs-v1' : 'jobs');
   const spec = { project:input('source.aep'), media:[input('source.jpg')],
     engine:input('aerender.exe'), ffprobe:input('ffprobe.exe'), ffmpeg:input('ffmpeg.exe'),
     output:path.join(dir,'export.mp4'),
@@ -46,12 +46,24 @@ function fixture(t, identity = () => null) {
   return {jobs,root,spec,job,bind,write,stage};
 }
 
-function processFixture(t) {
-  const f = fixture(t), { id } = f.jobs.prepare(f.spec), job = f.job(id);
+function processFixture(t, owned = false) {
+  const f = fixture(t, undefined, owned);
+  let preparation;
+  if (owned) {
+    const { hash } = require('../protocol/json');
+    const { randomUUID } = require('node:crypto');
+    const { engine, ffmpeg, ffprobe, ...stage } = f.spec;
+    const commandId = 'command-' + randomUUID(), installationId = 'installation-' + randomUUID();
+    const hex = hash(['ae-core4/render-job/v1', installationId, commandId]);
+    preparation = { id: [hex.slice(0,8), hex.slice(8,12), '8' + hex.slice(13,16),
+      ((parseInt(hex[16], 16) & 3) | 8).toString(16) + hex.slice(17,20), hex.slice(20,32)].join('-'),
+      authorization: { installationId, commandId, taskId: 'task-' + randomUUID(), stageHash: hash(stage) } };
+  }
+  const { id } = f.jobs.prepare(f.spec, preparation), job = f.job(id);
   const command = (...args) => args.map(arg => '"' + arg + '"').join(' ');
   const starter = {pid:9,parent:8,exe:process.execPath,birth:'2026-11-08T00:00:00.000Z',
     commandLine:command(process.execPath,operator,'start',id)};
-  const dispatch = f.bind(id,{observationVersion:1,starter,createdAt:'2026-11-08T00:00:00.100Z'});
+  const dispatch = f.bind(id,{observationVersion:1,starter,createdAt:'2026-11-08T00:00:00.100Z', ...(owned && { workerEntry: operator })});
   const dispatchHash = digest(JSON.stringify(dispatch));
   f.write(id,'dispatch.json',dispatch);
   fs.writeFileSync(path.join(f.root,'active.json'),JSON.stringify(f.bind(id,{dispatchHash})),{flag:'wx'});
@@ -77,6 +89,32 @@ function processFixture(t) {
   };
   return {...f,id,job,save,worker,engine,renderer,engineHash,exit,processes,read,started};
 }
+
+test('R1 maintenance fences a lost worker and a reserved publication even without the slot', windows, async t => {
+  const { inspectRenderJobs } = require('../runtime/render-job-maintenance');
+  const f = processFixture(t, true);
+  const scan = (probe = () => []) => inspectRenderJobs(path.dirname(f.root), { probe });
+  const held = path.join(f.root, 'active.json'), slot = fs.readFileSync(held);
+  f.started();
+  f.save('engine.json', { process: f.engine });
+  fs.unlinkSync(held);
+  assert.throws(() => scan(), /render_job_maintenance_unsettled/);
+  fs.writeFileSync(held, slot);
+  f.save('engine-exit.json', f.exit);
+  verifiedFixture(f, f.id, f.job);
+  const old = fs.linkSync;
+  try {
+    fs.linkSync = (from, to) => { if (to === f.job.spec.output) throw Error('fixture_interrupted_publication'); return old(from,to); };
+    await assert.rejects(f.read().finalize(f.id), /fixture_interrupted_publication/);
+  } finally { fs.linkSync = old; }
+  assert.ok(fs.existsSync(f.stage(f.id,'publish-intent.json')));
+  fs.unlinkSync(held);
+  assert.throws(() => scan(), /render_job_maintenance_unsettled/);
+  fs.writeFileSync(held, slot);
+  assert.equal((await f.read().finalize(f.id)).state, 'published');
+  assert.throws(() => scan(() => [f.worker]), /render_job_maintenance_unsettled/);
+  assert.match(scan().registry, /^[0-9a-f]{64}$/);
+});
 
 function verifiedFixture(f, id, job) {
   const bytes = 'verified fixture output';

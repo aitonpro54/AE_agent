@@ -42,12 +42,13 @@ function readBase(c, id, owned = new Map(), readoption = null) {
   const barrier = readoption?.stop || c.read(c.p.barrier), b = c.decode(barrier, 'maintenance-stop', ['id', 'scope', 'protected', 'authorizationHash', 'nonce']); c.scope(b.scope);
   if (b.id !== id || !HEX.test(b.authorizationHash) || !UUID.test(b.nonce)) fail('stopped_certification_record');
   const directory = c.dir(id), phase = tree(c, directory, readoption?.extension), snap = c.snapshot(true);
-  const protectedFacts = Object.fromEntries(['descriptor', 'origin', 'anchor', 'client'].map(k => [k, snap.facts[k]]));
+  const { stopProtected, receiptProtected } = require('./owner-maintenance');
+  const protectedFacts = stopProtected(snap.facts, b.protected);
   if (!equal(b.protected, protectedFacts)) fail('stopped_certification_changed'); c.settled(snap);
   const receipt = c.read(path.join(directory, 'stopped.json'), 128 * 1024);
   if (receipt.bytes) {
     const r = c.decode(receipt, 'maintenance-stopped', ['id', 'stopHash', 'scope', 'protected', 'markers', 'settled']);
-    if (r.id !== id || r.stopHash !== hash(barrier.bytes) || !equal(r.scope, b.scope) || !equal(r.protected, snap.facts) || r.settled !== true || !equal(Object.keys(r.markers || {}).sort(), Object.keys(c.markers()).sort()) || Object.values(r.markers).some(v => !equal(v, NIL()))) fail('stopped_certification_receipt');
+    if (r.id !== id || r.stopHash !== hash(barrier.bytes) || !equal(r.scope, b.scope) || !equal(r.protected, receiptProtected(snap.facts, b.protected)) || r.settled !== true || !equal(Object.keys(r.markers || {}).sort(), Object.keys(c.markers()).sort()) || Object.values(r.markers).some(v => !equal(v, NIL()))) fail('stopped_certification_receipt');
     // This optional old-owner receipt is evidence only. The new certificate
     // never claims to have been produced by the stopped owner.
   }

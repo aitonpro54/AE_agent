@@ -10,6 +10,8 @@
     "runtime/installation-lineage.js",
     "runtime/native-read-disposition.js",
     "runtime/ae-readiness.js",
+    "runtime/render-job-history.js",
+    "runtime/render-job-maintenance.js",
     "runtime/host/json-codec.jsx",
     "integrations/cep/http-peer.js",
     "integrations/cep/peer-protocol.js",

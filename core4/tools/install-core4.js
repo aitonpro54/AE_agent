@@ -312,6 +312,7 @@ function assertRuntimeStopped(stateDir, { lease, descriptorPath, cepDir, plan, s
     const file = path.join(stateDir, relative);
     if (entryExists(file) && !(relative === 'broker/broker-owner.gate' && owned.has(file) && fs.readFileSync(file).equals(owned.get(file)))) fail('runtime_state_owned_or_unknown');
   }
+  if (!certified) require('../runtime/render-job-maintenance').inspectRenderJobs(stateDir);
   const ledger = path.join(stateDir, 'broker/ledger.ndjson');
   if (entryExists(ledger)) {
     const stat = fs.lstatSync(ledger); if (stat.isSymbolicLink() || fs.realpathSync(ledger) !== ledger) fail('runtime_ledger_unknown');

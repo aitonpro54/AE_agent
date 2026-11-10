@@ -85,7 +85,9 @@ async function operate({ command, descriptor, id, expectedProofHash, expectedPac
       const status = await client.call('core_status', {}); if (!status?.ok || !status.value?.lifecycle) fail('maintenance_owner_unobserved');
       const s = status.value.lifecycle, scope = { bootId: s.processBootId, pid: s.pid, birthTicks: s.birthTicks };
       const proof = maintenance.createStopAuthorization({ installation: d, descriptorPath: descriptor, scope, id });
-      const response = await client.call('maintenance_stop', proof); if (!response?.ok) fail(response?.code === 'maintenance_persist_failed' ? response.code : 'maintenance_refused');
+      const response = await client.call('maintenance_stop', proof);
+      if (!response?.ok) fail(['maintenance_persist_failed', 'render_job_maintenance_unsettled',
+        'render_job_maintenance_unverifiable', 'render_job_maintenance_toolchain_changed'].includes(response?.code) ? response.code : 'maintenance_refused');
       return { accepted: true, id: response.value.id, phase: response.value.phase, automaticReplay: false, aeAuthority: false };
     } finally { client.close(); }
   }

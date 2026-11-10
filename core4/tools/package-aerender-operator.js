@@ -9,7 +9,7 @@ const { plainPath } = require('../runtime/project-file');
 const manifestName = 'operator.json';
 const modules = {
   protocol: ['json.js'],
-  runtime: ['aerender-jobs.js', 'aerender-profile.js', 'project-file.js', 'project-save-proof.js'],
+  runtime: ['aerender-jobs.js', 'aerender-profile.js', 'render-job-history.js', 'project-file.js', 'project-save-proof.js'],
   tools: ['aerender-jobs.js', 'aerender-profile.js']
 };
 const payload = Object.entries(modules).flatMap(([dir, files]) => files.map(file => dir + '/' + file));

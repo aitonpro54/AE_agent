@@ -26,14 +26,6 @@ function validateTimeline(target, row) {
   if (row.frames !== frameCount || row.startFrame !== startFrame) throw Error('aerender_queue_witness');
 }
 
-// The target has passed validateTimeline. aerender's last frame is inclusive.
-function frameArgs(target) {
-  if (target.timeline === undefined) return [];
-  const startFrame = target.range?.startFrame ?? target.timeline.startFrame;
-  const endFrameExclusive = target.range?.endFrameExclusive ?? target.timeline.startFrame + target.timeline.frameCount;
-  return ['-s', String(startFrame), '-e', String(endFrameExclusive - 1)];
-}
-
 function positiveInteger(value) {
   if (typeof value === 'string' && /^[1-9]\d*$/.test(value)) value = Number(value);
   return Number.isSafeInteger(value) && value > 0 ? value : NaN;
@@ -81,4 +73,4 @@ function verifyMediaFacts(target, probe) {
   return { frames: target.frames, fps: target.fps, duration: Number(reportedDuration), width: target.width, height: target.height, audio: target.audio };
 }
 
-module.exports = { validateTimeline, frameArgs, verifyMediaFacts };
+module.exports = { validateTimeline, frameArgs: require('./render-job-history').frameArgs, verifyMediaFacts };
