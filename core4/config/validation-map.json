@@ -144,7 +144,7 @@
     { "prefix": "core4/tools/operate-stopped-update.js", "owner": "stopped-update-operator", "checks": ["stopped-update-operator", "standalone-installer"] },
     { "prefix": "core4/test/stopped-update-operator.test.js", "owner": "stopped-update-operator", "checks": ["stopped-update-operator"] },
     { "prefix": "core4/tools/stopped-update.js", "owner": "stopped-update", "checks": ["stopped-update", "legacy-owner-migration", "standalone-installer"] },
-    { "prefix": "core4/test/stopped-update.test.js", "owner": "stopped-update", "checks": ["stopped-update"] },
+    { "prefix": "core4/test/stopped-update.test.js", "owner": "stopped-update", "checks": ["stopped-update", "frame-export-slot"] },
     { "prefix": "core4/test/fixtures/owner-pre-ready-claim-child.js", "owner": "stopped-update", "checks": ["stopped-update"] },
     { "prefix": "core4/tools/legacy-owner-migration.js", "owner": "legacy-owner-migration", "checks": ["legacy-owner-migration", "standalone-installer"] },
     { "prefix": "core4/test/legacy-owner-migration.test.js", "owner": "legacy-owner-migration", "checks": ["legacy-owner-migration"] },
@@ -1417,6 +1417,7 @@
       "config/catalog.json", "config/admissions/", "config/compositions/", "integrations/cep/",
       "tools/package-installable.js", "test/comp-frame-export.test.js", "test/fixtures/manual-http-runtime.js", "test/fixtures/ae.js"
     ],
+    "frame-export-slot": ["runtime/", "core/", "protocol/", "integrations/", "cep/", "worker.js", "modules/", "plan-engine/", "config/catalog.json", "config/admissions/", "config/compositions/", "tools/package-capability.js", "tools/package-installable.js", "tools/install-core4.js", "tools/stopped-update.js", "tools/legacy-owner-migration.js", "test/stopped-update.test.js", "test/fixtures/owner-runtime-child.js"],
     "project-assembly": [
       "core/", "protocol/", "worker.js", "runtime/", "cep/", "modules/", "plan-engine/",
       "config/catalog.json", "config/admissions/", "config/compositions/", "integrations/cep/",
@@ -1859,6 +1860,7 @@
     "text-variant": ["node", "--test", "--test-name-pattern=text-variant", "test/text-variant.test.js"],
     "comp-render": ["node", "--test", "--test-name-pattern=comp-render", "test/comp-render.test.js"],
     "comp-frame-export": ["node", "--test", "--test-name-pattern=comp-frame-export", "test/comp-frame-export.test.js"],
+    "frame-export-slot": ["node", "--test", "--test-name-pattern=^frame-export-slot", "test/stopped-update.test.js"],
     "project-assembly": ["node", "--test", "--test-name-pattern=project-assembly", "test/project-assembly.test.js"],
     "project-save": ["node", "--test", "--test-name-pattern=project-save", "test/project-save.test.js"],
     "project-lifecycle": ["node", "--test", "--test-name-pattern=project-lifecycle", "test/project-lifecycle.test.js"],
@@ -2068,6 +2070,7 @@
     "comp-frame-export": {
       "kind": "integration"
     },
+    "frame-export-slot": { "kind": "integration" },
     "project-assembly": {
       "kind": "integration"
     },

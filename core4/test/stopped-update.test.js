@@ -1,7 +1,8 @@
 'use strict';
 // Real TEMP packages/installations and fs CAS; synthetic process observations.
 const nodeTest = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), os = require('node:os'), crypto = require('node:crypto'), http = require('node:http'), Module = require('node:module');
-const { spawnSync } = require('node:child_process');
+const { fork, spawn, spawnSync } = require('node:child_process');
+const { once } = require('node:events');
 const { buildPackage, verifyPackage } = require('../tools/package-installable'), { canonical, hash } = require('../protocol/json');
 const { packageCapability, composeCapability } = require('../tools/package-capability');
 const { verifyStandalone } = require('../tools/standalone-installer');
@@ -360,6 +361,91 @@ test('comp-render supplies completion data in a pinned single-slot update', asyn
   assert.equal(next.installationId, h.d.installationId);
   for (const [file, digest] of Object.entries(composed.release.hashes))
     assert.equal(hash(fs.readFileSync(path.join(next.releaseDir, file))), digest, file);
+});
+nodeTest('frame-export-slot keeps the R1 package and native operation bytes across a stopped update', { timeout:90000 }, async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-frame-slot-'));
+  t.after(() => {
+    const actual = fs.realpathSync.native(dir);
+    assert.equal(path.dirname(actual), fs.realpathSync.native(os.tmpdir()));
+    fs.rmSync(actual, { recursive:true, force:true });
+  });
+  const moduleId = 'comp-frame-export', source = path.join(dir, moduleId), modulePath = 'modules/' + moduleId;
+  const approvalPath = 'config/admissions/' + moduleId + '.json';
+  fs.cpSync(path.join(SOURCE, modulePath), source, { recursive:true });
+  const base = pkg('operator-render-jobs');
+  const artifactFile = path.join(source, 'artifact.json'), artifact = JSON.parse(fs.readFileSync(artifactFile));
+  const contractFile = path.join(source, 'contract.json'), contractBytes = fs.readFileSync(contractFile);
+  artifact.version = '4.2.3';
+  fs.writeFileSync(artifactFile, canonical(artifact));
+  const approval = JSON.parse(Buffer.from(base.files[approvalPath], 'base64'));
+  const admission = Buffer.from(canonical({ ...approval, artifactHash:hash(artifact), trustApprovalId:'test-independent-frame-export' }));
+  const cap = packageCapability(source);
+  const pins = { basePin:base.packageHash, capabilityPin:cap.capabilityHash, admissionPin:hash(admission) };
+  const next = composeCapability(base, cap, admission, pins);
+  assert.deepEqual(Object.keys(base.files).filter(f => base.files[f] !== next.files[f]).sort(),
+    [approvalPath, 'config/catalog.json', modulePath + '/artifact.json'].sort());
+  assert.throws(() => composeCapability(pkg('operator-frame-export'), cap, admission, pins), code('capability_base_pin'));
+  const invalid = Buffer.from(canonical({ ...JSON.parse(admission), revoked:true }));
+  assert.throws(() => composeCapability(base, cap, invalid, { ...pins, admissionPin:hash(invalid) }), code('composition_not_admitted'));
+  const modified = JSON.parse(contractBytes);
+  modified.buildSchema.properties.fileName.maxLength--;
+  fs.writeFileSync(contractFile, canonical(modified));
+  fs.writeFileSync(artifactFile, canonical({ ...artifact, hashes:{ ...artifact.hashes, 'contract.json':hash(canonical(modified)) } }));
+  const foreign = packageCapability(source);
+  assert.throws(() => composeCapability(base, foreign, admission, { ...pins, capabilityPin:foreign.capabilityHash }), code('capability_contract_incompatible'));
+  fs.writeFileSync(path.join(source, 'unexpected.json'), '{}');
+  assert.throws(() => packageCapability(source), code('capability_closure'));
+
+  const h = await harness(t, { current:base, next, withHistory:true });
+  const prepared = await h.prepared();
+  assert.equal(h.api.applyStoppedUpdate({ plan:h.plan, ...prepared }).phase, 'update-stopped');
+  assert.equal((await h.api.enableStoppedUpdate({ permit:prepared.permit })).enabled, true);
+  const installed = JSON.parse(fs.readFileSync(h.descriptorPath));
+  assert.equal(installed.installationId, h.d.installationId);
+  assert.equal(installed.packageHash, next.packageHash);
+  for (const [file, expected] of Object.entries(next.release.hashes)) {
+    assert.equal(hash(fs.readFileSync(path.join(installed.releaseDir, file))), expected, file);
+  }
+  const preload = path.join(__dirname, 'fixtures/owner-runtime-child.js');
+  const owner = fork(path.join(installed.releaseDir, 'runtime/owner-entry.js'), ['--installation', h.descriptorPath], {
+    execArgv:['--require', preload], cwd:dir, windowsHide:true, stdio:['ignore','ignore','pipe','ipc']
+  });
+  let errors = '';
+  owner.stderr.on('data', bytes => { errors += bytes; });
+  const exited = once(owner, 'exit');
+  try {
+    const ready = new Promise(resolve => owner.on('message', value => { if (value.event === 'ipc') resolve(true); }));
+    assert.equal(await Promise.race([ready, exited.then(() => false)]), true, errors);
+    const config = fs.readFileSync(h.args.configPath, 'utf8');
+    const option = name => JSON.parse(config.match(new RegExp('^' + name + ' = (.+)$', 'm'))[1]);
+    const cmd = option('command'), args = option('args');
+    assert.equal(cmd, installed.nodePath);
+    assert.equal(args[0], path.join(installed.releaseDir, 'runtime/client-entry.js'));
+    const response = await new Promise((resolve, reject) => {
+      const child = spawn(cmd, ['--require', preload, ...args], { windowsHide:true, timeout:30000, cwd:dir, stdio:['pipe','pipe','pipe'] });
+      let stdout = '', stderr = '';
+      child.stdout.on('data', bytes => { stdout += bytes; if (stdout.includes('\n')) child.stdin.end(); });
+      child.stderr.on('data', bytes => { stderr += bytes; });
+      child.on('error', reject);
+      child.on('close', (code, signal) => {
+        if (code !== 0 || !stdout.trim()) { reject(Error('MCP ' + (code ?? signal) + ': ' + stderr)); return; }
+        try { resolve(JSON.parse(stdout)); } catch (error) { reject(error); }
+      });
+      child.stdin.write(canonical({ jsonrpc:'2.0', id:1, method:'tools/call', params:{ name:'get_module_contract', arguments:{ payload:{ moduleId } } } }) + '\n');
+    });
+    assert.equal(Boolean(response.result?.isError), false, JSON.stringify(response));
+    const found = JSON.parse(response.result.content[0].text);
+    assert.equal(found.modulePin, hash(artifact));
+    assert.equal(found.admissionPin, hash(JSON.parse(admission)));
+    assert.equal(found.operationId, 'save-comp-frame-png');
+    assert.deepEqual(found.contract, JSON.parse(contractBytes));
+  } finally {
+    if (owner.exitCode === null && owner.signalCode === null) {
+      if (owner.connected) owner.send('signal');
+      const fallback = setTimeout(() => { if (owner.exitCode === null && owner.signalCode === null) owner.kill(); }, 5000);
+      try { await exited; } finally { clearTimeout(fallback); }
+    }
+  }
 });
 test('one branded plan/lease/certificate updates owner while preserving the stop barrier and history', async t => {
   const h = await harness(t), protectedFiles = ['origin.json', 'state/production/origin.json'].map(n => path.join(h.args.installRoot, n)), before = protectedFiles.map(f => fs.readFileSync(f));
