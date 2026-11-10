@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "reviewId": "20261110-plan-01",
+  "attempt": 2,
+  "recordedAt": "2026-11-10T13:53:35.0617113Z",
+  "sourceThreadId": "01a1c487-716c-7500-9930-b1de9fd6d5e6",
+  "sourceUserMessageId": "01a1c5b9-bd3f-7b32-a4d3-0978bcbc78fc",
+  "userInstruction": "Ты, вероятно, отправлял в чат, а надо в задачу. Проверь ещё раз аргунчик. И если он вернёт что-то, попробуй это учесть и переформулируй.",
+  "condition": "One new send only if prior review is not found and Task, Aiton Pro, 4 Argon and maximum available reasoning effort are confirmed in UI",
+  "account": "Aiton Pro (aitonpro54@gmail.com)",
+  "mode": "Задача",
+  "model": "4 Argon",
+  "sendLimit": 1,
+  "prompt": "request.md",
+  "attachmentAllowlist": [
+    "bundle.md",
+    "manifest.json"
+  ],
+  "payload": [
+    {
+      "path": "request.md",
+      "sha256": "b21fa36d3365a8755c05e77cefee55b92056dee337f1a830d98e68b710018e5e",
+      "bytes": 1982
+    },
+    {
+      "path": "bundle.md",
+      "sha256": "08a3bf598a87d049635a4414c422e191b2ea569e5b5b2e579af6d6d2605086a8",
+      "bytes": 347514
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "0e7f261815f0bd15f18fa5a18973a12851aefad6a1abc16bac88cc76854c9580",
+      "bytes": 6771
+    },
+    {
+      "path": "proposal.md",
+      "sha256": "11dde7a2c7f7c3d4c7b536c4f006dc7af870ef3e9317110b278ec156e2085f93",
+      "bytes": 7896
+    }
+  ]
+}

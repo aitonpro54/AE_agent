@@ -1,0 +1,23 @@
+{
+  "baseCommit": "8e3b718db3c695190a45607064ac04e11d4d5558",
+  "kind": "bounded-offline-counterexamples",
+  "checks": [
+    {
+      "id": "F-03a",
+      "result": "confirmed",
+      "observation": "Removing project-save while retaining its required proof produces composition_optional_closure"
+    },
+    {
+      "id": "F-04",
+      "result": "confirmed",
+      "observation": "Existing comp-render packageCapability refuses capability_closure"
+    },
+    {
+      "id": "F-05-delivery",
+      "result": "not-reproduced-with-contradicting-source",
+      "observation": "Ordinary approval succeeds at delivery with montage=null; forged mandate fails montage_mandate_binding; imported callback calls=0"
+    }
+  ],
+  "nativeCalls": 0,
+  "installationWrites": 0
+}

@@ -1,0 +1,19 @@
+{
+  "verifiedAt": "2026-11-10T14:09:35.887Z",
+  "verified": true,
+  "baseCommit": "8e3b718db3c695190a45607064ac04e11d4d5558",
+  "sources": 28,
+  "payloadUnchanged": true,
+  "bindingMatches": 7,
+  "responseSha256": "d7d253906550145bf7395ac5292abefb2a7d50d6bcd098109ecb1581d22d7fd0",
+  "responseBytes": 45186,
+  "status": "received",
+  "verdict": "revise",
+  "mode": "Задача",
+  "sendInvocations": 1,
+  "retries": 0,
+  "evidenceChecks": 7,
+  "previousFilesPreserved": 13,
+  "implementationStarted": false,
+  "nativeCalls": 0
+}

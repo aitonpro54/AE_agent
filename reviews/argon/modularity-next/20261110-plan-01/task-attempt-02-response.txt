@@ -1,0 +1,384 @@
+Привязки ревью (Bindings)
+
+review_id: 20261110-plan-01
+
+stage_id: modularity-next
+
+review_type: architecture-plan
+
+reviewed_commit: 8e3b718db3c695190a45607064ac04e11d4d5558
+
+proposal_sha256: 11dde7a2c7f7c3d4c7b536c4f006dc7af870ef3e9317110b278ec156e2085f93
+
+bundle_sha256: 08a3bf598a87d049635a4414c422e191b2ea569e5b5b2e579af6d6d2605086a8
+
+manifest_sha256: 0e7f261815f0bd15f18fa5a18973a12851aefad6a1abc16bac88cc76854c9580
+
+classification: INTERNAL
+
+evidence_limits: Только ревью исходников из пакета (source review only). Заявленные в предложении прежние нативные результаты на MSI (полный мастер 720 кадров, диапазон с ненулевым стартом, фото → save → MP4, отмена, потеря worker после handoff, отказы занятого/повреждённого выхода и missing media) приняты как контекст владельца и не считаются независимо проверенными за отсутствием первичных нативных квитанций (receipts) в пакете.
+
+Перечень прочитанных, пропущенных и исключённых файлов
+
+Прочитанные файлы пакета (100% вложений):
+
+bundle.md (текст предложения + 28 встроенных файлов исходников, 347514 байт)
+
+manifest.json
+
+Встроенные исходники:
+
+core4/runtime/stdio-entry.js
+
+core4/runtime/client-entry.js
+
+core4/runtime/client-stdio.js
+
+core4/runtime/attachment-owner.js
+
+core4/runtime/render-job-owner.js
+
+core4/runtime/aerender-jobs.js
+
+core4/runtime/aerender-profile.js
+
+core4/runtime/project-lifecycle-proof.js
+
+core4/tools/package-installable.js
+
+core4/tools/package-capability.js
+
+core4/tools/stopped-update.js
+
+core4/modules/comp-render/completion.json
+
+core4/modules/comp-render/artifact.json
+
+core4/test/render-job-owner.test.js
+
+core4/test/installed-composition.test.js
+
+core4/config/compositions/manual-layer-overlay.json
+
+core4/config/compositions/manual-media-layers.json
+
+core4/config/compositions/manual-project-assembly.json
+
+core4/config/compositions/manual-project-lifecycle.json
+
+core4/config/compositions/manual-project-save.json
+
+core4/config/compositions/manual-titles-variants.json
+
+core4/config/compositions/operator-frame-export.json
+
+core4/config/compositions/operator-photo-montage.json
+
+core4/config/compositions/operator-render-jobs.json
+
+core4/config/compositions/operator-titles-photo-pilot.json
+
+core4/config/compositions/operator-titles-pilot.json
+
+core4/config/compositions/operator-workflows-montage.json
+
+core4/config/compositions/operator-workflows.json
+
+Пропущенные файлы из приложенного пакета: нет (0).
+
+Исключённые из пакета файлы (отсутствуют в bundle.md, но образуют внешние зависимости проверяемого кода):
+
+Конфигурация и контракты модулей: core4/runtime/source-package.json, core4/config/catalog.json, core4/config/admissions/project-lifecycle.json, core4/modules/project-lifecycle/{artifact.json,contract.json,implementation.js,executor.jsx}.
+
+Смежные runtime/tool модули: core4/runtime/stopped-certification.js, core4/runtime/owner-maintenance.js, core4/runtime/project-save-proof.js, core4/runtime/project-file.js, core4/runtime/operator-confirmation.js, core4/runtime/montage-mandate.js, core4/tools/check-boundaries.js, core4/tools/install-core4.js, core4/core/broker.js.
+
+Исключения по manifest.json: working-tree uncommitted changes, AEP and media, credentials and local configuration, runtime state and execution journals, browser data, первичные native receipts.
+
+Вердикт (Verdict)
+
+revise — декомпозиция на три уровня (обычная типизированная AE-операция / доверенный сервис R1 / продуктовый состав) и последовательность M0 → M1 → M2 → M3 → M4 архитектурно обоснованы, однако в текущем коде и плане есть критические пробелы на стыке stopped-update и долговечных заданий R1 (F-01), а также скрытые блокировки в stdio-entry.js при сборке минимального состава (F-02, F-03), которые необходимо явно включить в план до начала реализации.
+
+Архитектурные замечания (Findings)
+F-01 [P0] — Слепая зона ownerMaintenance и stopped-update в отношении активных/незавершённых долговечных заданий R1 и привязки worker к старому releaseDir
+
+Локализация:
+
+core4/runtime/stdio-entry.js — activity() в start() (строки 368–372), closeRuntime() в exposeOwner() (строки 211–215), создание render (строки 348–364).
+
+core4/tools/stopped-update.js — critical(c) (строки 83–104), finish(c, ready) (строки 157–178), readOwnerPreReady(options) (строки 353–400).
+
+core4/runtime/aerender-jobs.js — verifyDispatch() (строки 232–237), workerFor() (строки 244–246), start() (строки 359–377), worker() (строки 379–436).
+
+Сценарий отказа:
+
+Функция activity() в stdio-entry.js проверяет только состояние broker и peer.status(), не учитывая состояние render-job-owner / aerender-jobs. В результате ownerMaintenance позволяет перевести owner в состояние stopped и выпустить сертификат остановки, пока detached worker (node .../aerender-jobs.js worker ...) или дочерний процесс aerender.exe / AfterFX.com активно рендерит видео в фоне, либо пока слот state/production/render-jobs-v1/active.json удерживается незавершённым заданием.
+
+Функция critical(c) в stopped-update.js фиксирует неизменность origin.json, receiver/completions.ndjson и broker/ledger.ndjson, но вообще не проверяет state/production/render-jobs-v1 и render-job-toolchain.json. Если живой worker допишет engine-exit.json или terminal.json во время stopped-update, транзакция обновления пройдёт поверх меняющегося состояния.
+
+При запуске задания (aerender-jobs.js, строки 365–366) в dispatch.json сохраняются starter (с текущим process.execPath) и workerEntry: __filename (абсолютный путь в старом releases/<oldPackageHash>/runtime/aerender-jobs.js). Если обновление меняет состав на пакет без R1, то active.json, нефинализированный core4-render-<id>.partial.mp4 и core4-render-<id>.aep остаются навсегда заблокированными без RPC-методов render_job_* для их завершения или отмены. Если же во время рендера обновляется nodePath или удаляется старый releaseDir, проверки verifyDispatch / workerFor (строки 233–246) перестают сопоставлять worker.
+
+Уверенность: Высокая (прямое следствие прочитанного кода stdio-entry.js, stopped-update.js и aerender-jobs.js).
+
+Минимальная проверка: Тест в изолированном TEMP-окружении: перевести задание R1 в каждое из нетерминальных/нефинализированных состояний (prepare-intent.json без prepared.json, prepared при переходе в состав без R1, active.json / submitted / rendering, cancel_pending, verified до finalize, publish-intent.json без published.json) и убедиться, что ownerMaintenance / stopped-update детерминированно отказывает до начала переключения дескрипторов, а при терминальных состояниях (published, cancelled, failed с освобождённым active.json) — фиксирует неизменность дерева render-jobs-v1 в critical(c) и сохраняет читаемость истории после обновления.
+
+Предложенный milestone: M4 (с закладкой контракта состояния R1 в M0/M1).
+
+F-02 [P1] — Расхождение логики активации R1 между stdio-entry.js и client-entry.js и жёсткая привязка к имени состава operator-render-jobs
+
+Локализация:
+
+core4/runtime/stdio-entry.js — deriveComposition() (строки 165–170) и declarativeProfiles() (строки 39–89).
+
+core4/runtime/client-entry.js — startClient() (строка 159).
+
+core4/test/installed-composition.test.js — тест checkEntrySource (строки 222–234).
+
+Сценарий отказа:
+
+В stdio-entry.js (строка 165) признак renderJobs вычисляется как composition.id === 'operator-render-jobs', а строка 169 вызывает fail('composition_optional_closure'), если хотя бы один файл из RENDER_JOB_FILES присутствует в пакете с любым другим composition.id. Это блокирует создание минимального состава рендера (M2) и любого нового selector с поддержкой R1.
+
+При этом client-entry.js (строка 159) включает схему инструментов render_job_* по совершенно другому признаку: Object.hasOwn(JSON.parse(release).hashes, 'runtime/render-job-owner.js').
+
+Любая правка stdio-entry.js для перехода к декларативному признаку должна укладываться в жёсткие структурные рамки tools/check-boundaries.js (checkEntrySource), иначе сломается инвариант builtin-only загрузки до verifyInstallation.
+
+Уверенность: Высокая.
+
+Минимальная проверка: Сборка двух разных селекторов (совмещённого operator-render-jobs и нового минимального селектора, плюс произвольного тестового селектора в TEMP) с единым закрытым декларативным признаком R1 в composition-policy.json; проверка, что deriveComposition, client-entry.js, attachment-owner.js и checkEntrySource согласованно включают renderJobs при наличии декларации и отвергают пакет с composition_optional_closure, если файлы RENDER_JOB_FILES добавлены без декларации (или наоборот).
+
+Предложенный milestone: M1.
+
+F-03 [P1] — Скрытый конфликт замыкания файлов (composition_optional_closure) между project-lifecycle-proof.js и RESULT_PROFILES при отделении project-lifecycle от модуля project-save
+
+Локализация:
+
+core4/runtime/project-lifecycle-proof.js — строка 6 (const { createProjectSaveProof, plainPath, readAep, copyAep, samePath } = require('./project-save-proof');).
+
+core4/runtime/stdio-entry.js — RESULT_PROFILES (строки 19–33) и проверка замыкания в declarativeProfiles() (строки 52–86, особенно строка 85).
+
+core4/config/compositions/operator-titles-pilot.json и manual-project-lifecycle.json.
+
+Сценарий отказа:
+
+runtime/project-lifecycle-proof.js напрямую импортирует ./project-save-proof (который в свою очередь использует ./project-file). Следовательно, файлы runtime/project-save-proof.js и runtime/project-file.js физически необходимы в release.hashes любого состава, содержащего project-lifecycle.
+
+Однако в stdio-entry.js на строке 85 действует правило: Object.values(RESULT_PROFILES).includes(file) && !proofPaths.has(file) → fail('composition_optional_closure'). Так как 'runtime/project-save-proof.js' зарегистрирован в RESULT_PROFILES['current-project-save-v1'], то если в минимальный состав M2 включить project-lifecycle и файл runtime/project-save-proof.js, но не включить модуль project-save, proofPaths не будет содержать 'runtime/project-save-proof.js', и deriveComposition выбросит composition_optional_closure. А если не включить файл runtime/project-save-proof.js в пакет — упадёт require('./project-save-proof') при старте owner!
+
+Дополнительно: для R1 требуется item.resultProfile === 'project-lifecycle-v1' && item.registryOperatorConfirmation (stdio-entry.js, строка 166), что требует operatorConfirmation: "registry-v1" в профиле project-lifecycle и обязательного включения 'runtime/operator-confirmation.js' в bundle.files минимального состава (в manual-project-lifecycle.json его нет — он добавлялся ниже по дереву в operator-titles-pilot.json).
+
+Наконец, когда состав включает project-lifecycle без R1 (allowRenderCopy: false), действие stage-render-copy сейчас отвергается в project-lifecycle-proof.js (validateRenderInput, строка 21) только на фазе prepareCheckpoint / observe / validateResult (то есть при dry_run_plan / run_plan). Если modules/project-lifecycle/implementation.js (не включён в bundle) не проверяет доступность R1 на этапе build_solution_plan, агент сможет выпустить план (build / propose) для stage-render-copy в составе без R1.
+
+Уверенность: Высокая (по пп. 1–3 — 100% из кода; по п. 4 — требует проверки исключённого modules/project-lifecycle/implementation.js).
+
+Минимальная проверка:
+
+В stdio-entry.js (declarativeProfiles, строка 79) явно добавлять 'runtime/project-save-proof.js' в proofPaths (и вызывать checked('runtime/project-save-proof.js') + checked('runtime/project-file.js')), когда присутствует профиль project-lifecycle-v1 (по аналогии с тем, как на строке 66 layer-overlay проверяет runtime/media-layer-proof.js), либо явно включить project-save в минимальный состав сохранения/рендера AEP.
+
+Проверить тестом, что в составе с project-lifecycle без R1 запрос на stage-render-copy получает детерминированный отказ и не создаёт готового задания.
+
+Предложенный milestone: M2 (после фиксации карты в M0).
+
+F-04 [P2] — Жёсткое ограничение package-capability.js на 4 файла не пропускает comp-render/completion.json
+
+Локализация:
+
+core4/tools/package-capability.js — строки 13–14 (ARTIFACT_FILES, MODULE_FILES), строки 55–56 (verifyCapability), строка 68, строка 78 (packageCapability), строка 114 (composeCapability).
+
+core4/runtime/stdio-entry.js — строки 152–158.
+
+core4/modules/comp-render/artifact.json и completion.json.
+
+Сценарий отказа:
+
+В stdio-entry.js (строки 152–158) runtime уже умеет валидировать completion.json для owned-comp-render-v1, но tools/package-capability.js требует точного совпадения списка файлов с ['artifact.json', 'contract.json', 'executor.jsx', 'implementation.js']. Попытка выполнить pack или compose для слота comp-render завершается ошибкой capability_closure или capability_base_slot.
+
+Уверенность: Высокая.
+
+Минимальная проверка: Unit-тест package-capability (pack и compose) для comp-render с completion.json: проверка сохранения неизменными хэшей всех остальных модулей и runtime/stdio-entry.js, а также негативные тесты на невалидный JSON, лишние ключи в completion.json, несовпадение хэша в artifact.json и попытку подложить completion.json в модуль с другим resultProfile.
+
+Предложенный milestone: M3.
+
+F-05 [P2] — Риск рассогласования canResumeMontageTask и operatorConfirmation в составах с registry-v1, но без montage-mandate.js
+
+Локализация:
+
+core4/runtime/stdio-entry.js — строки 241–258 (observedMontageProject, canResumeMontageTask), строки 262–266 (createOperatorConfirmation).
+
+Сценарий отказа:
+
+В stdio-entry.js (строка 264) в createOperatorConfirmation передаётся колбэк (mandate, input) => montage.importedMontageItem(...), где montage равен null, если runtime/montage-mandate.js не включён в состав (что абсолютно законно для минимального состава рендера M2, где нет фотомонтажа). Если внутри operator-confirmation.js (файл исключён из пакета) этот колбэк вызывается безусловно при проверке registry-v1 без проверки if (montage), произойдёт TypeError: Cannot read properties of null.
+
+Уверенность: Средняя (так как runtime/operator-confirmation.js исключён из bundle; на строке 264 montage также передаётся последним аргументом, поэтому вероятна внутренняя защита, но её необходимо подтвердить в M0).
+
+Минимальная проверка: Проверить в runtime/operator-confirmation.js обработку montage === null для профиля project-lifecycle-v1 с operatorConfirmation: 'registry-v1' и прогнать выполнение project-lifecycle в минимальном составе M2 без runtime/montage-mandate.js.
+
+Предложенный milestone: M0 / M2.
+
+Ответы на архитектурные вопросы предложения
+1. Граница ordinary operation / trusted R1 service / product workflow и упущенные source-связи
+
+Разделение на три уровня выбрано правильно:
+
+Ordinary operation (обычный JSX/Node модуль): живёт в modules/<id>/, описывается четвёркой artifact.json, contract.json, implementation.js, executor.jsx (+ профильно-допустимые data-only файлы вроде completion.json), компилируется в cep/jsx/registry.jsx, исполняется внутри транзакции Broker/CEP и может обновляться офлайн через package-capability.js.
+
+Trusted R1 service (render-jobs): привилегированный сервис уровня owner-runtime (runtime/render-job-owner.js, runtime/aerender-jobs.js, runtime/aerender-profile.js), управляющий внешними ОС-процессами (node worker, aerender.exe, AfterFX.com, ffmpeg, ffprobe), собственным локальным конфигом state/production/render-job-toolchain.json и постоянным журналом заданий state/production/render-jobs-v1/<jobId>/. Он не имеет executor.jsx и не должен маскироваться под обычный модуль в catalog.json или package-capability.js.
+
+Product workflow (состав): декларативная сборка в config/compositions/<selector>.json → runtime/composition-policy.json.
+
+Упущенные в предложении конкретные source-связи:
+
+Скрытая связь project-lifecycle-proof.js → project-save-proof.js vs RESULT_PROFILES (F-03): project-lifecycle-proof.js (строка 6) импортирует project-save-proof.js, но stdio-entry.js (строка 85) запрещает нахождение любого файла из Object.values(RESULT_PROFILES) в пакете, если соответствующий модуль (project-save) не активирован и не добавил путь в proofPaths.
+
+Двойная точка входа R1 (F-02): owner проверяет composition.id === 'operator-render-jobs' (stdio-entry.js:165), а thin client проверяет Object.hasOwn(release.hashes, 'runtime/render-job-owner.js') (client-entry.js:159).
+
+Зависимость stage-render-copy от operatorConfirmation: 'registry-v1': stdio-entry.js:166 требует, чтобы project-lifecycle имел registryOperatorConfirmation: true, что тянет за собой обязательность runtime/operator-confirmation.js и runtime/owner-contract.json v4.
+
+Неучтённая связь stopped-update.js и activity() с render-jobs-v1 (F-01): ни stdio-entry.js:368, ни stopped-update.js:83 не знают о существовании state/production/render-jobs-v1.
+
+2. Порядок этапов: почему необходимо начинать с R1 (M0 → M1 → M2), а затем делать M3 (comp-render) и M4
+
+Начинать нужно именно с R1 (M0 → M1 → M2), а не с M3 (comp-render), по двум строго проверяемым причинам:
+
+Стабилизация хэша runtime/stdio-entry.js и базовых пакетов:
+
+В stdio-entry.js (строки 152–158) поддержка comp-render/completion.json для composition.version === 2 уже реализована. Поэтому этап M3 требует правок только в офлайн-утилите tools/package-capability.js (которая не входит в release.hashes установленного релиза!).
+
+Напротив, этапы M1 и M2 неизбежно требуют модификации runtime/stdio-entry.js (замена composition.id === 'operator-render-jobs' на декларативное правило и разрешение замыкания project-save-proof.js для project-lifecycle). Любая правка stdio-entry.js меняет его SHA-256 и, следовательно, меняет packageHash всех собираемых пакетов.
+
+Если выполнить M3 раньше M1–M2, то после правок stdio-entry.js в M1–M2 все собранные базовые пакеты изменят packageHash, и приёмку capability-обновления на финальном runtime всё равно придётся повторять.
+
+Снижение архитектурного риска: R1 затрагивает инварианты безопасности процесса owner, IPC-методов и долговечного состояния в state/production, тогда как M3 — локальное расширение валидатора артефакта в tools/package-capability.js. Сначала фиксируются границы runtime и составов (M0–M2), затем на стабильном stdio-entry.js расширяется package-capability.js (M3), и в финале (M4) проверяется stopped-update как для обычного модуля, так и для заданий R1.
+
+3. Где проверки допуска, bootstrap и old release compatibility нельзя заменить данными? Достаточен ли один закрытый capability descriptor?
+
+Нельзя заменять данными (должны оставаться закрытым кодом в stdio-entry.js / client-entry.js):
+
+Builtin-only bootstrap и проверка дерева релиза (verifyInstallation, verifyRelease, verifyCep, verifyClientDescriptor) до первого динамического require(...), включая структурные якоря checkEntrySource.
+
+Совместимость со старыми выпусками: ветка release.format === 1 (stdio-entry.js:116–122) и ветка composition.version === 1 (validateLegacyComposition и LEGACY_PROFILES, строки 92–98, 173–204).
+
+Закрытые таблицы отображения идентификаторов профилей в проверенные runtime-файлы: RESULT_PROFILES, OPERATOR_EFFECTS, RENDER_JOB_FILES и список файлов ownerFiles. Никакие пути к .js-обработчикам не должны читаться напрямую из JSON без сверки с белым списком в коде.
+
+Достаточен ли один закрытый capability descriptor для R1?
+
+Да, достаточен и оптимален. Лучшее решение без раздувания схемы — разрешить в runtime/composition-policy.json (например, через закрытое поле или фиксированную запись в policy) единственный закрытый дескриптор возможности (например, capabilities: ['render-jobs-v1'] либо булев/строковый признак в закрытом списке ключей policy, либо фиксированный ключ в spec.optional / composition-policy.json), который в deriveComposition проверяет:
+
+startOverSupported === true (наличие runtime/owner-contract.json v4);
+
+composition.version === 2;
+
+наличие в assets модуля с resultProfile === 'project-lifecycle-v1' и registryOperatorConfirmation === true;
+
+точное присутствие всех трёх файлов RENDER_JOB_FILES в release.hashes (и их полное отсутствие, если дескриптор не заявлен).
+
+И stdio-entry.js, и client-entry.js (или deriveComposition) должны опираться на это единое условие.
+
+4. Какие состояния долговечного задания R1 блокируют update / rollback / удаление capability (привязка к функциям и файлам состояния)
+Состояние задания в render-jobs-v1/<id>/	Файлы-свидетели на диске	Функция в render-job-owner.js / aerender-jobs.js	Решение для stopped-update / rollback / удаления R1	Причина и риск
+Interrupted prepare (unknown)	prepare-intent.json есть, prepared.json нет	prepare() (render-job-owner.js:116), preparation() (aerender-jobs.js:318)	БЛОКИРОВАТЬ (отказ до update)	Неопределённый исход создания рабочей копии AEP; требует явной диагностики/очистки до обновления.
+prepared (до start)	prepared.json и core4-render-<id>.aep есть, dispatch.json и active.json нет	prepare() / status() (aerender-jobs.js:323, 449)	БЛОКИРОВАТЬ при удалении R1 или смене контракта R1; при обычном обновлении модуля — либо блокировать, либо требовать cancel до update	Предпочтительнее блокировать любое обновление при prepared (или требовать предварительного render_job_cancel), так как start после update всё равно потребует совпадения stageSpec в ledger и текущей workSession (stdio-entry.js:351).
+submitted / starting / rendering / verifying	active.json + dispatch.json (+ launcher.json, worker.json, start-intent.json, engine.json, renderer.json), нет terminal.json	start(), worker(), observe(), status() (aerender-jobs.js:254–273, 359–456)	СТРОГО БЛОКИРОВАТЬ (и запрещать ownerMaintenance переход в stopped)	Фоновый worker или AfterFX.com жив, пишет в render-jobs-v1 и привязан к dispatch.workerEntry в старом releaseDir и starter.exe.
+Потерянный worker / unknown после handoff	active.json + dispatch.json (+ start-intent.json), terminal.json отсутствует или state: 'unknown'	worker() catch (aerender-jobs.js:430), status() (aerender-jobs.js:457), reconcile() (aerender-jobs.js:461)	СТРОГО БЛОКИРОВАТЬ	Слот active.json занят; AfterFX.com может продолжать работу или выход ожидает render_job_reconcile / render_job_cancel.
+cancel_pending	cancel-request.json есть, cancelled.json нет, active.json удерживается	cancel(), drainProof() (aerender-jobs.js:294–314, 475–503)	СТРОГО БЛОКИРОВАТЬ	Отмена ещё не доказала остановку процессов (assertQuiescent); слот active.json не освобождён.
+verified (partial готов, но не опубликован)	terminal.json или reconciled.json со state: 'verified', active.json удерживается, published.json нет	verifyCompleted(), reconcile(), finalize() (aerender-jobs.js:221, 461, 505)	СТРОГО БЛОКИРОВАТЬ	Слот active.json всё ещё удерживается этим заданием, а core4-render-<id>.partial.mp4 ещё не слинкован в финальный output. До update нужно выполнить finalize или cancel.
+Прерванная публикация (publish-intent)	publish-intent.json есть, published.json нет (status возвращает 'unknown')	status() (aerender-jobs.js:445), finalize() (aerender-jobs.js:531–545)	СТРОГО БЛОКИРОВАТЬ	Незавершённая атомарная публикация (fs.linkSync(partial, output) и удаление .partial.mp4). Требует завершения finalize на текущем релизе.
+Терминальные завершённые: published, cancelled, settled failed	published.json, cancelled.json, либо terminal.json (state: 'failed' без start-intent.json), и active.json отсутствует	finalize(), cancel() (aerender-jobs.js:498, 514, 522, 543)	РАЗРЕШИТЬ update (с фиксацией хэшей/дерева в stopped-update.js:critical(c))	Процессы мертвы, active.json снят, артефакты опубликованы или отменены. После обновления render_job_status должен продолжать читаться без мутаций.
+5. Точные критерии приёмки (Acceptance Checks): блокеры против необязательных улучшений
+
+Обязательные блокеры (Blockers для зачёта этапа):
+
+Детерминизм и отсутствие ветвления по имени селектора: сборка buildPackage для совмещённого (operator-render-jobs), минимального (только рендер сохранённого AEP) и синтетического тестового селектора с R1 работает без проверки composition.id === 'operator-render-jobs' в stdio-entry.js.
+
+Чистота замыкания минимального состава (M2): минимальный состав не включает модули titles*, text-*, photo-placeholder, media-import, layer-insert, layer-overlay, comp-frame-export, comp-render, project-assembly и файлы runtime/montage-mandate.js, runtime/png-proof.js; при этом включает необходимые proofs (project-lifecycle-proof.js, project-save-proof.js, project-file.js, operator-confirmation.js) и проходит verifyPackage / verifyInstallation.
+
+Запрет stage-render-copy без R1: в составе с project-lifecycle, но без capability R1, операция stage-render-copy отвергается (lifecycle_render_policy), а инструменты render_job_* отсутствуют в tools/list и attachment-owner.
+
+Изолированное обновление модуля с completion.json (M3): package-capability.js упаковывает и компонует comp-render (с completion.json); хэши всех остальных модулей, plan-engine и runtime/*.js (включая stdio-entry.js) в выпущенном пакете побайтово совпадают с базовым пакетом.
+
+Защита долговечных заданий при остановке и обновлении (M4):
+
+ownerMaintenance / stopped-update отказывает при наличии active.json или любого нетерминального/нефинализированного задания в state/production/render-jobs-v1 (включая prepared, submitted, rendering, cancel_pending, verified, publish-intent, unknown prepare-intent).
+
+stopped-update.js:critical(c) включает проверку неизменности state/production/render-jobs-v1 (и render-job-toolchain.json, если присутствует) на протяжении всей транзакции обновления.
+
+После успешного stopped-update сохраняются installationId, machineId, panelToken, controlToken, origin.json, ledger.ndjson, completions.ndjson, прежние UNKNOWN-записи и терминальная история render-jobs-v1 (published / cancelled).
+
+Необязательные улучшения (Non-blockers / отложить):
+
+Отдельная поставка/обновление самого привилегированного R1 runtime через package-capability.js (справедливо исключено предложением — R1 должен обновляться только полным релизом через stopped-update).
+
+Миграция на лету незавершённых (prepared или verified) заданий между разными версиями R1 (отказ до update проще, надёжнее и исключает скрытые расхождения форматов).
+
+Полный прогон всех существующих тестов репозитория на каждый промежуточный коммит (достаточно целевых scoped-тестов по затронутым модулям и финальной приёмки).
+
+Самый небольшой достаточный план (M0–M4)
+M0. Фиксация контракта границ и проверка исключённых исходников (Source Audit & Spec)
+
+Действия:
+
+Проверить в исключённых из bundle файлах (runtime/source-package.json, modules/project-lifecycle/{contract.json,implementation.js}, runtime/operator-confirmation.js, runtime/stopped-certification.js, runtime/owner-maintenance.js) точные точки соприкосновения с R1 и project-lifecycle.
+
+Зафиксировать таблицу состояний render-jobs-v1, блокирующих ownerMaintenance и stopped-update (см. ответ на вопрос 4).
+
+Критерий приёмки: Документированная карта зависимостей без правок runtime-кода; подтверждено поведение operator-confirmation.js при montage === null и modules/project-lifecycle/implementation.js для stage-render-copy.
+
+M1. Декларативная активация доверенного сервиса R1
+
+Действия:
+
+Ввести закрытый декларативный признак R1 в runtime/composition-policy.json (и source-package.json / config/compositions/operator-render-jobs.json), заменив проверку composition.id === 'operator-render-jobs' в stdio-entry.js:165.
+
+Синхронизировать определение renderJobs между stdio-entry.js (deriveComposition) и client-entry.js:159 с сохранением совместимости со всеми ранее выпущенными format: 1 и composition.version: 1/2 пакетами и прохождением checkEntrySource.
+
+Критерий приёмки: operator-render-jobs и синтетический селектор с тем же capability собираются и проходят verifyPackage и checkEntrySource без ветвления по имени селектора; пакет с файлами RENDER_JOB_FILES без декларации отвергается с composition_optional_closure.
+
+M2. Минимальный состав рендера сохранённого AEP
+
+Действия:
+
+Разрешить в stdio-entry.js (declarativeProfiles) зависимость project-lifecycle-v1 от runtime/project-save-proof.js и runtime/project-file.js (либо включить project-save в минимальный состав, если требуется сохранение in-place перед stage-render-copy).
+
+Добавить конфигурацию минимального состава (например, config/compositions/operator-project-render.json), включающую только project-inspection, project-lifecycle (и project-save, если выбран вариант с сохранением), runtime/operator-confirmation.js и capability R1, сохранив operator-render-jobs.json для совмещённого montage+render рабочего процесса.
+
+Критерий приёмки: Scoped-тесты в test/installed-composition.test.js подтверждают сборку минимального состава, отсутствие в его release.hashes модулей монтажа/титров/PNG, наличие всех нужных proofs и отказ при попытке stage-render-copy в составах без R1.
+
+M3. Поддержка профильно-привязанных data-only файлов в package-capability.js (comp-render/completion.json)
+
+Действия:
+
+Расширить tools/package-capability.js (verifyCapability, packageCapability, composeCapability): разрешить кроме базовой четвёрки файлов строго типизированные data-only файлы, предписанные профилем слота (для owned-comp-render-v1 — completion.json с валидацией схемы { directory, format: 'H.264' }, UTF-8, каноничности и бюджета размера).
+
+Сохранить запрет на publicDependencies и точное совпадение contract.json с базовым слотом.
+
+Критерий приёмки: Scoped-тест package-capability успешно выполняет pack и compose для обновлённого comp-render; packageHash нового релиза валиден, а хэши всех остальных файлов (включая runtime/stdio-entry.js и соседние модули) идентичны базовому пакету.
+
+M4. Защита долговечных заданий R1 при stopped-update и приёмка обновления на MSI
+
+Действия:
+
+Добавить проверку отсутствия активных/нефинализированных заданий в render-jobs-v1 (разрешены только терминальные published, cancelled и settled failed без active.json и без prepare-intent.json / publish-intent.json) перед остановкой owner для обслуживания/обновления и в stopped-update.js (critical(c) / stopped-certification.js).
+
+Включить дерево state/production/render-jobs-v1 (и render-job-toolchain.json, если существует) в critical(c) snapshot stopped-update.js, чтобы гарантировать отсутствие фоновых мутаций во время переключения релиза.
+
+Провести приёмку в TEMP, затем на MSI (после fresh MCP preflight, на копии AEP).
+
+Критерий приёмки:
+
+В TEMP: отказ stopped-update при любом незавершённом состоянии задания R1 (prepared, submitted, rendering, cancel_pending, verified, publish-intent, unknown prepare-intent); успешный stopped-update после перевода задания в published / cancelled с сохранением истории, credentials, UNKNOWN-команд и читаемости render_job_status.
+
+На MSI: успешное обновление слота и проверка работы на копии AEP без потери истории и идентификаторов установки.
+
+Предлагаемые упрощения
+
+Единый отказ на все нетерминальные состояния R1 при update: не реализовывать частичную миграцию состояний prepared или verified через границу обновления пакета. Любое задание в render-jobs-v1, кроме полностью завершённых (published, cancelled, либо failed без start-intent.json и без active.json), должно блокировать stopped-update с явным кодом отказа (требуя от оператора сначала вызвать render_job_finalize или render_job_cancel).
+
+Не менять формат release.json (format: 2) и owner-contract.json (version: 4): декларативный признак R1 разместить внутри уже проверяемого runtime/composition-policy.json, чтобы не плодить новые версии контрактов установщика и receiver.
+
+Унифицировать project-save в минимальном составе M2: если в реальном сценарии рендера AEP оператору иногда нужно сохранить проект перед stage-render-copy, включение модуля project-save в минимальный состав M2 одновременно даёт полезную функцию и автоматически удовлетворяет существующую проверку proofPaths для runtime/project-save-proof.js в stdio-entry.js:85 вообще без усложнения условий в declarativeProfiles.
+
+Вопросы, требующие дополнительных данных (из исключённых файлов)
+
+core4/modules/project-lifecycle/contract.json и implementation.js: включён ли 'stage-render-copy' в buildSchema.properties.action.enum постоянно во всех составах, и проверяет ли implementation.js допустимость 'stage-render-copy' на стадии build_solution_plan, или отказ происходит только в project-lifecycle-proof.js (allowRenderCopy) на стадии prepareCheckpoint?
+
+core4/runtime/stopped-certification.js: какие именно поля включает facts.snapshot при выпуске сертификата остановки owner (нужно ли расширять сам stopped-certification.js вместе с stopped-update.js:critical(c), чтобы включить слепок render-jobs-v1)?
+
+core4/runtime/operator-confirmation.js: безопасно ли вызывается проверка подтверждения для project-lifecycle (registry-v1), когда в createOperatorConfirmation последним аргументом передан montage = null (при отсутствии runtime/montage-mandate.js в минимальном составе M2)?
