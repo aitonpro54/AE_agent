@@ -8,6 +8,7 @@ const { createHash, randomUUID } = require('node:crypto');
 const { spawn, execFileSync } = require('node:child_process');
 const { createServer } = require('node:net');
 const { plainPath, readAep, samePath } = require('../runtime/project-save-proof');
+const { validateTimeline, frameArgs, verifyMediaFacts } = require('./aerender-profile');
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const sha = /^[0-9a-f]{64}$/;
@@ -87,10 +88,12 @@ function validateSpec(spec) {
   const ready = spec.queue.filter(row => row.status === 'Queued');
   requireFact(ready.length === 1 && ready[0].index === t.queueIndex &&
     ready[0].name === t.compName && ready[0].compId === t.compId &&
-    ready[0].frames === t.frames && ready[0].format === 'H.264', 'aerender_queue_witness');
+    ready[0].format === 'H.264', 'aerender_queue_witness');
+  validateTimeline(t, ready[0]);
   requireFact(Array.isArray(spec.media) && spec.media.length <= 512, 'aerender_media_witness');
   requireFact(typeof spec.output === 'string' && path.isAbsolute(spec.output) &&
-    samePath(path.resolve(spec.output), spec.output) && /^[\w.-]+\.mp4$/i.test(path.basename(spec.output)), 'aerender_output_path');
+    samePath(path.resolve(spec.output), spec.output) && /^[\w.-]+\.mp4$/i.test(path.basename(spec.output)) &&
+    !/^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])\./i.test(path.basename(spec.output)), 'aerender_output_path');
   plainPath(path.dirname(spec.output), true);
 }
 
@@ -116,29 +119,87 @@ function processRows(filter) {
 
 function processIdentity(pid) {
   requireFact(Number.isSafeInteger(pid) && pid > 0, 'aerender_process_id');
-  const [row] = processRows('ProcessId=' + pid);
+  const rows = processRows('ProcessId=' + pid);
+  requireFact(rows.length <= 1, 'aerender_process_identity');
+  const [row] = rows;
   if (!row) return null;
-  requireFact(row.pid === pid && typeof row.exe === 'string' &&
-    typeof row.commandLine === 'string' && Number.isFinite(Date.parse(row.birth)), 'aerender_process_identity');
+  requireFact(row.pid === pid && validProcess(row), 'aerender_process_identity');
   return row;
+}
+
+function validProcess(row) {
+  return row && Number.isSafeInteger(row.pid) && row.pid > 0 &&
+    Number.isSafeInteger(row.parent) && row.parent >= 0 &&
+    typeof row.exe === 'string' && path.isAbsolute(row.exe) &&
+    typeof row.commandLine === 'string' && row.commandLine.length > 0 &&
+    typeof row.birth === 'string' && Number.isFinite(Date.parse(row.birth));
+}
+
+function sameProcess(a, b) {
+  return a.pid === b.pid && a.parent === b.parent && samePath(a.exe, b.exe) &&
+    a.birth === b.birth && a.commandLine === b.commandLine;
 }
 
 function matchesProcess(expected, identity) {
   if (!expected) return false;
   const actual = identity(expected.pid);
-  return !!actual && samePath(actual.exe, expected.exe) &&
-    actual.birth === expected.birth && actual.commandLine === expected.commandLine;
+  if (actual == null) return false;
+  requireFact(validProcess(actual) && actual.pid === expected.pid, 'aerender_process_identity');
+  if (actual.birth !== expected.birth) return false; // The original incarnation is gone.
+  requireFact(sameProcess(actual, expected), 'aerender_process_identity');
+  return true;
 }
 
-function nativeRenderers(job, engine) {
-  const rows = processRows("Name='AfterFX.com' OR Name='AfterFX.exe'");
-  const mentions = (command, file) => command.includes(file) || command.includes(file.replace(/\\/g, '\\\\'));
-  const matched = rows.filter(row => typeof row.commandLine === 'string' &&
-    mentions(row.commandLine, job.working) && mentions(row.commandLine, job.partial));
-  requireFact(matched.length <= 1 && matched.every(row => typeof row.exe === 'string' &&
-    samePath(path.dirname(row.exe), path.dirname(job.spec.engine.path)) &&
-    (!engine || row.parent === engine.pid && Date.parse(row.birth) >= Date.parse(engine.birth))), 'aerender_native_identity');
+// These spawned argv values contain no literal quotes or trailing quoted backslashes.
+function commandArgs(row) {
+  return (row.commandLine.match(/"[^"]*"|[^\s"]+/g) || []).slice(1).map(arg => arg.replace(/^"|"$/g, ''));
+}
+
+function argsMatch(actual, expected) {
+  return Array.isArray(actual) && actual.length === expected.length && actual.every((arg, index) => arg === expected[index]);
+}
+
+function childOf(child, parent) {
+  return validProcess(child) && child.parent === parent.pid && child.pid !== parent.pid &&
+    Date.parse(child.birth) >= Date.parse(parent.birth);
+}
+
+function adobeArgs(command) {
+  const prefix = "d -noui -m -s if (typeof gAECommandLineRenderer == 'undefined' ) { app.exitCode = 13;} else { gAECommandLineRenderer.Render(";
+  const suffix = '); }';
+  if (!command.startsWith(prefix) || !command.endsWith(suffix)) return null;
+  const wrapped = JSON.parse('[' + command.slice(prefix.length,-suffix.length) + ']');
+  if (!wrapped.every(value => typeof value === 'string' && value.length >= 2 && value.startsWith("'") && value.endsWith("'"))) return null;
+  const [flag,port,...args] = wrapped.map(value => value.slice(1,-1));
+  return flag === '-port' && /^(?:\[::1\]|127\.0\.0\.1):[1-9]\d{0,4}$/.test(port) ? args : null;
+}
+
+function rendererFor(row, job, engine, exit) {
+  if (!childOf(row, engine) || Date.parse(row.birth) > Date.parse(exit.observedAt) ||
+      !/^AfterFX\.(com|exe)$/i.test(path.basename(row.exe)) ||
+      !samePath(path.dirname(row.exe), path.dirname(job.spec.engine.path))) return false;
+  return argsMatch(adobeArgs(row.commandLine),commandArgs(engine));
+}
+
+function rendererRows() {
+  return processRows("Name='AfterFX.com' OR Name='AfterFX.exe'");
+}
+
+function nativeRenderers(job, engine, exit, list) {
+  const matched = list().filter(row => {
+    if (row.parent === engine.pid) return true;
+    if (typeof row.commandLine !== 'string') return false;
+    const command = row.commandLine.toLowerCase();
+    return [job.working, job.partial].some(file =>
+      command.includes(file.toLowerCase()) || command.includes(file.toLowerCase().replace(/\\/g, '\\\\')));
+  });
+  requireFact(matched.length <= 1 && matched.every(row => rendererFor(row, job, engine, exit)), 'aerender_native_identity');
   return matched;
+}
+
+function renderArgs(job, log) {
+  return ['-project',job.working,'-rqindex',String(job.spec.target.queueIndex),'-output',job.partial,
+    ...frameArgs(job.spec.target),'-close','DO_NOT_SAVE_CHANGES','-v','ERRORS_AND_PROGRESS','-log',log];
 }
 
 async function withLock(root, action) {
@@ -157,16 +218,10 @@ function verifyMedia(job) {
   const target = job.spec.target;
   const media = JSON.parse(execFileSync(job.spec.ffprobe.path, ['-v','error','-count_frames','-show_streams','-show_format','-of','json',job.partial],
     { encoding:'utf8', windowsHide:true, maxBuffer:1024 * 1024 }));
-  const video = media.streams.filter(s => s.codec_type === 'video');
-  const audio = media.streams.filter(s => s.codec_type === 'audio');
-  const [num, den] = target.fps.split('/').map(Number);
-  requireFact(video.length === 1 && video[0].codec_name === 'h264' && video[0].width === target.width &&
-    video[0].height === target.height && video[0].avg_frame_rate === target.fps &&
-    Number(video[0].nb_read_frames) === target.frames && audio.length === Number(target.audio) &&
-    Math.abs(Number(media.format.duration) - target.frames * den / num) <= den / num, 'aerender_media_profile');
+  const facts = verifyMediaFacts(target,media);
   execFileSync(job.spec.ffmpeg.path, ['-nostdin','-v','error','-xerror','-i',job.partial,'-map','0:v','-map','0:a?','-f','null','-'],
     { windowsHide:true, maxBuffer:1024 * 1024 });
-  return { frames: target.frames, fps: target.fps, duration: Number(media.format.duration), width: target.width, height: target.height, audio: target.audio };
+  return facts;
 }
 
 function verifyLog(job, log) {
@@ -196,11 +251,14 @@ function verifyCompleted(job, log) {
   return { id:job.id, state:'verified', output:after, media };
 }
 
-function createJobs(root, identity = processIdentity) {
-  requireFact(path.isAbsolute(root), 'aerender_root');
-  fs.mkdirSync(root, { recursive:true });
+function createJobs(root, identity = processIdentity, listRenderers = rendererRows) {
+  requireFact(path.isAbsolute(root) && samePath(path.resolve(root),root), 'aerender_root');
+  plainPath(path.dirname(root),true);
+  try { fs.mkdirSync(root); }
+  catch (error) { if (error.code !== 'EEXIST') throw error; }
   plainPath(root, true);
   const active = path.join(root, 'active.json');
+  const requestStage = 'cancel-request.json', cancelledStage = 'cancelled.json', publishStage = 'publish-intent.json';
   const file = (id, name) => {
     requireFact(uuid.test(id), 'aerender_job_id');
     return path.join(root, id, name);
@@ -211,9 +269,138 @@ function createJobs(root, identity = processIdentity) {
     return job;
   };
   const bound = (job, stage) => {
-    const entry = record(file(job.id, stage));
-    if (entry) requireFact(entry.id === job.id && entry.jobHash === jobHash(job), 'aerender_job_binding');
+    const filename = file(job.id, stage);
+    const entry = record(filename);
+    if (entry !== null || present(filename)) requireFact(entry?.id === job.id && entry.jobHash === jobHash(job), 'aerender_job_binding');
     return entry;
+  };
+  const scoped = (job, dispatch, stage, data) => ({
+    ...data, id:job.id, jobHash:dispatch.jobHash, dispatchHash:jobHash(dispatch), stage
+  });
+  const observed = (job, dispatch, stage) => {
+    const entry = bound(job,stage);
+    if (entry) requireFact(entry.dispatchHash === jobHash(dispatch) && entry.stage === stage, 'aerender_dispatch_binding');
+    return entry;
+  };
+  const verifyDispatch = dispatch => {
+    requireFact(dispatch?.observationVersion === 1 && validProcess(dispatch.starter) &&
+      Number.isFinite(Date.parse(dispatch.createdAt)) && Date.parse(dispatch.createdAt) >= Date.parse(dispatch.starter.birth),
+    'aerender_dispatch_binding');
+  };
+  const ownsActive = (job, dispatch) => {
+    const held = record(active);
+    return held?.id === job.id && (dispatch.observationVersion === undefined ||
+      held.jobHash === dispatch.jobHash && held.dispatchHash === jobHash(dispatch));
+  };
+  const workerArgs = id => [__filename,'worker',root,id];
+  const workerFor = (row, job, dispatch) => childOf(row, dispatch.starter) &&
+    samePath(row.exe, dispatch.starter.exe) && argsMatch(commandArgs(row), workerArgs(job.id)) &&
+    Date.parse(row.birth) >= Date.parse(dispatch.createdAt);
+  const logFor = job => file(job.id,'aerender.log');
+  const engineFor = (row, job, worker, intent) => childOf(row, worker) && samePath(row.exe, job.spec.engine.path) &&
+    argsMatch(commandArgs(row), intent.args) && Date.parse(row.birth) >= Date.parse(intent.createdAt);
+  const readProcess = (job, dispatch, stage, validate) => {
+    const entry = observed(job,dispatch,stage);
+    if (entry) requireFact(validate(entry.process,entry), 'aerender_process_identity');
+    return entry?.process;
+  };
+  const observe = (job, dispatch) => {
+    verifyDispatch(dispatch);
+    requireFact(ownsActive(job,dispatch), 'aerender_dispatch_binding');
+    const worker = readProcess(job,dispatch,'worker.json', row => workerFor(row,job,dispatch));
+    const launcher = readProcess(job,dispatch,'launcher.json', row => workerFor(row,job,dispatch));
+    requireFact(!worker || !launcher || sameProcess(worker,launcher), 'aerender_worker_identity');
+    const intent = observed(job,dispatch,'start-intent.json');
+    if (intent) requireFact(worker && intent.workerHash === jobHash(worker) && intent.executable === job.spec.engine.path &&
+      argsMatch(intent.args,renderArgs(job,logFor(job))) && Date.parse(intent.createdAt) >= Date.parse(worker.birth),
+    'aerender_dispatch_binding');
+    const engine = readProcess(job,dispatch,'engine.json', row => worker && intent && engineFor(row,job,worker,intent));
+    const exit = observed(job,dispatch,'engine-exit.json');
+    if (exit) requireFact(engine && exit.engineHash === jobHash(engine) &&
+      Date.parse(exit.observedAt) >= Date.parse(engine.birth) &&
+      (Number.isInteger(exit.code) && (exit.signal === null || typeof exit.signal === 'string') ||
+        exit.code === null && typeof exit.signal === 'string' || typeof exit.error === 'string'), 'aerender_dispatch_binding');
+    const renderer = readProcess(job,dispatch,'renderer.json', (row,entry) =>
+      engine && exit?.code === 0 && entry.engineHash === jobHash(engine) && rendererFor(row,job,engine,exit));
+    return { engine, exit, workerAlive:matchesProcess(worker || launcher,identity),
+      renderAlive: [engine,renderer].map(row => matchesProcess(row,identity)).some(Boolean) };
+  };
+  const settled = (job, terminal) => {
+    if (terminal) requireFact(['verified','failed','unknown'].includes(terminal.state), 'aerender_job_binding');
+    if (['verified','failed'].includes(terminal?.state)) return terminal;
+    const reconciled = bound(job,'reconciled.json');
+    if (reconciled) requireFact(reconciled.state === 'verified', 'aerender_job_binding');
+    return reconciled;
+  };
+  const assertQuiescent = (job, dispatch, code) => {
+    let state;
+    try {
+      state = observe(job,dispatch);
+      requireFact(state.exit?.code === 0 && state.exit.signal === null && !state.workerAlive && !state.renderAlive &&
+        nativeRenderers(job,state.engine,state.exit,listRenderers).length === 0, code);
+    } catch { throw Error(code); }
+  };
+  const cancelProof = job => {
+    const terminal = bound(job,'terminal.json');
+    return settled(job,terminal) || terminal;
+  };
+  const cancellation = (job, dispatch) => {
+    const receipt = bound(job,cancelledStage), request = bound(job,requestStage);
+    if (!request && !receipt) return {};
+    const original = dispatch === undefined ? bound(job,'dispatch.json') : dispatch;
+    const dispatchHash = original ? jobHash(original) : null;
+    if (request) requireFact(original && request.dispatchHash === dispatchHash && request.stage === requestStage &&
+      request.state === 'cancel_pending' && typeof request.createdAt === 'string' && Number.isFinite(Date.parse(request.createdAt)),
+    'aerender_cancel_binding');
+    if (receipt) {
+      const proof = original && cancelProof(job);
+      requireFact(receipt.state === 'cancelled' && typeof receipt.createdAt === 'string' &&
+        Number.isFinite(Date.parse(receipt.createdAt)) && Boolean(original) === Boolean(request) &&
+        (!original || proof) && receipt.dispatchHash === dispatchHash &&
+        receipt.requestHash === (request ? jobHash(request) : null) &&
+        receipt.proofHash === (proof ? jobHash(proof) : null) &&
+        (receipt.slotHash === null || !original && typeof receipt.slotHash === 'string' && sha.test(receipt.slotHash)),
+      'aerender_cancel_binding');
+    }
+    return { request, receipt };
+  };
+  const noSlotFor = (id, held) => held ? uuid.test(held.id) && held.id !== id : !present(active);
+  const strandedSlot = job => {
+    const held = record(active);
+    if (noSlotFor(job.id,held)) return null;
+    // start writes this slot before it can dispatch a worker.
+    requireFact(held?.id === job.id && held.jobHash === jobHash(job) &&
+      typeof held.dispatchHash === 'string' && sha.test(held.dispatchHash) &&
+      !present(job.partial) && !['launcher.json','worker.json','start-intent.json','engine.json',
+        'engine-exit.json','renderer.json','terminal.json','reconciled.json'].some(stage => present(file(job.id,stage))),
+    'aerender_cancel_unsettled');
+    return jobHash(held);
+  };
+  const drainProof = (job, dispatch) => {
+    try {
+      if (!ownsActive(job,dispatch)) return null;
+      const proof = cancelProof(job);
+      if (!proof) return null;
+      if (proof.state === 'failed') {
+        if (present(file(job.id,'start-intent.json'))) return null;
+        if (dispatch.observationVersion !== undefined) {
+          const state = observe(job,dispatch);
+          if (state.workerAlive || state.renderAlive) return null;
+        }
+      } else {
+        // An unknown media verdict can coexist with proof that execution has ended.
+        assertQuiescent(job,dispatch,'aerender_cancel_unsettled');
+      }
+      return proof;
+    } catch { return null; }
+  };
+  const releaseCancelled = (job, dispatch, receipt) => {
+    if (dispatch) {
+      if (ownsActive(job,dispatch)) fs.unlinkSync(active);
+    } else if (receipt.slotHash) {
+      const held = record(active);
+      if (held?.id === job.id && jobHash(held) === receipt.slotHash) fs.unlinkSync(active);
+    }
   };
   const release = id => {
     const held = record(active);
@@ -255,17 +442,22 @@ function createJobs(root, identity = processIdentity) {
     },
     start(id) {
       return withLock(root, async () => {
-        const job = get(id), dispatch = file(id, 'dispatch.json');
-        requireFact(!present(dispatch) && !present(active), 'aerender_active_or_already_dispatched');
+        const job = get(id), dispatchPath = file(id, 'dispatch.json');
+        requireFact(!present(file(id,requestStage)) && !present(file(id,cancelledStage)), 'aerender_cancelled');
+        requireFact(!present(dispatchPath) && !present(active), 'aerender_active_or_already_dispatched');
         requireFact(!present(job.partial) && !present(job.spec.output), 'aerender_output_exists');
         checkInputs(job.spec, job.working);
-        writeOnce(active, { id });
-        writeOnce(dispatch, { id, jobHash:jobHash(job), createdAt: new Date().toISOString() });
-        const child = spawn(process.execPath, [__filename,'worker',root,id], { detached:true, windowsHide:true, stdio:'ignore' });
+        const starter = identity(process.pid);
+        requireFact(validProcess(starter) && starter.pid === process.pid && samePath(starter.exe,process.execPath), 'aerender_worker_identity');
+        const dispatch = { id, jobHash:jobHash(job), createdAt:new Date().toISOString(), observationVersion:1, starter };
+        verifyDispatch(dispatch);
+        writeOnce(active, { id, jobHash:dispatch.jobHash, dispatchHash:jobHash(dispatch) });
+        writeOnce(dispatchPath, dispatch);
+        const child = spawn(process.execPath, workerArgs(id), { detached:true, windowsHide:true, stdio:'ignore' });
         await new Promise((resolve, reject) => { child.once('spawn',resolve); child.once('error',reject); });
         try {
           const launched = identity(child.pid);
-          if (launched && samePath(launched.exe,process.execPath) && launched.commandLine.includes(id)) writeOnce(file(id,'launcher.json'),launched);
+          if (workerFor(launched,job,dispatch)) writeOnce(file(id,'launcher.json'),scoped(job,dispatch,'launcher.json',{process:launched}));
         } catch { /* Worker records its own identity before touching AE. */ }
         child.unref();
         return { id, state:'submitted' };
@@ -273,19 +465,26 @@ function createJobs(root, identity = processIdentity) {
     },
     async worker(id) {
       const job = get(id);
-      requireFact(record(active)?.id === id && bound(job,'dispatch.json'), 'aerender_dispatch_binding');
+      const dispatch = bound(job,'dispatch.json');
+      verifyDispatch(dispatch);
+      requireFact(ownsActive(job,dispatch), 'aerender_dispatch_binding');
       const self = identity(process.pid);
-      requireFact(self && samePath(self.exe,process.execPath) && self.commandLine.includes(id), 'aerender_worker_identity');
-      writeOnce(file(id,'worker.json'), self);
+      requireFact(workerFor(self,job,dispatch) && self.pid === process.pid && samePath(self.exe,process.execPath), 'aerender_worker_identity');
+      const readLauncher = () => readProcess(job,dispatch,'launcher.json', row => workerFor(row,job,dispatch));
+      let launched = readLauncher();
+      const starterAlive = !launched && matchesProcess(dispatch.starter,identity);
+      if (!launched && !starterAlive) launched = readLauncher(); // start may have pinned this child just before exiting.
+      requireFact(launched ? sameProcess(launched,self) : starterAlive, 'aerender_worker_identity');
+      const write = (stage,data) => writeOnce(file(id,stage),scoped(job,dispatch,stage,data));
+      write('worker.json', {process:self});
       let terminal;
       try {
         checkInputs(job.spec, job.working);
         plainPath(path.dirname(job.partial),true);
         requireFact(!present(job.partial) && !present(job.spec.output), 'aerender_output_exists');
-        const log = file(id,'aerender.log');
-        const args = ['-project',job.working,'-rqindex',String(job.spec.target.queueIndex),'-output',job.partial,
-          '-close','DO_NOT_SAVE_CHANGES','-v','ERRORS_AND_PROGRESS','-log',log];
-        writeOnce(file(id,'start-intent.json'), { executable: job.spec.engine.path, args, createdAt: new Date().toISOString() });
+        const log = logFor(job), args = renderArgs(job,log);
+        const intent = { executable:job.spec.engine.path, args, createdAt:new Date().toISOString(), workerHash:jobHash(self) };
+        write('start-intent.json', intent);
         const fd = fs.openSync(file(id,'console.log'),'wx');
         let result, engine;
         try {
@@ -296,24 +495,29 @@ function createJobs(root, identity = processIdentity) {
           });
           if (child.pid) {
             try {
-              engine = identity(child.pid);
-              requireFact(engine && samePath(engine.exe,job.spec.engine.path) &&
-                engine.commandLine.includes(job.working) && engine.commandLine.includes(job.partial), 'aerender_engine_identity');
-              writeOnce(file(id,'engine.json'),engine);
+              const candidate = identity(child.pid);
+              requireFact(engineFor(candidate,job,self,intent) && candidate.pid === child.pid, 'aerender_engine_identity');
+              write('engine.json', {process:candidate});
+              engine = candidate;
             } catch (error) {
-              writeOnce(file(id,'engine-observation-error.json'), { code:error.message });
+              write('engine-observation-error.json', {code:error.message});
             }
           }
         } finally { fs.closeSync(fd); }
-        const exit = await result;
-        writeOnce(file(id,'engine-exit.json'),exit);
-        requireFact(exit.code === 0, 'aerender_engine_failed');
-        const [renderer] = nativeRenderers(job,engine);
+        const outcome = await result;
+        requireFact(engine, 'aerender_engine_identity');
+        const exit = { ...outcome, engineHash:jobHash(engine), observedAt:new Date().toISOString() };
+        write('engine-exit.json', exit);
+        requireFact(exit.code === 0 && exit.signal === null, 'aerender_engine_failed');
+        requireFact(!matchesProcess(engine,identity), 'aerender_engine_identity');
+        const [renderer] = nativeRenderers(job,engine,exit,listRenderers);
         if (renderer) {
-          writeOnce(file(id,'renderer.json'),renderer);
+          write('renderer.json', {process:renderer,engineHash:jobHash(engine)});
           while (matchesProcess(renderer,identity)) await new Promise(resolve => setTimeout(resolve,3000));
         }
+        requireFact(nativeRenderers(job,engine,exit,listRenderers).length === 0, 'aerender_native_identity');
         terminal = verifyCompleted(job,log);
+        requireFact(nativeRenderers(job,engine,exit,listRenderers).length === 0, 'aerender_native_identity');
       } catch (error) {
         // AfterFX can outlive the CLI wrapper. An incomplete observation after
         // a spawn intent keeps the slot even when the wrapper returned zero.
@@ -324,37 +528,80 @@ function createJobs(root, identity = processIdentity) {
     },
     status(id) {
       const job = get(id);
-      const published = bound(job,'published.json');
-      if (published) return published;
-      const terminal = bound(job,'reconciled.json') || bound(job,'terminal.json');
-      if (terminal) return terminal;
-      if (!bound(job,'dispatch.json')) return { id, state:'prepared' };
       try {
-        if (matchesProcess(record(file(id,'worker.json')) || record(file(id,'launcher.json')),identity)) {
-          const running = matchesProcess(record(file(id,'renderer.json')),identity) ||
-            matchesProcess(record(file(id,'engine.json')),identity);
-          const engineExit = !!record(file(id,'engine-exit.json'));
-          return { id, state: running ? 'rendering' : engineExit ? 'verifying' : 'starting' };
+        const published = bound(job,'published.json');
+        const { request, receipt } = cancellation(job);
+        if (request || receipt) {
+          requireFact(!published && !present(file(id,publishStage)), 'aerender_cancel_binding');
+          return { id, state:receipt ? 'cancelled' : 'cancel_pending' };
         }
+        if (published) return published;
+        const terminal = bound(job,'terminal.json');
+        const end = settled(job,terminal);
+        if (end) return end;
+        const dispatch = bound(job,'dispatch.json');
+        if (!dispatch && noSlotFor(id,record(active))) return { id, state:'prepared' };
+        if (dispatch?.observationVersion === 1) {
+          const state = observe(job,dispatch);
+          if (state.renderAlive) return { id, state:'rendering' };
+          if (state.workerAlive && !terminal) return { id, state:state.exit ? 'verifying' : 'starting' };
+        }
+        if (terminal?.state === 'unknown') return terminal;
       } catch { return { id, state:'unknown' }; }
       return { id, state:'unknown' };
     },
     reconcile(id) {
       return withLock(root, () => {
-        const job = get(id), old = bound(job,'reconciled.json');
+        const job = get(id), { request, receipt } = cancellation(job);
+        if (request || receipt) requireFact(!present(file(id,'published.json')) && !present(file(id,publishStage)), 'aerender_cancel_binding');
+        if (receipt) return { id, state:'cancelled' };
+        const old = bound(job,'published.json') || settled(job,bound(job,'terminal.json'));
         if (old) return old;
-        requireFact(record(active)?.id === id && bound(job,'dispatch.json') &&
-          record(file(id,'start-intent.json')) && record(file(id,'engine-exit.json'))?.code === 0 &&
-          !matchesProcess(record(file(id,'worker.json')),identity) &&
-          nativeRenderers(job,record(file(id,'engine.json'))).length === 0, 'aerender_reconcile_unsettled');
-        const result = { ...verifyCompleted(job,file(id,'aerender.log')), jobHash:jobHash(job) };
+        const dispatch = bound(job,'dispatch.json');
+        assertQuiescent(job,dispatch,'aerender_reconcile_unsettled');
+        const result = { ...verifyCompleted(job,logFor(job)), jobHash:jobHash(job) };
+        assertQuiescent(job,dispatch,'aerender_reconcile_unsettled');
         writeOnce(file(id,'reconciled.json'),result);
         return result;
+      });
+    },
+    cancel(id) {
+      return withLock(root, () => {
+        const job = get(id), dispatch = bound(job,'dispatch.json');
+        const { request, receipt:previous } = cancellation(job,dispatch);
+        let receipt = previous;
+        requireFact(!present(file(id,'published.json')) && !present(file(id,publishStage)), 'aerender_cancel_publication_started');
+        const assertOutputVacant = () => requireFact(!present(job.spec.output), 'aerender_cancel_publication_started');
+        if (!receipt) {
+          assertOutputVacant();
+          let intent = request, proof, slotHash = null;
+          if (dispatch) {
+            if (!intent) {
+              intent = scoped(job,dispatch,requestStage,{state:'cancel_pending',createdAt:new Date().toISOString()});
+              writeOnce(file(id,requestStage),intent);
+            }
+            proof = drainProof(job,dispatch);
+            if (!proof) return { id, state:'cancel_pending' };
+          } else {
+            slotHash = strandedSlot(job);
+          }
+          assertOutputVacant();
+          receipt = {
+            id, jobHash:jobHash(job), state:'cancelled', createdAt:new Date().toISOString(),
+            dispatchHash:dispatch ? jobHash(dispatch) : null, requestHash:intent ? jobHash(intent) : null,
+            proofHash:proof ? jobHash(proof) : null, slotHash
+          };
+          writeOnce(file(id,cancelledStage),receipt);
+        }
+        releaseCancelled(job,dispatch,receipt);
+        return { id, state:'cancelled' };
       });
     },
     finalize(id) {
       return withLock(root, () => {
         const job = get(id), publishedPath = file(id,'published.json');
+        const { request, receipt } = cancellation(job);
+        requireFact(!request && !receipt, 'aerender_cancelled');
         const published = bound(job,'published.json');
         if (published) {
           const output = fingerprint(job.spec.output,true);
@@ -363,22 +610,35 @@ function createJobs(root, identity = processIdentity) {
           release(id);
           return published;
         }
-        const end = bound(job,'reconciled.json') || bound(job,'terminal.json');
-        requireFact(record(active)?.id === id && bound(job,'dispatch.json') &&
+        const end = settled(job,bound(job,'terminal.json')), dispatch = bound(job,'dispatch.json');
+        requireFact(dispatch && ownsActive(job,dispatch) &&
           end && end.id === id && ['verified','failed'].includes(end.state), 'aerender_unsettled');
         if (end.state === 'failed') {
-          requireFact(!present(file(id,'start-intent.json')), 'aerender_unsettled');
+          requireFact(!present(file(id,'start-intent.json')) && !present(file(id,publishStage)), 'aerender_unsettled');
           release(id); return end;
         }
+        if (dispatch.observationVersion !== undefined) assertQuiescent(job,dispatch,'aerender_unsettled');
         checkInputs(job.spec,job.working);
         plainPath(path.dirname(job.spec.output),true);
         const partial = fingerprint(job.partial,true);
-        requireFact(partial.sha256 === end.output.sha256 && partial.bytes === end.output.bytes &&
-          partial.dev === end.output.dev && partial.ino === end.output.ino, 'aerender_partial_changed');
+        requireFact(sameFingerprint(partial,end.output), 'aerender_partial_changed');
+        const readAlias = () => {
+          const output = fingerprint(job.spec.output,true);
+          requireFact(sameFingerprint(output,partial), 'aerender_publication_conflict');
+          return output;
+        };
+        const intent = observed(job,dispatch,publishStage);
+        if (intent) requireFact(intent.path === job.spec.output && intent.proofHash === jobHash(end) &&
+          sameFingerprint(partial,intent.output), 'aerender_publication_conflict');
+        else {
+          if (present(job.spec.output)) readAlias();
+          writeOnce(file(id,publishStage),scoped(job,dispatch,publishStage,{
+            path:job.spec.output, proofHash:jobHash(end), output:partial
+          }));
+        }
         try { fs.linkSync(job.partial,job.spec.output); }
         catch (error) { if (error.code !== 'EEXIST') throw error; }
-        const output = fingerprint(job.spec.output,true);
-        requireFact(output.sha256 === partial.sha256 && output.dev === partial.dev && output.ino === partial.ino, 'aerender_publication_conflict');
+        const output = readAlias();
         const result = { id, jobHash:jobHash(job), state:'published', path:job.spec.output, sha256:output.sha256, bytes:output.bytes, media:end.media };
         writeOnce(publishedPath,result);
         removePublishedAlias(job,output);
@@ -387,6 +647,11 @@ function createJobs(root, identity = processIdentity) {
       });
     }
   };
+}
+
+function sameFingerprint(actual, expected) {
+  return expected && actual.sha256 === expected.sha256 && actual.bytes === expected.bytes &&
+    actual.dev === expected.dev && actual.ino === expected.ino;
 }
 
 function jobHash(job) {
@@ -401,16 +666,27 @@ function removePublishedAlias(job, output) {
 }
 
 async function main() {
-  requireFact(process.platform === 'win32' && process.env.LOCALAPPDATA, 'aerender_windows_required');
-  const [command, arg, workerId, ...rest] = process.argv.slice(2);
+  requireFact(process.platform === 'win32', 'aerender_windows_required');
+  const args = process.argv.slice(2);
+  let root;
+  if (args[0] === '--state-dir') {
+    requireFact(args.length >= 4 && path.isAbsolute(args[1]), 'aerender_root');
+    root = path.resolve(args[1]);
+    args.splice(0,2);
+  }
+  const [command, arg, workerId, ...rest] = args;
   if (command === 'worker') {
-    requireFact(arg && workerId && !rest.length, 'aerender_usage');
+    requireFact(!root && arg && workerId && !rest.length, 'aerender_usage');
     await createJobs(arg).worker(workerId);
     return;
   }
-  requireFact(['prepare','start','status','reconcile','finalize'].includes(command) && arg && !workerId, 'aerender_usage');
-  const installation = fs.realpathSync.native(path.join(process.env.LOCALAPPDATA,'AEAgentCore4'));
-  const jobs = createJobs(path.join(installation,'aerender-jobs-v1'));
+  requireFact(['prepare','start','status','reconcile','finalize','cancel'].includes(command) && arg && !workerId, 'aerender_usage');
+  if (!root) {
+    requireFact(process.env.LOCALAPPDATA, 'aerender_windows_required');
+    const installation = fs.realpathSync.native(path.join(process.env.LOCALAPPDATA,'AEAgentCore4'));
+    root = path.join(installation,'aerender-jobs-v1');
+  }
+  const jobs = createJobs(root);
   const value = command === 'prepare' ? jobs.prepare(record(path.resolve(arg))) : await jobs[command](arg);
   console.log(JSON.stringify(value));
 }

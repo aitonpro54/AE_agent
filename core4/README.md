@@ -181,6 +181,58 @@ layer ID или создаёт новый вариант из дубликата
 результат и состояние доставки записаны в
 [плане приёмки](../plans/titles-end-to-end-msi-20261105.md#очередь-ae-и-медиа).
 
+### Длинный мастер через `aerender-jobs`
+
+Локальный оператор Windows работает с сохранённой рабочей копией AEP до
+96 МиБ. Перед подготовкой сверить точный ID и имя композиции в AEP, индекс
+строки и её настройки. Нужна одна строка `Queued` с одним модулем H.264,
+без действий после рендера. Остальные строки оставляют выключенными.
+Сохранить копию, убедиться в наличии медиа, шрифтов и эффектов. Скрипт
+создаёт ещё одну побайтную копию рядом, чтобы сохранить относительные пути.
+
+В `preflight.json` в UTF-8 без BOM передать `project`, `engine`, `ffprobe`, `ffmpeg` и каждый
+элемент `media` как `{ "path": "абсолютный путь", "sha256": "SHA-256" }`.
+`output` задаёт новый абсолютный путь MP4. `queue` перечисляет сохранённые
+строки по индексам с единицы (`index`, `name`, `status`). Для выбранной
+строки добавляются `compId`, `format: "H.264"`, `frames` полной композиции
+и `startFrame`. В `target` передать `compId`, `compName`, `queueIndex`,
+`width`, `height`, `fps` рациональной строкой, `audio` как ожидаемое наличие
+звука и `frames` как число кадров результата. Для полного мастера задать
+`timeline: { "startFrame": 0, "frameCount": 720 }`. Для фрагмента добавить
+`range: { "startFrame": 151, "endFrameExclusive": 239 }` и `frames: 88`.
+
+```powershell
+node core4/tools/aerender-jobs.js prepare C:/Temp/preflight.json
+node core4/tools/aerender-jobs.js start JOB_UUID
+node core4/tools/aerender-jobs.js status JOB_UUID
+node core4/tools/aerender-jobs.js finalize JOB_UUID
+```
+
+ID выдаётся на `prepare`. По нему новый клиент читает статус и квитанции.
+Публикация разрешена после `verified` и повторной сверки исполнителя и файла.
+При `unknown` повтор запуска закрыт. `reconcile JOB_UUID` может подтвердить
+исходный выпуск после завершения процессов, если сохранились необходимые
+квитанции и выход прошёл проверку. `cancel JOB_UUID` отменяет подготовленное
+задание сразу. После выдачи `cancel_pending` блокирует публикацию. Уже
+запущенный AE завершает рендер, затем повторный `cancel` подтверждает
+завершение по исходным квитанциям и освобождает слот. Промежуточный файл
+остаётся в каталоге назначения с именем `*.partial.mp4`.
+
+Для отдельной поставки собрать пакет и сверить его доверенной копией
+верификатора из checkout. Хеш для сверки берётся из результата сборки.
+
+```powershell
+node core4/tools/package-aerender-operator.js --output C:\Temp\R1-operator
+node core4/tools/package-aerender-operator.js --verify C:\Temp\R1-operator --expected-sha256 REVIEWED_HASH
+node C:\Temp\R1-operator\tools\aerender-jobs.js --state-dir C:\Temp\R1-state prepare C:\Temp\preflight.json
+```
+
+В каждом вызове переносимого оператора указывать тот же `--state-dir`.
+Его родительский каталог должен существовать. Путь хранит локальные
+квитанции одного оператора. Adobe, FFmpeg, медиа и
+файлы AEP задаются путями этой машины. Профили Titles и Slideshow используют
+штатный типизированный `comp-render`.
+
 Installer выбирает workspace по собственному расположению в source checkout
 и проверяет marker `core4/package.json` и точный layout `core4/tools/install-core4.js`.
 Текущий каталог запуска не определяет адрес MCP-конфигурации; при вызове installer
