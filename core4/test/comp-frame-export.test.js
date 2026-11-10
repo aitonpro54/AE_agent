@@ -28,16 +28,18 @@ function frameEnvironment(state) {
   class CompItem {
     saveFrameToPng(time, file) {
       state.captures.push(time);
+      state.captureStartedAt = Date.now();
       state.writeCapture = () => fs.writeFileSync(file.fsName, state.flags.truncated ? pixel.subarray(0, -12) : pixel, { flag: 'wx' });
-      if (!state.flags.delayed) state.writeCapture();
+      if (!state.flags.captureDelayMs) state.writeCapture();
       if (state.flags.revisionChanges) state.project.revision++;
     }
   }
   state.captures = [];
+  state.pollElapsedMs = 0;
   const comp = state.comp = Object.assign(new CompItem(), { id: 8, name: 'Frame', width: 1, height: 1, duration: 1,
     frameDuration: 1 / 25, displayStartTime: 0, time: 0, resolutionFactor: [1, 1], numLayers: 1 });
   const nativeDate = class extends Date {
-    constructor(...args) { super(...(args.length ? args : [Date.now() + (state.clockShift || 0)])); }
+    constructor(...args) { super(...(args.length ? args : [(state.captureStartedAt ?? Date.now()) + state.pollElapsedMs + (state.clockShift || 0)])); }
   };
   if (state.flags.expireOnFinalSnapshot) {
     Object.defineProperty(comp, 'resolutionFactor', { get() {
@@ -47,8 +49,9 @@ function frameEnvironment(state) {
   }
   const project = state.project = { file: { fsName: state.projectId, parent: { fsName: parent } }, revision: 7, dirty: false,
     itemByID: id => id === comp.id ? comp : null };
-  return { app: { project }, CompItem, File, Folder: File, Date: nativeDate, $: { sleep() {
-    if (state.flags.delayed) { state.flags.delayed = false; state.writeCapture(); }
+  return { app: { project }, CompItem, File, Folder: File, Date: nativeDate, $: { sleep(ms) {
+    state.pollElapsedMs += ms;
+    if (state.pollElapsedMs === state.flags.captureDelayMs) state.writeCapture();
   } } };
 }
 
@@ -109,6 +112,7 @@ test('comp-frame-export leaves a truncated output fenced and preserves the origi
   assert.equal(result.state, 'stopped');
   assert.equal(h.broker.ledger.unresolved().length, 1);
   assert.equal(h.state.captures.length, 1);
+  assert.equal(h.state.pollElapsedMs, 20000);
   assert.ok(fs.existsSync(h.output));
 });
 
@@ -141,12 +145,13 @@ test('comp-frame-export checks expiry again after the final snapshot', async t =
   assert.equal(fs.existsSync(h.output), false);
 });
 
-test('comp-frame-export waits for native output and preserves state across render revision ticks', async t => {
-  const h = await fixture(t, { delayed: true, revisionChanges: true });
+test('comp-frame-export waits seven seconds for native output and preserves state across render revision ticks', async t => {
+  const h = await fixture(t, { captureDelayMs: 7000, revisionChanges: true });
   const { snapshot: before } = await h.inspect();
   assert.equal((await h.run()).state, 'succeeded');
   const { snapshot: after } = await h.inspect();
   assert.notEqual(after.revision, before.revision);
   assert.equal(after.protected, before.protected);
+  assert.equal(h.state.pollElapsedMs, 7000);
   assert.deepEqual(fs.readFileSync(h.output), pixel);
 });

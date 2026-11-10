@@ -25,7 +25,8 @@
     function inspect(p) { return snapshot(p, composition(p)); }
 
     function completedPng(path) {
-        for (var attempt = 0; attempt < 50; attempt++) {
+        var waitMs = 20000, pollMs = 100, deadline = new Date().getTime() + waitMs;
+        for (var attempt = 0; attempt < waitMs / pollMs && new Date().getTime() < deadline; attempt++) {
             var file = new File(path), size = file.exists ? file.length : 0;
             if (file.alias || size > 67108864) fault('frame_export_readback');
             if (size >= 45) {
@@ -34,10 +35,13 @@
                     var end = '';
                     try { if (file.seek(size - 12, 0)) end = file.read(12); }
                     finally { file.close(); }
-                    if (end.length === 12 && end.substr(0, 8) === '\x00\x00\x00\x00IEND' && file.length === size) return size;
+                    if (end.length === 12 && end.substr(0, 8) === '\x00\x00\x00\x00IEND' &&
+                        file.length === size && new Date().getTime() <= deadline) return size;
                 }
             }
-            $.sleep(100);
+            var remaining = deadline - new Date().getTime();
+            if (remaining <= 0) break;
+            $.sleep(Math.min(pollMs, remaining));
         }
         fault('frame_export_output_incomplete');
     }
