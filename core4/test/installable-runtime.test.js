@@ -200,7 +200,7 @@ async function readDiagnosticPeer(t, changes = {}) {
 }
 test('installable-runtime private completed read proof belongs to one exact direct error and is consumed once', async t => {
   const f = await readDiagnosticPeer(t), other = await readDiagnosticPeer(t);
-  for (const code of ['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable']) {
+  for (const [code, source] of [['inspection_failed', 'host'], ['inspection_result_budget', 'host'], ['host_json_unavailable', 'registry'], ['host_registry_unavailable', 'registry']]) {
     const read = f.peer.inspect({ compId: 7 }), observed = read.catch(error => error), frame = (await f.c.call('/poll', {})).command;
     const receipt = { commandId: frame.commandId, originalBinding: frame.originalBinding, pins: frame.pins, result: { readFailureVersion: 1, outcome: 'rejected', code } };
     const before = fs.readFileSync(path.join(f.directory, 'completions.ndjson'));
@@ -211,7 +211,17 @@ test('installable-runtime private completed read proof belongs to one exact dire
     await f.c.call('/complete', receipt); const error = await observed;
     assert.equal(other.peer.consumeReadRejection(error), null);
     assert.equal(f.peer.consumeReadRejection({ ...error }), null);
-    assert.deepEqual(f.peer.consumeReadRejection(error), { code, commandId: frame.commandId, executorHash: asset.executorHash, payloadHash: hash(canonical({ compId: 7 })) });
+    const terminal = JSON.parse(fs.readFileSync(path.join(f.directory, 'completions.ndjson'), 'utf8').trimEnd().split('\n').at(-1));
+    assert.equal(terminal.type, 'complete');
+    assert.equal(terminal.commandId, frame.commandId);
+    assert.deepEqual(f.peer.consumeReadRejection(error), {
+      code, commandId: frame.commandId, executorHash: asset.executorHash, payloadHash: hash(canonical({ compId: 7 })),
+      physical: {
+        code, commandId: frame.commandId, moduleId: 'project-inspection', phase: 'inspect', effect: 'none',
+        stage: 'terminal', intentRecorded: true, handoff: 'offered', nativeStart: 'unknown', queue: 'idle', late: false,
+        terminalReceipt: { source, receiptRef: frame.originalBinding.receiptRef, recordHash: terminal.recordHash }
+      }
+    });
     assert.equal(f.peer.consumeReadRejection(error), null);
   }
   for (const selected of [asset, f.manual]) {

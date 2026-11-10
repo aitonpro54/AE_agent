@@ -126,6 +126,19 @@ test('aerender-jobs reaches the native launch intent with an isolated owner envi
   assert.equal(child.status, 0, child.stderr);
   const terminal = f.stage(id, 'terminal.json');
   for (let n = 0; n < 120 && !fs.existsSync(terminal); n++) await new Promise(resolve => setTimeout(resolve, 100));
+  const workerPid = JSON.parse(fs.readFileSync(f.stage(id, 'worker.json'), 'utf8')).process.pid;
+  // Windows holds the job directory until the detached worker leaves its cwd.
+  let workerExited = false;
+  for (let n = 0; n < 50; n++) {
+    try { process.kill(workerPid, 0); }
+    catch (error) {
+      assert.equal(error.code, 'ESRCH');
+      workerExited = true;
+      break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  assert.equal(workerExited, true, 'detached worker still holds the job directory');
   assert.equal(JSON.parse(fs.readFileSync(terminal, 'utf8')).state, 'unknown');
   assert.equal(JSON.parse(fs.readFileSync(f.stage(id, 'start-intent.json'), 'utf8')).executable, f.spec.engine.path);
 });

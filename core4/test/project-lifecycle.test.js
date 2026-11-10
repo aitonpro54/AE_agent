@@ -108,7 +108,7 @@ test('project-lifecycle render-copy refuses unsupported media and changes during
 });
 
 test('project-lifecycle render-copy failure after Save As remains UNKNOWN and cannot replay', async t => {
-  for (const [flag, writes, rows] of [['wrongCopyTarget', 1, 2], ['failCopySave', 2, 3]]) {
+  for (const [flag, writes, rows] of [['wrongCopyTarget', 1, 2], ['noTemplate', 1, 3], ['failCopySave', 2, 3]]) {
     const f = await flow(t, { flags: { clean: true, allowRenderCopy: true, [flag]: true } });
     const input = renderInput(f);
     const run = await f.prepare(input);
@@ -119,6 +119,7 @@ test('project-lifecycle render-copy failure after Save As remains UNKNOWN and ca
     const saved = path.join(f.h.installation.stateDir, 'project-save-checkpoints', command.checkpoint.ref + '.aep');
     assert.deepEqual(fs.readFileSync(saved), original);
     assert.deepEqual(fs.readFileSync(f.target.projectId), original);
+    assert.equal(fs.existsSync(input.render.output), false);
     assert.equal(f.h.state.currentFile, f.destination);
     assert.equal(f.h.state.queue.length, rows);
     await assert.rejects(f.h.broker.run(run), /fresh_dryrun_required/);

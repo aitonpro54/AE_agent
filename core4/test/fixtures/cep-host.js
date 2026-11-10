@@ -31,7 +31,6 @@ function vmHost({ state = initialState(), persist = () => {}, mode, delay = 0 } 
 }
 async function loopback({ root, directory, state, hostOptions = {}, io, loseReply = () => false, callbackTimeout = 100 } = {}) {
   const host = vmHost({ state, ...hostOptions });
-  const store = openCompletionStore({ directory, ...(io ? { io } : {}) });
   const dispatcher = createHostDispatcher({ ...install(root), csInterface: host.csInterface, callbackTimeout });
   let active, receiver, wireFrames = 0, connects = 0;
   const sockets = new Set();
@@ -49,7 +48,6 @@ async function loopback({ root, directory, state, hostOptions = {}, io, loseRepl
       } catch (e) { if (!socket.destroyed) socket.write(packet({ id: request.id, error: e.code || e.message })); }
     }, () => socket.destroy()));
   });
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const channel = { async connect(binding) {
     if (active) throw Object.assign(new Error('controller_busy'), { code: 'controller_busy' });
     const reservation = {}; active = reservation;
@@ -77,8 +75,10 @@ async function loopback({ root, directory, state, hostOptions = {}, io, loseRepl
     return { receiverStoreIdentity: store.identity, send: frame => request({ method: 'send', frame }), completion: commandId => request({ method: 'completion', commandId }), async disconnect() { socket.destroy(); if (active === socket) active = undefined; } };
   } };
   const lifecycleProducer = () => host.lifecycle.snapshot().binding;
-  return { host, store, dispatcher, channel, lifecycleProducer,
-    transport: createTransport({ channel, lifecycleProducer }),
+  const transport = createTransport({ channel, lifecycleProducer });
+  const store = openCompletionStore({ directory, ...(io ? { io } : {}) });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  return { host, store, dispatcher, channel, lifecycleProducer, transport,
     get wireFrames() { return wireFrames; }, get connects() { return connects; },
     async close() { for (const socket of sockets) socket.destroy(); active?.destroy(); await new Promise(resolve => server.close(resolve)); store.close(); }
   };

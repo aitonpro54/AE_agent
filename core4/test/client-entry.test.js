@@ -112,7 +112,7 @@ test('client-entry actual thin initialize/discovery survives absent owner withou
   const exit = once(child, 'exit'); child.stdin.end(); await exit; assert.equal(child.exitCode, 0, stderr);
 });
 test('client-entry local oversized request preserves the existing controller and an accepted call', { skip: process.platform !== 'win32', timeout: 10000 }, async t => {
-  const { createIpcServer } = require('../runtime/client-ipc');
+  const { createIpcServer, IPC_LIMITS } = require('../runtime/client-ipc');
   const { createAttachmentOwner, OWNER_METHODS } = require('../runtime/attachment-owner');
   const files = Object.fromEntries(['client-ipc.js', 'client-stdio.js', 'attachment-owner.js', 'controller-lease.js'].map(name => ['runtime/' + name, fs.readFileSync(path.join(__dirname, '../runtime', name))]));
   const f = fixture(files); let complete, calls = 0;
@@ -130,8 +130,8 @@ test('client-entry local oversized request preserves the existing controller and
   send(1, 'controller_acquire'); await wait(() => rows.some(row => row.id === 1));
   const holder = owner.status().holderClientId;
   send(2, 'core_connect'); await wait(() => owner.status().accepted === 1);
-  send(3, 'core_status', { text: 'x'.repeat(70000) }); await wait(() => rows.some(row => row.id === 3));
-  assert.ok(['ipc_frame_size', 'ipc_json'].includes(rows.find(row => row.id === 3).error.message));
+  send(3, 'core_status', { text: 'x'.repeat(IPC_LIMITS.frameBytes) }); await wait(() => rows.some(row => row.id === 3));
+  assert.match(rows.find(row => row.id === 3).error?.message ?? '', /^ipc_(frame_size|json)$/);
   assert.equal(server.status().sessions, 1); assert.equal(owner.status().holderClientId, holder); assert.equal(owner.status().accepted, 1);
   send(4, 'core_status'); await wait(() => rows.some(row => row.id === 4)); assert.equal(rows.find(row => row.id === 4).error, undefined);
   complete(); await wait(() => rows.some(row => row.id === 2)); assert.equal(rows.find(row => row.id === 2).error, undefined); assert.equal(calls, 1);
