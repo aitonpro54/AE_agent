@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "reviewId": "20261110-plan-01",
+  "stageId": "modularity-next",
+  "type": "architecture-plan",
+  "status": "submission-unknown",
+  "complete": false,
+  "verdict": null,
+  "response": null,
+  "counts": {
+    "uploadInvocations": 1,
+    "filesSelected": 2,
+    "sendInvocations": 1,
+    "retries": 0
+  },
+  "readiness": {
+    "profile": "Ваш Chrome",
+    "browserId": "1",
+    "extensionInstanceId": "9210d362-19f1-4727-b8a7-cf8eeab3692f",
+    "tabId": "1490140125",
+    "account": "Aiton Pro (aitonpro54@gmail.com)",
+    "mode": "4 Argon",
+    "effort": "Высокий — Глубокий",
+    "effortOptions": [
+      "Низкий",
+      "Средний",
+      "Высокий"
+    ],
+    "maximumAvailable": true,
+    "chat": "new ordinary Gemini dialogue in existing blank tab",
+    "url": "https://gemini.google.com/app",
+    "evidence": {
+      "path": "readiness-evidence.jpg",
+      "bytes": 18055,
+      "sha256": "4153141a1b3a1dec497de52435c4b158053b652f0f68c743783d04703c41e11e"
+    }
+  },
+  "receipt": {
+    "url": "https://gemini.google.com/app",
+    "count": 1,
+    "target": {
+      "turnId": null,
+      "responseLength": 0,
+      "finalControls": false,
+      "container": "PENDING-REQUEST"
+    },
+    "generating": true,
+    "attachments": true,
+    "evidence": {
+      "path": "submission-evidence.jpg",
+      "bytes": 29711,
+      "sha256": "3320c490b2147c14096cc2a81fe01b9ea139a3690b2bc504713ed31706df99c7"
+    }
+  },
+  "responseOutcome": "unknown",
+  "permalink": null,
+  "binding": null,
+  "responseFileCreated": false,
+  "retrievalHistory": [
+    {
+      "observedAt": "2026-11-10T13:45:32.436Z",
+      "url": "https://gemini.google.com/app",
+      "count": 0,
+      "generating": false,
+      "attachments": false,
+      "notices": [],
+      "evidence": {
+        "path": "disappearance-evidence.jpg",
+        "bytes": 21532,
+        "sha256": "153cd8c2e67884068ac1ee67a7142a6f9978a63add6638546db3d70f2bd6bc78"
+      }
+    },
+    {
+      "observedAt": "2026-11-10T13:46:31.7707257Z",
+      "account": "Aiton Pro (aitonpro54@gmail.com)",
+      "query": "20261110-plan-01",
+      "visibleResult": "Ничего не найдено.",
+      "evidence": {
+        "path": "search-evidence.jpg",
+        "sha256": "8455dff41319dd16aaddf7bcada2a03796e827e43e2a7cfd412ed50bfcdc195a",
+        "bytes": 7898
+      }
+    }
+  ],
+  "boundedConclusion": "Интерфейс показал единственный запрос с двумя вложениями и активной генерацией. Затем исчезли сообщение и генерация, сохранился только общий URL /app. Поиск точного ID ничего не показал. Сохранение беседы и исход генерации неизвестны.",
+  "blocker": "Временное сообщение исчезло до появления постоянного URL или ответа.",
+  "expectedBinding": {
+    "reviewId": "20261110-plan-01",
+    "stageId": "modularity-next",
+    "type": "architecture-plan",
+    "reviewedCommit": "8e3b718db3c695190a45607064ac04e11d4d5558",
+    "proposalSha256": "11dde7a2c7f7c3d4c7b536c4f006dc7af870ef3e9317110b278ec156e2085f93",
+    "bundleSha256": "08a3bf598a87d049635a4414c422e191b2ea569e5b5b2e579af6d6d2605086a8",
+    "manifestSha256": "0e7f261815f0bd15f18fa5a18973a12851aefad6a1abc16bac88cc76854c9580"
+  }
+}

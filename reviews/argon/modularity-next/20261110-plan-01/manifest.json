@@ -1,0 +1,195 @@
+{
+  "reviewId": "20261110-plan-01",
+  "stageId": "modularity-next",
+  "baseCommit": "8e3b718db3c695190a45607064ac04e11d4d5558",
+  "reviewType": "architecture-plan",
+  "classification": "INTERNAL",
+  "proposalSha256": "11dde7a2c7f7c3d4c7b536c4f006dc7af870ef3e9317110b278ec156e2085f93",
+  "bundle": {
+    "path": "bundle.md",
+    "bytes": 347514,
+    "sha256": "08a3bf598a87d049635a4414c422e191b2ea569e5b5b2e579af6d6d2605086a8"
+  },
+  "sources": [
+    {
+      "file": "core4/runtime/stdio-entry.js",
+      "bytes": 63989,
+      "sha256": "87b84144f3579b55bd28a41d629fe5ddd010851a5a880c101b8125f62b2cb1f7",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/runtime/client-entry.js",
+      "bytes": 18324,
+      "sha256": "a233f6915cfffc3a8a8987e47e8e98e9ea8393b633172bc41bba3b5165bc5618",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/runtime/client-stdio.js",
+      "bytes": 9823,
+      "sha256": "3dc4e7e582cb44e2d25e82bbc6e0c77e1aa1ebeb5d09acb5c10df0e16192abb2",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/runtime/attachment-owner.js",
+      "bytes": 18237,
+      "sha256": "7a7ea7ef59242bf44fe140a7e0aaf5be69733db55203fa17b2861f922a59b4a5",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/runtime/render-job-owner.js",
+      "bytes": 12229,
+      "sha256": "75b7a600e3b1d6335c3bfb1247c919f82e0efc9d0a1203c3b5eac766ddc6b082",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/runtime/aerender-jobs.js",
+      "bytes": 39730,
+      "sha256": "e75bfe06a7075b63028caec2854d9253119d8ffc03523a83ded9523c98023c7e",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/runtime/aerender-profile.js",
+      "bytes": 4338,
+      "sha256": "e6e8b5238ba9c4cab969920bebb0fa5f7a33b5b41b44e2d7da35f11182a43eb2",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/runtime/project-lifecycle-proof.js",
+      "bytes": 12865,
+      "sha256": "7afaf78e5d5e3a5f39fc62b832bb63b1f04c098f969429efbef8f7686f193ff5",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/tools/package-installable.js",
+      "bytes": 9306,
+      "sha256": "e040ed1970009a56fcf263e4aea84d248928afb4588cc9a0858eca6a7522b817",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/tools/package-capability.js",
+      "bytes": 11516,
+      "sha256": "f3ccd56028e1e05887eba8db692aaec73807c37df8b219d0183b32d5673ab3af",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/tools/stopped-update.js",
+      "bytes": 80787,
+      "sha256": "ae2390aa8c8f0f23aad45fffa9d9db1a197b2dba45646c7351032efab4b58ae0",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/modules/comp-render/completion.json",
+      "bytes": 56,
+      "sha256": "cd2968619199062027a0b3ba8856152aab6b93e644c6ae9fb7b7fe224c1cdc80",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/modules/comp-render/artifact.json",
+      "bytes": 487,
+      "sha256": "50b32ad22bdfa529840c58c0a5a577170c753809121d187b38a7b4341d4ab749",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/test/render-job-owner.test.js",
+      "bytes": 9589,
+      "sha256": "e3ee9ac792d3ae213b247a75803613503136bf536ed7368d0dd74e4424e4c215",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/test/installed-composition.test.js",
+      "bytes": 32565,
+      "sha256": "990b468da0ba747026245a08670afb0e43c6a3e3e30b8c04fdf4aed1a58ab9f4",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/manual-layer-overlay.json",
+      "bytes": 862,
+      "sha256": "3de1de3f484c8c4e7785bf5a96071eb8b45ccea2055fe3e329be150506a15fcd",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/manual-media-layers.json",
+      "bytes": 1199,
+      "sha256": "49f9c5261365923eb576597054533d9f5574c650e2a286f2efafbc5efe3a6041",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/manual-project-assembly.json",
+      "bytes": 739,
+      "sha256": "3daaebbb72834039e8ae1fe4a7a72ec3696ea35984f6b523896c235af8a4ad67",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/manual-project-lifecycle.json",
+      "bytes": 738,
+      "sha256": "6b575fb3fd433108315cd3dc4c0ea3ecd5cdafdb26626569962dd1521685b9c4",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/manual-project-save.json",
+      "bytes": 729,
+      "sha256": "71e948f4b26ec098056f06748733f1f8cc81db98c85322fa32558a30e44980d7",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/manual-titles-variants.json",
+      "bytes": 1347,
+      "sha256": "d753f1281f329d11af6201cc26ad495af00eb7780801a5c3b3b6c3d868cddd43",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/operator-frame-export.json",
+      "bytes": 807,
+      "sha256": "5f7a62df765d07330a30e4e8250ebdf06c06f34e6472fb5445964132954faa39",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/operator-photo-montage.json",
+      "bytes": 2278,
+      "sha256": "f8b9322e6e5b0fe2f9517b72a635f287c74bce50b75b0e0a8efc8fffc14738d4",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/operator-render-jobs.json",
+      "bytes": 271,
+      "sha256": "058d0a3a8f46721cf9868f6bd90e6afa6879630ed5b69b9cc2d967cf69189a99",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/operator-titles-photo-pilot.json",
+      "bytes": 306,
+      "sha256": "b7735443e35d5ac7408c5fd571ce7e4b47dab400ef0f967c874b7ceb0e456c53",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/operator-titles-pilot.json",
+      "bytes": 348,
+      "sha256": "54b2659a4e642e07c896a14ec14e8b1ca7ebffd03fd425dd6ed28f02cdd96930",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/operator-workflows-montage.json",
+      "bytes": 785,
+      "sha256": "2d42eed066411df9de75527fbd96a5c33641b3e02f424f10c0e5b57a0b10fd1f",
+      "classification": "INTERNAL"
+    },
+    {
+      "file": "core4/config/compositions/operator-workflows.json",
+      "bytes": 1438,
+      "sha256": "894daf8f8073a337a6f136a60582d2205b37d147fb88a780faddf40890330b90",
+      "classification": "INTERNAL"
+    }
+  ],
+  "excluded": [
+    "working-tree uncommitted changes",
+    "AEP and media",
+    "credentials and local configuration",
+    "runtime state and execution journals",
+    "browser data"
+  ],
+  "evidenceLimits": [
+    "source review only",
+    "recorded native outcomes summarized by owner",
+    "full repository and native receipts excluded"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "verified": true,
+  "baseCommit": "8e3b718db3c695190a45607064ac04e11d4d5558",
+  "sources": 28,
+  "requestSha256": "b21fa36d3365a8755c05e77cefee55b92056dee337f1a830d98e68b710018e5e",
+  "bundleSha256": "08a3bf598a87d049635a4414c422e191b2ea569e5b5b2e579af6d6d2605086a8",
+  "submission": "unknown",
+  "responseAvailable": false,
+  "implementationStarted": false
+}
