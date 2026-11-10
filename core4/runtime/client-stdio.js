@@ -54,7 +54,7 @@ function serveAttachment({ client, input, output } = {}) {
       if (request.id === undefined) return;
       if (pending >= 32) fail('rpc_backpressure'); pending++; counted = true;
       let result;
-      if (request.method === 'initialize') result = { protocolVersion: '2024-11-05', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'ae-agent-core4', version: '4.2.1' } };
+      if (request.method === 'initialize') result = { protocolVersion: '2024-11-05', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'ae-agent-core4', version: '4.2.2' } };
       else if (request.method === 'ping') result = {};
       else if (request.method === 'tools/list') result = { tools: OWNER_METHODS.map(name => ({ name, description: description(name), inputSchema: inputSchema(name) })) };
       else if (request.method === 'tools/call') {

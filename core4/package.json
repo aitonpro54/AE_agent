@@ -1,6 +1,6 @@
 {
   "name": "ae-agent-core4",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "private": true,
   "description": "Independent Core4 broker, external Node runtime and isolated CEP panel",
   "scripts": {
