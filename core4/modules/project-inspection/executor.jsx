@@ -8,6 +8,11 @@
   }
   function finite(value) { return typeof value === 'number' && isFinite(value) ? value : null; }
   function observedBool(value) { return typeof value === 'boolean' ? value : null; }
+  function sameProject(p, projectId, total, revision) {
+    if (!pageState || pageState.projectId !== projectId || pageState.total !== total || pageState.revision !== revision) return false;
+    // AE may invalidate the previous native handle when an AEP is reopened.
+    try { return pageState.project === p; } catch (_) { return false; }
+  }
   function inspect(input) {
     if (!input || Object.prototype.toString.call(input) !== '[object Object]') throw new Error('invalid_inspection');
     var key;
@@ -21,7 +26,7 @@
     var file = p.file, projectId = file ? file.fsName : null, total = p.numItems, revision = read(p, 'revision'), dirty = read(p, 'dirty');
     if (!uint(total, 0)) throw new Error('project_items_unavailable');
     if (!uint(revision, 0)) revision = null;
-    if (!pageState || pageState.project !== p || pageState.projectId !== projectId || pageState.total !== total || pageState.revision !== revision) {
+    if (!sameProject(p, projectId, total, revision)) {
       pageState = { project: p, projectId: projectId, total: total, revision: revision, token: registryId + '-' + (++generation) + ':', cursors: [] };
     }
     var start = 1, inventoryStatus = 'complete';
@@ -126,6 +131,8 @@
       pageState.cursors.push(coverage.inventory.nextCursor);
       if (pageState.cursors.length > 16) pageState.cursors.shift();
     }
+    // A complete unpaged observation needs no persistent native reference.
+    if (pageState.cursors.length === 0) pageState = null;
     return result;
   }
   return { inspect: inspect };

@@ -261,7 +261,8 @@ test('installed-composition project lifecycle is discovered by the installed MCP
     assert.equal((await h.call('core_status')).composition, 'manual-project-lifecycle');
     const contract = await h.call('get_module_contract', { moduleId: 'project-lifecycle' });
     assert.equal(contract.operationId, 'transition-project');
-    assert.deepEqual(contract.contract.buildSchema.properties.action.enum, ['save-as', 'create', 'open']);
+    // The shared contract lists render-copy. The Owner gates its execution on R1.
+    assert.deepEqual(contract.contract.buildSchema.properties.action.enum, ['save-as', 'create', 'open', 'stage-render-copy']);
   } finally { await h.close(); fs.rmSync(f.directory, { recursive: true, force: true }); }
 });
 test('installed-composition admits a new render operation through declarations on a relocated source and installed tree', { timeout: 15000 }, async t => {

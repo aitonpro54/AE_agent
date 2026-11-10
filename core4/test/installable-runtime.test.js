@@ -67,7 +67,7 @@ function dispatcher(pkg, options) {
 }
 function memoryStorage() { const map = new Map(); return { getItem: k => map.get(k) || null, setItem: (k, v) => map.set(k, v), removeItem: k => map.delete(k) }; }
 
-function projectInspectionHost(pkg, items, state = {}) {
+function projectInspectionHost(pkg, items, state = {}, nativeProjectEquals) {
   function CompItem(id, { name = 'Повтор', numLayers = 1 } = {}) {
     Object.assign(this, { id, name, numLayers, duration: 5, time: 2, workAreaStart: 1, workAreaDuration: 3 });
   }
@@ -78,7 +78,16 @@ function projectInspectionHost(pkg, items, state = {}) {
     activeItem: rows.at(-1), item: index => rows[index - 1],
     itemByID: id => { if (!rows[id - 1]) throw new Error('Item Not Found'); return rows[id - 1]; }, ...state };
   const app = { version: '26.0-test', project }, context = vm.createContext({ JSON: undefined, CompItem, app });
-  vm.runInContext(Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString(), context);
+  let source = Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString();
+  if (nativeProjectEquals) {
+    // Node's VM compares objects without touching them. Model AE's native
+    // comparison, which can raise an error for a closed project handle.
+    assert.match(source, /pageState\.project (?:===|!==) p/);
+    source = source.replace(/pageState\.project (===|!==) p/, (_, op) =>
+      (op === '!==' ? '!' : '') + 'nativeProjectEquals(pageState.project, p)');
+    context.nativeProjectEquals = nativeProjectEquals;
+  }
+  vm.runInContext(source, context);
   const inspect = target => JSON.parse(context.AECore4Host.dispatch(JSON.stringify({ assetKey: asset.assetKey, phase: 'inspect',
     pins: { executorHash: asset.executorHash }, typedPayload: target })));
   return { app, project, inspect };
@@ -135,6 +144,28 @@ test('installable-runtime project inspection resolves exact IDs independently of
   app.project = { ...project };
   assert.equal((await next({ cursor: fresh.coverage.inventory.nextCursor })).coverage.inventory.status, 'cursor_stale');
   assert.throws(() => f.peer.inspect({ cursor: 'x'.repeat(97) }), /invalid_inspection_cursor/);
+});
+
+test('installable-runtime project inspection expires cursors tied to an invalidated native project', () => {
+  const pkg = buildPackage(root, 'readonly');
+  let invalid;
+  const compare = (saved, current) => {
+    if (saved === invalid) throw new Error('Object is invalid');
+    return saved === current;
+  };
+  const { app, project, inspect } = projectInspectionHost(pkg, Array(501).fill(null), {}, compare);
+  const oldCursor = inspect({}).coverage.inventory.nextCursor;
+  assert.equal(inspect({ cursor: oldCursor }).coverage.inventory.status, 'complete');
+  invalid = project;
+  app.project = { ...project };
+  const stale = inspect({ cursor: oldCursor });
+  assert.equal(stale.coverage.inventory.status, 'cursor_stale');
+  assert.equal(stale.coverage.inventory.itemsScanned, 0);
+  const fresh = inspect({});
+  assert.equal(fresh.target.projectId, project.file.fsName);
+  assert.equal(fresh.coverage.inventory.status, 'more');
+  assert.notEqual(fresh.coverage.inventory.nextCursor, oldCursor);
+  assert.equal(inspect({ cursor: fresh.coverage.inventory.nextCursor }).coverage.inventory.itemsScanned, 1);
 });
 
 test('installable-runtime project inspection makes incomplete native reads and result budget coverage explicit', async t => {
