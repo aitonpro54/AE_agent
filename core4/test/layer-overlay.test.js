@@ -39,6 +39,14 @@ async function fixture(t, options = {}) {
   return { ...h, target, input, inspect, build, prepare, get confirmations() { return h.confirmations; } };
 }
 
+function addMaskFeather(layer, twoD) {
+  const mask = layer.masks.property(1), getProperty = mask.property.bind(mask);
+  const feather = { ...getProperty(1), matchName: 'ADBE Mask Feather', propertyValueType: new Number(twoD), value: [0, 0] };
+  mask.numProperties++;
+  mask.property = index => index === mask.numProperties ? feather : getProperty(index);
+  return feather;
+}
+
 test('layer-overlay copies the exact slot and verifies shared uses, keys, mask, effect, parent, matte and alpha', async t => {
   const h = await fixture(t, { flags: { nativeTransformComponents: true } });
   assert.equal((await h.broker.run(await h.prepare(false))).code, 'operator_confirmation_required');
@@ -78,6 +86,59 @@ test('layer-overlay copies the exact slot and verifies shared uses, keys, mask, 
     { ...after, stack: [after.stack[0], after.stack[1], ...after.stack.slice(1)] },
     { ...after, overlay: { ...after.overlay, sourceId: h.target.originalSourceId } }
   ]) assert.throws(() => proof.validateResult({ input: h.input, before }, damaged), { code: 'layer_overlay_readback' });
+});
+
+test('layer-overlay captures and verifies static TwoD Mask Feather under Mask Atom', async t => {
+  const h = await fixture(t);
+  const twoD = h.state.original.transforms.property('ADBE Scale').propertyValueType;
+  const feather = addMaskFeather(h.state.original, twoD);
+  const maskFeather = snapshot => JSON.parse(snapshot.signature)[11][0][4][1];
+  assert.deepEqual(maskFeather((await h.inspect()).snapshot), ['ADBE Mask Feather', [0, 0]]);
+  feather.value = [5.5, 11.25];
+  const before = (await h.inspect()).snapshot;
+  assert.deepEqual(maskFeather(before), ['ADBE Mask Feather', [5.5, 11.25]]);
+  const result = await h.broker.run(await h.prepare());
+  assert.equal(result.state, 'succeeded', JSON.stringify(result));
+  assert.equal((await h.inspect()).snapshot.overlay.signature, before.signature);
+});
+
+test('layer-overlay refuses unsupported Mask Feather values and keeps other property guards', async t => {
+  const h = await fixture(t);
+  const { original } = h.state;
+  const twoD = original.transforms.property('ADBE Scale').propertyValueType;
+  const feather = addMaskFeather(original, twoD), baseline = { ...feather };
+  const unsupported = [
+    { numKeys: 1 },
+    { expressionEnabled: true, expression: 'value' },
+    { propertyValueType: original.transforms.property('ADBE Anchor Point').propertyValueType },
+    { propertyValueType: original.masks.property(1).property(1).propertyValueType },
+    { propertyValueType: String(twoD) },
+    ...[0, [0], [0, 0, 0], [[0], 0], [0, Infinity], ['0', 0], { 0: 0, 1: 0, length: 2 }].map(value => ({ value }))
+  ];
+  for (const override of unsupported) {
+    Object.assign(feather, baseline, override);
+    await assert.rejects(h.inspect(), /inspection_failed/);
+  }
+  Object.assign(feather, baseline);
+
+  const maskShape = original.masks.property(1).property(1);
+  maskShape.value.featherRadii = [1];
+  await assert.rejects(h.inspect(), /inspection_failed/);
+  maskShape.value.featherRadii = null;
+
+  const originalEffects = original.effects;
+  original.effects = { ...originalEffects, property: index => ({ ...originalEffects.property(index),
+    numProperties: 1, property: () => feather }) };
+  await assert.rejects(h.inspect(), /inspection_failed/);
+  original.effects = originalEffects;
+
+  const scale = original.transforms.property('ADBE Scale');
+  scale.propertyValueType = new Number(twoD);
+  await assert.rejects(h.inspect(), /inspection_failed/);
+  scale.propertyValueType = twoD;
+  feather.propertyValueType = twoD;
+  assert.equal((await h.inspect()).snapshot.overlay.state, 'none');
+  assert.deepEqual(h.state.writes, { duplicate: 0, replace: 0, matte: 0 });
 });
 
 test('layer-overlay rejects external indexed expressions and revision drift before native duplicate', async t => {

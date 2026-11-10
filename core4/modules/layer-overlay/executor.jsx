@@ -65,11 +65,21 @@
         for (var i = 0; i < entries.length; i++) result.push([number(entries[i].speed), number(entries[i].influence)]);
         return result;
     }
-    function propertyState(property, transform) {
+    function propertyState(property, transform, maskAtom) {
         if (!property || property.propertyType !== PropertyType.PROPERTY || property.expressionEnabled === true ||
             property.canSetExpression && (typeof property.expressionEnabled !== 'boolean' || property.expression) ||
             property.isSeparationLeader && property.dimensionsSeparated || property.isSeparationFollower) fault('layer_overlay_property');
         var count = number(property.numKeys);
+        if (maskAtom && property.matchName === 'ADBE Mask Feather') {
+            if (count !== 0) fault('layer_overlay_key_profile');
+            var type = property.propertyValueType;
+            // Normalize native enum wrappers only for this static mask property.
+            if (type === null || typeof type !== 'number' && typeof type !== 'object' ||
+                Number(type) !== Number(PropertyValueType.TwoD)) fault('layer_overlay_property_value');
+            var feather = property.value;
+            if (!isArray(feather) || feather.length !== 2) fault('layer_overlay_property_value');
+            return [property.matchName, [number(feather[0]), number(feather[1])]];
+        }
         if (!count) return [property.matchName, plainValue(property, property.value, transform)];
         if (!transform || count > 24) fault('layer_overlay_key_profile');
         var spatial = property.propertyValueType === PropertyValueType.TwoD_SPATIAL || property.propertyValueType === PropertyValueType.ThreeD_SPATIAL, keys = [];
@@ -90,7 +100,7 @@
         for (var i = 1; i <= group.numProperties; i++) {
             var member = group.property(i), children = [], count = number(member.numProperties);
             if (count > 20 || (masks ? member.matchName !== 'ADBE Mask Atom' : !listed(supportedEffects, member.matchName))) fault('layer_overlay_group_profile');
-            for (var j = 1; j <= count; j++) children.push(propertyState(member.property(j), false));
+            for (var j = 1; j <= count; j++) children.push(propertyState(member.property(j), false, masks));
             output.push([member.matchName, text(member.name), bool(member.enabled), masks ?
                 [number(Number(member.maskMode)), bool(member.inverted), bool(member.rotoBezier),
                     number(Number(member.maskMotionBlur)), number(Number(member.maskFeatherFalloff)), bool(member.locked)] : [], children]);

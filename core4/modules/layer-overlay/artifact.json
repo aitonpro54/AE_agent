@@ -5,7 +5,7 @@
   "hashes": {
     "implementation.js": "38c20d4eaacec25277bea5d618d3e4316dcfbcd9afdcefb8f0efafec2063f9c3",
     "contract.json": "4478438e4b7beb60128cbfb5d97d315307f7a45ff59df673fd75364f2a3e20c4",
-    "executor.jsx": "176258dda3262df791ad14cd05158e2b34e4f40c3b8dc4562046ec3e49990c35"
+    "executor.jsx": "8d0516320070261b570b68abb62d311e5369de736a348e5e26b96dd305464193"
   },
   "publicDependencies": {}
 }
