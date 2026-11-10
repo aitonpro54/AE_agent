@@ -84,6 +84,7 @@ function manualResultProfile(asset) { return ['manual-text-v1', 'photo-source-v1
 function nativeFileResult(result, phase) {
   if (phase === 'mutate' && result.outcome !== 'applied') return result;
   const { savedFileSha256, checkpointRoot, checkpoint, transition, diskProofError, ...snapshot } = phase === 'mutate' ? result.snapshot : result;
+  if (snapshot.renderJob) snapshot.renderJob = { ...snapshot.renderJob, media: snapshot.renderJob.media.map(({ sha256, ...native }) => native) };
   return phase === 'mutate' ? { ...result, snapshot } : snapshot;
 }
 function observedOpen(command, result) {

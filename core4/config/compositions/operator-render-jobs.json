@@ -1,0 +1,14 @@
+{
+  "parent": "operator-workflows-montage",
+  "modules": [],
+  "assets": [],
+  "profiles": {},
+  "bundle": {
+    "files": [
+      "runtime/render-job-owner.js",
+      "runtime/aerender-jobs.js",
+      "runtime/aerender-profile.js"
+    ],
+    "artifactClosures": []
+  }
+}

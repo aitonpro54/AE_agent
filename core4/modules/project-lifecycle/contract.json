@@ -40,7 +40,8 @@
         "enum": [
           "save-as",
           "create",
-          "open"
+          "open",
+          "stage-render-copy"
         ]
       },
       "destination": {
@@ -55,6 +56,46 @@
       },
       "allowDirtyDestination": {
         "type": "boolean"
+      },
+      "render": {
+        "type": "object",
+        "properties": {
+          "compId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "fps": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 15
+          },
+          "audio": {
+            "type": "boolean"
+          },
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "startFrame": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "endFrameExclusive": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "compId",
+          "fps",
+          "audio",
+          "output"
+        ],
+        "additionalProperties": false
       }
     },
     "required": [
@@ -117,7 +158,8 @@
         "enum": [
           "save-as",
           "create",
-          "open"
+          "open",
+          "stage-render-copy"
         ]
       },
       "destination": {
@@ -132,6 +174,46 @@
       },
       "allowDirtyDestination": {
         "type": "boolean"
+      },
+      "render": {
+        "type": "object",
+        "properties": {
+          "compId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "fps": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 15
+          },
+          "audio": {
+            "type": "boolean"
+          },
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "startFrame": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "endFrameExclusive": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "compId",
+          "fps",
+          "audio",
+          "output"
+        ],
+        "additionalProperties": false
       }
     },
     "required": [
@@ -229,7 +311,8 @@
             "enum": [
               "save-as",
               "create",
-              "open"
+              "open",
+              "stage-render-copy"
             ]
           },
           "sourceSha256": {
@@ -275,6 +358,218 @@
           "action",
           "sourceSha256",
           "checkpoint"
+        ],
+        "additionalProperties": false
+      },
+      "renderJob": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "object",
+            "properties": {
+              "compId": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "compName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "queueIndex": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64
+              },
+              "frames": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 30000
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 30000
+              },
+              "fps": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 15
+              },
+              "audio": {
+                "type": "boolean"
+              },
+              "timeline": {
+                "type": "object",
+                "properties": {
+                  "startFrame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "frameCount": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "startFrame",
+                  "frameCount"
+                ],
+                "additionalProperties": false
+              },
+              "range": {
+                "type": "object",
+                "properties": {
+                  "startFrame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "endFrameExclusive": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "startFrame",
+                  "endFrameExclusive"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "compId",
+              "compName",
+              "queueIndex",
+              "frames",
+              "width",
+              "height",
+              "fps",
+              "audio",
+              "timeline"
+            ],
+            "additionalProperties": false
+          },
+          "queue": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 64
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "Queued",
+                    "Unqueued",
+                    "Needs Output",
+                    "User Stopped",
+                    "Error Stopped",
+                    "Done"
+                  ]
+                },
+                "compId": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "format": {
+                  "type": "string",
+                  "enum": [
+                    "H.264"
+                  ]
+                },
+                "frames": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "startFrame": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "index",
+                "name",
+                "status"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 64
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "bytes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1073741824
+                },
+                "modifiedMs": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "sha256": {
+                  "type": "string",
+                  "minLength": 64,
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "path",
+                "bytes",
+                "modifiedMs",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0,
+            "maxItems": 128
+          },
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "scratchOutput": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "target",
+          "queue",
+          "media",
+          "output",
+          "scratchOutput"
         ],
         "additionalProperties": false
       }

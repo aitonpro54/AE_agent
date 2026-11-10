@@ -13,7 +13,8 @@ const source = path.resolve(__dirname, '..');
 const cli = path.join(source, 'tools', 'package-aerender-operator.js');
 const entry = 'tools/aerender-jobs.js';
 const payload = [
-  'protocol/json.js', 'runtime/project-file.js', 'runtime/project-save-proof.js',
+  'protocol/json.js', 'runtime/aerender-jobs.js', 'runtime/aerender-profile.js',
+  'runtime/project-file.js', 'runtime/project-save-proof.js',
   entry, 'tools/aerender-profile.js'
 ];
 
@@ -41,13 +42,13 @@ function cliReceipt(cwd, args) {
   return JSON.parse(result.stdout);
 }
 
-test('builds a deterministic six-file operator and loads its original entry from a foreign cwd', t => {
+test('builds a deterministic eight-file operator and loads its original entry from a foreign cwd', t => {
   const root = fixture(t);
   const first = path.join(root, 'first package');
   const second = path.join(root, 'second package');
   const build = cliReceipt(root, ['--output', first]);
   const repeat = cliReceipt(root, ['--output', second]);
-  assert.equal(build.files, 6);
+  assert.equal(build.files, 8);
   assert.deepEqual(repeat, { ...build, output: second });
   assert.deepEqual(cliReceipt(root, ['--verify', second, '--expected-sha256', build.operatorHash]), repeat);
 

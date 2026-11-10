@@ -19,6 +19,7 @@ function canonical(value) {
 function hash(value) { return crypto.createHash('sha256').update(typeof value === 'string' || Buffer.isBuffer(value) ? value : canonical(value)).digest('hex'); }
 function exactKeys(value, keys) { if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).length !== keys.length || keys.some(key => !Object.hasOwn(value, key))) fail('composition_schema'); }
 const POLICY_FILE = 'runtime/composition-policy.json';
+const RENDER_JOB_FILES = ['runtime/render-job-owner.js', 'runtime/aerender-jobs.js', 'runtime/aerender-profile.js'];
 const RESULT_PROFILES = Object.freeze({
   'manual-text-v1': null,
   'photo-source-v1': 'runtime/photo-source-proof.js',
@@ -200,7 +201,12 @@ function deriveComposition(release, read) {
   });
   const startOverSupported = Object.hasOwn(release.hashes, 'runtime/owner-contract.json') && json('runtime/owner-contract.json').version === 4;
   if (assets.some(item => item.operatorConfirmation) && !startOverSupported) fail('operator_confirmation_owner_required');
-  return { composition, assets, ...(startOverSupported ? { startOverSupported: true } : {}) };
+  const renderJobs = composition.id === 'operator-render-jobs';
+  if (renderJobs) {
+    if (!startOverSupported || composition.version !== 2 || !assets.some(item => item.resultProfile === 'project-lifecycle-v1' && item.registryOperatorConfirmation)) fail('render_job_owner_required');
+    for (const file of RENDER_JOB_FILES) checked(file);
+  } else if (RENDER_JOB_FILES.some(file => Object.hasOwn(release.hashes, file))) fail('composition_optional_closure');
+  return { composition, assets, ...(startOverSupported ? { startOverSupported: true } : {}), ...(renderJobs ? { renderJobs: true } : {}) };
 }
 function validateLegacyComposition(composition, release, checked) {
   if (!['readonly', 'manual', 'manual-layout', 'manual-titles', 'manual-titles-variants'].includes(composition.id)) fail('composition_schema');
@@ -409,7 +415,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   }
   if (mode === 'owner') startOverControl = require('./start-over-panel-control.js').createStartOverPanelControl({ installation, status: startOverView, request: requestStartOver });
   async function exposeOwner(facade, activity, invoke, options = {}) {
-    const { createAttachmentOwner, OWNER_METHODS } = require('./attachment-owner.js');
+    const { createAttachmentOwner, ownerMethods } = require('./attachment-owner.js');
     const { createIpcServer } = require('./client-ipc.js');
     const { ownerEndpoint } = require('./client-entry.js');
     const { PRIVATE_METHODS, createOwnerMaintenance, createStopAuthorization } = require('./owner-maintenance.js');
@@ -436,7 +442,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     facade.status = () => ({ ...currentStatus(), maintenance: maintenance.status(), workSession: workSession.status(), startOver: startOverView() });
     facade.diagnostics = async () => ({ ...await currentDiagnostics(), maintenance: maintenance.status(), workSession: workSession.status(), startOver: startOverView() });
     ipc = createIpcServer({ endpoint, identity: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash },
-      secret: installation.controlToken, bootId: attachmentOwner.bootId, methods: [...OWNER_METHODS, ...PRIVATE_METHODS],
+      secret: installation.controlToken, bootId: attachmentOwner.bootId, methods: [...ownerMethods(options.renderJobs), ...PRIVATE_METHODS],
       onAttach: attachmentOwner.onAttach, onDetach: attachmentOwner.onDetach, onRequest: request => {
         if (!PRIVATE_METHODS.includes(request.method)) return attachmentOwner.onRequest(request);
         try { return { ok: true, value: maintenance.request(request.payload) }; }
@@ -520,7 +526,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
             currentSessionId: () => workSession?.status().sessionId ?? installation.installationId });
           return { ...binding, ...projectSave };
         case 'project-lifecycle-v1':
-          projectLifecycle = require('./project-lifecycle-proof.js').createProjectLifecycleProof({ stateDir: installation.stateDir,
+          projectLifecycle = require('./project-lifecycle-proof.js').createProjectLifecycleProof({ stateDir: installation.stateDir, allowRenderCopy: selected.renderJobs === true,
             currentSessionId: () => workSession?.status().sessionId ?? installation.installationId });
           return { ...binding, ...projectLifecycle };
         case 'manual-point-layout-v1': return { ...binding, proof: require('./point-layout-proof.js').createPointLayoutProof({ getBroker: () => broker, getPeer: () => peer }) };
@@ -635,6 +641,27 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     return { evidenceRef: id('observation'), moduleId: profile.id, contractId, ...result, authority: false };
   };
   facade.build = value => { if (value.contractId === contractId || value.steps?.some(s => s.contractId === contractId)) fail('read_only_module_build_unsupported'); return broker.build(value); };
+  if (selected.renderJobs && mode === 'owner') {
+    const { createRenderJobOwner } = require('./render-job-owner.js');
+    const render = createRenderJobOwner({ stateDir: installation.stateDir, installationId: installation.installationId,
+      getCommand(taskId, commandId) {
+        if (broker.ledger.corrupt) return undefined;
+        const record = broker.ledger.commands(taskId).find(command => command.commandId === commandId);
+        if (record?.target?.sessionId !== (invocationContext.getStore()?.sessionId ?? installation.installationId)) return undefined;
+        return record;
+      } });
+    const current = () => {
+      const context = invocationContext.getStore();
+      if (!context || context.observer) fail('owner_controller_required');
+      context.assertCurrent();
+    };
+    facade.renderJobPrepare = value => render.prepare(value, current);
+    facade.renderJobStart = value => render.start(value, current);
+    facade.renderJobStatus = value => render.status(value);
+    facade.renderJobReconcile = value => render.reconcile(value, current);
+    facade.renderJobFinalize = value => render.finalize(value, current);
+    facade.renderJobCancel = value => render.cancel(value, current);
+  }
   facade.close = async () => { if (closed) return; closed = true; await peer.close(); await broker.close(); };
   try { await peer.listen(); } catch (e) { await facade.close(); throw e; }
   if (mode === 'owner') {
@@ -655,7 +682,8 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       },
       isFreshDryrunRefusal: Broker.isFreshDryrunRefusal,
       consumeMediaDuplicateBuildRefusal: Broker.consumeMediaDuplicateBuildRefusal,
-      canResumeTask: canResumeMontageTask
+      canResumeTask: canResumeMontageTask,
+      renderJobs: selected.renderJobs === true
     });
   }
   serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.2.2' } });

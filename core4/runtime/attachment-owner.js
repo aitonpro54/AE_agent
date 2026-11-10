@@ -9,6 +9,8 @@ const { fitsIpcResult } = require('./client-ipc');
 const TOOL_METHODS = Object.freeze({ core_status: 'status', core_connect: 'connect', core_disconnect: 'disconnect', core_diagnostics: 'diagnostics', list_modules: 'listModules', get_module_contract: 'getContract', inspect_module_target: 'inspect', build_solution_plan: 'build', propose_plan: 'propose', dry_run_plan: 'dryrun', run_plan: 'run', get_task: 'getTask', reset_task: 'reset', reconcile_task: 'reconcile' });
 const CONTROL_METHODS = Object.freeze(['owner_status', 'controller_acquire', 'controller_renew', 'controller_release', 'controller_transfer']);
 const OWNER_METHODS = Object.freeze([...Object.keys(TOOL_METHODS), ...CONTROL_METHODS]);
+const RENDER_JOB_METHODS = Object.freeze({ render_job_prepare: 'renderJobPrepare', render_job_start: 'renderJobStart', render_job_status: 'renderJobStatus', render_job_reconcile: 'renderJobReconcile', render_job_finalize: 'renderJobFinalize', render_job_cancel: 'renderJobCancel' });
+const ownerMethods = renderJobs => renderJobs ? [...OWNER_METHODS, ...Object.keys(RENDER_JOB_METHODS)] : OWNER_METHODS;
 const LEASE_ERRORS = Object.freeze(['controller_busy', 'controller_fenced', 'controller_lease_identity', 'controller_lease_expired', 'controller_draining', 'controller_client_detached', 'controller_clock_fault', 'controller_operation_pending', 'controller_expected', 'controller_transfer_changed', 'controller_not_expired']);
 const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_inspection_contract_required', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed', 'owner_work_session_required', 'owner_work_session_changed', 'owner_work_session_unavailable', 'owner_baseline_required', 'fresh_dryrun_required', 'media_already_imported']);
 const OBSERVERS = new Set(['core_status', 'core_diagnostics', 'list_modules', 'get_module_contract', 'get_task']);
@@ -55,11 +57,12 @@ function classifyPhysicalRead(value) {
 }
 
 function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, isFreshDryrunRefusal = () => false,
-  consumeMediaDuplicateBuildRefusal = () => false, canResumeTask = () => false, workSession = () => ({ sessionId: null, baselineRequired: false, resetPending: false }), clock, ttlMs, drainIntervalMs = 100 } = {}) {
+  consumeMediaDuplicateBuildRefusal = () => false, canResumeTask = () => false, renderJobs = false, workSession = () => ({ sessionId: null, baselineRequired: false, resetPending: false }), clock, ttlMs, drainIntervalMs = 100 } = {}) {
   if (!runtime || typeof runtime.status !== 'function' || typeof activity !== 'function' || typeof invoke !== 'function' || typeof workSession !== 'function' || !Number.isSafeInteger(drainIntervalMs) || drainIntervalMs < 1 || drainIntervalMs > 1000) throw new Error('owner_options');
   const lease = createControllerLease({ clock, ttlMs }), sessions = new Map(), accepted = new Set(), timers = new Set(), ownErrors = new WeakSet();
   const rejectedReads = new WeakSet();
   const physicalReadErrors = new WeakMap();
+  const methods = ownerMethods(renderJobs), toolMethods = renderJobs ? { ...TOOL_METHODS, ...RENDER_JOB_METHODS } : TOOL_METHODS;
   const refs = { evidence: new Map(), build: new Map(), proposal: new Map(), dryrun: new Map(), task: new Map() };
   let closed = false, frozen = false;
   function fail(code) { const e = new Error(code); ownErrors.add(e); e.code = code; throw e; }
@@ -131,7 +134,7 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
   async function dispatch({ session, method, payload }) {
     if (closed) fail('owner_closed');
     const record = sessionRecord(session);
-    if (!OWNER_METHODS.includes(method)) fail('owner_method');
+    if (!methods.includes(method)) fail('owner_method');
     if (!payload || Object.getPrototypeOf(payload) !== Object.prototype) fail('owner_payload');
     if (method === 'owner_status') { object(payload, []); return status(); }
     if (method === 'controller_acquire') {
@@ -149,9 +152,9 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
     if (method === 'controller_release') {
       token(record, payload); admitted(); currentWork(record); lease.release(record.grant); record.grant = null; record.token = null; record.sessionId = undefined; return { released: true };
     }
-    const stateful = !OBSERVERS.has(method) || method === 'list_modules' && payload.refresh !== undefined && payload.refresh !== false;
+    const stateful = !OBSERVERS.has(method) && method !== 'render_job_status' || method === 'list_modules' && payload.refresh !== undefined && payload.refresh !== false;
     if (!stateful) {
-      const value = await invoke(TOOL_METHODS[method], payload, { observer: true, assertCurrent() { fail('owner_observer_physical_access'); } });
+      const value = await invoke(toolMethods[method], payload, { observer: true, assertCurrent() { fail('owner_observer_physical_access'); } });
       return method === 'core_status' || method === 'core_diagnostics' ? { ...value, attachmentOwner: status() } : value;
     }
     admitted();
@@ -168,7 +171,7 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
     const context = { observer: false, generation: grant.generation, sessionId: work.sessionId, assertCurrent() { if (closed) fail('owner_closed'); currentWork(record); lease.assertCurrent(grant); } };
     try {
       let result;
-      try { result = await invoke(TOOL_METHODS[method], payload, context); }
+      try { result = await invoke(toolMethods[method], payload, context); }
       catch (error) {
         if (method === 'run_plan' && isFreshDryrunRefusal(error)) fail('fresh_dryrun_required');
         const duplicateBuild = method === 'build_solution_plan' && consumeMediaDuplicateBuildRefusal(error);
@@ -216,4 +219,4 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
   }
   return Object.freeze({ onAttach, onDetach, onRequest, status, close, freeze() { frozen = true; }, bootId: lease.status().bootId });
 }
-module.exports = { createAttachmentOwner, TOOL_METHODS, OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES, PRE_DISPATCH_READ_CODES, classifyPhysicalRead };
+module.exports = { createAttachmentOwner, TOOL_METHODS, OWNER_METHODS, RENDER_JOB_METHODS, ownerMethods, OWNER_ERRORS, READ_REJECTION_CODES, PRE_DISPATCH_READ_CODES, classifyPhysicalRead };

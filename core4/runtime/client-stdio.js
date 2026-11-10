@@ -1,12 +1,13 @@
 'use strict';
 const { createInterface } = require('node:readline');
-const { OWNER_METHODS, OWNER_ERRORS, READ_REJECTION_CODES, PRE_DISPATCH_READ_CODES, classifyPhysicalRead } = require('./attachment-owner');
+const { ownerMethods, OWNER_ERRORS, READ_REJECTION_CODES, PRE_DISPATCH_READ_CODES, classifyPhysicalRead } = require('./attachment-owner');
 
 // Thin private fixture/embedding adapter, not the configured production entry.
 // EOF closes this authenticated attachment only. No Broker/HTTP/store/bootstrap.
-function serveAttachment({ client, input, output } = {}) {
+function serveAttachment({ client, input, output, renderJobs = false } = {}) {
   if (!client || typeof client.call !== 'function' || typeof client.close !== 'function' || !input || !output) throw new Error('stdio_attachment_options');
   const MAX = 256 * 1024;
+  const methods = ownerMethods(renderJobs);
   let pending = 0, bytes = 0, ended = false;
   const ownErrors = new WeakSet();
   function fail(code, requestId, physical) { const error = new Error(code); ownErrors.add(error); error.requestId = requestId; error.physical = physical; throw error; }
@@ -25,6 +26,9 @@ function serveAttachment({ client, input, output } = {}) {
     if (name === 'core_diagnostics') return 'Статус очереди, привязки CEP, окна Windows и подтверждённого нативного ответа.';
     if (name === 'inspect_module_target') return 'Прочитайте get_module_contract и передайте его moduleId и обязательный contractId в payload вместе с target по контракту. Требуется действующий controller lease; чтение не выдаёт допуск к изменению AE.';
     if (name === 'controller_release' || name === 'controller_renew') return 'Передайте в payload.leaseToken точный токен, полученный от controller_acquire/controller_transfer текущим клиентом.';
+    if (name === 'render_job_prepare') return 'Подготовить долговечное задание R1 по квитанции stage-render-copy. Передайте taskId и commandId. Требуется controller lease.';
+    if (name === 'render_job_status') return 'Прочитать статус R1 по ID задания. Lease не требуется.';
+    if (name.startsWith('render_job_')) return 'Операция R1 по ID задания. Требуется controller lease.';
     return 'Подключение к owner Core4; управление требует явного controller_acquire.';
   }
   function inputSchema(name) {
@@ -33,6 +37,11 @@ function serveAttachment({ client, input, output } = {}) {
       schema.required = ['payload'];
       schema.properties.payload.properties = { contractId: { type: 'string', pattern: '^[a-f0-9]{64}$' } };
       schema.properties.payload.required = ['contractId'];
+    }
+    if (name.startsWith('render_job_')) {
+      const keys = name === 'render_job_prepare' ? ['taskId', 'commandId'] : ['id'];
+      schema.required = ['payload'];
+      schema.properties.payload = { type: 'object', properties: Object.fromEntries(keys.map(key => [key, { type: 'string', minLength: 1, maxLength: 64 }])), required: keys, additionalProperties: false };
     }
     return schema;
   }
@@ -56,10 +65,10 @@ function serveAttachment({ client, input, output } = {}) {
       let result;
       if (request.method === 'initialize') result = { protocolVersion: '2024-11-05', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'ae-agent-core4', version: '4.2.2' } };
       else if (request.method === 'ping') result = {};
-      else if (request.method === 'tools/list') result = { tools: OWNER_METHODS.map(name => ({ name, description: description(name), inputSchema: inputSchema(name) })) };
+      else if (request.method === 'tools/list') result = { tools: methods.map(name => ({ name, description: description(name), inputSchema: inputSchema(name) })) };
       else if (request.method === 'tools/call') {
         exact(request.params, ['name', 'arguments', '_meta']);
-        if (!OWNER_METHODS.includes(request.params.name)) fail('unknown_tool');
+        if (!methods.includes(request.params.name)) fail('unknown_tool');
         if (request.params._meta !== undefined) {
           if (!request.params._meta || Object.getPrototypeOf(request.params._meta) !== Object.prototype || Buffer.byteLength(JSON.stringify(request.params._meta)) > 8192) fail('invalid_protocol_metadata');
         }

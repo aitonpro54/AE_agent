@@ -84,7 +84,8 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
   const lifecycle = lifecycleEnvironment ? {
     pin: hash(require('../../modules/project-lifecycle/artifact.json')), contract: require('../../modules/project-lifecycle/contract.json'),
     admission: require('../../config/admissions/project-lifecycle.json'),
-    ...require('../../runtime/project-lifecycle-proof').createProjectLifecycleProof({ stateDir: installation.stateDir, currentSessionId: () => installation.installationId })
+    ...require('../../runtime/project-lifecycle-proof').createProjectLifecycleProof({ stateDir: installation.stateDir,
+      currentSessionId: () => installation.installationId, allowRenderCopy: flags.allowRenderCopy === true })
   } : null;
   if (lifecycle) additional.push(lifecycle);
   const frame = frameEnvironment ? {

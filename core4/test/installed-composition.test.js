@@ -70,6 +70,15 @@ test('installed-composition includes render and text variants only in their sele
   const altered = edit(structuredClone(enabled), extra, p => { p.directory = 'other-output'; });
   assert.throws(() => verifyPackage(altered), /composition_artifact/);
 });
+test('installed-composition R1 extends the operator montage closure only in owner mode', () => {
+  const options = { runtimeModel: 'owner' };
+  const parent = buildPackage(root, 'operator-workflows-montage', options);
+  const r1 = buildPackage(root, 'operator-render-jobs', options);
+  const extra = Object.keys(r1.files).filter(file => !Object.hasOwn(parent.files, file));
+  assert.deepEqual(extra.sort(), ['runtime/aerender-jobs.js', 'runtime/aerender-profile.js', 'runtime/render-job-owner.js']);
+  assert.equal(verifyPackage(r1), r1);
+  assert.throws(() => buildPackage(root, 'operator-render-jobs'), /operator_confirmation_owner_required|render_job_owner_required/);
+});
 test('installed-composition adds a second operator-confirmed module by declaration and keeps the shared path identical', () => {
   const options = { runtimeModel: 'owner' };
   const titles = buildPackage(root, 'operator-titles-pilot', options);

@@ -223,7 +223,12 @@ async function startClient({ descriptor, input = process.stdin, output = process
   // Initialize/tools-list remain available without an owner. A failed accepted
   // call is never resent. Only a privately proven pre-send idle closure permits
   // one fresh attachment within a request; other losses need explicit requests.
-  try { return serveAttachment({ client, input, output }); } catch (error) { client.close(); throw error; }
+  try {
+    const release = read(path.join(d.releaseDir, 'release.json'), 1024 * 1024);
+    if (hash(release) !== d.packageHash) fail('client_release');
+    const renderJobs = Object.hasOwn(JSON.parse(release).hashes, 'runtime/render-job-owner.js');
+    return serveAttachment({ client, input, output, ...(renderJobs ? { renderJobs: true } : {}) });
+  } catch (error) { client.close(); throw error; }
 }
 module.exports = { ownerEndpoint, projectClientDescriptor, verifyClientDescriptor, startClient };
 if (require.main === module) {

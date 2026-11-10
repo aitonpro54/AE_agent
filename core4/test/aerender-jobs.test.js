@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
+const { spawnSync } = require('node:child_process');
 const test = require('node:test');
 const { createJobs } = require('../tools/aerender-jobs');
 const operator = require.resolve('../tools/aerender-jobs');
@@ -98,6 +99,35 @@ test('aerender-jobs binds a saved queue and refuses drift and extra ready rows',
   fs.appendFileSync(f.job(id).working,'changed');
   await assert.rejects(f.jobs.start(id), /aerender_input_changed/);
   assert.equal(f.jobs.status(id).state,'prepared');
+});
+
+test('aerender-jobs observes the starter from the configured owner environment before dispatch', windows, t => {
+  const f = fixture(t);
+  const { id } = f.jobs.prepare(f.spec);
+  const runner = path.resolve(__dirname, '../runtime/aerender-jobs.js');
+  const script = 'const {createJobs}=require(process.argv[1]);createJobs(process.argv[2]).start(process.argv[3],()=>{throw Error("fixture_before_spawn")}).catch(error=>{console.log(error.message);process.exitCode=1;})';
+  const child = spawnSync(process.execPath, ['-e', script, runner, f.root, id],
+    { encoding: 'utf8', windowsHide: true, env: { ...process.env, PATH: '', USERPROFILE: '' }, timeout: 12000 });
+  assert.equal(child.status, 1, child.stderr);
+  assert.equal(child.stdout.trim(), 'fixture_before_spawn');
+  assert.deepEqual(fs.readdirSync(f.root), [id]);
+  assert.deepEqual(fs.readdirSync(path.join(f.root, id)), ['prepared.json']);
+});
+
+test('aerender-jobs reaches the native launch intent with an isolated owner environment', windows, async t => {
+  const f = fixture(t);
+  const { id } = f.jobs.prepare(f.spec);
+  const runner = path.resolve(__dirname, '../runtime/aerender-jobs.js');
+  const script = 'require(process.argv[1]).createJobs(process.argv[2]).start(process.argv[3]).catch(error=>{console.error(error.message);process.exitCode=1;})';
+  const env = Object.fromEntries(['SystemRoot', 'WINDIR', 'TEMP', 'TMP'].filter(key => process.env[key]).map(key => [key, process.env[key]]));
+  for (const key of ['PATH', 'HOMEDRIVE', 'HOMEPATH', 'SYSTEMDRIVE', 'USERDOMAIN', 'USERNAME', 'USERPROFILE']) env[key] = '';
+  const child = spawnSync(process.execPath, ['-e', script, runner, f.root, id],
+    { encoding:'utf8', windowsHide:true, env, timeout:12000 });
+  assert.equal(child.status, 0, child.stderr);
+  const terminal = f.stage(id, 'terminal.json');
+  for (let n = 0; n < 120 && !fs.existsSync(terminal); n++) await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(JSON.parse(fs.readFileSync(terminal, 'utf8')).state, 'unknown');
+  assert.equal(JSON.parse(fs.readFileSync(f.stage(id, 'start-intent.json'), 'utf8')).executable, f.spec.engine.path);
 });
 
 test('aerender-jobs verifies a 96 MiB AEP and fences same-size copy drift before dispatch', windows, async t => {
@@ -324,7 +354,7 @@ test('aerender-jobs drains an exact verified dispatch after a lost cancel reply 
   assert.equal(fs.existsSync(job.spec.output),false);
 });
 
-test('aerender-jobs fences unknown cancellation until successful exit and clean native inventory are proven', windows, async t => {
+test('aerender-jobs fences unknown cancellation until an observed engine exit and clean native inventory are proven', windows, async t => {
   t.mock.method(process,'kill',() => assert.fail('unexpected process signal'));
   const f = processFixture(t), { id, job } = f;
   f.started();
@@ -336,7 +366,7 @@ test('aerender-jobs fences unknown cancellation until successful exit and clean 
   assert.deepEqual(await f.read().cancel(id),pending);
   assert.deepEqual(f.read().status(id),pending);
   await assert.rejects(f.read().finalize(id), /aerender_cancelled/);
-  f.save('engine-exit.json',f.exit);
+  f.save('engine-exit.json',{...f.exit,code:1});
   assert.deepEqual(await f.read(() => [{...f.renderer,commandLine:null}]).cancel(id),pending);
   assert.equal(fs.existsSync(path.join(f.root,'active.json')),true);
   assert.deepEqual(await f.read().cancel(id),{id,state:'cancelled'});

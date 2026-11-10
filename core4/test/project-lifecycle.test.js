@@ -7,7 +7,7 @@ const { setTimeout: pause } = require('node:timers/promises');
 const { hash } = require('../protocol/json');
 const { harness } = require('./fixtures/manual-http-runtime');
 
-const { lifecycleEnvironment, original, working, blank } = require('./fixtures/project-lifecycle-host');
+const { lifecycleEnvironment, original, working, blank, mediaBytes } = require('./fixtures/project-lifecycle-host');
 
 async function flow(t, options = {}) {
   const h = await harness({ lifecycleEnvironment, ...options });
@@ -25,6 +25,107 @@ async function flow(t, options = {}) {
   };
   return { h, target, destination, inspect, prepare };
 }
+
+function renderInput(f, render = {}) {
+  return { ...f.target, action: 'stage-render-copy', destination: f.destination,
+    render: { compId: 20, fps: '30000/1001', audio: false, output: path.join(f.h.dir, 'master.mp4'), ...render } };
+}
+
+test('project-lifecycle stages the only enabled render row on a saved copy and binds the output and media', async t => {
+  const f = await flow(t, { flags: { clean: true, allowRenderCopy: true }, confirm: ({ message, state }) => {
+    assert.equal(state.currentFile, state.projectId);
+    assert.equal(state.queue.length, 2);
+    assert.match(message, /compId 20/);
+    assert.match(message, /\[201, 289\)/);
+    assert.ok(message.includes(path.join(path.dirname(state.projectId), 'master.mp4')));
+    return true;
+  } });
+  const input = renderInput(f, { startFrame: 151, endFrameExclusive: 239 });
+  const result = await f.h.broker.run(await f.prepare(input));
+  assert.equal(result.state, 'succeeded', JSON.stringify(result));
+  const [command] = f.h.broker.ledger.commands(), { after } = command;
+  assert.equal(after.currentProject, f.destination);
+  assert.equal(after.dirty, false);
+  assert.equal(after.savedFileSha256, hash(fs.readFileSync(f.destination)));
+  assert.deepEqual(fs.readFileSync(after.transition.checkpoint.path), original);
+  assert.deepEqual(fs.readFileSync(f.target.projectId), original);
+  const { target, queue, media, output, scratchOutput } = after.renderJob;
+  assert.deepEqual(target, { compId: 20, compName: 'Сборка 1', queueIndex: 3, frames: 88,
+    width: 640, height: 400, fps: '30000/1001', audio: false, timeline: { startFrame: 50, frameCount: 720 },
+    range: { startFrame: 201, endFrameExclusive: 289 } });
+  assert.deepEqual(queue, [{ index: 1, name: 'Сборка 1', status: 'Unqueued' }, { index: 2, name: 'Архив', status: 'Done' },
+    { index: 3, name: 'Сборка 1', status: 'Queued', compId: 20, format: 'H.264', frames: 720, startFrame: 50 }]);
+  assert.equal(media.length, 1);
+  assert.equal(media[0].path, f.h.state.media);
+  assert.equal(media[0].sha256, hash(mediaBytes));
+  assert.equal(output, input.render.output);
+  assert.equal(scratchOutput, path.join(path.dirname(f.destination), 'core4-r1-scratch.mp4'));
+  assert.ok(!fs.existsSync(output) && !fs.existsSync(scratchOutput));
+  assert.equal(f.h.state.writes, 2);
+  assert.equal(f.h.confirmations, 1);
+});
+
+test('project-lifecycle render-copy permission defaults to closed and existing output refuses before reservation', async t => {
+  const legacy = await flow(t, { flags: { clean: true } });
+  const rejected = await legacy.h.broker.run(await legacy.prepare(renderInput(legacy)));
+  assert.equal(rejected.code, 'lifecycle_render_policy');
+  assert.equal(fs.existsSync(path.dirname(legacy.destination)), false);
+  assert.equal(legacy.h.confirmations, 0);
+  const f = await flow(t, { flags: { clean: true, allowRenderCopy: true } });
+  const input = renderInput(f);
+  fs.writeFileSync(input.render.output, 'keep me');
+  const occupied = await f.h.broker.run(await f.prepare(input));
+  assert.equal(occupied.code, 'lifecycle_render_output');
+  assert.equal(fs.readFileSync(input.render.output, 'utf8'), 'keep me');
+  assert.equal(fs.existsSync(path.dirname(f.destination)), false);
+  assert.equal(f.h.confirmations, 0);
+});
+
+test('project-lifecycle render-copy refuses unsupported media and changes during the local confirmation', async t => {
+  const differentRate = await flow(t, { flags: { clean: true, allowRenderCopy: true } });
+  const wrongRate = await differentRate.h.broker.run(await differentRate.prepare(renderInput(differentRate, { fps: '30/1' })));
+  assert.equal(wrongRate.message, 'lifecycle_render_timeline');
+  assert.equal(differentRate.h.state.writes, 0);
+  for (const [flag, code] of [['sequence', 'lifecycle_render_media_kind'], ['missing', 'lifecycle_render_missing_media'], ['proxy', 'lifecycle_render_proxy']]) {
+    const f = await flow(t, { flags: { clean: true, allowRenderCopy: true, [flag]: true } });
+    const result = await f.h.broker.run(await f.prepare(renderInput(f)));
+    assert.equal(result.code, 'executor_rejected');
+    assert.equal(result.message, code);
+    assert.equal(f.h.state.writes, 0);
+    assert.equal(f.h.confirmations, 0);
+  }
+  const f = await flow(t, { flags: { clean: true, allowRenderCopy: true }, confirm: ({ state }) => {
+    fs.appendFileSync(state.media, ' media changed');
+    return true;
+  } });
+  const changed = await f.h.broker.run(await f.prepare(renderInput(f)));
+  assert.equal(changed.code, 'executor_rejected');
+  assert.equal(changed.message, 'stale_target');
+  assert.equal(f.h.state.writes, 0);
+  assert.equal(f.h.state.queue[0].render, true);
+  assert.equal(f.h.confirmations, 1);
+  assert.deepEqual(fs.readFileSync(f.target.projectId), original);
+});
+
+test('project-lifecycle render-copy failure after Save As remains UNKNOWN and cannot replay', async t => {
+  for (const [flag, writes, rows] of [['wrongCopyTarget', 1, 2], ['failCopySave', 2, 3]]) {
+    const f = await flow(t, { flags: { clean: true, allowRenderCopy: true, [flag]: true } });
+    const input = renderInput(f);
+    const run = await f.prepare(input);
+    const result = await f.h.broker.run(run);
+    assert.equal(result.code, 'manual_effect_unknown', JSON.stringify(result));
+    const [command] = f.h.broker.ledger.commands();
+    assert.equal(command.state, 'UNKNOWN');
+    const saved = path.join(f.h.installation.stateDir, 'project-save-checkpoints', command.checkpoint.ref + '.aep');
+    assert.deepEqual(fs.readFileSync(saved), original);
+    assert.deepEqual(fs.readFileSync(f.target.projectId), original);
+    assert.equal(f.h.state.currentFile, f.destination);
+    assert.equal(f.h.state.queue.length, rows);
+    await assert.rejects(f.h.broker.run(run), /fresh_dryrun_required/);
+    await assert.rejects(f.prepare(input), /controller_unresolved/);
+    assert.equal(f.h.state.writes, writes);
+  }
+});
 
 test('project-lifecycle Save As preserves saved source and activates the new AEP with current edits', async t => {
   const f = await flow(t, { confirm: ({ message, state }) => {

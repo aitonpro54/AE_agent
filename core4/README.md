@@ -233,6 +233,42 @@ node C:\Temp\R1-operator\tools\aerender-jobs.js --state-dir C:\Temp\R1-state pre
 файлы AEP задаются путями этой машины. Профили Titles и Slideshow используют
 штатный типизированный `comp-render`.
 
+### Штатный MCP-запуск R1
+
+Установить состав `operator-render-jobs/owner` штатным обновлением. Один
+раз закрепить три локальных программы. JSON в UTF-8 без BOM содержит
+`engine`, `ffprobe`, `ffmpeg` с физическими абсолютными путями и SHA-256.
+Команда проверяет текущую установку и пишет новый файл привязки. Запросы
+MCP используют эту привязку установки.
+
+```powershell
+node core4/tools/configure-render-job-toolchain.js ABS_INSTALLATION_JSON REVIEWED_PACKAGE_HASH ABS_TOOLCHAIN_JSON
+```
+
+В текущем чистом сохранённом AEP получить управление, снять baseline
+`project-inspection` и прочитать `project-lifecycle`. Через обычный
+`build_solution_plan` → `propose_plan` → точное локальное подтверждение →
+`dry_run_plan` → `run_plan` выполнить одну операцию `transition-project`
+с `action: "stage-render-copy"`. Передать `projectId`, `sessionId`,
+`destination` в новом каталоге и `render: { compId, fps, audio, output }`.
+Для фрагмента добавить в `render` оба поля `startFrame` и
+`endFrameExclusive` относительно начала композиции. `output` должен быть
+новым MP4 в существующем каталоге, отдельном от каталога копии.
+
+Core активирует сохранённую копию, ставит одну строку с H.264 и сохраняет
+её. В квитанции есть comp ID, очередь, SHA-256 копии и поддерживаемых
+медиа. Профиль проверяет до 128 файлов общим объёмом до 1 ГиБ и требует
+доступных одиночных файлов из поддерживаемых форматов. Шрифты и плагины
+должны быть установлены на машине рендера.
+
+Передать `taskId` и `commandId` успешной команды в `render_job_prepare`.
+С полученным `id` вызвать `render_job_start`, затем `render_job_status`.
+После `verified` вызвать `render_job_finalize`. Повторный `prepare` с той
+же квитанцией возвращает исходный ID. Новый MCP-клиент может читать статус
+по этому ID. Для `prepare`, `start`, `reconcile`, `finalize` и `cancel`
+требуется controller lease. Неопределённая выдача сохраняет прежнее задание
+для `render_job_status` и `render_job_reconcile`.
+
 Installer выбирает workspace по собственному расположению в source checkout
 и проверяет marker `core4/package.json` и точный layout `core4/tools/install-core4.js`.
 Текущий каталог запуска не определяет адрес MCP-конфигурации; при вызове installer

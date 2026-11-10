@@ -11,6 +11,7 @@ function fixture(options = {}) {
   const calls = [], facts = { pending: false, unresolved: false, fault: false }; let closes = 0, time = 0, serial = 0;
   const runtime = { status: () => ({ ready: true, store: 'fixture-single-store' }), close() { closes++; } };
   const owner = createAttachmentOwner({ runtime, activity: () => ({ ...facts }), clock: () => time, ttlMs: 1000, drainIntervalMs: 1,
+    renderJobs: options.renderJobs,
     consumeReadRejection: options.consumeReadRejection,
     consumeMediaDuplicateBuildRefusal: options.consumeMediaDuplicateBuildRefusal,
     async invoke(method, payload, context) {
@@ -60,6 +61,23 @@ test('owner-attachments generic tool map remains compatible and observer attachm
   assert.equal(one.attachmentOwner.bootId, two.attachmentOwner.bootId); assert.equal(one.store, two.store);
   assert.equal(f.owner.status().mode, 'idle'); assert.equal(f.owner.status().generation, 0);
   await denied(f.call(a, 'core_connect'), 'owner_controller_required'); await f.owner.close();
+});
+test('owner-attachments render jobs are opt-in and only status is observable without a lease', async () => {
+  const disabled = fixture(), ordinary = disabled.attach();
+  await denied(disabled.call(ordinary, 'render_job_status', { id: 'job' }), 'owner_method');
+  await disabled.owner.close();
+  const enabled = fixture({ renderJobs: true }), operator = enabled.attach(), observer = enabled.attach();
+  await ok(enabled.call(observer, 'render_job_status', { id: 'job' }));
+  assert.equal(enabled.calls[0].method, 'renderJobStatus');
+  assert.equal(enabled.calls[0].context.observer, true);
+  for (const method of ['prepare', 'start', 'reconcile', 'finalize', 'cancel'])
+    await denied(enabled.call(observer, 'render_job_' + method), 'owner_controller_required');
+  const grant = await ok(enabled.call(operator, 'controller_acquire'));
+  await ok(enabled.call(operator, 'render_job_start', { id: 'job' }));
+  assert.equal(enabled.calls[1].method, 'renderJobStart');
+  assert.equal(enabled.calls[1].context.observer, false);
+  await ok(enabled.call(operator, 'controller_release', { leaseToken: grant.leaseToken }));
+  await enabled.owner.close();
 });
 test('owner-attachments first workflow build omits taskId and binds only the server task; unbound product task is refused before invoke', async () => {
   const f = fixture(), session = f.attach(); await ok(f.call(session, 'controller_acquire'));
