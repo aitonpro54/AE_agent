@@ -68,7 +68,7 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
     const full = path.resolve(root, relative); if (fs.realpathSync(full) !== full) fail('package_symlink');
     const bytes = fs.readFileSync(full); hashes[relative] = hash(bytes); files[relative] = bytes.toString('base64');
   }
-  const release = { version: '4.2.4', format: 2, hashes };
+  const release = { version: '4.2.5', format: 2, hashes };
   const original = JSON.parse(fs.readFileSync(path.join(root, 'config/catalog.json'), 'utf8'));
   const modules = parts.flatMap(part => part.modules), assets = parts.flatMap(part => part.assets);
   const profiles = Object.assign({}, ...parts.map(part => part.profiles));
@@ -91,7 +91,7 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
   return verifyPackage({ packageHash: hash(release), release, files });
 }
 function verifyPackage(pkg) {
-  if (pkg.packageHash !== hash(pkg.release) || (pkg.release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3', '4.2.4'].includes(pkg.release.version) && pkg.release.format === 2)) || canonical(Object.keys(pkg.files).sort()) !== canonical(Object.keys(pkg.release.hashes).sort())) fail('package_integrity');
+  if (pkg.packageHash !== hash(pkg.release) || (pkg.release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3', '4.2.4', '4.2.5'].includes(pkg.release.version) && pkg.release.format === 2)) || canonical(Object.keys(pkg.files).sort()) !== canonical(Object.keys(pkg.release.hashes).sort())) fail('package_integrity');
   for (const [relative, data] of Object.entries(pkg.files)) {
     if (!/^[a-zA-Z0-9_./-]+$/.test(relative) || relative.split('/').includes('..') || path.isAbsolute(relative) || /^(test|experiments|node_modules|\.git|logs|state|tools)\//.test(relative) || hash(Buffer.from(data, 'base64')) !== pkg.release.hashes[relative]) fail('package_integrity');
   }

@@ -1,0 +1,69 @@
+{
+  "at": "2026-11-11T12:33:14.336Z",
+  "scope": "TEMP-only no live calls",
+  "files": 1000,
+  "depth": [
+    4,
+    6
+  ],
+  "baselineSourceSha256": "99f7e7b4685e4d9b8924d2e79588938ff45dc807c44e4d54dfea836bff9c9f46",
+  "currentSourceSha256": "e2e5bed8053b5fd1f2a085822aa7bd6d5eeb63ed7a2752348983926b59cb7074",
+  "allDigestsEqual": true,
+  "wallThresholdAsserted": false,
+  "results": [
+    {
+      "variant": "baseline",
+      "attempt": 1,
+      "digest": "f8223cabc2cf1800383700a43a51b51eea86b7bffe53f7114b043086ccdffecb",
+      "wallMs": 3303.8537,
+      "cpuMs": 3078,
+      "lstatCalls": 12007,
+      "realpathCalls": 12006
+    },
+    {
+      "variant": "baseline",
+      "attempt": 2,
+      "digest": "f8223cabc2cf1800383700a43a51b51eea86b7bffe53f7114b043086ccdffecb",
+      "wallMs": 3117.5276,
+      "cpuMs": 2859,
+      "lstatCalls": 12007,
+      "realpathCalls": 12006
+    },
+    {
+      "variant": "baseline",
+      "attempt": 3,
+      "digest": "f8223cabc2cf1800383700a43a51b51eea86b7bffe53f7114b043086ccdffecb",
+      "wallMs": 3344.9717,
+      "cpuMs": 2875,
+      "lstatCalls": 12007,
+      "realpathCalls": 12006
+    },
+    {
+      "variant": "optimized",
+      "attempt": 1,
+      "digest": "f8223cabc2cf1800383700a43a51b51eea86b7bffe53f7114b043086ccdffecb",
+      "wallMs": 826.4394,
+      "cpuMs": 360,
+      "lstatCalls": 1008,
+      "realpathCalls": 1007
+    },
+    {
+      "variant": "optimized",
+      "attempt": 2,
+      "digest": "f8223cabc2cf1800383700a43a51b51eea86b7bffe53f7114b043086ccdffecb",
+      "wallMs": 780.1158,
+      "cpuMs": 437,
+      "lstatCalls": 1008,
+      "realpathCalls": 1007
+    },
+    {
+      "variant": "optimized",
+      "attempt": 3,
+      "digest": "f8223cabc2cf1800383700a43a51b51eea86b7bffe53f7114b043086ccdffecb",
+      "wallMs": 817.7242,
+      "cpuMs": 469,
+      "lstatCalls": 1008,
+      "realpathCalls": 1007
+    }
+  ]
+}

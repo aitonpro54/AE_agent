@@ -17,11 +17,16 @@ function pathsFor({ installRoot, stateDir, descriptorPath }) {
 function acquireInstallLease(scope, ...unsupported) {
   if (unsupported.length) fail('install_lease_options_forbidden');
   const io = fs;
-  const paths = pathsFor(scope), lease = Object.freeze({}), item = { paths, io, gates: [], phase: 'acquired', retained: false, released: false, checkpoint: null };
+  const paths = pathsFor(scope), lease = Object.freeze({}), item = { paths, io, gates: [], createdDirs: new Map(), phase: 'acquired', retained: false, released: false, checkpoint: null };
   io.mkdirSync(paths.installRoot, { recursive: true }); safeDirectory(paths.installRoot, io);
-  io.mkdirSync(path.join(paths.stateDir, 'broker'), { recursive: true }); safeDirectory(path.join(paths.stateDir, 'broker'), io);
   try {
     for (const file of [paths.installGate, paths.brokerGate]) {
+      if (file === paths.brokerGate) for (const dir of [path.join(paths.installRoot, 'state'), paths.stateDir, path.join(paths.stateDir, 'broker')]) {
+        let created = false;
+        try { io.mkdirSync(dir); created = true; } catch (e) { if (e.code !== 'EEXIST') throw e; }
+        safeDirectory(dir, io);
+        if (created) { const stat = io.lstatSync(dir, { bigint: true }); item.createdDirs.set(dir, { dev: String(stat.dev), ino: String(stat.ino), birth: String(stat.birthtimeNs) }); }
+      }
       const bytes = Buffer.from('core4-install-lease-v1-' + crypto.randomUUID()); let fd;
       try {
         fd = io.openSync(file, 'wx'); const stat = io.fstatSync(fd, { bigint: true }); item.gates.push({ file, bytes, fd, dev: String(stat.dev), ino: String(stat.ino) });
@@ -57,10 +62,29 @@ function checkpointInstallLease(lease, phase, checkpoint = null) {
   item.phase = phase; item.checkpoint = checkpoint && Object.freeze({ ...checkpoint });
 }
 function retainInstallLease(lease) { const item = state(lease); item.retained = true; }
-function releaseInstallLease(lease) {
+function cleanupCreatedDirectories(item) {
+  // The install gate stays pinned while empty directories created by this lease
+  // are removed. A replaced, pre-existing or populated directory is never ours.
+  const rootGate = item.gates[0];
+  for (const [dir, expected] of [...item.createdDirs].reverse()) {
+    const named = item.io.lstatSync(rootGate.file, { bigint: true }), held = item.io.fstatSync(rootGate.fd, { bigint: true });
+    if (String(named.dev) !== rootGate.dev || String(named.ino) !== rootGate.ino || String(held.dev) !== rootGate.dev || String(held.ino) !== rootGate.ino || !item.io.readFileSync(rootGate.file).equals(rootGate.bytes)) fail('install_lease_changed');
+    let stat; try { stat = item.io.lstatSync(dir, { bigint: true }); } catch (e) { if (e.code === 'ENOENT') continue; throw e; }
+    if (!stat.isDirectory() || stat.isSymbolicLink() || stat.reparsePoint || item.io.realpathSync(dir) !== dir || String(stat.dev) !== expected.dev || String(stat.ino) !== expected.ino || String(stat.birthtimeNs) !== expected.birth || item.io.readdirSync(dir).length) continue;
+    item.io.rmdirSync(dir);
+  }
+}
+function releaseInitialPrewriteAbort(lease) {
+  const item = state(lease);
+  if (item.maintenance || item.phase !== 'acquired' || !item.createdDirs) fail('install_lease_phase');
+  releaseLease(lease, true);
+}
+function releaseInstallLease(lease) { releaseLease(lease, false); }
+function releaseLease(lease, cleanup) {
   const item = state(lease); assertInstallLease(lease, item.paths); if (item.retained) fail('install_lease_retained');
   try {
     for (const gate of [...item.gates].reverse()) {
+      if (cleanup && gate.file === item.paths.installGate) cleanupCreatedDirectories(item);
       if (item.maintenance) { checkMaintenanceGate(item.io, gate); item.io.unlinkSync(gate.file); item.io.closeSync(gate.fd); gate.fd = undefined; }
       else { item.io.closeSync(gate.fd); gate.fd = undefined; if (!item.io.readFileSync(gate.file).equals(gate.bytes)) fail('install_lease_changed'); item.io.unlinkSync(gate.file); }
     }
@@ -165,5 +189,5 @@ function promoteLegacyMigrationInstallLease(lease, capability) {
   }
   catch (error) { item.retained = true; error.leaseRetained = true; throw error; }
 }
-module.exports = { acquireInstallLease, acquireMaintenanceInstallLease, acquireMaintenanceFinishLease, maintenanceLeaseFacts, assertInstallLease, ownedLeaseGates, checkpointInstallLease, retainInstallLease, releaseInstallLease,
+module.exports = { acquireInstallLease, acquireMaintenanceInstallLease, acquireMaintenanceFinishLease, maintenanceLeaseFacts, assertInstallLease, ownedLeaseGates, checkpointInstallLease, retainInstallLease, releaseInstallLease, releaseInitialPrewriteAbort,
   acquireStoppedUpdateLease, acquireLegacyMigrationInstallLease, acquireLegacyMigrationRecoveryLease, promoteLegacyMigrationInstallLease };

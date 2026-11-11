@@ -61,6 +61,38 @@
   по SHA a1b1fdca…. Astra независимо подтвердила F01–F03 и риск потери custom
   Core keys; локальные доработки и регрессии переданы тому же ae_implementer.
   [Decision log](../reviews/argon/core-transfer/20261111-result-01/decision-log.md).
+- Итоговая локальная доработка принята Astra на snapshot 99f7e7b4…/eaddb6fa…/
+  224bc697…. Семь narrow groups и boundaries 88 PASS; запущен fresh scoped run
+  с install-lease path. Immutable Argon payload сохранён, новых отправок нет.
+- Дополнительный bounded forensic 4–8 ноября выполнен ae_scout/Luna:
+  writer root rename/restore не найден; coverage добавлен в расследование.
+  Приёмка installation 53/53, native-read-recovery 19/19 и installed-composition
+  PASS на текущих bytes. Итоговая selection с lease включает 41 check/batch.
+- Последний точный anchor lookup по всем sessions (13 matching files) добавил
+  ранний чат от 29 октября и подтвердил штатный e0 update 7f 8 ноября.
+  Команда root rename/restore не найдена; дальнейший поиск без новых evidence
+  не назначается. Это остаётся явным пределом расследования.
+- Координатор как единственный live-controller проверил actual read-only plan
+  4.2.5 поверх здоровой установленной 4.2.4: identity/predecessor сохранены,
+  12 descriptor/client/origin/config/CEP bindings побайтно неизменны.
+  Candidate package `b24af0e1…`; production writes/native commands/acquire/apply=0.
+  Proof: .codex-runtime/core-4.2.5-implementation-20261111/actual-coherent-plan.json.
+- В усиленном snapshot выявлен лишний повторный ancestor walk на каждом файле.
+  Старый снимок 99f7… прошёл stopped-update 60/60 (2229s) и legacy migration
+  29/29 (431s), но добавленная стоимость обхода требует исправления до выпуска.
+  Astra приняла контракт локального lstat + полного realpath файла при сохранении
+  проверок каждого directory/root. Новая реализация и benchmark поручены Sol/high.
+- Старый runner остановлен после проверки PID/birth/script и TEMP scope;
+  рабочие Core/AE исключены, TEMP не удалён. Interruption receipt сохранён локально.
+  Старые PASS не объявляются current evidence новых bytes; eligible reuse только
+  при неизменившемся exact key. После performance delta — новая selection.
+- Performance delta e2e5bed8…/c790c116… (lease eadd… прежний) принята Astra.
+  1000-file benchmark дал byte-exact digest, wall 3.1–3.3s → 0.78–0.83s,
+  lstat 12007→1008. Полный legacy case почти не ускорился (30.918→30.825s),
+  поэтому ускорение всей recovery suite не заявляется. Fresh selection 41 запущена.
+- Actual read-only plan повторён координатором на e2e5…: same identity/lineage,
+  12 bindings unchanged, runtime package b24af0e1… прежний, production/native=0.
+  Proof: .codex-runtime/core-4.2.5-implementation-20261111/actual-coherent-plan-optimized.json.
 
 ## Validation
 

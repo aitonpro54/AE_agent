@@ -36,4 +36,8 @@ managed header по-прежнему запрещает initial. Исходны�
 Изменения после immutable Argon snapshot проверяются локально. Повторное
 обращение к Argon не назначается; payload/request/manifest не редактируются.
 Реализация поручена ae_implementer, финальная независимая проверка — Astra.
-Статус реализации и адресные результаты добавляются после фактических проверок.
+Итоговый код принят Astra: installer 99f7e7b4…, lease eaddb6fa…, owner tests
+224bc697…. [Точное заключение](../../../astra/core-transfer/20261111/review-post-triage.md).
+Семь адресных групп и boundaries 88 PASS у исполнителя; свежая полная selection
+по затронутым paths запущена на этих bytes. Полные результаты и package hashes
+фиксируются после её завершения.

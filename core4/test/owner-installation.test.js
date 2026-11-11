@@ -8,7 +8,7 @@ const { buildPackage, verifyPackage, runtimeBinding } = require('../tools/packag
 const { buildStandalone, writeStandalone } = require('../tools/package-standalone-installer');
 const { HELPERS, verifyStandalone } = require('../tools/standalone-installer');
 const { planInstall, applyInstall, rollback, snapshot, assertPreparedInstallPlan, prepareInstallPlan, assertDurablePreparedInstallPlan } = require('../tools/install-core4');
-const { acquireInstallLease } = require('../runtime/install-lease');
+const { acquireInstallLease, releaseInstallLease, releaseInitialPrewriteAbort, checkpointInstallLease, retainInstallLease } = require('../runtime/install-lease');
 const { verifyInstallation } = require('../runtime/installation');
 const { projectClientDescriptor, verifyClientDescriptor } = require('../runtime/client-entry');
 const SOURCE = path.resolve(__dirname, '..'), packages = new Map();
@@ -102,6 +102,222 @@ test('owner-installation first owner rollback removes only its exact sidecar and
   const f = fixture(t), applied = f.apply(), origin = fs.readFileSync(path.join(f.args.installRoot, 'origin.json'));
   rollback(applied.transactionFile); assert.equal(fs.existsSync(f.client), false); assert.equal(fs.existsSync(applied.descriptorPath), false); assert.equal(fs.existsSync(f.args.configPath), false);
   assert.deepEqual(fs.readFileSync(path.join(f.args.installRoot, 'origin.json')), origin);
+  assert.throws(() => f.plan(), /installation_descriptor_required/);
+});
+
+test('owner-installation virgin admission refuses retained transactions/releases/config instead of issuing another identity', t => {
+  const f = fixture(t), installed = f.apply(), original = JSON.parse(fs.readFileSync(installed.descriptorPath));
+  for (const [file, name] of [[installed.descriptorPath, 'descriptor'], [f.client, 'client'], [path.join(f.args.installRoot, 'origin.json'), 'origin'], [installed.stateDir, 'state'], [original.cepDir, 'cep']]) fs.renameSync(file, path.join(f.directory, 'saved-' + name));
+  const before = snapshot(f.directory);
+  assert.throws(() => f.plan(), /initial_installation_not_pristine/);
+  assert.deepEqual(snapshot(f.directory), before); assert.ok(fs.existsSync(installed.transactionFile));
+});
+
+test('owner-installation existing origins require a descriptor; initial rollback retains history but cannot be reapplied as virgin', t => {
+  for (const mode of ['missing-descriptor', 'rollback-ledger']) {
+    const f = fixture(t), installed = f.apply(), ledger = path.join(installed.stateDir, 'broker/ledger.ndjson');
+    if (mode === 'missing-descriptor') { fs.renameSync(installed.descriptorPath, path.join(f.directory, 'saved-descriptor')); fs.renameSync(f.client, path.join(f.directory, 'saved-client')); }
+    else {
+      const { Ledger } = require('../core/ledger'), log = new Ledger(ledger);
+      log.append({ type: 'intent', commandId: 'fixture-command', taskId: 'fixture-task', target: { projectId: 'fixture-only' } }); log.append({ type: 'command', commandId: 'fixture-command', state: 'succeeded' });
+      assert.equal(rollback(installed.transactionFile).rolledBack, true);
+    }
+    const before = snapshot(f.directory); assert.throws(() => f.plan(), /installation_descriptor_required/); assert.deepEqual(snapshot(f.directory), before);
+  }
+});
+
+test('owner-installation virgin apply refuses a settled ledger added after planning without publishing an identity', t => {
+  const f = fixture(t), plan = f.plan(), file = path.join(plan.descriptor.stateDir, 'broker/ledger.ndjson');
+  const { Ledger } = require('../core/ledger'), log = new Ledger(file);
+  log.append({ type: 'intent', commandId: 'fixture-command', taskId: 'fixture-task', target: { projectId: 'fixture-only' } }); log.append({ type: 'command', commandId: 'fixture-command', state: 'succeeded' });
+  const before = snapshot(f.directory); assert.throws(() => applyInstall(plan), /initial_installation_not_pristine/); assert.deepEqual(snapshot(f.directory), before);
+  assert.equal(fs.existsSync(path.join(f.args.installRoot, 'origin.json')), false);
+});
+
+test('owner-installation virgin admission recognizes quoted Core headers while preserving unrelated legacy config', t => {
+  for (const header of ['[mcp_servers.after-effects-core4]', '["mcp_servers"."after-effects-core4"]', "['mcp_servers'.'after-effects-core4']"]) {
+    const f = fixture(t); fs.writeFileSync(f.args.configPath, header + '\ncommand="foreign"\nargs=[]\n');
+    const before = snapshot(f.directory); assert.throws(() => f.plan(), /initial_installation_not_pristine/); assert.deepEqual(snapshot(f.directory), before);
+  }
+  const f = fixture(t), legacy = '["mcp_servers"."legacy-bridge"]\ncommand="unchanged"\n'; fs.writeFileSync(f.args.configPath, legacy);
+  f.apply(); assert.ok(fs.readFileSync(f.args.configPath, 'utf8').startsWith(legacy));
+});
+
+test('owner-installation pristine CAS rejects foreign additions under the lease and before switch, preserving the foreign file', t => {
+  for (const phase of ['lease', 'last-cas']) {
+    const f = fixture(t), plan = f.plan(), file = path.join(plan.descriptor.stateDir, 'broker/foreign.ndjson');
+    const open = fs.openSync, sync = fs.fsyncSync, close = fs.closeSync, handles = new Map(); let injected = false;
+    fs.openSync = function (file, ...args) { const fd = open.call(this, file, ...args); handles.set(fd, file); return fd; };
+    fs.closeSync = function (fd) { handles.delete(fd); return close.call(this, fd); };
+    fs.fsyncSync = function (fd) {
+      const result = sync.call(this, fd), name = handles.get(fd);
+      if (!injected && name === (phase === 'lease' ? path.join(plan.descriptor.stateDir, 'broker/broker-owner.gate') : path.join(f.args.installRoot, 'transactions', plan.transactionId + '.json'))) {
+        injected = true; fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, 'foreign evidence');
+      }
+      return result;
+    };
+    try {
+      assert.throws(() => applyInstall(plan), e => e.code === 'initial_installation_not_pristine' && (phase !== 'last-cas' || e.leaseRetained === true));
+      assert.equal(injected, true); assert.equal(fs.readFileSync(file, 'utf8'), 'foreign evidence');
+      for (const target of [plan.descriptorPath, path.join(f.args.installRoot, 'origin.json'), path.join(plan.descriptor.stateDir, 'origin.json'), plan.cepDir]) assert.equal(fs.existsSync(target), false);
+      if (phase === 'lease') for (const gate of ['install.lock', 'state/production/broker/broker-owner.gate']) assert.equal(fs.existsSync(path.join(f.args.installRoot, gate)), false);
+    } finally { fs.openSync = open; fs.fsyncSync = sync; fs.closeSync = close; for (const fd of handles.keys()) try { close(fd); } catch {} }
+  }
+});
+
+test('owner-installation coherent repeat accepts a new checkout config but refuses foreign CEP or an existing mismatched managed binding', t => {
+  for (const mode of ['new-checkout', 'formatted', 'foreign-cep', 'foreign-config']) {
+    const f = fixture(t), installed = f.apply(), d = JSON.parse(fs.readFileSync(installed.descriptorPath));
+    if (mode === 'new-checkout') fs.unlinkSync(f.args.configPath);
+    if (mode === 'formatted') fs.writeFileSync(f.args.configPath, fs.readFileSync(f.args.configPath, 'utf8').replace('[mcp_servers.after-effects-core4]', '["mcp_servers"."after-effects-core4"] # same binding').replace('command = ', '"command"  =  ').replace('args = ', "'args' = ") + '# retained outside comment\n');
+    if (mode === 'foreign-cep') fs.appendFileSync(path.join(d.cepDir, 'index.html'), 'foreign');
+    if (mode === 'foreign-config') fs.writeFileSync(f.args.configPath, fs.readFileSync(f.args.configPath, 'utf8').replace(d.releaseDir.split('\\').join('\\\\'), 'C:/foreign-release'));
+    const before = snapshot(f.directory);
+    if (mode.startsWith('foreign')) { assert.throws(() => f.plan(), mode === 'foreign-cep' ? /installation_cep_bytes/ : /installation_config_binding/); assert.deepEqual(snapshot(f.directory), before); }
+    else assert.equal(f.apply().installationId, installed.installationId);
+  }
+});
+
+test('owner-installation historical v1 data still requires exact CEP bytes before a candidate upgrade', t => {
+  const f = fixture(t), plan = f.plan('stdio');
+  require('./fixtures/legacy-installation-v1').legacyV1Data(plan);
+  fs.appendFileSync(path.join(plan.cepDir, 'index.html'), 'foreign CEP');
+  const before = snapshot(f.directory); assert.throws(() => f.plan(), /installation_cep_bytes/); assert.deepEqual(snapshot(f.directory), before);
+});
+
+test('owner-installation coherent preferences-only config derives its binding, while partial or different transports refuse', t => {
+  for (const mode of ['preferences', 'empty', 'command-only', 'args-only', 'foreign-transport']) {
+    const f = fixture(t), installed = f.apply(), d = JSON.parse(fs.readFileSync(installed.descriptorPath));
+    const preference = "'enabled' = false # retain\n tool_timeout_sec = 240\n";
+    const body = mode === 'empty' ? '' : mode === 'preferences' ? preference : mode === 'command-only' ? 'command = ' + JSON.stringify(d.nodePath) + '\n' : mode === 'args-only' ? 'args = []\n' : 'url = "https://foreign.invalid"\n';
+    fs.writeFileSync(f.args.configPath, '["mcp_servers"."after-effects-core4"]\n' + body);
+    const before = snapshot(f.directory);
+    if (['preferences', 'empty'].includes(mode)) {
+      assert.equal(f.apply().installationId, installed.installationId);
+      if (mode === 'preferences') assert.ok(fs.readFileSync(f.args.configPath, 'utf8').includes(preference));
+    } else { assert.throws(() => f.plan(), /installation_config_binding|config_core4_unknown_key/); assert.deepEqual(snapshot(f.directory), before); }
+  }
+  const virgin = fixture(t); fs.writeFileSync(virgin.args.configPath, '[mcp_servers.after-effects-core4]\nenabled = false\n');
+  const before = snapshot(virgin.directory); assert.throws(() => virgin.plan(), /initial_installation_not_pristine/); assert.deepEqual(snapshot(virgin.directory), before);
+});
+
+test('owner-installation publication preflight preserves foreign stages at planning, lease CAS and rollback', t => {
+  for (const role of ['descriptor-next', 'descriptor-rollback', 'config-next', 'config-rollback']) {
+    const f = fixture(t), installed = f.apply(), plan = f.plan();
+    const file = role.startsWith('descriptor') ? plan.descriptorPath + (role.endsWith('next') ? '.next' : '.rollback') : plan.configPath + (role.endsWith('next') ? '.core4-next' : '.rollback');
+    fs.writeFileSync(file, 'foreign-stage'); const before = snapshot(f.directory);
+    assert.throws(() => f.plan(), /install_publication_staging_exists/);
+    assert.throws(() => applyInstall(plan), /install_publication_staging_exists/);
+    assert.throws(() => rollback(installed.transactionFile), /install_publication_staging_exists/);
+    assert.deepEqual(snapshot(f.directory), before);
+  }
+  const f = fixture(t), plan = f.plan(), open = fs.openSync, sync = fs.fsyncSync, close = fs.closeSync, names = new Map(); let injected = false;
+  fs.openSync = function (file, ...args) { const fd = open.call(this, file, ...args); names.set(fd, file); return fd; };
+  fs.closeSync = function (fd) { names.delete(fd); return close.call(this, fd); };
+  fs.fsyncSync = function (fd) { const result = sync.call(this, fd); if (!injected && names.get(fd) === path.join(plan.descriptor.stateDir, 'broker/broker-owner.gate')) { injected = true; fs.writeFileSync(plan.configPath + '.rollback', 'under-lease'); } return result; };
+  try { assert.throws(() => applyInstall(plan), /install_publication_staging_exists/); }
+  finally { fs.openSync = open; fs.closeSync = close; fs.fsyncSync = sync; }
+  assert.equal(injected, true); assert.equal(fs.readFileSync(plan.configPath + '.rollback', 'utf8'), 'under-lease');
+  assert.equal(fs.existsSync(plan.descriptorPath), false); assert.equal(fs.existsSync(path.join(f.args.installRoot, 'state')), false);
+});
+
+test('owner-installation snapshot rejects linked, dangling and non-directory CEP roots before writes', t => {
+  for (const mode of ['linked', 'dangling', 'file']) {
+    const f = fixture(t), target = path.join(f.directory, 'cep-source'), cep = path.join(f.args.extensionsDir, 'com.codex.aeagentcore4');
+    fs.mkdirSync(f.args.extensionsDir); fs.mkdirSync(target);
+    if (mode === 'file') fs.writeFileSync(cep, 'foreign');
+    else { fs.symlinkSync(target, cep, process.platform === 'win32' ? 'junction' : 'dir'); if (mode === 'dangling') fs.rmdirSync(target); }
+    try { assert.throws(() => snapshot(cep), /install_symlink/); assert.throws(() => f.plan(), /install_symlink|existing_installation_without_origin/); assert.equal(fs.existsSync(f.args.installRoot), false); }
+    finally { if (mode !== 'file') fs.unlinkSync(cep); }
+  }
+});
+
+test('owner-installation final publication CAS refuses a foreign rollback file before moving CEP', t => {
+  for (const operation of ['apply', 'rollback']) {
+    const f = fixture(t), installed = f.apply(), plan = operation === 'apply' ? f.plan() : null, cepDir = path.join(f.args.extensionsDir, 'com.codex.aeagentcore4'), beforeCep = snapshot(cepDir), descriptor = fs.readFileSync(installed.descriptorPath);
+    const open = fs.openSync, close = fs.closeSync, sync = fs.fsyncSync, rename = fs.renameSync, names = new Map(), fds = new Set(); let injected = false, cepMoves = 0;
+    fs.openSync = function (file, ...args) { const fd = open.call(this, file, ...args); names.set(fd, file); fds.add(fd); return fd; };
+    fs.closeSync = function (fd) { names.delete(fd); fds.delete(fd); return close.call(this, fd); };
+    fs.renameSync = function (from, ...args) { if (from === cepDir) cepMoves++; return rename.call(this, from, ...args); };
+    fs.fsyncSync = function (fd) {
+      const result = sync.call(this, fd), trigger = operation === 'apply' ? path.join(f.args.installRoot, 'transactions', plan.transactionId + '.json') : path.join(f.args.installRoot, 'state/production/broker/broker-owner.gate');
+      if (!injected && names.get(fd) === trigger) { injected = true; fs.writeFileSync(installed.descriptorPath + '.rollback', 'foreign rollback'); }
+      return result;
+    };
+    try { assert.throws(() => operation === 'apply' ? applyInstall(plan) : rollback(installed.transactionFile), /install_publication_staging_exists/); }
+    finally { fs.openSync = open; fs.closeSync = close; fs.fsyncSync = sync; fs.renameSync = rename; for (const fd of fds) close(fd); }
+    assert.equal(injected, true); assert.equal(cepMoves, 0); assert.deepEqual(snapshot(cepDir), beforeCep); assert.deepEqual(fs.readFileSync(installed.descriptorPath), descriptor); assert.equal(fs.readFileSync(installed.descriptorPath + '.rollback', 'utf8'), 'foreign rollback');
+  }
+});
+
+test('owner-installation snapshot checks nested links leaf replacements and redirected parents before external reads', t => {
+  for (const mode of ['nested-junction', 'leaf-link', 'leaf-directory', 'parent-redirect']) {
+    const f = fixture(t), root = path.join(f.directory, 'snapshot'), nested = path.join(root, 'nested'), external = path.join(f.directory, 'external'), file = path.join(nested, 'leaf');
+    fs.mkdirSync(nested, { recursive: true }); fs.mkdirSync(external); fs.writeFileSync(file, 'local'); fs.writeFileSync(path.join(external, 'leaf'), 'external');
+    if (mode === 'nested-junction') { fs.rmSync(nested, { recursive: true }); fs.symlinkSync(external, nested, process.platform === 'win32' ? 'junction' : 'dir'); }
+    const readdir = fs.readdirSync, read = fs.readFileSync; let changed = mode === 'nested-junction', externalReads = 0;
+    fs.readdirSync = function (dir, ...args) {
+      const result = readdir.call(this, dir, ...args);
+      if (!changed && dir === nested) {
+        changed = true;
+        if (mode === 'parent-redirect') { fs.renameSync(nested, nested + '-original'); fs.symlinkSync(external, nested, process.platform === 'win32' ? 'junction' : 'dir'); }
+        else { fs.unlinkSync(file); if (mode === 'leaf-link') fs.symlinkSync(external, file, process.platform === 'win32' ? 'junction' : 'dir'); else fs.mkdirSync(file); }
+      }
+      return result;
+    };
+    fs.readFileSync = function (file, ...args) { if (typeof file === 'string' && fs.realpathSync(file).startsWith(external + path.sep)) externalReads++; return read.call(this, file, ...args); };
+    try { assert.throws(() => snapshot(root), /install_symlink/); }
+    finally { fs.readdirSync = readdir; fs.readFileSync = read; }
+    assert.equal(changed, true, mode); assert.equal(externalReads, 0, mode);
+    if (mode === 'nested-junction' || mode === 'parent-redirect') fs.unlinkSync(nested);
+    if (mode === 'leaf-link') fs.unlinkSync(file);
+  }
+  const f = fixture(t), dir = path.join(f.directory, 'plain/a/b'); fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(path.join(dir, 'binary'), Buffer.from([0, 255, 13, 10]));
+  assert.deepEqual(snapshot(path.join(f.directory, 'plain')), { 'a/b/binary': Buffer.from([0, 255, 13, 10]).toString('base64') });
+});
+
+test('owner-installation unknown managed config keys refuse while foreign legacy tables remain intact', t => {
+  for (const key of ['cwd', 'env', '"future-key"', "'url'"]) {
+    const f = fixture(t); f.apply(); fs.appendFileSync(f.args.configPath, key + ' = "foreign"\n'); const before = snapshot(f.directory);
+    assert.throws(() => f.plan(), /config_core4_unknown_key/); assert.deepEqual(snapshot(f.directory), before);
+  }
+  const f = fixture(t), neighbor = '[mcp_servers.legacy]\nenv = { RETAIN = "yes" }\ncwd = "foreign-workspace"\n';
+  fs.writeFileSync(f.args.configPath, neighbor); f.apply(); assert.ok(fs.readFileSync(f.args.configPath, 'utf8').startsWith(neighbor));
+});
+
+test('owner-installation early config CAS abort removes only own empty lease directories and permits a fresh plan', t => {
+  const f = fixture(t), plan = f.plan(), open = fs.openSync, sync = fs.fsyncSync, close = fs.closeSync, names = new Map(); let injected = false;
+  fs.openSync = function (file, ...args) { const fd = open.call(this, file, ...args); names.set(fd, file); return fd; };
+  fs.closeSync = function (fd) { names.delete(fd); return close.call(this, fd); };
+  fs.fsyncSync = function (fd) { const result = sync.call(this, fd); if (!injected && names.get(fd) === path.join(plan.descriptor.stateDir, 'broker/broker-owner.gate')) { injected = true; fs.writeFileSync(f.args.configPath, '# changed preference\n'); } return result; };
+  try { assert.throws(() => applyInstall(plan), /install_baseline_changed/); }
+  finally { fs.openSync = open; fs.closeSync = close; fs.fsyncSync = sync; }
+  assert.equal(injected, true); assert.equal(fs.readFileSync(f.args.configPath, 'utf8'), '# changed preference\n');
+  assert.deepEqual(fs.readdirSync(f.args.installRoot), []); assert.ok(f.plan());
+});
+
+test('owner-installation branded early-abort cleanup preserves preexisting replaced populated and postwrite directories', t => {
+  for (const mode of ['preexisting', 'replaced', 'populated', 'postwrite', 'default']) {
+    const f = fixture(t), scope = { installRoot: f.args.installRoot, stateDir: path.join(f.args.installRoot, 'state/production'), descriptorPath: path.join(f.args.installRoot, 'installation.json') }, broker = path.join(scope.stateDir, 'broker');
+    if (mode === 'preexisting') fs.mkdirSync(broker, { recursive: true });
+    const lease = acquireInstallLease(scope), unlink = fs.unlinkSync;
+    fs.unlinkSync = function (file, ...args) { const result = unlink.call(this, file, ...args); if (file === path.join(broker, 'broker-owner.gate')) {
+      if (mode === 'replaced') { fs.renameSync(broker, broker + '-saved'); fs.mkdirSync(broker); }
+      if (mode === 'populated') fs.writeFileSync(path.join(broker, 'foreign'), 'retain');
+    } return result; };
+    try {
+      if (mode === 'postwrite') { checkpointInstallLease(lease, 'installing'); assert.throws(() => releaseInitialPrewriteAbort(lease), /install_lease_phase/); releaseInstallLease(lease); }
+      else if (mode === 'default') releaseInstallLease(lease);
+      else releaseInitialPrewriteAbort(lease);
+    } finally { fs.unlinkSync = unlink; }
+    assert.equal(fs.existsSync(broker), true, mode); assert.equal(fs.existsSync(path.join(f.args.installRoot, 'install.lock')), false);
+    if (mode === 'populated') assert.equal(fs.readFileSync(path.join(broker, 'foreign'), 'utf8'), 'retain');
+  }
+  const f = fixture(t), scope = { installRoot: f.args.installRoot, stateDir: path.join(f.args.installRoot, 'state/production'), descriptorPath: path.join(f.args.installRoot, 'installation.json') }, open = fs.openSync, handles = [];
+  fs.openSync = function (...args) { const fd = open.apply(this, args); if (args[1] === 'wx') handles.push(fd); return fd; };
+  let lease; try { lease = acquireInstallLease(scope); } finally { fs.openSync = open; }
+  retainInstallLease(lease); assert.throws(() => releaseInitialPrewriteAbort(lease), /install_lease_retained/);
+  assert.ok(fs.existsSync(path.join(scope.stateDir, 'broker/broker-owner.gate'))); for (const fd of handles) fs.closeSync(fd);
 });
 
 test('owner-installation branded plans bind client bytes, origin bytes and binding metadata; durable prepared client tampering refuses', t => {

@@ -107,6 +107,37 @@ read-back. Повтор на той же версии не повреждает 
 Подключение проверяет точные Host/Origin/auth/MAC bindings; несовместимость CEP
 не устраняется wildcard CORS, отключением auth или молчаливым fallback.
 
+С Core 4.2.5 initial install допускается только в pristine-среде: без origins,
+descriptor/client, CEP, state, releases, transactions и действующей записи Core
+в конфигурации. Существующий пустой install root допустим. Read-only проверка
+повторяется под обеими install leases и непосредственно перед первым видимым
+switch. Под lease допускаются только собственные gates и созданные пустые
+каталоги; перед switch — закреплённые собственные prepared/stage/release/transaction
+файлы. Посторонний файл, в том числе завершённый ledger, не становится основанием
+для новой identity. При отказе он сохраняется, новая identity не публикуется.
+
+При существующих origins обязателен согласованный descriptor, client для Owner
+и точный установленный CEP/release. Существующая запись Core должна адресовать
+эту установку; quoted headers, preferences и соседние legacy-записи сохраняются.
+Исторические Node binding и release проверяются как данные: старый executable
+не исполняется и не требуется для candidate upgrade. Runtime verifier при этом
+сохраняет свою проверку действующего Node; installer отдельно сверяет обе версии CEP.
+Отсутствие записи Core в новом checkout допускает её штатное создание.
+Конфигурация с одной лишь секцией preferences (`enabled`/`tool_timeout_sec`) при
+согласованном existing descriptor тоже получает binding из этого descriptor.
+Частичный command/args или другой transport отклоняется. Virgin install
+с такой секцией preferences остаётся запрещён. Initial
+rollback сохраняет origins/state/history; оставшаяся без descriptor установка
+не становится pristine и ordinary reapply после такого rollback отклоняется.
+В управляемой таблице поддерживаются только `command`, `args`, `enabled` и
+`tool_timeout_sec`; неизвестные ключи требуют review до записи. Соседние таблицы
+сохраняются. Занятые staging-пути descriptor/config отклоняются до переключения
+CEP, включая rollback. При отказе initial apply до записи установка удаляет
+только созданные собственной lease пустые каталоги state, сохраняя root и любые
+прежние, заменённые или заполненные каталоги. Retained/unknown исход не очищается.
+Обновление и восстановление действующей установки используют существующие
+stopped-update/inspect/finish gates; новые tombstones и authority не вводятся.
+
 ## Две машины и общие ресурсы
 
 На десктопе и MSI — независимые installation identities и credentials,

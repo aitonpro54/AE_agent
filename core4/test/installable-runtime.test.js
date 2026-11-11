@@ -532,9 +532,16 @@ test('installable-runtime quoted TOML headers preserve desktop neighbor and env 
   const appended = configText(Buffer.from(before), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js');
   assert.equal(appended.slice(0, before.length), before); assert.ok(appended.slice(before.length).includes('[mcp_servers.after-effects-core4]\r\n'));
   const directory = temp(), { args } = install(directory); fs.writeFileSync(args.configPath, previous);
+  assert.throws(() => planInstall(args), /initial_installation_not_pristine/);
+  assert.equal(fs.readFileSync(args.configPath, 'utf8'), previous); assert.equal(fs.existsSync(args.installRoot), false);
+  // Editing a managed binding belongs to a coherent existing installation.
+  fs.writeFileSync(args.configPath, before + after);
+  const installed = applyInstall(planInstall(args)), current = JSON.parse(fs.readFileSync(installed.descriptorPath));
+  const coherent = before + ownHeader + preferences + 'command = ' + JSON.stringify(current.nodePath) + '\r\nargs = ' + JSON.stringify([path.join(current.releaseDir, 'runtime/stdio-entry.js'), '--installation', installed.descriptorPath]) + '\r\n' + after;
+  fs.writeFileSync(args.configPath, coherent);
   const planned = planInstall(args);
   assert.ok(planned.nextConfig.startsWith(before + ownHeader + preferences)); assert.ok(planned.nextConfig.endsWith(after));
-  assert.equal(fs.readFileSync(args.configPath, 'utf8'), previous); assert.equal(fs.existsSync(args.installRoot), false);
+  assert.equal(fs.readFileSync(args.configPath, 'utf8'), coherent);
   const values = '[mcp_servers."after-effects"]\ncommand = "literal key = value"\nargs = [\n  "after\\u002deffects-core4 = {command=old}",\n  \'enab\\u006ced = false\',\n  { NAME = "tool_timeout_\\u0073ec = 240" },\n]\n';
   assert.ok(configText(Buffer.from(values), 'C:/descriptor.json', 'C:/node.exe', 'C:/entry.js').startsWith(values));
 });
@@ -915,10 +922,10 @@ test('installable-runtime real stdio child consumes generated MCP config, advert
   child.stdout.on('data', b => { output += b; let n; while ((n = output.indexOf('\n')) >= 0) { const value = JSON.parse(output.slice(0, n)); output = output.slice(n + 1); waiting.get(value.id)?.(value); waiting.delete(value.id); } });
   async function rpc(method, params) { const id = ++nextId; const promise = new Promise((resolve, reject) => { waiting.set(id, resolve); const timer = setTimeout(() => reject(new Error('stdio_timeout:' + errors)), 15000); timer.unref(); }); child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, ...(params ? { params } : {}) }) + '\n'); const response = await promise; assert.equal(response.error, undefined, JSON.stringify(response)); return response.result; }
   async function tool(name, payload = {}) { const result = await rpc('tools/call', { name, arguments: { payload } }); return JSON.parse(result.content[0].text); }
-  const initialized = await rpc('initialize'); assert.equal(initialized.serverInfo.version, '4.2.4');
+  const initialized = await rpc('initialize'); assert.equal(initialized.serverInfo.version, '4.2.5');
   const listed = await rpc('tools/list'); assert.ok(listed.tools.some(x => x.name === 'inspect_module_target')); assert.ok(!listed.tools.some(x => x.name === 'inspect_project'));
   const withMeta = await rpc('tools/call', { name: 'core_status', arguments: { payload: {} }, _meta: { progressToken: 'fixture-progress', traceparent: 'fixture-trace' } });
-  assert.equal(JSON.parse(withMeta.content[0].text).product, 'AE Agent Core 4.2.4'); assert.ok(!withMeta.content[0].text.includes('fixture-progress'));
+  assert.equal(JSON.parse(withMeta.content[0].text).product, 'AE Agent Core 4.2.5'); assert.ok(!withMeta.content[0].text.includes('fixture-progress'));
   await assert.rejects(rpc('tools/call', { name: 'core_status', arguments: { payload: {} }, _meta: { padding: 'x'.repeat(9000) } }), /invalid_protocol_metadata/);
   await assert.rejects(rpc('tools/call', { name: 'core_status', arguments: { payload: {}, _meta: { grant: true } } }), /unexpected_field/);
   const status = await tool('core_status'); assert.equal(status.physical.peer.connected, false); assert.equal(status.automaticLifecycle, 'unavailable');

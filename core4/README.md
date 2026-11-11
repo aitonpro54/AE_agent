@@ -1,7 +1,7 @@
-# AE Agent Core 4.2.4 — устанавливаемое ядро
+# AE Agent Core 4.2.5 — устанавливаемое ядро
 
 Core использует внешний Node 20+ и отдельную CEP-панель `com.codex.aeagentcore4`
-с пунктом меню **AE Agent Core 4.2.4**. В основной сборке `manual/owner`
+с пунктом меню **AE Agent Core 4.2.5**. В основной сборке `manual/owner`
 тонкий клиент Codex подключается к отдельному процессу Core, который обслуживает
 HTTP на порту 3457. Для обновления используется тот же идентификатор расширения.
 MCP connect и HTTP link не создают project-incarnation.
@@ -18,20 +18,28 @@ Origin связывается с сохранённым server challenge и priv
 
 Node append+fsync begin выполняется до публикации команды; complete fsync — до correlated ACK. CEP сохраняет physical latch до eval и callback receipt до POST; latch удаляется только после ACK с exact command/receipt. LocalStorage не является fsync proof: Node store остаётся authority для no-replay. Timeout, callback loss, corruption, reload с потерянным callback и orphan receiver owner закрывают lane. Installer не удаляет owner/fences и отказывает при owned/unknown production state.
 
+Initial install 4.2.5 требует pristine root и отсутствия записи Core в config.
+Origins без descriptor, оставшиеся releases/transactions/production state и чужая
+CEP отклоняются до записи. Проверка повторяется под lease и перед switch;
+identity публикуется после последнего CAS. Initial rollback сохраняет origins и
+историю, поэтому ordinary reapply после него отклоняется. Для coherent existing
+установки сохраняется штатный repeat/update; пустой config нового checkout
+можно подключить, существующий Core binding обязан совпадать с установкой.
+
 Команды подготовки из корня репозитория (первые две не меняют установку):
 
 ```powershell
-node core4/tools/package-installable.js --output C:/Temp/core4-4.2.4-package.json --composition manual --runtime owner
-node core4/tools/install-core4.js dry-run --package C:/Temp/core4-4.2.4-package.json
-node core4/tools/install-core4.js apply --package C:/Temp/core4-4.2.4-package.json --expected-package-hash EXACT_HASH_FROM_DRY_RUN
+node core4/tools/package-installable.js --output C:/Temp/core4-4.2.5-package.json --composition manual --runtime owner
+node core4/tools/install-core4.js dry-run --package C:/Temp/core4-4.2.5-package.json
+node core4/tools/install-core4.js apply --package C:/Temp/core4-4.2.5-package.json --expected-package-hash EXACT_HASH_FROM_DRY_RUN
 node core4/tools/install-core4.js rollback C:/Users/USER/AppData/Local/AEAgentCore4/transactions/TRANSACTION.json
 ```
 
-Standalone принятого выпуска 4.2.4 с R1 и обоими слотами
+Standalone 4.2.5 с R1 и обоими слотами
 `comp-render` и `comp-frame-export` собирается так:
 
 ```powershell
-node core4/tools/package-standalone-installer.js --output C:/Temp/core4-4.2.4-standalone --composition operator-render-jobs --runtime owner
+node core4/tools/package-standalone-installer.js --output C:/Temp/core4-4.2.5-standalone --composition operator-render-jobs --runtime owner
 ```
 
 Для штатного обновления работающего owner Core используйте описанный в `README.txt`
