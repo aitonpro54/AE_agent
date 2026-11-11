@@ -45,9 +45,22 @@
 - Origins без descriptor отказывают как orphan. Initial rollback сохраняет
   свою прежнюю семантику; автоматический reapply после него не обещается.
   Tombstone/новая recovery authority не добавляются.
+- Astra проверила реализацию и приняла второй snapshot `1cb25357…`/`b2f1b5e9…`.
+  Два замечания первого снимка (historical Node как data и v1 CEP) исправлены
+  адресно без ослабления runtime verifier. Итог —
+  [review-final](../reviews/astra/core-transfer/20261111/review-final.md).
 - Argon readiness остановлена Computer Use: URL окна не определён надёжно,
   Chrome extension не подключён. Отправок/вложений нет; обходов нет.
   Пользователю направлена просьба подключить Aiton/Gemini штатным способом.
+- После ответа пользователя «готово» штатное Chrome extension подключение
+  Aiton подтверждено существующим controller. Пользователь затем разрешил
+  конкретный immutable payload 5600ae49… (9 файлов, bundle 242874 байта).
+  Один review направлен контроллеру; другие uploads/повторы не разрешены.
+  Request/manifest/approval находятся в reviews/argon/core-transfer/20261111-result-01/.
+- Argon вернул go на снимок 1cb25357…, полный ответ совпал при повторном открытии
+  по SHA a1b1fdca…. Astra независимо подтвердила F01–F03 и риск потери custom
+  Core keys; локальные доработки и регрессии переданы тому же ae_implementer.
+  [Decision log](../reviews/argon/core-transfer/20261111-result-01/decision-log.md).
 
 ## Validation
 

@@ -1,0 +1,97 @@
+{
+  "review_id": "20261111-transfer-425-result-01",
+  "stage_id": "core-transfer-admission-425",
+  "source": "Final Argon response; provider statements not independent proof of full reading",
+  "provider_claimed_read_count": 9,
+  "provider_claimed_skipped_count": 0,
+  "provider_claimed_truncation": false,
+  "read_files": [
+    {
+      "path": "core4/tools/install-core4.js",
+      "manifest_sha256": "1cb25357bb2bb2558bcca8f111d397283345b16649b78043e76e6dcb86487db9",
+      "hash_reproduced_in_response": true,
+      "provider_status": "Прочитан полностью"
+    },
+    {
+      "path": "core4/runtime/install-lease.js",
+      "manifest_sha256": "fe91dfedfafceaa38f0cac72d007f2600d4b82915d07b960c8d3ed6d735bb368",
+      "hash_reproduced_in_response": true,
+      "provider_status": "Прочитан полностью"
+    },
+    {
+      "path": "core4/runtime/installation.js",
+      "manifest_sha256": "7b7894f23e0ed6b7e11c644884b782d2532520e1da56981907cf0c7484cc1dc9",
+      "hash_reproduced_in_response": true,
+      "provider_status": "Прочитан полностью"
+    },
+    {
+      "path": "core4/runtime/stdio-entry.js",
+      "manifest_sha256": "41e35929bb3118ad0e490de4e464f6051d6410b2ab2bfd9953aae80db920d2c7",
+      "hash_reproduced_in_response": true,
+      "provider_status": "Прочитан полностью"
+    },
+    {
+      "path": "core4/test/owner-installation.test.js",
+      "manifest_sha256": "b2f1b5e9d8d62c59c5cf0eafb3df0495a12ada4572cc085cd6d881fd3566dd60",
+      "hash_reproduced_in_response": true,
+      "provider_status": "Прочитан полностью"
+    },
+    {
+      "path": "core4/tools/package-installable.js",
+      "manifest_sha256": "3b40fd268013d76586690ed019a83699bdb68d7400764037fb2e34a3b3d8ef8c",
+      "hash_reproduced_in_response": true,
+      "provider_status": "Прочитан полностью"
+    },
+    {
+      "path": "core4/tools/standalone-installer.js",
+      "manifest_sha256": "9459c199eabaadfa1a9cfe7fc981790eb4d780f2724c21bd45d4c9fca31bfe05",
+      "hash_reproduced_in_response": true,
+      "provider_status": "Прочитан полностью"
+    },
+    {
+      "path": "core4/tools/package-standalone-installer.js",
+      "manifest_sha256": "91dfd29d8e3dddfbfc0882b7ca02fbc9678e7bcc229df47d95ae0e6b626e49dc",
+      "hash_reproduced_in_response": true,
+      "provider_status": "Прочитан полностью"
+    },
+    {
+      "path": "docs/portability.md",
+      "manifest_sha256": "52da8fb83be23be4440a98a419edf15db18be0475bd6e75ae43bb9835e748899",
+      "hash_reproduced_in_response": true,
+      "provider_status": "Прочитан полностью"
+    }
+  ],
+  "outside_allowlist_gap": [
+    "core4/tools/package-capability.js",
+    "core4/runtime/client-stdio.js"
+  ],
+  "indirect_only": [
+    "core4/runtime/client-entry.js"
+  ],
+  "verdict": "go",
+  "findings": [
+    {
+      "id": "F-425-01",
+      "priority": "P2",
+      "summary": "Missing preflight checks for descriptor/config staged .next/.core4-next/.rollback files"
+    },
+    {
+      "id": "F-425-02",
+      "priority": "P3",
+      "summary": "existsSync versus lstat/entryExists for dangling symlinks"
+    },
+    {
+      "id": "F-425-03",
+      "priority": "P3",
+      "summary": "Empty state/production/broker directories after early virgin applyInstall failure"
+    }
+  ],
+  "hypotheses": [
+    "H-425-01: nonstandard managed MCP keys silently discarded"
+  ],
+  "evidence_gaps": [
+    "G-425-01: version 4.2.5 acceptance in package-capability.js/client-stdio.js requires local checks"
+  ],
+  "native_or_msi_acceptance": false,
+  "implementation_authorized_by_review": false
+}

@@ -1,0 +1,66 @@
+{
+  "review_id": "20261111-transfer-425-result-01",
+  "stage_id": "core-transfer-admission-425",
+  "source_thread_id": "01a1c92a-9399-7f91-a80d-8b4cc0f26f13",
+  "state": "response_received_persistence_verified",
+  "profile": "Aiton",
+  "account": "aitonpro54@gmail.com",
+  "model_ui": "4 Argon — Код и анализ",
+  "mode": "Задача",
+  "effort_ui": "No separate effort selector in this mode; maximum effort cannot be independently selected",
+  "existing_chat_url": "https://gemini.google.com/app/b377600730f549eb",
+  "existing_chat_title": "AE Agent Core Architectural Review",
+  "baseline_response_count": 1,
+  "previous_state": "Completed, stop control absent; draft empty; new review ID not in existing conversation",
+  "payload": [
+    {
+      "file": "request.md",
+      "bytes": 4041,
+      "sha256": "4a6b9925b9bc15c80b24e840ff000c77162c5ae0549ff98853eac96dfbb49904"
+    },
+    {
+      "file": "bundle.md",
+      "bytes": 242874,
+      "sha256": "5600ae493b70d369a3cac1478a7cd5a8246174e081d2a8b0af7351d627134abd"
+    },
+    {
+      "file": "manifest.json",
+      "bytes": 4468,
+      "sha256": "082ab2422f13a8afe0fe701ed621dcec86304b448b052a2be81c5ecbe12f6982"
+    }
+  ],
+  "attachment_allowlist": [
+    "bundle.md",
+    "manifest.json"
+  ],
+  "prompt_source": "request.md",
+  "authorized_submissions": 1,
+  "uploads_started": 2,
+  "submissions_attempted": 1,
+  "responses_received": 1,
+  "created_at": "2026-11-11T11:07:02.192Z",
+  "ui_attachment_count": 2,
+  "ui_attachment_names": [
+    "bundle",
+    "manifest"
+  ],
+  "upload_progressbars": 0,
+  "composer_input_exact_request_file": true,
+  "composer_nonblank_lines_exact_match": true,
+  "composer_rendering_note": "Gemini contenteditable innerText adds blank lines between paragraphs; all nonblank source lines match exactly. fill was called once with unmodified request.md UTF-8 text.",
+  "composer_fill_timeout_recovered_by_readback": true,
+  "uploads_completed_at": "2026-11-11T11:08:45.252Z",
+  "send_attempt_at": "2026-11-11T11:08:45.858Z",
+  "last_observed_at": "2026-11-11T11:09:26.357Z",
+  "response_chars": 18929,
+  "response_sha256": "a1b1fdca5f2989ab60ce4ddd4437cb5503e7021b6e83a26285c1e3ff4b4a26ee",
+  "chat_url": "https://gemini.google.com/app/b377600730f549eb",
+  "received_at": "2026-11-11T11:14:01.944Z",
+  "reopen_sha256": "a1b1fdca5f2989ab60ce4ddd4437cb5503e7021b6e83a26285c1e3ff4b4a26ee",
+  "reopen_exact_match": true,
+  "reopen_content_match": true,
+  "reopened_at": "2026-11-11T11:14:32.005Z",
+  "provider_claimed_coverage": "All 9 allowlisted files and manifest read, skipped 0, no truncation",
+  "independent_full_read_verification": false,
+  "provider_verdict": "go"
+}

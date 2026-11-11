@@ -1,0 +1,182 @@
+Выполнено ревью безопасности установки версии 4.2.5.
+Я теперь сосредоточился на анализе указанного запроса на проверку, чтобы понять его суть.
+Я начал детально изучать код, чтобы проверить приемлемость версии 4.2.5 в контексте затронутых читателей.
+Я обнаружил дополнительные файлы, которые могут влиять на совместимость с версией 4.2.5, расширив поле зрения.
+Я углубился в изучение конкретного файла, чтобы ответить на поставленные вопросы об установке, рассматривая различные функции.
+Я сейчас проверяю возможные случаи неисправностей символических ссылок для повышения точности диагностики.
+Я обнаружил уязвимость, связанную с тем, что целевой каталог может быть символической ссылкой, вызывающей сбой установки.
+Я выявил потенциальные проблемы, связанные с пустыми подкаталогами и символическими ссылками в целевых каталогах.
+Я обнаружил критическую уязвимость, связанную с символическими ссылками, влияющими на процесс установки, требующую немедленного исправления.
+Я проверил текущее состояние начальной раскладки, чтобы убедиться в ее целостности и предотвратить повреждения.
+Я теперь проверяю, может ли повторный запуск applyInstall привести к неожиданному поведению из-за сохраненных данных.
+Я сейчас проверяю возможность того, что отсутствие директории приведет к проблемам при получении разрешения.
+Я сейчас проверяю уязвимость, возникающую из-за того, что пустые каталоги могут остаться после отката установки.
+Я обнаружил ошибку в планировании установки, из-за которой повторная попытка может привести к сбою из-за оставшихся пустых каталогов.
+Я сейчас проверяю, как работает утилита, чтобы гарантировать безопасное восстановление, рассматривая структуру данных.
+Я сейчас проверяю уязвимости, возникающие из-за отсутствия или повреждения файлов, связанных с установкой.
+Я сейчас проверяю функцию `assertManagedConfig`, чтобы понять, почему происходит привязка конфигурации.
+Я сейчас проверяю, как переписываются разделы конфигурации при повторной установке, учитывая возможные потери данных.
+Я сейчас анализирую последовательность действий при неудачном первоначальном плане установки.
+Я сейчас анализирую последовательность действий при отмене первоначальной установки и связанные с этим проблемы.
+Я выяснил, что первоначальная отмена установки приводит к невозможности последующей работы из-за сохраненных данных.
+Я сейчас проверяю механизмы, которые гарантируют абсолютность путей и предотвращают несоответствия регистра.
+Я сейчас проверяю обработку ненормализованных путей в планировщике установки и влияние предыдущих неудачных попыток.
+Я выяснил, что не учитываются уже существующие файлы, что приводит к уязвимости при повторной установке.
+Я сейчас проверяю, как старые файлы конфигурации приводят к сохранению лицензии на установку и последующим сбоям.
+Я обнаружил уязвимость, возникающую из-за обработки .rollback-файлов в процессе отката.
+Я подтвердил, что все зависимости `install-core4.js` включены, и обнаружил, что тест затрагивает автономное применение.
+Я сейчас анализирую сравнение путей в конфигурации, чтобы понять, как работает проверка чувствительности к регистру.
+Я сейчас проверяю, как работает функция `installedBinding` и проверяет историческую установку.
+Я сейчас анализирую функцию `assertHistoricalInstallation` в деталях и влияние различных схем на старые директории.
+Я сейчас проверяю уязвимость, возникающую из-за неполных проверок перед применением запланированных изменений.
+Я теперь проверяю уязвимость, возникающую из-за того, что установка прерывается после изменений файлов.
+Я теперь проверяю, корректно ли обрабатываются символические ссылки на каталоги при планировании и применении установки.
+Я обнаружил, что пустые каталоги могут остаться после отмены, блокируя дальнейшие установки.
+Я сейчас проверяю уязвимости, связанные с обработкой конфигурации и планированием установки.
+Готово
+Ответ Gemini
+Привязки ревью и метаданные (Bindings)
+
+review_id: 20261111-transfer-425-result-01
+
+stage_id: core-transfer-admission-425
+
+type: result
+
+base_commit: c34ac239314cfe88850108887b36c305b56dc7f2 (c34ac23)
+
+bundle_sha256: 5600ae493b70d369a3cac1478a7cd5a8246174e081d2a8b0af7351d627134abd (242874 байт)
+
+request_sha256: 4a6b9925b9bc15c80b24e840ff000c77162c5ae0549ff98853eac96dfbb49904 (4041 байт)
+
+classification: INTERNAL source and synthetic tests
+
+Контрольные хеши исходников из Manifest (files)
+Путь файла	Байты	SHA-256	Статус чтения
+core4/tools/install-core4.js	59611	1cb25357bb2bb2558bcca8f111d397283345b16649b78043e76e6dcb86487db9	Прочитан полностью
+core4/runtime/install-lease.js	13950	fe91dfedfafceaa38f0cac72d007f2600d4b82915d07b960c8d3ed6d735bb368	Прочитан полностью
+core4/runtime/installation.js	248	7b7894f23e0ed6b7e11c644884b782d2532520e1da56981907cf0c7484cc1dc9	Прочитан полностью
+core4/runtime/stdio-entry.js	66382	41e35929bb3118ad0e490de4e464f6051d6410b2ab2bfd9953aae80db920d2c7	Прочитан полностью
+core4/test/owner-installation.test.js	34061	b2f1b5e9d8d62c59c5cf0eafb3df0495a12ada4572cc085cd6d881fd3566dd60	Прочитан полностью
+core4/tools/package-installable.js	9637	3b40fd268013d76586690ed019a83699bdb68d7400764037fb2e34a3b3d8ef8c	Прочитан полностью
+core4/tools/standalone-installer.js	18111	9459c199eabaadfa1a9cfe7fc981790eb4d780f2724c21bd45d4c9fca31bfe05	Прочитан полностью
+core4/tools/package-standalone-installer.js	11784	91dfd29d8e3dddfbfc0882b7ca02fbc9678e7bcc229df47d95ae0e6b626e49dc	Прочитан полностью
+docs/portability.md	22225	52da8fb83be23be4440a98a419edf15db18be0475bd6e75ae43bb9835e748899	Прочитан полностью
+
+Пропущенные файлы (skippedFiles): 0 (все 9 файлов allowlist и манифест прочитаны без обрезки; redactions: 0).
+
+Исключённые по политике пакета артефакты (excluded): production state/backups, credentials/.env, AEP/assets/preferences, browser/account state, full rollouts/logs. Команды не выполнялись, область ревью не расширялась.
+
+Вердикт (Verdict)
+
+go — инвариант сохранения единственной identity и цепочки predecessor при переносе и повторной установке в Core 4.2.5 обеспечен. Разделение на pristine first install, согласованную существующую установку и orphan/mixed состояние перекрывает все пути создания второй identity или сброса predecessor. Выявленные замечания (F-425-01..F-425-03) относятся к граничным условиям fail-closed отказа (удержание lease при наличии старых .next/.rollback файлов конфигурации/дескриптора или dangling symlink) и не нарушают безопасность identity.
+
+Ответы на контрольные вопросы
+1. Есть ли сценарий второй identity или потери predecessor, который проходит guards?
+
+Такого сценария в проверенном коде нет:
+
+Выпуск новой installationId ('installation-' + crypto.randomUUID()) и predecessor: null возможен исключительно при одновременном отсутствии installRoot/origin.json, stateDir/origin.json и installation.json (install-core4.js:275–281, 297, 355).
+
+При отсутствии originBytes малейший след прежней установки блокирует planInstall и applyInstall:
+
+наличие anchorBytes (state/production/origin.json) отвергается на строке 276 (stable_state_origin_missing_or_mismatch);
+
+наличие installation.json, cepDir или state/production отвергается на строке 277 (existing_installation_without_origin);
+
+наличие core-client.json (или его .next/.rollback) отвергается на строках 274 и 295 (client_binding_staging_exists / foreign_client_descriptor);
+
+наличие любых оставшихся каталогов/файлов в installRoot (включая releases/*, transactions/*, state/*) или секции [mcp_servers.after-effects-core4] (в том числе в кавычках) в configPath отвергается функцией assertInitialLayout (install-core4.js:228–256) с кодом initial_installation_not_pristine.
+
+При наличии originBytes отсутствие installation.json безусловно блокирует planInstall на строке 281 (installation_descriptor_required), а при наличии installation.json на строке 355 в applyInstall жёстко проверяется canonical(d.predecessor) === canonical({ transactionId: plan.transactionId, previousDescriptorHash: hash(plan.previousDescriptor) }) (install_lineage_plan).
+
+2. Достаточны ли CAS, allowlist собственных файлов и порядок публикации при изменении state после plan и сбоях? Не ослаблены ли gates repeat/update/rollback?
+
+Достаточность CAS и allowlist в initial install:
+
+Функция assertInitialLayout(plan, lease) вызывается трижды: в конце planInstall (строка 307, без lease — разрешён только отсутствующий или полностью пустой installRoot), сразу после захвата обоих гейтов acquireInstallLease (строка 354 — разрешены только install.lock, broker-owner.gate и их пустые родительские каталоги state/production/broker) и непосредственно перед публикацией origin.json и видимым переключением (строка 388 — разрешены только файлы из entry.initialFiles, записанные текущим вызовом и сверенные по STAGE_FIELDS: dev, ino, size, birthtimeNs, mtimeNs, ctimeNs и побайтовому содержимому).
+
+Если после planInstall (или во время удержания lease) в state/production/broker/ появляется чужой файл (включая полностью завершённый ledger.ndjson), assertInitialLayout на строке 354 или 388 прерывает установку с initial_installation_not_pristine до записи origin.json (строки 391–393), сохраняя чужой файл нетронутым.
+
+Сохранность gates repeat/update/rollback:
+
+Проверки assertRuntimeStopped (runtime-start-over.json, runtime-owner.json, runtime-owner.next, runtime-diagnostic.json, runtime-maintenance.json, broker-owner.lock, broker-owner.gate, receiver/owner, inspectRenderJobs, ledger.unresolved(), assertPreparedReceiverJournalSettled) вызываются в полном объёме (строки 319–338, 356, 470).
+
+Откат первой установки (rollback при previousDescriptor === null, строки 477–482) удаляет installation.json, core-client.json и созданный config.toml, но намеренно сохраняет installRoot/origin.json и state/production/origin.json (проверяя их неизменность на строке 485). Последующий обычный planInstall видит originBytes без installation.json и отказывает с installation_descriptor_required.
+
+3. Сохранены ли штатные first install, новый workspace, quoted TOML/preferences, legacy соседние записи и совместимость прежних пакетов?
+
+Штатный first install: проходит при отсутствующем или пустом installRoot и отсутствии записи after-effects-core4 в config.toml.
+
+Новый workspace (checkout): в assertManagedConfig (строка 209: if (!matches.length) return;) согласованная существующая установка (origin.json + installation.json + core-client.json + releaseDir + cepDir) штатно подключается к новому checkout, где в .codex/config.toml ещё нет секции mcp_servers.after-effects-core4, но отвергает конфиг, если секция уже есть и указывает на чужой releaseDir, installRoot или nodePath (installation_config_binding).
+
+Quoted TOML, preferences и соседние записи: configStructure и configText (строки 148–197) корректно распознают кавычки в заголовках (["mcp_servers"."after-effects-core4"], ['mcp_servers'.'after-effects-core4']) и ключах ("enabled", 'tool_timeout_sec', "command", 'args'), сохраняют enabled, tool_timeout_sec и все соседние секции (например, ["mcp_servers"."legacy-bridge"]), а также отвергают дубликаты секций и вложенные таблицы mcp_servers.after-effects-core4.*.
+
+Исторические пакеты и дескрипторы: assertHistoricalInstallation (строки 198–206) проверяет старый nodePath/nodeHash/nodeVersion как данные (не требуя запуска старого бинарника Node при апгрейде), но строго верифицирует целостность старого releaseDir и cepDir через verifyCep для дескрипторов v1 и v2. В stdio-entry.js (строки 85–88, 139–145, 252) сохранена обратная совместимость с format: 1, composition.version: 1 и версиями 4.0.0, 4.1.0–4.2.5.
+
+4. Попадает ли исправленный installer в standalone closure и принимается ли версия 4.2.5 всеми затронутыми readers?
+
+Standalone closure: tools/install-core4.js включён в массив HELPERS (standalone-installer.js:4), упаковывается в bundleStandalone (package-standalone-installer.js:78) и верифицируется по хешу в verifyStandalone (standalone-installer.js:44–56). Все его зависимости (runtime/install-lease.js, runtime/installation.js, runtime/stdio-entry.js, runtime/render-job-maintenance.js, tools/disposition-install-preflight.js, tools/stopped-update.js, core/ledger.js, runtime/native-read-disposition.js) входят либо в pkg.files, либо в HELPERS.
+
+Читатели версии 4.2.5:
+
+Внутри allowlist: stdio-entry.js (строки 85, 158, 201, 252, 438, 548, 642), package-installable.js (строки 61, 78) и standalone-installer.js (строка 53) принимают '4.2.5'.
+
+Вне allowlist (см. G-425-01 ниже): runtime/client-entry.js косвенно проверен вызовом verifyClientDescriptor в owner-installation.test.js:97, но tools/package-capability.js и runtime/client-stdio.js отсутствуют в пакете ревью и требуют локальной проверки.
+
+Детальные замечания (Findings)
+Подтверждённые дефекты граничных условий (Confirmed Defects — Fail-Closed)
+
+F-425-01 [P2] — Отсутствие preflight-проверки staged-файлов .next / .core4-next / .rollback для descriptorPath и configPath в planInstall и до начала записи в rollback
+
+Файл / строки: core4/tools/install-core4.js, строки 31–38 (clientPaths), 274–307 (planInstall), 381–383 (applyInstall), 456–482 (rollback).
+
+Сценарий: Для core-client.json функция clientPaths проверяет отсутствие .next и .rollback на этапе planInstall и в rollbackBinding до взятия lease. Однако для installation.json.next / .rollback (при repeat/update установке, когда assertInitialLayout не вызывается) и для .codex/config.toml.core4-next / .rollback (во всех режимах, включая virgin install, так как configPath лежит вне installRoot) проверка в planInstall отсутствует. Если на диске остался config.toml.core4-next или installation.json.next, то planInstall (и CLI dry-run) завершается успешно, а applyInstall падает с EEXIST только на строках 381–383 — уже после writes = true, записи transactions/<id>-prepared, releases/<hash> и cepStage. Это приводит к удержанию lease (leaseRetained: true) и оставляет артефакты в installRoot. Аналогично в rollback(file) наличие installation.json.rollback или config.toml.rollback обнаруживается на строке 481 уже после перемещения t.cepDir в transactions/<id>-applied-cep (строка 476).
+
+Уверенность: Высокая.
+
+Минимальная проверка: Проверять отсутствие descriptorPath + '.next', descriptorPath + '.rollback', configPath + '.core4-next', configPath + '.rollback' (или их принадлежность текущему staged) в planInstall, assertBaseline и rollbackBinding по аналогии с clientPaths.
+
+F-425-02 [P3] — Использование fs.existsSync вместо entryExists (fs.lstatSync) для cepDir, descriptor и stateDir в planInstall и snapshot
+
+Файл / строки: core4/tools/install-core4.js, строки 141 (snapshot), 277 (planInstall), 398 (applyInstall).
+
+Сценарий: fs.existsSync возвращает false для битой символической ссылки (dangling symlink / junction). Если в virgin-среде по пути cepDir (extensions/com.codex.aeagentcore4) находится битый symlink, строка 277 (fs.existsSync(cepDir)) и snapshot(cepDir) вернут false / null, applyInstall запишет оба origin.json (строки 391–393) и упадёт только при переименовании fs.renameSync(cepStage, plan.cepDir) (строка 399), оставив созданный origin.json и удержанный lease. Кроме того, snapshot(directory) на строке 141 проверяет item.isSymbolicLink() для дочерних элементов, но не проверяет fs.lstatSync(directory).isSymbolicLink() для самого корневого каталога directory.
+
+Уверенность: Высокая.
+
+Минимальная проверка: Заменить fs.existsSync на entryExists на строке 277 и добавить проверку fs.lstatSync(directory) (не symlink / не reparsePoint) в начале snapshot(directory).
+
+F-425-03 [P3] — Остаточные пустые каталоги state/production/broker при сбое virgin applyInstall в окне между acquireInstallLease и writes = true
+
+Файл / строки: core4/tools/install-core4.js, строки 350–356 (applyInstall); core4/runtime/install-lease.js, строки 20–21 (acquireInstallLease).
+
+Сценарий: При первом applyInstall(plan) вызов acquireInstallLease (строка 351) создаёт пустые каталоги installRoot/state/production/broker. Если проверка на строках 353–356 (assertBaseline, assertInitialLayout, assertRuntimeStopped) выбрасывает исключение (например, из-за изменения config.toml параллельным процессом перед взятием lease), writes ещё равен false: releaseInstallLease удаляет install.lock и broker-owner.gate, но пустые каталоги state/production/broker остаются в installRoot. При следующей попытке planInstall на этой же чистой машине сработает отказ existing_installation_without_origin (строка 277). Безопасность identity при этом не страдает (отказ fail-closed).
+
+Уверенность: Высокая.
+
+Минимальная проверка: При необходимости — тест на изменение config.toml между planInstall и applyInstall с проверкой чистоты отката или документированием необходимости пустого installRoot.
+
+Гипотезы (Hypotheses)
+
+H-425-01 [P3] — Молчаливое отбрасывание нестандартных ключей внутри секции [mcp_servers.after-effects-core4] при перезаписи configText
+
+Файл / строки: core4/tools/install-core4.js, строки 186–196 (configText), 207–226 (assertManagedConfig).
+
+Описание: assertManagedConfig проверяет внутри секции [mcp_servers.after-effects-core4] только ключи command и args, а configText переносит в новый конфиг только enabled и tool_timeout_sec. Если пользователь вручную добавил в секцию [mcp_servers.after-effects-core4] иной валидный TOML-ключ (например, env или cwd), planInstall не выдаст предупреждения, а applyInstall перезапишет секцию без этого ключа. Если контракт предполагает, что вся секция mcp_servers.after-effects-core4 принадлежит исключительно установщику, это поведение штатное; иначе в assertManagedConfig / configText стоит отвергать неизвестные ключи внутри этой секции.
+
+Пробелы доказательств (Evidence Gaps — вне allowlist пакета)
+
+G-425-01 — Проверка принятия версии '4.2.5' в core4/tools/package-capability.js и core4/runtime/client-stdio.js
+
+Описание: Файлы core4/runtime/client-entry.js, core4/runtime/client-stdio.js и core4/tools/package-capability.js не входят в allowlist из 9 файлов manifest.json. Для client-entry.js принятие '4.2.5' косвенно доказано прохождением verifyClientDescriptor(f.client) в core4/test/owner-installation.test.js:97. Для tools/package-capability.js (composeCapability, где проверяется список допустимых base.release.version) и runtime/client-stdio.js (serverInfo.version) требуется локально убедиться, что строка '4.2.5' добавлена.
+
+Рекомендуемые адресные регрессии
+
+Staged-файлы конфигурации и дескриптора (F-425-01): тест в owner-installation.test.js, проверяющий, что наличие config.toml.core4-next, config.toml.rollback, installation.json.next или installation.json.rollback отвергается на стадии planInstall / rollback до любых записей в installRoot и без удержания lease.
+
+Dangling symlink на cepDir (F-425-02): тест в owner-installation.test.js, проверяющий, что битая символическая ссылка или junction по пути extensions/com.codex.aeagentcore4 в virgin-среде отвергается в planInstall до создания origin.json.
+
+Совместимость package-capability.js с базой 4.2.5 (G-425-01): один прогон существующего теста package-capability (composeCapability) на базовом пакете версии 4.2.5.
+
+Готово

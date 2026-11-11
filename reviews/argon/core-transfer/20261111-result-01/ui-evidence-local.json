@@ -1,0 +1,16 @@
+[
+  {
+    "file": "before-send.png",
+    "localPath": ".codex-runtime/core425-review-ui-20261111/before-send.png",
+    "sha256": "ee5fe18d88d2dff64a1754ebb38db5cc945270e0678b8ee3d0015dfe26f14c9a",
+    "gitPublication": false,
+    "reason": "UI sidebar outside review scope; originals preserved locally"
+  },
+  {
+    "file": "result.png",
+    "localPath": ".codex-runtime/core425-review-ui-20261111/result.png",
+    "sha256": "b4fdc3a9df049260ec6e49651cf840d8b330c2b82f25bd7b1e58259e2095aa05",
+    "gitPublication": false,
+    "reason": "UI sidebar outside review scope; originals preserved locally"
+  }
+]

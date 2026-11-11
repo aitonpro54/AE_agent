@@ -1,0 +1,30 @@
+{
+  "reviewId": "20261111-transfer-425-result-01",
+  "approvedAt": "2026-11-11T11:05:21.925422+00:00",
+  "authorization": "Human reply in current chat: Передать этот пакет Аргону",
+  "payload": [
+    {
+      "path": "request.md",
+      "bytes": 4041,
+      "sha256": "4a6b9925b9bc15c80b24e840ff000c77162c5ae0549ff98853eac96dfbb49904"
+    },
+    {
+      "path": "bundle.md",
+      "bytes": 242874,
+      "sha256": "5600ae493b70d369a3cac1478a7cd5a8246174e081d2a8b0af7351d627134abd"
+    },
+    {
+      "path": "manifest.json",
+      "bytes": 4468,
+      "sha256": "082ab2422f13a8afe0fe701ed621dcec86304b448b052a2be81c5ecbe12f6982"
+    }
+  ],
+  "attachmentAllowlist": [
+    "bundle.md",
+    "manifest.json"
+  ],
+  "promptSource": "request.md",
+  "submissionsAuthorized": 1,
+  "recipient": "Argon via existing ARGON_BrowserUse local controller, Aiton account",
+  "nativeOrMsiAuthority": false
+}

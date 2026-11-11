@@ -1,0 +1,131 @@
+{
+  "reviewId": "20261111-transfer-425-result-01",
+  "stageId": "core-transfer-admission-425",
+  "status": "COMPLETE",
+  "baseCommit": "c34ac239314cfe88850108887b36c305b56dc7f2",
+  "builtAt": "2026-11-11T11:03:54.851826+00:00",
+  "files": [
+    {
+      "path": "core4/tools/install-core4.js",
+      "bytes": 59611,
+      "sha256": "1cb25357bb2bb2558bcca8f111d397283345b16649b78043e76e6dcb86487db9"
+    },
+    {
+      "path": "core4/runtime/install-lease.js",
+      "bytes": 13950,
+      "sha256": "fe91dfedfafceaa38f0cac72d007f2600d4b82915d07b960c8d3ed6d735bb368"
+    },
+    {
+      "path": "core4/runtime/installation.js",
+      "bytes": 248,
+      "sha256": "7b7894f23e0ed6b7e11c644884b782d2532520e1da56981907cf0c7484cc1dc9"
+    },
+    {
+      "path": "core4/runtime/stdio-entry.js",
+      "bytes": 66382,
+      "sha256": "41e35929bb3118ad0e490de4e464f6051d6410b2ab2bfd9953aae80db920d2c7"
+    },
+    {
+      "path": "core4/test/owner-installation.test.js",
+      "bytes": 34061,
+      "sha256": "b2f1b5e9d8d62c59c5cf0eafb3df0495a12ada4572cc085cd6d881fd3566dd60"
+    },
+    {
+      "path": "core4/tools/package-installable.js",
+      "bytes": 9637,
+      "sha256": "3b40fd268013d76586690ed019a83699bdb68d7400764037fb2e34a3b3d8ef8c"
+    },
+    {
+      "path": "core4/tools/standalone-installer.js",
+      "bytes": 18111,
+      "sha256": "9459c199eabaadfa1a9cfe7fc981790eb4d780f2724c21bd45d4c9fca31bfe05"
+    },
+    {
+      "path": "core4/tools/package-standalone-installer.js",
+      "bytes": 11784,
+      "sha256": "91dfd29d8e3dddfbfc0882b7ca02fbc9678e7bcc229df47d95ae0e6b626e49dc"
+    },
+    {
+      "path": "docs/portability.md",
+      "bytes": 22225,
+      "sha256": "52da8fb83be23be4440a98a419edf15db18be0475bd6e75ae43bb9835e748899"
+    }
+  ],
+  "request": {
+    "path": "request.md",
+    "bytes": 4041,
+    "sha256": "4a6b9925b9bc15c80b24e840ff000c77162c5ae0549ff98853eac96dfbb49904"
+  },
+  "bundle": {
+    "path": "bundle.md",
+    "bytes": 242874,
+    "sha256": "5600ae493b70d369a3cac1478a7cd5a8246174e081d2a8b0af7351d627134abd"
+  },
+  "privacy": {
+    "classification": "INTERNAL source and synthetic tests",
+    "realSecretsIncluded": false,
+    "redactions": 0,
+    "skippedFiles": 0,
+    "excluded": [
+      "production state/backups",
+      "credentials/.env",
+      "AEP/assets/preferences",
+      "browser/account state",
+      "full rollouts/logs"
+    ],
+    "scanner": "pro-review-bundle patterns; exact false positives independently inspected, full allowlist included",
+    "falsePositives": [
+      {
+        "path": "core4/tools/install-core4.js",
+        "line": 353,
+        "detector": "generic_secret",
+        "matchSha256": "c4ae72016ad840564878a6a4acd175b70208ce5572be48c190c361f77c107db7",
+        "disposition": "crypto.randomBytes source expression"
+      },
+      {
+        "path": "core4/tools/install-core4.js",
+        "line": 353,
+        "detector": "generic_secret",
+        "matchSha256": "c4ae72016ad840564878a6a4acd175b70208ce5572be48c190c361f77c107db7",
+        "disposition": "crypto.randomBytes source expression"
+      },
+      {
+        "path": "core4/runtime/stdio-entry.js",
+        "line": 474,
+        "detector": "generic_secret",
+        "matchSha256": "f7b1ebce3ea34a7ac6d2b12116e016c83dbb48b46db17e34617b0e6132ede88d",
+        "disposition": "installation.controlToken source reference"
+      },
+      {
+        "path": "core4/runtime/stdio-entry.js",
+        "line": 577,
+        "detector": "generic_secret",
+        "matchSha256": "06dfc66027b688e6eb044fc6471d65955c3f6055659c0a39041c3fe8046b0768",
+        "disposition": "ownerLifecycle.brokerToken source reference"
+      },
+      {
+        "path": "core4/runtime/stdio-entry.js",
+        "line": 595,
+        "detector": "generic_secret",
+        "matchSha256": "60dbaf1b3f3bf73c8b517246ebd4c8fbfa0099f02fcb077e2f2708686f05f591",
+        "disposition": "ownerLifecycle.receiverToken source reference"
+      },
+      {
+        "path": "core4/test/owner-installation.test.js",
+        "line": 356,
+        "detector": "phone_like",
+        "matchSha256": "11e594f481958c10e3015d0bf0447a22f068a8a647f475df15ce2c7ab4b8f3f1",
+        "disposition": "synthetic all-zero test transaction UUID"
+      }
+    ]
+  },
+  "authorization": {
+    "payloadApprovalRequired": true,
+    "sent": false
+  },
+  "limitations": [
+    "Addressed installer boundary only, not full Core audit",
+    "Historical filesystem writer unknown",
+    "No live/native 4.2.5 proof supplied"
+  ]
+}
