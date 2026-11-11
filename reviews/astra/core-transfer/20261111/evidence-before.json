@@ -1,0 +1,37 @@
+{
+  "source": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+  "sourceHash": "dcc869fd0cd11fa743c613fbf79df1a9f2db5bab499c207ab9f2bbdb0b466212",
+  "tempRoot": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-astra-repro-YJxSEs",
+  "productionRead": false,
+  "productionWrite": false,
+  "sourceWrite": false,
+  "cases": [
+    {
+      "name": "transactions-releases-without-roots",
+      "installed": true,
+      "newIdentity": true,
+      "previousDescriptor": null,
+      "oldTransactionPreserved": true
+    },
+    {
+      "name": "origins-cep-without-descriptor-client",
+      "installed": true,
+      "sameIdentity": true,
+      "predecessor": null,
+      "oldTransactionPreserved": true
+    },
+    {
+      "name": "initial-rollback-settled-ledger",
+      "rolledBack": true,
+      "reinstalled": true,
+      "ledgerPreserved": true,
+      "predecessor": null
+    },
+    {
+      "name": "settled-ledger-after-virgin-plan",
+      "installed": true,
+      "ledgerPreserved": true,
+      "predecessor": null
+    }
+  ]
+}

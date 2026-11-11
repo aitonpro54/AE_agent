@@ -778,3 +778,11 @@ controller released. Owner 3936 ready, holder=null, current pending/UNKNOWN/faul
 
 [Итог и квитанции](../docs/evidence/core-4.2.4-desktop-repair-20261111.json) ·
 [Контракт и полный результат](../docs/core-desktop-mixed-installation-repair-20261111.md).
+
+## 11 ноября: общий механизм переноса и выпуск 4.2.5
+
+Пользователь поручил расследовать первопричину смешения, исправить общий
+механизм, отправить обновлённый пакет 4.2.5 в Git и подключить Argon/Astra.
+Scope, Progress, Decision Log и Validation ведутся в
+[отдельном плане](core-transfer-4.2.5-20261111.md). MSI не изменяется;
+работающая desktop 4.2.4 и сохранённые данные остаются защищены.
