@@ -751,3 +751,30 @@ helper `2ea5cd50…`. Пакет 193539…/standalone a803a6…/177 воспро
 изменения bytes; routing 5/5 и boundaries 88 PASS. Применение оператора,
 стандартный maintenance preflight, update и запуск AE/MCP ещё предстоят;
 предыдущий статус blocked сохраняется до фактических проверок.
+
+### Завершение восстановления и проверки запуска DESKTOP
+
+**Progress.** Итоговый source `43a7dcad…` прошёл 38/38 tests и 82 crash-границы;
+native WinPS-query и реальная closed overlay provenance покрыты адресно.
+Применён repair `3f067ea7…` по hash `b2c90b1c…`; все исходные 1322 файла
+сохранены на месте/в архиве. Стандартный inspect принял прежний stop `dfcc…`.
+Update/inspect/enable `c7f271ab-e4e0-4c8e-a6a1-f5d5e67a037d` завершены,
+install ID e0 сохранён. Точные package 193539…/standalone a803a6…/177 установлены.
+
+**Decision Log.** e0 и 7ece сохранены раздельно. Отсутствующий до ремонта
+receiver 7ece не синтезирован; available ledger/receipts/markers и обе цепи
+сохранены в полном backup и repair archive. Нового runtime authority sidecar
+не выдавал. Credentials локально rotated штатным update, MSI не затрагивался.
+Продуктовые Titles/S1/render/AME и широкая source matrix не повторялись.
+
+**Validation.** Fresh configured MCP 4.2.4 появился в текущем чате автоматически.
+Панель и Window → Extensions 4.2.4 проверены в AE 23616. Одна typed inspection
+`inspect-f58d8ea5…` прочитала пустой AE 26.3x87, dirty=false; Origin `file://`,
+controller released. Owner 3936 ready, holder=null, current pending/UNKNOWN/fault
+нет. Старый receiver prefix точен (3→5 records); четыре AEP, global config и
+все прежние transaction bytes сохранены. Настройки до запуска AE совпали;
+последующие debug/UXP/Home changes выделены отдельно. AGENTS.md остаётся
+пользовательской незакоммиченной правкой.
+
+[Итог и квитанции](../docs/evidence/core-4.2.4-desktop-repair-20261111.json) ·
+[Контракт и полный результат](../docs/core-desktop-mixed-installation-repair-20261111.md).

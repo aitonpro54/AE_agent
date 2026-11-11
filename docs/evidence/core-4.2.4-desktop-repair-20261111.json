@@ -1,0 +1,497 @@
+{
+  "schemaVersion": 1,
+  "collectedAt": "2026-11-11T10:14:00.443Z",
+  "host": "DESKTOP-32974QF",
+  "result": "succeeded",
+  "startupAccepted": true,
+  "scope": "operator-render-jobs/owner installation recovery, update and one read-only native startup check",
+  "source": {
+    "publishedTag": "v4.2.4",
+    "tagObject": "c9c0555b07138129b7fd0d9649a2cc4d471a8c29",
+    "releaseCommit": "51eee397f87f68cacb1cde48d040e56d3ac6b707",
+    "repairToolCommit": "053a041",
+    "branch": "codex/ae-agent-core-4.2.4-desktop",
+    "userAgentsPatchPreserved": true,
+    "userAgentsRemainsUncommitted": true,
+    "originalBranchPreserved": "3116a6d70baecf5161a52a6298806e18c8cd82aa"
+  },
+  "package": {
+    "version": "4.2.4",
+    "composition": "operator-render-jobs",
+    "runtime": "owner",
+    "packageHash": "193539dfe14a0760317aa92c451423f076f84d5f9e809f48faf2923e04030684",
+    "distributionHash": "a803a685cf2f1c0f5636abca35347eef286d8de0c2f5e1facced616c8f0811d3",
+    "files": 177,
+    "installedReleaseFiles": 159,
+    "verified": true
+  },
+  "recovery": {
+    "operationId": "3f067ea7-2943-45f1-a1b8-1fe7d29e94e7",
+    "planHash": "b2c90b1ca3c4e9a39537330c0654dc1ab6a1f84e965520782f3356e8bc58deb4",
+    "operatorHash": "43a7dcad764a2f68fd447bfac8369a0fb9c3618fe90aef859f3af41bc9bcde0c",
+    "applyAttempts": 1,
+    "phase": "repaired",
+    "authorityIssued": false,
+    "archiveDirectory": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-mixed-local-repair",
+    "record": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\repair-control-current.json",
+      "sha256": "b092d08e0b3e182b7c28fa21a01bfaa129023d38f9e4f6ff4ab6bef313a9f468"
+    },
+    "preservation": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\repair-preservation.json",
+      "sha256": "7ba5c22b019c88129236b0182f5ecbedcebd15c9d6d4fdcdd9589747d8a0dcac"
+    },
+    "counts": {
+      "installation": 1322,
+      "cep": 7,
+      "preferences": 91,
+      "project-config": 1,
+      "global-config": 1,
+      "aep-0": 1,
+      "aep-1": 1,
+      "aep-2": 1,
+      "aep-3": 1
+    },
+    "allOriginalFilesAfterStartup": {
+      "unchanged": 1313,
+      "archived": 5,
+      "intentionalBindingsOrReadMetadata": [
+        "core-client.json",
+        "installation.json",
+        "state\\production\\work-session-baseline.json",
+        "state\\production\\receiver\\completions.ndjson"
+      ]
+    }
+  },
+  "histories": {
+    "activeInstallationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+    "foreignInstallationId": "installation-7ece2c0b-8f3b-4839-b689-3ea661464e7b",
+    "foreignArchive": [
+      {
+        "source": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\runtime-owner.json",
+        "archive": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-mixed-local-repair\\foreign-history\\1",
+        "sha256": "ab709fac53cc1daf4ac237ca633414c841b27e3a3c2fb1c8f0fbe6cd428226d6",
+        "bytes": 656,
+        "inodePreserved": true
+      },
+      {
+        "source": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\broker\\broker-owner.lock",
+        "archive": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-mixed-local-repair\\foreign-history\\2",
+        "sha256": "25b8ccdb4bf3cf4734f75843808fe19e3587ec1bf3fc97a5c254efe6862a7030",
+        "bytes": 59,
+        "inodePreserved": true
+      },
+      {
+        "source": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+        "archive": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-mixed-local-repair\\foreign-history\\0",
+        "sha256": "53f132d20be491ee75fa3845a9a1f55b44d3572a647e15c817f00bbbae35ac66",
+        "bytes": 1379496,
+        "inodePreserved": true
+      },
+      {
+        "source": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\receiver\\owner",
+        "archive": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\transactions\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-mixed-local-repair\\foreign-history\\3",
+        "sha256": "15ff2e833c5f212181608fca9d447fe39cffddae0bd57f54d410360ef65d5f3d",
+        "bytes": 71,
+        "inodePreserved": true
+      }
+    ],
+    "foreignNativeReport": {
+      "source": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\installed-proof\\native-receipts.json",
+      "target": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4-Recovery\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-provenance\\native-receipts.json",
+      "sha256": "1e1fe13aa57d4c0990fe8227e3fb25bf30905afc2cc31531829dc306a1225bc2",
+      "bytes": 146912
+    },
+    "foreignReceiver": {
+      "available": false,
+      "reportedCount": 119,
+      "reportedSha256": "8a0dd0056a387ce371a9c20818350e453593e51e2ec4ba6fc349f9522e9d7cac",
+      "reconstructed": false
+    },
+    "foreignHistorySettlementCertified": false,
+    "foreignOutcomesReissued": false,
+    "commandsReplayed": 0,
+    "activeReceiver": {
+      "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production\\receiver\\completions.ndjson",
+      "oldPrefixBytes": 6108,
+      "oldPrefixSha256": "faf8b7f4f184e5db2f5cf0efbbe95e3970a7ac2f3c13dc00cf244c3b52b5a14b",
+      "prefixPreserved": true,
+      "records": 5,
+      "sha256": "8436818065b8ad6cc54ae25aa7112ac9c31da41b7f8c5e3747a8a159429e92c6",
+      "newRecords": [
+        {
+          "type": "begin",
+          "seq": 4,
+          "recordHash": "f7c01a886f86c5b1a7d08c9f722e0f2cdbcf009beacf69adcabc4b333e9ce52d"
+        },
+        {
+          "type": "complete",
+          "seq": 5,
+          "recordHash": "2e573155d958bd3f2d1f0e7668c4eccdbf574578b398f911875a9675db15a1cc"
+        }
+      ]
+    }
+  },
+  "installation": {
+    "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+    "stateDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production",
+    "updateId": "c7f271ab-e4e0-4c8e-a6a1-f5d5e67a037d",
+    "originalStopId": "dfcc12b3-a01d-4b10-8e8e-198d7126f0d2",
+    "standardInspectPhase": "stopped",
+    "steps": [
+      {
+        "mode": "inspect",
+        "attempts": 1,
+        "exitCode": 0,
+        "phase": "stopped"
+      },
+      {
+        "mode": "owner-update",
+        "attempts": 1,
+        "exitCode": 0,
+        "phase": "update-stopped"
+      },
+      {
+        "mode": "update-inspect",
+        "attempts": 1,
+        "exitCode": 0,
+        "phase": "update-stopped"
+      },
+      {
+        "mode": "update-enable",
+        "attempts": 1,
+        "exitCode": 0,
+        "enabled": true
+      }
+    ],
+    "enabled": true,
+    "credentialsRotatedLocally": true,
+    "credentialsTransferredOrPrinted": false,
+    "record": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\update-once.json",
+      "sha256": "d359cd735499dbe909768a8754c5d338599cc85a625b5a526e4e629f6ad002c2"
+    }
+  },
+  "connection": {
+    "toolNamespace": "mcp__after_effects_core4",
+    "configuredNamespaceAppearedAfterUpdate": true,
+    "effectiveConfig": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\effective-config-final.json",
+      "sha256": "a67d118c2ad01f5847745b29fc63d86fe1421cfe0b999437239b4aadce38846a"
+    },
+    "coldStatus": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\configured-cold-status.json",
+      "sha256": "0f059b77371d225e8839afb1c4d607973dfc4e7f6831e3d3a8bc84e36f2df575"
+    },
+    "ownerPid": 3936,
+    "ownerBirthTicks": "639299880254966990",
+    "ownerBootId": "b0e268e2-b35f-4846-9c3a-04dffcb35187",
+    "aePid": 23616,
+    "aeBirthTicks": "639299880842585740",
+    "aeVersion": "26.3x87",
+    "origin": "file://",
+    "peerConnected": true,
+    "controllerReleased": true,
+    "activity": {
+      "fault": false,
+      "pending": false,
+      "unresolved": false
+    },
+    "holder": null,
+    "ledgerFault": false,
+    "ownershipFault": null,
+    "physicalUnknown": false,
+    "processCensus": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\processes-final-live.json",
+      "sha256": "d70b520a7537c6929ad8041cf5d35db98bee627f0c57345199a9d785e1f4f06c"
+    }
+  },
+  "native": {
+    "count": 1,
+    "moduleId": "project-inspection",
+    "operationId": "inspect-project",
+    "commandId": "inspect-f58d8ea5-7b82-470d-80b7-fadad0222039",
+    "contractId": "0524d0e4b475a58c35a7e2b3ef76f75bdd191ad4f4769087ea8bd77f9e29573f",
+    "modulePin": "9a2376956c44674d322ce37b2c8d3481f554ce277524f2e0232f708f30d4b999",
+    "evidenceRef": "observation-4b867b4a-8408-4b1f-bc40-802d3d6f1756",
+    "receiptRef": "1f643d7ca0d597b0607d0bfacdb96d23ce799b5e350b72aa60ca50d1fbae7631",
+    "observation": {
+      "activeComp": null,
+      "aeVersion": "26.3x87",
+      "compositions": [],
+      "coverage": {
+        "displayNamesShortened": false,
+        "inventory": {
+          "itemsScanned": 0,
+          "nextCursor": null,
+          "startItemIndex": 1,
+          "status": "complete",
+          "throughItemIndex": 0
+        },
+        "layers": {
+          "returned": 0,
+          "total": 0
+        },
+        "lookup": {
+          "compId": null,
+          "method": "none",
+          "status": "not_requested"
+        }
+      },
+      "dirty": false,
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "Несохранённый проект",
+        "numItems": 0,
+        "saved": false
+      },
+      "projectRevision": 1,
+      "target": {
+        "compId": null,
+        "projectId": null
+      },
+      "truncated": false
+    },
+    "authority": false,
+    "continuity": false,
+    "proof": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\configured-native-proof.json",
+      "sha256": "f4defe5c33a774bf3967841807e4a486ff20c8cf3967098812d8993412a3322f"
+    },
+    "finalStatus": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\configured-final-status.json",
+      "sha256": "d645188783c40916c8590ecab8cbcd5d1185949f09c145abd2a21aa7c107bb96"
+    }
+  },
+  "ui": {
+    "panelVersion": "4.2.4",
+    "panelReady": true,
+    "menu": "Window > Extensions > AE Agent Core 4.2.4",
+    "menuVerified": true,
+    "mainWindow": "Adobe After Effects 2026 - Untitled Project.aep",
+    "screenshots": [
+      {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\docs\\evidence\\core-4.2.4-desktop-20261111\\menu.png",
+        "sha256": "b84e01dfa5b86cf28ef908773a21bfafe1c4633c1f0261799cf78c39ad312d43"
+      },
+      {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\docs\\evidence\\core-4.2.4-desktop-20261111\\panel.png",
+        "sha256": "e38eeeef4101f69d0434a6d2ff8e41abb88900857adc211f11d8941433023bfe"
+      }
+    ],
+    "observations": [
+      {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\docs\\evidence\\core-4.2.4-desktop-20261111\\menu.json",
+        "sha256": "a903ab7208ca4cc035d98711a2c490b0f4a3706d862aa12d030c19e587b47898"
+      },
+      {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\docs\\evidence\\core-4.2.4-desktop-20261111\\panel.json",
+        "sha256": "d00d5b6a0a9e22efa55df2a754c64aa1174362b84c890b8423eb608ab996be3c"
+      }
+    ]
+  },
+  "preservation": {
+    "backup": {
+      "id": "3884194e-07fb-4c33-8df0-130e284a674c",
+      "target": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4-Recovery\\3884194e-07fb-4c33-8df0-130e284a674c",
+      "manifest": {
+        "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4-Recovery\\3884194e-07fb-4c33-8df0-130e284a674c\\manifest.json",
+        "sha256": "c9915f2ebb991f7e9509b5910e5456d82b717f6b41492255b36752d7e1e80300"
+      },
+      "roles": [
+        {
+          "role": "installation",
+          "files": 1322,
+          "bytes": 29888811
+        },
+        {
+          "role": "cep",
+          "files": 7,
+          "bytes": 239575
+        },
+        {
+          "role": "preferences",
+          "files": 91,
+          "bytes": 9309616
+        },
+        {
+          "role": "project-config",
+          "files": 1,
+          "bytes": 1152
+        },
+        {
+          "role": "global-config",
+          "files": 1,
+          "bytes": 21566
+        },
+        {
+          "role": "aep-0",
+          "files": 1,
+          "bytes": 276729
+        },
+        {
+          "role": "aep-1",
+          "files": 1,
+          "bytes": 95724372
+        },
+        {
+          "role": "aep-2",
+          "files": 1,
+          "bytes": 95724372
+        },
+        {
+          "role": "aep-3",
+          "files": 1,
+          "bytes": 95762386
+        }
+      ],
+      "verified": "byte-exact",
+      "sourceUnchanged": true
+    },
+    "provenance": {
+      "directory": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4-Recovery\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-provenance",
+      "copies": [
+        {
+          "source": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\installed-proof\\native-receipts.json",
+          "target": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4-Recovery\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-provenance\\native-receipts.json",
+          "sha256": "1e1fe13aa57d4c0990fe8227e3fb25bf30905afc2cc31531829dc306a1225bc2",
+          "bytes": 146912
+        },
+        {
+          "source": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\tools\\repair-mixed-installation.js",
+          "target": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4-Recovery\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-provenance\\repair-operator.js",
+          "sha256": "43a7dcad764a2f68fd447bfac8369a0fb9c3618fe90aef859f3af41bc9bcde0c",
+          "bytes": 43889
+        },
+        {
+          "source": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\actual-plan-overlay-3f067ea7-2943-45f1-a1b8-1fe7d29e94e7.json",
+          "target": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4-Recovery\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-provenance\\accepted-readonly-plan.json",
+          "sha256": "0c38508d11cfe1fc72002958aaa0a1c7929e4fe6160782f19d4cfb93755dbea7",
+          "bytes": 1520534
+        },
+        {
+          "source": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\validation-overlay-final.log",
+          "target": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4-Recovery\\3f067ea7-2943-45f1-a1b8-1fe7d29e94e7-provenance\\validation.log",
+          "sha256": "1a9535e66fb4e43756bde17cd41b3826e423c0de7cfcf0300c8952935982ddcb",
+          "bytes": 21055
+        }
+      ]
+    },
+    "aeFiles": [
+      {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\slideshow-s1-msi-20261107\\slideshow-s1-desktop-working.aep",
+        "sha256": "773c86afc5ac63c2b8b3bf5b116414297700039a2bf9c2b94fe8aeaf54bdd663",
+        "bytes": 276729,
+        "unchanged": true
+      },
+      {
+        "file": "C:\\Проекты 21\\2026.11.09 - Анатомия хитов (ШМП, Мунивер, СЭБ)\\муз универ_ШМПушка_СЭБ_АНАТОМИЯ ХИТОВ folder\\муз универ_ШМПушка_СЭБ_АНАТОМИЯ ХИТОВ.aep",
+        "sha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+        "bytes": 95724372,
+        "unchanged": true
+      },
+      {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\p2-visible-probe.aep",
+        "sha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+        "bytes": 95724372,
+        "unchanged": true
+      },
+      {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\p2-visible-installed.aep",
+        "sha256": "794f0c50fd1fc02abdf0702b9f36694e20bfad3525c8577c0c68cd59ade791a6",
+        "bytes": 95762386,
+        "unchanged": true
+      }
+    ],
+    "preLaunchPreferencesExact": true,
+    "preLaunchPreferenceFiles": 91,
+    "preLaunchPreservedFiles": 102,
+    "preferencesAfterNormalLaunch": {
+      "changed": [
+        {
+          "relative": "26.0\\Debug Database.txt",
+          "before": "344e66143dac7bd19c676c24222575bc577b898c8bfa80291911bf8bdbe6cc83",
+          "after": "eb5545beb3eaf2946a7dba282e99d2036da2ca2c6a2b8d4880bd43031d8fbd0b"
+        },
+        {
+          "relative": "26.3\\SCRPriorState.json",
+          "before": "ce45a1fb9d8765ad479431a887fce2808e78532f90b02f00ae85c9b36aad16a5",
+          "after": "d73fd5b77a96cfafcdc623f7484d7117fa779d03f28aadcc875118e2ab4fde7c"
+        },
+        {
+          "relative": "Logs\\UXPLogs_2026-11-09_22-33-21_042857.log",
+          "before": "0464e957d4b8ef8f56e9bf7aeca72e62ca074ed77f012a2d32c8f2ad5200b42c",
+          "after": null
+        },
+        {
+          "relative": "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000136.ldb",
+          "before": "9fe9e5820cd16e00ffeec3bc9ad2b444f43fd07e17362a1af7ecfc037acd602b",
+          "after": null
+        },
+        {
+          "relative": "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000138.ldb",
+          "before": "84bf8c56cc9b2af6ccac8a99763213131a1a2e5048c43d151f2b33549f6f3fd0",
+          "after": null
+        },
+        {
+          "relative": "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000141.ldb",
+          "before": "c3b89d3e5d531cdd677d03c12543f65d261aaaf3d7d778e7689888a9f0f3fa68",
+          "after": null
+        },
+        {
+          "relative": "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000144.ldb",
+          "before": "42a9d58eb6bb9006a3d17f0dae632abd825a09eaaddca5d4a8733f217c4a5dc4",
+          "after": null
+        },
+        {
+          "relative": "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000145.log",
+          "before": "ca05b1978e30bcdc1375b998f75586d5d5ab806b83f2626e326efdc7271e5e0f",
+          "after": null
+        },
+        {
+          "relative": "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\CURRENT",
+          "before": "8b50c14115667f437268154693ef9b7725385d3651ec2965cc604dc9bac3ac5f",
+          "after": "adf5ec53c0754cc481914e01ba4ae592bca94a18222e38fb1e3d82438e0bf7f2"
+        },
+        {
+          "relative": "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\MANIFEST-000143",
+          "before": "240885be95af8eb7e1ea3c63741bcd12e842ed926ab95b0f88fdb689552d07fa",
+          "after": null
+        }
+      ],
+      "added": [
+        "Logs\\UXPLogs_2026-11-11_15-02-02_176715.log",
+        "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000149.ldb",
+        "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000151.ldb",
+        "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000152.log",
+        "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\MANIFEST-000150"
+      ]
+    },
+    "globalConfigUnchanged": true,
+    "projectConfigOnlyExpectedPackagePath": true,
+    "installationGatesReleased": true
+  },
+  "validation": {
+    "toolEvidence": "docs/evidence/core-desktop-mixed-repair-tool-20261111.json",
+    "tests": 38,
+    "failed": 0,
+    "crashBoundaries": 82,
+    "routing": 5,
+    "boundaries": 88,
+    "packageReproduced": true,
+    "msiProductAcceptanceReused": [
+      "docs/evidence/core-4.2.4-msi-20261110.json",
+      "docs/evidence/core-followup-msi-l4-final-20261110.json"
+    ]
+  },
+  "notRun": [
+    "native mutation",
+    "render",
+    "Titles",
+    "Slideshow S1",
+    "AME",
+    "broad source matrix"
+  ],
+  "msiTouched": false
+}

@@ -127,3 +127,55 @@ Read-only план рабочей установки прошёл:
 `3f067ea7-2943-45f1-a1b8-1fe7d29e94e7`, hash
 `b2c90b1ca3c4e9a39537330c0654dc1ab6a1f84e965520782f3356e8bc58deb4`.
 Применение ещё не выполнялось на момент фиксации этого инженерного этапа.
+
+## Итог применения и запуска
+
+### Progress
+
+- Применён ровно один repair `3f067ea7-2943-45f1-a1b8-1fe7d29e94e7`
+  по принятому hash `b2c90b1c…`. Оператор завершился `repaired`, runtime authority
+  не выдавал, оба собственных gates освобождены. Все 1322 исходных файла
+  установки сохранены на месте либо в раздельных архивах; проверены их SHA
+  и inode. Обе доступные истории и исходные квитанции сохранены.
+- Стандартный `maintain-owner inspect` принял настоящий старый `dfcc12b3…`
+  как `stopped`. Одна штатная update-транзакция
+  `c7f271ab-e4e0-4c8e-a6a1-f5d5e67a037d` прошла update, inspect, read-back и
+  enable. Установлены точные 193539…/a803a6…/177, ID e0 сохранён.
+- Свежий configured MCP автоматически появился в текущем чате после update.
+  Его реальные tools подтвердили Core 4.2.4 и local package pin. AE 23616
+  запущен штатно, открыт пустой несохранённый проект без изменений. Панель
+  и Window → Extensions показывают `AE Agent Core 4.2.4`.
+- Один `project-inspection` выполнен через acquire/connect/read/release.
+  Команда `inspect-f58d8ea5-7b82-470d-80b7-fadad0222039`, observation
+  `observation-4b867b4a-8408-4b1f-bc40-802d3d6f1756`; нативно прочитан
+  AE 26.3x87, 0 items, dirty=false. Управление освобождено.
+
+### Decision Log
+
+- Истории e0 и 7ece не объединялись. Активной остаётся e0; foreign ledger,
+  три owner-маркера, прежние CEP/config и полный backup доступны отдельно.
+  Receiver 7ece, отсутствовавший до ремонта, не реконструировался; его
+  прежние исходы не переиздавались и полная settlement-сертификация
+  этой исторической ветки не заявляется.
+- Локальные credentials обновлены только штатным update. Передачи с MSI,
+  ручных исправлений config вне Core, повторов settled native-команд,
+  native mutation/render, Titles/S1/AME не было. MSI не затронут.
+- AE и Owner оставлены работающими, панель открыта, контроллер свободен.
+
+### Validation
+
+- Current scoped 38/38 и 82 crash-границы PASS. Package и installed closure
+  сверены; источник поставки — опубликованный `v4.2.4`/`51eee397…`.
+- До запуска AE все 91 файла каталога настроек и 102 защищённых файла
+  update совпали. После обычного запуска изменились/удалились 10 записей
+  debug/UXP/Home storage, появились 5 UXP/log записей; это отражено отдельно.
+  Все четыре AEP и global config остались точными, project config отличается
+  только нужным package path. Пользовательская правка AGENTS.md сохранена.
+- Старый e0 receiver prefix 6108 bytes/`faf8b7f4…` точен. Добавились только
+  begin/complete одной inspection (records 4/5). Архив foreign ledger и
+  прежние transaction files сохранились. Current holder=null, activity
+  fault/pending/unresolved=false, physical unknown=false, unresolved=[];
+  один listener 3457 принадлежит Owner 3936.
+- [Итоговое evidence](evidence/core-4.2.4-desktop-repair-20261111.json),
+  [меню](evidence/core-4.2.4-desktop-20261111/menu.png),
+  [готовая панель](evidence/core-4.2.4-desktop-20261111/panel.png).

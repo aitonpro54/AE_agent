@@ -1,0 +1,19 @@
+{
+  "observedAt": "2026-11-11T10:04:03.713Z",
+  "selectedApp": "{6D809377-6AF0-444B-8957-A3773F02200E}\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+  "selectedTitle": "Adobe After Effects 2026 - Untitled Project.aep",
+  "window": {
+    "app": "{6D809377-6AF0-444B-8957-A3773F02200E}\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "id": 920166,
+    "title": "Adobe After Effects 2026 - Untitled Project.aep"
+  },
+  "menu": "Window > Extensions > AE Agent Core 4.2.4",
+  "panelOpen": true,
+  "observedText": [
+    "\t\t\t\t\t\t\t\t\t\t\t\t183 текстовый Канал Core 4.2.4 готов к командам",
+    "\t\t1881 меню Extensions",
+    "\t\t\t1882 элемент меню AE Agent Core 4.2.4 ID: 22937601",
+    "\t\t\t\t\t\t\t\t\t\t\t\t183 текстовый Канал Core 4.2.4 готов к командам",
+    "AE Agent Core 4.2.4 Канал Core 4.2.4 готов к командам Отдельное ядро Core4. Чтение текущего проекта не подтверждает непрерывность его состояния. Подключить Начать заново Подключение готово. Допуск к изменению проекта выдаётся отдельно."
+  ]
+}
