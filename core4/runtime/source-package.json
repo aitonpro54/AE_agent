@@ -33,6 +33,7 @@
   "optional": {
     "owner": {
       "files": [
+        "runtime/adobe-child-environment.js",
         "runtime/ae-panel-startup.js",
         "runtime/host/ensure-panel.jsx",
         "runtime/owner-contract.json",

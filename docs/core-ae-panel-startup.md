@@ -32,16 +32,34 @@ realpath, inode/bytes и неизменность nlink во время чтен
 и executable hash сверяются как прежде. Исторический alias не удаляется.
 Descriptor/release/CEP, executable и startup receipts сохраняют строгие guards.
 
-Если AE отсутствует, используется привязанный executable; если запущен один
-AE, сохраняются PID, birth и path. Команда имеет только фиксированные аргументы
-`AfterFX.exe -r <package-owned bootstrap.jsx>`. Входные пути, произвольный JSX,
-menu ID и `-m` не принимаются. Кратковременный собственный forwarding CLI при
+Dispatch protocol 3 разделяет cold launch: привязанный executable сначала
+запускается с пустым argv и видимым GUI (`windowsHide:false`). Записываются
+собственные PID, точный CIM birth, path и executable hash. Только после
+read-only проверки responsive main window без modal выполняется отдельный
+`AfterFX.exe -r <package-owned bootstrap.jsx>`. У warm AE GUI повторно не
+запускается: тот же readiness gate предшествует единственному `-r`. Exact CIM
+identity проверяется до и после PID-bound window observation; разные API
+birth сравниваются до миллисекунд только внутри этой exact CIM проверки.
+Modal, unresponsive и неготовое/скрытое окно не получают bootstrap.
+Входные пути, произвольный JSX, menu ID и `-m` не принимаются. Кратковременный собственный forwarding CLI при
 существующем AE допускается только как ожидающий процесс; готовность
 подтверждается после его исчезновения и повторной проверки единственного AE.
 
+Оба Adobe child получают отдельную среду из native KnownFolder/os.userInfo:
+USERPROFILE, APPDATA, LOCALAPPDATA, ProgramData, TEMP/TMP и ограниченный PATH
+из executable directory/System32/Windows. Owner/client scrub не меняется;
+provider/control secrets и унаследованный дополнительный PATH не передаются.
+Тот же небольшой helper используется aerender; manual не импортирует render
+jobs. Исправление среды не меняет ACL, настройки разрешений или preferences.
+
 В `state/production/panel-startup/<UUID>/` до dispatch записываются долговечный
-attempt, request и фиксированная копия JSX. Непосредственно перед внешним вызовом
-записывается `dispatch-entered.json`. Доказанная ошибка подготовки завершается
+attempt, request и фиксированная копия JSX. GUI и bootstrap имеют отдельные
+`gui-launch-entered`/`gui-submission`/`gui-host` и
+`bootstrap-dispatch-entered`/`bootstrap-submission` квитанции. UUID не повторяет
+ни один этап. GUI-only отказ до входа в bootstrap сохраняет
+`blocked_before_bootstrap`, `coldHostStarted:true` и host identity; он не
+называется отсутствием эффекта и не создаёт вечный startup fence.
+Доказанная ошибка подготовки завершается
 `rejected_before_dispatch`; собственные prepared-only остатки сверяются без
 нативного повтора. После входа во внешний вызов неопределённый исход остаётся
 UNKNOWN. JSX проверяет deadline, находит
@@ -49,6 +67,14 @@ UNKNOWN. JSX проверяет deadline, находит
 положительный целый command ID. Ошибки перехватываются без alert/необработанного
 AE modal. Ack содержит узкие read-only `app.version` и
 `projectPresent/file/dirty/numItems`; они не заменяют typed inspection.
+У v3 request/ACK есть точные nonce/deadline, а attempt фиксирует хеши request и
+bootstrap. В обеих deadline-ветках fixed JSX возвращает положительный
+`expired_before_menu` и не вызывает меню. Canonical receipt появляется только
+после успешных File.write, File.close и rename собственного `.pending` файла.
+Observer принимает expiry только по точному ACK и неизменным assets, при
+достигнутом deadline; elapsed time, отсутствие executing, pending/partial файлы
+или clock-back сами по себе ничего не завершают. Executing без ACK остаётся
+UNKNOWN, включая паузу после второй проверки deadline перед executeCommand.
 Пути состояния проверяются на junction/symlink/hardlink, записи owner публикуются
 эксклюзивно после fsync. Startup pending/UNKNOWN блокирует несовместимые операции
 и maintenance даже после истечения lease; observer и получение управления для

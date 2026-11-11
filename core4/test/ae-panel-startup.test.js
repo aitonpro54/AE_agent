@@ -21,17 +21,36 @@ function harness(t, options = {}) {
   let time = 1000, connected = false, rows = options.absent ? [] : [{ pid: 123, birth: '2026-01-01T00:00:00.0000000Z', executablePath }], launches = [], idle = true, reverified = 0;
   const expected = options.expected || { protocolVersion: 1, productVersion: '4.2.6', panelBuildId: 'b'.repeat(64), extensionId: 'com.codex.aeagentcore4.panel' };
   const context = { assertCurrent() { if (options.fenced) throw new Error('fenced'); } };
-  function ack(code = 'menu_executed', operationId = id) { fs.writeFileSync(path.join(stateDir, 'panel-startup', id, 'ack.json'), JSON.stringify({ code, operationId, hostFacts: facts })); }
+  function writeAck(directory, code = 'menu_executed', operationId = path.basename(directory)) {
+    const request = JSON.parse(fs.readFileSync(path.join(directory, 'request.json')));
+    fs.writeFileSync(path.join(directory, 'ack.json'), JSON.stringify({ code, operationId, requestNonce: request.requestNonce, deadline: request.deadline, checkedAt: time, hostFacts: facts }));
+  }
+  function ack(code = 'menu_executed', operationId = id) { writeAck(path.join(stateDir, 'panel-startup', id), code, operationId); }
+  const readyChecks = [], childEnvironment = { USERPROFILE: 'C:\\Users\\Fixture', APPDATA: 'C:\\Users\\Fixture\\AppData\\Roaming', PATH: 'fixture-explicit-only' };
   const service = createAePanelStartup({ installation, expectedIdentity: expected, peerStatus: options.peerStatus || (() => ({ peer: { connected, acceptedIdentity: expected, peerId: 'fixture-peer-' + connection, identityEpoch: 'fixture-epoch', identityObservedAt: connection } })),
     assertIdle(request) { if (!idle) throw new Error('startup_lane_busy'); if (options.assertIdle) options.assertIdle(request); }, reverify() { reverified++; if (reverified === options.reverifyFailAt) throw new Error('startup_reverify_failed'); }, observeSubmission: async pid => ({ pid, status: options.submissionPresent ? 'present' : 'absent' }), preflight() { if (++preflights === options.preflightFailAt) throw new Error('startup_preflight_failed'); }, now: () => time,
-    scan: async () => { if (++scans === options.scanFailAt) throw new Error('startup_scan_failed'); return structuredClone(rows); }, wait: async ms => { time += ms; if (options.waitHook) await options.waitHook(); if (options.forwarding && rows.length === 2) rows = rows.slice(0, 1); }, launch: async (exe, args) => { launches.push({ exe, args }); if (options.launchHook) await options.launchHook(); if (!options.timeout) { rows = [{ pid: 123, birth: '2026-01-01T00:00:00.0000000Z', executablePath }]; fs.writeFileSync(path.join(path.dirname(args[1]), 'ack.json'), JSON.stringify({ code: options.stale ? 'requires_host_restart' : 'menu_executed', operationId: path.basename(path.dirname(args[1])), hostFacts: facts })); connected = !options.stale; if (!options.staleConnected) connection++; if (options.forwarding) { rows.push({ pid: 456, birth: '2026-01-01T00:00:01.0000000Z', executablePath }); return { pid: 456 }; } } if (options.submission) return { pid: 456 }; } });
-  return { service, installation, context, launches, ack, expected, executablePath, get reverified() { return reverified; }, connect() { connected = true; connection++; }, busy() { idle = false; }, rows(value) { rows = value; }, advance(ms) { time += ms; } };
+    environment: () => childEnvironment, readiness: async host => { readyChecks.push(structuredClone(host)); if (options.readinessHook) return options.readinessHook(host); const state = options.readinessState || 'window-responsive'; return { state, pid: host.pid, birth: host.birth, dialogs: state === 'modal-observed' ? ['1'] : [] }; },
+    scan: async () => { if (++scans === options.scanFailAt) throw new Error('startup_scan_failed'); return structuredClone(rows); },
+    wait: async ms => { time += ms; if (options.waitHook) await options.waitHook(); if (options.forwarding && rows.length === 2) rows = rows.slice(0, 1); },
+    launch: async (exe, args, launchOptions) => {
+      launches.push({ exe, args, options: launchOptions });
+      if (args.length === 0) { if (options.guiLaunchHook) await options.guiLaunchHook(); if (!options.guiNoHost) rows = [{ pid: 123, birth: '2026-01-01T00:00:00.0000000Z', executablePath }]; return { pid: 123 }; }
+      if (options.launchHook) await options.launchHook();
+      if (!options.timeout) {
+        rows = [{ pid: 123, birth: '2026-01-01T00:00:00.0000000Z', executablePath }]; writeAck(path.dirname(args[1]), options.stale ? 'requires_host_restart' : 'menu_executed');
+        connected = !options.stale; if (!options.staleConnected) connection++;
+        if (options.forwarding) { rows.push({ pid: 456, birth: '2026-01-01T00:00:01.0000000Z', executablePath }); return { pid: 456 }; }
+      }
+      if (options.submission) return { pid: 456 };
+    } });
+  return { service, installation, context, launches, ack, expected, executablePath, readyChecks, childEnvironment, get reverified() { return reverified; }, connect() { connected = true; connection++; }, busy() { idle = false; }, rows(value) { rows = value; }, advance(ms) { time += ms; } };
 }
 test('ae-panel-startup cold absent launches exact executable with one fixed -r asset and authentic panel', async t => {
   const f = harness(t, { absent: true }), result = await f.service.ensure({ operationId: id, timeoutMs: 1000 }, f.context);
-  assert.equal(result.outcome, 'ready'); assert.equal(result.nativeVerified, false); assert.equal(f.launches.length, 1); assert.equal(f.launches[0].exe, f.executablePath);
-  assert.deepEqual(f.launches[0].args, ['-r', path.join(f.installation.stateDir, 'panel-startup', id, 'bootstrap.jsx')]); assert.equal(f.reverified, 2);
-  assert.equal((await f.service.ensure({ operationId: id }, f.context)).outcome, 'ready'); assert.equal(f.launches.length, 1);
+  assert.equal(result.outcome, 'ready'); assert.equal(result.nativeVerified, false); assert.equal(f.launches.length, 2); assert.equal(f.launches[0].exe, f.executablePath);
+  assert.deepEqual(f.launches[0].args, []); assert.equal(f.launches[0].options.windowsHide, false); assert.equal(f.launches[1].options.windowsHide, true); assert.equal(f.launches[0].options.env, f.childEnvironment);
+  assert.deepEqual(f.launches[1].args, ['-r', path.join(f.installation.stateDir, 'panel-startup', id, 'bootstrap.jsx')]); assert.equal(f.reverified, 3);
+  assert.equal((await f.service.ensure({ operationId: id }, f.context)).outcome, 'ready'); assert.equal(f.launches.length, 2);
 });
 test('ae-panel-startup existing connected host is idempotent and keeps PID/birth without dispatch', async t => {
   const f = harness(t); f.connect(); assert.equal((await f.service.ensure({ operationId: id }, f.context)).outcome, 'ready'); assert.equal(f.launches.length, 0);
@@ -42,10 +61,61 @@ test('ae-panel-startup existing connected host is idempotent and keeps PID/birth
 test('ae-panel-startup existing host waits for its exact forwarding CLI to exit before accepting readiness', async t => {
   const f = harness(t, { forwarding: true }); assert.equal((await f.service.ensure({ operationId: id }, f.context)).outcome, 'ready'); assert.equal(f.launches.length, 1); assert.equal(f.service.status({ operationId: id }).attempt.original.pid, 123);
 });
+test('ae-panel-startup v3 cold GUI is visible and bootstrap waits for exact responsive modal-free host', async t => {
+  let calls = 0;
+  const f = harness(t, { absent: true, readinessHook(host) { calls++; assert.deepEqual(f.launches.map(call => call.args), [[]]); return { pid: host.pid, birth: host.birth, state: calls === 1 ? 'starting-or-hidden' : 'window-responsive', dialogs: [] }; } });
+  const result = await f.service.ensure({ operationId: id }, f.context); assert.equal(result.outcome, 'ready'); assert.equal(calls, 2); assert.deepEqual(f.launches[0].args, []); assert.equal(f.launches[0].options.windowsHide, false); assert.equal(f.launches[1].args[0], '-r');
+  const directory = path.join(f.installation.stateDir, 'panel-startup', id); assert.equal(JSON.parse(fs.readFileSync(path.join(directory, 'attempt.json'))).dispatchProtocol, 3);
+  for (const name of ['gui-launch-entered.json', 'gui-submission.json', 'gui-host.json', 'bootstrap-dispatch-entered.json']) assert.ok(fs.existsSync(path.join(directory, name)));
+  const host = JSON.parse(fs.readFileSync(path.join(directory, 'gui-host.json'))); assert.equal(host.pid, 123); assert.equal(host.executableHash, hash(fs.readFileSync(f.executablePath)));
+});
+test('ae-panel-startup v3 warm uses only -r and modal/unresponsive/hidden hosts never receive bootstrap', async t => {
+  const ready = harness(t); assert.equal((await ready.service.ensure({ operationId: id }, ready.context)).outcome, 'ready'); assert.equal(ready.launches.length, 1); assert.equal(ready.launches[0].args[0], '-r'); assert.equal(ready.launches[0].options.env, ready.childEnvironment);
+  for (const readinessState of ['modal-observed', 'unresponsive', 'starting-or-hidden', 'window-unobserved']) {
+    const f = harness(t, { readinessState }), result = await f.service.ensure({ operationId: id, timeoutMs: 1000 }, f.context); assert.equal(result.outcome, 'rejected'); assert.equal(f.launches.length, 0); assert.equal(f.service.activity().unresolved, false);
+  }
+});
+test('ae-panel-startup v3 readiness PID or birth mismatch never authorizes bootstrap', async t => {
+  for (const changed of ['pid', 'birth']) {
+    const f = harness(t, { readinessHook(host) { return { state: 'window-responsive', pid: changed === 'pid' ? host.pid + 1 : host.pid, birth: changed === 'birth' ? '2026-01-02T00:00:00.0000000Z' : host.birth, dialogs: [] }; } });
+    const result = await f.service.ensure({ operationId: id }, f.context); assert.equal(result.code, 'rejected_before_dispatch'); assert.equal(result.completion.reason, 'startup_readiness_identity'); assert.equal(f.launches.length, 0);
+  }
+});
+test('ae-panel-startup v3 actual fixture owner exit after GUI host publication is recovered as GUI-only without replay', async t => {
+  const f = harness(t), childSource = "const {createAePanelStartup}=require(process.argv[1]);const d=JSON.parse(process.argv[2]);let rows=[];const service=createAePanelStartup({installation:d.installation,expectedIdentity:d.expected,peerStatus:()=>({peer:{connected:false}}),assertIdle(){},preflight(){},reverify(){},environment:()=>({}),scan:async()=>rows,launch:async(exe,args)=>{if(args.length)throw Error('bootstrap_forbidden');rows=[{pid:123,birth:'2026-01-01T00:00:00.0000000Z',executablePath:exe}];return{pid:123};},readiness:async()=>process.exit(0)});service.ensure({operationId:d.id},{assertCurrent(){}}).then(()=>{process.exitCode=2;}).catch(e=>{console.error(e.message);process.exitCode=3;});";
+  const child = require('node:child_process').spawnSync(process.execPath, ['-e', childSource, require.resolve('../runtime/ae-panel-startup'), JSON.stringify({ installation: f.installation, expected: f.expected, id })], { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+  assert.equal(child.status, 0, child.stderr); const directory = path.join(f.installation.stateDir, 'panel-startup', id);
+  assert.ok(fs.existsSync(path.join(directory, 'gui-host.json'))); assert.equal(fs.existsSync(path.join(directory, 'result.json')), false); assert.equal(fs.existsSync(path.join(directory, 'bootstrap-dispatch-entered.json')), false);
+  const result = await f.service.observe({ operationId: id }); assert.equal(result.code, 'blocked_before_bootstrap'); assert.equal(result.completion.coldHostStarted, true); assert.equal(result.completion.host.pid, 123); assert.equal((await f.service.ensure({ operationId: id }, f.context)).code, 'blocked_before_bootstrap'); assert.equal(f.launches.length, 0);
+});
+test('ae-panel-startup v3 GUI-only modal or lease failure retains hostStarted, clears only startup gate, and never replays stages', async t => {
+  for (const failure of ['modal', 'lease']) {
+    const options = { absent: true, ...(failure === 'modal' ? { readinessState: 'modal-observed' } : { guiLaunchHook() { options.fenced = true; } }) }, f = harness(t, options);
+    const result = await f.service.ensure({ operationId: id }, f.context); assert.equal(result.code, 'blocked_before_bootstrap'); assert.equal(result.completion.coldHostStarted, true); assert.equal(result.completion.host.pid, 123); assert.deepEqual(f.launches.map(call => call.args), [[]]); assert.equal(f.service.activity().unresolved, false);
+    options.fenced = false; assert.equal((await f.service.ensure({ operationId: id }, f.context)).code, 'blocked_before_bootstrap'); assert.equal(f.launches.length, 1);
+  }
+});
+test('ae-panel-startup v3 crash at GUI or bootstrap external boundary never replays that UUID', async t => {
+  const cold = harness(t, { absent: true, guiLaunchHook() { throw new Error('fixture_gui_unknown'); } }); assert.equal((await cold.service.ensure({ operationId: id }, cold.context)).outcome, 'unknown'); assert.equal((await cold.service.ensure({ operationId: id }, cold.context)).outcome, 'unknown'); assert.equal(cold.launches.length, 1);
+  const warm = harness(t, { launchHook() { throw new Error('fixture_bootstrap_unknown'); } }); assert.equal((await warm.service.ensure({ operationId: id }, warm.context)).outcome, 'unknown'); assert.equal((await warm.service.ensure({ operationId: id }, warm.context)).outcome, 'unknown'); assert.equal(warm.launches.length, 1);
+});
+test('ae-panel-startup v3 exact positive expired ACK settles startup only; time or executing absence never substitutes', async t => {
+  const f = harness(t, { timeout: true }); await f.service.ensure({ operationId: id, timeoutMs: 1000 }, f.context); assert.equal((await f.service.observe({ operationId: id })).outcome, 'unknown'); f.ack('expired_before_menu');
+  const result = await f.service.observe({ operationId: id }); assert.equal(result.code, 'expired_before_menu'); assert.equal(result.completion.nativeMenuSubmitted, false); assert.equal(f.launches.length, 1); assert.equal(f.service.activity().unresolved, false);
+  for (const executing of ['', '{', '{"operationId":"' + id + '"}']) { const held = harness(t, { timeout: true }); await held.service.ensure({ operationId: id, timeoutMs: 1000 }, held.context); fs.writeFileSync(path.join(held.installation.stateDir, 'panel-startup', id, 'executing.json'), executing); assert.equal((await held.service.observe({ operationId: id })).outcome, 'unknown'); assert.equal(held.launches.length, 1); }
+});
+test('ae-panel-startup v3 clock-back, changed request/bootstrap or malformed ACK cannot settle by expiry', async t => {
+  for (const changed of ['clock', 'request.json', 'bootstrap.jsx', 'ack.json']) {
+    const f = harness(t, { timeout: true }); await f.service.ensure({ operationId: id, timeoutMs: 1000 }, f.context); f.ack('expired_before_menu'); const directory = path.join(f.installation.stateDir, 'panel-startup', id);
+    if (changed === 'clock') f.advance(-1000); else fs.appendFileSync(path.join(directory, changed), changed === 'ack.json' ? '{' : ' ');
+    if (changed === 'ack.json') await assert.rejects(f.service.observe({ operationId: id })); else assert.equal((await f.service.observe({ operationId: id })).outcome, 'unknown');
+    assert.equal(f.service.activity().unresolved, true); assert.equal(f.launches.length, 1);
+  }
+});
 test('ae-panel-startup cached connected peer with no AE still launches cold and requires a new accepted peer', async t => {
   const f = harness(t, { absent: true }); f.connect(); const before = f.service.activity(); assert.equal(before.pending, false);
-  const result = await f.service.ensure({ operationId: id, timeoutMs: 1000 }, f.context); assert.equal(f.launches.length, 1); assert.equal(result.outcome, 'ready'); assert.equal(result.completion.host.pid, 123);
-  const stale = harness(t, { absent: true, staleConnected: true }); stale.connect(); assert.equal((await stale.service.ensure({ operationId: id, timeoutMs: 1000 }, stale.context)).outcome, 'unknown'); assert.equal(stale.launches.length, 1);
+  const result = await f.service.ensure({ operationId: id, timeoutMs: 1000 }, f.context); assert.equal(f.launches.length, 2); assert.equal(result.outcome, 'ready'); assert.equal(result.completion.host.pid, 123);
+  const stale = harness(t, { absent: true, staleConnected: true }); stale.connect(); assert.equal((await stale.service.ensure({ operationId: id, timeoutMs: 1000 }, stale.context)).outcome, 'unknown'); assert.equal(stale.launches.length, 2);
 });
 test('ae-panel-startup expired warm host plus absent own forwarder interrupts only startup and preserves receiver UNKNOWN', async t => {
   const f = harness(t, { timeout: true, submission: true }); assert.equal((await f.service.ensure({ operationId: id, timeoutMs: 1000 }, f.context)).outcome, 'unknown'); f.rows([]);
@@ -88,7 +158,7 @@ test('ae-panel-startup hardlink allowance is confined to adoption data, never ex
   const cep = harness(t), manifest = path.join(cep.installation.cepDir, 'CSXS/manifest.xml'); fs.mkdirSync(path.dirname(manifest), { recursive: true }); fs.copyFileSync(path.join(source, 'cep/CSXS/manifest.xml'), manifest); fs.linkSync(manifest, manifest + '.history');
   assert.throws(() => collisionPreflight(cep.installation, cep.executablePath, [path.dirname(cep.installation.cepDir)]), /startup_path_redirected/);
   const release = harness(t), privateRoot = path.join(path.dirname(release.installation.stateDir), 'release'), script = path.join(privateRoot, 'runtime/host/ensure-panel.jsx'); fs.mkdirSync(path.dirname(script), { recursive: true }); fs.writeFileSync(script, fixed); fs.linkSync(script, script + '.history'); release.installation.releaseDir = privateRoot;
-  assert.equal((await release.service.ensure({ operationId: id }, release.context)).code, 'rejected_before_dispatch'); assert.equal(release.launches.length, 0);
+  assert.equal((await release.service.ensure({ operationId: id }, release.context)).code, 'startup_path_redirected'); assert.equal(release.launches.length, 0);
   const missing = harness(t); fs.unlinkSync(path.join(missing.installation.stateDir, 'host-adoption.json')); assert.equal((await missing.service.ensure({ operationId: id }, missing.context)).code, 'startup_executable_binding_required');
 });
 test('ae-panel-startup linked adoption still rejects directory redirection and a changing link identity', async t => {
@@ -168,15 +238,39 @@ test('ae-panel-startup owner controller/baseline gates allow ensure without gran
   await call('controller_acquire', { sessionId: id }); assert.equal((await call('core_ensure_ae_panel', { operationId: id })).ok, true); assert.deepEqual(calls, ['ensureAePanel']); assert.equal(owner.status().workSession.baselineRequired, true);
   assert.equal((await call('core_ensure_ae_panel', { operationId: id, args: [] })).code, 'owner_payload'); await owner.close();
 });
-function runJsx({ command = 42, throws = false, file = 'C:\\space dir\\title "x"\r\n\u0001\ud800.aep' } = {}) {
-  const files = new Map([['/fixture/request.json', canonical({ deadline: Date.now() + 10000, operationId: id })]]); const executed = [];
-  function File(name) { this.name = name; this.parent = { fsName: '/fixture' }; this.exists = files.has(name); this.open = mode => { this.mode = mode; return true; }; this.read = () => files.get(name); this.write = s => { files.set(name, s); return true; }; this.close = () => {}; }
-  vm.runInNewContext(fixed, { File, $: { fileName: '/fixture/bootstrap.jsx' }, app: { version: '26.3', project: { file: { fsName: file }, dirty: false, numItems: 0 }, findMenuCommandId(label) { assert.equal(label, 'AE Agent Core'); if (throws) throw new Error('API failure'); return command; }, executeCommand(value) { assert.ok(files.has('/fixture/executing.json')); executed.push(value); } } });
+function runJsx({ command = 42, throws = false, file = 'C:\\space dir\\title "x"\r\n\u0001\ud800.aep', now = 1000, deadline = 11000, lookupDelay = 0, existingExecuting, writeFailure, closeFailure, pauseBeforeExecute = false } = {}) {
+  let clock = now; const files = new Map([['/fixture/request.json', canonical({ deadline, operationId: id, requestNonce: other })]]), executed = [];
+  if (existingExecuting !== undefined) files.set('/fixture/executing.json', existingExecuting);
+  function File(name) { this.name = name; this.parent = { fsName: '/fixture' }; this.exists = files.has(name); this.open = mode => { this.mode = mode; return true; }; this.read = () => files.get(name); this.write = value => { files.set(name, writeFailure === path.basename(name).replace(/\.pending$/, '') ? value.slice(0, 5) : value); return writeFailure !== path.basename(name).replace(/\.pending$/, ''); }; this.close = () => closeFailure !== path.basename(name).replace(/\.pending$/, ''); this.rename = target => { const destination = '/fixture/' + target; if (files.has(destination)) return false; files.set(destination, files.get(name)); files.delete(name); return true; }; }
+  class Clock extends Date { constructor(...args) { super(...(args.length ? args : [clock])); } }
+  const source = pauseBeforeExecute ? fixed.replace('app.executeCommand(command);', 'throw new Error("fixture_pause_before_execute");app.executeCommand(command);') : fixed;
+  vm.runInNewContext(source, { Date: Clock, File, $: { fileName: '/fixture/bootstrap.jsx' }, app: { version: '26.3', project: { file: { fsName: file }, dirty: false, numItems: 0 }, findMenuCommandId(label) { assert.equal(label, 'AE Agent Core'); clock += lookupDelay; if (throws) throw new Error('API failure'); return command; }, executeCommand(value) { assert.ok(files.has('/fixture/executing.json')); executed.push(value); } } });
   return { files, executed };
 }
 test('ae-panel-startup fixed JSX escapes host facts, receipts before execute, no arbitrary script and no exception modal', () => {
   const f = runJsx(), receipt = JSON.parse(f.files.get('/fixture/ack.json')); assert.equal(receipt.hostFacts.file, 'C:\\space dir\\title "x"\r\n\u0001\ud800.aep'); assert.deepEqual(f.executed, [42]);
   assert.deepEqual(runJsx({ command: 0 }).executed, []); assert.doesNotThrow(() => runJsx({ throws: true }));
+});
+test('ae-panel-startup v3 fixed JSX publishes positive expiry before lookup or after delayed lookup without executing menu', () => {
+  const initial = runJsx({ now: 12000, deadline: 11000 }); assert.deepEqual(initial.executed, []); assert.equal(JSON.parse(initial.files.get('/fixture/ack.json')).code, 'expired_before_menu'); assert.equal(initial.files.has('/fixture/executing.json'), false);
+  const delayed = runJsx({ now: 1000, deadline: 2000, lookupDelay: 1500 }); assert.deepEqual(delayed.executed, []); assert.equal(JSON.parse(delayed.files.get('/fixture/ack.json')).code, 'expired_before_menu'); assert.equal(delayed.files.has('/fixture/executing.json'), true);
+});
+test('ae-panel-startup v3 existing executing/partial state and pause before execute never fabricate expired ACK', () => {
+  for (const existingExecuting of ['', '{', '{"operationId":"' + id + '"}']) { const f = runJsx({ now: 12000, deadline: 11000, existingExecuting }); assert.deepEqual(f.executed, []); assert.equal(f.files.has('/fixture/ack.json'), false); }
+  const paused = runJsx({ pauseBeforeExecute: true }); assert.deepEqual(paused.executed, []); assert.equal(paused.files.has('/fixture/executing.json'), true); assert.equal(paused.files.has('/fixture/ack.json'), false);
+});
+test('ae-panel-startup v3 receipt write/close failures publish no canonical ACK and cannot authorize menu execution', () => {
+  for (const failure of [{ writeFailure: 'executing.json' }, { closeFailure: 'executing.json' }, { closeFailure: 'request.json' }]) { const f = runJsx(failure); assert.deepEqual(f.executed, []); assert.equal(f.files.has('/fixture/ack.json'), false); }
+  for (const failure of [{ writeFailure: 'ack.json' }, { closeFailure: 'ack.json' }]) { const f = runJsx({ ...failure, now: 12000, deadline: 11000 }); assert.deepEqual(f.executed, []); assert.equal(f.files.has('/fixture/ack.json'), false); assert.equal(f.files.has('/fixture/ack.json.pending'), true); }
+});
+test('ae-panel-startup v3 shared environment is packaged for both needed consumers without render jobs in manual', () => {
+  const manual = buildPackage(undefined, 'manual', { runtimeModel: 'owner' }), operator = buildPackage(undefined, 'operator-render-jobs', { runtimeModel: 'owner' }), readonly = buildPackage(undefined, 'readonly');
+  assert.ok(manual.files['runtime/adobe-child-environment.js']); assert.ok(operator.files['runtime/adobe-child-environment.js']); assert.equal(Object.hasOwn(manual.files, 'runtime/aerender-jobs.js'), false); assert.equal(Object.hasOwn(readonly.files, 'runtime/adobe-child-environment.js'), false);
+});
+test('ae-panel-startup v2 historical host-exit observer still preserves receiver UNKNOWN without expiry-only retirement', async t => {
+  const f = harness(t, { timeout: true, submission: true }); await f.service.ensure({ operationId: id, timeoutMs: 1000 }, f.context); const directory = path.join(f.installation.stateDir, 'panel-startup', id), file = path.join(directory, 'attempt.json');
+  const attempt = JSON.parse(fs.readFileSync(file)); attempt.dispatchProtocol = 2; fs.writeFileSync(file, canonical(attempt)); fs.renameSync(path.join(directory, 'bootstrap-dispatch-entered.json'), path.join(directory, 'dispatch-entered.json')); fs.renameSync(path.join(directory, 'bootstrap-submission.json'), path.join(directory, 'submission.json'));
+  assert.equal((await f.service.observe({ operationId: id })).outcome, 'unknown'); f.rows([]); assert.equal((await f.service.observe({ operationId: id })).code, 'startup_host_exited'); assert.equal(f.launches.length, 1);
 });
 test('ae-panel-startup installed duplicate owners and ScriptUI title collision fail before find/execute', t => {
   const f = harness(t), ext = f.installation.cepDir; fs.mkdirSync(path.join(ext, 'CSXS'), { recursive: true }); fs.copyFileSync(path.join(source, 'cep/CSXS/manifest.xml'), path.join(ext, 'CSXS/manifest.xml'));

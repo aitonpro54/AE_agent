@@ -4,9 +4,9 @@
 // supplied by the operator after inspecting the saved AEP.
 const fs = require('node:fs');
 const path = require('node:path');
-const os = require('node:os');
 const { createHash, randomUUID } = require('node:crypto');
 const { spawn, execFileSync } = require('node:child_process');
+const { adobeEnvironment } = require('./adobe-child-environment');
 const { createServer } = require('node:net');
 const { plainPath, readAep, samePath } = require('./project-save-proof');
 const { validateTimeline, verifyMediaFacts } = require('./aerender-profile');
@@ -107,27 +107,6 @@ function checkInputs(spec, working) {
   verifyInput(spec.engine, /^aerender\.exe$/i);
   verifyInput(spec.ffprobe, /^ffprobe\.exe$/i);
   verifyInput(spec.ffmpeg, /^ffmpeg\.exe$/i);
-}
-
-function adobeEnvironment(executable) {
-  const failure = 'aerender_native_environment';
-  const folders = {SystemRoot:'Windows',APPDATA:'ApplicationData',LOCALAPPDATA:'LocalApplicationData',
-    ProgramData:'CommonApplicationData',ProgramFiles:'ProgramFiles',CommonProgramFiles:'CommonProgramFiles',
-    'ProgramFiles(x86)':'ProgramFilesX86','CommonProgramFiles(x86)':'CommonProgramFilesX86'};
-  const properties = Object.entries(folders).map(([key,folder]) => `'${key}'=[Environment]::GetFolderPath('${folder}')`);
-  const known = JSON.parse(windowsProbe('@{' + properties.join(';') + '} | ConvertTo-Json -Compress', failure));
-  const user = os.userInfo(), homeRoot = path.parse(user.homedir).root;
-  const windows = known.SystemRoot, system = path.join(windows, 'System32');
-  requireFact([windows, known.APPDATA, known.LOCALAPPDATA, known.ProgramData, user.homedir].every(value =>
-    typeof value === 'string' && path.isAbsolute(value) && !/[;\0]/.test(value)), failure);
-  const env = Object.fromEntries(Object.keys(folders).filter(key => known[key] && path.isAbsolute(known[key])).map(key => [key, known[key]]));
-  const temp = path.isAbsolute(process.env.TEMP || '') ? process.env.TEMP : path.join(known.LOCALAPPDATA, 'Temp');
-  // Adobe starts its own AfterFX child. Give it the native shell and user folders
-  // without passing the controller's PATH, credentials or developer variables.
-  return {...env, WINDIR:windows, SYSTEMDRIVE:path.parse(windows).root.slice(0,2), ComSpec:path.join(system,'cmd.exe'),
-    PATH:[path.dirname(executable),system,windows].join(path.delimiter), PATHEXT:'.COM;.EXE;.BAT;.CMD',
-    USERPROFILE:user.homedir, USERNAME:user.username, HOMEDRIVE:homeRoot.slice(0,2), HOMEPATH:user.homedir.slice(2),
-    TEMP:temp, TMP:temp, NODE_V8_COVERAGE:''};
 }
 
 async function withLock(root, action) {
@@ -317,7 +296,7 @@ function createJobs(root, identity = processIdentity, listRenderers = rendererRo
         plainPath(path.dirname(job.partial),true);
         requireFact(!present(job.partial) && !present(job.spec.output), 'aerender_output_exists');
         const log = logFor(job), args = renderArgs(job,log);
-        const env = adobeEnvironment(job.spec.engine.path);
+        const env = adobeEnvironment(job.spec.engine.path, { failure: 'aerender_native_environment' });
         const intent = { executable:job.spec.engine.path, args, createdAt:new Date().toISOString(), workerHash:jobHash(self) };
         write('start-intent.json', intent);
         const fd = fs.openSync(file(id,'console.log'),'wx');

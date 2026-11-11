@@ -250,3 +250,66 @@ stage2-summary.json, stage2-builds.json, stage2-source-freeze.json и stage2-che
 - Прежний полный source набор относится к исходному milestone9b5ca3b;
   эта узкая дельта имеет собственные current checks и review. Пересборки
   выпускаются в новых nativefix directories, прежние artifacts сохраняются.
+
+## Native: холодный старт и исправление среды Adobe, 12 ноября
+
+### Progress
+
+- Совместимый reader зафиксирован в d64ef69. Stopped update на manual b07a47eb…
+  завершён: stop a75c05da-4f32-423e-9015-f6c53755a79f, transaction
+  0c7f0e46-12c3-4d5a-8320-c5c935c200d0, 1968 защищённых файлов сохранены.
+- Ensure 28b60dc1-9bfb-4b4e-bd3f-29935a60f0e4 получил положительную native
+  квитанцию requires_host_restart: старый AE 23616 держал прежний menu cache.
+  Проект был пустым clean Untitled, без файла и элементов. Фиксированный guard
+  проверил это дважды перед app.quit. Исход quit_requested и отсутствие процесса
+  установлены по исходной квитанции и свежему чтению, повторов нет.
+- Cold ensure 80b6916e-66fe-4a79-9ed8-9d7389a17246 запустил AE 10340,
+  но AE остановился на fatal-диалоге о запуске и preferences folder до bootstrap.
+  В коде подтверждено наследование очищенного owner environment без пользовательских
+  путей Adobe. Причинность этого дефекта ещё требует успешной native перепроверки.
+- Необходимый UI-блок был выполнен через Computer Use. Оба runtime не показывали
+  скрытый AE main window и безымянный modal; сеансы завершены сразу после проверки,
+  native JS kernel сброшен. Единственный WM_CLOSE точному подтверждённому fatal
+  modal завершил AE штатно, без force kill. Исход прежнего UUID установлен тем же
+  observer: interrupted/startup_host_exited, submission absent. Receiver UNKNOWN
+  false, повторная отправка не выполнялась.
+
+### Decision Log
+
+- Пользователь уточнил: аварийные окна и необходимые UI-only действия агент
+  обрабатывает сам через Computer Use и сразу освобождает управление. Нулевое
+  число CU-вызовов не является gate; обычный запуск и версия остаются CLI/typed.
+- Исполнитель scoped исправления — ae_implementer. Он выделяет общий Adobe child
+  environment helper, сохраняя sanitation owner/client, и разделяет cold GUI launch
+  [] → pinned responsive host → отдельный fixed -r bootstrap. Root — единственный
+  live-контроллер. Изменять ACL, preferences или security settings оснований нет.
+- Protocol 3 получает раздельные durable stages и положительную expired_before_menu
+  квитанцию. Один лишь таймаут либо отсутствие executing marker не разрешает replay.
+  Новые source/artifacts пройдут адресные проверки и независимый review до update.
+
+### Validation
+
+Исторические native receipts сохранены в
+.codex-runtime/core-ae-panel-startup-pathfix-20261111/, включая
+cold-launch-01.json, cold-reconcile-02.json и fatal-close-request.json.
+Это диагностика и установленный исход отказа, не успешный cold launch. Цель
+cold/hot/repeat и проверка загруженной панели остаются открытыми. AE сейчас закрыт.
+
+### Protocol 3: source milestone принят
+
+- ae_implementer завершил отдельное Adobe child environment, visible cold launch,
+  pinned responsive/no-modal ожидание и отдельный bootstrap. Среда owner/client
+  не расширена; helper используется также прежним aerender consumer.
+- Current focused 49/49 (startup41, environment3, readiness5), адресные aerender2/2,
+  isolated operator closure4/4 PASS. Включены PID/birth mismatch и реальный выход
+  fixture owner после gui-host publication с наблюдением без replay новым owner.
+  Syntax8 JS, JSX ES3, boundaries91, diff-check PASS; runners завершены.
+- Независимый startup_review: ACCEPT, 12/12 LF SHA совпали. Freeze
+  .codex-runtime/core-ae-panel-startup-20261111/v3-source-freeze.json,
+  SHA49ef7c9946aef1a14a146f313ba977fa5cb13f509731cc1f208482d1e760f317.
+- До нового native update сохранён свежий read-only snapshot установки b07…:
+  installation2028, CEP8, preferences89, четыре AEP и обе конфигурации.
+  Manifest22e405923c65d77a1a21b8573681ffd47bb6f68361e881c8aa0ec2ec636a6d77.
+  Новый phase core-ae-panel-startup-v3-20261112 не переиспользует прежние intents.
+- Этот commit фиксирует source и диагностику; deterministic packages и native
+  cold/hot/repeat ещё ожидаются. Native/MSI/full release этим ACCEPT не заявляются.

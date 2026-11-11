@@ -5,6 +5,7 @@ const os = require('node:os');
 const { execFile, spawn } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
 const { hash, canonical } = require('../protocol/json');
+const { adobeEnvironment } = require('./adobe-child-environment');
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 function input(value, observe = false) {
   if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).some(k => !['operationId', ...(observe ? [] : ['timeoutMs'])].includes(k)) || !UUID.test(value.operationId) ||
@@ -44,10 +45,10 @@ function scanWindows() {
       try { if (e || stderr.trim()) throw new Error(); const rows = JSON.parse(stdout); if (!Array.isArray(rows) || rows.length > 16 || rows.some(p => !Number.isSafeInteger(p.pid) || p.pid < 1 || typeof p.birth !== 'string' || !Number.isFinite(Date.parse(p.birth)) || !path.win32.isAbsolute(p.executablePath))) throw new Error(); resolve(rows); } catch { reject(new Error('startup_process_probe')); }
     }));
 }
-function dispatch(executable, args) {
-  // AfterFX -r forwards to the one existing instance. No shell and no -m.
+function dispatch(executable, args, options) {
+  // Cold GUI starts visibly with []. Only a proven ready instance gets -r.
   return new Promise((resolve, reject) => {
-    const child = spawn(executable, args, { shell: false, windowsHide: true, detached: true, stdio: 'ignore', cwd: path.dirname(executable) });
+    const child = spawn(executable, args, { shell: false, windowsHide: options.windowsHide, env: options.env, detached: true, stdio: 'ignore', cwd: path.dirname(executable) });
     child.once('error', reject); child.once('spawn', () => { child.unref(); resolve({ pid: child.pid }); });
   });
 }
@@ -83,7 +84,7 @@ function ownsRegistryBootstrap(physical, operationId) {
   const bootstrap = physical.registryBootstrap;
   return !!(operationId && physical.pending?.stage === 'registry-bootstrap' && bootstrap?.startupOperationId === operationId && bootstrap.commandId === physical.pending.commandId && bootstrap.peerId === physical.peer.peerId && bootstrap.epoch === physical.peer.identityEpoch);
 }
-function createAePanelStartup({ installation, expectedIdentity, peerStatus, assertIdle, reverify = () => {}, preflight = collisionPreflight, scan = scanWindows, observeSubmission = require('./windows-owner-process').observeOwnerProcess, launch = dispatch, now = Date.now, wait = ms => new Promise(r => setTimeout(r, ms)) }) {
+function createAePanelStartup({ installation, expectedIdentity, peerStatus, assertIdle, reverify = () => {}, preflight = collisionPreflight, scan = scanWindows, readiness = require('./ae-readiness').observeAeWindows, environment = adobeEnvironment, observeSubmission = require('./windows-owner-process').observeOwnerProcess, launch = dispatch, now = Date.now, wait = ms => new Promise(r => setTimeout(r, ms)) }) {
   const root = path.join(installation.stateDir, 'panel-startup'); let busy = false, activeOperationId = null;
   function read(file) { try { return JSON.parse(bytes(file)); } catch (e) { if (e.code === 'ENOENT') return null; throw e; } }
   function binding() {
@@ -102,13 +103,24 @@ function createAePanelStartup({ installation, expectedIdentity, peerStatus, asse
   }
   function panel() { const p = peerStatus().peer; return p.connected && p.registryReady !== false && canonical(p.acceptedIdentity) === canonical(expectedIdentity) ? p : null; }
   function freshPanel(attempt) { const current = panel(), previous = attempt.initialPeer; return current && (!previous || current.peerId !== previous.peerId || current.identityEpoch !== previous.identityEpoch || current.identityObservedAt > previous.identityObservedAt) ? current : null; }
+  function hostMatches(actual, expected) { return actual.pid === expected.pid && actual.birth === expected.birth && path.resolve(actual.executablePath).toLowerCase() === path.resolve(expected.executablePath).toLowerCase(); }
+  function guiHost(directory) { const saved = read(path.join(directory, 'gui-host.json')); if (!saved) return null; if (Object.keys(saved).sort().join(',') !== 'birth,executableHash,executablePath,pid' || !Number.isSafeInteger(saved.pid) || saved.pid < 1 || typeof saved.birth !== 'string' || !Number.isFinite(Date.parse(saved.birth)) || typeof saved.executablePath !== 'string' || !path.isAbsolute(saved.executablePath) || !/^[a-f0-9]{64}$/.test(saved.executableHash)) throw new Error('startup_gui_identity_unproven'); return { pid: saved.pid, birth: saved.birth, executablePath: saved.executablePath }; }
+  function bootEntered(directory, attempt) { return fs.existsSync(path.join(directory, attempt.dispatchProtocol === 3 ? 'bootstrap-dispatch-entered.json' : 'dispatch-entered.json')); }
   function preparationOnly(directory, attempt) {
-    if (attempt && attempt.dispatchProtocol !== 2 || fs.existsSync(path.join(directory, 'dispatch-entered.json'))) return false;
+    if (attempt && ![2, 3].includes(attempt.dispatchProtocol) || fs.existsSync(path.join(directory, 'dispatch-entered.json')) || fs.existsSync(path.join(directory, 'gui-launch-entered.json')) || fs.existsSync(path.join(directory, 'bootstrap-dispatch-entered.json'))) return false;
     plain(directory, true);
     return fs.readdirSync(directory).every(name => /^(?:attempt\.json|request\.json|bootstrap\.jsx|result\.json)(?:\.stage-[a-f0-9-]{36})?$/.test(name));
   }
   function rejectPrepared(directory, attempt) {
     if (preparationOnly(directory, attempt) && !read(path.join(directory, 'result.json'))) durable(path.join(directory, 'result.json'), { outcome: 'rejected', code: 'rejected_before_dispatch' });
+  }
+  function blockedBeforeBootstrap(directory, attempt, host, reason) {
+    durable(path.join(directory, 'result.json'), { outcome: 'blocked', code: 'blocked_before_bootstrap', reason, coldHostStarted: true, host: { ...host, executableHash: attempt.executableHash } });
+  }
+  function assetsMatch(directory, attempt) {
+    return attempt.dispatchProtocol === 3 && hash(bytes(path.join(directory, 'request.json'), { maxBytes: 8192 })) === attempt.requestHash &&
+      hash(bytes(path.join(directory, 'bootstrap.jsx'), { maxBytes: 65536 })) === attempt.bootstrapHash &&
+      hash(bytes(path.join(installation.releaseDir, 'runtime/host/ensure-panel.jsx'), { maxBytes: 65536 })) === attempt.bootstrapHash;
   }
   function activity() {
     try {
@@ -126,7 +138,9 @@ function createAePanelStartup({ installation, expectedIdentity, peerStatus, asse
     if (!attempt) { const result = read(path.join(directory, 'result.json')); return { operationId: value.operationId, outcome: result?.outcome || 'absent', code: result?.code || null, nativeVerified: false }; }
     const result = read(path.join(directory, 'result.json')), ack = read(path.join(directory, 'ack.json'));
     if (attempt.operationId !== value.operationId || attempt.packageHash !== installation.packageHash) throw new Error('startup_attempt_binding');
-    if (ack && (ack.operationId !== value.operationId || Object.keys(ack).sort().join(',') !== 'code,hostFacts,operationId' || !['menu_executed', 'requires_host_restart'].includes(ack.code) ||
+    const v3 = attempt.dispatchProtocol === 3;
+    if (ack && (ack.operationId !== value.operationId || Object.keys(ack).sort().join(',') !== (v3 ? 'checkedAt,code,deadline,hostFacts,operationId,requestNonce' : 'code,hostFacts,operationId') || !(v3 ? ['menu_executed', 'requires_host_restart', 'expired_before_menu'] : ['menu_executed', 'requires_host_restart']).includes(ack.code) ||
+        v3 && (ack.requestNonce !== attempt.requestNonce || ack.deadline !== attempt.deadline || !Number.isSafeInteger(ack.checkedAt)) ||
         !ack.hostFacts || Object.keys(ack.hostFacts).sort().join(',') !== 'appVersion,dirty,file,numItems,projectPresent' || typeof ack.hostFacts.appVersion !== 'string' || typeof ack.hostFacts.projectPresent !== 'boolean' ||
         ack.hostFacts.file !== null && typeof ack.hostFacts.file !== 'string' || ack.hostFacts.dirty !== null && typeof ack.hostFacts.dirty !== 'boolean' || ack.hostFacts.numItems !== null && (!Number.isSafeInteger(ack.hostFacts.numItems) || ack.hostFacts.numItems < 0))) throw new Error('startup_ack_invalid');
     return { operationId: value.operationId, outcome: result?.outcome || 'unknown', code: result?.code || 'startup_outcome_unresolved', attempt, completion: result, ack, panel: panel(), nativeVerified: false };
@@ -137,15 +151,23 @@ function createAePanelStartup({ installation, expectedIdentity, peerStatus, asse
     const attempt = read(path.join(directory, 'attempt.json')); rejectPrepared(directory, attempt);
     const observed = status(value);
     if (observed.outcome !== 'unknown') return observed;
+    if (attempt.dispatchProtocol === 3 && observed.ack && !assetsMatch(directory, attempt)) return observed;
+    if (attempt.dispatchProtocol === 3 && !bootEntered(directory, attempt)) {
+      const host = guiHost(directory);
+      if (host) { blockedBeforeBootstrap(directory, attempt, host, 'startup_observed_gui_only'); return status(value); }
+    }
+    if (observed.ack?.code === 'expired_before_menu' && observed.ack.checkedAt >= attempt.deadline && now() >= attempt.deadline && bootEntered(directory, attempt) && assetsMatch(directory, attempt)) {
+      durable(path.join(directory, 'result.json'), { outcome: 'rejected', code: 'expired_before_menu', nativeMenuSubmitted: false, coldHostStarted: !!guiHost(directory), ack: observed.ack });
+    }
     if (observed.ack?.code === 'requires_host_restart') durable(path.join(directory, 'result.json'), { outcome: 'blocked', code: 'requires_host_restart' });
     if (observed.ack?.code === 'menu_executed' && freshPanel(observed.attempt)) {
-      const current = await scan(), prior = observed.attempt.original || read(path.join(directory, 'host.json'));
+      const current = await scan(), prior = observed.attempt.original || guiHost(directory) || read(path.join(directory, 'host.json'));
       if (current.length === 1 && path.resolve(current[0].executablePath).toLowerCase() === path.resolve(observed.attempt.executablePath).toLowerCase() && (!prior || canonical(current[0]) === canonical(prior))) {
         durable(path.join(directory, 'result.json'), { outcome: 'ready', code: 'authenticated_panel_reconciled', host: current[0], peer: freshPanel(observed.attempt) });
       }
     }
     if (!read(path.join(directory, 'result.json')) && Number.isSafeInteger(observed.attempt.deadline) && now() >= observed.attempt.deadline) {
-      const prior = observed.attempt.original || read(path.join(directory, 'host.json')), submission = read(path.join(directory, 'submission.json'));
+      const prior = observed.attempt.original || guiHost(directory) || read(path.join(directory, 'host.json')), submission = read(path.join(directory, observed.attempt.dispatchProtocol === 3 ? 'bootstrap-submission.json' : 'submission.json')) || read(path.join(directory, 'gui-submission.json'));
       if (prior && Number.isSafeInteger(submission?.pid) && submission.pid > 0) {
         const current = await scan(), gone = !current.some(host => canonical(host) === canonical(prior));
         if (gone) { const process = await observeSubmission(submission.pid); if (process?.status === 'absent' && process.pid === submission.pid) durable(path.join(directory, 'result.json'), { outcome: 'interrupted', code: 'startup_host_exited', original: prior, submissionAbsent: process }); }
@@ -160,7 +182,7 @@ function createAePanelStartup({ installation, expectedIdentity, peerStatus, asse
   async function ensure(value, context) {
     input(value); context.assertCurrent();
     if (busy) return { outcome: 'blocked', code: 'startup_busy', nativeVerified: false };
-    busy = true; activeOperationId = value.operationId; let directory, recorded = false, dispatchEntered = false;
+    busy = true; activeOperationId = value.operationId; let directory, recorded = false, guiCalled = false, bootstrapCalled = false, coldHost = null, attempt;
     try {
       // Repeated UUID is observation only, including a timeout or owner restart.
       if (fs.existsSync(path.join(root, value.operationId))) return await reconcile({ operationId: value.operationId });
@@ -172,36 +194,56 @@ function createAePanelStartup({ installation, expectedIdentity, peerStatus, asse
       mkdir(root); directory = path.join(root, value.operationId); mkdir(directory);
       const deadline = now() + (value.timeoutMs ?? 60000), original = rows[0] || null;
       const previousPeer = peerStatus().peer, initialPeer = typeof previousPeer.peerId === 'string' ? { peerId: previousPeer.peerId ?? null, identityEpoch: previousPeer.identityEpoch ?? null, identityObservedAt: previousPeer.identityObservedAt ?? null } : null;
-      const attempt = { dispatchProtocol: 2, operationId: value.operationId, packageHash: installation.packageHash, deadline, original, initialPeer, executablePath: h.executablePath, executableHash: h.executableHash };
+      const requestNonce = randomUUID(), request = canonical({ deadline, operationId: value.operationId, requestNonce }), script = bytes(path.join(installation.releaseDir, 'runtime/host/ensure-panel.jsx'));
+      attempt = { dispatchProtocol: 3, operationId: value.operationId, packageHash: installation.packageHash, deadline, original, initialPeer, executablePath: h.executablePath, executableHash: h.executableHash, requestNonce, requestHash: hash(request), bootstrapHash: hash(script) };
       durable(path.join(directory, 'attempt.json'), attempt); recorded = true;
-      if (rows.length === 1 && panel()) {
-        durable(path.join(directory, 'result.json'), { outcome: 'ready', code: 'already_authenticated', host: original, peer: panel() });
-        return status({ operationId: value.operationId });
-      }
-      durable(path.join(directory, 'request.json'), { deadline, operationId: value.operationId });
-      const script = bytes(path.join(installation.releaseDir, 'runtime/host/ensure-panel.jsx'));
+      durable(path.join(directory, 'request.json'), request);
       durable(path.join(directory, 'bootstrap.jsx'), script.toString('utf8'));
-      context.assertCurrent(); assertIdle({ operationId: value.operationId });
-      // Recheck immediately before dispatch; never launch a second host on ambiguity.
-      reverify(); preflight(installation, h.executablePath); if (canonical(binding()) !== canonical(h) || !bytes(path.join(directory, 'bootstrap.jsx')).equals(script)) throw new Error('startup_binding_changed');
-      const before = await scan();
-      if (canonical(before) !== canonical(rows)) throw new Error('startup_process_changed');
-      context.assertCurrent(); assertIdle({ operationId: value.operationId }); durable(path.join(directory, 'dispatch-entered.json'), { operationId: value.operationId, packageHash: installation.packageHash }); dispatchEntered = true;
-      const submission = await launch(h.executablePath, ['-r', path.join(directory, 'bootstrap.jsx')]);
-      if (Number.isSafeInteger(submission?.pid) && submission.pid > 0) durable(path.join(directory, 'submission.json'), { pid: submission.pid });
-      let observedHost = original;
+      function current() { context.assertCurrent(); assertIdle({ operationId: value.operationId }); if (now() >= deadline) throw new Error('startup_readiness_timeout'); }
+      function recheck() { reverify(); preflight(installation, h.executablePath); if (canonical(binding()) !== canonical(h) || !assetsMatch(directory, attempt)) throw new Error('startup_binding_changed'); }
+      let host = original;
+      if (!host) {
+        recheck(); const env = environment(h.executablePath); const before = await scan(); if (before.length) throw new Error('startup_process_changed'); current();
+        durable(path.join(directory, 'gui-launch-entered.json'), { operationId: value.operationId, packageHash: installation.packageHash }); current(); guiCalled = true;
+        const submission = await launch(h.executablePath, [], { windowsHide: false, env });
+        if (!Number.isSafeInteger(submission?.pid) || submission.pid < 1) throw new Error('startup_gui_submission_unproven');
+        durable(path.join(directory, 'gui-submission.json'), { pid: submission.pid });
+        while (now() < deadline) {
+          const candidates = await scan();
+          if (candidates.length > 1 || candidates.length === 1 && (candidates[0].pid !== submission.pid || path.resolve(candidates[0].executablePath).toLowerCase() !== path.resolve(h.executablePath).toLowerCase())) throw new Error('startup_process_changed');
+          if (candidates.length === 1) { host = candidates[0]; coldHost = host; durable(path.join(directory, 'gui-host.json'), { ...host, executableHash: h.executableHash }); break; }
+          current(); await wait(Math.min(500, Math.max(1, deadline - now())));
+        }
+        if (!host) throw new Error('startup_gui_identity_unproven');
+      }
+      // Exact CIM identity surrounds the PID-bound read-only window scan. Its
+      // GetProcess timestamp can differ from CIM in sub-millisecond precision.
+      while (true) {
+        current(); const before = await scan(); if (before.length !== 1 || !hostMatches(before[0], host)) throw new Error('startup_process_changed');
+        const observed = await readiness(host), after = await scan();
+        if (after.length !== 1 || !hostMatches(after[0], host) || observed.pid !== host.pid || Date.parse(observed.birth) !== Date.parse(host.birth)) throw new Error('startup_readiness_identity');
+        current();
+        if (observed.state === 'modal-observed' || observed.state === 'unresponsive') throw new Error('startup_ae_' + observed.state.replace('-', '_'));
+        if (observed.state === 'window-responsive' && Array.isArray(observed.dialogs) && observed.dialogs.length === 0) break;
+        await wait(Math.min(500, Math.max(1, deadline - now())));
+      }
+      if (original && panel()) { durable(path.join(directory, 'result.json'), { outcome: 'ready', code: 'already_authenticated', host, peer: panel() }); return status({ operationId: value.operationId }); }
+      recheck(); const env = environment(h.executablePath), before = await scan(); if (before.length !== 1 || !hostMatches(before[0], host)) throw new Error('startup_process_changed'); current();
+      durable(path.join(directory, 'bootstrap-dispatch-entered.json'), { operationId: value.operationId, packageHash: installation.packageHash, requestHash: attempt.requestHash, bootstrapHash: attempt.bootstrapHash }); current(); bootstrapCalled = true;
+      const submission = await launch(h.executablePath, ['-r', path.join(directory, 'bootstrap.jsx')], { windowsHide: true, env });
+      if (Number.isSafeInteger(submission?.pid) && submission.pid > 0) durable(path.join(directory, 'bootstrap-submission.json'), { pid: submission.pid });
       while (now() < deadline) {
         context.assertCurrent(); assertIdle({ operationId: value.operationId });
         const current = await scan();
-        if (original && current.length === 2 && submission?.pid && current.some(p => canonical(p) === canonical(original)) && current.some(p => p.pid === submission.pid && path.resolve(p.executablePath).toLowerCase() === path.resolve(h.executablePath).toLowerCase())) {
+        if (current.length === 2 && submission?.pid && current.some(p => hostMatches(p, host)) && current.some(p => p.pid === submission.pid && path.resolve(p.executablePath).toLowerCase() === path.resolve(h.executablePath).toLowerCase())) {
           // Known forwarding CLI may be transiently visible. It is never a
           // second accepted host and cannot establish readiness until it exits.
           await wait(Math.min(500, Math.max(1, deadline - now()))); continue;
         }
-        if (current.length > 1 || current.length === 1 && (path.resolve(current[0].executablePath).toLowerCase() !== path.resolve(h.executablePath).toLowerCase() || observedHost && canonical(current[0]) !== canonical(observedHost))) throw new Error('startup_process_changed');
-        if (current.length === 1 && !observedHost) { observedHost = current[0]; durable(path.join(directory, 'host.json'), observedHost); }
-        const ack = read(path.join(directory, 'ack.json'));
-        if (ack && (ack.operationId !== value.operationId || Object.keys(ack).sort().join(',') !== 'code,hostFacts,operationId' || !['menu_executed', 'requires_host_restart'].includes(ack.code))) throw new Error('startup_ack_invalid');
+        if (current.length > 1 || current.length === 1 && !hostMatches(current[0], host)) throw new Error('startup_process_changed');
+        const ack = status({ operationId: value.operationId }).ack;
+        if (ack && !assetsMatch(directory, attempt)) throw new Error('startup_binding_changed');
+        if (ack?.code === 'expired_before_menu') return await reconcile({ operationId: value.operationId });
         if (ack?.code === 'requires_host_restart') { durable(path.join(directory, 'result.json'), { outcome: 'blocked', code: 'requires_host_restart' }); return status({ operationId: value.operationId }); }
         if (current.length === 1 && ack?.code === 'menu_executed' && freshPanel(attempt)) {
           durable(path.join(directory, 'result.json'), { outcome: 'ready', code: 'authenticated_panel', host: current[0], peer: freshPanel(attempt) }); return status({ operationId: value.operationId });
@@ -210,8 +252,9 @@ function createAePanelStartup({ installation, expectedIdentity, peerStatus, asse
       }
       return status({ operationId: value.operationId });
     } catch (e) {
-      if (recorded && !dispatchEntered) { try { rejectPrepared(directory, read(path.join(directory, 'attempt.json'))); return status({ operationId: value.operationId }); } catch {} }
-      return { operationId: value.operationId, outcome: dispatchEntered ? 'unknown' : 'blocked', code: dispatchEntered ? 'startup_outcome_unresolved' : /^startup_/.test(e.message) ? e.message : 'startup_unavailable', nativeVerified: false };
+      if (recorded && !bootstrapCalled && coldHost) { try { blockedBeforeBootstrap(directory, attempt, coldHost, e.message); return status({ operationId: value.operationId }); } catch {} }
+      if (recorded && !guiCalled && !bootstrapCalled) { try { if (!read(path.join(directory, 'result.json'))) durable(path.join(directory, 'result.json'), { outcome: 'rejected', code: 'rejected_before_dispatch', reason: e.message }); return status({ operationId: value.operationId }); } catch {} }
+      return { operationId: value.operationId, outcome: guiCalled || bootstrapCalled ? 'unknown' : 'blocked', code: guiCalled || bootstrapCalled ? 'startup_outcome_unresolved' : /^startup_/.test(e.message) ? e.message : 'startup_unavailable', coldHostStarted: !!coldHost, nativeVerified: false };
     } finally { busy = false; activeOperationId = null; }
   }
   return { ensure, status, observe, activity };

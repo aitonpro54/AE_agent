@@ -1,5 +1,7 @@
 {
   "owners": [
+    { "prefix": "core4/runtime/adobe-child-environment.js", "owner": "adobe-child-environment", "checks": ["adobe-child-environment", "ae-panel-startup", "aerender-jobs", "aerender-operator"] },
+    { "prefix": "core4/test/adobe-child-environment.test.js", "owner": "adobe-child-environment", "checks": ["adobe-child-environment"] },
     { "prefix": "core4/test/panel-lifecycle.test.js", "owner": "panel-lifecycle", "checks": ["panel-lifecycle"] },
     { "prefix": "core4/runtime/ae-panel-startup.js", "owner": "ae-panel-startup", "checks": ["ae-panel-startup"] },
     { "prefix": "core4/runtime/host/ensure-panel.jsx", "owner": "ae-panel-startup", "checks": ["ae-panel-startup"] },
@@ -1188,8 +1190,9 @@
     }
   ],
   "checkDependencies": {
+    "adobe-child-environment": ["runtime/adobe-child-environment.js", "runtime/render-job-history.js", "runtime/source-package.json", "tools/package-aerender-operator.js", "test/adobe-child-environment.test.js"],
     "panel-lifecycle": ["runtime/start-over-panel-control.js", "runtime/source-package.json", "config/compositions/", "config/catalog.json", "modules/", "cep/", "integrations/cep/http-peer.js", "integrations/cep/panel-identity.js", "integrations/cep/completion-store.js", "runtime/stdio-entry.js", "tools/package-installable.js", "tools/install-core4.js", "tools/stopped-update.js", "protocol/", "test/panel-lifecycle.test.js"],
-    "ae-panel-startup": ["runtime/ae-panel-startup.js", "runtime/host/ensure-panel.jsx", "runtime/windows-owner-process.js", "runtime/stdio-entry.js", "runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/source-package.json", "integrations/cep/panel-identity.js", "integrations/cep/http-peer.js", "integrations/cep/completion-store.js", "tools/package-installable.js", "cep/", "protocol/", "test/ae-panel-startup.test.js"],
+    "ae-panel-startup": ["runtime/adobe-child-environment.js", "runtime/ae-readiness.js", "runtime/ae-panel-startup.js", "runtime/host/ensure-panel.jsx", "runtime/windows-owner-process.js", "runtime/stdio-entry.js", "runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/source-package.json", "integrations/cep/panel-identity.js", "integrations/cep/http-peer.js", "integrations/cep/completion-store.js", "tools/package-installable.js", "cep/", "protocol/", "test/ae-panel-startup.test.js"],
     "mixed-installation-repair": ["tools/repair-mixed-installation.js", "test/mixed-installation-repair.test.js", "test/fixtures/mixed-installation.js", "tools/package-standalone-installer.js", "tools/finish-owner-maintenance.js", "tools/maintain-owner.js", "tools/standalone-installer.js", "tools/package-installable.js", "config/compositions/", "tools/install-core4.js", "tools/disposition-install-preflight.js", "runtime/", "cep/", "core/", "protocol/", "modules/", "plan-engine/", "integrations/cep/http-peer.js", "integrations/cep/peer-protocol.js", "integrations/cep/completion-store.js", "worker.js", "config/catalog.json", "config/admissions/", "tools/legacy-owner-migration.js", "tools/operate-stopped-readoption.js", "tools/operate-stopped-update.js", "tools/stopped-host-readoption.js", "tools/stopped-host-readoption-store.js", "tools/stopped-host-readoption-transaction.js", "tools/stopped-update.js", "tools/windows-retained-process.js"],
     "montage-mandate": ["runtime/montage-mandate.js", "runtime/operator-confirmation.js", "protocol/", "test/montage-mandate.test.js"],
     "ae-readiness": ["runtime/ae-readiness.js", "runtime/stdio-entry.js", "runtime/controller-lease.js", "protocol/json.js", "test/ae-readiness.test.js"],
@@ -1463,13 +1466,13 @@
       "tools/package-installable.js", "test/layer-overlay.test.js", "test/fixtures/manual-http-runtime.js",
       "test/fixtures/montage-host.js", "test/fixtures/ae.js"
     ],
-    "aerender-jobs": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js",
+    "aerender-jobs": ["runtime/adobe-child-environment.js", "runtime/render-job-history.js", "runtime/render-job-maintenance.js",
       "tools/aerender-jobs.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "protocol/json.js", "test/aerender-jobs.test.js"
     ],
     "visual-review": ["tools/visual-review.js", "tools/package-visual-review.js", "protocol/json.js", "runtime/png-proof.js", "runtime/project-file.js", "test/visual-review.test.js"],
     "aerender-profile": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "tools/aerender-profile.js", "runtime/aerender-profile.js", "test/aerender-profile.test.js"],
-    "aerender-operator": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "tools/package-aerender-operator.js", "tools/aerender-jobs.js", "tools/aerender-profile.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "protocol/json.js", "test/package-aerender-operator.test.js"],
-    "render-job-owner": ["runtime/render-job-history.js", "runtime/render-job-maintenance.js", "config/compositions/operator-render-jobs.json", "runtime/render-job-owner.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/stdio-entry.js", "tools/configure-render-job-toolchain.js", "protocol/json.js", "test/render-job-owner.test.js"],
+    "aerender-operator": ["runtime/adobe-child-environment.js", "runtime/render-job-history.js", "runtime/render-job-maintenance.js", "tools/package-aerender-operator.js", "tools/aerender-jobs.js", "tools/aerender-profile.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "protocol/json.js", "test/package-aerender-operator.test.js"],
+    "render-job-owner": ["runtime/adobe-child-environment.js", "runtime/render-job-history.js", "runtime/render-job-maintenance.js", "config/compositions/operator-render-jobs.json", "runtime/render-job-owner.js", "runtime/aerender-jobs.js", "runtime/aerender-profile.js", "runtime/project-save-proof.js", "runtime/project-file.js", "runtime/attachment-owner.js", "runtime/client-stdio.js", "runtime/stdio-entry.js", "tools/configure-render-job-toolchain.js", "protocol/json.js", "test/render-job-owner.test.js"],
     "ame-media-export": [
       "tools/ame-media-export.js", "tools/ame-isolated-export.ps1", "tools/ame-isolated-host.ps1", "protocol/json.js",
       "test/ame-media-export.test.js", "test/fixtures/ame-isolated-host.ps1"
@@ -1780,6 +1783,7 @@
     "standalone-installer": ["tools/package-standalone-installer.js","tools/finish-owner-maintenance.js","tools/maintain-owner.js","tools/standalone-installer.js","tools/package-installable.js", "config/compositions/","tools/install-core4.js","tools/disposition-install-preflight.js","test/standalone-installer.test.js","test/fixtures/standalone-history.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-project-inspection-v1.txt","test/fixtures/legacy-installation-v1.js","runtime/","cep/","core/","protocol/","modules/","plan-engine/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","worker.js","config/catalog.json","config/admissions/","tools/legacy-owner-migration.js","tools/operate-stopped-readoption.js","tools/operate-stopped-update.js","tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/windows-retained-process.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"]
   },
   "checkCommands": {
+    "adobe-child-environment": ["node", "--test", "--test-name-pattern=adobe-child-environment", "test/adobe-child-environment.test.js"],
     "panel-lifecycle": ["node", "--test", "--test-name-pattern=panel-lifecycle", "test/panel-lifecycle.test.js"],
     "ae-panel-startup": ["node", "--test", "--test-name-pattern=ae-panel-startup", "test/ae-panel-startup.test.js"],
     "mixed-installation-repair": ["node", "--test", "--test-name-pattern=^mixed repair ", "test/mixed-installation-repair.test.js"],
@@ -2000,6 +2004,7 @@
     ]
   },
   "checkPolicy": {
+    "adobe-child-environment": { "kind": "component" },
     "panel-lifecycle": { "kind": "component" },
     "ae-panel-startup": { "kind": "component" },
     "mixed-installation-repair": { "kind": "integration" },

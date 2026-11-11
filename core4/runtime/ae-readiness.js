@@ -127,4 +127,5 @@ function createAeReadiness({ scan = scanWindows, platform = process.platform, no
   };
 }
 
-module.exports = { createAeReadiness };
+async function observeAeWindows() { return { ...parseObservation(await scanWindows()), observedAt: Date.now() }; }
+module.exports = { createAeReadiness, observeAeWindows };

@@ -13,7 +13,7 @@ const source = path.resolve(__dirname, '..');
 const cli = path.join(source, 'tools', 'package-aerender-operator.js');
 const entry = 'tools/aerender-jobs.js';
 const payload = [
-  'protocol/json.js', 'runtime/aerender-jobs.js', 'runtime/aerender-profile.js',
+  'protocol/json.js', 'runtime/adobe-child-environment.js', 'runtime/aerender-jobs.js', 'runtime/aerender-profile.js',
   'runtime/project-file.js', 'runtime/project-save-proof.js', 'runtime/render-job-history.js',
   entry, 'tools/aerender-profile.js'
 ];
@@ -48,7 +48,7 @@ test('builds a deterministic operator and loads its original entry from a foreig
   const second = path.join(root, 'second package');
   const build = cliReceipt(root, ['--output', first]);
   const repeat = cliReceipt(root, ['--output', second]);
-  assert.equal(build.files, 9);
+  assert.equal(build.files, 10);
   assert.deepEqual(repeat, { ...build, output: second });
   assert.deepEqual(cliReceipt(root, ['--verify', second, '--expected-sha256', build.operatorHash]), repeat);
 
