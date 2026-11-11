@@ -656,3 +656,67 @@ Standalone воспроизведён с тем же хешем. Прошли 16
 изменений, оба контракта слотов и все 14 состояний R1. Контроллер
 освобождён. В меню текущего процесса AE наблюдалась прежняя подпись 4.2.3.
 [Квитанции и хеши выпуска](../docs/evidence/core-4.2.4-msi-20261110.json).
+
+## 11 ноября: перенос 4.2.4 на DESKTOP-32974QF
+
+### Progress
+
+- Получен только опубликованный тег `v4.2.4`. Аннотированный объект
+  `c9c0555b07138129b7fd0d9649a2cc4d471a8c29` указывает на точный commit
+  `51eee397f87f68cacb1cde48d040e56d3ac6b707`; исходная ветка
+  `codex/ae-agent-core-4.2.1` сохранена на `3116a6d70baecf5161a52a6298806e18c8cd82aa`.
+  Рабочая ветка — `codex/ae-agent-core-4.2.4-desktop`. Пользовательская правка
+  `AGENTS.md` восстановлена поверх тега; все добавленные и удалённые строки
+  совпали с исходной правкой. Она остаётся незакоммиченной, резервный stash сохранён.
+- Одна штатная сборка `operator-render-jobs/owner` воспроизвела package
+  `193539dfe14a0760317aa92c451423f076f84d5f9e809f48faf2923e04030684`
+  и standalone `a803a685cf2f1c0f5636abca35347eef286d8de0c2f5e1facced616c8f0811d3`:
+  159 файлов пакета, 177 файлов distribution, плюс `standalone.json` на диске.
+- Установка и проверка запуска **заблокированы до изменения установки**.
+  Фактические descriptor/client/origin относятся к `installation-e0e81ad5…`,
+  package `582744df…`, descriptor SHA `d3371a08…`. CEP и effective MCP config
+  относятся к `8f73283b…`. Принятая 10 ноября транзакция `004c57c5…`
+  принадлежит другой identity `installation-7ece2c0b…`, с descriptor `e85b80c4…`.
+  Ни old, ни new descriptor этой транзакции не совпадают с фактическим.
+
+### Decision Log
+
+- Исходники и упаковка доставлены; native acceptance не заявляется.
+  `maintain-owner inspect` отказал с `installation_cep_bytes`. Свежий клиент
+  из effective CLI config завершился с `client_release` до initialize и
+  `core_status`; подтверждено также вне sandbox. Отправленных AE-команд нет.
+- Read-only сверка нашла исходную завершённую цепь descriptor `d337…`:
+  `7f087a29…`. Среди четырёх stopped-update intents нет successor с old=`d337…`.
+  Это не допустимый префикс прерванного обновления. Существующие completed/enabled
+  транзакции не являются оператором восстановления произвольно изменённого state.
+- Stop `dfcc12b3…` подписан под фактической старой identity, но его protected
+  snapshot ожидал отсутствующие ledger и owner-маркеры. Нынешний ledger содержит
+  166 событий, а `runtime-owner.json` указывает на identity `7ece2c0b…`.
+  Одна замена CEP не восстановит действующий stopped certificate. Барьер,
+  descriptor, credentials и журналы вручную не менялись; settled IDs не повторены.
+- Нужен отдельный engineering-блок восстановления согласованной локальной
+  установки с сохранением обеих историй и данных. Существующий штатный recovery
+  такого смешанного состояния не принимает. Общее разрешение на обновление уже
+  есть; повторное разрешение на ту же установку технический отказ не устранит.
+- Read-only поиск поручен `ae_scout`, сборка и адресная техническая сверка —
+  `ae_implementer`, сложная граница identity/history — `ae_specialist`.
+  Координатор оставался единственным writer/live-контроллером. MSI не затрагивался.
+
+### Validation
+
+- Exact tag/history, `verifyStandalone`, `verifyPackage`, runtime binding,
+  версия/состав/closure — PASS. Продуктовые сценарии и broad source matrix
+  переиспользуются из MSI evidence в прежних пределах; на десктопе не повторялись.
+- AE изначально закрыт; финальный process census в 11:18:45 +05:00 не нашёл
+  AE/CEP или процессов Core client/owner. Запускать AE с рассогласованной
+  установкой не стали. Меню 4.2.4, Origin `file://` и typed acquire/connect/read/release
+  остаются непроверенными. Свободный контроллер и отсутствие текущих
+  pending/UNKNOWN/fault через действующий MCP не подтверждены.
+- За последующую диагностику и документирование побайтно сохранены 88 state,
+  554 transaction, 91 файл настроек AE, четыре известных AEP, descriptor/client/origin,
+  CEP, проектный и глобальный config; сравнение точного снимка PASS.
+  Новых stop/update/enable/install/native mutation/render — 0.
+- [Адресное evidence](../docs/evidence/core-4.2.4-desktop-20261111.json).
+  Сборка, снимок, логи отказов и безопасный inventory находятся в
+  `.codex-runtime/core-4.2.4-desktop-20261111/`. Причина появления смешанных
+  файлов не установлена; исторические UNKNOWN не объявлены разрешёнными.

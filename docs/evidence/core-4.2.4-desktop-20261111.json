@@ -1,0 +1,368 @@
+{
+  "schemaVersion": 1,
+  "collectedAt": "2026-11-11T06:21:32.996Z",
+  "host": "DESKTOP-32974QF",
+  "scope": "Перенос принятого operator-render-jobs/owner 4.2.4 и проверка запуска",
+  "result": "source-and-package-pass-installation-preflight-blocked",
+  "startupAccepted": false,
+  "source": {
+    "origin": "https://github.com/aitonpro54/AE_agent.git",
+    "fetch": "git fetch --no-tags origin refs/tags/v4.2.4:refs/tags/v4.2.4",
+    "tag": "v4.2.4",
+    "tagObject": "c9c0555b07138129b7fd0d9649a2cc4d471a8c29",
+    "commit": "51eee397f87f68cacb1cde48d040e56d3ac6b707",
+    "mergeBaseWithOriginal": "3116a6d70baecf5161a52a6298806e18c8cd82aa",
+    "branch": "codex/ae-agent-core-4.2.4-desktop",
+    "originalBranch": {
+      "name": "codex/ae-agent-core-4.2.1",
+      "commit": "3116a6d70baecf5161a52a6298806e18c8cd82aa"
+    },
+    "userAgents": {
+      "beforeSha256": "369c96cdb03c752deeb542a74b96ae406d6a9e8ee68419eb17156b43d41fb95e",
+      "addedRemovedLinesPreserved": true,
+      "remainsUncommitted": true,
+      "retainedStash": "77fe0ed83e7c8add16d26234591767f67568235e"
+    }
+  },
+  "package": {
+    "packageHash": "193539dfe14a0760317aa92c451423f076f84d5f9e809f48faf2923e04030684",
+    "distributionHash": "a803a685cf2f1c0f5636abca35347eef286d8de0c2f5e1facced616c8f0811d3",
+    "version": "4.2.4",
+    "composition": "operator-render-jobs",
+    "runtimeModel": "owner",
+    "manifestFiles": 177,
+    "packageFiles": 159,
+    "output": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-20261111\\standalone",
+    "buildAttempts": 1,
+    "verification": {
+      "standaloneManifestAndExactDiskClosure": "PASS",
+      "packageIntegrityAndCompositionRegistry": "PASS",
+      "expectedIdentityAndSelectors": "PASS",
+      "runtimeContractVersion": 4,
+      "packageFiles": 159,
+      "diskFilesIncludingStandaloneManifest": 178,
+      "modules": [
+        "photo-placeholder",
+        "titles",
+        "titles-current-target",
+        "titles-point-layout",
+        "text-layer",
+        "text-variant",
+        "comp-render",
+        "project-assembly",
+        "project-save",
+        "project-lifecycle",
+        "media-import",
+        "layer-insert",
+        "comp-frame-export",
+        "layer-overlay"
+      ],
+      "assetKeys": [
+        "project-inspection-v1",
+        "titles-current-target-v1",
+        "photo-placeholder-v1",
+        "titles-point-layout-v1",
+        "text-layer-v1",
+        "text-variant-v1",
+        "comp-render-v1",
+        "project-assembly-v1",
+        "project-save-v1",
+        "project-lifecycle-v1",
+        "media-import-v1",
+        "layer-insert-v1",
+        "comp-frame-export-v1",
+        "layer-overlay-v1"
+      ]
+    },
+    "record": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-20261111\\package-build.json",
+      "sha256": "925e67f2c47546abd3f4cdafba36f9fd53b76f6db46738a0f096e066dbc8c5eb"
+    }
+  },
+  "actualInstallation": {
+    "descriptor": {
+      "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json",
+      "sha256": "d3371a0858d2540fd6ebc0b4cdf43f2578fcffb4d08972a930bac902603900b1"
+    },
+    "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+    "packageHash": "582744df1a5c1a6d7e235f28549cc0884ab6ca7e5f183e98c6fadce6087b7a8d",
+    "stateDir": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\state\\production",
+    "client": {
+      "file": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json",
+      "sha256": "69160f33fdac3c7260db708175b35f9a6b96862d42151461e898350f0b659917",
+      "installationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+      "packageHash": "582744df1a5c1a6d7e235f28549cc0884ab6ca7e5f183e98c6fadce6087b7a8d"
+    },
+    "originInstallationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+    "anchorInstallationId": "installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700",
+    "cepFullMatchPackage": "8f73283b88c7b3ba44fcb792f132fbda40c7b6e6ed00e858c3bc4165d7333034",
+    "cepVersion": "4.2.1",
+    "existingMaintenanceId": "dfcc12b3-a01d-4b10-8e8e-198d7126f0d2"
+  },
+  "historicalAcceptedInstallation": {
+    "installationId": "installation-7ece2c0b-8f3b-4839-b689-3ea661464e7b",
+    "packageHash": "8f73283b88c7b3ba44fcb792f132fbda40c7b6e6ed00e858c3bc4165d7333034",
+    "stopId": "ec1ff2af-9255-4077-adc3-06fa7851c737",
+    "updateId": "004c57c5-e53b-48b0-8c8c-ad78033c82ae",
+    "oldDescriptorHash": "048dcc215c0791eed172ae702f438c9851a5ee67e1748d975b8cce6b17e10851",
+    "newDescriptorHash": "e85b80c4a6cddd6dcf3d5cba7e5f69cb5db838743f6bb66cade0e00c33676738",
+    "phase": "enabled",
+    "currentDescriptorMatchesNeither": true,
+    "evidence": ".codex-runtime/p2-desktop-visible-20261110/update.json"
+  },
+  "preflight": {
+    "aeInitiallyClosed": true,
+    "openProject": null,
+    "processCensus": {
+      "observedAt": "2026-11-11T06:18:45.8940401Z",
+      "processes": []
+    },
+    "maintainOwnerInspection": {
+      "command": "node core4/tools/maintain-owner.js inspect --installation C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\installation.json --operation dfcc12b3-a01d-4b10-8e8e-198d7126f0d2 --expected-package-hash 582744df1a5c1a6d7e235f28549cc0884ab6ca7e5f183e98c6fadce6087b7a8d",
+      "exitCode": 1,
+      "code": "installation_cep_bytes",
+      "mutations": 0
+    },
+    "configuredMcpAttempts": [
+      {
+        "record": {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-20261111\\before-status.json",
+          "sha256": "e5f49620dfe8dbbf10874a81b77ac70ed6d96d13a057b21f345f7d1e2f89ccf3"
+        },
+        "effectiveConfig": {
+          "name": "after-effects-core4",
+          "enabled": true,
+          "disabled_reason": null,
+          "transport": {
+            "type": "stdio",
+            "command": "C:\\Program Files\\nodejs\\node.exe",
+            "args": [
+              "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\8f73283b88c7b3ba44fcb792f132fbda40c7b6e6ed00e858c3bc4165d7333034\\runtime\\client-entry.js",
+              "--client-descriptor",
+              "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json"
+            ],
+            "env": null,
+            "env_vars": [],
+            "cwd": null
+          },
+          "enabled_tools": null,
+          "disabled_tools": null,
+          "startup_timeout_sec": null,
+          "tool_timeout_sec": 120
+        },
+        "clientPid": 11504,
+        "clientExit": {
+          "code": 1,
+          "signal": null
+        },
+        "stderrCode": null,
+        "initializeSucceeded": false,
+        "toolCalls": 0
+      },
+      {
+        "record": {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-20261111\\before-status-host.json",
+          "sha256": "39cc4303d6242e3c363451889254edb5c7b728f0d316686a43c63ab353647ae8"
+        },
+        "effectiveConfig": {
+          "name": "after-effects-core4",
+          "enabled": true,
+          "disabled_reason": null,
+          "transport": {
+            "type": "stdio",
+            "command": "C:\\Program Files\\nodejs\\node.exe",
+            "args": [
+              "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\releases\\8f73283b88c7b3ba44fcb792f132fbda40c7b6e6ed00e858c3bc4165d7333034\\runtime\\client-entry.js",
+              "--client-descriptor",
+              "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4\\core-client.json"
+            ],
+            "env": null,
+            "env_vars": [],
+            "cwd": null
+          },
+          "enabled_tools": null,
+          "disabled_tools": null,
+          "startup_timeout_sec": null,
+          "tool_timeout_sec": 120
+        },
+        "clientPid": 40188,
+        "clientExit": {
+          "code": 1,
+          "signal": null
+        },
+        "stderrCode": "client_release",
+        "initializeSucceeded": false,
+        "toolCalls": 0
+      }
+    ],
+    "freshPendingUnknownFault": "unavailable: configured MCP exits before initialize/core_status",
+    "controllerFree": "not-certified; no live Core processes observed"
+  },
+  "recovery": {
+    "classification": "mixed-local-installation-identities-and-state",
+    "currentDescriptorOriginalTransaction": "7f087a29-7f60-45a9-ba11-78f72493f4f9",
+    "currentDescriptorOriginalTransactionState": "completed/enabled",
+    "successorFromCurrentDescriptorFound": false,
+    "ordinaryExistingOperatorAvailable": false,
+    "guards": [
+      "verifyInstallation rejects CEP bytes before maintenance/readoption/start-over",
+      "stopped update continuation accepts only original transaction identity and monotonic exact file prefix",
+      "completed/enabled transactions are not a generic descriptor restore",
+      "maintenance stopped receipt differs from current ledger and owner markers"
+    ],
+    "nextRequiredWork": "Отдельный engineering-блок: установить provenance обеих локальных цепей и подготовить проверяемое согласование с сохранением обеих историй и пользовательских данных. Не снимать барьер и не подменять descriptor/credentials вручную.",
+    "independentReadOnlyReview": {
+      "executor": "ae_specialist",
+      "stoppedUpdateIntents": 4,
+      "parsedJsonFiles": 326,
+      "parseErrors": 0,
+      "currentDescriptorTransactionCanonicalAndMac": "verified",
+      "maintenanceBarrierAndStoppedReceiptCanonicalAndMac": "verified",
+      "protectedSnapshotChanges": {
+        "ledger": {
+          "expected": "absent",
+          "actual": {
+            "records": 166,
+            "sha256": "53f132d20be491ee75fa3845a9a1f55b44d3572a647e15c817f00bbbae35ac66"
+          }
+        },
+        "ownerMarkers": {
+          "expected": "absent",
+          "actual": [
+            "runtime-owner.json",
+            "broker/broker-owner.lock",
+            "receiver/owner"
+          ]
+        }
+      },
+      "runtimeOwnerMarker": {
+        "installationId": "installation-7ece2c0b-8f3b-4839-b689-3ea661464e7b",
+        "descriptorHash": "e85b80c4a6cddd6dcf3d5cba7e5f69cb5db838743f6bb66cade0e00c33676738",
+        "pid": 4940,
+        "birthTicks": "639298879750215940",
+        "liveProcessAuthority": false
+      },
+      "codeBoundaries": [
+        {
+          "file": "core4/tools/operate-stopped-update.js",
+          "line": 32
+        },
+        {
+          "file": "core4/tools/stopped-update.js",
+          "line": 219
+        },
+        {
+          "file": "core4/tools/stopped-update.js",
+          "line": 387
+        },
+        {
+          "file": "core4/runtime/owner-maintenance.js",
+          "line": 198
+        },
+        {
+          "file": "core4/tools/install-core4.js",
+          "line": 298
+        },
+        {
+          "file": "core4/tools/finish-owner-maintenance.js",
+          "line": 13
+        }
+      ]
+    }
+  },
+  "preservation": {
+    "snapshot": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-20261111\\preservation-before-documentation.json",
+      "sha256": "7ce234cd17e5fb1e10043690185ce10862a977b83c93a388b6b7878485785aea"
+    },
+    "scope": "Точный снимок после отказавшего preflight; последующая диагностика и документирование сверяются с ним отдельно.",
+    "counts": {
+      "stateFiles": 88,
+      "transactionFiles": 554,
+      "preferenceFiles": 91,
+      "aepFiles": 4
+    },
+    "bindings": {
+      "installation.json": {
+        "bytes": 1062,
+        "sha256": "d3371a0858d2540fd6ebc0b4cdf43f2578fcffb4d08972a930bac902603900b1"
+      },
+      "core-client.json": {
+        "bytes": 788,
+        "sha256": "69160f33fdac3c7260db708175b35f9a6b96862d42151461e898350f0b659917"
+      },
+      "origin.json": {
+        "bytes": 151,
+        "sha256": "012ec2cfb475a8733d7e6d0c98b85468b77cac620dc444bc0b619e1e11c0d5b6"
+      }
+    },
+    "config": {
+      "bytes": 1152,
+      "sha256": "12e5927b345ddb4482efa0802477d9c6515cfca1d3aadfbe48b9bd946a5224ee"
+    },
+    "configOutsideCore": "0577547710a41a482a0525b413f9a605704d1ea817ca1b26e61c70f0d639e6a3",
+    "globalConfig": {
+      "bytes": 21566,
+      "sha256": "12372d145563ede70d16b621cd364136c961d6ee6695dc60c4b6f1093fb23b74"
+    },
+    "aeProjects": {
+      "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\slideshow-s1-msi-20261107\\slideshow-s1-desktop-working.aep": {
+        "bytes": 276729,
+        "sha256": "773c86afc5ac63c2b8b3bf5b116414297700039a2bf9c2b94fe8aeaf54bdd663"
+      },
+      "C:\\Проекты 21\\2026.11.09 - Анатомия хитов (ШМП, Мунивер, СЭБ)\\муз универ_ШМПушка_СЭБ_АНАТОМИЯ ХИТОВ folder\\муз универ_ШМПушка_СЭБ_АНАТОМИЯ ХИТОВ.aep": {
+        "bytes": 95724372,
+        "sha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd"
+      },
+      "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\p2-visible-probe.aep": {
+        "bytes": 95724372,
+        "sha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd"
+      },
+      "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\p2-visible-installed.aep": {
+        "bytes": 95762386,
+        "sha256": "794f0c50fd1fc02abdf0702b9f36694e20bfad3525c8577c0c68cd59ade791a6"
+      }
+    },
+    "currentStateR1Paths": [],
+    "comparisonRecord": {
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-20261111\\preservation-after-documentation.json",
+      "sha256": "bc3a192dd8252537a2c3939e9f9f715a08a4916b1d1a4ac03a2113fad1a26c30"
+    }
+  },
+  "actions": {
+    "stop": 0,
+    "ownerUpdate": 0,
+    "initialInstall": 0,
+    "updateEnable": 0,
+    "settledMutationReplay": 0,
+    "aeLaunchRestart": 0,
+    "cepReload": 0,
+    "nativeInspection": 0,
+    "nativeMutation": 0,
+    "render": 0,
+    "credentialsTransferredOrPrinted": false,
+    "manualConfigEdits": 0,
+    "msiChanges": 0
+  },
+  "acceptance": {
+    "sourceTag": "PASS",
+    "standalonePackage": "PASS",
+    "localInstall": "BLOCKED",
+    "aeMenu424": "NOT_RUN",
+    "configuredMcp424": "BLOCKED",
+    "originFile": "NOT_RUN",
+    "typedAcquireConnectReadRelease": "NOT_RUN",
+    "finalPendingUnknownFaultClearance": "NOT_CERTIFIED"
+  },
+  "reusedMsiEvidence": [
+    "docs/evidence/core-4.2.4-msi-20261110.json",
+    "docs/evidence/core-followup-msi-l4-final-20261110.json"
+  ],
+  "notRun": [
+    "broad source matrix",
+    "Titles",
+    "Slideshow S1",
+    "AME",
+    "native mutation/render"
+  ]
+}
