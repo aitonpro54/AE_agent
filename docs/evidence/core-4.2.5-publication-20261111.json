@@ -1,0 +1,24 @@
+{
+  "verifiedAt": "2026-11-11T17:00:27.291Z",
+  "result": "PASS",
+  "repository": "https://github.com/aitonpro54/AE_agent",
+  "releaseCommit": "7401395a29166cca73a03799f3d0b8d4e2500123",
+  "tag": "v4.2.5",
+  "annotatedTagObject": "244ed25db878995cd2607d11ad649f822ace48ed",
+  "observedRemoteRefs": {
+    "refs/heads/codex/ae-agent-core-4.2.5": "7401395a29166cca73a03799f3d0b8d4e2500123",
+    "refs/tags/v4.2.4": "c9c0555b07138129b7fd0d9649a2cc4d471a8c29",
+    "refs/tags/v4.2.4^{}": "51eee397f87f68cacb1cde48d040e56d3ac6b707",
+    "refs/tags/v4.2.5": "244ed25db878995cd2607d11ad649f822ace48ed",
+    "refs/tags/v4.2.5^{}": "7401395a29166cca73a03799f3d0b8d4e2500123"
+  },
+  "previousTagUnchanged": true,
+  "packageHash": "b24af0e119b10801ed4ab352ad6eaf9b0af4fd9c4ba5a9437f02085c58e7fca4",
+  "distributionHash": "2ec65e580d5f7c9020e350e81b734938bb6432afb155753cfd5ac65988cd8a2e",
+  "sourceCodeMatchesAcceptedCommit": true,
+  "installedDesktopVersion": "4.2.4",
+  "installationActions": 0,
+  "msiTouched": false,
+  "userAgentsHash": "0097d035294e889dd2b4410fb247938764d8b007c226893911c3ef4772f6f700",
+  "userAgentsExcludedFromCommits": true
+}
