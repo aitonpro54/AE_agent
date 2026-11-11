@@ -184,6 +184,7 @@ function gather(id) {
   const closure = sourceClosure(); // Complete before the first project import.
   if (hash(closure) !== SOURCE_CLOSURE_HASH) fail('repair_source_changed');
   const { inspectLedgerHistory } = require('../runtime/recovery-inspection');
+  const { validReplacementScope } = require('../core/resources');
   const { configText } = require('./install-core4');
   const ledger = inspectLedgerHistory(ledgerBytes, { installationId: foreign.next.installationId });
   // This is deliberately not a settled certification: receiver is unavailable.
@@ -193,7 +194,14 @@ function gather(id) {
     const c = e.record, resource = c.resource;
     exact(c, ['allowedEffects', 'checkpointRef', 'constraintId', 'origin', 'owner', 'provenance', 'reservationOwner', 'resource', 'revision', 'schemaVersion', 'unresolvedOutcome']);
     exact(c.origin, ['aePid', 'aeProcessBirth', 'machineId']);
-    if (c.schemaVersion !== 2 || c.owner !== PROFILE.foreignId || c.reservationOwner !== PROFILE.foreignId || c.unresolvedOutcome !== false || c.origin.aePid !== PROFILE.aePid || c.origin.aeProcessBirth !== PROFILE.aeBirth || c.origin.machineId !== PROFILE.machine || !resource || !resource.projectId || Object.keys(resource).some(k => !['projectId', 'compId', 'layerId', 'itemId'].includes(k))) fail('repair_external_fence');
+    if (c.schemaVersion !== 2 || c.owner !== PROFILE.foreignId || c.reservationOwner !== PROFILE.foreignId || c.unresolvedOutcome !== false || c.origin.aePid !== PROFILE.aePid || c.origin.aeProcessBirth !== PROFILE.aeBirth || c.origin.machineId !== PROFILE.machine || !resource || !resource.projectId) fail('repair_external_fence');
+    const overlayKeys = ['compId', 'itemId', 'layerId', 'originalSourceId', 'projectId', 'replacement', 'sessionId'];
+    const overlay = ['originalSourceId', 'replacement', 'sessionId'].some(k => Object.hasOwn(resource, k)) || c.allowedEffects.includes('composition-layer-overlay');
+    if (overlay) {
+      // The replacement's referenceProject is a read-only source binding in
+      // this exact admitted layer-overlay contract, never an output fence.
+      if (!equal(c.allowedEffects, ['composition-layer-overlay']) || !equal(Object.keys(resource).sort(), overlayKeys) || resource.sessionId !== PROFILE.foreignId || !validReplacementScope(resource) || !path.isAbsolute(resource.replacement.referenceProject)) fail('repair_external_fence');
+    } else if (Object.keys(resource).some(k => !['projectId', 'compId', 'layerId', 'itemId'].includes(k))) fail('repair_external_fence');
   }
   // Fences are execution resource scopes, not schema property names, read-only
   // source media filenames, or recordContext.project.file provenance.
@@ -235,7 +243,7 @@ function treeFromBackup(base, bk, repairDirectory) {
   return result;
 }
 // No command line or inherited script text is interpolated into the native query.
-const CENSUS = String.raw`$ErrorActionPreference='Stop';try{$wanted=@(ConvertFrom-Json -InputObject $env:AE_CORE4_REPAIR_PIDS);$rows=@(Get-CimInstance Win32_Process -Property ProcessId,Name,CreationDate,ExecutablePath -ErrorAction Stop);$result=@();foreach($p in $rows){if($wanted -contains [int]$p.ProcessId -or $p.Name -match '^(AfterFX|CEPHtmlEngine|aerender|Adobe Media Encoder)\.exe$'){if($null -eq $p.CreationDate -or -not ($p.CreationDate -is [DateTime])){throw 'birth'};$result+=@{pid=[int]$p.ProcessId;name=[string]$p.Name;birthTicks=$p.CreationDate.ToUniversalTime().Ticks.ToString([Globalization.CultureInfo]::InvariantCulture);executablePath=$p.ExecutablePath}}};[Console]::Out.Write((ConvertTo-Json -Compress -Depth 4 -InputObject @{observedAt=[DateTime]::UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");processes=$result}))}catch{[Console]::Error.Write('repair_process_unknown');exit 1}`;
+const CENSUS = String.raw`$ErrorActionPreference='Stop';try{$wanted=ConvertFrom-Json -InputObject $env:AE_CORE4_REPAIR_PIDS;$rows=@(Get-CimInstance Win32_Process -Property ProcessId,Name,CreationDate,ExecutablePath -ErrorAction Stop);$result=@();foreach($p in $rows){if($wanted -contains [int]$p.ProcessId -or $p.Name -match '^(AfterFX|CEPHtmlEngine|aerender|Adobe Media Encoder)\.exe$'){if($null -eq $p.CreationDate -or -not ($p.CreationDate -is [DateTime])){throw 'birth'};$result+=@{pid=[int]$p.ProcessId;name=[string]$p.Name;birthTicks=$p.CreationDate.ToUniversalTime().Ticks.ToString([Globalization.CultureInfo]::InvariantCulture);executablePath=$p.ExecutablePath}}};[Console]::Out.Write((ConvertTo-Json -Compress -Depth 4 -InputObject @{observedAt=[DateTime]::UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'");processes=$result}))}catch{[Console]::Error.Write('repair_process_unknown');exit 1}`;
 async function census(c, prior = []) {
   if (process.platform !== 'win32') fail('repair_process_unknown');
   const executable = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe'); plain(executable);

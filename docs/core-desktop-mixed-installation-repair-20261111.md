@@ -100,7 +100,7 @@ identity `installation-7ece2c0b…` сохраняется как отдельн
 Резервная копия и неизменность оригиналов после копирования — PASS. Прежний
 снимок оператора прошёл полный TEMP сценарий и 68 границ crash/recover;
 это evidence разработки, не приёмка окончательного исправления двойного gate.
-На новом снимке узкие P2/edge cases — 10/10 PASS. Финальный scoped прогон:
+На снимке двойного gate узкие P2/edge cases — 10/10 PASS. Его scoped прогон:
 27/27 PASS, fail/cancelled 0, 490,4 с; 39 fsync и 43 link/rename/unlink
 границы (всего 82) прошли inspect/recover с сохранением protected facts.
 Helper SHA `2ea5cd50321068e6f51f8f5235b5c78472da5f87e9cb1e676b9609b083bb1d7b`,
@@ -109,3 +109,21 @@ evidence key `9ffb4ebb1c8b2d453e630f21f26a5b062b947bfd63624fe905359f278afdee70`.
 в памяти после добавления sidecar воспроизвела исходные 193539…/a803a6…/177.
 После актуального scoped PASS предстоят actual repair, стандартное обновление
 и AE/MCP/Menu/Origin/native read/release.
+
+### Уточнение preflight на реальных данных
+
+Два read-only плана отказали до записи: закрытая форма исторического
+`composition-layer-overlay` содержит read-only `replacement` provenance,
+а WinPS 5.1 оборачивал PID-массив дополнительной коллекцией при `@(...)`.
+Разрешена только точная форма effect/session через прежний pinned
+`validReplacementScope`; file/output/job fences не ослаблены. Исправлен
+постоянный native query и добавлена проверка реального self PID/birth/path.
+
+Итоговый helper SHA `43a7dcad764a2f68fd447bfac8369a0fb9c3618fe90aef859f3af41bc9bcde0c`.
+Независимый адресный review preflight — ACCEPT. Current scoped:
+**38/38 PASS**, fail/cancelled/skipped 0, 546,1 с, **82 crash-границы PASS**.
+Ключ `16bb5b618dcd9198fb465a4e78905636a76e4e439f03db59db1342d9133aaa51`.
+Read-only план рабочей установки прошёл:
+`3f067ea7-2943-45f1-a1b8-1fe7d29e94e7`, hash
+`b2c90b1ca3c4e9a39537330c0654dc1ab6a1f84e965520782f3356e8bc58deb4`.
+Применение ещё не выполнялось на момент фиксации этого инженерного этапа.

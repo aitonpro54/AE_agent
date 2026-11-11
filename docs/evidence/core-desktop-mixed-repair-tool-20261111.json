@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "collectedAt": "2026-11-11T09:25:10.952Z",
+  "collectedAt": "2026-11-11T09:48:22.142Z",
   "host": "DESKTOP-32974QF",
   "scope": "incident-only sidecar, no installed runtime/package changes",
-  "sourceBaselineCommit": "4796a34",
+  "sourceBaselineCommit": "a4020be",
   "files": {
-    "core4/tools/repair-mixed-installation.js": "2ea5cd50321068e6f51f8f5235b5c78472da5f87e9cb1e676b9609b083bb1d7b",
-    "core4/test/mixed-installation-repair.test.js": "bc56593e2205e4de6587d57353ebb10e8bd958d87bd32c63fd92a6945e61034d",
-    "core4/test/fixtures/mixed-installation.js": "ec5e89793b612ca452f2bf07e615ea13cc9c92193658fcd3b13d4526e34e448a",
+    "core4/tools/repair-mixed-installation.js": "43a7dcad764a2f68fd447bfac8369a0fb9c3618fe90aef859f3af41bc9bcde0c",
+    "core4/test/mixed-installation-repair.test.js": "fbbc64226947ff7a663980c70ccd6be1fd34d43149310c3a0265792854355c22",
+    "core4/test/fixtures/mixed-installation.js": "cffab0abe3c6e0a99f761d412379c55f59bc92e5bbe1bb8a5f84cab642e048ad",
     "core4/config/validation-map.json": "c3e7eb8cc883f19b65bc81b322888b10ddd4855a3344ef013c53cf01781f7aae"
   },
   "sourceClosureHash": "6b133951906fc51115d70aaeb4a2ea26c8cffe9f211bab6be892879ff18ad41d",
@@ -21,12 +21,13 @@
       "--run"
     ],
     "check": "mixed-installation-repair",
-    "evidenceKey": "9ffb4ebb1c8b2d453e630f21f26a5b062b947bfd63624fe905359f278afdee70",
+    "evidenceKey": "16bb5b618dcd9198fb465a4e78905636a76e4e439f03db59db1342d9133aaa51",
     "exitCode": 0,
     "tests": {
-      "pass": 27,
+      "pass": 38,
       "fail": 0,
-      "cancelled": 0
+      "cancelled": 0,
+      "skipped": 0
     },
     "crashBoundaries": {
       "fsync": 39,
@@ -34,8 +35,8 @@
       "total": 82
     },
     "log": {
-      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\validation-final.log",
-      "sha256": "c81edab287dd9b3742b29bf1626e60244946b88c6130c85e4eb805ca9a74218c"
+      "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\validation-overlay-final.log",
+      "sha256": "1a9535e66fb4e43756bde17cd41b3826e423c0de7cfcf0300c8952935982ddcb"
     },
     "routing": {
       "pass": 5,
@@ -44,15 +45,17 @@
     "boundaries": {
       "checked": 88,
       "liveCalls": 0
-    }
+    },
+    "durationSeconds": 546.1
   },
   "review": {
     "executor": "ae_reviewer",
     "kind": "read-only source review",
-    "reviewedHelperSha256": "2ea5cd50321068e6f51f8f5235b5c78472da5f87e9cb1e676b9609b083bb1d7b",
+    "reviewedHelperSha256": "43a7dcad764a2f68fd447bfac8369a0fb9c3618fe90aef859f3af41bc9bcde0c",
     "originalP2": "root install mutex did not serialize ordinary broker writer",
     "resolution": "MAC/inode attributed install and broker gates, partial acquire/release recovery",
-    "remainingP1P2": 0
+    "remainingP1P2": 0,
+    "preflightReview": "ACCEPT: closed overlay source scope and native PowerShell PID query"
   },
   "expectedPackage": {
     "packageHash": "193539dfe14a0760317aa92c451423f076f84d5f9e809f48faf2923e04030684",
@@ -62,5 +65,63 @@
   },
   "actualApplyPerformed": false,
   "msiTouched": false,
-  "credentialsIncluded": false
+  "credentialsIncluded": false,
+  "history": [
+    {
+      "helper": "2ea5cd50321068e6f51f8f5235b5c78472da5f87e9cb1e676b9609b083bb1d7b",
+      "validation": {
+        "command": [
+          "node",
+          "core4/tools/validate-diff.js",
+          "core4/tools/repair-mixed-installation.js",
+          "core4/test/mixed-installation-repair.test.js",
+          "core4/test/fixtures/mixed-installation.js",
+          "--run"
+        ],
+        "check": "mixed-installation-repair",
+        "evidenceKey": "16bb5b618dcd9198fb465a4e78905636a76e4e439f03db59db1342d9133aaa51",
+        "exitCode": 0,
+        "tests": {
+          "pass": 38,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "crashBoundaries": {
+          "fsync": 39,
+          "linkRenameUnlink": 43,
+          "total": 82
+        },
+        "log": {
+          "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\validation-overlay-final.log",
+          "sha256": "1a9535e66fb4e43756bde17cd41b3826e423c0de7cfcf0300c8952935982ddcb"
+        },
+        "routing": {
+          "pass": 5,
+          "fail": 0
+        },
+        "boundaries": {
+          "checked": 88,
+          "liveCalls": 0
+        },
+        "durationSeconds": 546.1
+      },
+      "review": {
+        "executor": "ae_reviewer",
+        "kind": "read-only source review",
+        "reviewedHelperSha256": "43a7dcad764a2f68fd447bfac8369a0fb9c3618fe90aef859f3af41bc9bcde0c",
+        "originalP2": "root install mutex did not serialize ordinary broker writer",
+        "resolution": "MAC/inode attributed install and broker gates, partial acquire/release recovery",
+        "remainingP1P2": 0,
+        "preflightReview": "ACCEPT: closed overlay source scope and native PowerShell PID query"
+      }
+    }
+  ],
+  "actualReadonlyPlan": {
+    "operationId": "3f067ea7-2943-45f1-a1b8-1fe7d29e94e7",
+    "planHash": "b2c90b1ca3c4e9a39537330c0654dc1ab6a1f84e965520782f3356e8bc58deb4",
+    "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-4.2.4-desktop-repair-20261111\\actual-plan-overlay-3f067ea7-2943-45f1-a1b8-1fe7d29e94e7.json",
+    "mutations": 0,
+    "result": "PASS"
+  }
 }

@@ -1,14 +1,29 @@
 'use strict';
 // Offline synthetic TEMP evidence. These tests never certify a real repair.
 const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), net = require('node:net'), http = require('node:http');
-const { fixture, pkg, hash, canonical, stats, signed, write } = require('./fixtures/mixed-installation');
+const { execFileSync } = require('node:child_process');
+const { fixture, pkg, hash, canonical, stats, signed, write, overlayConstraint, rewriteForeignLedger } = require('./fixtures/mixed-installation');
 const code = value => e => e.code === value;
 const snapshot = files => Object.fromEntries(files.map(file => [file, { hash: hash(fs.readFileSync(file)), stat: stats(file) }]));
 const protectedFiles = h => ['installation.json', 'core-client.json', 'origin.json', 'state/production/origin.json', 'state/production/receiver/completions.ndjson', 'state/production/runtime-maintenance.json', 'state/production/host-adoption.json', 'state/production/work-session.json'].map(f => path.join(h.root, f));
 async function close(server) { if (server.listening) await new Promise(resolve => server.close(resolve)); }
 
+test('mixed repair native Windows census selects its own PID from a JSON array', { skip: process.platform !== 'win32', timeout: 20000 }, () => {
+  // Read-only native process observation, not live AE or repair proof. The
+  // normal TEMP harness mocks the process boundary and cannot catch PS5's
+  // nested-array result from @(ConvertFrom-Json ...).
+  const source = fs.readFileSync(path.resolve(__dirname, '../tools/repair-mixed-installation.js'), 'utf8');
+  const query = source.match(/const CENSUS = String.raw`([\s\S]*?)`;/)[1];
+  const bytes = execFileSync(path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'), ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', query],
+    { encoding: 'utf8', shell: false, windowsHide: true, timeout: 12000, maxBuffer: 2097152, env: { ...process.env, AE_CORE4_REPAIR_PIDS: JSON.stringify([process.pid]) } });
+  const observation = JSON.parse(bytes.replace(/^\uFEFF/, '')), self = observation.processes.find(p => p.pid === process.pid);
+  assert.ok(self); assert.equal(typeof self.birthTicks, 'string'); assert.match(self.birthTicks, /^[1-9][0-9]{0,18}$/);
+  assert.equal(self.executablePath.toLowerCase(), fs.realpathSync(process.execPath).toLowerCase());
+  assert.ok(Math.abs(Date.now() - Date.parse(observation.observedAt)) < 5000);
+});
+
 test('mixed repair authentic success preserves protected byte/stat facts and both histories without a synthetic receiver', { timeout: 90000 }, async t => {
-  const h = await fixture(t), before = snapshot(protectedFiles(h)), p = await h.plan();
+  const h = await fixture(t, h => { overlayConstraint(h, true); rewriteForeignLedger(h); }), before = snapshot(protectedFiles(h)), p = await h.plan();
   assert.equal(p.plan.foreignHistorySettlementCertified, false);
   assert.equal(p.plan.foreignReceiver.reconstructed, false);
   assert.equal(h.mutations.length, 0);
@@ -128,6 +143,26 @@ test('mixed repair refuses durable external file/output/job or unresolved constr
       const reportPath = path.join(h.repo, h.profile.report), report = JSON.parse(fs.readFileSync(reportPath)); report.ledger.sha256 = hash(bytes); write(reportPath, report);
     });
     await assert.rejects(h.plan(), e => ['repair_external_fence', 'repair_foreign_history'].includes(e.code)); assert.equal(h.mutations.length, 0);
+  });
+});
+
+test('mixed repair admits only the closed layer-overlay replacement provenance scope', { timeout: 120000 }, async t => {
+  for (const mode of ['source', 'shared-source', 'nested-output', 'nested-file', 'nested-job', 'wrong-session', 'wrong-effect', 'relative-reference', 'bad-count']) await t.test(mode, async t => {
+    const h = await fixture(t, h => {
+      const c = overlayConstraint(h, mode === 'shared-source');
+      if (mode === 'nested-output') c.resource.replacement.output = 'external-output';
+      if (mode === 'nested-file') c.resource.replacement.file = 'external-file';
+      if (mode === 'nested-job') c.resource.replacement.jobId = 'external-job';
+      if (mode === 'wrong-session') c.resource.sessionId = h.d.installationId;
+      if (mode === 'wrong-effect') c.allowedEffects = ['composition-layer-overlay', 'mutate'];
+      if (mode === 'relative-reference') c.resource.replacement.referenceProject = 'relative.aep';
+      if (mode === 'bad-count') c.resource.replacement.layerCount = 3201;
+      rewriteForeignLedger(h);
+    });
+    if (['source', 'shared-source'].includes(mode)) {
+      const result = await h.plan(); assert.equal(result.plan.foreignHistorySettlementCertified, false);
+    } else await assert.rejects(h.plan(), e => ['repair_external_fence', 'repair_foreign_history'].includes(e.code));
+    assert.equal(h.mutations.length, 0);
   });
 });
 

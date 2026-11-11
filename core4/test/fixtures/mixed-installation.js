@@ -150,4 +150,23 @@ async function fixture(t, change = () => {}) {
   t.after(() => { if (!path.resolve(base).startsWith(path.resolve(os.tmpdir()) + path.sep + 'core4-mixed-repair-')) throw Error('unsafe cleanup'); fs.rmSync(base, { recursive: true, force: true }); });
   return h;
 }
-module.exports = { fixture, pkg, hash, canonical, stats, signed, write };
+function overlayConstraint(h, shared = false) {
+  const c = h.events.find(e => e.type === 'constraint').record;
+  c.allowedEffects = ['composition-layer-overlay'];
+  c.resource = { compId: 65465, itemId: 65457, layerId: 69663, originalSourceId: 65457,
+    projectId: path.join(h.base, 'work.aep'), sessionId: h.foreign.installationId,
+    replacement: { itemCount: 1109, layerCount: 3112, name: '_Core overlay', projectSha256: hash('reference-project'),
+      referenceProject: path.join(h.base, 'reference.aep'), retiredLayerId: 69650,
+      ...(shared ? { sharedOriginalLayerId: 65458 } : {}) } };
+  return c;
+}
+function rewriteForeignLedger(h) {
+  let previousHash = 'origin';
+  for (const e of h.events) { e.previousHash = previousHash; const { recordHash, ...body } = e; e.recordHash = hash(body); previousHash = e.recordHash; }
+  const bytes = Buffer.from(h.events.map(canonical).join('\n') + '\n');
+  h.profile.ledgerHash = hash(bytes); write(path.join(h.state, 'broker/ledger.ndjson'), bytes);
+  const file = path.join(h.repo, h.profile.report), report = JSON.parse(fs.readFileSync(file)); report.ledger.sha256 = hash(bytes);
+  for (const r of report.receipts) r.ledgerRecordHash = h.events.find(e => e.type === 'command' && e.commandId === r.commandId).recordHash;
+  write(file, report);
+}
+module.exports = { fixture, pkg, hash, canonical, stats, signed, write, overlayConstraint, rewriteForeignLedger };
