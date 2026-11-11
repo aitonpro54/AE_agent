@@ -115,3 +115,45 @@
   финальная проверка refs после push.
 - Продуктовые сценарии Titles/Slideshow/AME и полная матрица P1–P8 не назначены.
   Новых live install/stop/native-команд в этом блоке пока нет.
+
+## Завершённый выпуск 4.2.5
+
+### Progress
+
+Общий installer исправлен в cd72302; test-only Windows fixture budget —
+в 5352fc92fbb2ebeefcbae1c2956ac1458cd8bd56. Из этого source собран
+`operator-render-jobs/owner` Core 4.2.5. Целевые Git refs:
+`codex/ae-agent-core-4.2.5`, `v4.2.5`; прежние 4.2.1/4.2.4 refs сохраняются.
+
+### Decision Log
+
+Чистое начало отделено от coherent/orphan/mixed состояния. Проверяются
+descriptor/origins/client/CEP/managed config и точные staging paths. Чужая
+история, links и неизвестные Core preferences дают отказ до записи. Own-empty
+scaffolding cleanup ограничен private lease, до writes и под install gate.
+Повторный ancestor walk устранён без пропуска полного realpath leaf.
+
+Argon дал go, его findings проверены локально Astra и исправлены. Итоговый
+source e2e5…/eadd… принят Astra. Одна внешняя отправка, immutable payload и
+полный неизменённый ответ сохранены; повторное Argon review не выполнялось.
+Исторический filesystem writer не установлен; доказанный initial-admission
+дефект и пределы расследования описаны отдельно.
+
+### Validation
+
+- **41/41 current scoped checks, 859 tests PASS**, boundaries **88 PASS**.
+  Exact key/command/receipt/logSHA сводка —
+  [release evidence](../docs/evidence/core-4.2.5-transfer-20261111.json).
+  Исторические FAIL/cancelled/interruption сохранены и не объявлены current PASS.
+- Package **b24af0e119b10801ed4ab352ad6eaf9b0af4fd9c4ba5a9437f02085c58e7fca4**,
+  159 runtime files. Standalone
+  **2ec65e580d5f7c9020e350e81b734938bb6432afb155753cfd5ac65988cd8a2e**,
+  177 hashed files + manifest. Две сборки совпали; verifyPackage/verifyStandalone
+  и closure PASS. Координатор независимо проверил артефакт и 96 evidence hashes.
+- Actual read-only plan поверх установленной 4.2.4 сохранил identity/lineage
+  и 12 bindings. Install/production writes/native AE commands — 0.
+  Desktop остаётся на 4.2.4, MSI не изменялся. Native/product acceptance 4.2.5
+  и full release certification не заявляются.
+- Пользовательская AGENTS.md hash 0097d035… сохранена вне продуктовых коммитов.
+  Локальный push dry-run авторизован текущим Git доступом; публикация использует
+  новые refs без переписывания прежних веток и тегов.

@@ -1,0 +1,1165 @@
+{
+  "version": "4.2.5",
+  "host": "DESKTOP-32974QF",
+  "scope": "offline source validation and standalone build",
+  "collectedAt": "2026-11-11T16:50:01.146Z",
+  "sourceCommit": "5352fc92fbb2ebeefcbae1c2956ac1458cd8bd56",
+  "branch": "codex/ae-agent-core-4.2.5",
+  "source": {
+    "installerSha256": "e2e5bed8053b5fd1f2a085822aa7bd6d5eeb63ed7a2752348983926b59cb7074",
+    "installLeaseSha256": "eaddb6fa4c8fcac2d8b94a42d3e2eb62683c7a30c1e621e0ab512c5da06483f6",
+    "ownerRuntimeBudgetTestSha256": "9f0564b9d453786faf915dbf37328374d5267d1ede30cab4b7e4eca1c3db9266"
+  },
+  "validation": {
+    "result": "PASS",
+    "selectedChecks": 41,
+    "matrix": {
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/matrix-current.json",
+      "sha256": "aeb525121e710d90c8455c372280962175f8a6a52f8c1e6aba2ffad1145b0644"
+    },
+    "tests": 859,
+    "checkResults": [
+      {
+        "check": "installable-runtime",
+        "evidenceKey": "a8d89b0e78be38237296269fa00e5b92e41d00d0969409078e631ca9d27d9d43",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:installable-runtime)",
+          "test/installable-runtime.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-installable-runtime-3.json",
+          "sha256": "5228752d977708dd9f0f399e17638a7abfb52595438d3df3280d1fcceb9c9d1e"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-installable-runtime-3.log",
+          "sha256": "e8af47245c5f31db2c50fe0c3add2d578c49ff045a7b7878432debb745cd3e7e"
+        },
+        "tests": 53,
+        "pass": 53,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "native-read-recovery",
+        "evidenceKey": "f39abaf1e7fa176bdd5778746fa677bc0db3aa21858bb6fcaf152211baaaeac0",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:native-read-recovery)",
+          "test/native-read-recovery.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-native-read-recovery-3.json",
+          "sha256": "2aabf31cba92462752be63f96d9052e2881c3630eef15d66341deced4b4b7408"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-native-read-recovery-3.log",
+          "sha256": "4343e6483232edd1a61ddef2a5b1e50f26c755d040eef160a43789b16fb81777"
+        },
+        "tests": 19,
+        "pass": 19,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "installed-composition",
+        "evidenceKey": "6893461d28815beca34a12d096a9ccac52f12fe0d3dcf89f8eebd7641d26eaeb",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:installed-composition)",
+          "test/installed-composition.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-installed-composition-2.json",
+          "sha256": "de06b8e4cf5187effa232cd5dbef22edfad7993227c7aa92bcc9dd8620956578"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-installed-composition-2.log",
+          "sha256": "941db8bc128516d7dba846113ee806bf97f24c78ea9f2f5c9d61966e723b1b38"
+        },
+        "tests": 23,
+        "pass": 23,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "manual-runtime",
+        "evidenceKey": "75d8b16ef9f40a0499dc8c5126b01439a171d8e6dd5a589d2b3fd1f3552d80bf",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:manual-runtime)",
+          "test/manual-runtime.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-manual-runtime-1.json",
+          "sha256": "c000011ee8232bb5013bf0b4061f0683c3123c7c66437f0efd237d76d481ecb0"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-manual-runtime-1.log",
+          "sha256": "8ca56f2afc41d78d8791b8f6976fc151abc8b3c7dd42ee554c25ddbf90fb2770"
+        },
+        "tests": 62,
+        "pass": 62,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "standalone-installer",
+        "evidenceKey": "7b20171855a135d6bb96981a8819dab18f4f523d5968e46dff4410559efc7c1c",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:standalone-installer)",
+          "test/standalone-installer.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-standalone-installer-2.json",
+          "sha256": "65886ed057fcab98d4853bfa8dbd65b1b466015a8fe5729cd23567be46f79d20"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-standalone-installer-2.log",
+          "sha256": "1a53fd4c6932eb336fec3fc2e1521f2924b48941e737f1786f20108806a5b06b"
+        },
+        "tests": 8,
+        "pass": 8,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "owner-installation",
+        "evidenceKey": "7f8ee5fa46203139f16705834ef074b463fa58e6fcdd17ffefe34e4a2e96fcc1",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:owner-installation)",
+          "test/owner-installation.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-owner-installation-3.json",
+          "sha256": "9c3e46574feea4c31d0d5746f9147d75c95300c51d5983342e289640a45cdcd6"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-owner-installation-3.log",
+          "sha256": "2b3f21af2c397827e3214f721eb4c5ae92200dda24da50effe8a42b3b801d8a0"
+        },
+        "tests": 33,
+        "pass": 33,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "human-window",
+        "evidenceKey": "2b1b52a65d421375e57cec7716cc1dd41568e24e57c7f682438407d59c5f0023",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:human-window)",
+          "test/human-window.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-human-window-2.json",
+          "sha256": "c4bc9f34c3635f70b04638e732ad25465b9ad4fea4613951e6811deb0ae52979"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-human-window-2.log",
+          "sha256": "88f01a9d4bd3e7cc836c8fd639cd1764c39cf38c2e2ded03ca7ab327bbd9113b"
+        },
+        "tests": 3,
+        "pass": 3,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "stopped-update",
+        "evidenceKey": "abc2899d1dbccecdafecf7b3ab53cbd97b9d3336c3aef35bebbd954707e097d2",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:stopped-update)",
+          "test/stopped-update.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-stopped-update-2.json",
+          "sha256": "295c78fc7ada1208b04c2039e25b948af71a3f9773f6eac61bbbfc111d2740a5"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-stopped-update-2.log",
+          "sha256": "ae58af267521a72f67e9ea9b0e41c65062f5b14bed4eac0246a04563382ad700"
+        },
+        "tests": 60,
+        "pass": 60,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "legacy-owner-migration",
+        "evidenceKey": "c9d7dc0435c0054fa9804e1bec3c6445934fd044c7de94ffe4261db90eeef844",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:legacy-owner-migration)",
+          "test/legacy-owner-migration.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-legacy-owner-migration-2.json",
+          "sha256": "98710e9bbca94ab1a892885b78a3d089c5ab7811aea44462b4cffe176ecf38b7"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-legacy-owner-migration-2.log",
+          "sha256": "9fc716b725ef2e9d5c26a5617855019ca8f96fb011b1edd0c90874a1ebe6001f"
+        },
+        "tests": 29,
+        "pass": 29,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "maintenance-finish",
+        "evidenceKey": "1f6f367d3e747e3c36ac3c1cd85c4c862c65ade610bdeec3f7ce90e55dbf350e",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:maintenance-finish)",
+          "test/maintenance-finish.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-maintenance-finish-2.json",
+          "sha256": "751acccd74a704d2ff28f81a4fc0f96822868a1d622e26edb9f9e859c439b3c1"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-maintenance-finish-2.log",
+          "sha256": "eb55170901fa1c0e36ab0ff3e41b8a6872c6c917616c162bdaf024e2283bb1df"
+        },
+        "tests": 32,
+        "pass": 32,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "owner-maintenance",
+        "evidenceKey": "b4ae26974eb889288141d3e235db8d6018891268aeb70588a3fd7c631cbbd75d",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:owner-maintenance)",
+          "test/owner-maintenance.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-owner-maintenance-1.json",
+          "sha256": "7cdf431e594096a425048492401904b63e762a23e4a474e0e7a05767f6b36ed1"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-owner-maintenance-1.log",
+          "sha256": "ae4faae5ea62e956d10e25e3d8dbbcbbb01c02a67d8b41cd06f08d523c4bb67d"
+        },
+        "tests": 24,
+        "pass": 24,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "ae-readiness",
+        "evidenceKey": "f10d49dcf32f7ee77120d064732e1a394b8faec732d7342a3189edfb6803bda0",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:ae-readiness)",
+          "test/ae-readiness.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-ae-readiness-1.json",
+          "sha256": "e3a89c4873625810e393d0ebb2301875b292b8c918ace77a49d1ce7fc5e5e61a"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-ae-readiness-1.log",
+          "sha256": "7a91877eb009466e245686a3b6d16b0bec91791d4e2968f581c051dadffc85ae"
+        },
+        "tests": 5,
+        "pass": 5,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "owner-runtime",
+        "evidenceKey": "4a975c72c5832daf6f1fb0764fafaddc3abce24a393b219de23ba0ba0d33e550",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:owner-runtime)",
+          "test/owner-runtime.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-owner-runtime-2.json",
+          "sha256": "885e926beaba3de12d7a36c1e0dbea16a60800bbe157b1c0840c547e92c2f426"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-owner-runtime-2.log",
+          "sha256": "75e2428ad2877c8382b5a6ebf702dde47bdee6c3d53af68969203bec74b5617e"
+        },
+        "tests": 32,
+        "pass": 32,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "client-entry",
+        "evidenceKey": "8f75534e7d2f9285c7795a59afefad4a21aff6c6038734764adca162f295fcd8",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:client-entry)",
+          "test/client-entry.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-client-entry-1.json",
+          "sha256": "44da0379851718e42e7076d2f705719ca00b4365103f586e1a5178c64de19cc1"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-client-entry-1.log",
+          "sha256": "f3ae31343bbee28ca2a443fba8f1568ffe2f9a0112e397955a8a834431766deb"
+        },
+        "tests": 12,
+        "pass": 12,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "owner-attachments",
+        "evidenceKey": "fbac2b94fce75d1c36e2ef8d4ffd9e98b5d47bf6313a2b460cd96ea9832514ad",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:owner-attachments)",
+          "test/owner-attachments.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-owner-attachments-1.json",
+          "sha256": "2e52b973f83b0caa5799e5148f9ee2f5ea493b4c9d5b41eff8bee8e9cc2bab2f"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-owner-attachments-1.log",
+          "sha256": "bd36c23657c5b4d833aa4aa9c1918df73626d05e88cea134dff8138d270dad21"
+        },
+        "tests": 34,
+        "pass": 34,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "owner-ipc-process",
+        "evidenceKey": "082104e03ceedcade7fcf2cf56ff018412ef316ad625f684506362f73941c5dc",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:owner-ipc-process)",
+          "test/owner-ipc-process.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-owner-ipc-process-1.json",
+          "sha256": "7fbdca143a5d3dcd7d73741a8b110b4a052c873584978b150c249d15df06b152"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-owner-ipc-process-1.log",
+          "sha256": "bb689bdeafdf9857e0b69258eaa6e5c88286fcc4ff9f0b1213a52cd82b6098a0"
+        },
+        "tests": 2,
+        "pass": 2,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "start-over-driver",
+        "evidenceKey": "e3bc3a768218e29d2859e817853bf4fcd62d3b7690da41fecae29d07b4f6e090",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:start-over-driver)",
+          "test/start-over-driver.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-start-over-driver-1.json",
+          "sha256": "2286d57e354cdb6ee639ff671a805ac5c3f586594c0f9ef4c18bd5be6dc837d5"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-start-over-driver-1.log",
+          "sha256": "bfaf076de47eb8dce56052a72d3d124edc6d95948a48e8b380bbe46c6a287c50"
+        },
+        "tests": 3,
+        "pass": 3,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "stopped-host-readoption-operator",
+        "evidenceKey": "79c8eebb2e64a3d8378457eba8b94b30f3418b4d7595dabac9129ce55d06ee9f",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:stopped-host-readoption-operator)",
+          "test/stopped-host-readoption-operator.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-stopped-host-readoption-operator-1.json",
+          "sha256": "110a0cb2bebaf887d8efe15cab1de44902e1d00831baf55f411d8e4167503172"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-stopped-host-readoption-operator-1.log",
+          "sha256": "1a753d64f9147c832ce2817bbe3ca80191f2c2fb33fb9ea1ce5f9c7d44759d62"
+        },
+        "tests": 17,
+        "pass": 17,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "stopped-update-operator",
+        "evidenceKey": "19ddfc0e2bbe27ca73dafcd926d3768d7327285e9e93ab64dec543abacbc3d47",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:stopped-update-operator)",
+          "test/stopped-update-operator.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-stopped-update-operator-1.json",
+          "sha256": "408ac7512c6ec51a79964c9aba86e9c36a6026891f2044a5c6d400b4df9cf964"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-stopped-update-operator-1.log",
+          "sha256": "595b8352a456c8e7ae31887940122e1b2fe77d79782e83516ece5e96c5c6d419"
+        },
+        "tests": 4,
+        "pass": 4,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "maintenance-finish-operator",
+        "evidenceKey": "176c8d81ae2d9cf797b2ee4c4f49791670b4ffbc192bf80878590eca52440165",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:maintenance-finish-operator)",
+          "test/maintenance-finish-operator.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-maintenance-finish-operator-1.json",
+          "sha256": "31e7f1b8fe3a1c4dddfd3fe983f99ea352fa809f38cf9b537d6729efe6711a86"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-maintenance-finish-operator-1.log",
+          "sha256": "0a85fe7f9e5bad9805b9271226514352f82bdf6497fb912e4a722f4f08135941"
+        },
+        "tests": 7,
+        "pass": 7,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "maintenance-operator",
+        "evidenceKey": "538408abfd2bd70b306731c2c0d4a8efcf05cad54aee8742e7934fae85cd5afe",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:maintenance-operator)",
+          "test/maintenance-operator.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-maintenance-operator-1.json",
+          "sha256": "e970fb03de6dccb6ab712512157d11b18c8c233725faa7f46f4e4466ec18b129"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-maintenance-operator-1.log",
+          "sha256": "b88ef6472cade080f482b29c2bb5a52d1f4f9edab17c4b1c1eb8d5b6b9b19b60"
+        },
+        "tests": 8,
+        "pass": 8,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "panel-reconnect",
+        "evidenceKey": "8dc1cda2d734413a97b0ef74f3b9363363460c5935f3ab5e5f8730e01d35c5f7",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:panel-reconnect)",
+          "test/panel-reconnect.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-panel-reconnect-1.json",
+          "sha256": "264b7788d84f280990441b2aaf2937a71257badbc3bdd2acd3d29959aeb896f9"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-panel-reconnect-1.log",
+          "sha256": "62b587fb0a15a418b5d518034a7d841560da47fb3bd85c9d71f245c2242e0ffb"
+        },
+        "tests": 69,
+        "pass": 69,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "artifact-boundaries",
+        "evidenceKey": "18896515d3c73d7afb701812f42e659e27d966ab830e1947f2f9f19b66bc4a19",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:artifact-boundaries)",
+          "test/core4.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-artifact-boundaries-1.json",
+          "sha256": "cbb3b128c959c65be17f372f6b820e07f88b7366078d3c2afa8664a67bd7f05a"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-artifact-boundaries-1.log",
+          "sha256": "7fb94eeafa5da226bcb75ce2c33694891d9ca2d240e73f3cf6e9d4f2df22c7d4"
+        },
+        "tests": 5,
+        "pass": 5,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "panel-start-over",
+        "evidenceKey": "a399d51d09751645ba10f604b7dd1af2cd4d8727f6c8d29e9ba2a6495ef327b4",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:panel-start-over)",
+          "test/panel-start-over.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-panel-start-over-1.json",
+          "sha256": "10385d977fac9606b8352647a98bf251b92bb09995650e7e0a342a792bebc48a"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-panel-start-over-1.log",
+          "sha256": "bdeccc3afa807418a136dd72608aeaaa097b8fd8b9990be02e0d3fadd0fe64bb"
+        },
+        "tests": 11,
+        "pass": 11,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "work-session",
+        "evidenceKey": "d81cb7a3227ebd687dc582015ac2bd86eecb37f73e7a202b37127e8c251d2f40",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:work-session)",
+          "test/work-session.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-work-session-1.json",
+          "sha256": "93930c6240ab59da5ec7585b557e32502c95dd58de7079d5fdc83ce7a96ed017"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-work-session-1.log",
+          "sha256": "0b9d909f34f3876d49764e16ed8b64e21be69fca85a9071572e57b5483284bb3"
+        },
+        "tests": 17,
+        "pass": 17,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "start-over-finisher",
+        "evidenceKey": "88c9839766c5ad5ed005ecf158f97ddf0465539feafb54a119974bb377870ab8",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:start-over-finisher)",
+          "test/start-over-finisher.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-start-over-finisher-1.json",
+          "sha256": "854361149308176aeb1ead000444b1f15fbe5053f1543d09d0ad305d1064cb22"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-start-over-finisher-1.log",
+          "sha256": "75aa245d81fb005a94edabaaf28c53d45b192c75f0e2f9d3f42c185fb3c26e34"
+        },
+        "tests": 20,
+        "pass": 20,
+        "cancelled": 0,
+        "exactReuse": true
+      },
+      {
+        "check": "start-over-state",
+        "evidenceKey": "b3f3fce7783b3d0550618bb049aa8ac9079682c6a5edef80cb827082ce64e9fb",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:start-over-state)",
+          "test/start-over-state.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-start-over-state-1.json",
+          "sha256": "5229ecb4e79bfcf2bb0142047fc75da23ae50e09a0d8b44ff137085d88b68f13"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-start-over-state-1.log",
+          "sha256": "5ec5c63425b2fbe8e939efe412ad99a8bd492a8462ec9c0219f73303d8dd4c36"
+        },
+        "tests": 20,
+        "pass": 20,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "start-over-barrier",
+        "evidenceKey": "694deba74353a5fa7ab75131556ced598ff43b1b0fc5fcf8eba80b8735458e8a",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:start-over-barrier)",
+          "test/start-over-barrier.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-start-over-barrier-1.json",
+          "sha256": "86f0237b1aff666f0b135165e9f5f3d5225999ab5b9cf04e626cb204141124ea"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-start-over-barrier-1.log",
+          "sha256": "5d24b9dafa3ba5d52b0b7cebb7082e4522d14da1084b4749ba12d78f522f15f9"
+        },
+        "tests": 14,
+        "pass": 14,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "start-over-inspection",
+        "evidenceKey": "62af6c7d604cd72843f2f691019964d9c948d2bf45e96f54fd8c11a2100ae8fb",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:start-over-inspection)",
+          "test/start-over-inspection.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-start-over-inspection-1.json",
+          "sha256": "f47f7ae1e1749f2d43c82cccd9b2c34340e8a5b2939f35e33e36f37198434a30"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-start-over-inspection-1.log",
+          "sha256": "2c8ed71dc2cb5fa3a314978a7fbd1bb3d0857d604dd6193abe5facf6f191f111"
+        },
+        "tests": 21,
+        "pass": 21,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "stopped-host-readoption",
+        "evidenceKey": "1c90af0288a3211dcee52c1408a997950448a7756deb11d3f9dcdb599a994b5c",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:stopped-host-readoption)",
+          "test/stopped-host-readoption.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-stopped-host-readoption-1.json",
+          "sha256": "3b729e2d9e60df6235d9c157145b566606362bf09a22e026a77ba0b7a9f9e664"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-stopped-host-readoption-1.log",
+          "sha256": "e58a81ef0f13af0089c38e1f3d9ff6701a418f64b877bbddb0c30dd77b9644af"
+        },
+        "tests": 25,
+        "pass": 25,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "readoption-core",
+        "evidenceKey": "c2a73dee9f08e2bb598b05d1d16eab7c61d8bea8352d082af5eae17d6ed30e44",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:readoption-core)",
+          "test/stopped-host-readoption-core.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-readoption-core-1.json",
+          "sha256": "8368b386c7f4839569dfab67d168e76fbf117e43d8e76f9589a082f529ee3a85"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-readoption-core-1.log",
+          "sha256": "143277aed9a05101b1a1bd6e99d9d88fc56c75f24e21282391d938c01c5dc6a4"
+        },
+        "tests": 13,
+        "pass": 13,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "readoption-recovery",
+        "evidenceKey": "581a66ee8c85a376978c88fd942e47171bdc4dc4a2c500766445d06898ba0adb",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:readoption-recovery)",
+          "test/stopped-host-readoption-recovery.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-readoption-recovery-1.json",
+          "sha256": "321e5664a5622cfe286d0994f234ec5af60fcb5689f5e75557f670bdf68c1b19"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-readoption-recovery-1.log",
+          "sha256": "163c2cfcb0b5b57006fde6fa6bd26a0a7b2ca549b76059bde863eab797f54c84"
+        },
+        "tests": 34,
+        "pass": 34,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "readoption-enable",
+        "evidenceKey": "ddd1a96978dc155d2b0f3d85e6251180718fb38b67a3f2b675134f30c73ccabc",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:readoption-enable)",
+          "test/stopped-host-readoption-enable.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-readoption-enable-1.json",
+          "sha256": "6d7752cdfe4ac7792490e299bc58dd4903d32cd226782586b1d60af0ee919c57"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-readoption-enable-1.log",
+          "sha256": "d1284f7f9b97c75bb13b62049624d9d10ff213e2dc1692cd7bad1146be2893fd"
+        },
+        "tests": 22,
+        "pass": 22,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "readoption-probe",
+        "evidenceKey": "008174b729f34171057fa2c55f16f92c3ea465d4a2e7bf8eb1743bf8231f7cc0",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:readoption-probe)",
+          "test/stopped-host-readoption-probe.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-readoption-probe-1.json",
+          "sha256": "0e9c90a7223acf2944420f3135d357a5ecfb20f121123df6a031d1541d2a14e6"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-readoption-probe-1.log",
+          "sha256": "7383f41472fcbb81b0ffa91d881ffc1a27edacc1a03578cac567445c050ea44e"
+        },
+        "tests": 1,
+        "pass": 1,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "stopped-certification",
+        "evidenceKey": "ef45288a6d13f4a4f53653f1691df42c1c0c8f7ab647c59ba7cfe9f3fbaeec63",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:stopped-certification)",
+          "test/stopped-certification.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-stopped-certification-1.json",
+          "sha256": "20bf5c34da1389742425df59fe5a048e70745e1d27fc70d20801da35730822cf"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-stopped-certification-1.log",
+          "sha256": "e83b4ed61597749e2cb53c3a6cd27047d01820d77b63ff8cdccf0fab79ac9dbf"
+        },
+        "tests": 30,
+        "pass": 30,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "owner-lifecycle",
+        "evidenceKey": "8b011ed491fab73876f633d0a5895a46e9243e8250708f25665324e64cd5659e",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:owner-lifecycle)",
+          "test/owner-lifecycle.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-owner-lifecycle-1.json",
+          "sha256": "2bc44d23938581d30852912ce8fc4484a9b19d7ce5d900dfa7662fad1b4caeba"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-owner-lifecycle-1.log",
+          "sha256": "a3666b7c42c0a112fec73e46b3003ff8cec1183648a00e0800d67191e8a3c8ad"
+        },
+        "tests": 12,
+        "pass": 12,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "owner-lifecycle-faults",
+        "evidenceKey": "e37ba9a5fba951e0777d51e62d1c226223af9358bef96214b8dd883c356a4baf",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:owner-lifecycle-faults)",
+          "test/owner-lifecycle-faults.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-owner-lifecycle-faults-1.json",
+          "sha256": "fd211a3706c6b39e8be4688972e0d943ae175cc78beb8bde9e52fab55088d38b"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-owner-lifecycle-faults-1.log",
+          "sha256": "6479b61542753c050a799fb5f32ce8334dd1921320bd44549388b99bd721c90f"
+        },
+        "tests": 21,
+        "pass": 21,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "owner-marker-publication",
+        "evidenceKey": "55c650bcf367983c5607ac5ba24654c9a23f2afaaf413cabfc41817f89955dea",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:owner-marker-publication)",
+          "test/owner-marker-publication.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-owner-marker-publication-1.json",
+          "sha256": "058ed096ccbf646ce8b07a2d9e4036a31f729d1af23080a8126ca79aa886fdf0"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-owner-marker-publication-1.log",
+          "sha256": "5648c20a56c41c2d7ecd0bc00cfccadffca7ec92bc1cc98db5d083cba18e796c"
+        },
+        "tests": 14,
+        "pass": 14,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "client-launcher",
+        "evidenceKey": "26101cdca9d1e7defbea238d5249ac8505cd0555fc4ad98db4c860f17c4df169",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:client-launcher)",
+          "test/client-launcher.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-client-launcher-1.json",
+          "sha256": "9381cc7bf2099c9c2d56b6a7c6fd62c831966c698388c7d500f3d18219799b2b"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-client-launcher-1.log",
+          "sha256": "2dacaf4153eb5eb406c71de421b9134278d052e0f72f16b3337b90e3f7516188"
+        },
+        "tests": 21,
+        "pass": 21,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "recovery-inspection",
+        "evidenceKey": "29f55c2fc2b4cc3e5f18cb6e589f6a2b3ba71f052f9f2fba904d3174d14fabdd",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:recovery-inspection)",
+          "test/recovery-inspection.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-recovery-inspection-1.json",
+          "sha256": "d5f7bae9d9b38dd4bcd5ac3f179c30f397c67a9634541147ccaef6920069072b"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-recovery-inspection-1.log",
+          "sha256": "34a51cffe2820caee6d22934a8b875592fe4b6d9992c891b911910bc0170f4b3"
+        },
+        "tests": 12,
+        "pass": 12,
+        "cancelled": 0,
+        "exactReuse": false
+      },
+      {
+        "check": "render-job-owner",
+        "evidenceKey": "fd9fd29818b0246fd5f723a4e3793117befa8177684a91f24a10e0d5c302ed2f",
+        "status": "PASS",
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=(?:^)",
+          "test/render-job-owner.test.js"
+        ],
+        "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4",
+        "receipt": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-render-job-owner-1.json",
+          "sha256": "bfd797a1085bee92d563af68b58c7e2f9ae260ce5159705bec650eb902c0801d"
+        },
+        "log": {
+          "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-render-job-owner-1.log",
+          "sha256": "6f7781666ce013d10499b51b12968c70dffaa0e37824e5f3d8d016027cd6c340"
+        },
+        "tests": 7,
+        "pass": 7,
+        "cancelled": 0,
+        "exactReuse": false
+      }
+    ],
+    "boundaries": {
+      "result": "PASS",
+      "checked": 88,
+      "liveCalls": 0,
+      "log": {
+        "path": ".codex-runtime/core-4.2.5-implementation-20261111/boundaries-final.log",
+        "sha256": "ce3327b8b851b1cf624c80e31341ee2d4f9469a46bed8690b32aba6c34b3e795"
+      }
+    }
+  },
+  "package": {
+    "version": "4.2.5",
+    "composition": "operator-render-jobs",
+    "runtimeModel": "owner",
+    "packageHash": "b24af0e119b10801ed4ab352ad6eaf9b0af4fd9c4ba5a9437f02085c58e7fca4",
+    "runtimeFiles": 159,
+    "verifyPackage": true
+  },
+  "standalone": {
+    "path": ".codex-runtime/core-4.2.5-desktop-20261111/standalone",
+    "distributionHash": "2ec65e580d5f7c9020e350e81b734938bb6432afb155753cfd5ac65988cd8a2e",
+    "manifestSha256": "2ec65e580d5f7c9020e350e81b734938bb6432afb155753cfd5ac65988cd8a2e",
+    "filesIncludingManifest": 178,
+    "hashedManifestFiles": 177,
+    "helpers": 16,
+    "verifyStandalone": true,
+    "compiledInstallerSha256": "e2e5bed8053b5fd1f2a085822aa7bd6d5eeb63ed7a2752348983926b59cb7074",
+    "compiledInstallLeaseSha256": "eaddb6fa4c8fcac2d8b94a42d3e2eb62683c7a30c1e621e0ab512c5da06483f6",
+    "installerClosureVerified": true
+  },
+  "twoBuilds": {
+    "firstPackageHash": "b24af0e119b10801ed4ab352ad6eaf9b0af4fd9c4ba5a9437f02085c58e7fca4",
+    "secondPackageHash": "b24af0e119b10801ed4ab352ad6eaf9b0af4fd9c4ba5a9437f02085c58e7fca4",
+    "firstDistributionHash": "2ec65e580d5f7c9020e350e81b734938bb6432afb155753cfd5ac65988cd8a2e",
+    "secondDistributionHash": "2ec65e580d5f7c9020e350e81b734938bb6432afb155753cfd5ac65988cd8a2e",
+    "equal": true
+  },
+  "buildEvidence": {
+    "path": ".codex-runtime/core-4.2.5-desktop-20261111/package-build.json",
+    "sha256": "d9bde924c0b2b2ca5a7ba23f936aed1123c30e2e5d7fa7d6b07b8cb36db8accd"
+  },
+  "installedActions": 0,
+  "productionInstallationWrites": 0,
+  "liveAeMcpUiActions": 0,
+  "liveProof": false,
+  "historical": [
+    {
+      "kind": "historical first installable-runtime fixture refusal",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/scoped-validation.log",
+      "sha256": "aef1f3294b325d7ae20085f3a6220d8c586751d3209cd60a446420e0f7a276bf"
+    },
+    {
+      "kind": "historical preferences-only compatibility failure before fix",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-native-read-recovery-1.log",
+      "sha256": "6bcaae2afa77b0c0aee987bc8ca977727e82568477a62af6acde76872c2f932f"
+    },
+    {
+      "kind": "historical two fixture-assertion failures before correction",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/narrow-combined.log",
+      "sha256": "d963368ef87aa79bcb08cd306805e4010ba82730cd43cec0d27987b78e615ba2"
+    },
+    {
+      "kind": "interrupted old-source validation; not current PASS",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/matrix-preperf-partial.json",
+      "sha256": "9b9d9fd134cc1deef95dc3b1a51bea02ece24c39ff9c4d52bd9a1814195d6f18"
+    },
+    {
+      "kind": "verified own test actors stopped for bounded snapshot correction",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/validation-interruption.json",
+      "sha256": "a51b8b1d1e67a603cbb1de299094ef02bcafa83874ceeb1e61269d0ae9aa696e"
+    },
+    {
+      "kind": "verified own serial parent stopped for isolated coordinator transition",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/validation-coordinator-transition.json",
+      "sha256": "fe62686864156f87e079d771a69f47600e4a5d5afe11fb7e113280934614ac51"
+    },
+    {
+      "kind": "historical matrix with old owner-runtime key cancelled twice",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/matrix-coordinator-old-owner-failed.json",
+      "sha256": "9936602666b7f2f7490ec76b7f8ef54b79c83298d09049f1d0d5444d6d315920"
+    },
+    {
+      "kind": "preserved old 15-second fixture-budget cancellation receipt",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/receipt-owner-runtime-1.json",
+      "sha256": "ac7518ee9e7586fe6328dc67037241fcbd5375a91a41256fac36400a5590a977"
+    },
+    {
+      "kind": "old key:30 passed,2 cancelled,0 assertion failures",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/batch-owner-runtime-1.log",
+      "sha256": "b8f9627e2f92abd8de59f0ee137c5d2e34c77d0d14f9b071b9b21e0edcb3ef25"
+    },
+    {
+      "kind": "only owner-runtime key changed; stopped-update key unchanged",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/owner-runtime-budget-key-audit.json",
+      "sha256": "86e5b104dff71c846ffb965bc41e9df2c5ce40ba4fec704008a4194e2dd20a5a"
+    },
+    {
+      "kind": "three equal-digest snapshots per variant; no timing threshold assertion",
+      "path": ".codex-runtime/core-4.2.5-implementation-20261111/snapshot-performance.json",
+      "sha256": "78de698177ef1aca33a057a11d8979b3c86fbdb244879f44a5202c1f904a419e"
+    }
+  ],
+  "sourceSummary": {
+    "path": ".codex-runtime/core-4.2.5-desktop-20261111/release-summary.json",
+    "sha256": "07e31264861a088d97c401316053c86bc9c540a69e034e602fd1c94fff8eb725"
+  },
+  "independentVerification": {
+    "artifact": "PASS",
+    "receiptsAndLogs": 96,
+    "allHashesMatch": true,
+    "packageHashMatchesActualPlan": true
+  },
+  "reviews": {
+    "argon": {
+      "verdict": "go",
+      "submissions": 1,
+      "bundleSha256": "5600ae493b70d369a3cac1478a7cd5a8246174e081d2a8b0af7351d627134abd",
+      "responseSha256": "a1b1fdca5f2989ab60ce4ddd4437cb5503e7021b6e83a26285c1e3ff4b4a26ee",
+      "persistenceVerified": true,
+      "decisionLog": "reviews/argon/core-transfer/20261111-result-01/decision-log.md",
+      "model": "4 Argon",
+      "effort": "no independent selector in Task mode"
+    },
+    "astra": {
+      "model": "gpt-6-astra",
+      "reasoning": "high",
+      "verdict": "ACCEPT",
+      "finalReview": "reviews/astra/core-transfer/20261111/review-performance.md"
+    }
+  },
+  "actualReadOnlyPlan": {
+    "path": ".codex-runtime/core-4.2.5-implementation-20261111/actual-coherent-plan-optimized.json",
+    "sha256": "2c4af41bb583987fe0ae4fb56a3eb0ccd0d35fb3f768b20adc76a6819f9b7a5e",
+    "sourceInstallerSha256": "e2e5bed8053b5fd1f2a085822aa7bd6d5eeb63ed7a2752348983926b59cb7074",
+    "installationIdPreserved": true,
+    "protectedBindings": 12,
+    "unchanged": true,
+    "productionWrites": 0,
+    "nativeCommands": 0
+  },
+  "runtimeState": {
+    "installedDesktopVersion": "4.2.4",
+    "installedPackageHash": "193539dfe14a0760317aa92c451423f076f84d5f9e809f48faf2923e04030684",
+    "msiTouched": false,
+    "liveAcceptance425": false,
+    "installationActions": 0
+  },
+  "limitations": {
+    "fullReleaseCertified": false,
+    "historicalFilesystemWriter": "not established; bounds and evidence in root-cause report",
+    "nativeProductScenarios": "not repeated",
+    "initialRollbackReapply": "orphan refusal; separate recovery required"
+  },
+  "publicationTarget": {
+    "repository": "https://github.com/aitonpro54/AE_agent",
+    "branch": "codex/ae-agent-core-4.2.5",
+    "tag": "v4.2.5"
+  }
+}

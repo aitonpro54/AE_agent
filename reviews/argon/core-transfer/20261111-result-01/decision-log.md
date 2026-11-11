@@ -41,3 +41,16 @@ managed header по-прежнему запрещает initial. Исходны�
 Семь адресных групп и boundaries 88 PASS у исполнителя; свежая полная selection
 по затронутым paths запущена на этих bytes. Полные результаты и package hashes
 фиксируются после её завершения.
+
+## Итог локальной приёмки
+
+Финальный installer e2e5bed8…, lease eaddb6fa…, owner snapshot tests c790c116…
+приняты Astra после удаления лишнего ancestor walk. Все проверки root/leaf/
+realpath сохранены; микробенч и пределы его влияния описаны в review-performance.
+Test-only owner-runtime budget 30s закрыл две отмены по внешнему fixture deadline;
+assertions и production deadlines не менялись, полный набор прошёл 32/32.
+
+Source 5352fc92…: **41/41 checks, 859 tests, boundaries 88 PASS**. Детерминированные
+package b24af0e1… и standalone 2ec65e58… проверены независимо; все 96 файлов
+evidence совпали по SHA. Runtime install/native actions — 0, MSI не изменялся.
+[Точная сводка](../../../../docs/evidence/core-4.2.5-transfer-20261111.json).
