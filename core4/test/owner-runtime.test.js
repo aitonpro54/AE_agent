@@ -1,6 +1,8 @@
 'use strict';
 const nodeTest = require('node:test');
-const test = (name, fn) => nodeTest('owner-runtime ' + name, { timeout: 15000 }, fn);
+// Observation budget for multi-step Windows TEMP install/IPC fixtures;
+// production startup, transport and per-RPC deadlines remain independent.
+const test = (name, fn) => nodeTest('owner-runtime ' + name, { timeout: 30000 }, fn);
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');

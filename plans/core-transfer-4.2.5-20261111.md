@@ -93,6 +93,18 @@
 - Actual read-only plan повторён координатором на e2e5…: same identity/lineage,
   12 bindings unchanged, runtime package b24af0e1… прежний, production/native=0.
   Proof: .codex-runtime/core-4.2.5-implementation-20261111/actual-coherent-plan-optimized.json.
+- Проверенные независимые TEMP/port0/PID fixture families распределены в две
+  очереди с одним matrix writer; три неизвестных operator-alias checks идут
+  последовательными барьерами. Source code зафиксирован в cd72302.
+- Owner-runtime на текущем source дал 30 PASS и 2 cancelled по общему fixture
+  timeout 15s (16.2s фактического выполнения), без assertion/product errors.
+  Подтверждён test-only budget 30s для многошаговой integration fixture;
+  production/RPC timeouts и assertions не меняются. Старый FAIL сохраняется,
+  whole stopped-update не прерывается; affected owner key проверяется заново.
+- После test-only изменения оба целевых сценария PASS (18.371s/18.067s),
+  полный owner-runtime 32/32 PASS, cancelled=0. Из 41 evidence keys изменился
+  только owner-runtime: 4a975c72…. Остальные PASS переиспользуются строго
+  по совпадению key/command/logSHA; прежняя cancelled попытка сохраняется.
 
 ## Validation
 
