@@ -376,6 +376,7 @@ function planInstall({ pkg, nodePath, installRoot, extensionsDir, configPath, ma
   const selected = deriveComposition(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
   const cep = Object.fromEntries(Object.entries(pkg.files).filter(([f]) => f.startsWith('cep/')).map(([f, data]) => [f.slice(4), data]));
   cep['installation.js'] = Buffer.from('window.Core4Installation=' + canonical(installationConfig(d, selected)) + ';\n').toString('base64');
+  if (selected.registryVerification) cep['installation-state.json'] = Buffer.from(canonical(require('../runtime/stdio-entry').installationMarker(d, selected))).toString('base64');
   const plannedOrigin = originBytes || Buffer.from(canonical(origin));
   const nextClient = runtime.runtimeModel === 'owner' ? Buffer.from(canonical(require('../runtime/client-entry').projectClientDescriptor(d, { originBytes: plannedOrigin }))) : null;
   const clientBinding = { version: 1, runtimeModel: runtime.runtimeModel, clientDescriptorPath, previousClient: previousClient?.toString('base64') ?? null, appliedClientHash: nextClient ? hash(nextClient) : null };

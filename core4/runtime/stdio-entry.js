@@ -83,7 +83,7 @@ function compositionPaths(files, closures, readArtifact) {
 function declarativeProfiles(composition, release, json, checked) {
   const policy = json(POLICY_FILE);
   const declared = Object.hasOwn(policy, 'version');
-  const versionedPolicy = ['4.2.3', '4.2.4', '4.2.5'].includes(release.version);
+  const versionedPolicy = ['4.2.3', '4.2.4', '4.2.5', '4.2.6'].includes(release.version);
   exactKeys(policy, ['id', 'modules', 'assets', 'profiles', 'files', 'closures', ...(declared ? ['version', 'capabilities'] : [])]);
   if (declared ? policy.version !== 2 || !versionedPolicy : versionedPolicy) fail('composition_policy_version');
   const capabilities = declared ? policy.capabilities : release.version === '4.2.2' && composition.id === 'operator-render-jobs' ? { 'render-jobs': 1 } : {};
@@ -177,7 +177,7 @@ function deriveComposition(release, read) {
   if (![1, 2].includes(composition.version) || (composition.version === 2) !== Object.hasOwn(release.hashes, POLICY_FILE) ||
       typeof composition.id !== 'string' || !/^[a-z][a-z0-9-]*$/.test(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
   const catalog = json('config/catalog.json'); exactKeys(catalog, ['catalogRevision', 'modules', 'engine']);
-  if (['4.2.3', '4.2.4', '4.2.5'].includes(release.version) && composition.version !== 2) fail('composition_policy_version');
+  if (['4.2.3', '4.2.4', '4.2.5', '4.2.6'].includes(release.version) && composition.version !== 2) fail('composition_policy_version');
   const { profiles, capabilities } = composition.version === 2 ? declarativeProfiles(composition, release, json, checked) : { profiles: LEGACY_PROFILES, capabilities: {} };
   if (composition.version === 1) validateLegacyComposition(composition, release, checked);
   if (!Array.isArray(catalog.modules) || canonical(catalog.modules.map(m => m.id)) !== canonical(composition.modules) || canonical(catalog.engine) !== canonical(composition.engine) || (composition.id === 'readonly' ? composition.engine !== null : !composition.engine || composition.engine.path !== 'plan-engine')) fail('composition_catalog');
@@ -228,9 +228,9 @@ function deriveComposition(release, read) {
   if (renderJobs) {
     if (!startOverSupported || !assets.some(item => item.resultProfile === 'project-lifecycle-v1' && item.registryOperatorConfirmation) ||
         !assets.some(item => item.resultProfile === 'current-project-save-v1')) fail('render_job_owner_required');
-    if (['4.2.3', '4.2.4', '4.2.5'].includes(release.version)) for (const file of ['runtime/project-file.js', 'runtime/render-job-history.js', 'runtime/render-job-maintenance.js']) checked(file);
+    if (['4.2.3', '4.2.4', '4.2.5', '4.2.6'].includes(release.version)) for (const file of ['runtime/project-file.js', 'runtime/render-job-history.js', 'runtime/render-job-maintenance.js']) checked(file);
   }
-  return { composition, assets, ...(startOverSupported ? { startOverSupported: true } : {}), ...(renderJobs ? { renderJobs: true } : {}) };
+  return { composition, assets, ...(release.version === '4.2.6' ? { registryVerification: true } : {}), ...(startOverSupported ? { startOverSupported: true } : {}), ...(renderJobs ? { renderJobs: true } : {}) };
 }
 function validateLegacyComposition(composition, release, checked) {
   if (!['readonly', 'manual', 'manual-layout', 'manual-titles', 'manual-titles-variants'].includes(composition.id)) fail('composition_schema');
@@ -261,7 +261,7 @@ function validateLegacyComposition(composition, release, checked) {
   // No optional runtime code is shipped in the standalone inspection composition.
   if (composition.id === 'readonly' && Object.keys(release.hashes).some(file => /^(plan-engine\/|modules\/(?!project-inspection\/)|config\/admissions\/|runtime\/(manual-policy|windows-reservation-provider)\.js$)/.test(file))) fail('composition_optional_closure');
 }
-function registrySource(assets, codecSource) {
+function registrySource(assets, codecSource, identityEnabled = false) {
   const declarations = [], entries = assets.map((asset, index) => {
     const name = 'executor' + index; declarations.push('var ' + name + '=' + asset.executor + ';');
     const calls = asset.phases.map(phase => {
@@ -283,11 +283,18 @@ function registrySource(assets, codecSource) {
     'return call(p,function(){if(proof.expiresAt<=new Date().getTime()){',
     'var e=new Error("operator_confirmation_expired");e.coreCode="operator_confirmation_expired";throw e;}return true;});}',
   ].join('') : '';
-  return '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + codecSource + ';' + declarations.join('') + approval + 'var assets={' + entries.join(',') + '};return {"dispatch":function(serialized){var frame=JSON.parse(serialized),own=Object.prototype.hasOwnProperty,a=frame&&own.call(assets,frame.assetKey)&&assets[frame.assetKey],call=a&&own.call(a.calls,frame.phase)&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({"readFailureVersion":1,"outcome":"rejected","code":"inspection_failed"});}}};}());\n';
+  let source = '/* Fixed package-owned registry. Runtime frames contain data only. */\nvar AECore4Host=(function(){var JSON=' + codecSource + ';' + declarations.join('') + approval + 'var assets={' + entries.join(',') + '};return {"dispatch":function(serialized){var frame=JSON.parse(serialized),own=Object.prototype.hasOwnProperty,a=frame&&own.call(assets,frame.assetKey)&&assets[frame.assetKey],call=a&&own.call(a.calls,frame.phase)&&a.calls[frame.phase];if(!call||frame.pins.executorHash!==a.hash)throw new Error("fixed_asset_binding");if(frame.phase==="mutate")return JSON.stringify(call(frame.typedPayload));try{return JSON.stringify(call(frame.typedPayload));}catch(e){return JSON.stringify({"readFailureVersion":1,"outcome":"rejected","code":"inspection_failed"});}}};}());\n';
+  if (identityEnabled) {
+    source = source.replace('var AECore4Host=(function(){', 'var AECore4Host=(function(){var registryBuildId="' + '0'.repeat(64) + '";/*CORE4_REGISTRY_ID*/')
+      .replace('return {"dispatch":', 'return {"identity":function(){return {"protocolVersion":1,"registryBuildId":registryBuildId};},"dispatch":');
+    source = source.replace('0'.repeat(64) + '";/*CORE4_REGISTRY_ID*/', hash(source) + '";/*CORE4_REGISTRY_ID*/');
+  }
+  return source;
 }
-function installationConfig(d, selected) { const assets = selected.assets.map(a => ({ assetKey: a.assetKey, executorHash: a.executorHash, phases: a.phases })); return { installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: assets[0].executorHash, assetKey: assets[0].assetKey, assets, ...(selected.startOverSupported ? { startOverSupported: true } : {}) }; }
+function installationConfig(d, selected) { const assets = selected.assets.map(a => ({ assetKey: a.assetKey, executorHash: a.executorHash, phases: a.phases })); return { installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: assets[0].executorHash, assetKey: assets[0].assetKey, assets, ...(selected.startOverSupported ? { startOverSupported: true } : {}), ...(selected.registryVerification ? { registryVerification: 1 } : {}) }; }
+function installationMarker(d, selected) { return { version: 1, installationId: d.installationId, packageHash: d.packageHash, panelConfigHash: hash(installationConfig(d, selected)) }; }
 function verifyRelease(directory, release) {
-  exactKeys(release, ['version', 'format', 'hashes']); if ((release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3', '4.2.4', '4.2.5'].includes(release.version) && release.format === 2)) || !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype) fail('release_schema');
+  exactKeys(release, ['version', 'format', 'hashes']); if ((release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3', '4.2.4', '4.2.5', '4.2.6'].includes(release.version) && release.format === 2)) || !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype) fail('release_schema');
   const root = path.resolve(directory), expectedFiles = new Set(['release.json']), expectedDirs = new Set(['']);
   for (const relative of Object.keys(release.hashes || {})) {
     if (!/^[A-Za-z0-9_./-]+$/.test(relative) || relative.includes('\\') || relative.split('/').some(p => !p || p === '.' || p === '..') || path.isAbsolute(relative) || relative === 'release.json') fail('release_path');
@@ -313,7 +320,7 @@ function verifyRelease(directory, release) {
     return;
   }
   const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
-  if (fs.readFileSync(path.join(root, 'cep/jsx/registry.jsx'), 'utf8') !== registrySource(selected.assets, fs.readFileSync(path.join(root, 'runtime/host/json-codec.jsx'), 'utf8'))) fail('composition_registry');
+  if (fs.readFileSync(path.join(root, 'cep/jsx/registry.jsx'), 'utf8') !== registrySource(selected.assets, fs.readFileSync(path.join(root, 'runtime/host/json-codec.jsx'), 'utf8'), release.version === '4.2.6')) fail('composition_registry');
 }
 function assertPlainPath(file, directory = false) {
   if (!path.isAbsolute(file) || path.resolve(file) !== file) fail('installation_path');
@@ -327,6 +334,7 @@ function verifyCep(d, manifest, cepDir) {
   if (Object.keys(expected).length !== 6) fail('installation_cep_closure');
   const cfg = installationConfig(d, selected);
   expected['installation.js'] = hash('window.Core4Installation=' + canonical(cfg) + ';\n');
+  if (selected.registryVerification) expected['installation-state.json'] = hash(canonical(installationMarker(d, selected)));
   const files = new Set(Object.keys(expected)), dirs = new Set(['']); for (const file of files) for (let dir = path.posix.dirname(file); dir !== '.'; dir = path.posix.dirname(dir)) dirs.add(dir);
   function visit(directory, relative) { assertPlainPath(directory, true); if (!dirs.delete(relative)) fail('installation_cep_tree'); for (const name of fs.readdirSync(directory)) { const file = path.join(directory, name), rel = relative ? relative + '/' + name : name, stat = fs.lstatSync(file); assertPlainPath(file, stat.isDirectory()); if (stat.isDirectory()) visit(file, rel); else if (!files.delete(rel) || hash(fs.readFileSync(file)) !== expected[rel]) fail('installation_cep_bytes'); } }
   visit(cepDir, ''); if (files.size || dirs.size) fail('installation_cep_tree');
@@ -359,7 +367,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const installation = verifyInstallation(descriptor), root = installation.releaseDir;
   if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(root)) fail('installation_entry_root_mismatch');
   const installGate = path.join(installation.installRoot, 'install.lock');
-  let startupGate, broker, peer, attachmentOwner, ipc, reservedServer, ownerLifecycle, workSession, startOverOwner, startOverControl, ownerMaintenance, startOverRestartArmed = false;
+  let startupGate, broker, peer, panelStartup, attachmentOwner, ipc, reservedServer, ownerLifecycle, workSession, startOverOwner, startOverControl, ownerMaintenance, startOverRestartArmed = false;
   try {
   if (!['stdio', 'owner'].includes(mode)) fail('runtime_mode');
   if (mode === 'stdio') startupGate = fs.openSync(installGate, 'wx');
@@ -425,6 +433,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     }
   }
   async function requestStartOver() {
+    const startup = panelStartup?.activity(); if (startup && (startup.pending || startup.unresolved)) fail('startup_outcome_unresolved');
     if (!startOverOwner || !ownerMaintenance) fail('start_over_owner_not_ready');
     require('./render-job-maintenance').inspectRenderJobs(installation.stateDir, { installationId: installation.installationId });
     try { await startOverOwner.request(); }
@@ -448,7 +457,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     const { createIpcServer } = require('./client-ipc.js');
     const { ownerEndpoint } = require('./client-entry.js');
     const { PRIVATE_METHODS, createOwnerMaintenance, createStopAuthorization } = require('./owner-maintenance.js');
-    attachmentOwner = createAttachmentOwner({ runtime: facade, activity, invoke, ...options, workSession: workSession.status });
+    attachmentOwner = createAttachmentOwner({ runtime: facade, activity: options.ownerActivity || activity, invoke, ...options, workSession: workSession.status });
     const endpoint = ownerEndpoint(installation);
     let closed = false, closing, maintenance;
     async function closeRuntime() {
@@ -493,7 +502,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     // Broker or opening an execution store. Only authenticated panel reset
     // control is available; the physical command channel remains refused.
     require('./start-over-panel-control.js').attachStartOverHttp({ server: reservedServer, control: startOverControl, reason: 'owner_recovery_required' });
-    const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.2.5',
+    const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.2.6',
       installation: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash, nodeVerified: true },
       lifecycle: ownerLifecycle.state(), ownershipFault: 'owner_recovery_required', physical: { listening: reservedServer.listening, port: reservedServer.address()?.port || null, inspectionAvailable: false, storeClosed: true, unknown: true, coverage: 'diagnostic-only; execution queue not reopened', readiness: aeReadiness.status({ peer: { connected: false }, storeClosed: true }, true) }, externalLegacyCoverage: 'unobserved' });
     const unavailable = () => ({ available: false, reason: 'owner_recovery_required' });
@@ -583,7 +592,10 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   };
   const additionalAssets = mutationAssets.map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
     operationId: item.contract.operationId, executorHash: item.executorHash, resultProfile: item.resultProfile, effect: item.contract.effectPolicy.effect }));
-  peer = createHttpPeer({ installation, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets,
+  const expectedPanelIdentity = require('../integrations/cep/panel-identity').verify(file => fs.readFileSync(path.join(root, file)));
+  peer = createHttpPeer({ expectedPanelIdentity, installation, captureBootstrapStartup() { return panelStartup?.activity().operationId ?? null; }, bootstrapAdmissionGuard() {
+    if (broker.closed || broker.stateLock.error || broker.ledger.corrupt || broker.ledger.unresolved().length || broker.running || broker.reconciling || broker.controllerBusy || broker.controlPending || broker.worker.status().pending || fs.existsSync(path.join(installation.stateDir, 'runtime-maintenance.json'))) fail('registry_lane_busy');
+  }, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets,
     observeProjectSave: projectSave?.observe, observeProjectLifecycle: projectLifecycle?.observe,
     assertMediaSourceLock: manual?.assertSourceLock, requireMutationGuard: mode === 'owner',
     timeout: PRODUCTION_TIMING.callbackTimeoutMs, ...(projectLifecycle ? { projectOpenTimeout: PROJECT_OPEN_TIMING.callbackTimeoutMs } : {}),
@@ -598,13 +610,21 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const physical = () => {
     const value = peer.status();
     const readiness = aeReadiness.status(value, workSession?.status().baselineRequired ?? null);
-    return { ...value, readiness, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && !value.startOverFrozen && !value.storeClosed && !value.storeFault && !value.pending && !aeReadiness.blocker() };
+    return { ...value, readiness, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && value.peer.registryReady !== false && !value.startOverFrozen && !value.storeClosed && !value.storeFault && !value.pending && !aeReadiness.blocker() };
   };
-  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.2.5', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
+  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.2.6', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), startupActivity: panelStartup?.activity() || null, ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
   facade.diagnostics = async () => {
     await aeReadiness.refresh();
     return { ...broker.diagnostics(), ...facade.status() };
   };
+  panelStartup = mode === 'owner' ? require('./ae-panel-startup').createAePanelStartup({ installation, expectedIdentity: expectedPanelIdentity, peerStatus: () => peer.status(), reverify() { if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('startup_installation_changed'); }, assertIdle(startupRequest) {
+    const p = peer.status(), ownRegistry = require('./ae-panel-startup').ownsRegistryBootstrap(p, startupRequest?.operationId);
+    if (broker.closed || broker.stateLock.error || broker.ledger.corrupt || broker.ledger.unresolved().length || p.pending && !ownRegistry || p.storeClosed || p.storeFault || p.startOverFrozen || fs.existsSync(path.join(installation.stateDir, 'runtime-maintenance.json'))) throw new Error('startup_lane_busy');
+  } }) : null;
+  if (panelStartup) {
+  facade.ensureAePanel = value => panelStartup.ensure(value, invocationContext.getStore());
+  facade.aePanelStartupStatus = value => panelStartup.observe(value);
+  }
   facade.connect = async () => {
     const result = manual ? await broker.connect() : null;
     const snapshot = physical();
@@ -698,16 +718,17 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   facade.close = async () => { if (closed) return; closed = true; await peer.close(); await broker.close(); };
   try { await peer.listen(); } catch (e) { await facade.close(); throw e; }
   if (mode === 'owner') {
-    const activity = () => {
+    const ownerActivity = () => {
       const physicalState = peer.status();
       return { pending: !!(broker.running || broker.reconciling || broker.controllerBusy || broker.controlPending || broker.worker.status().pending || physicalState.pending),
         unresolved: !!(broker.ledger.unresolved().length || physicalState.storeClosed || physicalState.unknown),
         fault: !!(broker.closed || broker.stateLock.error || broker.ledger.corrupt || physicalState.storeFault) };
     };
+    const activity = () => { const core = ownerActivity(), startup = panelStartup.activity(); return { ...core, pending: core.pending || startup.pending || startup.unresolved, unresolved: core.unresolved || startup.unresolved }; };
     return await exposeOwner(facade, activity, (method, payload, context) => {
       const receiver = Object.hasOwn(facade, method) ? facade : broker;
       return invocationContext.run(context, () => { if (!context.observer) context.assertCurrent(); return receiver[method](payload); });
-    }, {
+    }, { ownerActivity, startupGate: () => panelStartup.activity(),
       consumeReadRejection(error, request) {
         const record = completedReadErrors.get(error); completedReadErrors.delete(error);
         if (!record || request.context !== record.context || request.method !== 'inspect_module_target' || request.payload.moduleId !== record.moduleId || request.payload.contractId !== record.contractId || hash(canonical(request.payload.target || {})) !== record.targetHash) return null;
@@ -719,7 +740,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       renderJobs: selected.renderJobs === true
     });
   }
-  serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.2.5' } });
+  serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.2.6' } });
   return { close: facade.close, status: facade.status };
   } catch (e) {
     if (ipc) await ipc.close();
@@ -731,7 +752,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
 }
 // Direct-main start imports the historical reader synchronously. Publish these
 // builtin verifiers first so its installation.js import sees initialized exports.
-module.exports = { start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, compositionPaths, builtinCapabilityFiles, validateCompRenderCompletion, registrySource, installationConfig, PRODUCTION_TIMING };
+module.exports = { start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, compositionPaths, builtinCapabilityFiles, validateCompRenderCompletion, registrySource, installationConfig, installationMarker, PRODUCTION_TIMING };
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.length !== 2 || args[0] !== '--installation') { process.stderr.write('Explicit --installation ABSOLUTE_DESCRIPTOR required.\n'); process.exitCode = 2; }

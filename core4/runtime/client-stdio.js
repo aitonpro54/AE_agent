@@ -22,6 +22,8 @@ function serveAttachment({ client, input, output, renderJobs = false } = {}) {
   function exact(value, keys) { if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).some(k => !keys.includes(k))) fail('invalid_request'); }
   function description(name) {
     if (name === 'controller_acquire' || name === 'controller_transfer') return 'Явное получение управления. Сначала прочитайте core_status; для нового сеанса передайте его workSession.sessionId в payload.sessionId. Это не допуск к изменению AE.';
+    if (name === 'core_ensure_ae_panel') return 'Явный запуск AE и точной панели Core без Computer Use. Требует lease. UUID operationId обязателен; повтор UUID только сверяет исход. Не выдаёт project authority.';
+    if (name === 'core_ae_panel_startup_status') return 'Прочитать долговечный исход запуска по UUID operationId без повторного запуска.';
     if (name === 'core_status') return 'Статус Core, текущего сеанса и сброса. baselineRequired снимается свежей project-inspection; старое управление автоматически не восстанавливается.';
     if (name === 'core_diagnostics') return 'Статус очереди, привязки CEP, окна Windows и подтверждённого нативного ответа.';
     if (name === 'inspect_module_target') return 'Прочитайте get_module_contract и передайте его moduleId и обязательный contractId в payload вместе с target по контракту. Требуется действующий controller lease; чтение не выдаёт допуск к изменению AE.';
@@ -33,6 +35,9 @@ function serveAttachment({ client, input, output, renderJobs = false } = {}) {
   }
   function inputSchema(name) {
     const schema = { type: 'object', properties: { payload: { type: 'object', additionalProperties: true } }, additionalProperties: false };
+    if (name === 'core_ensure_ae_panel' || name === 'core_ae_panel_startup_status') {
+      schema.required = ['payload']; schema.properties.payload = { type: 'object', properties: { operationId: { type: 'string', format: 'uuid', pattern: '^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$' }, ...(name === 'core_ensure_ae_panel' ? { timeoutMs: { type: 'integer', minimum: 1000, maximum: 90000 } } : {}) }, required: ['operationId'], additionalProperties: false };
+    }
     if (name === 'inspect_module_target') {
       schema.required = ['payload'];
       schema.properties.payload.properties = { contractId: { type: 'string', pattern: '^[a-f0-9]{64}$' } };
@@ -63,7 +68,7 @@ function serveAttachment({ client, input, output, renderJobs = false } = {}) {
       if (request.id === undefined) return;
       if (pending >= 32) fail('rpc_backpressure'); pending++; counted = true;
       let result;
-      if (request.method === 'initialize') result = { protocolVersion: '2024-11-05', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'ae-agent-core4', version: '4.2.5' } };
+      if (request.method === 'initialize') result = { protocolVersion: '2024-11-05', capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'ae-agent-core4', version: '4.2.6' } };
       else if (request.method === 'ping') result = {};
       else if (request.method === 'tools/list') result = { tools: methods.map(name => ({ name, description: description(name), inputSchema: inputSchema(name) })) };
       else if (request.method === 'tools/call') {

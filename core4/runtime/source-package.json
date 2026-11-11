@@ -10,6 +10,7 @@
     "runtime/installation-lineage.js",
     "runtime/native-read-disposition.js",
     "runtime/ae-readiness.js",
+    "integrations/cep/panel-identity.js",
     "runtime/render-job-history.js",
     "runtime/render-job-maintenance.js",
     "runtime/host/json-codec.jsx",
@@ -32,6 +33,8 @@
   "optional": {
     "owner": {
       "files": [
+        "runtime/ae-panel-startup.js",
+        "runtime/host/ensure-panel.jsx",
         "runtime/owner-contract.json",
         "runtime/owner-entry.js",
         "runtime/client-entry.js",

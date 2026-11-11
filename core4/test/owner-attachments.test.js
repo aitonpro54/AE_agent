@@ -55,7 +55,7 @@ test('owner-attachments inspection contract validation preserves control gates a
 });
 
 test('owner-attachments generic tool map remains compatible and observer attachment never acquires', async () => {
-  assert.deepEqual(TOOL_METHODS, ORIGINAL_METHODS);
+  assert.deepEqual(TOOL_METHODS, { core_ensure_ae_panel: 'ensureAePanel', core_ae_panel_startup_status: 'aePanelStartupStatus', ...ORIGINAL_METHODS });
   const f = fixture(), a = f.attach(), b = f.attach();
   const one = await ok(f.call(a, 'core_status')), two = await ok(f.call(b, 'core_status'));
   assert.equal(one.attachmentOwner.bootId, two.attachmentOwner.bootId); assert.equal(one.store, two.store);

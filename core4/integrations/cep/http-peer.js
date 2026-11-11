@@ -1,5 +1,6 @@
 'use strict';
 const http = require('node:http');
+const path = require('node:path');
 const crypto = require('node:crypto');
 const { performance } = require('node:perf_hooks');
 const { hash, canonical, parse, bounded, exact, fail, id, dispatchBinding, decode, encode, envelope } = require('../../core/receiver-api');
@@ -141,7 +142,8 @@ function validateInspectionCoverage(result, payload) {
       (lookup.status === 'not_found' && lookup.method === 'page_scan' && (start !== 1 || itemsScanned !== total))) fail('inspection_result');
   if (result.truncated !== (displayNamesShortened || status !== 'complete' || layers.returned < layers.total)) fail('inspection_result');
 }
-function createHttpPeer({ installation, directory, asset, additionalAssets = [], observeProjectSave, observeProjectLifecycle, assertMediaSourceLock, port = 3457, timeout = 30000, projectOpenTimeout, directReadDrainMs = 0, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, requireMutationGuard = false, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
+function createHttpPeer({ registryTimeoutMs = 90000, captureBootstrapStartup = () => null, bootstrapAdmissionGuard = () => {}, expectedPanelIdentity, installation, directory, asset, additionalAssets = [], observeProjectSave, observeProjectLifecycle, assertMediaSourceLock, port = 3457, timeout = 30000, projectOpenTimeout, directReadDrainMs = 0, pollTimeout = 15000, admissionGuard = () => {}, captureDeliveryGuard = () => () => {}, requireMutationGuard = false, preboundServer, installationContext, ownerToken, workSessionId = null, startOverControl }) {
+  if (!Number.isSafeInteger(registryTimeoutMs) || registryTimeoutMs < 1 || registryTimeoutMs > 90000) fail('registry_timeout');
   if (workSessionId !== null && (typeof workSessionId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(workSessionId))) fail('physical_work_session');
   if (typeof captureDeliveryGuard !== 'function') fail('physical_delivery_guard');
   if (!Number.isSafeInteger(directReadDrainMs) || directReadDrainMs < 0 || directReadDrainMs > 10000) fail('physical_drain_window');
@@ -155,6 +157,15 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
   const server = preboundServer || http.createServer();
   const store = openCompletionStore({ directory, installationContext, ownerToken });
   const epoch = id('http'), controllerId = id('controller');
+  const registryRequired = !!expectedPanelIdentity?.registryBuildId;
+  let registryBootstrap = null, registryTimer = null;
+  function registryPending() { return registryBootstrap && store.get(registryBootstrap.command.commandId)?.state === 'ongoing'; }
+  function failRegistry() { if (registryPending()) store.unknown(registryBootstrap.command.commandId); clearTimeout(registryTimer); }
+  function ready() { return !!peer && (!registryRequired || peer.registryReady === true); }
+  function extensionRoot(value) {
+    if (typeof value !== 'string' || value.length > 4096 || /[\x00-\x1f]/.test(value) || !path.isAbsolute(value) || path.resolve(value).replace(/\\/g, '/').toLowerCase() !== path.resolve(installation.cepDir).replace(/\\/g, '/').toLowerCase()) fail('panel_extension_root');
+    return path.resolve(installation.cepDir).replace(/\\/g, '/');
+  }
   let peer = null, pending = null, closed = false, activePoll = null, lastReadFailure = null, lastPhysicalFault = null, lastCommandOutcome = null, startOverFrozen = false;
   const challenges = new Map();
   const completedReadErrors = new WeakMap();
@@ -274,7 +285,8 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     const poll = activePoll; activePoll = null;
     finishPoll(poll, handoff(poll));
   }
-  function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId, origin: peer.origin } : { connected: false, origin: null }, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, pending: pending ? { ...commandOutcome(pending, pending.callerSettled ? 'draining' : pending.delivered ? 'handed_to_poll' : 'queued'), delivered: pending.delivered, ...(pending.callerSettled ? { drainDeadlineAt: pending.drainDeadlineAt } : {}) } : null, lastReadFailure, lastPhysicalFault, lastCommandOutcome, startOverFrozen, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
+  let lastPanelRejection = null;
+  function status() { return { listening: server.listening, port: server.address()?.port || port, peer: peer ? { connected: Date.now() - peer.lastSeen < 45000, peerId: peer.peerId, origin: peer.origin, ...(expectedPanelIdentity || Object.keys(peer.identity).length ? { acceptedIdentity: peer.identity, identityObservedAt: peer.identityObservedAt, identityEpoch: epoch, registryReady: !registryRequired || peer.registryReady === true, registryBuildId: peer.registryReady && registryRequired ? expectedPanelIdentity.registryBuildId : null } : {}) } : { connected: false, origin: null }, lastPanelRejection, expectedPanelIdentity: expectedPanelIdentity || null, receiverStoreIdentity: store.identity || null, storeClosed: store.closed, storeFault: store.fault, registryBootstrap: registryBootstrap ? { commandId: registryBootstrap.command.commandId, nonce: registryBootstrap.nonce, deadlineAt: registryBootstrap.deadlineAt, state: store.get(registryBootstrap.command.commandId)?.state, registryBuildId: expectedPanelIdentity.registryBuildId, startupOperationId: registryBootstrap.startupOperationId, sessionId: registryBootstrap.sessionId, epoch, peerId: registryBootstrap.peerId } : null, pending: registryPending() ? { stage: 'registry-bootstrap', delivered: true, commandId: registryBootstrap.command.commandId } : pending ? { ...commandOutcome(pending, pending.callerSettled ? 'draining' : pending.delivered ? 'handed_to_poll' : 'queued'), delivered: pending.delivered, ...(pending.callerSettled ? { drainDeadlineAt: pending.drainDeadlineAt } : {}) } : null, lastReadFailure, lastPhysicalFault, lastCommandOutcome, startOverFrozen, unknown: store.closed, automaticLifecycle: 'unavailable', externalLegacyCoverage: 'unobserved' }; }
   function reply(res, statusCode, value, origin, beforeWrite) {
     if (res.destroyed || res.writableEnded) return false;
     const body = bounded(value);
@@ -307,21 +319,41 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         challenges.set(nonce, { value, time: Date.now() }); reply(res, 200, value, corsOrigin); return;
       }
       if (req.url === '/link') {
-        exact(input, ['challenge', 'peerId', 'proof']); const challenge = challenges.get(input.challenge?.nonce); challenges.delete(input.challenge?.nonce);
+        exact(input, ['challenge', 'peerId', 'proof', ...(Object.hasOwn(input, 'loadedPanel') ? ['loadedPanel'] : []), ...(Object.hasOwn(input, 'extensionRoot') ? ['extensionRoot'] : [])]); const challenge = challenges.get(input.challenge?.nonce); challenges.delete(input.challenge?.nonce);
         const role = challenge?.value.role, secret = role === 'panel' ? installation.panelToken : installation.controlToken;
-        if (!challenge || origin !== challenge.value.origin || Date.now() - challenge.time > 10000 || canonical(input.challenge) !== canonical(challenge.value) || typeof input.peerId !== 'string' || !/^[a-zA-Z0-9-]{1,100}$/.test(input.peerId) || !validMac({ challenge: input.challenge, peerId: input.peerId }, input.proof, secret)) fail('peer_auth');
+        if (!challenge || origin !== challenge.value.origin || Date.now() - challenge.time > 10000 || canonical(input.challenge) !== canonical(challenge.value) || typeof input.peerId !== 'string' || !/^[a-zA-Z0-9-]{1,100}$/.test(input.peerId) || !validMac({ challenge: input.challenge, peerId: input.peerId, ...(Object.hasOwn(input, 'loadedPanel') ? { loadedPanel: input.loadedPanel } : {}), ...(Object.hasOwn(input, 'extensionRoot') ? { extensionRoot: input.extensionRoot } : {}) }, input.proof, secret)) fail('peer_auth');
         if (role !== 'panel') fail('panel_role_required');
+        if (expectedPanelIdentity && canonical(input.loadedPanel ?? null) !== canonical(expectedPanelIdentity)) { lastPanelRejection = { code: 'panel_identity_mismatch', observedAt: Date.now(), loadedPanel: input.loadedPanel ?? null }; fail('panel_identity_mismatch'); }
         expirePending();
-        if (peer && (Date.now() - peer.lastSeen < 45000 || pending)) fail('duplicate_peer');
+        if (peer && (Date.now() - peer.lastSeen < 45000 || pending || registryPending())) fail('duplicate_peer');
+        const root = registryRequired ? extensionRoot(input.extensionRoot) : null;
+        if (registryRequired) { if (store.closed || store.fault || pending || startOverFrozen) fail('registry_lane_closed'); bootstrapAdmissionGuard(); }
         flushPoll();
-        peer = { peerId: input.peerId, origin: challenge.value.origin, sequence: 0, lastSeen: Date.now(), identity: Object.freeze({}) };
-        const body = { linked: true, epoch, peerId: peer.peerId, controllerId, pins, receiverStoreIdentity: store.identity, laneClosed: store.closed, ...(startOverControl ? { workSessionId, startOver: startOverControl.status() } : {}) };
+        peer = { peerId: input.peerId, origin: challenge.value.origin, sequence: 0, lastSeen: Date.now(), identity: Object.freeze(input.loadedPanel || {}), identityObservedAt: Date.now(), registryReady: !registryRequired };
+        if (registryRequired) {
+          const nonce = crypto.randomBytes(32).toString('hex'), payload = { nonce, extensionRoot: root, registryBuildId: expectedPanelIdentity.registryBuildId, sessionId: workSessionId };
+          const command = { protocolVersion: 1, controllerId, channelEpoch: epoch, commandId: id('registry'), moduleId: 'registry-bootstrap', operationId: 'verify-registry', executorHash: expectedPanelIdentity.registryBuildId, phase: 'inspect', payloadHash: hash(payload), payload };
+          store.begin(command, dispatchBinding(command, store.identity));
+          registryBootstrap = { command, nonce, epoch, sessionId: workSessionId, startupOperationId: captureBootstrapStartup(), peerId: peer.peerId, deadlineAt: Date.now() + registryTimeoutMs };
+          registryTimer = setTimeout(() => { try { failRegistry(); } catch { /* durable store fault remains fenced */ } }, registryTimeoutMs);
+        }
+        const body = { linked: true, epoch, peerId: peer.peerId, controllerId, pins, receiverStoreIdentity: store.identity, laneClosed: store.closed, ...(Object.hasOwn(input, 'loadedPanel') ? { acceptedIdentity: peer.identity } : {}), ...(registryRequired ? { registryReady: false, bootstrap: { nonce: registryBootstrap.nonce, expectedRegistryBuildId: expectedPanelIdentity.registryBuildId, deadline: registryBootstrap.deadlineAt, sessionId: workSessionId } } : {}), ...(startOverControl ? { workSessionId, startOver: startOverControl.status() } : {}) };
         reply(res, 200, { body, mac: mac(body, secret) }, corsOrigin); return;
       }
       exact(input, ['body', 'mac']); const b = requestBody(input.body);
       if (!peer || origin !== peer.origin || b.epoch !== epoch || b.peerId !== peer.peerId || b.sequence !== peer.sequence + 1 || b.method !== req.method || b.path !== req.url || !validMac(b, input.mac, installation.panelToken)) fail('peer_auth_or_replay');
       peer.sequence = b.sequence; peer.lastSeen = Date.now();
       function signed(payload, beforeWrite) { const body = { epoch, peerId: b.peerId, sequence: b.sequence, payload }; return reply(res, 200, { body, mac: mac(body, installation.panelToken) }, corsOrigin, beforeWrite); }
+      if (req.url === '/registry-ready') {
+        exact(b.payload, ['nonce', 'registryBuildId', 'refreshed', 'sessionId']);
+        if (!registryRequired || !registryBootstrap || registryBootstrap.peerId !== b.peerId || b.payload.nonce !== registryBootstrap.nonce || b.payload.sessionId !== workSessionId || b.payload.sessionId !== registryBootstrap.sessionId || b.payload.registryBuildId !== expectedPanelIdentity.registryBuildId || typeof b.payload.refreshed !== 'boolean') fail('registry_ready_binding');
+        const prior = store.get(registryBootstrap.command.commandId), result = { registryBootstrapVersion: 1, registryBuildId: b.payload.registryBuildId, refreshed: b.payload.refreshed, sessionId: b.payload.sessionId };
+        if (prior?.state === 'completed') { if (canonical(prior.response.result) !== canonical(result)) fail('registry_ready_conflict'); signed({ registryReady: true, nonce: registryBootstrap.nonce, registryBuildId: expectedPanelIdentity.registryBuildId, sessionId: workSessionId }); return; }
+        if (!registryPending() || Date.now() > registryBootstrap.deadlineAt || store.closed || startOverFrozen) { failRegistry(); fail('registry_outcome_unknown'); }
+        store.complete(registryBootstrap.command.commandId, completionResponse(registryBootstrap.command, result)); clearTimeout(registryTimer); peer.registryReady = true;
+        signed({ registryReady: true, nonce: registryBootstrap.nonce, registryBuildId: expectedPanelIdentity.registryBuildId, sessionId: workSessionId }); return;
+      }
+      if (registryRequired && !ready() && req.url !== '/complete') fail('registry_not_ready');
       if (req.url === '/poll') {
         exact(b.payload, []); if (activePoll) fail('concurrent_poll');
         expirePending();
@@ -508,7 +540,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
         (offer?.commandId !== command.commandId || offer?.payloadHash !== command.payloadHash || typeof offer?.assert !== 'function'))
       fail('physical_delivery_guard');
     admissionGuard(command); deliveryGuard();
-    if (closed || store.closed) fail('receiver_lane_closed'); if (!peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); if (pending) fail('physical_lane_pending');
+    if (closed || store.closed) fail('receiver_lane_closed'); if (registryRequired && !ready()) fail('registry_not_ready'); if (!peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); if (pending) fail('physical_lane_pending');
     const directRead = !broker && selected === asset && asset.assetKey === 'project-inspection-v1' && command.moduleId === 'project-inspection' && command.operationId === 'inspect' && command.phase === 'inspect';
     const effect = directRead ? 'none' : command.phase === 'mutate' ? selected.effect || 'unclassified' : 'unclassified';
     const isProjectOpen = broker && offer && selected.resultProfile === 'project-lifecycle-v1' && command.phase === 'mutate' &&
@@ -539,7 +571,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
     },
     identity: hash({ packageHash: installation.packageHash, assets: [...assets.values()] }),
     transport: Object.freeze({
-      async connect(value) { if (store.closed || !peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); exact(value, ['controllerId', 'channelEpoch', 'secret']); brokerBinding = Object.freeze({ ...value }); return { receiverStoreIdentity: store.identity }; },
+      async connect(value) { if (store.closed) fail('panel_unavailable'); if (registryRequired && !ready()) fail('registry_not_ready'); if (!peer || Date.now() - peer.lastSeen > 45000) fail('panel_unavailable'); exact(value, ['controllerId', 'channelEpoch', 'secret']); brokerBinding = Object.freeze({ ...value }); return { receiverStoreIdentity: store.identity }; },
       async send(frame, offer) { if (!brokerBinding) fail('transport_disconnected'); const command = envelope(decode(frame, brokerBinding.secret)); if (command.controllerId !== brokerBinding.controllerId || command.channelEpoch !== brokerBinding.channelEpoch) fail('controller_binding'); return encode(await submit(command, true, offer), brokerBinding.secret); },
       async completion(commandId) { if (!brokerBinding) fail('transport_disconnected'); const c = store.get(commandId); return encode({ commandId, state: c?.state || 'unknown', ...(c?.originalBinding ? { originalBinding: c.originalBinding } : {}), ...(c?.response ? { response: c.response } : {}) }, brokerBinding.secret); },
       async disconnect() { if (pending) fail('physical_lane_pending'); brokerBinding = undefined; }
@@ -556,7 +588,7 @@ function createHttpPeer({ installation, directory, asset, additionalAssets = [],
       const command = { protocolVersion: 1, controllerId, channelEpoch: epoch, commandId: id('inspect'), moduleId: 'project-inspection', operationId: 'inspect', executorHash: asset.executorHash, phase: 'inspect', payloadHash: hash(canonical(payload)), payload };
       return submit(command);
     },
-    async close() { closed = true; disconnect('runtime_closed'); flushPoll(); await new Promise(resolve => server.close(resolve)); store.close(); }
+    async close() { closed = true; failRegistry(); disconnect('runtime_closed'); flushPoll(); await new Promise(resolve => server.close(resolve)); store.close(); }
   });
   observationPeers.set(api, completedProjectReads); return api;
 }

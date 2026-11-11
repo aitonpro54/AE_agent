@@ -44,8 +44,14 @@ async function client(port, config = installation, origin = 'null') {
   let sequence = 0;
   function raw(route, body, extra = {}, options = {}) { return rawRequest(port, route, body, { origin, headers: extra, ...options }); }
   const challenge = (await raw('/challenge', { role: 'panel' })).value, peerId = 'test-peer';
-  const link = await raw('/link', { challenge, peerId, proof: mac({ challenge, peerId }, config.panelToken) });
+  const loadedPanel = config.releaseDir ? require('../integrations/cep/panel-identity').verify(file => fs.readFileSync(path.join(config.releaseDir, file))) : undefined;
+  const claim = { challenge, peerId, ...(loadedPanel ? { loadedPanel } : {}), ...(loadedPanel?.registryBuildId ? { extensionRoot: config.cepDir.replace(/\\/g, '/') } : {}) };
+  const link = await raw('/link', { ...claim, proof: mac(claim, config.panelToken) });
   assert.equal(link.status, 200); assert.equal(link.value.mac, mac(link.value.body, config.panelToken));
+  if (link.value.body.bootstrap) {
+    const body = { epoch: challenge.epoch, peerId, sequence: ++sequence, method: 'POST', path: '/registry-ready', payload: { nonce: link.value.body.bootstrap.nonce, registryBuildId: loadedPanel.registryBuildId, refreshed: false, sessionId: link.value.body.bootstrap.sessionId } };
+    const ack = await raw('/registry-ready', { body, mac: mac(body, config.panelToken) }); assert.equal(ack.status, 200, JSON.stringify(ack.value)); assert.equal(ack.value.mac, mac(ack.value.body, config.panelToken));
+  }
   return {
     raw, challenge, peerId, pins: link.value.body.pins,
     envelope(route, payload, seq = ++sequence) { const body = { epoch: challenge.epoch, peerId, sequence: seq, method: 'POST', path: route, payload: JSON.parse(JSON.stringify(payload)) }; return { body, mac: mac(body, config.panelToken) }; },
@@ -373,11 +379,16 @@ test('installable-runtime package deterministic closure, install CAS, exact roll
   fs.appendFileSync(args.configPath, '# concurrent\n'); assert.throws(() => applyInstall(plan), /install_baseline_changed/);
   const first = applyInstall(planInstall(args)), d = verifyInstallation(first.descriptorPath);
   assert.match(fs.readFileSync(args.configPath, 'utf8'), /command = "unchanged"/);
-  const beforeState = fs.readFileSync(path.join(d.stateDir, 'origin.json'));
+  const beforeState = fs.readFileSync(path.join(d.stateDir, 'origin.json')), markerPath = path.join(d.cepDir, 'installation-state.json'), initialMarker = fs.readFileSync(markerPath);
+  const selected = require('../runtime/stdio-entry').deriveComposition(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
+  assert.deepEqual(JSON.parse(initialMarker), require('../runtime/stdio-entry').installationMarker(d, selected)); assert.equal(initialMarker.includes(d.panelToken), false);
   fs.writeFileSync(path.join(d.stateDir, 'protected-evidence'), 'do not reset');
   const second = applyInstall(planInstall(args)); assert.equal(second.installationId, first.installationId);
   assert.notEqual(JSON.parse(fs.readFileSync(first.descriptorPath)).panelToken, d.panelToken);
+  assert.notEqual(JSON.parse(fs.readFileSync(markerPath)).panelConfigHash, JSON.parse(initialMarker).panelConfigHash); verifyInstallation(first.descriptorPath);
   rollback(second.transactionFile); assert.equal(fs.readFileSync(first.descriptorPath, 'utf8'), canonical(d));
+  assert.deepEqual(fs.readFileSync(markerPath), initialMarker); verifyInstallation(first.descriptorPath);
+  fs.writeFileSync(markerPath, '{}'); assert.throws(() => verifyInstallation(first.descriptorPath), /installation_cep_bytes/); fs.writeFileSync(markerPath, initialMarker);
   assert.equal(fs.readFileSync(path.join(d.stateDir, 'protected-evidence'), 'utf8'), 'do not reset');
   assert.ok(beforeState.equals(fs.readFileSync(path.join(d.stateDir, 'origin.json'))));
   fs.mkdirSync(path.join(d.stateDir, 'receiver'), { recursive: true }); fs.writeFileSync(path.join(d.stateDir, 'receiver/owner'), 'unknown');
@@ -678,7 +689,10 @@ test('installable-runtime unknown Broker owner, ledger fault or unresolved inten
     const runtime = await require(path.join(d.releaseDir, 'runtime/stdio-entry.js')).start({ descriptor: installed.descriptorPath, port: 0, input, output });
     async function call(name, payload = {}) { const id = ++serial, result = new Promise(resolve => pending.set(id, resolve)); input.write(JSON.stringify({ jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: { payload } } }) + '\n'); const r = await result; return r.error ? { error: r.error.message } : JSON.parse(r.result.content[0].text); }
     try {
-      const status = await call('core_status'); await client(status.physical.port, d);
+      const status = await call('core_status');
+      const challenge = (await rawRequest(status.physical.port, '/challenge', { role: 'panel' })).value, loadedPanel = require('../integrations/cep/panel-identity').verify(file => fs.readFileSync(path.join(d.releaseDir, file)));
+      const claim = { challenge, peerId: 'fault-fixture', loadedPanel, extensionRoot: d.cepDir.replace(/\\/g, '/') };
+      const refused = await rawRequest(status.physical.port, '/link', { ...claim, proof: mac(claim, d.panelToken) }); assert.equal(refused.status, 403); assert.equal(refused.value.error, 'registry_lane_busy');
       const contract = await call('get_module_contract', { moduleId: 'project-inspection' });
       const result = await call('inspect_module_target', { moduleId: 'project-inspection', contractId: contract.contractId, target: {} });
       assert.equal(result.error, fault === 'orphan-gate' ? 'state_owner_gate_unavailable' : fault === 'ledger-corrupt' ? 'ledger_corrupt' : 'controller_unresolved');
@@ -835,8 +849,8 @@ test('installable-runtime panel VM/WebCrypto shim validates challenge Origin bef
         assert.ok(options.signal instanceof AbortSignal);
         if (route === '/challenge') return { ok: true, json: async () => challenge };
         if (route === '/link') {
-          assert.equal(canonical(value.challenge), canonical(challenge)); assert.equal(value.proof, mac({ challenge, peerId: value.peerId }, installation.panelToken));
-          const body = { linked: true, peerId: value.peerId, epoch: challenge.epoch, controllerId: challenge.controllerId, pins: { installationId: cfg.installationId, packageHash: cfg.packageHash, executorHash: cfg.executorHash }, receiverStoreIdentity: 'shim-store', laneClosed: false }; return { ok: true, json: async () => ({ body, mac: mac(body, installation.panelToken) }) };
+          assert.equal(canonical(value.challenge), canonical(challenge)); assert.equal(value.proof, mac({ challenge, peerId: value.peerId, loadedPanel: value.loadedPanel }, installation.panelToken));
+          const body = { linked: true, peerId: value.peerId, epoch: challenge.epoch, controllerId: challenge.controllerId, pins: { installationId: cfg.installationId, packageHash: cfg.packageHash, executorHash: cfg.executorHash }, receiverStoreIdentity: 'shim-store', laneClosed: false, acceptedIdentity: value.loadedPanel }; return { ok: true, json: async () => ({ body, mac: mac(body, installation.panelToken) }) };
         }
         assert.equal(route, '/poll'); throw new Error('shim_stop_after_poll');
       }
@@ -847,7 +861,7 @@ test('installable-runtime panel VM/WebCrypto shim validates challenge Origin bef
     vm.runInContext(source, context); await finished;
     assert.deepEqual(calls.map(c => c.route), accepted ? ['/challenge', '/link', '/poll'] : ['/challenge'], elements.status.textContent);
     assert.equal(recovered, accepted ? 1 : 0);
-    if (accepted) { assert.equal(signed[0], canonical({ challenge, peerId: calls[1].value.peerId })); assert.match(elements.status.textContent, /shim_stop_after_poll/); }
+    if (accepted) { assert.equal(signed[0], canonical({ challenge, peerId: calls[1].value.peerId, loadedPanel: calls[1].value.loadedPanel })); assert.match(elements.status.textContent, /shim_stop_after_poll/); }
     else { assert.equal(signed.length, 0); assert.equal(elements.status.textContent, 'Остановлено: installation_binding'); }
   }
 });
@@ -922,10 +936,10 @@ test('installable-runtime real stdio child consumes generated MCP config, advert
   child.stdout.on('data', b => { output += b; let n; while ((n = output.indexOf('\n')) >= 0) { const value = JSON.parse(output.slice(0, n)); output = output.slice(n + 1); waiting.get(value.id)?.(value); waiting.delete(value.id); } });
   async function rpc(method, params) { const id = ++nextId; const promise = new Promise((resolve, reject) => { waiting.set(id, resolve); const timer = setTimeout(() => reject(new Error('stdio_timeout:' + errors)), 15000); timer.unref(); }); child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, ...(params ? { params } : {}) }) + '\n'); const response = await promise; assert.equal(response.error, undefined, JSON.stringify(response)); return response.result; }
   async function tool(name, payload = {}) { const result = await rpc('tools/call', { name, arguments: { payload } }); return JSON.parse(result.content[0].text); }
-  const initialized = await rpc('initialize'); assert.equal(initialized.serverInfo.version, '4.2.5');
+  const initialized = await rpc('initialize'); assert.equal(initialized.serverInfo.version, '4.2.6');
   const listed = await rpc('tools/list'); assert.ok(listed.tools.some(x => x.name === 'inspect_module_target')); assert.ok(!listed.tools.some(x => x.name === 'inspect_project'));
   const withMeta = await rpc('tools/call', { name: 'core_status', arguments: { payload: {} }, _meta: { progressToken: 'fixture-progress', traceparent: 'fixture-trace' } });
-  assert.equal(JSON.parse(withMeta.content[0].text).product, 'AE Agent Core 4.2.5'); assert.ok(!withMeta.content[0].text.includes('fixture-progress'));
+  assert.equal(JSON.parse(withMeta.content[0].text).product, 'AE Agent Core 4.2.6'); assert.ok(!withMeta.content[0].text.includes('fixture-progress'));
   await assert.rejects(rpc('tools/call', { name: 'core_status', arguments: { payload: {} }, _meta: { padding: 'x'.repeat(9000) } }), /invalid_protocol_metadata/);
   await assert.rejects(rpc('tools/call', { name: 'core_status', arguments: { payload: {}, _meta: { grant: true } } }), /unexpected_field/);
   const status = await tool('core_status'); assert.equal(status.physical.peer.connected, false); assert.equal(status.automaticLifecycle, 'unavailable');

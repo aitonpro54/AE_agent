@@ -6,14 +6,14 @@ const { fitsIpcResult } = require('./client-ipc');
 // Private composition seam. No listener, credentials, Broker or state IO here.
 // Production embedding must restore durable state before exposing this owner,
 // enforce assertCurrent at physical submit/deliver, and report real activity.
-const TOOL_METHODS = Object.freeze({ core_status: 'status', core_connect: 'connect', core_disconnect: 'disconnect', core_diagnostics: 'diagnostics', list_modules: 'listModules', get_module_contract: 'getContract', inspect_module_target: 'inspect', build_solution_plan: 'build', propose_plan: 'propose', dry_run_plan: 'dryrun', run_plan: 'run', get_task: 'getTask', reset_task: 'reset', reconcile_task: 'reconcile' });
+const TOOL_METHODS = Object.freeze({ core_ensure_ae_panel: 'ensureAePanel', core_ae_panel_startup_status: 'aePanelStartupStatus', core_status: 'status', core_connect: 'connect', core_disconnect: 'disconnect', core_diagnostics: 'diagnostics', list_modules: 'listModules', get_module_contract: 'getContract', inspect_module_target: 'inspect', build_solution_plan: 'build', propose_plan: 'propose', dry_run_plan: 'dryrun', run_plan: 'run', get_task: 'getTask', reset_task: 'reset', reconcile_task: 'reconcile' });
 const CONTROL_METHODS = Object.freeze(['owner_status', 'controller_acquire', 'controller_renew', 'controller_release', 'controller_transfer']);
 const OWNER_METHODS = Object.freeze([...Object.keys(TOOL_METHODS), ...CONTROL_METHODS]);
 const RENDER_JOB_METHODS = Object.freeze({ render_job_prepare: 'renderJobPrepare', render_job_start: 'renderJobStart', render_job_status: 'renderJobStatus', render_job_reconcile: 'renderJobReconcile', render_job_finalize: 'renderJobFinalize', render_job_cancel: 'renderJobCancel' });
 const ownerMethods = renderJobs => renderJobs ? [...OWNER_METHODS, ...Object.keys(RENDER_JOB_METHODS)] : OWNER_METHODS;
 const LEASE_ERRORS = Object.freeze(['controller_busy', 'controller_fenced', 'controller_lease_identity', 'controller_lease_expired', 'controller_draining', 'controller_client_detached', 'controller_clock_fault', 'controller_operation_pending', 'controller_expected', 'controller_transfer_changed', 'controller_not_expired']);
-const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_payload', 'owner_inspection_contract_required', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed', 'owner_work_session_required', 'owner_work_session_changed', 'owner_work_session_unavailable', 'owner_baseline_required', 'fresh_dryrun_required', 'media_already_imported']);
-const OBSERVERS = new Set(['core_status', 'core_diagnostics', 'list_modules', 'get_module_contract', 'get_task']);
+const OWNER_ERRORS = Object.freeze([...LEASE_ERRORS, 'owner_startup_pending', 'owner_payload', 'owner_inspection_contract_required', 'owner_recovery_required', 'owner_draining', 'owner_attachment_required', 'owner_lease_token', 'owner_reference_generation', 'owner_attachment_refused', 'owner_closed', 'owner_method', 'owner_controller_required', 'owner_reference_budget', 'owner_observer_physical_access', 'owner_outcome_uncertain', 'owner_unavailable', 'runtime_request_failed', 'owner_work_session_required', 'owner_work_session_changed', 'owner_work_session_unavailable', 'owner_baseline_required', 'fresh_dryrun_required', 'media_already_imported']);
+const OBSERVERS = new Set(['core_ae_panel_startup_status', 'core_status', 'core_diagnostics', 'list_modules', 'get_module_contract', 'get_task']);
 const READ_REJECTION_CODES = Object.freeze(['inspection_failed', 'inspection_result_budget', 'host_json_unavailable', 'host_registry_unavailable',
   'layer_overlay_layer_profile', 'layer_overlay_expression_scope', 'layer_overlay_existing_or_partial']);
 const PRE_DISPATCH_READ_CODES = Object.freeze(['ae_modal_observed', 'ae_unresponsive']);
@@ -56,7 +56,7 @@ function classifyPhysicalRead(value) {
   return null;
 }
 
-function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection = () => null, isFreshDryrunRefusal = () => false,
+function createAttachmentOwner({ startupGate = () => ({ pending: false, unresolved: false }), runtime, activity, invoke, consumeReadRejection = () => null, isFreshDryrunRefusal = () => false,
   consumeMediaDuplicateBuildRefusal = () => false, canResumeTask = () => false, renderJobs = false, workSession = () => ({ sessionId: null, baselineRequired: false, resetPending: false }), clock, ttlMs, drainIntervalMs = 100 } = {}) {
   if (!runtime || typeof runtime.status !== 'function' || typeof activity !== 'function' || typeof invoke !== 'function' || typeof workSession !== 'function' || !Number.isSafeInteger(drainIntervalMs) || drainIntervalMs < 1 || drainIntervalMs > 1000) throw new Error('owner_options');
   const lease = createControllerLease({ clock, ttlMs }), sessions = new Map(), accepted = new Set(), timers = new Set(), ownErrors = new WeakSet();
@@ -158,14 +158,16 @@ function createAttachmentOwner({ runtime, activity, invoke, consumeReadRejection
       return method === 'core_status' || method === 'core_diagnostics' ? { ...value, attachmentOwner: status() } : value;
     }
     admitted();
+    const startup = startupGate(); if ((startup.pending || startup.unresolved) && method !== 'core_ensure_ae_panel') fail('owner_startup_pending');
     if (!record.grant) fail('owner_controller_required');
     const work = currentWork(record);
-    if (work.baselineRequired && !['core_connect', 'core_disconnect'].includes(method) && !(method === 'inspect_module_target' && payload.moduleId === 'project-inspection')) fail('owner_baseline_required');
+    if (work.baselineRequired && !['core_connect', 'core_disconnect', 'core_ensure_ae_panel'].includes(method) && !(method === 'inspect_module_target' && payload.moduleId === 'project-inspection')) fail('owner_baseline_required');
     if (Object.values(refs).some(values => values.size >= 4096)) fail('owner_reference_budget');
     lease.assertCurrent(record.grant);
     // This argument check precedes acceptance/invoke. It says nothing about a
     // runtime exception or the outcome of any command that was already sent.
     if (method === 'inspect_module_target' && (typeof payload.contractId !== 'string' || !/^[a-f0-9]{64}$/.test(payload.contractId))) fail('owner_inspection_contract_required');
+    if (method === 'core_ensure_ae_panel' || method === 'core_ae_panel_startup_status') { try { require('./ae-panel-startup').validateStartupInput(payload, method === 'core_ae_panel_startup_status'); } catch { fail('owner_payload'); } }
     inputs(method, payload, record.grant);
     const grant = record.grant, operation = lease.begin(grant); accepted.add(operation);
     const context = { observer: false, generation: grant.generation, sessionId: work.sessionId, assertCurrent() { if (closed) fail('owner_closed'); currentWork(record); lease.assertCurrent(grant); } };

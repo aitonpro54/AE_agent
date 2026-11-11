@@ -30,7 +30,7 @@ function panel(t,options={}){
         return response(200,result);
       }
       if(route==='/challenge')return response(200,{nonce:'f'.repeat(64),epoch,controllerId:'controller',role:'panel',origin:'null',...pins});
-      if(route==='/link'){assert.equal(value.proof,mac({challenge:value.challenge,peerId:value.peerId},cfg.panelToken));peerId=value.peerId;seq=0;const body={linked:true,epoch,peerId,controllerId:'controller',pins,receiverStoreIdentity:'fixture-receiver',laneClosed:options.laneClosed===true,workSessionId:state.sessionId,startOver:state};return response(200,{body,mac:mac(body,cfg.panelToken)});}
+      if(route==='/link'){assert.equal(value.proof,mac({challenge:value.challenge,peerId:value.peerId,loadedPanel:value.loadedPanel},cfg.panelToken));peerId=value.peerId;seq=0;const body={linked:true,epoch,peerId,controllerId:'controller',pins,receiverStoreIdentity:'fixture-receiver',laneClosed:options.laneClosed===true,acceptedIdentity:value.loadedPanel,workSessionId:state.sessionId,startOver:state};return response(200,{body,mac:mac(body,cfg.panelToken)});}
       assert.ok(['/poll','/complete'].includes(route));assert.equal(value.mac,mac(value.body,cfg.panelToken));assert.equal(value.body.epoch,epoch);assert.equal(value.body.peerId,peerId);assert.equal(value.body.sequence,++seq);
       function channel(payload){const body={epoch,peerId,sequence:value.body.sequence,payload};return response(200,{body,mac:mac(body,cfg.panelToken)});}
       if(route==='/complete'){posts.push(value.body.payload);return channel({ack:{commandId:value.body.payload.commandId,receiptRef:value.body.payload.originalBinding.receiptRef}});}

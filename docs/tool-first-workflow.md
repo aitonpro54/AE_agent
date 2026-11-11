@@ -2,6 +2,29 @@
 
 Core предоставляет typed MCP инструменты для детерминированной подготовки и проверяемого исполнения AE-планов. Эта инструкция описывает опубликованный контракт; она не является разрешением на live-действие и не подтверждает workflow acceptance.
 
+## Запуск AE и версия загруженной панели
+
+В owner runtime с поддержкой startup сначала прочитайте `core_status`, затем
+получите управление текущим `workSession.sessionId` через `controller_acquire`.
+`core_ensure_ae_panel` принимает новый UUID v4 `operationId` и необязательный
+`timeoutMs` (1000–90000). Он штатно запускает отсутствующий AE и открывает
+собственную панель; Computer Use для этого не нужен. Status/connect сами AE
+не запускают. При старом MCP-клиенте сначала используйте свежий штатный клиент
+из действующей configured привязки; старый клиент не доказывает новую установку.
+
+Различайте версию клиента/owner, установленного пакета и загруженной CEP.
+`physical.peer.acceptedIdentity` показывает защищённый ответ выполняемого
+`panel.js`; готовность нативного registry подтверждается отдельным bootstrap.
+Версия manifest или подпись меню не заменяют эти ответы. После запуска сделайте
+обычную typed `project-inspection` по актуальному контракту и освободите lease.
+Startup не выдаёт project authority и не снимает baseline/grants.
+
+При timeout/UNKNOWN читайте `core_ae_panel_startup_status` исходного UUID.
+Не создавайте второй запуск и не переходите в Computer Use для обхода отказа.
+`interrupted` завершает только исход запуска; receiver UNKNOWN сохраняет свой
+штатный путь восстановления. Подробный контракт и ограничения первого перехода
+со старой панели — [штатный запуск](core-ae-panel-startup.md).
+
 ## План и proposal
 
 1. Получи точный контракт выбранного builder через `get_plan_builder_contract(solutionId)`. Не угадывай inputs и не ищи recipe: Core не публикует `search_solutions`, `get_solution` или candidate tools.

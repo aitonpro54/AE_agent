@@ -56,13 +56,13 @@ function panel(options = {}) {
           return options.challenge ? await options.challenge({ challenge, attempt: challengeSerial, reply, signal: request.signal, elapse: ms => { now += ms; } }) : reply(200, challenge);
         }
         if (route === '/link') {
-          assert.deepEqual(Object.keys(value).sort(), ['challenge', 'peerId', 'proof']); assert.equal(canonical(value.challenge), canonical(challenges.at(-1)));
-          assert.equal(value.proof, mac({ challenge: value.challenge, peerId: value.peerId }, cfg.panelToken));
+          assert.deepEqual(Object.keys(value).sort(), ['challenge', 'loadedPanel', 'peerId', 'proof']); assert.equal(canonical(value.challenge), canonical(challenges.at(-1)));
+          assert.equal(value.proof, mac({ challenge: value.challenge, peerId: value.peerId, loadedPanel: value.loadedPanel }, cfg.panelToken));
           assert.ok(!linkProofs.includes(value.proof), 'fresh challenge and proof required on every attempt'); linkProofs.push(value.proof);
           const attempt = calls.filter(call => call.route === '/link').length;
           if (attempt <= (options.duplicates || 0)) return reply(403, { error: 'duplicate_peer' });
           linkedPeer = value.peerId; requestSequence = 0;
-          const body = { linked: true, epoch: value.challenge.epoch, peerId: value.peerId, controllerId: 'fixture-controller', pins, receiverStoreIdentity: 'fixture-store', laneClosed: false };
+          const body = { linked: true, epoch: value.challenge.epoch, peerId: value.peerId, controllerId: 'fixture-controller', pins, receiverStoreIdentity: 'fixture-store', laneClosed: false, acceptedIdentity: value.loadedPanel };
           return options.link ? await options.link({ body, attempt, reply, signed, elapse: ms => { now += ms; } }) : signed(body);
         }
         assert.ok(['/poll', '/complete'].includes(route), 'no other transport route');
@@ -101,7 +101,7 @@ test('panel-reconnect repeated duplicate peers get fresh challenge/proof then on
   assert.deepEqual(p.calls.map(call => call.route), ['/challenge', '/link', '/challenge', '/link', '/challenge', '/link', '/poll']);
   assert.deepEqual(p.waits, [3000, 3000]); assert.equal(new Set(p.challenges.map(c => c.nonce)).size, 3); assert.equal(new Set(p.linkProofs).size, 3);
   assert.equal(new Set(p.calls.filter(c => c.route === '/link').map(c => c.value.peerId)).size, 1);
-  assert.equal(p.recovered, 1); assert.equal(p.dispatches, 0); assert.equal(p.now, 6000); assert.equal(p.statuses.filter(s => s === 'Подключено к Core 4.2.5').length, 1);
+  assert.equal(p.recovered, 1); assert.equal(p.dispatches, 0); assert.equal(p.now, 6000); assert.equal(p.statuses.filter(s => s === 'Подключено к Core 4.2.6').length, 1);
 });
 
 test('panel-reconnect deadline stops after exactly 17 handshake pairs and 50 seconds', async () => {
@@ -154,7 +154,7 @@ const refusalCases = [
 ];
 for (const [label, status, body] of refusalCases) test('panel-reconnect no retry for untrusted/non-duplicate link refusal: ' + label, async () => {
   const p = panel({ link: () => reply(status, body) }); await p.finish();
-  assert.deepEqual(p.calls.map(c => c.route), ['/challenge', '/link']); assert.deepEqual(p.waits, []); assert.equal(p.recovered, 0); assert.ok(!p.statuses.includes('Подключено к Core 4.2.5'));
+  assert.deepEqual(p.calls.map(c => c.route), ['/challenge', '/link']); assert.deepEqual(p.waits, []); assert.equal(p.recovered, 0); assert.ok(!p.statuses.includes('Подключено к Core 4.2.6'));
 });
 for (const stage of ['challenge', 'link']) test('panel-reconnect transport/JSON errors containing duplicate_peer do not retry: ' + stage, async () => {
   for (const invalidJson of [false, true]) {
@@ -312,7 +312,7 @@ for (const raw of ['', 'null', 'false', '0', '""']) test('panel-reconnect any re
   const state = storage(); state.setItem(latchKey, raw);
   const p = panel({ storage: state, channel({ value }) { return pollReply(value, frame()); } }); await p.finish();
   assert.equal(p.count('/poll'), 0); assert.equal(p.count('/complete'), 0); assert.equal(p.nativeCalls, 0); assert.equal(p.elements.status.dataset.state, 'recovery');
-  assert.equal(state.getItem(latchKey), raw); assert.ok(!p.statuses.includes('Канал Core 4.2.5 готов к командам'));
+  assert.equal(state.getItem(latchKey), raw); assert.ok(!p.statuses.includes('Канал Core 4.2.6 готов к командам'));
 });
 test('panel-reconnect a raw latch inserted during poll is checked again before evaluation', async () => {
   const state = storage(), p = panel({ storage: state, channel({ value }) { state.setItem(latchKey, 'false'); return pollReply(value, frame()); } }); await p.finish();
