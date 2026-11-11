@@ -71,6 +71,40 @@ test('ae-panel-startup redirected state ancestor cannot receive request/bootstra
   fs.symlinkSync(destination, path.join(f.installation.stateDir, 'panel-startup'), process.platform === 'win32' ? 'junction' : 'dir');
   assert.equal((await f.service.ensure({ operationId: id }, f.context)).code, 'startup_path_redirected'); assert.equal(f.launches.length, 0); assert.deepEqual(fs.readdirSync(destination), []);
 });
+test('ae-panel-startup reads a stable readoption two-link adoption locator without changing its history alias', async t => {
+  const f = harness(t), adoption = path.join(f.installation.stateDir, 'host-adoption.json');
+  const preparation = path.join(path.dirname(f.installation.stateDir), 'transactions/readopt-preparation-' + id); fs.mkdirSync(preparation, { recursive: true });
+  const anchor = path.join(preparation, 'replacement.json'); fs.linkSync(adoption, anchor); const original = fs.readFileSync(anchor), inode = fs.statSync(anchor).ino;
+  assert.equal(fs.statSync(adoption).nlink, 2);
+  const result = await f.service.ensure({ operationId: id }, f.context); assert.equal(result.outcome, 'ready'); assert.equal(f.launches.length, 1); assert.equal(result.nativeVerified, false);
+  assert.deepEqual(fs.readFileSync(anchor), original); assert.deepEqual(fs.readFileSync(adoption), original); assert.equal(fs.statSync(adoption).ino, inode); assert.equal(fs.statSync(anchor).nlink, 2);
+});
+test('ae-panel-startup hardlink allowance is confined to adoption data, never executable or state receipts', async t => {
+  const code = harness(t); fs.linkSync(code.executablePath, path.join(path.dirname(code.executablePath), 'executable-history-link'));
+  assert.equal((await code.service.ensure({ operationId: id }, code.context)).code, 'startup_path_redirected'); assert.equal(code.launches.length, 0);
+  const state = harness(t, { timeout: true }); await state.service.ensure({ operationId: id, timeoutMs: 1000 }, state.context);
+  const attempt = path.join(state.installation.stateDir, 'panel-startup', id, 'attempt.json'); fs.linkSync(attempt, attempt + '.history');
+  await assert.rejects(state.service.observe({ operationId: id }), /startup_path_redirected/); assert.equal(state.launches.length, 1);
+  const cep = harness(t), manifest = path.join(cep.installation.cepDir, 'CSXS/manifest.xml'); fs.mkdirSync(path.dirname(manifest), { recursive: true }); fs.copyFileSync(path.join(source, 'cep/CSXS/manifest.xml'), manifest); fs.linkSync(manifest, manifest + '.history');
+  assert.throws(() => collisionPreflight(cep.installation, cep.executablePath, [path.dirname(cep.installation.cepDir)]), /startup_path_redirected/);
+  const release = harness(t), privateRoot = path.join(path.dirname(release.installation.stateDir), 'release'), script = path.join(privateRoot, 'runtime/host/ensure-panel.jsx'); fs.mkdirSync(path.dirname(script), { recursive: true }); fs.writeFileSync(script, fixed); fs.linkSync(script, script + '.history'); release.installation.releaseDir = privateRoot;
+  assert.equal((await release.service.ensure({ operationId: id }, release.context)).code, 'rejected_before_dispatch'); assert.equal(release.launches.length, 0);
+  const missing = harness(t); fs.unlinkSync(path.join(missing.installation.stateDir, 'host-adoption.json')); assert.equal((await missing.service.ensure({ operationId: id }, missing.context)).code, 'startup_executable_binding_required');
+});
+test('ae-panel-startup linked adoption still rejects directory redirection and a changing link identity', async t => {
+  const f = harness(t), adoption = path.join(f.installation.stateDir, 'host-adoption.json'), alias = adoption + '.anchor'; fs.linkSync(adoption, alias);
+  const originalOpen = fs.openSync, originalRead = fs.readFileSync; let adoptionFd, altered = false;
+  const open = t.mock.method(fs, 'openSync', function (file, ...args) { const fd = originalOpen.call(fs, file, ...args); if (file === adoption) adoptionFd = fd; return fd; });
+  const read = t.mock.method(fs, 'readFileSync', function (file, ...args) { const value = originalRead.call(fs, file, ...args); if (file === adoptionFd && !altered) { altered = true; fs.linkSync(adoption, adoption + '.unexpected-alias'); } return value; });
+  const result = await f.service.ensure({ operationId: id }, f.context); open.mock.restore(); read.mock.restore();
+  assert.equal(result.code, 'startup_file_changed'); assert.equal(f.launches.length, 0);
+  const redirected = harness(t), canonical = redirected.installation.stateDir, target = canonical + '-target'; fs.renameSync(canonical, target); fs.symlinkSync(target, canonical, process.platform === 'win32' ? 'junction' : 'dir');
+  assert.equal((await redirected.service.ensure({ operationId: id }, redirected.context)).code, 'startup_path_redirected'); assert.equal(redirected.launches.length, 0);
+});
+test('ae-panel-startup adoption locator enforces its data budget before reading payload', async t => {
+  const f = harness(t), adoption = path.join(f.installation.stateDir, 'host-adoption.json'); fs.appendFileSync(adoption, ' '.repeat(64 * 1024));
+  const result = await f.service.ensure({ operationId: id }, f.context); assert.equal(result.code, 'startup_file_budget'); assert.equal(f.launches.length, 0);
+});
 test('ae-panel-startup multiple AE and busy/UNKNOWN lane reject without dispatch', async t => {
   const f = harness(t); f.rows([{ pid: 1 }, { pid: 2 }]); assert.equal((await f.service.ensure({ operationId: id }, f.context)).code, 'startup_ambiguous_ae');
   f.busy(); assert.equal((await f.service.ensure({ operationId: other }, f.context)).code, 'startup_lane_busy'); assert.equal(f.launches.length, 0);

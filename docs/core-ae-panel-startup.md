@@ -25,6 +25,12 @@ maintenance, единственность AE, executable и коллизии т�
 `host-adoption.json` служит только локальным locator для executable с SHA-256.
 Запуск не изменяет adoption, baseline, grants, проект или право его изменять.
 Отсутствие locator возвращает `startup_executable_binding_required`.
+Штатный stopped readoption сохраняет hardlink к `host-adoption.json` в preparation
+history. Для чтения только этого фиксированного data leaf допустимы стабильные
+hardlinks: размер ограничен 64 KiB, проверяются regular-file, все ancestors,
+realpath, inode/bytes и неизменность nlink во время чтения. Installation/machine
+и executable hash сверяются как прежде. Исторический alias не удаляется.
+Descriptor/release/CEP, executable и startup receipts сохраняют строгие guards.
 
 Если AE отсутствует, используется привязанный executable; если запущен один
 AE, сохраняются PID, birth и path. Команда имеет только фиксированные аргументы

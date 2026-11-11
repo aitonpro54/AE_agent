@@ -12,20 +12,21 @@ function input(value, observe = false) {
 }
 // The installed state/release roots are verified by startup. Recheck every
 // existing ancestor for redirection before each request/receipt access.
-function plain(file, directory = false) {
+function plain(file, directory = false, linkedData = false) {
   const resolved = path.resolve(file), parent = path.dirname(resolved);
   if (parent !== resolved) plain(parent, true);
   const info = fs.lstatSync(resolved);
-  if (info.isSymbolicLink() || info.reparsePoint || fs.realpathSync(resolved).toLowerCase() !== resolved.toLowerCase() || (directory ? !info.isDirectory() : !info.isFile() || info.nlink !== 1)) throw new Error('startup_path_redirected');
+  if (info.isSymbolicLink() || info.reparsePoint || fs.realpathSync(resolved).toLowerCase() !== resolved.toLowerCase() || (directory ? !info.isDirectory() : !info.isFile() || info.nlink < 1 || !linkedData && info.nlink !== 1)) throw new Error('startup_path_redirected');
   return info;
 }
 function mkdir(directory) { try { plain(directory, true); } catch (e) { if (e.code !== 'ENOENT') throw e; const parent = path.dirname(directory); plain(parent, true); fs.mkdirSync(directory); plain(directory, true); } }
-function bytes(file) {
-  plain(file); const fd = fs.openSync(file, 'r');
+function bytes(file, { linkedData = false, maxBytes = 512 * 1024 * 1024 } = {}) {
+  plain(file, false, linkedData); const fd = fs.openSync(file, 'r');
   try {
-    const before = fs.fstatSync(fd), value = fs.readFileSync(fd), after = fs.fstatSync(fd); plain(file);
+    const before = fs.fstatSync(fd); if (before.size > maxBytes) throw new Error('startup_file_budget');
+    const value = fs.readFileSync(fd), after = fs.fstatSync(fd); plain(file, false, linkedData);
     const named = fs.lstatSync(file);
-    if (value.length > 512 * 1024 * 1024 || ['dev', 'ino', 'size', 'mtimeMs', 'ctimeMs'].some(k => before[k] !== after[k] || after[k] !== named[k])) throw new Error('startup_file_changed');
+    if (value.length > maxBytes || ['dev', 'ino', 'nlink', 'size', 'mtimeMs', 'ctimeMs'].some(k => before[k] !== after[k] || after[k] !== named[k])) throw new Error('startup_file_changed');
     return value;
   } finally { fs.closeSync(fd); }
 }
@@ -86,7 +87,14 @@ function createAePanelStartup({ installation, expectedIdentity, peerStatus, asse
   const root = path.join(installation.stateDir, 'panel-startup'); let busy = false, activeOperationId = null;
   function read(file) { try { return JSON.parse(bytes(file)); } catch (e) { if (e.code === 'ENOENT') return null; throw e; } }
   function binding() {
-    const a = read(path.join(installation.stateDir, 'host-adoption.json')), h = a?.host;
+    // Stopped readoption intentionally retains a preparation hardlink to this
+    // DATA record. It is only a locator here, never adoption/project authority.
+    // Only this fixed leaf permits stable hardlinks; all ancestors/code/state
+    // receipts still use the strict default path guard.
+    let a;
+    try { a = JSON.parse(bytes(path.join(installation.stateDir, 'host-adoption.json'), { linkedData: true, maxBytes: 64 * 1024 })); }
+    catch (error) { if (error.code === 'ENOENT') throw new Error('startup_executable_binding_required'); throw error; }
+    const h = a?.host;
     if (a?.version !== 1 || a.installationId !== installation.installationId || a.machineId !== installation.machineId || h?.machineId !== installation.machineId ||
         !h || !path.isAbsolute(h.executablePath) || path.basename(h.executablePath).toLowerCase() !== 'afterfx.exe' || !/^[a-f0-9]{64}$/.test(h.executableHash)) throw new Error('startup_executable_binding_required');
     if (hash(bytes(h.executablePath)) !== h.executableHash) throw new Error('startup_executable_changed');

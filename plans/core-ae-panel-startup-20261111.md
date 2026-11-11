@@ -196,3 +196,57 @@ node --test --test-name-pattern="C1b packages" core4/test/stopped-update.test.js
 stage2-summary.json, stage2-builds.json, stage2-source-freeze.json и stage2-checks/.
 Исторические fixture FAIL сохранены отдельно; не объявляются current PASS.
 Нативная приёмка и full release certification этим source milestone не заявлены.
+
+## Native: первый пакет и исправление совместимости locator
+
+### Progress
+
+- Source milestone commit **9b5ca3b**. Первое ordinary stopped update завершено:
+  stop a785d3be-5cec-4799-8060-6b9d6ff1cc18, transaction
+  b7fdeb3b-09f7-4e6f-8ede-15d89c26c0a9. Эти IDs settled, не повторять.
+  manual4.2.6 d4443d74… enabled, identity e0e81ad5… сохранена,
+  1849 защищённых файлов сверены. Enable не запускал runtime автоматически.
+- Fresh configured4.2.6 вызвал ensure UUID4f8c780e-b956-4940-a033-a109eb543bd0.
+  Получен `blocked/startup_path_redirected` **до attempt/dispatch**; observer
+  вернул absent, lease освобождён. Нативных действий/изменений AEP нет.
+- ae_implementer диагностировал несовместимость нового reader: canonical
+  host-adoption.json — regular file, exact realpath, не symlink, но nlink2.
+  Второе имя — штатный anchor transactions/readopt-preparation-eebc5a9d…/
+  replacement.json. Оба имени имеют одинаковые dev/ino/size824 и сохранены.
+  Foreign CEP roots, остальные state/release/CEP/executable проверки прошли.
+- Новый read-only checkpoint текущего manual d444…: 1889 файлов установки,
+  CEP8, preferences89 и прежние четыре AEP, byte-exact/source unchanged.
+  Manifest SHA3b83769afaa1fdd2604b7bc176e83302471a18555272a0faeb60f788ec174cb2.
+
+### Decision Log
+
+- Нужен адресный совместимый reader только canonical adoption locator. Никаких
+  unlink/перепривязки, ослабления code/bootstrap/descriptor guards или переноса
+  authority. Исправление и регрессия переданы ae_implementer; root остаётся
+  единственным live-контроллером. Повтор исходного settled install исключён.
+- Новый пакет пройдёт scoped review и штатное stopped update в отдельной
+  фазе core-ae-panel-startup-pathfix-20261111. Первый blocked UUID не переигрывается.
+
+### Validation
+
+Первый отказ — current native evidence о pre-dispatch guard, не успешный запуск.
+Текущая цель cold/hot/repeat остаётся открытой; Computer Use calls0.
+
+### Совместимый locator reader принят
+
+- Исправлены только startup reader, его тесты и инструкция. Read-only исключение
+  hardlink применяется исключительно к fixed canonical host-adoption.json;
+  ancestors/reparse/realpath и dev/ino/nlink/size/timestamps/bytes стабильность,
+  budget64KiB и installation/machine/executable hash проверки сохранены.
+  Остальные data/code paths по-прежнему запрещают hardlinks. Исходная adoption
+  и readopt anchor не менялись; authority не выдавалась.
+- ae-panel-startup28/28, boundaries90, syntax и diff-check PASS. Четыре новые
+  регрессии: legitimate alias, граница исключения, замена link/redirection,
+  размер. Первый fixture EPERM сохранён, применимый junction case проверен.
+- Независимый startup_review **ACCEPT**, три SHA совпали с nativefix freeze:
+  startup86ab2dabcb1bfce7e796758fe08d4ef1bf3738a440c90056b2fd0f2748a147ef;
+  test3dc38233b6eb755b91d0f97f11a78fb3a211d793df0a2115730cf658525e23ba;
+  docs300fc6bfb95bb0dbc388b83976c5631923728857f9da03a18a2484fbb640de83.
+- Прежний полный source набор относится к исходному milestone9b5ca3b;
+  эта узкая дельта имеет собственные current checks и review. Пересборки
+  выпускаются в новых nativefix directories, прежние artifacts сохраняются.
