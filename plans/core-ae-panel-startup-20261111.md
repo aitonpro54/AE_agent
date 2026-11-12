@@ -410,3 +410,33 @@ registry-observer-01.json и registry-observer-02.json. History/UNKNOWN сохр
   прежде следующего update/native proof. Источники приняты отдельным commit,
   успешный native запуск этим milestone не заявляется. Анализ collision отделён
   от принятой panel дельты; произвольного удаления/слияния каталогов нет.
+
+### Подтверждённый MSIX split и следующий recovery block
+
+- Source milestone commit3492c89. Current native reset остаётся4c3…, AE закрыт,
+  CU завершён. Существующий finisher не умеет завершать этот split; обычный
+  continue повторял бы safe refusal, поэтому root его не вызывал.
+- ae_specialist подтвердил Windows MSIX merged view для Codex family
+  OpenAI.Codex_2p2nqsd0c76g0. Верхний физический root:
+  C:/Users/Ant/AppData/Local/Packages/OpenAI.Codex_2p2nqsd0c76g0/LocalCache/Local/AEAgentCore4.
+  После rename upper broker исчез, upper archive-broker сохранил exact original
+  inode3096224745886735. Logical source теперь показывает нижний broker
+  inode2251799815104406. Это проявление второго слоя, не доказанный новый writer.
+- Original signed tree снимался как union: upper metadata и lower children.
+  In-memory overlay(upper archive, lower remaining source) с upper precedence
+  совпал с sameTree(original,true). В остаточном broker только immutable CAS:
+  source45 files/290515 bytes, archive18/98524; общий core2bf byte-identical.
+  Ledger/locks/gates в остаточном broker отсутствуют. Receiver bytes сохранены.
+- Safe collision artifact start-over-archive-collision-safe.json
+  SHAef9d8fea7c4feeac1d078a785cb35be79198fee6c3928a811811ea54f4c2deeb.
+  Это не unpackaged proof и не успешное завершение reset. Изначальные backups
+  содержат merged view; перед recovery write нужны отдельные backups двух слоёв.
+- Boundary contract передан ae_architect msix_reset_contract: append-only recovery
+  исходного reset/intent без переписывания seals, обе истории сохраняются.
+  ae_implementer отдельно готовит только headless read-only msix-view-probe.ps1
+  для verified unpackaged view; production не запускает. Root sole live controller.
+- У read-only resetdriver26048 нет штатного graceful stop API. При необходимости
+  точное supervised termination допустимо только после backup/готового review,
+  PID+birth639300565585425050/path/proof no AE и no execution lane. Это не graceful
+  shutdown и не завершение Computer Use; helper CU и пользовательские apps не трогаются.
+- Детальный bounded контракт и приёмка: [MSIX recovery](core-msix-layer-recovery-20261112.md).
