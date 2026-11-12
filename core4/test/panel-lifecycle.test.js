@@ -14,7 +14,7 @@ const read = file => Buffer.from(pkg.files[file], 'base64'), expected = panelIde
 const descriptor = { installationId: 'lifecycle-fixture', packageHash: pkg.packageHash, panelToken: 'a'.repeat(64), controlToken: 'b'.repeat(64), cepDir: 'C:/Fixture Core' };
 const selected = deriveComposition(pkg.release, read), cfg = installationConfig(descriptor, selected);
 function storage() { const data = new Map(); return { get length() { return data.size; }, key: i => [...data.keys()][i] ?? null, getItem: k => data.has(k) ? data.get(k) : null, setItem: (k, v) => data.set(k, String(v)), removeItem: k => data.delete(k) }; }
-async function until(fn) { const deadline = Date.now() + 3000; while (!fn()) { if (Date.now() > deadline) assert.fail('lifecycle fixture did not settle'); await new Promise(r => setTimeout(r, 2)); } }
+async function until(fn, describe = () => '') { const deadline = Date.now() + 3000; while (!fn()) { if (Date.now() > deadline) assert.fail('lifecycle fixture did not settle ' + describe()); await new Promise(r => setTimeout(r, 2)); } }
 function nativeHost(current = false, localRegistryScope = false) {
   const loaded = [], context = vm.createContext({ File: function (file) { this.fsName = file; }, CompItem: function () {}, app: { version: '26-fixture', project: { file: null, numItems: 0 } }, $: { evalFile(file) { assert.equal(file.fsName, descriptor.cepDir + '/jsx/registry.jsx'); loaded.push(file.fsName); vm.runInContext(read('cep/jsx/registry.jsx').toString(), context); } } });
   context.$.global = context;
@@ -33,11 +33,12 @@ function panel(t, options = {}) {
   const config = options.config || cfg, local = options.local || storage(), session = options.session || storage(), native = nativeHost(options.currentRegistry, options.localRegistryScope), elements = {}, calls = [], evals = [], proofs = [], markerReads = [], reloads = [], timers = new Set();
   if (options.bootstrapFailure) native.context.$.evalFile = () => { throw new Error('fixture_private_native_error'); };
   let sequence = 0, peerId, nonceCount = 0, polls = 0, unload, click, completeResolve, bootstrapCallback, linkCount = 0;
-  const marker = options.marker || installationMarker({ ...descriptor, panelToken: 'c'.repeat(64) }, selected);
+  let marker = options.marker || installationMarker({ ...descriptor, panelToken: 'c'.repeat(64) }, selected);
   for (const id of ['status', 'detail', 'connect', 'start-over']) elements[id] = { dataset: {}, textContent: '', addEventListener(event, callback) { if (id === 'connect') click = callback; } };
   const pins = { installationId: config.installationId, packageHash: config.packageHash, executorHash: config.executorHash };
   const resetState = options.resetState || { id: null, sessionId: null, ownerBootId: '10000000-0000-4000-8000-000000000001', phase: 'ready', requiresAEExit: false, resetComplete: false, baselineRequired: false, fault: null, eligibility: { action: 'request', reason: 'start_over_ready' }, aeAuthority: false };
-  const reset = createStartOverPanelControl({ installation: { ...descriptor, panelToken: config.panelToken }, status: () => resetState, request: async () => { throw new Error('fixture_forbids_reset_request'); } });
+  const currentReset = () => options.status ? options.status({ polls, links: linkCount }) : resetState;
+  const reset = createStartOverPanelControl({ installation: { ...descriptor, panelToken: config.panelToken }, status: currentReset, request: async () => { throw new Error('fixture_forbids_reset_request'); } });
   function response(body, ok = true) { return { ok, status: ok ? 200 : 403, json: async () => body }; }
   function signed(body) { return response({ body, mac: mac(body, config.panelToken) }); }
   const context = vm.createContext({ JSON, Object, Array, Promise, Error, isFinite, TextEncoder, Uint8Array, AbortController, crypto: webcrypto, localStorage: local, sessionStorage: session, Core4Installation: config,
@@ -48,14 +49,17 @@ function panel(t, options = {}) {
     setTimeout(callback, ms) { const timer = setTimeout(() => { timers.delete(timer); callback(); }, /requestTimedOut|resetRequestTimedOut/.test(callback.name) ? ms : Math.min(ms, 5)); timers.add(timer); return timer; }, clearTimeout(timer) { clearTimeout(timer); timers.delete(timer); },
     async fetch(url, request) {
       const route = new URL(url).pathname, value = JSON.parse(request.body); calls.push({ route, value });
+      if (options.wire) return options.wire({ route, value, request });
+      if (options.intercept) { const override = await options.intercept({ route, value, request, response, signed, local }); if (override !== undefined) return override; }
       if (route.startsWith('/start-over/')) { if (options.resetFailure) throw new TypeError('owner unavailable during status'); const result = await reset.handle(route, value, 'file://'); if (result.body && options.resetTamper) { if (options.resetTamper === 'missing-mac') delete result.mac; else if (options.resetTamper === 'mac') result.mac = '0'.repeat(64); else { result.body[options.resetTamper] = 'wrong'; result.mac = mac({ domain: 'ae-core4/panel-start-over/v1', kind: 'response', body: result.body }, config.panelToken); } } return response(result); }
       if (route === '/challenge') return response({ nonce: String(++nonceCount).padStart(64, '0'), epoch: 'fixture-epoch', controllerId: 'fixture-controller', role: 'panel', origin: 'file://', ...pins });
       if (route === '/link') {
         proofs.push(value); const { proof, ...claim } = value; assert.equal(proof, mac(claim, config.panelToken)); assert.equal(value.extensionRoot, descriptor.cepDir); assert.deepEqual(value.loadedPanel, expected);
-        assert.equal(evals.length, 0, 'no native bootstrap before provisional admission');
+        assert.equal(evals.length, Math.max(0, linkCount - (options.duplicates || 0)), 'one bootstrap per prior accepted link');
         if (++linkCount <= (options.duplicates || 0)) return response({ error: 'duplicate_peer' }, false);
         peerId = value.peerId; sequence = 0;
-        return signed({ linked: true, epoch: 'fixture-epoch', peerId, controllerId: 'fixture-controller', pins, receiverStoreIdentity: 'fixture-receiver', laneClosed: false, acceptedIdentity: expected, registryReady: false, bootstrap: { nonce: 'd'.repeat(64), expectedRegistryBuildId: expected.registryBuildId, deadline: Date.now() + 90000, sessionId: resetState.sessionId }, ...(config.startOverSupported ? { workSessionId: resetState.sessionId, startOver: resetState } : {}) });
+        const state = currentReset();
+        return signed({ linked: true, epoch: 'fixture-epoch', peerId, controllerId: 'fixture-controller', pins, receiverStoreIdentity: options.storeIdentity ? options.storeIdentity(linkCount) : 'fixture-receiver', laneClosed: false, acceptedIdentity: expected, registryReady: false, bootstrap: { nonce: String(linkCount).padStart(64, 'd'), expectedRegistryBuildId: expected.registryBuildId, deadline: Date.now() + 90000, sessionId: state.sessionId }, ...(config.startOverSupported ? { workSessionId: state.sessionId, startOver: state } : {}) });
       }
       const b = value.body; assert.equal(value.mac, mac(b, config.panelToken)); assert.equal(b.epoch, 'fixture-epoch'); assert.equal(b.peerId, peerId); assert.equal(b.sequence, ++sequence);
       const reply = payload => signed({ epoch: b.epoch, peerId, sequence: b.sequence, payload });
@@ -67,6 +71,7 @@ function panel(t, options = {}) {
         return reply(ack);
       }
       assert.equal(route, '/poll'); polls++;
+      if (options.poll) { const result = await options.poll({ polls, reply, response, local }); if (result !== undefined) return result; }
       if (options.command && polls === 1) return reply({ command: { assetKey: config.assetKey, phase: 'inspect', typedPayload: {}, commandId: 'fixture-inspection', originalBinding: { commandId: 'fixture-inspection', executorHash: config.executorHash, phase: 'inspect', receiptRef: 'fixture-receipt' }, pins } });
       if (options.failure) { if (options.failure === 'network') throw new TypeError('network unavailable'); return response({ error: 'peer_auth_or_replay' }, false); }
       return new Promise((resolve, reject) => request.signal.addEventListener('abort', () => reject(Object.assign(new Error('abort'), { name: 'AbortError' })), { once: true }));
@@ -74,7 +79,7 @@ function panel(t, options = {}) {
   });
   vm.runInContext('window=this;', context); vm.runInContext(read('cep/js/poll-dispatcher.js').toString(), context); if (options.beforeStart) options.beforeStart(context); vm.runInContext(read('cep/js/panel.js').toString(), context);
   t.after(async () => { unload(); for (const timer of timers) clearTimeout(timer); await new Promise(r => setTimeout(r, 5)); });
-  return { context, calls, evals, proofs, native, local, session, markerReads, reloads, elements, click: () => click(), get polls() { return polls; }, get completePending() { return !!completeResolve; }, releaseComplete() { completeResolve(); }, get bootstrapPending() { return !!bootstrapCallback; }, releaseBootstrap() { bootstrapCallback(); } };
+  return { context, calls, evals, proofs, native, local, session, markerReads, reloads, elements, click: () => click(), unload: () => unload(), setMarker(value) { marker = value; }, get polls() { return polls; }, get completePending() { return !!completeResolve; }, releaseComplete() { completeResolve(); }, get bootstrapPending() { return !!bootstrapCallback; }, releaseBootstrap() { bootstrapCallback(); } };
 }
 test('panel-lifecycle manifest has no pre-admission ScriptPath loader', () => { assert.doesNotMatch(read('cep/CSXS/manifest.xml').toString(), /<ScriptPath>/); });
 test('panel-lifecycle old registry refreshes only fixed own path; current registry uses no evalFile', async t => {
@@ -425,6 +430,143 @@ test('panel-lifecycle admission retains current saved-result recovery by one com
 });
 
 const initialNullReset = { ...completedReset, id: null, sessionId: null, phase: 'ready', resetComplete: false, baselineRequired: false };
+const BOOT_B = '10000000-0000-4000-8000-000000000002';
+function reconnectOptions(extra = {}) {
+  const state = { ...initialNullReset, sessionId: S1 }, config = { ...cfg, startOverSupported: true };
+  return { state, options: { config, marker: { ...installationMarker(descriptor, selected), panelConfigHash: hash(config) }, status: () => state,
+    poll({ polls, response }) { if (polls === 1) { state.ownerBootId = BOOT_B; return response({ error: 'peer_auth_or_replay' }, false); } }, ...extra } };
+}
+test('panel-lifecycle signed different boot recovers exact old-poll 403 with fresh peer and registry without clicks or reload', async t => {
+  const { options } = reconnectOptions(), f = panel(t, options); await until(() => f.polls === 2);
+  assert.equal(f.reloads.length, 0); assert.equal(f.proofs.length, 2); assert.notEqual(f.proofs[0].peerId, f.proofs[1].peerId); assert.notEqual(f.proofs[0].proof, f.proofs[1].proof);
+  assert.equal(f.evals.length, 2); assert.equal(f.calls.filter(c => c.route === '/registry-ready').length, 2); assert.equal(f.calls.some(c => c.route === '/complete' || c.route === '/start-over/request'), false);
+  assert.deepEqual(f.calls.filter(c => c.route === '/poll').map(c => c.value.body.sequence), [2, 2]);
+});
+test('panel-lifecycle same boot refusal is terminal and marker watcher sends no auth retries', async t => {
+  const { options } = reconnectOptions({ poll: ({ response }) => response({ error: 'peer_auth_or_replay' }, false) });
+  const f = panel(t, options); await until(() => !f.elements.connect.disabled, () => JSON.stringify({ calls: f.calls.map(c => c.route), status: f.elements.status.textContent })); const routes = f.calls.length;
+  await until(() => f.markerReads.length >= 3); assert.equal(f.calls.length, routes); assert.equal(f.proofs.length, 1); assert.equal(f.evals.length, 1); assert.equal(f.reloads.length, 0);
+});
+test('panel-lifecycle only exact poll-route HTTP403 closed refusal permits independent signed boot verification', async t => {
+  for (const mode of ['401', '500', 'extra', 'wrong-code', 'exception', 'complete-route']) {
+    const { options } = reconnectOptions({ poll({ response }) {
+      if (mode === 'exception') throw new Error('peer_auth_or_replay');
+      if (mode === 'complete-route') return undefined;
+      const r = response(mode === 'extra' ? { error: 'peer_auth_or_replay', retry: true } : { error: mode === 'wrong-code' ? 'peer_auth' : 'peer_auth_or_replay' }, false);
+      if (mode === '401' || mode === '500') r.status = Number(mode); return r;
+    }, ...(mode === 'complete-route' ? { command: true, completeFailure: true } : {}) });
+    const f = panel(t, options); await until(() => !f.elements.connect.disabled);
+    assert.equal(f.calls.filter(c => c.route === '/start-over/status').length, 1); assert.equal(f.proofs.length, 1); assert.equal(f.reloads.length, 0);
+  }
+});
+test('panel-lifecycle recovery signed status rejects MAC nonce origin pins and schema tampering before new link or native', async t => {
+  for (const mode of ['mac', 'nonce', 'origin', 'packageHash', 'installationId', 'epoch', 'schema']) {
+    const { options } = reconnectOptions();
+    const reset = createStartOverPanelControl({ installation: descriptor, status: options.status, request: async () => { throw new Error('no request'); } });
+    options.intercept = async ({ route, value, response }) => {
+      if (!route.startsWith('/start-over/')) return;
+      const result = JSON.parse(JSON.stringify(await reset.handle(route, value, 'file://')));
+      if (result.body && options.status().ownerBootId === BOOT_B) {
+        if (mode === 'mac') result.mac = '0'.repeat(64);
+        else { if (mode === 'schema') result.body.status.extra = true; else result.body[mode] = 'wrong'; result.mac = mac({ domain: 'ae-core4/panel-start-over/v1', kind: 'response', body: result.body }, cfg.panelToken); }
+      }
+      return response(result);
+    };
+    const f = panel(t, options); await until(() => !f.elements.connect.disabled); assert.equal(f.proofs.length, 1); assert.equal(f.evals.length, 1); assert.equal(f.reloads.length, 0);
+  }
+});
+test('panel-lifecycle recovery rejects changed receiver store before any new native bootstrap', async t => {
+  const { options } = reconnectOptions({ storeIdentity: links => links === 1 ? 'fixture-receiver' : 'foreign-receiver' });
+  const f = panel(t, options); await until(() => !f.elements.connect.disabled); assert.match(f.elements.status.textContent, /receiver_store_changed/); assert.equal(f.proofs.length, 2); assert.equal(f.evals.length, 1); assert.equal(f.calls.filter(c => c.route === '/registry-ready').length, 1);
+});
+test('panel-lifecycle post-poll status outage resumes same boot or reconnects changed boot after idle retry', async t => {
+  for (const changed of [false, true]) {
+    let polled = false, failures = 0;
+    const { state, options } = reconnectOptions({ poll: ({ polls, reply }) => { polled = true; return polls === 1 ? reply({ command: null }) : undefined; } });
+    options.intercept = ({ route }) => { if (route === '/start-over/challenge' && polled && ++failures <= 2) { if (changed) state.ownerBootId = BOOT_B; throw new TypeError('temporary status outage'); } };
+    let f = panel(t, options); await until(() => f.polls === 2);
+    assert.equal(f.evals.length, changed ? 2 : 1); assert.equal(f.proofs.length, changed ? 2 : 1); assert.equal(f.calls.some(c => c.route === '/start-over/request'), false);
+  }
+});
+test('panel-lifecycle recovery rechecks strict idle after each signed verification boundary preserving exact latch bytes', async t => {
+  for (const boundary of ['challenge', 'status', 'new-link']) for (const raw of ['{corrupt', 'null', JSON.stringify({ frame: { commandId: 'saved' }, result: { saved: true } })]) {
+    const { options } = reconnectOptions(); const key = legacyPhysicalKey + '-session-' + S1;
+    options.intercept = ({ route, local }) => { if (options.status().ownerBootId === BOOT_B && route === ({ challenge: '/start-over/challenge', status: '/start-over/status', 'new-link': '/link' })[boundary]) local.setItem(key, raw); };
+    const f = panel(t, options); await until(() => !f.elements.connect.disabled); assert.equal(f.local.getItem(key), raw); assert.equal(f.evals.length, 1); assert.equal(f.reloads.length, 0); assert.equal(f.calls.some(c => c.route === '/complete'), false);
+  }
+});
+test('panel-lifecycle late marker publication reloads once without retrying stopped auth and unload cancels watcher', async t => {
+  const same = installationMarker(descriptor, selected), { options } = reconnectOptions({ poll: ({ response }) => response({ error: 'peer_auth_or_replay' }, false) });
+  const f = panel(t, options); await until(() => !f.elements.connect.disabled); const count = f.calls.length; await until(() => f.markerReads.length >= 3); f.setMarker({ ...same, panelConfigHash: 'f'.repeat(64) }); await until(() => f.reloads.length === 1); assert.equal(f.calls.length, count); assert.equal(f.evals.length, 1);
+  const second = panel(t, options); await until(() => !second.elements.connect.disabled); second.unload(); const reads = second.markerReads.length; second.setMarker({ ...same, panelConfigHash: 'f'.repeat(64) }); await new Promise(r => setTimeout(r, 25)); assert.equal(second.markerReads.length, reads); assert.equal(second.reloads.length, 0);
+});
+test('panel-lifecycle late marker watcher stops when a new raw or registry latch appears and preserves bytes', async t => {
+  for (const registry of [false, true]) {
+    const { options } = reconnectOptions({ poll: ({ response }) => response({ error: 'peer_auth_or_replay' }, false) }), f = panel(t, options); await until(() => !f.elements.connect.disabled);
+    const key = registry ? bootKey : legacyPhysicalKey + '-session-' + S1, raw = '{unresolved exact bytes'; f.local.setItem(key, raw); f.setMarker({ ...installationMarker(descriptor, selected), panelConfigHash: 'f'.repeat(64) }); await new Promise(r => setTimeout(r, 25)); assert.equal(f.reloads.length, 0); assert.equal(f.local.getItem(key), raw); assert.equal(f.proofs.length, 1);
+  }
+});
+test('panel-lifecycle manual start cancels the stopped marker watcher before a new channel', async t => {
+  const { options } = reconnectOptions({ poll: ({ polls, response }) => polls === 1 ? response({ error: 'peer_auth_or_replay' }, false) : undefined }), f = panel(t, options);
+  await until(() => !f.elements.connect.disabled); f.click(); await until(() => f.polls === 2); const reads = f.markerReads.length; f.setMarker({ ...options.marker, panelConfigHash: 'f'.repeat(64) }); await new Promise(r => setTimeout(r, 25)); assert.equal(f.markerReads.length, reads); assert.equal(f.reloads.length, 0); assert.equal(f.proofs.length, 2);
+});
+test('panel-lifecycle background verification never relinks blocked faulted or AE-exit-required owners', async t => {
+  for (const patch of [{ phase: 'baseline-required' }, { fault: 'retained_unknown' }, { requiresAEExit: true }]) {
+    const { state, options } = reconnectOptions();
+    options.poll = ({ response }) => { Object.assign(state, patch, { ownerBootId: BOOT_B }); return response({ error: 'peer_auth_or_replay' }, false); };
+    const f = panel(t, options); await until(() => !f.elements.connect.disabled); assert.equal(f.proofs.length, 1); assert.equal(f.evals.length, 1); assert.equal(f.calls.some(c => c.route === '/start-over/request'), false);
+  }
+});
+test('panel-lifecycle transport recovery admits healthy same or changed boot but rejects unsafe changed boot before bootstrap', async t => {
+  for (const patch of [{}, { ownerBootId: BOOT_B }, { ownerBootId: BOOT_B, phase: 'baseline-required' }, { ownerBootId: BOOT_B, requiresAEExit: true }, { ownerBootId: BOOT_B, fault: 'retained_unknown' }]) {
+    const unsafe = patch.phase || patch.requiresAEExit || patch.fault, { state, options } = reconnectOptions();
+    options.poll = ({ polls }) => { if (polls === 1) { Object.assign(state, patch); throw new TypeError('transport disappeared'); } };
+    const f = panel(t, options); if (unsafe) await until(() => !f.elements.connect.disabled); else await until(() => f.polls === 2);
+    assert.equal(f.proofs.length, 2); assert.equal(f.evals.length, unsafe ? 1 : 2); assert.equal(f.calls.filter(c => c.route === '/registry-ready').length, unsafe ? 1 : 2); assert.equal(f.polls, unsafe ? 1 : 2); assert.equal(f.calls.some(c => c.route === '/complete' || c.route === '/start-over/request'), false);
+  }
+});
+test('panel-lifecycle changed session goes through separate signed start-over watcher without reset request', async t => {
+  const { state, options } = reconnectOptions();
+  options.poll = ({ polls, response }) => { if (polls === 1) { Object.assign(state, { ownerBootId: BOOT_B, sessionId: S2 }); return response({ error: 'peer_auth_or_replay' }, false); } };
+  const f = panel(t, options); await until(() => f.polls === 2); assert.equal(f.proofs.length, 2); assert.equal(f.calls.filter(c => c.route === '/start-over/status').length, 4); assert.equal(f.calls.some(c => c.route === '/start-over/request'), false); assert.equal(f.evals.length, 2);
+});
+test('panel-lifecycle marker watcher obeys native callback and outstanding dispatcher operation guards', async t => {
+  for (const mode of ['callback', 'ack']) {
+    const { options } = reconnectOptions({ poll: ({ response }) => response({ error: 'peer_auth_or_replay' }, false) }), f = panel(t, options); await until(() => !f.elements.connect.disabled);
+    let release, pending;
+    if (mode === 'callback') f.context.__aeCore4NativeCallbackGuard.active = { preserved: true };
+    else {
+      const api = f.context.Core4PollDispatcher, key = api.storageKey(cfg.installationId, S1), record = { frame: { commandId: 'old-ack', originalBinding: { receiptRef: 'old-ref' } }, result: { preserved: true } };
+      f.local.setItem(key, JSON.stringify(record)); pending = api.createDispatcher({ installationId: cfg.installationId, sessionId: S1, storage: f.local, complete: () => new Promise(resolve => { release = () => resolve({ ack: { commandId: 'old-ack', receiptRef: 'old-ref' } }); }) }).recover();
+    }
+    f.setMarker({ ...options.marker, panelConfigHash: 'f'.repeat(64) }); await new Promise(r => setTimeout(r, 25)); assert.equal(f.reloads.length, 0); assert.equal(f.proofs.length, 1); assert.equal(f.evals.length, 1);
+    if (pending) { release(); await pending; }
+  }
+});
+test('panel-lifecycle actual TEMP HTTP owner A to B rejects old epoch then signs new boot and preserves journal prefix', async t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-owner-reconnect-')), installation = { ...descriptor }, state = { ...initialNullReset, sessionId: S1 };
+  let peer, port, switched = false, journalBefore, oldPoll, newPoll, seenPeers = [];
+  async function owner() {
+    const control = createStartOverPanelControl({ installation, status: () => state, request: async () => { throw new Error('reset forbidden'); } });
+    peer = createHttpPeer({ installation, directory, asset: { assetKey: cfg.assetKey, executorHash: cfg.executorHash }, expectedPanelIdentity: expected, workSessionId: S1, startOverControl: control, port: 0, pollTimeout: 1000 });
+    await peer.listen(); port = peer.status().port; assert.ok(port > 0 && port !== 3457);
+  }
+  await owner();
+  t.after(async () => { await peer.close(); assert.ok(path.resolve(directory).startsWith(path.join(os.tmpdir(), 'core4-owner-reconnect-'))); fs.rmSync(directory, { recursive: true, force: true }); });
+  const config = { ...cfg, startOverSupported: true }, f = panel(t, { config, marker: { ...installationMarker(descriptor, selected), panelConfigHash: hash(config) }, async wire({ route, value, request }) {
+    if (route === '/poll' && !switched) {
+      switched = true; oldPoll = value; journalBefore = fs.readFileSync(path.join(directory, 'completions.ndjson')); await peer.close(); state.ownerBootId = BOOT_B; await owner();
+    } else if (route === '/poll') newPoll = value;
+    if (route === '/link') seenPeers.push(value.peerId);
+    const response = await fetch('http://127.0.0.1:' + port + route, { ...request, headers: { ...request.headers, Origin: 'file://' } });
+    if (route === '/poll' && !newPoll) { assert.equal(response.status, 403); const body = await response.clone().json(); assert.deepEqual(body, { error: 'peer_auth_or_replay' }); }
+    return response;
+  } });
+  await until(() => newPoll && peer.status().peer.registryReady === true);
+  f.unload(); assert.equal(f.evals.length, 2); assert.equal(f.reloads.length, 0); assert.equal(seenPeers.length, 2); assert.notEqual(seenPeers[0], seenPeers[1]); assert.notEqual(oldPoll.body.epoch, newPoll.body.epoch); assert.equal(oldPoll.body.sequence, 2); assert.equal(newPoll.body.sequence, 2); assert.notEqual(oldPoll.mac, newPoll.mac);
+  const journalAfter = fs.readFileSync(path.join(directory, 'completions.ndjson')); assert.deepEqual(journalAfter.subarray(0, journalBefore.length), journalBefore);
+  const events = journalAfter.toString().trim().split('\n').map(JSON.parse); assert.equal(events.filter(e => e.type === 'begin').length, 2); assert.equal(events.filter(e => e.type === 'complete').length, 2); assert.equal(events.some(e => e.type === 'unknown'), false); assert.equal(f.calls.some(c => c.route === '/complete' || c.route === '/start-over/request'), false);
+});
 function currentResultRecord() { return { frame: { commandId: 'current-inspection', originalBinding: { commandId: 'current-inspection', executorHash: cfg.executorHash, phase: 'inspect', receiptRef: 'current-receipt' }, pins: { installationId: cfg.installationId, packageHash: cfg.packageHash, executorHash: cfg.executorHash } }, result: { alreadyExecuted: true } }; }
 test('panel-lifecycle signed initial explicit null session preserves current base result ACK-only recovery', async t => {
   const local = storage(); local.setItem(legacyPhysicalKey, JSON.stringify(currentResultRecord()));

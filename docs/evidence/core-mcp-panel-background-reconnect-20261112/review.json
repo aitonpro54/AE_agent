@@ -1,0 +1,49 @@
+{
+  "collectedAt": "2026-11-12T17:49:51.752Z",
+  "reviewer": {
+    "role": "ae_reviewer",
+    "scope": "Independent read-only review; no tests, live calls or writes"
+  },
+  "source": {
+    "result": "ACCEPT",
+    "openP1P2": 0,
+    "files": {
+      "core4/cep/js/panel.js": "69eeb81c19157fc28224052665f396ca5156a8fa375db4df2bfdba986b8b8fbb",
+      "core4/test/panel-lifecycle.test.js": "c0b84ee7beedef1a8ed42326b1592372affeba70a1a83269f8a9dc79274cda46",
+      "core4/test/panel-reconnect.test.js": "3384567ab5407858e9fd418c7e75411e14530631d593cb092ec0b2151878b0cf"
+    },
+    "resolvedFinding": "Changed boot after transport loss must always require ready/no AE exit/no fault; fixed before final tests and package."
+  },
+  "live": {
+    "result": "ACCEPT bounded desktop installation and background owner restart/native proof",
+    "openP1P2": 0,
+    "sanitizedEvidenceConsistentWithPrivateRecords": true,
+    "freshAuthenticatedPeerAndRegistryBeforeAcquire": true,
+    "observationRef": "observation-d305af6b-8132-4b94-b699-73c426877dc6",
+    "leaseReleased": true,
+    "sameAEAndSessionAndReceiverStore": true,
+    "protectedExactFiles": 828,
+    "nonLogPreferencesExact": 80,
+    "appendOnlyLogs": 10,
+    "userAepFilesPreserved": 4,
+    "ownAepPreserved": true,
+    "receiverRestartBytes": {
+      "before": 74370,
+      "after": 79437,
+      "exactPrefix": true,
+      "newRecords": 4
+    },
+    "ledgerBytes": {
+      "before": 140900,
+      "after": 140900,
+      "unchanged": true
+    }
+  },
+  "limits": [
+    "Initial CU activation excluded from background acceptance.",
+    "Exact403 versus transport-loss live subpath not identified without packet capture.",
+    "Subsequent real package-marker update remains open.",
+    "Current-chat MCP not refreshed; separate CLI proof does not close it.",
+    "Full release and MSI live portability not certified."
+  ]
+}

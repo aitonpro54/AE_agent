@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-11-12T17:44:02.768Z",
+  "scope": "Initial activation only; excluded from background acceptance",
+  "controller": "root",
+  "runtime": "installed bundled @oai/sky",
+  "actions": [
+    "Activated existing AE window",
+    "Closed stopped Core floating panel once",
+    "Opened Window > Extensions > AE Agent Core once"
+  ],
+  "observation": "Visible Core 4.2.6: Канал Core 4.2.6 готов к командам. No modal dialog visible. AEP title unchanged.",
+  "projectMutation": false,
+  "aeRestart": false,
+  "ensureInvoked": false,
+  "uiCallsEnded": true,
+  "teardown": "No native teardown API documented; no further UI calls. Integration disablement not claimed.",
+  "mcpUi": {
+    "returnedDisplayName": "ChatGPT",
+    "appId": "OpenAI.Codex_2p2nqsd0c76g0!App",
+    "actions": 0,
+    "restriction": "Bundled computer-use docs/guidance.md:241 prohibits automation of the ChatGPT desktop app UI."
+  }
+}

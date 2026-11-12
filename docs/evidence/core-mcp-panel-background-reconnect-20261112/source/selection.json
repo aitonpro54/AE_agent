@@ -1,0 +1,1707 @@
+{
+  "mode": "scoped",
+  "certification": "selected-artifacts-only",
+  "releaseCertified": false,
+  "contractImpacts": [],
+  "checks": [
+    {
+      "check": "panel-reconnect",
+      "reasons": [
+        "changed owner panel-reconnect: core4/cep/js/panel.js",
+        "changed owner panel-reconnect: core4/test/panel-reconnect.test.js",
+        "changed component dependency cep/js/panel.js: core4/cep/js/panel.js",
+        "changed component dependency test/panel-reconnect.test.js: core4/test/panel-reconnect.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/cep/js/panel.js",
+          "panel-reconnect",
+          "panel-reconnect"
+        ],
+        [
+          "core4/test/panel-reconnect.test.js",
+          "panel-reconnect",
+          "panel-reconnect"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/js/panel.js",
+          "panel-reconnect"
+        ],
+        [
+          "core4/test/panel-reconnect.test.js",
+          "test/panel-reconnect.test.js",
+          "panel-reconnect"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-reconnect",
+        "test/panel-reconnect.test.js"
+      ],
+      "evidenceKey": "a313808e0ab77578719fe7df10fa285e3310642addd547d8a86e897ac1a650f4",
+      "reason": "changed owner panel-reconnect: core4/cep/js/panel.js; changed owner panel-reconnect: core4/test/panel-reconnect.test.js; changed component dependency cep/js/panel.js: core4/cep/js/panel.js; changed component dependency test/panel-reconnect.test.js: core4/test/panel-reconnect.test.js",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "panel-reconnect",
+          "panel-reconnect"
+        ],
+        [
+          "core4/test/panel-reconnect.test.js",
+          "panel-reconnect",
+          "panel-reconnect"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/js/panel.js",
+          "panel-reconnect"
+        ],
+        [
+          "core4/test/panel-reconnect.test.js",
+          "test/panel-reconnect.test.js",
+          "panel-reconnect"
+        ]
+      ],
+      "dependencies": [
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "protocol/json.js",
+        "test/panel-reconnect.test.js"
+      ]
+    },
+    {
+      "check": "panel-lifecycle",
+      "reasons": [
+        "changed owner panel-lifecycle: core4/test/panel-lifecycle.test.js",
+        "changed component dependency cep/: core4/cep/js/panel.js",
+        "changed component dependency test/panel-lifecycle.test.js: core4/test/panel-lifecycle.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/panel-lifecycle.test.js",
+          "panel-lifecycle",
+          "panel-lifecycle"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "panel-lifecycle"
+        ],
+        [
+          "core4/test/panel-lifecycle.test.js",
+          "test/panel-lifecycle.test.js",
+          "panel-lifecycle"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-lifecycle",
+        "test/panel-lifecycle.test.js"
+      ],
+      "evidenceKey": "087914581ea809746d1eb3947ca3d57cca68ebfd508316fee851b36a2d8291e4",
+      "reason": "changed owner panel-lifecycle: core4/test/panel-lifecycle.test.js; changed component dependency cep/: core4/cep/js/panel.js; changed component dependency test/panel-lifecycle.test.js: core4/test/panel-lifecycle.test.js",
+      "dependencyPath": [
+        [
+          "core4/test/panel-lifecycle.test.js",
+          "panel-lifecycle",
+          "panel-lifecycle"
+        ],
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "panel-lifecycle"
+        ],
+        [
+          "core4/test/panel-lifecycle.test.js",
+          "test/panel-lifecycle.test.js",
+          "panel-lifecycle"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/catalog.json",
+        "config/compositions/manual-layer-overlay.json",
+        "config/compositions/manual-media-layers.json",
+        "config/compositions/manual-project-assembly.json",
+        "config/compositions/manual-project-lifecycle.json",
+        "config/compositions/manual-project-save.json",
+        "config/compositions/manual-titles-variants.json",
+        "config/compositions/operator-frame-export.json",
+        "config/compositions/operator-photo-montage.json",
+        "config/compositions/operator-project-lifecycle.json",
+        "config/compositions/operator-r1-minimal.json",
+        "config/compositions/operator-render-jobs.json",
+        "config/compositions/operator-titles-photo-pilot.json",
+        "config/compositions/operator-titles-pilot.json",
+        "config/compositions/operator-workflows-montage.json",
+        "config/compositions/operator-workflows.json",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/panel-identity.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/composition-spec.js",
+        "runtime/source-package.json",
+        "runtime/start-over-panel-control.js",
+        "runtime/stdio-entry.js",
+        "test/panel-lifecycle.test.js",
+        "tools/composition-spec.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/stopped-update.js"
+      ]
+    },
+    {
+      "check": "version-profile-compatibility",
+      "reasons": [
+        "changed component dependency cep/: core4/cep/js/panel.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "version-profile-compatibility"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=release policy|portable owned-text profile",
+        "test/version-profile-compatibility.test.js"
+      ],
+      "evidenceKey": "5fc0ba1633e864c83ea11b70657cb92bf3d345529b6c26a552487c6c9828d35e",
+      "reason": "changed component dependency cep/: core4/cep/js/panel.js",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "version-profile-compatibility"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/compositions/manual-layer-overlay.json",
+        "config/compositions/manual-media-layers.json",
+        "config/compositions/manual-project-assembly.json",
+        "config/compositions/manual-project-lifecycle.json",
+        "config/compositions/manual-project-save.json",
+        "config/compositions/manual-titles-variants.json",
+        "config/compositions/operator-frame-export.json",
+        "config/compositions/operator-photo-montage.json",
+        "config/compositions/operator-project-lifecycle.json",
+        "config/compositions/operator-r1-minimal.json",
+        "config/compositions/operator-render-jobs.json",
+        "config/compositions/operator-titles-photo-pilot.json",
+        "config/compositions/operator-titles-pilot.json",
+        "config/compositions/operator-workflows-montage.json",
+        "config/compositions/operator-workflows.json",
+        "config/validation-map.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/artifact.json",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/host-dispatcher.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/manifest.json",
+        "integrations/cep/panel-identity.js",
+        "integrations/cep/peer-protocol.js",
+        "integrations/cep/transport.js",
+        "integrations/cep/wire.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/adobe-child-environment.js",
+        "runtime/ae-panel-startup.js",
+        "runtime/ae-readiness.js",
+        "runtime/aerender-jobs.js",
+        "runtime/aerender-profile.js",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/comp-frame-export-proof.js",
+        "runtime/comp-render-proof.js",
+        "runtime/composition-spec.js",
+        "runtime/controller-lease.js",
+        "runtime/host/ensure-panel.jsx",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/layer-insert-proof.js",
+        "runtime/layer-overlay-proof.js",
+        "runtime/manual-policy.js",
+        "runtime/media-layer-proof.js",
+        "runtime/montage-mandate.js",
+        "runtime/native-read-disposition.js",
+        "runtime/operator-confirmation.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/photo-source-proof.js",
+        "runtime/png-proof.js",
+        "runtime/point-layout-proof.js",
+        "runtime/profiles.json",
+        "runtime/project-assembly-proof.js",
+        "runtime/project-file.js",
+        "runtime/project-lifecycle-proof.js",
+        "runtime/project-save-proof.js",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/render-job-history.js",
+        "runtime/render-job-maintenance.js",
+        "runtime/render-job-owner.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/text-layer-proof.js",
+        "runtime/text-variant-proof.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/fixed-format1-package.js",
+        "test/fixtures/legacy-panel-v1.txt",
+        "test/fixtures/legacy-poll-dispatcher-v1.txt",
+        "test/fixtures/legacy-project-inspection-v1.txt",
+        "test/fixtures/portable-text-runtime.js",
+        "test/fixtures/text-layer-ae.js",
+        "test/helpers.js",
+        "test/version-profile-compatibility.test.js",
+        "tools/composition-spec.js",
+        "tools/disposition-install-preflight.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "tools/package-standalone-installer.js",
+        "tools/standalone-installer.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "catalog-revision",
+      "reasons": [
+        "changed component dependency cep/: core4/cep/js/panel.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "catalog-revision"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=catalog-revision",
+        "test/catalog-revision.test.js"
+      ],
+      "evidenceKey": "82789d2958dfa8db14c74849f7ef4805317698fa6bfac435b56621731cd1056a",
+      "reason": "changed component dependency cep/: core4/cep/js/panel.js",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "catalog-revision"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/compositions/manual-layer-overlay.json",
+        "config/compositions/manual-media-layers.json",
+        "config/compositions/manual-project-assembly.json",
+        "config/compositions/manual-project-lifecycle.json",
+        "config/compositions/manual-project-save.json",
+        "config/compositions/manual-titles-variants.json",
+        "config/compositions/operator-frame-export.json",
+        "config/compositions/operator-photo-montage.json",
+        "config/compositions/operator-project-lifecycle.json",
+        "config/compositions/operator-r1-minimal.json",
+        "config/compositions/operator-render-jobs.json",
+        "config/compositions/operator-titles-photo-pilot.json",
+        "config/compositions/operator-titles-pilot.json",
+        "config/compositions/operator-workflows-montage.json",
+        "config/compositions/operator-workflows.json",
+        "config/validation-map.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/artifact.json",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/host-dispatcher.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/manifest.json",
+        "integrations/cep/panel-identity.js",
+        "integrations/cep/peer-protocol.js",
+        "integrations/cep/transport.js",
+        "integrations/cep/wire.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/adobe-child-environment.js",
+        "runtime/ae-panel-startup.js",
+        "runtime/ae-readiness.js",
+        "runtime/aerender-jobs.js",
+        "runtime/aerender-profile.js",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/comp-frame-export-proof.js",
+        "runtime/comp-render-proof.js",
+        "runtime/composition-spec.js",
+        "runtime/controller-lease.js",
+        "runtime/host/ensure-panel.jsx",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/layer-insert-proof.js",
+        "runtime/layer-overlay-proof.js",
+        "runtime/manual-policy.js",
+        "runtime/media-layer-proof.js",
+        "runtime/montage-mandate.js",
+        "runtime/native-read-disposition.js",
+        "runtime/operator-confirmation.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/photo-source-proof.js",
+        "runtime/png-proof.js",
+        "runtime/point-layout-proof.js",
+        "runtime/profiles.json",
+        "runtime/project-assembly-proof.js",
+        "runtime/project-file.js",
+        "runtime/project-lifecycle-proof.js",
+        "runtime/project-save-proof.js",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/render-job-history.js",
+        "runtime/render-job-maintenance.js",
+        "runtime/render-job-owner.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/text-layer-proof.js",
+        "runtime/text-variant-proof.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/catalog-revision.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/helpers.js",
+        "tools/composition-spec.js",
+        "tools/package-installable.js",
+        "tools/seal.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "composition-spec",
+      "reasons": [
+        "changed component dependency cep/: core4/cep/js/panel.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "composition-spec"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=composition-spec",
+        "test/composition-spec.test.js"
+      ],
+      "evidenceKey": "96087833d3c0f2f33d142bdba48f85833257c495ea1a746604f5f5c1fd396c98",
+      "reason": "changed component dependency cep/: core4/cep/js/panel.js",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "composition-spec"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/compositions/manual-layer-overlay.json",
+        "config/compositions/manual-media-layers.json",
+        "config/compositions/manual-project-assembly.json",
+        "config/compositions/manual-project-lifecycle.json",
+        "config/compositions/manual-project-save.json",
+        "config/compositions/manual-titles-variants.json",
+        "config/compositions/operator-frame-export.json",
+        "config/compositions/operator-photo-montage.json",
+        "config/compositions/operator-project-lifecycle.json",
+        "config/compositions/operator-r1-minimal.json",
+        "config/compositions/operator-render-jobs.json",
+        "config/compositions/operator-titles-photo-pilot.json",
+        "config/compositions/operator-titles-pilot.json",
+        "config/compositions/operator-workflows-montage.json",
+        "config/compositions/operator-workflows.json",
+        "config/validation-map.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/artifact.json",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/host-dispatcher.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/manifest.json",
+        "integrations/cep/panel-identity.js",
+        "integrations/cep/peer-protocol.js",
+        "integrations/cep/transport.js",
+        "integrations/cep/wire.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/adobe-child-environment.js",
+        "runtime/ae-panel-startup.js",
+        "runtime/ae-readiness.js",
+        "runtime/aerender-jobs.js",
+        "runtime/aerender-profile.js",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/comp-frame-export-proof.js",
+        "runtime/comp-render-proof.js",
+        "runtime/composition-spec.js",
+        "runtime/controller-lease.js",
+        "runtime/host/ensure-panel.jsx",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/layer-insert-proof.js",
+        "runtime/layer-overlay-proof.js",
+        "runtime/manual-policy.js",
+        "runtime/media-layer-proof.js",
+        "runtime/montage-mandate.js",
+        "runtime/native-read-disposition.js",
+        "runtime/operator-confirmation.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/photo-source-proof.js",
+        "runtime/png-proof.js",
+        "runtime/point-layout-proof.js",
+        "runtime/profiles.json",
+        "runtime/project-assembly-proof.js",
+        "runtime/project-file.js",
+        "runtime/project-lifecycle-proof.js",
+        "runtime/project-save-proof.js",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/render-job-history.js",
+        "runtime/render-job-maintenance.js",
+        "runtime/render-job-owner.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/text-layer-proof.js",
+        "runtime/text-variant-proof.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/composition-spec.test.js",
+        "test/fixtures/fixed-format1-package.js",
+        "test/fixtures/legacy-panel-v1.txt",
+        "test/fixtures/legacy-poll-dispatcher-v1.txt",
+        "test/fixtures/legacy-project-inspection-v1.txt",
+        "tools/adopt-host.js",
+        "tools/aerender-jobs.js",
+        "tools/aerender-profile.js",
+        "tools/ame-isolated-export.ps1",
+        "tools/ame-isolated-host.ps1",
+        "tools/ame-media-export.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/check-package-location.js",
+        "tools/composition-spec.js",
+        "tools/configure-render-job-toolchain.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-start-over.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-aerender-operator.js",
+        "tools/package-capability.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/package-visual-review.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/repair-mixed-installation.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/validation-reuse.js",
+        "tools/visual-review.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "ae-panel-startup",
+      "reasons": [
+        "changed component dependency cep/: core4/cep/js/panel.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "ae-panel-startup"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=ae-panel-startup",
+        "test/ae-panel-startup.test.js"
+      ],
+      "evidenceKey": "cfc469dc6bbf1e0d14c9322ce6cbff5e316acc26e60332319d17c8afb99dfb60",
+      "reason": "changed component dependency cep/: core4/cep/js/panel.js",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "ae-panel-startup"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/panel-identity.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/adobe-child-environment.js",
+        "runtime/ae-panel-startup.js",
+        "runtime/ae-readiness.js",
+        "runtime/attachment-owner.js",
+        "runtime/client-stdio.js",
+        "runtime/composition-spec.js",
+        "runtime/host/ensure-panel.jsx",
+        "runtime/source-package.json",
+        "runtime/stdio-entry.js",
+        "runtime/windows-owner-process.js",
+        "test/ae-panel-startup.test.js",
+        "tools/composition-spec.js",
+        "tools/package-installable.js"
+      ]
+    },
+    {
+      "check": "panel-start-over",
+      "reasons": [
+        "changed component dependency cep/js/panel.js: core4/cep/js/panel.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/js/panel.js",
+          "panel-start-over"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-start-over",
+        "test/panel-start-over.test.js"
+      ],
+      "evidenceKey": "1fe21f875099de0b8cefa40500b0b5109350eff8f2bb5949544db7bc6c531999",
+      "reason": "changed component dependency cep/js/panel.js: core4/cep/js/panel.js",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/js/panel.js",
+          "panel-start-over"
+        ]
+      ],
+      "dependencies": [
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "integrations/cep/peer-protocol.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/composition-spec.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/stdio-entry.js",
+        "test/panel-start-over.test.js"
+      ]
+    }
+  ],
+  "executionBatches": [
+    {
+      "checks": [
+        "panel-reconnect"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:panel-reconnect)",
+        "test/panel-reconnect.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "panel-lifecycle"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:panel-lifecycle)",
+        "test/panel-lifecycle.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "version-profile-compatibility"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:release policy|portable owned-text profile)",
+        "test/version-profile-compatibility.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "catalog-revision"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:catalog-revision)",
+        "test/catalog-revision.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "composition-spec"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:composition-spec)",
+        "test/composition-spec.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "ae-panel-startup"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:ae-panel-startup)",
+        "test/ae-panel-startup.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "panel-start-over"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:panel-start-over)",
+        "test/panel-start-over.test.js"
+      ]
+    }
+  ],
+  "deferredCoverage": [
+    {
+      "check": "mixed-installation-repair",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "mixed-installation-repair"
+        ]
+      ]
+    },
+    {
+      "check": "package-location",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "package-location"
+        ]
+      ]
+    },
+    {
+      "check": "start-over-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "start-over-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "start-over-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "start-over-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "stopped-host-readoption-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "stopped-update-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "stopped-update"
+        ]
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "legacy-owner-migration"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "owner-installation"
+        ]
+      ]
+    },
+    {
+      "check": "owner-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "owner-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "windows-cim-probe"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "human-window",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "human-window"
+        ]
+      ]
+    },
+    {
+      "check": "manual-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "manual-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "point-layout-integration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "point-layout-integration"
+        ]
+      ]
+    },
+    {
+      "check": "text-layer-integration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "text-layer-integration"
+        ]
+      ]
+    },
+    {
+      "check": "comp-frame-export",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "comp-frame-export"
+        ]
+      ]
+    },
+    {
+      "check": "frame-export-slot",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "frame-export-slot"
+        ]
+      ]
+    },
+    {
+      "check": "project-assembly",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "project-assembly"
+        ]
+      ]
+    },
+    {
+      "check": "project-save",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "project-save"
+        ]
+      ]
+    },
+    {
+      "check": "project-lifecycle",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "project-lifecycle"
+        ]
+      ]
+    },
+    {
+      "check": "media-layers",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "media-layers"
+        ]
+      ]
+    },
+    {
+      "check": "layer-overlay",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "layer-overlay"
+        ]
+      ]
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "installable-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/test/panel-reconnect.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/panel-lifecycle.test.js",
+          "dependency": "test/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/test/panel-reconnect.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/panel-lifecycle.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "native-read-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "installed-composition"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "exact-f548-transition"
+        ]
+      ]
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/cep/js/panel.js",
+          "dependency": "cep/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/cep/js/panel.js",
+          "cep/",
+          "standalone-installer"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,174 @@
+{
+  "observedAt": "2026-11-12T17:48:04.055Z",
+  "result": "PASS-bounded-background-owner-restart",
+  "scope": "Real same-package/credentials owner stop/resume/start with already activated candidate panel; initial UI activation excluded.",
+  "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+  "packageHash": "75a95aa5738f313f4d00e0f40b80c57048de1d818acb64c0d072cc0b6cbe3c45",
+  "distributionHash": "73543e6e0e4013663266ea269782bd61daacaedb79c334abdca0f4a1f17bb7f1",
+  "panelIdentity": {
+    "extensionId": "com.codex.aeagentcore4.panel",
+    "panelBuildId": "2754542e09840c74267d075239b86a90221b78764b8f00e2625b495ca79f58da",
+    "productVersion": "4.2.6",
+    "protocolVersion": 1,
+    "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+  },
+  "maintenanceId": "5d735a2c-a90a-4fbb-8eaa-1f95c49d3bcd",
+  "stopAttempts": 1,
+  "resumeAttempts": 1,
+  "before": {
+    "owner": {
+      "birthTicks": "639301020137988530",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+          "eventCount": 42,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "59d8b188720ffe50d98f35a06eab4b875ffecbd9796e1767bf0edfba8088c1fb",
+          "eventCount": 41,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 18248,
+      "processBootId": "31b140d7-256c-4b14-8c0f-9b2e3e5d3230",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "peer": {
+      "acceptedIdentity": {
+        "extensionId": "com.codex.aeagentcore4.panel",
+        "panelBuildId": "2754542e09840c74267d075239b86a90221b78764b8f00e2625b495ca79f58da",
+        "productVersion": "4.2.6",
+        "protocolVersion": 1,
+        "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+      },
+      "connected": true,
+      "identityEpoch": "http-fec9c627-9380-4494-88a3-daf1b923b921",
+      "identityObservedAt": 1794505417530,
+      "origin": "file://",
+      "peerId": "panel-b25b729ef18f24783bd82e6c378c48b6799677b4308372c4",
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+      "registryReady": true
+    },
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "work-session",
+      "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+      "resetPending": false,
+      "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+    }
+  },
+  "after": {
+    "owner": {
+      "birthTicks": "639301023565844340",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+          "eventCount": 42,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "8e59526baf6bc0f649a82d0efab5e34b79fba2c5cf68afb8a8e670bb859efebe",
+          "eventCount": 45,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 31260,
+      "processBootId": "e7ca4384-f7c2-4a10-9069-3762bc924775",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "peer": {
+      "acceptedIdentity": {
+        "extensionId": "com.codex.aeagentcore4.panel",
+        "panelBuildId": "2754542e09840c74267d075239b86a90221b78764b8f00e2625b495ca79f58da",
+        "productVersion": "4.2.6",
+        "protocolVersion": 1,
+        "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+      },
+      "connected": true,
+      "identityEpoch": "http-e1e6feee-216e-48e7-882c-c8afccd719be",
+      "identityObservedAt": 1794505572547,
+      "origin": "file://",
+      "peerId": "panel-0abbad30e0099ba6b2df1467adcbd5a7eb6bab5ccb9fdc38",
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+      "registryReady": true
+    },
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "work-session",
+      "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+      "resetPending": false,
+      "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+    }
+  },
+  "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688",
+  "receiverStoreIdentityUnchanged": true,
+  "descriptorConfigMarkerCredentialsUnchanged": true,
+  "freshNative": {
+    "moduleId": "project-inspection",
+    "evidenceRef": "observation-d305af6b-8132-4b94-b699-73c426877dc6",
+    "commandId": "inspect-f9ce460a-ebe7-42b6-8450-7c627f543cac",
+    "receiptRef": "d493d4f22c33aa0c68524864d9b7ac2b6ecd5fb85fc00953b02a573565377612",
+    "authority": false,
+    "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+    "compIds": [
+      1
+    ],
+    "dirty": false
+  },
+  "sameAE": {
+    "birth": "2026-11-12T16:28:50.0853090Z",
+    "pid": 39220
+  },
+  "ownAepSha256": "e9bfd6813ae411ad46c207c5633f65e7f30c14f1a108f2ea0a7f9861d33d6edc",
+  "final": {
+    "holderClientId": null,
+    "pending": null,
+    "unknown": false,
+    "storeFault": false,
+    "ledgerFault": false,
+    "ownershipFault": null,
+    "unresolved": 0,
+    "peerConnected": true,
+    "registryReady": true,
+    "leaseReleased": true,
+    "clientExit": {
+      "code": 0,
+      "signal": null
+    }
+  },
+  "preservedExactFiles": 828,
+  "protectedUserAeps": 4,
+  "prefixesPreserved": true,
+  "ensureCalls": 0,
+  "rawJsxCalls": 0,
+  "computerUseCallsDuringBackgroundProof": 0,
+  "aeRestarts": 0,
+  "projectMutations": 0,
+  "saveCalls": 0,
+  "sourceEdits": 0,
+  "currentChatMcpRefreshed": false,
+  "subsequentRealPackageMarkerUpdate": "OPEN: same-package stopped update is unsupported; no artificial candidate or redundant install attempted.",
+  "initialActivation": "Separate root UI close/open once; see initial-ui-activation.json. The failed initial cooperative activation remains recorded.",
+  "limitations": [
+    "This is configured CLI native proof; current root-chat MCP refresh is a separate unresolved boundary.",
+    "Wire packet capture and CEP localStorage/sessionStorage inspection were not performed; exact403-versus-transport subpath is not claimed by this live run. Offline exact403 and marker tests remain separate evidence.",
+    "No second package update or live late-marker watcher acceptance."
+  ],
+  "soleCoreControllerReturnedToRoot": true,
+  "privateTaskDirectory": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-background-reconnect-live-7d27765045a6447e97a44620c57201df"
+}

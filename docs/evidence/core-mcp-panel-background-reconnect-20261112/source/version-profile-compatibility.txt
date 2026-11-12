@@ -1,0 +1,26 @@
+✔ release policy exact supported format2: 4.0.0 (136.7162ms)
+✔ release policy exact supported format2: 4.1.0 (104.4019ms)
+✔ release policy exact supported format2: 4.1.1 (128.7436ms)
+✔ release policy exact supported format2: 4.1.2 (113.9621ms)
+✔ release policy exact supported format2: 4.2.1 (114.1793ms)
+✔ release policy exact supported format2: 4.2.2 (119.0483ms)
+✔ release policy exact supported format2: 4.2.3 (109.1643ms)
+✔ release policy exact supported format2: 4.2.4 (113.0987ms)
+✔ release policy exact supported format2: 4.2.5 (118.3085ms)
+✔ release policy exact supported format2: 4.2.6 (110.708ms)
+✔ release policy legacy format1 is exact and future versions fail before reading composition (409.5032ms)
+✔ release policy current registry and panel markers remain mandatory (120.5351ms)
+✔ release policy client and own-root owner retain their narrower exact whitelist (6085.7661ms)
+✔ release policy standalone outer data gate has exact product versions independent of manifest v3 (1788.8352ms)
+✔ portable owned-text profile actual package has independent pins and retains fixed-profile refusals (1391.604ms)
+✔ portable owned-text profile actual runtime factory HTTP receipt and sibling readback (3849.2354ms)
+✔ portable owned-text profile native cancellation stays rejected with unchanged readback (3399.8279ms)
+✔ portable owned-text profile invalid original receipt cannot succeed or replay (3225.1246ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21574.3532

@@ -1,0 +1,160 @@
+{
+  "createdAt": "2026-11-12T17:45:41.764Z",
+  "purpose": "same-package-credentials-background-owner-reconnect-live",
+  "id": "5d735a2c-a90a-4fbb-8eaa-1f95c49d3bcd",
+  "packageHash": "75a95aa5738f313f4d00e0f40b80c57048de1d818acb64c0d072cc0b6cbe3c45",
+  "distributionHash": "73543e6e0e4013663266ea269782bd61daacaedb79c334abdca0f4a1f17bb7f1",
+  "before": {
+    "owner": {
+      "birthTicks": "639301020137988530",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+          "eventCount": 42,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "59d8b188720ffe50d98f35a06eab4b875ffecbd9796e1767bf0edfba8088c1fb",
+          "eventCount": 41,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 18248,
+      "processBootId": "31b140d7-256c-4b14-8c0f-9b2e3e5d3230",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "peer": {
+      "acceptedIdentity": {
+        "extensionId": "com.codex.aeagentcore4.panel",
+        "panelBuildId": "2754542e09840c74267d075239b86a90221b78764b8f00e2625b495ca79f58da",
+        "productVersion": "4.2.6",
+        "protocolVersion": 1,
+        "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+      },
+      "connected": true,
+      "identityEpoch": "http-fec9c627-9380-4494-88a3-daf1b923b921",
+      "identityObservedAt": 1794505417530,
+      "origin": "file://",
+      "peerId": "panel-b25b729ef18f24783bd82e6c378c48b6799677b4308372c4",
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+      "registryReady": true
+    },
+    "startOver": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "eligibility": {
+        "action": "request",
+        "reason": "start_over_ready"
+      },
+      "fault": null,
+      "id": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+      "ownerBootId": "31b140d7-256c-4b14-8c0f-9b2e3e5d3230",
+      "phase": "ready",
+      "requiresAEExit": false,
+      "resetComplete": true,
+      "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+    },
+    "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688",
+    "sameAE": {
+      "birth": "2026-11-12T16:28:50.0853090Z",
+      "pid": 39220
+    },
+    "fixed": {
+      "installation.json": "60a226a7c10027656bb561765b3cca09caa73e128253b3b0b6fbcbde0c7c9650",
+      "core-client.json": "c9c86b594ca8646830847e2ec2ffb0b2f488c58ffd59b91a68d91d95ab96cc01",
+      "config.toml": "7873f5125f8956865d6a34ff0be3a9c0feedbd275d71739fa063035defcae8aa",
+      "installation.js": "ba329a0dca4ed2d08fb7ffedf72e3be4c0571b2a4a2811954de5c83dcb5923a2",
+      "installation-state.json": "362b96532eb594278fe65c456db20f13253e60c2f8808af2ac561af6ec491827"
+    },
+    "prefixFacts": [
+      {
+        "file": "completions.ndjson",
+        "bytes": 74370,
+        "sha256": "8e59526baf6bc0f649a82d0efab5e34b79fba2c5cf68afb8a8e670bb859efebe"
+      },
+      {
+        "file": "ledger.ndjson",
+        "bytes": 140900,
+        "sha256": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "name": "restart-01-stop",
+      "mode": "stop",
+      "id": "5d735a2c-a90a-4fbb-8eaa-1f95c49d3bcd",
+      "attempts": 1,
+      "startedAt": "2026-11-12T17:45:41.772Z",
+      "exitCode": 0,
+      "completedAt": "2026-11-12T17:45:43.299Z",
+      "stdoutSha256": "bd658768c95ebcc49c904ccb8c6b07b5db8893fbfc3eaa8b0d8b5bd75d1d9685",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "accepted": true,
+        "aeAuthority": false,
+        "automaticReplay": false,
+        "id": "5d735a2c-a90a-4fbb-8eaa-1f95c49d3bcd",
+        "phase": "draining"
+      },
+      "error": null
+    },
+    {
+      "name": "restart-02-inspect-00",
+      "mode": "inspect",
+      "id": "5d735a2c-a90a-4fbb-8eaa-1f95c49d3bcd",
+      "attempts": 1,
+      "startedAt": "2026-11-12T17:45:43.303Z",
+      "exitCode": 0,
+      "completedAt": "2026-11-12T17:45:45.630Z",
+      "stdoutSha256": "99c373f2a3ca9137d8cf6064ad57c15f2f916bfd3026f8aa33a4cb3f49e254e0",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "aeAuthority": false,
+        "id": "5d735a2c-a90a-4fbb-8eaa-1f95c49d3bcd",
+        "inspectionOnly": true,
+        "phase": "stopped",
+        "proofHash": "99c12ae88face913f47686f6fa43532087c05c8056c7adb81bb10387a460e77d"
+      },
+      "error": null
+    },
+    {
+      "name": "restart-03-resume",
+      "mode": "resume",
+      "id": "5d735a2c-a90a-4fbb-8eaa-1f95c49d3bcd",
+      "attempts": 1,
+      "startedAt": "2026-11-12T17:45:45.639Z",
+      "exitCode": 0,
+      "completedAt": "2026-11-12T17:45:49.442Z",
+      "stdoutSha256": "ba2dc39bbb0022bce361ac793db3e739959fb803fb18b2bce977e40820c3d8cf",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "aeAuthority": false,
+        "id": "5d735a2c-a90a-4fbb-8eaa-1f95c49d3bcd",
+        "recoveredLeaseOnly": false,
+        "resumed": true,
+        "runtimeStarted": false,
+        "sameDescriptor": true
+      },
+      "error": null
+    }
+  ],
+  "result": "resumed-same-descriptor-runtime-not-started",
+  "automaticReplay": false,
+  "resumed": {
+    "aeAuthority": false,
+    "id": "5d735a2c-a90a-4fbb-8eaa-1f95c49d3bcd",
+    "recoveredLeaseOnly": false,
+    "resumed": true,
+    "runtimeStarted": false,
+    "sameDescriptor": true
+  },
+  "fixedBindingBytesUnchanged": true,
+  "finishedAt": "2026-11-12T17:45:49.452Z"
+}

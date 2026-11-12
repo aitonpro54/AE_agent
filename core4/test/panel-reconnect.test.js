@@ -17,7 +17,7 @@ const pins = { installationId: cfg.installationId, packageHash: cfg.packageHash,
 const latchKey = 'aeagentcore4-physical-' + cfg.installationId;
 function storage(initial) {
   const values = new Map(initial ? [[latchKey, JSON.stringify(initial)]] : []);
-  return { getItem: key => values.has(key) ? values.get(key) : null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
+  return { get length() { return values.size; }, key: i => [...values.keys()][i] ?? null, getItem: key => values.has(key) ? values.get(key) : null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
 }
 function reply(status, body) { return { ok: status >= 200 && status < 300, status, json: async () => JSON.parse(JSON.stringify(body)) }; }
 function mac(body, secret) { return createHmac('sha256', secret).update(canonical(body)).digest('hex'); }
@@ -218,6 +218,10 @@ test('panel-reconnect idle transport loss uses a fresh channel and sequence with
   const links = p.calls.filter(c => c.route === '/link'), requests = p.calls.filter(c => c.route === '/poll');
   assert.notEqual(links[0].value.peerId, links[1].value.peerId); assert.deepEqual(requests.map(c => c.value.body.sequence), [1, 1]);
   assert.notEqual(requests[0].value.mac, requests[1].value.mac); assert.deepEqual(p.waits, [3000]); assert.equal(p.dispatches, 0); assert.equal(p.recovered, 2);
+});
+test('panel-reconnect transport recovery rejects a changed receiver store before dispatcher recovery', async () => {
+  const p = panel({ link: ({ body, attempt }) => signed({ ...body, receiverStoreIdentity: attempt === 1 ? 'original-store' : 'replacement-store' }), channel() { throw new TypeError('Failed to fetch'); } });
+  await p.finish(); assert.equal(p.count('/link'), 2); assert.equal(p.count('/poll'), 1); assert.equal(p.recovered, 1); assert.equal(p.nativeCalls, 0); assert.match(p.elements.status.textContent, /receiver_store_changed/);
 });
 test('panel-reconnect missing Core enters slow background wait and connects after more than one initial window', async () => {
   const p = panel({ challenge({ challenge, attempt, reply }) { if (attempt <= 20) throw new TypeError('Failed to fetch'); return reply(200, challenge); } });

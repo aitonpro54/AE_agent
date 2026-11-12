@@ -1,0 +1,60 @@
+{
+  "collectedAt": "2026-11-12T17:34:05.557Z",
+  "temp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp",
+  "candidateA": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\candidate-a",
+  "candidateB": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\candidate-b",
+  "composition": "operator-render-jobs",
+  "runtimeModel": "owner",
+  "productVersion": "4.2.6",
+  "manifestVersion": 3,
+  "packageHash": "75a95aa5738f313f4d00e0f40b80c57048de1d818acb64c0d072cc0b6cbe3c45",
+  "distributionHash": "73543e6e0e4013663266ea269782bd61daacaedb79c334abdca0f4a1f17bb7f1",
+  "packageFiles": 164,
+  "distributionFiles": 183,
+  "deterministic": true,
+  "verifyPackage": true,
+  "verifyStandalone": true,
+  "panelIdentity": {
+    "protocolVersion": 1,
+    "productVersion": "4.2.6",
+    "panelBuildId": "2754542e09840c74267d075239b86a90221b78764b8f00e2625b495ca79f58da",
+    "extensionId": "com.codex.aeagentcore4.panel",
+    "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+  },
+  "previousPanelIdentity": {
+    "protocolVersion": 1,
+    "productVersion": "4.2.6",
+    "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+    "extensionId": "com.codex.aeagentcore4.panel",
+    "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+  },
+  "previousPackageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+  "registryBuildIdUnchanged": true,
+  "dryRun": {
+    "cwd": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\foreign",
+    "exitCode": 0,
+    "destinationUnchanged": true,
+    "distributionUnchanged": true,
+    "report": {
+      "baseline": {
+        "anchorOrigin": null,
+        "cep": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "client": null,
+        "config": null,
+        "descriptor": null,
+        "rootOrigin": null
+      },
+      "cepDir": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\dry-run-destinations\\extensions\\com.codex.aeagentcore4",
+      "configPath": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\dry-run-destinations\\project\\.codex\\config.toml",
+      "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\dry-run-destinations\\AEAgentCore4\\installation.json",
+      "distributionHash": "73543e6e0e4013663266ea269782bd61daacaedb79c334abdca0f4a1f17bb7f1",
+      "dryRun": true,
+      "extensionsDir": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\dry-run-destinations\\extensions",
+      "installRoot": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\dry-run-destinations\\AEAgentCore4",
+      "liveProof": false,
+      "packageHash": "75a95aa5738f313f4d00e0f40b80c57048de1d818acb64c0d072cc0b6cbe3c45",
+      "stateDir": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\dry-run-destinations\\AEAgentCore4\\state\\production"
+    }
+  },
+  "liveProof": false
+}

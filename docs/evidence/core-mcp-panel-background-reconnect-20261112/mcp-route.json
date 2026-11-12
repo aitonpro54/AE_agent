@@ -1,0 +1,65 @@
+{
+  "date": "2026-11-12",
+  "chatId": "01a1cede-3e0f-7aa1-a375-be24e49bec1e",
+  "chatIdSource": "exec runtime CODEX_THREAD_ID and matching list_threads entry",
+  "initialCurrentChatCall": {
+    "tool": "after-effects-core4/core_status",
+    "result": "MCP error -32000 owner_unavailable",
+    "separateCliProofAcceptedAsCurrentChat": false
+  },
+  "postInstallCurrentChatCall": {
+    "tool": "after-effects-core4/core_status",
+    "result": "MCP error -32000 owner_unavailable",
+    "afterPackage": "75a95aa5738f313f4d00e0f40b80c57048de1d818acb64c0d072cc0b6cbe3c45",
+    "afterSuccessfulSeparateClientBackgroundRestartProof": true
+  },
+  "runtime": {
+    "desktopMsixVersion": "26.1106.6628.0",
+    "bundledCliVersion": "0.167.0-alpha.4.1",
+    "appServerPid": 35608,
+    "appServerCreatedAt": "2026-11-12T08:24:51.754415Z",
+    "transport": "stdio",
+    "staleCoreClientPid": 42676,
+    "staleCoreClientParentPid": 35608,
+    "staleCoreClientCreatedAt": "2026-11-12T08:27:13.991991Z",
+    "staleCoreClientRelease": "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9"
+  },
+  "confirmedSupportedProtocol": {
+    "config/mcpServer/reload": "Generated schema exists; no params, global loaded-thread refresh.",
+    "mcpServerStatus/list": "Supports threadId/serverName; read-only status.",
+    "activeConnectionReachable": false,
+    "newAppServerWouldRefreshThisChat": false
+  },
+  "readOnlyInvestigation": {
+    "activeControlSocketFound": false,
+    "appToolExposesGenericReloadRequest": false,
+    "externalDeepLinkReloadRouteFound": false,
+    "internalRendererRestartHandler": "codex-app-server-restart -> getAppServerConnection(hostId).restart",
+    "staticReferences": [
+      "app.asar/.vite/build/early-bootstrap-620-1eb87a1b3aa240b6.js offset 3101871",
+      "app.asar/.vite/build/early-bootstrap-631-8a15b3cfc1548366.js module 26133 closed destination parser"
+    ],
+    "applyConfigRoute": "Applies remote connection/project settings; does not refresh active MCP registry.",
+    "clientReconnect": "Immutable descriptor captured by startClient. core_connect/core_disconnect do not reload the stdio client.",
+    "privateIpcInjection": false,
+    "separateAppServerInvoked": false,
+    "uiAutomation": false,
+    "broadAppServerRestart": false,
+    "targetedClientTermination": false,
+    "targetedTerminationDecision": "No positive evidence of auto-respawn after stdio EOF; do not close the cached transport as an unproven refresh mechanism."
+  },
+  "uiRestriction": {
+    "inventoryReturnedName": "ChatGPT",
+    "inventoryReturnedAppId": "OpenAI.Codex_2p2nqsd0c76g0!App",
+    "actionsOnThisApp": 0,
+    "skill": "C:/Users/Ant/.codex/plugins/cache/openai-bundled/computer-use/26.1106.51428/skills/computer-use/SKILL.md",
+    "requiredGuidance": "C:/Users/Ant/.codex/plugins/cache/openai-bundled/computer-use/26.1106.51428/docs/guidance.md:241",
+    "quote": "Do not automate the ChatGPT desktop app UI"
+  },
+  "officialSources": [
+    "https://learn.chatgpt.com/docs/app-server",
+    "https://learn.chatgpt.com/docs/extend/mcp?surface=cli"
+  ],
+  "currentChatRefreshProven": false,
+  "result": "No exposed supported active-runtime reload endpoint found. UI Restart blocked by bundled Computer Use rule. Current-chat refresh remains open; separate CLI proof does not close it."
+}

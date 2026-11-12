@@ -1,0 +1,47 @@
+{
+  "initialConsoleOnlyAttempt": {
+    "tests": 106,
+    "pass": 101,
+    "fail": 5,
+    "fullRawFileAvailable": false,
+    "explanation": "Initial strict reloadIdle change exposed the old minimal localStorage fixture missing standard length/key; corrected fixture. Initial console output exists only in task tool transcript."
+  },
+  "attempts": [
+    {
+      "file": "attempt02.txt",
+      "privatePath": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-private-20261112\\attempt02.txt",
+      "sha256": "0e6e5371c11a0a61ffdfa35b6b936dfcd7a5ffc40ed93499fabe7e90b92d77cb",
+      "tests": 106,
+      "pass": 106,
+      "fail": 0,
+      "explanation": "Intermediate successful address-scoped run before final review additions."
+    },
+    {
+      "file": "attempt03.txt",
+      "privatePath": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-private-20261112\\attempt03.txt",
+      "sha256": "71038e3f37015c88afa04d4d48a336104d57c1c53a2d1cbbe8256465e80286fc",
+      "tests": 115,
+      "pass": 109,
+      "fail": 6,
+      "explanation": "New offline fixture marker hashed the config without startOverSupported override; status outage seam also referenced a TDZ fixture, and schema tamper targeted a frozen object. Fixtures corrected; production auth/reload guards were not loosened."
+    },
+    {
+      "file": "attempt04.txt",
+      "privatePath": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-private-20261112\\attempt04.txt",
+      "sha256": "2b361553915d95089e72b6c802aea38c95327aee0286f2eb84012fbf416f9a72",
+      "tests": 115,
+      "pass": 114,
+      "fail": 1,
+      "explanation": "Schema tamper attempted to mutate the frozen synthetic server status, producing a transport TypeError instead of a wire schema violation. Clone before wire tampering corrected the fixture."
+    },
+    {
+      "file": "attempt05.txt",
+      "privatePath": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-private-20261112\\attempt05.txt",
+      "sha256": "c92647615e13cc43fcd42c186c271b2682143da6969e36c5578c0c6ad78ae907",
+      "tests": 119,
+      "pass": 119,
+      "fail": 0,
+      "explanation": "Intermediate successful address-scoped run before final review additions."
+    }
+  ]
+}

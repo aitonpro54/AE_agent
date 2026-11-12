@@ -1,0 +1,92 @@
+[
+  {
+    "checks": [
+      "version-profile-compatibility"
+    ],
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:release policy|portable owned-text profile)",
+      "test/version-profile-compatibility.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "exitCode": 0,
+    "error": null,
+    "tests": 18,
+    "pass": 18,
+    "sha256": "d2e99764fc4adf86fc55c49a3b694a89dbd5825f7aa1a580c3f7fc2157e922b4",
+    "log": "version-profile-compatibility.txt"
+  },
+  {
+    "checks": [
+      "catalog-revision"
+    ],
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:catalog-revision)",
+      "test/catalog-revision.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "exitCode": 0,
+    "error": null,
+    "tests": 12,
+    "pass": 12,
+    "sha256": "39d17e651fff123be9fbf56d9004719cb3bdaa537ae261c45352f0377cc97561",
+    "log": "catalog-revision.txt"
+  },
+  {
+    "checks": [
+      "composition-spec"
+    ],
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:composition-spec)",
+      "test/composition-spec.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "exitCode": 0,
+    "error": null,
+    "tests": 16,
+    "pass": 16,
+    "sha256": "1c102cdd322850e8c04aa19d3625083842121ee818eed184bf96308f3303ea3d",
+    "log": "composition-spec.txt"
+  },
+  {
+    "checks": [
+      "ae-panel-startup"
+    ],
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:ae-panel-startup)",
+      "test/ae-panel-startup.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "exitCode": 0,
+    "error": null,
+    "tests": 41,
+    "pass": 41,
+    "sha256": "d907c493dd9d2fd54b914e9c39b33088679679633a10a67b6d6d7e28ab07a626",
+    "log": "ae-panel-startup.txt"
+  },
+  {
+    "checks": [
+      "panel-start-over"
+    ],
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=(?:panel-start-over)",
+      "test/panel-start-over.test.js"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "exitCode": 0,
+    "error": null,
+    "tests": 11,
+    "pass": 11,
+    "sha256": "8fddc065d613d0dd6a6bd31af86e25a2b894bb7aaff9fc85dc88c1574a5780b8",
+    "log": "panel-start-over.txt"
+  }
+]

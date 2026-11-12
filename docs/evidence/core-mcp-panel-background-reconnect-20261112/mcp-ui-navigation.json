@@ -1,0 +1,36 @@
+{
+  "observedAt": "2026-11-12T17:53:55.116Z",
+  "userAuthorization": {
+    "source": "Explicit reply to request_user_input_async in this chat",
+    "answer": "Разрешаю только этот Restart",
+    "scope": "Only standard Settings → MCP → Restart and required navigation"
+  },
+  "surface": {
+    "displayName": "ChatGPT",
+    "appId": "OpenAI.Codex_2p2nqsd0c76g0!App"
+  },
+  "pathObserved": "Settings → search MCP → Plugins → MCP",
+  "observation": {
+    "serverCount": 7,
+    "coreProjectEntryVisible": true,
+    "coreSettingsAndToggleDisabled": true,
+    "restartButtonVisible": false
+  },
+  "configChanges": 0,
+  "serverToggles": 0,
+  "restartClicks": 0,
+  "uiCallsEnded": true,
+  "teardown": "No documented native teardown; integration disablement not claimed.",
+  "staticClarification": {
+    "asset": "webview/assets/async/548929.433a0aeeb6.js",
+    "restartRenderCondition": "eO = er.includes(hostId)",
+    "restartRenderOffset": 46137,
+    "flagInitiallyEmpty": true,
+    "flagSetAfter": ["successful UI MCP save", "enable", "uninstall", "OAuth"],
+    "projectEntryReadOnly": "serverOrigins[key]?.name.type === project",
+    "projectEntryOffsets": [52144, 52267],
+    "navigationAloneSetsFlag": false,
+    "remoteConnectionRestartIsSameLocalTarget": false
+  },
+  "result": "The supported Restart button requires a preceding MCP configuration save/change. No configuration-save exception was inferred from the user's only-this-Restart authorization; no private IPC/deep-link invocation."
+}

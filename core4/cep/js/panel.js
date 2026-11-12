@@ -2,7 +2,8 @@
   'use strict';
   var loadedPanelIdentity = {"protocolVersion":1,"productVersion":"4.2.6","panelBuildId":"0000000000000000000000000000000000000000000000000000000000000000","extensionId":"com.codex.aeagentcore4.panel","registryBuildId":"0000000000000000000000000000000000000000000000000000000000000000"}; // CORE4_LOADED_IDENTITY
   var cfg = window.Core4Installation && JSON.parse(JSON.stringify(window.Core4Installation)), api = window.Core4PollDispatcher, status = document.getElementById('status'), detail = document.getElementById('detail'), button = document.getElementById('connect'), resetButton = document.getElementById('start-over');
-  var delivered = false, wirePending = 0, resetWatching = 0, reloadFlight = false, configHashPromise = null, verifiedResetProof = null;
+  var delivered = false, wirePending = 0, resetWatching = 0, reloadFlight = false, configHashPromise = null, verifiedResetProof = null, channelBinding = null, reconnectBinding = null;
+  var markerTimer, markerGeneration = 0, reconnectNewBoot = false;
   var peerId, epoch, sequence = 0, running = false, disposed = false, generation = 0, activeRequest, retryTimer, cancelWait;
   var workSessionId = null, resetGeneration = 0, resetControllers = [], resetTimer, cancelResetWait, resetPosting = false, resetRequested = false, resetState = null, resetUncertain = null, resumeRequested = false;
   function show(state, text) { if (status.dataset) status.dataset.state = state; status.textContent = text; }
@@ -50,15 +51,20 @@
     } catch (e) { resetCurrent(g); if (timedOut && refused !== null) throw error('http_' + refused + '_body_timeout'); if (timedOut || !received && e && e.name === 'TypeError') throw error(timedOut ? 'transport_timeout' : 'transport_unavailable', true); throw e; }
     finally { clearTimeout(timer); var at = resetControllers.indexOf(controller); if (at >= 0) resetControllers.splice(at, 1); }
   }
-  async function resetRpc(action, g, expected) {
+  async function resetRpc(action, g, expected, guard) {
+    function check() { resetCurrent(g); if (guard) guard(); }
+    check();
     var input = { action: action }, keys = ['version', 'purpose', 'role', 'action', 'nonce', 'epoch', 'origin', 'installationId', 'packageHash'];
     if (expected) { input.expected = expected; keys.push('expected'); }
-    var reply = await resetPost('/start-over/challenge', input, g), c = reply.challenge;
+    var reply = await resetPost('/start-over/challenge', input, g), c = reply.challenge; check();
     if (!object(reply, ['challenge']) || !object(c, keys) || c.version !== 1 || c.purpose !== 'start-over' || c.role !== 'panel' || c.action !== action || typeof c.nonce !== 'string' || !/^[a-f0-9]{64}$/.test(c.nonce) || typeof c.epoch !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(c.epoch) || ['null', 'file://'].indexOf(c.origin) < 0 || expected && api.canonical(c.expected) !== api.canonical(expected)) throw error('start_over_challenge_auth');
     if (c.installationId !== cfg.installationId || c.packageHash !== cfg.packageHash) throw error('start_over_binding_changed');
-    var proof = await sign({ domain: 'ae-core4/panel-start-over/v1', kind: 'request', challenge: c }); resetCurrent(g);
+    var proof = await sign({ domain: 'ae-core4/panel-start-over/v1', kind: 'request', challenge: c }); check();
     var response = await resetPost('/start-over/' + action, { challenge: c, proof: proof }, g), body = response.body;
-    if (!object(response, ['body', 'mac']) || !object(body, ['version', 'purpose', 'action', 'epoch', 'nonce', 'origin', 'installationId', 'packageHash', 'status']) || body.version !== 1 || body.purpose !== 'start-over' || body.action !== action || body.epoch !== c.epoch || body.nonce !== c.nonce || body.origin !== c.origin || body.installationId !== c.installationId || body.packageHash !== c.packageHash || response.mac !== await sign({ domain: 'ae-core4/panel-start-over/v1', kind: 'response', body: body }) || !validReset(body.status)) throw error('start_over_response_auth');
+    check();
+    if (!object(response, ['body', 'mac']) || !object(body, ['version', 'purpose', 'action', 'epoch', 'nonce', 'origin', 'installationId', 'packageHash', 'status']) || body.version !== 1 || body.purpose !== 'start-over' || body.action !== action || body.epoch !== c.epoch || body.nonce !== c.nonce || body.origin !== c.origin || body.installationId !== c.installationId || body.packageHash !== c.packageHash || !validReset(body.status)) throw error('start_over_response_auth');
+    var responseMac = await sign({ domain: 'ae-core4/panel-start-over/v1', kind: 'response', body: body }); check();
+    if (response.mac !== responseMac) throw error('start_over_response_auth');
     resetCurrent(g); if (action === 'status') verifiedResetProof = { envelope: { challenge: c, response: response }, observedAt: Date.now(), generation: g }; return body.status;
   }
   async function resetWait(ms, g) {
@@ -95,7 +101,8 @@
     throw error('stale_reset');
     } finally { resetWatching--; }
   }
-  function interruptMain() { generation++; if (activeRequest) activeRequest.abort(); if (retryTimer) clearTimeout(retryTimer); if (cancelWait) cancelWait(); }
+  function cancelMarkerWatch() { markerGeneration++; if (markerTimer) clearTimeout(markerTimer); markerTimer = null; }
+  function interruptMain() { cancelMarkerWatch(); generation++; if (activeRequest) activeRequest.abort(); if (retryTimer) clearTimeout(retryTimer); if (cancelWait) cancelWait(); }
   function interruptReset() { resetGeneration++; resetControllers.slice().forEach(function (c) { c.abort(); }); if (resetTimer) clearTimeout(resetTimer); if (cancelResetWait) cancelResetWait(); }
   async function beginReset() {
     if (disposed || resetPosting || resetUncertain || !resetState || resetState.eligibility.action === 'none') return;
@@ -116,7 +123,7 @@
     finally { resetPosting = false; updateResetButton(); }
   }
   function newChannel() {
-    generation++; var random = new Uint8Array(24); crypto.getRandomValues(random);
+    cancelMarkerWatch(); generation++; var random = new Uint8Array(24); crypto.getRandomValues(random);
     peerId = 'panel-' + Array.from(random).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
     epoch = undefined; sequence = 0;
   }
@@ -134,6 +141,7 @@
       if (!result.response.ok) {
         var e = error(result.body && result.body.error || 'http_' + result.response.status);
         e.linkDuplicatePeer = path === '/link' && result.response.status === 403 && object(result.body, ['error']) && result.body.error === 'duplicate_peer';
+        e.pollPeerRejected = path === '/poll' && result.response.status === 403 && object(result.body, ['error']) && result.body.error === 'peer_auth_or_replay';
         throw e;
       }
       return result.body;
@@ -200,8 +208,26 @@
     var admission = admitSavedResult === true ? { packageHash: cfg.packageHash, executorHashes: (cfg.assets || [{ executorHash: cfg.executorHash }]).map(function (asset) { return asset.executorHash; }), explicitNullSession: !!(cfg.startOverSupported === true && resetState && validReset(resetState) && resetState.sessionId === null && workSessionId === null && resetState.id === null && resetState.resetComplete === false && sessionAvailable(resetState) && resetState.requiresAEExit === false && resetState.fault === null) } : null;
     return !disposed && !delivered && !resetPosting && !resetRequested && !resetUncertain && !resetWatching && !resetControllers.length && !activeRequest && !wirePending && api.reloadIdle(localStorage, cfg.installationId, workSessionId, retiredSessions(), admission);
   }
+  function reloadCause(cause) { return cause && (cause.transportUnavailable || ['installation_config_changed', 'installation_binding', 'start_over_binding_changed', 'peer_auth', 'peer_auth_or_replay', 'panel_identity_mismatch', 'link_auth', 'start_over_challenge_auth', 'start_over_response_auth'].indexOf(cause.message) >= 0); }
+  function watchMarker(cause) {
+    if (cfg.registryVerification !== 1 || !reloadCause(cause) || !reloadIdle()) return;
+    cancelMarkerWatch(); var token = markerGeneration, g = generation, attempts = 0;
+    // Only the fixed local marker is watched after a terminal stop. No refused
+    // HTTP request is retried: 3 s for 17 observations, then 15 s while idle.
+    function valid() { return token === markerGeneration && g === generation && !running && reloadIdle(); }
+    async function observe() {
+      markerTimer = null;
+      if (!valid()) return;
+      var marker = await changedMarker();
+      if (!valid()) return;
+      if (marker && await maybeReload(cause)) return;
+      if (valid()) schedule();
+    }
+    function schedule() { markerTimer = setTimeout(observe, attempts++ < 17 ? 3000 : 15000); }
+    schedule();
+  }
   async function maybeReload(cause) {
-    if (reloadFlight || cfg.registryVerification !== 1 || !reloadIdle() || !cause || !(cause.transportUnavailable || ['installation_config_changed', 'installation_binding', 'start_over_binding_changed', 'peer_auth', 'peer_auth_or_replay', 'panel_identity_mismatch', 'link_auth', 'start_over_challenge_auth', 'start_over_response_auth'].indexOf(cause.message) >= 0)) return false;
+    if (reloadFlight || cfg.registryVerification !== 1 || !reloadIdle() || !reloadCause(cause)) return false;
     reloadFlight = true;
     try {
       var marker = await changedMarker();
@@ -215,37 +241,68 @@
     } catch (ignored) { return false; }
     finally { reloadFlight = false; }
   }
+  async function recoverOwner(cause, g, budget, observed) {
+    var binding = channelBinding;
+    function guard() { current(g); if (!binding || channelBinding !== binding || !reloadIdle()) throw error('reconnect_local_busy'); }
+    guard();
+    while (true) {
+      var value = observed; observed = null;
+      if (!value) {
+        try { guard(); value = await resetRpc('status', resetGeneration, undefined, guard); guard(); }
+        catch (e) {
+          guard(); if (!e.transportUnavailable) throw e;
+          if (await maybeReload(e)) throw error('panel_reload_scheduled'); guard();
+          await waitRetry(budget, false); guard(); continue;
+        }
+      }
+      guard();
+      if (value.sessionId !== binding.workSessionId || !sessionAvailable(value)) throw error('start_over_in_progress');
+      showReset(value);
+      if (value.ownerBootId === binding.ownerBootId) {
+        if (cause.pollPeerRejected) throw cause;
+        return false;
+      }
+      if (value.phase !== 'ready' || value.requiresAEExit || value.fault !== null) throw error('owner_reconnect_not_ready');
+      guard(); reconnectBinding = binding; reconnectNewBoot = true; newChannel(); return true;
+    }
+  }
   async function settleReload() {
     if (cfg.registryVerification !== 1 || !window.sessionStorage) return;
     var suffix = '-' + await configHash(), prefix = 'aeagentcore4-reload-' + cfg.installationId + '-';
     for (var i = 0; i < sessionStorage.length; i++) { var key = sessionStorage.key(i); if (key.indexOf(prefix) === 0 && key.slice(-suffix.length) === suffix && sessionStorage.getItem(key) === 'pending') sessionStorage.setItem(key, 'settled'); }
   }
   async function link(budget) {
+    function guard() { if (reconnectBinding && !reloadIdle()) throw error('reconnect_local_busy'); }
     while (true) {
+      guard();
       if (Date.now() >= budget.deadline || budget.attempts >= 17) throw error(budget.reason || 'runtime_wait_expired');
       budget.attempts++; var g = generation;
       try {
         var challenge = await post('/challenge', { role: 'panel' }, g, budget.deadline);
+        guard();
         if (!object(challenge, ['nonce', 'epoch', 'controllerId', 'role', 'origin', 'packageHash', 'executorHash', 'installationId']) || typeof challenge.nonce !== 'string' || typeof challenge.epoch !== 'string' || typeof challenge.controllerId !== 'string' || challenge.packageHash !== cfg.packageHash || challenge.installationId !== cfg.installationId || challenge.executorHash !== cfg.executorHash || challenge.role !== 'panel' || (challenge.origin !== 'null' && challenge.origin !== 'file://')) throw error('installation_binding');
         var claim = { challenge: challenge, peerId: peerId, loadedPanel: loadedPanelIdentity };
         if (cfg.registryVerification === 1) claim.extensionRoot = extensionRoot();
-        var proof = await sign(claim); current(g);
+        var proof = await sign(claim); current(g); guard();
         if (Date.now() >= budget.deadline) throw error(budget.reason || 'duplicate_peer_wait_expired');
         if (cfg.registryVerification === 1 && !reloadIdle(true)) throw error('registry_local_busy');
         var response = await post('/link', Object.assign({}, claim, { proof: proof }), g, budget.deadline);
+        guard();
         if (Date.now() >= budget.deadline) throw error(budget.reason || 'duplicate_peer_wait_expired');
         return { challenge: challenge, response: response, generation: g, extensionRoot: claim.extensionRoot };
       } catch (e) {
         if (await maybeReload(e)) throw error('panel_reload_scheduled');
         if (!e.linkDuplicatePeer && !(e.transportUnavailable && !latched())) throw e;
         await waitRetry(budget, e.linkDuplicatePeer);
+        guard();
         if (e.transportUnavailable) newChannel();
       }
     }
   }
   async function start() {
-    if (running || disposed) return; running = true; button.disabled = true;
-    delivered = false;
+    if (running || disposed) return; cancelMarkerWatch(); running = true; button.disabled = true;
+    var stoppedCause = null;
+    delivered = false; channelBinding = null; reconnectBinding = null; reconnectNewBoot = false;
     try {
       if (!cfg || !api || !window.crypto || !crypto.subtle || typeof TextEncoder !== 'function' || typeof fetch !== 'function' || typeof AbortController !== 'function' || !window.__adobe_cep__ || typeof __adobe_cep__.evalScript !== 'function') throw error('CEP_WebCrypto_or_host_unavailable');
       if (cfg.startOverSupported === true && !await watchReset(null, resetGeneration)) return;
@@ -259,12 +316,18 @@
         if (cfg.registryVerification === 1) linkKeys = linkKeys.concat(['registryReady', 'bootstrap']);
         if (cfg.startOverSupported === true) linkKeys = linkKeys.concat(['workSessionId', 'startOver']);
         if (!object(response, ['body', 'mac']) || !object(response.body, linkKeys) || response.mac !== await sign(response.body) || api.canonical(response.body.acceptedIdentity) !== api.canonical(loadedPanelIdentity) || response.body.linked !== true || response.body.peerId !== peerId || response.body.epoch !== handshake.challenge.epoch || response.body.controllerId !== handshake.challenge.controllerId || api.canonical(response.body.pins) !== api.canonical({ installationId: cfg.installationId, packageHash: cfg.packageHash, executorHash: cfg.executorHash }) || typeof response.body.receiverStoreIdentity !== 'string' || typeof response.body.laneClosed !== 'boolean') throw error('link_auth');
+        current(g); if (reconnectBinding && !reloadIdle()) throw error('reconnect_local_busy');
         if (cfg.startOverSupported === true) {
           if (!validReset(response.body.startOver)) throw error('link_auth');
           if (!sessionAvailable(response.body.startOver)) throw error('start_over_in_progress');
           if (response.body.workSessionId !== response.body.startOver.sessionId) throw error('link_auth');
+          if (reconnectBinding && response.body.workSessionId !== reconnectBinding.workSessionId) throw error('start_over_in_progress');
+          if (reconnectBinding && (reconnectNewBoot && response.body.startOver.ownerBootId === reconnectBinding.ownerBootId || response.body.startOver.ownerBootId !== reconnectBinding.ownerBootId && (response.body.startOver.phase !== 'ready' || response.body.startOver.requiresAEExit || response.body.startOver.fault !== null))) throw error('owner_reconnect_binding');
+          if (reconnectBinding && response.body.receiverStoreIdentity !== reconnectBinding.receiverStoreIdentity) throw error('receiver_store_changed');
           workSessionId = response.body.workSessionId; showReset(response.body.startOver);
         }
+        if (reconnectBinding && response.body.receiverStoreIdentity !== reconnectBinding.receiverStoreIdentity) throw error('receiver_store_changed');
+        channelBinding = Object.freeze({ ownerBootId: cfg.startOverSupported === true ? response.body.startOver.ownerBootId : null, workSessionId: workSessionId, receiverStoreIdentity: response.body.receiverStoreIdentity }); reconnectBinding = null;
         current(g); epoch = response.body.epoch; sequence = 0; show('connected', 'Подключено к Core 4.2.6');
         var dispatcher = api.createDispatcher({ installationId: cfg.installationId, sessionId: workSessionId, assetKey: cfg.assetKey, assets: cfg.assets, pins: response.body.pins, storage: localStorage, csInterface: { evalScript: function (s, cb) { __adobe_cep__.evalScript(s, cb); } }, complete: (function (channel) { return function (p) { return authenticated('/complete', p, channel); }; }(g)) });
         await dispatcher.recover(); current(g); if (latched()) throw error('physical_latch_present'); if (response.body.laneClosed) throw error('receiver_lane_closed');
@@ -283,8 +346,9 @@
           catch (e) {
             // A lost poll may already be delivered on the server. Only a NEW
             // handshake may reconnect; server duplicate/lane/UNKNOWN fences stay.
-            if (!e.transportUnavailable || latched()) throw e;
-            await waitRetry(budget, false); newChannel(); break;
+            if (e.pollPeerRejected && cfg.startOverSupported === true) { if (await recoverOwner(e, g, budget)) break; }
+            if (!e.transportUnavailable || !reloadIdle()) throw e;
+            await waitRetry(budget, false); current(g); if (!reloadIdle()) throw error('reconnect_local_busy'); reconnectBinding = channelBinding; reconnectNewBoot = false; newChannel(); break;
           }
           current(g); if (!object(next, ['command']) || next.command !== null && (typeof next.command !== 'object' || Array.isArray(next.command))) throw error('poll_frame');
           budget = { deadline: Date.now() + 50000, attempts: 0 };
@@ -299,7 +363,12 @@
             showReady();
           }
           if (cfg.startOverSupported === true && !resetPosting) {
-            var updated = await resetRpc('status', resetGeneration); current(g); showReset(updated);
+            var updated;
+            function idleStatus() { current(g); if (!reloadIdle()) throw error('reconnect_local_busy'); }
+            try { idleStatus(); updated = await resetRpc('status', resetGeneration, undefined, idleStatus); idleStatus(); }
+            catch (e) { if (!e.transportUnavailable) throw e; if (await recoverOwner(e, g, budget)) break; showReady(); continue; }
+            if (channelBinding && updated.ownerBootId !== channelBinding.ownerBootId) { if (await recoverOwner(error('owner_boot_changed'), g, budget, updated)) break; }
+            showReset(updated);
             if (!sessionAvailable(updated) || updated.sessionId !== workSessionId) throw error('start_over_in_progress');
             showReady();
           }
@@ -314,12 +383,13 @@
       }
       if (resetRequested || e.message === 'stale_reset') return;
       if (!disposed) {
+        stoppedCause = e;
         var recovery = delivered || e.message === 'receiver_lane_closed' || e.message === 'owner_recovery_required';
         try { recovery = recovery || latched(); } catch (ignored) { recovery = true; }
         show(recovery ? 'recovery' : 'stopped', (recovery ? 'Требуется восстановление: ' : 'Остановлено: ') + e.message);
         detail.textContent = (/wait_expired$/.test(e.message) ? 'Время ожидания подключения истекло. Для новой попытки нажмите «Подключить». ' : '') + 'UNKNOWN не повторяется. Проверяйте core_status; перезагрузка не снимает fence.';
       }
-    } finally { running = false; if (!disposed) button.disabled = false; if (resumeRequested && !disposed) { resumeRequested = false; setTimeout(start, 0); } }
+    } finally { running = false; if (!disposed) button.disabled = false; if (resumeRequested && !disposed) { resumeRequested = false; setTimeout(start, 0); } else if (stoppedCause) watchMarker(stoppedCause); }
   }
   if (typeof window.addEventListener === 'function') window.addEventListener('unload', function () { disposed = true; interruptMain(); interruptReset(); });
   if (resetButton) { resetButton.disabled = true; resetButton.addEventListener('click', beginReset); }

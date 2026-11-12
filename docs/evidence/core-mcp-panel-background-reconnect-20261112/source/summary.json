@@ -1,0 +1,127 @@
+{
+  "collectedAt": "2026-11-12T17:35:02.874Z",
+  "baseline": {
+    "head": "314502d",
+    "branch": "codex/ae-panel-startup",
+    "installedPackageReadOnly": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+  },
+  "scope": [
+    "core4/cep/js/panel.js",
+    "core4/test/panel-reconnect.test.js",
+    "core4/test/panel-lifecycle.test.js"
+  ],
+  "sourceHashes": {
+    "core4/cep/js/panel.js": "69eeb81c19157fc28224052665f396ca5156a8fa375db4df2bfdba986b8b8fbb",
+    "core4/test/panel-reconnect.test.js": "3384567ab5407858e9fd418c7e75411e14530631d593cb092ec0b2151878b0cf",
+    "core4/test/panel-lifecycle.test.js": "c0b84ee7beedef1a8ed42326b1592372affeba70a1a83269f8a9dc79274cda46"
+  },
+  "checks": [
+    {
+      "command": [
+        "node",
+        "--check",
+        "core4/cep/js/panel.js"
+      ],
+      "exitCode": 0
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "core4/test/panel-reconnect.test.js"
+      ],
+      "exitCode": 0
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "core4/test/panel-lifecycle.test.js"
+      ],
+      "exitCode": 0
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0
+    }
+  ],
+  "targeted": {
+    "command": [
+      "node",
+      "--test",
+      "core4/test/panel-reconnect.test.js",
+      "core4/test/panel-lifecycle.test.js"
+    ],
+    "tests": 122,
+    "pass": 122,
+    "fail": 0,
+    "rawSha256": "3fe8abb7255824b2f24082257ab6aa6856fe9ef1a43bc7837eed03930e1cbdcb",
+    "log": "targeted-final.txt"
+  },
+  "selectedChecks": [
+    {
+      "check": "panel-reconnect",
+      "evidenceKey": "a313808e0ab77578719fe7df10fa285e3310642addd547d8a86e897ac1a650f4"
+    },
+    {
+      "check": "panel-lifecycle",
+      "evidenceKey": "087914581ea809746d1eb3947ca3d57cca68ebfd508316fee851b36a2d8291e4"
+    },
+    {
+      "check": "version-profile-compatibility",
+      "evidenceKey": "5fc0ba1633e864c83ea11b70657cb92bf3d345529b6c26a552487c6c9828d35e"
+    },
+    {
+      "check": "catalog-revision",
+      "evidenceKey": "82789d2958dfa8db14c74849f7ef4805317698fa6bfac435b56621731cd1056a"
+    },
+    {
+      "check": "composition-spec",
+      "evidenceKey": "96087833d3c0f2f33d142bdba48f85833257c495ea1a746604f5f5c1fd396c98"
+    },
+    {
+      "check": "ae-panel-startup",
+      "evidenceKey": "cfc469dc6bbf1e0d14c9322ce6cbff5e316acc26e60332319d17c8afb99dfb60"
+    },
+    {
+      "check": "panel-start-over",
+      "evidenceKey": "1fe21f875099de0b8cefa40500b0b5109350eff8f2bb5949544db7bc6c531999"
+    }
+  ],
+  "additionalSelectedTests": 98,
+  "totalAddressScopedPass": 220,
+  "deferredCoverageCount": 32,
+  "releaseCertified": false,
+  "candidateSourceMatches": true,
+  "candidate": {
+    "packageHash": "75a95aa5738f313f4d00e0f40b80c57048de1d818acb64c0d072cc0b6cbe3c45",
+    "distributionHash": "73543e6e0e4013663266ea269782bd61daacaedb79c334abdca0f4a1f17bb7f1",
+    "panelIdentity": {
+      "protocolVersion": 1,
+      "productVersion": "4.2.6",
+      "panelBuildId": "2754542e09840c74267d075239b86a90221b78764b8f00e2625b495ca79f58da",
+      "extensionId": "com.codex.aeagentcore4.panel",
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+    },
+    "candidateA": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\candidate-a",
+    "candidateB": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\candidate-b"
+  },
+  "review": {
+    "agent": "/root/review_background_reconnect",
+    "result": "No open P1/P2 on these three final source hashes; read-only review; tests/live not independently run."
+  },
+  "coverage": "Offline VM and actual TEMP HTTP loopback only. New test verifies signed owner A to B, old epoch rejection, fresh peer and sequences, registry bootstrap and exact journal prefix. Existing actual HTTP lost-delivered-poll and lost-completion-ACK tests remain passing.",
+  "liveActions": 0,
+  "installActions": 0,
+  "realConfigMutations": 0,
+  "model": {
+    "configuredRole": "ae_implementer",
+    "configuredModel": "gpt-6.1-sol",
+    "configuredEffort": "high",
+    "runtimeMetadataVerified": false
+  }
+}

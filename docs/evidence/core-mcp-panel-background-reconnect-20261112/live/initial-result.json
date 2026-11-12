@@ -1,0 +1,77 @@
+{
+  "observedAt": "2026-11-12T17:42:36.167Z",
+  "stage": "initial-activation",
+  "result": "installed-enabled-background-activation-not-observed",
+  "privateTaskDirectory": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-background-reconnect-live-7d27765045a6447e97a44620c57201df",
+  "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+  "oldPackageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+  "packageHash": "75a95aa5738f313f4d00e0f40b80c57048de1d818acb64c0d072cc0b6cbe3c45",
+  "distributionHash": "73543e6e0e4013663266ea269782bd61daacaedb79c334abdca0f4a1f17bb7f1",
+  "stopId": "da32f172-c71e-49d5-984b-c606dbc78fec",
+  "updateTransactionId": "a0665061-fa1b-43bf-aaae-cc45e6044063",
+  "updateAttempts": 1,
+  "stopAttempts": 1,
+  "enableAttempts": 1,
+  "sameAE": {
+    "birth": "2026-11-12T16:28:50.0853090Z",
+    "pid": 39220
+  },
+  "ownAepSha256": "e9bfd6813ae411ad46c207c5633f65e7f30c14f1a108f2ea0a7f9861d33d6edc",
+  "preflightNativeObservation": "observation-6724b933-bd40-4d47-81c3-58ca60341561",
+  "preflightControllerReleased": true,
+  "activationStatusCalls": 23,
+  "activationWaitMs": 76702,
+  "newOwner": {
+    "birthTicks": "639301020137988530",
+    "historyAtStartup": {
+      "ledger": {
+        "byteHash": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+        "eventCount": 42,
+        "present": true,
+        "settled": true,
+        "unresolvedCount": 0
+      },
+      "receiver": {
+        "byteHash": "59d8b188720ffe50d98f35a06eab4b875ffecbd9796e1767bf0edfba8088c1fb",
+        "eventCount": 41,
+        "present": true,
+        "settled": true,
+        "unresolvedCount": 0
+      }
+    },
+    "mode": "active",
+    "pid": 18248,
+    "processBootId": "31b140d7-256c-4b14-8c0f-9b2e3e5d3230",
+    "reason": null,
+    "recoveryRequired": false
+  },
+  "final": {
+    "peerConnected": false,
+    "holderClientId": null,
+    "pending": null,
+    "unknown": false,
+    "storeFault": false,
+    "unresolved": 0,
+    "clientExit": {
+      "code": 0,
+      "signal": null
+    }
+  },
+  "nativeAfterUpdate": 0,
+  "ensureCalls": 0,
+  "rawJsxCalls": 0,
+  "computerUseCalls": 0,
+  "aeRestarts": 0,
+  "ownerRestartAcceptance": "not-started-because-initial-panel-not-active",
+  "markerUpdateLiveAcceptance": "not-started-same-package-owner-update-is-unsupported",
+  "samePackageUpdateContract": {
+    "file": "core4/tools/stopped-update.js",
+    "line": 172,
+    "condition": "plan.descriptor.packageHash === old.packageHash",
+    "error": "stopped_update_scope",
+    "operatorAttempted": false
+  },
+  "limitation": "Old loaded 950d panel did not cooperatively activate candidate in the bounded wait. Installed source/CEP bytes and a healthy new owner do not prove loaded candidate identity. Separate initial panel activation is needed before testing new owner-restart behavior.",
+  "currentChatMcpRefreshed": false,
+  "soleCoreControllerReturnedToRoot": true
+}
