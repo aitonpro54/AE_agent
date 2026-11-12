@@ -1,0 +1,596 @@
+✔ mixed repair native Windows census selects its own PID from a JSON array (957.113ms)
+✖ mixed repair authentic success preserves protected byte/stat facts and both histories without a synthetic receiver (5794.5626ms)
+▶ mixed repair rejects wrong MAC, owner token and malformed scope before mutation
+  ✔ mac (5161.3694ms)
+  ✔ token (5245.7856ms)
+  ✔ scope (5205.3757ms)
+  ✔ numeric-birth (5194.1769ms)
+✔ mixed repair rejects wrong MAC, owner token and malformed scope before mutation (20807.7452ms)
+✖ mixed repair rejects active or unknown process observations and original living repair actor (5377.0785ms)
+✖ mixed repair refuses all three occupied endpoints and an unrelated install gate (5273.9648ms)
+✖ mixed repair holds attributable install and broker gates until read-back and blocks the ordinary state writer (5532.7514ms)
+✖ mixed repair refuses a foreign broker gate without publishing repair state or removing the foreign gate (5489.7429ms)
+▶ mixed repair rejects inode/hash drift, job registry and undeclared writer fences
+  ✖ inode (5488.5859ms)
+  ✖ hash (5260.126ms)
+  ✖ job (5386.7815ms)
+  ✖ writer (5279.7941ms)
+✖ mixed repair rejects inode/hash drift, job registry and undeclared writer fences (21416.4462ms)
+▶ mixed repair refuses durable external file/output/job or unresolved constraint fences
+  ✖ file (5247.0903ms)
+  ✖ output (5384.5992ms)
+  ✖ jobId (5343.8261ms)
+  ✖ unresolved (5655.3465ms)
+✖ mixed repair refuses durable external file/output/job or unresolved constraint fences (21631.8766ms)
+▶ mixed repair admits only the closed layer-overlay replacement provenance scope
+  ✖ source (5378.1776ms)
+  ✖ shared-source (5638.772ms)
+  ✖ nested-output (5383.2355ms)
+  ✖ nested-file (5374.5358ms)
+  ✖ nested-job (5463.681ms)
+  ✖ wrong-session (8497.1139ms)
+  ✖ wrong-effect (5477.7433ms)
+  ✖ relative-reference (5591.0002ms)
+  ✖ bad-count (5461.763ms)
+✖ mixed repair admits only the closed layer-overlay replacement provenance scope (52267.6529ms)
+▶ mixed repair refuses reservation output and grant file execution scopes
+  ✖ reservation-output (5489.5964ms)
+  ✖ grant-file (5601.7101ms)
+✖ mixed repair refuses reservation output and grant file execution scopes (11092.0592ms)
+✖ mixed repair crash after each rename and every record publication recovers only the original monotonic prefix (5338.9968ms)
+✖ mixed repair rejects substituted archive/source inode and nonmonotonic visible recovery state (5467.067ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 6
+ℹ fail 30
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 166569.7686
+
+✖ failing tests:
+
+test at test\mixed-installation-repair.test.js:25:1
+✖ mixed repair authentic success preserves protected byte/stat facts and both histories without a synthetic receiver (5794.5626ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-dAxirD\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-dAxirD\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-dAxirD\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:26:144)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:71:1
+✖ mixed repair rejects active or unknown process observations and original living repair actor (5377.0785ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-zsrUz6\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-zsrUz6\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-zsrUz6\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:72:43)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:82:1
+✖ mixed repair refuses all three occupied endpoints and an unrelated install gate (5273.9648ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-pPWQwk\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-pPWQwk\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-pPWQwk\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:83:43)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:94:1
+✖ mixed repair holds attributable install and broker gates until read-back and blocks the ordinary state writer (5532.7514ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-goWocX\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-goWocX\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-goWocX\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:95:43)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:115:1
+✖ mixed repair refuses a foreign broker gate without publishing repair state or removing the foreign gate (5489.7429ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-DzqY8y\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-DzqY8y\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-DzqY8y\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:116:43)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:124:66
+✖ inode (5488.5859ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-U5eey2\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-U5eey2\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-U5eey2\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:125:45)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:124:58)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:124:66
+✖ hash (5260.126ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-uI2oST\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-uI2oST\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-uI2oST\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:125:45)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:124:58)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:124:66
+✖ job (5386.7815ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-QPINvR\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-QPINvR\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-QPINvR\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:125:45)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:124:58)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:124:66
+✖ writer (5279.7941ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-5hnHL0\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-5hnHL0\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-5hnHL0\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:125:45)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:124:58)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:136:73
+✖ file (5247.0903ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:145:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:136:65)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-5iSpro\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-5iSpro\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-5iSpro\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:145:28)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:136:65)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:136:73
+✖ output (5384.5992ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:145:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:136:65)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-g5r5fi\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-g5r5fi\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-g5r5fi\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:145:28)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:136:65)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:136:73
+✖ jobId (5343.8261ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:145:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:136:65)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-ajr4nV\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-ajr4nV\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-ajr4nV\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:145:28)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:136:65)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:136:73
+✖ unresolved (5655.3465ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:145:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:136:65)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-hFJthc\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-hFJthc\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-hFJthc\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:145:28)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:136:65)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:150:173
+✖ source (5378.1776ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-zO9gOp\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-zO9gOp\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-zO9gOp\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:163:30)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:150:173
+✖ shared-source (5638.772ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-LT4AvA\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-LT4AvA\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-LT4AvA\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:163:30)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:150:173
+✖ nested-output (5383.2355ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-ReLH68\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-ReLH68\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-ReLH68\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:35)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:150:173
+✖ nested-file (5374.5358ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-VqRUh1\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-VqRUh1\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-VqRUh1\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:35)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:150:173
+✖ nested-job (5463.681ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-qiD3fA\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-qiD3fA\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-qiD3fA\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:35)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:150:173
+✖ wrong-session (8497.1139ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-oEUjAd\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-oEUjAd\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-oEUjAd\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:35)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:150:173
+✖ wrong-effect (5477.7433ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-168A43\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-168A43\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-168A43\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:35)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:150:173
+✖ relative-reference (5591.0002ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-jRFihw\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-jRFihw\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-jRFihw\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:35)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:150:173
+✖ bad-count (5461.763ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-WKwxMp\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-WKwxMp\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-WKwxMp\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:164:35)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:150:165)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:170:69
+✖ reservation-output (5489.5964ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:184:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:170:61)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-gKMHiW\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-gKMHiW\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-gKMHiW\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:184:28)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:170:61)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:170:69
+✖ grant-file (5601.7101ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+  
+  Caught error:
+  
+  Error: repair_source_changed
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:184:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:170:61)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_source_changed
+        at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-mspIux\repo\core4\tools\repair-mixed-installation.js:13:43)
+        at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-mspIux\repo\core4\tools\repair-mixed-installation.js:173:46)
+        at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-mspIux\repo\core4\tools\repair-mixed-installation.js:409:13)
+        at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:184:28)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:170:61)
+        at async Test.run (node:internal/test_runner/test:1208:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:188:1
+✖ mixed repair crash after each rename and every record publication recovers only the original monotonic prefix (5338.9968ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-0Dquh8\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-0Dquh8\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-0Dquh8\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:189:57)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }
+
+test at test\mixed-installation-repair.test.js:222:1
+✖ mixed repair rejects substituted archive/source inode and nonmonotonic visible recovery state (5467.067ms)
+  Error: repair_source_changed
+      at fail (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-kOZFMu\repo\core4\tools\repair-mixed-installation.js:13:43)
+      at gather (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-kOZFMu\repo\core4\tools\repair-mixed-installation.js:173:46)
+      at Object.execute (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-kOZFMu\repo\core4\tools\repair-mixed-installation.js:409:13)
+      at h.plan (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\mixed-installation.js:148:49)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:223:43)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'repair_source_changed'
+  }

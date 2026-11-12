@@ -45,6 +45,11 @@ test('package-location checks real packages and preserves a reproducible path-de
       for (const location of ['plain', 'with spaces', 'Юникод 日本語']) assert.ok(expected.equals(fs.readFileSync(path.join(output, 'sources', location, file))));
     }
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(output, 'report.json'))), report);
+    const toolingFiles = Object.keys(report.source.files).filter(file => file.startsWith('tools/')).sort();
+    assert.deepEqual(toolingFiles, ['tools/composition-spec.js', 'tools/package-installable.js']);
+    const shim = fs.readFileSync(path.join(source, 'tools/composition-spec.js'));
+    assert.match(shim.toString('utf8'), /require\('\.\.\/runtime\/composition-spec\.js'\)/);
+    for (const location of ['plain', 'with spaces', 'Юникод 日本語']) assert.ok(shim.equals(fs.readFileSync(path.join(output, 'sources', location, 'tools/composition-spec.js'))));
   });
   await t.test('a source-path leak fails with retained packages and finding', () => {
     // Isolated Git fixture; production source and repository config stay untouched.
@@ -62,10 +67,21 @@ test('package-location checks real packages and preserves a reproducible path-de
     const failedOutput = path.join(directory, 'failure'), failed = run(fixture, failedOutput, directory);
     assert.equal(failed.status, 1); assert.equal(failed.report.ok, false);
     assert.equal(failed.report.findings.length, 1);
-    assert.match(failed.report.findings[0].message, /package bytes differ: cep\/panel.css/);
+    // The only injected source payload is CSS. Current packaging restamps the
+    // derived panel identity, which sorts before CSS in the exact byte check.
+    assert.equal(failed.report.findings[0].message, 'package bytes differ: cep/js/panel.js');
     assert.match(failed.report.findings[0].phase, /readonly-stdio \/ with spaces/);
     assert.equal(failed.report.evidenceDirectory, failedOutput);
     for (const file of ['report.json', 'source.json', 'packages/readonly-stdio-clean.json', 'packages/readonly-stdio-1-source.json', 'sources/with spaces/tools/package-installable.js']) assert.ok(fs.existsSync(path.join(failedOutput, file)));
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(failedOutput, 'report.json'))), failed.report);
+    const clean = JSON.parse(fs.readFileSync(path.join(failedOutput, 'packages/readonly-stdio-clean.json'))), relocated = JSON.parse(fs.readFileSync(path.join(failedOutput, 'packages/readonly-stdio-1-source.json')));
+    const bytes = (pkg, file) => Buffer.from(pkg.files[file], 'base64');
+    assert.equal(bytes(clean, 'cep/panel.css').toString(), path.join(failedOutput, 'sources/plain'));
+    assert.equal(bytes(relocated, 'cep/panel.css').toString(), path.join(failedOutput, 'sources/with spaces'));
+    assert.deepEqual(Object.keys(relocated.files).sort(), Object.keys(clean.files).sort());
+    assert.deepEqual(Object.keys(clean.files).filter(file => !bytes(clean, file).equals(bytes(relocated, file))).sort(), ['cep/js/panel.js', 'cep/panel.css']);
+    const identity = require('../integrations/cep/panel-identity');
+    const left = identity.verify(file => bytes(clean, file)), right = identity.verify(file => bytes(relocated, file));
+    assert.notEqual(left.panelBuildId, right.panelBuildId); assert.equal(left.registryBuildId, right.registryBuildId);
   });
 });

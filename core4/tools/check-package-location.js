@@ -27,7 +27,7 @@ function localPath(file) {
     /(?:^|\/)(?:\.env(?:\..*)?|installation\.json|core-client\.json|\.core4-client-binding\.json|origin\.json|host-adoption\.json|runtime-owner\.json)$/.test(file) || file === 'cep/js/config.js';
 }
 function sourcePath(file) {
-  return !localPath(file) && (SOURCE_DIRS.has(file.split('/')[0]) || ['worker.js', 'package.json', 'tools/package-installable.js'].includes(file));
+  return !localPath(file) && (SOURCE_DIRS.has(file.split('/')[0]) || ['worker.js', 'package.json', 'tools/package-installable.js', 'tools/composition-spec.js'].includes(file));
 }
 function git(root, args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
@@ -35,7 +35,7 @@ function git(root, args) {
 function writeJson(file, value) { fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n', { flag: 'wx' }); }
 function snapshot(root) {
   const files = git(root, ['ls-files', '--cached', '-z', '--', '.']).split('\0').filter(Boolean).filter(sourcePath).sort();
-  assert.ok(files.includes('tools/package-installable.js') && files.includes('runtime/source-package.json'), 'tracked Core source required');
+  assert.ok(['tools/package-installable.js', 'tools/composition-spec.js', 'runtime/source-package.json'].every(file => files.includes(file)), 'tracked Core source and fixed tooling shim required');
   const bytes = new Map(), hashes = {};
   for (const file of files) {
     assert.ok(!path.isAbsolute(file) && !file.split('/').includes('..') && !file.includes('\\'), 'unsafe source path');
@@ -46,7 +46,7 @@ function snapshot(root) {
   }
   const changed = git(root, ['diff', '--relative', '--name-only', '-z', 'HEAD', '--', '.']).split('\0').filter(file => bytes.has(file)).sort();
   return { bytes, provenance: { commit: git(root, ['rev-parse', 'HEAD']).trim(), branch: git(root, ['branch', '--show-current']).trim(),
-    changedSourceFiles: changed, files: hashes, sourceHash: digest(JSON.stringify(hashes)), policy: 'tracked source directories plus package builder; local data, tests and other tools excluded' } };
+    changedSourceFiles: changed, files: hashes, sourceHash: digest(JSON.stringify(hashes)), policy: 'tracked source directories plus fixed tools/package-installable.js and tools/composition-spec.js; local data, tests and other tools excluded' } };
 }
 function copySnapshot(bytes, root) {
   for (const [file, data] of bytes) {

@@ -1,0 +1,985 @@
+{
+  "purpose": "rerun-planning-only",
+  "releaseCertified": false,
+  "evidenceReuseClaimed": false,
+  "selectionSHA256": "46738fd565381e0781153f15d26bf7397aa7bc36df760a83b995543e00d48540",
+  "comparisons": [
+    {
+      "file": "C:/Users/Ant/AppData/Local/Temp/core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5/result-gOIiFT/result.json",
+      "sha256": "098b9aa8d960ce59aa1b15cc9fe40b23dd6a18d4980d677f398a1556980fae57",
+      "purpose": "rerun-planning-only",
+      "releaseCertified": false,
+      "evidenceReuseClaimed": false,
+      "onlyChecks": [
+        "installable-runtime",
+        "cep-transport",
+        "lifecycle-simulation",
+        "owner-runtime",
+        "owner-installation",
+        "mixed-installation-repair",
+        "start-over-runtime",
+        "stopped-update",
+        "legacy-owner-migration",
+        "stopped-certification",
+        "maintenance-finish",
+        "maintenance-finish-operator",
+        "owner-maintenance",
+        "maintenance-operator",
+        "owner-lifecycle",
+        "owner-lifecycle-faults",
+        "owner-marker-publication",
+        "client-launcher",
+        "recovery-inspection",
+        "native-read-capture",
+        "windows-cim-probe",
+        "zero-dispatch-recovery",
+        "point-layout-integration",
+        "text-layer-integration",
+        "comp-frame-export",
+        "frame-export-slot",
+        "project-assembly",
+        "project-save",
+        "project-lifecycle",
+        "media-layers",
+        "layer-overlay",
+        "render-job-owner",
+        "manual-current-target",
+        "native-read-recovery",
+        "installed-composition",
+        "exact-f548-transition",
+        "standalone-installer",
+        "catalog-revision",
+        "version-profile-compatibility",
+        "adobe-child-environment",
+        "work-session-owner",
+        "start-over-channel",
+        "panel-reconnect",
+        "photo-owner",
+        "titles-owner",
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ],
+      "rerun": [
+        {
+          "check": "installable-runtime",
+          "reasons": [
+            "prior_status_FAIL",
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "FAIL",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "cep-transport",
+          "reasons": [
+            "prior_status_FAIL",
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "FAIL",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "lifecycle-simulation",
+          "reasons": [
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "PASS",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "owner-runtime",
+          "reasons": [
+            "prior_status_FAIL",
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "FAIL",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "owner-installation",
+          "reasons": [
+            "prior_status_FAIL",
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "FAIL",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "mixed-installation-repair",
+          "reasons": [
+            "prior_status_FAIL",
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "FAIL",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "start-over-runtime",
+          "reasons": [
+            "prior_status_FAIL",
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "FAIL",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "stopped-update",
+          "reasons": [
+            "prior_status_UNKNOWN"
+          ],
+          "priorStatus": "UNKNOWN",
+          "requiresOutcomeResolution": true
+        },
+        {
+          "check": "legacy-owner-migration",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "stopped-certification",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "maintenance-finish",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "maintenance-finish-operator",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "owner-maintenance",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "maintenance-operator",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "owner-lifecycle",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "owner-lifecycle-faults",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "owner-marker-publication",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "client-launcher",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "recovery-inspection",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "native-read-capture",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "windows-cim-probe",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "zero-dispatch-recovery",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "point-layout-integration",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "text-layer-integration",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "comp-frame-export",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "frame-export-slot",
+          "reasons": [
+            "prior_status_UNKNOWN"
+          ],
+          "priorStatus": "UNKNOWN",
+          "requiresOutcomeResolution": true
+        },
+        {
+          "check": "project-assembly",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "project-save",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "project-lifecycle",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "media-layers",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "layer-overlay",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "render-job-owner",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "manual-current-target",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "native-read-recovery",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "installed-composition",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "evidenceKey_changed",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "exact-f548-transition",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "evidenceKey_changed",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "standalone-installer",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "catalog-revision",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "version-profile-compatibility",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "adobe-child-environment",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "work-session-owner",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "start-over-channel",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "panel-reconnect",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "photo-owner",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "titles-owner",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "photo-executor-contract",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "titles-executor-contract",
+          "reasons": [
+            "prior_status_NOT_RUN",
+            "actual_batch_command_changed"
+          ],
+          "priorStatus": "NOT_RUN",
+          "requiresOutcomeResolution": false
+        }
+      ],
+      "unchangedPassCandidates": [
+        "manual-runtime",
+        "validation-routing",
+        "core-control",
+        "core-admission",
+        "workflow-recovery",
+        "worker-isolation",
+        "protocol-codec",
+        "artifact-boundaries",
+        "human-window",
+        "audit-repairs",
+        "owner-attachments",
+        "owner-ipc-process",
+        "controller-transfer",
+        "client-entry",
+        "composition-spec",
+        "panel-lifecycle",
+        "ae-panel-startup",
+        "ae-readiness",
+        "package-location",
+        "start-over-driver",
+        "panel-start-over",
+        "start-over-operator",
+        "work-session",
+        "start-over-finisher",
+        "start-over-state",
+        "start-over-barrier",
+        "start-over-inspection",
+        "stopped-host-readoption-operator",
+        "stopped-host-readoption",
+        "readoption-core",
+        "readoption-recovery",
+        "readoption-enable",
+        "readoption-probe",
+        "stopped-update-operator",
+        "documentation"
+      ],
+      "unchangedPassCandidatesRequireIndependentKeyCommandLogVerification": true,
+      "commandChangedBatches": [
+        "legacy-owner-migration",
+        "stopped-certification",
+        "maintenance-finish",
+        "maintenance-finish-operator",
+        "owner-maintenance",
+        "maintenance-operator",
+        "owner-lifecycle",
+        "owner-lifecycle-faults",
+        "owner-marker-publication",
+        "client-launcher",
+        "recovery-inspection",
+        "native-read-capture",
+        "windows-cim-probe",
+        "zero-dispatch-recovery",
+        "point-layout-integration",
+        "text-layer-integration",
+        "comp-frame-export",
+        "project-assembly",
+        "project-save",
+        "project-lifecycle",
+        "media-layers",
+        "layer-overlay",
+        "render-job-owner",
+        "manual-current-target",
+        "native-read-recovery",
+        "installed-composition",
+        "exact-f548-transition",
+        "standalone-installer",
+        "catalog-revision",
+        "version-profile-compatibility",
+        "adobe-child-environment",
+        "work-session-owner",
+        "start-over-channel",
+        "panel-reconnect",
+        "photo-owner",
+        "titles-owner",
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ]
+    },
+    {
+      "file": "C:/Users/Ant/AppData/Local/Temp/core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f/result-QfP99b/result.json",
+      "sha256": "d667805063b2bbcee3ae5379e8f90019f3a444e528fed23d3d6891af94a9dd62",
+      "purpose": "rerun-planning-only",
+      "releaseCertified": false,
+      "evidenceReuseClaimed": false,
+      "onlyChecks": [
+        "manual-runtime",
+        "validation-routing",
+        "core-control",
+        "core-admission",
+        "workflow-recovery",
+        "worker-isolation",
+        "protocol-codec",
+        "artifact-boundaries",
+        "human-window",
+        "audit-repairs",
+        "lifecycle-simulation",
+        "owner-attachments",
+        "owner-ipc-process",
+        "controller-transfer",
+        "client-entry",
+        "composition-spec",
+        "panel-lifecycle",
+        "ae-panel-startup",
+        "mixed-installation-repair",
+        "ae-readiness",
+        "package-location",
+        "start-over-driver",
+        "panel-start-over",
+        "start-over-operator",
+        "work-session",
+        "start-over-finisher",
+        "start-over-state",
+        "start-over-barrier",
+        "start-over-inspection",
+        "stopped-host-readoption-operator",
+        "stopped-host-readoption",
+        "readoption-core",
+        "readoption-recovery",
+        "readoption-enable",
+        "readoption-probe",
+        "stopped-update-operator",
+        "installed-composition",
+        "exact-f548-transition",
+        "documentation"
+      ],
+      "rerun": [
+        {
+          "check": "manual-runtime",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "validation-routing",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "core-control",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "core-admission",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "workflow-recovery",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "worker-isolation",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "protocol-codec",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "artifact-boundaries",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "human-window",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "audit-repairs",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "lifecycle-simulation",
+          "reasons": [
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "PASS",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "owner-attachments",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "owner-ipc-process",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "controller-transfer",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "client-entry",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "composition-spec",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "panel-lifecycle",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "ae-panel-startup",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "mixed-installation-repair",
+          "reasons": [
+            "prior_status_FAIL",
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "FAIL",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "ae-readiness",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "package-location",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "start-over-driver",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "panel-start-over",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "start-over-operator",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "work-session",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "start-over-finisher",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "start-over-state",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "start-over-barrier",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "start-over-inspection",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "stopped-host-readoption-operator",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "stopped-host-readoption",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "readoption-core",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "readoption-recovery",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "readoption-enable",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "readoption-probe",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "stopped-update-operator",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "installed-composition",
+          "reasons": [
+            "prior_status_FAIL",
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "FAIL",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "exact-f548-transition",
+          "reasons": [
+            "prior_status_FAIL",
+            "evidenceKey_changed"
+          ],
+          "priorStatus": "FAIL",
+          "requiresOutcomeResolution": false
+        },
+        {
+          "check": "documentation",
+          "reasons": [
+            "no_prior_check"
+          ],
+          "priorStatus": null,
+          "requiresOutcomeResolution": false
+        }
+      ],
+      "unchangedPassCandidates": [
+        "installable-runtime",
+        "cep-transport",
+        "owner-runtime",
+        "owner-installation",
+        "start-over-runtime",
+        "stopped-update",
+        "legacy-owner-migration",
+        "stopped-certification",
+        "maintenance-finish",
+        "maintenance-finish-operator",
+        "owner-maintenance",
+        "maintenance-operator",
+        "owner-lifecycle",
+        "owner-lifecycle-faults",
+        "owner-marker-publication",
+        "client-launcher",
+        "recovery-inspection",
+        "native-read-capture",
+        "windows-cim-probe",
+        "zero-dispatch-recovery",
+        "point-layout-integration",
+        "text-layer-integration",
+        "comp-frame-export",
+        "frame-export-slot",
+        "project-assembly",
+        "project-save",
+        "project-lifecycle",
+        "media-layers",
+        "layer-overlay",
+        "render-job-owner",
+        "manual-current-target",
+        "native-read-recovery",
+        "standalone-installer",
+        "catalog-revision",
+        "version-profile-compatibility",
+        "adobe-child-environment",
+        "work-session-owner",
+        "start-over-channel",
+        "panel-reconnect",
+        "photo-owner",
+        "titles-owner",
+        "photo-executor-contract",
+        "titles-executor-contract"
+      ],
+      "unchangedPassCandidatesRequireIndependentKeyCommandLogVerification": true,
+      "commandChangedBatches": []
+    }
+  ],
+  "onlyChecks": [
+    "lifecycle-simulation",
+    "mixed-installation-repair",
+    "installed-composition",
+    "exact-f548-transition"
+  ],
+  "rule": "Run every current check without an unchanged PASS candidate in ANY finished prior result. Candidate logs/contexts are independently verified only by final join."
+}

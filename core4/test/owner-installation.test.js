@@ -43,7 +43,9 @@ test('owner-installation runtime selector is independent of composition and owne
     assert.ok(p.files['runtime/render-job-history.js']);
     assert.ok(p.files['runtime/render-job-maintenance.js']);
     assert.equal(Object.hasOwn(p.files, 'runtime/render-job-owner.js'), false);
-    assert.equal(Object.keys(p.files).length, (composition === 'readonly' ? 44 : 64) + (model === 'owner' ? 21 : 0));
+    assert.ok(p.files['runtime/composition-spec.js']);
+    assert.ok(p.files['integrations/cep/panel-identity.js']);
+    assert.equal(Object.keys(p.files).length, (composition === 'readonly' ? 46 : 66) + (model === 'owner' ? 24 : 0));
   }
   assert.equal(buildPackage(SOURCE, 'readonly').packageHash, pkg('readonly', 'stdio').packageHash);
   const p = pkg(), contract = JSON.parse(Buffer.from(p.files['runtime/owner-contract.json'], 'base64'));

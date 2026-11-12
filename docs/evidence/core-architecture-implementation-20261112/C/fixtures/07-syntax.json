@@ -1,0 +1,90 @@
+[
+  {
+    "exitCode": 0,
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-owner-runtime.test.js.stdout.txt",
+    "sourceSHA": "1e2becc39e16f1d26bae1af8fb202b64f3e96de61e16db6faae45d5e6f3bbdc1",
+    "command": [
+      "node",
+      "--check",
+      "core4/test/owner-runtime.test.js"
+    ]
+  },
+  {
+    "exitCode": 0,
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-installed-composition.test.js.stdout.txt",
+    "sourceSHA": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+    "command": [
+      "node",
+      "--check",
+      "core4/test/installed-composition.test.js"
+    ]
+  },
+  {
+    "exitCode": 0,
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-installed-composition-transition.js.stdout.txt",
+    "sourceSHA": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+    "command": [
+      "node",
+      "--check",
+      "core4/test/fixtures/installed-composition-transition.js"
+    ]
+  },
+  {
+    "exitCode": 0,
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-core4.test.js.stdout.txt",
+    "sourceSHA": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+    "command": [
+      "node",
+      "--check",
+      "core4/test/core4.test.js"
+    ]
+  },
+  {
+    "exitCode": 0,
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-installable-runtime.test.js.stdout.txt",
+    "sourceSHA": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+    "command": [
+      "node",
+      "--check",
+      "core4/test/installable-runtime.test.js"
+    ]
+  },
+  {
+    "exitCode": 0,
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-manual-http-runtime.js.stdout.txt",
+    "sourceSHA": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+    "command": [
+      "node",
+      "--check",
+      "core4/test/fixtures/manual-http-runtime.js"
+    ]
+  },
+  {
+    "exitCode": 0,
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-native-read-recovery.js.stdout.txt",
+    "sourceSHA": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+    "command": [
+      "node",
+      "--check",
+      "core4/test/fixtures/native-read-recovery.js"
+    ]
+  },
+  {
+    "exitCode": 0,
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-core-http-integration.test.js.stdout.txt",
+    "sourceSHA": "ef2331bec18df15fef0eef429098fe1271aca307e5ebe11b0b4a9e26b6720598",
+    "command": [
+      "node",
+      "--check",
+      "products/titles/test/core-http-integration.test.js"
+    ]
+  }
+]

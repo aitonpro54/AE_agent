@@ -1,0 +1,161 @@
+✔ installable-runtime project inspection resolves exact IDs independently of discovery and correlates paged receipts (231.4365ms)
+✔ installable-runtime project inspection expires cursors tied to an invalidated native project (27.7791ms)
+✔ installable-runtime project inspection makes incomplete native reads and result budget coverage explicit (180.4143ms)
+ℹ unicode: 39974 code units, 104998/106090/105511/107550 UTF-8 bytes (observation/HTTP/journal/MCP)
+ℹ escaped: 38726 code units, 38726/39818/39239/46392 UTF-8 bytes (observation/HTTP/journal/MCP)
+✔ installable-runtime private completed read proof belongs to one exact direct error and is consumed once (66.7482ms)
+✔ installable-runtime finite Titles read codes complete only admitted read phases and publish bounded diagnostics after durability (317.7907ms)
+✔ installable-runtime read diagnostic rejects unknown codes extra fields and bad correlation without journal or status promotion (29.6703ms)
+✔ installable-runtime montage diagnostic admits only the exact prospective rejection for media-import (67.777ms)
+✔ installable-runtime montage diagnostic admits only the exact prospective rejection for layer-overlay (71.9805ms)
+✔ installable-runtime render queue read durably accepts its owned job field only in the render profile (30.5694ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for project (15.9082ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for foreign-key (16.6632ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for foreign-module (16.6904ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for foreign-operation (15.674ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for foreign-profile (17.6669ms)
+✔ installable-runtime Titles diagnostic vocabulary is refused for mutate (15.4826ms)
+✔ installable-runtime package deterministic closure, install CAS, exact rollback and stable origin (7022.6164ms)
+✔ installable-runtime staged update prepares every complete file before its first visible rename and publishes config last (4248.2963ms)
+✔ installable-runtime staged short write preserves the whole live installation before switch: cep (2975.2173ms)
+✔ installable-runtime staged short write preserves the whole live installation before switch: descriptor (2992.3151ms)
+✔ installable-runtime staged short write preserves the whole live installation before switch: client (2993.3655ms)
+✔ installable-runtime staged short write preserves the whole live installation before switch: config (3031.5663ms)
+✔ installable-runtime staged final CAS refuses changed owned client stage without publishing it: false (3204.0246ms)
+✔ installable-runtime staged final CAS refuses changed owned client stage without publishing it: true (2907.9429ms)
+✔ installable-runtime staged foreign CEP stage is preserved and never replaces the live panel (2931.0969ms)
+✔ installable-runtime staged cross-volume planning and apply refuse before any installation writes (278.8279ms)
+✔ installable-runtime full generated host registry parses as ES3 before any host evaluation (152.3837ms)
+✔ installable-runtime exact release closure rejects extensionless shadow, empty directory and junction before package imports (3377.5792ms)
+✔ installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies (4514.8814ms)
+✔ installable-runtime descriptor changed at startup gate is rejected before package imports (3024.1772ms)
+✔ installable-runtime bounded TOML edit preserves indented neighboring servers and inline-commented Core4 header bytes (513.4733ms)
+✔ installable-runtime quoted TOML headers preserve desktop neighbor and env bytes while updating the exact Core4 alias (2797.936ms)
+✔ installable-runtime quoted TOML Core4 aliases refuse duplicate nested and dotted assignment ambiguity (514.6338ms)
+✔ installable-runtime quoted TOML unsupported key syntax remains closed without treating aliases as neighbors (1.1853ms)
+✔ installable-runtime quoted TOML escaped Core4 assignment alias refuses before appending a duplicate table (581.9793ms)
+✔ installable-runtime quoted TOML escaped preference keys refuse without removing enabled or timeout settings (991.6947ms)
+✔ installable-runtime CLI apply requires reviewed package hash and mismatches have zero installation writes (258.2303ms)
+✖ installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node (176.2802ms)
+✖ installable-runtime CLI explicit workspace requires an absolute marked source layout before writes (177.6855ms)
+✔ installable-runtime unknown Broker owner, ledger fault or unresolved intent permits diagnostics but no new physical read begin (11456.5955ms)
+✔ installable-runtime actual HTTP auth role, origin, challenge, epoch, replay, bounded input and duplicate peer (28.4348ms)
+✔ installable-runtime exact CEP Origin ingress and CORS success/error/OPTIONS matrix at Node HTTP boundary (71.4145ms)
+✔ installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: null (122.1959ms)
+✔ installable-runtime Origin-bound challenge and peer preserve auth/sequence/pending/ACK: file:// (94.2084ms)
+✔ installable-runtime panel VM/WebCrypto shim validates challenge Origin before signing or link and signs full original challenge (15.5236ms)
+✔ installable-runtime real HTTP and compiled registry VM: begin before evaluate, receipt before POST, durable ACK then latch clear (64.9014ms)
+✔ installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: null (97.0068ms)
+✔ installable-runtime callback loss fences durable store and persisted browser latch: no replay on reload or cross-Origin restart: file:// (115.0414ms)
+✔ installable-runtime missing fixed host registry returns known read rejection after durable begin, no raw fallback (81.7523ms)
+✔ installable-runtime long Cyrillic display names and total inspection budget stay bounded at actual HTTP boundary; next read survives known budget refusal (452.8685ms)
+✔ installable-runtime real stdio child consumes generated MCP config, advertises generic API, status without panel, then typed module inspect via HTTP + VM (4510.8709ms)
+✔ installable-runtime private adoption bootstrap imports no mutable operator-relative provider before verified release preflight (3142.8276ms)
+✔ installable-runtime private adoption preflight verifies the installed Titles composition (4658.092ms)
+✔ installable-runtime real stdio process crash after delivery preserves original ongoing record and blocks new reads after restart (5848.0882ms)
+ℹ tests 53
+ℹ suites 0
+ℹ pass 51
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 81687.3484
+
+✖ failing tests:
+
+test at test\installable-runtime.test.js:639:1
+✖ installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node (176.2802ms)
+  AssertionError [ERR_ASSERTION]: node:internal/modules/cjs/loader:1479
+    throw err;
+    ^
+  
+  Error: Cannot find module './composition-spec.js'
+  Require stack:
+  - C:\Users\Ant\AppData\Local\Temp\core4-installable-5P80Ox\source\core4\tools\package-installable.js
+  - C:\Users\Ant\AppData\Local\Temp\core4-installable-5P80Ox\source\core4\tools\install-core4.js
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+      at Module._load (node:internal/modules/cjs/loader:1262:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.require (node:internal/modules/cjs/loader:1576:12)
+      at require (node:internal/modules/helpers:153:16)
+      at Object.<anonymous> (C:\Users\Ant\AppData\Local\Temp\core4-installable-5P80Ox\source\core4\tools\package-installable.js:5:106)
+      at Module._compile (node:internal/modules/cjs/loader:1830:14) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [
+      'C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-5P80Ox\\source\\core4\\tools\\package-installable.js',
+      'C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-5P80Ox\\source\\core4\\tools\\install-core4.js'
+    ]
+  }
+  
+  Node.js v24.15.0
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\installable-runtime.test.js:645:32)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test\installable-runtime.test.js:660:1
+✖ installable-runtime CLI explicit workspace requires an absolute marked source layout before writes (177.6855ms)
+  AssertionError [ERR_ASSERTION]: node:internal/modules/cjs/loader:1479
+    throw err;
+    ^
+  
+  Error: Cannot find module './composition-spec.js'
+  Require stack:
+  - C:\Users\Ant\AppData\Local\Temp\core4-installable-NOYL6v\source\core4\tools\package-installable.js
+  - C:\Users\Ant\AppData\Local\Temp\core4-installable-NOYL6v\source\core4\tools\install-core4.js
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+      at Module._load (node:internal/modules/cjs/loader:1262:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.require (node:internal/modules/cjs/loader:1576:12)
+      at require (node:internal/modules/helpers:153:16)
+      at Object.<anonymous> (C:\Users\Ant\AppData\Local\Temp\core4-installable-NOYL6v\source\core4\tools\package-installable.js:5:106)
+      at Module._compile (node:internal/modules/cjs/loader:1830:14) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [
+      'C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-NOYL6v\\source\\core4\\tools\\package-installable.js',
+      'C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-installable-NOYL6v\\source\\core4\\tools\\install-core4.js'
+    ]
+  }
+  
+  Node.js v24.15.0
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\installable-runtime.test.js:663:56)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

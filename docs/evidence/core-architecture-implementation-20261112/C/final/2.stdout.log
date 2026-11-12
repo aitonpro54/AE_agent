@@ -1,0 +1,64 @@
+✔ mixed repair semantic incident packages retain the explicit legacy seven-file CEP contract (927.6441ms)
+ℹ {"name":"readonly","currentPackageHash":"a74cb12a791aa68e06662716a80dfc6848d713c5a1ce58105ddf120ca34dc381","semanticLegacyPackageHash":"4eb9f335c3b2ad80b9a75c64ea6bc0f98d20568bb23b9fef6a3e1dbdb3e359c0","changedDataFiles":["cep/jsx/registry.jsx","config/catalog.json"],"evidence":"semantic legacy data; not byte-historical or native old-panel proof"}
+ℹ {"name":"manual","currentPackageHash":"26673c5aa903e1cb5957c7313120d0d7d3fc23c856a2815dc48dddab8882b965","semanticLegacyPackageHash":"f5483fb16109424575a5aa2abf893fc988d6ff0fca033cfe1b774a4e5309fff8","changedDataFiles":["cep/jsx/registry.jsx","config/catalog.json"],"evidence":"semantic legacy data; not byte-historical or native old-panel proof"}
+ℹ {"name":"manual-titles-variants","currentPackageHash":"da720337f92e71b42c0f751d93477b08f4d9ca33cefa6573b2fcbde7c3e721d9","semanticLegacyPackageHash":"8def63b44da8dcbfc251ea64adb763345a88cdc95979fb304a5f84ca8fccae58","changedDataFiles":["cep/jsx/registry.jsx","config/catalog.json"],"evidence":"semantic legacy data; not byte-historical or native old-panel proof"}
+✔ mixed repair native Windows census selects its own PID from a JSON array (717.4355ms)
+✔ mixed repair authentic success preserves protected byte/stat facts and both histories without a synthetic receiver (57172.6376ms)
+▶ mixed repair rejects wrong MAC, owner token and malformed scope before mutation
+  ✔ mac (5378.0311ms)
+  ✔ token (5443.7854ms)
+  ✔ scope (5457.3029ms)
+  ✔ numeric-birth (5372.3546ms)
+✔ mixed repair rejects wrong MAC, owner token and malformed scope before mutation (21652.6554ms)
+✔ mixed repair rejects active or unknown process observations and original living repair actor (19432.0026ms)
+✔ mixed repair refuses all three occupied endpoints and an unrelated install gate (10976.963ms)
+✔ mixed repair holds attributable install and broker gates until read-back and blocks the ordinary state writer (16773.7926ms)
+✔ mixed repair refuses a foreign broker gate without publishing repair state or removing the foreign gate (6922.5103ms)
+▶ mixed repair rejects inode/hash drift, job registry and undeclared writer fences
+  ✔ inode (6770.874ms)
+  ✔ hash (7048.7854ms)
+  ✔ job (7013.3586ms)
+  ✔ writer (7090.316ms)
+✔ mixed repair rejects inode/hash drift, job registry and undeclared writer fences (27925.0116ms)
+▶ mixed repair refuses durable external file/output/job or unresolved constraint fences
+  ✔ file (5793.4341ms)
+  ✔ output (5550.7998ms)
+  ✔ jobId (5753.1036ms)
+  ✔ unresolved (5622.3597ms)
+✔ mixed repair refuses durable external file/output/job or unresolved constraint fences (22720.5341ms)
+▶ mixed repair admits only the closed layer-overlay replacement provenance scope
+  ✔ source (5903.8934ms)
+  ✔ shared-source (5905.1146ms)
+  ✔ nested-output (5615.5098ms)
+  ✔ nested-file (5638.9907ms)
+  ✔ nested-job (5548.9791ms)
+  ✔ wrong-session (5554.7941ms)
+  ✔ wrong-effect (5555.3383ms)
+  ✔ relative-reference (5621.0361ms)
+  ✔ bad-count (5601.1356ms)
+✔ mixed repair admits only the closed layer-overlay replacement provenance scope (50946.5674ms)
+▶ mixed repair refuses reservation output and grant file execution scopes
+  ✔ reservation-output (5619.4689ms)
+  ✔ grant-file (5586.57ms)
+✔ mixed repair refuses reservation output and grant file execution scopes (11206.5718ms)
+▶ mixed repair crash after each rename and every record publication recovers only the original monotonic prefix
+  ✔ fsyncSync (132672.2313ms)
+  ℹ verified crash boundaries: 39
+  ✔ linkSync+renameSync+unlinkSync (146423.162ms)
+  ℹ verified crash boundaries: 43
+✔ mixed repair crash after each rename and every record publication recovers only the original monotonic prefix (293094.6563ms)
+✔ mixed repair rejects substituted archive/source inode and nonmonotonic visible recovery state (9378.1671ms)
+▶ mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports
+  ✔ tools/composition-spec.js before-plan (5529.5993ms)
+  ✔ tools/composition-spec.js after-plan (6835.92ms)
+  ✔ runtime/composition-spec.js before-plan (5677.4011ms)
+  ✔ runtime/composition-spec.js after-plan (6772.2603ms)
+✔ mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports (24816.0197ms)
+ℹ tests 44
+ℹ suites 0
+ℹ pass 44
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 574803.0392

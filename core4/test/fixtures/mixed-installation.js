@@ -1,18 +1,75 @@
 'use strict';
 // Synthetic TEMP incident only. No production credentials or runtime authority.
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), crypto = require('node:crypto'), Module = require('node:module');
+const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), crypto = require('node:crypto'), Module = require('node:module'), net = require('node:net');
 const { canonical, hash } = require('../../protocol/json');
-const { buildPackage } = require('../../tools/package-installable');
-const { deriveComposition, installationConfig } = require('../../runtime/stdio-entry');
+const { buildPackage, verifyPackage, selectedCatalogRevision } = require('../../tools/package-installable');
+const { deriveComposition, installationConfig, registrySource } = require('../../runtime/stdio-entry');
 const { dispatchBinding } = require('../../protocol/dispatch');
 const SOURCE = path.resolve(__dirname, '../..'), packages = new Map();
 const stats = file => Object.fromEntries(['dev', 'ino', 'size', 'birthtimeNs', 'mtimeNs', 'ctimeNs'].map(k => [k, String(fs.statSync(file, { bigint: true })[k])]));
 const uuid = () => crypto.randomUUID(), token = () => crypto.randomBytes(32).toString('hex');
 function pkg(name) { if (!packages.has(name)) packages.set(name, buildPackage(SOURCE, name, { runtimeModel: 'owner' })); return packages.get(name); }
+const incidentPackages = new Map();
+function incidentPkg(name) {
+  if (incidentPackages.has(name)) return incidentPackages.get(name);
+  // Semantic legacy fixture only, not byte-identical historical source or a
+  // native old-panel claim. Keep current pkg() and all executable files intact;
+  // generate only the supported 4.2.5 release/catalog/registry DATA shape.
+  const value = structuredClone(pkg(name)); value.release.version = '4.2.5';
+  const read = file => Buffer.from(value.files[file], 'base64'), json = file => JSON.parse(read(file));
+  const put = (file, data) => { const bytes = Buffer.from(typeof data === 'string' ? data : canonical(data)); value.files[file] = bytes.toString('base64'); value.release.hashes[file] = hash(bytes); };
+  const selected = deriveComposition(value.release, read);
+  if (Object.hasOwn(selected, 'registryVerification')) throw Error('fixture_incident_registry_policy');
+  const catalog = json('config/catalog.json'), composition = json('runtime/composition.json'), policy = json('runtime/composition-policy.json');
+  catalog.catalogRevision = selectedCatalogRevision({ catalog, composition, policy, registryVerification: false }, json);
+  put('config/catalog.json', catalog);
+  put('cep/jsx/registry.jsx', registrySource(selected.assets, read('runtime/host/json-codec.jsx').toString('utf8'), false));
+  value.packageHash = hash(value.release); verifyPackage(value);
+  incidentPackages.set(name, value); return value;
+}
+
 function write(file, value) { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, Buffer.isBuffer(value) || typeof value === 'string' ? value : canonical(value)); }
-function copySource(file, destination, seen = new Set()) {
-  if (seen.has(file)) return; seen.add(file); const bytes = fs.readFileSync(file); write(path.join(destination, path.relative(SOURCE, file)), bytes);
-  if (file.endsWith('.js')) for (const m of bytes.toString('utf8').matchAll(/require\(['"]([^'"]+)['"]\)/g)) if (m[1].startsWith('.')) { let child = path.resolve(path.dirname(file), m[1]); if (!path.extname(child)) child += '.js'; if (child.startsWith(SOURCE + path.sep)) copySource(child, destination, seen); }
+function copySourceClosure(destination) {
+  const files = {}, seen = new Set();
+  function visit(file) {
+    file = path.resolve(file);
+    if (seen.has(file)) return;
+    seen.add(file);
+    if (!file.startsWith(SOURCE + path.sep) || seen.size > 256) throw Error('fixture_source_closure');
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.reparsePoint || fs.realpathSync(file) !== file) throw Error('fixture_source_path');
+    const bytes = fs.readFileSync(file), relative = path.relative(SOURCE, file).split(path.sep).join('/');
+    files[relative] = hash(bytes);
+    const target = path.join(destination, relative); write(target, bytes);
+    if (!fs.readFileSync(target).equals(bytes) || hash(fs.readFileSync(target)) !== files[relative]) throw Error('fixture_source_copy_changed');
+    if (!file.endsWith('.js')) return;
+    for (const match of bytes.toString('utf8').matchAll(/require\(['"]([^'"]+)['"]\)/g)) {
+      if (!match[1].startsWith('.')) { if (!match[1].startsWith('node:')) throw Error('fixture_source_dependency'); continue; }
+      let next = path.resolve(path.dirname(file), match[1]); if (!path.extname(next)) next += '.js'; visit(next);
+    }
+  }
+  visit(path.join(SOURCE, 'tools/install-core4.js')); visit(path.join(SOURCE, 'runtime/recovery-inspection.js'));
+  // Do not exclude the operator: a future dependency cycle must fail visibly,
+  // rather than permitting a pin rewrite inside its own hashed source graph.
+  if (Object.hasOwn(files, 'tools/repair-mixed-installation.js')) throw Error('fixture_incident_operator_in_source_closure');
+  for (const [relative, digest] of Object.entries(files)) if (hash(fs.readFileSync(path.join(destination, relative))) !== digest) throw Error('fixture_source_copy_changed');
+  const manifest = Object.freeze(Object.fromEntries(Object.entries(files).sort(([a], [b]) => a.localeCompare(b))));
+  return Object.freeze({ manifest, digest: hash(manifest) });
+}
+function replaceFixtureLiteral(source, pattern, replacement) {
+  if ([...source.matchAll(new RegExp(pattern.source, pattern.flags + 'g'))].length !== 1) throw Error('fixture_literal_count');
+  return source.replace(pattern, replacement);
+}
+async function allocateRepairEndpoint() {
+  const server = net.createServer();
+  try {
+    await new Promise((resolve, reject) => { server.once('error', reject); server.listen({ host: '127.0.0.1', port: 0 }, resolve); });
+    const address = server.address();
+    if (!address || typeof address === 'string' || address.address !== '127.0.0.1' || !Number.isInteger(address.port) || address.port < 1 || address.port > 65535 || address.port === 3457) throw Error('fixture_repair_endpoint');
+    return Object.freeze({ host: '127.0.0.1', port: address.port });
+  } finally {
+    if (server.listening) await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
 }
 function signingKey(d, domain) { return crypto.createHmac('sha256', Buffer.from(d.panelToken, 'hex')).update('ae-core4/' + domain + (domain === 'stopped-update' ? '/key/v1\0' : '-key/v1\0')).update(Buffer.from(d.controlToken, 'hex')).digest(); }
 function signed(d, domain, kind, value) {
@@ -25,6 +82,7 @@ function updateRecord(old, next, id, payload) {
   return { body, oldMac: crypto.createHmac('sha256', signingKey(old, 'stopped-update')).update(message).digest('hex'), newMac: crypto.createHmac('sha256', signingKey(next, 'stopped-update')).update(message).digest('hex') };
 }
 async function fixture(t, change = () => {}) {
+  const repairEndpoint = await allocateRepairEndpoint();
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-mixed-repair-')), home = path.join(base, 'home'), repo = path.join(base, 'repo'), core = path.join(repo, 'core4');
   let birth = 639000000000000000n, censusMode = 'dead', fault = null, mutations = [];
   const io = { ...fs };
@@ -78,9 +136,9 @@ async function fixture(t, change = () => {}) {
   const root = path.join(home, 'AppData/Local/AEAgentCore4'), cep = path.join(home, 'AppData/Roaming/Adobe/CEP/extensions/com.codex.aeagentcore4'), config = path.join(repo, '.codex/config.toml');
   write(config, '# fixture outside Core\n[mcp_servers.other]\ncommand = "other"\n');
   const installArgs = { installRoot: root, extensionsDir: path.dirname(cep), configPath: config, machineId: os.hostname(), nodePath: fs.realpathSync(process.execPath) };
-  installer.applyInstall(installer.planInstall({ ...installArgs, pkg: pkg('readonly') }));
+  installer.applyInstall(installer.planInstall({ ...installArgs, pkg: incidentPkg('readonly') }));
   const descriptorPath = path.join(root, 'installation.json'), old = JSON.parse(fs.readFileSync(descriptorPath));
-  const nextPlan = installer.planInstall({ ...installArgs, pkg: pkg('manual') }), payload = installer.preparedInstallPayload(nextPlan);
+  const nextPlan = installer.planInstall({ ...installArgs, pkg: incidentPkg('manual') }), payload = installer.preparedInstallPayload(nextPlan);
   installer.applyInstall(nextPlan);
   const d = JSON.parse(fs.readFileSync(descriptorPath)), state = d.stateDir, currentId = nextPlan.transactionId;
   load(path.join(SOURCE, 'integrations/cep/completion-store')).openCompletionStore({ directory: path.join(state, 'receiver') }).close();
@@ -91,10 +149,11 @@ async function fixture(t, change = () => {}) {
   if ((await m.done).phase !== 'stopped') throw Error('fixture stop failed');
   write(path.join(root, 'transactions', currentId + '-stopped-update/intent.json'), updateRecord(old, d, currentId, payload));
   const foreignId = uuid(), foreignOld = { ...d, installationId: 'installation-' + uuid(), panelToken: token(), controlToken: token(), predecessor: null };
-  const foreignPkg = pkg('manual-titles-variants'), foreign = { ...foreignOld, packageHash: foreignPkg.packageHash, releaseDir: path.join(root, 'releases', foreignPkg.packageHash), predecessor: { transactionId: foreignId, previousDescriptorHash: hash(canonical(foreignOld)) } };
+  const foreignPkg = incidentPkg('manual-titles-variants'), foreign = { ...foreignOld, packageHash: foreignPkg.packageHash, releaseDir: path.join(root, 'releases', foreignPkg.packageHash), predecessor: { transactionId: foreignId, previousDescriptorHash: hash(canonical(foreignOld)) } };
   const fixedCep = Object.fromEntries(Object.entries(foreignPkg.files).filter(([f]) => f.startsWith('cep/')).map(([f, v]) => [f.slice(4), v]));
   const selected = deriveComposition(foreignPkg.release, f => Buffer.from(foreignPkg.files[f], 'base64'));
   fixedCep['installation.js'] = Buffer.from('window.Core4Installation=' + canonical(installationConfig(foreign, selected)) + ';\n').toString('base64');
+  if (Object.hasOwn(selected, 'registryVerification') || Object.keys(fixedCep).length !== 7 || canonical(Object.keys(fixedCep).sort()) !== canonical(Object.keys(payload.cep).sort())) throw Error('fixture_incident_cep_contract');
   const foreignConfig = Buffer.from(installer.configText(fs.readFileSync(config), path.join(root, 'core-client.json'), d.nodePath, path.join(foreign.releaseDir, 'runtime/client-entry.js'), '--client-descriptor'));
   const foreignPayload = { ...payload, transactionId: foreignId, descriptorBytes: Buffer.from(canonical(foreign)).toString('base64'), previousDescriptor: Buffer.from(canonical(foreignOld)).toString('base64'), configBytes: foreignConfig.toString('base64'), cep: fixedCep, package: foreignPkg };
   write(path.join(root, 'transactions', foreignId + '-stopped-update/intent.json'), updateRecord(foreignOld, foreign, foreignId, foreignPayload));
@@ -138,14 +197,28 @@ async function fixture(t, change = () => {}) {
   const h = { base, home, root, repo, core, state, cep, config, backup, d, foreign, profile, descriptorPath, stop, installer, installArgs, load, refreshBackup, events, receipts, signed, updateRecord, write, stats, ledgerBytes,
     setCensus(v) { censusMode = v; }, crashAfter(callback) { fault = callback; }, clearFault() { fault = null; }, mutations,
     die() { birth += 10n; }, modules };
+  Object.defineProperty(h, 'repairEndpoint', { value: repairEndpoint, enumerable: true });
   await change(h); refreshBackup();
-  copySource(path.join(SOURCE, 'tools/install-core4.js'), core); copySource(path.join(SOURCE, 'runtime/recovery-inspection.js'), core);
+  const sourceClosure = copySourceClosure(core);
+  Object.defineProperty(h, 'sourceClosure', { value: sourceClosure, enumerable: true });
   const operator = path.join(core, 'tools/repair-mixed-installation.js');
   const original = fs.readFileSync(path.join(SOURCE, 'tools/repair-mixed-installation.js'), 'utf8');
-  // Private harness rewrite of incident constants, never a production CLI seam.
-  write(operator, original.replace(/const PROFILE = Object\.freeze\(\{[\s\S]*?\n\}\);/, 'const PROFILE = Object.freeze(' + canonical(profile) + ');'));
+  // Bind this private TEMP incident once to exact copied source bytes. The real
+  // operator's reviewed source pin and guard remain unchanged in the checkout.
+  const profiled = replaceFixtureLiteral(original, /const PROFILE = Object\.freeze\(\{[\s\S]*?\n\}\);/, 'const PROFILE = Object.freeze(' + canonical(profile) + ');');
+  const pinned = replaceFixtureLiteral(profiled, /const SOURCE_CLOSURE_HASH = '[a-f0-9]{64}';/, "const SOURCE_CLOSURE_HASH = '" + sourceClosure.digest + "';");
+  // Adapt only this TEMP operator's fixed TCP reservation, once before load.
+  // A later port race remains a real guard failure; never reselect or retry.
+  const isolated = replaceFixtureLiteral(pinned, /\{ host: '127\.0\.0\.1', port: 3457 \}/, "{ host: '127.0.0.1', port: " + repairEndpoint.port + ' }');
+  write(operator, isolated);
+  const operatorHash = hash(fs.readFileSync(operator));
+  Object.defineProperty(h, 'operatorHash', { value: operatorHash, enumerable: true });
   h.api = load(operator, true); h.id = uuid(); h.repairDir = path.join(root, 'transactions', h.id + '-mixed-local-repair');
-  h.plan = () => { clearLookups(); return h.api.execute('plan', h.id); };
+  h.plan = async () => {
+    clearLookups(); const result = await h.api.execute('plan', h.id);
+    if (result.plan.operatorHash !== operatorHash) throw Error('fixture_operator_hash');
+    return result;
+  };
   h.run = (mode, pin) => { clearLookups(); return h.api.execute(mode, h.id, pin); };
   t.after(() => { if (!path.resolve(base).startsWith(path.resolve(os.tmpdir()) + path.sep + 'core4-mixed-repair-')) throw Error('unsafe cleanup'); fs.rmSync(base, { recursive: true, force: true }); });
   return h;
@@ -169,4 +242,4 @@ function rewriteForeignLedger(h) {
   for (const r of report.receipts) r.ledgerRecordHash = h.events.find(e => e.type === 'command' && e.commandId === r.commandId).recordHash;
   write(file, report);
 }
-module.exports = { fixture, pkg, hash, canonical, stats, signed, write, overlayConstraint, rewriteForeignLedger };
+module.exports = { fixture, pkg, incidentPkg, hash, canonical, stats, signed, write, overlayConstraint, rewriteForeignLedger };

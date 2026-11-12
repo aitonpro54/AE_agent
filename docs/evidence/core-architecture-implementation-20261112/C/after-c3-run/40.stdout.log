@@ -1,0 +1,16 @@
+✔ work-session explicit current acknowledgement is required after reset (2.8607ms)
+✔ work-session baseline admits only fresh project inspection and connection before changes (1.5177ms)
+✔ work-session old controller context cannot submit after session changes (0.796ms)
+✔ work-session reset intent blocks captures while observer status remains explicit (1.4037ms)
+✔ work-session normal maintenance freeze still lets accepted context drain (0.6064ms)
+✔ work-session unavailable metadata fails closed and does not adopt legacy implicitly (0.4588ms)
+✔ work-session legacy installation keeps explicit empty acquire compatibility (0.361ms)
+✔ work-session expired controller transfer needs explicit current session acknowledgement as well as exact holder (0.768ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 104.2691

@@ -1,0 +1,11 @@
+{
+  "status": "TEMP_PREPARED_NOT_APPLIED_OR_SUITE_TESTED",
+  "file": "core4/test/installed-composition.test.js",
+  "baseSHA256": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+  "patchedSHA256": "043cc0ad637c03f9b5c5aae9d5e6f41e2085ab82d0b6f2e39842ace52475919f",
+  "baseBytes": 37745,
+  "patchedBytes": 38310,
+  "diffSHA256": "ae3d3bc9d2112b4753b91d941f80abd3b68ae7b553f8778a888cad1e435fec74",
+  "cause": "legacy4.2.2 metadata retained current identity-enabled registry; composition_registry at verifyPackage, not installed handshake",
+  "contract": "genuine legacy derive must omit registryVerification; regenerate only that legacy registry data with identity=false and rehash; current4.2.6 gates and renderJobs/id negative assertions unchanged"
+}

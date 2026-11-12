@@ -1,0 +1,166 @@
+✔ mixed repair semantic incident packages retain the explicit legacy seven-file CEP contract (989.9802ms)
+ℹ {"name":"readonly","currentPackageHash":"a74cb12a791aa68e06662716a80dfc6848d713c5a1ce58105ddf120ca34dc381","semanticLegacyPackageHash":"4eb9f335c3b2ad80b9a75c64ea6bc0f98d20568bb23b9fef6a3e1dbdb3e359c0","changedDataFiles":["cep/jsx/registry.jsx","config/catalog.json"],"evidence":"semantic legacy data; not byte-historical or native old-panel proof"}
+ℹ {"name":"manual","currentPackageHash":"26673c5aa903e1cb5957c7313120d0d7d3fc23c856a2815dc48dddab8882b965","semanticLegacyPackageHash":"f5483fb16109424575a5aa2abf893fc988d6ff0fca033cfe1b774a4e5309fff8","changedDataFiles":["cep/jsx/registry.jsx","config/catalog.json"],"evidence":"semantic legacy data; not byte-historical or native old-panel proof"}
+ℹ {"name":"manual-titles-variants","currentPackageHash":"da720337f92e71b42c0f751d93477b08f4d9ca33cefa6573b2fcbde7c3e721d9","semanticLegacyPackageHash":"8def63b44da8dcbfc251ea64adb763345a88cdc95979fb304a5f84ca8fccae58","changedDataFiles":["cep/jsx/registry.jsx","config/catalog.json"],"evidence":"semantic legacy data; not byte-historical or native old-panel proof"}
+✔ mixed repair native Windows census selects its own PID from a JSON array (817.298ms)
+✖ mixed repair authentic success preserves protected byte/stat facts and both histories without a synthetic receiver (8411.2705ms)
+▶ mixed repair rejects wrong MAC, owner token and malformed scope before mutation
+  ✔ mac (5495.6231ms)
+  ✔ token (5494.9604ms)
+  ✔ scope (5491.2264ms)
+  ✔ numeric-birth (5366.1671ms)
+✔ mixed repair rejects wrong MAC, owner token and malformed scope before mutation (21849.1871ms)
+✖ mixed repair rejects active or unknown process observations and original living repair actor (10229.4474ms)
+✖ mixed repair refuses all three occupied endpoints and an unrelated install gate (6095.4194ms)
+✖ mixed repair holds attributable install and broker gates until read-back and blocks the ordinary state writer (7433.1283ms)
+✔ mixed repair refuses a foreign broker gate without publishing repair state or removing the foreign gate (7358.3528ms)
+▶ mixed repair rejects inode/hash drift, job registry and undeclared writer fences
+  ✔ inode (6812.761ms)
+  ✔ hash (7203.2517ms)
+  ✔ job (7204.2321ms)
+  ✔ writer (7293.9478ms)
+✔ mixed repair rejects inode/hash drift, job registry and undeclared writer fences (28516.5506ms)
+▶ mixed repair refuses durable external file/output/job or unresolved constraint fences
+  ✔ file (5668.9901ms)
+  ✔ output (5533.2015ms)
+  ✔ jobId (5459.8215ms)
+  ✔ unresolved (5667.471ms)
+✔ mixed repair refuses durable external file/output/job or unresolved constraint fences (22330.9981ms)
+▶ mixed repair admits only the closed layer-overlay replacement provenance scope
+  ✔ source (6165.3086ms)
+  ✔ shared-source (5758.9441ms)
+  ✔ nested-output (5665.5761ms)
+  ✔ nested-file (5617.1691ms)
+  ✔ nested-job (5703.7797ms)
+  ✔ wrong-session (5593.479ms)
+  ✔ wrong-effect (5579.3749ms)
+  ✔ relative-reference (5571.2789ms)
+  ✔ bad-count (5495.4945ms)
+✔ mixed repair admits only the closed layer-overlay replacement provenance scope (51152.2963ms)
+▶ mixed repair refuses reservation output and grant file execution scopes
+  ✔ reservation-output (5495.0834ms)
+  ✔ grant-file (5516.6993ms)
+✔ mixed repair refuses reservation output and grant file execution scopes (11012.3358ms)
+✖ mixed repair crash after each rename and every record publication recovers only the original monotonic prefix (7130.1432ms)
+✖ mixed repair rejects substituted archive/source inode and nonmonotonic visible recovery state (7345.7997ms)
+▶ mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports
+  ✔ tools/composition-spec.js before-plan (5459.9386ms)
+  ✔ tools/composition-spec.js after-plan (7073.4636ms)
+  ✔ runtime/composition-spec.js before-plan (5696.0131ms)
+  ✔ runtime/composition-spec.js after-plan (6969.8979ms)
+✔ mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports (25200.1737ms)
+ℹ tests 42
+ℹ suites 0
+ℹ pass 36
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 216011.5113
+
+✖ failing tests:
+
+test at test\mixed-installation-repair.test.js:53:1
+✖ mixed repair authentic success preserves protected byte/stat facts and both histories without a synthetic receiver (8411.2705ms)
+  Error: repair_endpoint_busy
+      at Server.<anonymous> (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-O6PyyO\repo\core4\tools\repair-mixed-installation.js:343:91)
+      at Object.onceWrapper (node:events:631:26)
+      at Server.emit (node:events:509:28)
+      at emitErrorNT (node:net:2044:8)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'repair_endpoint_busy'
+  }
+
+test at test\mixed-installation-repair.test.js:99:1
+✖ mixed repair rejects active or unknown process observations and original living repair actor (10229.4474ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /simulated crash/. Input:
+  
+  'Error: repair_endpoint_busy'
+  
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:105:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_endpoint_busy
+        at Server.<anonymous> (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-YGoknz\repo\core4\tools\repair-mixed-installation.js:343:91)
+        at Object.onceWrapper (node:events:631:26)
+        at Server.emit (node:events:509:28)
+        at emitErrorNT (node:net:2044:8)
+        at process.processTicksAndRejections (node:internal/process/task_queues:90:21),
+    expected: /simulated crash/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:110:1
+✖ mixed repair refuses all three occupied endpoints and an unrelated install gate (6095.4194ms)
+  Error: listen EADDRINUSE: address already in use 127.0.0.1:3457
+      at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+      at listenInCluster (node:net:2065:12)
+      at node:net:2274:7
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'EADDRINUSE',
+    errno: -4091,
+    syscall: 'listen',
+    address: '127.0.0.1',
+    port: 3457
+  }
+
+test at test\mixed-installation-repair.test.js:122:1
+✖ mixed repair holds attributable install and broker gates until read-back and blocks the ordinary state writer (7433.1283ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /simulated crash/. Input:
+  
+  'Error: repair_endpoint_busy'
+  
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:137:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_endpoint_busy
+        at Server.<anonymous> (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-21oZsF\repo\core4\tools\repair-mixed-installation.js:343:91)
+        at Object.onceWrapper (node:events:631:26)
+        at Server.emit (node:events:509:28)
+        at emitErrorNT (node:net:2044:8)
+        at process.processTicksAndRejections (node:internal/process/task_queues:90:21),
+    expected: /simulated crash/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test\mixed-installation-repair.test.js:216:1
+✖ mixed repair crash after each rename and every record publication recovers only the original monotonic prefix (7130.1432ms)
+  Error: repair_endpoint_busy
+      at Server.<anonymous> (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-EF0Kq7\repo\core4\tools\repair-mixed-installation.js:343:91)
+      at Object.onceWrapper (node:events:631:26)
+      at Server.emit (node:events:509:28)
+      at emitErrorNT (node:net:2044:8)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'repair_endpoint_busy'
+  }
+
+test at test\mixed-installation-repair.test.js:250:1
+✖ mixed repair rejects substituted archive/source inode and nonmonotonic visible recovery state (7345.7997ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /simulated crash/. Input:
+  
+  'Error: repair_endpoint_busy'
+  
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\mixed-installation-repair.test.js:253:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: repair_endpoint_busy
+        at Server.<anonymous> (C:\Users\Ant\AppData\Local\Temp\core4-mixed-repair-WEi676\repo\core4\tools\repair-mixed-installation.js:343:91)
+        at Object.onceWrapper (node:events:631:26)
+        at Server.emit (node:events:509:28)
+        at emitErrorNT (node:net:2044:8)
+        at process.processTicksAndRejections (node:internal/process/task_queues:90:21),
+    expected: /simulated crash/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

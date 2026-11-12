@@ -134,14 +134,33 @@ function raw(port, route, body) {
   });
 }
 async function panel(port, installation) {
+  // Installed fixtures require identity/bootstrap; synthetic private peers have
+  // no installed roots and retain their original signed claim.
+  const journalFile = installation.releaseDir ? path.join(installation.stateDir, 'receiver/completions.ndjson') : null, prefix = journalFile ? fs.readFileSync(journalFile) : null;
   const challenge = (await raw(port, '/challenge', { role: 'panel' })).value, peerId = 'owner-runtime-panel'; let sequence = 0;
-  const response = await raw(port, '/link', { challenge, peerId, proof: mac({ challenge, peerId }, installation.panelToken) }); assert.equal(response.status, 200);
-  return { async request(route, payload) {
+  const loadedPanel = installation.releaseDir ? require('../integrations/cep/panel-identity').verify(file => fs.readFileSync(path.join(installation.releaseDir, file))) : undefined;
+  const claim = { challenge, peerId, ...(loadedPanel ? { loadedPanel } : {}), ...(loadedPanel?.registryBuildId ? { extensionRoot: installation.cepDir.replace(/\\/g, '/') } : {}) };
+  const linked = await raw(port, '/link', { ...claim, proof: mac(claim, installation.panelToken) }); assert.equal(linked.status, 200, JSON.stringify(linked.value));
+  assert.equal(linked.value.mac, mac(linked.value.body, installation.panelToken));
+  const client = { async request(route, payload) {
     const body = { epoch: challenge.epoch, peerId, sequence: ++sequence, method: 'POST', path: route, payload };
     const response = await raw(port, route, { body, mac: mac(body, installation.panelToken) });
     if (response.status === 200) { assert.equal(response.value.mac, mac(response.value.body, installation.panelToken)); return { status: 200, value: response.value.body.payload }; }
     return response;
   } };
+  if (linked.value.body.bootstrap) {
+    const bootstrap = linked.value.body.bootstrap;
+    const ready = await client.request('/registry-ready', { nonce: bootstrap.nonce, sessionId: bootstrap.sessionId, registryBuildId: loadedPanel.registryBuildId, refreshed: false });
+    assert.equal(ready.status, 200, JSON.stringify(ready.value)); assert.equal(ready.value.registryReady, true);
+    const journal = fs.readFileSync(journalFile); assert.ok(journal.subarray(0, prefix.length).equals(prefix), 'registry bootstrap preserves the exact existing journal prefix');
+    const appended = journal.subarray(prefix.length).toString('utf8').trim().split('\n').map(JSON.parse);
+    assert.deepEqual(appended.map(event => event.type), ['begin', 'complete']);
+    const [begin, complete] = appended; assert.equal(begin.command.moduleId, 'registry-bootstrap'); assert.equal(begin.command.operationId, 'verify-registry');
+    assert.equal(begin.command.executorHash, loadedPanel.registryBuildId); assert.equal(begin.command.payload.nonce, bootstrap.nonce);
+    assert.equal(complete.commandId, begin.command.commandId); assert.equal(complete.response.commandId, begin.command.commandId); assert.equal(complete.response.executorHash, begin.command.executorHash); assert.equal(complete.response.payloadHash, begin.command.payloadHash);
+    assert.deepEqual(complete.response.result, { registryBootstrapVersion: 1, registryBuildId: loadedPanel.registryBuildId, refreshed: false, sessionId: bootstrap.sessionId });
+  }
+  return client;
 }
 function observation() { return { observationVersion: 1, target: { projectId: null, compId: null }, project: { name: 'fixture', numItems: 0, saved: false }, compositions: [], layers: [], truncated: false, aeVersion: '26-fixture' }; }
 function vmObservation(pkg, frame) {
@@ -226,7 +245,7 @@ test('durable project read rejections cross the production owner IPC and stdio w
   assert.equal((await p.request('/complete', completion(frame, vmObservation(f.pkg, frame)))).status, 200);
   assert.equal((await read).authority, false);
   await c.call('controller_release', { leaseToken: grant.leaseToken });
-  assert.deepEqual(fs.readFileSync(journalFile, 'utf8').trim().split('\n').map(JSON.parse).map(e => e.type), ['origin', ...Array(5).fill(['begin', 'complete']).flat()]);
+  assert.deepEqual(fs.readFileSync(journalFile, 'utf8').trim().split('\n').map(JSON.parse).map(e => e.type), ['origin', ...Array(6).fill(['begin', 'complete']).flat()]);
 });
 
 test('operator-confirmation owner composition reads a project without requiring a mutation grant', async t => {
@@ -1065,7 +1084,11 @@ test('actual owner crash after durable delivery restarts diagnostic and never pr
   assert.equal((await raw(diagnostic.physical.port, '/poll', {})).status, 503);
   assert.equal((await raw(diagnostic.physical.port, '/complete', completion(frame))).status, 503);
   assert.deepEqual(fs.readFileSync(journalFile), journal); assert.deepEqual(fs.readFileSync(path.join(f.d.stateDir, 'receiver/owner')), marker);
-  assert.deepEqual(journal.toString('utf8').trim().split('\n').map(JSON.parse).map(e => e.type), ['origin', 'begin']);
+  const journalEvents = journal.toString('utf8').trim().split('\n').map(JSON.parse);
+  assert.deepEqual(journalEvents.map(e => e.type), ['origin', 'begin', 'complete', 'begin']);
+  assert.equal(journalEvents[1].command.moduleId, 'registry-bootstrap');
+  assert.equal(journalEvents[2].commandId, journalEvents[1].command.commandId);
+  assert.equal(journalEvents.at(-1).command.commandId, frame.commandId);
   second.child.send('signal'); assert.equal((await second.exit).code, 0); assert.deepEqual(fs.readFileSync(journalFile), journal);
 });
 
@@ -1098,7 +1121,7 @@ test('desired-stop freezes new control while captured original inspection comple
   assert.equal(runtime.status().attachmentOwner.frozen, true); assert.equal(runtime.status().attachmentOwner.closed, true);
   assert.equal(fs.existsSync(path.join(f.d.stateDir, 'runtime-maintenance.json')), true);
   const events = fs.readFileSync(path.join(f.d.stateDir, 'receiver/completions.ndjson'), 'utf8').trim().split('\n').map(JSON.parse);
-  assert.deepEqual(events.map(e => e.type), ['origin', 'begin', 'complete']);
+  assert.deepEqual(events.map(e => e.type), ['origin', 'begin', 'complete', 'begin', 'complete']);
 });
 
 test('owner main signal persists desired-stop and drains original completion without a second shutdown request', async t => {
@@ -1128,7 +1151,7 @@ test('later panel poll after controller detach durably settles an undelivered re
   const grant = await ok(observer.call('controller_acquire', {}));
   await ok(observer.call('controller_release', { leaseToken: grant.leaseToken }));
   const events = fs.readFileSync(path.join(f.d.stateDir, 'receiver/completions.ndjson'), 'utf8').trim().split('\n').map(JSON.parse);
-  assert.deepEqual(events.map(e => e.type), ['origin', 'begin', 'complete']);
+  assert.deepEqual(events.map(e => e.type), ['origin', 'begin', 'complete', 'begin', 'complete']);
 });
 
 async function guardedFixture(t, { expireAtBegin = false, beforeSubmit } = {}) {

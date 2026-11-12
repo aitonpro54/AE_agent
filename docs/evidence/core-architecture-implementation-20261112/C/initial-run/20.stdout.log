@@ -1,0 +1,11 @@
+✔ start-over-driver holds authenticated read-only endpoints while exact AE death is required, then uses one borrowed-endpoint finisher (16524.821ms)
+✔ start-over-driver post-claim fault stays read-only without retry; explicit panel continuation restarts the same intent after former writer death (16692.7274ms)
+✔ start-over-driver startup continues original crash-before-inventory without stopped receipt or a second reset (12914.5864ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 46245.8946

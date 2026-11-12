@@ -1,0 +1,9 @@
+*.stdout.txt -whitespace
+*.stdout.log -whitespace
+*.stderr.log -whitespace
+*.patch -whitespace
+*.diff -whitespace
+*.json linguist-generated=true
+*.log linguist-generated=true
+*.stdout.txt linguist-generated=true
+*.stderr.txt linguist-generated=true

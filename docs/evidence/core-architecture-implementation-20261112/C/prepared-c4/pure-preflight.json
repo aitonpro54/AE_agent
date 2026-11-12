@@ -1,0 +1,94 @@
+{
+  "status": "PURE_PREVIEW_PASS_NOT_CURRENT_CHECK_KEY",
+  "preparedModule": "core4/test/fixtures/mixed-installation.js",
+  "preparedSHA256": "aab62c7523dfba7f325fa30d8a9167cf4123a155b1317ea5e2f30288e2c9076a",
+  "compileFilename": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4\\test\\fixtures\\mixed-installation.js",
+  "results": [
+    {
+      "name": "readonly",
+      "currentPkgHash": "a74cb12a791aa68e06662716a80dfc6848d713c5a1ce58105ddf120ca34dc381",
+      "semanticLegacyHash": "4eb9f335c3b2ad80b9a75c64ea6bc0f98d20568bb23b9fef6a3e1dbdb3e359c0",
+      "releaseVersion": "4.2.5",
+      "changedDataFiles": [
+        "cep/jsx/registry.jsx",
+        "config/catalog.json"
+      ],
+      "policySHA": "afa36112fd08e2341def21544b69e2c4e3b6a1c15b19b6dd3de543aed5e9a2d7",
+      "registrySHA": "9f0496f7008cf193d2ddb798da2e7a3207d84ce474eac23290f5b4a7571b1ca6",
+      "currentRegistrySHA": "ae8473bfe84feef7b0358f2a14b5710c6161d8dbd514409ceead9bb10f148ceb",
+      "currentCatalogRevision": "selected-v1-03acbf7923b654907f356a06dc96909fff7058fed772aaeea92617956368c73b",
+      "semanticCatalogRevision": "selected-v1-c7906190840f721ad1540ee03bbaf117d284dcdc0ba1d398a6e4474f590c6a31",
+      "executableFilesUnchanged": 56,
+      "cepFiles": [
+        "CSXS/manifest.xml",
+        "index.html",
+        "installation.js",
+        "js/panel.js",
+        "js/poll-dispatcher.js",
+        "jsx/registry.jsx",
+        "panel.css"
+      ],
+      "registryVerificationPropertyAbsent": true
+    },
+    {
+      "name": "manual",
+      "currentPkgHash": "26673c5aa903e1cb5957c7313120d0d7d3fc23c856a2815dc48dddab8882b965",
+      "semanticLegacyHash": "f5483fb16109424575a5aa2abf893fc988d6ff0fca033cfe1b774a4e5309fff8",
+      "releaseVersion": "4.2.5",
+      "changedDataFiles": [
+        "cep/jsx/registry.jsx",
+        "config/catalog.json"
+      ],
+      "policySHA": "fdb876483f251213b240b6fc6ad371bc42a81c2fa606445a9fa0bd45918a01fc",
+      "registrySHA": "7a1e97633e5ee61cace88631499c7e1a4d46b9b7a1d3f45c1a1237fdf01d1613",
+      "currentRegistrySHA": "b7c00c4b59d0150aaba7776be1c51650967498c3cad4b47a517c103e864e4873",
+      "currentCatalogRevision": "selected-v1-94223dfd355441165bb48f02d0f26a7baf0aa52c8d5018d409628d5c58c6456d",
+      "semanticCatalogRevision": "selected-v1-5c7fcdc93df2e2bf61e98488944cbb7fa89f4b9d8e27720f055841345821334e",
+      "executableFilesUnchanged": 66,
+      "cepFiles": [
+        "CSXS/manifest.xml",
+        "index.html",
+        "installation.js",
+        "js/panel.js",
+        "js/poll-dispatcher.js",
+        "jsx/registry.jsx",
+        "panel.css"
+      ],
+      "registryVerificationPropertyAbsent": true
+    },
+    {
+      "name": "manual-titles-variants",
+      "currentPkgHash": "da720337f92e71b42c0f751d93477b08f4d9ca33cefa6573b2fcbde7c3e721d9",
+      "semanticLegacyHash": "8def63b44da8dcbfc251ea64adb763345a88cdc95979fb304a5f84ca8fccae58",
+      "releaseVersion": "4.2.5",
+      "changedDataFiles": [
+        "cep/jsx/registry.jsx",
+        "config/catalog.json"
+      ],
+      "policySHA": "0206bc554342887dd86d56acf08f903bdc4a7de120e08acdd2bc0737a415fa98",
+      "registrySHA": "49eb64b9896abcf0d5373bec2dc0a0508e49fec779bfe2a7536b276dfd1993d7",
+      "currentRegistrySHA": "0868e0fa3167d670138d79b3f49c4143687031239e86d02e5f9c18a5ad89f032",
+      "currentCatalogRevision": "selected-v1-54245300b41697c25347d8a4ff743ab6ea8699c8f54add8d17bb703ffff3a3f1",
+      "semanticCatalogRevision": "selected-v1-84983d48d426093c2fe2f94a16ee0cc0c919a3abdced5c37ed6869ff20da0f57",
+      "executableFilesUnchanged": 78,
+      "cepFiles": [
+        "CSXS/manifest.xml",
+        "index.html",
+        "installation.js",
+        "js/panel.js",
+        "js/poll-dispatcher.js",
+        "jsx/registry.jsx",
+        "panel.css"
+      ],
+      "registryVerificationPropertyAbsent": true
+    }
+  ],
+  "planRoot": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c4-prep-31aa207da41646c1b7ec5cbcad9517cc\\pure-plan-XphNE9",
+  "planRootEntries": [],
+  "noFixtureCall": true,
+  "noApply": true,
+  "noTCP": true,
+  "noActors": true,
+  "noProductionModuleOverrides": true,
+  "scope": "semantic legacy data only; not byte-historical/native-old-panel proof"
+}

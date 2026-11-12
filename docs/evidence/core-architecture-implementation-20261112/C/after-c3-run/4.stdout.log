@@ -1,0 +1,45 @@
+✔ owner-runtime thin-client preload refuses all nested child factories before native calls and preserves owner hooks in VM (4.5112ms)
+✔ owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants (14622.8779ms)
+✔ owner-runtime operator-confirmation owner composition reads a project without requiring a mutation grant (16479.316ms)
+✔ owner-runtime installed montage CLI scopes one task across controller generations using fresh evidence (17019.4172ms)
+✔ owner-runtime media lock survives owner EOF until the adopted host exits (1565.3843ms)
+✔ owner-runtime installed montage locks approved bytes, binds receipts and returns bounded task outcomes (21916.4878ms)
+ℹ mixed 1109-item fixture prospective intent v1=248519, v2=213398 bytes
+ℹ receiver max=72951, broker ledger max=228347, owner run output=69072 bytes
+✔ owner-runtime installed layer insertion refuses wide inspection and intent before any mutation offer (15471.2098ms)
+✔ owner-runtime installed operator-r1-minimal enforces R1 admission without montage (14549.1488ms)
+✔ owner-runtime installed operator-project-lifecycle enforces R1 admission without montage (12922.185ms)
+✔ owner-runtime installed lifecycle retains open observation and both checkpoints after disk proof fails (16030.144ms)
+✔ owner-runtime only a Broker-issued fresh dry-run refusal crosses the owner boundary as a known refusal (7.5991ms)
+✔ owner-runtime default verified entry markers remain exact and new owner files stay outside the ordinary source package (3359.7595ms)
+✔ owner-runtime A1 direct stdio concurrent close shares deferred peer success (2728.5364ms)
+✔ owner-runtime A1 direct stdio concurrent close shares deferred peer rejection (2656.8489ms)
+✔ owner-runtime A1 upper Owner wrapper rejects draining before sharing the deferred lower cleanup (7951.9248ms)
+✔ owner-runtime normal package without the complete owner cluster refuses private owner mode before any listener or store opens (2608.3624ms)
+✔ owner-runtime TEMP installed owner and two real thin Node clients retain the same owner after both client EOF and owner stdin EOF (9282.9849ms)
+✔ owner-runtime foreign HTTP endpoint refuses owner startup before stores open and preserves both empty and retained state byte for byte (7583.1482ms)
+✔ owner-runtime competing starts reserve under the install gate and later owner attempts cannot displace the winner or rewrite its markers (11970.5388ms)
+✔ owner-runtime reserved HTTP server closes and attributed startup fence remains if Broker construction fails before peer creation (9316.8523ms)
+✔ owner-runtime private prebound peer requires a listening native loopback HTTP server and reuses its one listener (14.9384ms)
+✔ owner-runtime initial receiver owner marker leaves status available and refuses controller acquisition without clearing the marker (7733.4841ms)
+✔ owner-runtime initial corrupt Broker ledger blocks acquisition while owner diagnostics remain available (7136.0303ms)
+✔ owner-runtime actual dead settled owner restarts with fresh process proof and unchanged journal and installation (13921.6514ms)
+✔ owner-runtime actual legacy receiver fence exposes only recovery diagnostics without a Broker writer or replay (7304.0358ms)
+✔ owner-runtime actual owner crash after durable delivery restarts diagnostic and never promotes or replays original ongoing work (13885.678ms)
+✔ owner-runtime inherited generic methods execute on the actual Broker so activity observes its control state (7715.8566ms)
+✔ owner-runtime desired-stop freezes new control while captured original inspection completes after client detach (9423.7178ms)
+✔ owner-runtime owner main signal persists desired-stop and drains original completion without a second shutdown request (9122.2403ms)
+✔ owner-runtime later panel poll after controller detach durably settles an undelivered read without a receiver fence (9523.6783ms)
+✔ owner-runtime captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry (25.9795ms)
+✔ owner-runtime active poll delivery checks the captured lease again immediately after store.begin (25.0654ms)
+✔ owner-runtime lease expiry across a trusted await is checked at physical submit before durable begin (11.2214ms)
+✔ owner-runtime no captured controller context rejects before durable begin; original completion remains accepted after lease expiry (17.6228ms)
+✔ owner-runtime owner bootstrap rejects complete-tree tampering before importing a modified Broker (2491.0843ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 276540.0692

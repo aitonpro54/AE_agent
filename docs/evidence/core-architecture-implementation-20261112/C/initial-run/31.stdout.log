@@ -1,0 +1,21 @@
+✔ readoption-core pinned hardlink gate anchors work with the unchanged sealed lease consumer (3851.0677ms)
+✔ readoption-core H01 one CAS preserves old bytes and supports original baseline nlink 1 (16095.5044ms)
+✔ readoption-core H01 one CAS preserves old bytes and supports original baseline nlink 2 (16254.004ms)
+✔ readoption-core H07 explicit enable changes only barrier/gates and never needs the host after committed CAS (28851.9246ms)
+✔ readoption-core Windows repeatability: two whole stopped cycles preserve prior anchors and close old inode FDs before CAS (41979.8661ms)
+✔ readoption-core forged operation/context/lease capabilities cannot write (3690.9645ms)
+✔ readoption-core H03/P2 inspect-to-apply old adoption valid-bytes is a zero-write refusal (6815.3162ms)
+✔ readoption-core H03/P2 inspect-to-apply old adoption byte-equal-inode is a zero-write refusal (6944.1457ms)
+✔ readoption-core P2 replay whitespace-50k refuses before any preparation or claim (3894.248ms)
+✔ readoption-core P2 replay canonical-over-budget refuses before any preparation or claim (3892.4317ms)
+✔ readoption-core P2 exact serialized old-byte budget remains replayable through claim and CAS (16074.3366ms)
+✔ readoption-core P2 foreign install gate during inert publication cannot become owned or publish a claim (6441.3659ms)
+✔ readoption-core P2 foreign broker gate during inert publication cannot become owned or publish a claim (6473.6081ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 161386.2593

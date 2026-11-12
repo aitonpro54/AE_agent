@@ -1,0 +1,25 @@
+✔ stopped-host-readoption-operator source guards require private bootstrap before all nonbuiltins and constant reviewed imports (4.8384ms)
+✔ stopped-host-readoption-operator all four helpers have one exact union entry; build/write/verifier retain unchanged runtime package (594.8183ms)
+✔ stopped-host-readoption-operator bootstrap capability remains private through await, then revokes on resolve/reject/synchronous throw (713.2408ms)
+✔ stopped-host-readoption-operator readonly/stdio support and wrong distribution/current pin refuse before operator or native module import (1519.2195ms)
+✔ stopped-host-readoption-operator unknown flags duplicates invalid hashes UUID paths and cross-mode witness flags are zero-write early refusals (4698.6444ms)
+✔ stopped-host-readoption-operator tampered distributed stopped-host-readoption.js refuses before operator import (470.3641ms)
+✔ stopped-host-readoption-operator tampered distributed stopped-host-readoption-store.js refuses before operator import (473.5909ms)
+✔ stopped-host-readoption-operator tampered distributed stopped-host-readoption-transaction.js refuses before operator import (432.5373ms)
+✔ stopped-host-readoption-operator tampered distributed operate-stopped-readoption.js refuses before operator import (453.7659ms)
+✔ stopped-host-readoption-operator a validly hashed extra closure file is refused before operator import (465.0177ms)
+✔ stopped-host-readoption-operator valid hashed poisoned installed owner source is only data; failures never output descriptor or credentials (4874.2983ms)
+✔ stopped-host-readoption-operator apply witness hash refuses before election/library import and preserves installed data (3855.2721ms)
+✔ stopped-host-readoption-operator apply witness budget refuses before election/library import and preserves installed data (3623.7195ms)
+✔ stopped-host-readoption-operator apply witness UTF8 refuses before election/library import and preserves installed data (3736.9884ms)
+✔ stopped-host-readoption-operator pinned witness read detects in-place byte drift before any election (3462.8668ms)
+✔ stopped-host-readoption-operator all five modes dispatch exact frozen options and an owned witness snapshot while election stays held (11278.0501ms)
+✔ stopped-host-readoption-operator continuous reservation closes pending HTTP and rebinds after awaited success or refusal (5788.1834ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 46580.9501

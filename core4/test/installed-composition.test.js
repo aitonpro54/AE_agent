@@ -7,7 +7,7 @@ const { hash, canonical } = require('../protocol/json');
 const { buildPackage, verifyPackage } = require('../tools/package-installable');
 const { planInstall, applyInstall } = require('../tools/install-core4');
 const { verifyInstallation, verifyRelease, verifyCep } = require('../runtime/installation');
-const { deriveComposition } = require('../runtime/stdio-entry');
+const { deriveComposition, registrySource } = require('../runtime/stdio-entry');
 const { checkEntrySource } = require('../tools/check-boundaries');
 const { mac } = require('../integrations/cep/peer-protocol');
 const root = path.resolve(__dirname, '..');
@@ -38,8 +38,12 @@ function rpcChild(f) {
 function raw(port, route, value) { return new Promise((resolve, reject) => { const request = http.request('http://127.0.0.1:' + port + route, { method: 'POST', agent: false, headers: { Origin: 'null', 'Content-Type': 'application/json' } }, response => { let bytes = ''; response.on('data', b => { bytes += b; }); response.on('end', () => resolve({ status: response.statusCode, value: JSON.parse(bytes) })); }); request.on('error', reject); request.end(canonical(value)); }); }
 async function panel(port, d) {
   const challenge = (await raw(port, '/challenge', { role: 'panel' })).value, peerId = 'composition-fixture';
-  const linked = await raw(port, '/link', { challenge, peerId, proof: mac({ challenge, peerId }, d.panelToken) }); assert.equal(linked.status, 200); let sequence = 0;
-  return async (route, payload) => { const body = { epoch: challenge.epoch, peerId, sequence: ++sequence, method: 'POST', path: route, payload }; const response = await raw(port, route, { body, mac: mac(body, d.panelToken) }); assert.equal(response.status, 200, JSON.stringify(response.value)); assert.equal(response.value.mac, mac(response.value.body, d.panelToken)); return response.value.body.payload; };
+  const loadedPanel = require('../integrations/cep/panel-identity').verify(file => fs.readFileSync(path.join(d.releaseDir, file)));
+  const claim = { challenge, peerId, loadedPanel, extensionRoot: d.cepDir.replace(/\\/g, '/') };
+  const linked = await raw(port, '/link', { ...claim, proof: mac(claim, d.panelToken) }); assert.equal(linked.status, 200, JSON.stringify(linked.value)); assert.equal(linked.value.mac, mac(linked.value.body, d.panelToken)); let sequence = 0;
+  const call = async (route, payload) => { const body = { epoch: challenge.epoch, peerId, sequence: ++sequence, method: 'POST', path: route, payload }; const response = await raw(port, route, { body, mac: mac(body, d.panelToken) }); assert.equal(response.status, 200, JSON.stringify(response.value)); assert.equal(response.value.mac, mac(response.value.body, d.panelToken)); return response.value.body.payload; };
+  if (linked.value.body.bootstrap) { const bootstrap = linked.value.body.bootstrap; assert.equal((await call('/registry-ready', { nonce: bootstrap.nonce, sessionId: bootstrap.sessionId, registryBuildId: loadedPanel.registryBuildId, refreshed: false })).registryReady, true); }
+  return call;
 }
 test('installed-composition deterministic packages, fixed ES3 registries, admission pins and physical closure', () => {
   for (const selector of ['manual', 'readonly']) {
@@ -128,6 +132,12 @@ test('installed-composition selects R1 by versioned capability and serves the sa
   reject(pkg => edit(pkg, policyPath, policy => { delete policy.version; delete policy.capabilities; }), /composition_policy_version/);
   const legacy = structuredClone(r1); legacy.release.version = '4.2.2';
   edit(legacy, policyPath, policy => { delete policy.version; delete policy.capabilities; });
+  const legacySelected = deriveComposition(legacy.release, read(legacy));
+  assert.equal(Object.hasOwn(legacySelected, 'registryVerification'), false);
+  const legacyRegistry = registrySource(legacySelected.assets, read(legacy)('runtime/host/json-codec.jsx').toString('utf8'), false);
+  assert.doesNotMatch(legacyRegistry, /CORE4_REGISTRY_ID/);
+  legacy.files['cep/jsx/registry.jsx'] = Buffer.from(legacyRegistry).toString('base64');
+  legacy.release.hashes['cep/jsx/registry.jsx'] = hash(legacyRegistry); legacy.packageHash = hash(legacy.release);
   assert.equal(verifyPackage(legacy), legacy);
   assert.equal(deriveComposition(legacy.release, read(legacy)).renderJobs, true);
   edit(legacy, compositionPath, c => { c.id = 'fixture-r1'; });

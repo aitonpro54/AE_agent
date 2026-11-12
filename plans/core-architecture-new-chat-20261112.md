@@ -1,5 +1,9 @@
 # Запрос для нового чата реализации Core
 
+> Исторический стартовый запрос. По последующему поручению пользователя A → B → C
+> выполнены в текущем Core-чате. Не запускать повторно с A1; актуальный результат
+> и границы находятся в [исполненном плане](core-architecture-implementation-20261112.md).
+
 Работай в `C:/Users/Ant/Documents/Codex/AE_agent_core`.
 Выполни source-этапы A → B → C из
 `plans/core-architecture-implementation-20261112.md`.

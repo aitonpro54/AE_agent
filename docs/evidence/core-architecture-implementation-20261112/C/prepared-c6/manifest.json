@@ -1,0 +1,10 @@
+{
+  "status": "TEMP_PREPARED_NOT_APPLIED_NOT_RERUN",
+  "file": "core4/test/exact-f548-transition.test.js",
+  "baseSHA256": "5cf0f0fbccacf5147a76f54ba75505f48d48b95ac043f128268698fa7425bc08",
+  "patchedSHA256": "e63572a0c207fcf9cc902bda090bb1e9195e7a081e0f9633e259d6fd1cc2ab00",
+  "diffSHA256": "2d5832db49f55f62457624e1f611c53f20070f2d0b8f03ed6b1aebc789497fa2",
+  "baseBytes": 270,
+  "patchedBytes": 425,
+  "change": "test observation timeout30000->90000 only; exact artifact and production contracts unchanged"
+}

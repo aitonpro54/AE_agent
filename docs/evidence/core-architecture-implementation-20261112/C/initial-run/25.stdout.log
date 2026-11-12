@@ -1,0 +1,28 @@
+✔ start-over-finisher preserves UNKNOWN bytes and old identity while enabling only a new signed baseline-required session (13308.8186ms)
+✔ start-over-finisher repeat same reset is historical data only and preserves current new-work files (13612.934ms)
+✔ start-over-finisher stopped receipt and initial owner inventory are optional after exact producer death (15589.0004ms)
+✔ start-over-finisher resumes same intent after crash at attempt publication before canonical claim and former finisher death (15519.0479ms)
+✔ start-over-finisher resumes same intent after crash at canonical gate claim and former finisher death (15435.2225ms)
+✔ start-over-finisher resumes same intent after crash at broker archive and former finisher death (16810.508ms)
+✔ start-over-finisher resumes same intent after crash at receiver archive and former finisher death (17500.9967ms)
+✔ start-over-finisher resumes same intent after crash at owner archive and former finisher death (18156.1604ms)
+✔ start-over-finisher resumes same intent after crash at session candidate publication and former finisher death (22771.0433ms)
+✔ start-over-finisher resumes same intent after crash at session publish intent and former finisher death (24923.8012ms)
+✔ start-over-finisher resumes same intent after crash at new session alias and former finisher death (26504.5165ms)
+✔ start-over-finisher resumes same intent after crash at session receipt and former finisher death (26269.1517ms)
+✔ start-over-finisher resumes same intent after crash at reset completion receipt and former finisher death (27179.3087ms)
+✔ start-over-finisher resumes same intent after crash at owned gate release and former finisher death (27549.9798ms)
+✔ start-over-finisher loss after final barrier removal returns historical completion without a second lease or reset (13044.6086ms)
+✔ start-over-finisher old opaque session and baseline bytes remain archived and cannot clear the new baseline (15110.8145ms)
+✔ start-over-finisher foreign source introduced after partial archive is retained and blocks continuation (2552.7687ms)
+✔ start-over-finisher same bytes in a foreign archive incarnation cannot replace the exact planned object (4477.3041ms)
+✔ start-over-finisher lookalike capabilities and stale intent pin cannot enter archive or claim authority (677.8156ms)
+✔ start-over-finisher foreign candidate alias outside the transaction cannot be mistaken for a retained atomic stage (18557.5957ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 335668.2086

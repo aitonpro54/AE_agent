@@ -1,0 +1,62 @@
+✖ owner-installation runtime selector is independent of composition and owner contract is a closed admitted cluster (33.8009ms)
+✔ owner-installation fresh-root planning projects exact origin bytes without destination reads or writes (303.9739ms)
+✔ owner-installation TEMP readonly/manual apply stages exact role sidecar before publishing config last (6543.8777ms)
+✔ owner-installation legacy to owner to legacy and both rollbacks preserve exact sidecar bytes and stable origin (6218.0142ms)
+✔ owner-installation first owner rollback removes only its exact sidecar and retains stable state origin (2218.3855ms)
+✔ owner-installation virgin admission refuses retained transactions/releases/config instead of issuing another identity (2141.0383ms)
+✔ owner-installation existing origins require a descriptor; initial rollback retains history but cannot be reapplied as virgin (4272.5322ms)
+✔ owner-installation virgin apply refuses a settled ledger added after planning without publishing an identity (288.9079ms)
+✔ owner-installation virgin admission recognizes quoted Core headers while preserving unrelated legacy config (2378.2773ms)
+✔ owner-installation pristine CAS rejects foreign additions under the lease and before switch, preserving the foreign file (1543.0635ms)
+✔ owner-installation coherent repeat accepts a new checkout config but refuses foreign CEP or an existing mismatched managed binding (10463.3391ms)
+✔ owner-installation historical v1 data still requires exact CEP bytes before a candidate upgrade (547.4514ms)
+✔ owner-installation coherent preferences-only config derives its binding, while partial or different transports refuse (13091.384ms)
+✔ owner-installation publication preflight preserves foreign stages at planning, lease CAS and rollback (11627.1082ms)
+✔ owner-installation snapshot rejects linked, dangling and non-directory CEP roots before writes (44.7973ms)
+✔ owner-installation final publication CAS refuses a foreign rollback file before moving CEP (4384.1572ms)
+✔ owner-installation snapshot checks nested links leaf replacements and redirected parents before external reads (18.6879ms)
+✔ owner-installation unknown managed config keys refuse while foreign legacy tables remain intact (10084.5553ms)
+✔ owner-installation early config CAS abort removes only own empty lease directories and permits a fresh plan (504.6294ms)
+✔ owner-installation branded early-abort cleanup preserves preexisting replaced populated and postwrite directories (156.5304ms)
+✔ owner-installation branded plans bind client bytes, origin bytes and binding metadata; durable prepared client tampering refuses (1039.3578ms)
+✔ owner-installation client and origin CAS detect drift before writes, including drift while acquiring the install lease (9214.3113ms)
+✔ owner-installation noncanonical existing origin bytes are retained and pinned exactly (4491.1227ms)
+✔ owner-installation foreign or missing sidecar never permits replacement or owner to stdio deletion (3650.3251ms)
+✔ owner-installation staging files and ancestor junctions refuse before reading or changing destinations (32.4871ms)
+✔ owner-installation rollback refuses sidecar/origin/prepared drift and missing owner transaction extension before writes (9721.1406ms)
+✔ owner-installation owner package cannot execute through the legacy stdio entry before listener or store open (3839.5952ms)
+✔ owner-installation standalone stdio and owner closure apply without checkout code, launcher or listeners (5510.0326ms)
+✔ owner-installation fixed CLI runtime selector reaches package and standalone builders and rejects unknown models (711.0475ms)
+✔ owner-installation corrupt staged sidecar refuses before client or config becomes visible (2448.6211ms)
+✔ owner-installation bounded readers reject growth after fd sampling before installer writes and close their fd (7529.4452ms)
+✔ owner-installation byte-exact ownership rejects invalid UTF8 that decodes to the same client descriptor (1987.4997ms)
+✔ owner-installation all rollback restore inputs and stamped transaction paths are bound before any destination writes (5417.0071ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 32
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 132640.9142
+
+✖ failing tests:
+
+test at test\owner-installation.test.js:34:1
+✖ owner-installation runtime selector is independent of composition and owner contract is a closed admitted cluster (33.8009ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  46 !== 44
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-installation.test.js:46:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 46,
+    expected: 44,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

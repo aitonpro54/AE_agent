@@ -2,11 +2,39 @@
 // Offline synthetic TEMP evidence. These tests never certify a real repair.
 const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), net = require('node:net'), http = require('node:http');
 const { execFileSync } = require('node:child_process');
-const { fixture, pkg, hash, canonical, stats, signed, write, overlayConstraint, rewriteForeignLedger } = require('./fixtures/mixed-installation');
+const { fixture, pkg, incidentPkg, hash, canonical, stats, signed, write, overlayConstraint, rewriteForeignLedger } = require('./fixtures/mixed-installation');
 const code = value => e => e.code === value;
 const snapshot = files => Object.fromEntries(files.map(file => [file, { hash: hash(fs.readFileSync(file)), stat: stats(file) }]));
 const protectedFiles = h => ['installation.json', 'core-client.json', 'origin.json', 'state/production/origin.json', 'state/production/receiver/completions.ndjson', 'state/production/runtime-maintenance.json', 'state/production/host-adoption.json', 'state/production/work-session.json'].map(f => path.join(h.root, f));
 async function close(server) { if (server.listening) await new Promise(resolve => server.close(resolve)); }
+
+
+test('mixed repair semantic incident packages retain the explicit legacy seven-file CEP contract', t => {
+  const os = require('node:os'), { verifyPackage } = require('../tools/package-installable'), { planInstall } = require('../tools/install-core4'), { deriveComposition } = require('../runtime/stdio-entry');
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-mixed-legacy-data-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const expectedCep = ['CSXS/manifest.xml', 'index.html', 'installation.js', 'js/panel.js', 'js/poll-dispatcher.js', 'jsx/registry.jsx', 'panel.css'];
+  for (const name of ['readonly', 'manual', 'manual-titles-variants']) {
+    const current = pkg(name), original = canonical(current), legacy = incidentPkg(name), read = p => file => Buffer.from(p.files[file], 'base64');
+    assert.notEqual(legacy, current); assert.equal(verifyPackage(legacy), legacy); assert.equal(current.release.version, '4.2.6'); assert.equal(legacy.release.version, '4.2.5');
+    assert.equal(canonical(current), original, 'legacy projection never mutates the cached current package');
+    const selected = deriveComposition(legacy.release, read(legacy)); assert.equal(Object.hasOwn(selected, 'registryVerification'), false);
+    assert.doesNotMatch(read(legacy)('cep/jsx/registry.jsx').toString(), /CORE4_REGISTRY_ID/);
+    const policy = JSON.parse(read(legacy)('runtime/composition-policy.json')); assert.equal(policy.version, 2);
+    assert.deepEqual(policy, JSON.parse(read(current)('runtime/composition-policy.json')));
+    assert.deepEqual(Object.keys(legacy.files).sort(), Object.keys(current.files).sort());
+    const changed = Object.keys(current.files).filter(file => legacy.files[file] !== current.files[file]).sort();
+    assert.deepEqual(changed, ['cep/jsx/registry.jsx', 'config/catalog.json']);
+    for (const file of Object.keys(current.files).filter(file => /\.(?:js|jsx)$/.test(file) && file !== 'cep/jsx/registry.jsx')) assert.equal(legacy.files[file], current.files[file], 'executable bytes unchanged: ' + file);
+    const oldCatalog = JSON.parse(read(current)('config/catalog.json')), catalog = JSON.parse(read(legacy)('config/catalog.json'));
+    assert.deepEqual(catalog.modules, oldCatalog.modules); assert.deepEqual(catalog.engine, oldCatalog.engine); assert.notEqual(catalog.catalogRevision, oldCatalog.catalogRevision);
+    const plan = planInstall({ pkg: legacy, installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'), configPath: path.join(directory, 'config.toml'), machineId: os.hostname(), nodePath: fs.realpathSync(process.execPath) });
+    for (const file of [plan.descriptor.installRoot, plan.descriptor.stateDir, plan.descriptor.releaseDir, plan.descriptor.cepDir, plan.descriptorPath, plan.configPath]) assert.ok(path.resolve(file).startsWith(directory + path.sep), file);
+    assert.deepEqual(Object.keys(plan.cep).sort(), expectedCep); assert.equal(Object.hasOwn(plan.cep, 'installation-state.json'), false);
+    t.diagnostic(JSON.stringify({ name, currentPackageHash: current.packageHash, semanticLegacyPackageHash: legacy.packageHash, changedDataFiles: changed, evidence: 'semantic legacy data; not byte-historical or native old-panel proof' }));
+  }
+  assert.deepEqual(fs.readdirSync(directory), [], 'pure package/preflight creates no installation or runtime state');
+});
 
 test('mixed repair native Windows census selects its own PID from a JSON array', { skip: process.platform !== 'win32', timeout: 20000 }, () => {
   // Read-only native process observation, not live AE or repair proof. The
@@ -80,11 +108,29 @@ test('mixed repair rejects active or unknown process observations and original l
 });
 
 test('mixed repair refuses all three occupied endpoints and an unrelated install gate', { timeout: 90000 }, async t => {
-  const h = await fixture(t), p = await h.plan();
-  const endpoints = [{ port: 3457, host: '127.0.0.1' }, ...[h.d, h.foreign].map(d => ({ path: '\\\\.\\pipe\\ae-core4-owner-' + hash(JSON.stringify({ installationId: d.installationId, machineId: d.machineId })).slice(0, 32) }))];
+  const h = await fixture(t), p = await h.plan(), before = snapshot(protectedFiles(h));
+  assert.equal(Object.isFrozen(h.repairEndpoint), true); assert.equal(Object.getOwnPropertyDescriptor(h, 'repairEndpoint').writable, false);
+  assert.equal(h.repairEndpoint.host, '127.0.0.1'); assert.ok(Number.isInteger(h.repairEndpoint.port) && h.repairEndpoint.port > 0 && h.repairEndpoint.port <= 65535); assert.notEqual(h.repairEndpoint.port, 3457);
+  assert.equal(p.plan.operatorHash, h.operatorHash); assert.equal(h.operatorHash, hash(fs.readFileSync(path.join(h.core, 'tools/repair-mixed-installation.js'))));
+  const endpoints = [h.repairEndpoint, ...[h.d, h.foreign].map(d => ({ path: '\\\\.\\pipe\\ae-core4-owner-' + hash(JSON.stringify({ installationId: d.installationId, machineId: d.machineId })).slice(0, 32) }))];
   for (const endpoint of endpoints) {
-    const server = net.createServer(socket => socket.destroy()); await new Promise(resolve => server.listen(endpoint, resolve));
-    await assert.rejects(h.run('apply', p.planHash), code('repair_endpoint_busy')); await close(server);
+    const server = net.createServer(socket => socket.destroy()); t.after(() => close(server));
+    try {
+      await new Promise((resolve, reject) => { server.once('error', reject); server.listen(endpoint, resolve); });
+      assert.equal(server.listening, true);
+      if (endpoint.path) assert.equal(server.address(), endpoint.path);
+      else { assert.equal(server.address().address, endpoint.host); assert.equal(server.address().port, endpoint.port); }
+      await assert.rejects(h.run('apply', p.planHash), code('repair_endpoint_busy'));
+      assert.equal(h.mutations.length, 0); assert.deepEqual(snapshot(protectedFiles(h)), before); assert.equal(fs.existsSync(h.repairDir), false);
+      if (endpoint.path) {
+        // A failed pipe reservation must release the earlier TCP reservation.
+        const probe = net.createServer(socket => socket.destroy()); t.after(() => close(probe));
+        try {
+          await new Promise((resolve, reject) => { probe.once('error', reject); probe.listen(h.repairEndpoint, resolve); });
+          assert.equal(probe.listening, true); assert.equal(probe.address().port, h.repairEndpoint.port);
+        } finally { await close(probe); }
+      }
+    } finally { await close(server); }
   }
   assert.equal(h.mutations.length, 0);
   write(path.join(h.root, 'install.lock'), 'foreign gate');
@@ -226,4 +272,25 @@ test('mixed repair rejects substituted archive/source inode and nonmonotonic vis
   const archived = path.join(h.repairDir, 'foreign-history/0'), bytes = fs.readFileSync(archived); fs.renameSync(archived, archived + '.other'); write(archived, bytes);
   await assert.rejects(h.run('recover', p.planHash), code('repair_nonmonotonic_prefix'));
   assert.equal(fs.existsSync(path.join(h.root, 'install.lock')), true);
+});
+
+
+test('mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports', { timeout: 180000 }, async t => {
+  for (const helper of ['tools/composition-spec.js', 'runtime/composition-spec.js']) for (const phase of ['before-plan', 'after-plan']) await t.test(helper + ' ' + phase, { timeout: 60000 }, async t => {
+    const h = await fixture(t), originalClosure = h.sourceClosure;
+    assert.ok(Object.isFrozen(originalClosure)); assert.ok(Object.isFrozen(originalClosure.manifest));
+    assert.equal(Object.hasOwn(originalClosure.manifest, 'tools/repair-mixed-installation.js'), false);
+    assert.equal(originalClosure.digest, hash(originalClosure.manifest));
+    assert.equal(hash(fs.readFileSync(path.join(h.core, helper))), originalClosure.manifest[helper]);
+    const plan = phase === 'after-plan' ? await h.plan() : null;
+    assert.equal(h.mutations.length, 0);
+    const facts = [...protectedFiles(h), h.config, ...['broker/ledger.ndjson', 'runtime-owner.json', 'broker/broker-owner.lock', 'receiver/owner'].map(file => path.join(h.state, file))], before = snapshot(facts);
+    const marker = path.join(h.base, 'UNTRUSTED-HELPER-EXECUTED');
+    fs.appendFileSync(path.join(h.core, helper), '\nrequire("node:fs").writeFileSync(' + JSON.stringify(marker) + ',"bad");\n');
+    if (plan) await assert.rejects(h.run('apply', plan.planHash), code('repair_source_changed'));
+    else await assert.rejects(h.plan(), code('repair_source_changed'));
+    assert.equal(h.sourceClosure, originalClosure); assert.equal(h.sourceClosure.digest, hash(originalClosure.manifest));
+    assert.deepEqual(snapshot(facts), before); assert.equal(h.mutations.length, 0);
+    assert.equal(fs.existsSync(marker), false); assert.equal(fs.existsSync(h.repairDir), false);
+  });
 });

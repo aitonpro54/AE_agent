@@ -1,0 +1,15 @@
+✔ start-over-operator JSON lookalikes and weakened source bootstrap never reach reset state or a writer (4.0024ms)
+✔ start-over-operator official inspect is read-only and missing finish pin refuses before effects (5930.718ms)
+✔ start-over-operator either initiation route requires an explicit confirmation digest before effects (2440.7785ms)
+✔ start-over-operator changed distributed helper is rejected before its first import (2192.0461ms)
+✔ start-over-operator pending reset blocks planning and a prepared install before credential rotation (2289.8652ms)
+✔ start-over-operator existing work session refuses stdio/legacy reader and rollback but preserves v4 planning (5632.1381ms)
+✔ start-over-operator closed v3 metadata remains readable as data but cannot carry an undeclared reset cluster (2107.1373ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 20728.7178

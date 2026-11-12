@@ -496,6 +496,9 @@ test('installable-runtime stale release A entry cannot verify B descriptor then 
   const directory = temp(), pkgA = buildPackage(), { args, plan } = install(directory, pkgA), installedA = applyInstall(plan), descriptorA = JSON.parse(fs.readFileSync(installedA.descriptorPath));
   const pkgB = structuredClone(pkgA), css = Buffer.from(pkgB.files['cep/panel.css'], 'base64').toString('utf8') + '\n/* independent test release B */\n';
   pkgB.files['cep/panel.css'] = Buffer.from(css).toString('base64'); pkgB.release.hashes['cep/panel.css'] = hash(css); pkgB.packageHash = hash(pkgB.release);
+  const identity = require('../integrations/cep/panel-identity'), read = file => Buffer.from(pkgB.files[file], 'base64');
+  const panel = identity.stamp(read('cep/js/panel.js').toString('utf8'), identity.identity(read));
+  pkgB.files['cep/js/panel.js'] = Buffer.from(panel).toString('base64'); pkgB.release.hashes['cep/js/panel.js'] = hash(panel); pkgB.packageHash = hash(pkgB.release);
   const installedB = applyInstall(planInstall({ ...args, pkg: pkgB })); assert.notEqual(pkgB.packageHash, pkgA.packageHash);
   const sentinel = path.join(directory, 'STALE-RELEASE-A-EXECUTED');
   fs.appendFileSync(path.join(descriptorA.releaseDir, 'core/broker.js'), '\nrequire("node:fs").writeFileSync(' + JSON.stringify(sentinel) + ',"executed");\n');
@@ -617,7 +620,7 @@ test('installable-runtime CLI apply requires reviewed package hash and mismatche
 function installerCliFixture() {
   const directory = temp(), workspace = path.join(directory, 'source'), foreign = path.join(directory, 'unrelated'), pkg = buildPackage(), file = path.join(directory, 'candidate.json');
   // Copy the real CLI and its eager import closure, never the real config/state.
-  for (const relative of ['package.json', 'tools/install-core4.js', 'tools/package-installable.js', 'protocol/json.js', 'runtime/install-lease.js', 'runtime/stdio-entry.js']) {
+  for (const relative of ['package.json', 'tools/install-core4.js', 'tools/package-installable.js', 'tools/composition-spec.js', 'protocol/json.js', 'runtime/install-lease.js', 'runtime/stdio-entry.js', 'runtime/composition-spec.js', 'integrations/cep/panel-identity.js']) {
     const target = path.join(workspace, 'core4', relative); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.copyFileSync(path.join(root, relative), target);
   }
   for (const [target, content] of [[workspace, '# selected source\n[mcp_servers.neighbor]\ncommand = "preserve-source"\n'], [foreign, '# unrelated CWD\n[mcp_servers.neighbor]\ncommand = "preserve-foreign"\n']]) {
@@ -660,6 +663,7 @@ test('installable-runtime CLI explicit workspace requires an absolute marked sou
   const selected = run(['--workspace', other]); assert.equal(selected.status, 0, selected.stderr); const report = JSON.parse(selected.stdout);
   assert.equal(report.workspaceRoot, other); assert.equal(report.workspaceSource, 'explicit-workspace'); assert.equal(report.configPath, path.join(other, '.codex/config.toml')); assert.equal(report.baseline.config, null);
   const relocated = path.join(workspace, 'core4/relocated/install-core4.js'); fs.mkdirSync(path.dirname(relocated)); fs.copyFileSync(path.join(workspace, 'core4/tools/install-core4.js'), relocated); fs.copyFileSync(path.join(workspace, 'core4/tools/package-installable.js'), path.join(path.dirname(relocated), 'package-installable.js'));
+  fs.copyFileSync(path.join(workspace, 'core4/tools/composition-spec.js'), path.join(path.dirname(relocated), 'composition-spec.js'));
   const wrongPosition = run([], { entry: relocated }); assert.equal(wrongPosition.status, 1); assert.match(wrongPosition.stderr, /workspace_source_layout_required/);
   const explicitStandalone = run(['--workspace', other], { entry: relocated }); assert.equal(explicitStandalone.status, 0, explicitStandalone.stderr); assert.equal(JSON.parse(explicitStandalone.stdout).configPath, report.configPath);
   for (const [value, code] of [['source', 'workspace_absolute_exact_path_required'], [path.join(directory, 'missing'), 'workspace_source_layout_required'], [file, 'workspace_source_layout_required'], ['', 'workspace_absolute_exact_path_required']]) {

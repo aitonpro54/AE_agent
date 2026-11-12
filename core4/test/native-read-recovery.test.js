@@ -5,6 +5,69 @@ const {hash,canonical}=require('../protocol/json');const vm=require('node:vm'),h
 const {mac}=require('../integrations/cep/peer-protocol');
 const {recoveryFixture}=require('./fixtures/native-read-recovery');
 const root=path.resolve(__dirname,'..');
+function closureFixture(t) {
+  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'core4-operator-closure-'));
+  t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));return directory;
+}
+function resealOperator(bundle) { bundle.operatorHash=hash(canonical(bundle.manifest));return bundle; }
+function constructorChild(directory,bundle,mutate) {
+  const {writeOperatorPackage}=require('../tools/package-native-read-operator'),operatorRoot=path.join(directory,'operator');
+  writeOperatorPackage(operatorRoot,bundle);
+  mutate?.(operatorRoot);
+  const descriptor=path.join(directory,'constructor-descriptor.json'),config=path.join(directory,'constructor.json');
+  fs.writeFileSync(descriptor,canonical({stateDir:path.join(directory,'untouched-state')}));
+  fs.writeFileSync(config,canonical({operatorRoot,operatorHash:bundle.operatorHash,args:{descriptor},constructorOnly:true}));
+  return new Promise((resolve,reject)=>{const child=fork(path.join(__dirname,'fixtures/disposition-child.js'),[config],{stdio:['ignore','pipe','pipe','ipc'],windowsHide:true});let stdout='',stderr='';const messages=[];child.stdout.on('data',b=>stdout+=b);child.stderr.on('data',b=>stderr+=b);child.on('message',m=>messages.push(m));child.on('error',reject);child.on('exit',code=>resolve({code,stdout,stderr,messages,operatorRoot}));});
+}
+test('native-read-recovery operator trusted slot uses own pure bytes and constructor never executes poisoned candidate spec',async t=>{
+  const directory=closureFixture(t),{buildPackage}=require('../tools/package-installable'),{buildOperatorPackage}=require('../tools/package-native-read-operator');
+  let candidate=buildPackage(root),bundle=buildOperatorPackage(root);const pure=fs.readFileSync(path.join(root,'runtime/composition-spec.js')).toString('base64'),shim=fs.readFileSync(path.join(root,'tools/composition-spec.js')).toString('base64');
+  assert.equal(bundle.files['tools/composition-spec.js'],pure);assert.notEqual(pure,shim);assert.equal(Object.keys(bundle.files).filter(file=>file==='tools/composition-spec.js').length,1);
+  for(const [file,bytes]of Object.entries(candidate.files))assert.equal(bundle.files[file],bytes,'candidate byte preserved: '+file);
+  assert.equal(bundle.candidatePackageHash,candidate.packageHash);assert.equal(bundle.manifest.version,1);
+  const marker=path.join(directory,'CANDIDATE-EXECUTED'),beforeHash=bundle.operatorHash;
+  const poisoned=Buffer.from('require("node:fs").writeFileSync('+JSON.stringify(marker)+',"bad");\n'+Buffer.from(candidate.files['runtime/composition-spec.js'],'base64').toString());
+  // Instrument only the existing candidate producer in this test process: its
+  // actual builder runs, then its valid pinned DATA result is poisoned/resealed
+  // before the real operator bundler selects its independent own-root slot.
+  const producer=require('../tools/package-installable'),original=producer.buildPackage,moduleFile=require.resolve('../tools/package-native-read-operator'),cached=require.cache[moduleFile];let produced=0;
+  producer.buildPackage=(...args)=>{produced++;candidate=original(...args);candidate.files['runtime/composition-spec.js']=poisoned.toString('base64');candidate.release.hashes['runtime/composition-spec.js']=hash(poisoned);candidate.packageHash=hash(candidate.release);producer.verifyPackage(candidate);return candidate;};
+  try{delete require.cache[moduleFile];bundle=require(moduleFile).buildOperatorPackage(root);}finally{producer.buildPackage=original;require.cache[moduleFile]=cached;}
+  assert.equal(produced,1);assert.equal(bundle.candidatePackageHash,candidate.packageHash);
+  assert.notEqual(bundle.operatorHash,beforeHash);assert.equal(bundle.files['tools/composition-spec.js'],pure);
+  const result=await constructorChild(directory,bundle);assert.equal(result.code,0,result.stderr);assert.deepEqual(result.messages,[{event:'fixture_constructed'}]);
+  assert.equal(fs.existsSync(marker),false);assert.equal(fs.existsSync(path.join(directory,'untouched-state')),false);
+  assert.equal(fs.readFileSync(path.join(result.operatorRoot,'runtime/composition-spec.js')).toString('base64'),candidate.files['runtime/composition-spec.js']);
+  assert.throws(()=>require('../tools/dispose-native-read').verifyOperatorClosure(result.operatorRoot,beforeHash),/operator_closure_hash/);
+});
+test('native-read-recovery operator missing or corrupt trusted slot refuses outer closure before imports',async t=>{
+  const {buildOperatorPackage}=require('../tools/package-native-read-operator');
+  for(const mode of ['missing','corrupt']){
+    const directory=closureFixture(t),bundle=buildOperatorPackage(root),marker=path.join(directory,'TOOLING-EXECUTED');
+    const result=await constructorChild(directory,bundle,operatorRoot=>{const slot=path.join(operatorRoot,'tools/composition-spec.js');if(mode==='missing')fs.unlinkSync(slot);else fs.writeFileSync(slot,'require("node:fs").writeFileSync('+JSON.stringify(marker)+',"bad");');});
+    assert.equal(result.code,1);assert.match(result.stderr,/operator_closure_tree|operator_closure_bytes/);assert.deepEqual(result.messages,[]);
+    assert.throws(()=>require('../tools/dispose-native-read').verifyOperatorClosure(result.operatorRoot,bundle.operatorHash),/operator_closure_tree|operator_closure_bytes/);
+    assert.equal(fs.existsSync(marker),false);assert.equal(fs.existsSync(path.join(directory,'untouched-state')),false);
+  }
+});
+test('native-read-recovery operator legacy v1 inventory without new slot stays data-readable without fallback execution',async t=>{
+  const directory=closureFixture(t),{buildOperatorPackage,writeOperatorPackage}=require('../tools/package-native-read-operator'),bundle=buildOperatorPackage(root);
+  delete bundle.files['tools/composition-spec.js'];delete bundle.manifest.hashes['tools/composition-spec.js'];resealOperator(bundle);
+  const legacy=path.join(directory,'legacy');writeOperatorPackage(legacy,bundle);const before=fs.readFileSync(path.join(legacy,'operator.json'));
+  assert.ok(require('../tools/dispose-native-read').verifyOperatorClosure(legacy,bundle.operatorHash));assert.ok(before.equals(fs.readFileSync(path.join(legacy,'operator.json'))));assert.equal(fs.existsSync(path.join(legacy,'tools/composition-spec.js')),false);
+  const result=await constructorChild(directory,bundle);assert.equal(result.code,1);assert.match(result.stderr,/Cannot find module '\.\/composition-spec\.js'/);assert.equal(fs.existsSync(path.join(directory,'untouched-state')),false);
+});
+test('native-read-recovery operator candidate reserved tools aliases refuse before merge or own tooling reads',t=>{
+  for(const file of ['tools/composition-spec.js','Tools/poison.js','TOOLS/composition-spec.js','tOoLs./poison.js','tools /poison.js','TOOLS\\poison.js']){
+    const directory=closureFixture(t),tools=path.join(directory,'tools');fs.mkdirSync(tools);fs.mkdirSync(path.join(directory,'protocol'));
+    fs.copyFileSync(path.join(root,'tools/package-native-read-operator.js'),path.join(tools,'package-native-read-operator.js'));fs.copyFileSync(path.join(root,'protocol/json.js'),path.join(directory,'protocol/json.js'));
+    // Isolated data producer models a reserved candidate key that normal source
+    // validation may already reject. No production injection API is introduced.
+    fs.writeFileSync(path.join(tools,'package-installable.js'),'exports.buildPackage=()=>('+JSON.stringify({files:{[file]:Buffer.from('throw Error("candidate");').toString('base64')}})+');');
+    assert.throws(()=>require(path.join(tools,'package-native-read-operator.js')).buildOperatorPackage(directory),/operator_candidate_namespace/);
+    assert.equal(fs.existsSync(path.join(directory,'runtime')),false,'namespace fails before reading own trusted slot');
+  }
+});
 function raw(port,route,input,origin='file://'){return new Promise((resolve,reject)=>{const req=http.request('http://127.0.0.1:'+port+route,{method:'POST',agent:false,headers:{Origin:origin,'Content-Type':'application/json'}},res=>{let b='';res.on('data',c=>b+=c);res.on('end',()=>resolve({status:res.statusCode,value:JSON.parse(b)}));});req.on('error',reject);req.end(canonical(input));});}
 async function historicalAck(f,d){
   const {createHttpPeer}=require('../integrations/cep/http-peer'),asset={assetKey:'project-inspection-v1',executorHash:f.command.executorHash},peer=createHttpPeer({installation:d,directory:f.receiver,asset,port:0,pollTimeout:30,installationContext:{descriptorPath:f.args.descriptor}});await peer.listen();

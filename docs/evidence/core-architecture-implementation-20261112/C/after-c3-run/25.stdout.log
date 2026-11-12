@@ -1,0 +1,14 @@
+✔ comp-frame-export authenticates the exact frame and records the native PNG with unchanged project state (827.9747ms)
+✔ comp-frame-export refuses a changed revision, an out-of-range frame and a non-native preview resolution (635.7837ms)
+✔ comp-frame-export leaves a truncated output fenced and preserves the original command (649.6665ms)
+✔ comp-frame-export expires a dry run before either journal or output changes (587.2384ms)
+✔ comp-frame-export checks expiry again after the final snapshot (568.3184ms)
+✔ comp-frame-export waits seven seconds for native output and preserves state across render revision ticks (583.5078ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3973.882

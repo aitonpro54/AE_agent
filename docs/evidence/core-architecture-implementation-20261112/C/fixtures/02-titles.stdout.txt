@@ -1,0 +1,32 @@
+✖ Titles compiler → actual Core HTTP receipt and fresh read-back preserve sibling and style (450.3165ms)
+✔ Titles compiler stale inspection is refused before mutation and fresh compiler proposal succeeds (466.2236ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1033.3029
+
+✖ failing tests:
+
+test at products\titles\test\core-http-integration.test.js:34:1
+✖ Titles compiler → actual Core HTTP receipt and fresh read-back preserve sibling and style (450.3165ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '8f4fe2ec72e9516f3eb8c1496d573285cf524c41e4b56192b3223d9eb3a0c78e'
+  - 'c13761f41e984e45a7db64dbbe46643dfaa7a92fdcb81a468414ae187e595b02'
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\products\titles\test\core-http-integration.test.js:42:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '8f4fe2ec72e9516f3eb8c1496d573285cf524c41e4b56192b3223d9eb3a0c78e',
+    expected: 'c13761f41e984e45a7db64dbbe46643dfaa7a92fdcb81a468414ae187e595b02',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

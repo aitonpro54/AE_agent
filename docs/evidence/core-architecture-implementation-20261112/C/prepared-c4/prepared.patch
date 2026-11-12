@@ -1,0 +1,111 @@
+--- a/core4/test/fixtures/mixed-installation.js
++++ b/core4/test/fixtures/mixed-installation.js
+@@ -2,13 +2,32 @@
+ // Synthetic TEMP incident only. No production credentials or runtime authority.
+ const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), crypto = require('node:crypto'), Module = require('node:module');
+ const { canonical, hash } = require('../../protocol/json');
+-const { buildPackage } = require('../../tools/package-installable');
+-const { deriveComposition, installationConfig } = require('../../runtime/stdio-entry');
++const { buildPackage, verifyPackage, selectedCatalogRevision } = require('../../tools/package-installable');
++const { deriveComposition, installationConfig, registrySource } = require('../../runtime/stdio-entry');
+ const { dispatchBinding } = require('../../protocol/dispatch');
+ const SOURCE = path.resolve(__dirname, '../..'), packages = new Map();
+ const stats = file => Object.fromEntries(['dev', 'ino', 'size', 'birthtimeNs', 'mtimeNs', 'ctimeNs'].map(k => [k, String(fs.statSync(file, { bigint: true })[k])]));
+ const uuid = () => crypto.randomUUID(), token = () => crypto.randomBytes(32).toString('hex');
+ function pkg(name) { if (!packages.has(name)) packages.set(name, buildPackage(SOURCE, name, { runtimeModel: 'owner' })); return packages.get(name); }
++const incidentPackages = new Map();
++function incidentPkg(name) {
++  if (incidentPackages.has(name)) return incidentPackages.get(name);
++  // Semantic legacy fixture only, not byte-identical historical source or a
++  // native old-panel claim. Keep current pkg() and all executable files intact;
++  // generate only the supported 4.2.5 release/catalog/registry DATA shape.
++  const value = structuredClone(pkg(name)); value.release.version = '4.2.5';
++  const read = file => Buffer.from(value.files[file], 'base64'), json = file => JSON.parse(read(file));
++  const put = (file, data) => { const bytes = Buffer.from(typeof data === 'string' ? data : canonical(data)); value.files[file] = bytes.toString('base64'); value.release.hashes[file] = hash(bytes); };
++  const selected = deriveComposition(value.release, read);
++  if (Object.hasOwn(selected, 'registryVerification')) throw Error('fixture_incident_registry_policy');
++  const catalog = json('config/catalog.json'), composition = json('runtime/composition.json'), policy = json('runtime/composition-policy.json');
++  catalog.catalogRevision = selectedCatalogRevision({ catalog, composition, policy, registryVerification: false }, json);
++  put('config/catalog.json', catalog);
++  put('cep/jsx/registry.jsx', registrySource(selected.assets, read('runtime/host/json-codec.jsx').toString('utf8'), false));
++  value.packageHash = hash(value.release); verifyPackage(value);
++  incidentPackages.set(name, value); return value;
++}
++
+ function write(file, value) { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, Buffer.isBuffer(value) || typeof value === 'string' ? value : canonical(value)); }
+ function copySourceClosure(destination) {
+   const files = {}, seen = new Set();
+@@ -105,9 +124,9 @@
+   const root = path.join(home, 'AppData/Local/AEAgentCore4'), cep = path.join(home, 'AppData/Roaming/Adobe/CEP/extensions/com.codex.aeagentcore4'), config = path.join(repo, '.codex/config.toml');
+   write(config, '# fixture outside Core\n[mcp_servers.other]\ncommand = "other"\n');
+   const installArgs = { installRoot: root, extensionsDir: path.dirname(cep), configPath: config, machineId: os.hostname(), nodePath: fs.realpathSync(process.execPath) };
+-  installer.applyInstall(installer.planInstall({ ...installArgs, pkg: pkg('readonly') }));
++  installer.applyInstall(installer.planInstall({ ...installArgs, pkg: incidentPkg('readonly') }));
+   const descriptorPath = path.join(root, 'installation.json'), old = JSON.parse(fs.readFileSync(descriptorPath));
+-  const nextPlan = installer.planInstall({ ...installArgs, pkg: pkg('manual') }), payload = installer.preparedInstallPayload(nextPlan);
++  const nextPlan = installer.planInstall({ ...installArgs, pkg: incidentPkg('manual') }), payload = installer.preparedInstallPayload(nextPlan);
+   installer.applyInstall(nextPlan);
+   const d = JSON.parse(fs.readFileSync(descriptorPath)), state = d.stateDir, currentId = nextPlan.transactionId;
+   load(path.join(SOURCE, 'integrations/cep/completion-store')).openCompletionStore({ directory: path.join(state, 'receiver') }).close();
+@@ -118,10 +137,11 @@
+   if ((await m.done).phase !== 'stopped') throw Error('fixture stop failed');
+   write(path.join(root, 'transactions', currentId + '-stopped-update/intent.json'), updateRecord(old, d, currentId, payload));
+   const foreignId = uuid(), foreignOld = { ...d, installationId: 'installation-' + uuid(), panelToken: token(), controlToken: token(), predecessor: null };
+-  const foreignPkg = pkg('manual-titles-variants'), foreign = { ...foreignOld, packageHash: foreignPkg.packageHash, releaseDir: path.join(root, 'releases', foreignPkg.packageHash), predecessor: { transactionId: foreignId, previousDescriptorHash: hash(canonical(foreignOld)) } };
++  const foreignPkg = incidentPkg('manual-titles-variants'), foreign = { ...foreignOld, packageHash: foreignPkg.packageHash, releaseDir: path.join(root, 'releases', foreignPkg.packageHash), predecessor: { transactionId: foreignId, previousDescriptorHash: hash(canonical(foreignOld)) } };
+   const fixedCep = Object.fromEntries(Object.entries(foreignPkg.files).filter(([f]) => f.startsWith('cep/')).map(([f, v]) => [f.slice(4), v]));
+   const selected = deriveComposition(foreignPkg.release, f => Buffer.from(foreignPkg.files[f], 'base64'));
+   fixedCep['installation.js'] = Buffer.from('window.Core4Installation=' + canonical(installationConfig(foreign, selected)) + ';\n').toString('base64');
++  if (Object.hasOwn(selected, 'registryVerification') || Object.keys(fixedCep).length !== 7 || canonical(Object.keys(fixedCep).sort()) !== canonical(Object.keys(payload.cep).sort())) throw Error('fixture_incident_cep_contract');
+   const foreignConfig = Buffer.from(installer.configText(fs.readFileSync(config), path.join(root, 'core-client.json'), d.nodePath, path.join(foreign.releaseDir, 'runtime/client-entry.js'), '--client-descriptor'));
+   const foreignPayload = { ...payload, transactionId: foreignId, descriptorBytes: Buffer.from(canonical(foreign)).toString('base64'), previousDescriptor: Buffer.from(canonical(foreignOld)).toString('base64'), configBytes: foreignConfig.toString('base64'), cep: fixedCep, package: foreignPkg };
+   write(path.join(root, 'transactions', foreignId + '-stopped-update/intent.json'), updateRecord(foreignOld, foreign, foreignId, foreignPayload));
+@@ -200,4 +220,4 @@
+   for (const r of report.receipts) r.ledgerRecordHash = h.events.find(e => e.type === 'command' && e.commandId === r.commandId).recordHash;
+   write(file, report);
+ }
+-module.exports = { fixture, pkg, hash, canonical, stats, signed, write, overlayConstraint, rewriteForeignLedger };
++module.exports = { fixture, pkg, incidentPkg, hash, canonical, stats, signed, write, overlayConstraint, rewriteForeignLedger };
+--- a/core4/test/mixed-installation-repair.test.js
++++ b/core4/test/mixed-installation-repair.test.js
+@@ -2,11 +2,39 @@
+ // Offline synthetic TEMP evidence. These tests never certify a real repair.
+ const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), net = require('node:net'), http = require('node:http');
+ const { execFileSync } = require('node:child_process');
+-const { fixture, pkg, hash, canonical, stats, signed, write, overlayConstraint, rewriteForeignLedger } = require('./fixtures/mixed-installation');
++const { fixture, pkg, incidentPkg, hash, canonical, stats, signed, write, overlayConstraint, rewriteForeignLedger } = require('./fixtures/mixed-installation');
+ const code = value => e => e.code === value;
+ const snapshot = files => Object.fromEntries(files.map(file => [file, { hash: hash(fs.readFileSync(file)), stat: stats(file) }]));
+ const protectedFiles = h => ['installation.json', 'core-client.json', 'origin.json', 'state/production/origin.json', 'state/production/receiver/completions.ndjson', 'state/production/runtime-maintenance.json', 'state/production/host-adoption.json', 'state/production/work-session.json'].map(f => path.join(h.root, f));
+ async function close(server) { if (server.listening) await new Promise(resolve => server.close(resolve)); }
++
++
++test('mixed repair semantic incident packages retain the explicit legacy seven-file CEP contract', t => {
++  const os = require('node:os'), { verifyPackage } = require('../tools/package-installable'), { planInstall } = require('../tools/install-core4'), { deriveComposition } = require('../runtime/stdio-entry');
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-mixed-legacy-data-'));
++  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
++  const expectedCep = ['CSXS/manifest.xml', 'index.html', 'installation.js', 'js/panel.js', 'js/poll-dispatcher.js', 'jsx/registry.jsx', 'panel.css'];
++  for (const name of ['readonly', 'manual', 'manual-titles-variants']) {
++    const current = pkg(name), original = canonical(current), legacy = incidentPkg(name), read = p => file => Buffer.from(p.files[file], 'base64');
++    assert.notEqual(legacy, current); assert.equal(verifyPackage(legacy), legacy); assert.equal(current.release.version, '4.2.6'); assert.equal(legacy.release.version, '4.2.5');
++    assert.equal(canonical(current), original, 'legacy projection never mutates the cached current package');
++    const selected = deriveComposition(legacy.release, read(legacy)); assert.equal(Object.hasOwn(selected, 'registryVerification'), false);
++    assert.doesNotMatch(read(legacy)('cep/jsx/registry.jsx').toString(), /CORE4_REGISTRY_ID/);
++    const policy = JSON.parse(read(legacy)('runtime/composition-policy.json')); assert.equal(policy.version, 2);
++    assert.deepEqual(policy, JSON.parse(read(current)('runtime/composition-policy.json')));
++    assert.deepEqual(Object.keys(legacy.files).sort(), Object.keys(current.files).sort());
++    const changed = Object.keys(current.files).filter(file => legacy.files[file] !== current.files[file]).sort();
++    assert.deepEqual(changed, ['cep/jsx/registry.jsx', 'config/catalog.json']);
++    for (const file of Object.keys(current.files).filter(file => /\.(?:js|jsx)$/.test(file) && file !== 'cep/jsx/registry.jsx')) assert.equal(legacy.files[file], current.files[file], 'executable bytes unchanged: ' + file);
++    const oldCatalog = JSON.parse(read(current)('config/catalog.json')), catalog = JSON.parse(read(legacy)('config/catalog.json'));
++    assert.deepEqual(catalog.modules, oldCatalog.modules); assert.deepEqual(catalog.engine, oldCatalog.engine); assert.notEqual(catalog.catalogRevision, oldCatalog.catalogRevision);
++    const plan = planInstall({ pkg: legacy, installRoot: path.join(directory, 'AEAgentCore4'), extensionsDir: path.join(directory, 'extensions'), configPath: path.join(directory, 'config.toml'), machineId: os.hostname(), nodePath: fs.realpathSync(process.execPath) });
++    for (const file of [plan.descriptor.installRoot, plan.descriptor.stateDir, plan.descriptor.releaseDir, plan.descriptor.cepDir, plan.descriptorPath, plan.configPath]) assert.ok(path.resolve(file).startsWith(directory + path.sep), file);
++    assert.deepEqual(Object.keys(plan.cep).sort(), expectedCep); assert.equal(Object.hasOwn(plan.cep, 'installation-state.json'), false);
++    t.diagnostic(JSON.stringify({ name, currentPackageHash: current.packageHash, semanticLegacyPackageHash: legacy.packageHash, changedDataFiles: changed, evidence: 'semantic legacy data; not byte-historical or native old-panel proof' }));
++  }
++  assert.deepEqual(fs.readdirSync(directory), [], 'pure package/preflight creates no installation or runtime state');
++});
+ 
+ test('mixed repair native Windows census selects its own PID from a JSON array', { skip: process.platform !== 'win32', timeout: 20000 }, () => {
+   // Read-only native process observation, not live AE or repair proof. The

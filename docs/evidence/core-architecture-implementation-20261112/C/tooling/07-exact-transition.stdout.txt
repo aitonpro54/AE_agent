@@ -1,0 +1,28 @@
+✖ exact-f548-transition code artifact to readonly with fresh synthetic state (6.6348ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 96.7298
+
+✖ failing tests:
+
+test at core4\test\exact-f548-transition.test.js:3:1
+✖ exact-f548-transition code artifact to readonly with fresh synthetic state (6.6348ms)
+  Error: ENOENT: no such file or directory, open 'C:\Users\Ant\Documents\Codex\AE_agent_core\dist\core4\4.0.0-panel-reconnect-f54863dbb69b\core4-4.0.0.json'
+      at Object.openSync (node:fs:561:18)
+      at Object.readFileSync (node:fs:445:35)
+      at Object.exactTransition (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\exact-f548-transition.js:7:20)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\exact-f548-transition.test.js:4:80)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    errno: -4058,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: 'C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\core4\\4.0.0-panel-reconnect-f54863dbb69b\\core4-4.0.0.json'
+  }

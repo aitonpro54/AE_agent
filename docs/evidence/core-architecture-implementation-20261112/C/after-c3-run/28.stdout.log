@@ -1,0 +1,30 @@
+✔ project-lifecycle stages the only enabled render row on a saved copy and binds the output and media (667.148ms)
+✔ project-lifecycle render-copy permission defaults to closed and existing output refuses before reservation (988.2987ms)
+✔ project-lifecycle render-copy refuses unsupported media and changes during the local confirmation (2750.7752ms)
+✔ project-lifecycle render-copy failure after Save As remains UNKNOWN and cannot replay (1594.6045ms)
+✔ project-lifecycle Save As preserves saved source and activates the new AEP with current edits (537.4842ms)
+✔ project-lifecycle refuses an occupied directory and a destination created during confirmation (643.6128ms)
+✔ project-lifecycle rejects proposals from a previous host binding and fences uncertain writes (585.7018ms)
+✔ project-lifecycle creates and verifies an empty named AEP after a clean source (557.2877ms)
+✔ project-lifecycle refuses to create from a dirty source before preparing a destination (444.5093ms)
+✔ project-lifecycle opens the exact existing AEP and verifies both saved hashes (540.025ms)
+✔ project-lifecycle explicit dirty Open confirms, preserves disk bytes and exposes the native dirty state (556.1897ms)
+✔ project-lifecycle dirty Open defaults to the clean-destination gate (542.1688ms)
+✔ project-lifecycle dirty destination opt-in is exclusive to Open and still needs a clean source (492.3034ms)
+✔ project-lifecycle only Open receives the longer callback and Broker deadline (1544.3225ms)
+✔ project-lifecycle Open timeout keeps UNKNOWN when the original callback later arrives (861.5701ms)
+✔ project-lifecycle refuses a wrong or changed opening target and retains the original project (652.982ms)
+✔ project-lifecycle records the destination checkpoint stage when native read throws before open (558.6679ms)
+✔ project-lifecycle compares the complete compact inventory above 1079 items and fails closed above its text budget (991.0636ms)
+ℹ lifecycle inventory bytes=29154
+✔ project-lifecycle partial open preserves both disk checkpoints and blocks replay (590.686ms)
+✔ project-lifecycle reports an already switched AEP when its post-open inventory exceeds the limit (551.6471ms)
+✔ project-lifecycle retains the authenticated open observation after disk proof fails (526.754ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17337.7596

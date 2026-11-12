@@ -1,0 +1,15 @@
+✔ R1 prepares once from exact staged ledger evidence and reopens without an executable payload (56.5967ms)
+✔ R1 refuses foreign or unsettled receipts, output drift and protected paths before preparation (7.6768ms)
+✔ R1 requires its exact plain local toolchain file and verifies the prepared pins (44.6764ms)
+✔ R1 retains an interrupted preparation and refuses a second mutation after restart (25.0731ms)
+✔ R1 reads back a lost prepare reply and enforces the live guard within cancel (47.9913ms)
+✔ R1 requires current stage authority for a fresh start and preserves post-reset cancellation (47.2023ms)
+✔ R1 exports only a bound, verified publication and refuses changed evidence or movie (66.632ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 402.3823

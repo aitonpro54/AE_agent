@@ -285,7 +285,7 @@ test('[cep-transport] B9 independent transport pin scoped owner public seam and 
   // A second copy isolates the cached-module mutation from the pin locality assertions.
   const cacheDir = path.join(ws.temp, 'cached'); fs.cpSync(SOURCE, cacheDir, { recursive: true });
   assert.equal(spawnSync(process.execPath, ['-e', cachedFactoryScript], { cwd: cacheDir, windowsHide: true }).status, 0);
-  const privateReport = selectChecks(['core4/integrations/cep/transport.js']); assert.deepEqual(privateReport.checks.map(c => c.check), ['cep-transport']);
+  const privateReport = selectChecks(['core4/integrations/cep/transport.js']); assert.deepEqual(privateReport.checks.map(c => c.check).sort(), ['catalog-revision', 'cep-transport', 'composition-spec', 'version-profile-compatibility']);
   const seam = selectChecks(['core4/core/receiver-api.js']); assert.ok(seam.checks.some(c => c.check === 'cep-transport')); assert.equal(seam.releaseCertified, false);
   const titles = selectChecks(['core4/modules/titles/implementation.js']); assert.ok(titles.deferredCoverage.some(c => c.check === 'cep-transport')); assert.ok(!titles.checks.some(c => c.check === 'cep-transport'));
 });

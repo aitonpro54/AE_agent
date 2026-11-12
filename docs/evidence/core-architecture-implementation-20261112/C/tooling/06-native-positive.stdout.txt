@@ -1,0 +1,10 @@
+✔ native-read-recovery actual Node IPC approval commits one unknown disposition, archives owner and publishes v2 reachable lineage (131260.0773ms)
+✔ native-read-recovery approval does not waive fresh original CAS, new owners or additional UNKNOWN (25651.792ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 157026.6732

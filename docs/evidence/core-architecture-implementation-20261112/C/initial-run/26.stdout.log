@@ -1,0 +1,28 @@
+✔ start-over-state an ancestor junction cannot redirect retained receiver bytes outside their original directory (427.1509ms)
+✔ start-over-state a missing file still requires the complete existing parent path to be canonical (357.5436ms)
+✔ start-over-state noncanonical spelling of an existing full marker path refuses before intent publication (370.0728ms)
+✔ start-over-state freezes admission and physical delivery before durable intent; exactly one new ID and stop request survive repeat (709.0528ms)
+✔ start-over-state diagnostic request retains previous active producer and UNKNOWN rather than trusting diagnostic mode as a barrier (734.9216ms)
+✔ start-over-state native query failure retains original intent and markers; status does not invent process death or completion (478.9292ms)
+✔ start-over-state late original completion during native observation is append-only history without weakening the initial risk requirement (586.1612ms)
+✔ start-over-state new physical begin across the observation await preserves the intent and refuses stop continuation (472.7485ms)
+✔ start-over-state clean close after request keeps inspection valid even when ordinary close removed current owner markers (800.3433ms)
+✔ start-over-state descriptor bytes changed across native await refuse publication and keep the reset fence (460.418ms)
+✔ start-over-state same bytes in a replaced barrier inode cannot substitute the original published intent (588.9277ms)
+✔ start-over-state same bytes replacing both intent aliases across await cannot become a fresh identity baseline (445.2211ms)
+✔ start-over-state foreign marker and already-running maintenance refuse before an intent is published (1082.904ms)
+✔ start-over-state publication failure retains freeze and unpublished preparation without removing any marker or retrying (392.8496ms)
+✔ start-over-state source API has no native injection finisher restart or fence removal and foreign-machine descriptor cannot enter local scope (354.2864ms)
+✔ start-over-state journal inode anchors preserve original bytes and refuse a recreated current journal even when its chain is identical (438.8214ms)
+✔ start-over-state stages are retained inert bytes but directory or symlink replacements cannot enter an accepted phase (674.9957ms)
+✔ start-over-state native inventory schema and freshness are checked before persistence or stop request (1521.1148ms)
+✔ start-over-state stop refusal leaves a durable intent with inventory and never claims a stopped receipt (612.331ms)
+✔ start-over-state physical fence callback failure is a persistent volatile fault in the requester and no intent or retry is fabricated (323.6663ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11960.2964

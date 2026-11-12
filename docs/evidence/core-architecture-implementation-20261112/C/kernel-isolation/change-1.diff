@@ -1,0 +1,67 @@
+diff --git "a/C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c7-d0eded5b778444d38998f5c0228a6bb0\\base\\core4\\test\\fixtures\\mixed-installation.js" "b/C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\test\\fixtures\\mixed-installation.js"
+index 540d646..4ae160f 100644
+--- "a/C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c7-d0eded5b778444d38998f5c0228a6bb0\\base\\core4\\test\\fixtures\\mixed-installation.js"
++++ "b/C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\test\\fixtures\\mixed-installation.js"
+@@ -1,6 +1,6 @@
+ 'use strict';
+ // Synthetic TEMP incident only. No production credentials or runtime authority.
+-const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), crypto = require('node:crypto'), Module = require('node:module');
++const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), crypto = require('node:crypto'), Module = require('node:module'), net = require('node:net');
+ const { canonical, hash } = require('../../protocol/json');
+ const { buildPackage, verifyPackage, selectedCatalogRevision } = require('../../tools/package-installable');
+ const { deriveComposition, installationConfig, registrySource } = require('../../runtime/stdio-entry');
+@@ -60,6 +60,17 @@ function replaceFixtureLiteral(source, pattern, replacement) {
+   if ([...source.matchAll(new RegExp(pattern.source, pattern.flags + 'g'))].length !== 1) throw Error('fixture_literal_count');
+   return source.replace(pattern, replacement);
+ }
++async function allocateRepairEndpoint() {
++  const server = net.createServer();
++  try {
++    await new Promise((resolve, reject) => { server.once('error', reject); server.listen({ host: '127.0.0.1', port: 0 }, resolve); });
++    const address = server.address();
++    if (!address || typeof address === 'string' || address.address !== '127.0.0.1' || !Number.isInteger(address.port) || address.port < 1 || address.port > 65535 || address.port === 3457) throw Error('fixture_repair_endpoint');
++    return Object.freeze({ host: '127.0.0.1', port: address.port });
++  } finally {
++    if (server.listening) await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
++  }
++}
+ function signingKey(d, domain) { return crypto.createHmac('sha256', Buffer.from(d.panelToken, 'hex')).update('ae-core4/' + domain + (domain === 'stopped-update' ? '/key/v1\0' : '-key/v1\0')).update(Buffer.from(d.controlToken, 'hex')).digest(); }
+ function signed(d, domain, kind, value) {
+   const body = { version: 1, kind, installationId: d.installationId, machineId: d.machineId, descriptorHash: hash(canonical(d)), ...value };
+@@ -71,6 +82,7 @@ function updateRecord(old, next, id, payload) {
+   return { body, oldMac: crypto.createHmac('sha256', signingKey(old, 'stopped-update')).update(message).digest('hex'), newMac: crypto.createHmac('sha256', signingKey(next, 'stopped-update')).update(message).digest('hex') };
+ }
+ async function fixture(t, change = () => {}) {
++  const repairEndpoint = await allocateRepairEndpoint();
+   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-mixed-repair-')), home = path.join(base, 'home'), repo = path.join(base, 'repo'), core = path.join(repo, 'core4');
+   let birth = 639000000000000000n, censusMode = 'dead', fault = null, mutations = [];
+   const io = { ...fs };
+@@ -185,6 +197,7 @@ async function fixture(t, change = () => {}) {
+   const h = { base, home, root, repo, core, state, cep, config, backup, d, foreign, profile, descriptorPath, stop, installer, installArgs, load, refreshBackup, events, receipts, signed, updateRecord, write, stats, ledgerBytes,
+     setCensus(v) { censusMode = v; }, crashAfter(callback) { fault = callback; }, clearFault() { fault = null; }, mutations,
+     die() { birth += 10n; }, modules };
++  Object.defineProperty(h, 'repairEndpoint', { value: repairEndpoint, enumerable: true });
+   await change(h); refreshBackup();
+   const sourceClosure = copySourceClosure(core);
+   Object.defineProperty(h, 'sourceClosure', { value: sourceClosure, enumerable: true });
+@@ -194,9 +207,18 @@ async function fixture(t, change = () => {}) {
+   // operator's reviewed source pin and guard remain unchanged in the checkout.
+   const profiled = replaceFixtureLiteral(original, /const PROFILE = Object\.freeze\(\{[\s\S]*?\n\}\);/, 'const PROFILE = Object.freeze(' + canonical(profile) + ');');
+   const pinned = replaceFixtureLiteral(profiled, /const SOURCE_CLOSURE_HASH = '[a-f0-9]{64}';/, "const SOURCE_CLOSURE_HASH = '" + sourceClosure.digest + "';");
+-  write(operator, pinned);
++  // Adapt only this TEMP operator's fixed TCP reservation, once before load.
++  // A later port race remains a real guard failure; never reselect or retry.
++  const isolated = replaceFixtureLiteral(pinned, /\{ host: '127\.0\.0\.1', port: 3457 \}/, "{ host: '127.0.0.1', port: " + repairEndpoint.port + ' }');
++  write(operator, isolated);
++  const operatorHash = hash(fs.readFileSync(operator));
++  Object.defineProperty(h, 'operatorHash', { value: operatorHash, enumerable: true });
+   h.api = load(operator, true); h.id = uuid(); h.repairDir = path.join(root, 'transactions', h.id + '-mixed-local-repair');
+-  h.plan = () => { clearLookups(); return h.api.execute('plan', h.id); };
++  h.plan = async () => {
++    clearLookups(); const result = await h.api.execute('plan', h.id);
++    if (result.plan.operatorHash !== operatorHash) throw Error('fixture_operator_hash');
++    return result;
++  };
+   h.run = (mode, pin) => { clearLookups(); return h.api.execute(mode, h.id, pin); };
+   t.after(() => { if (!path.resolve(base).startsWith(path.resolve(os.tmpdir()) + path.sep + 'core4-mixed-repair-')) throw Error('unsafe cleanup'); fs.rmSync(base, { recursive: true, force: true }); });
+   return h;

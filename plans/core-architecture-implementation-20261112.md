@@ -1,6 +1,6 @@
 # Core 4.2.6: архитектурная сверка и план реализации
 
-Дата: 12 ноября 2026. Назначение: проверяемое задание для нового чата реализации.
+Дата: 12 ноября 2026. Назначение: исполненный source-план A → B → C и его evidence.
 Рабочий корень: `C:/Users/Ant/Documents/Codex/AE_agent_core`.
 
 ## Решение
@@ -46,8 +46,8 @@
   client bootstrap, artifact/worker, ledger, product Titles и правила portability.
   Это разбор основных границ, а не утверждение о чтении каждой строки репозитория
   или формальное доказательство отсутствия всех дефектов.
-- В этом проходе тесты, product build и live AE не запускались. Имена существующих
-  тестов означают имеющееся покрытие в исходниках, а не новый PASS.
+- При подготовке исходного read-only плана тесты, product build и live AE не
+  запускались. Результаты последующей реализации приведены в Progress/Validation.
 
 ## Архитектурная карта
 
@@ -422,6 +422,89 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Progress
 
+- **A → B → C завершены в разрешённом source scope.** Финальный verified join:
+  82/82 current checks, 72 distinct batches, 1338/1338 Node records PASS,
+  fail/cancel/skip/todo 0. Итог MULTI_CONTEXT_SELECTED_PASS, 4 записанных runtime
+  contexts; равенство окружений и full release не заявляются. Не выбраны
+  catalog-discovery и validation-reuse; их current PASS не приписан.
+  Final source union43 paths к dd50fb8 и protected dirty hashes сверены.
+  [Coverage](../docs/evidence/core-architecture-implementation-20261112/C/final/actual-selected-coverage.json),
+  [архитектурный результат](../docs/core-architecture-result-20261112.md).
+  Независимое итоговое ae_reviewer чтение фактического evidence: ACCEPT,
+  P1/P2 нет; current keys/raw logs,385 supplemental source hashes и candidates
+  подтверждены. Новых tests/build для этого review не запускалось.
+- C7 принят independent review, mixed-repair 44/44 и lifecycle31/31 PASS.
+  Genuine kernel reservation/busy/pipe проверки изолированы в TEMP; существующий
+  установленный Owner и canonical3457 не менялись. Все 11 исходных failed/
+  UNKNOWN attempts сохранены. Final Titles28/28; четыре current candidates
+  совпали с прошедшими dry-run distributions. Ветка остаётся Core4.2.6;
+  публикация, actual installation/cutover и live/native acceptance не назначались.
+- Milestone commits: A1 5ea56ca, A2 563f30a, A3 37c68a0, B0 5ef6921,
+  B1 d8740d0, B2 0378e88, B3 3f6821f. Финальный C commit содержит оставшийся
+  source/test diff, эту запись и сохранённое evidence. Записи ниже — ход работы.
+- C4/C5/C6 применены после independent ACCEPT. Final four-key attempt:
+  lifecycle 31/31, installed-composition 23/23, exact f548 1/1 PASS;
+  mixed 36/42, 6 FAIL. Все 4 helper-drift cases PASS. Шесть remaining —
+  actual kernel endpoint conflict3457, который занят существующим production
+  Owner (его не трогали); guard правильно даёт repair_endpoint_busy. C7
+  изолирует только TEMP operator на собственном ephemeral endpoint, сохраняя
+  реальные bind/busy/pipe отказы и production port/pin/PROFILE. C7 исполняет
+  ae_implementer; после review повторяются лишь mixed и lifecycle keys.
+- C3 второй controller завершён: 44/44 batches, 41 PASS и 3 FAIL
+  (mixed legacy CEP7/8, legacy R1 registry4.2.2, exact transition test deadline).
+  813 Node test records: 793 PASS/19 FAIL/1 cancelled; это попытка, не финальная
+  source certification. Большие stopped-update 61/61 и native-read-recovery
+  23/23 приняты в пределах current keys. C5 исправляет только legacy registry
+  fixture; C6 увеличивает test deadline30→90s после установления полного
+  завершённого transition outcome и отсутствия связанных actors. Все исходные
+  FAIL/cancel/UNKNOWN и их logs сохраняются.
+- C3 runtime checkpoint: повторный stopped-update/frame-export-slot batch
+  завершён 61/61 PASS за ~39 минут. Initial UNKNOWN не переписан; принадлежавшие
+  timeout стенду процессы ранее проверены как завершённые. Во втором controller
+  закрыты batches 1–8: 53/53, 15/15, 31/31, 35/35, 33/33, mixed 23/41 FAIL,
+  start-over 3/3, stopped-update 61/61. Остальные группы продолжаются.
+  Единственный текущий известный FAIL — mixed legacy CEP contract; для него
+  подготовлен и reviewed C4, который применяется после завершения controller.
+- C4 подготовлен только в TEMP и независимо reviewed ACCEPT: mixed incident
+  fixture приводится к явно synthetic legacy release policy 4.2.5, без нового
+  registry marker. Настоящие derive/revision/registry/verifyPackage сохраняют
+  current executable bytes и формируют согласованные 7 CEP-файлов. Pure preview
+  3 packages/read-only plans PASS; patch ещё не применён и runtime suites ему
+  не приписаны. Production incident 7/pin/PROFILE/guard остаются frozen.
+- C3 применён после исходного checkpoint: 7 reviewed test-only файлов совпали
+  с prepared SHA. Initial run завершился на batch36 по 30-минутному timeout
+  stopped-update/frame-export-slot; outcome UNKNOWN сохранён. Дочерний PID
+  отсутствует, owned TEMP Node actors не найдены, cleanup не потребовался.
+  OS PID и exec session ID различены исправленной metadata-копией отчёта.
+  Новый frozen diff — 42 source paths; выполняются 47 checks/44 batches,
+  включая незапущенные и все инвалидированные, с лимитом 2 часа на batch.
+  35 unchanged PASS — только кандидаты до final verified join.
+  После применения Titles снова 28/28, current candidate fingerprints 4/4
+  совпали с actual dry-run distributions, boundaries 92 PASS.
+- C2: обе tooling closure исправлены по архитектурному контракту; 11 applicable
+  focused checks, boundaries 92 PASS. Независимый reviewer ACCEPT для C1/C2,
+  8+5 source hashes сверены. Production native-read operator остаётся v1.
+  Exact f548 input восстановлен из 7dec462 исходным builder с полным совпадением
+  размера/SHA/packageHash; прежний ENOENT сохранён, не переименован в PASS.
+- C3: заморожен полный diff к dd50fb8 — 37 source paths, 82 checks/72 batches,
+  2 deferred. Полный Titles suite 28/28 PASS. Initial union выполняется;
+  собраны дополнительные fixture FAIL: неполная CLI copy, installed identity
+  в synthetic owner helper, старые routing/count/journal expectations,
+  start-over handshake и исторический source pin TEMP mixed-repair.
+  Test-only исправления готовит ae_implementer в отдельном TEMP; основной
+  checkout остаётся замороженным до завершения initial run. Финальный proof
+  объединит только точные current keys и verified raw logs после scoped rerun.
+- C1 выполняет ae_implementer: current identity/registry handshakes и точные
+  routing/cache assertions обновлены в fixtures; реальный Titles compiler
+  прошёл offline HTTP/receipt/read-back и stale-input отказ. Две production
+  tooling closure после B1 обнаружены неполными: check-package-location snapshot
+  и native-read operator не несут composition-spec helper. Их безопасный
+  own-tooling contract отдельно разбирает ae_architect до исправления.
+  Полный affected union ещё не запущен; предварительно 82 checks/72 batches.
+- C packaging: readonly/manual/manual-titles-variants/operator-render-jobs owner
+  собраны детерминированно, verifyPackage/verifyStandalone и actual v3 dry-run
+  из foreign CWD PASS. Все пути назначения в task TEMP отсутствуют после dry-run,
+  distribution bytes сохранены. Это candidate proof, без real install/native.
 - B3 реализован ae_implementer: явная release feature policy в trusted bootstrap
   и pure spec; неизвестная версия отвергается до чтения состава. Narrower
   owner/client whitelist сохранён. Actual TEMP module проходит штатный
@@ -525,6 +608,25 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Decision Log
 
+- C завершён без нового incident rebase: package maker моделирует известную
+  legacy4.2.5 policy только в synthetic fixture, сохраняя current executable
+  bytes и отдельное provenance. Это не byte-identical исторический4.2.5 пакет
+  и не native old-panel proof. Для exact f548 использованы побайтно восстановленные
+  данные. Ephemeral endpoint адаптирует только TEMP operator, включён в его
+  operatorHash; mutable production overrides не введены.
+- C evidence: явный per-check-contexts принят ae_architect и независимо reviewed.
+  Каждый current-key PASS сохраняет собственный полный runtime/envhash; прочие
+  runtime-поля одинаковы. Итог MULTI_CONTEXT_SELECTED_PASS не утверждает равенство
+  окружений. Initial main хранит только общий envhash; остальные отличия этого
+  окружения восстановить нельзя. Strict режим не меняется, prod guards не затронуты.
+- C: production incident repair PROFILE/SOURCE_CLOSURE_HASH/guard остаются
+  прежними. Для synthetic fixture допускается один manifest двух существующих
+  literal-import roots и его pin в TEMP operator до load. После plan digest
+  не обновляется; новые negative tests проверяют helper drift до plan и до apply.
+  Это не новый production incident rebase и не снятие frozen MSIX scope.
+- C: CSS leak в source-location checker порождает restamped panel identity,
+  поэтому первый exact byte-diff — cep/js/panel.js. Production compare order
+  сохранён; fixture проверяет именно CSS input delta и связанный panel stamp.
 - B3: closed feature table сохраняет прежние version/format пары и отсутствие
   registryVerification у старых selected shapes. Минимальная inline/spec
   дубликация защищена parity, без preverification import. Portable execution
@@ -581,6 +683,21 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Validation
 
+- Финальный source coverage SHA:
+  032a12aa3d0a3a9277336d79992ab318b1be9ba35912e0738a8f0e123afac261.
+  Verifier повторно проверил current Git union, hashes43 source files, protected
+  files, selector/map, input/config/runner pins, original scope relations,
+  before/after keys, actual commands/cwd и raw logs/counts/matched names.
+  246 rejected stale/nonPASS candidates не скрыты; 11 failed attempts сохранены.
+  1338/1338 — сумма 72 distinct used batches, не сумма повторных attempts.
+  Дополнительно final Titles28/28 и boundaries92 PASS. Source/package fingerprints
+  и команды с raw hashes лежат в evidence C; больших package blobs в Git нет.
+- C evidence automation — task-local, вне product/runtime. Full runner и
+  explicit-subset runner независимо reviewed; subset не заявляет full PASS.
+  Join verifier проверяет source union, keys/commands/контекст и повторно разбирает
+  сырые logs; его 12 synthetic cases и независимое read-only review PASS/ACCEPT.
+  Actual финальное объединение ещё не выполнено. Root отвечает за config pins
+  и полный список внешних immutable inputs, включая exact f548 fixture.
 - B3: focused 67/67, boundaries 92, syntax и final declared-consumers parity
   PASS. Исходные failures и их причины сохранены; transient SHA ранних test
   revisions не фиксировались и не выдаются за финальное evidence. Coordinator

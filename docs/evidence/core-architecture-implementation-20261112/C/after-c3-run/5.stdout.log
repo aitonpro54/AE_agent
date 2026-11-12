@@ -1,0 +1,41 @@
+✔ owner-installation runtime selector is independent of composition and owner contract is a closed admitted cluster (221.5856ms)
+✔ owner-installation fresh-root planning projects exact origin bytes without destination reads or writes (265.6508ms)
+✔ owner-installation TEMP readonly/manual apply stages exact role sidecar before publishing config last (6644.7243ms)
+✔ owner-installation legacy to owner to legacy and both rollbacks preserve exact sidecar bytes and stable origin (6147.4314ms)
+✔ owner-installation first owner rollback removes only its exact sidecar and retains stable state origin (2115.1636ms)
+✔ owner-installation virgin admission refuses retained transactions/releases/config instead of issuing another identity (2203.1717ms)
+✔ owner-installation existing origins require a descriptor; initial rollback retains history but cannot be reapplied as virgin (4249.578ms)
+✔ owner-installation virgin apply refuses a settled ledger added after planning without publishing an identity (243.5055ms)
+✔ owner-installation virgin admission recognizes quoted Core headers while preserving unrelated legacy config (2463.2581ms)
+✔ owner-installation pristine CAS rejects foreign additions under the lease and before switch, preserving the foreign file (1641.5936ms)
+✔ owner-installation coherent repeat accepts a new checkout config but refuses foreign CEP or an existing mismatched managed binding (10683.623ms)
+✔ owner-installation historical v1 data still requires exact CEP bytes before a candidate upgrade (564.4837ms)
+✔ owner-installation coherent preferences-only config derives its binding, while partial or different transports refuse (13136.261ms)
+✔ owner-installation publication preflight preserves foreign stages at planning, lease CAS and rollback (11579.6078ms)
+✔ owner-installation snapshot rejects linked, dangling and non-directory CEP roots before writes (46.5423ms)
+✔ owner-installation final publication CAS refuses a foreign rollback file before moving CEP (4370.3756ms)
+✔ owner-installation snapshot checks nested links leaf replacements and redirected parents before external reads (18.6855ms)
+✔ owner-installation unknown managed config keys refuse while foreign legacy tables remain intact (10530.5226ms)
+✔ owner-installation early config CAS abort removes only own empty lease directories and permits a fresh plan (504.0351ms)
+✔ owner-installation branded early-abort cleanup preserves preexisting replaced populated and postwrite directories (158.9677ms)
+✔ owner-installation branded plans bind client bytes, origin bytes and binding metadata; durable prepared client tampering refuses (1020.7922ms)
+✔ owner-installation client and origin CAS detect drift before writes, including drift while acquiring the install lease (9015.7136ms)
+✔ owner-installation noncanonical existing origin bytes are retained and pinned exactly (4697.4603ms)
+✔ owner-installation foreign or missing sidecar never permits replacement or owner to stdio deletion (3789.1561ms)
+✔ owner-installation staging files and ancestor junctions refuse before reading or changing destinations (36.638ms)
+✔ owner-installation rollback refuses sidecar/origin/prepared drift and missing owner transaction extension before writes (10053.6255ms)
+✔ owner-installation owner package cannot execute through the legacy stdio entry before listener or store open (3880.0076ms)
+✔ owner-installation standalone stdio and owner closure apply without checkout code, launcher or listeners (5434.54ms)
+✔ owner-installation fixed CLI runtime selector reaches package and standalone builders and rejects unknown models (726.933ms)
+✔ owner-installation corrupt staged sidecar refuses before client or config becomes visible (2467.3183ms)
+✔ owner-installation bounded readers reject growth after fd sampling before installer writes and close their fd (7895.5789ms)
+✔ owner-installation byte-exact ownership rejects invalid UTF8 that decodes to the same client descriptor (2073.5943ms)
+✔ owner-installation all rollback restore inputs and stamped transaction paths are bound before any destination writes (5539.6023ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 134550.1151

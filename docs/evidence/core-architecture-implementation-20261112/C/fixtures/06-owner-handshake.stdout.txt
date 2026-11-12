@@ -1,0 +1,12 @@
+✔ owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants (14625.6866ms)
+✔ owner-runtime desired-stop freezes new control while captured original inspection completes after client detach (9194.7335ms)
+✔ owner-runtime owner main signal persists desired-stop and drains original completion without a second shutdown request (9164.366ms)
+✔ owner-runtime later panel poll after controller detach durably settles an undelivered read without a receiver fence (9083.6681ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 42225.6821

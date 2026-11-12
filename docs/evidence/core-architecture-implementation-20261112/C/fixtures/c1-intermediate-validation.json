@@ -1,0 +1,439 @@
+{
+  "scope": "C1 test/fixture repairs and Titles/Core source integration; intermediate result, NOT C1 PASS",
+  "baseline": "3f6821f",
+  "status": "TEST_PATCH_FROZEN_WITH_TWO_PRODUCTION_CLOSURE_FAILURES",
+  "sources": {
+    "core4/test/owner-runtime.test.js": {
+      "sha256": "1e2becc39e16f1d26bae1af8fb202b64f3e96de61e16db6faae45d5e6f3bbdc1",
+      "bytes": 92885
+    },
+    "core4/test/installed-composition.test.js": {
+      "sha256": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+      "bytes": 37745
+    },
+    "core4/test/fixtures/installed-composition-transition.js": {
+      "sha256": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+      "bytes": 6765
+    },
+    "core4/test/core4.test.js": {
+      "sha256": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+      "bytes": 58783
+    },
+    "core4/test/installable-runtime.test.js": {
+      "sha256": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+      "bytes": 103711
+    },
+    "core4/test/fixtures/manual-http-runtime.js": {
+      "sha256": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+      "bytes": 18645
+    },
+    "core4/test/fixtures/native-read-recovery.js": {
+      "sha256": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+      "bytes": 14130
+    },
+    "products/titles/test/core-http-integration.test.js": {
+      "sha256": "ef2331bec18df15fef0eef429098fe1271aca307e5ebe11b0b4a9e26b6720598",
+      "bytes": 5520
+    }
+  },
+  "runs": [
+    {
+      "metadata": "01-routing.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=validation-routing",
+          "core4/test/core4.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:29:04.257Z",
+        "ended": "2026-11-12T11:29:18.887Z",
+        "exitCode": 0,
+        "signal": null,
+        "sources": {
+          "core4/test/owner-runtime.test.js": "e3b13868c691ab70a1e7c4661a0e8582cc171f3fa2b22fb0adbb7fa75f71dc5b",
+          "core4/test/installed-composition.test.js": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/test/core4.test.js": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+          "core4/test/installable-runtime.test.js": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+          "core4/test/fixtures/manual-http-runtime.js": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+          "products/titles/test/core-http-integration.test.js": "7d89ac97c65cfcc50612853f8591b59eefdbf862f658fc534fc18a1b0641d954"
+        },
+        "log": "01-routing.stdout.txt",
+        "stdoutSHA": "b320a5129513b338afbb3b5a750610b7e8af5e1493fefbb8b85bcb75691ae440"
+      }
+    },
+    {
+      "metadata": "02-titles.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "products/titles/test/core-http-integration.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:29:04.220Z",
+        "ended": "2026-11-12T11:29:05.340Z",
+        "exitCode": 1,
+        "signal": null,
+        "sources": {
+          "core4/test/owner-runtime.test.js": "e3b13868c691ab70a1e7c4661a0e8582cc171f3fa2b22fb0adbb7fa75f71dc5b",
+          "core4/test/installed-composition.test.js": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/test/core4.test.js": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+          "core4/test/installable-runtime.test.js": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+          "core4/test/fixtures/manual-http-runtime.js": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+          "products/titles/test/core-http-integration.test.js": "7d89ac97c65cfcc50612853f8591b59eefdbf862f658fc534fc18a1b0641d954"
+        },
+        "log": "02-titles.stdout.txt",
+        "stdoutSHA": "d1d8d7e56f2eb3c0661d8fd6bc2be3fe01f65117f6757de63699457b02f513ae"
+      }
+    },
+    {
+      "metadata": "03-handshakes.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=desired-stop freezes|owner main signal|durable project read rejections|portable fixed-format1 transition|installed readonly child|stale release A entry",
+          "core4/test/owner-runtime.test.js",
+          "core4/test/installed-composition.test.js",
+          "core4/test/installable-runtime.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:29:29.029Z",
+        "ended": "2026-11-12T11:30:03.344Z",
+        "exitCode": 1,
+        "signal": null,
+        "sources": {
+          "core4/test/owner-runtime.test.js": "e3b13868c691ab70a1e7c4661a0e8582cc171f3fa2b22fb0adbb7fa75f71dc5b",
+          "core4/test/installed-composition.test.js": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/test/core4.test.js": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+          "core4/test/installable-runtime.test.js": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+          "core4/test/fixtures/manual-http-runtime.js": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+          "products/titles/test/core-http-integration.test.js": "ef2331bec18df15fef0eef429098fe1271aca307e5ebe11b0b4a9e26b6720598"
+        },
+        "log": "03-handshakes.stdout.txt",
+        "stdoutSHA": "d2935db0ba0e9e6779224fc6a5302af2d03f61920357b150dd73c9dd47389f0a"
+      }
+    },
+    {
+      "metadata": "04-titles.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "products/titles/test/core-http-integration.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:29:29.043Z",
+        "ended": "2026-11-12T11:29:30.446Z",
+        "exitCode": 0,
+        "signal": null,
+        "sources": {
+          "core4/test/owner-runtime.test.js": "e3b13868c691ab70a1e7c4661a0e8582cc171f3fa2b22fb0adbb7fa75f71dc5b",
+          "core4/test/installed-composition.test.js": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/test/core4.test.js": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+          "core4/test/installable-runtime.test.js": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+          "core4/test/fixtures/manual-http-runtime.js": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+          "products/titles/test/core-http-integration.test.js": "ef2331bec18df15fef0eef429098fe1271aca307e5ebe11b0b4a9e26b6720598"
+        },
+        "log": "04-titles.stdout.txt",
+        "stdoutSHA": "2c64b5b9ae6f2b8b94bbeb7cab3910bab47524d1b4cb94716e513115acfdf3ef"
+      }
+    },
+    {
+      "metadata": "05-package-location.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "core4/test/package-location.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:30:05.281Z",
+        "ended": "2026-11-12T11:30:08.983Z",
+        "exitCode": 1,
+        "signal": null,
+        "sources": {
+          "core4/test/owner-runtime.test.js": "e3b13868c691ab70a1e7c4661a0e8582cc171f3fa2b22fb0adbb7fa75f71dc5b",
+          "core4/test/installed-composition.test.js": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/test/core4.test.js": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+          "core4/test/installable-runtime.test.js": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+          "core4/test/fixtures/manual-http-runtime.js": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+          "products/titles/test/core-http-integration.test.js": "ef2331bec18df15fef0eef429098fe1271aca307e5ebe11b0b4a9e26b6720598"
+        },
+        "log": "05-package-location.stdout.txt",
+        "stdoutSHA": "a51b34ecf4470fa6edc705c4c53ee0133350d5f26d95c6b44fcccfc8bf00b7c6"
+      }
+    },
+    {
+      "metadata": "06-owner-handshake.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=desired-stop freezes|owner main signal|durable project read rejections|later panel poll",
+          "core4/test/owner-runtime.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:31:28.616Z",
+        "ended": "2026-11-12T11:32:10.933Z",
+        "exitCode": 0,
+        "signal": null,
+        "sources": {
+          "core4/test/owner-runtime.test.js": "1e2becc39e16f1d26bae1af8fb202b64f3e96de61e16db6faae45d5e6f3bbdc1",
+          "core4/test/installed-composition.test.js": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/test/core4.test.js": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+          "core4/test/installable-runtime.test.js": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+          "core4/test/fixtures/manual-http-runtime.js": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+          "products/titles/test/core-http-integration.test.js": "ef2331bec18df15fef0eef429098fe1271aca307e5ebe11b0b4a9e26b6720598"
+        },
+        "log": "06-owner-handshake.stdout.txt",
+        "stdoutSHA": "bd0ae2348fa639e770932be9fd000d598e5680491fe4ad46076c64f7cd1d11ff"
+      }
+    },
+    {
+      "metadata": "07-syntax.json",
+      "value": [
+        {
+          "exitCode": 0,
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-owner-runtime.test.js.stdout.txt",
+          "sourceSHA": "1e2becc39e16f1d26bae1af8fb202b64f3e96de61e16db6faae45d5e6f3bbdc1",
+          "command": [
+            "node",
+            "--check",
+            "core4/test/owner-runtime.test.js"
+          ]
+        },
+        {
+          "exitCode": 0,
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-installed-composition.test.js.stdout.txt",
+          "sourceSHA": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+          "command": [
+            "node",
+            "--check",
+            "core4/test/installed-composition.test.js"
+          ]
+        },
+        {
+          "exitCode": 0,
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-installed-composition-transition.js.stdout.txt",
+          "sourceSHA": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "command": [
+            "node",
+            "--check",
+            "core4/test/fixtures/installed-composition-transition.js"
+          ]
+        },
+        {
+          "exitCode": 0,
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-core4.test.js.stdout.txt",
+          "sourceSHA": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+          "command": [
+            "node",
+            "--check",
+            "core4/test/core4.test.js"
+          ]
+        },
+        {
+          "exitCode": 0,
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-installable-runtime.test.js.stdout.txt",
+          "sourceSHA": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+          "command": [
+            "node",
+            "--check",
+            "core4/test/installable-runtime.test.js"
+          ]
+        },
+        {
+          "exitCode": 0,
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-manual-http-runtime.js.stdout.txt",
+          "sourceSHA": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+          "command": [
+            "node",
+            "--check",
+            "core4/test/fixtures/manual-http-runtime.js"
+          ]
+        },
+        {
+          "exitCode": 0,
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-native-read-recovery.js.stdout.txt",
+          "sourceSHA": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+          "command": [
+            "node",
+            "--check",
+            "core4/test/fixtures/native-read-recovery.js"
+          ]
+        },
+        {
+          "exitCode": 0,
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c1-5f46aff40059401a8e01798654f560d4\\syntax-core-http-integration.test.js.stdout.txt",
+          "sourceSHA": "ef2331bec18df15fef0eef429098fe1271aca307e5ebe11b0b4a9e26b6720598",
+          "command": [
+            "node",
+            "--check",
+            "products/titles/test/core-http-integration.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "metadata": "08-diffcheck.json",
+      "value": {
+        "exitCode": 0,
+        "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "command": "git diff --check"
+      }
+    }
+  ],
+  "changes": [
+    "3 installed panel handshakes use verified loadedPanel + normalized extensionRoot in signed claim + signed registry-ready",
+    "owner handshake asserts exact old journal prefix plus only bootstrap begin/complete with full command/executor/payload/nonce/result correlation; exact lifecycle journal expectations include bootstrap",
+    "3 routing exact6 sets + exact broad changed cachekeys4 and unchanged title keys2; Core-only controller run retains no-photo/no-engine dependency assertion",
+    "stale-release-A and native-read-recovery TEMP CSS candidates restamped via existing trusted panel identity helper, intended wrong-root assertion retained",
+    "test-only optional requestBuilder passes original contract and inspection to actual product prepareBuild; old callers keep prior exact request"
+  ],
+  "passedUniqueFocusedScenarios": 13,
+  "passes": {
+    "routing": {
+      "count": 5,
+      "evidence": "01-routing.stdout.txt"
+    },
+    "titles": {
+      "count": 2,
+      "evidence": "04-titles.stdout.txt"
+    },
+    "ownerLifecycle": {
+      "count": 4,
+      "evidence": "06-owner-handshake.stdout.txt"
+    },
+    "installedReadonly": {
+      "count": 1,
+      "evidence": "03-handshakes.stdout.txt"
+    },
+    "staleReleaseWrongRoot": {
+      "count": 1,
+      "evidence": "03-handshakes.stdout.txt"
+    },
+    "syntax": {
+      "count": 8,
+      "evidence": "07-syntax.json"
+    },
+    "diffcheck": {
+      "exitCode": 0,
+      "evidence": "08-diffcheck.json"
+    }
+  },
+  "product": {
+    "source": "products/titles/test/core-http-integration.test.js:33 and :56",
+    "path": "actual compiler prepareBuild(real Core contract + inspection) -> real Broker build/propose/dryrun/run -> private manual policy -> signed HTTP -> actual registry/dispatcher in VM -> original transaction receipt -> fresh Broker inspection",
+    "metadata": "Compiler-generated recordContext is asserted user_work/work_context. Only request.recordContext purpose/lifetime are replaced with technical_check/ephemeral_check for this isolated task; exact generated workflow/steps/input/contract/evidence remain unchanged. Existing privateEmbedding defaults remain technical_check/ephemeral_check. Descriptive labels never grant authority.",
+    "authority": "No inspection.synthetic assignment. Existing private manual port itself issues synthetic:false using TEMP synthetic OS/native host; this is not installed/live authority.",
+    "preservation": "Native fixture sibling photo101/source11, photo mutation count0, transform/time and title style unchanged. Target title receives fresh inspection matching result and protected baseline. Actual receipt binds desiredText and checkpoint digest.",
+    "stale": "Old inspection then manual text change -> approved_target_drift before intent/native confirmation/setter; no commands; fresh compiler proposal succeeds once.",
+    "limits": "AE, native confirmation and Windows observations simulated; loopback test listener only; no native visual/content acceptance."
+  },
+  "failedAttemptsRetained": [
+    {
+      "log": "02-titles.stdout.txt",
+      "source": "products/titles/test/core-http-integration.test.js:42 (original attempt)",
+      "reason": "Wrong test assumption checkpoint.digest=hash(snapshot); actual checkpoint includes bound envelope. Corrected to ledger checkpoint.preimage equality and original receipt binding;04 PASS."
+    },
+    {
+      "log": "03-handshakes.stdout.txt",
+      "source": "core4/test/owner-runtime.test.js:238 and :1110 (attempt)",
+      "reason": "Exact journals lacked current registry bootstrap begin/complete. Repaired explicit lifecycle expectations and verified full bootstrap binding;06 four owner PASS."
+    },
+    {
+      "log": "03-handshakes.stdout.txt",
+      "source": "core4/test/fixtures/installed-composition-transition.js:15",
+      "reason": "Actual native-read operator copy missing fixed trusted tools/composition-spec.js; production closure gap remains open. Test candidate CSS restamp separately corrected, syntax PASS; full transition still unproven."
+    },
+    {
+      "log": "05-package-location.stdout.txt",
+      "source": "core4/test/package-location.test.js:22 and :65; core4/tools/check-package-location.js:31",
+      "reason": "Actual source-copy builder misses tools/composition-spec.js; MODULE_NOT_FOUND in both positive and injected-leak cases. No production or assertion workaround applied."
+    }
+  ],
+  "confirmedMissingClosureConsumers": [
+    {
+      "source": "core4/tools/check-package-location.js:31",
+      "role": "Own trusted source snapshot copies tools/package-installable.js, omits its fixed tools/composition-spec.js shim."
+    },
+    {
+      "source": "core4/tools/package-native-read-operator.js:9",
+      "role": "Flattened operator tooling copies package-installable/install-core4 but omits tools/composition-spec.js; role-safe source/alias contract delegated to architect before production changes."
+    }
+  ],
+  "transitionMapping": [
+    {
+      "transition": "stale input/pin or malformed request rejected before eval",
+      "refs": [
+        "products/titles/test/core-http-integration.test.js:56",
+        "core4/test/integration/cep-transport.test.js:89"
+      ]
+    },
+    {
+      "transition": "refused before physical send / expiry",
+      "refs": [
+        "core4/test/manual-runtime.test.js:145",
+        "core4/test/manual-runtime.test.js:158"
+      ]
+    },
+    {
+      "transition": "native cancellation / post-confirm drift",
+      "refs": [
+        "core4/test/manual-runtime.test.js:94"
+      ]
+    },
+    {
+      "transition": "accepted then disconnect / missing callback / late callback retain latch",
+      "refs": [
+        "core4/test/integration/cep-transport.test.js:104",
+        "core4/test/integration/cep-transport.test.js:116"
+      ]
+    },
+    {
+      "transition": "persisted completion duplicate / lost ACK without another eval",
+      "refs": [
+        "core4/test/integration/cep-transport.test.js:137",
+        "core4/test/integration/cep-transport.test.js:147"
+      ]
+    },
+    {
+      "transition": "setter uncertainty / restart UNKNOWN / wrong original proof",
+      "refs": [
+        "core4/test/manual-runtime.test.js:105",
+        "core4/test/manual-runtime.test.js:131",
+        "core4/test/integration/cep-transport.test.js:246",
+        "core4/test/integration/cep-transport.test.js:259"
+      ]
+    }
+  ],
+  "mappingLimit": "Existing crash/ACK/UNKNOWN references are SOURCE COVERAGE ONLY in C1; they were not rerun here. Root final selected union must supply fresh execution evidence.",
+  "next": "Separate scoped production source fix after architect closure contract; rerun transition + package-location and address any actual subsequent fixture failures. Root owns final fullunion/supplemental checks and commits.",
+  "unchanged": [
+    "production files",
+    "validation-map",
+    "product compiler semantics",
+    "synthetic manual-http handshake without releaseDir/cepDir",
+    "protected dirty AGENTS/transfer plan"
+  ],
+  "noLive": true,
+  "noInstalledChanges": true,
+  "noCommits": true
+}

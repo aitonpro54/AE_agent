@@ -1,0 +1,21 @@
+✔ [manual-current-target] queued same-path same-IDs replacement requires fresh local confirmation; A untouched (29.1272ms)
+✔ [manual-current-target] cancel on replacement gives zero setter and original target untouched (20.9974ms)
+✔ [manual-current-target] full same-path project replacement inside confirm freshly resolves B and locally verifies B (21.146ms)
+✔ [manual-current-target] immutable registered proposal rejects every forged binding before confirm/evaluate (19.4216ms)
+✔ [manual-current-target] all protected fields drift during modal confirmation reject before setter (303.0394ms)
+✔ [manual-current-target] text path comp/layer/session lock and effect constraints re-resolve after confirm (216.253ms)
+✔ [manual-current-target] preconfirm drift is refused without dialog; quoted text remains data (38.7664ms)
+✔ [manual-current-target] setter throws after effect or damages protected field leaves durable UNKNOWN and no replay (40.5659ms)
+✔ [manual-current-target] timeout before execution then late confirmation may mutate; UNKNOWN survives reopen (59.5254ms)
+✔ [manual-current-target] timer during blocked confirm then late agree keeps original UNKNOWN and no replay (1035.1328ms)
+✔ [manual-current-target] actual receiver duplicates never re-evaluate and completed proof survives reopen (26.0802ms)
+✔ [manual-current-target] lost host callback after effect durably fences without retry (61.6293ms)
+✔ [manual-current-target] reviewed JSX rejects payload Boolean/callback; separate local verify and sole setter (3.9276ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2012.9388

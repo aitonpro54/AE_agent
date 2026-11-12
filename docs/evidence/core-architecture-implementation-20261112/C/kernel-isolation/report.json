@@ -1,0 +1,108 @@
+{
+  "stage": "C7",
+  "status": "SOURCE_FROZEN_FOR_REVIEW",
+  "root": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+  "sourceScope": [
+    "core4/test/fixtures/mixed-installation.js",
+    "core4/test/mixed-installation-repair.test.js"
+  ],
+  "sources": [
+    {
+      "file": "core4/test/fixtures/mixed-installation.js",
+      "baseSHA256": "aab62c7523dfba7f325fa30d8a9167cf4123a155b1317ea5e2f30288e2c9076a",
+      "finalSHA256": "ce49409f8700ee41ddc53ca53175db48424e6e98ad29806ba3bc92164d4cc327",
+      "bytes": 22974
+    },
+    {
+      "file": "core4/test/mixed-installation-repair.test.js",
+      "baseSHA256": "a7ae7b44bb97815c67509968f8a6fbf0d9875b7e7e61f3aca5afb9b46342de78",
+      "finalSHA256": "1490a87da2dd0ac624dead25eabcdb142d0688d344bab04ac42bd9dd2518ddd9",
+      "bytes": 25240
+    }
+  ],
+  "commands": [
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--check",
+        "core4/test/fixtures/mixed-installation.js"
+      ],
+      "exit": 0,
+      "stdout": "syntax-1.log",
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--check",
+        "core4/test/mixed-installation-repair.test.js"
+      ],
+      "exit": 0,
+      "stdout": "syntax-2.log",
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "core4/test/fixtures/mixed-installation.js",
+        "core4/test/mixed-installation-repair.test.js"
+      ],
+      "exit": 0,
+      "stdout": "diffcheck.log",
+      "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "allocation": {
+    "evidence": "actual allocator function extracted from final fixture, real ephemeral loopback listen/close then rebind/close; no fixture construction or mapped suite run",
+    "endpoint": {
+      "host": "127.0.0.1",
+      "port": 6163
+    },
+    "reboundAfterAllocatorClose": true,
+    "finalProbeListening": false,
+    "allocatorSourceSHA256": "b51e6cd7ee64cf3f5aec3d0fbdea0962a711d9fb724179832a0d55e613c17985",
+    "productionReservationLiteralOccurrences": 1,
+    "productionSHA256": "43a7dcad764a2f68fd447bfac8369a0fb9c3618fe90aef859f3af41bc9bcde0c",
+    "sourceClosureFunctionUnchanged": true,
+    "pipeExpressionsUnchangedByAdapter": true
+  },
+  "scopeLimits": [
+    "No mixed suite executed; mapped result remains pending root controller.",
+    "No production source, pin, PROFILE, source closure, network/import override, installed state or owner touched.",
+    "One fixed private TCP endpoint per fixture; post-allocation races remain ordinary guard failures without retry.",
+    "Actual busy TCP/two-pipe refusals and four source-drift cases await root-run mapped suite."
+  ],
+  "artifacts": [
+    {
+      "path": "change-1.diff",
+      "sha256": "e4ba5c9b433f62f0888d8c172806c39e1bd43bd3c0f66f5e219ec2244c1a0de0"
+    },
+    {
+      "path": "change-2.diff",
+      "sha256": "f6cb38e46ecc55f294ca5f3016c320850a82f610634a0c24b34154876eeaaa8c"
+    },
+    {
+      "path": "allocation.json",
+      "sha256": "06fda756ab01bd31da056e4086a15f9abd7d7198e91e0040cde62f8ea0e49c01"
+    },
+    {
+      "path": "syntax-1.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "syntax-2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "diffcheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "validate-c7.js",
+      "sha256": "796d327e5f8f2c1a8c1421209c28ab286386f2eee8269ed64f78677bdc7c5580"
+    }
+  ]
+}

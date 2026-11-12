@@ -1,0 +1,40 @@
+✔ maintenance-finish finishes original known intent prefix without changing intent or histories (4669.8772ms)
+✔ maintenance-finish finishes original known install prefix without changing intent or histories (4491.3389ms)
+✔ maintenance-finish finishes original known broker prefix without changing intent or histories (4689.0334ms)
+✔ maintenance-finish finishes original known lease prefix without changing intent or histories (5080.18ms)
+✔ maintenance-finish finishes original known completed prefix without changing intent or histories (5099.6938ms)
+✔ maintenance-finish finishes original known archive prefix without changing intent or histories (5131.0731ms)
+✔ maintenance-finish finishes original known remove prefix without changing intent or histories (3109.0403ms)
+✔ maintenance-finish finishes original known release prefix without changing intent or histories (3275.0558ms)
+✔ maintenance-finish a new explicit actor finishes after continuation crash at attempt (5248.1194ms)
+✔ maintenance-finish a new explicit actor finishes after continuation crash at old (5711.631ms)
+✔ maintenance-finish a new explicit actor finishes after continuation crash at rename (5729.1291ms)
+✔ maintenance-finish a new explicit actor finishes after continuation crash at new-link (6462.7168ms)
+✔ maintenance-finish a new explicit actor finishes after continuation crash at commit (6977.2315ms)
+✔ maintenance-finish a new explicit actor finishes after continuation crash at archive (7245.6128ms)
+✔ maintenance-finish a new explicit actor finishes after continuation crash at remove (5084.4536ms)
+✔ maintenance-finish a new explicit actor finishes after continuation crash at release-intent (5604.8396ms)
+✔ maintenance-finish a new explicit actor finishes after continuation crash at release-gate (5507.4031ms)
+✔ maintenance-finish repeat takeover crashes keep a single bounded sealed chain and original actor is never republished (9250.3603ms)
+✔ maintenance-finish refuses receipt-replace without removing stop or other destination writes (1795.3449ms)
+✔ maintenance-finish refuses receipt-inplace without removing stop or other destination writes (1745.7112ms)
+✔ maintenance-finish refuses tree without removing stop or other destination writes (1525.4236ms)
+✔ maintenance-finish refuses history without removing stop or other destination writes (1476.3802ms)
+✔ maintenance-finish refuses foreign-gate without removing stop or other destination writes (1649.3334ms)
+✔ maintenance-finish refuses missing-recorded-gate without removing stop or other destination writes (1695.1222ms)
+✔ maintenance-finish finished proof and phase CAS cannot be replayed after receipt replacement during final self probe (1808.1873ms)
+✔ maintenance-finish unpublished torn attempt stage has no authority and a later fresh actor leaves it as evidence (5051.2708ms)
+✔ maintenance-finish a still-live previous continuation actor refuses before any new attempt (5731.4921ms)
+✔ maintenance-finish corrupt published continuation and original records fence two further explicit attempts (8387.4906ms)
+✔ maintenance-finish sealed forks and an unexpected archive refuse without guessing a continuation (2181.1802ms)
+✔ maintenance-finish continuation budget stops further publication while preserving the stopped fence (27572.5925ms)
+✔ maintenance-finish completed finish permits a fresh lifecycle while keeping keys and history unchanged (4845.2428ms)
+✔ maintenance-finish unavailable process observation preserves every pending file and never infers absence (1325.6719ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 165287.3428

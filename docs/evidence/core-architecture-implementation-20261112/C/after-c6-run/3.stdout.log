@@ -1,0 +1,31 @@
+✔ installed-composition portable fixed-format1 transition to readonly preserves signed history and no replay (33743.4474ms)
+✔ installed-composition deterministic packages, fixed ES3 registries, admission pins and physical closure (431.7597ms)
+✔ installed-composition includes render and text variants only in their selected composition (135.8299ms)
+✔ installed-composition R1 extends the operator montage closure only in owner mode (421.2653ms)
+✔ installed-composition minimal R1 contains only saved-project dependencies (232.2246ms)
+✔ installed-composition selects R1 by versioned capability and serves the same tools from the installed MCP (7309.7607ms)
+✔ installed-composition adds a second operator-confirmed module by declaration and keeps the shared path identical (358.9704ms)
+✔ installed-composition operator workflows requires proof in the packaged registry for every added executor (241.0958ms)
+✔ installed-composition point-layout is opt-in and refuses a package without its proof (120.8663ms)
+✔ installed-composition text-layer is opt-in and preserves earlier Titles artifacts (109.5997ms)
+✔ installed-composition admits media import and layer insertion only in their owner package (362.164ms)
+✔ installed-composition isolates the montage mandate and admits only three montage effects (167.4182ms)
+✔ installed-composition project assembly is discovered by the installed MCP entry (4609.6659ms)
+✔ installed-composition project save is discovered by the installed MCP entry (4777.8411ms)
+✔ installed-composition project lifecycle is discovered by the installed MCP entry (4998.4478ms)
+✔ installed-composition admits a new render operation through declarations on a relocated source and installed tree (5002.2383ms)
+✔ installed-composition direct legacy derivation requires each fixed admission hash and exact bytes (56.1602ms)
+✔ installed-composition entry source guard covers top-level/start/lease-prefix/tail and fails closed on layout changes (3.7985ms)
+✔ installed-composition build CLI selects readonly/manual and rejects ambiguous options without output (1053.5116ms)
+✔ installed-composition unknown/missing/corrupt/duplicate/path/phase/catalog/admission/downgrade failures (684.8384ms)
+✔ installed-composition installed readonly child initialize/status/discovery/contract and native fake VM inspection (3488.1189ms)
+✔ installed-composition actual manual installed child retains module discovery and manual gated policy (3566.7185ms)
+✔ installed-composition installed format2 corruption/missing composition rejects before imports and legacy format1 generic verification stays generic (3182.6276ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 75190.7585

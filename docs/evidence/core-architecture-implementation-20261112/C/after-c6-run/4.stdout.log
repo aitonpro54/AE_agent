@@ -1,0 +1,10 @@
+{"evidence":"exact-historical-code/temp-synthetic-state","artifact":"C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\dist\\core4\\4.0.0-panel-reconnect-f54863dbb69b\\core4-4.0.0.json","artifactBytes":343626,"artifactSha256":"dc02187e1d71513638d94e544f40901ab343ec22d75640704a08a777c1acb9b8","historicalPackageHash":"f54863dbb69b5e3a4b0e79d8ee3629cf71c7eced0a3759745d8899fa65a1ce90","candidatePackageHash":"cd0d96228f2ba674b08373adf60c95e05e01eefbe64f5333839ff9c433323f7c","historicalFormat":1,"candidateFormat":2,"signedDisposition":true,"originalUnknownPreserved":true,"duplicateNoReplay":true,"lateAckCount":2,"additionalUnknownClosesStore":true,"nativeCalls":0,"productionCalls":0}
+✔ exact-f548-transition code artifact to readonly with fresh synthetic state (32198.4005ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 32300.3461

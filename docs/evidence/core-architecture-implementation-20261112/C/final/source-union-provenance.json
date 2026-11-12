@@ -1,0 +1,387 @@
+{
+  "purpose": "technical_check",
+  "lifetime": "ephemeral_check",
+  "releaseCertified": false,
+  "recordedAt": "2026-11-12T15:23:21.399Z",
+  "implementationBase": "dd50fb8dc80c1330accf7025d24433c4372858fb",
+  "headAtFreeze": "3f6821f13e72813a35116a222e9937a8365b0074",
+  "trackedCommand": [
+    "git",
+    "diff",
+    "--name-only",
+    "dd50fb8dc80c1330accf7025d24433c4372858fb",
+    "--",
+    "core4",
+    "products/titles"
+  ],
+  "untrackedCommand": [
+    "git",
+    "ls-files",
+    "--others",
+    "--exclude-standard",
+    "--",
+    "core4",
+    "products/titles"
+  ],
+  "tracked": [
+    "core4/cep/js/poll-dispatcher.js",
+    "core4/config/validation-map.json",
+    "core4/core/artifact.json",
+    "core4/core/broker.js",
+    "core4/runtime/attachment-owner.js",
+    "core4/runtime/client-entry.js",
+    "core4/runtime/composition-spec.js",
+    "core4/runtime/source-package.json",
+    "core4/runtime/stdio-entry.js",
+    "core4/test/catalog-revision.test.js",
+    "core4/test/client-entry.test.js",
+    "core4/test/client-launcher.test.js",
+    "core4/test/composition-spec.test.js",
+    "core4/test/core4.test.js",
+    "core4/test/exact-f548-transition.test.js",
+    "core4/test/fixtures/disposition-child.js",
+    "core4/test/fixtures/installed-composition-transition.js",
+    "core4/test/fixtures/manual-http-runtime.js",
+    "core4/test/fixtures/mixed-installation.js",
+    "core4/test/fixtures/native-read-recovery.js",
+    "core4/test/fixtures/portable-text-runtime.js",
+    "core4/test/installable-runtime.test.js",
+    "core4/test/installed-composition.test.js",
+    "core4/test/integration/cep-transport.test.js",
+    "core4/test/mixed-installation-repair.test.js",
+    "core4/test/native-read-recovery.test.js",
+    "core4/test/owner-attachments.test.js",
+    "core4/test/owner-installation.test.js",
+    "core4/test/owner-runtime.test.js",
+    "core4/test/package-location.test.js",
+    "core4/test/panel-lifecycle.test.js",
+    "core4/test/standalone-installer.test.js",
+    "core4/test/start-over-runtime.test.js",
+    "core4/test/version-profile-compatibility.test.js",
+    "core4/tools/check-boundaries.js",
+    "core4/tools/check-package-location.js",
+    "core4/tools/composition-spec.js",
+    "core4/tools/install-core4.js",
+    "core4/tools/package-installable.js",
+    "core4/tools/package-native-read-operator.js",
+    "core4/tools/package-standalone-installer.js",
+    "core4/tools/standalone-installer.js"
+  ],
+  "untracked": [
+    "products/titles/test/core-http-integration.test.js"
+  ],
+  "changedPaths": [
+    "core4/cep/js/poll-dispatcher.js",
+    "core4/config/validation-map.json",
+    "core4/core/artifact.json",
+    "core4/core/broker.js",
+    "core4/runtime/attachment-owner.js",
+    "core4/runtime/client-entry.js",
+    "core4/runtime/composition-spec.js",
+    "core4/runtime/source-package.json",
+    "core4/runtime/stdio-entry.js",
+    "core4/test/catalog-revision.test.js",
+    "core4/test/client-entry.test.js",
+    "core4/test/client-launcher.test.js",
+    "core4/test/composition-spec.test.js",
+    "core4/test/core4.test.js",
+    "core4/test/exact-f548-transition.test.js",
+    "core4/test/fixtures/disposition-child.js",
+    "core4/test/fixtures/installed-composition-transition.js",
+    "core4/test/fixtures/manual-http-runtime.js",
+    "core4/test/fixtures/mixed-installation.js",
+    "core4/test/fixtures/native-read-recovery.js",
+    "core4/test/fixtures/portable-text-runtime.js",
+    "core4/test/installable-runtime.test.js",
+    "core4/test/installed-composition.test.js",
+    "core4/test/integration/cep-transport.test.js",
+    "core4/test/mixed-installation-repair.test.js",
+    "core4/test/native-read-recovery.test.js",
+    "core4/test/owner-attachments.test.js",
+    "core4/test/owner-installation.test.js",
+    "core4/test/owner-runtime.test.js",
+    "core4/test/package-location.test.js",
+    "core4/test/panel-lifecycle.test.js",
+    "core4/test/standalone-installer.test.js",
+    "core4/test/start-over-runtime.test.js",
+    "core4/test/version-profile-compatibility.test.js",
+    "core4/tools/check-boundaries.js",
+    "core4/tools/check-package-location.js",
+    "core4/tools/composition-spec.js",
+    "core4/tools/install-core4.js",
+    "core4/tools/package-installable.js",
+    "core4/tools/package-native-read-operator.js",
+    "core4/tools/package-standalone-installer.js",
+    "core4/tools/standalone-installer.js",
+    "products/titles/test/core-http-integration.test.js"
+  ],
+  "selectedCorePaths": [
+    "core4/cep/js/poll-dispatcher.js",
+    "core4/config/validation-map.json",
+    "core4/core/artifact.json",
+    "core4/core/broker.js",
+    "core4/runtime/attachment-owner.js",
+    "core4/runtime/client-entry.js",
+    "core4/runtime/composition-spec.js",
+    "core4/runtime/source-package.json",
+    "core4/runtime/stdio-entry.js",
+    "core4/test/catalog-revision.test.js",
+    "core4/test/client-entry.test.js",
+    "core4/test/client-launcher.test.js",
+    "core4/test/composition-spec.test.js",
+    "core4/test/core4.test.js",
+    "core4/test/exact-f548-transition.test.js",
+    "core4/test/fixtures/disposition-child.js",
+    "core4/test/fixtures/installed-composition-transition.js",
+    "core4/test/fixtures/manual-http-runtime.js",
+    "core4/test/fixtures/mixed-installation.js",
+    "core4/test/fixtures/native-read-recovery.js",
+    "core4/test/fixtures/portable-text-runtime.js",
+    "core4/test/installable-runtime.test.js",
+    "core4/test/installed-composition.test.js",
+    "core4/test/integration/cep-transport.test.js",
+    "core4/test/mixed-installation-repair.test.js",
+    "core4/test/native-read-recovery.test.js",
+    "core4/test/owner-attachments.test.js",
+    "core4/test/owner-installation.test.js",
+    "core4/test/owner-runtime.test.js",
+    "core4/test/package-location.test.js",
+    "core4/test/panel-lifecycle.test.js",
+    "core4/test/standalone-installer.test.js",
+    "core4/test/start-over-runtime.test.js",
+    "core4/test/version-profile-compatibility.test.js",
+    "core4/tools/check-boundaries.js",
+    "core4/tools/check-package-location.js",
+    "core4/tools/composition-spec.js",
+    "core4/tools/install-core4.js",
+    "core4/tools/package-installable.js",
+    "core4/tools/package-native-read-operator.js",
+    "core4/tools/package-standalone-installer.js",
+    "core4/tools/standalone-installer.js"
+  ],
+  "sourceHashes": {
+    "core4/cep/js/poll-dispatcher.js": {
+      "sha256": "ef2c1b1479dccfdca370e67a946aefaaca47f823098a6554c869fa831cb8e2de",
+      "bytes": 15433
+    },
+    "core4/config/validation-map.json": {
+      "sha256": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4",
+      "bytes": 115860
+    },
+    "core4/core/artifact.json": {
+      "sha256": "9119a750bc5ea60b7ce9f0b649b6644feb6fbe99d9bdad85d3b07ff2bffaf99a",
+      "bytes": 1750
+    },
+    "core4/core/broker.js": {
+      "sha256": "42d64cee97ab79026447971b07ac12e6fd1c81a98c6738bf2014ae228d3c1c01",
+      "bytes": 44767
+    },
+    "core4/runtime/attachment-owner.js": {
+      "sha256": "551e29e15dadbc4702ac1ca5c29494f16fe15bec69205dfcb6fb119a5dfb0f2d",
+      "bytes": 18964
+    },
+    "core4/runtime/client-entry.js": {
+      "sha256": "aa9e6abfb291d1a27a6905f1aadaaed87f8196e5e423c51480ddbe2589bed380",
+      "bytes": 18602
+    },
+    "core4/runtime/composition-spec.js": {
+      "sha256": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+      "bytes": 28094
+    },
+    "core4/runtime/source-package.json": {
+      "sha256": "f0a4647a8990d81812617c5107b6e2b62b827fde9f08943fc4cc456f51c1753f",
+      "bytes": 6551
+    },
+    "core4/runtime/stdio-entry.js": {
+      "sha256": "fb21717ab0ac2b93abfcbea4fc23be6c1d0d8af9a8cf87f6e4373756f75821c9",
+      "bytes": 71108
+    },
+    "core4/test/catalog-revision.test.js": {
+      "sha256": "e6f6b453fcf9586703d33ad15a0a01c3093092ab81d00d623ee4d54fff8fede4",
+      "bytes": 8760
+    },
+    "core4/test/client-entry.test.js": {
+      "sha256": "8fa61de477a560b81f518d4ca9a3ddcf9a42c1c668428d54f08cc444cc24c0ee",
+      "bytes": 14377
+    },
+    "core4/test/client-launcher.test.js": {
+      "sha256": "8999182e213229230cf584a4d0e78131ffaa1cd630e8275d6bd45250e1d2a86c",
+      "bytes": 32540
+    },
+    "core4/test/composition-spec.test.js": {
+      "sha256": "de4c51ae9874b672bf27b2dccee18d95fee874c8aeb985c4c719d3d99d4e1484",
+      "bytes": 21067
+    },
+    "core4/test/core4.test.js": {
+      "sha256": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+      "bytes": 58783
+    },
+    "core4/test/exact-f548-transition.test.js": {
+      "sha256": "e63572a0c207fcf9cc902bda090bb1e9195e7a081e0f9633e259d6fd1cc2ab00",
+      "bytes": 425
+    },
+    "core4/test/fixtures/disposition-child.js": {
+      "sha256": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+      "bytes": 3423
+    },
+    "core4/test/fixtures/installed-composition-transition.js": {
+      "sha256": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+      "bytes": 6765
+    },
+    "core4/test/fixtures/manual-http-runtime.js": {
+      "sha256": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+      "bytes": 18645
+    },
+    "core4/test/fixtures/mixed-installation.js": {
+      "sha256": "ce49409f8700ee41ddc53ca53175db48424e6e98ad29806ba3bc92164d4cc327",
+      "bytes": 22974
+    },
+    "core4/test/fixtures/native-read-recovery.js": {
+      "sha256": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+      "bytes": 14130
+    },
+    "core4/test/fixtures/portable-text-runtime.js": {
+      "sha256": "1dfcc38a8b2f5c5e9cf2a7c244800e7abba74a7665304c3bf52ab34736a4637c",
+      "bytes": 10903
+    },
+    "core4/test/installable-runtime.test.js": {
+      "sha256": "e95a445f61eab3fae134c3d977987443f850c0c2efe3c07dbf4765e1fbf3a6f4",
+      "bytes": 103944
+    },
+    "core4/test/installed-composition.test.js": {
+      "sha256": "043cc0ad637c03f9b5c5aae9d5e6f41e2085ab82d0b6f2e39842ace52475919f",
+      "bytes": 38310
+    },
+    "core4/test/integration/cep-transport.test.js": {
+      "sha256": "e49ce08ea129339e760e597164bf0df0d7b9836e5bcf70ba9d9bd7f1b663be8f",
+      "bytes": 27256
+    },
+    "core4/test/mixed-installation-repair.test.js": {
+      "sha256": "1490a87da2dd0ac624dead25eabcdb142d0688d344bab04ac42bd9dd2518ddd9",
+      "bytes": 25240
+    },
+    "core4/test/native-read-recovery.test.js": {
+      "sha256": "cb1ba81e953c0e1c8afadc93f55b67893f5fec7a0fb297d1959f8554c1c2215a",
+      "bytes": 35798
+    },
+    "core4/test/owner-attachments.test.js": {
+      "sha256": "21e6c3defce8cffbd23e96646a91999d4b73a4d49476b9cf0254c9ed8ea9c8d4",
+      "bytes": 31125
+    },
+    "core4/test/owner-installation.test.js": {
+      "sha256": "b1121290bbcfb844974c67898565210b1c3c620068466fd8568cf0971c2c59c7",
+      "bytes": 46783
+    },
+    "core4/test/owner-runtime.test.js": {
+      "sha256": "7984f1647b24ff83a32c1db98ce17eaf624989183a35a7fc426a060d89b46a90",
+      "bytes": 93481
+    },
+    "core4/test/package-location.test.js": {
+      "sha256": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+      "bytes": 7496
+    },
+    "core4/test/panel-lifecycle.test.js": {
+      "sha256": "63479576fe999290b024a008a72575350a7cf82f65b70442433a8a0af786795c",
+      "bytes": 50764
+    },
+    "core4/test/standalone-installer.test.js": {
+      "sha256": "507996ac5bfdf6a2f2d2dde3ecc2863e39a1be295f367d669160f385d00e44c9",
+      "bytes": 16834
+    },
+    "core4/test/start-over-runtime.test.js": {
+      "sha256": "16a0ee51101eab60c0df3b2fe2fec4969fa11cc8731f95b384463c50e6ad1d17",
+      "bytes": 16162
+    },
+    "core4/test/version-profile-compatibility.test.js": {
+      "sha256": "d167a5aca763c25aa52f7dab4bfb20bc70225392c1f0c6c63b06d3f087c14aec",
+      "bytes": 13822
+    },
+    "core4/tools/check-boundaries.js": {
+      "sha256": "92c09516d4b35c449e64ed8a7bdacfded9a0747bb74f3c4eba4543bd37f96671",
+      "bytes": 13936
+    },
+    "core4/tools/check-package-location.js": {
+      "sha256": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+      "bytes": 12199
+    },
+    "core4/tools/composition-spec.js": {
+      "sha256": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+      "bytes": 234
+    },
+    "core4/tools/install-core4.js": {
+      "sha256": "f4d345ae1a42441d5c2d2ca713e07bee27f5c5b417f6dbc52ddee854e21d340a",
+      "bytes": 61774
+    },
+    "core4/tools/package-installable.js": {
+      "sha256": "55486ffd50b3f7013627d7a7e90bc508b46b26c323bfd0072525131c391843e6",
+      "bytes": 11476
+    },
+    "core4/tools/package-native-read-operator.js": {
+      "sha256": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+      "bytes": 2859
+    },
+    "core4/tools/package-standalone-installer.js": {
+      "sha256": "c49de8fb09730cac20d85ef2d63efc34c50bf79cf4e8427b59746551f751dbd4",
+      "bytes": 12277
+    },
+    "core4/tools/standalone-installer.js": {
+      "sha256": "dfe57875f8b103669c80beca33ba5e89ffba52933203b459a0da991856b51692",
+      "bytes": 18901
+    },
+    "products/titles/test/core-http-integration.test.js": {
+      "sha256": "ef2331bec18df15fef0eef429098fe1271aca307e5ebe11b0b4a9e26b6720598",
+      "bytes": 5520
+    }
+  },
+  "protectedFiles": {
+    "AGENTS.md": "0097d035294e889dd2b4410fb247938764d8b007c226893911c3ef4772f6f700",
+    "plans/core-transfer-4.2.5-20261111.md": "cc9ca6acebbc0732587a82c3dfd94da57f8a850c39f38ee6c2bf8b7936926bb7"
+  },
+  "selection": {
+    "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5\\after-c7\\frozen-selection.json",
+    "sha256": "b3c0205f58f3c6eec6ea969e43e2d576331c3e104a9a4840a71e566417a3dd08",
+    "checks": 82,
+    "batches": 72,
+    "deferred": 2
+  },
+  "config": {
+    "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5\\after-c7\\subset-config.json",
+    "sha256": "3b35864ff640a027a6cb95c9061f0ea75a7d1b8a26b26984c464731b3693dcc7"
+  },
+  "runner": {
+    "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f\\run-selected-subset.cjs",
+    "sha256": "4b9dd7f879b8e437dced728271d7d58628d15f2efb2c900c85b9e4c465a552d8"
+  },
+  "freezeScript": {
+    "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5\\after-c7\\freeze-selection.cjs",
+    "sha256": "00bbf14e3a4dc17bf25c8f94a00670732a9a2a5ff5d6e228f4842d0d0424df79"
+  },
+  "planningReference": {
+    "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5\\after-c7\\full-planning-source-union.json",
+    "sha256": "8d4d42cbbc783068f57c8ff7a8bb25f10da1811b9d4d2904bacdcf2e6b73bbe7",
+    "execution": "not executed; superseded by explicit final subset plan"
+  },
+  "rerunPlanning": {
+    "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5\\after-c7\\rerun-plan.json",
+    "sha256": "bb48b21be00e5a6093111aaf80b4d918e57cac98c2de0150926a7a4d3ea0c944",
+    "priorResults": [
+      {
+        "path": "C:/Users/Ant/AppData/Local/Temp/core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5/result-gOIiFT/result.json",
+        "sha256": "098b9aa8d960ce59aa1b15cc9fe40b23dd6a18d4980d677f398a1556980fae57"
+      },
+      {
+        "path": "C:/Users/Ant/AppData/Local/Temp/core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f/result-QfP99b/result.json",
+        "sha256": "d667805063b2bbcee3ae5379e8f90019f3a444e528fed23d3d6891af94a9dd62"
+      },
+      {
+        "path": "C:/Users/Ant/AppData/Local/Temp/core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f/result-1wWN8J/result.json",
+        "sha256": "3bad9e649b110cf37fa019180eef588232e35d42d42c2e6d0a96f7e6258b6ad3"
+      }
+    ],
+    "requestedChecks": [
+      "lifecycle-simulation",
+      "mixed-installation-repair"
+    ]
+  },
+  "executionScope": "Explicit expanded batches only; no full PASS or reuse asserted by this plan."
+}

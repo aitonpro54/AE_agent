@@ -1,0 +1,31 @@
+✔ native-read-recovery operator trusted slot uses own pure bytes and constructor never executes poisoned candidate spec (431.6158ms)
+✔ native-read-recovery operator missing or corrupt trusted slot refuses outer closure before imports (763.7839ms)
+✔ native-read-recovery operator legacy v1 inventory without new slot stays data-readable without fallback execution (475.0832ms)
+✔ native-read-recovery operator candidate reserved tools aliases refuse before merge or own tooling reads (47.9104ms)
+✔ native-read-recovery actual Node IPC approval commits one unknown disposition, archives owner and publishes v2 reachable lineage (138575.3013ms)
+✔ native-read-recovery IPC mismatch retains exact prepared plan and gates without journal/owner mutation (26390.6404ms)
+✔ native-read-recovery IPC duplicate retains exact prepared plan and gates without journal/owner mutation (29434.6011ms)
+✔ native-read-recovery IPC disconnect retains exact prepared plan and gates without journal/owner mutation (25906.4247ms)
+✔ native-read-recovery IPC timeout retains exact prepared plan and gates without journal/owner mutation (28697.5303ms)
+✔ native-read-recovery append-short retains gates/evidence and original UNKNOWN without automatic recovery (30353.5394ms)
+✔ native-read-recovery append-fsync retains gates/evidence and original UNKNOWN without automatic recovery (31035.1087ms)
+✔ native-read-recovery archive retains gates/evidence and original UNKNOWN without automatic recovery (31416.8607ms)
+✔ native-read-recovery install-switch retains gates/evidence and original UNKNOWN without automatic recovery (31628.5741ms)
+✔ native-read-recovery approval does not waive fresh original CAS, new owners or additional UNKNOWN (27321.9989ms)
+✔ native-read-recovery private plan and shared lease reject JSON forgery, mutation, foreign scope and startup while held (3025.7938ms)
+✔ native-read-recovery historical Node binding is data, explicit lineage rejects missing/tampered edges and runtime has no data-only selector (6598.43ms)
+✔ native-read-recovery rollback partial visible switch retains both lease gates and transaction without automatic rollback (4013.0204ms)
+✔ native-read-recovery operator inspect rejects modified managed witness, producer profile and closure before issuance (30223.3058ms)
+✔ native-read-recovery owner identity ABA owner-between-inspect-apply refuses C and preserves original history/foreign marker (22437.4842ms)
+✔ native-read-recovery owner identity ABA owner-after-ipc refuses C and preserves original history/foreign marker (29460.1361ms)
+✔ native-read-recovery owner identity ABA owner-after-append refuses C and preserves original history/foreign marker (30278.8224ms)
+✔ native-read-recovery owner identity ABA owner-wrong-archive refuses C and preserves original history/foreign marker (30338.7762ms)
+✔ native-read-recovery owner identity ABA owner-after-rename refuses C and preserves original history/foreign marker (28896.0327ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 587869.5744

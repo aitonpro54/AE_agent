@@ -1,0 +1,57 @@
+[
+  {
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c2-a36b281bb26c4bbca5cbe64d4e78679e\\syntax-check-package-location.js.stdout.txt",
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sourceSHA": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+    "command": [
+      "node",
+      "--check",
+      "core4/tools/check-package-location.js"
+    ],
+    "exitCode": 0
+  },
+  {
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c2-a36b281bb26c4bbca5cbe64d4e78679e\\syntax-package-native-read-operator.js.stdout.txt",
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sourceSHA": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+    "command": [
+      "node",
+      "--check",
+      "core4/tools/package-native-read-operator.js"
+    ],
+    "exitCode": 0
+  },
+  {
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c2-a36b281bb26c4bbca5cbe64d4e78679e\\syntax-package-location.test.js.stdout.txt",
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sourceSHA": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+    "command": [
+      "node",
+      "--check",
+      "core4/test/package-location.test.js"
+    ],
+    "exitCode": 0
+  },
+  {
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c2-a36b281bb26c4bbca5cbe64d4e78679e\\syntax-native-read-recovery.test.js.stdout.txt",
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sourceSHA": "014ac12150aba3842889dafd7f9d61e4429563f423f17bf0fb38710a9ce6ac2c",
+    "command": [
+      "node",
+      "--check",
+      "core4/test/native-read-recovery.test.js"
+    ],
+    "exitCode": 0
+  },
+  {
+    "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c2-a36b281bb26c4bbca5cbe64d4e78679e\\syntax-disposition-child.js.stdout.txt",
+    "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sourceSHA": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+    "command": [
+      "node",
+      "--check",
+      "core4/test/fixtures/disposition-child.js"
+    ],
+    "exitCode": 0
+  }
+]

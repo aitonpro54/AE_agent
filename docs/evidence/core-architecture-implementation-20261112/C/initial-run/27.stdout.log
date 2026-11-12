@@ -1,0 +1,22 @@
+✔ start-over-barrier idle barrier holds both endpoints without requiring AE exit and exposes no reset or mutation authority (1327.0561ms)
+✔ start-over-barrier UNKNOWN requires exact old AE exit while a new AE birth does not cause an endless restart requirement (1237.7302ms)
+✔ start-over-barrier diagnostic owner absence cannot substitute death of the previous active producer (1078.6995ms)
+✔ start-over-barrier crash before inventory captures the complete AE set once after producer death and retains it across retry (1073.9614ms)
+✔ start-over-barrier missing old stopped receipt does not prevent process-gone proof and does not relabel UNKNOWN (1086.1115ms)
+✔ start-over-barrier foreign marker written across native await refuses before any store archive or lease claim (795.5419ms)
+✔ start-over-barrier strengthened history risk across native await forces a new AE observation instead of accepting cheap idle proof (1026.6495ms)
+✔ start-over-barrier held barrier detects phase drift and releases endpoints even when its proof has become invalid (1193.6672ms)
+✔ start-over-barrier busy canonical IPC does not steal the endpoint or keep the new HTTP reservation (770.6122ms)
+✔ start-over-barrier JSON lookalikes stale intent pins and caller-native overrides do not acquire a barrier (778.6242ms)
+✔ start-over-barrier corrupt stop-requested metadata cannot be ignored merely because old process death would otherwise be available (825.2097ms)
+✔ start-over-barrier a shutdown gate binds the exact full original scope and never just matching PID birth and boot (1982.0245ms)
+✔ start-over-barrier historical adoption AE is observed explicitly even when absent from the current AfterFX inventory (887.8694ms)
+✔ start-over-barrier imprecise or foreign historical host identity does not become local death proof (1529.9832ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15718.3091

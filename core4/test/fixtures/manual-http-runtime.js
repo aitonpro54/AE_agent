@@ -18,7 +18,7 @@ const { validateExecutionPolicyPort, validateReservationHandle } = require('../.
 const { initialState, environment } = require('./ae');
 const { assertImportFile } = require('../../runtime/media-layer-proof');
 const root = path.resolve(__dirname, '../..');
-async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, projectOpenTransportTimeout, projectOpenTimeout, layoutEnvironment, textEnvironment, assemblyEnvironment, saveEnvironment, lifecycleEnvironment, mediaEnvironment, overlayEnvironment, frameEnvironment, operatorSession } = {}) {
+async function harness({ confirm = () => true, flags = {}, adopt = true, probeOverride, minimalBroker = false, humanDelayMs = 0, callerTimeout = 1500, callbackTimeout = 1500, projectOpenTransportTimeout, projectOpenTimeout, layoutEnvironment, textEnvironment, assemblyEnvironment, saveEnvironment, lifecycleEnvironment, mediaEnvironment, overlayEnvironment, frameEnvironment, operatorSession, requestBuilder } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-manual-runtime-')), state = initialState(); delete state.sessionId; Object.assign(state.flags, flags);
   const installation = { installationId: 'fixture-installation', machineId: 'fixture-machine', stateDir: path.join(dir, 'state'), packageHash: '1'.repeat(64), panelToken: '2'.repeat(64), controlToken: '3'.repeat(64) };
   if (saveEnvironment || lifecycleEnvironment || frameEnvironment || flags.verifiedCopy)
@@ -168,7 +168,11 @@ async function harness({ confirm = () => true, flags = {}, adopt = true, probeOv
   async function proposal(text = 'After') {
     const c = broker.getContract({ moduleId: 'titles-current-target' }), target = { projectId: state.projectId, compId: 1, layerId: 102 };
     const evidence = await broker.inspect({ moduleId: 'titles-current-target', contractId: c.contractId, target });
-    const built = await broker.build({ oneStep: true, steps: [{ stepId: 'title', moduleId: 'titles-current-target', contractId: c.contractId, evidenceRef: evidence.evidenceRef, input: { ...target, text } }] });
+    // Test-only product seam: pass actual contract/evidence unchanged to an
+    // external compiler. Existing callers retain the exact original request.
+    const request = requestBuilder ? await requestBuilder({ contract: c, inspection: evidence, target, text }) :
+      { oneStep: true, steps: [{ stepId: 'title', moduleId: 'titles-current-target', contractId: c.contractId, evidenceRef: evidence.evidenceRef, input: { ...target, text } }] };
+    const built = await broker.build(request);
     const p = broker.propose({ buildId: built.buildId }), dry = await broker.dryrun({ proposalId: p.proposalId });
     return { proposalId: p.proposalId, dryrunRef: dry.dryrunRef, taskId: built.taskId, ...(p.operatorApprovalDigest ? { operatorApprovalDigest: p.operatorApprovalDigest } : {}) };
   }

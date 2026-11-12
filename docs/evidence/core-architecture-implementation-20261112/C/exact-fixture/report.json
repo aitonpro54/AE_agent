@@ -1,0 +1,19 @@
+{
+  "result": "EXACT_PASS_RESTORED",
+  "commit": "7dec462a5033700ccddf5a0756f80681103ba0ce",
+  "archiveSha256": "e7fff9a472bf32050caab02bea941c83b9b38d800cb7ce5fb3bc87ddc5103b1b",
+  "historicalBuilderBlob": "1296fe3829ef8256dae9530da766a87f78bc4869",
+  "historicalBuilderExtractedSha256": "7587d8ce18c069994f88ff689b2ae1a45cd44629dca836dea0eca079ceea3a9e",
+  "nodeVersion": "v24.15.0",
+  "builderExit": 0,
+  "historicalVerifyPackage": "PASS (pure, 60 files)",
+  "sourcePackageFileSha256": "0575b9596c7ae5c7bc72b06fdc4239ebfacd65f8d442db27427969f67ab66a1c",
+  "panelFileSha256": "861a0c797276f1ec52f47b204f4f6a7c819ea432b9f93f223bf58e37f3a07ba7",
+  "packageHash": "f54863dbb69b5e3a4b0e79d8ee3629cf71c7eced0a3759745d8899fa65a1ce90",
+  "fileSha256": "dc02187e1d71513638d94e544f40901ab343ec22d75640704a08a777c1acb9b8",
+  "fileBytes": 343626,
+  "destination": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\dist\\core4\\4.0.0-panel-reconnect-f54863dbb69b\\core4-4.0.0.json",
+  "taskTemp": "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core-fixture-3270a98cbe954dc3be78878f066dc321",
+  "stdout": "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core-fixture-3270a98cbe954dc3be78878f066dc321\\builder.stdout.txt",
+  "stderr": "C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core-fixture-3270a98cbe954dc3be78878f066dc321\\builder.stderr.txt"
+}

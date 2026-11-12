@@ -1,0 +1,12 @@
+✔ point-layout: real Broker, HTTP, CEP dispatcher and fixed JSX measure, restore and apply with two confirmations (691.4933ms)
+✔ point-layout: forged receipt, changed text, and altered placement stop before delivery (677.2703ms)
+✔ point-layout: native cancellation and post-confirm baseline drift have zero setters (867.6863ms)
+✔ point-layout: measurement failure restores the original and fences the uncertain outcome (437.2735ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2806.1887

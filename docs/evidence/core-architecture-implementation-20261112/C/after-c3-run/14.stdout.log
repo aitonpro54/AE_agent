@@ -1,0 +1,16 @@
+✔ maintenance-operator operator guard requires reviewed package pin and rejects imports before complete verification (2.5695ms)
+✔ maintenance-operator wrong package pin and poisoned installed import bytes refuse before evaluating trusted imports (3255.1764ms)
+✔ maintenance-operator real owner IPC rejects control-only maintenance proof and keeps private methods out of MCP (8427.7733ms)
+✔ maintenance-operator actual pinned operator stop uses private IPC once and prints no credentials or raw descriptor (10025.4284ms)
+✔ maintenance-operator desired-stop refuses owner before listen and refuses installer before acquiring any lease (4482.9744ms)
+✔ maintenance-operator private election cleanup closes an actual unhandled HTTP request and releases its ephemeral port (3845.7743ms)
+✔ maintenance-operator private election bind refusal cleans its server without touching the foreign listener or installation (3745.2787ms)
+✔ maintenance-operator operator builtin verifier refuses matching foreign-machine origin before probes or trusted imports (2403.0404ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 36318.8412

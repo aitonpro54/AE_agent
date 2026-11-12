@@ -64,7 +64,7 @@ test('[catalog-discovery titles-owner] A3 unrelated artifact refresh preserves c
 test('[validation-routing] A4 diff maps single owner reverse contracts and dependency-keyed cache', () => {
   const ws = workspace();
   const titles = selectChecks(['core4/modules/titles/implementation.js'], ws.root);
-  assert.deepEqual(titles.checks.map(c => c.check).sort(), ['titles-executor-contract', 'titles-owner']);
+  assert.deepEqual(titles.checks.map(c => c.check).sort(), ['catalog-revision', 'composition-spec', 'panel-lifecycle', 'titles-executor-contract', 'titles-owner', 'version-profile-compatibility']);
   assert.ok(titles.checks.every(c => c.reason && c.dependencyPath.length && c.evidenceKey && c.command.some(part => part.endsWith('.test.js'))));
   assert.ok(!titles.checks.some(c => c.check.includes('photo')));
   const shared = selectChecks(['core4/protocol/target-contract.json'], ws.root);
@@ -74,7 +74,9 @@ test('[validation-routing] A4 diff maps single owner reverse contracts and depen
   assert.throws(() => selectChecks(['core4/mystery.js'], ws.root), code('unknown_or_ambiguous_owner'));
   rewrite(ws.root, 'modules/photo-placeholder/implementation.js', source => source + '\n// unrelated\n'); rewrite(ws.root, 'config/catalog.json', source => source + '\n');
   rewrite(ws.root, 'test/modules/photo-placeholder.test.js', source => source + '\n// unrelated photo test edit\n');
-  assert.deepEqual(selectChecks(['core4/modules/titles/implementation.js'], ws.root).checks.map(c => c.evidenceKey), titles.checks.map(c => c.evidenceKey));
+  const unrelated = selectChecks(['core4/modules/titles/implementation.js'], ws.root), originalKeys = new Map(titles.checks.map(c => [c.check, c.evidenceKey]));
+  assert.deepEqual(unrelated.checks.filter(c => c.evidenceKey === originalKeys.get(c.check)).map(c => c.check).sort(), ['titles-executor-contract', 'titles-owner']);
+  assert.deepEqual(unrelated.checks.filter(c => c.evidenceKey !== originalKeys.get(c.check)).map(c => c.check).sort(), ['catalog-revision', 'composition-spec', 'panel-lifecycle', 'version-profile-compatibility']);
   rewrite(ws.root, 'modules/titles/implementation.js', source => source + '\n// changed owner\n');
   assert.notEqual(selectChecks(['core4/modules/titles/implementation.js'], ws.root).checks[0].evidenceKey, titles.checks[0].evidenceKey);
   const catalog = selectChecks(['core4/config/catalog.json'], ws.root);
@@ -446,12 +448,16 @@ test('[core-control core-admission] one broker owns durable state and valid-JSON
 });
 
 test('[validation-routing] actual Core-only diff checks pass with photo and engine absent from their source tree', () => {
-  const ws = workspace(); fs.rmSync(path.join(ws.root, 'modules/photo-placeholder'), { recursive: true }); fs.rmSync(path.join(ws.root, 'plan-engine'), { recursive: true });
+  const ws = workspace(), selected = selectChecks(['core4/modules/titles/implementation.js'], ws.root);
+  assert.deepEqual(selected.checks.map(c => c.check).sort(), ['catalog-revision', 'composition-spec', 'panel-lifecycle', 'titles-executor-contract', 'titles-owner', 'version-profile-compatibility']);
+  assert.equal(selected.executionBatches.length, 5);
+  fs.rmSync(path.join(ws.root, 'modules/photo-placeholder'), { recursive: true }); fs.rmSync(path.join(ws.root, 'plan-engine'), { recursive: true });
   const output = execFileSync(process.execPath, [path.join(ws.root, 'tools/validate-diff.js'), 'core4/test/controller-lease.test.js', '--run'], { encoding: 'utf8', windowsHide: true });
   assert.ok(output.includes('controller-lease')); assert.ok(!output.includes('titles-owner')); assert.ok(!output.includes('titles-executor-contract')); assert.ok(!output.includes('photo-owner'));
   assert.match(output, /(?:tests 16|# tests 16)/);
-  const selected = selectChecks(['core4/modules/titles/implementation.js'], ws.root); assert.ok(selected.checks.every(c => c.dependencies.every(dep => !dep.includes('photo-placeholder') && !dep.includes('plan-engine'))));
-  assert.deepEqual(selected.checks.map(c => c.check).sort(), ['titles-executor-contract', 'titles-owner']); assert.equal(selected.executionBatches.length, 1);
+  const controller = selectChecks(['core4/test/controller-lease.test.js'], ws.root);
+  assert.deepEqual(controller.checks.map(c => c.check), ['controller-lease']);
+  assert.ok(controller.checks.every(c => c.dependencies.every(dep => !dep.includes('photo-placeholder') && !dep.includes('plan-engine'))));
   assert.equal(selected.releaseCertified, false);
   assert.ok(selected.deferredCoverage.some(c => c.check === 'workflow-recovery' && c.status === 'current-closure-unverified' && c.changedDependencies.some(d => d.file === 'core4/modules/titles/implementation.js')));
   assert.ok(selected.deferredCoverage.every(c => !('evidenceKey' in c) && c.reason && c.dependencyPath.length));
@@ -475,7 +481,7 @@ test('[validation-routing] shared Core dependencies select component consumers w
     assert.ok(repair, changed); assert.ok(repair.dependencies.includes('test/audit-repairs.test.js')); assert.ok(repair.dependencies.includes('test/fixtures/artifact-publish-crash.js'));
   }
   const privateTitle = selectChecks(['core4/modules/titles/implementation.js'], ws.root);
-  assert.deepEqual(privateTitle.checks.map(c => c.check).sort(), ['titles-executor-contract', 'titles-owner']);
+  assert.deepEqual(privateTitle.checks.map(c => c.check).sort(), ['catalog-revision', 'composition-spec', 'panel-lifecycle', 'titles-executor-contract', 'titles-owner', 'version-profile-compatibility']);
   assert.ok(privateTitle.deferredCoverage.some(c => c.check === 'workflow-recovery')); assert.ok(!privateTitle.checks.some(c => c.check.startsWith('photo')));
 });
 

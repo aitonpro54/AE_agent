@@ -110,6 +110,28 @@ tools/case aliases не подмешиваются; legacy closure injection и 
 helper отвергаются; current executable не импортирует tooling после legacy-only
 verification; repository shim/spec и полный bundled pure helper имеют parity.
 
+## Уточнение C: source snapshot и native-read operator
+
+Две дополнительные tooling closure требуют того же разделения ролей.
+`check-package-location` копирует ровно package-installable и repository
+composition-spec shim как tracked source bytes; собственный runtime snapshot
+содержит pure spec. Allowlist не расширяется до всего tools.
+
+Flattened native-read operator получает отдельный tools/composition-spec.js
+из reviewed OWN root/runtime/composition-spec.js, а не repository shim или
+candidate files. Candidate tools namespace (включая Windows aliases) запрещён
+до объединения, candidate bytes/hashes не перезаписываются. Новый tooling slot
+имеет собственный hash в полном operator inventory.
+
+Operator manifest остаётся v1: reader проверяет объявленный inventory и outer
+operatorHash, без закрытого standalone helper-union. Старые inventories читаются
+с их прежними hashes, новый slot не становится требованием к старому reader.
+A_HASH/DRIVER_HASH, receipts, authority/lease/disposition protocol не меняются.
+Новые closures получают новый operatorHash. Проверки включают source-shim bytes,
+candidate poison marker через actual constructor/import, missing/corrupt helper,
+old expectedHash refusal и чтение legacy v1 inventory. Live inspection/apply
+для этой приёмки не нужны.
+
 ## Старые пакеты
 
 Новые tooling readers проверяют старый package своим trusted spec как данные.

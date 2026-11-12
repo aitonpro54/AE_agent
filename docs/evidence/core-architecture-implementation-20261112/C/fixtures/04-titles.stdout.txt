@@ -1,0 +1,10 @@
+✔ Titles compiler → actual Core HTTP receipt and fresh read-back preserve sibling and style (695.1376ms)
+✔ Titles compiler stale inspection is refused before mutation and fresh compiler proposal succeeds (495.2819ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1319.1935

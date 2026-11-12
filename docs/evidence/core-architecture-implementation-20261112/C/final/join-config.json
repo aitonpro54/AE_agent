@@ -1,0 +1,26 @@
+{
+  "coreRoot": "C:/Users/Ant/Documents/Codex/AE_agent_core/core4",
+  "selectionFile": "C:/Users/Ant/AppData/Local/Temp/core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5/after-c7/frozen-selection.json",
+  "sourceUnionFile": "C:/Users/Ant/AppData/Local/Temp/core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5/after-c7/source-union-provenance.json",
+  "sourceUnionSHA256": "17e9688ac78b595620a41d48138a6b6a6b994e113dcc421fd5808b7dfc220593",
+  "results": [
+    "C:/Users/Ant/AppData/Local/Temp/core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5/result-gOIiFT/result.json",
+    "C:/Users/Ant/AppData/Local/Temp/core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f/result-QfP99b/result.json",
+    "C:/Users/Ant/AppData/Local/Temp/core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f/result-1wWN8J/result.json",
+    "C:/Users/Ant/AppData/Local/Temp/core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f/result-iHwyWi/result.json"
+  ],
+  "expectedRunnerHashes": [
+    "cf00330fa01d125d28aca48f8cb653fff17eb041dccfe19f74ce950a43c363f1",
+    "4b9dd7f879b8e437dced728271d7d58628d15f2efb2c900c85b9e4c465a552d8"
+  ],
+  "extraInputs": [
+    {
+      "path": "C:/Users/Ant/Documents/Codex/AE_agent_core/dist/core4/4.0.0-panel-reconnect-f54863dbb69b/core4-4.0.0.json",
+      "sha256": "dc02187e1d71513638d94e544f40901ab343ec22d75640704a08a777c1acb9b8",
+      "bytes": 343626
+    }
+  ],
+  "output": "C:/Users/Ant/AppData/Local/Temp/core4-architecture-c-scopejoin-9f1eabb9-096e-4d93-aa45-d43f4598589a/actual-selected-coverage.json",
+  "contextPolicy": "per-check-contexts",
+  "sourceScopePolicy": "prior-subset-of-current"
+}

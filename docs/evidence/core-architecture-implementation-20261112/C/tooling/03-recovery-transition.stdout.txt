@@ -1,0 +1,10 @@
+✔ installed-composition portable fixed-format1 transition to readonly preserves signed history and no replay (37598.5517ms)
+✔ native-read-recovery operator inspect rejects modified managed witness, producer profile and closure before issuance (32187.9838ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 37716.4252

@@ -1,0 +1,48 @@
+✔ [core-control catalog-discovery] A1 independent startup physically absent optional artifacts and bad catalog (479.6244ms)
+✔ [titles-owner titles-executor-contract core-control] A2 real lazy selection and successful typed title readback (502.3073ms)
+✔ [validation-routing] A4 diff maps single owner reverse contracts and dependency-keyed cache (3927.4667ms)
+✔ [workflow-recovery photo-owner photo-executor-contract titles-owner] A5 mixed fault resumes fresh targets across worker and ledger reopen without replay (839.9567ms)
+✔ [workflow-recovery photo-owner] A5 counterexample manual photo drift is rejected on resume without rewriting photo (630.2471ms)
+✔ [core-control core-admission worker-isolation] A6 reset before dispatch sends no mutation and rejects late worker epoch (1420.0699ms)
+✔ [core-control core-admission] A6 reset after durable intent preserves receipt and after ACK loss preserves fence (1042.5472ms)
+✔ [worker-isolation core-control] A7 infinite loop exit malformed IPC keep same Core PID and durable UNKNOWN (1208.4947ms)
+✔ [core-admission titles-executor-contract artifact-boundaries] A8 worker claims code wrong operation altered resource cannot become authority (4154.2083ms)
+✔ [core-admission titles-executor-contract] A3 schema-valid unrequested builder effect fails before build publication or dispatch (625.9292ms)
+✔ [core-admission workflow-recovery] A3 materialize repeats reject an effect introduced only after the approved build (665.1657ms)
+✔ [core-admission titles-owner] A3 desired optional values and declared expectations survive repeated materialize (1375.8423ms)
+✔ [core-admission titles-executor-contract] A3 existing desired value target and expectation checks remain effective (2460.3631ms)
+✔ [core-admission titles-executor-contract] A8 stale CAS confirmed private gate admission revocation between dryrun and send (974.9609ms)
+✔ [artifact-boundaries core-admission] A9 mutable source replacement cannot alter selected immutable closure and receipt (702.3714ms)
+✔ [core-admission protocol-codec] forged channel response executor and payload bindings bounded schema reject (485.2385ms)
+✔ [workflow-recovery core-admission] A10 coinciding text does not reconcile ongoing UNKNOWN command and serialization survives reconnect (685.1254ms)
+✔ [core-control workflow-recovery] A10 actual child crash boundaries durable intent before send ACK readback (5748.6901ms)
+✔ [core-control] durable ledger torn record is diagnostic only and latched append failure prevents sends (216.0536ms)
+✔ [artifact-boundaries] reviewed source boundaries (28.8344ms)
+✔ [documentation] local README records offline and UNKNOWN constraints (0.5508ms)
+✔ [core-control protocol-codec] actual stdio MCP generic surface status unavailable and no public fixture authority (381.3212ms)
+✔ [core-admission workflow-recovery] approved expectations cannot silently rebase and identity bindings cannot expand scope (1536.8966ms)
+✔ [workflow-recovery titles-owner] new failed-step revision reapproves fresh drift without replaying successful photo (954.7659ms)
+✔ [core-admission titles-executor-contract photo-executor-contract] explicit project incarnation rejects reopen same path and IDs (799.7251ms)
+✔ [core-admission photo-executor-contract titles-executor-contract] mutations followed by setter errors or protected drift remain UNKNOWN (1517.517ms)
+✔ [core-admission core-control] neutral durable ownership checkpoint constraints and unknown schemas fence mutation (3435.1612ms)
+✔ [artifact-boundaries validation-routing titles-owner] scoped package seal reads only selected module closure while others physically absent (360.608ms)
+✔ [protocol-codec worker-isolation core-control] RPC and worker pending limits remain 32 after overflow and recover after drain (396.711ms)
+✔ [core-admission] admission and private grant revocation are rechecked at final dispatch commit (1531.325ms)
+✔ [core-control core-admission] one broker owns durable state and valid-JSON ledger corruption fails closed (625.2753ms)
+✔ [validation-routing] actual Core-only diff checks pass with photo and engine absent from their source tree (926.1675ms)
+✔ [validation-routing] shared Core dependencies select component consumers while byte-only integrations remain explicit deferred coverage (7252.1332ms)
+✔ [validation-routing] declared semantic contract impacts select consumers without claiming private-file semantic equivalence (1280.4806ms)
+✔ [core-control worker-isolation artifact-boundaries] permanent worker bytes are pinned and spawn excludes ambient credential environment (621.5156ms)
+✔ [core-control core-admission] recordContext descriptive defaults and synthetic checks do not authorize writes (550.0046ms)
+✔ [core-admission] unknown constraint schema or malformed neutral identities cannot narrow the fence (4055.7354ms)
+✔ [core-control core-admission] concurrent stale lease reclaim is serialized and orphan acquire gate remains closed (683.9221ms)
+✔ [core-control core-admission workflow-recovery] close is terminal drains physical send and forbids late old-owner ledger appends (606.5805ms)
+✔ [core-control] close also drains a pending connection and never reopens the closed instance (420.1401ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 56250.9272

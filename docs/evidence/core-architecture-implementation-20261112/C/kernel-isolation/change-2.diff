@@ -1,0 +1,38 @@
+diff --git "a/C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c7-d0eded5b778444d38998f5c0228a6bb0\\base\\core4\\test\\mixed-installation-repair.test.js" "b/C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\test\\mixed-installation-repair.test.js"
+index fbb32af..b86b871 100644
+--- "a/C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c7-d0eded5b778444d38998f5c0228a6bb0\\base\\core4\\test\\mixed-installation-repair.test.js"
++++ "b/C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\core4\\test\\mixed-installation-repair.test.js"
+@@ -108,11 +108,29 @@ test('mixed repair rejects active or unknown process observations and original l
+ });
+ 
+ test('mixed repair refuses all three occupied endpoints and an unrelated install gate', { timeout: 90000 }, async t => {
+-  const h = await fixture(t), p = await h.plan();
+-  const endpoints = [{ port: 3457, host: '127.0.0.1' }, ...[h.d, h.foreign].map(d => ({ path: '\\\\.\\pipe\\ae-core4-owner-' + hash(JSON.stringify({ installationId: d.installationId, machineId: d.machineId })).slice(0, 32) }))];
++  const h = await fixture(t), p = await h.plan(), before = snapshot(protectedFiles(h));
++  assert.equal(Object.isFrozen(h.repairEndpoint), true); assert.equal(Object.getOwnPropertyDescriptor(h, 'repairEndpoint').writable, false);
++  assert.equal(h.repairEndpoint.host, '127.0.0.1'); assert.ok(Number.isInteger(h.repairEndpoint.port) && h.repairEndpoint.port > 0 && h.repairEndpoint.port <= 65535); assert.notEqual(h.repairEndpoint.port, 3457);
++  assert.equal(p.plan.operatorHash, h.operatorHash); assert.equal(h.operatorHash, hash(fs.readFileSync(path.join(h.core, 'tools/repair-mixed-installation.js'))));
++  const endpoints = [h.repairEndpoint, ...[h.d, h.foreign].map(d => ({ path: '\\\\.\\pipe\\ae-core4-owner-' + hash(JSON.stringify({ installationId: d.installationId, machineId: d.machineId })).slice(0, 32) }))];
+   for (const endpoint of endpoints) {
+-    const server = net.createServer(socket => socket.destroy()); await new Promise(resolve => server.listen(endpoint, resolve));
+-    await assert.rejects(h.run('apply', p.planHash), code('repair_endpoint_busy')); await close(server);
++    const server = net.createServer(socket => socket.destroy()); t.after(() => close(server));
++    try {
++      await new Promise((resolve, reject) => { server.once('error', reject); server.listen(endpoint, resolve); });
++      assert.equal(server.listening, true);
++      if (endpoint.path) assert.equal(server.address(), endpoint.path);
++      else { assert.equal(server.address().address, endpoint.host); assert.equal(server.address().port, endpoint.port); }
++      await assert.rejects(h.run('apply', p.planHash), code('repair_endpoint_busy'));
++      assert.equal(h.mutations.length, 0); assert.deepEqual(snapshot(protectedFiles(h)), before); assert.equal(fs.existsSync(h.repairDir), false);
++      if (endpoint.path) {
++        // A failed pipe reservation must release the earlier TCP reservation.
++        const probe = net.createServer(socket => socket.destroy()); t.after(() => close(probe));
++        try {
++          await new Promise((resolve, reject) => { probe.once('error', reject); probe.listen(h.repairEndpoint, resolve); });
++          assert.equal(probe.listening, true); assert.equal(probe.address().port, h.repairEndpoint.port);
++        } finally { await close(probe); }
++      }
++    } finally { await close(server); }
+   }
+   assert.equal(h.mutations.length, 0);
+   write(path.join(h.root, 'install.lock'), 'foreign gate');

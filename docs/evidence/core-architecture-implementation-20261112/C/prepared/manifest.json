@@ -1,0 +1,69 @@
+{
+  "scope": "C3 TEMP-only preparation; not applied or suite-tested",
+  "root": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core",
+  "files": [
+    {
+      "path": "core4/test/installable-runtime.test.js",
+      "baseSHA256": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+      "patchedSHA256": "e95a445f61eab3fae134c3d977987443f850c0c2efe3c07dbf4765e1fbf3a6f4",
+      "baseBytes": 103711,
+      "patchedBytes": 103944,
+      "diff": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c3-prep-abf6d3ea4dd0497da087128d02483abb\\diffs\\core4__test__installable-runtime.test.js.patch",
+      "diffSHA256": "ed28b5616d619f6e3d57ec43a5caa763b45fe436e64faed4ef73a3b7a6e4b4c1"
+    },
+    {
+      "path": "core4/test/owner-runtime.test.js",
+      "baseSHA256": "1e2becc39e16f1d26bae1af8fb202b64f3e96de61e16db6faae45d5e6f3bbdc1",
+      "patchedSHA256": "7984f1647b24ff83a32c1db98ce17eaf624989183a35a7fc426a060d89b46a90",
+      "baseBytes": 92885,
+      "patchedBytes": 93481,
+      "diff": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c3-prep-abf6d3ea4dd0497da087128d02483abb\\diffs\\core4__test__owner-runtime.test.js.patch",
+      "diffSHA256": "232e88c751b93dfa695c8d716991214bbff5574921cb6f550039261eacd7a8e1"
+    },
+    {
+      "path": "core4/test/owner-installation.test.js",
+      "baseSHA256": "c790c1169c5a03f24268a4eb436403d8f932b5eaf51e84d6841099a084b19bd5",
+      "patchedSHA256": "b1121290bbcfb844974c67898565210b1c3c620068466fd8568cf0971c2c59c7",
+      "baseBytes": 46666,
+      "patchedBytes": 46783,
+      "diff": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c3-prep-abf6d3ea4dd0497da087128d02483abb\\diffs\\core4__test__owner-installation.test.js.patch",
+      "diffSHA256": "2f0a9c9c31be84a55541c50b0d940b88a396a5c452eff2564cb8e7cb31ad7776"
+    },
+    {
+      "path": "core4/test/integration/cep-transport.test.js",
+      "baseSHA256": "11acc54cd72d2e18a7529c13329c8022297f2d31811e69e9711be95aec111162",
+      "patchedSHA256": "e49ce08ea129339e760e597164bf0df0d7b9836e5bcf70ba9d9bd7f1b663be8f",
+      "baseBytes": 27176,
+      "patchedBytes": 27256,
+      "diff": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c3-prep-abf6d3ea4dd0497da087128d02483abb\\diffs\\core4__test__integration__cep-transport.test.js.patch",
+      "diffSHA256": "d790407520776db557a8e6627eee7804f34d38b01a730b26ee53faf14a06ef7c"
+    },
+    {
+      "path": "core4/test/start-over-runtime.test.js",
+      "baseSHA256": "23bff37314037c39d4b79e410e9675bac26bffa241517aab57ab67849f28a5b9",
+      "patchedSHA256": "16a0ee51101eab60c0df3b2fe2fec4969fa11cc8731f95b384463c50e6ad1d17",
+      "baseBytes": 14308,
+      "patchedBytes": 16162,
+      "diff": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c3-prep-abf6d3ea4dd0497da087128d02483abb\\diffs\\core4__test__start-over-runtime.test.js.patch",
+      "diffSHA256": "b89cc9797906ba6573cb327c996498a1bc986678a416d65a63f2c5ae79f1668a"
+    },
+    {
+      "path": "core4/test/fixtures/mixed-installation.js",
+      "baseSHA256": "cffab0abe3c6e0a99f761d412379c55f59bc92e5bbe1bb8a5f84cab642e048ad",
+      "patchedSHA256": "1c055be668ce50e4772a679cd79cfdaff7c99d88a103cd76063c3259a651f4ea",
+      "baseBytes": 17762,
+      "patchedBytes": 19726,
+      "diff": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c3-prep-abf6d3ea4dd0497da087128d02483abb\\diffs\\core4__test__fixtures__mixed-installation.js.patch",
+      "diffSHA256": "b265954c59290d47323c5b4b6de90c08c4c09af4ba9c16bf202f9ea0fc95af8e"
+    },
+    {
+      "path": "core4/test/mixed-installation-repair.test.js",
+      "baseSHA256": "fbbc64226947ff7a663980c70ccd6be1fd34d43149310c3a0265792854355c22",
+      "patchedSHA256": "a19a57d2c36cc30085d92aa3bf9b68c90bcd66627fdf2c1c4dea3746a35c2a29",
+      "baseBytes": 18489,
+      "patchedBytes": 20285,
+      "diff": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c3-prep-abf6d3ea4dd0497da087128d02483abb\\diffs\\core4__test__mixed-installation-repair.test.js.patch",
+      "diffSHA256": "3e9c6492ccf9623ce7979d074842b6138105172c1547e6a2f5b8a09e96327c87"
+    }
+  ]
+}

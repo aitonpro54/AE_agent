@@ -1,0 +1,29 @@
+✔ start-over-inspection idle and queued pre-submit history needs no AE exit and issues no authority (3.253ms)
+✔ start-over-inspection receiver ongoing UNKNOWN and unknown physical completion retain exact historical states (1.8138ms)
+✔ start-over-inspection settled read rejection and mutation completion do not require restart alone (1.6963ms)
+✔ start-over-inspection intent before submit and acknowledged command remain conservative without fabricated delivery status (1.2377ms)
+✔ start-over-inspection rejects contradictory Broker success and missing receiver rather than resetting broken history (2.4574ms)
+✔ start-over-inspection cross-journal matching binds receiver identity epoch and original command (2.3311ms)
+✔ start-over-inspection foreign owner reservation and shared file output fences cannot be archived into permission (2.377ms)
+✔ start-over-inspection archives a read-only import input only after original correlated success (3.0468ms)
+✔ start-over-inspection unresolved own AE-local fence can retire only behind AE exit and original bytes remain unknown (0.4433ms)
+✔ start-over-inspection preserves valid large revisions for both settled and unresolved commands (3.7212ms)
+✔ start-over-inspection another machine legacy origin and imprecise AE birth cannot retire behind local process death (0.6577ms)
+✔ start-over-inspection malformed own resource schemas and unresolved unfamiliar fences remain blocking (2.1221ms)
+✔ start-over-inspection uses latest constraint record without silently discarding a current foreign fence (0.4543ms)
+✔ start-over-inspection permits original completion during drain while preserving prefix and original uncertainty (1.1421ms)
+✔ start-over-inspection a new receiver begin after the fence is refused even if both journals are valid append-only chains (1.1875ms)
+✔ start-over-inspection unchanged UNKNOWN remains unknown and is not relabelled cancelled or successful (0.7074ms)
+✔ start-over-inspection rejects truncated deleted and validly rehashed replacements of the original history prefix (2.1171ms)
+✔ start-over-inspection missing histories may materialize during drain but existing empty ledger cannot disappear (0.4074ms)
+✔ start-over-inspection newly encountered foreign fence during drain blocks archival even with a valid old prefix (0.3691ms)
+✔ start-over-inspection an initial foreign fence cannot disappear by a later local record with the same ID (0.4222ms)
+✔ start-over-inspection schema UTF8 chain and history budgets remain strict (0.4812ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 144.5195

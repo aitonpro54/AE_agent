@@ -1,0 +1,28 @@
+{
+  "command": [
+    "node",
+    "--check",
+    "core4/test/native-read-recovery.test.js"
+  ],
+  "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+  "started": "2026-11-12T11:43:04.511Z",
+  "ended": "2026-11-12T11:43:04.600Z",
+  "exitCode": 0,
+  "signal": null,
+  "sources": {
+    "core4/tools/check-package-location.js": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+    "core4/tools/package-native-read-operator.js": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+    "core4/test/package-location.test.js": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+    "core4/test/native-read-recovery.test.js": "cb1ba81e953c0e1c8afadc93f55b67893f5fec7a0fb297d1959f8554c1c2215a",
+    "core4/test/fixtures/disposition-child.js": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+    "core4/test/fixtures/native-read-recovery.js": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+    "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+    "core4/tools/dispose-native-read.js": "5e29121c81c6fa62f6b6aaa13581ea3e107a206d71d7c4de757f99c93d6332cf",
+    "core4/tools/capture-native-read.js": "f3c51cd62a04a09cc8aaf6a0dd4564319c6d7809c2ff132bdb134ba04956120e",
+    "core4/runtime/composition-spec.js": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+    "core4/tools/composition-spec.js": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+    "core4/config/validation-map.json": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4"
+  },
+  "log": "09-final-syntax.stdout.txt",
+  "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

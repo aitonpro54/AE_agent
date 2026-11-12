@@ -1,0 +1,19 @@
+✔ media-layers imports once and inserts by ID above a same-named layer with signed read-back (904.03ms)
+✔ media-layers refuses matte split, cross-comp expression, and source ranges before dispatch (725.0579ms)
+✔ media-layers never records or promotes an applied callback after the source lock is lost (590.1441ms)
+✔ media-layers rejects a wrong input SHA before confirm and a changed stack after confirm (755.4815ms)
+✔ media-layers preserves a long-path 1109-item inventory within the wire budget and refuses wide names (1455.9639ms)
+ℹ media-import snapshot bytes=70309, receiver max bytes=73696
+✔ media-layers preflights import capacity before the media file exists (479.3838ms)
+✔ media-layers records numeric import preflight budget stages without exposing item data (689.1463ms)
+✔ media-layers refuses oversized layer-insert read and intent before mutation (971.8845ms)
+✔ media-layers preserves UNKNOWN after a partial importThrows (546.9823ms)
+✔ media-layers preserves UNKNOWN after a partial moveThrows (565.1073ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7817.0028

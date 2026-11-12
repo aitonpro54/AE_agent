@@ -1,0 +1,53 @@
+✔ [cep-transport] B1 Core physically lacks integration and import performs no channel/state IO (464.7635ms)
+✔ [cep-transport] B2 actual fragmented wire and VM source dispatch keep typed text as data (169.4293ms)
+✔ [cep-transport] B3 admission identity bytes phase auth and runtime code fields reject before eval (42.5305ms)
+✔ [cep-transport] B4 missing callback second controller disconnect timeout retain physical latch (53.8722ms)
+✔ [cep-transport] B4 external throws malformed mutation and late callback never free UNKNOWN lane (289.8882ms)
+✔ [cep-transport] B4 concurrent private connects reserve one controller and cancelled connect stays disconnected (19.2179ms)
+✔ [cep-transport] B5 completed duplicate after graceful reopen keeps original origin and one evaluate (34.4396ms)
+✔ [cep-transport] B6 actual child crash intent and completion fsync boundaries survive reopen without replay (508.1732ms)
+✔ [cep-transport] B6 disk write fsync failures and corruption close lane before false reply (130.9941ms)
+✔ [cep-transport] B7 Broker new authenticated channel reconciles original store proof then independent verify (622.4336ms)
+✔ [cep-transport] B5 same Broker replacement journal rejects captured frame even after old CAS restored (690.0395ms)
+✔ [cep-transport] B7 wrong origin store continuity and legacy receipt retain UNKNOWN (1687.3454ms)
+✔ [cep-transport] B7 reconnect after durable intent is rejected before physical mutate (539.7607ms)
+✔ [cep-transport] B8 production lacks lifecycle issuer shallow ready JSON and public issuer tools (379.2239ms)
+✖ [cep-transport] B9 independent transport pin scoped owner public seam and explicit deferred integration coverage (1184.833ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 14
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6941.2907
+
+✖ failing tests:
+
+test at test\integration\cep-transport.test.js:276:1
+✖ [cep-transport] B9 independent transport pin scoped owner public seam and explicit deferred integration coverage (1184.833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      'cep-transport',
+  +   'version-profile-compatibility',
+  +   'catalog-revision',
+  +   'composition-spec'
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\integration\cep-transport.test.js:288:87)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'cep-transport', 'version-profile-compatibility', 'catalog-revision', 'composition-spec' ],
+    expected: [ 'cep-transport' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

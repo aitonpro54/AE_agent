@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "kind": "core4-timeout-process-settlement",
+  "collectedAtUtc": "2026-11-12T13:18:52.3119230Z",
+  "workspace": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+  "sourceResult": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5\\result-gOIiFT\\result.json",
+  "batch": {
+    "index": 36,
+    "pid": 24964,
+    "command": "node --test --test-name-pattern=(?:stopped-update)|(?:^frame-export-slot) test/stopped-update.test.js",
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAtUtc": "2026-11-12T12:45:46.3510000Z",
+    "timeoutEndUtc": "2026-11-12T13:15:46.3810000Z",
+    "durationMs": 1800030,
+    "timedOut": true,
+    "killResult": true,
+    "closed": true,
+    "logsComplete": false,
+    "status": "UNKNOWN",
+    "checks": [
+      "stopped-update",
+      "frame-export-slot"
+    ],
+    "completedTestCount": 43,
+    "lastCompletedNames": [
+      "stopped-update owner pre-ready crash at attempt remains attributed and resumes only after actor death",
+      "stopped-update owner pre-ready crash at lease remains attributed and resumes only after actor death",
+      "stopped-update owner pre-ready crash at release-file remains attributed and resumes only after actor death",
+      "stopped-update owner pre-ready crash at prepared-file remains attributed and resumes only after actor death",
+      "stopped-update owner pre-ready crash at cep-file remains attributed and resumes only after actor death"
+    ],
+    "exitCode": null,
+    "signal": "SIGTERM"
+  },
+  "controller": {
+    "pid": 94469,
+    "presentAtAudit": false
+  },
+  "processAudit": {
+    "method": "Get-CimInstance Win32_Process read-only; restricted to node.exe created inside batch interval +15s and command lines containing core4-",
+    "matchingProcesses": [],
+    "batchPidPresent": false,
+    "fixtureDirectoriesCreatedDuringBatch": [
+      {
+        "name": "core4-stopped-update-OHN9Cf",
+        "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-stopped-update-OHN9Cf",
+        "createdAt": "2026-11-12T18:15:34.1234573+05:00",
+        "lastWriteTime": "2026-11-12T18:15:35.5633327+05:00"
+      }
+    ]
+  },
+  "disposition": "SETTLED_NO_CLEANUP",
+  "cleanup": {
+    "processesTerminated": [],
+    "tempFilesDeleted": [],
+    "fixtureHistoryPreserved": true,
+    "reason": "No live process matched the confirmed batch identity/time/fixture filter; batch PID absent; no child process was proven owned and live."
+  },
+  "scope": {
+    "rerun": false,
+    "sourceFilesChanged": false,
+    "gitOrProductionConfigChanged": false,
+    "liveAeUiTouched": false,
+    "realInstalledOwnerTouched": false,
+    "tempHistoryDeleted": false
+  },
+  "limitations": [
+    "Batch exited through supervisor timeout with SIGTERM; full test output unavailable (logsComplete=false).",
+    "The stopped-update check and frame-export-slot check remain UNKNOWN; no successful suite completion is claimed.",
+    "No authoritative birthTicks were recorded for batch PID, so the batch PID was treated as settled only after exact PID absence at audit; no kill attempted."
+  ]
+}

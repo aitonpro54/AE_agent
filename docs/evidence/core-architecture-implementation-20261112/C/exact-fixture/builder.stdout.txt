@@ -1,0 +1,1 @@
+{"packageHash":"f54863dbb69b5e3a4b0e79d8ee3629cf71c7eced0a3759745d8899fa65a1ce90","files":60,"output":"C:\\Users\\Ant\\AppData\\Local\\Temp\\ae-core-fixture-3270a98cbe954dc3be78878f066dc321\\core4-4.0.0.json"}

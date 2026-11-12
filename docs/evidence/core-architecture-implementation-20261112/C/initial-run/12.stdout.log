@@ -1,0 +1,135 @@
+✔ owner-runtime thin-client preload refuses all nested child factories before native calls and preserves owner hooks in VM (5.6146ms)
+✔ owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants (14746.2259ms)
+✔ owner-runtime operator-confirmation owner composition reads a project without requiring a mutation grant (16474.5532ms)
+✔ owner-runtime installed montage CLI scopes one task across controller generations using fresh evidence (17088.7057ms)
+✔ owner-runtime media lock survives owner EOF until the adopted host exits (1458.523ms)
+✔ owner-runtime installed montage locks approved bytes, binds receipts and returns bounded task outcomes (22327.5637ms)
+ℹ mixed 1109-item fixture prospective intent v1=248519, v2=213398 bytes
+ℹ receiver max=72951, broker ledger max=228347, owner run output=69072 bytes
+✔ owner-runtime installed layer insertion refuses wide inspection and intent before any mutation offer (15613.1076ms)
+✔ owner-runtime installed operator-r1-minimal enforces R1 admission without montage (13967.1987ms)
+✔ owner-runtime installed operator-project-lifecycle enforces R1 admission without montage (12678.9987ms)
+✔ owner-runtime installed lifecycle retains open observation and both checkpoints after disk proof fails (16169.7404ms)
+✔ owner-runtime only a Broker-issued fresh dry-run refusal crosses the owner boundary as a known refusal (7.1698ms)
+✔ owner-runtime default verified entry markers remain exact and new owner files stay outside the ordinary source package (3289.2975ms)
+✔ owner-runtime A1 direct stdio concurrent close shares deferred peer success (2820.4626ms)
+✔ owner-runtime A1 direct stdio concurrent close shares deferred peer rejection (2590.8545ms)
+✔ owner-runtime A1 upper Owner wrapper rejects draining before sharing the deferred lower cleanup (8119.1832ms)
+✔ owner-runtime normal package without the complete owner cluster refuses private owner mode before any listener or store opens (2541.5619ms)
+✔ owner-runtime TEMP installed owner and two real thin Node clients retain the same owner after both client EOF and owner stdin EOF (9193.1413ms)
+✔ owner-runtime foreign HTTP endpoint refuses owner startup before stores open and preserves both empty and retained state byte for byte (7640.6404ms)
+✔ owner-runtime competing starts reserve under the install gate and later owner attempts cannot displace the winner or rewrite its markers (12224.8796ms)
+✔ owner-runtime reserved HTTP server closes and attributed startup fence remains if Broker construction fails before peer creation (9581.5628ms)
+✖ owner-runtime private prebound peer requires a listening native loopback HTTP server and reuses its one listener (13.8229ms)
+✔ owner-runtime initial receiver owner marker leaves status available and refuses controller acquisition without clearing the marker (7985.12ms)
+✔ owner-runtime initial corrupt Broker ledger blocks acquisition while owner diagnostics remain available (7029.8782ms)
+✔ owner-runtime actual dead settled owner restarts with fresh process proof and unchanged journal and installation (14041.9037ms)
+✔ owner-runtime actual legacy receiver fence exposes only recovery diagnostics without a Broker writer or replay (7338.9801ms)
+✖ owner-runtime actual owner crash after durable delivery restarts diagnostic and never promotes or replays original ongoing work (13077.9531ms)
+✔ owner-runtime inherited generic methods execute on the actual Broker so activity observes its control state (7915.0833ms)
+✔ owner-runtime desired-stop freezes new control while captured original inspection completes after client detach (9342.1367ms)
+✔ owner-runtime owner main signal persists desired-stop and drains original completion without a second shutdown request (9118.9361ms)
+✔ owner-runtime later panel poll after controller detach durably settles an undelivered read without a receiver fence (9523.7118ms)
+✖ owner-runtime captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry (11.7498ms)
+✖ owner-runtime active poll delivery checks the captured lease again immediately after store.begin (6.9725ms)
+✖ owner-runtime lease expiry across a trusted await is checked at physical submit before durable begin (8.1906ms)
+✖ owner-runtime no captured controller context rejects before durable begin; original completion remains accepted after lease expiry (6.7622ms)
+✔ owner-runtime owner bootstrap rejects complete-tree tampering before importing a modified Broker (2643.5694ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 29
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 276774.2364
+
+✖ failing tests:
+
+test at test\owner-runtime.test.js:5:28
+✖ owner-runtime private prebound peer requires a listening native loopback HTTP server and reuses its one listener (13.8229ms)
+  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received undefined
+      at Object.join (node:path:513:7)
+      at panel (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:137:28)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1019:111)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'ERR_INVALID_ARG_TYPE'
+  }
+
+test at test\owner-runtime.test.js:5:28
+✖ owner-runtime actual owner crash after durable delivery restarts diagnostic and never promotes or replays original ongoing work (13077.9531ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      'origin',
+      'begin',
+  +   'complete',
+  +   'begin'
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1085:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'origin', 'begin', 'complete', 'begin' ],
+    expected: [ 'origin', 'begin' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test\owner-runtime.test.js:5:28
+✖ owner-runtime captured lease guard survives absent ALS during a delayed poll and blocks delivery after expiry (11.7498ms)
+  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received undefined
+      at Object.join (node:path:513:7)
+      at panel (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:137:28)
+      at guardedFixture (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1165:67)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1172:13)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'ERR_INVALID_ARG_TYPE'
+  }
+
+test at test\owner-runtime.test.js:5:28
+✖ owner-runtime active poll delivery checks the captured lease again immediately after store.begin (6.9725ms)
+  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received undefined
+      at Object.join (node:path:513:7)
+      at panel (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:137:28)
+      at guardedFixture (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1165:67)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1179:13)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'ERR_INVALID_ARG_TYPE'
+  }
+
+test at test\owner-runtime.test.js:5:28
+✖ owner-runtime lease expiry across a trusted await is checked at physical submit before durable begin (8.1906ms)
+  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received undefined
+      at Object.join (node:path:513:7)
+      at panel (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:137:28)
+      at guardedFixture (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1165:67)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1186:32)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'ERR_INVALID_ARG_TYPE'
+  }
+
+test at test\owner-runtime.test.js:5:28
+✖ owner-runtime no captured controller context rejects before durable begin; original completion remains accepted after lease expiry (6.7622ms)
+  TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received undefined
+      at Object.join (node:path:513:7)
+      at panel (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:137:28)
+      at guardedFixture (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1165:67)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1194:13)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'ERR_INVALID_ARG_TYPE'
+  }

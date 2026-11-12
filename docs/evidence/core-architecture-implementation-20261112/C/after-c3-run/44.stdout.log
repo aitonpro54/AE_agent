@@ -1,0 +1,12 @@
+✔ [titles-owner] deterministic builder selects titles only; photo and engine physically absent (297.5352ms)
+✔ [titles-executor-contract] actual fixed JSX set-text CAS and independent uniform-style readback (311.6865ms)
+✔ [titles-executor-contract] unsupported style API mixed text keys expressions and identity fail closed (1028.1389ms)
+✔ [titles-executor-contract] setter mutation then error and protected style change remain unknown (564.9469ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2307.0857

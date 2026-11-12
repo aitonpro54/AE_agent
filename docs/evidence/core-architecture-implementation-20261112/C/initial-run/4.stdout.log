@@ -1,0 +1,11 @@
+✔ human-window actual stdio child completes confirmed mutation after former two-second caller deadline (3226.5967ms)
+✔ human-window physical callback deadline remains UNKNOWN after late confirmation and prevents replay (817.8662ms)
+✔ human-window private production ordering and MCP default preserve explicit user timeout and enabled preferences (5.8984ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4188.7325

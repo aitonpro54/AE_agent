@@ -60,6 +60,8 @@ async function recoveryFixture(options = {}){
   fs.writeFileSync(path.join(producerSession,'exit.json'),canonical({at:new Date().toISOString(),pid:333333331,code:0,signal:null})+'\n');
   const bundle=buildOperatorPackage(),operatorRoot=path.join(f.directory,'operator');writeOperatorPackage(operatorRoot,bundle);
   const candidate=structuredClone(buildPackage(undefined, options.selector || 'manual')),css=Buffer.from(candidate.files['cep/panel.css'],'base64').toString()+'\n/* recovery fixture candidate */\n';candidate.files['cep/panel.css']=Buffer.from(css).toString('base64');candidate.release.hashes['cep/panel.css']=hash(css);candidate.packageHash=hash(candidate.release);
+  const identity=require('../../integrations/cep/panel-identity'),read=file=>Buffer.from(candidate.files[file],'base64');
+  const panel=identity.stamp(read('cep/js/panel.js').toString('utf8'),identity.identity(read));candidate.files['cep/js/panel.js']=Buffer.from(panel).toString('base64');candidate.release.hashes['cep/js/panel.js']=hash(panel);candidate.packageHash=hash(candidate.release);
   const packageFile=path.join(f.directory,'candidate.json');fs.writeFileSync(packageFile,canonical(candidate));
   const args={...f.args,capture,producerSession,producerDriver,inspection,package:packageFile,expectedPackageHash:candidate.packageHash};
   const config={operatorRoot,operatorHash:bundle.operatorHash,args};const fixtureFile=path.join(f.directory,'operator-fixture.json');fs.writeFileSync(fixtureFile,canonical(config));

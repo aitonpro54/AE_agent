@@ -1,0 +1,12 @@
+✔ native-read-recovery operator trusted slot uses own pure bytes and constructor never executes poisoned candidate spec (418.2847ms)
+✔ native-read-recovery operator missing or corrupt trusted slot refuses outer closure before imports (895.8975ms)
+✔ native-read-recovery operator legacy v1 inventory without new slot stays data-readable without fallback execution (479.4438ms)
+✔ native-read-recovery operator candidate reserved tools aliases refuse before merge or own tooling reads (40.1282ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1950.6155

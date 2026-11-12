@@ -1,0 +1,29 @@
+✔ owner-lifecycle-faults markReady crash after starting-owner archive resumes exact intent before publishing a fresh boot (1379.6304ms)
+✔ owner-lifecycle-faults markReady crash after active publish but before completion does not release readiness and resumes once (1219.0115ms)
+✔ owner-lifecycle-faults gate takeover crash after atomic replacement preserves a hardlink inode and never exposes an absent gate window (1201.569ms)
+✔ owner-lifecycle-faults owner recovery crash after owner archive resumes without rewriting protected bytes (1355.794ms)
+✔ owner-lifecycle-faults owner recovery crash after brokerOwner archive resumes without rewriting protected bytes (1385.3001ms)
+✔ owner-lifecycle-faults owner recovery crash after brokerGate archive resumes without rewriting protected bytes (1577.0865ms)
+✔ owner-lifecycle-faults owner recovery crash after receiverOwner archive resumes without rewriting protected bytes (1345.6115ms)
+✔ owner-lifecycle-faults owner recovery crash before durable completion retains all archived marker bytes and completes before a new writer record (1535.5288ms)
+✔ owner-lifecycle-faults marker CAS drift after recovery intent refuses cleanup and cannot produce a fresh active record on retry (828.6482ms)
+✔ owner-lifecycle-faults valid origin-byte drift after recovery intent is still CAS failure and never silently rebaselines on retry (746.9118ms)
+✔ owner-lifecycle-faults corrupt published ready intent is a persistent fence and is never inferred to have completed (428.9788ms)
+✔ owner-lifecycle-faults corrupt published ready completion remains fenced rather than guessing done (527.6148ms)
+✔ owner-lifecycle-faults contradictory original and archive cannot authorize recovery even when both contain matching sealed bytes (851.0585ms)
+✔ owner-lifecycle-faults missing both original and archive does not reconstruct provenance from intent bytes or clear other markers (823.3487ms)
+✔ owner-lifecycle-faults unexpected extra archive file fences incomplete recovery and never disappears during subsequent starts (787.9744ms)
+✔ owner-lifecycle-faults install.lock fault before exclusive publication leaves only an inert stage and a dead retry can start safely (1163.6323ms)
+✔ owner-lifecycle-faults runtime-owner.json fault before exclusive publication leaves only an inert stage and a dead retry can start safely (1315.6398ms)
+✔ owner-lifecycle-faults unpublished ready intent.json partial stage is preserved while a new nonce independently finishes recovery (1182.1619ms)
+✔ owner-lifecycle-faults unpublished ready completion.json partial stage is preserved while a new nonce independently finishes recovery (1314.5284ms)
+✔ owner-lifecycle-faults a missing intent with a published archive or completion is contradictory and stays fenced across retries (825.5806ms)
+✔ owner-lifecycle-faults descriptor atomic replacement during pre-election process observation is unblocked and exact identity CAS refuses startup without stores (62.6545ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21982.8228

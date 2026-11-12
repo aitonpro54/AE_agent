@@ -1,0 +1,3006 @@
+{
+  "schema": 1,
+  "mode": "subset",
+  "certification": "executed-batches-only",
+  "context": "technical_check/ephemeral_check",
+  "releaseCertified": false,
+  "fullSelectionCertified": false,
+  "startedAt": "2026-11-12T15:24:49.349Z",
+  "configPath": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5\\after-c7\\subset-config.json",
+  "configSHA256": "3b35864ff640a027a6cb95c9061f0ea75a7d1b8a26b26984c464731b3693dcc7",
+  "coreRoot": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+  "changedPaths": [
+    "core4/cep/js/poll-dispatcher.js",
+    "core4/config/validation-map.json",
+    "core4/core/artifact.json",
+    "core4/core/broker.js",
+    "core4/runtime/attachment-owner.js",
+    "core4/runtime/client-entry.js",
+    "core4/runtime/composition-spec.js",
+    "core4/runtime/source-package.json",
+    "core4/runtime/stdio-entry.js",
+    "core4/test/catalog-revision.test.js",
+    "core4/test/client-entry.test.js",
+    "core4/test/client-launcher.test.js",
+    "core4/test/composition-spec.test.js",
+    "core4/test/core4.test.js",
+    "core4/test/exact-f548-transition.test.js",
+    "core4/test/fixtures/disposition-child.js",
+    "core4/test/fixtures/installed-composition-transition.js",
+    "core4/test/fixtures/manual-http-runtime.js",
+    "core4/test/fixtures/mixed-installation.js",
+    "core4/test/fixtures/native-read-recovery.js",
+    "core4/test/fixtures/portable-text-runtime.js",
+    "core4/test/installable-runtime.test.js",
+    "core4/test/installed-composition.test.js",
+    "core4/test/integration/cep-transport.test.js",
+    "core4/test/mixed-installation-repair.test.js",
+    "core4/test/native-read-recovery.test.js",
+    "core4/test/owner-attachments.test.js",
+    "core4/test/owner-installation.test.js",
+    "core4/test/owner-runtime.test.js",
+    "core4/test/package-location.test.js",
+    "core4/test/panel-lifecycle.test.js",
+    "core4/test/standalone-installer.test.js",
+    "core4/test/start-over-runtime.test.js",
+    "core4/test/version-profile-compatibility.test.js",
+    "core4/tools/check-boundaries.js",
+    "core4/tools/check-package-location.js",
+    "core4/tools/composition-spec.js",
+    "core4/tools/install-core4.js",
+    "core4/tools/package-installable.js",
+    "core4/tools/package-native-read-operator.js",
+    "core4/tools/package-standalone-installer.js",
+    "core4/tools/standalone-installer.js"
+  ],
+  "contractImpacts": [],
+  "selectionFile": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5\\after-c7\\frozen-selection.json",
+  "selectionSHA256": "b3c0205f58f3c6eec6ea969e43e2d576331c3e104a9a4840a71e566417a3dd08",
+  "selectorSHA256": "879f1f36974f24aae649cf35fef6a37b5904377176b3a8bea41f6e00837dddf1",
+  "mapSHA256": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4",
+  "runner": {
+    "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f\\run-selected-subset.cjs",
+    "sha256": "4b9dd7f879b8e437dced728271d7d58628d15f2efb2c900c85b9e4c465a552d8"
+  },
+  "runtime": {
+    "node": "v24.15.0",
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "binarySHA256": "3331e1ffe19874215472217c5e94f5a0c6d8e18c4ac7111d3937aa0ad5e9b4a5",
+    "platform": "win32",
+    "arch": "x64",
+    "hostname": "DESKTOP-32974QF",
+    "release": "10.0.26200",
+    "environmentSHA256": "6956e59aac2b364dc29f519b4be8d9fff0757bb39b0965861630f90137e6d250"
+  },
+  "requestedChecks": [
+    "lifecycle-simulation",
+    "mixed-installation-repair"
+  ],
+  "expandedChecks": [
+    "lifecycle-simulation",
+    "mixed-installation-repair"
+  ],
+  "skippedByPlan": [
+    {
+      "check": "installable-runtime",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "fad1a531588d39b8cfbd5901d94be5826a7fa46048c2d2de24da6006e60ac52e",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installable-runtime",
+        "test/installable-runtime.test.js"
+      ]
+    },
+    {
+      "check": "manual-runtime",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "134de2fac6d74fa5417ba7f5616e7f99043e90134e3e804dfe54f9ba8d60d97d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-runtime",
+        "test/manual-runtime.test.js"
+      ]
+    },
+    {
+      "check": "validation-routing",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "f729208e386be8191b802d781db6b1e33725353a2b7fa7f1b795613fe7782808",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=validation-routing",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "core-control",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "c6d8bc77e72d9a49d96d729a076aa61fab85dc9cac2b8853b588d4a8255932d6",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=core-control",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "core-admission",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "ff728d40f15e94a6ab809f3ec9e0c051200ffebeef9d141312e6bdf7cdb83921",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=core-admission",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "workflow-recovery",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "616c6217eb322ff1033fefb9b8770063c79391be3a42c31a7001cf8fd5ccc173",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=workflow-recovery",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "worker-isolation",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "95f35a257dada8a7aa92e4929ba4edf819ccb594907a52d619705ee01ff220a1",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=worker-isolation",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "protocol-codec",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "25ed5a945d9a45b70e2bc1960d2ac1dd71d3c8c8c0cb1f51a5ea13218ff74cdc",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=protocol-codec",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "artifact-boundaries",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "82cfafa7f74c6eda2a674fd91caef9c062357acf2c00fc5515fbefd4f338d761",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=artifact-boundaries",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "check": "human-window",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "a114dc22e052afaf312b38f875cf0c0912c42b21e3245b00258aa4a26714fab8",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=human-window",
+        "test/human-window.test.js"
+      ]
+    },
+    {
+      "check": "audit-repairs",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "05da34a3248a6bee3831b4182d9668d1ac1eb3f1262f623bdf9890c844b76ad1",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=audit-repairs",
+        "test/audit-repairs.test.js"
+      ]
+    },
+    {
+      "check": "cep-transport",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "3679720de95d27bc6571982872e03a88b360d6c92ac46bc2a44efcb4869fe33d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=cep-transport",
+        "test/integration/cep-transport.test.js"
+      ]
+    },
+    {
+      "check": "owner-attachments",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "65ee93dd4ef8b6a94087c58d82706b29bfe02adbc12e4fcf5575ad99c2bc7331",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-attachments",
+        "test/owner-attachments.test.js"
+      ]
+    },
+    {
+      "check": "owner-ipc-process",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "4b59774cc5189340ca7a4731ce39ba2b691697d7e8dc603aa6c81d2743b48c1d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-ipc-process",
+        "test/owner-ipc-process.test.js"
+      ]
+    },
+    {
+      "check": "controller-transfer",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "20b6fc1733e66683b760bdf4bb4dce577dcc058a55cfc301811191410536fcf3",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=controller-transfer",
+        "test/controller-transfer-ipc.test.js"
+      ]
+    },
+    {
+      "check": "client-entry",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "7691e9a6ca3321d71f9f4fe42ed571d1ba6529a4d1ee66be75b8399ecd9b425a",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=client-entry",
+        "test/client-entry.test.js"
+      ]
+    },
+    {
+      "check": "owner-runtime",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "a93b26c11992e1b8d83e348e37b1d37bffec117ceca6d2f5b0c146f45ec33c2d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-runtime",
+        "test/owner-runtime.test.js"
+      ]
+    },
+    {
+      "check": "owner-installation",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "f00045be57cd139054cec9d2badcd197c4fa01d22661733764eba9553b243e35",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-installation",
+        "test/owner-installation.test.js"
+      ]
+    },
+    {
+      "check": "composition-spec",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "2da0ec7e3dbf157450c36b1add0163a2bfeb977d00398cfded50f6f21c5e3972",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=composition-spec",
+        "test/composition-spec.test.js"
+      ]
+    },
+    {
+      "check": "panel-lifecycle",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "59919ece6d2601f2949e3a34de3464933fd74bbbaa7a12176fe6a0c3c098a69b",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-lifecycle",
+        "test/panel-lifecycle.test.js"
+      ]
+    },
+    {
+      "check": "ae-panel-startup",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "e9eb96fe263d561e21979200a5e7944fe90989a7926ca186a1e0a4b774e50eb1",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=ae-panel-startup",
+        "test/ae-panel-startup.test.js"
+      ]
+    },
+    {
+      "check": "ae-readiness",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "0e24c050505130f178a91b60e3901967173275c10d617807c51e0c1c48a397e3",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=ae-readiness",
+        "test/ae-readiness.test.js"
+      ]
+    },
+    {
+      "check": "package-location",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "e876e570604c0ae4be7b117e03e6d0f1f359a6b915a0e98f7813bf1a0ba70d0a",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=package-location",
+        "test/package-location.test.js"
+      ]
+    },
+    {
+      "check": "start-over-driver",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "088ff6377bb8deabbf25abad9ff812a02140d6f7aa7a4f7b78aef4adadc71504",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-driver",
+        "test/start-over-driver.test.js"
+      ]
+    },
+    {
+      "check": "panel-start-over",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "31a60da92fb045857aa4dd7cb98079966e089ac95ff6bc3b827dfe031de68ce8",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-start-over",
+        "test/panel-start-over.test.js"
+      ]
+    },
+    {
+      "check": "start-over-runtime",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "65b552a639a5405009b96f91154f090ee8686748acb9bbb6b2ac6b1d744a141b",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-runtime",
+        "test/start-over-runtime.test.js"
+      ]
+    },
+    {
+      "check": "start-over-operator",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "943abf992c8c1c9654759c57f8706bf00637bef201717c996b03a22c1d96a846",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-operator",
+        "test/start-over-operator.test.js"
+      ]
+    },
+    {
+      "check": "work-session",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "9f62e63294af253d270b86a683d901e1a1ee1dfcd16abf93654ec728ca674f65",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=work-session",
+        "test/work-session.test.js"
+      ]
+    },
+    {
+      "check": "start-over-finisher",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "63a08aef3d3438a1348138e65f9f78e9673fc07aaed1da40ea1c5925d2bb41e4",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-finisher",
+        "test/start-over-finisher.test.js"
+      ]
+    },
+    {
+      "check": "start-over-state",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "f87e292480c09423653e003dbfe6f7b649c193306903d549ca9eebba319dc94e",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-state",
+        "test/start-over-state.test.js"
+      ]
+    },
+    {
+      "check": "start-over-barrier",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "84da26baf74da51896f269a0a6d5b804e4a83a962dbd4624763b523a0e572d7d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-barrier",
+        "test/start-over-barrier.test.js"
+      ]
+    },
+    {
+      "check": "start-over-inspection",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "90dcffc4bf714a4c58b54f160a2e766ec8c28cb09b7f42aece79c68d549b5c5f",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-inspection",
+        "test/start-over-inspection.test.js"
+      ]
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "7ce9ef4eb3e50f2851f59f8910e4b9f1b89b4c66e41963204e09b8a3b9fc9a4e",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption-operator",
+        "test/stopped-host-readoption-operator.test.js"
+      ]
+    },
+    {
+      "check": "stopped-host-readoption",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "49ef49208e4c3e19b88e1436d3eae31b08149c39f8d7533d722c988990ba1f1d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-host-readoption",
+        "test/stopped-host-readoption.test.js"
+      ]
+    },
+    {
+      "check": "readoption-core",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "9c6c334308739b78e7cd037c5ab0cc517285341fdb65aab293ab2798e61ba572",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-core",
+        "test/stopped-host-readoption-core.test.js"
+      ]
+    },
+    {
+      "check": "readoption-recovery",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "be54b547c884f9d459b63dfcda5bd5b2f4aa6387bf2a2927c8009606d83b0b6f",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-recovery",
+        "test/stopped-host-readoption-recovery.test.js"
+      ]
+    },
+    {
+      "check": "readoption-enable",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "cccc415202a0bb5f98d139490c81d98498cd5f06865afaae039c7e9c2a432c8d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-enable",
+        "test/stopped-host-readoption-enable.test.js"
+      ]
+    },
+    {
+      "check": "readoption-probe",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "64ba291e0067b4628bc359d215d3b55b72eb5129f3b1d5c0aec6ba9ae95dbf59",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=readoption-probe",
+        "test/stopped-host-readoption-probe.test.js"
+      ]
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "1908ba704a33188691c2fdd2906b166e716aa95f5bf7351b38c03b878b4abad7",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-update-operator",
+        "test/stopped-update-operator.test.js"
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "f2c35b6eca4552fde736662ae7e99932d88450bb16098b09cf03cb4f3eb14765",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-update",
+        "test/stopped-update.test.js"
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "53d3b5f67099129ed060fec4127e235fed42bd77760a8ebb65a137b40ba52235",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=legacy-owner-migration",
+        "test/legacy-owner-migration.test.js"
+      ]
+    },
+    {
+      "check": "stopped-certification",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "778a80fec18c0071b2152dbc7addfef40f7c6f8f412c6ab43e28a1b31863211f",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-certification",
+        "test/stopped-certification.test.js"
+      ]
+    },
+    {
+      "check": "maintenance-finish",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "0d58b1839c4be7d187f34b034fe21110d6f9b117994336a334de5c21157e5d4b",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish",
+        "test/maintenance-finish.test.js"
+      ]
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "f2d40dc94428a9cb813a4ddbcf88ccffd7198dc11beb21d1b4637cd66bef8d83",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish-operator",
+        "test/maintenance-finish-operator.test.js"
+      ]
+    },
+    {
+      "check": "owner-maintenance",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "6a54456844761331be1118aa00759b1a6dd1e8a450e05000bcb38992dbed9063",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-maintenance",
+        "test/owner-maintenance.test.js"
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "abe90b7d28de302e0e3eb64832162f36d3a5b41155f9cefc8494f9b7654ba3bd",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-operator",
+        "test/maintenance-operator.test.js"
+      ]
+    },
+    {
+      "check": "owner-lifecycle",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "2880fa25d24c1479771adda4968409b886e7ecefccf181616a92fb00bd9b6a7f",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-lifecycle",
+        "test/owner-lifecycle.test.js"
+      ]
+    },
+    {
+      "check": "owner-lifecycle-faults",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "f5f0e46e17731664ad304b605c3e645d312e286d8fd182bd6f0d388f39401ac5",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-lifecycle-faults",
+        "test/owner-lifecycle-faults.test.js"
+      ]
+    },
+    {
+      "check": "owner-marker-publication",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "963b84820487661ae72d5aa8dcd277139c486f9568964ba70a71dd779816d9e3",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-marker-publication",
+        "test/owner-marker-publication.test.js"
+      ]
+    },
+    {
+      "check": "client-launcher",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "76b95dfe478a7cbc98a0c5944d489b04dc3557ad6d4b281230a873f7e35b54dc",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=client-launcher",
+        "test/client-launcher.test.js"
+      ]
+    },
+    {
+      "check": "recovery-inspection",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "384ee16343fe818f5044ad09031ec053b070ea2afbdaec997ba00f34e775b011",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=recovery-inspection",
+        "test/recovery-inspection.test.js"
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "41203e7db43c32df22d7610596a4fdcd76548a7dcf3b59bda8150769516ce65d",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-capture",
+        "test/native-read-capture.test.js"
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "234ed3275c3b1bc35ca62fd2cf6e182a9949421cf8ac9b90222c65e8a7314875",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=windows-cim-probe",
+        "test/windows-cim-probe.test.js"
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "37991ba8c96223c2bbc2b4499f454d59165fbd25ff3c361d1b6e80be76b009fa",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=zero-dispatch",
+        "test/recover-zero-dispatch-owner.test.js"
+      ]
+    },
+    {
+      "check": "point-layout-integration",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "af0d9ac3e092cc01a3a95d2cf4096ccb246399c2ea233e307bf845804fed7bb1",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=point-layout",
+        "test/point-layout.test.js"
+      ]
+    },
+    {
+      "check": "text-layer-integration",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "0c8c9aabcb6379dbf21e4eab3b12b358473180780ededb230cf9968a0c862997",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=text-layer",
+        "test/text-layer.test.js"
+      ]
+    },
+    {
+      "check": "comp-frame-export",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "82da4c61d9e4cb338801d6b90b1a50cb7b5efdb6d09220911fa60460a0c3a88a",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=comp-frame-export",
+        "test/comp-frame-export.test.js"
+      ]
+    },
+    {
+      "check": "frame-export-slot",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "56d89a2e32229c79103efe3406ff4ac9ae3183af56827eb06e7b35b8aefa1825",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^frame-export-slot",
+        "test/stopped-update.test.js"
+      ]
+    },
+    {
+      "check": "project-assembly",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "a98d71c3fd12f80b8b91214c3a28d8c14d9a47d6e539fab2f9fe68b578bf2525",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=project-assembly",
+        "test/project-assembly.test.js"
+      ]
+    },
+    {
+      "check": "project-save",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "efe5964490e08b0ab9be4c44835104dff45fd7795eeea10378ae38e796e88ee6",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=project-save",
+        "test/project-save.test.js"
+      ]
+    },
+    {
+      "check": "project-lifecycle",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "03a8c491b58d52b89291eeea7b4b4b71a0d75788dd657ce84ed113ef7f28a733",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=project-lifecycle",
+        "test/project-lifecycle.test.js"
+      ]
+    },
+    {
+      "check": "media-layers",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "936f7078920597b0396833b84c2821fea44463968e673e177701b0e7cde075c7",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=media-layers",
+        "test/media-layers.test.js"
+      ]
+    },
+    {
+      "check": "layer-overlay",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "01bd56dd93f24067b2e843fa9384f489bb56f7142e907cbb411ae159944b478f",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=layer-overlay",
+        "test/layer-overlay.test.js"
+      ]
+    },
+    {
+      "check": "render-job-owner",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "6f17495ad5526d40f31b9ae90214116ef3cb7793076ff23db52e5be17e83e169",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^",
+        "test/render-job-owner.test.js"
+      ]
+    },
+    {
+      "check": "manual-current-target",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "b3dfad2177dde9adf3c4fb9ca26fef79ecc0e0fb930fbf924c592524187af092",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-current-target",
+        "test/manual-current-target.test.js"
+      ]
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "63733bbe54cce5d6da91fdeae6fd9f37f0d31a577b9b4fa0da553869143cd661",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=native-read-recovery",
+        "test/native-read-recovery.test.js"
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "989130763e9fefe6c220646ff2ac25e9d02f86c30497b4405fa6fd5ae90a7c1f",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=installed-composition",
+        "test/installed-composition.test.js"
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "cf77af3cd3ca712576d5f5d2eb566aeb88f86a2787fa3d387fc9c92dbfe9c8ac",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=exact-f548-transition",
+        "test/exact-f548-transition.test.js"
+      ]
+    },
+    {
+      "check": "standalone-installer",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "26382ec4d7c5da7daa08e903f303cb32cfaf534f95e78ea8b4ce098843024a67",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=standalone-installer",
+        "test/standalone-installer.test.js"
+      ]
+    },
+    {
+      "check": "catalog-revision",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "47f884faea191a08932b6ab79d33ef5058c923cf84d3d4879e022b9f8307b826",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=catalog-revision",
+        "test/catalog-revision.test.js"
+      ]
+    },
+    {
+      "check": "version-profile-compatibility",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "eef4e14fe2079bb002da393dc0099dc4cc66a3c291e0e06db4b99d806981c3c6",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=release policy|portable owned-text profile",
+        "test/version-profile-compatibility.test.js"
+      ]
+    },
+    {
+      "check": "adobe-child-environment",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "a8869e32c409c9e39d11204af96916362aff000fb6c73f6a0e0d50b8930aefe7",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=adobe-child-environment",
+        "test/adobe-child-environment.test.js"
+      ]
+    },
+    {
+      "check": "work-session-owner",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "0ba46ced5292d06ad6797f9f4085458df91fabc8edd0326ad118cf89c0633d6b",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=work-session",
+        "test/work-session-owner.test.js"
+      ]
+    },
+    {
+      "check": "start-over-channel",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "da1a873bf9290c064027d3fc2918ca0dd20cff230642c3912c677b8f6edd817e",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-channel",
+        "test/start-over-channel.test.js"
+      ]
+    },
+    {
+      "check": "panel-reconnect",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "f82b0cb25b7c240b32bee17ed939538d4946239949a1d160e6574f9c6b76e549",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=panel-reconnect",
+        "test/panel-reconnect.test.js"
+      ]
+    },
+    {
+      "check": "photo-owner",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "dcdd958e71d45e7fdeb83813f9f0b8dcc0bc15d1e6f00a0022d3675a0b4db9dc",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=photo-owner",
+        "test/modules/photo-placeholder.test.js"
+      ]
+    },
+    {
+      "check": "titles-owner",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "e9ac8e4f7b951669367bab21ae241c8a1602e1d97feab8333950fa57e0e5a48a",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=titles-owner",
+        "test/modules/titles.test.js"
+      ]
+    },
+    {
+      "check": "photo-executor-contract",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "fcf0e9fc9ffe0b482cabdab0cf79d560ee94c270ce1f253ae7d02083d6941cd2",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=photo-executor-contract",
+        "test/modules/photo-placeholder.test.js"
+      ]
+    },
+    {
+      "check": "titles-executor-contract",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "35cc0cb56b3db71eae9bce1b66f487335e0bba3eb8d52e8e66adb06a37b85df4",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=titles-executor-contract",
+        "test/modules/titles.test.js"
+      ]
+    },
+    {
+      "check": "documentation",
+      "status": "NOT_REQUESTED",
+      "evidenceKey": "62e9e658d26f946fc51223181badc9b88ac1c056d00cd034705e2a492bbd06bd",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=documentation",
+        "test/core4.test.js"
+      ]
+    }
+  ],
+  "deferredCoverage": [
+    {
+      "check": "catalog-discovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/test/core4.test.js",
+          "dependency": "test/core4.test.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/test/core4.test.js",
+          "test/core4.test.js",
+          "catalog-discovery"
+        ]
+      ]
+    },
+    {
+      "check": "validation-reuse",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        },
+        {
+          "file": "core4/tools/check-boundaries.js",
+          "dependency": "tools/check-boundaries.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "validation-reuse"
+        ],
+        [
+          "core4/tools/check-boundaries.js",
+          "tools/check-boundaries.js",
+          "validation-reuse"
+        ]
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "check": "lifecycle-simulation",
+      "evidenceKey": "d7e8f36b35a2527a19e9e5883c3e535b73274ff65a668f3b9a335e88a5f97cd7",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=lifecycle-simulation",
+        "test/lifecycle-simulation.test.js"
+      ],
+      "status": "PASS",
+      "currentEvidenceKey": "d7e8f36b35a2527a19e9e5883c3e535b73274ff65a668f3b9a335e88a5f97cd7",
+      "batchIndex": 1,
+      "actualBatchCommand": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:lifecycle-simulation)",
+        "test/lifecycle-simulation.test.js"
+      ],
+      "stdoutSHA256": "127317581b31160dc2799ea68b0193ae0cc9b7b4321d626bf4f811da5f8c2f30",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "counts": {
+        "tests": 31,
+        "pass": 31,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "matchedPassedNames": [
+        "[lifecycle-simulation] C1 source-less startup and public tools provide no event or issuance authority",
+        "[lifecycle-simulation] C2 transitions rotate same-path incarnation and unsaved new closes admission",
+        "[lifecycle-simulation] C2 uncertain sequences permanently lose that source epoch",
+        "[lifecycle-simulation] C3 loss reconnect and restart never recover old project proof",
+        "[lifecycle-simulation] C4 confirmation binds complete canonical proposal and exact step",
+        "[lifecycle-simulation] C4 project transition needs new proposal ownership and checkpoint bindings",
+        "[lifecycle-simulation] C5 loss at afterAuthorize preserves the send boundary",
+        "[lifecycle-simulation] C5 loss at beforeIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 loss at afterIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 loss at afterPhysicalSend preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at afterAuthorize preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at beforeIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at afterIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at afterPhysicalSend preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at afterAuthorize preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at beforeIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at afterIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at afterPhysicalSend preserves the send boundary",
+        "[lifecycle-simulation] C5 late loss at afterAck preserves ACK and fence",
+        "[lifecycle-simulation] C5 late revoke at afterAck preserves ACK and fence",
+        "[lifecycle-simulation] C5 late loss at afterReadback preserves ACK and fence",
+        "[lifecycle-simulation] C5 late revoke at afterReadback preserves ACK and fence",
+        "[lifecycle-simulation] C5 throwing physical-send hook cannot classify a submitted mutation as rejected",
+        "[lifecycle-simulation] C5 event during evaluate retains applied receipt and cannot fabricate readback success",
+        "[lifecycle-simulation] C5 retained observer permits original completion plus independent verification after broker reopen",
+        "[lifecycle-simulation] C5 replacement observer cannot infer continuity from same AE values and completion store",
+        "[lifecycle-simulation] C6 validation selects actual lifecycle consumers and preserves offline certification",
+        "[lifecycle-simulation] C5 reconciliation microtask loss after completion cannot record terminal success",
+        "[lifecycle-simulation] C5 reconciliation microtask revert after completion cannot record terminal success",
+        "[lifecycle-simulation] C5 reconciliation microtask loss after verify cannot record terminal success",
+        "[lifecycle-simulation] C5 reconciliation microtask revert after verify cannot record terminal success"
+      ]
+    },
+    {
+      "check": "mixed-installation-repair",
+      "evidenceKey": "16f6aa93afe3dffc6ada02812fe4d433acc91142aa7285fdcc25d25ff169ad6e",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^mixed repair ",
+        "test/mixed-installation-repair.test.js"
+      ],
+      "status": "PASS",
+      "currentEvidenceKey": "16f6aa93afe3dffc6ada02812fe4d433acc91142aa7285fdcc25d25ff169ad6e",
+      "batchIndex": 2,
+      "actualBatchCommand": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:^mixed repair )",
+        "test/mixed-installation-repair.test.js"
+      ],
+      "stdoutSHA256": "60354a9263a6c425a00a7001fad678cbe60f232f6d7666945d44dc27e6869431",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "counts": {
+        "tests": 44,
+        "pass": 44,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "matchedPassedNames": [
+        "mixed repair semantic incident packages retain the explicit legacy seven-file CEP contract",
+        "mixed repair native Windows census selects its own PID from a JSON array",
+        "mixed repair authentic success preserves protected byte/stat facts and both histories without a synthetic receiver",
+        "mixed repair rejects wrong MAC, owner token and malformed scope before mutation mac",
+        "mixed repair rejects wrong MAC, owner token and malformed scope before mutation token",
+        "mixed repair rejects wrong MAC, owner token and malformed scope before mutation scope",
+        "mixed repair rejects wrong MAC, owner token and malformed scope before mutation numeric-birth",
+        "mixed repair rejects wrong MAC, owner token and malformed scope before mutation",
+        "mixed repair rejects active or unknown process observations and original living repair actor",
+        "mixed repair refuses all three occupied endpoints and an unrelated install gate",
+        "mixed repair holds attributable install and broker gates until read-back and blocks the ordinary state writer",
+        "mixed repair refuses a foreign broker gate without publishing repair state or removing the foreign gate",
+        "mixed repair rejects inode/hash drift, job registry and undeclared writer fences inode",
+        "mixed repair rejects inode/hash drift, job registry and undeclared writer fences hash",
+        "mixed repair rejects inode/hash drift, job registry and undeclared writer fences job",
+        "mixed repair rejects inode/hash drift, job registry and undeclared writer fences writer",
+        "mixed repair rejects inode/hash drift, job registry and undeclared writer fences",
+        "mixed repair refuses durable external file/output/job or unresolved constraint fences file",
+        "mixed repair refuses durable external file/output/job or unresolved constraint fences output",
+        "mixed repair refuses durable external file/output/job or unresolved constraint fences jobId",
+        "mixed repair refuses durable external file/output/job or unresolved constraint fences unresolved",
+        "mixed repair refuses durable external file/output/job or unresolved constraint fences",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope source",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope shared-source",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope nested-output",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope nested-file",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope nested-job",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope wrong-session",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope wrong-effect",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope relative-reference",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope bad-count",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope",
+        "mixed repair refuses reservation output and grant file execution scopes reservation-output",
+        "mixed repair refuses reservation output and grant file execution scopes grant-file",
+        "mixed repair refuses reservation output and grant file execution scopes",
+        "mixed repair crash after each rename and every record publication recovers only the original monotonic prefix fsyncSync",
+        "mixed repair crash after each rename and every record publication recovers only the original monotonic prefix linkSync+renameSync+unlinkSync",
+        "mixed repair crash after each rename and every record publication recovers only the original monotonic prefix",
+        "mixed repair rejects substituted archive/source inode and nonmonotonic visible recovery state",
+        "mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports tools/composition-spec.js before-plan",
+        "mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports tools/composition-spec.js after-plan",
+        "mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports runtime/composition-spec.js before-plan",
+        "mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports runtime/composition-spec.js after-plan",
+        "mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports"
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "index": 1,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:lifecycle-simulation)",
+        "test/lifecycle-simulation.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+      "pid": 26868,
+      "startedAt": "2026-11-12T15:24:52.497Z",
+      "durationMs": 17682,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "timedOut": false,
+      "killResult": null,
+      "closed": true,
+      "logsComplete": true,
+      "stdout": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f\\result-iHwyWi\\1.stdout.log",
+      "stderr": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f\\result-iHwyWi\\1.stderr.log",
+      "stdoutSHA256": "127317581b31160dc2799ea68b0193ae0cc9b7b4321d626bf4f811da5f8c2f30",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checks": [
+        "lifecycle-simulation"
+      ],
+      "status": "PASS",
+      "counts": {
+        "tests": 31,
+        "pass": 31,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "complete": true,
+      "duplicate": [],
+      "passedNames": [
+        "[lifecycle-simulation] C1 source-less startup and public tools provide no event or issuance authority",
+        "[lifecycle-simulation] C2 transitions rotate same-path incarnation and unsaved new closes admission",
+        "[lifecycle-simulation] C2 uncertain sequences permanently lose that source epoch",
+        "[lifecycle-simulation] C3 loss reconnect and restart never recover old project proof",
+        "[lifecycle-simulation] C4 confirmation binds complete canonical proposal and exact step",
+        "[lifecycle-simulation] C4 project transition needs new proposal ownership and checkpoint bindings",
+        "[lifecycle-simulation] C5 loss at afterAuthorize preserves the send boundary",
+        "[lifecycle-simulation] C5 loss at beforeIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 loss at afterIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 loss at afterPhysicalSend preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at afterAuthorize preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at beforeIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at afterIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 revoke at afterPhysicalSend preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at afterAuthorize preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at beforeIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at afterIntent preserves the send boundary",
+        "[lifecycle-simulation] C5 reset at afterPhysicalSend preserves the send boundary",
+        "[lifecycle-simulation] C5 late loss at afterAck preserves ACK and fence",
+        "[lifecycle-simulation] C5 late revoke at afterAck preserves ACK and fence",
+        "[lifecycle-simulation] C5 late loss at afterReadback preserves ACK and fence",
+        "[lifecycle-simulation] C5 late revoke at afterReadback preserves ACK and fence",
+        "[lifecycle-simulation] C5 throwing physical-send hook cannot classify a submitted mutation as rejected",
+        "[lifecycle-simulation] C5 event during evaluate retains applied receipt and cannot fabricate readback success",
+        "[lifecycle-simulation] C5 retained observer permits original completion plus independent verification after broker reopen",
+        "[lifecycle-simulation] C5 replacement observer cannot infer continuity from same AE values and completion store",
+        "[lifecycle-simulation] C6 validation selects actual lifecycle consumers and preserves offline certification",
+        "[lifecycle-simulation] C5 reconciliation microtask loss after completion cannot record terminal success",
+        "[lifecycle-simulation] C5 reconciliation microtask revert after completion cannot record terminal success",
+        "[lifecycle-simulation] C5 reconciliation microtask loss after verify cannot record terminal success",
+        "[lifecycle-simulation] C5 reconciliation microtask revert after verify cannot record terminal success"
+      ],
+      "skippedLines": [],
+      "before": {
+        "selectorSHA256": "879f1f36974f24aae649cf35fef6a37b5904377176b3a8bea41f6e00837dddf1",
+        "mapSHA256": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4",
+        "selectionDigest": "6d3e0d29c4c0217e790cd832bb97f7ffaa13469940426f17fed321bf2abb3f63",
+        "keys": [
+          {
+            "check": "installable-runtime",
+            "evidenceKey": "fad1a531588d39b8cfbd5901d94be5826a7fa46048c2d2de24da6006e60ac52e"
+          },
+          {
+            "check": "manual-runtime",
+            "evidenceKey": "134de2fac6d74fa5417ba7f5616e7f99043e90134e3e804dfe54f9ba8d60d97d"
+          },
+          {
+            "check": "validation-routing",
+            "evidenceKey": "f729208e386be8191b802d781db6b1e33725353a2b7fa7f1b795613fe7782808"
+          },
+          {
+            "check": "core-control",
+            "evidenceKey": "c6d8bc77e72d9a49d96d729a076aa61fab85dc9cac2b8853b588d4a8255932d6"
+          },
+          {
+            "check": "core-admission",
+            "evidenceKey": "ff728d40f15e94a6ab809f3ec9e0c051200ffebeef9d141312e6bdf7cdb83921"
+          },
+          {
+            "check": "workflow-recovery",
+            "evidenceKey": "616c6217eb322ff1033fefb9b8770063c79391be3a42c31a7001cf8fd5ccc173"
+          },
+          {
+            "check": "worker-isolation",
+            "evidenceKey": "95f35a257dada8a7aa92e4929ba4edf819ccb594907a52d619705ee01ff220a1"
+          },
+          {
+            "check": "protocol-codec",
+            "evidenceKey": "25ed5a945d9a45b70e2bc1960d2ac1dd71d3c8c8c0cb1f51a5ea13218ff74cdc"
+          },
+          {
+            "check": "artifact-boundaries",
+            "evidenceKey": "82cfafa7f74c6eda2a674fd91caef9c062357acf2c00fc5515fbefd4f338d761"
+          },
+          {
+            "check": "human-window",
+            "evidenceKey": "a114dc22e052afaf312b38f875cf0c0912c42b21e3245b00258aa4a26714fab8"
+          },
+          {
+            "check": "audit-repairs",
+            "evidenceKey": "05da34a3248a6bee3831b4182d9668d1ac1eb3f1262f623bdf9890c844b76ad1"
+          },
+          {
+            "check": "cep-transport",
+            "evidenceKey": "3679720de95d27bc6571982872e03a88b360d6c92ac46bc2a44efcb4869fe33d"
+          },
+          {
+            "check": "lifecycle-simulation",
+            "evidenceKey": "d7e8f36b35a2527a19e9e5883c3e535b73274ff65a668f3b9a335e88a5f97cd7"
+          },
+          {
+            "check": "owner-attachments",
+            "evidenceKey": "65ee93dd4ef8b6a94087c58d82706b29bfe02adbc12e4fcf5575ad99c2bc7331"
+          },
+          {
+            "check": "owner-ipc-process",
+            "evidenceKey": "4b59774cc5189340ca7a4731ce39ba2b691697d7e8dc603aa6c81d2743b48c1d"
+          },
+          {
+            "check": "controller-transfer",
+            "evidenceKey": "20b6fc1733e66683b760bdf4bb4dce577dcc058a55cfc301811191410536fcf3"
+          },
+          {
+            "check": "client-entry",
+            "evidenceKey": "7691e9a6ca3321d71f9f4fe42ed571d1ba6529a4d1ee66be75b8399ecd9b425a"
+          },
+          {
+            "check": "owner-runtime",
+            "evidenceKey": "a93b26c11992e1b8d83e348e37b1d37bffec117ceca6d2f5b0c146f45ec33c2d"
+          },
+          {
+            "check": "owner-installation",
+            "evidenceKey": "f00045be57cd139054cec9d2badcd197c4fa01d22661733764eba9553b243e35"
+          },
+          {
+            "check": "composition-spec",
+            "evidenceKey": "2da0ec7e3dbf157450c36b1add0163a2bfeb977d00398cfded50f6f21c5e3972"
+          },
+          {
+            "check": "panel-lifecycle",
+            "evidenceKey": "59919ece6d2601f2949e3a34de3464933fd74bbbaa7a12176fe6a0c3c098a69b"
+          },
+          {
+            "check": "ae-panel-startup",
+            "evidenceKey": "e9eb96fe263d561e21979200a5e7944fe90989a7926ca186a1e0a4b774e50eb1"
+          },
+          {
+            "check": "mixed-installation-repair",
+            "evidenceKey": "16f6aa93afe3dffc6ada02812fe4d433acc91142aa7285fdcc25d25ff169ad6e"
+          },
+          {
+            "check": "ae-readiness",
+            "evidenceKey": "0e24c050505130f178a91b60e3901967173275c10d617807c51e0c1c48a397e3"
+          },
+          {
+            "check": "package-location",
+            "evidenceKey": "e876e570604c0ae4be7b117e03e6d0f1f359a6b915a0e98f7813bf1a0ba70d0a"
+          },
+          {
+            "check": "start-over-driver",
+            "evidenceKey": "088ff6377bb8deabbf25abad9ff812a02140d6f7aa7a4f7b78aef4adadc71504"
+          },
+          {
+            "check": "panel-start-over",
+            "evidenceKey": "31a60da92fb045857aa4dd7cb98079966e089ac95ff6bc3b827dfe031de68ce8"
+          },
+          {
+            "check": "start-over-runtime",
+            "evidenceKey": "65b552a639a5405009b96f91154f090ee8686748acb9bbb6b2ac6b1d744a141b"
+          },
+          {
+            "check": "start-over-operator",
+            "evidenceKey": "943abf992c8c1c9654759c57f8706bf00637bef201717c996b03a22c1d96a846"
+          },
+          {
+            "check": "work-session",
+            "evidenceKey": "9f62e63294af253d270b86a683d901e1a1ee1dfcd16abf93654ec728ca674f65"
+          },
+          {
+            "check": "start-over-finisher",
+            "evidenceKey": "63a08aef3d3438a1348138e65f9f78e9673fc07aaed1da40ea1c5925d2bb41e4"
+          },
+          {
+            "check": "start-over-state",
+            "evidenceKey": "f87e292480c09423653e003dbfe6f7b649c193306903d549ca9eebba319dc94e"
+          },
+          {
+            "check": "start-over-barrier",
+            "evidenceKey": "84da26baf74da51896f269a0a6d5b804e4a83a962dbd4624763b523a0e572d7d"
+          },
+          {
+            "check": "start-over-inspection",
+            "evidenceKey": "90dcffc4bf714a4c58b54f160a2e766ec8c28cb09b7f42aece79c68d549b5c5f"
+          },
+          {
+            "check": "stopped-host-readoption-operator",
+            "evidenceKey": "7ce9ef4eb3e50f2851f59f8910e4b9f1b89b4c66e41963204e09b8a3b9fc9a4e"
+          },
+          {
+            "check": "stopped-host-readoption",
+            "evidenceKey": "49ef49208e4c3e19b88e1436d3eae31b08149c39f8d7533d722c988990ba1f1d"
+          },
+          {
+            "check": "readoption-core",
+            "evidenceKey": "9c6c334308739b78e7cd037c5ab0cc517285341fdb65aab293ab2798e61ba572"
+          },
+          {
+            "check": "readoption-recovery",
+            "evidenceKey": "be54b547c884f9d459b63dfcda5bd5b2f4aa6387bf2a2927c8009606d83b0b6f"
+          },
+          {
+            "check": "readoption-enable",
+            "evidenceKey": "cccc415202a0bb5f98d139490c81d98498cd5f06865afaae039c7e9c2a432c8d"
+          },
+          {
+            "check": "readoption-probe",
+            "evidenceKey": "64ba291e0067b4628bc359d215d3b55b72eb5129f3b1d5c0aec6ba9ae95dbf59"
+          },
+          {
+            "check": "stopped-update-operator",
+            "evidenceKey": "1908ba704a33188691c2fdd2906b166e716aa95f5bf7351b38c03b878b4abad7"
+          },
+          {
+            "check": "stopped-update",
+            "evidenceKey": "f2c35b6eca4552fde736662ae7e99932d88450bb16098b09cf03cb4f3eb14765"
+          },
+          {
+            "check": "legacy-owner-migration",
+            "evidenceKey": "53d3b5f67099129ed060fec4127e235fed42bd77760a8ebb65a137b40ba52235"
+          },
+          {
+            "check": "stopped-certification",
+            "evidenceKey": "778a80fec18c0071b2152dbc7addfef40f7c6f8f412c6ab43e28a1b31863211f"
+          },
+          {
+            "check": "maintenance-finish",
+            "evidenceKey": "0d58b1839c4be7d187f34b034fe21110d6f9b117994336a334de5c21157e5d4b"
+          },
+          {
+            "check": "maintenance-finish-operator",
+            "evidenceKey": "f2d40dc94428a9cb813a4ddbcf88ccffd7198dc11beb21d1b4637cd66bef8d83"
+          },
+          {
+            "check": "owner-maintenance",
+            "evidenceKey": "6a54456844761331be1118aa00759b1a6dd1e8a450e05000bcb38992dbed9063"
+          },
+          {
+            "check": "maintenance-operator",
+            "evidenceKey": "abe90b7d28de302e0e3eb64832162f36d3a5b41155f9cefc8494f9b7654ba3bd"
+          },
+          {
+            "check": "owner-lifecycle",
+            "evidenceKey": "2880fa25d24c1479771adda4968409b886e7ecefccf181616a92fb00bd9b6a7f"
+          },
+          {
+            "check": "owner-lifecycle-faults",
+            "evidenceKey": "f5f0e46e17731664ad304b605c3e645d312e286d8fd182bd6f0d388f39401ac5"
+          },
+          {
+            "check": "owner-marker-publication",
+            "evidenceKey": "963b84820487661ae72d5aa8dcd277139c486f9568964ba70a71dd779816d9e3"
+          },
+          {
+            "check": "client-launcher",
+            "evidenceKey": "76b95dfe478a7cbc98a0c5944d489b04dc3557ad6d4b281230a873f7e35b54dc"
+          },
+          {
+            "check": "recovery-inspection",
+            "evidenceKey": "384ee16343fe818f5044ad09031ec053b070ea2afbdaec997ba00f34e775b011"
+          },
+          {
+            "check": "native-read-capture",
+            "evidenceKey": "41203e7db43c32df22d7610596a4fdcd76548a7dcf3b59bda8150769516ce65d"
+          },
+          {
+            "check": "windows-cim-probe",
+            "evidenceKey": "234ed3275c3b1bc35ca62fd2cf6e182a9949421cf8ac9b90222c65e8a7314875"
+          },
+          {
+            "check": "zero-dispatch-recovery",
+            "evidenceKey": "37991ba8c96223c2bbc2b4499f454d59165fbd25ff3c361d1b6e80be76b009fa"
+          },
+          {
+            "check": "point-layout-integration",
+            "evidenceKey": "af0d9ac3e092cc01a3a95d2cf4096ccb246399c2ea233e307bf845804fed7bb1"
+          },
+          {
+            "check": "text-layer-integration",
+            "evidenceKey": "0c8c9aabcb6379dbf21e4eab3b12b358473180780ededb230cf9968a0c862997"
+          },
+          {
+            "check": "comp-frame-export",
+            "evidenceKey": "82da4c61d9e4cb338801d6b90b1a50cb7b5efdb6d09220911fa60460a0c3a88a"
+          },
+          {
+            "check": "frame-export-slot",
+            "evidenceKey": "56d89a2e32229c79103efe3406ff4ac9ae3183af56827eb06e7b35b8aefa1825"
+          },
+          {
+            "check": "project-assembly",
+            "evidenceKey": "a98d71c3fd12f80b8b91214c3a28d8c14d9a47d6e539fab2f9fe68b578bf2525"
+          },
+          {
+            "check": "project-save",
+            "evidenceKey": "efe5964490e08b0ab9be4c44835104dff45fd7795eeea10378ae38e796e88ee6"
+          },
+          {
+            "check": "project-lifecycle",
+            "evidenceKey": "03a8c491b58d52b89291eeea7b4b4b71a0d75788dd657ce84ed113ef7f28a733"
+          },
+          {
+            "check": "media-layers",
+            "evidenceKey": "936f7078920597b0396833b84c2821fea44463968e673e177701b0e7cde075c7"
+          },
+          {
+            "check": "layer-overlay",
+            "evidenceKey": "01bd56dd93f24067b2e843fa9384f489bb56f7142e907cbb411ae159944b478f"
+          },
+          {
+            "check": "render-job-owner",
+            "evidenceKey": "6f17495ad5526d40f31b9ae90214116ef3cb7793076ff23db52e5be17e83e169"
+          },
+          {
+            "check": "manual-current-target",
+            "evidenceKey": "b3dfad2177dde9adf3c4fb9ca26fef79ecc0e0fb930fbf924c592524187af092"
+          },
+          {
+            "check": "native-read-recovery",
+            "evidenceKey": "63733bbe54cce5d6da91fdeae6fd9f37f0d31a577b9b4fa0da553869143cd661"
+          },
+          {
+            "check": "installed-composition",
+            "evidenceKey": "989130763e9fefe6c220646ff2ac25e9d02f86c30497b4405fa6fd5ae90a7c1f"
+          },
+          {
+            "check": "exact-f548-transition",
+            "evidenceKey": "cf77af3cd3ca712576d5f5d2eb566aeb88f86a2787fa3d387fc9c92dbfe9c8ac"
+          },
+          {
+            "check": "standalone-installer",
+            "evidenceKey": "26382ec4d7c5da7daa08e903f303cb32cfaf534f95e78ea8b4ce098843024a67"
+          },
+          {
+            "check": "catalog-revision",
+            "evidenceKey": "47f884faea191a08932b6ab79d33ef5058c923cf84d3d4879e022b9f8307b826"
+          },
+          {
+            "check": "version-profile-compatibility",
+            "evidenceKey": "eef4e14fe2079bb002da393dc0099dc4cc66a3c291e0e06db4b99d806981c3c6"
+          },
+          {
+            "check": "adobe-child-environment",
+            "evidenceKey": "a8869e32c409c9e39d11204af96916362aff000fb6c73f6a0e0d50b8930aefe7"
+          },
+          {
+            "check": "work-session-owner",
+            "evidenceKey": "0ba46ced5292d06ad6797f9f4085458df91fabc8edd0326ad118cf89c0633d6b"
+          },
+          {
+            "check": "start-over-channel",
+            "evidenceKey": "da1a873bf9290c064027d3fc2918ca0dd20cff230642c3912c677b8f6edd817e"
+          },
+          {
+            "check": "panel-reconnect",
+            "evidenceKey": "f82b0cb25b7c240b32bee17ed939538d4946239949a1d160e6574f9c6b76e549"
+          },
+          {
+            "check": "photo-owner",
+            "evidenceKey": "dcdd958e71d45e7fdeb83813f9f0b8dcc0bc15d1e6f00a0022d3675a0b4db9dc"
+          },
+          {
+            "check": "titles-owner",
+            "evidenceKey": "e9ac8e4f7b951669367bab21ae241c8a1602e1d97feab8333950fa57e0e5a48a"
+          },
+          {
+            "check": "photo-executor-contract",
+            "evidenceKey": "fcf0e9fc9ffe0b482cabdab0cf79d560ee94c270ce1f253ae7d02083d6941cd2"
+          },
+          {
+            "check": "titles-executor-contract",
+            "evidenceKey": "35cc0cb56b3db71eae9bce1b66f487335e0bba3eb8d52e8e66adb06a37b85df4"
+          },
+          {
+            "check": "documentation",
+            "evidenceKey": "62e9e658d26f946fc51223181badc9b88ac1c056d00cd034705e2a492bbd06bd"
+          }
+        ]
+      },
+      "after": {
+        "selectorSHA256": "879f1f36974f24aae649cf35fef6a37b5904377176b3a8bea41f6e00837dddf1",
+        "mapSHA256": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4",
+        "selectionDigest": "6d3e0d29c4c0217e790cd832bb97f7ffaa13469940426f17fed321bf2abb3f63",
+        "keys": [
+          {
+            "check": "installable-runtime",
+            "evidenceKey": "fad1a531588d39b8cfbd5901d94be5826a7fa46048c2d2de24da6006e60ac52e"
+          },
+          {
+            "check": "manual-runtime",
+            "evidenceKey": "134de2fac6d74fa5417ba7f5616e7f99043e90134e3e804dfe54f9ba8d60d97d"
+          },
+          {
+            "check": "validation-routing",
+            "evidenceKey": "f729208e386be8191b802d781db6b1e33725353a2b7fa7f1b795613fe7782808"
+          },
+          {
+            "check": "core-control",
+            "evidenceKey": "c6d8bc77e72d9a49d96d729a076aa61fab85dc9cac2b8853b588d4a8255932d6"
+          },
+          {
+            "check": "core-admission",
+            "evidenceKey": "ff728d40f15e94a6ab809f3ec9e0c051200ffebeef9d141312e6bdf7cdb83921"
+          },
+          {
+            "check": "workflow-recovery",
+            "evidenceKey": "616c6217eb322ff1033fefb9b8770063c79391be3a42c31a7001cf8fd5ccc173"
+          },
+          {
+            "check": "worker-isolation",
+            "evidenceKey": "95f35a257dada8a7aa92e4929ba4edf819ccb594907a52d619705ee01ff220a1"
+          },
+          {
+            "check": "protocol-codec",
+            "evidenceKey": "25ed5a945d9a45b70e2bc1960d2ac1dd71d3c8c8c0cb1f51a5ea13218ff74cdc"
+          },
+          {
+            "check": "artifact-boundaries",
+            "evidenceKey": "82cfafa7f74c6eda2a674fd91caef9c062357acf2c00fc5515fbefd4f338d761"
+          },
+          {
+            "check": "human-window",
+            "evidenceKey": "a114dc22e052afaf312b38f875cf0c0912c42b21e3245b00258aa4a26714fab8"
+          },
+          {
+            "check": "audit-repairs",
+            "evidenceKey": "05da34a3248a6bee3831b4182d9668d1ac1eb3f1262f623bdf9890c844b76ad1"
+          },
+          {
+            "check": "cep-transport",
+            "evidenceKey": "3679720de95d27bc6571982872e03a88b360d6c92ac46bc2a44efcb4869fe33d"
+          },
+          {
+            "check": "lifecycle-simulation",
+            "evidenceKey": "d7e8f36b35a2527a19e9e5883c3e535b73274ff65a668f3b9a335e88a5f97cd7"
+          },
+          {
+            "check": "owner-attachments",
+            "evidenceKey": "65ee93dd4ef8b6a94087c58d82706b29bfe02adbc12e4fcf5575ad99c2bc7331"
+          },
+          {
+            "check": "owner-ipc-process",
+            "evidenceKey": "4b59774cc5189340ca7a4731ce39ba2b691697d7e8dc603aa6c81d2743b48c1d"
+          },
+          {
+            "check": "controller-transfer",
+            "evidenceKey": "20b6fc1733e66683b760bdf4bb4dce577dcc058a55cfc301811191410536fcf3"
+          },
+          {
+            "check": "client-entry",
+            "evidenceKey": "7691e9a6ca3321d71f9f4fe42ed571d1ba6529a4d1ee66be75b8399ecd9b425a"
+          },
+          {
+            "check": "owner-runtime",
+            "evidenceKey": "a93b26c11992e1b8d83e348e37b1d37bffec117ceca6d2f5b0c146f45ec33c2d"
+          },
+          {
+            "check": "owner-installation",
+            "evidenceKey": "f00045be57cd139054cec9d2badcd197c4fa01d22661733764eba9553b243e35"
+          },
+          {
+            "check": "composition-spec",
+            "evidenceKey": "2da0ec7e3dbf157450c36b1add0163a2bfeb977d00398cfded50f6f21c5e3972"
+          },
+          {
+            "check": "panel-lifecycle",
+            "evidenceKey": "59919ece6d2601f2949e3a34de3464933fd74bbbaa7a12176fe6a0c3c098a69b"
+          },
+          {
+            "check": "ae-panel-startup",
+            "evidenceKey": "e9eb96fe263d561e21979200a5e7944fe90989a7926ca186a1e0a4b774e50eb1"
+          },
+          {
+            "check": "mixed-installation-repair",
+            "evidenceKey": "16f6aa93afe3dffc6ada02812fe4d433acc91142aa7285fdcc25d25ff169ad6e"
+          },
+          {
+            "check": "ae-readiness",
+            "evidenceKey": "0e24c050505130f178a91b60e3901967173275c10d617807c51e0c1c48a397e3"
+          },
+          {
+            "check": "package-location",
+            "evidenceKey": "e876e570604c0ae4be7b117e03e6d0f1f359a6b915a0e98f7813bf1a0ba70d0a"
+          },
+          {
+            "check": "start-over-driver",
+            "evidenceKey": "088ff6377bb8deabbf25abad9ff812a02140d6f7aa7a4f7b78aef4adadc71504"
+          },
+          {
+            "check": "panel-start-over",
+            "evidenceKey": "31a60da92fb045857aa4dd7cb98079966e089ac95ff6bc3b827dfe031de68ce8"
+          },
+          {
+            "check": "start-over-runtime",
+            "evidenceKey": "65b552a639a5405009b96f91154f090ee8686748acb9bbb6b2ac6b1d744a141b"
+          },
+          {
+            "check": "start-over-operator",
+            "evidenceKey": "943abf992c8c1c9654759c57f8706bf00637bef201717c996b03a22c1d96a846"
+          },
+          {
+            "check": "work-session",
+            "evidenceKey": "9f62e63294af253d270b86a683d901e1a1ee1dfcd16abf93654ec728ca674f65"
+          },
+          {
+            "check": "start-over-finisher",
+            "evidenceKey": "63a08aef3d3438a1348138e65f9f78e9673fc07aaed1da40ea1c5925d2bb41e4"
+          },
+          {
+            "check": "start-over-state",
+            "evidenceKey": "f87e292480c09423653e003dbfe6f7b649c193306903d549ca9eebba319dc94e"
+          },
+          {
+            "check": "start-over-barrier",
+            "evidenceKey": "84da26baf74da51896f269a0a6d5b804e4a83a962dbd4624763b523a0e572d7d"
+          },
+          {
+            "check": "start-over-inspection",
+            "evidenceKey": "90dcffc4bf714a4c58b54f160a2e766ec8c28cb09b7f42aece79c68d549b5c5f"
+          },
+          {
+            "check": "stopped-host-readoption-operator",
+            "evidenceKey": "7ce9ef4eb3e50f2851f59f8910e4b9f1b89b4c66e41963204e09b8a3b9fc9a4e"
+          },
+          {
+            "check": "stopped-host-readoption",
+            "evidenceKey": "49ef49208e4c3e19b88e1436d3eae31b08149c39f8d7533d722c988990ba1f1d"
+          },
+          {
+            "check": "readoption-core",
+            "evidenceKey": "9c6c334308739b78e7cd037c5ab0cc517285341fdb65aab293ab2798e61ba572"
+          },
+          {
+            "check": "readoption-recovery",
+            "evidenceKey": "be54b547c884f9d459b63dfcda5bd5b2f4aa6387bf2a2927c8009606d83b0b6f"
+          },
+          {
+            "check": "readoption-enable",
+            "evidenceKey": "cccc415202a0bb5f98d139490c81d98498cd5f06865afaae039c7e9c2a432c8d"
+          },
+          {
+            "check": "readoption-probe",
+            "evidenceKey": "64ba291e0067b4628bc359d215d3b55b72eb5129f3b1d5c0aec6ba9ae95dbf59"
+          },
+          {
+            "check": "stopped-update-operator",
+            "evidenceKey": "1908ba704a33188691c2fdd2906b166e716aa95f5bf7351b38c03b878b4abad7"
+          },
+          {
+            "check": "stopped-update",
+            "evidenceKey": "f2c35b6eca4552fde736662ae7e99932d88450bb16098b09cf03cb4f3eb14765"
+          },
+          {
+            "check": "legacy-owner-migration",
+            "evidenceKey": "53d3b5f67099129ed060fec4127e235fed42bd77760a8ebb65a137b40ba52235"
+          },
+          {
+            "check": "stopped-certification",
+            "evidenceKey": "778a80fec18c0071b2152dbc7addfef40f7c6f8f412c6ab43e28a1b31863211f"
+          },
+          {
+            "check": "maintenance-finish",
+            "evidenceKey": "0d58b1839c4be7d187f34b034fe21110d6f9b117994336a334de5c21157e5d4b"
+          },
+          {
+            "check": "maintenance-finish-operator",
+            "evidenceKey": "f2d40dc94428a9cb813a4ddbcf88ccffd7198dc11beb21d1b4637cd66bef8d83"
+          },
+          {
+            "check": "owner-maintenance",
+            "evidenceKey": "6a54456844761331be1118aa00759b1a6dd1e8a450e05000bcb38992dbed9063"
+          },
+          {
+            "check": "maintenance-operator",
+            "evidenceKey": "abe90b7d28de302e0e3eb64832162f36d3a5b41155f9cefc8494f9b7654ba3bd"
+          },
+          {
+            "check": "owner-lifecycle",
+            "evidenceKey": "2880fa25d24c1479771adda4968409b886e7ecefccf181616a92fb00bd9b6a7f"
+          },
+          {
+            "check": "owner-lifecycle-faults",
+            "evidenceKey": "f5f0e46e17731664ad304b605c3e645d312e286d8fd182bd6f0d388f39401ac5"
+          },
+          {
+            "check": "owner-marker-publication",
+            "evidenceKey": "963b84820487661ae72d5aa8dcd277139c486f9568964ba70a71dd779816d9e3"
+          },
+          {
+            "check": "client-launcher",
+            "evidenceKey": "76b95dfe478a7cbc98a0c5944d489b04dc3557ad6d4b281230a873f7e35b54dc"
+          },
+          {
+            "check": "recovery-inspection",
+            "evidenceKey": "384ee16343fe818f5044ad09031ec053b070ea2afbdaec997ba00f34e775b011"
+          },
+          {
+            "check": "native-read-capture",
+            "evidenceKey": "41203e7db43c32df22d7610596a4fdcd76548a7dcf3b59bda8150769516ce65d"
+          },
+          {
+            "check": "windows-cim-probe",
+            "evidenceKey": "234ed3275c3b1bc35ca62fd2cf6e182a9949421cf8ac9b90222c65e8a7314875"
+          },
+          {
+            "check": "zero-dispatch-recovery",
+            "evidenceKey": "37991ba8c96223c2bbc2b4499f454d59165fbd25ff3c361d1b6e80be76b009fa"
+          },
+          {
+            "check": "point-layout-integration",
+            "evidenceKey": "af0d9ac3e092cc01a3a95d2cf4096ccb246399c2ea233e307bf845804fed7bb1"
+          },
+          {
+            "check": "text-layer-integration",
+            "evidenceKey": "0c8c9aabcb6379dbf21e4eab3b12b358473180780ededb230cf9968a0c862997"
+          },
+          {
+            "check": "comp-frame-export",
+            "evidenceKey": "82da4c61d9e4cb338801d6b90b1a50cb7b5efdb6d09220911fa60460a0c3a88a"
+          },
+          {
+            "check": "frame-export-slot",
+            "evidenceKey": "56d89a2e32229c79103efe3406ff4ac9ae3183af56827eb06e7b35b8aefa1825"
+          },
+          {
+            "check": "project-assembly",
+            "evidenceKey": "a98d71c3fd12f80b8b91214c3a28d8c14d9a47d6e539fab2f9fe68b578bf2525"
+          },
+          {
+            "check": "project-save",
+            "evidenceKey": "efe5964490e08b0ab9be4c44835104dff45fd7795eeea10378ae38e796e88ee6"
+          },
+          {
+            "check": "project-lifecycle",
+            "evidenceKey": "03a8c491b58d52b89291eeea7b4b4b71a0d75788dd657ce84ed113ef7f28a733"
+          },
+          {
+            "check": "media-layers",
+            "evidenceKey": "936f7078920597b0396833b84c2821fea44463968e673e177701b0e7cde075c7"
+          },
+          {
+            "check": "layer-overlay",
+            "evidenceKey": "01bd56dd93f24067b2e843fa9384f489bb56f7142e907cbb411ae159944b478f"
+          },
+          {
+            "check": "render-job-owner",
+            "evidenceKey": "6f17495ad5526d40f31b9ae90214116ef3cb7793076ff23db52e5be17e83e169"
+          },
+          {
+            "check": "manual-current-target",
+            "evidenceKey": "b3dfad2177dde9adf3c4fb9ca26fef79ecc0e0fb930fbf924c592524187af092"
+          },
+          {
+            "check": "native-read-recovery",
+            "evidenceKey": "63733bbe54cce5d6da91fdeae6fd9f37f0d31a577b9b4fa0da553869143cd661"
+          },
+          {
+            "check": "installed-composition",
+            "evidenceKey": "989130763e9fefe6c220646ff2ac25e9d02f86c30497b4405fa6fd5ae90a7c1f"
+          },
+          {
+            "check": "exact-f548-transition",
+            "evidenceKey": "cf77af3cd3ca712576d5f5d2eb566aeb88f86a2787fa3d387fc9c92dbfe9c8ac"
+          },
+          {
+            "check": "standalone-installer",
+            "evidenceKey": "26382ec4d7c5da7daa08e903f303cb32cfaf534f95e78ea8b4ce098843024a67"
+          },
+          {
+            "check": "catalog-revision",
+            "evidenceKey": "47f884faea191a08932b6ab79d33ef5058c923cf84d3d4879e022b9f8307b826"
+          },
+          {
+            "check": "version-profile-compatibility",
+            "evidenceKey": "eef4e14fe2079bb002da393dc0099dc4cc66a3c291e0e06db4b99d806981c3c6"
+          },
+          {
+            "check": "adobe-child-environment",
+            "evidenceKey": "a8869e32c409c9e39d11204af96916362aff000fb6c73f6a0e0d50b8930aefe7"
+          },
+          {
+            "check": "work-session-owner",
+            "evidenceKey": "0ba46ced5292d06ad6797f9f4085458df91fabc8edd0326ad118cf89c0633d6b"
+          },
+          {
+            "check": "start-over-channel",
+            "evidenceKey": "da1a873bf9290c064027d3fc2918ca0dd20cff230642c3912c677b8f6edd817e"
+          },
+          {
+            "check": "panel-reconnect",
+            "evidenceKey": "f82b0cb25b7c240b32bee17ed939538d4946239949a1d160e6574f9c6b76e549"
+          },
+          {
+            "check": "photo-owner",
+            "evidenceKey": "dcdd958e71d45e7fdeb83813f9f0b8dcc0bc15d1e6f00a0022d3675a0b4db9dc"
+          },
+          {
+            "check": "titles-owner",
+            "evidenceKey": "e9ac8e4f7b951669367bab21ae241c8a1602e1d97feab8333950fa57e0e5a48a"
+          },
+          {
+            "check": "photo-executor-contract",
+            "evidenceKey": "fcf0e9fc9ffe0b482cabdab0cf79d560ee94c270ce1f253ae7d02083d6941cd2"
+          },
+          {
+            "check": "titles-executor-contract",
+            "evidenceKey": "35cc0cb56b3db71eae9bce1b66f487335e0bba3eb8d52e8e66adb06a37b85df4"
+          },
+          {
+            "check": "documentation",
+            "evidenceKey": "62e9e658d26f946fc51223181badc9b88ac1c056d00cd034705e2a492bbd06bd"
+          }
+        ]
+      },
+      "afterError": null
+    },
+    {
+      "index": 2,
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:^mixed repair )",
+        "test/mixed-installation-repair.test.js"
+      ],
+      "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+      "pid": 25148,
+      "startedAt": "2026-11-12T15:25:16.187Z",
+      "durationMs": 574883,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "timedOut": false,
+      "killResult": null,
+      "closed": true,
+      "logsComplete": true,
+      "stdout": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f\\result-iHwyWi\\2.stdout.log",
+      "stderr": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-c-subset-9cdd9825-26d9-4ccf-a08e-81b1db68669f\\result-iHwyWi\\2.stderr.log",
+      "stdoutSHA256": "60354a9263a6c425a00a7001fad678cbe60f232f6d7666945d44dc27e6869431",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checks": [
+        "mixed-installation-repair"
+      ],
+      "status": "PASS",
+      "counts": {
+        "tests": 44,
+        "pass": 44,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "complete": true,
+      "duplicate": [],
+      "passedNames": [
+        "mixed repair semantic incident packages retain the explicit legacy seven-file CEP contract",
+        "mixed repair native Windows census selects its own PID from a JSON array",
+        "mixed repair authentic success preserves protected byte/stat facts and both histories without a synthetic receiver",
+        "mac",
+        "mixed repair rejects wrong MAC, owner token and malformed scope before mutation mac",
+        "token",
+        "mixed repair rejects wrong MAC, owner token and malformed scope before mutation token",
+        "scope",
+        "mixed repair rejects wrong MAC, owner token and malformed scope before mutation scope",
+        "numeric-birth",
+        "mixed repair rejects wrong MAC, owner token and malformed scope before mutation numeric-birth",
+        "mixed repair rejects wrong MAC, owner token and malformed scope before mutation",
+        "mixed repair rejects active or unknown process observations and original living repair actor",
+        "mixed repair refuses all three occupied endpoints and an unrelated install gate",
+        "mixed repair holds attributable install and broker gates until read-back and blocks the ordinary state writer",
+        "mixed repair refuses a foreign broker gate without publishing repair state or removing the foreign gate",
+        "inode",
+        "mixed repair rejects inode/hash drift, job registry and undeclared writer fences inode",
+        "hash",
+        "mixed repair rejects inode/hash drift, job registry and undeclared writer fences hash",
+        "job",
+        "mixed repair rejects inode/hash drift, job registry and undeclared writer fences job",
+        "writer",
+        "mixed repair rejects inode/hash drift, job registry and undeclared writer fences writer",
+        "mixed repair rejects inode/hash drift, job registry and undeclared writer fences",
+        "file",
+        "mixed repair refuses durable external file/output/job or unresolved constraint fences file",
+        "output",
+        "mixed repair refuses durable external file/output/job or unresolved constraint fences output",
+        "jobId",
+        "mixed repair refuses durable external file/output/job or unresolved constraint fences jobId",
+        "unresolved",
+        "mixed repair refuses durable external file/output/job or unresolved constraint fences unresolved",
+        "mixed repair refuses durable external file/output/job or unresolved constraint fences",
+        "source",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope source",
+        "shared-source",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope shared-source",
+        "nested-output",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope nested-output",
+        "nested-file",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope nested-file",
+        "nested-job",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope nested-job",
+        "wrong-session",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope wrong-session",
+        "wrong-effect",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope wrong-effect",
+        "relative-reference",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope relative-reference",
+        "bad-count",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope bad-count",
+        "mixed repair admits only the closed layer-overlay replacement provenance scope",
+        "reservation-output",
+        "mixed repair refuses reservation output and grant file execution scopes reservation-output",
+        "grant-file",
+        "mixed repair refuses reservation output and grant file execution scopes grant-file",
+        "mixed repair refuses reservation output and grant file execution scopes",
+        "fsyncSync",
+        "mixed repair crash after each rename and every record publication recovers only the original monotonic prefix fsyncSync",
+        "linkSync+renameSync+unlinkSync",
+        "mixed repair crash after each rename and every record publication recovers only the original monotonic prefix linkSync+renameSync+unlinkSync",
+        "mixed repair crash after each rename and every record publication recovers only the original monotonic prefix",
+        "mixed repair rejects substituted archive/source inode and nonmonotonic visible recovery state",
+        "tools/composition-spec.js before-plan",
+        "mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports tools/composition-spec.js before-plan",
+        "tools/composition-spec.js after-plan",
+        "mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports tools/composition-spec.js after-plan",
+        "runtime/composition-spec.js before-plan",
+        "mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports runtime/composition-spec.js before-plan",
+        "runtime/composition-spec.js after-plan",
+        "mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports runtime/composition-spec.js after-plan",
+        "mixed repair exact TEMP source pin refuses either helper drift before plan and after cached imports"
+      ],
+      "skippedLines": [],
+      "before": {
+        "selectorSHA256": "879f1f36974f24aae649cf35fef6a37b5904377176b3a8bea41f6e00837dddf1",
+        "mapSHA256": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4",
+        "selectionDigest": "6d3e0d29c4c0217e790cd832bb97f7ffaa13469940426f17fed321bf2abb3f63",
+        "keys": [
+          {
+            "check": "installable-runtime",
+            "evidenceKey": "fad1a531588d39b8cfbd5901d94be5826a7fa46048c2d2de24da6006e60ac52e"
+          },
+          {
+            "check": "manual-runtime",
+            "evidenceKey": "134de2fac6d74fa5417ba7f5616e7f99043e90134e3e804dfe54f9ba8d60d97d"
+          },
+          {
+            "check": "validation-routing",
+            "evidenceKey": "f729208e386be8191b802d781db6b1e33725353a2b7fa7f1b795613fe7782808"
+          },
+          {
+            "check": "core-control",
+            "evidenceKey": "c6d8bc77e72d9a49d96d729a076aa61fab85dc9cac2b8853b588d4a8255932d6"
+          },
+          {
+            "check": "core-admission",
+            "evidenceKey": "ff728d40f15e94a6ab809f3ec9e0c051200ffebeef9d141312e6bdf7cdb83921"
+          },
+          {
+            "check": "workflow-recovery",
+            "evidenceKey": "616c6217eb322ff1033fefb9b8770063c79391be3a42c31a7001cf8fd5ccc173"
+          },
+          {
+            "check": "worker-isolation",
+            "evidenceKey": "95f35a257dada8a7aa92e4929ba4edf819ccb594907a52d619705ee01ff220a1"
+          },
+          {
+            "check": "protocol-codec",
+            "evidenceKey": "25ed5a945d9a45b70e2bc1960d2ac1dd71d3c8c8c0cb1f51a5ea13218ff74cdc"
+          },
+          {
+            "check": "artifact-boundaries",
+            "evidenceKey": "82cfafa7f74c6eda2a674fd91caef9c062357acf2c00fc5515fbefd4f338d761"
+          },
+          {
+            "check": "human-window",
+            "evidenceKey": "a114dc22e052afaf312b38f875cf0c0912c42b21e3245b00258aa4a26714fab8"
+          },
+          {
+            "check": "audit-repairs",
+            "evidenceKey": "05da34a3248a6bee3831b4182d9668d1ac1eb3f1262f623bdf9890c844b76ad1"
+          },
+          {
+            "check": "cep-transport",
+            "evidenceKey": "3679720de95d27bc6571982872e03a88b360d6c92ac46bc2a44efcb4869fe33d"
+          },
+          {
+            "check": "lifecycle-simulation",
+            "evidenceKey": "d7e8f36b35a2527a19e9e5883c3e535b73274ff65a668f3b9a335e88a5f97cd7"
+          },
+          {
+            "check": "owner-attachments",
+            "evidenceKey": "65ee93dd4ef8b6a94087c58d82706b29bfe02adbc12e4fcf5575ad99c2bc7331"
+          },
+          {
+            "check": "owner-ipc-process",
+            "evidenceKey": "4b59774cc5189340ca7a4731ce39ba2b691697d7e8dc603aa6c81d2743b48c1d"
+          },
+          {
+            "check": "controller-transfer",
+            "evidenceKey": "20b6fc1733e66683b760bdf4bb4dce577dcc058a55cfc301811191410536fcf3"
+          },
+          {
+            "check": "client-entry",
+            "evidenceKey": "7691e9a6ca3321d71f9f4fe42ed571d1ba6529a4d1ee66be75b8399ecd9b425a"
+          },
+          {
+            "check": "owner-runtime",
+            "evidenceKey": "a93b26c11992e1b8d83e348e37b1d37bffec117ceca6d2f5b0c146f45ec33c2d"
+          },
+          {
+            "check": "owner-installation",
+            "evidenceKey": "f00045be57cd139054cec9d2badcd197c4fa01d22661733764eba9553b243e35"
+          },
+          {
+            "check": "composition-spec",
+            "evidenceKey": "2da0ec7e3dbf157450c36b1add0163a2bfeb977d00398cfded50f6f21c5e3972"
+          },
+          {
+            "check": "panel-lifecycle",
+            "evidenceKey": "59919ece6d2601f2949e3a34de3464933fd74bbbaa7a12176fe6a0c3c098a69b"
+          },
+          {
+            "check": "ae-panel-startup",
+            "evidenceKey": "e9eb96fe263d561e21979200a5e7944fe90989a7926ca186a1e0a4b774e50eb1"
+          },
+          {
+            "check": "mixed-installation-repair",
+            "evidenceKey": "16f6aa93afe3dffc6ada02812fe4d433acc91142aa7285fdcc25d25ff169ad6e"
+          },
+          {
+            "check": "ae-readiness",
+            "evidenceKey": "0e24c050505130f178a91b60e3901967173275c10d617807c51e0c1c48a397e3"
+          },
+          {
+            "check": "package-location",
+            "evidenceKey": "e876e570604c0ae4be7b117e03e6d0f1f359a6b915a0e98f7813bf1a0ba70d0a"
+          },
+          {
+            "check": "start-over-driver",
+            "evidenceKey": "088ff6377bb8deabbf25abad9ff812a02140d6f7aa7a4f7b78aef4adadc71504"
+          },
+          {
+            "check": "panel-start-over",
+            "evidenceKey": "31a60da92fb045857aa4dd7cb98079966e089ac95ff6bc3b827dfe031de68ce8"
+          },
+          {
+            "check": "start-over-runtime",
+            "evidenceKey": "65b552a639a5405009b96f91154f090ee8686748acb9bbb6b2ac6b1d744a141b"
+          },
+          {
+            "check": "start-over-operator",
+            "evidenceKey": "943abf992c8c1c9654759c57f8706bf00637bef201717c996b03a22c1d96a846"
+          },
+          {
+            "check": "work-session",
+            "evidenceKey": "9f62e63294af253d270b86a683d901e1a1ee1dfcd16abf93654ec728ca674f65"
+          },
+          {
+            "check": "start-over-finisher",
+            "evidenceKey": "63a08aef3d3438a1348138e65f9f78e9673fc07aaed1da40ea1c5925d2bb41e4"
+          },
+          {
+            "check": "start-over-state",
+            "evidenceKey": "f87e292480c09423653e003dbfe6f7b649c193306903d549ca9eebba319dc94e"
+          },
+          {
+            "check": "start-over-barrier",
+            "evidenceKey": "84da26baf74da51896f269a0a6d5b804e4a83a962dbd4624763b523a0e572d7d"
+          },
+          {
+            "check": "start-over-inspection",
+            "evidenceKey": "90dcffc4bf714a4c58b54f160a2e766ec8c28cb09b7f42aece79c68d549b5c5f"
+          },
+          {
+            "check": "stopped-host-readoption-operator",
+            "evidenceKey": "7ce9ef4eb3e50f2851f59f8910e4b9f1b89b4c66e41963204e09b8a3b9fc9a4e"
+          },
+          {
+            "check": "stopped-host-readoption",
+            "evidenceKey": "49ef49208e4c3e19b88e1436d3eae31b08149c39f8d7533d722c988990ba1f1d"
+          },
+          {
+            "check": "readoption-core",
+            "evidenceKey": "9c6c334308739b78e7cd037c5ab0cc517285341fdb65aab293ab2798e61ba572"
+          },
+          {
+            "check": "readoption-recovery",
+            "evidenceKey": "be54b547c884f9d459b63dfcda5bd5b2f4aa6387bf2a2927c8009606d83b0b6f"
+          },
+          {
+            "check": "readoption-enable",
+            "evidenceKey": "cccc415202a0bb5f98d139490c81d98498cd5f06865afaae039c7e9c2a432c8d"
+          },
+          {
+            "check": "readoption-probe",
+            "evidenceKey": "64ba291e0067b4628bc359d215d3b55b72eb5129f3b1d5c0aec6ba9ae95dbf59"
+          },
+          {
+            "check": "stopped-update-operator",
+            "evidenceKey": "1908ba704a33188691c2fdd2906b166e716aa95f5bf7351b38c03b878b4abad7"
+          },
+          {
+            "check": "stopped-update",
+            "evidenceKey": "f2c35b6eca4552fde736662ae7e99932d88450bb16098b09cf03cb4f3eb14765"
+          },
+          {
+            "check": "legacy-owner-migration",
+            "evidenceKey": "53d3b5f67099129ed060fec4127e235fed42bd77760a8ebb65a137b40ba52235"
+          },
+          {
+            "check": "stopped-certification",
+            "evidenceKey": "778a80fec18c0071b2152dbc7addfef40f7c6f8f412c6ab43e28a1b31863211f"
+          },
+          {
+            "check": "maintenance-finish",
+            "evidenceKey": "0d58b1839c4be7d187f34b034fe21110d6f9b117994336a334de5c21157e5d4b"
+          },
+          {
+            "check": "maintenance-finish-operator",
+            "evidenceKey": "f2d40dc94428a9cb813a4ddbcf88ccffd7198dc11beb21d1b4637cd66bef8d83"
+          },
+          {
+            "check": "owner-maintenance",
+            "evidenceKey": "6a54456844761331be1118aa00759b1a6dd1e8a450e05000bcb38992dbed9063"
+          },
+          {
+            "check": "maintenance-operator",
+            "evidenceKey": "abe90b7d28de302e0e3eb64832162f36d3a5b41155f9cefc8494f9b7654ba3bd"
+          },
+          {
+            "check": "owner-lifecycle",
+            "evidenceKey": "2880fa25d24c1479771adda4968409b886e7ecefccf181616a92fb00bd9b6a7f"
+          },
+          {
+            "check": "owner-lifecycle-faults",
+            "evidenceKey": "f5f0e46e17731664ad304b605c3e645d312e286d8fd182bd6f0d388f39401ac5"
+          },
+          {
+            "check": "owner-marker-publication",
+            "evidenceKey": "963b84820487661ae72d5aa8dcd277139c486f9568964ba70a71dd779816d9e3"
+          },
+          {
+            "check": "client-launcher",
+            "evidenceKey": "76b95dfe478a7cbc98a0c5944d489b04dc3557ad6d4b281230a873f7e35b54dc"
+          },
+          {
+            "check": "recovery-inspection",
+            "evidenceKey": "384ee16343fe818f5044ad09031ec053b070ea2afbdaec997ba00f34e775b011"
+          },
+          {
+            "check": "native-read-capture",
+            "evidenceKey": "41203e7db43c32df22d7610596a4fdcd76548a7dcf3b59bda8150769516ce65d"
+          },
+          {
+            "check": "windows-cim-probe",
+            "evidenceKey": "234ed3275c3b1bc35ca62fd2cf6e182a9949421cf8ac9b90222c65e8a7314875"
+          },
+          {
+            "check": "zero-dispatch-recovery",
+            "evidenceKey": "37991ba8c96223c2bbc2b4499f454d59165fbd25ff3c361d1b6e80be76b009fa"
+          },
+          {
+            "check": "point-layout-integration",
+            "evidenceKey": "af0d9ac3e092cc01a3a95d2cf4096ccb246399c2ea233e307bf845804fed7bb1"
+          },
+          {
+            "check": "text-layer-integration",
+            "evidenceKey": "0c8c9aabcb6379dbf21e4eab3b12b358473180780ededb230cf9968a0c862997"
+          },
+          {
+            "check": "comp-frame-export",
+            "evidenceKey": "82da4c61d9e4cb338801d6b90b1a50cb7b5efdb6d09220911fa60460a0c3a88a"
+          },
+          {
+            "check": "frame-export-slot",
+            "evidenceKey": "56d89a2e32229c79103efe3406ff4ac9ae3183af56827eb06e7b35b8aefa1825"
+          },
+          {
+            "check": "project-assembly",
+            "evidenceKey": "a98d71c3fd12f80b8b91214c3a28d8c14d9a47d6e539fab2f9fe68b578bf2525"
+          },
+          {
+            "check": "project-save",
+            "evidenceKey": "efe5964490e08b0ab9be4c44835104dff45fd7795eeea10378ae38e796e88ee6"
+          },
+          {
+            "check": "project-lifecycle",
+            "evidenceKey": "03a8c491b58d52b89291eeea7b4b4b71a0d75788dd657ce84ed113ef7f28a733"
+          },
+          {
+            "check": "media-layers",
+            "evidenceKey": "936f7078920597b0396833b84c2821fea44463968e673e177701b0e7cde075c7"
+          },
+          {
+            "check": "layer-overlay",
+            "evidenceKey": "01bd56dd93f24067b2e843fa9384f489bb56f7142e907cbb411ae159944b478f"
+          },
+          {
+            "check": "render-job-owner",
+            "evidenceKey": "6f17495ad5526d40f31b9ae90214116ef3cb7793076ff23db52e5be17e83e169"
+          },
+          {
+            "check": "manual-current-target",
+            "evidenceKey": "b3dfad2177dde9adf3c4fb9ca26fef79ecc0e0fb930fbf924c592524187af092"
+          },
+          {
+            "check": "native-read-recovery",
+            "evidenceKey": "63733bbe54cce5d6da91fdeae6fd9f37f0d31a577b9b4fa0da553869143cd661"
+          },
+          {
+            "check": "installed-composition",
+            "evidenceKey": "989130763e9fefe6c220646ff2ac25e9d02f86c30497b4405fa6fd5ae90a7c1f"
+          },
+          {
+            "check": "exact-f548-transition",
+            "evidenceKey": "cf77af3cd3ca712576d5f5d2eb566aeb88f86a2787fa3d387fc9c92dbfe9c8ac"
+          },
+          {
+            "check": "standalone-installer",
+            "evidenceKey": "26382ec4d7c5da7daa08e903f303cb32cfaf534f95e78ea8b4ce098843024a67"
+          },
+          {
+            "check": "catalog-revision",
+            "evidenceKey": "47f884faea191a08932b6ab79d33ef5058c923cf84d3d4879e022b9f8307b826"
+          },
+          {
+            "check": "version-profile-compatibility",
+            "evidenceKey": "eef4e14fe2079bb002da393dc0099dc4cc66a3c291e0e06db4b99d806981c3c6"
+          },
+          {
+            "check": "adobe-child-environment",
+            "evidenceKey": "a8869e32c409c9e39d11204af96916362aff000fb6c73f6a0e0d50b8930aefe7"
+          },
+          {
+            "check": "work-session-owner",
+            "evidenceKey": "0ba46ced5292d06ad6797f9f4085458df91fabc8edd0326ad118cf89c0633d6b"
+          },
+          {
+            "check": "start-over-channel",
+            "evidenceKey": "da1a873bf9290c064027d3fc2918ca0dd20cff230642c3912c677b8f6edd817e"
+          },
+          {
+            "check": "panel-reconnect",
+            "evidenceKey": "f82b0cb25b7c240b32bee17ed939538d4946239949a1d160e6574f9c6b76e549"
+          },
+          {
+            "check": "photo-owner",
+            "evidenceKey": "dcdd958e71d45e7fdeb83813f9f0b8dcc0bc15d1e6f00a0022d3675a0b4db9dc"
+          },
+          {
+            "check": "titles-owner",
+            "evidenceKey": "e9ac8e4f7b951669367bab21ae241c8a1602e1d97feab8333950fa57e0e5a48a"
+          },
+          {
+            "check": "photo-executor-contract",
+            "evidenceKey": "fcf0e9fc9ffe0b482cabdab0cf79d560ee94c270ce1f253ae7d02083d6941cd2"
+          },
+          {
+            "check": "titles-executor-contract",
+            "evidenceKey": "35cc0cb56b3db71eae9bce1b66f487335e0bba3eb8d52e8e66adb06a37b85df4"
+          },
+          {
+            "check": "documentation",
+            "evidenceKey": "62e9e658d26f946fc51223181badc9b88ac1c056d00cd034705e2a492bbd06bd"
+          }
+        ]
+      },
+      "after": {
+        "selectorSHA256": "879f1f36974f24aae649cf35fef6a37b5904377176b3a8bea41f6e00837dddf1",
+        "mapSHA256": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4",
+        "selectionDigest": "6d3e0d29c4c0217e790cd832bb97f7ffaa13469940426f17fed321bf2abb3f63",
+        "keys": [
+          {
+            "check": "installable-runtime",
+            "evidenceKey": "fad1a531588d39b8cfbd5901d94be5826a7fa46048c2d2de24da6006e60ac52e"
+          },
+          {
+            "check": "manual-runtime",
+            "evidenceKey": "134de2fac6d74fa5417ba7f5616e7f99043e90134e3e804dfe54f9ba8d60d97d"
+          },
+          {
+            "check": "validation-routing",
+            "evidenceKey": "f729208e386be8191b802d781db6b1e33725353a2b7fa7f1b795613fe7782808"
+          },
+          {
+            "check": "core-control",
+            "evidenceKey": "c6d8bc77e72d9a49d96d729a076aa61fab85dc9cac2b8853b588d4a8255932d6"
+          },
+          {
+            "check": "core-admission",
+            "evidenceKey": "ff728d40f15e94a6ab809f3ec9e0c051200ffebeef9d141312e6bdf7cdb83921"
+          },
+          {
+            "check": "workflow-recovery",
+            "evidenceKey": "616c6217eb322ff1033fefb9b8770063c79391be3a42c31a7001cf8fd5ccc173"
+          },
+          {
+            "check": "worker-isolation",
+            "evidenceKey": "95f35a257dada8a7aa92e4929ba4edf819ccb594907a52d619705ee01ff220a1"
+          },
+          {
+            "check": "protocol-codec",
+            "evidenceKey": "25ed5a945d9a45b70e2bc1960d2ac1dd71d3c8c8c0cb1f51a5ea13218ff74cdc"
+          },
+          {
+            "check": "artifact-boundaries",
+            "evidenceKey": "82cfafa7f74c6eda2a674fd91caef9c062357acf2c00fc5515fbefd4f338d761"
+          },
+          {
+            "check": "human-window",
+            "evidenceKey": "a114dc22e052afaf312b38f875cf0c0912c42b21e3245b00258aa4a26714fab8"
+          },
+          {
+            "check": "audit-repairs",
+            "evidenceKey": "05da34a3248a6bee3831b4182d9668d1ac1eb3f1262f623bdf9890c844b76ad1"
+          },
+          {
+            "check": "cep-transport",
+            "evidenceKey": "3679720de95d27bc6571982872e03a88b360d6c92ac46bc2a44efcb4869fe33d"
+          },
+          {
+            "check": "lifecycle-simulation",
+            "evidenceKey": "d7e8f36b35a2527a19e9e5883c3e535b73274ff65a668f3b9a335e88a5f97cd7"
+          },
+          {
+            "check": "owner-attachments",
+            "evidenceKey": "65ee93dd4ef8b6a94087c58d82706b29bfe02adbc12e4fcf5575ad99c2bc7331"
+          },
+          {
+            "check": "owner-ipc-process",
+            "evidenceKey": "4b59774cc5189340ca7a4731ce39ba2b691697d7e8dc603aa6c81d2743b48c1d"
+          },
+          {
+            "check": "controller-transfer",
+            "evidenceKey": "20b6fc1733e66683b760bdf4bb4dce577dcc058a55cfc301811191410536fcf3"
+          },
+          {
+            "check": "client-entry",
+            "evidenceKey": "7691e9a6ca3321d71f9f4fe42ed571d1ba6529a4d1ee66be75b8399ecd9b425a"
+          },
+          {
+            "check": "owner-runtime",
+            "evidenceKey": "a93b26c11992e1b8d83e348e37b1d37bffec117ceca6d2f5b0c146f45ec33c2d"
+          },
+          {
+            "check": "owner-installation",
+            "evidenceKey": "f00045be57cd139054cec9d2badcd197c4fa01d22661733764eba9553b243e35"
+          },
+          {
+            "check": "composition-spec",
+            "evidenceKey": "2da0ec7e3dbf157450c36b1add0163a2bfeb977d00398cfded50f6f21c5e3972"
+          },
+          {
+            "check": "panel-lifecycle",
+            "evidenceKey": "59919ece6d2601f2949e3a34de3464933fd74bbbaa7a12176fe6a0c3c098a69b"
+          },
+          {
+            "check": "ae-panel-startup",
+            "evidenceKey": "e9eb96fe263d561e21979200a5e7944fe90989a7926ca186a1e0a4b774e50eb1"
+          },
+          {
+            "check": "mixed-installation-repair",
+            "evidenceKey": "16f6aa93afe3dffc6ada02812fe4d433acc91142aa7285fdcc25d25ff169ad6e"
+          },
+          {
+            "check": "ae-readiness",
+            "evidenceKey": "0e24c050505130f178a91b60e3901967173275c10d617807c51e0c1c48a397e3"
+          },
+          {
+            "check": "package-location",
+            "evidenceKey": "e876e570604c0ae4be7b117e03e6d0f1f359a6b915a0e98f7813bf1a0ba70d0a"
+          },
+          {
+            "check": "start-over-driver",
+            "evidenceKey": "088ff6377bb8deabbf25abad9ff812a02140d6f7aa7a4f7b78aef4adadc71504"
+          },
+          {
+            "check": "panel-start-over",
+            "evidenceKey": "31a60da92fb045857aa4dd7cb98079966e089ac95ff6bc3b827dfe031de68ce8"
+          },
+          {
+            "check": "start-over-runtime",
+            "evidenceKey": "65b552a639a5405009b96f91154f090ee8686748acb9bbb6b2ac6b1d744a141b"
+          },
+          {
+            "check": "start-over-operator",
+            "evidenceKey": "943abf992c8c1c9654759c57f8706bf00637bef201717c996b03a22c1d96a846"
+          },
+          {
+            "check": "work-session",
+            "evidenceKey": "9f62e63294af253d270b86a683d901e1a1ee1dfcd16abf93654ec728ca674f65"
+          },
+          {
+            "check": "start-over-finisher",
+            "evidenceKey": "63a08aef3d3438a1348138e65f9f78e9673fc07aaed1da40ea1c5925d2bb41e4"
+          },
+          {
+            "check": "start-over-state",
+            "evidenceKey": "f87e292480c09423653e003dbfe6f7b649c193306903d549ca9eebba319dc94e"
+          },
+          {
+            "check": "start-over-barrier",
+            "evidenceKey": "84da26baf74da51896f269a0a6d5b804e4a83a962dbd4624763b523a0e572d7d"
+          },
+          {
+            "check": "start-over-inspection",
+            "evidenceKey": "90dcffc4bf714a4c58b54f160a2e766ec8c28cb09b7f42aece79c68d549b5c5f"
+          },
+          {
+            "check": "stopped-host-readoption-operator",
+            "evidenceKey": "7ce9ef4eb3e50f2851f59f8910e4b9f1b89b4c66e41963204e09b8a3b9fc9a4e"
+          },
+          {
+            "check": "stopped-host-readoption",
+            "evidenceKey": "49ef49208e4c3e19b88e1436d3eae31b08149c39f8d7533d722c988990ba1f1d"
+          },
+          {
+            "check": "readoption-core",
+            "evidenceKey": "9c6c334308739b78e7cd037c5ab0cc517285341fdb65aab293ab2798e61ba572"
+          },
+          {
+            "check": "readoption-recovery",
+            "evidenceKey": "be54b547c884f9d459b63dfcda5bd5b2f4aa6387bf2a2927c8009606d83b0b6f"
+          },
+          {
+            "check": "readoption-enable",
+            "evidenceKey": "cccc415202a0bb5f98d139490c81d98498cd5f06865afaae039c7e9c2a432c8d"
+          },
+          {
+            "check": "readoption-probe",
+            "evidenceKey": "64ba291e0067b4628bc359d215d3b55b72eb5129f3b1d5c0aec6ba9ae95dbf59"
+          },
+          {
+            "check": "stopped-update-operator",
+            "evidenceKey": "1908ba704a33188691c2fdd2906b166e716aa95f5bf7351b38c03b878b4abad7"
+          },
+          {
+            "check": "stopped-update",
+            "evidenceKey": "f2c35b6eca4552fde736662ae7e99932d88450bb16098b09cf03cb4f3eb14765"
+          },
+          {
+            "check": "legacy-owner-migration",
+            "evidenceKey": "53d3b5f67099129ed060fec4127e235fed42bd77760a8ebb65a137b40ba52235"
+          },
+          {
+            "check": "stopped-certification",
+            "evidenceKey": "778a80fec18c0071b2152dbc7addfef40f7c6f8f412c6ab43e28a1b31863211f"
+          },
+          {
+            "check": "maintenance-finish",
+            "evidenceKey": "0d58b1839c4be7d187f34b034fe21110d6f9b117994336a334de5c21157e5d4b"
+          },
+          {
+            "check": "maintenance-finish-operator",
+            "evidenceKey": "f2d40dc94428a9cb813a4ddbcf88ccffd7198dc11beb21d1b4637cd66bef8d83"
+          },
+          {
+            "check": "owner-maintenance",
+            "evidenceKey": "6a54456844761331be1118aa00759b1a6dd1e8a450e05000bcb38992dbed9063"
+          },
+          {
+            "check": "maintenance-operator",
+            "evidenceKey": "abe90b7d28de302e0e3eb64832162f36d3a5b41155f9cefc8494f9b7654ba3bd"
+          },
+          {
+            "check": "owner-lifecycle",
+            "evidenceKey": "2880fa25d24c1479771adda4968409b886e7ecefccf181616a92fb00bd9b6a7f"
+          },
+          {
+            "check": "owner-lifecycle-faults",
+            "evidenceKey": "f5f0e46e17731664ad304b605c3e645d312e286d8fd182bd6f0d388f39401ac5"
+          },
+          {
+            "check": "owner-marker-publication",
+            "evidenceKey": "963b84820487661ae72d5aa8dcd277139c486f9568964ba70a71dd779816d9e3"
+          },
+          {
+            "check": "client-launcher",
+            "evidenceKey": "76b95dfe478a7cbc98a0c5944d489b04dc3557ad6d4b281230a873f7e35b54dc"
+          },
+          {
+            "check": "recovery-inspection",
+            "evidenceKey": "384ee16343fe818f5044ad09031ec053b070ea2afbdaec997ba00f34e775b011"
+          },
+          {
+            "check": "native-read-capture",
+            "evidenceKey": "41203e7db43c32df22d7610596a4fdcd76548a7dcf3b59bda8150769516ce65d"
+          },
+          {
+            "check": "windows-cim-probe",
+            "evidenceKey": "234ed3275c3b1bc35ca62fd2cf6e182a9949421cf8ac9b90222c65e8a7314875"
+          },
+          {
+            "check": "zero-dispatch-recovery",
+            "evidenceKey": "37991ba8c96223c2bbc2b4499f454d59165fbd25ff3c361d1b6e80be76b009fa"
+          },
+          {
+            "check": "point-layout-integration",
+            "evidenceKey": "af0d9ac3e092cc01a3a95d2cf4096ccb246399c2ea233e307bf845804fed7bb1"
+          },
+          {
+            "check": "text-layer-integration",
+            "evidenceKey": "0c8c9aabcb6379dbf21e4eab3b12b358473180780ededb230cf9968a0c862997"
+          },
+          {
+            "check": "comp-frame-export",
+            "evidenceKey": "82da4c61d9e4cb338801d6b90b1a50cb7b5efdb6d09220911fa60460a0c3a88a"
+          },
+          {
+            "check": "frame-export-slot",
+            "evidenceKey": "56d89a2e32229c79103efe3406ff4ac9ae3183af56827eb06e7b35b8aefa1825"
+          },
+          {
+            "check": "project-assembly",
+            "evidenceKey": "a98d71c3fd12f80b8b91214c3a28d8c14d9a47d6e539fab2f9fe68b578bf2525"
+          },
+          {
+            "check": "project-save",
+            "evidenceKey": "efe5964490e08b0ab9be4c44835104dff45fd7795eeea10378ae38e796e88ee6"
+          },
+          {
+            "check": "project-lifecycle",
+            "evidenceKey": "03a8c491b58d52b89291eeea7b4b4b71a0d75788dd657ce84ed113ef7f28a733"
+          },
+          {
+            "check": "media-layers",
+            "evidenceKey": "936f7078920597b0396833b84c2821fea44463968e673e177701b0e7cde075c7"
+          },
+          {
+            "check": "layer-overlay",
+            "evidenceKey": "01bd56dd93f24067b2e843fa9384f489bb56f7142e907cbb411ae159944b478f"
+          },
+          {
+            "check": "render-job-owner",
+            "evidenceKey": "6f17495ad5526d40f31b9ae90214116ef3cb7793076ff23db52e5be17e83e169"
+          },
+          {
+            "check": "manual-current-target",
+            "evidenceKey": "b3dfad2177dde9adf3c4fb9ca26fef79ecc0e0fb930fbf924c592524187af092"
+          },
+          {
+            "check": "native-read-recovery",
+            "evidenceKey": "63733bbe54cce5d6da91fdeae6fd9f37f0d31a577b9b4fa0da553869143cd661"
+          },
+          {
+            "check": "installed-composition",
+            "evidenceKey": "989130763e9fefe6c220646ff2ac25e9d02f86c30497b4405fa6fd5ae90a7c1f"
+          },
+          {
+            "check": "exact-f548-transition",
+            "evidenceKey": "cf77af3cd3ca712576d5f5d2eb566aeb88f86a2787fa3d387fc9c92dbfe9c8ac"
+          },
+          {
+            "check": "standalone-installer",
+            "evidenceKey": "26382ec4d7c5da7daa08e903f303cb32cfaf534f95e78ea8b4ce098843024a67"
+          },
+          {
+            "check": "catalog-revision",
+            "evidenceKey": "47f884faea191a08932b6ab79d33ef5058c923cf84d3d4879e022b9f8307b826"
+          },
+          {
+            "check": "version-profile-compatibility",
+            "evidenceKey": "eef4e14fe2079bb002da393dc0099dc4cc66a3c291e0e06db4b99d806981c3c6"
+          },
+          {
+            "check": "adobe-child-environment",
+            "evidenceKey": "a8869e32c409c9e39d11204af96916362aff000fb6c73f6a0e0d50b8930aefe7"
+          },
+          {
+            "check": "work-session-owner",
+            "evidenceKey": "0ba46ced5292d06ad6797f9f4085458df91fabc8edd0326ad118cf89c0633d6b"
+          },
+          {
+            "check": "start-over-channel",
+            "evidenceKey": "da1a873bf9290c064027d3fc2918ca0dd20cff230642c3912c677b8f6edd817e"
+          },
+          {
+            "check": "panel-reconnect",
+            "evidenceKey": "f82b0cb25b7c240b32bee17ed939538d4946239949a1d160e6574f9c6b76e549"
+          },
+          {
+            "check": "photo-owner",
+            "evidenceKey": "dcdd958e71d45e7fdeb83813f9f0b8dcc0bc15d1e6f00a0022d3675a0b4db9dc"
+          },
+          {
+            "check": "titles-owner",
+            "evidenceKey": "e9ac8e4f7b951669367bab21ae241c8a1602e1d97feab8333950fa57e0e5a48a"
+          },
+          {
+            "check": "photo-executor-contract",
+            "evidenceKey": "fcf0e9fc9ffe0b482cabdab0cf79d560ee94c270ce1f253ae7d02083d6941cd2"
+          },
+          {
+            "check": "titles-executor-contract",
+            "evidenceKey": "35cc0cb56b3db71eae9bce1b66f487335e0bba3eb8d52e8e66adb06a37b85df4"
+          },
+          {
+            "check": "documentation",
+            "evidenceKey": "62e9e658d26f946fc51223181badc9b88ac1c056d00cd034705e2a492bbd06bd"
+          }
+        ]
+      },
+      "afterError": null
+    }
+  ],
+  "requestedOutstandingCoverage": [],
+  "outstandingCoverage": [
+    {
+      "check": "installable-runtime",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "manual-runtime",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "validation-routing",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "core-control",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "core-admission",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "workflow-recovery",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "worker-isolation",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "protocol-codec",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "artifact-boundaries",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "human-window",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "audit-repairs",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "cep-transport",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "owner-attachments",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "owner-ipc-process",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "controller-transfer",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "client-entry",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "owner-runtime",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "owner-installation",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "composition-spec",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "panel-lifecycle",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "ae-panel-startup",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "ae-readiness",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "package-location",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "start-over-driver",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "panel-start-over",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "start-over-runtime",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "start-over-operator",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "work-session",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "start-over-finisher",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "start-over-state",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "start-over-barrier",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "start-over-inspection",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "stopped-host-readoption",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "readoption-core",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "readoption-recovery",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "readoption-enable",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "readoption-probe",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "stopped-update",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "stopped-certification",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "maintenance-finish",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "owner-maintenance",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "owner-lifecycle",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "owner-lifecycle-faults",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "owner-marker-publication",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "client-launcher",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "recovery-inspection",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "native-read-capture",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "point-layout-integration",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "text-layer-integration",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "comp-frame-export",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "frame-export-slot",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "project-assembly",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "project-save",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "project-lifecycle",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "media-layers",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "layer-overlay",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "render-job-owner",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "manual-current-target",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "installed-composition",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "standalone-installer",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "catalog-revision",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "version-profile-compatibility",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "adobe-child-environment",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "work-session-owner",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "start-over-channel",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "panel-reconnect",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "photo-owner",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "titles-owner",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "photo-executor-contract",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "titles-executor-contract",
+      "status": "NOT_REQUESTED"
+    },
+    {
+      "check": "documentation",
+      "status": "NOT_REQUESTED"
+    }
+  ],
+  "finishedAt": "2026-11-12T15:34:54.173Z",
+  "status": "SUBSET_PASS"
+}

@@ -1,0 +1,25 @@
+✔ native-read-capture current and later pinned panels refuse the capture challenge before link with unchanged latch and no eval (520.597ms)
+✔ native-read-capture format2 is refused before probes listener gates or evidence writes (1525.4791ms)
+✔ native-read-capture inspect is pure/stable; actual panel and dispatcher cached recover posts once with no ACK/eval/poll and unchanged protected bytes (33095.6732ms)
+✔ native-read-capture missing result or latch uses bounded linked timeout, preserves latch and UNKNOWN and does not guess the cause (14420.8711ms)
+✔ native-read-capture ingress/MAC/role/sequence/original binding gates reject before an admitted one-shot receipt (11459.4652ms)
+✔ native-read-capture authenticated wrong binding/pins/result consumes the sole receipt attempt and never ACKs or writes receipt (35687.6903ms)
+✔ native-read-capture rejects active/unknown probes, gates/ledger/owner, damaged CEP/evidence and junctions before listener (15282.3368ms)
+✔ native-read-capture CAS/short write/fsync/readback failure retains ambiguous gates without changing protected bytes (29435.6031ms)
+✔ native-read-capture fixed eligibility rejects validly rehashed wrong command journals and any extra obligations (12641.5417ms)
+✔ native-read-capture receipt durability failures and partial gate writes never certify capture or ACK (33833.3908ms)
+✔ native-read-capture global deadline before link is finite and creates no receipt, retry, ACK or protected-state write (7260.9489ms)
+✔ native-read-capture classifies exact current/stale core cache against verified retained release data, never executes it, and CAS protects bytes (13314.0166ms)
+✔ native-read-capture cache extra/stage/unknown/unclassified paths and reparse junctions fail closed as data (7257.3125ms)
+✔ native-read-capture machine binding is actual hostname and Windows nonstandard Node name is refused before probes/readiness (5655.2108ms)
+✔ native-read-capture Windows probe syntax and UTF8 stdin data exceed environment limits without running CIM or path inspection (526.6878ms)
+✔ native-read-capture same production probe on Windows PowerShell 5.1 validates flat paths and actual fixture Get-Item/reparse with a test-only CIM stub (5758.6281ms)
+✔ native-read-capture builtin-only CLI preflight rejects unverified release before imports; defaults and production endpoint are fixed (1128.7641ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 228916.4078

@@ -5,10 +5,22 @@ const path = require('node:path');
 const { buildPackage } = require('./package-installable');
 const { hash, canonical, fail } = require('../protocol/json');
 function buildOperatorPackage(root = path.resolve(__dirname, '..')) {
-  const pkg = buildPackage(root), files = { ...pkg.files };
+  const pkg = buildPackage(root);
+  // Candidate is data. Tooling occupies its own reserved namespace, including
+  // Windows case/trailing-dot aliases; never overwrite candidate-owned bytes.
+  if (Object.keys(pkg.files).some(file => /^tools[. ]*(?:[\\/]|$)/i.test(file))) fail('operator_candidate_namespace');
+  const files = { ...pkg.files };
+  const ownBytes = file => {
+    const full = path.resolve(root, file), stat = fs.lstatSync(full);
+    if (fs.realpathSync(full) !== full || stat.isSymbolicLink() || stat.reparsePoint || !stat.isFile()) fail('operator_package_path');
+    return fs.readFileSync(full);
+  };
   for (const file of ['tools/dispose-native-read.js', 'tools/disposition-install-preflight.js', 'tools/install-core4.js', 'tools/package-installable.js', 'tools/capture-native-read.js', 'tools/package-native-read-operator.js']) {
-    const full = path.join(root, file); if (fs.realpathSync(full) !== full) fail('operator_package_path'); files[file] = fs.readFileSync(full).toString('base64');
+    files[file] = ownBytes(file).toString('base64');
   }
+  // Fixed single source alias. The repo shim belongs to source tooling; this
+  // flattened role requires reviewed pure bytes from its own root, not pkg.files.
+  files['tools/composition-spec.js'] = ownBytes('runtime/composition-spec.js').toString('base64');
   const manifest = { version: 1, purpose: 'native-read-disposition-and-install-v1', hashes: Object.fromEntries(Object.keys(files).sort().map(file => [file, hash(Buffer.from(files[file], 'base64'))])) };
   return { operatorHash: hash(canonical(manifest)), candidatePackageHash: pkg.packageHash, manifest, files };
 }

@@ -1,0 +1,459 @@
+{
+  "scope": "C2 fixed tooling closure only; final affected union owned by root",
+  "baseline": "3f6821f",
+  "status": "APPLICABLE_FOCUSED_PASS; exact-f548 key FAIL_UNAVAILABLE_INPUT remains explicit",
+  "sources": {
+    "core4/tools/package-native-read-operator.js": {
+      "sha256": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+      "bytes": 2859
+    },
+    "core4/test/package-location.test.js": {
+      "sha256": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+      "bytes": 7496
+    },
+    "core4/test/native-read-recovery.test.js": {
+      "sha256": "cb1ba81e953c0e1c8afadc93f55b67893f5fec7a0fb297d1959f8554c1c2215a",
+      "bytes": 35798
+    },
+    "core4/tools/check-package-location.js": {
+      "sha256": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+      "bytes": 12199
+    },
+    "core4/test/fixtures/disposition-child.js": {
+      "sha256": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+      "bytes": 3423
+    }
+  },
+  "runs": [
+    {
+      "metadata": "01-operator-closure.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=operator trusted slot|operator missing or corrupt trusted slot|operator legacy v1 inventory|operator candidate reserved tools aliases",
+          "core4/test/native-read-recovery.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:39:31.265Z",
+        "ended": "2026-11-12T11:39:33.136Z",
+        "exitCode": 0,
+        "signal": null,
+        "sources": {
+          "core4/tools/check-package-location.js": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+          "core4/tools/package-native-read-operator.js": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+          "core4/test/package-location.test.js": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+          "core4/test/native-read-recovery.test.js": "014ac12150aba3842889dafd7f9d61e4429563f423f17bf0fb38710a9ce6ac2c",
+          "core4/test/fixtures/disposition-child.js": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+          "core4/test/fixtures/native-read-recovery.js": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/tools/dispose-native-read.js": "5e29121c81c6fa62f6b6aaa13581ea3e107a206d71d7c4de757f99c93d6332cf",
+          "core4/tools/capture-native-read.js": "f3c51cd62a04a09cc8aaf6a0dd4564319c6d7809c2ff132bdb134ba04956120e",
+          "core4/runtime/composition-spec.js": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+          "core4/tools/composition-spec.js": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+          "core4/config/validation-map.json": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4"
+        },
+        "log": "01-operator-closure.stdout.txt",
+        "stdoutSHA": "855edd2b513420c614a3cc931ed102488562bc150448735263b17a731e642b7c"
+      }
+    },
+    {
+      "metadata": "02-package-location.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "core4/test/package-location.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:39:31.284Z",
+        "ended": "2026-11-12T11:40:21.275Z",
+        "exitCode": 0,
+        "signal": null,
+        "sources": {
+          "core4/tools/check-package-location.js": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+          "core4/tools/package-native-read-operator.js": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+          "core4/test/package-location.test.js": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+          "core4/test/native-read-recovery.test.js": "014ac12150aba3842889dafd7f9d61e4429563f423f17bf0fb38710a9ce6ac2c",
+          "core4/test/fixtures/disposition-child.js": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+          "core4/test/fixtures/native-read-recovery.js": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/tools/dispose-native-read.js": "5e29121c81c6fa62f6b6aaa13581ea3e107a206d71d7c4de757f99c93d6332cf",
+          "core4/tools/capture-native-read.js": "f3c51cd62a04a09cc8aaf6a0dd4564319c6d7809c2ff132bdb134ba04956120e",
+          "core4/runtime/composition-spec.js": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+          "core4/tools/composition-spec.js": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+          "core4/config/validation-map.json": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4"
+        },
+        "log": "02-package-location.stdout.txt",
+        "stdoutSHA": "a81396d4fe58534ff2345b4e40539b7ae9b5215d78efbf823730caacae4d6aab"
+      }
+    },
+    {
+      "metadata": "03-recovery-transition.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=portable fixed-format1 transition|operator inspect rejects modified|original receipt is captured|ordinary install|signed terminal",
+          "core4/test/installed-composition.test.js",
+          "core4/test/native-read-recovery.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:40:14.630Z",
+        "ended": "2026-11-12T11:40:52.420Z",
+        "exitCode": 0,
+        "signal": null,
+        "sources": {
+          "core4/tools/check-package-location.js": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+          "core4/tools/package-native-read-operator.js": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+          "core4/test/package-location.test.js": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+          "core4/test/native-read-recovery.test.js": "014ac12150aba3842889dafd7f9d61e4429563f423f17bf0fb38710a9ce6ac2c",
+          "core4/test/fixtures/disposition-child.js": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+          "core4/test/fixtures/native-read-recovery.js": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/tools/dispose-native-read.js": "5e29121c81c6fa62f6b6aaa13581ea3e107a206d71d7c4de757f99c93d6332cf",
+          "core4/tools/capture-native-read.js": "f3c51cd62a04a09cc8aaf6a0dd4564319c6d7809c2ff132bdb134ba04956120e",
+          "core4/runtime/composition-spec.js": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+          "core4/tools/composition-spec.js": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+          "core4/config/validation-map.json": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4"
+        },
+        "log": "03-recovery-transition.stdout.txt",
+        "stdoutSHA": "caae9fa031b454b6e6eda7a41be611f9836d6f80f605f186aa723422b7f15ee0"
+      }
+    },
+    {
+      "metadata": "04-syntax.json",
+      "value": [
+        {
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c2-a36b281bb26c4bbca5cbe64d4e78679e\\syntax-check-package-location.js.stdout.txt",
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "sourceSHA": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+          "command": [
+            "node",
+            "--check",
+            "core4/tools/check-package-location.js"
+          ],
+          "exitCode": 0
+        },
+        {
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c2-a36b281bb26c4bbca5cbe64d4e78679e\\syntax-package-native-read-operator.js.stdout.txt",
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "sourceSHA": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+          "command": [
+            "node",
+            "--check",
+            "core4/tools/package-native-read-operator.js"
+          ],
+          "exitCode": 0
+        },
+        {
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c2-a36b281bb26c4bbca5cbe64d4e78679e\\syntax-package-location.test.js.stdout.txt",
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "sourceSHA": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+          "command": [
+            "node",
+            "--check",
+            "core4/test/package-location.test.js"
+          ],
+          "exitCode": 0
+        },
+        {
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c2-a36b281bb26c4bbca5cbe64d4e78679e\\syntax-native-read-recovery.test.js.stdout.txt",
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "sourceSHA": "014ac12150aba3842889dafd7f9d61e4429563f423f17bf0fb38710a9ce6ac2c",
+          "command": [
+            "node",
+            "--check",
+            "core4/test/native-read-recovery.test.js"
+          ],
+          "exitCode": 0
+        },
+        {
+          "log": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c2-a36b281bb26c4bbca5cbe64d4e78679e\\syntax-disposition-child.js.stdout.txt",
+          "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "sourceSHA": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+          "command": [
+            "node",
+            "--check",
+            "core4/test/fixtures/disposition-child.js"
+          ],
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "metadata": "05-diffcheck.json",
+      "value": {
+        "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "command": "git diff --check",
+        "exitCode": 0
+      }
+    },
+    {
+      "metadata": "06-native-positive.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=actual Node IPC approval|approval does not waive",
+          "core4/test/native-read-recovery.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:40:52.622Z",
+        "ended": "2026-11-12T11:43:29.762Z",
+        "exitCode": 0,
+        "signal": null,
+        "sources": {
+          "core4/tools/check-package-location.js": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+          "core4/tools/package-native-read-operator.js": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+          "core4/test/package-location.test.js": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+          "core4/test/native-read-recovery.test.js": "014ac12150aba3842889dafd7f9d61e4429563f423f17bf0fb38710a9ce6ac2c",
+          "core4/test/fixtures/disposition-child.js": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+          "core4/test/fixtures/native-read-recovery.js": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/tools/dispose-native-read.js": "5e29121c81c6fa62f6b6aaa13581ea3e107a206d71d7c4de757f99c93d6332cf",
+          "core4/tools/capture-native-read.js": "f3c51cd62a04a09cc8aaf6a0dd4564319c6d7809c2ff132bdb134ba04956120e",
+          "core4/runtime/composition-spec.js": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+          "core4/tools/composition-spec.js": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+          "core4/config/validation-map.json": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4"
+        },
+        "log": "06-native-positive.stdout.txt",
+        "stdoutSHA": "d59c83d51e6f2cee53c3ecb5c7a35d29c18c91cc4d48e83f8ca42772907decb2"
+      }
+    },
+    {
+      "metadata": "07-exact-transition.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "core4/test/exact-f548-transition.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:41:11.775Z",
+        "ended": "2026-11-12T11:41:11.958Z",
+        "exitCode": 1,
+        "signal": null,
+        "sources": {
+          "core4/tools/check-package-location.js": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+          "core4/tools/package-native-read-operator.js": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+          "core4/test/package-location.test.js": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+          "core4/test/native-read-recovery.test.js": "014ac12150aba3842889dafd7f9d61e4429563f423f17bf0fb38710a9ce6ac2c",
+          "core4/test/fixtures/disposition-child.js": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+          "core4/test/fixtures/native-read-recovery.js": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/tools/dispose-native-read.js": "5e29121c81c6fa62f6b6aaa13581ea3e107a206d71d7c4de757f99c93d6332cf",
+          "core4/tools/capture-native-read.js": "f3c51cd62a04a09cc8aaf6a0dd4564319c6d7809c2ff132bdb134ba04956120e",
+          "core4/runtime/composition-spec.js": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+          "core4/tools/composition-spec.js": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+          "core4/config/validation-map.json": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4"
+        },
+        "log": "07-exact-transition.stdout.txt",
+        "stdoutSHA": "28ccc123d7bfc7d305a513d8f80049b712a3e684cb9643fab926787e39af9b5d"
+      }
+    },
+    {
+      "metadata": "08-operator-poison-before-bundle.json",
+      "value": {
+        "command": [
+          "node",
+          "--test",
+          "--test-name-pattern=operator trusted slot|operator missing or corrupt trusted slot|operator legacy v1 inventory|operator candidate reserved tools aliases",
+          "core4/test/native-read-recovery.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:42:33.362Z",
+        "ended": "2026-11-12T11:42:35.409Z",
+        "exitCode": 0,
+        "signal": null,
+        "sources": {
+          "core4/tools/check-package-location.js": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+          "core4/tools/package-native-read-operator.js": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+          "core4/test/package-location.test.js": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+          "core4/test/native-read-recovery.test.js": "cb1ba81e953c0e1c8afadc93f55b67893f5fec7a0fb297d1959f8554c1c2215a",
+          "core4/test/fixtures/disposition-child.js": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+          "core4/test/fixtures/native-read-recovery.js": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/tools/dispose-native-read.js": "5e29121c81c6fa62f6b6aaa13581ea3e107a206d71d7c4de757f99c93d6332cf",
+          "core4/tools/capture-native-read.js": "f3c51cd62a04a09cc8aaf6a0dd4564319c6d7809c2ff132bdb134ba04956120e",
+          "core4/runtime/composition-spec.js": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+          "core4/tools/composition-spec.js": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+          "core4/config/validation-map.json": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4"
+        },
+        "log": "08-operator-poison-before-bundle.stdout.txt",
+        "stdoutSHA": "e37e1e79ee85b05c868cacb4795c17e6cf82eef38a534711a82bd5533061bd68"
+      }
+    },
+    {
+      "metadata": "09-final-syntax.json",
+      "value": {
+        "command": [
+          "node",
+          "--check",
+          "core4/test/native-read-recovery.test.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:43:04.511Z",
+        "ended": "2026-11-12T11:43:04.600Z",
+        "exitCode": 0,
+        "signal": null,
+        "sources": {
+          "core4/tools/check-package-location.js": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+          "core4/tools/package-native-read-operator.js": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+          "core4/test/package-location.test.js": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+          "core4/test/native-read-recovery.test.js": "cb1ba81e953c0e1c8afadc93f55b67893f5fec7a0fb297d1959f8554c1c2215a",
+          "core4/test/fixtures/disposition-child.js": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+          "core4/test/fixtures/native-read-recovery.js": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/tools/dispose-native-read.js": "5e29121c81c6fa62f6b6aaa13581ea3e107a206d71d7c4de757f99c93d6332cf",
+          "core4/tools/capture-native-read.js": "f3c51cd62a04a09cc8aaf6a0dd4564319c6d7809c2ff132bdb134ba04956120e",
+          "core4/runtime/composition-spec.js": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+          "core4/tools/composition-spec.js": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+          "core4/config/validation-map.json": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4"
+        },
+        "log": "09-final-syntax.stdout.txt",
+        "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "metadata": "10-boundaries.json",
+      "value": {
+        "command": [
+          "node",
+          "core4/tools/check-boundaries.js"
+        ],
+        "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+        "started": "2026-11-12T11:43:04.694Z",
+        "ended": "2026-11-12T11:43:04.835Z",
+        "exitCode": 0,
+        "signal": null,
+        "sources": {
+          "core4/tools/check-package-location.js": "70ac9ab274d2025f503050704cb80a0add4104170e3df3c84fe7e0f43dbe2ddf",
+          "core4/tools/package-native-read-operator.js": "c4ceaba58bbe8c1d15d44058c6e4c1760bc6ed44ceb6de7fb81cc5d6ce429699",
+          "core4/test/package-location.test.js": "a983d07f9dc9dda79cfa04ef37105ce18420f27a83d9328122ab1323f174473f",
+          "core4/test/native-read-recovery.test.js": "cb1ba81e953c0e1c8afadc93f55b67893f5fec7a0fb297d1959f8554c1c2215a",
+          "core4/test/fixtures/disposition-child.js": "886a9514ae600f64c46c632dd4a4722b46a8ebf82bd1cb74ba1389f9fac1c317",
+          "core4/test/fixtures/native-read-recovery.js": "a6eb3f2c36a323601b13e602a5b49f230b0d9b8468e79b7f8061918539b6badd",
+          "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+          "core4/tools/dispose-native-read.js": "5e29121c81c6fa62f6b6aaa13581ea3e107a206d71d7c4de757f99c93d6332cf",
+          "core4/tools/capture-native-read.js": "f3c51cd62a04a09cc8aaf6a0dd4564319c6d7809c2ff132bdb134ba04956120e",
+          "core4/runtime/composition-spec.js": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+          "core4/tools/composition-spec.js": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+          "core4/config/validation-map.json": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4"
+        },
+        "log": "10-boundaries.stdout.txt",
+        "stdoutSHA": "98850ee100fa03526f85cbaaffcbe974317bda5c91ec27e67736c999d7c584c7"
+      }
+    },
+    {
+      "metadata": "11-diffcheck.json",
+      "value": {
+        "exitCode": 0,
+        "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "command": "git diff --check"
+      }
+    }
+  ],
+  "production": [
+    "check-package-location exact source allowlist includes only tools/package-installable.js and tools/composition-spec.js plus existing source directories; both tooling files tracked-required, exact copy/hash/provenance retained",
+    "native-read operator reserves candidate tools namespace incl Windows aliases before merge, reads regular exact own-root files, adds one trusted tools/spec slot from own runtime/spec bytes; candidate data/hash unchanged"
+  ],
+  "unchanged": [
+    "runtime/consumer imports",
+    "repository tooling shim",
+    "manifest v1 and purpose",
+    "dispose-native-read old declared inventory reader",
+    "A_HASH/DRIVER_HASH",
+    "validation-map",
+    "authority and version policies",
+    "production comparison order/file-set/all-byte checks"
+  ],
+  "coverage": {
+    "operatorClosure": {
+      "count": 4,
+      "log": "08-operator-poison-before-bundle.stdout.txt",
+      "details": [
+        "actual candidate builder runs; pinned DATA spec poisoned and verifyPackage accepts resealed candidate BEFORE operator bundling via restored test module-memory producer spy",
+        "real operator bundler retains own clean pure slot; actual disposition child constructor/import path completes; candidate marker absent; state destination absent; candidate bytes stay poisoned/pinned",
+        "missing/corrupt trusted slot actual child fails outer closure before constructor; tooling marker absent",
+        "changed closure with old outer hash denied",
+        "legacy v1 inventory without slot remains read-only verified; current constructor has finite MODULE_NOT_FOUND without fallback",
+        "6 reserved namespace aliases reject before any own tooling reads; isolated data producer, no production injection API"
+      ]
+    },
+    "packageLocation": {
+      "count": 3,
+      "cases": 108,
+      "variants": 18,
+      "log": "02-package-location.stdout.txt",
+      "details": "positive source/foreign cwd/spaces/Unicode + local exclusion; exact source shim in all copies; injected source delta only CSS; actual package byte refusal first derived cep/js/panel.js, exact2 changed files panel.js+panel.css, both identities verified and bind respective CSS, registry identity unchanged"
+    },
+    "portableTransition": {
+      "count": 1,
+      "log": "03-recovery-transition.stdout.txt"
+    },
+    "nativeInspect": {
+      "count": 1,
+      "log": "03-recovery-transition.stdout.txt"
+    },
+    "nativePositive": {
+      "count": 2,
+      "log": "06-native-positive.stdout.txt",
+      "durationSeconds": 157,
+      "details": "actual private Node IPC approval, signed UNKNOWN disposition, original prefix, owner archival, v2 lineage through17 isolated installs, historical receipt/lost ACK no eval; approval still refuses fresh CAS/foreign owner"
+    },
+    "syntax": 5,
+    "boundaries": 92,
+    "diffcheck": "PASS"
+  },
+  "passedApplicableTestCount": 11,
+  "failures": [
+    {
+      "key": "exact-f548-transition",
+      "command": [
+        "node",
+        "--test",
+        "core4/test/exact-f548-transition.test.js"
+      ],
+      "log": "07-exact-transition.stdout.txt",
+      "source": "core4/test/fixtures/exact-f548-transition.js:7",
+      "error": "ENOENT before fixture: dist/core4/4.0.0-panel-reconnect-f54863dbb69b/core4-4.0.0.json",
+      "classification": "missing immutable historical input; not substituted, skipped or counted PASS; root scout seeks exact provenance/artifact"
+    }
+  ],
+  "priorFailures": {
+    "C1Report": "C:/Users/Ant/AppData/Local/Temp/core4-c1-5f46aff40059401a8e01798654f560d4/c1-intermediate-validation.json",
+    "resolution": "03-handshakes missing operator shim and05-package-location missing source shim now addressed; source fixes separate from unchanged original failed logs"
+  },
+  "contractRefinement": "Root explicitly retained original compare order. Stale CSS-only first finding changed to exact current derived panel.js; additional test proves only CSS injection and derived CSS-bound stamp, rather than accepting arbitrary error.",
+  "manifestArtifact": {
+    "file": "operator-manifest.json",
+    "sha256": "82cb3499d507e83aa50296785c4f26240932da403595eaef4516c4f8e55d4a70",
+    "roleDiff": {
+      "added": [
+        "tools/composition-spec.js"
+      ],
+      "changed": [
+        "tools/package-native-read-operator.js"
+      ],
+      "removed": [],
+      "manifestVersion": 1,
+      "purpose": "native-read-disposition-and-install-v1",
+      "slotSource": "OWN root/runtime/composition-spec.js; one literal source alias",
+      "pureSHA": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+      "repoShimSHA": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638",
+      "candidateFiles": 66,
+      "operatorFiles": 73
+    }
+  },
+  "limits": [
+    "offline isolated TEMP/Node/VM/loopback evidence only",
+    "constructor-only poison fixture does not inspect/apply any target or observe native AE",
+    "legacy data-reader acceptance is not execution acceptance of incomplete new executable tooling",
+    "no full release acceptance or selected union PASS claim",
+    "root owns independent review, finalunion, plan/docs/evidence/commits"
+  ],
+  "noLive": true,
+  "noInstalledChanges": true,
+  "noCommits": true
+}

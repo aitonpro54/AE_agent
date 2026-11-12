@@ -1,0 +1,36 @@
+✔ independent deterministic preview and exact build; fresh desired text changes payload identity (5.7958ms)
+✔ strict job rejects unknown/mixed/unsupported input, types, budgets and version (1.565ms)
+✔ single-line Unicode text preserves meaningful whitespace and rejects control/blank inputs (0.6716ms)
+✔ contract/profile mismatch and malformed evidence fail before producing a payload (9.5424ms)
+✔ contract references require strings without RegExp coercion (8.0355ms)
+✔ CLI explicit files only: deterministic stdout, strict arguments, byte budgets, no workspace writes (958.5238ms)
+✔ production import closure is own files + allowed Node builtins; contract profile equals public source (4.6873ms)
+✔ actual owner boundary accepts first compiler payload with server taskId and Broker rejects forged evidence; VM only (643.3598ms)
+✔ Titles compiler → actual Core HTTP receipt and fresh read-back preserve sibling and style (577.8649ms)
+✔ Titles compiler stale inspection is refused before mutation and fresh compiler proposal succeeds (478.3086ms)
+✔ prepares one numbered block with distinct roles, preserving source and explicit frame (4.5541ms)
+✔ keeps a short two-line title, preserves unquoted text, and handles nested quotes (1.0893ms)
+✔ generates distinct deterministic variants without deleting text or splitting initials and connectors (1.2363ms)
+✔ pins a manual line break to this title without changing its words (0.8868ms)
+✔ reports missing, ambiguous or malformed input and rejects unsupported frame geometry (0.608ms)
+✔ the public CLI produces layout JSON and accepts only its documented flag (131.6975ms)
+✔ Titles layout builds measure and apply inputs for the current public Core contract (9.4648ms)
+✔ fits measured bounds along both axes and centers them with the original anchor (0.4488ms)
+✔ preserves the base if it fits at the preferred scale, and reports an undersized fit (0.394ms)
+✔ rejects stale layout, missing or duplicated measurements, unsupported geometry and degenerate fits (0.9564ms)
+✔ fit CLI works from a foreign current directory with explicit UTF-8 files (66.8405ms)
+✔ release compiler carries the configured hold and selects the exact result layer for the queue (1.8474ms)
+✔ release compiler binds cleanup to the observed job and rejects a stale contract or target (0.2403ms)
+✔ release compiler starts only a queued job on a Core contract that supports start (0.2369ms)
+✔ release compiler prepares an exact Advanced 3D copy without projecting it into the 2D layout (0.202ms)
+✔ numbered source becomes two exact jobs with separate rubric styles and an explicit break (4.7775ms)
+✔ series compiler uses fresh evidence and an explicit layer ID to edit exactly one title (4.1246ms)
+✔ ambiguous guides, duplicate slots, stale module and unrelated project are rejected (0.3222ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1737.7181

@@ -1,0 +1,22 @@
+✔ owner-marker-publication all process markers publish one complete fsynced inode, including the release gate nonce (85.6384ms)
+✔ owner-marker-publication acquire-gate short stage write never publishes an incomplete target and retains partial evidence (3.8737ms)
+✔ owner-marker-publication broker-owner short stage write never publishes an incomplete target and retains partial evidence (11.9799ms)
+✔ owner-marker-publication release-gate short stage write never publishes an incomplete target and retains partial evidence (17.5139ms)
+✔ owner-marker-publication receiver-owner short stage write never publishes an incomplete target and retains partial evidence (3.3727ms)
+✔ owner-marker-publication fsync faults leave only unpublished stage evidence for every process marker (33.6442ms)
+✔ owner-marker-publication a crash before link leaves target absent although the complete stage was already fsynced (56.4015ms)
+✔ owner-marker-publication a crash immediately after link preserves the whole published marker and never guesses that acquisition succeeded (55.7605ms)
+✔ owner-marker-publication exclusive publication collision preserves foreign markers byte for byte (45.4228ms)
+✔ owner-marker-publication an existing same-nonce stage is never reused, truncated, or mistaken for authority (36.2991ms)
+✔ owner-marker-publication stage replacement after publication is retained as foreign evidence while the target stays complete (22.8209ms)
+✔ owner-marker-publication release refuses modified or replaced broker owners and preserves the foreign bytes (45.3551ms)
+✔ owner-marker-publication known-dead legacy reclaim can retry exclusive publication with the same trusted nonce (28.4058ms)
+✔ owner-marker-publication settled dead boot recovery ignores unpublished orphan stages and a new nonce publishes fresh complete markers (1140.3359ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1698.7153

@@ -1,0 +1,45 @@
+✔ panel-lifecycle manifest has no pre-admission ScriptPath loader (1.0471ms)
+✔ panel-lifecycle old registry refreshes only fixed own path; current registry uses no evalFile (71.8795ms)
+✔ panel-lifecycle caller-local registry survives bootstrap into a separate native dispatch (31.6536ms)
+✔ panel-lifecycle bootstrap never publishes a wrong or nondispatching registry (5.6277ms)
+✔ panel-lifecycle duplicate peer gets no native bootstrap until accepted provisional link (55.8406ms)
+✔ panel-lifecycle changed marker rotates same-package config through one fixed reload and preserves closure credentials (77.9642ms)
+✔ panel-lifecycle unchanged marker and auth/network errors alone never reload (61.1033ms)
+✔ panel-lifecycle owner signed session watcher unwinds before changed-marker reload and never sends reset (61.7489ms)
+✔ panel-lifecycle dispatch completion ACK and bootstrap callback keep reload guard closed (60.6492ms)
+✔ panel-lifecycle registry bootstrap latch survives a new document and forbids native replay (63.5684ms)
+✔ panel-lifecycle reload guard retains historical latches unless signed reset retires their session (30.844ms)
+✔ panel-lifecycle provisional peer rejects poll/inspection/connect and wrong root/nonce/build/MAC before ready (155.7114ms)
+✔ panel-lifecycle old executing JS cannot adopt a new on-disk cfg identity or receive bootstrap admission (15.5402ms)
+✔ panel-lifecycle native bootstrap timeout retains durable UNKNOWN and rejects late ready without new epoch promotion (40.9783ms)
+✔ panel-lifecycle different composition changes registry ID and same-package credential rotation changes marker only (158.4029ms)
+✔ panel-lifecycle A2 bound native failure is visible in the existing UI without ready, replay or latch clearing (35.4804ms)
+✔ panel-lifecycle A2 only exact bound error callbacks preserve registry_refresh_failed (7.2106ms)
+✔ panel-lifecycle A2 foreign callback token and replaced latch never become a known bootstrap failure (2.2278ms)
+✔ panel-lifecycle A2 storage failures preserve the latch and never acknowledge bootstrap readiness (3.4571ms)
+✔ panel-lifecycle A2 synchronous eval throw and absent callback retain the native guard across reload (3.4065ms)
+✔ panel-lifecycle A2 a diagnosed failure still requires signed completed reset to archive the exact old latch (2.5267ms)
+✔ panel-lifecycle retirement rejects missing/forged MAC and wrong nonce or pins with exact active bytes and zero eval (89.0086ms)
+✔ panel-lifecycle retirement rejects incomplete/same/null/missing-session/fault/awaiting proof (16.3646ms)
+✔ panel-lifecycle ordinary reload/new epoch/config rotation cannot retire old UNKNOWN (29.9226ms)
+✔ panel-lifecycle signed completed S1 or explicit null to S2 archives exact UNKNOWN then permits one new session bootstrap (62.5991ms)
+✔ panel-lifecycle native callback or completion ACK in flight blocks retirement even with valid reset proof (10.8883ms)
+✔ panel-lifecycle archive conflict/write failure and raw change during digest never delete active latch (8.4279ms)
+✔ panel-lifecycle old S1 callback or ACK cannot overwrite/save/post/clear replacement S2 latch (11.9866ms)
+✔ panel-lifecycle registry ready session tamper/missing fails binding and wrong signed ACK session retains latch (75.8625ms)
+✔ panel-lifecycle signed reset status precedes old latch gate; no new provisional link while UNKNOWN remains (31.4882ms)
+✔ panel-lifecycle completed authenticated reset admits legacy null and old UUID history without recovery or changing bytes (30.6156ms)
+✔ panel-lifecycle legacy history remains closed without complete authenticated nonnull reset session (371.56ms)
+✔ panel-lifecycle current session native and completion operations deny admission before any provisional link (92.0125ms)
+✔ panel-lifecycle legacy exemption requires explicit nonnull valid current session even at dispatcher seam (2.7606ms)
+✔ panel-lifecycle admission retains current saved-result recovery by one completion ACK before registry bootstrap (24.4032ms)
+✔ panel-lifecycle signed initial explicit null session preserves current base result ACK-only recovery (50.5752ms)
+✔ panel-lifecycle explicit null result recovery rejects stale pins missing session and failed original ACK before native bootstrap (123.2477ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2167.2834

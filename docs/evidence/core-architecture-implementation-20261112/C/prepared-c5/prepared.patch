@@ -1,0 +1,24 @@
+--- a/core4/test/installed-composition.test.js
++++ b/core4/test/installed-composition.test.js
+@@ -7,7 +7,7 @@
+ const { buildPackage, verifyPackage } = require('../tools/package-installable');
+ const { planInstall, applyInstall } = require('../tools/install-core4');
+ const { verifyInstallation, verifyRelease, verifyCep } = require('../runtime/installation');
+-const { deriveComposition } = require('../runtime/stdio-entry');
++const { deriveComposition, registrySource } = require('../runtime/stdio-entry');
+ const { checkEntrySource } = require('../tools/check-boundaries');
+ const { mac } = require('../integrations/cep/peer-protocol');
+ const root = path.resolve(__dirname, '..');
+@@ -132,6 +132,12 @@
+   reject(pkg => edit(pkg, policyPath, policy => { delete policy.version; delete policy.capabilities; }), /composition_policy_version/);
+   const legacy = structuredClone(r1); legacy.release.version = '4.2.2';
+   edit(legacy, policyPath, policy => { delete policy.version; delete policy.capabilities; });
++  const legacySelected = deriveComposition(legacy.release, read(legacy));
++  assert.equal(Object.hasOwn(legacySelected, 'registryVerification'), false);
++  const legacyRegistry = registrySource(legacySelected.assets, read(legacy)('runtime/host/json-codec.jsx').toString('utf8'), false);
++  assert.doesNotMatch(legacyRegistry, /CORE4_REGISTRY_ID/);
++  legacy.files['cep/jsx/registry.jsx'] = Buffer.from(legacyRegistry).toString('base64');
++  legacy.release.hashes['cep/jsx/registry.jsx'] = hash(legacyRegistry); legacy.packageHash = hash(legacy.release);
+   assert.equal(verifyPackage(legacy), legacy);
+   assert.equal(deriveComposition(legacy.release, read(legacy)).renderJobs, true);
+   edit(legacy, compositionPath, c => { c.id = 'fixture-r1'; });

@@ -1,0 +1,13 @@
+✔ ae-readiness separates window, CEP, native callback and baseline (1.7426ms)
+✔ ae-readiness reports invalid or unavailable scans without claiming an absent dialog (0.3583ms)
+✔ ae-readiness direct inspection refreshes a missing or stale scan before any offer (2.3615ms)
+✔ ae-readiness root inspection detects a new modal within the responsive cache lifetime (1.6642ms)
+✔ ae-readiness direct inspection revalidates its exact lease after a pending scan (0.769ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 97.2855

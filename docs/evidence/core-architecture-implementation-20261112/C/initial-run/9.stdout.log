@@ -1,0 +1,10 @@
+✔ owner-ipc-process two real stdio clients share one Broker and EOF leaves owner available (616.5022ms)
+✔ owner-ipc-process actual TEMP Broker inspection/build flow is scoped to controller generation (684.5571ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1396.6872

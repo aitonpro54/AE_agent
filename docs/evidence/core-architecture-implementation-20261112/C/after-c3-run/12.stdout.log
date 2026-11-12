@@ -1,0 +1,15 @@
+✔ maintenance-finish-operator source guards pin bootstrap and constant NEW support imports (3.8316ms)
+✔ maintenance-finish-operator JSON clones cannot issue the opaque bootstrap capability or cause installation reads (1.9962ms)
+✔ maintenance-finish-operator NEW reviewed distribution verifies installed poisoned source as DATA and never imports it (4016.8101ms)
+✔ maintenance-finish-operator wrong distribution/current pins and absent owner support refuse before runtime import (4812.8516ms)
+✔ maintenance-finish-operator tampered NEW support helper is rejected before any installed operator import (2416.3656ms)
+✔ maintenance-finish-operator stopped certification routes only through verified NEW code and closes election on refusal (6653.4804ms)
+✔ maintenance-finish-operator private election finally closes a real pending request on its TEMP port (3740.5376ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21824.3784

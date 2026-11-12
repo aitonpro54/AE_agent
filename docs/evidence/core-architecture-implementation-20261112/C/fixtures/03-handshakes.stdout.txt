@@ -1,0 +1,135 @@
+✔ installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies (5167.4908ms)
+✖ installed-composition portable fixed-format1 transition to readonly preserves signed history and no replay (12335.1795ms)
+✔ installed-composition installed readonly child initialize/status/discovery/contract and native fake VM inspection (3776.8579ms)
+✖ owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants (15506.764ms)
+✖ owner-runtime desired-stop freezes new control while captured original inspection completes after client detach (9323.9138ms)
+✔ owner-runtime owner main signal persists desired-stop and drains original completion without a second shutdown request (9254.1315ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 3
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 34226.3435
+
+✖ failing tests:
+
+test at core4\test\installed-composition.test.js:17:1
+✖ installed-composition portable fixed-format1 transition to readonly preserves signed history and no replay (12335.1795ms)
+  AssertionError [ERR_ASSERTION]: node:internal/modules/cjs/loader:1479
+    throw err;
+    ^
+  
+  Error: Cannot find module './composition-spec.js'
+  Require stack:
+  - C:\Users\Ant\AppData\Local\Temp\core4-native-capture-BL9Enw\operator\tools\package-installable.js
+  - C:\Users\Ant\AppData\Local\Temp\core4-native-capture-BL9Enw\operator\tools\install-core4.js
+  - C:\Users\Ant\AppData\Local\Temp\core4-native-capture-BL9Enw\operator\tools\dispose-native-read.js
+  - C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\disposition-child.js
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+      at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+      at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+      at Module._load (node:internal/modules/cjs/loader:1262:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.require (node:internal/modules/cjs/loader:1576:12)
+      at require (node:internal/modules/helpers:153:16)
+      at Object.<anonymous> (C:\Users\Ant\AppData\Local\Temp\core4-native-capture-BL9Enw\operator\tools\package-installable.js:5:106)
+      at Module._compile (node:internal/modules/cjs/loader:1830:14) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [
+      'C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-BL9Enw\\operator\\tools\\package-installable.js',
+      'C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-BL9Enw\\operator\\tools\\install-core4.js',
+      'C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-native-capture-BL9Enw\\operator\\tools\\dispose-native-read.js',
+      'C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4\\test\\fixtures\\disposition-child.js'
+    ]
+  }
+  
+  Node.js v24.15.0
+  
+  
+  1 !== 0
+  
+      at Object.transition (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\fixtures\installed-composition-transition.js:15:122)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\installed-composition.test.js:18:18)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at core4\test\owner-runtime.test.js:5:28
+✖ owner-runtime durable project read rejections cross the production owner IPC and stdio without uncertainty or grants (15506.764ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    [
+      'origin',
+      'begin',
+      'complete',
+      'begin',
+  ...
+      'complete',
+  +   'begin',
+  +   'complete'
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:238:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [
+      'origin',   'begin',
+      'complete', 'begin',
+      'complete', 'begin',
+      'complete', 'begin',
+      'complete', 'begin',
+      'complete', 'begin',
+      'complete'
+    ],
+    expected: [
+      'origin',   'begin',
+      'complete', 'begin',
+      'complete', 'begin',
+      'complete', 'begin',
+      'complete', 'begin',
+      'complete'
+    ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at core4\test\owner-runtime.test.js:5:28
+✖ owner-runtime desired-stop freezes new control while captured original inspection completes after client detach (9323.9138ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      'origin',
+      'begin',
+      'complete',
+  +   'begin',
+  +   'complete'
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_agent_core\core4\test\owner-runtime.test.js:1110:10)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at process.processTimers (node:internal/timers:538:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'origin', 'begin', 'complete', 'begin', 'complete' ],
+    expected: [ 'origin', 'begin', 'complete' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

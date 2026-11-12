@@ -1,0 +1,25 @@
+✔ layer-overlay copies the exact slot and verifies shared uses, keys, mask, effect, parent, matte and alpha (1084.9815ms)
+✔ layer-overlay captures and verifies static TwoD Mask Feather under Mask Atom (696.1596ms)
+✔ layer-overlay verified copy inserts a visible layer, retires its exact predecessor and keeps Texturize on the same layer (1290.95ms)
+✔ layer-overlay verified copy fails closed on incomplete counts, unsafe dependencies and a partial predecessor (705.2687ms)
+✔ layer-overlay verified copy requires an independent byte-identical reference before native dispatch (582.4836ms)
+✔ layer-overlay verified copy preserves UNKNOWN if the native index keeps its number and changes identity (628.0953ms)
+✔ layer-overlay refuses unsupported Mask Feather values and keeps other property guards (638.6796ms)
+✔ layer-overlay rejects external indexed expressions and revision drift before native duplicate (554.0504ms)
+✔ layer-overlay rejects a project at the total layer limit before duplicate (626.3274ms)
+✔ layer-overlay preflights the original slot and shared uses before a replacement item exists (524.5011ms)
+✔ layer-overlay journals the first expression location only for the same prospective project revision (465.0505ms)
+✔ layer-overlay preflight reserves capacity for a longer escaped replacement path (377.5778ms)
+✔ layer-overlay uses one montage mandate for a real Broker import receipt and the derived footage ID (742.6459ms)
+✔ layer-overlay preserves UNKNOWN and forbids a fresh proposal after duplicateThrows (617.8094ms)
+✔ layer-overlay preserves UNKNOWN and forbids a fresh proposal after ignoresMarker (661.5673ms)
+✔ layer-overlay preserves UNKNOWN and forbids a fresh proposal after returnsExisting (658.7847ms)
+✔ layer-overlay preserves UNKNOWN and forbids a fresh proposal after holdMutationCallback (948.7865ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11946.7182

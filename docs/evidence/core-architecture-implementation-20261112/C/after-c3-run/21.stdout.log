@@ -1,0 +1,16 @@
+✔ windows-cim-probe fixed plaintext query projects only PID/birth/path and base64-encodes JSON data (55.4797ms)
+✔ windows-cim-probe actual wrapper uses one literal query, Node hostname/hash/stat and preserves Unicode path and seven-digit birth (9.2901ms)
+✔ windows-cim-probe scrubbed owner profile uses native homedir for PowerShell without inheriting caller variables (7.1004ms)
+✔ windows-cim-probe unavailable or malformed native profile fails before child launch with no environment fallback (1.319ms)
+✔ windows-cim-probe bounded canonical data decode handles arrays/Unicode/date and rejects malformed wire or projection fields (2.1309ms)
+✔ windows-cim-probe cmdlet, CLM, AppControl and invalid data failures are host_probe_failed with no fallback query (1.7873ms)
+✔ windows-cim-probe Node executable identity rejects unreadable/non-file/changed executable data (2.091ms)
+✔ windows-cim-probe synchronous process refusal is host_probe_failed and never retries (0.45ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 172.8685

@@ -1,0 +1,20 @@
+✔ owner-lifecycle publishes boot before stores and exposes no active lease until markReady owns exact markers (582.2169ms)
+✔ owner-lifecycle refuses same live incarnation without touching its stores and removes only the failed contender gate (703.6336ms)
+✔ owner-lifecycle settled dead boot archives exact markers and preserves receiver journal identity and bytes (1124.5556ms)
+✔ owner-lifecycle crash before first stores reclaims only an attributable startup gate without an absent gate window (937.0632ms)
+✔ owner-lifecycle unknown physical history keeps old execution markers and opens only diagnostic ownership (735.9818ms)
+✔ owner-lifecycle legacy empty receiver marker is never attributed to a new boot or deleted (297.4118ms)
+✔ owner-lifecycle generic install gate and unavailable process proof refuse without changing protected state (82.4165ms)
+✔ owner-lifecycle one role key cannot forge provenance and malformed owner data never authorizes marker cleanup (436.5639ms)
+✔ owner-lifecycle receiver close retains foreign in-place token and replaced inode instead of deleting another marker (875.923ms)
+✔ owner-lifecycle conflicting ledger and receiver outcomes keep the old writer markers and diagnostic fence (1316.0176ms)
+✔ owner-lifecycle matching foreign origin drift during process observation never becomes a new recovery baseline (444.502ms)
+✔ owner-lifecycle origin byte drift after stores before markReady refuses active publication (153.2933ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7814.2096

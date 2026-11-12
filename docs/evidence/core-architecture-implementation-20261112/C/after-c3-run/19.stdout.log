@@ -1,0 +1,20 @@
+✔ recovery-inspection explicit missing histories and empty ledger report coverage without authority or a ready runtime (2.1522ms)
+✔ recovery-inspection receiver origin and bound original completion settle supplied bytes and freeze facts (1.7242ms)
+✔ recovery-inspection ongoing and UNKNOWN remain unsettled without converting or discarding original history (0.6988ms)
+✔ recovery-inspection receiver checks dispatch, response, payload digest and terminal ordering rather than only checksum (1.9336ms)
+✔ recovery-inspection a self-hashed forged terminal disposition is never accepted as settlement (0.8589ms)
+✔ recovery-inspection durable transport completion with unknown physical effect retains reply and remains fenced (1.1679ms)
+✔ recovery-inspection torn UTF8 checksum sequence and oversized line histories fail closed (5.8066ms)
+✔ recovery-inspection ledger acknowledged command remains unresolved and original terminal outcome settles it (1.2501ms)
+✔ recovery-inspection open reservation blocks even a succeeded command and only its original terminal ref settles it (1.4095ms)
+✔ recovery-inspection only the original journal and checkpoint settle a pre-dispatch reservation (4.7341ms)
+✔ recovery-inspection latest durable constraints preserve unresolved foreign and unfamiliar fences (1.607ms)
+✔ recovery-inspection does not construct execution stores create directories write files or probe processes (0.5384ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 141.8281

@@ -19,6 +19,9 @@ const originalRename=fs.renameSync;
 if(fixture.fault==='install-switch')fs.renameSync=(from,to)=>{if(from.endsWith('installation.json.next'))throw Object.assign(new Error('fixture_switch'),{code:'fixture_switch'});return originalRename(from,to);};
 const op=api.createDispositionOperator({operatorRoot:fixture.operatorRoot,operatorClosure:token,io,captureFactory:()=>A.createCapture(probes),probePid:()=> 'dead',ipcTimeoutMs:2000});
 (async()=>{
+  // Constructor/import-only closure regression. Never inspect/apply a target or
+  // enter capture, native probing, confirmation or install paths in this mode.
+  if(fixture.constructorOnly){process.send({event:'fixture_constructed'});if(process.connected)process.disconnect();return;}
   try{const inspected=await op.inspect(fixture.args);process.send({event:'fixture_inspected',proofHash:inspected.proofHash});if(fixture.fault==='owner-between-inspect-apply')replaceOwner('between-inspect-apply');const result=await op.apply({...fixture.args,expectedProofHash:inspected.proofHash});process.send({event:'fixture_result',value:result});}
   catch(e){process.send?.({event:'fixture_error',error:e.code||e.message,transaction:e.transaction||null,leaseRetained:!!e.leaseRetained});process.exitCode=1;}
   finally{if(process.connected)process.disconnect();}

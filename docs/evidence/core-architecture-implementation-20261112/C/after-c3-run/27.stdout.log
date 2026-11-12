@@ -1,0 +1,17 @@
+✔ project-save streams and verifies a 91.3 MiB checkpoint with bounded file size (1045.621ms)
+✔ project-save is opt-in and ships in the fixed ES3 registry (426.1173ms)
+✔ project-save verifies a durable checkpoint before one native save and records a fresh disk read (626.0612ms)
+✔ project-save refuses a foreign session, an old proposal and a changed project during confirmation (676.2178ms)
+✔ project-save detects same-length disk drift during confirmation before AE writes (514.8209ms)
+✔ project-save records the checkpoint stage when native read throws before save (515.4268ms)
+✔ project-save fences an uncertain native write and preserves the original checkpoint (493.4058ms)
+✔ project-save closes a failed checkpoint reservation before any native dispatch (505.2856ms)
+✔ project-save cannot certify a native success when the disk checkpoint fails verification (534.6495ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5472.4753

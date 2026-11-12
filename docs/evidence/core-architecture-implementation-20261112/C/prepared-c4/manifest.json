@@ -1,0 +1,23 @@
+{
+  "scope": "C4 TEMP-only semantic legacy fixture preparation",
+  "files": [
+    {
+      "path": "core4/test/fixtures/mixed-installation.js",
+      "baseSHA256": "1c055be668ce50e4772a679cd79cfdaff7c99d88a103cd76063c3259a651f4ea",
+      "patchedSHA256": "aab62c7523dfba7f325fa30d8a9167cf4123a155b1317ea5e2f30288e2c9076a",
+      "baseBytes": 19726,
+      "patchedBytes": 21511,
+      "diff": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c4-prep-31aa207da41646c1b7ec5cbcad9517cc\\diffs\\core4__test__fixtures__mixed-installation.js.patch",
+      "diffSHA256": "bfa8d711f76847ddde1cb2ea0bbe86fd65d0d146ba84fdba27cd2a92774e8ff5"
+    },
+    {
+      "path": "core4/test/mixed-installation-repair.test.js",
+      "baseSHA256": "a19a57d2c36cc30085d92aa3bf9b68c90bcd66627fdf2c1c4dea3746a35c2a29",
+      "patchedSHA256": "a7ae7b44bb97815c67509968f8a6fbf0d9875b7e7e61f3aca5afb9b46342de78",
+      "baseBytes": 20285,
+      "patchedBytes": 23708,
+      "diff": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-c4-prep-31aa207da41646c1b7ec5cbcad9517cc\\diffs\\core4__test__mixed-installation-repair.test.js.patch",
+      "diffSHA256": "bea3b6ede240986d6401c0a00e4a7f7d5598c34e906b9a5664e0e49946c9447b"
+    }
+  ]
+}

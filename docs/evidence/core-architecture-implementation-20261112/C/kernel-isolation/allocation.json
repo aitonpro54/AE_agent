@@ -1,0 +1,14 @@
+{
+  "evidence": "actual allocator function extracted from final fixture, real ephemeral loopback listen/close then rebind/close; no fixture construction or mapped suite run",
+  "endpoint": {
+    "host": "127.0.0.1",
+    "port": 6163
+  },
+  "reboundAfterAllocatorClose": true,
+  "finalProbeListening": false,
+  "allocatorSourceSHA256": "b51e6cd7ee64cf3f5aec3d0fbdea0962a711d9fb724179832a0d55e613c17985",
+  "productionReservationLiteralOccurrences": 1,
+  "productionSHA256": "43a7dcad764a2f68fd447bfac8369a0fb9c3618fe90aef859f3af41bc9bcde0c",
+  "sourceClosureFunctionUnchanged": true,
+  "pipeExpressionsUnchangedByAdapter": true
+}

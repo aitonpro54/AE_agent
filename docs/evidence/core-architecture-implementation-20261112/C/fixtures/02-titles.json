@@ -1,0 +1,23 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "products/titles/test/core-http-integration.test.js"
+  ],
+  "cwd": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+  "started": "2026-11-12T11:29:04.220Z",
+  "ended": "2026-11-12T11:29:05.340Z",
+  "exitCode": 1,
+  "signal": null,
+  "sources": {
+    "core4/test/owner-runtime.test.js": "e3b13868c691ab70a1e7c4661a0e8582cc171f3fa2b22fb0adbb7fa75f71dc5b",
+    "core4/test/installed-composition.test.js": "7c32134dfb734e0d432111804bbf7f76c834715e0f3f20515d282ae974484b79",
+    "core4/test/fixtures/installed-composition-transition.js": "03ab80f722fda69dd74f7b074d74cb602bd74532f044bc9ee9cf322e4f183131",
+    "core4/test/core4.test.js": "29c8cee5abf89c5cb69b7870cb9f5b26b6852a138bde81aa68803b38491a6e91",
+    "core4/test/installable-runtime.test.js": "c7903b305da76eaca3f1936d30ae70b157704f292e43c51f926d58711a331839",
+    "core4/test/fixtures/manual-http-runtime.js": "790a1aba1eebb98ff3d2f163253ac85cab55998bd7496d84b7baa5d2cb524400",
+    "products/titles/test/core-http-integration.test.js": "7d89ac97c65cfcc50612853f8591b59eefdbf862f658fc534fc18a1b0641d954"
+  },
+  "log": "02-titles.stdout.txt",
+  "stdoutSHA": "d1d8d7e56f2eb3c0661d8fd6bc2be3fe01f65117f6757de63699457b02f513ae"
+}

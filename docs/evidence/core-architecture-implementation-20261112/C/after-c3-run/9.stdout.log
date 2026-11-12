@@ -1,0 +1,37 @@
+✔ legacy-owner-migration inspection is read-only and rejects stale/busy/foreign root evidence (5335.7189ms)
+✔ legacy-owner-migration one root stop promotes the SAME lease and archives only known markers (9612.8144ms)
+✔ legacy-owner-migration drift after the only stop leaves gates/barrier and refuses replay (8314.6816ms)
+✔ legacy-owner-migration lost install gate after native retain refuses before stop (5140.8636ms)
+✔ legacy-owner-migration lost install gate after native inspect refuses before stop (5811.455ms)
+✔ legacy-owner-migration barrier inode drift before-stop refuses exact CAS (5314.8286ms)
+✔ legacy-owner-migration barrier inode drift after-stop refuses exact CAS (7020.5105ms)
+✔ legacy-owner-migration barrier inode drift capability refuses exact CAS (9059.3487ms)
+✔ legacy-owner-migration recovery finishes original intent.json prefix without stop replay or normal plan rebrand (15260.3568ms)
+✔ legacy-owner-migration recovery finishes original runtime-maintenance.json prefix without stop replay or normal plan rebrand (16665.0276ms)
+✔ legacy-owner-migration recovery finishes original stop-intent.json prefix without stop replay or normal plan rebrand (17770.9189ms)
+✔ legacy-owner-migration recovery finishes original stop-receipt.json prefix without stop replay or normal plan rebrand (19532.0741ms)
+✔ legacy-owner-migration recovery finishes original retirement-intent.json prefix without stop replay or normal plan rebrand (20320.8488ms)
+✔ legacy-owner-migration recovery finishes original broker-owner.lock prefix without stop replay or normal plan rebrand (20379.8121ms)
+✔ legacy-owner-migration recovery finishes original completion.json prefix without stop replay or normal plan rebrand (21074.884ms)
+✔ legacy-owner-migration unknown stop with still-live exact target refuses and never sends another stop (8689.1008ms)
+✔ legacy-owner-migration native actor ticks are exact; live actor and unavailable observations preserve fences (9382.3449ms)
+✔ legacy-owner-migration interrupted recovery recover-record retains continuous install gate and attributes the next actor (23152.5408ms)
+✔ legacy-owner-migration interrupted recovery gate-replace retains continuous install gate and attributes the next actor (24451.1259ms)
+✔ legacy-owner-migration interrupted recovery archive retains continuous install gate and attributes the next actor (28273.9007ms)
+✔ legacy-owner-migration interrupted recovery completion retains continuous install gate and attributes the next actor (29889.7867ms)
+✔ legacy-owner-migration prepared copy, foreign marker and observation drift refuse before recovery writes (25865.1868ms)
+✔ legacy-owner-migration recovered opaque preparation stages the ORIGINAL payload through dedicated update recovery (33437.9287ms)
+✔ legacy-owner-migration normal shared-brand stop prepare apply completes with the ORIGINAL keys and journal (17940.8559ms)
+✔ legacy-owner-migration normal shared-brand refuses unknown client staging before stop or gate publication (2627.9497ms)
+✔ legacy-owner-migration normal shared-brand staged certificate still refuses config drift before visible switch (14018.0448ms)
+✔ legacy-owner-migration normal shared-brand staged certificate still refuses config-inode drift before visible switch (14035.1122ms)
+✔ legacy-owner-migration normal shared-brand staged certificate still refuses history drift before visible switch (14517.0394ms)
+✔ legacy-owner-migration normal shared-brand staged certificate still refuses marker drift before visible switch (14783.3769ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 447817.787

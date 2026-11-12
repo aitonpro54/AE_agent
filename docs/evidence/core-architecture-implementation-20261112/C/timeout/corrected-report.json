@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "kind": "core4-timeout-process-settlement",
+  "collectedAtUtc": "2026-11-12T13:18:52.311923Z",
+  "workspace": "C:/Users/Ant/Documents/Codex/AE_agent_core",
+  "sourceResult": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5\\result-gOIiFT\\result.json",
+  "batch": {
+    "index": 36,
+    "pid": 24964,
+    "command": "node --test --test-name-pattern=(?:stopped-update)|(?:^frame-export-slot) test/stopped-update.test.js",
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_agent_core\\core4",
+    "startedAtUtc": "2026-11-12T12:45:46.351Z",
+    "timeoutEndUtc": "2026-11-12T13:15:46.381Z",
+    "durationMs": 1800030,
+    "timedOut": true,
+    "killResult": true,
+    "closed": true,
+    "logsComplete": false,
+    "status": "UNKNOWN",
+    "checks": [
+      "stopped-update",
+      "frame-export-slot"
+    ],
+    "completedTestCount": 43,
+    "lastCompletedNames": [
+      "stopped-update owner pre-ready crash at attempt remains attributed and resumes only after actor death",
+      "stopped-update owner pre-ready crash at lease remains attributed and resumes only after actor death",
+      "stopped-update owner pre-ready crash at release-file remains attributed and resumes only after actor death",
+      "stopped-update owner pre-ready crash at prepared-file remains attributed and resumes only after actor death",
+      "stopped-update owner pre-ready crash at cep-file remains attributed and resumes only after actor death"
+    ],
+    "exitCode": null,
+    "signal": "SIGTERM"
+  },
+  "processAudit": {
+    "method": "Get-CimInstance Win32_Process read-only; restricted to node.exe created inside batch interval +15s and command lines containing core4-",
+    "matchingProcesses": [],
+    "fixtureDirectoriesCreatedDuringBatch": [
+      {
+        "name": "core4-stopped-update-OHN9Cf",
+        "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-stopped-update-OHN9Cf",
+        "createdAt": "2026-11-12T18:15:34.1234573+05:00",
+        "lastWriteTime": "2026-11-12T18:15:35.5633327+05:00"
+      }
+    ],
+    "childOSPid24964Absent": true,
+    "noOwnedNodeCandidateMatches": true,
+    "pid94469Query": "irrelevant: 94469 was exec session ID, not OS PID; not identity evidence"
+  },
+  "disposition": "SETTLED_NO_CLEANUP",
+  "cleanup": {
+    "processesTerminated": [],
+    "tempFilesDeleted": [],
+    "fixtureHistoryPreserved": true,
+    "reason": "No live process matched the confirmed batch identity/time/fixture filter; batch PID absent; no child process was proven owned and live."
+  },
+  "scope": {
+    "rerun": false,
+    "sourceFilesChanged": false,
+    "gitOrProductionConfigChanged": false,
+    "liveAeUiTouched": false,
+    "realInstalledOwnerTouched": false,
+    "tempHistoryDeleted": false
+  },
+  "limitations": [
+    "Batch exited through supervisor timeout with SIGTERM; partial raw stdout remains available at the recorded path, but Node TAP/spec final summary is absent because the batch was killed and logsComplete=false.",
+    "The stopped-update check and frame-export-slot check remain UNKNOWN; no successful suite completion is claimed.",
+    "Batch child OS PID 24964 was independently absent at audit; no owned Node candidate matched the bounded CIM query. No cleanup or rerun was performed. OS parent PID was not captured."
+  ],
+  "metadataCorrection": {
+    "correctionOnly": true,
+    "originalReportPreserved": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-timeout-resolution-1b59d7e14c4f43ff8c66809c8f957a6e\\report.json",
+    "original94469Interpretation": "The value 94469 was a tools.exec_command session ID, not an operating-system PID. Any query for OS PID 94469 is irrelevant evidence and is not used as identity proof.",
+    "batchChild": {
+      "osPid": 24964,
+      "identityBasis": "batch 36 record",
+      "observedAtAudit": "Absent from current Win32_Process inventory; no PID termination attempted."
+    },
+    "processSettlement": "Child OS PID 24964 was independently absent. No owned Node candidate matched the bounded CIM query. No cleanup was performed.",
+    "execController": {
+      "sessionId": 94469,
+      "normalToolCompletionExitCode": 1,
+      "witness": "root exec session result",
+      "osParentPid": "not captured"
+    },
+    "stdout": {
+      "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-final-c-c5aa2bcfcb58473aa434bb7d1442a8f5\\result-gOIiFT\\36.stdout.log",
+      "availability": "partial raw stdout available",
+      "finalSummary": "Node TAP/spec final summary absent because supervisor killed batch; batch logsComplete=false."
+    },
+    "noRerunOrInterruption": true
+  }
+}
