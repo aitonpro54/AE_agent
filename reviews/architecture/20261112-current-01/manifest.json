@@ -1,0 +1,808 @@
+{
+  "status": "COMPLETE",
+  "reviewScope": "bounded architecture snapshot; not full-code review or full release acceptance",
+  "gitHead": "6d40cc228d9f2e18c672af5782033be305b82917",
+  "productVersion": "4.2.6",
+  "privacy": "INTERNAL",
+  "productionEvidence": "summary only; personal/local identities and raw runtime state/logs not selected",
+  "externalAllowlist": [
+    "request.md",
+    "bundle.md",
+    "manifest.json"
+  ],
+  "payloads": {
+    "request.md": {
+      "sha256": "f13794a8dd8e8c2ce037157d502cf2a7fadfc03f1746be1f57fee853527fb3c1",
+      "bytes": 7214
+    },
+    "bundle.md": {
+      "sha256": "6ace4bd2c9c6ceb8055936ceeb3c05602d13f6bd1a3842e2d03c2e84924f03bc",
+      "bytes": 195325
+    }
+  },
+  "builder": {
+    "name": "build_bundle.py",
+    "sha256": "1a3480c0c620d32467b613d3f8df2d86da901f9065e8ee99432b38761296dfea",
+    "exitCode": 0,
+    "includedFiles": 17,
+    "skippedFiles": 0,
+    "warnings": 0,
+    "redactions": 0
+  },
+  "selection": {
+    "sourceFiles": 39,
+    "exactSourceBytes": 147772,
+    "stageBytes": 182942,
+    "sourceProvenance": [
+      {
+        "path": "core4/package.json",
+        "fullFileSha256": "6bd4b2a6288aec94573577589c2d951f3ce8f4145b8bf878ea7df3154cb18996",
+        "fullFileBytes": 1174,
+        "fullFileLines": 19,
+        "gitBlob": "5ca5a34b0c1b6eec4358681196346cb5b88f7cc6",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 19,
+            "bytes": 1174,
+            "sha256": "6bd4b2a6288aec94573577589c2d951f3ce8f4145b8bf878ea7df3154cb18996",
+            "group": "01-package-composition"
+          }
+        ]
+      },
+      {
+        "path": "core4/config/catalog.json",
+        "fullFileSha256": "799f59201231800f814374d3c48028e900751de959329b217c6af8d786f75174",
+        "fullFileBytes": 785,
+        "fullFileLines": 27,
+        "gitBlob": "237495fefc739c28af142adfe07a72df805531f2",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 24,
+            "bytes": 692,
+            "sha256": "733af7d4854b08577db2f629a9ed44182fed8ce9c76552511324d8bdd4c15a5c",
+            "group": "01-package-composition"
+          },
+          {
+            "firstLine": 26,
+            "lastLine": 27,
+            "bytes": 6,
+            "sha256": "df739a06c1cbb1244e3363d38bcf9fa50ce84fed399c2193a3c7f08d59918b2a",
+            "group": "01-package-composition"
+          }
+        ]
+      },
+      {
+        "path": "core4/config/compositions/operator-render-jobs.json",
+        "fullFileSha256": "4524428ed6300cb712a5ef2e0623a2de8522f951e171bbae7bb4193863b0eef6",
+        "fullFileBytes": 199,
+        "fullFileLines": 11,
+        "gitBlob": "0c881e726921188dabea76686b2f4dd374a3b203",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 11,
+            "bytes": 199,
+            "sha256": "4524428ed6300cb712a5ef2e0623a2de8522f951e171bbae7bb4193863b0eef6",
+            "group": "01-package-composition"
+          }
+        ]
+      },
+      {
+        "path": "core4/config/compositions/operator-workflows-montage.json",
+        "fullFileSha256": "2d42eed066411df9de75527fbd96a5c33641b3e02f424f10c0e5b57a0b10fd1f",
+        "fullFileBytes": 785,
+        "fullFileLines": 25,
+        "gitBlob": "8957dfdb4cd83f057bd52a15bb88a1aa16a384d8",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 25,
+            "bytes": 785,
+            "sha256": "2d42eed066411df9de75527fbd96a5c33641b3e02f424f10c0e5b57a0b10fd1f",
+            "group": "01-package-composition"
+          }
+        ]
+      },
+      {
+        "path": "core4/config/compositions/operator-workflows.json",
+        "fullFileSha256": "894daf8f8073a337a6f136a60582d2205b37d147fb88a780faddf40890330b90",
+        "fullFileBytes": 1438,
+        "fullFileLines": 17,
+        "gitBlob": "866d7322d1d917aaf626d3e50a75bfe1eff62a97",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 17,
+            "bytes": 1438,
+            "sha256": "894daf8f8073a337a6f136a60582d2205b37d147fb88a780faddf40890330b90",
+            "group": "01-package-composition"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/source-package.json",
+        "fullFileSha256": "bb51b58130e1ca33501c531a035a74f682643479762b3594fa7c1823e442538b",
+        "fullFileBytes": 6516,
+        "fullFileLines": 222,
+        "gitBlob": "728db4a0e47bae9a54c4b2ae1dd8d54b22eef01b",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 65,
+            "bytes": 2090,
+            "sha256": "62501bdaac6d74170fd2500e48de4a60e0d99b49d350c8b5395ae2e24780e304",
+            "group": "01-package-composition"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/owner-entry.js",
+        "fullFileSha256": "f5764b7ada15a35d2624fbfec1bf96ed9d3feb6413a97c36953733cd33b5c327",
+        "fullFileBytes": 5452,
+        "fullFileLines": 75,
+        "gitBlob": "11ff8f40280cb090a5f349e5c8abff007537ee93",
+        "ranges": [
+          {
+            "firstLine": 58,
+            "lastLine": 75,
+            "bytes": 1244,
+            "sha256": "e8b0a10fbd8574adf4a3aa1b74ddbb6bf560d434b907da626d41a09a40c05777",
+            "group": "02-owner-thin-client"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/owner-contract.json",
+        "fullFileSha256": "1313117aa67e63e908ebc0694d3b067b740c3a72a5b2675722794daab94d103b",
+        "fullFileBytes": 987,
+        "fullFileLines": 31,
+        "gitBlob": "082717a753619556a281adab1f04810a2052e297",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 31,
+            "bytes": 987,
+            "sha256": "1313117aa67e63e908ebc0694d3b067b740c3a72a5b2675722794daab94d103b",
+            "group": "02-owner-thin-client"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/client-entry.js",
+        "fullFileSha256": "b2a84ad7b58525b846ced716cb905187151588fb020f8c12ead16b20fec2daba",
+        "fullFileBytes": 18599,
+        "fullFileLines": 241,
+        "gitBlob": "9f9fb296c3f3c33b74905be960a33f9cc9c6fc70",
+        "ranges": [
+          {
+            "firstLine": 97,
+            "lastLine": 128,
+            "bytes": 2387,
+            "sha256": "607316a7cd3a23dbfa7cdd0c41ef6b73a567c5ce86c12771aed7f5b746137ef0",
+            "group": "02-owner-thin-client"
+          },
+          {
+            "firstLine": 196,
+            "lastLine": 235,
+            "bytes": 2297,
+            "sha256": "a7976bb2f1735297a89955e32897a4bfddcde1b78e24b47d66e6c6f583fbb7ed",
+            "group": "02-owner-thin-client"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/client-ipc.js",
+        "fullFileSha256": "48f30d194b90e59b05183a5116f92372546e1d211fb15c56c53e17c7fdabac71",
+        "fullFileBytes": 18053,
+        "fullFileLines": 297,
+        "gitBlob": "8c09bdf44a650afc3e7037945dd8882eeb5a1fa7",
+        "ranges": [
+          {
+            "firstLine": 210,
+            "lastLine": 240,
+            "bytes": 2369,
+            "sha256": "bd82944c295b732bcecc93e077f311ac8ff42aed1d060c7f7641c5c0e3f76241",
+            "group": "02-owner-thin-client"
+          },
+          {
+            "firstLine": 270,
+            "lastLine": 297,
+            "bytes": 1547,
+            "sha256": "495200ada2c2c82307c8c3369a707cd5a24e16e900eb87b4798d5c94200a7cae",
+            "group": "02-owner-thin-client"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/controller-lease.js",
+        "fullFileSha256": "454030025198334d7ce1fdd3c57aefcd109998b15ddd3c266811b886e817c253",
+        "fullFileBytes": 5529,
+        "fullFileLines": 103,
+        "gitBlob": "8dec8036bba1ceee566d82fc5fae8edcc1f94f2d",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 103,
+            "bytes": 5529,
+            "sha256": "454030025198334d7ce1fdd3c57aefcd109998b15ddd3c266811b886e817c253",
+            "group": "03-lease-worksession"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/work-session.js",
+        "fullFileSha256": "6956afea74d8d5b1261f116ad775204a0ec6def6f620847311d21d65d502eff9",
+        "fullFileBytes": 9883,
+        "fullFileLines": 78,
+        "gitBlob": "989efff798bb6a485545ffd1d4cb10ad0d84ec02",
+        "ranges": [
+          {
+            "firstLine": 23,
+            "lastLine": 78,
+            "bytes": 6936,
+            "sha256": "f97b8058b723913f28273af15305eeedc51b225d553d1e1cbf455429ec183419",
+            "group": "03-lease-worksession"
+          }
+        ]
+      },
+      {
+        "path": "core4/core/authority.js",
+        "fullFileSha256": "2ac5bd1fd69a0c9a98e271ddbf2ab7759293d1a72cda5e73232e5d1d27cbb04e",
+        "fullFileBytes": 4772,
+        "fullFileLines": 59,
+        "gitBlob": "dd1ef3b9ac79498b3ebd2b95f075b9799175597c",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 59,
+            "bytes": 4772,
+            "sha256": "2ac5bd1fd69a0c9a98e271ddbf2ab7759293d1a72cda5e73232e5d1d27cbb04e",
+            "group": "04-authority-attachment"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/attachment-owner.js",
+        "fullFileSha256": "ee66a3b848143aeddefa8651fc5c63a9f4cf124d15229be0647b57d40317e875",
+        "fullFileBytes": 18857,
+        "fullFileLines": 224,
+        "gitBlob": "c4cc57f7b8cca431f709fa2a924c00c490591624",
+        "ranges": [
+          {
+            "firstLine": 59,
+            "lastLine": 100,
+            "bytes": 3925,
+            "sha256": "dd29ba0afa79af21500b46f254d5450e9a47f73688627d2bb246676286794588",
+            "group": "04-authority-attachment"
+          },
+          {
+            "firstLine": 195,
+            "lastLine": 224,
+            "bytes": 1721,
+            "sha256": "a20613e840b2ba325fc1635034e6d0e2ddd183c03bb93e22ead6094af9bd54e6",
+            "group": "04-authority-attachment"
+          }
+        ]
+      },
+      {
+        "path": "core4/core/broker.js",
+        "fullFileSha256": "259384bbb699742accd5c61ee123723c295f2c4052a76c25895ef83ea1a9c460",
+        "fullFileBytes": 44608,
+        "fullFileLines": 502,
+        "gitBlob": "48a7208cde9ef72586f33c6a585c40d77f5f3f55",
+        "ranges": [
+          {
+            "firstLine": 18,
+            "lastLine": 37,
+            "bytes": 1800,
+            "sha256": "180395cf4b602b36bf8b4f2dc9f87e773242ed9f296293e12c8623aa40d7476a",
+            "group": "05-generic-broker"
+          },
+          {
+            "firstLine": 39,
+            "lastLine": 56,
+            "bytes": 1138,
+            "sha256": "0a6c14558158de5869d4a40300d933d1961f05ec860b20dc8277d0964285086d",
+            "group": "05-generic-broker"
+          },
+          {
+            "firstLine": 92,
+            "lastLine": 123,
+            "bytes": 2709,
+            "sha256": "225147421e18c7253624cb0cfe627167055bfd3062f3c0d7a037f175540ddb08",
+            "group": "05-generic-broker"
+          },
+          {
+            "firstLine": 165,
+            "lastLine": 258,
+            "bytes": 8842,
+            "sha256": "fb9b8b04189d41bbd31d0d029042441a0e2b4f16f4690028e230ac16a05b1743",
+            "group": "05-generic-broker"
+          },
+          {
+            "firstLine": 387,
+            "lastLine": 426,
+            "bytes": 3568,
+            "sha256": "699895c82e2abb66440c6267cfbb26f640e8186b5318f90d5bb1e302f07f9b06",
+            "group": "05-generic-broker"
+          }
+        ]
+      },
+      {
+        "path": "core4/core/ledger.js",
+        "fullFileSha256": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+        "fullFileBytes": 2535,
+        "fullFileLines": 52,
+        "gitBlob": "680be4c243d33f3e685fcf88ab6ba54905c4478c",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 52,
+            "bytes": 2535,
+            "sha256": "a52aff8ba051a8790cf620a9a44081f2772e27257f477dc5562fc4588c842402",
+            "group": "06-journal-ownership"
+          }
+        ]
+      },
+      {
+        "path": "core4/core/state-lock.js",
+        "fullFileSha256": "4e515580ec7ceb03cc7a7a5d789048aee9bf0e9a7866d4cf0ee108958ff58e23",
+        "fullFileBytes": 6101,
+        "fullFileLines": 99,
+        "gitBlob": "7f02ae9b06a538bf26369c810812bcf352fb07a4",
+        "ranges": [
+          {
+            "firstLine": 58,
+            "lastLine": 99,
+            "bytes": 2659,
+            "sha256": "5d2c6dbaec10e4ff370e1638aeeefe11cf2a62759eeae66e3a9d0a599e218401",
+            "group": "06-journal-ownership"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/owner-lifecycle.js",
+        "fullFileSha256": "c9d9328e7e3ffdee86f4ece7e4ea45a13e0e472d52c99a9fd4e75fda070e9f5b",
+        "fullFileBytes": 45398,
+        "fullFileLines": 497,
+        "gitBlob": "27bd569054fdcd00631eecebf950173236cb4760",
+        "ranges": [
+          {
+            "firstLine": 298,
+            "lastLine": 330,
+            "bytes": 2603,
+            "sha256": "bbc4f84e22b87ede8d4ad788a2623f59e73babd926309f3cd640e6a03880b55f",
+            "group": "06-journal-ownership"
+          },
+          {
+            "firstLine": 352,
+            "lastLine": 375,
+            "bytes": 2075,
+            "sha256": "a1dfdea1091a8eb67e75075fe5f6a62fccaa8227b2d13540662f0bfe85977ffe",
+            "group": "06-journal-ownership"
+          }
+        ]
+      },
+      {
+        "path": "core4/core/stdio.js",
+        "fullFileSha256": "e48f55653cb3867032851e6fe91c7637151de96af01e9a966aebf5653787c401",
+        "fullFileBytes": 3660,
+        "fullFileLines": 45,
+        "gitBlob": "761bdf059246e28dfa9df438e8f519c10c4d3647",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 18,
+            "bytes": 1553,
+            "sha256": "f356b3b4e55b7f9421f729cdd55b5bb28f48552443bed0476de02b586734979d",
+            "group": "07-mcp-surface"
+          },
+          {
+            "firstLine": 20,
+            "lastLine": 45,
+            "bytes": 1959,
+            "sha256": "aaf34aaa1c501845f756aaa5dc828df1ee696791541f1b87ad01d3f150cd2ab7",
+            "group": "07-mcp-surface"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/client-stdio.js",
+        "fullFileSha256": "3996fb790334c289efe0ea25626e2419e09432900da46e2fcf55000b2998fb16",
+        "fullFileBytes": 10796,
+        "fullFileLines": 109,
+        "gitBlob": "b743afe4f37018b69db81bcc991a34568621f547",
+        "ranges": [
+          {
+            "firstLine": 82,
+            "lastLine": 109,
+            "bytes": 3091,
+            "sha256": "97b31a7b012c7550914466717dbfbd12110d16fa2f39af308d19009b6bac021c",
+            "group": "07-mcp-surface"
+          }
+        ]
+      },
+      {
+        "path": "core4/protocol/codec.js",
+        "fullFileSha256": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+        "fullFileBytes": 1360,
+        "fullFileLines": 20,
+        "gitBlob": "65100fc6725f73071a7551a2dc537c3666ec3b52",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 20,
+            "bytes": 1360,
+            "sha256": "64057672c5c9123e1c3e5f49c2b448d704e1cdbc99d8c1d5f1ee3892b09810c1",
+            "group": "08-typed-channel"
+          }
+        ]
+      },
+      {
+        "path": "core4/protocol/dispatch.js",
+        "fullFileSha256": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+        "fullFileBytes": 904,
+        "fullFileLines": 14,
+        "gitBlob": "3856416e893b7af01e5e699f84401ded1f0c6e05",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 14,
+            "bytes": 904,
+            "sha256": "d9fd64adc931d32f65ab0b57104afce7f199f5e1ce96f17cf00e19fc1d95645d",
+            "group": "08-typed-channel"
+          }
+        ]
+      },
+      {
+        "path": "core4/core/receiver.js",
+        "fullFileSha256": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+        "fullFileBytes": 3521,
+        "fullFileLines": 52,
+        "gitBlob": "d463b7b1e56ee3524079af65f251d83d80e3ca3a",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 52,
+            "bytes": 3521,
+            "sha256": "3a3fcdd3d783e309e8ff9e068e4b0749add8430f1e0b530887998e057d0836c2",
+            "group": "08-typed-channel"
+          }
+        ]
+      },
+      {
+        "path": "core4/integrations/cep/host-dispatcher.js",
+        "fullFileSha256": "57db0822461593d22540a139abd126dcf67b85b5da57c5ff288d2f44b2f5784c",
+        "fullFileBytes": 3712,
+        "fullFileLines": 52,
+        "gitBlob": "15d6d97c019b72a47c08556cb3bd34572afd9e9c",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 52,
+            "bytes": 3712,
+            "sha256": "57db0822461593d22540a139abd126dcf67b85b5da57c5ff288d2f44b2f5784c",
+            "group": "08-typed-channel"
+          }
+        ]
+      },
+      {
+        "path": "core4/integrations/cep/http-peer.js",
+        "fullFileSha256": "d0d6081df5b814e364b795c0f08087101fd9db8219ede64a29e999a04bdf1bb0",
+        "fullFileBytes": 53581,
+        "fullFileLines": 595,
+        "gitBlob": "7557858f44dd8f56fb5951899cb4b4304418cd43",
+        "ranges": [
+          {
+            "firstLine": 157,
+            "lastLine": 178,
+            "bytes": 2090,
+            "sha256": "142c33576a423fea082e2e29dd7f74e08826dec910990dba113b6d42a8cee544",
+            "group": "09-authenticated-peer"
+          },
+          {
+            "firstLine": 296,
+            "lastLine": 322,
+            "bytes": 2317,
+            "sha256": "a5cd233055675df64090b945587a670d3a1124157b4e81ae546a46cbf97bd93e",
+            "group": "09-authenticated-peer"
+          },
+          {
+            "firstLine": 324,
+            "lastLine": 348,
+            "bytes": 3782,
+            "sha256": "df9db07947540097a7362a3eeb9fbff769198b027a2b579805c7f5cd72a85d54",
+            "group": "09-authenticated-peer"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/stdio-entry.js",
+        "fullFileSha256": "456a936c20c41e6e8ac82ae0a617525c042781423eb4ba9e773e24a62ca25a6e",
+        "fullFileBytes": 69585,
+        "fullFileLines": 762,
+        "gitBlob": "c3e06c19c64def5d231130208704fdcb603f90f8",
+        "ranges": [
+          {
+            "firstLine": 264,
+            "lastLine": 293,
+            "bytes": 2844,
+            "sha256": "200541b81ccce49773dd2fca0e18a4b2ecc32d4bb99bc7365db470eb28a91514",
+            "group": "10-jsx-registry"
+          }
+        ]
+      },
+      {
+        "path": "core4/cep/js/poll-dispatcher.js",
+        "fullFileSha256": "3199bbd8b98bc1d78c74e278f6bf2da3b405575f4709468d70758f7df582e065",
+        "fullFileBytes": 14848,
+        "fullFileLines": 139,
+        "gitBlob": "deb40fd070c1df64ecd2785606fc42e8a08c9cb5",
+        "ranges": [
+          {
+            "firstLine": 23,
+            "lastLine": 66,
+            "bytes": 4070,
+            "sha256": "8bfa5ce4463a2ab66e4ef392b92c74c41e48935e1ca1862e4bd6495831a7cb87",
+            "group": "10-jsx-registry"
+          },
+          {
+            "firstLine": 88,
+            "lastLine": 118,
+            "bytes": 4124,
+            "sha256": "6f131cb816edb3d9177eb8218bdb2f22a8c17f3c0c1739b29674b25582436a59",
+            "group": "10-jsx-registry"
+          }
+        ]
+      },
+      {
+        "path": "core4/tools/package-installable.js",
+        "fullFileSha256": "c31d2830d2b36cf879289ecc5eb610d5baf8d9d420f215d311d36fd75aff1804",
+        "fullFileBytes": 10119,
+        "fullFileLines": 115,
+        "gitBlob": "9979feb162739c059515d10a5c52febe01f7ecb7",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 115,
+            "bytes": 10119,
+            "sha256": "c31d2830d2b36cf879289ecc5eb610d5baf8d9d420f215d311d36fd75aff1804",
+            "group": "11-packaging"
+          }
+        ]
+      },
+      {
+        "path": "core4/worker.js",
+        "fullFileSha256": "7f536cdcfd03b3971e1292780ba5d32c250a9c28e8c50e19d65df70a3e5d1703",
+        "fullFileBytes": 2244,
+        "fullFileLines": 39,
+        "gitBlob": "da9219d4f7c219081b1a4e7f8a11b5bcbc9a27f3",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 39,
+            "bytes": 2244,
+            "sha256": "7f536cdcfd03b3971e1292780ba5d32c250a9c28e8c50e19d65df70a3e5d1703",
+            "group": "11-packaging"
+          }
+        ]
+      },
+      {
+        "path": "core4/tools/install-core4.js",
+        "fullFileSha256": "a64b61d4be78a1d30247488ff09e8d66987608df0b315d1b610fe17fe9e93c11",
+        "fullFileBytes": 61792,
+        "fullFileLines": 650,
+        "gitBlob": "8f29f14bf3c398838081bfce53b554a4ff3a6662",
+        "ranges": [
+          {
+            "firstLine": 339,
+            "lastLine": 374,
+            "bytes": 3816,
+            "sha256": "604a38aff6dbf750f05c56d507e5d27ec8d79419262119adf44d44fc3a0b90ec",
+            "group": "12-install-local-environment"
+          },
+          {
+            "firstLine": 376,
+            "lastLine": 386,
+            "bytes": 2001,
+            "sha256": "9cb3b340c7029531dbb21d9a71db8ab9554f4712229779d532fa4f2ca51d8885",
+            "group": "12-install-local-environment"
+          },
+          {
+            "firstLine": 453,
+            "lastLine": 479,
+            "bytes": 2208,
+            "sha256": "1b48384f43e72fbcec5118d255779b72581d680bb9c23d7cf9e77cbd4adb8377",
+            "group": "12-install-local-environment"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/adobe-child-environment.js",
+        "fullFileSha256": "0db5990546fb91eef36e943aab5739ce8243b2accb1209a93d097c04b84ecfa9",
+        "fullFileBytes": 2285,
+        "fullFileLines": 24,
+        "gitBlob": "9627073fa980008dcac94347e426d967d9500e5f",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 24,
+            "bytes": 2285,
+            "sha256": "0db5990546fb91eef36e943aab5739ce8243b2accb1209a93d097c04b84ecfa9",
+            "group": "12-install-local-environment"
+          }
+        ]
+      },
+      {
+        "path": "core4/runtime/ae-panel-startup.js",
+        "fullFileSha256": "7c1887301b23f49d5deedf972bebde42c527682ac68bf0f3c7f9584c717ceba6",
+        "fullFileBytes": 26224,
+        "fullFileLines": 262,
+        "gitBlob": "01bff3d0ddf32de8a2cb99b5a090c476ffe10f64",
+        "ranges": [
+          {
+            "firstLine": 87,
+            "lastLine": 118,
+            "bytes": 4281,
+            "sha256": "e1812e3481371b34ee0f862b2ba972814abc14c9745aee6bce18969947d02609",
+            "group": "13-startup-boundary"
+          },
+          {
+            "firstLine": 230,
+            "lastLine": 262,
+            "bytes": 3663,
+            "sha256": "724352e0e5ff40d04225d34195228918740f2efa532f12cbe73d2453bfdaa12b",
+            "group": "13-startup-boundary"
+          }
+        ]
+      },
+      {
+        "path": "core4/modules/titles-current-target/artifact.json",
+        "fullFileSha256": "daea352b270666fab332739c34d413e7d2fdc021db026bc35a5cf9392552c9cc",
+        "fullFileBytes": 406,
+        "fullFileLines": 11,
+        "gitBlob": "e184e5d6c1e5ed53e2846d24ddc9e759f8a512c7",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 11,
+            "bytes": 406,
+            "sha256": "daea352b270666fab332739c34d413e7d2fdc021db026bc35a5cf9392552c9cc",
+            "group": "14-representative-module"
+          }
+        ]
+      },
+      {
+        "path": "core4/modules/titles-current-target/contract.json",
+        "fullFileSha256": "318a5d6021bc94690323ab00ca324c694c6b66dd520a28989eda87643c1d3ce0",
+        "fullFileBytes": 3748,
+        "fullFileLines": 182,
+        "gitBlob": "d5f6e035e8eb45e42fa397c21e4ccff414ab1fac",
+        "ranges": [
+          {
+            "firstLine": 160,
+            "lastLine": 182,
+            "bytes": 530,
+            "sha256": "0a3ae3aff811e8a551ab6853f61d619724525daa754fa39d8ccdc89096022d1e",
+            "group": "14-representative-module"
+          }
+        ]
+      },
+      {
+        "path": "core4/modules/titles-current-target/implementation.js",
+        "fullFileSha256": "1b31cd96b475f6af3e286fdd5c009d46e09b18b271db88ce951e9ec8d7fc580b",
+        "fullFileBytes": 372,
+        "fullFileLines": 6,
+        "gitBlob": "ef0a4406d27ba30db61faf34c13d8cbe9de19401",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 6,
+            "bytes": 372,
+            "sha256": "1b31cd96b475f6af3e286fdd5c009d46e09b18b271db88ce951e9ec8d7fc580b",
+            "group": "14-representative-module"
+          }
+        ]
+      },
+      {
+        "path": "core4/modules/titles-current-target/executor.jsx",
+        "fullFileSha256": "f439be6df6abb5a3de9372c85c91e895a05283e8d15d53784d9e7ba808701eb4",
+        "fullFileBytes": 9714,
+        "fullFileLines": 106,
+        "gitBlob": "aeca73c4bd4a3c9ca04083a9bea6802f1daca4ef",
+        "ranges": [
+          {
+            "firstLine": 70,
+            "lastLine": 106,
+            "bytes": 3982,
+            "sha256": "59dcb817581b4a95613029ba4b0279a0319777725bb2095a1313ee4e8ee9d2ac",
+            "group": "14-representative-module"
+          }
+        ]
+      },
+      {
+        "path": "core4/config/admissions/titles-current-target.json",
+        "fullFileSha256": "c6adbebb9ad8b919e91c0de2c773e9339be9922a8ddac50b55d515150c4dd68c",
+        "fullFileBytes": 631,
+        "fullFileLines": 12,
+        "gitBlob": "3ecf17aa7cc0aa1a042d8cfbfcd5033c1ca0c5f0",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 4,
+            "bytes": 164,
+            "sha256": "4413f4bf2a4a1ef500f399b097fda700c5c50d0012c941d5281a1fbcda8c43ba",
+            "group": "14-representative-module"
+          },
+          {
+            "firstLine": 6,
+            "lastLine": 12,
+            "bytes": 383,
+            "sha256": "35c24b0f823166ad1ea8e92cb5cf6cd4961ca298440a6b2f2ec95af4577c1260",
+            "group": "14-representative-module"
+          }
+        ]
+      },
+      {
+        "path": "products/titles/src/compiler.js",
+        "fullFileSha256": "765c625b4dca5c3129ded67b5c6b99b364279deae3378823a575b91d338d99ba",
+        "fullFileBytes": 5645,
+        "fullFileLines": 94,
+        "gitBlob": "dbb45bfa1de2edd5c352c7a4b94c5b09f2650337",
+        "ranges": [
+          {
+            "firstLine": 1,
+            "lastLine": 94,
+            "bytes": 5645,
+            "sha256": "765c625b4dca5c3129ded67b5c6b99b364279deae3378823a575b91d338d99ba",
+            "group": "15-external-products"
+          }
+        ]
+      },
+      {
+        "path": "products/slideshow/compiler.js",
+        "fullFileSha256": "fc854c08dd826fabc0d0bd6236ac73c0b4140ab49d7981fb1c74696fec3cb22e",
+        "fullFileBytes": 12056,
+        "fullFileLines": 186,
+        "gitBlob": "a661ee334f99d6c3caee404113b65b937ff1587b",
+        "ranges": [
+          {
+            "firstLine": 150,
+            "lastLine": 186,
+            "bytes": 2319,
+            "sha256": "b15e4f6ed0b976c34a09ad52b37d9f1e764e6c4191424779a83e64768f8c571d",
+            "group": "15-external-products"
+          }
+        ]
+      }
+    ],
+    "summaryEvidenceProvenance": [
+      {
+        "path": "docs/evidence/core-single-install-cutover-20261112.json",
+        "sha256": "6c679a4d399dc0e7d644ccec0079eb8a9b6c0fbce4e29b8012aac51c0086fda1",
+        "bytes": 10273,
+        "mode": "summary only; raw production-sensitive contents omitted"
+      },
+      {
+        "path": "plans/core-ae-panel-startup-20261111.md",
+        "sha256": "2c2d42fd10ae0b5ae9ce41478f120c07043c32651c1855dc53187727b8ad466c",
+        "bytes": 55962,
+        "mode": "summary only; raw production-sensitive contents omitted"
+      },
+      {
+        "path": "plans/core-msix-layer-recovery-20261112.md",
+        "sha256": "5fde49daf45ddad75ba58ceeb6dc0c775030aaa8a9124f237aaf8993828725db",
+        "bytes": 12345,
+        "mode": "summary only; raw production-sensitive contents omitted"
+      }
+    ]
+  },
+  "limitations": [
+    "Intentionally selected source excerpts only; omitted lines/ranges are explicit in source-map.",
+    "No new tests, live calls, installation, AE/UI/network activity or external sends.",
+    "Historical design documents not used as current implementation.",
+    "Manifest excludes its own hash; separate local checksums.txt covers manifest and payloads."
+  ]
+}

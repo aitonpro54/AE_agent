@@ -1,0 +1,203 @@
+{
+  "result": "PASS",
+  "sourceBlocksExact": 56,
+  "sourceComparison": "exact Git excerpt bytes; Markdown fence newline excluded only where source has no final newline",
+  "groups": [
+    {
+      "group": "01-package-composition",
+      "exactBlocks": 7
+    },
+    {
+      "group": "02-owner-thin-client",
+      "exactBlocks": 6
+    },
+    {
+      "group": "03-lease-worksession",
+      "exactBlocks": 2
+    },
+    {
+      "group": "04-authority-attachment",
+      "exactBlocks": 3
+    },
+    {
+      "group": "05-generic-broker",
+      "exactBlocks": 5
+    },
+    {
+      "group": "06-journal-ownership",
+      "exactBlocks": 4
+    },
+    {
+      "group": "07-mcp-surface",
+      "exactBlocks": 3
+    },
+    {
+      "group": "08-typed-channel",
+      "exactBlocks": 4
+    },
+    {
+      "group": "09-authenticated-peer",
+      "exactBlocks": 3
+    },
+    {
+      "group": "10-jsx-registry",
+      "exactBlocks": 3
+    },
+    {
+      "group": "11-packaging",
+      "exactBlocks": 2
+    },
+    {
+      "group": "12-install-local-environment",
+      "exactBlocks": 4
+    },
+    {
+      "group": "13-startup-boundary",
+      "exactBlocks": 2
+    },
+    {
+      "group": "14-representative-module",
+      "exactBlocks": 6
+    },
+    {
+      "group": "15-external-products",
+      "exactBlocks": 2
+    }
+  ],
+  "payloadsMatchManifest": true,
+  "privacy": [
+    {
+      "file": "request.md",
+      "secretHits": 0,
+      "rawPersonalPathHits": 0,
+      "heuristicPiiHits": [],
+      "resolution": "bundle: builder timestamp only; manifest: verified SHA/Git object fields only; no raw PII"
+    },
+    {
+      "file": "bundle.md",
+      "secretHits": 0,
+      "rawPersonalPathHits": 0,
+      "heuristicPiiHits": [
+        {
+          "kind": "phone_like",
+          "line": 3
+        }
+      ],
+      "resolution": "bundle: builder timestamp only; manifest: verified SHA/Git object fields only; no raw PII"
+    },
+    {
+      "file": "manifest.json",
+      "secretHits": 0,
+      "rawPersonalPathHits": 0,
+      "heuristicPiiHits": [
+        {
+          "kind": "phone_like",
+          "line": 39
+        },
+        {
+          "kind": "phone_like",
+          "line": 42
+        },
+        {
+          "kind": "phone_like",
+          "line": 48
+        },
+        {
+          "kind": "phone_like",
+          "line": 55
+        },
+        {
+          "kind": "phone_like",
+          "line": 64
+        },
+        {
+          "kind": "phone_like",
+          "line": 126
+        },
+        {
+          "kind": "phone_like",
+          "line": 158
+        },
+        {
+          "kind": "phone_like",
+          "line": 167
+        },
+        {
+          "kind": "phone_like",
+          "line": 174
+        },
+        {
+          "kind": "phone_like",
+          "line": 220
+        },
+        {
+          "kind": "phone_like",
+          "line": 229
+        },
+        {
+          "kind": "phone_like",
+          "line": 255
+        },
+        {
+          "kind": "phone_like",
+          "line": 277
+        },
+        {
+          "kind": "phone_like",
+          "line": 307
+        },
+        {
+          "kind": "phone_like",
+          "line": 390
+        },
+        {
+          "kind": "phone_like",
+          "line": 422
+        },
+        {
+          "kind": "phone_like",
+          "line": 477
+        },
+        {
+          "kind": "phone_like",
+          "line": 486
+        },
+        {
+          "kind": "phone_like",
+          "line": 516
+        },
+        {
+          "kind": "phone_like",
+          "line": 526
+        },
+        {
+          "kind": "phone_like",
+          "line": 603
+        },
+        {
+          "kind": "phone_like",
+          "line": 610
+        },
+        {
+          "kind": "phone_like",
+          "line": 656
+        },
+        {
+          "kind": "phone_like",
+          "line": 720
+        },
+        {
+          "kind": "phone_like",
+          "line": 775
+        },
+        {
+          "kind": "phone_like",
+          "line": 796
+        }
+      ],
+      "resolution": "bundle: builder timestamp only; manifest: verified SHA/Git object fields only; no raw PII"
+    }
+  ],
+  "head": "6d40cc228d9f2e18c672af5782033be305b82917",
+  "noLiveOrExternalActions": true
+}
