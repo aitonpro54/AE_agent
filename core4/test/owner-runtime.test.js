@@ -10,6 +10,7 @@ const os = require('node:os');
 const http = require('node:http');
 const vm = require('node:vm');
 const { AsyncLocalStorage } = require('node:async_hooks');
+const { PassThrough } = require('node:stream');
 const { fork, spawn, spawnSync } = require('node:child_process');
 const { once } = require('node:events');
 const { canonical, hash } = require('../protocol/json');
@@ -806,6 +807,103 @@ test('default verified entry markers remain exact and new owner files stay outsi
   main.child.stdin.write(canonical({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }) + '\n');
   assert.equal(JSON.parse(String((await response)[0])).result.serverInfo.name, 'ae-agent-core4');
   main.child.stdin.end(); assert.equal((await main.exit).code, 0); assert.equal(main.stderr, '');
+});
+
+async function closeFixture(t, ownerMode = false) {
+  const f = install(t, ownerMode ? testPackage() : buildPackage(SOURCE, 'readonly'));
+  const peerModule = require(path.join(f.d.releaseDir, 'integrations/cep/http-peer.js'));
+  const brokerModule = require(path.join(f.d.releaseDir, 'core/broker.js'));
+  const readiness = require(path.join(f.d.releaseDir, 'runtime/ae-readiness.js'));
+  const originalPeer = peerModule.createHttpPeer, OriginalBroker = brokerModule.Broker, originalReadiness = readiness.createAeReadiness;
+  let resolve, reject, physical, broker, physicalClosed = false, peerCloses = 0, brokerCloses = 0;
+  const gate = new Promise((yes, no) => { resolve = yes; reject = no; });
+  const input = new PassThrough(), output = new PassThrough(), pending = new Map(); let serial = 0, buffer = '';
+  output.on('data', bytes => {
+    buffer += bytes;
+    while (buffer.includes('\n')) { const at = buffer.indexOf('\n'), reply = JSON.parse(buffer.slice(0, at)); buffer = buffer.slice(at + 1); pending.get(reply.id)?.(reply); pending.delete(reply.id); }
+  });
+  // TEMP release module-memory instrumentation only: delay/reject the physical
+  // close without adding runtime injection hooks or observing the user's AE.
+  peerModule.createHttpPeer = options => {
+    physical = originalPeer(options);
+    return { ...physical, async close() { peerCloses++; await gate; await physical.close(); physicalClosed = true; } };
+  };
+  brokerModule.Broker = class extends OriginalBroker {
+    constructor(options) { super(options); broker = this; }
+    close() { brokerCloses++; return super.close(); }
+  };
+  readiness.createAeReadiness = () => originalReadiness({ platform: 'fixture' });
+  // A rejected product close deliberately retains resources. Only fixture
+  // teardown closes the isolated peer and lock directly, never retries close.
+  resources(t).closers.push(async () => {
+    resolve();
+    if (physical && !physicalClosed) await physical.close();
+    if (broker && !broker.closed) OriginalBroker.prototype.close.call(broker);
+  });
+  let runtime;
+  try {
+    runtime = ownerMode
+      ? await require(path.join(f.d.releaseDir, 'runtime/owner-entry.js')).startOwner({ descriptor: f.descriptor, port: 0 })
+      : await require(path.join(f.d.releaseDir, 'runtime/stdio-entry.js')).start({ descriptor: f.descriptor, port: 0, input, output });
+  } finally {
+    peerModule.createHttpPeer = originalPeer; brokerModule.Broker = OriginalBroker; readiness.createAeReadiness = originalReadiness;
+  }
+  if (ownerMode) resources(t).closers.push(async () => { resolve(); await runtime.close(); });
+  const call = name => new Promise(done => {
+    const id = ++serial; pending.set(id, done);
+    input.write(canonical({ jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: { payload: {} } } }) + '\n');
+  });
+  return { f, runtime, call, resolve, reject, get broker() { return broker; }, get peerCloses() { return peerCloses; }, get brokerCloses() { return brokerCloses; } };
+}
+
+for (const rejected of [false, true]) test('A1 direct stdio concurrent close shares deferred peer ' + (rejected ? 'rejection' : 'success'), async t => {
+  const f = await closeFixture(t), error = new Error('fixture_peer_close_failed');
+  const lock = path.join(f.f.d.stateDir, 'broker/broker-owner.lock'), originalLock = fs.readFileSync(lock);
+  assert.equal(f.runtime.status().ready, true);
+  const settled = [], first = f.runtime.close(), second = f.runtime.close();
+  const outcomes = Promise.allSettled([first, second]);
+  first.then(() => settled.push('first'), () => settled.push('first'));
+  second.then(() => settled.push('second'), () => settled.push('second'));
+  const closing = f.runtime.status();
+  assert.equal(closing.closed, true); assert.equal(closing.ready, false); assert.equal(closing.connection, 'unavailable');
+  assert.equal(closing.physical.inspectionAvailable, false);
+  for (const name of Object.keys(require('../core/stdio').TOOL_METHODS)) {
+    const reply = await f.call(name);
+    assert.equal(reply.error?.message, 'broker_closed', name);
+  }
+  await until(() => f.peerCloses === 1); await new Promise(done => setImmediate(done));
+  assert.deepEqual(settled, []); assert.equal(f.brokerCloses, 0); assert.equal(f.broker.closed, false);
+  assert.deepEqual(fs.readFileSync(lock), originalLock);
+  if (rejected) f.reject(error); else f.resolve();
+  const results = await outcomes;
+  assert.ok(results.every(result => result.status === (rejected ? 'rejected' : 'fulfilled')));
+  if (rejected) {
+    assert.ok(results.every(result => result.reason === error));
+    await assert.rejects(f.runtime.close(), value => value === error);
+    assert.equal(f.brokerCloses, 0); assert.equal(f.broker.closed, false);
+    assert.deepEqual(fs.readFileSync(lock), originalLock);
+  } else {
+    await f.runtime.close(); assert.equal(f.brokerCloses, 1); assert.equal(f.broker.closed, true);
+    assert.equal(fs.existsSync(lock), false);
+  }
+  assert.equal(f.peerCloses, 1); assert.equal(f.runtime.status().ready, false);
+});
+
+test('A1 upper Owner wrapper rejects draining before sharing the deferred lower cleanup', async t => {
+  const f = await closeFixture(t, true), settled = [];
+  f.broker.controlPending = 1;
+  await assert.rejects(f.runtime.close(), error => error.code === 'owner_draining');
+  assert.equal(f.peerCloses, 0); assert.equal(f.runtime.status().attachmentOwner.closed, false);
+  f.broker.controlPending = 0;
+  const first = f.runtime.close(), second = f.runtime.close();
+  const outcomes = Promise.all([first, second]);
+  first.then(() => settled.push('first')); second.then(() => settled.push('second'));
+  await until(() => f.peerCloses === 1); await new Promise(done => setImmediate(done));
+  assert.deepEqual(settled, []); assert.equal(f.brokerCloses, 0);
+  assert.equal(f.runtime.status().attachmentOwner.closed, true);
+  f.resolve(); await outcomes; await f.runtime.close();
+  assert.equal(f.peerCloses, 1); assert.equal(f.brokerCloses, 1);
+  assert.equal(f.runtime.status().maintenance.phase, 'stopped');
 });
 
 test('normal package without the complete owner cluster refuses private owner mode before any listener or store opens', async t => {

@@ -1,0 +1,63 @@
+✖ owner-runtime A1 direct stdio concurrent close shares deferred peer success (2858.7345ms)
+✖ owner-runtime A1 direct stdio concurrent close shares deferred peer rejection (2798.8454ms)
+✔ owner-runtime A1 upper Owner wrapper waits for the same deferred lower cleanup (8247.9308ms)
+✖ owner-runtime desired-stop freezes new control while captured original inspection completes after client detach (7898.0599ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 1
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21947.664
+
+✖ failing tests:
+
+test at core4\test\owner-runtime.test.js:5:28
+✖ owner-runtime A1 direct stdio concurrent close shares deferred peer success (2858.7345ms)
+  Error: ENOENT: no such file or directory, open 'C:\Users\Ant\AppData\Local\Temp\core4-owner-ULudKp\AEAgentCore4\state\production\broker\broker-owner.gate'
+      at Object.openSync (node:fs:561:18)
+      at Object.readFileSync (node:fs:445:35)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\owner-runtime.test.js:861:89)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    errno: -4058,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: 'C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-ULudKp\\AEAgentCore4\\state\\production\\broker\\broker-owner.gate'
+  }
+
+test at core4\test\owner-runtime.test.js:5:28
+✖ owner-runtime A1 direct stdio concurrent close shares deferred peer rejection (2798.8454ms)
+  Error: ENOENT: no such file or directory, open 'C:\Users\Ant\AppData\Local\Temp\core4-owner-of0Yr9\AEAgentCore4\state\production\broker\broker-owner.gate'
+      at Object.openSync (node:fs:561:18)
+      at Object.readFileSync (node:fs:445:35)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\owner-runtime.test.js:861:89)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    errno: -4058,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: 'C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-owner-of0Yr9\\AEAgentCore4\\state\\production\\broker\\broker-owner.gate'
+  }
+
+test at core4\test\owner-runtime.test.js:5:28
+✖ owner-runtime desired-stop freezes new control while captured original inspection completes after client detach (7898.0599ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  403 !== 200
+  
+      at panel (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\owner-runtime.test.js:138:136)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\owner-runtime.test.js:1083:13)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 403,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

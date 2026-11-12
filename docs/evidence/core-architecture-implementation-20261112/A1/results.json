@@ -1,0 +1,64 @@
+[
+  {
+    "name": "syntax-attachment-owner",
+    "args": [
+      "--check",
+      "core4/runtime/attachment-owner.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "syntax-stdio-entry",
+    "args": [
+      "--check",
+      "core4/runtime/stdio-entry.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "syntax-owner-attachments-test",
+    "args": [
+      "--check",
+      "core4/test/owner-attachments.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "syntax-owner-runtime-test",
+    "args": [
+      "--check",
+      "core4/test/owner-runtime.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "owner-attachments",
+    "args": [
+      "--test",
+      "--test-name-pattern=owner-attachments",
+      "core4/test/owner-attachments.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "owner-runtime-a1",
+    "args": [
+      "--test",
+      "--test-name-pattern=A1|desired-stop freezes",
+      "core4/test/owner-runtime.test.js"
+    ],
+    "exit": 1,
+    "signal": null,
+    "summary": []
+  }
+]

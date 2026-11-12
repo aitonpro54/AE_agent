@@ -1,0 +1,50 @@
+{
+  "scope": "A1 only",
+  "status": "implemented; focused validation passed; full affected map pending coordinator union",
+  "files": [
+    {
+      "path": "core4/runtime/attachment-owner.js",
+      "sha256": "551e29e15dadbc4702ac1ca5c29494f16fe15bec69205dfcb6fb119a5dfb0f2d"
+    },
+    {
+      "path": "core4/runtime/stdio-entry.js",
+      "sha256": "8cb90f46d8af7493c7345523c04241cb94b4ef5f12b95698f339ca4642fee0d4"
+    },
+    {
+      "path": "core4/test/owner-attachments.test.js",
+      "sha256": "21e6c3defce8cffbd23e96646a91999d4b73a4d49476b9cf0254c9ed8ea9c8d4"
+    },
+    {
+      "path": "core4/test/owner-runtime.test.js",
+      "sha256": "2fc1a5b89ea2bb2607525fc0e70ba85b6459a9270d6e304a972096ff410be7ff"
+    }
+  ],
+  "passed": {
+    "ownerAttachments": {
+      "tests": 38,
+      "stdout": "owner-attachments.stdout.txt"
+    },
+    "ownerRuntimeFocusedA1": {
+      "tests": 3,
+      "stdout": "owner-runtime-a1-attempt02.stdout.txt"
+    },
+    "syntax": "four changed JS files, owner-runtime repeated after final fixture correction",
+    "entryBoundary": true,
+    "diffCheck": true
+  },
+  "retainedFailures": {
+    "stdout": "owner-runtime-a1.stdout.txt",
+    "stderr": "owner-runtime-a1.stderr.txt",
+    "newFixtures": "attempt01 used transient .gate instead of steady .lock; corrected, attempt02 PASS",
+    "existingHarness": {
+      "test": "desired-stop freezes new control while captured original inspection completes after client detach",
+      "testPath": "core4/test/owner-runtime.test.js:1086",
+      "helperPath": "core4/test/owner-runtime.test.js:138",
+      "failure": "403 instead of 200 during /link; panel helper omits current loadedPanel/extensionRoot/registry-ready contract",
+      "disposition": "C task; production auth unchanged; not a current PASS"
+    }
+  },
+  "remaining": "selection.json: 37 selected checks/37 batches. owner-attachments completed; owner-runtime only 3 focused cases; 36 selected check keys still lack full A1 current closure proof here. 26 deferred coverage records retained.",
+  "noLive": true,
+  "noCommits": true
+}

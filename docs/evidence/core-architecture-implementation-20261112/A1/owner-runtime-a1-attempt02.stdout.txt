@@ -1,0 +1,11 @@
+✔ owner-runtime A1 direct stdio concurrent close shares deferred peer success (2838.6135ms)
+✔ owner-runtime A1 direct stdio concurrent close shares deferred peer rejection (2912.5759ms)
+✔ owner-runtime A1 upper Owner wrapper rejects draining before sharing the deferred lower cleanup (8302.5111ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14196.1088

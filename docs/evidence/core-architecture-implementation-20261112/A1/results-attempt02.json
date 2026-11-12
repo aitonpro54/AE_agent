@@ -1,0 +1,25 @@
+[
+  {
+    "name": "syntax-owner-runtime-final",
+    "args": [
+      "--check",
+      "core4/test/owner-runtime.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "name": "owner-runtime-a1-attempt02",
+    "args": [
+      "--test",
+      "--test-name-pattern=A1",
+      "core4/test/owner-runtime.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "stdout": "✔ owner-runtime A1 direct stdio concurrent close shares deferred peer success (2838.6135ms)\n✔ owner-runtime A1 direct stdio concurrent close shares deferred peer rejection (2912.5759ms)\n✔ owner-runtime A1 upper Owner wrapper rejects draining before sharing the deferred lower cleanup (8302.5111ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 14196.1088\n",
+    "stderr": ""
+  }
+]

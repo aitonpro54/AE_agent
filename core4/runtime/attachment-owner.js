@@ -64,7 +64,7 @@ function createAttachmentOwner({ startupGate = () => ({ pending: false, unresolv
   const physicalReadErrors = new WeakMap();
   const methods = ownerMethods(renderJobs), toolMethods = renderJobs ? { ...TOOL_METHODS, ...RENDER_JOB_METHODS } : TOOL_METHODS;
   const refs = { evidence: new Map(), build: new Map(), proposal: new Map(), dryrun: new Map(), task: new Map() };
-  let closed = false, frozen = false;
+  let closed = false, frozen = false, closing;
   function fail(code) { const e = new Error(code); ownErrors.add(e); e.code = code; throw e; }
   function object(value, keys) {
     if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).some(k => !keys.includes(k))) fail('owner_payload');
@@ -213,11 +213,15 @@ function createAttachmentOwner({ startupGate = () => ({ pending: false, unresolv
     }
   }
   async function close() {
-    if (closed) return;
+    if (closing) return closing;
     if (accepted.size || facts().pending) fail('owner_draining');
-    closed = true; for (const session of sessions.keys()) onDetach(session);
-    for (const timer of timers) clearTimeout(timer);
-    await runtime.close();
+    closed = true;
+    closing = Promise.resolve().then(async () => {
+      for (const session of sessions.keys()) onDetach(session);
+      for (const timer of timers) clearTimeout(timer);
+      await runtime.close();
+    });
+    return closing;
   }
   return Object.freeze({ onAttach, onDetach, onRequest, status, close, freeze() { frozen = true; }, bootId: lease.status().bootId });
 }

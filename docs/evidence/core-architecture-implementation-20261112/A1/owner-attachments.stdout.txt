@@ -1,0 +1,46 @@
+✔ owner-attachments A1 concurrent close shares deferred cleanup success (7.4199ms)
+✔ owner-attachments A1 concurrent close shares deferred cleanup rejection (0.7867ms)
+✔ owner-attachments A1 synchronous cleanup failure stays rejected on repeated close (0.39ms)
+✔ owner-attachments A1 draining refusal leaves a later close admissible (0.3834ms)
+✔ owner-attachments inspection contract shape is rejected before runtime acceptance and leaves the lease usable (1.3645ms)
+✔ owner-attachments inspection contract validation preserves control gates and never trusts a runtime error with the same code (0.8674ms)
+✔ owner-attachments generic tool map remains compatible and observer attachment never acquires (0.3278ms)
+✔ owner-attachments render jobs are opt-in and only status is observable without a lease (0.5738ms)
+✔ owner-attachments first workflow build omits taskId and binds only the server task; unbound product task is refused before invoke (0.4255ms)
+✔ owner-attachments copied sessions and unlisted RPC cannot reach runtime (0.2539ms)
+✔ owner-attachments refresh requires control while default discovery stays observer (0.2775ms)
+✔ owner-attachments explicit acquisition excludes other clients and exact token governs release (0.3307ms)
+✔ owner-attachments boot durable fault or unresolved forbids acquisition while status remains readable (0.2607ms)
+✔ owner-attachments expired controller cannot execute or renew and does not transfer itself (0.3597ms)
+✔ owner-attachments detached client cannot continue physical send after awaited preparation (1.2959ms)
+✔ owner-attachments caller completion does not release accepted physical/control pending (2.5652ms)
+✔ owner-attachments UNKNOWN after original callback holds sticky fence across detach (0.3091ms)
+✔ owner-attachments prior generation evidence/build/proposal/dryrun cannot become executable (0.4652ms)
+✔ owner-attachments runtime secret messages and arbitrary error codes do not cross attachment (0.169ms)
+✔ owner-attachments duplicate build refusal requires private proof and clean facts (0.7084ms)
+✔ owner-attachments observer context cannot be used for physical access (0.1678ms)
+✔ owner-attachments accepted stateful throw reports uncertainty but preserves actual clean outcome facts (0.2586ms)
+✔ owner-attachments completed read classification is private one-shot and survives lease expiry (0.9005ms)
+✔ owner-attachments terminal flag clean facts wrong operation and verifier failure never prove completion (0.5982ms)
+✔ owner-attachments consumes completed read proof even when pending unresolved or fault prevents classification (9.3228ms)
+✔ owner-attachments stdio initialize and discovery do not invoke owner or acquire (10.3755ms)
+✔ owner-attachments stdio inspection discovery and missing contract error explain the next action without UNKNOWN (23.2928ms)
+✔ owner-attachments stdio EOF only closes attachment; accepted call is neither cancelled nor retried (30.9061ms)
+✔ owner-attachments stdio metadata never enters domain payload or controller selection (15.4345ms)
+✔ owner-attachments stdio connection loss reports uncertain outcome without resend (0.6655ms)
+✔ owner-attachments stdio preserves accepted-owner uncertainty and original request correlation (14.8499ms)
+✔ owner-attachments stdio projects only exact finite rejected inspection as an MCP tool error (76.9952ms)
+✔ owner-attachments stdio oversized unterminated frame closes only attachment (18.2102ms)
+✔ owner-attachments stdio secret-shaped handler message or envelope code is never exposed (2.9679ms)
+✔ owner-attachments blocked stdout has bounded buffering and detaches without retry (40.9279ms)
+✔ owner-attachments oversized response and long request identity always produce bounded error (14.0908ms)
+✔ owner-attachments explicit expired transfer requires fresh holder CAS and invalidates prior references (1.2472ms)
+✔ owner-attachments expired transfer cannot waive actual physical/control pending, unresolved or fault (0.6857ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 403.1222

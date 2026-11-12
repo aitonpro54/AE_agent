@@ -1,0 +1,69 @@
+{
+  "stage": "A1",
+  "recordedAt": "2026-11-12T09:51:23.512211+00:00",
+  "sourceParent": "dd50fb8",
+  "result": "implemented-focused-validation-pass",
+  "fullAffectedProof": "pending C; no full selected-key PASS claimed",
+  "sourceHashesVerified": true,
+  "review": "ae_reviewer ACCEPT, no actionable P1/P2 in A1 diff",
+  "files": [
+    {
+      "path": "a1-validation.json",
+      "sha256": "8b82a90a2da8512af76358fde43bee2feac039cd238bf817ba207f27a98bea0d",
+      "bytes": 2072
+    },
+    {
+      "path": "selection.json",
+      "sha256": "b99d030fc912c8b877ba598747c22347b1921d91d51f49692598b5dde2d80a23",
+      "bytes": 161950
+    },
+    {
+      "path": "results.json",
+      "sha256": "7bf87fcc9f2565328b1c16b27e2cfaea018838b15edd6c34a5967f3700d466bb",
+      "bytes": 1176
+    },
+    {
+      "path": "results-attempt02.json",
+      "sha256": "527ceb58c046143f3bc98386d678a3e87b7fbfc964a40f385d26ceec29358c6d",
+      "bytes": 864
+    },
+    {
+      "path": "owner-attachments.stdout.txt",
+      "sha256": "4eb3779e1f0c59aa7576b54fda83f3731acbbc37a26b380797f5cb93ce230bc9",
+      "bytes": 4159
+    },
+    {
+      "path": "owner-attachments.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "owner-runtime-a1.stdout.txt",
+      "sha256": "32aeb94309f533e963880fced54fe15f5e2a1ea6b2b7d1ee412cd2c86127a578",
+      "bytes": 3284
+    },
+    {
+      "path": "owner-runtime-a1.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "owner-runtime-a1-attempt02.stdout.txt",
+      "sha256": "8c592020e88e2c048b0ef9cddee03a10d6480a871e9ef7602efae9ba19475f63",
+      "bytes": 419
+    },
+    {
+      "path": "owner-runtime-a1-attempt02.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "entry-boundary.stdout.txt",
+      "sha256": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+      "bytes": 5
+    }
+  ],
+  "knownFailure": "Retained attempt01 plus existing stale owner-runtime panel identity helper; targeted harness correction reserved C",
+  "productVersion": "4.2.6",
+  "installedStateChanged": false
+}

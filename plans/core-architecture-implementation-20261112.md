@@ -386,7 +386,19 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Progress
 
-- Повторная архитектурная сверка и план подготовлены; реализации A/B/C ещё нет.
+- **A1 реализован:** оба нижних close ожидают один cleanup и сохраняют его
+  rejection; direct stdio сразу закрывает tool admission/status. При ошибке
+  peer.close Broker/state lock не освобождается. Upper Owner/maintenance не менялись.
+- Проверки A1: owner-attachments 38/38, focused runtime 3/3 PASS; syntax четырёх
+  JS, entry boundary и diff check PASS. Независимый ae_reviewer — ACCEPT.
+  [Evidence A1](../docs/evidence/core-architecture-implementation-20261112/A1/acceptance.json).
+- Исходные FAIL сохранены: первая версия new fixture использовала transient
+  gate вместо steady lock; исправлена. Existing desired-stop fixture получает
+  /link403 из-за отсутствия текущей panel identity; она не объявлена PASS.
+  Её test-only ремонт и полный affected набор входят в C. A1 selection —
+  37 checks/37 batches, 26 deferred; полный current closure proof пока не заявлен.
+- Исходный план подготовлен до source-реализации; текущий статус определяется
+  поэтапными записями выше.
 - План подготовлен в чате «Настроить мост к Chrome». По прямому поручению
   пользователя продолжение и финальная проверка переданы в Core-чат
   «Провести аудит архитектуры» (`01a1cede-3e0f-7aa1-a375-be24e49bec1e`).
@@ -395,9 +407,23 @@ reviewable commits, контракты и затронутая closure пров�
   `48576d1`. Независимый ae_reviewer проверил оба документа; единственный
   actionable P2 — пропущенный facade.close — включён в A1.
 - Подготовлен [готовый запрос для нового чата](core-architecture-new-chat-20261112.md).
+- Пользователь прямо поручил реализовать план в этом Core-чате: A1 → A2 → A3,
+  затем B0–B3 и C, с проверками и отдельными milestone commits. Прежний
+  документальный stop-line на начало source-работ снят этим поручением.
+- A1 выполняет ae_implementer (Sol 6.1 High), владеет двумя нижними close и
+  адресными fixtures. B0 параллельно исследует ae_architect read-only:
+  конкретная сложность — integrity-before-import и совместимость старых пакетов.
+  Координатор владеет планом/evidence/коммитами; установку и live AE не запускаем.
 
 ## Decision Log
 
+- A1 safe sequencing: failed peer close сохраняет ошибку для повторных callers
+  и удерживает Broker lease; cleanup не повторяется автоматически. Runtime
+  status обозначает closing немедленно, существующий public return API не расширен.
+- Широкий набор общих файлов не повторяется после каждой локальной правки:
+  A1 проверяет changed invariant fixtures, текущий union будет выполнен в C.
+  Сохранённый /link403 исследован как несовместимость test helper текущему
+  identity/registry контракту, без ослабления production auth.
 - Перепись не нужна; порядок A → B → C уменьшает число одновременно меняющихся
   инвариантов. Крупные этапы делятся на малые отдельные commits.
 - Bootstrap diagnostic отделён от решения о terminal outcome/recovery.
@@ -409,9 +435,19 @@ reviewable commits, контракты и затронутая closure пров�
 - Передача переносит инициативу, без новых browser/external/live действий.
   Текущий заказ завершает архитектурный план; source-реализация отдельно
   поручается пользователем. Создание нового чата автоматически не выполняется.
+- Новое поручение на реализацию получено здесь. A/B/C остаются source scope;
+  выпуск, публикация, установка, изменение MCP/CEP config и native приемка
+  не добавлены. Совместимые исторические records переиспользуются только
+  в пределах проверенной closure. Проверки общих файлов группируются по
+  завершённым инвариантам, а итоговый affected набор проверяется в C.
 
 ## Validation
 
+- A1 evidence скопировано с SHA, source hashes четырёх changed JS совпали;
+  полный stdout успешных и неуспешных попыток сохранён. Новых live действий нет.
+- Failed-run raw stdout содержит отступы на пустых строках; они сохраняются
+  побайтно. Локальный .gitattributes исключает только whitespace-проверку этого
+  stdout, не source/tests. Source и остальной staged diff проверяются штатно.
 - Source diff к снимку внешнего аудита пуст до правки этих документов.
 - Проверены полные ключевые execution/recovery functions и потребители helpers.
 - Чужие исходные dirty файлы исключены из области записи.

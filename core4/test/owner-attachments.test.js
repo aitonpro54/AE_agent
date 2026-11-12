@@ -9,7 +9,7 @@ const inspection = { moduleId: 'fixture-module', contractId: 'a'.repeat(64), tar
 
 function fixture(options = {}) {
   const calls = [], facts = { pending: false, unresolved: false, fault: false }; let closes = 0, time = 0, serial = 0;
-  const runtime = { status: () => ({ ready: true, store: 'fixture-single-store' }), close() { closes++; } };
+  const runtime = { status: () => ({ ready: true, store: 'fixture-single-store' }), close() { closes++; return options.close?.(); } };
   const owner = createAttachmentOwner({ runtime, activity: () => ({ ...facts }), clock: () => time, ttlMs: 1000, drainIntervalMs: 1,
     renderJobs: options.renderJobs,
     consumeReadRejection: options.consumeReadRejection,
@@ -31,6 +31,49 @@ function fixture(options = {}) {
 async function ok(promise) { const reply = await promise; assert.equal(reply.ok, true, JSON.stringify(reply)); return reply.value; }
 async function denied(promise, code) { const reply = await promise; assert.deepEqual(reply, code === 'owner_outcome_uncertain' ? { ok: false, code, outcome: 'unknown', requestId: null } : { ok: false, code }); }
 async function until(fn) { for (let i = 0; i < 100; i++) { if (fn()) return; await new Promise(resolve => setTimeout(resolve, 2)); } assert.fail('fixture_wait'); }
+
+for (const rejected of [false, true]) test('owner-attachments A1 concurrent close shares deferred cleanup ' + (rejected ? 'rejection' : 'success'), async () => {
+  let resolve, reject;
+  const cleanup = new Promise((yes, no) => { resolve = yes; reject = no; });
+  const f = fixture({ close: () => cleanup }), session = f.attach(), error = new Error('fixture_cleanup_failed');
+  const settled = [], first = f.owner.close(), second = f.owner.close();
+  const outcomes = Promise.allSettled([first, second]);
+  first.then(() => settled.push('first'), () => settled.push('first'));
+  second.then(() => settled.push('second'), () => settled.push('second'));
+  assert.equal(f.owner.status().closed, true);
+  assert.throws(f.attach, /owner_attachment_refused/);
+  await denied(f.call(session, 'core_status'), 'owner_closed');
+  await until(() => f.closes === 1);
+  await new Promise(done => setImmediate(done));
+  assert.deepEqual(settled, []);
+  assert.equal(f.owner.status().attachments, 0);
+  if (rejected) reject(error); else resolve();
+  const results = await outcomes;
+  for (const result of results) {
+    assert.equal(result.status, rejected ? 'rejected' : 'fulfilled');
+    if (rejected) assert.equal(result.reason, error);
+  }
+  if (rejected) await assert.rejects(f.owner.close(), value => value === error); else await f.owner.close();
+  assert.equal(f.closes, 1);
+});
+
+test('owner-attachments A1 synchronous cleanup failure stays rejected on repeated close', async () => {
+  const error = new Error('fixture_sync_cleanup_failed'), f = fixture({ close() { throw error; } });
+  const results = await Promise.allSettled([f.owner.close(), f.owner.close()]);
+  assert.ok(results.every(result => result.status === 'rejected' && result.reason === error));
+  await assert.rejects(f.owner.close(), value => value === error);
+  assert.equal(f.closes, 1); assert.equal(f.owner.status().closed, true);
+});
+
+test('owner-attachments A1 draining refusal leaves a later close admissible', async () => {
+  const f = fixture(), session = f.attach(); f.facts.pending = true;
+  await assert.rejects(f.owner.close(), error => error.code === 'owner_draining');
+  assert.equal(f.owner.status().closed, false); assert.equal(f.closes, 0);
+  await ok(f.call(session, 'owner_status'));
+  f.facts.pending = false;
+  await Promise.all([f.owner.close(), f.owner.close()]);
+  assert.equal(f.closes, 1); assert.equal(f.owner.status().closed, true);
+});
 
 test('owner-attachments inspection contract shape is rejected before runtime acceptance and leaves the lease usable', async () => {
   const f = fixture(), a = f.attach(), grant = await ok(f.call(a, 'controller_acquire'));

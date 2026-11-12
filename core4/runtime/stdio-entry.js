@@ -511,7 +511,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     return await exposeOwner(facade, () => ({ pending: false, unresolved: true, fault: true }), (method, payload) => facade[method](payload));
   }
   const { Broker } = require('../core/broker.js');
-  const { serve } = require('../core/stdio.js');
+  const { serve, TOOL_METHODS } = require('../core/stdio.js');
   const { exact, id } = require('../protocol/json.js');
   const { createHttpPeer } = require('../integrations/cep/http-peer.js');
   const invocationContext = mode === 'owner' ? new (require('node:async_hooks').AsyncLocalStorage)() : null;
@@ -605,14 +605,14 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     // Retain this exact operation's grant beyond ALS lifetime, including /poll.
     return () => { context.assertCurrent(); operatorConfirmation?.assertDelivery(command); };
   } } : {}), installationContext: { descriptorPath: descriptor }, ...(ownerLifecycle ? { ownerToken: ownerLifecycle.receiverToken } : {}) });
-  const contractId = hash({ packageHash: installation.packageHash, admission, contract }); let closed = false;
+  const contractId = hash({ packageHash: installation.packageHash, admission, contract }); let closed = false, closing;
   const facade = Object.create(broker);
   const physical = () => {
     const value = peer.status();
     const readiness = aeReadiness.status(value, workSession?.status().baselineRequired ?? null);
-    return { ...value, readiness, inspectionAvailable: !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && value.peer.registryReady !== false && !value.startOverFrozen && !value.storeClosed && !value.storeFault && !value.pending && !aeReadiness.blocker() };
+    return { ...value, readiness, inspectionAvailable: !closed && !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && value.peer.registryReady !== false && !value.startOverFrozen && !value.storeClosed && !value.storeFault && !value.pending && !aeReadiness.blocker() };
   };
-  facade.status = () => ({ ...broker.status(), product: 'AE Agent Core 4.2.6', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), startupActivity: panelStartup?.activity() || null, ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
+  facade.status = () => ({ ...broker.status(), ...(closed ? { ready: false, closed: true, connection: 'unavailable', unavailableReason: 'broker_closed' } : {}), product: 'AE Agent Core 4.2.6', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), startupActivity: panelStartup?.activity() || null, ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
   facade.diagnostics = async () => {
     await aeReadiness.refresh();
     return { ...broker.diagnostics(), ...facade.status() };
@@ -715,7 +715,15 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     facade.renderJobFinalize = value => render.finalize(value, current);
     facade.renderJobCancel = value => render.cancel(value, current);
   }
-  facade.close = async () => { if (closed) return; closed = true; await peer.close(); await broker.close(); };
+  facade.close = async () => {
+    if (!closing) {
+      closed = true;
+      // Preserve a failed physical close: never release the Broker lock or retry
+      // cleanup while the physical peer's outcome is unproven.
+      closing = Promise.resolve().then(async () => { await peer.close(); await broker.close(); });
+    }
+    return closing;
+  };
   try { await peer.listen(); } catch (e) { await facade.close(); throw e; }
   if (mode === 'owner') {
     const ownerActivity = () => {
@@ -740,7 +748,12 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
       renderJobs: selected.renderJobs === true
     });
   }
-  serve(facade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.2.6' } });
+  const stdioFacade = Object.create(facade);
+  for (const method of Object.values(TOOL_METHODS)) stdioFacade[method] = (...args) => {
+    if (closed) fail('broker_closed');
+    return facade[method](...args);
+  };
+  serve(stdioFacade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.2.6' } });
   return { close: facade.close, status: facade.status };
   } catch (e) {
     if (ipc) await ipc.close();

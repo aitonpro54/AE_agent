@@ -1,0 +1,2 @@
+# Preserve the original failed-run stdout, including blank-line indentation.
+owner-runtime-a1.stdout.txt -whitespace
