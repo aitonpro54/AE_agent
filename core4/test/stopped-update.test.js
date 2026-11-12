@@ -165,9 +165,9 @@ test('C1b packages, admits and updates one independent Titles capability through
   assert.equal(checked.capabilityBaseHash, base.packageHash);
   assert.deepEqual(checked.pkg, composeCapability(base, bundle, admission, pins(bundle, admission)));
   const changed = Object.keys(base.files).filter(file => base.files[file] !== checked.pkg.files[file]);
-  assert.deepEqual(changed.sort(), [modulePath + '/artifact.json', modulePath + '/executor.jsx', admissionPath, 'config/catalog.json', 'cep/jsx/registry.jsx', ...(base.release.version === '4.2.6' ? ['cep/js/panel.js'] : [])].sort());
+  assert.deepEqual(changed.sort(), [modulePath + '/artifact.json', modulePath + '/executor.jsx', admissionPath, 'config/catalog.json', 'cep/jsx/registry.jsx', ...(require('../runtime/composition-spec').releaseFeatures(base.release).registryIdentity ? ['cep/js/panel.js'] : [])].sort());
   assert.equal(checked.pkg.release.version, base.release.version);
-  if (base.release.version === '4.2.6') { const identity = require('../integrations/cep/panel-identity'); const before = identity.verify(file => Buffer.from(base.files[file], 'base64')), after = identity.verify(file => Buffer.from(checked.pkg.files[file], 'base64')); assert.notEqual(after.registryBuildId, before.registryBuildId); assert.notEqual(after.panelBuildId, before.panelBuildId); verifyPackage(checked.pkg); }
+  if (require('../runtime/composition-spec').releaseFeatures(base.release).registryIdentity) { const identity = require('../integrations/cep/panel-identity'); const before = identity.verify(file => Buffer.from(base.files[file], 'base64')), after = identity.verify(file => Buffer.from(checked.pkg.files[file], 'base64')); assert.notEqual(after.registryBuildId, before.registryBuildId); assert.notEqual(after.panelBuildId, before.panelBuildId); verifyPackage(checked.pkg); }
 
   const tampered = structuredClone(bundle); tampered.files['executor.jsx'] = initial.files['executor.jsx'];
   assert.throws(() => composeCapability(base, tampered, admission, pins(bundle, admission)), code('capability_bytes'));
@@ -208,7 +208,7 @@ test('C1b packages, admits and updates one independent Titles capability through
   otherBase.files[unrelatedPath] = newerHtml.toString('base64');
   otherBase.release.hashes[unrelatedPath] = hash(newerHtml);
   otherBase.packageHash = hash(otherBase.release);
-  if (otherBase.release.version === '4.2.6') { const identity = require('../integrations/cep/panel-identity'), read = file => Buffer.from(otherBase.files[file], 'base64'); const panel = identity.stamp(read('cep/js/panel.js').toString('utf8'), identity.identity(read)); otherBase.files['cep/js/panel.js'] = Buffer.from(panel).toString('base64'); otherBase.release.hashes['cep/js/panel.js'] = hash(panel); otherBase.packageHash = hash(otherBase.release); }
+  if (require('../runtime/composition-spec').releaseFeatures(otherBase.release).registryIdentity) { const identity = require('../integrations/cep/panel-identity'), read = file => Buffer.from(otherBase.files[file], 'base64'); const panel = identity.stamp(read('cep/js/panel.js').toString('utf8'), identity.identity(read)); otherBase.files['cep/js/panel.js'] = Buffer.from(panel).toString('base64'); otherBase.release.hashes['cep/js/panel.js'] = hash(panel); otherBase.packageHash = hash(otherBase.release); }
   verifyPackage(otherBase);
   const bootstrap = require(path.join(distribution, 'tools/standalone-installer.js'));
   const installRoot = path.join(root, 'must-not-write');
@@ -286,7 +286,7 @@ test('C1c replaces an already admitted declarative text-layer slot from a reloca
   assert.deepEqual(checked.pkg, composeCapability(base, bundle, admission, pins));
   assert.deepEqual(Object.keys(checked.pkg.files).sort(), Object.keys(base.files).sort());
   assert.deepEqual(Object.keys(base.files).filter(file => base.files[file] !== checked.pkg.files[file]).sort(),
-    [modulePath + '/artifact.json', modulePath + '/executor.jsx', admissionPath, 'config/catalog.json', 'cep/jsx/registry.jsx', ...(base.release.version === '4.2.6' ? ['cep/js/panel.js'] : [])].sort());
+    [modulePath + '/artifact.json', modulePath + '/executor.jsx', admissionPath, 'config/catalog.json', 'cep/jsx/registry.jsx', ...(require('../runtime/composition-spec').releaseFeatures(base.release).registryIdentity ? ['cep/js/panel.js'] : [])].sort());
   const smaller = pkg('manual');
   assert.throws(() => composeCapability(smaller, bundle, admission, { ...pins, basePin: smaller.packageHash }), code('capability_base_slot'));
   assert.throws(() => composeCapability(base, bundle, originalAdmission, { ...pins, admissionPin: hash(originalAdmission) }), code('composition_not_admitted'));
@@ -352,7 +352,7 @@ test('comp-render supplies completion data in a pinned single-slot update', asyn
   assert.throws(() => composeCapability(base, bundle, originalBytes, { ...pins, admissionPin: hash(originalBytes) }), code('composition_not_admitted'));
   const composed = composeCapability(base, bundle, approval, pins);
   const changed = [modulePath + '/artifact.json', modulePath + '/executor.jsx', modulePath + '/completion.json',
-    admissionPath, 'config/catalog.json', 'cep/jsx/registry.jsx', ...(base.release.version === '4.2.6' ? ['cep/js/panel.js'] : [])].sort();
+    admissionPath, 'config/catalog.json', 'cep/jsx/registry.jsx', ...(require('../runtime/composition-spec').releaseFeatures(base.release).registryIdentity ? ['cep/js/panel.js'] : [])].sort();
   assert.deepEqual(Object.keys(composed.release.hashes), Object.keys(base.release.hashes));
   assert.deepEqual(Object.keys(base.files).filter(file => base.files[file] !== composed.files[file]).sort(), changed);
   const h = await harness(t, { current: base, next: composed });

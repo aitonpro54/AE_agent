@@ -1,0 +1,11 @@
+✔ stopped-update C1b packages, admits and updates one independent Titles capability through the stopped owner path (27223.4198ms)
+✔ stopped-update C1c replaces an already admitted declarative text-layer slot from a relocated capability (32103.7614ms)
+✔ stopped-update comp-render supplies completion data in a pinned single-slot update (40679.3098ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 100129.2053

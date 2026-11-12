@@ -1,0 +1,43 @@
+{
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "--require",
+    "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\offline-boundary.cjs",
+    "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\candidate-a\\tools\\standalone-installer.js",
+    "dry-run",
+    "--expected-distribution-hash",
+    "f6803959685c71db19b8335fb97349343df86203ca3ec8ffff4f9f17d379fc9b",
+    "--install-root",
+    "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\AEAgentCore4",
+    "--extensions-dir",
+    "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\dryrun-extensions",
+    "--config",
+    "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\dryrun-project\\.codex\\config.toml"
+  ],
+  "cwd": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\foreign-cwd",
+  "exitCode": 0,
+  "report": {
+    "baseline": {
+      "anchorOrigin": null,
+      "cep": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "client": null,
+      "config": null,
+      "descriptor": null,
+      "rootOrigin": null
+    },
+    "cepDir": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\dryrun-extensions\\com.codex.aeagentcore4",
+    "configPath": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\dryrun-project\\.codex\\config.toml",
+    "descriptorPath": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\AEAgentCore4\\installation.json",
+    "distributionHash": "f6803959685c71db19b8335fb97349343df86203ca3ec8ffff4f9f17d379fc9b",
+    "dryRun": true,
+    "extensionsDir": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\dryrun-extensions",
+    "installRoot": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\AEAgentCore4",
+    "liveProof": false,
+    "packageHash": "2ce5b1c2c49ddc7be422a9d4b57d1d2d84e0b30e5ce703a9278df306e1c03e04",
+    "stateDir": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\AEAgentCore4\\state\\production"
+  },
+  "destinationsAbsentAfter": true,
+  "networkAndChildProcessBlocked": true,
+  "importsRestrictedToDistribution": true,
+  "liveProof": false
+}

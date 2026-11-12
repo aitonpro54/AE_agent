@@ -30,7 +30,8 @@ const RELEASE_FEATURES = Object.freeze(Object.fromEntries([
   ['4.2.3', [2], true, false],
   ['4.2.4', [2], true, false],
   ['4.2.5', [2], true, false],
-  ['4.2.6', [2], true, true]
+  ['4.2.6', [2], true, true],
+  ['4.2.7', [2], true, true]
 ].map(([version, formats, versionedComposition, registryIdentity]) => [version,
   Object.freeze({ formats: Object.freeze(formats), versionedComposition, registryIdentity })])));
 function releaseFeatures(release) {
@@ -525,7 +526,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     // Broker or opening an execution store. Only authenticated panel reset
     // control is available; the physical command channel remains refused.
     require('./start-over-panel-control.js').attachStartOverHttp({ server: reservedServer, control: startOverControl, reason: 'owner_recovery_required' });
-    const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.2.6',
+    const status = () => ({ ready: false, closed: false, pid: process.pid, product: 'AE Agent Core 4.2.7',
       installation: { installationId: installation.installationId, machineId: installation.machineId, packageHash: installation.packageHash, nodeVerified: true },
       lifecycle: ownerLifecycle.state(), ownershipFault: 'owner_recovery_required', physical: { listening: reservedServer.listening, port: reservedServer.address()?.port || null, inspectionAvailable: false, storeClosed: true, unknown: true, coverage: 'diagnostic-only; execution queue not reopened', readiness: aeReadiness.status({ peer: { connected: false }, storeClosed: true }, true) }, externalLegacyCoverage: 'unobserved' });
     const unavailable = () => ({ available: false, reason: 'owner_recovery_required' });
@@ -616,6 +617,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
   const additionalAssets = mutationAssets.map(item => ({ assetKey: item.assetKey, moduleId: item.moduleId,
     operationId: item.contract.operationId, executorHash: item.executorHash, resultProfile: item.resultProfile, effect: item.contract.effectPolicy.effect }));
   const expectedPanelIdentity = require('../integrations/cep/panel-identity').verify(file => fs.readFileSync(path.join(root, file)));
+  if (expectedPanelIdentity.productVersion !== release.version) fail('panel_identity_version');
   peer = createHttpPeer({ expectedPanelIdentity, installation, captureBootstrapStartup() { return panelStartup?.activity().operationId ?? null; }, bootstrapAdmissionGuard() {
     if (broker.closed || broker.stateLock.error || broker.ledger.corrupt || broker.ledger.unresolved().length || broker.running || broker.reconciling || broker.controllerBusy || broker.controlPending || broker.worker.status().pending || fs.existsSync(path.join(installation.stateDir, 'runtime-maintenance.json'))) fail('registry_lane_busy');
   }, directory: path.join(installation.stateDir, 'receiver'), asset, additionalAssets,
@@ -635,7 +637,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     const readiness = aeReadiness.status(value, workSession?.status().baselineRequired ?? null);
     return { ...value, readiness, inspectionAvailable: !closed && !broker.closed && !broker.stateLock.error && !broker.ledger.corrupt && !broker.ledger.unresolved().length && value.peer.connected && value.peer.registryReady !== false && !value.startOverFrozen && !value.storeClosed && !value.storeFault && !value.pending && !aeReadiness.blocker() };
   };
-  facade.status = () => ({ ...broker.status(), ...(closed ? { ready: false, closed: true, connection: 'unavailable', unavailableReason: 'broker_closed' } : {}), product: 'AE Agent Core 4.2.6', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), startupActivity: panelStartup?.activity() || null, ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
+  facade.status = () => ({ ...broker.status(), ...(closed ? { ready: false, closed: true, connection: 'unavailable', unavailableReason: 'broker_closed' } : {}), product: 'AE Agent Core 4.2.7', composition: selected.composition.id, installation: { installationId: installation.installationId, packageHash: installation.packageHash, nodeVersion: process.versions.node, nodeVerified: true, machineId: installation.machineId }, physical: physical(), startupActivity: panelStartup?.activity() || null, ...(ownerLifecycle ? { lifecycle: ownerLifecycle.state() } : {}), automaticLifecycle: 'unavailable', inspectionPolicy: profile.executionPolicy, manualPolicy: manual?.policyId || null, resourceProvider: provider ? provider.status() : null, ...(manual ? {} : { mutationAvailable: false }), externalLegacyCoverage: 'unobserved' });
   facade.diagnostics = async () => {
     await aeReadiness.refresh();
     return { ...broker.diagnostics(), ...facade.status() };
@@ -776,7 +778,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
     if (closed) fail('broker_closed');
     return facade[method](...args);
   };
-  serve(stdioFacade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.2.6' } });
+  serve(stdioFacade, input, output, { serverInfo: { name: 'ae-agent-core4', version: '4.2.7' } });
   return { close: facade.close, status: facade.status };
   } catch (e) {
     if (ipc) await ipc.close();

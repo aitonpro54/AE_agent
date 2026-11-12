@@ -1,6 +1,6 @@
 # AE Agent Core
 
-Текущий выпуск — **AE Agent Core 4.2.5**. Состав `operator-render-jobs/owner`
+Текущий выпуск — **AE Agent Core 4.2.7**. Состав `operator-render-jobs/owner`
 включает R1, `comp-render` и `comp-frame-export`. Команды сборки и обновления
 описаны в [README Core4](core4/README.md).
 

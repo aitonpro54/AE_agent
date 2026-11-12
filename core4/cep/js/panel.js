@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var loadedPanelIdentity = {"protocolVersion":1,"productVersion":"4.2.6","panelBuildId":"0000000000000000000000000000000000000000000000000000000000000000","extensionId":"com.codex.aeagentcore4.panel","registryBuildId":"0000000000000000000000000000000000000000000000000000000000000000"}; // CORE4_LOADED_IDENTITY
+  var loadedPanelIdentity = {"protocolVersion":1,"productVersion":"4.2.7","panelBuildId":"0000000000000000000000000000000000000000000000000000000000000000","extensionId":"com.codex.aeagentcore4.panel","registryBuildId":"0000000000000000000000000000000000000000000000000000000000000000"}; // CORE4_LOADED_IDENTITY
   var cfg = window.Core4Installation && JSON.parse(JSON.stringify(window.Core4Installation)), api = window.Core4PollDispatcher, status = document.getElementById('status'), detail = document.getElementById('detail'), button = document.getElementById('connect'), resetButton = document.getElementById('start-over');
   var delivered = false, wirePending = 0, resetWatching = 0, reloadFlight = false, configHashPromise = null, verifiedResetProof = null, channelBinding = null, reconnectBinding = null;
   var markerTimer, markerGeneration = 0, reconnectNewBoot = false;
@@ -35,7 +35,7 @@
   }
   function showReady() {
     var baseline = resetState && resetState.baselineRequired;
-    show('ready', baseline ? 'Новый сеанс: требуется чтение проекта' : 'Канал Core 4.2.6 готов к командам');
+    show('ready', baseline ? 'Новый сеанс: требуется чтение проекта' : 'Канал Core 4.2.7 готов к командам');
     detail.textContent = baseline ? 'Сначала Core должен прочитать текущее состояние проекта. Допуск к изменениям выдаётся отдельно.' : 'Подключение готово. Допуск к изменению проекта выдаётся отдельно.';
   }
   async function resetPost(path, value, g) {
@@ -163,7 +163,7 @@
     if (duplicate && remaining <= 0) throw error(budget.reason);
     var background = !duplicate && (remaining <= 0 || budget.background === true);
     if (!duplicate && latched()) throw error('physical_latch_present');
-    show('waiting', duplicate ? 'Ожидание завершения прежнего подключения Core 4.2.6' : background ? 'Core пока недоступен; подключение возобновится автоматически' : 'Ожидание Core 4.2.6');
+    show('waiting', duplicate ? 'Ожидание завершения прежнего подключения Core 4.2.7' : background ? 'Core пока недоступен; подключение возобновится автоматически' : 'Ожидание Core 4.2.7');
     detail.textContent = background ? 'Следующая попытка через 15 с. Оставьте панель открытой и запустите Core через MCP. Состояние команд и UNKNOWN не меняется.' : 'Повтор подключения каждые 3 с, до 50 с. Состояние команд и UNKNOWN не меняется.';
     var g = generation;
     await new Promise(function (resolve, reject) { cancelWait = function () { reject(error('stale_channel')); }; retryTimer = setTimeout(resolve, background ? 15000 : Math.min(3000, remaining)); });
@@ -328,7 +328,7 @@
         }
         if (reconnectBinding && response.body.receiverStoreIdentity !== reconnectBinding.receiverStoreIdentity) throw error('receiver_store_changed');
         channelBinding = Object.freeze({ ownerBootId: cfg.startOverSupported === true ? response.body.startOver.ownerBootId : null, workSessionId: workSessionId, receiverStoreIdentity: response.body.receiverStoreIdentity }); reconnectBinding = null;
-        current(g); epoch = response.body.epoch; sequence = 0; show('connected', 'Подключено к Core 4.2.6');
+        current(g); epoch = response.body.epoch; sequence = 0; show('connected', 'Подключено к Core 4.2.7');
         var dispatcher = api.createDispatcher({ installationId: cfg.installationId, sessionId: workSessionId, assetKey: cfg.assetKey, assets: cfg.assets, pins: response.body.pins, storage: localStorage, csInterface: { evalScript: function (s, cb) { __adobe_cep__.evalScript(s, cb); } }, complete: (function (channel) { return function (p) { return authenticated('/complete', p, channel); }; }(g)) });
         await dispatcher.recover(); current(g); if (latched()) throw error('physical_latch_present'); if (response.body.laneClosed) throw error('receiver_lane_closed');
         if (cfg.registryVerification === 1) {

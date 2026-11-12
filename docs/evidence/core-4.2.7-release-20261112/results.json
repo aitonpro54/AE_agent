@@ -1,0 +1,149 @@
+[
+  {
+    "name": "version-profile",
+    "command": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "--test",
+      "core4/test/version-profile-compatibility.test.js"
+    ],
+    "exitCode": 0,
+    "startedAt": "2026-11-12T18:19:33.580Z",
+    "finishedAt": "2026-11-12T18:19:53.048Z",
+    "summary": [
+      "ℹ tests 21",
+      "ℹ pass 21",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 19369.8215"
+    ]
+  },
+  {
+    "name": "catalog-revision",
+    "command": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "--test",
+      "core4/test/catalog-revision.test.js"
+    ],
+    "exitCode": 0,
+    "startedAt": "2026-11-12T18:19:53.050Z",
+    "finishedAt": "2026-11-12T18:19:59.376Z",
+    "summary": [
+      "ℹ tests 12",
+      "ℹ pass 12",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 6237.4365"
+    ]
+  },
+  {
+    "name": "ae-panel-startup",
+    "command": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "--test",
+      "core4/test/ae-panel-startup.test.js"
+    ],
+    "exitCode": 0,
+    "startedAt": "2026-11-12T18:19:59.376Z",
+    "finishedAt": "2026-11-12T18:20:03.009Z",
+    "summary": [
+      "ℹ tests 41",
+      "ℹ pass 41",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 3547.4504"
+    ]
+  },
+  {
+    "name": "panel-reconnect",
+    "command": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "--test",
+      "core4/test/panel-reconnect.test.js"
+    ],
+    "exitCode": 0,
+    "startedAt": "2026-11-12T18:20:03.009Z",
+    "finishedAt": "2026-11-12T18:20:06.615Z",
+    "summary": [
+      "ℹ tests 70",
+      "ℹ pass 70",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 3507.1978"
+    ]
+  },
+  {
+    "name": "capability-composition",
+    "command": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "--test",
+      "--test-name-pattern=C1b|C1c|comp-render supplies",
+      "core4/test/stopped-update.test.js"
+    ],
+    "exitCode": 0,
+    "startedAt": "2026-11-12T18:20:06.616Z",
+    "finishedAt": "2026-11-12T18:21:46.832Z",
+    "summary": [
+      "ℹ tests 3",
+      "ℹ pass 3",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 100129.2053"
+    ]
+  },
+  {
+    "name": "standalone",
+    "command": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "--test",
+      "core4/test/standalone-installer.test.js"
+    ],
+    "exitCode": 0,
+    "startedAt": "2026-11-12T18:21:46.833Z",
+    "finishedAt": "2026-11-12T18:22:10.937Z",
+    "summary": [
+      "ℹ tests 8",
+      "ℹ pass 8",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 24008.9111"
+    ]
+  },
+  {
+    "name": "installable-focused",
+    "command": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "--test",
+      "--test-name-pattern=package deterministic closure|full generated host registry|exact release closure|stale release A entry|descriptor changed at startup|CLI dry-run binds source|real stdio child consumes",
+      "core4/test/installable-runtime.test.js"
+    ],
+    "exitCode": 0,
+    "startedAt": "2026-11-12T18:22:10.937Z",
+    "finishedAt": "2026-11-12T18:22:30.247Z",
+    "summary": [
+      "ℹ tests 7",
+      "ℹ pass 7",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 19222.0945"
+    ]
+  },
+  {
+    "name": "mixed-version",
+    "command": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "--test",
+      "--test-name-pattern=semantic incident packages",
+      "core4/test/mixed-installation-repair.test.js"
+    ],
+    "exitCode": 0,
+    "startedAt": "2026-11-12T18:22:30.247Z",
+    "finishedAt": "2026-11-12T18:22:31.444Z",
+    "summary": [
+      "ℹ tests 1",
+      "ℹ pass 1",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 1103.1661"
+    ]
+  }
+]

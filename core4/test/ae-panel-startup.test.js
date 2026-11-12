@@ -19,7 +19,7 @@ function harness(t, options = {}) {
   fs.writeFileSync(path.join(stateDir, 'host-adoption.json'), canonical({ version: 1, installationId: 'fixture', machineId: installation.machineId, host: { machineId: installation.machineId, executablePath, executableHash: hash(fs.readFileSync(executablePath)) } }));
   let scans = 0, preflights = 0, connection = 0;
   let time = 1000, connected = false, rows = options.absent ? [] : [{ pid: 123, birth: '2026-01-01T00:00:00.0000000Z', executablePath }], launches = [], idle = true, reverified = 0;
-  const expected = options.expected || { protocolVersion: 1, productVersion: '4.2.6', panelBuildId: 'b'.repeat(64), extensionId: 'com.codex.aeagentcore4.panel' };
+  const expected = options.expected || { protocolVersion: 1, productVersion: '4.2.7', panelBuildId: 'b'.repeat(64), extensionId: 'com.codex.aeagentcore4.panel' };
   const context = { assertCurrent() { if (options.fenced) throw new Error('fenced'); } };
   function writeAck(directory, code = 'menu_executed', operationId = path.basename(directory)) {
     const request = JSON.parse(fs.readFileSync(path.join(directory, 'request.json')));
@@ -280,15 +280,15 @@ test('ae-panel-startup installed duplicate owners and ScriptUI title collision f
 });
 test('ae-panel-startup packaged fingerprint covers executing panel/dispatcher/registry and is portable', () => {
   const pkg = buildPackage(undefined, 'manual', { runtimeModel: 'owner' }), read = f => Buffer.from(pkg.files[f], 'base64'), expected = verify(read);
-  assert.equal(expected.productVersion, '4.2.6'); assert.equal(pkg.release.version, '4.2.6'); assert.ok(pkg.files['runtime/host/ensure-panel.jsx']);
+  assert.equal(expected.productVersion, '4.2.7'); assert.equal(pkg.release.version, '4.2.7'); assert.ok(pkg.files['runtime/host/ensure-panel.jsx']);
   for (const changed of ['cep/js/panel.js', 'cep/js/poll-dispatcher.js']) assert.notDeepEqual(identity(f => f === changed ? Buffer.concat([read(f), Buffer.from('// changed')]) : read(f)), expected);
   const decoded = Object.values(pkg.files).map(value => Buffer.from(value, 'base64').toString('utf8')).join('\n');
   assert.equal(decoded.includes(os.hostname()), false); assert.equal(decoded.includes(os.userInfo().homedir), false); assert.equal(decoded.includes(os.userInfo().homedir.replace(/\\/g, '\\\\')), false);
-  assert.throws(() => verify(file => file === 'cep/js/panel.js' ? Buffer.from(read(file).toString().replace('"productVersion":"4.2.6"', '"productVersion":"4.2.5"')) : read(file)), /panel_identity_integrity/);
+  assert.throws(() => verify(file => file === 'cep/js/panel.js' ? Buffer.from(read(file).toString().replace('"productVersion":"4.2.7"', '"productVersion":"4.2.5"')) : read(file)), /panel_identity_integrity/);
 });
 test('ae-panel-startup handshake authenticates loaded build/version; spoof/missing/stale identities never acquire peer', async t => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'core4-panel-link-')); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-  const installation = { installationId: 'fixture', packageHash: 'a'.repeat(64), panelToken: 'b'.repeat(64), controlToken: 'c'.repeat(64) }, expected = { protocolVersion: 1, productVersion: '4.2.6', panelBuildId: 'd'.repeat(64), extensionId: 'com.codex.aeagentcore4.panel' };
+  const installation = { installationId: 'fixture', packageHash: 'a'.repeat(64), panelToken: 'b'.repeat(64), controlToken: 'c'.repeat(64) }, expected = { protocolVersion: 1, productVersion: '4.2.7', panelBuildId: 'd'.repeat(64), extensionId: 'com.codex.aeagentcore4.panel' };
   const peer = createHttpPeer({ installation, directory: dir, asset: { assetKey: 'inspection', moduleId: 'project-inspection', operationId: 'inspect', executorHash: 'e'.repeat(64) }, expectedPanelIdentity: expected, port: 0 }); await peer.listen(); t.after(() => peer.close());
   const url = 'http://127.0.0.1:' + peer.status().port;
   const post = async (route, body) => (await fetch(url + route, { method: 'POST', headers: { Origin: 'file://', 'Content-Type': 'application/json' }, body: canonical(body) })).json();

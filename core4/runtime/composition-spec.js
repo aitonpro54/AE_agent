@@ -24,7 +24,8 @@ const RELEASE_FEATURES = Object.freeze(Object.fromEntries([
   ['4.2.3', [2], true, false],
   ['4.2.4', [2], true, false],
   ['4.2.5', [2], true, false],
-  ['4.2.6', [2], true, true]
+  ['4.2.6', [2], true, true],
+  ['4.2.7', [2], true, true]
 ].map(([version, formats, versionedComposition, registryIdentity]) => [version,
   Object.freeze({ formats: Object.freeze(formats), versionedComposition, registryIdentity })])));
 function releaseFeatures(release) {

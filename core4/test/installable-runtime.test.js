@@ -940,10 +940,10 @@ test('installable-runtime real stdio child consumes generated MCP config, advert
   child.stdout.on('data', b => { output += b; let n; while ((n = output.indexOf('\n')) >= 0) { const value = JSON.parse(output.slice(0, n)); output = output.slice(n + 1); waiting.get(value.id)?.(value); waiting.delete(value.id); } });
   async function rpc(method, params) { const id = ++nextId; const promise = new Promise((resolve, reject) => { waiting.set(id, resolve); const timer = setTimeout(() => reject(new Error('stdio_timeout:' + errors)), 15000); timer.unref(); }); child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, ...(params ? { params } : {}) }) + '\n'); const response = await promise; assert.equal(response.error, undefined, JSON.stringify(response)); return response.result; }
   async function tool(name, payload = {}) { const result = await rpc('tools/call', { name, arguments: { payload } }); return JSON.parse(result.content[0].text); }
-  const initialized = await rpc('initialize'); assert.equal(initialized.serverInfo.version, '4.2.6');
+  const initialized = await rpc('initialize'); assert.equal(initialized.serverInfo.version, '4.2.7');
   const listed = await rpc('tools/list'); assert.ok(listed.tools.some(x => x.name === 'inspect_module_target')); assert.ok(!listed.tools.some(x => x.name === 'inspect_project'));
   const withMeta = await rpc('tools/call', { name: 'core_status', arguments: { payload: {} }, _meta: { progressToken: 'fixture-progress', traceparent: 'fixture-trace' } });
-  assert.equal(JSON.parse(withMeta.content[0].text).product, 'AE Agent Core 4.2.6'); assert.ok(!withMeta.content[0].text.includes('fixture-progress'));
+  assert.equal(JSON.parse(withMeta.content[0].text).product, 'AE Agent Core 4.2.7'); assert.ok(!withMeta.content[0].text.includes('fixture-progress'));
   await assert.rejects(rpc('tools/call', { name: 'core_status', arguments: { payload: {} }, _meta: { padding: 'x'.repeat(9000) } }), /invalid_protocol_metadata/);
   await assert.rejects(rpc('tools/call', { name: 'core_status', arguments: { payload: {}, _meta: { grant: true } } }), /unexpected_field/);
   const status = await tool('core_status'); assert.equal(status.physical.peer.connected, false); assert.equal(status.automaticLifecycle, 'unavailable');

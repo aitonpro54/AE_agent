@@ -1,0 +1,114 @@
+{
+  "files": [
+    {
+      "file": "README.md",
+      "sha256": "e551af20030621e4bab80856e3313224ab3a725581330668920d90ed43839b6f"
+    },
+    {
+      "file": "core4/README.md",
+      "sha256": "4ad0514a46a42c45537b7606587f9b9ffe3ac0c36fd0492c32eba2a67107778f"
+    },
+    {
+      "file": "core4/cep/CSXS/manifest.xml",
+      "sha256": "3e2b782905b6058651130b2112cb228d3ddc45eb538682a08e4bfeacad2e7788"
+    },
+    {
+      "file": "core4/cep/index.html",
+      "sha256": "f4da08fda19577de653cd924065ff54d92d86d9d740c703c7bd9e594db7a85cd"
+    },
+    {
+      "file": "core4/cep/js/panel.js",
+      "sha256": "533a396aabf9e79baef5b515cb7a5a01ee6f4ee15eaa56977de7cbb4b12969ee"
+    },
+    {
+      "file": "core4/integrations/cep/panel-identity.js",
+      "sha256": "7b4657a7bfb2de6295e05cea4e454b030d90c3c9cc31b6a527a607911854bffb"
+    },
+    {
+      "file": "core4/package.json",
+      "sha256": "72b915b9b084a0ebb920f6ab6672d80841ab35ec1ada997a5e146b93b9f19f92"
+    },
+    {
+      "file": "core4/runtime/client-entry.js",
+      "sha256": "745accc4eaffe8dc8dff7757980c01a291994dee032c33f03e54a832879441cb"
+    },
+    {
+      "file": "core4/runtime/client-stdio.js",
+      "sha256": "eb3d502a20d787dfe99d3f805742c1de4eb3e2719d1eee925180b305fe775901"
+    },
+    {
+      "file": "core4/runtime/composition-spec.js",
+      "sha256": "1571aa89d2977a1a4e7514b61a159e983441f60a9acf710f37c4208e3963577b"
+    },
+    {
+      "file": "core4/runtime/owner-entry.js",
+      "sha256": "26e13be2a77d6a27f394812022dea7ddfe0fab70085a6344476c996d6d7cf340"
+    },
+    {
+      "file": "core4/runtime/start-over-driver.js",
+      "sha256": "8830727327900b30f6927475d5db81e087d60329c8345a3886351bbea83e5f1c"
+    },
+    {
+      "file": "core4/runtime/stdio-entry.js",
+      "sha256": "b06cda915ff70ce5952ac25ac78cbd313e334042c896cce68a777da733622d72"
+    },
+    {
+      "file": "core4/test/ae-panel-startup.test.js",
+      "sha256": "b4519c8d0d766df2e9edc32b7b559bd3ba74ea66932d1308af2dad10442ac7e0"
+    },
+    {
+      "file": "core4/test/installable-runtime.test.js",
+      "sha256": "c54b7b8151502bf8a34f09957bc73a4a91c2874e1f4a3bd9a51446f1e830f646"
+    },
+    {
+      "file": "core4/test/mixed-installation-repair.test.js",
+      "sha256": "6b3d1b26dbfe215343ce26a970dbf98731207cfb90c80c62d2bb5f1f8ac66b48"
+    },
+    {
+      "file": "core4/test/panel-reconnect.test.js",
+      "sha256": "02fd03a8685f25bcc5accb378cf16979cf198922bb55ee611cc070f0e7db61a9"
+    },
+    {
+      "file": "core4/test/stopped-update.test.js",
+      "sha256": "07bd2e045765344467777aa4c7c71b014f307b29bb8ce350d2d81196e7952650"
+    },
+    {
+      "file": "core4/test/version-profile-compatibility.test.js",
+      "sha256": "6e695e5db5a9db3be100c0364c71ddc2db4f7e32bd39d9c1d453fbeb71143112"
+    },
+    {
+      "file": "core4/tools/maintain-owner.js",
+      "sha256": "2cf566678bd50b697407718312945dbdf5a7696049161b55557008f0d7b9aa8b"
+    },
+    {
+      "file": "core4/tools/package-capability.js",
+      "sha256": "971b48815fbe79ebf3f9c32a3b5725be54e208e6433fc04f28f1a3401aa18bb9"
+    },
+    {
+      "file": "core4/tools/package-installable.js",
+      "sha256": "a8af4a223a971c1da2ce33ba8dcf1f43292abf36df68fd72ac64f07e8fe459a1"
+    },
+    {
+      "file": "core4/tools/standalone-installer.js",
+      "sha256": "bffd4554d0e88f885cb8fa91b73b8573e339b7cc8beaa377c1b2e9168f748908"
+    },
+    {
+      "file": "docs/core-version-profile-compatibility.md",
+      "sha256": "f5bc572065ef699b31f0c85ddbfc0abcae9849182bf73d111f913de9c87b6482"
+    }
+  ],
+  "protected": [
+    {
+      "file": "AGENTS.md",
+      "sha256": "0097d035294e889dd2b4410fb247938764d8b007c226893911c3ef4772f6f700",
+      "expected": "0097d035294e889dd2b4410fb247938764d8b007c226893911c3ef4772f6f700",
+      "preserved": true
+    },
+    {
+      "file": "plans/core-transfer-4.2.5-20261111.md",
+      "sha256": "cc9ca6acebbc0732587a82c3dfd94da57f8a850c39f38ee6c2bf8b7936926bb7",
+      "expected": "cc9ca6acebbc0732587a82c3dfd94da57f8a850c39f38ee6c2bf8b7936926bb7",
+      "preserved": true
+    }
+  ]
+}

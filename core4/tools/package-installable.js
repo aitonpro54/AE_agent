@@ -81,7 +81,7 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
     const full = path.resolve(root, relative); if (fs.realpathSync(full) !== full) fail('package_symlink');
     const bytes = fs.readFileSync(full); hashes[relative] = hash(bytes); files[relative] = bytes.toString('base64');
   }
-  const release = { version: '4.2.6', format: 2, hashes }; const features = releaseFeatures(release);
+  const release = { version: '4.2.7', format: 2, hashes }; const features = releaseFeatures(release);
   const original = JSON.parse(fs.readFileSync(path.join(root, 'config/catalog.json'), 'utf8'));
   const modules = parts.flatMap(part => part.modules), assets = parts.flatMap(part => part.assets);
   const profiles = Object.assign({}, ...parts.map(part => part.profiles));
@@ -117,7 +117,7 @@ function verifyPackage(pkg) {
     if (!/^[a-zA-Z0-9_./-]+$/.test(relative) || relative.split('/').includes('..') || path.isAbsolute(relative) || /^(test|experiments|node_modules|\.git|logs|state|tools)\//.test(relative) || hash(Buffer.from(data, 'base64')) !== pkg.release.hashes[relative]) fail('package_integrity');
   }
   runtimeBinding(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
-  if (features.registryIdentity) require('../integrations/cep/panel-identity').verify(file => Buffer.from(pkg.files[file], 'base64'));
+  if (features.registryIdentity && require('../integrations/cep/panel-identity').verify(file => Buffer.from(pkg.files[file], 'base64')).productVersion !== pkg.release.version) fail('panel_identity_version');
   const selected = deriveComposition(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
   if (!selected.legacy && Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString('utf8') !== registrySource(selected.assets, Buffer.from(pkg.files['runtime/host/json-codec.jsx'], 'base64').toString('utf8'), features.registryIdentity)) fail('composition_registry');
   return pkg;

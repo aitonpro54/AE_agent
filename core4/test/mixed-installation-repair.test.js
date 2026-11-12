@@ -16,7 +16,7 @@ test('mixed repair semantic incident packages retain the explicit legacy seven-f
   const expectedCep = ['CSXS/manifest.xml', 'index.html', 'installation.js', 'js/panel.js', 'js/poll-dispatcher.js', 'jsx/registry.jsx', 'panel.css'];
   for (const name of ['readonly', 'manual', 'manual-titles-variants']) {
     const current = pkg(name), original = canonical(current), legacy = incidentPkg(name), read = p => file => Buffer.from(p.files[file], 'base64');
-    assert.notEqual(legacy, current); assert.equal(verifyPackage(legacy), legacy); assert.equal(current.release.version, '4.2.6'); assert.equal(legacy.release.version, '4.2.5');
+    assert.notEqual(legacy, current); assert.equal(verifyPackage(legacy), legacy); assert.equal(current.release.version, '4.2.7'); assert.equal(legacy.release.version, '4.2.5');
     assert.equal(canonical(current), original, 'legacy projection never mutates the cached current package');
     const selected = deriveComposition(legacy.release, read(legacy)); assert.equal(Object.hasOwn(selected, 'registryVerification'), false);
     assert.doesNotMatch(read(legacy)('cep/jsx/registry.jsx').toString(), /CORE4_REGISTRY_ID/);

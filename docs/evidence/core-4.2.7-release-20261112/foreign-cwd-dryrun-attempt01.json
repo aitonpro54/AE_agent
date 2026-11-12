@@ -1,0 +1,11 @@
+{
+  "exitCode": 1,
+  "error": "install_scope",
+  "reason": "TEMP install-root basename must be AEAgentCore4",
+  "destinationsAbsentAfter": true,
+  "destinations": {
+    "installRoot": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\dryrun-install",
+    "extensionsDir": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\dryrun-extensions",
+    "configPath": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\dryrun-project\\.codex\\config.toml"
+  }
+}

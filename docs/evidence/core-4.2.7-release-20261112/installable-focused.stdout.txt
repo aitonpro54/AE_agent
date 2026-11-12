@@ -1,0 +1,15 @@
+✔ installable-runtime package deterministic closure, install CAS, exact rollback and stable origin (5689.9634ms)
+✔ installable-runtime full generated host registry parses as ES3 before any host evaluation (164.4851ms)
+✔ installable-runtime exact release closure rejects extensionless shadow, empty directory and junction before package imports (2632.4225ms)
+✔ installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies (3417.506ms)
+✔ installable-runtime descriptor changed at startup gate is rejected before package imports (2194.331ms)
+✔ installable-runtime CLI dry-run binds source workspace independently of CWD and defaults to its current Node (1242.0045ms)
+✔ installable-runtime real stdio child consumes generated MCP config, advertises generic API, status without panel, then typed module inspect via HTTP + VM (3746.198ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19222.0945

@@ -1,0 +1,12 @@
+✔ mixed repair semantic incident packages retain the explicit legacy seven-file CEP contract (983.7025ms)
+ℹ {"name":"readonly","currentPackageHash":"07667063fc7b258873ba3ec04779316768f32d0653ab478155cdbd0013985542","semanticLegacyPackageHash":"637eb71be8e25ae98edab5448463dfb24438671c7d0462acc593dd1c55f690d6","changedDataFiles":["cep/jsx/registry.jsx","config/catalog.json"],"evidence":"semantic legacy data; not byte-historical or native old-panel proof"}
+ℹ {"name":"manual","currentPackageHash":"6c97e916cbe465856d347f3859b4c8b38219305d80001b82df297301b94f79e0","semanticLegacyPackageHash":"cd17af791bbfd07470621bd958b32ad878ef4127cc09b2810cbac8f624ff3a5d","changedDataFiles":["cep/jsx/registry.jsx","config/catalog.json"],"evidence":"semantic legacy data; not byte-historical or native old-panel proof"}
+ℹ {"name":"manual-titles-variants","currentPackageHash":"bd06d84fd62e3bcf67b8d5874743de6f3f562b157b8e3e322e475769f8de8855","semanticLegacyPackageHash":"e311c4da8bbd95bce17ce066b316d10fd23b41c5d7df0c3335f5ab7532c8d622","changedDataFiles":["cep/jsx/registry.jsx","config/catalog.json"],"evidence":"semantic legacy data; not byte-historical or native old-panel proof"}
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1103.1661

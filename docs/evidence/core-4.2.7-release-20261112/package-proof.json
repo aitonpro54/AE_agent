@@ -1,0 +1,41 @@
+{
+  "createdAt": "2026-11-12T18:20:13.575Z",
+  "version": "4.2.7",
+  "composition": "operator-render-jobs",
+  "runtimeModel": "owner",
+  "runtimeFiles": 164,
+  "packageHash": "2ce5b1c2c49ddc7be422a9d4b57d1d2d84e0b30e5ce703a9278df306e1c03e04",
+  "packageBytesSha256": "108520ac2ef3b19a7d4fd270bccb2db0c62a36b0b4f8b3c9062e0475f0101dc8",
+  "standaloneManifestVersion": 3,
+  "standaloneFiles": 183,
+  "distributionHash": "f6803959685c71db19b8335fb97349343df86203ca3ec8ffff4f9f17d379fc9b",
+  "catalogRevision": "selected-v1-084e8e8ad437be7d290f16a36bf57547822f52878ec6509d4f62b853298e2500",
+  "panelIdentity": {
+    "protocolVersion": 1,
+    "productVersion": "4.2.7",
+    "panelBuildId": "2111abf81701b707498717c1a7f20b957873590e691a368e3bcf1f8be8b31909",
+    "extensionId": "com.codex.aeagentcore4.panel",
+    "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+  },
+  "deterministicPackage": true,
+  "deterministicStandalone": true,
+  "standalonePaths": [
+    "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\candidate-a",
+    "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\candidate-b"
+  ],
+  "historical426": {
+    "path": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-panel-reconnect-candidate-k6JAFp\\candidate-a",
+    "distributionHash": "73543e6e0e4013663266ea269782bd61daacaedb79c334abdca0f4a1f17bb7f1",
+    "packageHash": "75a95aa5738f313f4d00e0f40b80c57048de1d818acb64c0d072cc0b6cbe3c45",
+    "verifiedByCurrentPackageVerifier": true,
+    "panelIdentity": {
+      "protocolVersion": 1,
+      "productVersion": "4.2.6",
+      "panelBuildId": "2754542e09840c74267d075239b86a90221b78764b8f00e2625b495ca79f58da",
+      "extensionId": "com.codex.aeagentcore4.panel",
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+    }
+  },
+  "liveProof": false,
+  "releaseCertified": false
+}

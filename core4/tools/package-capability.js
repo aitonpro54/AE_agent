@@ -5,7 +5,7 @@ const path = require('node:path');
 const { Script } = require('node:vm');
 const { canonical, fail, hash, MAX_FRAME } = require('../protocol/json');
 const { reviewCode } = require('../core/artifacts');
-const { deriveComposition, registrySource, validateCompRenderCompletion } = require('../runtime/stdio-entry');
+const { deriveComposition, registrySource, validateCompRenderCompletion, releaseFeatures } = require('../runtime/stdio-entry');
 const { runtimeBinding, verifyPackage } = require('./package-installable');
 const { bundleStandalone, writeStandalone } = require('./package-standalone-installer');
 
@@ -135,7 +135,7 @@ function composeCapability(base, bundle, admissionBytes, { basePin, capabilityPi
   const readBase = file => Buffer.from(base.files[file], 'base64');
   const selected = deriveComposition(base.release, readBase);
   const composition = selected.composition;
-  if (!['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3', '4.2.4', '4.2.5', '4.2.6'].includes(base.release.version) || !composition || composition.id === 'readonly' ||
+  if (!['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3', '4.2.4', '4.2.5', '4.2.6', '4.2.7'].includes(base.release.version) || !composition || composition.id === 'readonly' ||
       (composition.version === 1 && composition.id !== 'manual') ||
       runtimeBinding(base.release, readBase).runtimeModel !== 'owner') fail('capability_base_composition');
   const { artifact, contract, allowed, artifactFiles } = verifyCapability(bundle, capabilityPin);
@@ -174,10 +174,10 @@ function composeCapability(base, bundle, admissionBytes, { basePin, capabilityPi
   requireInitialization('var executor = ' + updated.executor + '\n; executor != null && ' + phases.join(' && '), 'capability_executor_interface');
   requireInitialization('var module = {exports:{}};\n(function(module,exports){\n' + utf8(read(existing.path + '/implementation.js')) +
     '\n})(module,module.exports);\nmodule.exports != null && typeof module.exports.build === "function";', 'capability_builder_interface');
-  const registry = registrySource(composed.assets, utf8(read('runtime/host/json-codec.jsx')), release.version === '4.2.6');
+  const registry = registrySource(composed.assets, utf8(read('runtime/host/json-codec.jsx')), releaseFeatures(release).registryIdentity);
   requireInitialization(registry + '\n; typeof AECore4Host.dispatch === "function";', 'capability_registry_initialization');
   put('cep/jsx/registry.jsx', Buffer.from(registry));
-  if (release.version === '4.2.6') { const panel = require('../integrations/cep/panel-identity'); put('cep/js/panel.js', Buffer.from(panel.stamp(utf8(read('cep/js/panel.js')), panel.identity(read)))); }
+  if (releaseFeatures(release).registryIdentity) { const panel = require('../integrations/cep/panel-identity'); put('cep/js/panel.js', Buffer.from(panel.stamp(utf8(read('cep/js/panel.js')), panel.identity(read)))); }
   return verifyPackage({ packageHash: hash(release), release, files });
 }
 

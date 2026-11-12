@@ -1,0 +1,139 @@
+{
+  "collectedAt": "2026-11-12T18:26:18.768Z",
+  "version": "4.2.7",
+  "sourceBase": "48c5bad",
+  "branch": "codex/ae-agent-core-4.2.7",
+  "remote": "origin",
+  "remoteUrl": "https://github.com/aitonpro54/AE_agent.git",
+  "result": "validated-source-ready-for-push",
+  "validationCommands": 8,
+  "testsPassed": 163,
+  "boundaries": {
+    "checked": 92,
+    "liveCalls": 0
+  },
+  "validationMap": {
+    "selected": 65,
+    "deferred": 9,
+    "selectedDoesNotMeanPass": true,
+    "fullReportPrivate": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-427-release-oBXXta\\validation-map-report.json",
+    "fullReportSha256": "821279ead4d26fd558ef527a68bbf9484641e35f9bd647b55c3f5c05ee55a477"
+  },
+  "review": {
+    "role": "ae_reviewer",
+    "result": "ACCEPT bounded source/evidence; no P1/P2",
+    "sourceAndProtectedHashesMatched": 26,
+    "testsNotRepeated": true
+  },
+  "historical426ActualBytesVerified": true,
+  "foreignCwdDryRun": true,
+  "productionWrites": 0,
+  "liveActions": 0,
+  "installedRuntimeVersion": "4.2.6",
+  "releaseCertified": false,
+  "attempts": [
+    {
+      "stage": "historical426-verification",
+      "initialRefusal": "standalone_absolute_exact_path",
+      "resolution": "Use observed absolute Windows path via path.resolve; no gate changes or writes."
+    },
+    {
+      "stage": "foreign-cwd-dryrun",
+      "initialRefusal": "install_scope",
+      "resolution": "Use required AEAgentCore4 basename; no gate changes or destination writes."
+    }
+  ],
+  "postPushReceiptLocal": ".codex-runtime/core-4.2.7-release-20261112/push.json",
+  "artifacts": [
+    {
+      "file": "ae-panel-startup.stdout.txt",
+      "bytes": 4901,
+      "sha256": "0997e91d9b66ae30b040fafe42bc35c339a55edfaa5fb51f5f4e5699ef1d9b7b"
+    },
+    {
+      "file": "boundaries.stdout.txt",
+      "bytes": 102,
+      "sha256": "98850ee100fa03526f85cbaaffcbe974317bda5c91ec27e67736c999d7c584c7"
+    },
+    {
+      "file": "capability-composition.stdout.txt",
+      "bytes": 473,
+      "sha256": "8e1330ef3723e63498bf562de68876a870d9dde8f13a59abde23762a7d56ad80"
+    },
+    {
+      "file": "catalog-revision.stdout.txt",
+      "bytes": 1268,
+      "sha256": "9b3f1c3274afed694c1a5cd0fb898fc98188d176a902e78744be5ab75756d04d"
+    },
+    {
+      "file": "foreign-cwd-dryrun-attempt01.json",
+      "bytes": 497,
+      "sha256": "1abb1c38841ecee05627574fc282506aab5034bc4bc8cb7d74bfca326bd54124"
+    },
+    {
+      "file": "foreign-cwd-dryrun-attempt01.stderr.txt",
+      "bytes": 26,
+      "sha256": "d2a8defebe11179b6b7085dcdd1fa504b5c69d320c674e17c8e744708933947f"
+    },
+    {
+      "file": "foreign-cwd-dryrun-proof.json",
+      "bytes": 2154,
+      "sha256": "7b2d8df1b6a023ea97740d0d9c513b56c3cf367ea1b83b663d271978c73cbbd1"
+    },
+    {
+      "file": "foreign-cwd-dryrun.stdout.txt",
+      "bytes": 1020,
+      "sha256": "dd8b13c51bf0bd5979e6d86ab6cf3d1751e5807ca59d045a8952d71347e920b8"
+    },
+    {
+      "file": "installable-focused.stdout.txt",
+      "bytes": 1007,
+      "sha256": "13b7c24d772ded601223185f3c9dd8dcae491db3189edbeb460da36adffffe3a"
+    },
+    {
+      "file": "mixed-version.stdout.txt",
+      "bytes": 1296,
+      "sha256": "281d283ae09dbc60ba06f15d211075ef59f60b600e33b39700f0c6ae2d072c1a"
+    },
+    {
+      "file": "offline-boundary.cjs",
+      "bytes": 654,
+      "sha256": "68bffb23380a64085ab505ddbed405bc9d2ba257600e2ec8d2a72142b77ef121"
+    },
+    {
+      "file": "package-proof.json",
+      "bytes": 1890,
+      "sha256": "20c821d3b7fe0c23b9ffb8761dd957dd04e5af9754c861ee91466a0eba35b7b6"
+    },
+    {
+      "file": "panel-reconnect.stdout.txt",
+      "bytes": 7365,
+      "sha256": "de30a8bfc9aef96467435efc5a65b678db535bf41469ac02d1701ad83dfb404a"
+    },
+    {
+      "file": "results.json",
+      "bytes": 3734,
+      "sha256": "6bea5b2486bb6df29f973c84fa06626d5340165790415527712b5fe05266cc42"
+    },
+    {
+      "file": "source-sha256.json",
+      "bytes": 4008,
+      "sha256": "51c74c508ebbbe91f7323b450d385c39ceda4420a49f9422002563aca1cc4f4d"
+    },
+    {
+      "file": "standalone.stdout.txt",
+      "bytes": 1056,
+      "sha256": "056c164d41cd170ae672af2eab49b598c54b883af4850831a579bc2581a33f8b"
+    },
+    {
+      "file": "validation-map-summary.json",
+      "bytes": 2021,
+      "sha256": "4367e2b5d3cd9440f1ad0ebf0d4f6437f652326296ddfcf5c6a0415fe8b667b5"
+    },
+    {
+      "file": "version-profile.stdout.txt",
+      "bytes": 1795,
+      "sha256": "867a425962b4485e290b3a76a86fbe3ed9e93b64db4050444ff228f1c9cbce6d"
+    }
+  ]
+}

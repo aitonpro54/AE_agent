@@ -1,6 +1,6 @@
 # Совместимость версий и result profiles Core
 
-Контракт B3, 12 ноября 2026. Product/serverInfo остаётся **4.2.6**.
+Контракт B3, 12 ноября 2026. Product/serverInfo — **4.2.7**.
 Release format, composition policy, standalone manifest и product version —
 раздельные номера. Незнакомый product version отклоняется до чтения состава.
 
@@ -9,21 +9,23 @@ Release format, composition policy, standalone manifest и product version —
 | 4.0.0 | 1, 2 | прежний legacy либо поддерживаемый format-2 состав | прежние требования |
 | 4.1.0, 4.1.1, 4.1.2, 4.2.1, 4.2.2 | 2 | прежние v1/v2 формы; policy без номера | прежние требования |
 | 4.2.3, 4.2.4, 4.2.5 | 2 | composition 2, policy 2 | без нового registry marker |
-| 4.2.6 | 2 | composition 2, policy 2 | обе обязательны |
+| 4.2.6, 4.2.7 | 2 | composition 2, policy 2 | обе обязательны |
 | Все прочие | — | `unsupported_release` | silent downgrade отсутствует |
 
 Inline bootstrap и pure spec содержат одинаковую builtin policy, связанную
 поведенческими parity fixtures. У старых selected shapes поле
 `registryVerification` остаётся отсутствующим. Client/owner сохраняют отдельный
-узкий whitelist **4.2.2–4.2.6**. Предварительный owner byte-reader исторически
+узкий whitelist **4.2.2–4.2.7**. Предварительный owner byte-reader исторически
 принимает formats 1/2; следующий полный verifier ограничивает допустимые пары
 версии/формата. Standalone outer reader принимает только format 2 и точный
 полный product whitelist как данные; manifest v3 не означает product version 3.
 Текущий executable сохраняет v3 tooling gate и fixed trusted tools/spec slot.
 
-Для 4.2.6 package verifier проверяет panel identity и точные registry bytes,
+Для 4.2.6 и 4.2.7 package verifier проверяет panel identity и точные registry bytes,
 inline verifier — точные registry bytes; runtime после полной установки и
-own-root guard проверяет panel identity до создания HTTP peer. Ранних imports
+own-root guard проверяет panel identity до создания HTTP peer. Версия identity
+должна совпадать с product version release. Точный manifest header выбирает
+только нормализацию 4.2.6 или 4.2.7; прежние 4.2.6 bytes и identity сохраняются. Ранних imports
 для этих проверок не добавлено. Receiver contract остаётся version 1,
 descriptor 2 / journal 2 / terminal-read-failure disposition 1; owner contract
 3/4 читается tooling по прежним правилам, текущий owner runtime требует 4.
