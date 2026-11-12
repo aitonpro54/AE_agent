@@ -405,6 +405,14 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Progress
 
+- **B0 завершён:** [контракт доверенного bootstrap](../docs/core-composition-bootstrap-contract-20261112.md)
+  подготовлен ae_architect, независимый ae_reviewer ACCEPT. Inline verifier
+  остаётся прежней доверенной границей; fixed pure spec загружается после
+  проверки собственного root либо trusted tooling читает candidate как данные.
+- B1 передаётся ae_implementer по зафиксированному контракту. Его ограниченный
+  результат сознательно сохраняет дублирование inline semantic validation;
+  parity fixtures не допускают незаметного расхождения. Новый trust protocol
+  и версия продукта не нужны.
 - **A3 реализован:** validateIntent запрещает дополнительные keys вне desired
   и expectedBindings при initial build и materialize. Четыре новых actual-worker
   fixtures и audit-repairs 32/32 PASS; syntax, boundaries 91 и source diff check
@@ -453,6 +461,12 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Decision Log
 
+- Проверка target tree не удостоверяет соседний helper исполняемого source tree.
+  Поэтому ранний verifier не вызывает новый require; новый entry требует свой
+  pinned helper без missing-helper fallback. Legacy readers/форматы сохраняются.
+- B3 доказывает переносимый owned-text-layer-v1 на TEMP-only reviewed module.
+  Identity-bound profiles и OPERATOR_EFFECTS не расширяются ради fixture.
+  Это уточняет исходное общее обещание модульности, сохраняя authority envelope.
 - A3 усиливает общий validateIntent, без отдельного mutable allowlist и без
   фильтрации нежелательных полей. Схема может разрешать optional поле, но worker
   не вправе добавить его без desired/expectedBindings. TEMP-only admission
@@ -487,6 +501,9 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Validation
 
+- B0 — source argument и независимый contract review, не test/live PASS.
+  Описаны positive/negative parity, corrupt/missing helper, wrong root,
+  candidate non-execution и version/profile compatibility fixtures для B1/B3.
 - A3 exact source hashes сверены. Полные команды/exit/stdout SHA и исходный
   failed core run сохранены; никакого переноса этого FAIL в PASS нет. Whitespace
   исключён только для raw failed stdout локальным .gitattributes, source проверен.
