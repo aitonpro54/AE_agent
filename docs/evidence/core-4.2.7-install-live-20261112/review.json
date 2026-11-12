@@ -1,0 +1,37 @@
+{
+  "collectedAt": "2026-11-12T18:52:59.042Z",
+  "role": "ae_reviewer",
+  "mode": "Independent read-only file review; no live/UI/test calls or edits.",
+  "result": "ACCEPT bounded installed 4.2.7 and two automatic panel connections",
+  "openP1P2": 0,
+  "installed": {
+    "runtimeFilesVerified": 164,
+    "cepMatchesCandidate": true,
+    "packageHash": "2ce5b1c2c49ddc7be422a9d4b57d1d2d84e0b30e5ce703a9278df306e1c03e04",
+    "panelBuildId": "2111abf81701b707498717c1a7f20b957873590e691a368e3bcf1f8be8b31909"
+  },
+  "live": {
+    "authenticated427RegistryReadyBeforeAcquireAndConnectInBothPhases": true,
+    "newPeerAndEpochInBothPhases": true,
+    "nativeReceiptsBoundToNewEpochs": true,
+    "leasesReleased": true,
+    "sameObservedAEAndProject": true
+  },
+  "preservation": {
+    "exactCurrentProtectedFiles": 1035,
+    "prefixFacts": 14,
+    "snapshotManifestSha256": "2f9ea07d7e03e66afbbda3623e8efa579b2073790ec6be2a6363718bf8c259a6",
+    "manifestCreatedBeforeUpdateIntent": true,
+    "indexedArtifactsVerifiedBeforeRootMetadata": 8,
+    "logSharingReadHandledReadOnly": true,
+    "missingPrivateBackupEmptyLockCopies": 2,
+    "sourceMatchesSealedManifest": true,
+    "completeBackupRestorabilityProven": false
+  },
+  "documentationCorrection": "Summary limitation narrowed from LOCK/LOG to the two observed UXP LOCK copies; no runtime changes or retesting needed.",
+  "limits": [
+    "Current-chat namespace 4.2.7 remains open until user full Codex restart; configured CLI is not substituted for it.",
+    "No automatic lifecycle/continuity claim; continuity=false remains.",
+    "Exact wire/reload subpath, MSI and full release not proven."
+  ]
+}

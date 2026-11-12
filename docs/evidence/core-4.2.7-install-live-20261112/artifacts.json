@@ -1,0 +1,57 @@
+{
+  "observedAt": "2026-11-12T18:52:59.592Z",
+  "credentialsExcluded": true,
+  "files": [
+    {
+      "file": "artifact-gap.json",
+      "bytes": 949,
+      "sha256": "78d142467151b89aa19611cb4c24e352e3c3da5be66722c4afba65927129edce"
+    },
+    {
+      "file": "automatic-restart-native.json",
+      "bytes": 81163,
+      "sha256": "820fce37c6d8e58e28bd88d5ad43f568555a693e2837cc4ef06667eea3ef9397"
+    },
+    {
+      "file": "automatic-update-native.json",
+      "bytes": 81163,
+      "sha256": "cf619cd421c0522988aa2b4fb3762494fd7320e0b7aaaae98fea5cf8fff402c0"
+    },
+    {
+      "file": "current-chat-before-restart.json",
+      "bytes": 800,
+      "sha256": "0fbfa69dd711342b25a85b0a0b7d0ab23469d03edf1923fdf749399ffd22e6d2"
+    },
+    {
+      "file": "preflight-native.json",
+      "bytes": 68907,
+      "sha256": "a8442910670702d283012e6be9b3961ae839004624d747d43bdb1ed90987306f"
+    },
+    {
+      "file": "preservation.json",
+      "bytes": 8178,
+      "sha256": "ab695f5432180cb9e749de95182938cf14307b38f94b33af90e0cd928aae0b45"
+    },
+    {
+      "file": "restart-operation.json",
+      "bytes": 5762,
+      "sha256": "dde096e7e1f7846da5b5e6e6d95af188ce91c092f9c04c229db906106fafd1d1"
+    },
+    {
+      "file": "review.json",
+      "bytes": 1654,
+      "sha256": "cedb95870a545f2358306ca5b474ae52689af7c7a81556304c82226082493651"
+    },
+    {
+      "file": "summary.json",
+      "bytes": 11305,
+      "sha256": "e05838214c3a0d1fd901097906cb794920899cc81a97b85fed8568499ea99bde"
+    },
+    {
+      "file": "update-operation.json",
+      "bytes": 8755,
+      "sha256": "79d1cfee3cbd79f8a463bb9c0394605320d732b3e7684e368f2a696733ae607c"
+    }
+  ],
+  "rootFollowupMetadataIncluded": true
+}

@@ -1,0 +1,25 @@
+{
+  "observedAt": "2026-11-12T18:46:58.186Z",
+  "missingPrivateBackupCopies": [
+    {
+      "role": "preferences",
+      "file": "26.2\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\LOCK",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "currentMatchesSealedManifest": true
+    },
+    {
+      "role": "preferences",
+      "file": "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\LOCK",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "currentMatchesSealedManifest": true
+    }
+  ],
+  "initialSnapshotByteExactVerified": true,
+  "currentSourceHashesAndByteCountsMatch": true,
+  "completeRestorabilityOfPrivateBackupClaimed": false,
+  "reasonForDisappearance": "not established; outside scoped install/reconnect task",
+  "restorationAttempted": false,
+  "productionChangesDueToGap": 0
+}

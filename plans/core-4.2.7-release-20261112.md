@@ -6,6 +6,11 @@ push в 4.2.7. База исходников — `48c5bad`, ранее прин�
 
 ## Progress
 
+- Последующий отдельный этап установил 4.2.7 и принял два автоматических
+  reconnect в live AE: [install/live план](core-4.2.7-install-live-20261112.md).
+  Это дополняет историческую source-only проверку ниже; current-chat client
+  refresh после установки выделен отдельно.
+
 - Создана ветка `codex/ae-agent-core-4.2.7` по существующему именованию version
   branches. Remote `origin`: `https://github.com/aitonpro54/AE_agent.git`.
   Read-only ls-remote не обнаружил занятую ветку 4.2.7.

@@ -1,0 +1,18 @@
+{
+  "observedAt": "2026-11-12T18:49:30.902Z",
+  "scope": "Direct MCP namespace of this chat after installed upgrade; separate from successful configured CLI proof.",
+  "tool": "mcp__after_effects_core4__core_status",
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "tool call error: tool call failed for `after-effects-core4/core_status`\n\nCaused by:\n    Mcp error: -32000: owner_unavailable"
+      }
+    ],
+    "isError": true
+  },
+  "installedPackage": "2ce5b1c2c49ddc7be422a9d4b57d1d2d84e0b30e5ce703a9278df306e1c03e04",
+  "currentChatRefreshed": false,
+  "knownResolution": "Full Codex restart performed by the user, followed by one direct current-chat native inspection/release. No further install or owner restart needed.",
+  "agentCodexUiOrProcessControl": 0
+}

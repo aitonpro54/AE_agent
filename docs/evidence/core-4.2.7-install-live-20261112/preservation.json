@@ -1,0 +1,218 @@
+{
+  "observedAt": "2026-11-12T18:46:24.210Z",
+  "snapshotManifestSha256": "2f9ea07d7e03e66afbbda3623e8efa579b2073790ec6be2a6363718bf8c259a6",
+  "exactProtectedFiles": 1035,
+  "unchangedPreferences": 80,
+  "protectedUserAepFiles": 4,
+  "aep": [
+    {
+      "role": "own-aep",
+      "sha256": "e9bfd6813ae411ad46c207c5633f65e7f30c14f1a108f2ea0a7f9861d33d6edc",
+      "same": true
+    },
+    {
+      "role": "aep-0",
+      "sha256": "773c86afc5ac63c2b8b3bf5b116414297700039a2bf9c2b94fe8aeaf54bdd663",
+      "same": true
+    },
+    {
+      "role": "aep-1",
+      "sha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+      "same": true
+    },
+    {
+      "role": "aep-2",
+      "sha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+      "same": true
+    },
+    {
+      "role": "aep-3",
+      "sha256": "794f0c50fd1fc02abdf0702b9f36694e20bfad3525c8577c0c68cd59ade791a6",
+      "same": true
+    }
+  ],
+  "prefixes": [
+    {
+      "role": "installation",
+      "file": "state/production/broker/ledger.ndjson",
+      "beforeBytes": 140900,
+      "afterBytes": 140900,
+      "prefixSha256": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+      "afterSha256": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+      "appendedRecords": 0
+    },
+    {
+      "role": "installation",
+      "file": "state/production/receiver/completions.ndjson",
+      "beforeBytes": 84743,
+      "afterBytes": 94877,
+      "prefixSha256": "c77ae5b79325e9ed0b5cf2d35fcf2dc48073d95fd0ebd548d482c328501a5c3d",
+      "afterSha256": "1fba92367594164d940eacbaa18253d65d6504d26ae41571d8f29a42b9c8dc38",
+      "appendedRecords": 8
+    },
+    {
+      "role": "installation",
+      "file": "transactions/0e6d16c9-f80e-4761-b445-3a7e8cfbac1d-start-over/archive-receiver/completions.ndjson",
+      "beforeBytes": 4246,
+      "afterBytes": 4246,
+      "prefixSha256": "eb26c8b8a0afd0e99c7ca400e69ed247b997a85f7fd1d13a618513572e49317a",
+      "afterSha256": "eb26c8b8a0afd0e99c7ca400e69ed247b997a85f7fd1d13a618513572e49317a",
+      "appendedRecords": 0
+    },
+    {
+      "role": "installation",
+      "file": "transactions/fff4d550-28bf-436b-8ca5-c2591855c679-start-over/archive-receiver/completions.ndjson",
+      "beforeBytes": 17713,
+      "afterBytes": 17713,
+      "prefixSha256": "f6cbbd03ad70852bff7864e42831ff7d6f99264994a1edd70d23b0fc2ead31b6",
+      "afterSha256": "f6cbbd03ad70852bff7864e42831ff7d6f99264994a1edd70d23b0fc2ead31b6",
+      "appendedRecords": 0
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_09-23-17_722110.log",
+      "beforeBytes": 200,
+      "afterBytes": 200,
+      "prefixSha256": "dd1a23cf6fb968ff3c1a4ebc127cc16a60f5c2ee887defb2064012746e0b11ad",
+      "afterSha256": "dd1a23cf6fb968ff3c1a4ebc127cc16a60f5c2ee887defb2064012746e0b11ad",
+      "appendedRecords": 0
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_09-37-44_440504.log",
+      "beforeBytes": 200,
+      "afterBytes": 200,
+      "prefixSha256": "500cac35765ffb8d778ab5171c4e4e43aa0d7b74aad06a29fc6c8c164a27990e",
+      "afterSha256": "500cac35765ffb8d778ab5171c4e4e43aa0d7b74aad06a29fc6c8c164a27990e",
+      "appendedRecords": 0
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_10-23-44_984687.log",
+      "beforeBytes": 200,
+      "afterBytes": 200,
+      "prefixSha256": "05996c97f88724257e0b348865387b302e8db6eb1bd03241d26c0493b8aaf9dd",
+      "afterSha256": "05996c97f88724257e0b348865387b302e8db6eb1bd03241d26c0493b8aaf9dd",
+      "appendedRecords": 0
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_10-47-58_489073.log",
+      "beforeBytes": 199,
+      "afterBytes": 199,
+      "prefixSha256": "ab4a2c610e193e8c9ac1bd2d930398b7fb427a9b02880eaece25120d83d1c6a1",
+      "afterSha256": "ab4a2c610e193e8c9ac1bd2d930398b7fb427a9b02880eaece25120d83d1c6a1",
+      "appendedRecords": 0
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_11-12-23_910084.log",
+      "beforeBytes": 200,
+      "afterBytes": 200,
+      "prefixSha256": "423c5a2c737e6c0a6e065e4b4e6e8112fc8ff1241e522c26534be9f3478d07a5",
+      "afterSha256": "423c5a2c737e6c0a6e065e4b4e6e8112fc8ff1241e522c26534be9f3478d07a5",
+      "appendedRecords": 0
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-11_15-02-02_176715.log",
+      "beforeBytes": 43208,
+      "afterBytes": 43208,
+      "prefixSha256": "c45aaaf55ddd4f4cf65312ba3789e6cff1baaeabc6f0de296bc6290fc54c63e9",
+      "afterSha256": "c45aaaf55ddd4f4cf65312ba3789e6cff1baaeabc6f0de296bc6290fc54c63e9",
+      "appendedRecords": 0
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-12_09-55-41_884734.log",
+      "beforeBytes": 24266,
+      "afterBytes": 24266,
+      "prefixSha256": "a2936f8a52209da8d97e49e5876f2605e2abc8f87e9e84742ee0c4b6f7e15960",
+      "afterSha256": "a2936f8a52209da8d97e49e5876f2605e2abc8f87e9e84742ee0c4b6f7e15960",
+      "appendedRecords": 0
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-12_11-59-40_431989.log",
+      "beforeBytes": 43445,
+      "afterBytes": 43445,
+      "prefixSha256": "c05f11325fe6e59bd648802e4279a198637914b99bd92099bc6be155b891a781",
+      "afterSha256": "c05f11325fe6e59bd648802e4279a198637914b99bd92099bc6be155b891a781",
+      "appendedRecords": 0
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-12_21-15-26_424839.log",
+      "beforeBytes": 25628,
+      "afterBytes": 25628,
+      "prefixSha256": "096cb4442b60da61fb27752eef983140406c856d6ab1922b9aec631a308d07e6",
+      "afterSha256": "096cb4442b60da61fb27752eef983140406c856d6ab1922b9aec631a308d07e6",
+      "appendedRecords": 0
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-12_21-28-59_868169.log",
+      "beforeBytes": 199,
+      "afterBytes": 199,
+      "prefixSha256": "eaf8d1cfc1d44ab1ea2f418c86834ce42b6acc535810a333f8cb6821f0fde6e3",
+      "afterSha256": "eaf8d1cfc1d44ab1ea2f418c86834ce42b6acc535810a333f8cb6821f0fde6e3",
+      "appendedRecords": 0
+    }
+  ],
+  "restartPrefixes": [
+    {
+      "file": "completions.ndjson",
+      "beforeBytes": 89810,
+      "afterBytes": 94877,
+      "prefixSha256": "8e57d6ae3f0940f22f85dcce240d567ad813862040b2441f7906ac1f287d4ab6",
+      "afterSha256": "1fba92367594164d940eacbaa18253d65d6504d26ae41571d8f29a42b9c8dc38",
+      "appendedRecords": 4
+    },
+    {
+      "file": "ledger.ndjson",
+      "beforeBytes": 140900,
+      "afterBytes": 140900,
+      "prefixSha256": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+      "afterSha256": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+      "appendedRecords": 0
+    }
+  ],
+  "changed": [],
+  "skippedExpectedRuntimeFiles": [
+    "core-client.json",
+    "installation.json",
+    "state/production/broker/broker-owner.lock",
+    "state/production/receiver/owner",
+    "state/production/runtime-owner.json"
+  ],
+  "installationIdentityPreserved": true,
+  "installedReleaseAndCepVerified": true,
+  "configOnlyInitialExpectedPackagePath": true,
+  "restartDescriptorConfigMarkerCredentialsUnchanged": true,
+  "initialCredentialsRotated": true,
+  "distinctCredentialRoles": true,
+  "sameAE": {
+    "birth": "2026-11-12T16:28:50.0853090Z",
+    "pid": 39220
+  },
+  "packageHash": "2ce5b1c2c49ddc7be422a9d4b57d1d2d84e0b30e5ce703a9278df306e1c03e04",
+  "descriptorSha256": "68b21edb3efac1041534d16d2e3c0298b01d566195589773e4ba88e84dfa4847",
+  "retainedDirty": [
+    {
+      "file": "AGENTS.md",
+      "sha256": "0097d035294e889dd2b4410fb247938764d8b007c226893911c3ef4772f6f700",
+      "unchanged": true
+    },
+    {
+      "file": "plans/core-transfer-4.2.5-20261111.md",
+      "sha256": "cc9ca6acebbc0732587a82c3dfd94da57f8a850c39f38ee6c2bf8b7936926bb7",
+      "unchanged": true
+    }
+  ],
+  "artifactGap": {
+    "file": "artifact-gap.json",
+    "missingPrivateBackupCopies": 2,
+    "currentImmutableComparedAgainst": "sealed fresh manifest hashes and byte counts; original byte copies used for append-only prefix proofs",
+    "completeBackupRestorabilityClaimed": false
+  }
+}

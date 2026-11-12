@@ -1,0 +1,294 @@
+{
+  "observedAt": "2026-11-12T18:46:24.211Z",
+  "result": "PASS-installed-4.2.7-and-two-automatic-panel-connections",
+  "scope": "Real installed 4.2.6→4.2.7 update followed by same-package/same-credentials owner stop/resume/start; fresh native inspection and lease release after each automatic panel readiness.",
+  "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+  "previousPackageHash": "75a95aa5738f313f4d00e0f40b80c57048de1d818acb64c0d072cc0b6cbe3c45",
+  "packageHash": "2ce5b1c2c49ddc7be422a9d4b57d1d2d84e0b30e5ce703a9278df306e1c03e04",
+  "distributionHash": "f6803959685c71db19b8335fb97349343df86203ca3ec8ffff4f9f17d379fc9b",
+  "composition": "operator-render-jobs",
+  "runtimeModel": "owner",
+  "runtimeFiles": 164,
+  "standaloneFiles": 183,
+  "configuredPath": "C:\\Users\\Ant\\AEAgentCore4\\releases\\2ce5b1c2c49ddc7be422a9d4b57d1d2d84e0b30e5ce703a9278df306e1c03e04\\runtime\\client-entry.js",
+  "effectiveConfig": {
+    "enabled": true,
+    "command": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\Users\\Ant\\AEAgentCore4\\releases\\2ce5b1c2c49ddc7be422a9d4b57d1d2d84e0b30e5ce703a9278df306e1c03e04\\runtime\\client-entry.js",
+      "--client-descriptor",
+      "C:\\Users\\Ant\\AEAgentCore4\\core-client.json"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+    "env": null,
+    "env_vars": [],
+    "sourceSha256": "40e2004171268ef8ef8cca6d964c8f350e88ee2f40e586b9838cf1c0e0527112"
+  },
+  "initialize": {
+    "serverInfo": {
+      "name": "ae-agent-core4",
+      "version": "4.2.7"
+    },
+    "protocolVersion": "2024-11-05"
+  },
+  "loadedPanelIdentity": {
+    "extensionId": "com.codex.aeagentcore4.panel",
+    "panelBuildId": "2111abf81701b707498717c1a7f20b957873590e691a368e3bcf1f8be8b31909",
+    "productVersion": "4.2.7",
+    "protocolVersion": 1,
+    "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+  },
+  "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+  "cutover": {
+    "stopId": "b49fb68b-85e8-4e05-ad47-b9b373088e2d",
+    "updateTransactionId": "31b1ae75-9d66-4186-b193-817e3a575c22",
+    "stopAttempts": 1,
+    "ownerUpdateAttempts": 1,
+    "enableAttempts": 1,
+    "automaticConnection": {
+      "firstStatusStartedAt": "2026-11-12T18:42:27.640Z",
+      "readyObservedAt": "2026-11-12T18:42:45.727Z",
+      "readyIdentityObservedAt": "2026-11-12T18:42:45.412Z",
+      "boundedObservedMs": 18087,
+      "readyBeforeCoreConnect": true,
+      "readyBeforeControllerAcquire": true,
+      "statusPolls": 4,
+      "nativeEvidenceRef": "observation-9867e807-ebb6-470c-9d7f-ee01ecf8d988",
+      "nativeCommandId": "inspect-87f64db7-5ab5-466e-93a7-9e48d501fb35",
+      "nativeReceiptRef": "7b2fec623c20d04551b0dd18bbe6f91e32e4870c8f746a86ef8ac3d550ab9c59",
+      "clientPid": 37696,
+      "clientExit": {
+        "code": 0,
+        "signal": null
+      }
+    }
+  },
+  "restart": {
+    "maintenanceId": "43252957-687a-4b54-8844-be067374bce9",
+    "stopAttempts": 1,
+    "resumeAttempts": 1,
+    "sameDescriptorAndCredentials": true,
+    "automaticConnection": {
+      "firstStatusStartedAt": "2026-11-12T18:43:22.666Z",
+      "readyObservedAt": "2026-11-12T18:43:40.494Z",
+      "readyIdentityObservedAt": "2026-11-12T18:43:39.527Z",
+      "boundedObservedMs": 17828,
+      "readyBeforeCoreConnect": true,
+      "readyBeforeControllerAcquire": true,
+      "statusPolls": 4,
+      "nativeEvidenceRef": "observation-4bf952fc-9de1-4ad0-a6be-654959be6684",
+      "nativeCommandId": "inspect-658df3bc-8284-4bb6-9bf7-f1ada010ccd3",
+      "nativeReceiptRef": "a9c213afd0bddd9ef688f8ee61c2a97ba279fbeec50ad9ba255182d26bc51572",
+      "clientPid": 23828,
+      "clientExit": {
+        "code": 0,
+        "signal": null
+      }
+    }
+  },
+  "owners": {
+    "before": {
+      "birthTicks": "639301023565844340",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+          "eventCount": 42,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "8e59526baf6bc0f649a82d0efab5e34b79fba2c5cf68afb8a8e670bb859efebe",
+          "eventCount": 45,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 31260,
+      "processBootId": "e7ca4384-f7c2-4a10-9069-3762bc924775",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "afterUpdate": {
+      "birthTicks": "639301057480914750",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+          "eventCount": 42,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "c77ae5b79325e9ed0b5cf2d35fcf2dc48073d95fd0ebd548d482c328501a5c3d",
+          "eventCount": 53,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 14824,
+      "processBootId": "9bf91dd5-4724-4680-819b-f5a044ca6a65",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "afterRestart": {
+      "birthTicks": "639301058031276110",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+          "eventCount": 42,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "8e57d6ae3f0940f22f85dcce240d567ad813862040b2441f7906ac1f287d4ab6",
+          "eventCount": 57,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 34544,
+      "processBootId": "e5b2dffd-c096-46cd-9a37-f7e21fbce70b",
+      "reason": null,
+      "recoveryRequired": false
+    }
+  },
+  "peers": {
+    "before": {
+      "acceptedIdentity": {
+        "extensionId": "com.codex.aeagentcore4.panel",
+        "panelBuildId": "2754542e09840c74267d075239b86a90221b78764b8f00e2625b495ca79f58da",
+        "productVersion": "4.2.6",
+        "protocolVersion": 1,
+        "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+      },
+      "connected": true,
+      "identityEpoch": "http-e1e6feee-216e-48e7-882c-c8afccd719be",
+      "identityObservedAt": 1794505572547,
+      "origin": "file://",
+      "peerId": "panel-0abbad30e0099ba6b2df1467adcbd5a7eb6bab5ccb9fdc38",
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+      "registryReady": true
+    },
+    "afterUpdate": {
+      "acceptedIdentity": {
+        "extensionId": "com.codex.aeagentcore4.panel",
+        "panelBuildId": "2111abf81701b707498717c1a7f20b957873590e691a368e3bcf1f8be8b31909",
+        "productVersion": "4.2.7",
+        "protocolVersion": 1,
+        "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+      },
+      "connected": true,
+      "identityEpoch": "http-af4e1d9b-f699-451f-a1fc-696e26bd7d2e",
+      "identityObservedAt": 1794508965412,
+      "origin": "file://",
+      "peerId": "panel-285fe73b14be4ca8fd295c4f577b5327a0bc280534154e46",
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+      "registryReady": true
+    },
+    "afterRestart": {
+      "acceptedIdentity": {
+        "extensionId": "com.codex.aeagentcore4.panel",
+        "panelBuildId": "2111abf81701b707498717c1a7f20b957873590e691a368e3bcf1f8be8b31909",
+        "productVersion": "4.2.7",
+        "protocolVersion": 1,
+        "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+      },
+      "connected": true,
+      "identityEpoch": "http-397f5047-c559-414e-90cd-5d46d58b51e5",
+      "identityObservedAt": 1794509019527,
+      "origin": "file://",
+      "peerId": "panel-29fdbe72dc05e57ae800a6774b053e4781d33d3a1183c8d1",
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+      "registryReady": true
+    }
+  },
+  "workSession": {
+    "aeAuthority": false,
+    "baselineRequired": false,
+    "mode": "work-session",
+    "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+    "resetPending": false,
+    "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+  },
+  "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688",
+  "sameAE": {
+    "birth": "2026-11-12T16:28:50.0853090Z",
+    "pid": 39220
+  },
+  "project": {
+    "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+    "revision": 72,
+    "dirty": false,
+    "numItems": 1,
+    "compId": 1,
+    "ownAepSha256": "e9bfd6813ae411ad46c207c5633f65e7f30c14f1a108f2ea0a7f9861d33d6edc"
+  },
+  "preservation": {
+    "exactProtectedFiles": 1035,
+    "unchangedPreferences": 80,
+    "userAeps": 4,
+    "ownAep": 1,
+    "prefixesPreserved": true,
+    "globalConfigUnchanged": true,
+    "foreignConfigUnchanged": true,
+    "installationIdentityPreserved": true,
+    "protectedPreferenceFiles": 90,
+    "exactPreferenceFiles": 80,
+    "prefixPreservedPreferenceLogs": 10
+  },
+  "final": {
+    "ownerReady": true,
+    "holderClientId": null,
+    "pending": null,
+    "unknown": false,
+    "storeFault": false,
+    "ledgerFault": false,
+    "ownershipFault": null,
+    "unresolved": 0,
+    "peerConnected": true,
+    "origin": "file://",
+    "registryReady": true,
+    "leaseReleased": true,
+    "helperClientsClosed": true,
+    "listenerOwnerPid": 34544
+  },
+  "counts": {
+    "nativeInspections": 3,
+    "projectMutations": 0,
+    "saves": 0,
+    "rawJsx": 0,
+    "computerUse": 0,
+    "aeRestarts": 0,
+    "manualPanelConnect": 0,
+    "panelEnsure": 0,
+    "manualPanelReload": 0,
+    "codexRestarts": 0,
+    "sourceEdits": 0
+  },
+  "currentChatMcpRefreshed": false,
+  "limitations": [
+    "Fresh configured CLI MCP proof; current root-chat MCP remains cached 4.2.6 until a user-managed full Codex restart. No app-server/thin-client manipulation performed.",
+    "No visual UI/title-bar proof, wire packet capture or direct CEP storage inspection; authenticated panel/registry readiness and native typed AE results are the live evidence.",
+    "Only this installed host and bounded reconnect scenarios were exercised. Existing source evidence is reused, not rerun.",
+    "Two zero-byte UXP LOCK copies disappeared from private TEMP backup after initial exact verification; current source matches sealed manifest. Full private backup restorability is not claimed."
+  ],
+  "snapshotPreparation": {
+    "firstAttempt": "failed-before-intent-and-production-writes: historical recovery manifest absent",
+    "resolution": "prior verified TEMP snapshot used only as source path inventory; all current bytes freshly snapshotted; no restore"
+  },
+  "soleCoreControllerReturnedToRoot": true,
+  "artifactGap": {
+    "file": "artifact-gap.json",
+    "missingPrivateBackupCopies": 2,
+    "currentImmutableComparedAgainst": "sealed fresh manifest hashes and byte counts; original byte copies used for append-only prefix proofs",
+    "completeBackupRestorabilityClaimed": false
+  }
+}
