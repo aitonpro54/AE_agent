@@ -1,5 +1,18 @@
 # Восстановление того же StartOver после MSIX split
 
+> **ОСТАНОВЛЕНО ПО ОГРАНИЧЕНИЮ ПОЛЬЗОВАТЕЛЯ, 12 ноября 10:56 YEKT.**
+> Разрешён только ограниченный ремонт текущей установки/запуска/связи. Поскольку
+> дальнейшее восстановление требует нового крупного root-rebase/archive протокола,
+> его разработка остановлена. Предложения ниже — исторический анализ, не назначение
+> продолжать или менять runtime. Source recovery/root-rebase не реализованы.
+
+> HOLD после нового physical proof: lower installationId `installation-7ece2c0b-8f3b-4839-b689-3ea661464e7b`
+> отличается от current upper `installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700`.
+> Прежний пункт об удалении/переносе всех восьми ролей обоих слоёв НЕ принят для
+> foreign lower. Production/source recovery write не начинались. Текущий контракт
+> пересматривается по ownership; lower — read-only. Старый текст ниже сохраняет
+> provenance первой архитектурной версии, не разрешает mutation foreign state.
+
 ## Цель и scope
 
 Завершить reset `4c3b80e6-b231-4c2b-a378-ff331a4b0aed`, сохранив оба
@@ -109,3 +122,28 @@ standalone-installer.js; необходимые owner/closure declarations и bo
 обнаружения collision. Source milestones011ffbf и3492c89 приняты отдельно.
 Открыты unpackaged proof, two-layer backup, остальные role provenance и reviewed
 recovery distribution. После них — точная termination driver и исходный finisher.
+
+### Новый physical ownership proof, 12 ноября 10:41 YEKT
+
+- Read-only helper в обычном tool child вернул API15700, но native file handles
+  показали L→U mapping. Package API без FileID/finalPath недостаточен.
+- Headless WMI Create запустил тот же approved Core7 helper как PID35240,
+  birth2026-11-12T05:41:28.7637391Z. API15700, native requested physical paths L/U,
+  все selected reads complete; known mappings отсутствуют. Receipt
+  `.codex-runtime/core-ae-panel-startup-install-20261112/msix-view-probe-76dbc940-9a7a-41db-a328-2cc3eb4b4aa8.json`,
+  SHA52209c90f57cd72f8ba4cb3ebd532f22d4f094e277a19e53e715f2ff8a8eefd5.
+- L/installation.json принадлежит installation-7ece2c0b-8f3b-4839-b689-3ea661464e7b,
+  package8f73283b88c7b3ba44fcb792f132fbda40c7b6e6ed00e858c3bc4165d7333034;
+  U/installation.json — current installation-e0e81ad5-6bce-451c-8cfd-8e2ec14f3700,
+  package3dfdb40d70abba8b3b77232ddd09656ae5d8ad9d95541000189e2db939b7ce73.
+  Lower currenttx4c… absent, lower install.lock absent. Это разные установки.
+- Нижние role trees зафиксированы read-only. Предыдущая all-roles-absent-both-layers
+  часть XHigh packet не разрешает перемещение foreign state. SolHigh sourcewrite0.
+  После двух содержательных XHigh passes оставшийся ownership/storage boundary
+  передан ae_architect_ultra msix_ownership_recovery; требуется bounded upper-only
+  recovery и устойчивый runtime binding без mutation foreign lower.
+- WindowsPS5 -File отказал по действующей scripts-disabled policy до запуска.
+  Policy/ACL/security settings не менялись. Использована существующая штатная CLI
+  Core7.6.9 с её RemoteSigned policy, local helper без MOTW; override flags не было.
+  Первый WMI вызов с optional flags вернул21 до создания процесса; ShowWindow0-only
+  исправил параметры. Все старые failures/receipts сохранены, production writes0.

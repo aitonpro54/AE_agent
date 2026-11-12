@@ -440,3 +440,49 @@ registry-observer-01.json и registry-observer-02.json. History/UNKNOWN сохр
   PID+birth639300565585425050/path/proof no AE и no execution lane. Это не graceful
   shutdown и не завершение Computer Use; helper CU и пользовательские apps не трогаются.
 - Детальный bounded контракт и приёмка: [MSIX recovery](core-msix-layer-recovery-20261112.md).
+
+## Ограничение scope и безопасная остановка, 12 ноября 10:56 YEKT
+
+### Progress
+
+- Прямое поручение пользователя передано из соседнего чата: ограничиться current
+  install, normal AE/panel launch, loaded version и одним native read/release.
+  Если для этого нужен новый большой ремонт — остановиться и объяснить связанность.
+- Новая разработка layered recovery/root-rebase остановлена; Ultra helper прерван,
+  implementer уведомлён, мутационный source после3492c89 не создавался. Дальнейшие
+  разделы отдельного MSIX плана не назначают действий в текущем scope.
+- Read-only external proof установил: lower принадлежит другой installation7ece…,
+  upper — текущейe0…. Lower сохранён read-only. Реальная CEP независимо проверена:
+  физический Roaming root содержит current e0…/3df…/manifest4.2.6 и marker;
+  Codex UpperRoaming root отсутствует. CEP не принадлежит foreign lower по одному
+  лишь lower descriptor. Receipt msix-cep-view-probe-6ba52955-041f-4fe5-94a2-6b1dea214c3a.json
+  SHAe34a6f14bb77e8471bf96ea5b21c8721ebf79f6ece4b8503032a14149fe2a735.
+- Последний scoped status: 2026-11-12T05:56:22.160Z, source report scope-stop-01.json.
+  Driver26048/birth639300565585425050 остаётся read-only start-over observer,
+  ready=false, reset4c3… blocked/start_over_archive_collision, resetComplete=false,
+  baselineRequired=true, aeAuthority=false. `pass` в helper означает получение
+  status, не native success. Driver не завершали и не продолжали исходный reset.
+- Свежий CIM: AfterFX отсутствует. Все UI-блоки уже завершены штатно; нового CU
+  не включали. Исходные UNKNOWN, partial upper archive и lower history сохранены.
+  Новые install/reset/continue/finish/dispatch не выполнялись после ограничения.
+
+### Decision Log
+
+Ближайший исходный native результат НЕ достигнут. Завершение требует связанного
+нового протокола: архивировать owned upper с доказательством foreign read-only
+contributions, завершить прежний reset и официально перепривязать current root,
+сохранив lineage/seals и CEP. Это большой engineering block, поэтому по прямому
+ограничению пользователя он не реализуется автоматически.
+
+Упрощать нужно зависимость startup/version/read-only connection от журналов UNKNOWN,
+полного StartOver и миграции storage root. Подтверждение версии выполняемой панели
+и восстановление простого подключения не должны назначать цепочку новых ремонтов.
+Это вывод для последующего отдельного решения, не начало новой переработки.
+
+### Validation
+
+Source изменения сохранены в011ffbf и3492c89, их scoped tests/review описаны выше.
+Текущая native installation — промежуточный manual3df…, а не latest ready packages
+bb86…/fb2b…. Одного успешного ordinary native project-inspection, hot update и
+same-package repeat после исправления нет; full release/native completion=false.
+Проверка состояния не повторяла settled/UNKNOWN команды и не ослабляла guards.
