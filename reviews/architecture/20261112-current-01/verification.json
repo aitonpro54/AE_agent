@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "targetCommit": "6d40cc228d9f2e18c672af5782033be305b82917",
+  "originalPayloadsUnchanged": true,
+  "crosscheckPayloadsUnchanged": true,
+  "preexistingDirtyFilesUnchanged": true,
+  "coreAndProductsDiffFromTarget": "empty",
+  "argonPersistenceExactSha256": "f0ad8bdae11ddd86b6addd84613a457f4004fa265e2ea21b40131529561e3ac7",
+  "newProductTests": "not run; audit uses source arguments and explicitly scoped existing evidence",
+  "modelCaveat": "Argon selected before send; backend response identity not independently available after connection recovery"
+}

@@ -1,0 +1,71 @@
+{
+  "review_id": "20261112-current-crosscheck-01",
+  "source_thread_id": "01a1cede-3e0f-7aa1-a375-be24e49bec1e",
+  "target_commit": "6d40cc228d9f2e18c672af5782033be305b82917",
+  "product_version": "4.2.6",
+  "state": "response_received_persistence_verified",
+  "profile": "Aiton",
+  "account": "aitonpro54@gmail.com",
+  "model": "4 Argon — Код и анализ",
+  "mode": "Задача",
+  "effort": "No separate effort selector in Task UI",
+  "inputs": {
+    "bundle.md": {
+      "bytes": 195325,
+      "sha256": "6ace4bd2c9c6ceb8055936ceeb3c05602d13f6bd1a3842e2d03c2e84924f03bc"
+    },
+    "manifest.json": {
+      "bytes": 28259,
+      "sha256": "efffba09e5f4536f124c051dceee32781a11b17f647e4849e76c2137a8de10cc"
+    },
+    "pro-response.txt": {
+      "bytes": 49279,
+      "sha256": "8a23d0d20f50a1a7e4eb778d813845b8da382f77fa8ec676be50e4bf30275d1a"
+    },
+    "argon-manifest.json": {
+      "bytes": 1570,
+      "sha256": "40329f69ce1fbb7e6e0b4a24e45546135c0ea75f91b74d353f8aaef3604d107e"
+    },
+    "argon-request.md": {
+      "bytes": 3589,
+      "sha256": "85042031f6205d14463ab7a7746dbca38f538235c19e5aab16cd1124f989c778"
+    }
+  },
+  "attachment_allowlist": [
+    "bundle.md",
+    "manifest.json",
+    "pro-response.txt",
+    "argon-manifest.json"
+  ],
+  "composer_source": "argon-request.md",
+  "duplicate_check": "Exact ID not found in Gemini search; local submission absent",
+  "uploads_started": 4,
+  "submissions_attempted": 1,
+  "responses_received": 1,
+  "created_at": "2026-11-12T08:55:58.698Z",
+  "ui_attachment_count": 4,
+  "ui_attachment_names": [
+    "bundle",
+    "manifest",
+    "pro-response",
+    "argon-manifest"
+  ],
+  "upload_progressbars": 0,
+  "exact_request_input": true,
+  "composer_nonblank_lines_match": true,
+  "uploads_completed_at": "2026-11-12T08:56:28.938Z",
+  "sent_at": "2026-11-12T08:56:29.565Z",
+  "last_url": "https://gemini.google.com/app/3fe3d93f1ef2c668",
+  "last_observed_at": "2026-11-12T09:03:20.545Z",
+  "connection_error_observed_at": "2026-11-12T09:01:56.789Z",
+  "known_submitted_chat_url": "https://gemini.google.com/app/3fe3d93f1ef2c668",
+  "reopened_composer_model": "Flash shown after reopening while existing generation continues; send-time selector was 4 Argon, not changed by controller",
+  "response_chars": 33025,
+  "response_sha256": "f0ad8bdae11ddd86b6addd84613a457f4004fa265e2ea21b40131529561e3ac7",
+  "received_at": "2026-11-12T09:08:04.902Z",
+  "chat_url": "https://gemini.google.com/app/3fe3d93f1ef2c668",
+  "reopened_at": "2026-11-12T09:08:18.453Z",
+  "reopen_sha256": "f0ad8bdae11ddd86b6addd84613a457f4004fa265e2ea21b40131529561e3ac7",
+  "reopen_exact_match": true,
+  "reopen_content_match": true
+}

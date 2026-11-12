@@ -1,0 +1,274 @@
+Завершен критический анализ аудиторской документации Core 4.2.6.
+Я тщательно проверил прикрепленные файлы, чтобы подтвердить соответствие хэшей и размеров.
+Проверил контрольные суммы и размеры вложений
+Я выяснил, что полный файл был усечен в предыдущем запросе, что необходимо учитывать.
+Проверил оглавление и полный объём bundle.md
+Я выяснил, почему размер файла на диске отличается от ожидаемого, и теперь анализирую количество заголовков.
+Сверил список исходников в manifest.json и bundle.md
+Я обнаружил несоответствие в количестве элементов между двумя списками и начал его расследовать.
+Я пересчитал файлы в выходных данных, чтобы уточнить несоответствие, и начал проверять объем данных в одном из файлов.
+Проверил все заголовки выдержек кода в bundle.md
+Я заметил неожиданное расхождение между количеством источников и файлов, что требует дальнейшего изучения.
+Проверил пронумерованный список файлов в manifest.json
+Я исправил синтаксис и проверил файлы, теперь я обрабатываю неоднозначности в форматировании.
+Вывел полный список 39 файлов из manifest.json
+Теперь я вижу, что действительно есть 39 файлов, подтверждено подсчетом, и теперь проверяю диапазоны в `manifest.json`.
+Сверил блоки кода в bundle.md с диапазонами в manifest.json
+Я понял, что проблема с выводом была вызвана усечением текста, а не ошибкой в поиске.
+Вывел все 56 блоков исходного кода из bundle.md
+Подождите, теперь я вижу возможную проблему с отображением данных, которая искажает последовательность.
+Проверил распределение байтов по строкам в bundle.md
+Я выяснил, что не все файлы отображались из-за фильтров и пауз в выводе.
+Проверил полный массив путей в manifest.json в одной строке
+Я выяснил, почему количество элементов в выводе отличается от ожидаемого, теперь пытаюсь понять, как это происходит.
+Проверил индексы всех 39 файлов в manifest.json
+Отлично, я подтвердил наличие всех компонентов и приступил к проверке соответствия.
+Проверил совпадение SHA256 всех 56 блоков кода с manifest.json
+Теперь я понял, почему кандидаты не совпадали, и буду исследовать длину закодированного блока.
+Подтвердил совпадение SHA256 всех 56 блоков после нормализации переводов строк
+Я проверил все блоки кода, теперь разбираюсь, почему некоторые данные не соответствуют ожиданиям.
+Я понял, что не все блоки были представлены в запросе пользователя, и теперь суммирую размеры блоков.
+Я определил структуру и основные компоненты, теперь анализирую взаимосвязи между всеми файлами.
+Проиндексировал точные номера строк ключевых файлов из bundle.md
+Проиндексировал точные номера строк остальных файлов из bundle.md
+Проблема с подсчетом файлов выявлена, и я начал проверять логику работы в этом месте.
+Я выявил, что предыдущая арифметическая ошибка была неверной, и проверил количество заголовков в скриптах.
+Проверка исходных файлов показала соответствие данных, и теперь я начал тщательный технический анализ утверждений из подсказки.
+Я подтвердил оценку "revise" для архитектуры, полностью согласен с необходимостью сохранения существующего каркаса.
+Я углубился в исследование структуры управления, обращая внимание на критические механизмы и архитектурные решения.
+Я начал детально анализировать представленные доказательства эксплуатационной пригодности, обращая внимание на конкретные сценарии отказа.
+Я уточнил границы доказательств и выявил пробел в выборке пакета, а также переоценку риска в некоторых аспектах.
+Я начал анализировать уязвимости, выявленные в ходе исследования, и их влияние на архитектуру.
+Я проанализировал взаимодействие `poll-dispatcher.js` с другими модулями и пересмотрел логику истечения блокировки.
+Я выявил потенциальную уязвимость, связанную с сохранением IPC-соединения, а также проанализировал влияние этого на систему.
+Я подтвердил границу доказательства и перешел к проверке scope замечания функции close().
+Я выявил потенциальную race condition при обработке сигналов завершения и начал проверку логики закрытия для уточнения доказательств.
+Я выявил дефект в обработке промиса закрытия и начал анализировать прямые архитектурные сцепки.
+Я обнаружил несколько жестко закодированных модулей и начал исследовать их влияние на минимальность.
+Я начал исследовать влияние жестко закодированных модулей на минимальность архитектуры.
+Я выявил несовместимость обработки данных в двух ветках тернарного оператора, что указывает на узость приемника.
+Я начал анализировать влияние устаревшего получателя и его потенциальное влияние на текущую архитектуру.
+Я начал анализировать потенциальные уязвимости в обработке входных данных и синхронности истории.
+Я обнаружил серьезное расхождение в формате вызова между ядром и компиляторами и начал его детальный анализ.
+Я начал анализировать способ обработки данных `exact()` и его использование в различных модулях.
+Я выявил, что проверка на подмножество ключей в протоколе, позволила избежать ложного срабатывания, и перепроверил логику в конкретных модулях.
+Я начал детально анализировать уязвимость, связанную с сохранением состояния при обработке разрешенного списка.
+Я начал анализировать обработку возвращаемых данных, чтобы убедиться в отсутствии уязвимостей.
+Я начал анализировать обработку сбоев, связанных с функцией `exact()`, и их влияние на сохранность данных.
+Я выявил уязвимость, связанную с возможностью исчерпания таблицы, из-за запросов `/challenge`, поступающих с локального хоста.
+Я выявил потенциальную уязвимость из-за жесткого кодирования версии и начал анализировать его влияние на различные модули.
+Я начал анализировать потенциальную уязвимость из-за возможности неверной инициализации `projectId`, если он отсутствует в целевых полях.
+Я выявил, что проверка на подмножество ключей в протоколе, позволила избежать ложного срабатывания, и перепроверил логику в конкретных модулях. Я выявил, что эта неисправность, связанная с хэшем каталога, может привести к неправильным версиям артефактов.
+Я выявил, что проверка на подмножество ключей в протоколе, позволила избежать ложного срабатывания, и перепроверил логику в конкретных модулях. Я выявил точки утечки модулей в ядро, что указывает на неполную минимальность.
+Я определил ключевые области, где внедрены жестко закодированные зависимости, и перешел к потенциальному разделению компонентов для уменьшения сцепления.
+Я определил и начал разделение компонентов, чтобы уменьшить жестко закодированные зависимости в критических местах.
+Я начал анализ разделения критических компонентов, чтобы уменьшить жестко закодированные зависимости в области архитектурного обзора.
+Готово
+Ответ Gemini
+
+Verdict: revise
+
+Привязка к запросу, целевому snapshot и прочитанный состав
+
+Review ID: 20261112-current-crosscheck-01 (argon-manifest.json:2).
+
+Target commit: 6d40cc228d9f2e18c672af5782033be305b82917 (manifest.json:4, argon-manifest.json:5, bundle.md / 17-source-map.md).
+
+Версия продукта: 4.2.6 (core4/package.json:3, core4/tools/package-installable.js:71,97,102,104).
+
+Прочитанный и верифицированный состав вложений (read-only проверка):
+
+bundle.md — 195 325 байт, SHA256 6ace4bd2c9c6ceb8055936ceeb3c05602d13f6bd1a3842e2d03c2e84924f03bc (совпадает с manifest.json:16 и argon-manifest.json:10). Включает встроенный request.md и 17 разделов (01-package-composition.md … 17-source-map.md), содержащих 56 выдержек из 39 исходных файлов объёмом 147 772 исходных байт. Все 56/56 кодовых блоков сверены по SHA256 и байтовой длине с manifest.json.
+
+manifest.json — 28 259 байт, SHA256 efffba09e5f4536f124c051dceee32781a11b17f647e4849e76c2137a8de10cc (совпадает с argon-manifest.json:14).
+
+pro-response.txt — 49 279 байт, SHA256 8a23d0d20f50a1a7e4eb778d813845b8da382f77fa8ec676be50e4bf30275d1a (совпадает с argon-manifest.json:18; содержит аудит ChatGPT Pro с вердиктом revise и замечаниями AE-01…AE-08).
+
+argon-manifest.json — 1 570 байт, SHA256 40329f69ce1fbb7e6e0b4a24e45546135c0ea75f91b74d353f8aaef3604d107e.
+
+Явная оговорка по полноте привязки: в argon-manifest.json:21–24 в списке files указан пятый файл argon-request.md (3 589 байт, SHA256 85042031f6205d14463ab7a7746dbca38f538235c19e5aab16cd1124f989c778), который как отдельный файл в контейнер не приложен (приложены 4 файла из условия задачи, а текст задания Argon передан напрямую в текущем запросе пользователя). Также сам bundle.md является намеренно ограниченным срезом (17-source-map.md), поэтому отсутствие полных файлов или тестов внутри bundle.md не трактуется как их отсутствие в репозитории.
+
+Краткий вывод
+
+Сохранение каркаса и зрелость (Вопрос 1): Полностью согласен с рекомендацией Pro сохранить базовую архитектуру и не проводить полную переработку. Разделение installation-scoped owner и тонких stdio-клиентов (core4/runtime/owner-entry.js:58–75, core4/runtime/client-entry.js:97–128,196–235), явный controllerLease без автоматического перехвата по таймеру (core4/runtime/controller-lease.js:7–101), серверная цепочка contract → inspect → build → propose → dryrun → run с fsync-журналом и семантикой UNKNOWN/no-replay (core4/core/broker.js:99–105,165–256,387–426, core4/core/ledger.js:21–49), а также вынесение компиляторов Titles/Slideshow за пределы ядра (products/titles/src/compiler.js:63–93, products/slideshow/compiler.js:150–185) спроектированы и реализованы строго по целевой модели. Оценка зрелости у Pro («реализованное ядро с ограниченно подтверждённым рабочим read-only профилем») верна в части эксплуатационного proof (E1, E2, E5), однако по коду зрелость выше простого read-only прототипа: механизмы CAS, локального read-back, workSession baseline и сертифицированного recovery уже детально написаны, но их сквозная сцепка частично осталась за рамками выбранных в bundle.md диапазонов.
+
+Главное расхождение с Pro (Вопросы 2 и 3): Pro местами смешивает архитектурный приоритет проверки (P1) с тяжестью доказанного дефекта, а также путает неиспользуемые в упакованном CEP-рантайме модули (core/receiver.js и integrations/cep/host-dispatcher.js, которых нет в core4/runtime/source-package.json:1–65) с активным маршрутом http-peer.js + poll-dispatcher.js + cep/jsx/registry.jsx. Из-за этого Pro переоценивает риск AE-06 для titles-current-target и часть сценариев блокировки в AE-02, но при этом упускает конкретные дефекты в показанном коде (G-01…G-05), включая потерю кода ошибки и залипание localStorage latch при отказе bootstrapRegistry (core4/cep/js/poll-dispatcher.js:99–115) и перезапись catalogRevision хешем только последнего добавленного модуля при упаковке (core4/tools/package-installable.js:75–82).
+
+Перекрёстная проверка замечаний Pro (AE-01–AE-08)
+
+В таблице ниже разделены: (а) Приоритет проверки (важность подтверждения инварианта для архитектуры) и (б) Тяжесть доказанного дефекта в представленном коде.
+
+ID	Вердикт Argon	Приоритет проверки / Тяжесть дефекта	Скептический разбор: что доказано кодом, где пробел среза и где Pro переоценивает или недооценивает риск	Точные источники (path:line / E1–E5)
+AE-01	qualify	Проверка: P1 / Дефект: нет (пробел среза)	Пробел выборки, а не дефект. В срезе опущены Broker.prototype.executeStep (broker.js:259–386) и середина attachment-owner.js:101–194. При этом на всех видимых границах инвариант UNKNOWN/no-replay доказан кодом: Ledger.commands() инициализирует любой intent как 'UNKNOWN' до появления command (ledger.js:44), controllerLease.complete(op, 'unknown') ставит fenced = true (controller-lease.js:93), executor.jsx после started = true возвращает outcome: 'unknown' (executor.jsx:97,103). Замечание Pro, что broker.run() проверяет unresolved() только для plan.taskId (broker.js:397), перекрывается в owner-режиме глобальным барьером admitted() (attachment-owner.js:84,198–199), блокирующим весь owner при unresolved/fault. Наличие test/lifecycle-simulation.test.js и test/audit-repairs.test.js (package.json:11–17, E2) указывает, что в полном репозитории эти тесты уже есть, но не включены в bundle.md.	core4/core/broker.js:243–249,387–419; core4/core/ledger.js:21–34,41–49; core4/runtime/controller-lease.js:85–95; core4/runtime/attachment-owner.js:72–84,198–202; core4/modules/titles-current-target/executor.jsx:94–103; E2, E5; 17-source-map.md
+AE-02	qualify	Проверка: P1 / Дефект: P2 (только в CEP latch, см. G-01)	Pro смешивает неактивный адаптер с активным и переоценивает блокировку lease. (1) Pro ссылается на physicalPending в host-dispatcher.js:29–47, но этот файл вообще не входит в упакованный состав source-package.json:1–65; реальная панель использует cep/js/poll-dispatcher.js, где для обычного dispatch есть recover() и reloadIdle (poll-dispatcher.js:34,62–66), доставляющие сохранённый record.result без повторного evalScript. (2) Pro переоценивает задержку по TTL controllerLease (30 с): в controller-lease.js:74–78 при закрытии сокета клиента (detach(session)) в отсутствие активной операции и fenced lease сбрасывается мгновенно (current = null, строка 77), не ожидая expiresAt. (3) Окно broker-owner.gate (state-lock.js:63–96) длится микросекунды синхронного try/finally вокруг publishMarker/unlinkSync.	core4/core/state-lock.js:63–96; core4/runtime/controller-lease.js:7,46–95; core4/runtime/source-package.json:1–65; core4/integrations/cep/host-dispatcher.js:29–47; core4/cep/js/poll-dispatcher.js:26–66,88–116; core4/runtime/owner-lifecycle.js:298–330,352–375
+AE-03	agree	Проверка: P1 / Дефект: нет (граница proof E1–E5)	Точная фиксация границы эксплуатационного доказательства. Код инсталлятора проверяет парные origin.json, assertSwitchVolumes и realpathSync(nodePath) (install-core4.js:348–361), а adobeEnvironment() берет системные пути из .NET GetFolderPath (adobe-child-environment.js:6–22). Но так как на новой установке после cutover (E1, E3, E4) нет host-adoption.json (E5), вызов binding() в ae-panel-startup.js:95–97 детерминированно вернёт startup_executable_binding_required. Автоматический relaunch (core_ensure_ae_panel) действительно не сертифицирован на новой identity.	core4/runtime/adobe-child-environment.js:6–23; core4/runtime/ae-panel-startup.js:90–102,230–259; core4/tools/install-core4.js:348–371; E1, E3, E4, E5
+AE-04	qualify	Проверка: P2 / Дефект: P2 (подтверждён кодом)	Дефект идемпотентности close() подтверждён; Pro упустил прямое следствие в owner-entry.js:69–73. В attachment-owner.js:215–220 флаг closed = true ставится до await runtime.close(), а промис закрытия не сохраняется. Если во время await runtime.close() или после его ошибки придёт второй сигнал (SIGTERM/SIGINT), обработчик в owner-entry.js:69–73 вызовет close() повторно, получит мгновенный resolve() из if (closed) return (строка 216) и выставит process.exitCode = 0 даже при незавершённом или упавшем runtime.close(). Кроме того, close() не взводит frozen = true, а admitted() (строка 84) проверяет frozen, но не closed.	core4/runtime/attachment-owner.js:67,84,215–222; core4/runtime/owner-entry.js:68–73
+AE-05	agree	Проверка: P2 / Дефект: P2 (архитектурная связанность)	Подтверждено кодом и шире, чем указал Pro. Помимо 4 связей, отмеченных Pro (client-entry.js:231 → stdio-entry.js, package-installable.js:5 → stdio-entry.js, broker.js:19,201 → media-import, adobe-child-environment.js:5 → render-job-history), в срезе есть ещё 3 жёсткие сцепки: install-core4.js:379 также импортирует stdio-entry.js, stdio-entry.js:268 хардкодит профиль 'photo-source-v1', а http-peer.js:174–175 хардкодит 'current-project-save-v1' и 'project-lifecycle-v1'.	core4/runtime/client-entry.js:230–233; core4/tools/package-installable.js:5,24,112; core4/tools/install-core4.js:376,379; core4/core/broker.js:19,22,201; core4/runtime/attachment-owner.js:60; core4/runtime/adobe-child-environment.js:5; core4/runtime/source-package.json:14–15; core4/runtime/stdio-entry.js:268; core4/integrations/cep/http-peer.js:174–175
+AE-06	qualify	Проверка: P3 / Дефект: P3 (только в legacy/fixture receiver.js)	Pro переоценивает риск для production-маршрута и недооценивает жёсткость core/receiver.js. (1) core/receiver.js не входит в source-package.json:1–65. В production CEP-панели AECore4Host.dispatch (stdio-entry.js:286) возвращает JSON.stringify(call(frame.typedPayload)) без exact(result, ['outcome', 'snapshot', 'code']), а poll-dispatcher.js:53–55 передаёт result в http-peer.js, где действуют resultProfile валидаторы. Поэтому transactionReceipt из titles-current-target/executor.jsx:102 не ломает рабочий HTTP/CEP маршрут. (2) Сам же core/receiver.js:34 — это не универсальный receiver, а M1 fixture-receiver: в нём зашиты поля ['outcome', 'snapshot', 'code'] для mutate (куда не проходит ни успешный, ни отклонённый ответ titles-current-target/executor.jsx:91,102,103) и ['target', 'revision', 'sourceId', 'text', 'protected'] для чтения.	core4/core/receiver.js:12–38; core4/runtime/source-package.json:1–65; core4/runtime/stdio-entry.js:264–286; core4/cep/js/poll-dispatcher.js:48–55; core4/modules/titles-current-target/executor.jsx:73,91,102–103
+AE-07	agree	Проверка: P2 / Дефект: P3 (неполный инвариант в валидаторе)	Подтверждено кодом. В broker.js:173–182 validateIntent проверяет inputSchema, неизменность ключей из desired (request.input) и совпадение policy.expectedBindings с evidence, но не проверяет, что Object.keys(intent.input) не содержит ключей вне desired ∪ expectedBindings. На titles-current-target/implementation.js:4 проблемы нет (добавляются только expectedRevision и expectedText), но сам метод validateIntent не обеспечивает заявленный в комментарии (broker.js:177) инвариант без опоры на внешнюю строгость inputSchema.	core4/core/broker.js:173–182,196–204; core4/modules/titles-current-target/implementation.js:1–6; core4/modules/titles-current-target/contract.json:167–170
+AE-08	agree	Проверка: P3 / Дефект: нет (проектный компромисс)	Подтверждено кодом, текущий ущерб отсутствует. Полное чтение ledger.ndjson в память, линейные проходы task()/commands()/workflow() и синхронный fsyncSync на каждый append (ledger.js:6–50) оправданы для надёжности одиночного owner-процесса. При наличии механизма архивации сессии через start-over (work-session.js:42–49) усложнять хранилище не требуется.	core4/core/ledger.js:6–50; core4/core/broker.js:400–410; core4/runtime/work-session.js:42–49
+Дополнительный детальный разбор по вопросам 3 и 4
+Вопрос 3: Где Pro переоценивает или недооценивает риск (close() и условные пути generic receiver/validator)
+
+Scope замечания close() (core4/runtime/attachment-owner.js:215–220 и core4/runtime/owner-entry.js:69–73):
+
+Pro правильно нашёл отсутствие shared closing promise и превращение повторного close() в no-op после ошибки runtime.close().
+
+Что Pro недооценил: в owner-entry.js:69–73 на SIGTERM и SIGINT навешивается обработчик без { once: true }, который вызывает runtime.close().then(() => { process.exitCode = 0; }, ...). Если runtime.close() проходит через attachmentOwner.close(), то при повторном сигнале во время дренирования/ошибки закрытия второй вызов немедленно попадает в if (closed) return; (attachment-owner.js:216) и сбрасывает process.exitCode в 0. Кроме того, внутри attachmentOwner.close() не выставляется frozen = true, тогда как admitted() (строка 84) проверяет if (frozen || workFacts().resetPending), но не проверяет closed.
+
+Где предел доказательства: функция start(..., { mode: 'owner' }) в runtime/stdio-entry.js не включена в срез, поэтому мы не видим обёртку runtime.close(), которую вызывает owner-entry.js:72 и которая сама вызывается на строке attachment-owner.js:220.
+
+Условные пути generic receiver и validator (AE-06, AE-07):
+
+Как показано при разборе AE-06, в core4 сосуществуют два разных контура приёма:
+
+Контур 1 (Fixture / Legacy M1): core/receiver.js + integrations/cep/host-dispatcher.js. Здесь exact(value, keys) из protocol/json.js проверяет, что ключи объекта входят в разрешённый список keys (allowlist). Для inspect список ['target', 'revision', 'sourceId', 'text', 'protected'] (receiver.js:34) случайно пропускает 4-польный snapshot titles-current-target (так как {target, text, protected, revision} — подмножество этих 5 ключей), но отвергнет project-inspection. Для mutate список ['outcome', 'snapshot', 'code'] отвергает transactionReceipt из titles-current-target/executor.jsx:102 и переводит команду в unknown (receiver.js:41–42).
+
+Контур 2 (Production CEP / HTTP Peer): integrations/cep/http-peer.js + cep/js/poll-dispatcher.js + cep/jsx/registry.jsx. Здесь AECore4Host.dispatch (stdio-entry.js:286) и poll-dispatcher.js:53–55 прозрачно сериализуют и пересылают любой валидный JSON-результат mutate в http-peer.js, который валидирует его по resultProfile из композиции (operator-workflows*.json).
+
+Следовательно, риск в AE-06 относится не к поломке titles-current-target в production, а к расхождению между старым core/receiver.js и новой системой resultProfile.
+
+Вопрос 4: Фактическая минимальность Core, независимость модулей и одно ограниченное упрощение
+
+Насколько Core фактически минимален и модули независимы:
+
+На уровне исполнения планов и безопасности (Broker, Ledger, controllerLease, worker.js, codec.js, dispatch.js) ядро компактно и строго отделяет оркестрацию от предметной логики продуктов (products/titles/src/compiler.js:63–93, products/slideshow/compiler.js:150–185).
+
+На уровне композиции и профилей модули пока не вполне независимы от кода ядра: добавление нового модуля или профиля сегодня требует правок внутри runtime-файлов ядра (media-import в broker.js:201 и attachment-owner.js:60; photo-source-v1 в stdio-entry.js:268; current-project-save-v1 и project-lifecycle-v1 в http-peer.js:174–175; render-job-history.js в базовом списке source-package.json:14–15).
+
+Одно ограниченное упрощение с наибольшей отдачей:
+
+Выделить чистый детерминированный модуль спецификации состава и генерации реестра (например, core4/runtime/composition-spec.js, зависящий только от protocol/json), перенеся туда из core4/runtime/stdio-entry.js функции deriveComposition, compositionPaths, builtinCapabilityFiles, registrySource и installationMarker.
+
+Переключить на него core4/runtime/client-entry.js:231, core4/tools/package-installable.js:5, core4/tools/install-core4.js:376,379 и сам core4/runtime/stdio-entry.js.
+
+Почему это лучшее упрощение: оно разрывает прямую зависимость тонкого клиента, упаковщика и инсталлятора от тяжелого исполняемого входа stdio-entry.js (69,5 КБ), делает тривиальным изолированное тестирование initialize / tools/list / package verification и не затрагивает ни одного инварианта authority, controllerLease, workSession, UNKNOWN/no-replay, checkpoints или формата журнала.
+
+Отдельные новые findings Argon (G-01…G-05), пропущенные или недооценённые у Pro
+G-01 — P2 — Отказ внутри bootstrapRegistry в CEP-панели теряет диагностический код registry_refresh_failed и навсегда оставляет localStorage latch без result
+
+Источник: core4/cep/js/poll-dispatcher.js:88–118; core4/integrations/cep/http-peer.js:162–163,333–339.
+
+Уверенность: высокая (полностью доказано показанным кодом).
+
+Сценарий:
+
+При /link с registryRequired === true http-peer.js:336 открывает команду verify-registry (phase: 'inspect') в completionStore и возвращает панели bootstrap challenge.
+
+Панель вызывает bootstrapRegistry(options) (poll-dispatcher.js:88), который до вызова evalScript записывает в localStorage ключ aeagentcore4-registry-<installationId> без поля result (строки 92–95) и взводит nativeGuard.active = token.
+
+Если внутри ExtendScript (строка 99) возникает ошибка (например, не совпал registryBuildId или ошибка чтения registry.jsx), блок catch(e) в ExtendScript штатно возвращает JSON {"version":1,"nonce":"...","code":"registry_refresh_failed"}.
+
+Однако в JS-колбэке на строках 105–106 код безусловно вызывает exact(result, ['version', 'nonce', 'registryBuildId', 'refreshed']). На объекте с полем code вызов exact() выбрасывает исключение до строки 107 (record.result = result; save();) и до вызова options.complete(...).
+
+Последствия:
+
+Конкретный код ошибки registry_refresh_failed теряется.
+
+Хотя ExtendScript уже завершился и это чисто проверочная (inspect) операция без мутации проекта, options.complete не вызывается (http-peer.js ждёт истечения registryTimeoutMs и переводит bootstrap в unknown на строке 163), а в localStorage панели остаётся незакрытый record без result. Любой следующий вызов bootstrapRegistry в этой установке немедленно падает на строке 90 (options.storage.getItem(key) !== null → registry_bootstrap_unknown_no_replay).
+
+Дополнительно: если options.csInterface.evalScript выбросит синхронное исключение (poll-dispatcher.js:56 и :115), nativeGuard.active (и active = true на строке 43) вообще не сбрасываются в catch (e) { reject(e); }.
+
+Предел вывода: поведение reloadIdle после строки 66 (poll-dispatcher.js:67–87) не включено в срез, но строка 90 в bootstrapRegistry проверяет options.storage.getItem(key) !== null безусловно.
+
+G-02 — P2 — Перезапись catalogRevision в buildPackage() хешем только последнего динамического модуля нарушает детерминизм ревизии каталога
+
+Источник: core4/tools/package-installable.js:72–82; core4/config/catalog.json:1–24; core4/core/broker.js:92–97.
+
+Уверенность: высокая (полностью доказано показанным кодом).
+
+Сценарий:
+
+В core4/tools/package-installable.js:75–80 цикл проходит по модулям выбранной композиции, которых нет в базовом config/catalog.json (photo-placeholder, titles, titles-current-target), и на каждой итерации перезаписывает original.catalogRevision = selector + '-' + hash(manifest) (строка 79).
+
+Если композиция добавляет несколько модулей (например, цепочка наследования operator-render-jobs → operator-workflows-montage → operator-frame-export → operator-workflows → manual-media-layers), итоговый catalog.catalogRevision (строка 82) зависит только от artifact.json последнего добавленного модуля в массиве modules.
+
+Если в следующей сборке изменится artifact.json любого предыдущего модуля в этой цепочке (или любого из трёх базовых модулей в config/catalog.json), catalog.catalogRevision в собранном пакете останется прежним.
+
+Последствия: Broker.prototype.listModules() (core4/core/broker.js:97) возвращает catalogRevision, который не отражает изменения остальных модулей состава.
+
+Предел вывода: не влияет на криптографическую проверку packageHash и artifact.hashes (package-installable.js:59–64,97–100), так как они считаются по всем файлам, но делает catalogRevision неполным индикатором состава.
+
+G-03 — P3 — В Broker.prototype.build() формирование plan.recordContext жёстко обращается к steps[0].input.projectId в обход effectPolicy.targetFields
+
+Источник: core4/core/broker.js:212 (ср. с broker.js:113,180,225,228,253).
+
+Уверенность: высокая.
+
+Сценарий: везде в Broker целевые идентификаторы извлекаются через pick(input, selected.contract.effectPolicy.targetFields), но на строке 212 записано plan.recordContext = recordContext(args.recordContext || this.defaultRecordContext, { taskId, projectId: steps[0].input.projectId });. Если первый шаг плана принадлежит модулю, у которого в input нет поля projectId, в recordContext передаётся projectId: undefined.
+
+Предел вывода: реализация helper-функции recordContext(...) в broker.js:1–17 не включена в срез; для текущих модулей с projectId (titles-current-target, slideshow) ошибка не проявляется.
+
+G-04 — P3 — Неаутентифицированный /challenge в http-peer.js позволяет локальному процессу вызвать 10-секундный challenge_backpressure для CEP-панели
+
+Источник: core4/integrations/cep/http-peer.js:301–320.
+
+Уверенность: высокая.
+
+Сценарий: маршрут /challenge проверяет только локальный сокет 127.0.0.1 и заголовок Origin: file:// или Origin: null (строки 301–304), после чего до проверки MAC создаёт запись в challenges с лимитом challenges.size >= 16 и TTL 10 000 мс (строки 316–319). Любой локальный процесс пользователя может отправить 16 POST-запросов на /challenge с заголовком Origin: file:// и заблокировать подключение легитимной CEP-панели ошибкой challenge_backpressure на 10 секунд.
+
+Предел вывода: это локальный liveness/DoS-риск уровня P3, не позволяющий обойти HMAC-аутентификацию в /link (строка 324).
+
+G-05 — P3 — Хардкод устаревшей версии '4.0.0-m1' в параметрах по умолчанию core4/core/stdio.js:6
+
+Источник: core4/core/stdio.js:6,40–44; core4/package.json:3.
+
+Уверенность: высокая.
+
+Сценарий: в core4/core/stdio.js:6 дефолтный serverInfo задан как { name: 'ae-agent-core4', version: '4.0.0-m1' }. При прямом запуске core/stdio.js --state-dir ... (строки 40–44) или вызове serve(broker) без явного serverInfo сервер сообщает версию 4.0.0-m1 вместо 4.2.6.
+
+Предел вывода: в owner/client режиме точка входа stdio-entry.js или client-stdio.js может переопределять serverInfo в невыбранных строках (client-stdio.js:1–81).
+
+Следующие три ограниченных рабочих блока (без полной переработки и без назначения нового live acceptance)
+
+Блок 1: Выделение чистой спецификации состава (composition-spec) и выравнивание детерминизма упаковки
+
+Объём: вынести чистые функции deriveComposition, compositionPaths, builtinCapabilityFiles, registrySource и installationMarker из core4/runtime/stdio-entry.js в отдельный модуль без I/O и side effects; переключить на него client-entry.js, package-installable.js, install-core4.js и stdio-entry.js. В package-installable.js:75–82 вычислять catalogRevision детерминированно по всему итоговому списку catalog.modules, а в core/stdio.js:6 синхронизировать дефолтную версию с 4.2.6.
+
+Приёмка (локальная/тестовая, без live AE):
+
+client-entry.js, package-installable.js и install-core4.js больше не импортируют runtime/stdio-entry.js.
+
+Побитовый результат buildPackage и registrySource для существующих композиций (включая registryBuildId при неизменном составе) сохраняет совместимость, а изменение любого модуля в композиции гарантированно меняет catalogRevision.
+
+Проходят существующие npm run check:boundaries и npm run test:installable.
+
+Блок 2: Идемпотентность close(), очистка latch/guard при ошибках poll-dispatcher и замыкание validateIntent
+
+Объём:
+
+В core4/runtime/attachment-owner.js:215–220 сохранять единый closingPromise, выставлять frozen = true (или проверять closed в admitted()), чтобы параллельные и повторные вызовы close() ожидали реального завершения runtime.close() и не возвращали успешный no-op после ошибки cleanup.
+
+В core4/cep/js/poll-dispatcher.js:49–56,99–115 сбрасывать nativeGuard.active (и active) в синхронном catch вокруг evalScript, а при получении структурированного ответа code: "registry_refresh_failed" в bootstrapRegistry сохранять диагностический код и корректно завершать/очищать bootstrap-попытку без вечного клина localStorage на этапе чтения реестра.
+
+В core4/core/broker.js:173–182 добавить проверку, что все ключи intent.input принадлежат Object.keys(desired) либо Object.keys(policy.expectedBindings).
+
+Приёмка (локальная/тестовая, без live AE):
+
+Unit-тесты подтверждают, что два параллельных close() ждут один промис, а при падении runtime.close() повторный вызов не маскирует ошибку и не сбрасывает exitCode в 0.
+
+Unit-тесты poll-dispatcher подтверждают освобождение nativeGuard.active при синхронном выбросе evalScript и сохранение кода registry_refresh_failed.
+
+Unit-тест validateIntent отвергает любое недокументированное поле, добавленное билдером сверх desired и expectedBindings.
+
+Блок 3: Сквозная контрактная и симуляционная сверка маршрута Titles и таблицы resultProfile (на существующих фикстурах и срезах кода)
+
+Объём: без запуска живого AE свести в единую проверяемую таблицу маршрутизацию moduleId → resultProfile → validator между http-peer.js и core/receiver.js (явно отделив legacy M1 fixture-receiver от профильных валидаторов 4.2.6), и проверить на уровне контрактных/симуляционных тестов полную цепочку products/titles/src/compiler.js (compile → prepareBuild) → Broker (build → propose → dryrun → run → executeStep) → executor.jsx (transactionReceipt) → Ledger (UNKNOWN при обрыве после started = true).
+
+Приёмка (локальная/тестовая, без назначения нового live acceptance):
+
+Выход products/titles/src/compiler.js:prepareBuild проходит полный цикл в Broker с валидацией transactionReceipt профильным валидатором.
+
+Симуляционный тест обрыва между физическим mutate и записью ответа подтверждает сохранение UNKNOWN в Ledger, перевод controllerLease в fenced и отказ attachmentOwner.admitted() для новых задач и новых клиентов.
+
+Отсутствующий proof (что нельзя подтвердить по текущему пакету)
+
+Сквозной код executeStep и reconcile в Broker и диспетчеризация в AttachmentOwner: строки core4/core/broker.js:259–386 и core4/runtime/attachment-owner.js:101–194 не включены в bundle.md. Для полного кодового доказательства AE-01 без запуска тестов нужен именно этот срез.
+
+Валидаторы resultProfile и маршрут /complete в http-peer.js: строки core4/integrations/cep/http-peer.js:1–156,179–295,349–595 (включая строку 323 выбора ключа роли и обработку результатов mutate/transactionReceipt) опущены.
+
+Точка входа core4/runtime/stdio-entry.js (вне строк 264–293): не показана сборка start({ mode: 'owner' }), передача serverInfo (4.2.6) и реализация runtime.close(), вызываемая из owner-entry.js:72 и attachment-owner.js:220.
+
+Эксплуатационные границы E5: отсутствие host-adoption.json на новой установке после cutover, непроверенный core_ensure_ae_panel и отсутствие live-приёмки мутаций Titles/Slideshow на новой identity зафиксированы в E1–E5 и не могут быть закрыты исключительно анализом текста.
+
+Готово

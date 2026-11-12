@@ -1,0 +1,91 @@
+{
+  "review_id": "20261112-current-crosscheck-01",
+  "target_commit": "6d40cc228d9f2e18c672af5782033be305b82917",
+  "product_version": "4.2.6",
+  "state": "completed_with_model_ui_caveat",
+  "verdict": "revise",
+  "chat_url": "https://gemini.google.com/app/3fe3d93f1ef2c668",
+  "account_at_send": "Aiton Pro (aitonpro54@gmail.com)",
+  "model_at_send": "4 Argon — Код и анализ",
+  "mode_at_send": "Задача",
+  "effort": "No separate Task effort selector",
+  "model_evidence_note": "Confirmed model selector before one send. After a connection error and reopening the same persistent chat, next-message composer showed Flash while the original server-side generation continued. Controller never selected Flash or re-sent. Backend response model identity cannot be independently read from this UI.",
+  "submissions_attempted": 1,
+  "uploads": 4,
+  "response_chars": 33025,
+  "response_bytes": 48851,
+  "raw_response_sha256": "f0ad8bdae11ddd86b6addd84613a457f4004fa265e2ea21b40131529561e3ac7",
+  "utf8_text_sha256": "f0ad8bdae11ddd86b6addd84613a457f4004fa265e2ea21b40131529561e3ac7",
+  "reopen_exact_sha_match": true,
+  "input_hashes_unchanged": true,
+  "provider_claimed_read": [
+    "bundle.md",
+    "manifest.json",
+    "pro-response.txt",
+    "argon-manifest.json"
+  ],
+  "request_provided_as_composer": "argon-request.md exact text, not a fifth attachment",
+  "provider_claimed_source_coverage": {
+    "sections": 17,
+    "excerpts": 56,
+    "unique_source_files": 39,
+    "source_bytes": 147772,
+    "all_56_block_hashes_checked": true
+  },
+  "independent_full_read_verification": false,
+  "observed_response_truncation": false,
+  "provider_scope_limit": "Deliberately selected source ranges; missing ranges do not imply missing repository implementation.",
+  "ae_classification": {
+    "AE-01": "qualify; evidence gap, no proved defect",
+    "AE-02": "qualify; P2 CEP latch scope",
+    "AE-03": "agree; operational proof boundary",
+    "AE-04": "qualify; P2 close idempotence",
+    "AE-05": "agree; P2 architectural coupling",
+    "AE-06": "qualify; P3 legacy/fixture receiver scope",
+    "AE-07": "agree; P3 incomplete validator invariant",
+    "AE-08": "agree; deliberate tradeoff, no present harm"
+  },
+  "new_findings": [
+    {
+      "id": "G-01",
+      "priority": "P2",
+      "summary": "bootstrapRegistry error loses registry_refresh_failed code and leaves localStorage latch pending"
+    },
+    {
+      "id": "G-02",
+      "priority": "P2",
+      "summary": "buildPackage overwrites catalogRevision with hash of last dynamic module"
+    },
+    {
+      "id": "G-03",
+      "priority": "P3",
+      "summary": "Broker.build recordContext assumes steps[0].input.projectId outside targetFields"
+    },
+    {
+      "id": "G-04",
+      "priority": "P3",
+      "summary": "Unauthenticated local /challenge can cause 10-second challenge_backpressure"
+    },
+    {
+      "id": "G-05",
+      "priority": "P3",
+      "summary": "core/stdio.js default server version remains 4.0.0-m1"
+    }
+  ],
+  "recommended_blocks": [
+    "Pure composition-spec and deterministic packaging",
+    "close idempotence, CEP latch/guard failure handling, validateIntent allowed key union",
+    "Bounded offline Titles end-to-end simulation and resultProfile routing table"
+  ],
+  "missing_proof": [
+    "core4/core/broker.js:259–386 executeStep/reconcile",
+    "core4/runtime/attachment-owner.js:101–194 dispatch",
+    "core4/integrations/cep/http-peer.js omitted ranges 1–156,179–295,349–595; provider also mentions role-key/result handling near 323",
+    "core4/runtime/stdio-entry.js outside supplied 264–293, including runtime.close and start(owner)",
+    "E5 host adoption/panel startup and mutation live acceptance on new identity remain outside code-only proof"
+  ],
+  "source_code_or_tests_executed_locally": false,
+  "native_acceptance_authority": false,
+  "implementation_authorized_by_review": false,
+  "created_at": "2026-11-12T09:09:24.5269087Z"
+}

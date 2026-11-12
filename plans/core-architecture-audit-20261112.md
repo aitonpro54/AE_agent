@@ -126,3 +126,45 @@ Source/test/docs reads, read-only evidence-key/schema comparison. Для одн�
 component reuse подтверждены key и SHA полного stdout PASS 16/16. Новых тестов
 и live операций не было; offline close experiment не потребовался. Продуктовые
 исходники сохранены.
+
+## Этап 3 — сверка Argon и итог завершены
+
+### Progress
+
+Argon-контроллер завершил одну отправку в Aiton, режим перед отправкой —
+«Задача / 4 Argon», отдельного effort control нет. Получен `revise`;
+`argon-response.txt` содержит 33025 символов, SHA-256
+`f0ad8bdae11ddd86b6addd84613a457f4004fa265e2ea21b40131529561e3ac7`.
+После повторного открытия raw SHA совпал. Чат:
+https://gemini.google.com/app/3fe3d93f1ef2c668.
+
+`local-argon-triage.md` проверяет AE-01–08 и G-01–05 по полным исходникам.
+`decisions.md` фиксирует архитектурный вывод, принятые и суженные утверждения,
+приоритеты будущих ограниченных блоков и границы поручения.
+
+### Decision Log
+
+Каркас сохраняется; модульность частичная. Подтверждены узкий lower close
+контракт, потеря diagnostic code при registry bootstrap, неполнота
+catalogRevision и общие предметные зависимости. Текущая поломка Titles,
+отсутствие receiver в пакете и общий ложный stop Owner не подтверждаются.
+«Вечный latch» сужен: signed retirement уже существует. Сначала рекомендованы
+узкие ошибки диагностики/close, затем pure metadata/registry boundary,
+далее только оставшийся affected proof. Реализация этим аудитом не назначена.
+
+Оговорка provenance Gemini: после connection error и восстановления того же
+чата селектор следующего сообщения показывал Flash. Контроллер не выбирал
+его и не повторял запрос. Backend identity полученного ответа независимо
+недоступна; эту неопределённость нельзя скрывать за send-time выбором Argon.
+Source findings дополнительно проверены локально независимо от имени модели.
+
+### Validation
+
+Координатор подтвердил неизменность original/cross-check payload hashes,
+точное совпадение Argon response после reopen, сохранность двух исходных
+dirty файлов и отсутствие diff `core4/`/`products/` к target snapshot.
+`verification.json` сохранён. Внешние ответы не обрезались по наблюдаемому UI;
+полное прочтение моделью — её заявление, не независимо доказанный факт.
+Текст запроса Argon передан в composer, остальные четыре файла — вложениями.
+Контроллер закончил CU-блок; runtime/product/AEP/config не менялись.
+Новых product tests и live acceptance нет. Все этапы заказанного аудита закрыты.
