@@ -195,8 +195,11 @@
       return value.panelConfigHash !== await configHash() ? value : null;
     } catch (ignored) { return null; }
   }
-  function retiredSessions() { return !!(resetState && resetState.resetComplete === true && resetState.sessionId === workSessionId && sessionAvailable(resetState)); }
-  function reloadIdle() { return !disposed && !delivered && !resetPosting && !resetRequested && !resetUncertain && !resetWatching && !resetControllers.length && !activeRequest && !wirePending && api.reloadIdle(localStorage, cfg.installationId, workSessionId, retiredSessions()); }
+  function retiredSessions() { return !!(cfg.startOverSupported === true && resetState && validReset(resetState) && resetState.id !== null && typeof workSessionId === 'string' && resetState.sessionId === workSessionId && resetState.resetComplete === true && sessionAvailable(resetState) && resetState.requiresAEExit === false && resetState.fault === null); }
+  function reloadIdle(admitSavedResult) {
+    var admission = admitSavedResult === true ? { packageHash: cfg.packageHash, executorHashes: (cfg.assets || [{ executorHash: cfg.executorHash }]).map(function (asset) { return asset.executorHash; }), explicitNullSession: !!(cfg.startOverSupported === true && resetState && validReset(resetState) && resetState.sessionId === null && workSessionId === null && resetState.id === null && resetState.resetComplete === false && sessionAvailable(resetState) && resetState.requiresAEExit === false && resetState.fault === null) } : null;
+    return !disposed && !delivered && !resetPosting && !resetRequested && !resetUncertain && !resetWatching && !resetControllers.length && !activeRequest && !wirePending && api.reloadIdle(localStorage, cfg.installationId, workSessionId, retiredSessions(), admission);
+  }
   async function maybeReload(cause) {
     if (reloadFlight || cfg.registryVerification !== 1 || !reloadIdle() || !cause || !(cause.transportUnavailable || ['installation_config_changed', 'installation_binding', 'start_over_binding_changed', 'peer_auth', 'peer_auth_or_replay', 'panel_identity_mismatch', 'link_auth', 'start_over_challenge_auth', 'start_over_response_auth'].indexOf(cause.message) >= 0)) return false;
     reloadFlight = true;
@@ -228,6 +231,7 @@
         if (cfg.registryVerification === 1) claim.extensionRoot = extensionRoot();
         var proof = await sign(claim); current(g);
         if (Date.now() >= budget.deadline) throw error(budget.reason || 'duplicate_peer_wait_expired');
+        if (cfg.registryVerification === 1 && !reloadIdle(true)) throw error('registry_local_busy');
         var response = await post('/link', Object.assign({}, claim, { proof: proof }), g, budget.deadline);
         if (Date.now() >= budget.deadline) throw error(budget.reason || 'duplicate_peer_wait_expired');
         return { challenge: challenge, response: response, generation: g, extensionRoot: claim.extensionRoot };
@@ -247,6 +251,7 @@
       if (cfg.startOverSupported === true && !await watchReset(null, resetGeneration)) return;
       if (cfg.registryVerification === 1 && cfg.startOverSupported === true && verifiedResetProof) await api.retireRegistryLatch({ installationId: cfg.installationId, storage: localStorage, proof: verifiedResetProof.envelope, verifyProof: verifyRetirementProof, digest: digestRaw });
       if (cfg.registryVerification === 1 && localStorage.getItem(api.registryKey(cfg.installationId)) !== null) throw error('registry_bootstrap_unknown_no_replay');
+      if (cfg.registryVerification === 1 && !reloadIdle(true)) throw error('registry_local_busy');
       newChannel(); var budget = { deadline: Date.now() + 50000, attempts: 0 };
       while (!disposed) {
         var handshake = await link(budget), response = handshake.response, g = handshake.generation;
@@ -267,7 +272,7 @@
           var bootstrap = response.body.bootstrap;
           if (response.body.registryReady !== false || !object(bootstrap, ['nonce', 'expectedRegistryBuildId', 'deadline', 'sessionId']) || !/^[a-f0-9]{64}$/.test(bootstrap.nonce) || bootstrap.sessionId !== workSessionId || bootstrap.expectedRegistryBuildId !== loadedPanelIdentity.registryBuildId || typeof bootstrap.deadline !== 'number' || bootstrap.deadline <= Date.now() || bootstrap.deadline > Date.now() + 91000) throw error('registry_bootstrap_auth');
           if (extensionRoot() !== handshake.extensionRoot) throw error('registry_extension_changed');
-          if (!api.reloadIdle(localStorage, cfg.installationId, workSessionId, retiredSessions())) throw error('registry_local_busy');
+          if (!reloadIdle()) throw error('registry_local_busy');
           await api.bootstrapRegistry({ installationId: cfg.installationId, storage: localStorage, extensionRoot: handshake.extensionRoot, registryBuildId: loadedPanelIdentity.registryBuildId, binding: { epoch: epoch, peerId: peerId, nonce: bootstrap.nonce, packageHash: cfg.packageHash, sessionId: workSessionId }, csInterface: { evalScript: function (script, callback) { __adobe_cep__.evalScript(script, callback); } }, complete: (function (channel) { return function (value) { return authenticated('/registry-ready', value, channel); }; }(g)) }); current(g);
         }
         await settleReload(); showReady();

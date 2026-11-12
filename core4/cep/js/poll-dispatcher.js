@@ -59,15 +59,27 @@
     };
   }
   function registryKey(installationId) { return 'aeagentcore4-registry-' + installationId; }
-  function reloadIdle(storage, installationId, sessionId, retiredSessions) {
-    if (nativeGuard.active || operations || storage.getItem(registryKey(installationId)) !== null || storage.getItem(storageKey(installationId, sessionId)) !== null || storage.getItem(storageKey(installationId)) !== null) return false;
+  function reloadIdle(storage, installationId, sessionId, retiredSessions, admitSavedResult) {
+    // Admission may recover only a saved current result by POST/ACK after link.
+    // Native/operation guards still apply, and bootstrap uses the strict check.
+    var recoverableCurrent = false;
+    if (admitSavedResult && typeof admitSavedResult === 'object') {
+      try {
+        var prior = JSON.parse(storage.getItem(storageKey(installationId, sessionId))), frame = prior && prior.frame, binding = frame && frame.originalBinding, pins = frame && frame.pins;
+        recoverableCurrent = !!(frame && typeof frame.commandId === 'string' && frame.commandId && binding && typeof binding.receiptRef === 'string' && binding.commandId === frame.commandId && pins && pins.installationId === installationId && pins.packageHash === admitSavedResult.packageHash && Array.isArray(admitSavedResult.executorHashes) && admitSavedResult.executorHashes.indexOf(pins.executorHash) >= 0 && binding.executorHash === pins.executorHash && prior.result && (typeof sessionId === 'string' || sessionId === null && admitSavedResult.explicitNullSession === true));
+      } catch (ignored) {}
+    }
+    var historicalNullSession = retiredSessions === true && typeof sessionId === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(sessionId);
+    if (nativeGuard.active || operations || storage.getItem(registryKey(installationId)) !== null || storage.getItem(storageKey(installationId, sessionId)) !== null && !recoverableCurrent || storage.getItem(storageKey(installationId)) !== null && !historicalNullSession && !(recoverableCurrent && sessionId === null)) return false;
     if (typeof storage.key !== 'function' || typeof storage.length !== 'number') return false;
     var prefix = storageKey(installationId), currentKey = storageKey(installationId, sessionId);
     for (var i = 0; i < storage.length; i++) {
       var key = storage.key(i);
       if (typeof key !== 'string' || key.indexOf(prefix) !== 0 || storage.getItem(key) === null) continue;
-      // Only a signed completed work-session reset retires historical session
+      // Only a signed completed work-session reset retires historical null/UUID session
       // latches. Their bytes remain intact; they are never replayed or deleted.
+      if (recoverableCurrent && key === currentKey) continue;
+      if (historicalNullSession && key === prefix) continue;
       if (retiredSessions === true && key !== currentKey && key.indexOf(prefix + '-session-') === 0 && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(key.slice((prefix + '-session-').length))) continue;
       return false;
     }

@@ -164,6 +164,18 @@ active key. Итог архива — `unknown_preserved/retired_after_completed
 старого latch gate; новый provisional bootstrap при неразрешённом старом latch
 не отправляется. Baseline и исходный receiver UNKNOWN ведёт прежний StartOver.
 
+Старые physical latch keys с прежним UUID и точный legacy base key (null-session)
+не блокируют registry bootstrap нового сеанса только после подписанного completed
+StartOver: непустые reset/session UUID, готовая фаза, `requiresAEExit:false`,
+`fault:null`. Их байты не изменяются, команды не восстанавливаются и не повторяются.
+Без этого подтверждения legacy base остаётся fence. До `/link` проверяются local
+registry/current UNKNOWN, native callback и все operations; busy не создаёт новый
+server registry begin. Сохранённый result текущего сеанса может пройти только
+существующий POST/ACK recovery после provisional link. Это включает initial
+explicit null-session с подписанным текущим статусом и совпадающими pins; missing
+session, stale pins или отказ исходного ACK не допускают native bootstrap. Перед bootstrap idle
+проверяется повторно без этого исключения.
+
 Результат запуска всегда имеет `nativeVerified:false`. Для рабочей приёмки
 после authentic current handshake требуется отдельная свежая обычная typed
 project-inspection и освобождение lease. Startup не снимает `baselineRequired`.

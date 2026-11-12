@@ -51,6 +51,7 @@ function panel(t, options = {}) {
       const reply = payload => signed({ epoch: b.epoch, peerId, sequence: b.sequence, payload });
       if (route === '/registry-ready') { assert.equal(b.payload.registryBuildId, expected.registryBuildId); return reply({ registryReady: true, nonce: b.payload.nonce, registryBuildId: expected.registryBuildId, sessionId: options.wrongAckSession ? '10000000-0000-4000-8000-000000000009' : b.payload.sessionId }); }
       if (route === '/complete') {
+        if (options.completeFailure) return response({ error: 'completed_result_conflict' }, false);
         const ack = { ack: { commandId: b.payload.commandId, receiptRef: b.payload.originalBinding.receiptRef } };
         if (options.holdComplete) return new Promise(resolve => { completeResolve = () => resolve(reply(ack)); });
         return reply(ack);
@@ -61,7 +62,7 @@ function panel(t, options = {}) {
       return new Promise((resolve, reject) => request.signal.addEventListener('abort', () => reject(Object.assign(new Error('abort'), { name: 'AbortError' })), { once: true }));
     }
   });
-  vm.runInContext('window=this;', context); vm.runInContext(read('cep/js/poll-dispatcher.js').toString(), context); vm.runInContext(read('cep/js/panel.js').toString(), context);
+  vm.runInContext('window=this;', context); vm.runInContext(read('cep/js/poll-dispatcher.js').toString(), context); if (options.beforeStart) options.beforeStart(context); vm.runInContext(read('cep/js/panel.js').toString(), context);
   t.after(async () => { unload(); for (const timer of timers) clearTimeout(timer); await new Promise(r => setTimeout(r, 5)); });
   return { context, calls, evals, proofs, native, local, session, markerReads, reloads, elements, click: () => click(), get polls() { return polls; }, get completePending() { return !!completeResolve; }, releaseComplete() { completeResolve(); }, get bootstrapPending() { return !!bootstrapCallback; }, releaseBootstrap() { bootstrapCallback(); } };
 }
@@ -230,4 +231,84 @@ test('panel-lifecycle signed reset status precedes old latch gate; no new provis
   const local = storage(), raw = oldLatch(); local.setItem(bootKey, raw);
   const f = panel(t, { config: { ...cfg, startOverSupported: true }, local, resetState: { ...completedReset, resetComplete: false } }); await until(() => f.elements.connect.disabled === false);
   assert.deepEqual(f.calls.map(c => c.route), ['/start-over/challenge', '/start-over/status']); assert.equal(f.evals.length, 0); assert.equal(local.getItem(bootKey), raw);
+});
+
+const legacyPhysicalKey = 'aeagentcore4-physical-' + cfg.installationId;
+const historicalPhysicalRaw = JSON.stringify({ frame: { commandId: 'legacy-inspection', originalBinding: { receiptRef: 'legacy-receipt' }, pins: { packageHash: 'old-package' } }, result: { preserved: true } });
+function legacyPhysicalStorage() { const local = storage(); local.setItem(legacyPhysicalKey, historicalPhysicalRaw); local.setItem(legacyPhysicalKey + '-session-' + S1, '{"oldUnknown":true}'); return local; }
+test('panel-lifecycle completed authenticated reset admits legacy null and old UUID history without recovery or changing bytes', async t => {
+  const local = legacyPhysicalStorage(), before = Array.from({ length: local.length }, (_, i) => [local.key(i), local.getItem(local.key(i))]);
+  const f = panel(t, { config: { ...cfg, startOverSupported: true }, local, resetState: completedReset }); await until(() => f.polls === 1);
+  assert.equal(f.evals.length, 1); assert.equal(f.calls.filter(c => c.route === '/link').length, 1); assert.equal(f.calls.some(c => c.route === '/complete'), false);
+  for (const [key, raw] of before) assert.equal(local.getItem(key), raw);
+  assert.equal(local.getItem(legacyPhysicalKey + '-session-' + S2), null); assert.match(f.elements.status.textContent, /требуется чтение проекта/);
+});
+test('panel-lifecycle legacy history remains closed without complete authenticated nonnull reset session', async t => {
+  const cases = [
+    { config: cfg },
+    ...[{ resetComplete: false }, { id: null }, { sessionId: null }, { fault: 'retained_unknown' }, { requiresAEExit: true }, { phase: 'blocked' }].map(patch => ({ resetState: { ...completedReset, ...patch } })),
+    ...['missing-mac', 'mac', 'nonce', 'packageHash'].map(resetTamper => ({ resetTamper }))
+  ];
+  for (const options of cases) {
+    const local = legacyPhysicalStorage(), f = panel(t, { config: { ...cfg, startOverSupported: true }, resetState: completedReset, ...options, local });
+    await until(() => f.elements.connect.disabled === false); assert.equal(f.calls.some(c => c.route === '/link'), false); assert.equal(f.evals.length, 0); assert.equal(f.calls.some(c => c.route === '/complete'), false); assert.equal(local.getItem(legacyPhysicalKey), historicalPhysicalRaw);
+  }
+  const local = legacyPhysicalStorage(), f = panel(t, { config: { ...cfg, startOverSupported: true }, local, resetState: { ...completedReset, phase: 'awaiting-ae', resetComplete: false, requiresAEExit: true } });
+  await until(() => f.calls.some(c => c.route === '/start-over/status')); await new Promise(r => setTimeout(r, 20));
+  assert.equal(f.calls.some(c => c.route === '/link'), false); assert.equal(f.evals.length, 0); assert.equal(local.getItem(legacyPhysicalKey), historicalPhysicalRaw);
+});
+test('panel-lifecycle current session native and completion operations deny admission before any provisional link', async t => {
+  for (const busy of ['current', 'native', 'completion']) {
+    const local = legacyPhysicalStorage(); let release, pending;
+    if (busy === 'current') local.setItem(legacyPhysicalKey + '-session-' + S2, '{"currentUnknown":true}');
+    const f = panel(t, { config: { ...cfg, startOverSupported: true }, local, resetState: completedReset, beforeStart(context) {
+      if (busy === 'native') context.__aeCore4NativeCallbackGuard.active = { originalCallback: true };
+      if (busy === 'completion') {
+        const api = context.Core4PollDispatcher, record = { frame: { commandId: 'old-completion', originalBinding: { receiptRef: 'old-receipt' } }, result: { preserved: true } };
+        local.setItem(api.storageKey(cfg.installationId, S1), JSON.stringify(record));
+        pending = api.createDispatcher({ installationId: cfg.installationId, sessionId: S1, storage: local, complete: () => new Promise(resolve => { release = () => resolve({ ack: { commandId: 'old-completion', receiptRef: 'old-receipt' } }); }) }).recover();
+      }
+    } });
+    await until(() => f.elements.connect.disabled === false); assert.match(f.elements.status.textContent, /registry_local_busy/); assert.equal(f.calls.some(c => c.route === '/link'), false); assert.equal(f.evals.length, 0); assert.equal(local.getItem(legacyPhysicalKey), historicalPhysicalRaw);
+    if (pending) { release(); await pending; }
+  }
+});
+test('panel-lifecycle legacy exemption requires explicit nonnull valid current session even at dispatcher seam', () => {
+  const api = isolatedDispatcher(), local = legacyPhysicalStorage();
+  for (const session of [undefined, null, '', 'not-a-session']) {
+    if (session !== undefined && session !== null) assert.throws(() => api.reloadIdle(local, cfg.installationId, session, true), /physical_session_binding/);
+    else assert.equal(api.reloadIdle(local, cfg.installationId, session, true), false);
+  }
+  assert.equal(api.reloadIdle(local, cfg.installationId, S2, false), false); assert.equal(api.reloadIdle(local, cfg.installationId, S2, true), true); assert.equal(local.getItem(legacyPhysicalKey), historicalPhysicalRaw);
+});
+
+test('panel-lifecycle admission retains current saved-result recovery by one completion ACK before registry bootstrap', async t => {
+  const local = legacyPhysicalStorage(), key = legacyPhysicalKey + '-session-' + S2;
+  const frame = { commandId: 'saved-current-inspection', originalBinding: { commandId: 'saved-current-inspection', executorHash: cfg.executorHash, phase: 'inspect', receiptRef: 'saved-current-receipt' }, pins: { installationId: cfg.installationId, packageHash: cfg.packageHash, executorHash: cfg.executorHash } };
+  local.setItem(key, JSON.stringify({ frame, result: { alreadyExecuted: true } }));
+  const f = panel(t, { config: { ...cfg, startOverSupported: true }, local, resetState: completedReset }); await until(() => f.polls === 1);
+  assert.equal(local.getItem(key), null); assert.equal(local.getItem(legacyPhysicalKey), historicalPhysicalRaw); assert.equal(f.evals.length, 1); assert.doesNotMatch(f.evals[0], /AECore4Host.dispatch/);
+  assert.equal(f.calls.filter(c => c.route === '/complete').length, 1); const routes = f.calls.map(c => c.route); assert.ok(routes.indexOf('/link') < routes.indexOf('/complete')); assert.ok(routes.indexOf('/complete') < routes.indexOf('/registry-ready'));
+});
+
+const initialNullReset = { ...completedReset, id: null, sessionId: null, phase: 'ready', resetComplete: false, baselineRequired: false };
+function currentResultRecord() { return { frame: { commandId: 'current-inspection', originalBinding: { commandId: 'current-inspection', executorHash: cfg.executorHash, phase: 'inspect', receiptRef: 'current-receipt' }, pins: { installationId: cfg.installationId, packageHash: cfg.packageHash, executorHash: cfg.executorHash } }, result: { alreadyExecuted: true } }; }
+test('panel-lifecycle signed initial explicit null session preserves current base result ACK-only recovery', async t => {
+  const local = storage(); local.setItem(legacyPhysicalKey, JSON.stringify(currentResultRecord()));
+  const f = panel(t, { config: { ...cfg, startOverSupported: true }, local, resetState: initialNullReset }); await until(() => f.polls === 1);
+  assert.equal(local.getItem(legacyPhysicalKey), null); assert.equal(f.calls.filter(c => c.route === '/complete').length, 1); assert.equal(f.evals.length, 1); assert.doesNotMatch(f.evals[0], /AECore4Host.dispatch/);
+  const routes = f.calls.map(c => c.route); assert.ok(routes.indexOf('/complete') < routes.indexOf('/registry-ready'));
+});
+test('panel-lifecycle explicit null result recovery rejects stale pins missing session and failed original ACK before native bootstrap', async t => {
+  for (const mode of ['stale-pins', 'no-result', 'missing-session', 'forged-status', 'ack-refused']) {
+    const local = storage(), record = currentResultRecord();
+    if (mode === 'stale-pins') record.frame.pins.packageHash = 'f'.repeat(64);
+    if (mode === 'no-result') delete record.result;
+    const state = { ...initialNullReset }; if (mode === 'missing-session') delete state.sessionId;
+    const raw = JSON.stringify(record); local.setItem(legacyPhysicalKey, raw);
+    const f = panel(t, { config: { ...cfg, startOverSupported: true }, local, resetState: state, resetTamper: mode === 'forged-status' ? 'mac' : undefined, completeFailure: mode === 'ack-refused' });
+    await until(() => f.elements.connect.disabled === false); assert.equal(f.evals.length, 0); assert.equal(f.calls.some(c => c.route === '/registry-ready'), false); assert.equal(local.getItem(legacyPhysicalKey), raw);
+    assert.equal(f.calls.filter(c => c.route === '/link').length, mode === 'ack-refused' ? 1 : 0);
+    assert.equal(f.calls.filter(c => c.route === '/complete').length, mode === 'ack-refused' ? 1 : 0);
+  }
 });

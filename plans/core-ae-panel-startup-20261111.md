@@ -313,3 +313,100 @@ cold/hot/repeat и проверка загруженной панели оста
   Новый phase core-ae-panel-startup-v3-20261112 не переиспользует прежние intents.
 - Этот commit фиксирует source и диагностику; deterministic packages и native
   cold/hot/repeat ещё ожидаются. Native/MSI/full release этим ACCEPT не заявляются.
+
+## Возобновление 12 ноября: protocol 3 установлен, native registry blocker
+
+### Progress
+
+- После пользовательского stop работа возобновлена прямым «добивай». Source
+  commit011ffbf сохранён. Четыре v3 packages проверены, пары deterministic:
+  manual3dfdb40d…/distributiona6117209…; operator4e5fe534…/18418957….
+- Исходные stdout49/49, aerender2/2 и closure4/4 найдены в TEMP и сохранены
+  без rerun: v3-validation.json SHA3aeaddd4978df24983c769787eb56ff1b8d25ade4e6556251966b3682c3c41b2,
+  v3-checks/. Freeze12 unchanged. Scout сперва не нашёл эти logs; это не FAIL.
+- За остановку обновились global config и Codex CLI binary. Старый snapshot
+  отказал до intent. После свежего snapshot stop6467e862… не подключился к
+  отсутствующему owner (ipc_endpoint_absent), обновление не начиналось. Fresh
+  configured client штатно запустил owner36524, status healthy/free, maintenance
+  not requested. Исходный stop не повторялся; новые prepared helpers используют
+  подтверждённый CLI9e1da79431da526b вместо отсутствующего5449c1f0….
+- Свежий snapshot manifest2105dac6094b5bf0295edbad285a7ac94df2b1e88c8ef8dd032b67cbce40025a.
+  Отдельный stop86e810dd-43e3-472f-9dce-4088a2571f6f и update528759ae-8162-4dd0-9955-5958bc81cfbc
+  завершены, manual3df… enabled, 2115 protected files сохранены. IDs settled.
+- Cold ensurea4bf398b-58e4-40ed-bc05-e79f88619829 штатно создал AE1912,
+  birth2026-11-12T04:54:02.311873Z. До bootstrap обнаружен modal, исход положительно
+  blocked_before_bootstrap/startup_ae_modal_observed, native dispatch0.
+  Computer Use прочитал Crash Repair Options от прошлого падения; Continue1
+  закрыл dialog. Native JS kernel сразу reset; отдельного native teardown API нет.
+- CEP автоматически открылась. HMAC JS identity4.2.6/file:// принята, но panel
+  показала registry_local_busy. Ordinary warm helper отказал на pending до lease
+  и нового ensure. Нативный registry9d44d962-6c32-4462-8bb3-d35ee2e49ea5
+  перешёл ongoing→UNKNOWN; observer02 сохранил исход, replay0. UI inspection
+  увидела clean Untitled и отсутствие modal; CUA немедленно completion_summary.
+
+### Decision Log
+
+- Root остаётся sole live controller. Конкретный registry/local latch blocker
+  передан ae_specialist: взаимодействие lifecycle/UNKNOWN требует scoped диагноза
+  до исправления. Новых native dispatch/reset, удаления latch или ослабления
+  authority до установления recovery contract нет.
+- Routine install и loaded JS version обходятся без UI. Crash-repair dialog —
+  отдельный необходимый UI-блок; его обработка не является обычным happy-path proof.
+  Нативное чтение и повторный полностью штатный cold launch ещё открыты.
+
+### Validation
+
+Current native evidence находится в core-ae-panel-startup-install-20261112/:
+update-once.json, cold-launch-01.json, warm-after-crash-repair-01.json,
+registry-observer-01.json и registry-observer-02.json. History/UNKNOWN сохраняются.
+
+### Legacy latch и текущий reset
+
+- ae_specialist подтвердил read-only LevelDB view только Core cache: legacy
+  unscoped physical key (1402 bytes, SHA43cd87366f68999a5ac9aefc878d6a577ed1c32d04ecc5d04531466a83a042f9)
+  и два старых session keys; текущего935… и registry-latch нет. Исторический
+  null-session key безусловно блокировал reloadIdle после completed reset.
+  Native eval не достигнут по controlflow и сохранённым facts. Safe artifact
+  registry-local-storage-safe-01.json SHA91c5713480560a2eb73f6e602f7454b957b9bc2f1f6bc1d3c39112c0d859d9ec;
+  parser CRC не проверял, это stable file-backed view, не live renderer query.
+- Scoped fix выполняет ae_implementer, read-only review/recovery — ae_specialist.
+  Контракт: historical base при authenticated completed reset/new nonnull session
+  не восстанавливать/не удалять; admission до /link, postlink native guard строгий.
+  Сохраняется существующий ACK-only recovery точного CURRENT saved-result key,
+  включая explicit-null current session; missing session не приравнивается к null.
+- План reset operation4348ba6f-7d36-4acc-bd03-dd3e49b57658,
+  planHasha2ddf7271c83479ace7396091d9965dc1beb2c92b1d859aac08641764e043179.
+  Request1 дал reset4c3b80e6-b231-4c2b-a378-ff331a4b0aed,
+  intentHashe502ae0431e4d65875c907689d3c26d516db9c7a444cb10d2ec5828e8d1e6389,
+  newSession7ef3840c-c1de-49cc-b850-f44fc310e277. Повторов request нет.
+- Official inspect проверил inventoryRecorded. Exact AE1912/birthTicks639300560423118730
+  присутствует в signed inventory SHA1ee9139185b96717dae8738ef0c65487fa3f05d4b10ccfe3ea64022fa331467a.
+  Начальный root comparison отказал на автоматическом преобразовании ISO string
+  PowerShell; сравнение нативных DateTime ticks исправлено, exact match PASS.
+- Только затем CU наблюдал Untitled/no-star/Home и выполнил Alt-F4. Окно исчезло,
+  completion_summary — немедленно. CIM подтвердил AE absent. Root не менял проект,
+  не сохранял, не сбрасывал prefs. Driver26048 сохранил blocked/start_over_archive_collision,
+  eligibility continue. Archive/source не трогаются, specialist диагностирует точную
+  текущую transaction 4c3…; receiver UNKNOWN не объявляется успешной старой командой.
+
+### Legacy admission source milestone принят
+
+- Исправлены panel.js, poll-dispatcher.js и адресные VM tests. Signed completed
+  reset разрешает игнорировать точный historical null-session key при новой
+  непустой сессии, сохраняя его bytes. Prelink guard отсекает заведомо локальные
+  блокировки до owner registry begin. Existing current-result ACK-only recovery
+  сохранён для nonnull и signed explicit-null session; strict postlink native
+  guard и все pins/binding проверки остаются.
+- Final focused109/109, syntax3, boundaries91, diff-check PASS. Полный stdout и
+  команды: legacy-base-fix-validation.json SHA7379192a914cfb25d79d18220c2b0927db895f29535383203f216af57b6cfe51.
+- Независимый ae_specialist review ACCEPT, четыре exact SHA совпали с freeze
+  legacy-base-fix-source-freeze-final.json SHA3ac423b55e593e23ae1881ece5a6aa7b97448e227a2f71d5eae1f9beab181c5d.
+- Две deterministic пары verifyPackage/verifyStandalone/closure PASS:
+  manualbb86ed3780a175b65b729ae92df449c6d65926313760b5942f7066befbd26c14 /
+  distribution79ee3d3a910bb46afd0afc25b974b78ba2f72856360b04bdfd76c9ebc9cf8d3c;
+  operatorfb2b942f2308690f3809a909fd045b621545c0b6c507dbba35dca04b71a8ae95 /
+  distribution326dab6595f57f4823d0e14ca84889feb3ac15d7ecd71c15abd07144f88c2934.
+- Installed остаётся manual3df…; reset4c… требует разрешить archive collision
+  прежде следующего update/native proof. Источники приняты отдельным commit,
+  успешный native запуск этим milestone не заявляется. Анализ collision отделён
+  от принятой panel дельты; произвольного удаления/слияния каталогов нет.
